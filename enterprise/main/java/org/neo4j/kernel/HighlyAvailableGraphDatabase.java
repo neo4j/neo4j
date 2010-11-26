@@ -41,6 +41,7 @@ import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.ha.BranchedDataException;
 import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.BrokerFactory;
 import org.neo4j.kernel.ha.HaCommunicationException;
@@ -85,6 +86,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     private final int machineId;
     private volatile MasterServer masterServer;
     private ScheduledExecutorService updatePuller;
+    private volatile RuntimeException causeOfShutdown;
 
     private final List<KernelEventHandler> kernelEventHandlers =
             new CopyOnWriteArrayList<KernelEventHandler>();
@@ -136,10 +138,23 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     private void startUp()
     {
         newMaster( null, new Exception() );
+        localGraph();
+    }
+
+    private EmbeddedGraphDbImpl localGraph()
+    {
         if ( localGraph == null )
         {
-            throw new RuntimeException( "Failed to find a master" );
+            if ( causeOfShutdown != null )
+            {
+                throw causeOfShutdown;
+            }
+            else
+            {
+                throw new RuntimeException( "Failed to find a master" );
+            }
         }
+        return localGraph;
     }
 
     private BrokerFactory defaultBrokerFactory( final String storeDir,
@@ -202,7 +217,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     @Override
     public Config getConfig()
     {
-        return this.localGraph.getConfig();
+        return localGraph().getConfig();
     }
 
     @Override
@@ -214,7 +229,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     @Override
     public <T> T getManagementBean( Class<T> type )
     {
-        return this.localGraph.getManagementBean( type );
+        return localGraph().getManagementBean( type );
     }
 
     protected synchronized void reevaluateMyself( Pair<Master, Machine> master )
@@ -255,11 +270,11 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         {
             for ( TransactionEventHandler<?> handler : transactionEventHandlers )
             {
-                this.localGraph.registerTransactionEventHandler( handler );
+                localGraph().registerTransactionEventHandler( handler );
             }
             for ( KernelEventHandler handler : kernelEventHandlers )
             {
-                this.localGraph.registerKernelEventHandler( handler );
+                localGraph().registerKernelEventHandler( handler );
             }
         }
     }
@@ -301,7 +316,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 return;
             }
 
-            XaDataSource nioneoDataSource = this.localGraph.getConfig().getTxModule()
+            XaDataSource nioneoDataSource = getConfig().getTxModule()
                     .getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
             long myLastCommittedTx = nioneoDataSource.getLastCommittedTxId();
             long highestCommonTxId = Math.min( myLastCommittedTx, master.other().getLastCommittedTxId() );
@@ -321,13 +336,14 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                     myLastCommittedTx + "," + masterForMyHighestCommonTxId +
                     "] but master says machine id for that txId is " + masterForMastersHighestCommonTxId;
                 msgLog.logMessage( msg, true );
-                shutdown();
-                throw new RuntimeException( msg );
+                RuntimeException exception = new BranchedDataException( msg );
+                shutdown( exception );
+                throw exception;
             }
         }
         catch ( IOException e )
         {
-            shutdown();
+            shutdown( new RuntimeException( e ) );
             throw new RuntimeException( e );
         }
     }
@@ -382,60 +398,60 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 
     public Transaction beginTx()
     {
-        return localGraph.beginTx();
+        return localGraph().beginTx();
     }
 
     public Node createNode()
     {
-        return localGraph.createNode();
+        return localGraph().createNode();
     }
 
     public boolean enableRemoteShell()
     {
-        return localGraph.enableRemoteShell();
+        return localGraph().enableRemoteShell();
     }
 
     public boolean enableRemoteShell( Map<String, Serializable> initialProperties )
     {
-        return localGraph.enableRemoteShell( initialProperties );
+        return localGraph().enableRemoteShell( initialProperties );
     }
 
     public Iterable<Node> getAllNodes()
     {
-        return localGraph.getAllNodes();
+        return localGraph().getAllNodes();
     }
 
     public Node getNodeById( long id )
     {
-        return localGraph.getNodeById( id );
+        return localGraph().getNodeById( id );
     }
 
     public Node getReferenceNode()
     {
-        return localGraph.getReferenceNode();
+        return localGraph().getReferenceNode();
     }
 
     public Relationship getRelationshipById( long id )
     {
-        return localGraph.getRelationshipById( id );
+        return localGraph().getRelationshipById( id );
     }
 
     public Iterable<RelationshipType> getRelationshipTypes()
     {
-        return localGraph.getRelationshipTypes();
+        return localGraph().getRelationshipTypes();
     }
 
     public KernelEventHandler registerKernelEventHandler( KernelEventHandler handler )
     {
         this.kernelEventHandlers.add( handler );
-        return localGraph.registerKernelEventHandler( handler );
+        return localGraph().registerKernelEventHandler( handler );
     }
 
     public <T> TransactionEventHandler<T> registerTransactionEventHandler(
             TransactionEventHandler<T> handler )
     {
         this.transactionEventHandlers.add( handler );
-        return localGraph.registerTransactionEventHandler( handler );
+        return localGraph().registerTransactionEventHandler( handler );
     }
 
     public synchronized void internalShutdown()
@@ -463,9 +479,15 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             this.localGraph = null;
         }
     }
-
-    public synchronized void shutdown()
+    
+    public synchronized void shutdown( RuntimeException cause )
     {
+        if ( causeOfShutdown != null )
+        {
+            return;
+        }
+        
+        causeOfShutdown = cause;
         msgLog.logMessage( "Shutdown[" + machineId + "], " + this, true );
         if ( this.broker != null )
         {
@@ -474,21 +496,26 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         internalShutdown();
     }
 
+    public synchronized void shutdown()
+    {
+        shutdown( new IllegalStateException() );
+    }
+
     public KernelEventHandler unregisterKernelEventHandler( KernelEventHandler handler )
     {
-        return localGraph.unregisterKernelEventHandler( handler );
+        return localGraph().unregisterKernelEventHandler( handler );
     }
 
     public <T> TransactionEventHandler<T> unregisterTransactionEventHandler(
             TransactionEventHandler<T> handler )
     {
-        return localGraph.unregisterTransactionEventHandler( handler );
+        return localGraph().unregisterTransactionEventHandler( handler );
     }
 
     public SlaveContext getSlaveContext( int eventIdentifier )
     {
         XaDataSourceManager localDataSourceManager =
-            localGraph.getConfig().getTxModule().getXaDataSourceManager();
+            getConfig().getTxModule().getXaDataSourceManager();
         Collection<XaDataSource> dataSources = localDataSourceManager.getAllRegisteredDataSources();
         @SuppressWarnings("unchecked")
         Pair<String, Long>[] txs = new Pair[dataSources.size()];
@@ -506,7 +533,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         try
         {
             XaDataSourceManager localDataSourceManager =
-                localGraph.getConfig().getTxModule().getXaDataSourceManager();
+                getConfig().getTxModule().getXaDataSourceManager();
             for ( Pair<String, TransactionStream> streams : response.transactions().getStreams() )
             {
                 String resourceName = streams.first();
@@ -578,6 +605,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     
     public IndexManager index()
     {
-        return this.localGraph.index();
+        return localGraph().index();
     }
 }
