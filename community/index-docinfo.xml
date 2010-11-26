@@ -1,0 +1,71 @@
+<authorgroup>
+  <author>
+    <firstname>Tobias</firstname>
+    <surname>Ivarsson</surname>
+    <affiliation>
+      <jobtitle>Architect</jobtitle>
+      <orgname>Neo Technology</orgname>
+    </affiliation>
+  </author>
+
+  <author>
+    <firstname>Peter</firstname>
+    <surname>Neubauer</surname>
+    <affiliation>
+      <jobtitle>Chief Operating Officer</jobtitle>
+      <orgname>Neo Technology</orgname>
+    </affiliation>
+  </author>
+
+  <author>
+    <firstname>Johan</firstname>
+    <surname>Svensson</surname>
+    <affiliation>
+      <jobtitle>Chief Technology Officer</jobtitle>
+      <orgname>Neo Technology</orgname>
+    </affiliation>
+  </author>
+
+  <author>
+    <firstname>Andreas</firstname>
+    <surname>Kollegger</surname>
+    <affiliation>
+      <jobtitle>Developer</jobtitle>
+      <orgname>Neo Technology</orgname>
+    </affiliation>
+  </author>
+
+  <author>
+    <firstname>Andrés</firstname>
+    <surname>Taylor</surname>
+    <affiliation>
+      <jobtitle>Developer</jobtitle>
+      <orgname>Neo Technology</orgname>
+    </affiliation>
+  </author>
+
+  <editor>
+    <firstname>Anders</firstname>
+    <surname>Nawroth</surname>
+    <affiliation>
+      <jobtitle>Community Manager</jobtitle>
+      <orgname>Neo Technology</orgname>
+    </affiliation>
+  </editor>
+</authorgroup>
+
+<copyright>
+  <year>2010</year>
+  <holder>Neo Technology</holder>
+</copyright>
+
+<revhistory>
+  <revision>
+    <revnumber>1.2.M05</revnumber>
+    <date>December 2010</date>
+    <revremark>
+      First release.
+    </revremark>
+  </revision>
+</revhistory>
+
