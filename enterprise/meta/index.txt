@@ -1,0 +1,9 @@
+Project information
+===================
+
+Information for the document project contributors.
+
+:leveloffset: 2
+
+include::guide.txt[]
+
