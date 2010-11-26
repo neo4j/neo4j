@@ -1,0 +1,7 @@
+Dummy
+=====
+
+Lorem ipsum.
+
+image::dummy/ha1.png[Overview]
+
