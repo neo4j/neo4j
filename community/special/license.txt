@@ -1,3 +1,4 @@
+[license]
 License
 =======
 This book is presented in open source and licensed through Creative Commons 3.0.

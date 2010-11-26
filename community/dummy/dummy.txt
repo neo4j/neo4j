@@ -3,5 +3,4 @@ Dummy
 
 Lorem ipsum.
 
-image::dummy/ha1.png[Overview]
-
+image::ha1.png[Overview]

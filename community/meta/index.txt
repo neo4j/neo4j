@@ -7,3 +7,4 @@ Information for the document project contributors.
 
 include::guide.txt[]
 
+include::development.txt[]
