@@ -13,7 +13,7 @@
   <description>This component provides the means to set up a cluster of Neo4j instances that act together
     as a cluster, providing Master-Slave replication and other features.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}/</url>
-  <packaging>bundle</packaging>
+  <packaging>jar</packaging>
 
   <properties>
     <bundle.namespace>org.neo4j.kernel.ha</bundle.namespace>
