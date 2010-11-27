@@ -3,7 +3,7 @@ mkdir target
 
 # PDF toolchain using FOP
 mkdir -p target/fop
-a2x -v -k -f pdf --fop -D target/fop --conf-file=conf/fop.conf --xsltproc-opts "--stringparam toc.section.depth 1 --stringparam admon.graphics 1" index.txt
+a2x -v -k -f pdf --fop -D target/fop --conf-file=conf/fop.conf --xsl-file=conf/fo.xsl --xsltproc-opts "--stringparam toc.section.depth 1 --stringparam admon.graphics 1" index.txt
 
 # output as chunked html
 #a2x -v -k -f chunked -D target --conf-file=conf/chunked.conf --xsltproc-opts "--stringparam admon.graphics 1" index.txt
