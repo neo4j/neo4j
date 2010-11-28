@@ -267,7 +267,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
     
     static IndexProviderStore newIndexStore( String dbStoreDir )
     {
-        return new IndexProviderStore( getStoreDir( dbStoreDir ) + "/lucene-store.db" );
+        return new IndexProviderStore( getStoreDir( dbStoreDir ).first() + "/lucene-store.db" );
     }
 
     @Override
