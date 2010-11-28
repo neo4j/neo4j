@@ -153,4 +153,18 @@ public interface BatchInserterIndex
      * after a flush.
      */
     void flush();
+    
+    /**
+     * Sets the cache size for key/value pairs for the given {@code key}.
+     * Caching values may increase {@link #get(String, Object)} lookups significantly,
+     * but may at the same time slow down insertion of data some.
+     * 
+     * Be sure to call this method to enable caching for keys that will be
+     * used a lot in lookups. It's also best to call this method for your keys
+     * right after the index has been created.
+     * 
+     * @param key the key to set cache capacity for.
+     * @param size the number of values to cache results for.
+     */
+    void setCacheCapacity( String key, int size );
 }
