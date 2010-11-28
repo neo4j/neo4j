@@ -54,6 +54,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.index.IndexProviderStore;
@@ -145,7 +146,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
         super( params );
         caching = new Cache();
         String storeDir = (String) params.get( "store_dir" );
-        this.baseStorePath = getStoreDir( storeDir );
+        this.baseStorePath = getStoreDir( storeDir ).first();
         cleanWriteLocks( baseStorePath );
         this.indexStore = (IndexStore) params.get( IndexStore.class );
         this.providerStore = newIndexStore( storeDir );
@@ -248,9 +249,10 @@ public class LuceneDataSource extends LogBackedXaDataSource
         }
     }
     
-    static String getStoreDir( String dbStoreDir )
+    static Pair<String, Boolean> getStoreDir( String dbStoreDir )
     {
         File dir = new File( new File( dbStoreDir ), "index" );
+        boolean created = false;
         if ( !dir.exists() )
         {
             if ( !dir.mkdirs() )
@@ -258,8 +260,9 @@ public class LuceneDataSource extends LogBackedXaDataSource
                 throw new RuntimeException( "Unable to create directory path["
                     + dir.getAbsolutePath() + "] for Neo4j store." );
             }
+            created = true;
         }
-        return dir.getAbsolutePath();
+        return Pair.of( dir.getAbsolutePath(), created );
     }
     
     static IndexProviderStore newIndexStore( String dbStoreDir )
