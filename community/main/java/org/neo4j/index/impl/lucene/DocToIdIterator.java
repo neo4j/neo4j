@@ -60,7 +60,7 @@ class DocToIdIterator extends AbstractIndexHits<Long>
         return result;
     }
     
-    private void endReached()
+    protected void endReached()
     {
         if ( this.searcherOrNull != null )
         {
