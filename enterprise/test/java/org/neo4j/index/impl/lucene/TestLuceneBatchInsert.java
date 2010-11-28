@@ -28,6 +28,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 import junit.framework.Assert;
@@ -43,6 +44,7 @@ import org.neo4j.graphdb.index.BatchInserterIndex;
 import org.neo4j.graphdb.index.BatchInserterIndexProvider;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
@@ -153,25 +155,23 @@ public class TestLuceneBatchInsert
     public void testInsertionSpeed()
     {
         BatchInserter inserter = new BatchInserterImpl( PATH );
-        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider(
-                inserter );
-        BatchInserterIndex index = provider.nodeIndex( "yeah",
-                LuceneIndexProvider.EXACT_CONFIG );
+        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );
+        BatchInserterIndex index = provider.nodeIndex( "yeah", LuceneIndexProvider.EXACT_CONFIG );
+        index.setCacheCapacity( "key", 1000000 );
         long t = System.currentTimeMillis();
-        for ( int i = 0; i < 100000; i++ )
+        for ( int i = 0; i < 1000000; i++ )
         {
-            long id = inserter.createNode( null );
-            index.add( id, MapUtil.map( "key", "value" + i ) );
+            Map<String, Object> properties = MapUtil.map( "key", "value" + i );
+            long id = inserter.createNode( properties );
+            index.add( id, properties );
         }
         System.out.println( "insert:" + ( System.currentTimeMillis() - t ) );
         index.flush();
 
         t = System.currentTimeMillis();
-        for ( int i = 0; i < 10000; i++ )
+        for ( int i = 0; i < 1000000; i++ )
         {
-            for ( long n : index.get( "key", "value" + i ) )
-            {
-            }
+            IteratorUtil.count( (Iterator<Long>) index.get( "key", "value" + i ) );
         }
         System.out.println( "get:" + ( System.currentTimeMillis() - t ) );
     }
@@ -210,7 +210,7 @@ public class TestLuceneBatchInsert
     }
 
     @Test
-    public void testCanIndexRelatoinships()
+    public void testCanIndexRelationships()
     {
         BatchInserter inserter = new BatchInserterImpl( PATH );
         BatchInserterIndexProvider indexProvider = new LuceneBatchInserterIndexProvider(
