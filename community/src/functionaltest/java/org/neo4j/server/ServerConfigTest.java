@@ -25,8 +25,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.server.ServerBuilder.server;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 import com.sun.jersey.api.client.Client;
@@ -36,12 +34,7 @@ public class ServerConfigTest {
     
     private static final int NON_DEFAULT_PORT = 54321;
     
-    @Before
-    @After
-    public void noServerRunning() {
-        ServerTestUtils.nukeServer();
-    }
-    
+
     @Test
     public void shouldPickUpPortFromConfig() throws Exception {
         
