@@ -3,17 +3,15 @@ The Neo4j Manual
 
 :neo4j-version: 1.2.M05
 
+include::introduction/introduction.txt[]
+
 :leveloffset: 1
 
 include::capabilities/index.txt[]
 
-//:leveloffset: 1
+:leveloffset: 1
 
-//include::dummy/dummy.txt[]
-
-//:leveloffset: 1
-
-//include::meta/index.txt[]
+include::installation-deployment/index.txt[]
 
 :leveloffset: 1
 
@@ -22,3 +20,4 @@ include::configuration-performance/index.txt[]
 :leveloffset: 1
 
 include::operations/index.txt[]
+
