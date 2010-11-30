@@ -17,14 +17,15 @@ When running Neo4j on Windows the size of the memory-mapped nioneo configuration
 Most modern CPUs implement a Non-Uniform Memory Access (NUMA) architecture, where different parts of the memory have different access speeds. Suns Hotspot JVM is able to allocate objects with awareness of the NUMA structure as of version 1.6.0 update 18. When enabled this can give up to 40% performance improvements. To enabled the NUMA awareness, specify the -XX:+UseNUMA parameter.
 
 
-Guidelines for heap size
-^^^^^^^^^^^^^^^^^^^^^^^^
-
-This table is a guideline for how much memory to assign to various parts of the system for a web application using Neo4j, running on server hardware with mechanical disks.
-Number of primitives	 RAM size	 Heap configuration	 Reserved RAM for the OS	 Memory mapping configuration
-10M	 2GB	 512MB	the rest	 100-512MB
-100M	 4-8GB	 1-4GB	 1-2GB	the rest
-1B+	 8-32GB	 4GB+	 1-2GB	the rest
+.Guidelines for heap size
+[format="csv",width="60%",cols="4"]
+[frame="topbot",grid="none",options="header"]
+|======================================================================================================
+Number of primitives,RAM size,Heap configuration,Reserved RAM for the OS,Memory mapping configuration
+10M,2GB,512MB,the rest,100-512MB
+100M,4-8GB,1-4GB,1-2GB,the rest
+1B+,8-32GB,4GB+,1-2GB,the rest
+|======================================================================================================
 
 Configuring the Garbage Collector
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -34,4 +35,6 @@ The Hotspot JVM usually uses two garbage collectors, one for the young generatio
 We have found that the Concurrent Mark and Sweep Compactor gives the best performance for Neo4j Applications.
 
 Startup line example:
+----
 java -XX:+UseConcMarkSweepGC -d64 -server -Xmx1024m -cp /path/to/neo4j-kernel.jar:/path/to/jta.jar:/path/to/your-application.jar com.example.yourapp.MainClass
+----
