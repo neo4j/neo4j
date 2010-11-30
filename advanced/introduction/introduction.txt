@@ -1,7 +1,23 @@
 Introduction
+============
+Neo Technology <info@neotechnology.com>
+v1.2, December 2010:
+Reference for Neo4j 1.2
 
-This is the reference documentation for the 1.2 release of the Neo4j the graph database.
+== Expectations, Assumptions, and Aspirations ==
 
-The goal is to provide a technical overview of how things work, what to do and what to avoid to successfully run Neo4j in a production environment. The intended reader of this document is a developer, architect or ops guy who already know the basics about Neo4j. If you are completely new to Neo4j please check out http://neo4j.org first.
+This is a reference manual. The material is practical, technical, and focused
+on answering specific questions. After a brief introduction, each topic area
+assumes general familiarity as it addresses the particular details of Neo4j.
+ 
+The goal is to be thumb-through and rule-of-thumb friendly.
 
-o fill in more introduction
+The topics should be relevant to architects, administrators, developers and 
+anyone trying to take Neo4j from installation to deployment. The goal is to 
+provide a technical overview of how things work, what to do and what to avoid 
+to successfully run Neo4j in a production environment. 
+
+You should already be familiar with Neo4j and using graphs to store data.
+If you are completely new to Neo4j please check out http://neo4j.org first.
+
+
