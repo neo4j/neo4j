@@ -28,10 +28,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.Set;
+import java.util.Map.Entry;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.logging.Logger;
@@ -84,8 +84,8 @@ class EmbeddedGraphDbImpl
     private final KernelPanicEventGenerator kernelPanicEventGenerator =
             new KernelPanicEventGenerator( kernelEventHandlers );
 
-    private KernelExtension.KernelData extensions;
-    
+    private final KernelExtension.KernelData extensions;
+
     private final IndexManagerImpl indexManager;
     private final StringLogger msgLog;
 
@@ -116,7 +116,7 @@ class EmbeddedGraphDbImpl
         this.graphDbService = graphDbService;
         IndexStore indexStore = graphDbInstance.getConfig().getIndexStore();
         this.indexManager = new IndexManagerImpl( this, indexStore );
-        
+
         extensions = new KernelExtension.KernelData()
         {
             @Override
@@ -142,7 +142,8 @@ class EmbeddedGraphDbImpl
             {
                 return EmbeddedGraphDbImpl.this.graphDbService;
             }
-            
+
+            @Override
             protected void initialized( KernelExtension extension )
             {
                 if ( extension instanceof IndexProvider )
@@ -151,14 +152,14 @@ class EmbeddedGraphDbImpl
                 }
             }
         };
-        
+
         KernelExtensionLoader extensionLoader = new KernelExtensionLoader()
         {
             public void init()
             {
                 extensions.initAll( msgLog );
             }
-            
+
             public void load()
             {
                 extensions.loadAll( msgLog );
@@ -493,9 +494,14 @@ class EmbeddedGraphDbImpl
                             getConfig().getTxModule().getTxManager() );
         }
     }
-    
+
     IndexManager index()
     {
         return this.indexManager;
+    }
+
+    KernelExtension.KernelData getKernelData()
+    {
+        return extensions;
     }
 }
