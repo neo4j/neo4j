@@ -23,11 +23,14 @@ package org.neo4j.management.impl;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import javax.management.MBeanServerConnection;
 import javax.management.ObjectInstance;
 import javax.management.ObjectName;
+import javax.management.remote.JMXServiceURL;
 
+import org.neo4j.kernel.KernelExtension.KernelData;
 import org.neo4j.management.Kernel;
 
 public abstract class KernelProxy
@@ -74,7 +77,7 @@ public abstract class KernelProxy
             catch ( Throwable e )
             {
             }
-            if ( beanType != null && beanType != Kernel.class )
+            CREATE_PROXY: while ( beanType != null && beanType != Kernel.class )
             {
                 try
                 {
@@ -82,7 +85,22 @@ public abstract class KernelProxy
                 }
                 catch ( IllegalArgumentException couldNotCreateProxy )
                 {
+                    Class<?>[] interfaces = beanType.getInterfaces();
+                    if ( interfaces.length == 0 )
+                    {
+                        beanType = beanType.getSuperclass();
+                        continue;
+                    }
+                    for ( Class<?> type : interfaces )
+                    {
+                        if ( type.getName().equals( beanType.getName() + "MBean" ) )
+                        {
+                            beanType = type;
+                            continue CREATE_PROXY;
+                        }
+                    }
                 }
+                break;
             }
         }
         return beans;
@@ -90,16 +108,37 @@ public abstract class KernelProxy
 
     protected ObjectName getObjectName( String beanName )
     {
-        return JmxExtension.getObjectName( kernel.getMBeanQuery(), null, beanName );
+        return assertExists( JmxExtension.getObjectName( kernel.getMBeanQuery(), null, beanName ) );
     }
 
     protected ObjectName getObjectName( Class<?> beanInterface )
     {
-        return JmxExtension.getObjectName( kernel.getMBeanQuery(), beanInterface, null );
+        return assertExists( JmxExtension.getObjectName( kernel.getMBeanQuery(), beanInterface,
+                null ) );
+    }
+
+    private ObjectName assertExists( ObjectName name )
+    {
+        try
+        {
+            if ( !server.queryNames( name, null ).isEmpty() )
+            {
+                return name;
+            }
+        }
+        catch ( IOException handled )
+        {
+        }
+        throw new NoSuchElementException( "No MBeans matching " + name );
     }
 
     protected <T> T getBean( Class<T> beanInterface )
     {
         return BeanProxy.load( server, beanInterface, getObjectName( beanInterface ) );
+    }
+
+    protected static JMXServiceURL getConnectionURL( KernelData kernel )
+    {
+        return new JmxExtension().getConnectionURL( kernel );
     }
 }

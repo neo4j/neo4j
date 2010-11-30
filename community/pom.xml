@@ -88,6 +88,7 @@
       </roles>
     </developer>
   </developers>
+  
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
@@ -99,7 +100,13 @@
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
     </dependency>
-
+    <!-- dependency>
+      <groupId>com.sun</groupId>
+      <artifactId>jconsole</artifactId>
+      <version>1.6</version>
+      <scope>system</scope>
+      <systemPath>${java.home}/lib/jconsole.jar</systemPath>
+    </dependency -->
   </dependencies>
 
   <build>
@@ -110,6 +117,17 @@
         <configuration>
           <source>1.5</source>
           <target>1.5</target>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifest>
+              <mainClass>${bundle.namespace}.Main</mainClass>
+              <packageName>${bundle.namespace}</packageName>
+            </manifest>
+          </archive>
         </configuration>
       </plugin>
       <plugin>
