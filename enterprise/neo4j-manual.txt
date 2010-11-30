@@ -23,3 +23,7 @@ include::configuration-performance/index.txt[]
 
 include::operations/index.txt[]
 
+:leveloffset: 1
+
+include::glossary.txt[]
+
