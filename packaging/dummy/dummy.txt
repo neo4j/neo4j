@@ -3,4 +3,22 @@ Dummy
 
 Lorem ipsum.
 
+{eval: 5 + 3}
+
+[source, java]
+-----------------------------------------------------
+Node firstNode = graphDb.createNode();
+firstNode.setProperty( NAME_KEY, "Hello" );
+Node secondNode = graphDb.createNode();
+secondNode.setProperty( NAME_KEY, "World" );
+
+firstNode.createRelationshipTo( secondNode, ExampleRelationshipTypes.EXAMPLE );
+-----------------------------------------------------
+
+[source, java]
+-----------------------------------------------------
+include::EmbeddedNeo4j.java[]
+-----------------------------------------------------
+
 image::ha1.png[Overview]
+
