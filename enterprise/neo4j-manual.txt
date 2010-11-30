@@ -17,5 +17,8 @@ include::capabilities/index.txt[]
 
 :leveloffset: 1
 
-include::operations/index.txt[]
+include::configuration-performance/index.txt[]
 
+:leveloffset: 1
+
+include::operations/index.txt[]
