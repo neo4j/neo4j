@@ -11,11 +11,14 @@ keep_logical_logs=true [1]
 
 2. Shut down the neo4j database and copy its files to the backup location. Once this is prepared, backups can be run by executing these Java statements:
 
+.Java code to perform backup
+[source,java]
+---
 EmbeddedGraphDatabase graphDb = getTheGraphDbFromApp(); // assume lucene is hooked into this instance
 String location = "/var/backup/neo4j-db";
 Backup backup = Neo4jBackup.allDataSources( graphDb, location );
 backup.doBackup();
-
+---
 
 How to make backups of databases running in Neo4j Server
 --------------------------------------------------------
