@@ -20,21 +20,21 @@
 
 package org.neo4j.onlinebackup.impl;
 
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
 /**
- * Wraps an {@link EmbeddedGraphDatabase} to be used as data source and give
+ * Wraps an {@link AbstractGraphDatabase} to be used as data source and give
  * access to other data sources as well.
  */
-public class EmbeddedGraphDatabaseResource extends AbstractResource
+public class AbstractGraphDatabaseResource extends AbstractResource
     implements Neo4jResource
 {
-    protected final EmbeddedGraphDatabase graphDb;
+    protected final AbstractGraphDatabase graphDb;
     protected final XaDataSourceManager xaDsm;
 
-    public EmbeddedGraphDatabaseResource( final EmbeddedGraphDatabase graphDb )
+    public AbstractGraphDatabaseResource( final AbstractGraphDatabase graphDb )
     {
         super( graphDb.getConfig().getPersistenceModule()
             .getPersistenceManager().getPersistenceSource().getXaDataSource() );
