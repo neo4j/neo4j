@@ -1,8 +1,5 @@
 Introduction
 ============
-Neo Technology <info@neotechnology.com>
-v1.2, December 2010:
-Reference for Neo4j 1.2
 
 == Expectations, Assumptions, and Aspirations ==
 
