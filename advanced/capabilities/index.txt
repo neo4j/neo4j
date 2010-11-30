@@ -1,6 +1,15 @@
 Capabilities
 ============
 
+Neo4j is an enterprise graph database  on performance, robustness and scalability providing features such as:
+
+* True ACID transactions with JTA support.
+* High availability (see the High Availability chapter).
+* Scales to billion of nodes and relationships on single machine hardware.
+* High speed traversals and querying of the data.
+
+o paragraph about the pro's of graph databases 
+
 :leveloffset: 2
 
 include::transactions.txt[]
