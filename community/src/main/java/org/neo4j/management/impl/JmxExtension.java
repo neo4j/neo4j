@@ -28,7 +28,6 @@ import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -36,7 +35,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.management.MBeanServer;
-import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.management.remote.JMXConnectorServer;
 import javax.management.remote.JMXConnectorServerFactory;
@@ -293,67 +291,6 @@ public final class JmxExtension extends KernelExtension
 
     static ObjectName getObjectName( KernelData kernel, Class<?> beanInterface, String beanName )
     {
-        return getObjectName( kernel.instanceId(), beanInterface, beanName );
-    }
-
-    static ObjectName getObjectName( String instanceId, Class<?> beanInterface, String beanName )
-    {
-        final String name = beanName( beanInterface, beanName );
-        if ( name == null ) return null;
-        StringBuilder identifier = new StringBuilder( "org.neo4j:" );
-        identifier.append( "instance=kernel#" );
-        identifier.append( instanceId == null ? "*" : instanceId );
-        identifier.append( ",name=" );
-        identifier.append( name );
-        try
-        {
-            return new ObjectName( identifier.toString() );
-        }
-        catch ( MalformedObjectNameException e )
-        {
-            return null;
-        }
-    }
-
-    private static String beanName( Class<?> beanInterface, String beanName )
-    {
-        final String name;
-        if ( beanName != null )
-        {
-            name = beanName;
-        }
-        else if ( beanInterface == null )
-        {
-            name = "*";
-        }
-        else
-        {
-            try
-            {
-                name = (String) beanInterface.getField( "NAME" ).get( null );
-            }
-            catch ( Exception e )
-            {
-                return null;
-            }
-        }
-        return name;
-    }
-
-    static ObjectName getObjectName( ObjectName beanQuery, Class<?> beanInterface, String beanName )
-    {
-        String name = beanName( beanInterface, beanName );
-        if ( name == null ) return null;
-        Hashtable<String, String> properties = new Hashtable<String, String>(
-                beanQuery.getKeyPropertyList() );
-        properties.put( "name", name );
-        try
-        {
-            return new ObjectName( beanQuery.getDomain(), properties );
-        }
-        catch ( Exception e )
-        {
-            throw new IllegalStateException( "Could not create specified MBean Query." );
-        }
+        return BeanNaming.getObjectName( kernel.instanceId(), beanInterface, beanName );
     }
 }
