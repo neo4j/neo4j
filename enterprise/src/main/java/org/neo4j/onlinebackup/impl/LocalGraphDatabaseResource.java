@@ -28,7 +28,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
  * Start an {@link EmbeddedGraphDatabase} from a directory location and wrap it
  * as XA data source.
  */
-public class LocalGraphDatabaseResource extends EmbeddedGraphDatabaseResource
+public class LocalGraphDatabaseResource extends AbstractGraphDatabaseResource
 {
     private LocalGraphDatabaseResource( final EmbeddedGraphDatabase graphDb )
     {
