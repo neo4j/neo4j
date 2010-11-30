@@ -30,7 +30,6 @@ help:
 	@echo "  singlehtml  to make a single large HTML file"
 	@echo "  text        to make text files"
 	@echo "  all         to make all formats"
-#	@echo "  test        to test the documentation syntax"
 	@echo "For verbose output, use 'VERBOSE=1'".
 	@echo "To keep temporary files, use 'KEEP=1'".
 
