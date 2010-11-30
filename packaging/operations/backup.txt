@@ -1,0 +1,24 @@
+Backup
+======
+
+Neo4j makes incremental backups using the transaction logs. You have to prepare the database by copying the current database. Once the database is copied, the transactions in the log will be applied to the backup database, to keep them in sync.
+
+How to make backups in embedded mode
+------------------------------------
+1. First of, make sure your database is configured to keep logical logs around, like this:
+
+keep_logical_logs=true [1]
+
+2. Shut down the neo4j database and copy its files to the backup location. Once this is prepared, backups can be run by executing these Java statements:
+
+EmbeddedGraphDatabase graphDb = getTheGraphDbFromApp(); // assume lucene is hooked into this instance
+String location = "/var/backup/neo4j-db";
+Backup backup = Neo4jBackup.allDataSources( graphDb, location );
+backup.doBackup();
+
+
+How to make backups of databases running in Neo4j Server
+--------------------------------------------------------
+If you are running Neo4j Server, the only way right now to make a backup is to shut down the server and manually copy the database files.
+
+[1] See Configurations to see how you can give the database its settings.
