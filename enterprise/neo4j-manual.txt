@@ -3,6 +3,8 @@ The Neo4j Manual
 
 :neo4j-version: 1.2.M05
 
+:leveloffset: 1
+
 include::introduction/introduction.txt[]
 
 :leveloffset: 1
