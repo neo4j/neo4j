@@ -30,7 +30,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
  * Start an {@link EmbeddedGraphDatabase} from a directory location together
  * with a {@link LuceneIndexService} and wrap it as XA data source.
  */
-public class LocalLuceneIndexResource extends EmbeddedGraphDatabaseResource
+public class LocalLuceneIndexResource extends AbstractGraphDatabaseResource
 {
     private final IndexService lucene;
 

@@ -20,25 +20,21 @@
 
 package org.neo4j.onlinebackup;
 
+import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.Config;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.onlinebackup.impl.AbstractGraphDatabaseResource;
+import org.neo4j.onlinebackup.impl.LocalGraphDatabaseResource;
+import org.neo4j.onlinebackup.impl.Neo4jResource;
+import org.neo4j.onlinebackup.impl.XaDataSourceResource;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.logging.ConsoleHandler;
-import java.util.logging.FileHandler;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
-
-import org.neo4j.kernel.Config;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
-import org.neo4j.onlinebackup.impl.EmbeddedGraphDatabaseResource;
-import org.neo4j.onlinebackup.impl.LocalGraphDatabaseResource;
-import org.neo4j.onlinebackup.impl.Neo4jResource;
-import org.neo4j.onlinebackup.impl.XaDataSourceResource;
+import java.util.logging.*;
 
 /**
  * Online backup implementation for Neo4j.
@@ -61,12 +57,12 @@ public class Neo4jBackup implements Backup
         logger.addHandler( consoleHandler );
     }
 
-    private final EmbeddedGraphDatabase onlineGraphDb;
+    private final AbstractGraphDatabase onlineGraphDb;
     private final ResourceFetcher destinationResourceFetcher;
     private final List<String> xaNames;
 
     /**
-     * Backup from a running {@link EmbeddedGraphDatabase} to a destination
+     * Backup from a running {@link AbstractGraphDatabase} to a destination
      * directory. Only the data source representing the Neo4j database will be
      * used and if it isn't set to keep logical logs an
      * {@link IllegalStateException} will be thrown.
@@ -75,7 +71,7 @@ public class Neo4jBackup implements Backup
      * @param destinationDir location of backup destination
      * @return instance for creating backup
      */
-    public static Backup neo4jDataSource( EmbeddedGraphDatabase source,
+    public static Backup neo4jDataSource( AbstractGraphDatabase source,
             String destinationDir )
     {
         return new Neo4jBackup( source, new DestinationDirResourceFetcher( destinationDir ),
@@ -83,8 +79,8 @@ public class Neo4jBackup implements Backup
     }
 
     /**
-     * Backup from a running {@link EmbeddedGraphDatabase} to another running
-     * {@link EmbeddedGraphDatabase}. Only the data source representing the
+     * Backup from a running {@link AbstractGraphDatabase} to another running
+     * {@link AbstractGraphDatabase}. Only the data source representing the
      * Neo4j database will be used and if it isn't set to keep logical logs an
      * {@link IllegalStateException} will be thrown.
      * 
@@ -92,15 +88,15 @@ public class Neo4jBackup implements Backup
      * @param destination running database as backup destination
      * @return instance for creating backup
      */
-    public static Backup neo4jDataSource( EmbeddedGraphDatabase source,
-            EmbeddedGraphDatabase destination )
+    public static Backup neo4jDataSource( AbstractGraphDatabase source,
+            AbstractGraphDatabase destination )
     {
         return new Neo4jBackup( source, new GraphDbResourceFetcher( destination ),
                 Collections.singletonList( Config.DEFAULT_DATA_SOURCE_NAME ) );
     }
 
     /**
-     * Backup from a running {@link EmbeddedGraphDatabase} to a destination
+     * Backup from a running {@link AbstractGraphDatabase} to a destination
      * directory. All registered XA data sources will be used and all those data
      * sources will have to be set to keep their logical logs, otherwise an
      * {@link IllegalStateException} will be thrown.
@@ -109,7 +105,7 @@ public class Neo4jBackup implements Backup
      * @param destinationDir location of backup destination
      * @return instance for creating backup
      */
-    public static Backup allDataSources( EmbeddedGraphDatabase source,
+    public static Backup allDataSources( AbstractGraphDatabase source,
             String destinationDir )
     {
         return new Neo4jBackup( source, new DestinationDirResourceFetcher( destinationDir ),
@@ -117,8 +113,8 @@ public class Neo4jBackup implements Backup
     }
 
     /**
-     * Backup from a running {@link EmbeddedGraphDatabase} to another running
-     * {@link EmbeddedGraphDatabase}. All registered XA data sources will be
+     * Backup from a running {@link AbstractGraphDatabase} to another running
+     * {@link AbstractGraphDatabase}. All registered XA data sources will be
      * used and all those data sources will have to be set to keep their logical
      * logs, otherwise an {@link IllegalStateException} will be thrown.
      * 
@@ -126,15 +122,15 @@ public class Neo4jBackup implements Backup
      * @param destination running database as backup destination
      * @return instance for creating backup
      */
-    public static Backup allDataSources( EmbeddedGraphDatabase source,
-            EmbeddedGraphDatabase destination )
+    public static Backup allDataSources( AbstractGraphDatabase source,
+            AbstractGraphDatabase destination )
     {
         return new Neo4jBackup( source, new GraphDbResourceFetcher( destination ),
                 allDataSources( source ) );
     }
 
     /**
-     * Backup from a running {@link EmbeddedGraphDatabase} to a destination
+     * Backup from a running {@link AbstractGraphDatabase} to a destination
      * directory. Which XA data sources to include in the backup can here be
      * explicitly specified. This is considered to be more of an "expert-mode".
      * If any of the specified data sources isn't set to keep its logical logs
@@ -145,7 +141,7 @@ public class Neo4jBackup implements Backup
      * @param xaDataSourceNames names of data sources to backup
      * @return instance for creating backup
      */
-    public static Backup customDataSources( EmbeddedGraphDatabase source,
+    public static Backup customDataSources( AbstractGraphDatabase source,
             String destinationDir, String... xaDataSourceNames )
     {
         return new Neo4jBackup( source, new DestinationDirResourceFetcher(
@@ -154,8 +150,8 @@ public class Neo4jBackup implements Backup
     }
 
     /**
-     * Backup from a running {@link EmbeddedGraphDatabase} to another running
-     * {@link EmbeddedGraphDatabase}. Which XA data sources to include in the
+     * Backup from a running {@link AbstractGraphDatabase} to another running
+     * {@link AbstractGraphDatabase}. Which XA data sources to include in the
      * backup can here be explicitly specified. This is considered to be more of
      * an "expert-mode". If any of the specified data sources isn't set to keep
      * its logical logs an {@link IllegalStateException} will be thrown.
@@ -165,15 +161,15 @@ public class Neo4jBackup implements Backup
      * @param xaDataSourceNames names of data sources to backup
      * @return instance for creating backup
      */
-    public static Backup customDataSources( EmbeddedGraphDatabase source,
-            EmbeddedGraphDatabase destination, String... xaDataSourceNames )
+    public static Backup customDataSources( AbstractGraphDatabase source,
+            AbstractGraphDatabase destination, String... xaDataSourceNames )
     {
         return new Neo4jBackup( source, new GraphDbResourceFetcher( destination ),
                 new ArrayList<String>( new ArrayList<String>(
                         Arrays.asList( xaDataSourceNames ) ) ) );
     }
     
-    private Neo4jBackup( EmbeddedGraphDatabase source,
+    private Neo4jBackup( AbstractGraphDatabase source,
             ResourceFetcher destination, List<String> xaDataSources )
     {
         if ( source == null )
@@ -190,7 +186,7 @@ public class Neo4jBackup implements Backup
         assertLogicalLogsAreKept();
     }
     
-    private static List<String> allDataSources( EmbeddedGraphDatabase db )
+    private static List<String> allDataSources( AbstractGraphDatabase db )
     {
         List<String> result = new ArrayList<String>();
         for ( XaDataSource dataSource : db.getConfig().getTxModule()
@@ -229,7 +225,7 @@ public class Neo4jBackup implements Backup
     public void doBackup() throws IOException
     {
         logger.info( "Initializing backup." );
-        Neo4jResource srcResource = new EmbeddedGraphDatabaseResource( onlineGraphDb );
+        Neo4jResource srcResource = new AbstractGraphDatabaseResource( onlineGraphDb );
         Neo4jResource dstResource = this.destinationResourceFetcher.fetch();
         if ( xaNames.size() == 1 )
         {
@@ -333,7 +329,6 @@ public class Neo4jBackup implements Backup
          * 
          * @param src wrapped data source for source
          * @param dst wrapped data source for destination
-         * @param resourceName name of data source
          */
         private Neo4jBackupTask( final XaDataSourceResource src,
                 final XaDataSourceResource dst )
@@ -524,9 +519,9 @@ public class Neo4jBackup implements Backup
     
     private static class GraphDbResourceFetcher extends ResourceFetcher
     {
-        private final EmbeddedGraphDatabase db;
+        private final AbstractGraphDatabase db;
 
-        GraphDbResourceFetcher( EmbeddedGraphDatabase db )
+        GraphDbResourceFetcher( AbstractGraphDatabase db )
         {
             if ( db == null )
             {
@@ -544,7 +539,7 @@ public class Neo4jBackup implements Backup
         @Override
         Neo4jResource fetch()
         {
-            return new EmbeddedGraphDatabaseResource( db );
+            return new AbstractGraphDatabaseResource( db );
         }
     }
     
