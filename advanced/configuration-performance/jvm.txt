@@ -1,14 +1,13 @@
 JVM Settings
 ============
 
-The JVM is configured by passing command line flags when starting the JVM, the most important configuration parameters for Neo4j are the ones that control the memory and garbage collector, but some of the parameters for configuring the Just In Time compiler are also of interest.
+The most important configuration parameters for Neo4j are the ones that control the memory and garbage collector.
 
 == Configuring the memory for the JVM ==
 
-There are two main memory parameters for the JVM, one controls the heap space and the other controls the stack space. The heap space parameter is the most important one for Neo4j, since this governs how many objects you can allocate. 
+When it comes to heap space the general rule is: the larger heap space you have the better. You have to make sure the heap fits in the RAM memory of the computer.
 
-When it comes to heap space the general rule is: the larger heap space you have the better, but make sure the heap fits in the RAM memory of the computer. Having a larger heap space will mean that Neo4j can handle larger transactions and more concurrent transactions. A large heap space will also make Neo4j run faster since it means Neo4j can fit a larger portion of the graph in its caches, meaning that the nodes and relationships your application uses frequently are always available quickly. The default heap size for a 32bit JVM is 64MB (and 30% larger for 64bit), which is too small for most real applications.
-
+Having a larger heap space will mean that Neo4j can handle larger transactions and more concurrent transactions. A large heap space will also make Neo4j run faster since it means Neo4j can fit a larger portion of the graph in its caches, meaning that the nodes and relationships your application uses frequently are always available quickly. The default heap size for a 32bit JVM is 64MB (and 30% larger for 64bit), which is too small for most real applications.
 
 The heap size is set by specifying the -Xmx???m parameter to hotspot, where ??? is the heap size in megabytes.
 
@@ -20,21 +19,23 @@ Most modern CPUs implement a Non-Uniform Memory Access (NUMA) architecture, wher
 [format="csv",width="60%",cols="4"]
 [frame="topbot",grid="none",options="header"]
 |======================================================================================================
-Number of primitives,RAM size,Heap configuration,Reserved RAM for the OS,Memory mapping configuration
-10M,2GB,512MB,the rest,100-512MB
-100M,4-8GB,1-4GB,1-2GB,the rest
-1B+,8-32GB,4GB+,1-2GB,the rest
+Number of primitives,RAM size,Heap configuration,Reserved RAM for the OS
+10M,2GB,512MB,the rest
+100M,4-8GB,1-4GB,1-2GB
+1B+,8-32GB,4GB+,1-2GB
 |======================================================================================================
 
 == Configuring the Garbage Collector ==
 
-The Hotspot JVM usually uses two garbage collectors, one for the young generation and one for the tenured generation. For general advice on selecting an appropriate garbage collectors for your Java Platform application, see this article. These are our advice on how to configure garbage collection for Neo4j.
+We have found that the Concurrent Mark and Sweep Compactor gives the best performance for Neo4j Applications. To configure this, use -XX:+UseConcMarkSweepGC
 
-We have found that the Concurrent Mark and Sweep Compactor gives the best performance for Neo4j Applications.
+== Selecting VM modes ==
+A JVM generally has two execution modes, client mode and server mode. On computers with 64-bit processors there are also modes for executing the JVM in 32-bit mode and 64-bit mode. Selecting VM modes is done by specifying command line parameters, -client for client mode, -server for server mode, -d32 for 32-bit mode, and -d64 for 64-bit mode. The mode modifying command line arguments must be the first arguments specified to the java command, since they modify the behavior of the entire VM and thus the interpretation of all the other parameters. We recommend always executing Neo4j applications in a server mode JVM.
+
 
 Startup line example:
 [source, shell]
 ----
-java -XX:+UseConcMarkSweepGC -d64 -server -Xmx1024m -cp /path/to/neo4j-kernel.jar:/path/to/jta.jar:/path/to/your-application.jar com.example.yourapp.MainClass
+java -XX:+UseNUMA -XX:+UseConcMarkSweepGC -d64 -server -Xmx1024m -cp /path/to/neo4j-kernel.jar:/path/to/jta.jar:/path/to/your-application.jar com.example.yourapp.MainClass
 ----
 
