@@ -24,7 +24,9 @@ import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.net.InetAddress;
 import java.net.MalformedURLException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -112,58 +114,20 @@ public final class JmxExtension extends KernelExtension
             try
             {
                 Class<?> cal = Class.forName( "sun.management.ConnectorAddressLink" );
-                Method importRemote = cal.getMethod( "importRemoteFrom", int.class );
-                @SuppressWarnings( "unchecked" ) Map<String, String> remote = (Map<String, String>) importRemote.invoke(
-                        null, Integer.valueOf( 0 ) );
-                Set<Integer> instances = new HashSet<Integer>();
-                for ( String key : remote.keySet() )
+                try
                 {
-                    if ( key.startsWith( "sun.management.JMXConnectorServer" ) )
-                    {
-                        int end = key.lastIndexOf( '.' );
-                        if ( end < 0 ) continue;
-                        int start = key.lastIndexOf( '.', end );
-                        if ( start < 0 ) continue;
-                        final int id;
-                        try
-                        {
-                            id = Integer.parseInt( key.substring( start, end ) );
-                        }
-                        catch ( NumberFormatException e )
-                        {
-                            continue;
-                        }
-                        instances.add( Integer.valueOf( id ) );
-                    }
+                    Method importRemoteFrom = cal.getMethod( "importRemoteFrom", int.class );
+                    @SuppressWarnings( "unchecked" ) Map<String, String> remote = (Map<String, String>) importRemoteFrom.invoke(
+                            null, Integer.valueOf( 0 ) );
+                    url = getUrlFrom( remote );
                 }
-                if ( !instances.isEmpty() )
+                catch ( NoSuchMethodException ex )
                 {
-                    String prefix = "sun.management.JMXConnectorServer.";
-                    if ( instances.size() > 1 )
-                    {
-                        for ( Object key : instances.toArray() )
-                        {
-                            if ( !remote.containsKey( "sun.management.JMXConnectorServer." + key
-                                                      + ".remoteAddress" ) )
-                            {
-                                instances.remove( key );
-                            }
-                        }
-                        if ( instances.contains( Integer.valueOf( 0 ) ) )
-                        {
-                            prefix = prefix + "0.";
-                        }
-                    }
-                    if ( instances.size() == 1 )
-                    {
-                        String remoteAddress = remote.get( prefix + instances.iterator().next()
-                                                           + "remoteAddress" );
-                        url = new JMXServiceURL( remoteAddress );
-                    }
-                    else if ( !instances.isEmpty() )
-                    {
-                        // TODO: find the appropriate one
-                    }
+                }
+                if ( url == null )
+                {
+                    Method importFrom = cal.getMethod( "importFrom", int.class );
+                    url = getUrlFrom( (String) importFrom.invoke( null, Integer.valueOf( 0 ) ) );
                 }
             }
             catch ( LinkageError e )
@@ -174,6 +138,7 @@ public final class JmxExtension extends KernelExtension
             {
                 log.log( Level.INFO, "Failed to load local JMX configuration.", e );
             }
+            // No previous connection server -- create one!
             if ( url == null )
             {
                 Object portObj = kernel.getParam( "jmx.port" );
@@ -221,6 +186,103 @@ public final class JmxExtension extends KernelExtension
                 }
             }
             this.url = url;
+        }
+
+        private static JMXServiceURL getUrlFrom( String url )
+        {
+            if ( url == null ) return null;
+            JMXServiceURL jmxUrl;
+            try
+            {
+                jmxUrl = new JMXServiceURL( url );
+            }
+            catch ( MalformedURLException e1 )
+            {
+                return null;
+            }
+            String host = null;
+            try
+            {
+                host = InetAddress.getLocalHost().getHostAddress();
+            }
+            catch ( UnknownHostException ok )
+            {
+            }
+            if ( host == null )
+            {
+                host = jmxUrl.getHost();
+            }
+            try
+            {
+                return new JMXServiceURL( jmxUrl.getProtocol(), host, jmxUrl.getPort(),
+                        jmxUrl.getURLPath() );
+            }
+            catch ( MalformedURLException e )
+            {
+                return null;
+            }
+        }
+
+        private static JMXServiceURL getUrlFrom( Map<String, String> remote )
+        {
+            Set<Integer> instances = new HashSet<Integer>();
+            for ( String key : remote.keySet() )
+            {
+                if ( key.startsWith( "sun.management.JMXConnectorServer" ) )
+                {
+                    int end = key.lastIndexOf( '.' );
+                    if ( end < 0 ) continue;
+                    int start = key.lastIndexOf( '.', end );
+                    if ( start < 0 ) continue;
+                    final int id;
+                    try
+                    {
+                        id = Integer.parseInt( key.substring( start, end ) );
+                    }
+                    catch ( NumberFormatException e )
+                    {
+                        continue;
+                    }
+                    instances.add( Integer.valueOf( id ) );
+                }
+            }
+            if ( !instances.isEmpty() )
+            {
+                String prefix = "sun.management.JMXConnectorServer.";
+                if ( instances.size() > 1 )
+                {
+                    for ( Object key : instances.toArray() )
+                    {
+                        if ( !remote.containsKey( "sun.management.JMXConnectorServer." + key
+                                                  + ".remoteAddress" ) )
+                        {
+                            instances.remove( key );
+                        }
+                    }
+                    if ( instances.contains( Integer.valueOf( 0 ) ) )
+                    {
+                        prefix = prefix + "0.";
+                    }
+                }
+                if ( instances.size() == 1 )
+                {
+                    String remoteAddress = remote.get( prefix + instances.iterator().next()
+                                                       + "remoteAddress" );
+                    try
+                    {
+                        return new JMXServiceURL( remoteAddress );
+                    }
+                    catch ( MalformedURLException e )
+                    {
+                        return null;
+                    }
+                }
+                else if ( !instances.isEmpty() )
+                {
+                    // TODO: find the appropriate one
+                }
+            }
+            return null;
         }
 
         void shutdown()
