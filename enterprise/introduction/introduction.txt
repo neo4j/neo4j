@@ -10,9 +10,9 @@ assumes general familiarity as it addresses the particular details of Neo4j.
 The goal is to be thumb-through and rule-of-thumb friendly.
 
 The topics should be relevant to architects, administrators, developers and 
-anyone trying to take Neo4j from installation to deployment. The goal is to 
-provide a technical overview of how things work, what to do and what to avoid 
-to successfully run Neo4j in a production environment. 
+operations personnel. The goal is to provide a technical overview of how 
+things work, what to do and what to avoid to successfully run Neo4j in a 
+production environment. 
 
 You should already be familiar with Neo4j and using graphs to store data.
 If you are completely new to Neo4j please check out http://neo4j.org first.
