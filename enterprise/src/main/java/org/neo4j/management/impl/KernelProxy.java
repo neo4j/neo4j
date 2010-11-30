@@ -46,7 +46,7 @@ public abstract class KernelProxy
 
     protected static ObjectName getObjectName( Class<?> beanType, String kernelIdentifier )
     {
-        return JmxExtension.getObjectName( kernelIdentifier, beanType, null );
+        return BeanNaming.getObjectName( kernelIdentifier, beanType, null );
     }
 
     protected static <T> T proxy( MBeanServerConnection server, Class<T> beanType, ObjectName name )
@@ -108,13 +108,12 @@ public abstract class KernelProxy
 
     protected ObjectName getObjectName( String beanName )
     {
-        return assertExists( JmxExtension.getObjectName( kernel.getMBeanQuery(), null, beanName ) );
+        return assertExists( BeanNaming.getObjectName( kernel.getMBeanQuery(), null, beanName ) );
     }
 
     protected ObjectName getObjectName( Class<?> beanInterface )
     {
-        return assertExists( JmxExtension.getObjectName( kernel.getMBeanQuery(), beanInterface,
-                null ) );
+        return assertExists( BeanNaming.getObjectName( kernel.getMBeanQuery(), beanInterface, null ) );
     }
 
     private ObjectName assertExists( ObjectName name )
