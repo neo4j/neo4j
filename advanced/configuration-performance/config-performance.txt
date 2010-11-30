@@ -1,0 +1,39 @@
+Configuration & Performance
+
+<for this chapter pull information from
+http://wiki.neo4j.org/content/Performance_Guide
+and
+http://wiki.neo4j.org/content/Configuration_Settings>
+
+o introduction how to configure neo4j (we use a Map<String,String>) etc
+
+Cache
+
+There are several configuration options for caching in Neo4j that impacts performance and runtime behavior. To start with there are two different caches, the high level node and relationship cache and the low level store layer cache. 
+
+-Low level cache
+
+The low level store cache works like a file system cache and the goal is to improve writes and reads to the underlying durable storage. 
+
+o The cache is a mirror of the on disk format representing the graph
+o The graph is stored in several files with a fixed record size nodestore=9b,relstore=33b,propstore=25b,stringstore=133b,arraystore=133b, reltypestore,propertyindexstore
+o For dynamic length data (strings and arrays) several records are used to store the data.
+o The relationshiptype store and property index stores can usually be ignored since in most graphs there are not that many property keys / relationship types
+o record sizes can be used to calculate on disk size of a graph and how much memory is required to fully cache the graph for the low level cache
+o the more of the store we can cache the lower the chance is that we have to touch disk
+o the string and array store sizes can be set at when creating a new db, string_block_size & array_block_size, an additional 13 byte header will be added to the block size, default size for both string and array is 120 (can store 60 chars strings and array data of 120bytes)
+
+o how to configure low level cache
+o memory mapped buffers vs plain heap buffers (use_memory_mapped_buffers config=true/false)
+o how the memory is used, if memory > store size everything is cached, if not the memory is divided into chunks (windows) and dynamically moved around to cache records that are frequently being read or written to. Records that are not cached by a windows (chunk of memory) will be read/written to using a row heap buffer (of record size). Statistics of cache hit/miss (read/write to window=hit, read/write to a row buffer=miss) and used to dynamically change position on windows (what should be cached)
+o Linux uses memory mapped buffers by default, Windows heap buffers by default
+
+o if using heap buffers the heap has to be larger than the total size assigned else out of memory exception will be thrown, it should be larger and them some since the application and high level caches also consumes heap
+o using memory mapped buffers heap+memory mapped size must be less than RAM available (leaving RAM for OS and other apps is important to avoid swapping)
+
+o explain how autoconfiguration works in Linux and Windows
+
+-High level cache, todo
+-JVM
+-Other config parameters
+-Other performance tweakings?
