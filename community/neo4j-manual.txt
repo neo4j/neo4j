@@ -5,8 +5,17 @@ The Neo4j Manual
 
 :leveloffset: 1
 
-include::dummy/dummy.txt[]
+include::capabilities/index.txt[]
 
-include::meta/index.txt[]
+//:leveloffset: 1
 
-include::operations/backup.txt[]
+//include::dummy/dummy.txt[]
+
+//:leveloffset: 1
+
+//include::meta/index.txt[]
+
+:leveloffset: 1
+
+include::operations/index.txt[]
+
