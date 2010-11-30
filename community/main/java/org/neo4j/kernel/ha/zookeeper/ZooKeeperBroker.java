@@ -22,48 +22,95 @@ package org.neo4j.kernel.ha.zookeeper;
 
 import java.util.Map;
 
+import javax.management.remote.JMXServiceURL;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.KernelExtension.KernelData;
 import org.neo4j.kernel.ha.AbstractBroker;
+import org.neo4j.kernel.ha.ConnectionInformation;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterImpl;
 import org.neo4j.kernel.ha.MasterServer;
 import org.neo4j.kernel.ha.ResponseReceiver;
+import org.neo4j.management.Neo4jManager;
 
 public class ZooKeeperBroker extends AbstractBroker
 {
     private final ZooClient zooClient;
     private final String haServer;
     private final int machineId;
-    
-    public ZooKeeperBroker( String storeDir, int machineId, String zooKeeperServers, 
+
+    public ZooKeeperBroker( String storeDir, int machineId, String zooKeeperServers,
             String haServer, ResponseReceiver receiver )
     {
         super( machineId, storeDir );
         this.machineId = machineId;
         this.haServer = haServer;
-        NeoStoreUtil store = new NeoStoreUtil( storeDir ); 
+        NeoStoreUtil store = new NeoStoreUtil( storeDir );
         this.zooClient = new ZooClient( zooKeeperServers, machineId, store.getCreationTime(),
                 store.getStoreId(), store.getLastCommittedTx(), receiver, haServer, storeDir );
     }
-    
+
+    @Override
+    public void setConnectionInformation( KernelData kernel )
+    {
+        String instanceId = kernel.instanceId();
+        JMXServiceURL url = Neo4jManager.getConnectionURL( kernel );
+        if ( instanceId != null && url != null )
+        {
+            zooClient.setJmxConnectionData( url, instanceId );
+        }
+    }
+
+    @Override
+    public ConnectionInformation getConnectionInformation( int machineId )
+    {
+        for ( ConnectionInformation connection : getConnectionInformation() )
+        {
+            if ( connection.getMachineId() == machineId ) return connection;
+        }
+        return null;
+    }
+
+    @Override
+    public ConnectionInformation[] getConnectionInformation()
+    {
+        Map<Integer, Machine> machines = zooClient.getAllMachines( false );
+        Machine master = zooClient.getMasterBasedOn( machines.values() );
+        ConnectionInformation[] result = new ConnectionInformation[machines.size()];
+        int i = 0;
+        for ( Machine machine : machines.values() )
+        {
+            result[i++] = addJmxInfo( new ConnectionInformation( machine, master.equals( machine ) ) );
+        }
+        return result;
+    }
+
+    private ConnectionInformation addJmxInfo( ConnectionInformation connect )
+    {
+        zooClient.getJmxConnectionData( connect );
+        return connect;
+    }
+
     public Pair<Master, Machine> getMaster()
     {
         return zooClient.getCachedMaster();
     }
-    
+
     public Pair<Master, Machine> getMasterReally()
     {
         return zooClient.getMasterFromZooKeeper( true );
     }
-    
+
+    @Override
     public Machine getMasterExceptMyself()
     {
         Map<Integer, Machine> machines = zooClient.getAllMachines( true );
         machines.remove( this.machineId );
         return zooClient.getMasterBasedOn( machines.values() );
     }
-    
+
     public Object instantiateMasterServer( GraphDatabaseService graphDb )
     {
         MasterServer server = new MasterServer( new MasterImpl( graphDb ),
@@ -71,21 +118,24 @@ public class ZooKeeperBroker extends AbstractBroker
         return server;
     }
 
+    @Override
     public void setLastCommittedTxId( long txId )
     {
         zooClient.setCommittedTx( txId );
     }
-    
+
     public boolean iAmMaster()
     {
         return zooClient.getCachedMaster().other().getMachineId() == getMyMachineId();
     }
-    
+
+    @Override
     public void shutdown()
     {
         zooClient.shutdown();
     }
-    
+
+    @Override
     public void rebindMaster()
     {
         zooClient.setDataChangeWatcher( ZooClient.MASTER_REBOUND_CHILD, machineId );

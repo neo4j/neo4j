@@ -48,18 +48,18 @@ import org.neo4j.kernel.ha.HaCommunicationException;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterIdGeneratorFactory;
 import org.neo4j.kernel.ha.MasterServer;
-import org.neo4j.kernel.ha.TimeUtil;
-import org.neo4j.kernel.ha.MasterTxIdGenerator.MasterTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.Response;
 import org.neo4j.kernel.ha.ResponseReceiver;
 import org.neo4j.kernel.ha.SlaveContext;
-import org.neo4j.kernel.ha.SlaveIdGenerator.SlaveIdGeneratorFactory;
-import org.neo4j.kernel.ha.SlaveLockManager.SlaveLockManagerFactory;
 import org.neo4j.kernel.ha.SlaveRelationshipTypeCreator;
-import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.SlaveTxRollbackHook;
+import org.neo4j.kernel.ha.TimeUtil;
 import org.neo4j.kernel.ha.TransactionStream;
 import org.neo4j.kernel.ha.ZooKeeperLastCommittedTxIdSetter;
+import org.neo4j.kernel.ha.MasterTxIdGenerator.MasterTxIdGeneratorFactory;
+import org.neo4j.kernel.ha.SlaveIdGenerator.SlaveIdGeneratorFactory;
+import org.neo4j.kernel.ha.SlaveLockManager.SlaveLockManagerFactory;
+import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
@@ -86,6 +86,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     private final int machineId;
     private volatile MasterServer masterServer;
     private ScheduledExecutorService updatePuller;
+    private volatile long updateTime = 0;
     private volatile RuntimeException causeOfShutdown;
 
     private final List<KernelEventHandler> kernelEventHandlers =
@@ -214,6 +215,16 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         }
     }
 
+    private void updateTime()
+    {
+        this.updateTime = System.currentTimeMillis();
+    }
+
+    long lastUpdateTime()
+    {
+        return this.updateTime;
+    }
+
     @Override
     public Config getConfig()
     {
@@ -265,9 +276,9 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             }
             tryToEnsureIAmNotABrokenMachine( broker.getMaster() );
         }
-
         if ( restarted )
         {
+            broker.setConnectionInformation( this.localGraph.getKernelData() );
             for ( TransactionEventHandler<?> handler : transactionEventHandlers )
             {
                 localGraph().registerTransactionEventHandler( handler );
@@ -326,7 +337,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             // Compare those two, if equal -> good
             if ( masterForMyHighestCommonTxId == masterForMastersHighestCommonTxId )
             {
-                msgLog.logMessage( "Master id for last committed tx ok with highestCommonTxId=" + 
+                msgLog.logMessage( "Master id for last committed tx ok with highestCommonTxId=" +
                         highestCommonTxId + " with masterId=" + masterForMyHighestCommonTxId, true );
                 return;
             }
@@ -406,11 +417,13 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         return localGraph().createNode();
     }
 
+    @Override
     public boolean enableRemoteShell()
     {
         return localGraph().enableRemoteShell();
     }
 
+    @Override
     public boolean enableRemoteShell( Map<String, Serializable> initialProperties )
     {
         return localGraph().enableRemoteShell( initialProperties );
@@ -544,6 +557,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                     channel.other().close();
                 }
             }
+            updateTime();
             return response.response();
         }
         catch ( IOException e )
@@ -591,18 +605,18 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     {
         return machineId;
     }
-    
+
     public boolean isMaster()
     {
         return broker.iAmMaster();
     }
-    
+
     @Override
     public boolean isReadOnly()
     {
         return false;
     }
-    
+
     public IndexManager index()
     {
         return localGraph().index();
