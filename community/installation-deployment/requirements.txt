@@ -1,0 +1,40 @@
+System Requirements
+===================
+
+Memory constrains graph size, disk I/O constrains read/write performance, 
+as always. 
+
+== Memory ==
+
+Minimum:     1GB
+Recommended: 4-8GB
+
+More memory allows even larger graphs, but runs the risk of inducing larger
+Garbage Collection operations.
+
+== Disk ==
+
+Minimum:     SCSI, EIDE 
+Recommended: SSD w/ SATA
+
+Aside from capacity, the performance characteristics of the disk are 
+the most important when selecting storage.
+
+== CPU ==
+
+Minimum:      Intel 486
+Recommended:  Intel Core i7
+
+== Filesystem ==
+
+Minimum:      ext3 (or similar)
+Recommended:  ext4
+
+Generally, a journaled file system is required for proper operation.
+
+== Software ==
+
+Java: 1.5+
+Operating Systems: Linux, Windows XP, Mac OS X
+
+
