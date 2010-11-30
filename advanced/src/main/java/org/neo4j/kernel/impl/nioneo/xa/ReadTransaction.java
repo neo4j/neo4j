@@ -131,8 +131,8 @@ class ReadTransaction
             else
             {
                 throw new InvalidRecordException( "Node[" + nodeId + 
-                    "] not part of firstNode[" + firstNode + 
-                    "] or secondNode[" + secondNode + "]" );
+                    "] is neither firstNode[" + firstNode + 
+                    "] nor secondNode[" + secondNode + "] for Relationship[" + relRecord.getId() + "]" );
             }
         }
         position.setNextRecord( nextRel );
