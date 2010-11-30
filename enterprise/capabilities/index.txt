@@ -1,0 +1,7 @@
+Capabilities
+============
+
+:leveloffset: 2
+
+include::transactions.txt[]
+
