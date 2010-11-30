@@ -51,12 +51,12 @@ class RelTypeElement extends RelTypeElementIterator
         IntArray add, IntArray remove )
     {
         super( type, node );
-        this.src = src;
         if ( src == null )
         {
             src = IntArray.EMPTY;
             srcTraversed = true;
         }
+        this.src = src;
         if ( add == null )
         {
             addTraversed = true;
