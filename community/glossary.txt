@@ -1,0 +1,11 @@
+[glossary]
+Glossary
+========
+
+[glossary]
+A glossary term::
+  The corresponding (indented) definition.
+
+A second glossary term::
+  The corresponding (indented) definition.
+
