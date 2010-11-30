@@ -44,3 +44,5 @@ In order to programmatically connect to the Neo4j JMX server, there are some con
 Neo4jManager manager = new Neo4jManager( graphDb.getManagementBean( Kernel.class ) );
 long nodeIDsInUse    = manager.getPrimitivesBean.getNumberOfNodeIdsInUse();
 ----
+
+Once having access to this information, it can be used to for instance expose the values to SNMP or other monitoring systems.
