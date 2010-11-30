@@ -1,10 +1,9 @@
 JVM Settings
-~~~~~~~~~~~~
+============
 
 The JVM is configured by passing command line flags when starting the JVM, the most important configuration parameters for Neo4j are the ones that control the memory and garbage collector, but some of the parameters for configuring the Just In Time compiler are also of interest.
 
-Configuring the memory for the JVM
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+== Configuring the memory for the JVM ==
 
 There are two main memory parameters for the JVM, one controls the heap space and the other controls the stack space. The heap space parameter is the most important one for Neo4j, since this governs how many objects you can allocate. 
 
@@ -27,14 +26,15 @@ Number of primitives,RAM size,Heap configuration,Reserved RAM for the OS,Memory 
 1B+,8-32GB,4GB+,1-2GB,the rest
 |======================================================================================================
 
-Configuring the Garbage Collector
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+== Configuring the Garbage Collector ==
 
 The Hotspot JVM usually uses two garbage collectors, one for the young generation and one for the tenured generation. For general advice on selecting an appropriate garbage collectors for your Java Platform application, see this article. These are our advice on how to configure garbage collection for Neo4j.
 
 We have found that the Concurrent Mark and Sweep Compactor gives the best performance for Neo4j Applications.
 
 Startup line example:
+[source, shell]
 ----
 java -XX:+UseConcMarkSweepGC -d64 -server -Xmx1024m -cp /path/to/neo4j-kernel.jar:/path/to/jta.jar:/path/to/your-application.jar com.example.yourapp.MainClass
 ----
+
