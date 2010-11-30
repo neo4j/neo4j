@@ -20,18 +20,22 @@
 
 package org.neo4j.kernel.ha.zookeeper;
 
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.util.Date;
 import java.util.List;
+
+import javax.management.remote.JMXServiceURL;
 
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.ha.ConnectionInformation;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.ResponseReceiver;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -40,13 +44,13 @@ public class ZooClient extends AbstractZooKeeperManager
 {
     static final String MASTER_NOTIFY_CHILD = "master-notify";
     static final String MASTER_REBOUND_CHILD = "master-rebound";
-    
+
     private ZooKeeper zooKeeper;
     private final int machineId;
     private String sequenceNr;
-    
+
     private long committedTx;
-    
+
     private volatile KeeperState keeperState = KeeperState.Disconnected;
     private volatile boolean shutdown = false;
     private final ResponseReceiver receiver;
@@ -54,10 +58,10 @@ public class ZooClient extends AbstractZooKeeperManager
     private final String haServer;
 
     private final StringLogger msgLog;
-    
+
     private long sessionId = -1;
-    
-    public ZooClient( String servers, int machineId, long storeCreationTime, 
+
+    public ZooClient( String servers, int machineId, long storeCreationTime,
         long storeId, long committedTx, ResponseReceiver receiver, String haServer, String storeDir )
     {
         super( servers, storeDir );
@@ -70,13 +74,13 @@ public class ZooClient extends AbstractZooKeeperManager
         this.msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
         this.zooKeeper = instantiateZooKeeper();
     }
-    
+
     @Override
     protected int getMyMachineId()
     {
         return this.machineId;
     }
-    
+
     public void process( WatchedEvent event )
     {
         try
@@ -166,7 +170,8 @@ public class ZooClient extends AbstractZooKeeperManager
             msgLog.flush();
         }
     }
-    
+
+    @Override
     public void waitForSyncConnected()
     {
         if ( keeperState == KeeperState.SyncConnected )
@@ -205,12 +210,12 @@ public class ZooClient extends AbstractZooKeeperManager
 
             if ( keeperState != KeeperState.SyncConnected )
             {
-                throw new ZooKeeperTimedOutException( 
+                throw new ZooKeeperTimedOutException(
                         "Connection to ZooKeeper server timed out, keeper state=" + keeperState );
             }
         }
     }
-    
+
     protected void setDataChangeWatcher( String child, int currentMasterId )
     {
         try
@@ -220,7 +225,7 @@ public class ZooClient extends AbstractZooKeeperManager
             byte[] data = null;
             boolean exists = false;
             try
-            { 
+            {
                 data = zooKeeper.getData( path, true, null );
                 exists = true;
                 int id = ByteBuffer.wrap( data ).getInt();
@@ -237,7 +242,7 @@ public class ZooClient extends AbstractZooKeeperManager
                     throw new ZooKeeperException( "Couldn't get master notify node", e );
                 }
             }
-            
+
             // Didn't exist or has changed
             try
             {
@@ -245,7 +250,7 @@ public class ZooClient extends AbstractZooKeeperManager
                 ByteBuffer.wrap( data ).putInt( currentMasterId );
                 if ( !exists )
                 {
-                    zooKeeper.create( path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, 
+                    zooKeeper.create( path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE,
                             CreateMode.PERSISTENT );
                     msgLog.logMessage( child + " created with " + currentMasterId );
                 }
@@ -254,7 +259,7 @@ public class ZooClient extends AbstractZooKeeperManager
                     zooKeeper.setData( path, data, -1 );
                     msgLog.logMessage( child + " set to " + currentMasterId );
                 }
-                
+
                 // Add a watch for it
                 zooKeeper.getData( path, true, null );
             }
@@ -272,7 +277,8 @@ public class ZooClient extends AbstractZooKeeperManager
             throw new ZooKeeperException( "Interrupted", e );
         }
     }
-    
+
+    @Override
     public String getRoot()
     {
         // Make sure it exists
@@ -288,8 +294,8 @@ public class ZooClient extends AbstractZooKeeperManager
             {
                 if ( e.code() != KeeperException.Code.NONODE )
                 {
-                    throw new ZooKeeperException( "Unable to get root node", 
-                        e ); 
+                    throw new ZooKeeperException( "Unable to get root node",
+                        e );
                 }
             }
             catch ( InterruptedException e )
@@ -301,7 +307,7 @@ public class ZooClient extends AbstractZooKeeperManager
             try
             {
                 byte data[] = new byte[0];
-                zooKeeper.create( rootPath, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, 
+                zooKeeper.create( rootPath, data, ZooDefs.Ids.OPEN_ACL_UNSAFE,
                     CreateMode.PERSISTENT );
             }
             catch ( KeeperException e )
@@ -319,7 +325,7 @@ public class ZooClient extends AbstractZooKeeperManager
         } while ( rootData == null );
         throw new IllegalStateException();
     }
-    
+
     private void cleanupChildren()
     {
         try
@@ -349,7 +355,7 @@ public class ZooClient extends AbstractZooKeeperManager
             throw new ZooKeeperException( "Interrupted.", e );
         }
     }
-    
+
     private byte[] dataRepresentingMe( long txId )
     {
         byte[] array = new byte[8];
@@ -357,7 +363,7 @@ public class ZooClient extends AbstractZooKeeperManager
         buffer.putLong( txId );
         return array;
     }
-    
+
     private String setup()
     {
         try
@@ -366,9 +372,9 @@ public class ZooClient extends AbstractZooKeeperManager
             writeHaServerConfig();
             String root = getRoot();
             String path = root + "/" + machineId + "_";
-            String created = zooKeeper.create( path, dataRepresentingMe( committedTx ), 
+            String created = zooKeeper.create( path, dataRepresentingMe( committedTx ),
                 ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL );
-            
+
             // Add watches to our master notification nodes
             setDataChangeWatcher( MASTER_NOTIFY_CHILD, -1 );
             setDataChangeWatcher( MASTER_REBOUND_CHILD, -1 );
@@ -406,7 +412,7 @@ public class ZooClient extends AbstractZooKeeperManager
                 throw e;
             }
         }
-        
+
         // Write the HA server config.
         String machinePath = path + "/" + machineId;
         byte[] data = haServerAsData();
@@ -450,7 +456,77 @@ public class ZooClient extends AbstractZooKeeperManager
         System.arraycopy( array, 0, actualArray, 0, actualArray.length );
         return actualArray;
     }
-    
+
+    public synchronized void setJmxConnectionData( JMXServiceURL jmxUrl, String instanceId )
+    {
+        String path = rootPath + "/" + HA_SERVERS_CHILD + "/" + machineId + "/jmx";
+        String url = jmxUrl.toString();
+        byte[] data = new byte[( url.length() + instanceId.length() ) * 2 + 4];
+        ByteBuffer buffer = ByteBuffer.wrap( data );
+        // write URL
+        buffer.putShort( (short) url.length() );
+        buffer.asCharBuffer().put( url.toCharArray() );
+        // write instanceId
+        buffer.putShort( (short) instanceId.length() );
+        buffer.asCharBuffer().put( url.toCharArray() );
+        // truncate array
+        if ( buffer.limit() != data.length )
+        {
+            byte[] array = new byte[buffer.limit()];
+            System.arraycopy( data, 0, array, 0, array.length );
+            data = array;
+        }
+        try
+        {
+            zooKeeper.setData( path, data, -1 );
+        }
+        catch ( KeeperException e )
+        {
+            msgLog.logMessage( "Unable to set jxm connection info", e );
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.interrupted();
+            msgLog.logMessage( "Unable to set jxm connection info", e );
+        }
+    }
+
+    public void getJmxConnectionData( ConnectionInformation connection )
+    {
+        String path = rootPath + "/" + HA_SERVERS_CHILD + "/" + machineId + "/jmx";
+        byte[] data;
+        try
+        {
+            data = zooKeeper.getData( path, false, null );
+        }
+        catch ( KeeperException e )
+        {
+            return;
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.interrupted();
+            return;
+        }
+        if ( data == null || data.length == 0 ) return;
+        ByteBuffer buffer = ByteBuffer.wrap( data );
+        char[] url, instanceId;
+        try
+        {
+            // read URL
+            url = new char[buffer.getShort()];
+            buffer.asCharBuffer().get( url );
+            // read instanceId
+            instanceId = new char[buffer.getShort()];
+            buffer.asCharBuffer().get( instanceId );
+        }
+        catch ( BufferUnderflowException e )
+        {
+            return;
+        }
+        connection.setJMXConnectionData( new String( url ), new String( instanceId ) );
+    }
+
     public synchronized void setCommittedTx( long tx )
     {
         msgLog.logMessage( "ZooClient setting txId=" + tx + " for machine=" + machineId, true );
@@ -473,7 +549,8 @@ public class ZooClient extends AbstractZooKeeperManager
             throw new ZooKeeperException( "Interrupted...", e );
         }
     }
-    
+
+    @Override
     public void shutdown()
     {
         this.shutdown = true;
@@ -485,7 +562,7 @@ public class ZooClient extends AbstractZooKeeperManager
     {
         return zooKeeper;
     }
-    
+
     @Override
     protected String getHaServer( int machineId, boolean wait )
     {

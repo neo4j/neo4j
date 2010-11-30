@@ -20,8 +20,11 @@
 
 package org.neo4j.kernel;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,11 +34,13 @@ import javax.management.NotCompliantMBeanException;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.KernelExtension.KernelData;
+import org.neo4j.kernel.ha.ConnectionInformation;
 import org.neo4j.kernel.ha.MasterServer;
 import org.neo4j.kernel.ha.SlaveContext;
-import org.neo4j.kernel.management.HighAvailability;
-import org.neo4j.kernel.management.SlaveInfo;
-import org.neo4j.kernel.management.SlaveInfo.SlaveTransaction;
+import org.neo4j.management.HighAvailability;
+import org.neo4j.management.InstanceInfo;
+import org.neo4j.management.SlaveInfo;
+import org.neo4j.management.SlaveInfo.SlaveTransaction;
 import org.neo4j.management.impl.Description;
 import org.neo4j.management.impl.ManagementBeanProvider;
 import org.neo4j.management.impl.Neo4jMBean;
@@ -43,6 +48,8 @@ import org.neo4j.management.impl.Neo4jMBean;
 @Service.Implementation( ManagementBeanProvider.class )
 public final class HighAvailabilityBean extends ManagementBeanProvider
 {
+    private static final DateFormat ISO8601 = new SimpleDateFormat( "yyyy-MM-dd'T'HH:mm:ssz" );
+
     public HighAvailabilityBean()
     {
         super( HighAvailability.class );
@@ -84,6 +91,20 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
             return Integer.toString( db.getMachineId() );
         }
 
+        public InstanceInfo[] getInstancesInCluster()
+        {
+            ConnectionInformation[] connections = db.getBroker().getConnectionInformation();
+            InstanceInfo[] result = new InstanceInfo[connections.length];
+            for ( int i = 0; i < result.length; i++ )
+            {
+                ConnectionInformation connection = connections[i];
+                result[i] = new InstanceInfo( connection.getJMXServiceURL(),
+                        connection.getInstanceId(), connection.getMachineId(),
+                        connection.isMaster(), connection.getLastCommitedTransactionId() );
+            }
+            return result;
+        }
+
         @Description( "Whether this instance is master or not" )
         public boolean isMaster()
         {
@@ -99,9 +120,14 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
             List<SlaveInfo> result = new ArrayList<SlaveInfo>();
             for ( Map.Entry<Integer, Collection<SlaveContext>> entry : master.getSlaveInformation().entrySet() )
             {
-                result.add( slaveInfo( entry.getKey(), entry.getValue() ) );
+                result.add( slaveInfo( entry.getKey().intValue(), entry.getValue() ) );
             }
             return result.toArray( new SlaveInfo[result.size()] );
+        }
+
+        public String getLastUpdateTime()
+        {
+            return ISO8601.format( new Date( db.lastUpdateTime() ) );
         }
 
         @Description( "(If this is a slave) Update the database on this "
@@ -121,7 +147,7 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
             return "Update completed in " + time + "ms";
         }
 
-        private static SlaveInfo slaveInfo( Integer machineId, Collection<SlaveContext> contexts )
+        private SlaveInfo slaveInfo( int machineId, Collection<SlaveContext> contexts )
         {
             List<SlaveTransaction> txInfo = new ArrayList<SlaveTransaction>();
             for ( SlaveContext context : contexts )
@@ -133,7 +159,10 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
                 }
                 txInfo.add( new SlaveTransaction( context.getEventIdentifier(), lastTransactions ) );
             }
-            return new SlaveInfo( machineId, txInfo.toArray( new SlaveTransaction[txInfo.size()] ) );
+            ConnectionInformation connection = db.getBroker().getConnectionInformation( machineId );
+            return new SlaveInfo( connection.getJMXServiceURL(), connection.getInstanceId(),
+                    machineId, false, connection.getLastCommitedTransactionId(),
+                    txInfo.toArray( new SlaveTransaction[txInfo.size()] ) );
         }
     }
 }

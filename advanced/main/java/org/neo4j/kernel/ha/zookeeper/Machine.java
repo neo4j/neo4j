@@ -25,7 +25,7 @@ import org.neo4j.helpers.Pair;
 public class Machine
 {
     public static final Machine NO_MACHINE = new Machine( -1, -1, 1, null );
-    
+
     private final int machineId;
     private final int sequenceId;
     private final long lastCommittedTxId;
@@ -58,20 +58,20 @@ public class Machine
     {
         return server;
     }
-    
+
     @Override
     public String toString()
     {
         return "MachineInfo[ID:" + machineId + ", sequence:" + sequenceId +
                 ", last committed tx id:" + lastCommittedTxId + ", server:" + server + "]";
     }
-    
+
     @Override
     public boolean equals( Object obj )
     {
         return (obj instanceof Machine) && ((Machine) obj).machineId == machineId;
     }
-    
+
     @Override
     public int hashCode()
     {
