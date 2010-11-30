@@ -1,0 +1,10 @@
+Web Administration
+==================
+
+The Neo4j Server comes with a built-in web administration interface. This interface provides functionality to 
+
+- monitor the Neo4j Server
+- manipulate and browse data
+- interact with the database via a web based scripting environment
+- view the raw JMX MBeans data for further introspection and online monitoring
+- time based storage and reporting based on round-robin storage of selected measures
