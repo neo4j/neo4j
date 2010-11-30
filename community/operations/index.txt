@@ -5,3 +5,4 @@ Operations
 
 include::backup.txt[]
 
+include::monitoring.txt[]
