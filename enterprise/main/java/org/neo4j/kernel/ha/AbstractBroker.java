@@ -22,6 +22,7 @@ package org.neo4j.kernel.ha;
 
 import java.util.Map;
 
+import org.neo4j.kernel.KernelExtension.KernelData;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 
 public abstract class AbstractBroker implements Broker
@@ -34,22 +35,22 @@ public abstract class AbstractBroker implements Broker
         this.myMachineId = myMachineId;
         this.storeDir = storeDir;
     }
-    
+
     public void setLastCommittedTxId( long txId )
     {
         // Do nothing
     }
-    
+
     public int getMyMachineId()
     {
         return this.myMachineId;
     }
-    
+
     public String getStoreDir()
     {
         return storeDir;
     }
-    
+
     public void shutdown()
     {
         // Do nothing
@@ -59,12 +60,12 @@ public abstract class AbstractBroker implements Broker
     {
         throw new UnsupportedOperationException();
     }
-    
+
     public void rebindMaster()
     {
         // Do nothing
     }
-    
+
     public static BrokerFactory wrapSingleBroker( final Broker broker )
     {
         return new BrokerFactory()
@@ -74,5 +75,21 @@ public abstract class AbstractBroker implements Broker
                 return broker;
             }
         };
+    }
+
+    public void setConnectionInformation( KernelData kernel )
+    {
+    }
+
+    public ConnectionInformation getConnectionInformation( int machineId )
+    {
+        throw new UnsupportedOperationException( getClass().getName()
+                                                 + " does not support ConnectionInformation" );
+    }
+
+    public ConnectionInformation[] getConnectionInformation()
+    {
+        throw new UnsupportedOperationException( getClass().getName()
+                                                 + " does not support ConnectionInformation" );
     }
 }
