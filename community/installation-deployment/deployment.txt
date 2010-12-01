@@ -1,15 +1,22 @@
-Installation, requirements and deployment scenarios 
+Deployment Scenarios
+====================
 
-Neo4j can be embedded into your application, run as a standalone server or deployed on several machines providing high availability. 
+Neo4j can be embedded into your application, run as a standalone server or deployed on several machines to provide high availability. 
 
- o describe embedded mode (spring and other stacks/containers)
- o describe stand alone server mode
- o briefly describe HA mode and reference the HA section
+[cols="h",options="header"]
+|================================================================
+|          | Single Instance       | Multiple Instances
+| Embedded | EmbeddedGraphDatabase | HighlyAvailableGraphDatabase
+| Server   | Neo4j Server          | 
 
-Requirements
+== Server ==
 
- o Java version 1.6 is required to run Neo4j. 
- o To deliver full ACID semantics it is depending on the operating system and underlying file system, a flush (fsync, fdatasync) must be persisted to the underlying storage. 
- o Recommended operating systems are Solaris and Linux, recommended filesystems include EXT3,EXT4 and ZFS.
+Neo4j is normally accessed as a standalone server, either directly through a REST interface or through a language-specific driver.
+
+== Embedded ==
+
+Neo4j can be embedded directly in a server application by including the appropriate Java libraries.
+When programming, you can refer to the GraphDatabaseService API.
+To switch from a single instance to multiple highly available instances, simply switch from the concrete EmbeddedGraphDatabase to the HighlyAvailableGraphDatabase.
 
 
