@@ -1,7 +1,9 @@
 The Neo4j Manual
 ================
+Neo Technology <info@neotechnology.com>
+:Revision: 1.2-SNAPSHOT
 
-:neo4j-version: 1.2.M05
+:neo4j-version: {revnumber}
 
 :leveloffset: 1
 
@@ -9,7 +11,7 @@ include::introduction/introduction.txt[]
 
 :leveloffset: 1
 
-include::capabilities/index.txt[]
+include::capabilities/capabilities.txt[]
 
 :leveloffset: 1
 
