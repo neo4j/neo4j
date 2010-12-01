@@ -10,7 +10,7 @@ First of, make sure your database is configured to keep logical logs around, lik
 ----
 keep_logical_logs=true <1>
 ----
-WARNING: You need to do this __every__ time you open the database, or you might not be able to backup in the future
+WARNING: If you want to do incremental backups, you need to do make sure that logical logs are kept anytime you modify data or start up the database, otherwise you incremental backups might not work properly.
 
 <1> See Configurations to see how you can give the database its settings.
 
