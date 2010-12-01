@@ -3,5 +3,7 @@ Configuration & Performance
 
 :leveloffset: 2
 
+include::cache.txt[]
+
 include::jvm.txt[]
 
