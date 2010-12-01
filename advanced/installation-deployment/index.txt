@@ -7,3 +7,6 @@ include::installation-deployment.txt[]
 
 include::requirements.txt[]
 
+include::upgrades.txt[]
+
+
