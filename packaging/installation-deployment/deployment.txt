@@ -3,7 +3,7 @@ Deployment Scenarios
 
 Neo4j can be embedded into your application, run as a standalone server or deployed on several machines to provide high availability. 
 
-[cols="h",options="header"]
+[options="header"]
 |================================================================
 |          | Single Instance       | Multiple Instances
 | Embedded | EmbeddedGraphDatabase | HighlyAvailableGraphDatabase
