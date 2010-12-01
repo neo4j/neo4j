@@ -3,7 +3,9 @@ Installation & Deployment
 
 :leveloffset: 2
 
-include::installation-deployment.txt[]
+include::installation.txt[]
+
+include::deployment.txt[]
 
 include::requirements.txt[]
 
