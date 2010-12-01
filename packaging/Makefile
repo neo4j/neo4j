@@ -45,7 +45,7 @@ latexpdf:
 	a2x $(GENERAL_FLAGS) -f pdf -D $(BUILDDIR)/dblatex --conf-file=$(CONFDIR)/dblatex.conf $(SRCFILE)
 
 html:
-	a2x $(GENERAL_FLAGS) -f chunked -D $(BUILDDIR) --conf-file=$(CONFDIR)/chunked.conf --xsltproc-opts "--stringparam admon.graphics 1" $(SRCFILE)
+	a2x $(GENERAL_FLAGS) -f chunked -D $(BUILDDIR) --conf-file=$(CONFDIR)/chunked.conf --xsl-file=$(CONFDIR)/chunked.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(SRCFILE)
 
 singlehtml:
 	mkdir -p $(BUILDDIR)/html/images
