@@ -532,7 +532,13 @@
 
   <profiles>
     <profile>
-      <id>funct</id>
+      <id>functional-tests</id>
+      <activation>
+        <property>
+          <name>tests</name>
+          <value>functional</value>
+        </property>
+      </activation>
       <build>
         <plugins>
           <plugin>
