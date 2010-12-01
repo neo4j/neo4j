@@ -1,5 +1,6 @@
-Enterprise Capabilities
-=======================
+Enterprise Features
+===================
+
 
 Neo4j meets the special requirements for operating in an enterprise environment, ensuring smooth operation, data recovery, resilience, data security, and performance.
 
@@ -44,7 +45,7 @@ full Two Phase Commit transaction management, with rollback support over all dat
 sources. Thus, failed index insertions into Lucene can be transparently rolled 
 back in all data sources and thus keep data up-to-date.
 
-== Data Integration === 
+== Data Integration ==
 
 Most enterprises rely primarily on relational databases to store their data, but 
 this may cause performance limitations. In some of these cases, Neo4j can be used 
@@ -195,14 +196,3 @@ type Long, permitting a virtually unlimited address space of 2ˆ64 addresses.
 
 While support for sharding is on the development roadmap, graphs which exceeed 
 the capacity of a single server must be broken up on the application level. 
-
-== Graph databases versus Relational databases ==
-
-While graph structures in theory are normalizable even in Relational Database 
-Systems (RDBMS), this has serious query performance implications for recursive structures 
-like for instance file trees and network structures like e.g. social graphs, due to the 
-implementation characteristics of relational databases. Every operation over a relationship 
-of a network results in a "join" operation in the RDBMS, implemented as a set-operation 
-between the sets of primary keys for two tables - a slow operation and not scalable over 
-growing numbers of tuples in these tables.
-
