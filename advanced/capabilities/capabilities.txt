@@ -1,8 +1,6 @@
 Capabilities
 ============
 
-== Enterprise Features Overview ==
-
 Neo4j meets the special requirements for operating in an enterprise environment, ensuring smooth operation, data recovery, resilience, data security, and performance.
 
 It features:
@@ -24,7 +22,24 @@ growing numbers of tuples in these tables.
 
 == Transactions ==
 
+In order to fully maintain data integrity and ensure good transactional behavior, Neo4j supports the ACID properties:
+
+* atomicity - if any part of a transaction fails, the database state is left unchanged
+* consistency - any transaction will leave the database in a consistent state
+* isolation - during a transaction, modified data cannot be accessed by other operations
+* durability - the DBMS can always recover the results of a committed transaction
+
 All mutating data operations must occur within a transaction, ensuring proper ACID behavior. 
+
+Specifically:
+
+* All modifications to Neo4j data must be wrapped in transactions.
+* The default isolation level is +READ_COMMITTED+.
+* Data retrieved by traversals is not protected from modification by other transactions.
+* Non-repeatable reads may occur (i.e., only write locks are acquired and held until the end of the transaction).
+* One can manually acquire write locks on nodes and relationships to achieve higher level of isolation (+SERIALIZABLE+).
+* Locks are acquired at the Node and Relationship level.
+* Deadlock detection is built into the core transaction management.
 
 == Data Security ==
 
