@@ -26,7 +26,7 @@ package org.neo4j.server.osgi.services;
  * must be defined on the host side, and made available on the
  * embedded side as part of the system bundle.
  */
-public interface ExampleService
+public interface ExampleBundleService
 {
     String doSomethingWith(String someInput);
 }
