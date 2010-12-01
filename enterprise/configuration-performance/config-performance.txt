@@ -60,6 +60,10 @@ o keep_logical_logs
 o enable_remote_shell
 o rebuild_idgenerators_fast
 
+Tweaking Liunx
+
+get good stuff from http://wiki.neo4j.org/content/Linux_Performance_Guide
+
 -JVM
 -Other config parameters
 -Other performance tweakings?
