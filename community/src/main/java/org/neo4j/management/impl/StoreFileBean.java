@@ -73,13 +73,13 @@ public final class StoreFileBean extends ManagementBeanProvider
             this.storePath = path;
         }
 
-        @Description( "The total disk space used by this Neo4j instance" )
+        @Description( "The total disk space used by this Neo4j instance, in bytes." )
         public long getTotalStoreSize()
         {
             return sizeOf( storePath );
         }
 
-        @Description( "The amount of disk space used by the current Neo4j logical log" )
+        @Description( "The amount of disk space used by the current Neo4j logical log, in bytes." )
         public long getLogicalLogSize()
         {
             File logicalLog = new File( storePath, LOGICAL_LOG1 );
@@ -113,32 +113,32 @@ public final class StoreFileBean extends ManagementBeanProvider
             return sizeOf( new File( storePath, name ) );
         }
 
-        @Description( "The amount of disk space used to store array properties" )
+        @Description( "The amount of disk space used to store array properties, in bytes." )
         public long getArrayStoreSize()
         {
             return sizeOf( ARRAY_STORE );
         }
 
-        @Description( "The amount of disk space used to store nodes" )
+        @Description( "The amount of disk space used to store nodes, in bytes." )
         public long getNodeStoreSize()
         {
             return sizeOf( NODE_STORE );
         }
 
         @Description( "The amount of disk space used to store properties "
-                      + "(excluding string values and array values)" )
+                      + "(excluding string values and array values), in bytes." )
         public long getPropertyStoreSize()
         {
             return sizeOf( PROPERTY_STORE );
         }
 
-        @Description( "The amount of disk space used to store relationships" )
+        @Description( "The amount of disk space used to store relationships, in bytes." )
         public long getRelationshipStoreSize()
         {
             return sizeOf( RELATIONSHIP_STORE );
         }
 
-        @Description( "The amount of disk space used to store string properties" )
+        @Description( "The amount of disk space used to store string properties, in bytes." )
         public long getStringStoreSize()
         {
             return sizeOf( STRING_STORE );
