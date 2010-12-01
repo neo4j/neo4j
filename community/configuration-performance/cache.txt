@@ -22,7 +22,8 @@ The file buffer cache caches the Neo4j data in the same format as it is represen
 The purpose of this cache layer is to improve read and write performance.
 The file buffer cache improves write performance by deferring actual durable write until a cache window is evicted or the logical log is rotated.
 This behavior is safe since all transactions are always durably written to the logical log, which can be used to recover the store files in the event of a crash.
-The file buffer cache improves read performance by avoiding seek operations on mechanical storage mediums.
+The file buffer cache improves read performance by putting data in RAM, with faster access time than durable storage mediums.
+It also improves read performance by avoiding seek operations on mechanical storage mediums.
 Since the operation of the cache is tightly related to the data it stores, a short description of the Neo4j durable representation format is necessary background.
 
 Neo4j stores data in multiple files and relies on the underlying file system to handle this efficiently.
@@ -108,9 +109,65 @@ The content of this cache are objects with a representation geared towards suppo
 Reading from this cache is 5 to 10 times faster than reading from the file buffer cache.
 This cache is contained in the heap of the JVM and the size is adapted to the current amount of available heap memory.
 
-Nodes and Relationships
+Nodes and Relationships are added to the object cache as soon as they are accessed.
+The cached objects are however populated lazily.
+The properties for a Node or Relationship are not loaded until properties are accessed for that Node or Relationship.
+String (and array) properties are not loaded until that particular property is accessed.
+The relationships for a particular node is also not loaded until the relationships are accessed for that node.
+Eviction from the cache happens in an LRU manner when the memory is needed.
+
 
 Configuration
 ^^^^^^^^^^^^^
 
-stuff
+The main configuration parameter for the object cache is the `cache_type` parameter.
+This specifies which cache implementation to use for the object cache.
+The available cache types are:
+
+[options="header",frame="none",cols="<m,<"]
+|==========================================
+| `cache_type` | Description
+| none         | Do not use a high level cache. No objects will be cached.
+| soft         | Provides optimal utilization of the available memory.
+                 Suitable for high performance traversal.
+                 May run into GC issues under high load if the frequently accessed parts of the graph does not fit in the cache.
+
+                 This is the default cache implementation.
+| weak         | Provides short life span for cached objects.
+                 Suitable for high throughput applications where a larger portion of the graph than what can fit into memory is frequently accessed.
+| strong       | This cache will cache *all data* in the *entire graph*.
+                 It will never release memory held by the cache.
+                 Provides optimal performance if your graph is small enough to fit in memory.
+|==========================================
+
+
+Heap memory usage
+^^^^^^^^^^^^^^^^^
+
+This table can be used to calculate how much memory the data in the object cache will occupy on a 64bit JVM:
+
+[options="header",grid="none",frame="none",cols="<,>m,<e"]
+|================================
+| Object        | Size  | Comment
+| Node          | 344 B | Size for each Node (not counting its Relationships or properties).
+|               |  48 B | Object overhead.
+|               | 136 B | Property storage (ArrayMap `48B`, HashMap `88B`).
+|               | 136 B | Relationship storage (ArrayMap `48B`, HashMap `88B`).
+|               |  24 B | Location of first / next set of relationships.
+| Relationship  | 208 B | Size for each Relationship (not cointing its properties).
+|               |  48 B | Object overhead.
+|               | 136 B | Property storage (ArrayMap `48B`, HashMap `88B`).
+| Property      | 116 B | Size for each property of a Node or Relationship.
+|               |  32 B | PropertyData element - allows for transactional modification and keeps track of on disk location.
+|               |  48 B | Entry in the Map where it is stored.
+|               |  12 B | Space used in hash table, accounts for normal fill ratio.
+|               |  24 B | Property key index.
+| Relationships | 108 B | Size for each RelationshipType for a Node that has a relationship of that type.
+|               |  48 B | Collection of the Relationships of this type.
+|               |  48 B | Entry in the Map where it is stored.
+|               |  12 B | Space used in hash table, accounts for normal fill ratio.
+| Relationships |   8 B | Space used by each Relationship related to a particualr Node (both incoming and outgoing).
+| Primitive     |  24 B | Size of a primitive property value.
+| String        |  64+B | Size of a string property value.
+|================================
+
