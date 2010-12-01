@@ -24,8 +24,3 @@ String location = "/var/backup/neo4j-db";
 Backup backup = Neo4jBackup.allDataSources( graphDb, location );
 backup.doBackup();
 ----
-
-How to make backups of databases running in Neo4j Server
---------------------------------------------------------
-If you are running Neo4j Server, the only way right now to make a backup is to shut down the server and manually copy the database files.
-
