@@ -154,7 +154,7 @@ This table can be used to calculate how much memory the data in the object cache
 |               | 136 B | Property storage (ArrayMap `48B`, HashMap `88B`).
 |               | 136 B | Relationship storage (ArrayMap `48B`, HashMap `88B`).
 |               |  24 B | Location of first / next set of relationships.
-| Relationship  | 208 B | Size for each Relationship (not cointing its properties).
+| Relationship  | 208 B | Size for each Relationship (not counting its properties).
 |               |  48 B | Object overhead.
 |               | 136 B | Property storage (ArrayMap `48B`, HashMap `88B`).
 | Property      | 116 B | Size for each property of a Node or Relationship.
