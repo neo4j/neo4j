@@ -1,19 +1,19 @@
 JVM Settings
 ============
 
-The most important configuration parameters for Neo4j are the ones that control the memory and garbage collector.
+Configuring JVM heap and the garbage collector properly is very important. As an example, a poorly tweaked JVM could spend all CPU time performing garbage collection (blocking all threads from performing any work). Requirements such as latency, total throughput and available hardware has to be considered to find the right setup. In production it is recommended to run Neo4j on a multi core/CPU platform putting the JVM in server mode.
+ 
+== Configuring heap size and GC for the JVM ==
 
-== Configuring the memory for the JVM ==
+A Large heap allows for larger node and relationship caches which is a good thing but large heaps can also lead to latency problems caused by full garbage collections. The different high level cache implementations available in Neo4j together with a suitable JVM configuration of heap size and GC should be able to handle most workloads.
 
-When it comes to heap space the general rule is: the larger heap space you have the better. You have to make sure the heap fits in the RAM memory of the computer.
+The default cache (soft reference based LRU cache) works best with a heap that never gets full meaning the application workload is such that most nodes and relationships that are used can be cached. If the heap gets to full there is a risk that a full GC will be triggered and figuring out what soft references should be cleared will take longer the larger the heap. 
 
-Having a larger heap space will mean that Neo4j can handle larger transactions and more concurrent transactions. A large heap space will also make Neo4j run faster since it means Neo4j can fit a larger portion of the graph in its caches, meaning that the nodes and relationships your application uses frequently are always available quickly. The default heap size for a 32bit JVM is 64MB (and 30% larger for 64bit), which is too small for most real applications.
+Using the strong reference cache means all the nodes and relationships being used must fit in available heap or there is a risk of getting out of memory exceptions. The soft reference and strong reference caches are well suited for applications were the overal throughput is important.
 
-The heap size is set by specifying the -Xmx???m parameter to hotspot, where ??? is the heap size in megabytes.
+The weak reference cache basically needs enough heap to handle the peak load of the application (how much memory will the avg request require*peak load) and is well suited for low latency requirements were GC interuptions are not acceptable.
 
-When running Neo4j on Windows the size of the memory-mapped nioneo configurations need to be added to the heap size parameter. On Linux and Unix-systems memory mapped IO is not included in the heap size.
-Most modern CPUs implement a Non-Uniform Memory Access (NUMA) architecture, where different parts of the memory have different access speeds. Suns Hotspot JVM is able to allocate objects with awareness of the NUMA structure as of version 1.6.0 update 18. When enabled this can give up to 40% performance improvements. To enabled the NUMA awareness, specify the -XX:+UseNUMA parameter.
-
+Also remember when running Neo4j on Windows the size of the memory mapped buffers are allocated on heap by default and needs to be taken into consideration when determining heap size.
 
 .Guidelines for heap size
 [format="csv",width="60%",cols="4"]
@@ -25,17 +25,4 @@ Number of primitives,RAM size,Heap configuration,Reserved RAM for the OS
 1B+,8-32GB,4GB+,1-2GB
 |======================================================================================================
 
-== Configuring the Garbage Collector ==
-
-We have found that the Concurrent Mark and Sweep Compactor gives the best performance for Neo4j Applications. To configure this, use -XX:+UseConcMarkSweepGC
-
-== Selecting VM modes ==
-A JVM generally has two execution modes, client mode and server mode. On computers with 64-bit processors there are also modes for executing the JVM in 32-bit mode and 64-bit mode. Selecting VM modes is done by specifying command line parameters, -client for client mode, -server for server mode, -d32 for 32-bit mode, and -d64 for 64-bit mode. The mode modifying command line arguments must be the first arguments specified to the java command, since they modify the behavior of the entire VM and thus the interpretation of all the other parameters. We recommend always executing Neo4j applications in a server mode JVM.
-
-
-Startup line example:
-[source, shell]
-----
-java -XX:+UseNUMA -XX:+UseConcMarkSweepGC -d64 -server -Xmx1024m -cp /path/to/neo4j-kernel.jar:/path/to/jta.jar:/path/to/your-application.jar com.example.yourapp.MainClass
-----
-
+The recommended garbage collector to use when running Neo4j in production is the Concurrent Mark and Sweep Compactor turned on by supplying -XX:+UseConcMarkSweepGC as a JVM parameter.
