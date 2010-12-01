@@ -29,10 +29,13 @@ import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.swissbox.tinybundles.core.TinyBundles.newBundle;
 import static org.ops4j.pax.swissbox.tinybundles.core.TinyBundles.withBnd;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 import org.apache.commons.io.FileUtils;
-import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -46,7 +49,12 @@ import org.neo4j.server.osgi.bundles.service.ServiceProviderActivator;
 import org.neo4j.server.osgi.services.ExampleBundleService;
 import org.neo4j.server.osgi.services.ExampleHostService;
 import org.ops4j.io.StreamUtils;
-import org.osgi.framework.*;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleException;
+import org.osgi.framework.Constants;
+import org.osgi.framework.InvalidSyntaxException;
+import org.osgi.framework.ServiceReference;
 
 public class OSGiContainerTest
 {
