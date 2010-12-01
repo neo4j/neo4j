@@ -1,15 +1,34 @@
-Installation, requirements and deployment scenarios 
+Installation
+============
 
-Neo4j can be embedded into your application, run as a standalone server or deployed on several machines providing high availability. 
+== Server Installation ==
 
- o describe embedded mode (spring and other stacks/containers)
- o describe stand alone server mode
- o briefly describe HA mode and reference the HA section
+1. Download the latest release from http://neo4j.org/download
+   * select the appropriate version for your platform
+2. Extract the contents of the archive
+   * refer to the top-level extracted directory as +NEO4J-HOME+
+3. Use the scripts in the +bin+ directory
+4. Refer to the packaged information in the +doc+ directory for details
 
-Requirements
+== Embedded Installation ==
 
- o Java version 1.6 is required to run Neo4j. 
- o To deliver full ACID semantics it is depending on the operating system and underlying file system, a flush (fsync, fdatasync) must be persisted to the underlying storage. 
- o Recommended operating systems are Solaris and Linux, recommended filesystems include EXT3,EXT4 and ZFS.
+To embed Neo4j in your Java application, use the Neo4j library jars in your build.
+Either take the jar files from the +lib+ directory of the downloaded archive, or use the artifacts available from Maven Central.
 
+.Maven dependency
+--------------------------------------------
+<project>
+...
+ <dependencies>
+	<dependency>
+   	<groupId>org.neo4j</groupId>
+   	<artifactId>neo4j</artifactId>
+   	<version>1.2.M04</version>
+	</dependency>
+	...
+ </dependencies>
+...
+</project>
+
+--------------------------------------------
 
