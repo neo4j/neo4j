@@ -24,5 +24,9 @@ of a network results in a "join" operation in the RDBMS, implemented as a set-op
 between the sets of primary keys for two tables - a comparatively slow operation and not scalable over 
 growing numbers of tuples in these tables.
 
+TODO:
+Neo4j System architecture diagram
+
+
 
 
