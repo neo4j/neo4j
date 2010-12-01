@@ -1,0 +1,14 @@
+Upgrading
+=========
+
+A properly shutdown Neo4j database can be upgraded directly to a new minor version. 
+Backwards compatibilty is only guaranteed between minor versions, for example from 1.1 to 1.2.
+
+To upgrade directly:
+
+1. download the new server release
+2. configure the server to point to the existing database directory
+3. cleanly shutdown the previous server
+4. startup the new server
+
+
