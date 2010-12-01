@@ -20,12 +20,9 @@
 
 package org.neo4j.server.osgi.bundles.consumer;
 
-import org.neo4j.server.osgi.services.ExampleBundleService;
 import org.neo4j.server.osgi.services.ExampleHostService;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
-import org.osgi.framework.ServiceRegistration;
 
 /**
  * For a bundle to consume an OSGi "service" means that it
