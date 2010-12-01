@@ -1,0 +1,116 @@
+Caches in Neo4j
+---------------
+
+Neo4j utilizes two different types of caches.
+A file buffer cache and an object cache.
+The file buffer cache caches the storage file data in the same format as it is stored on the durable storage media.
+The object cache caches the Nodes, Relationships and Properties in a format that is optimized for high traversal speeds and transactional mutation.
+
+
+File buffer cache
+~~~~~~~~~~~~~~~~~
+
+.Quick info
+***********
+* Somtimes called _low level cache_ or _file system cache_.
+* Caches the Neo4j data as stored on the durable media.
+* Uses the operating system memory mapping features when possible.
+* Neo4j will configure the cache automatically as long as the heap size of the JVM is configured properly.
+***********
+
+The file buffer cache caches the Neo4j data in the same format as it is represented on the durable storage media (disk or SSD).
+The purpose of this cache layer is to improve read and write performance.
+The file buffer cache improves write performance by deferring actual durable write until a cache window is evicted or the logical log is rotated.
+This behavior is safe since all transactions are always durably written to the logical log, which can be used to recover the store files in the event of a crash.
+The file buffer cache improves read performance by avoiding seek operations on mechanical storage mediums.
+Since the operation of the cache is tightly related to the data it stores, a short description of the Neo4j durable representation format is necessary background.
+
+Neo4j stores data in multiple files and relies on the underlying file system to handle this efficiently.
+Each Neo4j storage file contains uniform fixed size records of a particular type:
+
+[options="header",grid="none",frame="none",cols="<,>m,<"]
+|============================================
+| Store file         | Record size | Contents
+| nodestore          |         9 B | Nodes
+| relstore           |        33 B | Relationships
+| propstore          |        25 B | Properties for Nodes and Relationships
+| stringstore        |       133 B | Values of string properties
+| arraystore         |       133 B | Values of array properties
+|============================================
+
+For strings and arrays, where data can be of variable length, data is stored in one or several 120B chunks, with 13B record overhead.
+The sizes of these blocks can actually be configured when the store is created using the `string_block_size` and `array_block_size` parameters.
+The sizes of each record type can also be used to calculate the storage requirements of a Neo4j graph or the apropriate cache sizes for each file buffer cache.
+
+Neo4j uses multiple file buffer caches, one for each different storage file.
+Each file buffer cache divides its storage file into a number of equally sized windows.
+Each cache window contains an even number of storage records.
+The cache holds the most active cache windows in memory and tracks hit vs. miss ratio for the windows.
+When the hit ratio of an un-cached window gets higher than the miss ratio of a cached window, the cached window gets evicted and the previously un-cached window is cached instead.
+
+Configuration
+^^^^^^^^^^^^^
+
+[options="header",frame="none",cols="<m,<,<"]
+|========================================================
+| Parameter                 | Possible values   | Effect
+| use_memory_mapped_buffers | `true` or `false` |
+  If set to `true` Neo4j will use the operating systems memory mapping functionality for the file buffer cache windows.
+  If set to `false` Neo4j will use its own buffer implementation.
+  In this case the buffers will reside in the JVM Heap which needs to be increased accordingly.
+  The default value for this parameter is `true`, except on Windows.
+| neostore.nodestore.db.mapped_memory             .7+^.^|
+  The maximum amount of memory to use for memory mapped buffers for this file buffer cache.
+  The default unit is `MiB`, for other units use any of the following suffixes: `B`, `k`, `M` or `G`.
+  |
+  The maximum amount of memory to use for the file buffer cache of the Node storage file.
+| neostore.relationshipstore.db.mapped_memory           |
+  The maximum amount of memory to use for the file buffer cache of the Relationship store file.
+| neostore.propertystore.db.index.keys.mapped_memory    |
+  The maximum amount of memory to use for the file buffer cache of the something-something file.
+| neostore.propertystore.db.index.mapped_memory         |
+  The maximum amount of memory to use for the file buffer cache of the something-something file.
+| neostore.propertystore.db.mapped_memory               |
+  The maximum amount of memory to use for the file buffer cache of the property storage file.
+| neostore.propertystore.db.strings.mapped_memory       |
+  The maximum amount of memory to use for the file buffer cache of the string property storage file.
+| neostore.propertystore.db.arrays.mapped_memory        |
+  The maximum amount of memory to use for the file buffer cache of the array property storage file.
+| string_block_size .2+^.^| The number of bytes per block. |
+  Specifies the block size for storing strings.
+  This parameter is only honored when the store is created, otherwise it is ignored.
+  Note that each character in a string occupies two bytes, meaning that a block size of 120 (the default size) will hold a 60 character long string before overflowing into a second block.
+  Also note that each block carries an overhead of 13 bytes.
+  This means that if the block size is 120, the size of the stored records will be 133 bytes.
+| array_block_size        |
+  Specifies the block size for storing arrays.
+  This parameter is only honored when the store is created, otherwise it is ignored.
+  The default block size is 120 bytes, and the overhead of each block is the same as for string blocks, i.e. 13 bytes.
+|========================================================
+
+When memory mapped buffers are used (`use_memory_mapped_buffers = true`) the heap size of the JVM must be smaller than the total available memory of the computer, minus the total amount of memory used for the buffers.
+When heap buffers are used (`use_memory_mapped_buffers = false`) the heap size of the JVM must be large enough to contain all the buffers, plus the runtime heap memory requirements of the application and the object cache.
+
+When reading the configuration parameters on startup Neo4j will automatically configure that parameters that are not specified.
+The cache sizes will be configured based on the available memory on the computer, how much is used by the JVM heap and how large the storage files are.
+
+Object cache
+~~~~~~~~~~~~
+
+.Quick info
+***********
+* Somtimes called _high level cache_.
+* Caches the Neo4j data in a form optimized for fast traversal, close to the object oriented Neo4j API.
+***********
+
+The object cache caches individual Nodes and Relationships and their properties in a form that is optimized for fast traversal of the graph.
+The content of this cache are objects with a representation geared towards supporting the Neo4j object API and graph traversals.
+Reading from this cache is 5 to 10 times faster than reading from the file buffer cache.
+This cache is contained in the heap of the JVM and the size is adapted to the current amount of available heap memory.
+
+Nodes and Relationships
+
+Configuration
+^^^^^^^^^^^^^
+
+stuff
