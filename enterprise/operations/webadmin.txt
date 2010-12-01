@@ -1,10 +1,97 @@
 Web Administration
 ==================
 
-The Neo4j Server comes with a built-in web administration interface. This interface provides functionality to 
+The Neo4j Server comes with a built-in web based administration interface. This interface provides functionality to 
 
 - monitor the Neo4j Server
 - manipulate and browse data
 - interact with the database via a web based scripting environment
 - view the raw JMX MBeans data for further introspection and online monitoring
 - time based storage and reporting based on round-robin storage of selected measures
+
+== The Overview tab ==
+
+Included in Neo4j Server is an administrative web application. Make sure the server is running, for instance at port 7474 on localhost, and then open a web browser and go to the page http://localhost:7474/webadmin. On the start page you'll see that the database is running. The charts show some of the main important indicators over time: The count of the the number of nodes, relationships and properties in the database, charted over time. You can choose a different timescale by selecting the appropriate time interval (Year, Month, Day, 6 hours, 30 minutes).
+
+.Charting view of the Neo4j administration
+image::../images/operations/webadmin-overview.png[scaledwidth="100%", alt="Administration overview"]
+
+
+.Charting view of the Neo4j administration
+image::../images/operations/webadmin-charts.png[scaledwidth="100%", alt="Administration charts"]
+
+While the charts are backed by a Round Robin Database, making them being persisted and selectable even upon restart of the server, there is also a collection of current values available in the statistics section.
+
+.Statistics overview of the Neo4j administration
+image::../images/operations/webadmin-stats.png[scaledwidth="100%", alt="Administration statistics overview"]
+
+== The Data tab ==
+
+In order to manipulate data in the Neo4j server, there are several ways to access the database. The Data Tab of the administration tool gives you visual access to browsing and modifying data.
+
+.Data manipulation
+image::../images/operations/webadmin-data.png[scaledwidth="100%", alt="Administration data manipulation"]
+
+
+=== Adding a node ===
+Click on the "New node" link to create a new node and position yourself on that node in the data browser. the link displayed as the Id is the REST- endpoint URI for this node and can be used programmatically for data access and manipulation. Clicking the "Remove" link will remove this node and any relationships linked to it from the database.
+
+=== Adding a property to a node ===
+At the bottom of the "Node" box, you'll find "New property". Add a key and a value there. Upon leaving the entry field, the new values will be automatically persisted.
+
+=== Adding a relationship ===
+Click on the "New relationship" link and enter the ID of the start node, the type string of your new relationship, and the end node. The relationship will be created and, if it is starting or ending in the currently visible node, be shown in the "Related nodes" table in your current view.
+
+=== Adding a property to a relationship ===
+Click on the Type link of the entry of the relationship that you are interested in in order to open the view on the relationship, showing the start node, end node and properties on the relationship. Now, you can add and remove properties much like in the node view, see below.
+
+.Manipulating a relationship
+image::../images/operations/webadmin-rels.png[scaledwidth="100%", alt="Administration relationship manipulation"]
+
+== The Console tab ==
+
+The Console tab gives scripting access to the database via the http://gremlin.tinkerpop.com[Gremlin] scripting engine, a language designed specifically for the manipulation of graphs and inspired by XPath syntax constructs. There are a couple of built-in variables that you can use to position yourself in the graph, especiallty $_ to set the current position in the graph.
+
+.Gremlin creating two nodes and a relationship
+==============================================
+[source,shell]
+-------
+#create new nodes (vertex) and assign it to the variables $car and $whell
+$car := g:add-v()
+$wheel := g:add-v()
+
+#create a relationship of type HAS between $car and $wheel
+$relationship := g:add-e($car,'HAS',$wheel)
+
+#set the "type" property of the $car and $wheel
+$car/@type := 'Volvo'
+$wheel/@type := 'Radial'
+
+#set the current position to $car
+$_ := $car
+
+#list the "type" property of the current node
+./@color := 'RED'
+
+#list all properties of the current node
+g:map(.)
+
+#list all outgoing relationships (edges) from the current node
+./outE
+
+#list the type property of the nodes on the other end (inVertices) that this node
+#has an outgoing relationship of type HAS with
+./outE[@label='HAS']/inV/@type
+
+-------
+==============================================
+
+.Manipulating data with Gremlin
+image::../images/operations/webadmin-console.png[scaledwidth="100%", alt="Data manipulation with Gremlin"]
+
+== The JMX tab ==
+
+In order to have full control over all the exposed aspects of the Neo4j Server, the JMX tab provides a raw few on all JMX attributes provided by the underlying JVM.
+
+.JMX Attributes
+image::../images/operations/webadmin-jmx.png[scaledwidth="100%", alt="JMX"]
