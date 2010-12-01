@@ -8,6 +8,7 @@ Neo4j can be embedded into your application, run as a standalone server or deplo
 |          | Single Instance       | Multiple Instances
 | Embedded | EmbeddedGraphDatabase | HighlyAvailableGraphDatabase
 | Server   | Neo4j Server          | 
+|================================================================
 
 == Server ==
 
