@@ -1,8 +1,7 @@
 Enterprise Capabilities
 =======================
 
-Neo4j meets the special requirements for operating in an enterprise environment, ensuring smooth 
-operation, data recovery, resilience, data security, and performance.
+Neo4j meets the special requirements for operating in an enterprise environment, ensuring smooth operation, data recovery, resilience, data security, and performance.
 
 It features:
 
@@ -13,44 +12,18 @@ It features:
 
 == Transactions ==
 
-To maintain data integrity and ensure good transactional behavior, Neo4j 
-complies with the ACID properties:
-
-* atomicity - if any part of a transaction fails, the database state is left unchanged
-* consistency - any transaction will leave the database in a consistent state
-* isolation - during a transaction, modified data cannot be accessed by other operations
-* durability - the DBMS can always recover the results of a committed transaction
-
-Specifically regarding write operations:
-
-* all modifications to data must be wrapped in transactions
-* default isolation level is READ_COMMITTED
-* write locks are acquired at the Node and Relationship level
-* locks can be acquired manually to achieve higher level of isolation (SERIALIZABLE)
-* deadlock detection is built into the core transaction management
-
-For read operations:
-
-* they may occur outside of a transaction
-* data retrieved by traversals is not protected from modification by other transactions
-* non-repeatable reads may occur (i.e., only write locks are acquired and held until the end of the transaction)
+All mutating data operations must occur within a transaction, ensuring proper ACID behavior. 
 
 == Data Security ==
 
-Some data may need to be protected from unauthorized access (e.g., theft, 
-modification). Neo4j does not deal with data encryption explicitly, but supports 
-all means built into the Java programming language and the JVM to protect data 
-by encrypting it before storing.
+Some data may need to be protected from unauthorized access (e.g., theft, modification). 
+Neo4j does not deal with data encryption explicitly, but supports all means built into the Java programming language and the JVM to protect data by encrypting it before storing.
 
-Furthermore, data can be easily secured by running on an encrypted datastore 
-at the file system level. Finally, data protection should be considered in 
-the upper layers of the surrounding system in order to prevent problems with 
-scraping, malicious data insertion, and other threats.
+Furthermore, data can be easily secured by running on an encrypted datastore at the file system level. Finally, data protection should be considered in the upper layers of the surrounding system in order to prevent problems with scraping, malicious data insertion, and other threats.
 
 == Data Integrity ==
 
-In order to keep data consistent, there needs to be mechanisms and structures 
-that guarantee the integrity of all stored data. In Neo4j, there are different subsystems that need data integrity:
+In order to keep data consistent, there needs to be mechanisms and structures that guarantee the integrity of all stored data. In Neo4j, there are different subsystems that need data integrity:
 
 === Core Graph Engine ===
 
