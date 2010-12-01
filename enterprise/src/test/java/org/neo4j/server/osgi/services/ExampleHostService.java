@@ -18,28 +18,15 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.server.osgi.bundles.aware;
-
-import org.osgi.framework.BundleActivator;
-import org.osgi.framework.BundleContext;
+package org.neo4j.server.osgi.services;
 
 /**
- * For a bundle to be OSGi "aware" means that it
- * participates in the OSGi lifecycle. Usually that
- * involves either publishing or looking for services,
- * but here we're just outputting some messages.
+ * For an OSGi service to be consumed by bundles, the interface
+ * (and any classes which will cross the host-embedded bridge)
+ * must be defined on the host side, and made available on the
+ * embedded side as part of the system bundle.
  */
-public class LifecycleActivator implements BundleActivator
+public interface ExampleHostService
 {
-
-    public void start( BundleContext bundleContext ) throws Exception
-    {
-        System.out.println( "OSGi aware bundle started" );
-    }
-
-    public void stop( BundleContext bundleContext ) throws Exception
-    {
-        System.out.println( "OSGi aware bundle stopped" );
-    }
-
+    String askHorton( String aQuestion );
 }
