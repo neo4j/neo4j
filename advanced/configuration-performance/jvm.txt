@@ -5,7 +5,7 @@ Configuring JVM heap and the garbage collector properly is very important. As an
  
 == Configuring heap size and GC for the JVM ==
 
-A Large heap allows for larger node and relationship caches which is a good thing but large heaps can also lead to latency problems caused by full garbage collections. The different high level cache implementations available in Neo4j together with a suitable JVM configuration of heap size and GC should be able to handle most workloads.
+A large heap allows for larger node and relationship caches which is a good thing but large heaps can also lead to latency problems caused by full garbage collections. The different high level cache implementations available in Neo4j together with a suitable JVM configuration of heap size and GC should be able to handle most workloads.
 
 The default cache (soft reference based LRU cache) works best with a heap that never gets full meaning the application workload is such that most nodes and relationships that are used can be cached. If the heap gets to full there is a risk that a full GC will be triggered and figuring out what soft references should be cleared will take longer the larger the heap. 
 
@@ -26,3 +26,17 @@ Number of primitives,RAM size,Heap configuration,Reserved RAM for the OS
 |======================================================================================================
 
 The recommended garbage collector to use when running Neo4j in production is the Concurrent Mark and Sweep Compactor turned on by supplying -XX:+UseConcMarkSweepGC as a JVM parameter.
+
+== Standalone Server ==
+
+Tuning the standalone server is achieved by editing the +neo4j-wrapper.conf+ file in the +conf+ directory of +NEO4J_HOME+.
+
+Edit the following properties:
+
+.neo4j-wrapper.conf JVM tuning properties
+[options="header"]
+|====================
+| Property Name             | Meaning
+| wrapper.java.initmemory   | initial heap size (in MB)
+| wrapper.java.maxmemory    | maximum heap size (in MB)
+| wrapper.java.additional.N | additional literal JVM parameter, where N is a number for each
