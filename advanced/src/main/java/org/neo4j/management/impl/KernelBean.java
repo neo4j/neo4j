@@ -83,25 +83,25 @@ class KernelBean extends Neo4jMBean implements Kernel
         return query;
     }
 
-    @Description( "The time from which this Neo4j instance was in operational mode" )
+    @Description( "The time from which this Neo4j instance was in operational mode." )
     public Date getKernelStartTime()
     {
         return new Date( kernelStartTime );
     }
 
-    @Description( "The time when this Neo4j graph store was created" )
+    @Description( "The time when this Neo4j graph store was created." )
     public Date getStoreCreationDate()
     {
         return new Date( storeCreationDate );
     }
 
-    @Description( "A identifier that uniquely identifies this Neo4j graph store" )
+    @Description( "An identifier that uniquely identifies this Neo4j graph store." )
     public String getStoreId()
     {
         return Long.toHexString( storeId );
     }
 
-    @Description( "The current version of the Neo4j store logical log" )
+    @Description( "The current version of the Neo4j store logical log." )
     public long getStoreLogVersion()
     {
         return storeLogVersion;
