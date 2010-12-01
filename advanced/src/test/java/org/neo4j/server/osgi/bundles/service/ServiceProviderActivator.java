@@ -18,28 +18,35 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.server.osgi.bundles.aware;
+package org.neo4j.server.osgi.bundles.service;
 
+import org.neo4j.server.osgi.services.ExampleBundleService;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
 
 /**
- * For a bundle to be OSGi "aware" means that it
- * participates in the OSGi lifecycle. Usually that
- * involves either publishing or looking for services,
- * but here we're just outputting some messages.
+ * For a bundle to provide an OSGi "service" means that it
+ * participates in the OSGi lifecycle and publishes an
+ * implementation instance of a service interface.
  */
-public class LifecycleActivator implements BundleActivator
+public class ServiceProviderActivator implements BundleActivator
 {
+    private ServiceRegistration exampleServiceReference;
 
     public void start( BundleContext bundleContext ) throws Exception
     {
-        System.out.println( "OSGi aware bundle started" );
+        ExampleBundleService serviceImplementaton = new ExampleServiceImpl();
+
+        exampleServiceReference = bundleContext.registerService(
+                ExampleBundleService.class.getName(), serviceImplementaton, null );
+
+        System.out.println( "OSGi service provider bundle started" );
     }
 
     public void stop( BundleContext bundleContext ) throws Exception
     {
-        System.out.println( "OSGi aware bundle stopped" );
+        exampleServiceReference.unregister();
+        System.out.println( "OSGi service provider bundle stopped" );
     }
-
 }

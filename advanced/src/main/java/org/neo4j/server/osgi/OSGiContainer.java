@@ -21,16 +21,15 @@
 package org.neo4j.server.osgi;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.apache.felix.framework.Felix;
 import org.apache.felix.framework.util.FelixConstants;
 import org.apache.felix.main.AutoProcessor;
+import org.neo4j.ext.udc.impl.osgi.OSGiActivator;
 import org.neo4j.server.logging.Logger;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.launch.Framework;
@@ -40,27 +39,35 @@ import org.osgi.framework.launch.Framework;
  */
 public class OSGiContainer
 {
+    public static Logger log = Logger.getLogger( OSGiContainer.class );
+
     public static final String DEFAULT_BUNDLE_DIRECTORY = "bundles";
     public static final String DEFAULT_CACHE_DIRECTORY = "cache";
 
     private Framework osgiFramework;
-    private HostBridge bridge;
-    private Logger log = Logger.getLogger( OSGiContainer.class );
     private String bundleDirectory;
 
     public OSGiContainer( String bundleDirectory, String cacheDirectory )
     {
+        this( bundleDirectory, cacheDirectory, new HostBridge() );
+    }
+
+    public OSGiContainer( String bundleDirectory, String cacheDirectory, BundleActivator... activators )
+    {
         this.bundleDirectory = bundleDirectory;
 
         Map<String, Object> configMap = new HashMap<String, Object>();
-        bridge = new HostBridge();
-        List<HostBridge> list = new ArrayList<HostBridge>();
-        list.add( bridge );
 
-        configMap.put( FelixConstants.SYSTEMBUNDLE_ACTIVATORS_PROP, list );
+        if ( activators != null )
+        {
+            List<BundleActivator> list = new ArrayList<BundleActivator>();
+            list.addAll( Arrays.asList( activators ) );
+            configMap.put( FelixConstants.SYSTEMBUNDLE_ACTIVATORS_PROP, list );
+        }
         configMap.put( Constants.FRAMEWORK_STORAGE, cacheDirectory );
-        configMap.put(Constants.FRAMEWORK_SYSTEMPACKAGES_EXTRA,
-            "host.service.command; version=1.0.0");
+        configMap.put( Constants.FRAMEWORK_SYSTEMPACKAGES_EXTRA,
+                "org.neo4j.server.osgi.services; version=1.0.0" );
+
 
         osgiFramework = new Felix( configMap );
 
@@ -91,7 +98,8 @@ public class OSGiContainer
         AutoProcessor.process( autoConfig, osgiFramework.getBundleContext() );
         osgiFramework.start();
 
-        for ( Bundle b : bridge.getBundles() )
+
+        for ( Bundle b : osgiFramework.getBundleContext().getBundles() )
         {
             logBundleState( b );
         }
@@ -126,7 +134,7 @@ public class OSGiContainer
 
     public Bundle[] getBundles()
     {
-        return bridge.getBundles();
+        return osgiFramework.getBundleContext().getBundles();
     }
 
     public void shutdown() throws BundleException, InterruptedException
@@ -134,6 +142,7 @@ public class OSGiContainer
         osgiFramework.stop();
         osgiFramework.waitForStop( 0 );
     }
+
     public String getBundleDirectory()
     {
         return bundleDirectory;
