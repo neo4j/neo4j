@@ -46,3 +46,6 @@ long nodeIDsInUse    = manager.getPrimitivesBean.getNumberOfNodeIdsInUse();
 Once having access to this information, it can be used to for instance expose the values to SNMP:: or other monitoring systems.
 
 === Reference of supported JMX MBeans ===
+
+todo
+
