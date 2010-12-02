@@ -19,11 +19,17 @@
     <license-text.header>ApacheLicense-2.0-header.txt</license-text.header>
   </properties>
 
+  <scm>
+    <connection>scm:svn:https://svn.neo4j.org/examples/neo4j-examples/trunk</connection>
+    <developerConnection>scm:svn:https://svn.neo4j.org/examples/neo4j-examples/trunk</developerConnection>
+    <url>https://trac.neo4j.org/browser/examples/neo4j-examples/</url>
+  </scm>
+
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j</artifactId>
-      <version>1.2.M05</version>
+      <version>1.2-SNAPSHOT</version>
       <!-- In this context, keep this artifact as type pom -->
       <type>pom</type>
       <exclusions>
@@ -36,7 +42,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-udc</artifactId>
-      <version>0.1-1.2.M05</version>
+      <version>0.1-SNAPSHOT</version>
       <classifier>neo4j</classifier>
     </dependency>
     <dependency>
@@ -86,12 +92,6 @@
     <system>Trac</system>
     <url>https://trac.neo4j.org/query?status=assigned&amp;status=new&amp;status=reopened&amp;component=neo4j</url>
   </issueManagement>
-
-  <scm>
-    <connection>scm:svn:https://svn.neo4j.org/examples/neo4j-examples/trunk</connection>
-    <developerConnection>scm:svn:https://svn.neo4j.org/examples/neo4j-examples/trunk</developerConnection>
-    <url>https://trac.neo4j.org/browser/examples/neo4j-examples/</url>
-  </scm>
 
   <build>
     <plugins>
