@@ -19,7 +19,7 @@ endif
 GENERAL_FLAGS = $(V) $(K)
 GENERAL_ALL_FLAGS = $(VA) $(KA)
 
-.PHONY: help clean pdf latexpdf html singlehtml text meta
+.PHONY: help clean pdf latexpdf html singlehtml singlehtml-asciidoc text meta
 
 help:
 	@echo "Please use 'make <target>' where <target> is one of"
@@ -28,6 +28,7 @@ help:
 	@echo "  latexpdf    to generate a PDF file using LaTeX"
 	@echo "  html        to make standalone HTML files"
 	@echo "  singlehtml  to make a single large HTML file"
+	@echo "  singlehtml-asciidoc  to make a single HTML file using asciidoc only"
 	@echo "  text        to make text files"
 	@echo "  all         to make all formats"
 	@echo "For verbose output, use 'VERBOSE=1'".
@@ -47,11 +48,16 @@ latexpdf:
 html:
 	a2x $(GENERAL_FLAGS) -f chunked -D $(BUILDDIR) --conf-file=$(CONFDIR)/chunked.conf --xsl-file=$(CONFDIR)/chunked.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(SRCFILE)
 
+# use the asciidoc tool only, not docbok
+singlehtml-asciidoc:
+	mkdir -p $(BUILDDIR)/singlehtml/images
+	#cp -R images/* $(BUILDDIR)/singlehtml/images
+	svn export --force images $(BUILDDIR)/singlehtml/images
+	asciidoc $(V) -a docinfo -a icons -d book -o $(BUILDDIR)/singlehtml/index.html --conf-file=$(CONFDIR)/asciidoc.conf $(SRCFILE)
+
 singlehtml:
-	mkdir -p $(BUILDDIR)/html/images
-	#cp -R images/* $(BUILDDIR)/html/images
-	svn export --force images $(BUILDDIR)/html/images
-	asciidoc $(V) -a docinfo -a icons -d book -o $(BUILDDIR)/html/index.html --conf-file=$(CONFDIR)/asciidoc.conf $(SRCFILE)
+	mkdir -p $(BUILDDIR)/html
+	a2x $(GENERAL_FLAGS) -f xhtml -D $(BUILDDIR)/html --conf-file=$(CONFDIR)/xhtml.conf --xsl-file=$(CONFDIR)/xhtml.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(SRCFILE)
 
 text:
 	mkdir -p $(BUILDDIR)/text
