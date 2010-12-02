@@ -1,3 +1,9 @@
+1.2-1.2.M05 (2010-12-02)
+------------------------
+
+o Added IndexHits#currentScore which exposes the most recently fetched
+  IndexHits item's score from the search, if any.
+
 1.2-1.2.M04 (2010-11-18)
 ------------------------
 o Index configuration handling moved to IndexManager (graphDb.index()) and added
