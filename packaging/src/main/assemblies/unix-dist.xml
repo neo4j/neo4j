@@ -52,6 +52,15 @@
         <exclude>*.bat</exclude>
       </excludes>
     </fileSet>
+    <!-- der manual -->
+    <fileSet>
+      <directory>target/manual</directory>
+      <outputDirectory>doc/manual/</outputDirectory>
+      <includes>
+        <include>*.pdf</include>
+        <include>*.html</include>
+      </includes>
+    </fileSet>
   </fileSets>
 
   <dependencySets>
