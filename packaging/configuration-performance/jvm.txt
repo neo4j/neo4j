@@ -21,8 +21,8 @@ Also remember when running Neo4j on Windows the size of the memory mapped buffer
 |======================================================================================================
 Number of primitives,RAM size,Heap configuration,Reserved RAM for the OS
 10M,2GB,512MB,the rest
-100M,4-8GB,1-4GB,1-2GB
-1B+,8-32GB,4GB+,1-2GB
+100M,8GB+,1-4GB,1-2GB
+1B+,16GB-32GB+,4GB+,1-2GB
 |======================================================================================================
 
 The recommended garbage collector to use when running Neo4j in production is the Concurrent Mark and Sweep Compactor turned on by supplying -XX:+UseConcMarkSweepGC as a JVM parameter.
