@@ -22,7 +22,7 @@
 
   <scm>
     <connection>scm:svn:https://svn.neo4j.org/components/ha</connection>
-    <developerConnection>scm:svn:https://svn.neo4j.org/components/ha</developerConnection>
+    <developerConnection>${project.scm.connection}</developerConnection>
     <url>https://trac.neo4j.org/browser/components/ha</url>
   </scm>
 
@@ -70,26 +70,26 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.2-SNAPSHOT</version>
+      <version>1.2-1.2.M05</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-management</artifactId>
-      <version>1.2-SNAPSHOT</version>
+      <version>1.2-1.2.M05</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-shell</artifactId>
-      <version>1.2-SNAPSHOT</version>
+      <version>1.2-1.2.M05</version>
       <scope>provided</scope>
     </dependency>
     <!--dependency> <groupId>org.neo4j</groupId> <artifactId>neo4j-index</artifactId> <version>1.2-SNAPSHOT</version> </dependency -->
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-lucene-index</artifactId>
-      <version>0.2-SNAPSHOT</version>
+      <version>0.2-1.2.M05</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
