@@ -1,5 +1,5 @@
 Caches in Neo4j
----------------
+===============
 
 Neo4j utilizes two different types of caches.
 A file buffer cache and an object cache.
@@ -8,7 +8,7 @@ The object cache caches the Nodes, Relationships and Properties in a format that
 
 
 File buffer cache
-~~~~~~~~~~~~~~~~~
+-----------------
 
 .Quick info
 ***********
@@ -50,7 +50,7 @@ The cache holds the most active cache windows in memory and tracks hit vs. miss 
 When the hit ratio of an un-cached window gets higher than the miss ratio of a cached window, the cached window gets evicted and the previously un-cached window is cached instead.
 
 Configuration
-^^^^^^^^^^^^^
+~~~~~~~~~~~~~
 
 [options="header",frame="none",cols="<m,<,<"]
 |========================================================
@@ -96,7 +96,7 @@ When reading the configuration parameters on startup Neo4j will automatically co
 The cache sizes will be configured based on the available memory on the computer, how much is used by the JVM heap and how large the storage files are.
 
 Object cache
-~~~~~~~~~~~~
+------------
 
 .Quick info
 ***********
@@ -118,7 +118,7 @@ Eviction from the cache happens in an LRU manner when the memory is needed.
 
 
 Configuration
-^^^^^^^^^^^^^
+~~~~~~~~~~~~~
 
 The main configuration parameter for the object cache is the `cache_type` parameter.
 This specifies which cache implementation to use for the object cache.
@@ -142,7 +142,7 @@ The available cache types are:
 
 
 Heap memory usage
-^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~
 
 This table can be used to calculate how much memory the data in the object cache will occupy on a 64bit JVM:
 

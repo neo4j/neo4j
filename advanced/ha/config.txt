@@ -1,0 +1,51 @@
+Setup and configuration
+=======================
+
+Depending on the requirements such as load, fault tolerance and available hardware Neo4j HA can be set up and configured differently.
+
+Neo4j HA makes use of Apache ZooKeeper to perform master election and propagate general cluster and machine status information between Neo4j instances.
+ZooKeeper can be seen as a distributed coordination service.
+Neo4j HA requires a ZooKeeper service for initial master election, new master election (current master failing) and to publish general status information about the current Neo4j HA cluster (for example when a machine joined or left the cluster).
+Read operations through the GraphDatabaseService API will always work and even writes can survive ZooKeeper failures if a master is present.
+
+ZooKeeper requires a majority of the ZooKeeper instances to be available to operate properly.
+This means that the number of ZooKeeper instances should always be an odd number since that will make best use of available hardware.
+To further clarify the fault tolerance characteristics of Neo4j HA here are a few example setups:
+
+Small
+-----
+
+* 3 physical (or virtual) machines
+* 1 ZooKeeper instance running on each machine
+* 1 Neo4j-HA instance running on each machine
+
+This setup is conservative in use of hardware while being able to handle moderate read load.
+It can fully operate when at least 2 of the ZooKeeper instances are running.
+Since the ZooKeeper service and Neo4j-HA are running together on each machine this will in most scenarios mean that only one server is allowed to go down.
+
+Medium
+------
+
+* 5-7+ machines
+* ZooKeeper running on 3, 5 or 7 machines
+* Neo4j-HA can run on 5+ machines
+
+This may mean that two different machine setups have to be managed (some machines run both ZooKeeper and Neo4j HA).
+Fault tolerance will depend on how many machines are running ZooKeeper.
+With 3 ZooKeeper instances the cluster can survive one ZooKeeper going down, with 5 it can survive 2 and with 7 it can handle 3 ZooKeeper instances failing.
+The number of Neo4j-HA instances that can fail for normal operations is theoretically all but 1 (but for each required master election the ZooKeeper service must be available).
+
+Large
+-----
+
+* 8+ machines
+* ZooKeeper running on dedicated machines.
+
+In this setup all ZooKeeper instances are running on separate machines as a dedicated ZooKeeper service.
+The dedicated ZooKeeper cluster of 5 machines can handle 2 machines failing, 7 machines 3 and so on.
+The Neo4j-HA cluster will be able to operate from X machines down to a single machine.
+Adding more Neo4j-HA instances will be very easy in this setup since one does not have to be concerned with ZooKeeper (hosted as a dedicated service elsewhere).
+
+In addition to ZooKeeper each Neo4j HA instance requires a unique machine id (integer 1+).
+This machine id together with ZooKeeper connection information and local master port to bind to (in case elected as master) are the only additional configuration required compared to normal embedded mode (passed in as parameters in the HighlyAvailableGraphDatabase constructor).
+Optionally a interval how often a slave should check for updates on the master can be configured.
