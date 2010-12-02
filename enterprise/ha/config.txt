@@ -44,7 +44,7 @@ Large
 * 5+ Zookeeper, on separate dedicated machines
 
 In this setup all ZooKeeper instances are running on separate machines as a dedicated ZooKeeper service.
-The dedicated ZooKeeper cluster can handle half of the instances, plus 1, going down.
+The dedicated ZooKeeper cluster can handle half of the instances, minus 1, going down.
 The Neo4j-HA cluster will be able to operate with at least a single live machine.
 Adding more Neo4j-HA instances is very easy in this setup since Zookeeper is operating as a separate service.
 
