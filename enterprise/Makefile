@@ -19,7 +19,7 @@ endif
 GENERAL_FLAGS = $(V) $(K)
 GENERAL_ALL_FLAGS = $(VA) $(KA)
 
-.PHONY: help clean pdf latexpdf html singlehtml text
+.PHONY: help clean pdf latexpdf html singlehtml text meta
 
 help:
 	@echo "Please use 'make <target>' where <target> is one of"
@@ -60,3 +60,6 @@ text:
 all:
 	make $(GENERAL_ALL_FLAGS) pdf latexpdf html singlehtml text
 
+meta:
+	mkdir -p $(BUILDDIR)/meta-fop
+	a2x $(GENERAL_FLAGS) -f pdf --fop -D $(BUILDDIR)/meta-fop --conf-file=$(CONFDIR)/fop.conf --xsl-file=$(CONFDIR)/fo.xsl --xsltproc-opts "--stringparam toc.section.depth 1 --stringparam admon.graphics 1" $(SRCDIR)/meta/index.txt
