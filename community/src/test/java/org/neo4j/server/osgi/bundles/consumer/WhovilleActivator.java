@@ -21,27 +21,62 @@
 package org.neo4j.server.osgi.bundles.consumer;
 
 import org.neo4j.server.osgi.services.ExampleHostService;
-import org.osgi.framework.BundleActivator;
-import org.osgi.framework.BundleContext;
+import org.osgi.framework.*;
+import org.osgi.util.tracker.ServiceTracker;
 
 /**
  * For a bundle to consume an OSGi "service" means that it
  * participates in the OSGi lifecycle and consumes an
  * implementation instance of a service interface.
+ * <p/>
+ * This activator listens for service events, looking
+ * for the registration of an ExampleHostService.
  */
-public class WhovilleActivator implements BundleActivator
+public class WhovilleActivator implements BundleActivator, ServiceListener
 {
-    private ExampleHostService hortonCommunicator;
+    private ExampleHostService hortonCommunicator = null;
+    private BundleContext bundleContext;
 
     public void start( BundleContext bundleContext ) throws Exception
     {
-        hortonCommunicator = (ExampleHostService)bundleContext.getService( bundleContext.getServiceReference( ExampleHostService.class.toString()) );
+        this.bundleContext = bundleContext;
 
-        System.out.println( "OSGi service consumer bundle started" );
+        synchronized (this)
+        {
+            bundleContext.addServiceListener(this);
+
+            ServiceReference[] refs = bundleContext.getServiceReferences(
+                ExampleHostService.class.getName(), null);
+
+            if (refs != null)
+            {
+                hortonCommunicator = (ExampleHostService) bundleContext.getService(refs[0]);
+                hortonCommunicator.askHorton( "Can you hear us?" );
+            }
+        }
+
+
+        System.out.println( "Whoville is looking for Horton" );
     }
 
     public void stop( BundleContext bundleContext ) throws Exception
     {
-        System.out.println( "OSGi service consumer bundle stopped" );
+        System.out.println( "Whoville has given up on Horton" );
+    }
+
+    @Override
+    public synchronized void serviceChanged( ServiceEvent serviceEvent )
+    {
+        if ( serviceEvent.getType() == ServiceEvent.REGISTERED )
+        {
+            try
+            {
+                hortonCommunicator = (ExampleHostService) bundleContext.getService( serviceEvent.getServiceReference() );
+                hortonCommunicator.askHorton( "Can you hear us now?" );
+            } catch ( Exception e )
+            {
+                ; // oh, well
+            }
+        }
     }
 }

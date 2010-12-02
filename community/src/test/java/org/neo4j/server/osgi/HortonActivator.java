@@ -28,12 +28,15 @@ import org.osgi.framework.ServiceRegistration;
 public class HortonActivator implements BundleActivator
 {
     private ServiceRegistration hortonCommRegistration;
+    public int whovilleCommunicationCount = 0;
 
     public void start( BundleContext bundleContext ) throws Exception
     {
         ExampleHostService hortonCommunicator = new ExampleHostService() {
             public String askHorton( String aQuestion )
             {
+                System.out.println("100 percent!");
+                whovilleCommunicationCount++;
                 return "a person is a person, no matter how small";
             }
         };
