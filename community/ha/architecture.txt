@@ -7,8 +7,7 @@ Consider an already existing application where the Neo4j database is running on 
 To deploy such an application in a multi machine setup running HA the changes required is to change the creation of the GraphDatabaseService from an EmbeddedGraphDatabase to a HighlyAvailableGraphDatabase.
 Since they both implement the same interface no additional changes are required.
 
-Below is diagram of a typical setup when running multiple Neo4j instances in HA mode.
-
+.Typical setup when running multiple Neo4j instances in HA mode
 image::../images/ha2.png[scaledwidth="100%", alt="Neo4j Highly Available Cluster"]
 
 When running Neo4j in HA mode there is always a single master and zero or more slaves.
