@@ -1,3 +1,18 @@
+1.2-1.2.M05 (2010-12-02)
+------------------------
+
+-API
+o Added a BatchInserterIndex.setCacheCapacity(String key, int size) method
+  which can be used to enable cache for certain keys for a batch inserter
+  index so that lookups will be significantly faster.
+o Traversal: Added Evaluator which is a merge between PruneEvaluator and
+  filter (Predicate<Path> during traversal). This allows for more flexible
+  evaluators and also more performant because a pruner/filter can be merged
+  together where it has a full view of the decision making.
+
+-Optimizations
+o A memory leak was fixed, leading to decreased memory usage.
+
 1.2-1.2.M04 (2010-11-18)
 ------------------------
 
