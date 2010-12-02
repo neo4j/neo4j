@@ -1,8 +1,6 @@
 Transaction management
 ======================
 
-== Introduction ==
-
 In order to fully maintain data integrity and ensure good transactional behavior, Neo4j supports the ACID properties:
 
 * atomicity - if any part of a transaction fails, the database state is left unchanged
