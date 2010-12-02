@@ -18,7 +18,7 @@ Using the strong reference cache means 'all' the nodes and relationships being u
 Otherwise there is a risk of getting out-of-memory exceptions. 
 The soft reference and strong reference caches are well suited for applications were the overal throughput is important.
 
-The weak reference cache basically needs enough heap to handle the peak load of the application -- how much memory will the average request require multiplied by peak load. 
+The weak reference cache basically needs enough heap to handle the peak load of the application -- peak load multiplied by the average memory required per request. 
 It is well suited for low latency requirements were GC interuptions are not acceptable.
 
 When running Neo4j on Windows, keep in mind that the memory mapped buffers are allocated on heap by default, so need to be taken into consideration when determining heap size.
