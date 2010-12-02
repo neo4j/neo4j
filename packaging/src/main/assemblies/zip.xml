@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<assembly>
+  <id>packaged</id>
+  <formats>
+    <format>zip</format>
+  </formats>
+  <fileSets>
+
+    <!-- non-maven jars -->
+    <fileSet>
+      <directory>target/</directory>
+      <outputDirectory>/</outputDirectory>
+      <includes>
+        <include>fop/*.pdf</include>
+        <include>html/**</include>
+        <include>text/**</include>
+      </includes>
+    </fileSet>
+  </fileSets>
+</assembly>
