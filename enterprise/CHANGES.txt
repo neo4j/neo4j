@@ -1,3 +1,15 @@
+1.2.M05 (2010-12-02)
+--------------------
+
+-New components
+o neo4j-ha, providing high availability
+
+-Important changes
+o new Evaluator interface improves the traversal API
+o support for index hit scores in neo4j-lucene-index
+o index caching support added to BatchInserter
+o integrated index is now supported by the shell
+
 1.2.M04 (2010-11-18)
 --------------------
 -New components
