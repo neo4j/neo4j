@@ -15,4 +15,3 @@ include::config.txt[]
 
 include::operation.txt[]
 
-include::troubleshooting.txt[]
