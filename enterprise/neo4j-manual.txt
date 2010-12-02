@@ -27,7 +27,7 @@ include::operations/index.txt[]
 
 :leveloffset: 1
 
-include::capabilities/transactions.txt[]
+include::transactions.txt[]
 
 :leveloffset: 1
 
