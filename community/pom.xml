@@ -21,9 +21,9 @@
   </properties>
 
   <scm>
-    <connection>scm:svn:https://svn.neo4j.org/components/ha/tags/0.5-SNAPSHOT</connection>
-    <developerConnection>scm:svn:https://svn.neo4j.org/components/ha/tags/0.5-SNAPSHOT</developerConnection>
-    <url>scm:svn:https://svn.neo4j.org/components/ha/tags/0.5-SNAPSHOT</url>
+    <connection>scm:svn:https://svn.neo4j.org/components/ha/trunk</connection>
+    <developerConnection>scm:svn:https://svn.neo4j.org/components/ha/trunk</developerConnection>
+    <url>scm:svn:https://svn.neo4j.org/components/ha/</url>
   </scm>
 
 
