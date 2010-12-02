@@ -1,9 +1,13 @@
 Project information
 ===================
+Neo Technology <info@neotechnology.com>
+:Revision: 1.2-SNAPSHOT
+
+:neo4j-version: {revnumber}
 
 Information for the document project contributors.
 
-:leveloffset: 2
+:leveloffset: 1
 
 include::guide.txt[]
 
