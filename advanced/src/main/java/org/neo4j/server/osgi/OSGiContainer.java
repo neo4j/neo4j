@@ -71,7 +71,6 @@ public class OSGiContainer
         configMap.put( Constants.FRAMEWORK_SYSTEMPACKAGES_EXTRA,
                 "org.neo4j.server.osgi.services; version=1.0.0" );
 
-
         osgiFramework = new Felix( configMap );
 
         File bundleDirectoryAsFile = new File( bundleDirectory );

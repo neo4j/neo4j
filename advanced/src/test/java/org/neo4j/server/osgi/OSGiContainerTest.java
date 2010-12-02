@@ -34,6 +34,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
@@ -49,18 +53,15 @@ import org.neo4j.server.osgi.bundles.service.ServiceProviderActivator;
 import org.neo4j.server.osgi.services.ExampleBundleService;
 import org.neo4j.server.osgi.services.ExampleHostService;
 import org.ops4j.io.StreamUtils;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.BundleException;
-import org.osgi.framework.Constants;
-import org.osgi.framework.InvalidSyntaxException;
-import org.osgi.framework.ServiceReference;
+import org.osgi.framework.*;
 
 public class OSGiContainerTest
 {
 
     OSGiContainer container;
     private InMemoryAppender logAppender;
+    private File bundleDirectory;
+    private File cacheDirectory;
 
     @Before
     public void cleanupFrameworkDirectories() throws IOException
@@ -73,13 +74,19 @@ public class OSGiContainerTest
         if ( !targetDirectory.exists() )
             targetDirectory.mkdirs();
 
-        File bundleDirectory = new File( targetDirectory, OSGiContainer.DEFAULT_BUNDLE_DIRECTORY );
+        bundleDirectory = new File( targetDirectory, OSGiContainer.DEFAULT_BUNDLE_DIRECTORY );
         FileUtils.deleteDirectory( bundleDirectory );
 
-        File cacheDirectory = new File( targetDirectory, OSGiContainer.DEFAULT_CACHE_DIRECTORY );
+        cacheDirectory = new File( targetDirectory, OSGiContainer.DEFAULT_CACHE_DIRECTORY );
         FileUtils.deleteDirectory( cacheDirectory );
 
-        this.container = new OSGiContainer( bundleDirectory.getPath(), cacheDirectory.getPath(), new HostBridge(), new HortonActivator() );
+    }
+
+    public void createContainer( BundleActivator... extraActivators )
+    {
+        BundleActivator[] activators = Arrays.copyOf( extraActivators, extraActivators.length + 1 );
+        activators[activators.length - 1] = new HostBridge();
+        this.container = new OSGiContainer( bundleDirectory.getPath(), cacheDirectory.getPath(), activators );
     }
 
     @After
@@ -91,6 +98,7 @@ public class OSGiContainerTest
     @Test
     public void shouldCreateFrameworkDuringConstruction() throws Exception
     {
+        createContainer();
         assertThat( container.getFramework(), is( notNullValue() ) );
         assertThat( container.getFramework().getState(), is( Bundle.INSTALLED ) );
 
@@ -99,6 +107,7 @@ public class OSGiContainerTest
     @Test
     public void shouldStartMinimalFramework() throws Exception
     {
+        createContainer();
         container.start();
 
         assertThat( container.getFramework().getState(), is( Bundle.ACTIVE ) );
@@ -109,6 +118,7 @@ public class OSGiContainerTest
     @Test
     public void shouldCreateSystemBundle() throws Exception
     {
+        createContainer();
         container.start();
 
         // The system bundle should always be bundle zero,
@@ -124,6 +134,7 @@ public class OSGiContainerTest
     @Test
     public void shouldCreateBundleDirectoryDuringConstructionIfItDoesntExist() throws BundleException, InterruptedException
     {
+        createContainer();
         File bundleDirectory = new File( container.getBundleDirectory() );
 
         assertTrue( bundleDirectory.exists() );
@@ -134,6 +145,7 @@ public class OSGiContainerTest
     @Test
     public void shouldLoadLibraryBundle() throws Exception
     {
+        createContainer();
         String expectedBundleSymbolicName = "HelloTinyBundle";
         InputStream bundleStream = newBundle()
                 .add( Hello.class )
@@ -159,6 +171,7 @@ public class OSGiContainerTest
     @Test
     public void shouldActivateOSGiAwareBundles() throws Exception
     {
+        createContainer();
         String expectedBundleSymbolicName = "OSGiAwareBundle";
         InputStream bundleStream = newBundle()
                 .add( LifecycleActivator.class )
@@ -185,6 +198,7 @@ public class OSGiContainerTest
     @Test
     public void shouldAllowAccessToOSGiServices() throws Exception
     {
+        createContainer();
         String expectedBundleSymbolicName = "OSGiServiceProviderBundle";
         InputStream bundleStream = newBundle()
                 .add( ServiceProviderActivator.class )
@@ -215,18 +229,19 @@ public class OSGiContainerTest
     }
 
     @Test
-    @Ignore("until it works")
     public void shouldProvideHostServiceToOSGiBundles() throws IOException, BundleException, InvalidSyntaxException, InterruptedException
     {
-        String expectedBundleSymbolicName = "ServiceConsumerBundle";
+        HortonActivator hortonActivator = new HortonActivator();
+        createContainer( hortonActivator );
+        String expectedBundleSymbolicName = "WhovilleBundle";
         InputStream bundleStream = newBundle()
                 .add( WhovilleActivator.class )
                 .set( Constants.BUNDLE_SYMBOLICNAME, expectedBundleSymbolicName )
                 .set( Constants.EXPORT_PACKAGE, "org.neo4j.server.osgi.bundles.consumer" )
-                .set( Constants.IMPORT_PACKAGE, "org.neo4j.server.osgi.bundles.consumer, org.neo4j.server.osgi.services, org.osgi.framework" )
+                .set( Constants.IMPORT_PACKAGE, "org.neo4j.server.osgi.bundles.consumer, org.neo4j.server.osgi.services, org.osgi.framework, org.osgi.util.tracker" )
                 .set( Constants.BUNDLE_ACTIVATOR, WhovilleActivator.class.getName() )
                 .build( withBnd() );
-        File awareJar = new File( container.getBundleDirectory(), "consumer-impl.jar" );
+        File awareJar = new File( container.getBundleDirectory(), "whoville.jar" );
         OutputStream jarOutputStream = new FileOutputStream( awareJar );
         StreamUtils.copyStream( bundleStream, jarOutputStream, true );
 
@@ -237,13 +252,15 @@ public class OSGiContainerTest
 
         Bundle serviceConsumerBundle = container.getBundles()[1];
         BundleContext bundleContext = serviceConsumerBundle.getBundleContext();
-        assertThat( serviceConsumerBundle.getState(), is( Bundle.ACTIVE ) );
         assertThat( (String) serviceConsumerBundle.getHeaders().get( Constants.BUNDLE_SYMBOLICNAME ), is( expectedBundleSymbolicName ) );
+        assertThat( serviceConsumerBundle.getState(), is( Bundle.ACTIVE ) );
 
         ServiceReference[] hostServices = bundleContext.getServiceReferences(
                 ExampleHostService.class.getName(), null );
         ExampleHostService service = (ExampleHostService) bundleContext.getService( hostServices[0] );
         assertNotNull( service );
+
+        assertThat( hortonActivator.whovilleCommunicationCount, is( 1 ) );
 
         container.shutdown();
     }
