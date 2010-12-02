@@ -14,9 +14,5 @@ The topics should be relevant to architects, administrators, developers and oper
 You should already know about Neo4j and using graphs to store data.
 If you are completely new to Neo4j please check out http://neo4j.org first.
 
-== Don't worry, it's a graph ==
-
-Graphs embrace complexity, easily handling deeply nested, interconnected and dynamic data.
-Queries can span thousands of relationships, revealing rich semantics in any data set.
 
 
