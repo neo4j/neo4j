@@ -25,8 +25,18 @@ With administrative rights, Neo4j can be isntalled as a Windows service.
 To uninstall, run `UninstallNeo4j` as ad administrator.
 
 
-=== Linux daemon ===
+=== Linux Service ===
 
+Neo4j can participate in the normal system startup and shutdown process.
+The following procedure should work on most popular Linux distributions:
+
+1. `cd $NEO4J_HOME`
+2. `sudo ./bin/neo4j install`
+   * if asked, enter your password to gain super-user privileges
+3. `service neo4j-server status`
+   * should indicate that the server is not running
+4. `service neo4j-server start`
+   * will start the server
 
 
 == Embedded Installation ==
