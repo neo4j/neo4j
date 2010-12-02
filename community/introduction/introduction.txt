@@ -1,14 +1,16 @@
 Introduction
 ============
 
-== Expectations, Assumptions, and Aspirations ==
-
 This is a reference manual. 
 The material is practical, technical, and focused on answering specific questions. 
 It addresses how things work, what to do and what to avoid to successfully run Neo4j in a production environment. 
 After a brief introduction, each topic area assumes general familiarity as it addresses the particular details of Neo4j.
  
 The goal is to be thumb-through and rule-of-thumb friendly.
+
+Each section should stand on its own, so you can hop right to whatever interests you.
+
+== Who should read this ==
 
 The topics should be relevant to architects, administrators, developers and operations personnel.
 You should already know about Neo4j and using graphs to store data.
