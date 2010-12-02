@@ -3,9 +3,9 @@ Architecture
 
 Neo4j HA has been designed to make the transition from single machine to multi machine operation simple, by not having to change the already existing application.
 
-Consider an already existing application where the Neo4j database is running on a single machine, it has an application server exposing a REST API and is running a Neo4j instance in embedded mode.
-To deploy such an application in a multi machine setup running HA the changes required is to change the creation of the GraphDatabaseService from an EmbeddedGraphDatabase to a HighlyAvailableGraphDatabase.
-Since they both implement the same interface no additional changes are required.
+Consider an existing application with Neo4j embedded and running on a single machine. 
+To deploy such an application in a multi machine setup the only required change is to switch the creation of the GraphDatabaseService from EmbeddedGraphDatabase to HighlyAvailableGraphDatabase.
+Since both implement the same interface, no additional changes are required.
 
 .Typical setup when running multiple Neo4j instances in HA mode
 image::../images/ha2.png[scaledwidth="100%", alt="Neo4j Highly Available Cluster"]
