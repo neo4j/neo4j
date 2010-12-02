@@ -22,7 +22,7 @@
   
   <profiles>
     <profile>
-      <id>Linux dependency jconsole.jar</id>
+      <id>Linux-dependency-jconsole.jar</id>
       <activation>
         <os><name>Linux</name></os>
       </activation>
