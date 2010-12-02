@@ -1,0 +1,19 @@
+Architecture
+============
+
+Neo4j HA has been designed to make the transition from single machine to multi machine operation simple, by not having to change the already existing application.
+
+Consider an already existing application where the Neo4j database is running on a single machine, it has an application server exposing a REST API and is running a Neo4j instance in embedded mode.
+To deploy such an application in a multi machine setup running HA the changes required is to change the creation of the GraphDatabaseService from an EmbeddedGraphDatabase to a HighlyAvailableGraphDatabase.
+Since they both implement the same interface no additional changes are required.
+
+Below is diagram of a typical setup when running multiple Neo4j instances in HA mode.
+
+image::../images/ha2.png[scaledwidth="100%", alt="Neo4j Highly Available Cluster"]
+
+When running Neo4j in HA mode there is always a single master and zero or more slaves.
+Compared to other master-slave replication setups Neo4j HA can handle writes on a slave so there is no need to redirect writes to the master.
+
+A slave will handle writes by synchronizing with the master to preserve consistency.
+Updates will however propagate from the master to other slaves eventually so a write from one slave is not immediately visible on all other slaves.
+This is the only difference between multiple machines running in HA mode compared to single machine operation, all other ACID characteristics are the same.
