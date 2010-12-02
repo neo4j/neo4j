@@ -14,19 +14,9 @@ The topics should be relevant to architects, administrators, developers and oper
 You should already know about Neo4j and using graphs to store data.
 If you are completely new to Neo4j please check out http://neo4j.org first.
 
-== Graph databases versus Relational databases ==
+== Don't worry, it's a graph ==
 
-While graph structures in theory are normalizable even in Relational Database 
-Systems (RDBMS), this has serious query performance implications for recursive structures 
-like for instance file trees and network structures like e.g. social graphs, due to the 
-implementation characteristics of relational databases. Every operation over a relationship 
-of a network results in a "join" operation in the RDBMS, implemented as a set-operation 
-between the sets of primary keys for two tables - a comparatively slow operation and not scalable over 
-growing numbers of tuples in these tables.
-
-TODO:
-Neo4j System architecture diagram
-
-
+Graphs embrace complexity, easily handling deeply nested, interconnected and dynamic data.
+Queries can span thousands of relationships, revealing rich semantics in any data set.
 
 
