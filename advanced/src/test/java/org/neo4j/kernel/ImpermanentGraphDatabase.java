@@ -31,6 +31,7 @@ import org.neo4j.graphdb.index.IndexManager;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -41,16 +42,26 @@ public class ImpermanentGraphDatabase extends AbstractGraphDatabase
     private EmbeddedGraphDatabase inner;
     private String storeDir;
 
+    public ImpermanentGraphDatabase( String storeDir, Map<String, String> params )
+    {
+        this.storeDir = storeDir;
+        deleteRecursively( new File( storeDir ) );
+        inner = new EmbeddedGraphDatabase( storeDir, params );
+    }
+
+    public ImpermanentGraphDatabase( Map<String, String> params ) throws IOException
+    {
+        this(createTempDir(), params);
+    }
+
     public ImpermanentGraphDatabase() throws IOException
     {
-        this( createTempDir() );
+        this( createTempDir(), new HashMap<String, String>() );
     }
 
     public ImpermanentGraphDatabase( String storeDir )
     {
-        this.storeDir = storeDir;
-        deleteRecursively( new File( storeDir ) );
-        inner = new EmbeddedGraphDatabase( storeDir );
+        this( storeDir, new HashMap<String, String>() );
     }
 
 
