@@ -10,8 +10,26 @@
   <artifactId>neo4j-manual</artifactId>
   <version>1.2-SNAPSHOT</version>
   <name>Neo4j - Reference Manual</name>
-
+  <description>Neo4j Reference Manual.</description>
+  <url>http://neo4j.org/</url>
   <packaging>pom</packaging>
+
+  <properties>
+    <short-name>manual</short-name>
+  </properties>
+
+  <scm>
+    <connection>scm:svn:https://svn.neo4j.org/documentation/manual/trunk/</connection>
+	<developerConnection>${project.scm.connection}</developerConnection>
+	<url>https://trac.neo4j.org/browser/documentation/manual</url>
+  </scm>
+
+  <licenses>
+    <license>
+      <name>Creative Commons Attribution-ShareAlike 3.0 Unported</name>
+      <url>http://creativecommons.org/licenses/by-sa/3.0/</url>
+    </license>
+  </licenses>
 
   <build>
     <plugins>
@@ -56,7 +74,15 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <artifactId>maven-release-plugin</artifactId>
+        <configuration>
+          <tag>${releaseVersion}</tag>
+          <tagBase>https://svn.neo4j.org/documentation/${short-name}/tags</tagBase>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 
 </project>
+
