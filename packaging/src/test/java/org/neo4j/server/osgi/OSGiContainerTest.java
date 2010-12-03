@@ -29,23 +29,16 @@ import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.swissbox.tinybundles.core.TinyBundles.newBundle;
 import static org.ops4j.pax.swissbox.tinybundles.core.TinyBundles.withBnd;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.ArrayList;
+import java.io.*;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.server.osgi.bundles.aware.LifecycleActivator;
+import org.neo4j.server.osgi.bundles.BundleJarProducer;
 import org.neo4j.server.osgi.bundles.consumer.WhovilleActivator;
 import org.neo4j.server.osgi.bundles.hello.Hello;
 import org.neo4j.server.osgi.bundles.service.ExampleServiceImpl;
@@ -90,8 +83,9 @@ public class OSGiContainerTest
     }
 
     @After
-    public void dumpLog()
+    public void shutdownThenDumpLog() throws BundleException, InterruptedException
     {
+        this.container.shutdown();
         System.out.println( logAppender.toString() );
     }
 
@@ -111,8 +105,6 @@ public class OSGiContainerTest
         container.start();
 
         assertThat( container.getFramework().getState(), is( Bundle.ACTIVE ) );
-
-        container.shutdown();
     }
 
     @Test
@@ -127,8 +119,6 @@ public class OSGiContainerTest
         Bundle systemBundle = container.getBundles()[0];
 
         assertThat( (String) systemBundle.getHeaders().get( Constants.EXPORT_PACKAGE ), containsString( "org.osgi.framework" ) );
-
-        container.shutdown();
     }
 
     @Test
@@ -138,8 +128,6 @@ public class OSGiContainerTest
         File bundleDirectory = new File( container.getBundleDirectory() );
 
         assertTrue( bundleDirectory.exists() );
-
-        container.shutdown();
     }
 
     @Test
@@ -164,25 +152,16 @@ public class OSGiContainerTest
 
         assertThat( (String) helloBundle.getHeaders().get( Constants.BUNDLE_SYMBOLICNAME ), is( expectedBundleSymbolicName ) );
         assertThat( container.getFramework().getState(), is( Bundle.ACTIVE ) );
-
-        container.shutdown();
     }
 
     @Test
     public void shouldActivateOSGiAwareBundles() throws Exception
     {
         createContainer();
-        String expectedBundleSymbolicName = "OSGiAwareBundle";
-        InputStream bundleStream = newBundle()
-                .add( LifecycleActivator.class )
-                .set( Constants.BUNDLE_SYMBOLICNAME, expectedBundleSymbolicName )
-                .set( Constants.EXPORT_PACKAGE, "org.neo4j.server.osgi.bundles.aware" )
-                .set( Constants.IMPORT_PACKAGE, "org.neo4j.server.osgi.bundles.aware, org.osgi.framework" )
-                .set( Constants.BUNDLE_ACTIVATOR, LifecycleActivator.class.getName() )
-                .build( withBnd() );
-        File awareJar = new File( container.getBundleDirectory(), "aware.jar" );
-        OutputStream jarOutputStream = new FileOutputStream( awareJar );
-        StreamUtils.copyStream( bundleStream, jarOutputStream, true );
+
+        LifecycleActivator lifecycler = new LifecycleActivator();
+        lifecycler.produceJar( container.getBundleDirectory(), "lifecycler.jar" );
+        String expectedBundleSymbolicName = lifecycler.getBundleSymbolicName();
 
         container.start();
 
@@ -191,26 +170,16 @@ public class OSGiContainerTest
         assertNotNull( awareBundle );
 
         assertThat( awareBundle.getState(), is( Bundle.ACTIVE ) );
-
-        container.shutdown();
     }
 
     @Test
     public void shouldAllowAccessToOSGiServices() throws Exception
     {
         createContainer();
-        String expectedBundleSymbolicName = "OSGiServiceProviderBundle";
-        InputStream bundleStream = newBundle()
-                .add( ServiceProviderActivator.class )
-                .add( ExampleServiceImpl.class )
-                .set( Constants.BUNDLE_SYMBOLICNAME, expectedBundleSymbolicName )
-                .set( Constants.EXPORT_PACKAGE, "org.neo4j.server.osgi.bundles.service" )
-                .set( Constants.IMPORT_PACKAGE, "org.neo4j.server.osgi.bundles.service, org.neo4j.server.osgi.services, org.osgi.framework" )
-                .set( Constants.BUNDLE_ACTIVATOR, ServiceProviderActivator.class.getName() )
-                .build( withBnd() );
-        File awareJar = new File( container.getBundleDirectory(), "service-impl.jar" );
-        OutputStream jarOutputStream = new FileOutputStream( awareJar );
-        StreamUtils.copyStream( bundleStream, jarOutputStream, true );
+
+        ServiceProviderActivator serviceProvider = new ServiceProviderActivator();
+        serviceProvider.produceJar( container.getBundleDirectory(), "service-impl.jar");
+        String expectedBundleSymbolicName = serviceProvider.getBundleSymbolicName();
 
         container.start();
 
@@ -224,8 +193,6 @@ public class OSGiContainerTest
                 ExampleBundleService.class.getName(), null );
         ExampleBundleService service = (ExampleBundleService) bundleContext.getService( registeredServices[0] );
         assertThat( service, is( notNullValue() ) );
-
-        container.shutdown();
     }
 
     @Test
@@ -233,17 +200,10 @@ public class OSGiContainerTest
     {
         HortonActivator hortonActivator = new HortonActivator();
         createContainer( hortonActivator );
-        String expectedBundleSymbolicName = "WhovilleBundle";
-        InputStream bundleStream = newBundle()
-                .add( WhovilleActivator.class )
-                .set( Constants.BUNDLE_SYMBOLICNAME, expectedBundleSymbolicName )
-                .set( Constants.EXPORT_PACKAGE, "org.neo4j.server.osgi.bundles.consumer" )
-                .set( Constants.IMPORT_PACKAGE, "org.neo4j.server.osgi.bundles.consumer, org.neo4j.server.osgi.services, org.osgi.framework, org.osgi.util.tracker" )
-                .set( Constants.BUNDLE_ACTIVATOR, WhovilleActivator.class.getName() )
-                .build( withBnd() );
-        File awareJar = new File( container.getBundleDirectory(), "whoville.jar" );
-        OutputStream jarOutputStream = new FileOutputStream( awareJar );
-        StreamUtils.copyStream( bundleStream, jarOutputStream, true );
+
+        WhovilleActivator whoville = new WhovilleActivator();
+        whoville.produceJar( container.getBundleDirectory(), "whoville.jar");
+        String expectedBundleSymbolicName = whoville.getBundleSymbolicName();
 
         container.start();
 
@@ -261,7 +221,6 @@ public class OSGiContainerTest
         assertNotNull( service );
 
         assertThat( hortonActivator.whovilleCommunicationCount, is( 1 ) );
-
-        container.shutdown();
     }
+
 }

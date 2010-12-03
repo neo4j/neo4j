@@ -20,6 +20,7 @@
 
 package org.neo4j.server.osgi.bundles.aware;
 
+import org.neo4j.server.osgi.bundles.BundleJarProducer;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 
@@ -29,7 +30,7 @@ import org.osgi.framework.BundleContext;
  * involves either publishing or looking for services,
  * but here we're just outputting some messages.
  */
-public class LifecycleActivator implements BundleActivator
+public class LifecycleActivator extends BundleJarProducer implements BundleActivator
 {
 
     public void start( BundleContext bundleContext ) throws Exception
@@ -40,6 +41,18 @@ public class LifecycleActivator implements BundleActivator
     public void stop( BundleContext bundleContext ) throws Exception
     {
         System.out.println( "OSGi aware bundle stopped" );
+    }
+
+    @Override
+    public String getBundleSymbolicName()
+    {
+        return "LifeycleBundle";
+    }
+
+    @Override
+    protected Class[] getExtraBundleClasses()
+    {
+        return new Class[0];
     }
 
 }
