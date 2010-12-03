@@ -149,6 +149,53 @@
   <xsl:attribute name="keep-together.within-column">auto</xsl:attribute>
 </xsl:attribute-set>
 
+<!-- Neo4j customizations -->
+
+<xsl:param name="body.font.family" select="'serif'"/>
+<xsl:param name="body.font.master">12</xsl:param>
+<xsl:param name="body.font.size">
+ <xsl:value-of select="$body.font.master"/><xsl:text>pt</xsl:text>
+</xsl:param>
+
+<xsl:attribute-set name="section.title.level1.properties">
+  <xsl:attribute name="font-size">
+    <xsl:value-of select="24"></xsl:value-of>
+    <xsl:text>pt</xsl:text>
+  </xsl:attribute>
+</xsl:attribute-set>
+<xsl:attribute-set name="section.title.level2.properties">
+  <xsl:attribute name="font-size">
+    <xsl:value-of select="18"></xsl:value-of>
+    <xsl:text>pt</xsl:text>
+  </xsl:attribute>
+</xsl:attribute-set>
+<xsl:attribute-set name="section.title.level3.properties">
+  <xsl:attribute name="font-size">
+    <xsl:value-of select="16"></xsl:value-of>
+    <xsl:text>pt</xsl:text>
+  </xsl:attribute>
+</xsl:attribute-set>
+<xsl:attribute-set name="section.title.level4.properties">
+  <xsl:attribute name="font-size">
+    <xsl:value-of select="14"></xsl:value-of>
+    <xsl:text>pt</xsl:text>
+  </xsl:attribute>
+</xsl:attribute-set>
+<xsl:attribute-set name="section.title.level5.properties">
+  <xsl:attribute name="font-size">
+    <xsl:value-of select="$body.font.master"></xsl:value-of>
+    <xsl:text>pt</xsl:text>
+  </xsl:attribute>
+</xsl:attribute-set>
+<xsl:attribute-set name="section.title.level6.properties">
+  <xsl:attribute name="font-size">
+    <xsl:value-of select="$body.font.master"></xsl:value-of>
+    <xsl:text>pt</xsl:text>
+  </xsl:attribute>
+</xsl:attribute-set>
+
+
+
 <xsl:template name="front.cover">
  <xsl:call-template name="page.sequence">
   <xsl:with-param name="master-reference">titlepage</xsl:with-param>
