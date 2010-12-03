@@ -31,10 +31,7 @@
           <arguments>
             <argument>VERBOSE=1</argument>
             <argument>clean</argument>
-            <argument>pdf</argument>
-            <argument>html</argument>
-            <argument>singlehtml</argument>
-            <argument>text</argument>
+            <argument>dist</argument>
           </arguments>
         </configuration>
       </plugin>
