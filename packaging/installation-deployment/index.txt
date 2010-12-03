@@ -1,12 +1,14 @@
 Installation & Deployment
 =========================
 
+Neo4j operates as a standalone server or as an embedded library. 
+
 .Neo4j deployment options
-[cols="^s,^,^"]
+[cols="^s,^,^", frame="none"]
 |================================
-|            | single  | multiple
-| embedded   | EmbeddedGraphDatabase | HighlyAvailableGraphDatabase
-| standalone | Neo4j Server | not yet available
+|            | Single  | Multiple
+| Embedded   | EmbeddedGraphDatabase | HighlyAvailableGraphDatabase
+| Standalone | Neo4j Server | not yet available
 |=================================
 
 :leveloffset: 2
