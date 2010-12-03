@@ -1,7 +1,7 @@
 The Neo4j Manual
 ================
 Neo Technology <info@neotechnology.com>
-:Revision: 1.2-SNAPSHOT
+:Revision: 1.2.M05
 
 :neo4j-version: {revnumber}
 
