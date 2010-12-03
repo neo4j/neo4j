@@ -20,9 +20,9 @@
 
 package org.neo4j.server.osgi.bundles.consumer;
 
+import org.neo4j.server.osgi.bundles.BundleJarProducer;
 import org.neo4j.server.osgi.services.ExampleHostService;
 import org.osgi.framework.*;
-import org.osgi.util.tracker.ServiceTracker;
 
 /**
  * For a bundle to consume an OSGi "service" means that it
@@ -32,7 +32,7 @@ import org.osgi.util.tracker.ServiceTracker;
  * This activator listens for service events, looking
  * for the registration of an ExampleHostService.
  */
-public class WhovilleActivator implements BundleActivator, ServiceListener
+public class WhovilleActivator extends BundleJarProducer implements BundleActivator, ServiceListener
 {
     private ExampleHostService hortonCommunicator = null;
     private BundleContext bundleContext;
@@ -43,14 +43,14 @@ public class WhovilleActivator implements BundleActivator, ServiceListener
 
         synchronized (this)
         {
-            bundleContext.addServiceListener(this);
+            bundleContext.addServiceListener( this );
 
             ServiceReference[] refs = bundleContext.getServiceReferences(
-                ExampleHostService.class.getName(), null);
+                    ExampleHostService.class.getName(), null );
 
-            if (refs != null)
+            if ( refs != null )
             {
-                hortonCommunicator = (ExampleHostService) bundleContext.getService(refs[0]);
+                hortonCommunicator = (ExampleHostService) bundleContext.getService( refs[0] );
                 hortonCommunicator.askHorton( "Can you hear us?" );
             }
         }
@@ -78,5 +78,23 @@ public class WhovilleActivator implements BundleActivator, ServiceListener
                 ; // oh, well
             }
         }
+    }
+
+    @Override
+    public String getBundleSymbolicName()
+    {
+        return "WhovilleBundle";
+    }
+
+    @Override
+    protected Class[] getExtraBundleClasses()
+    {
+        return new Class[0];
+    }
+
+    @Override
+    public String getImportedPackages()
+    {
+        return super.getImportedPackages() + ", org.neo4j.server.osgi.services";
     }
 }
