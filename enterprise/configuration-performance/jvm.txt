@@ -42,7 +42,7 @@ Tuning the standalone server is achieved by editing the +neo4j-wrapper.conf+ fil
 Edit the following properties:
 
 .neo4j-wrapper.conf JVM tuning properties
-[options="header"]
+[options="header", cols="<m,<"]
 |====================
 | Property Name             | Meaning
 | wrapper.java.initmemory   | initial heap size (in MB)

@@ -1,7 +1,7 @@
 Troubleshooting guide
 =====================
 
-[options="header"]
+[options="header", cols="40,30,30"]
 |=============================
 | Problem | Cause | Resolution
 
