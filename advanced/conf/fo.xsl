@@ -194,7 +194,39 @@
   </xsl:attribute>
 </xsl:attribute-set>
 
+<xsl:template match="row/entry/simpara/literal">
+  <fo:inline hyphenate="true" xsl:use-attribute-sets="monospace.properties">
+    <xsl:call-template name="intersperse-with-zero-spaces">
+      <xsl:with-param name="str" select="text()"/>
+    </xsl:call-template>
+  </fo:inline>
+</xsl:template>
 
+<!-- Actual space intercalation: recursive -->
+<xsl:template name="intersperse-with-zero-spaces">
+    <xsl:param name="str"/>
+    <xsl:variable name="spacechars">
+        &#x9;&#xA;&#x2000;&#x2001;&#x2002;&#x2003;&#x2004;&#x2005;&#x2006;&#x2007;&#x2008;&#x2009;&#x200A;&#x200B;
+    </xsl:variable>
+
+    <xsl:if test="string-length($str) &gt; 0">
+        <xsl:variable name="c1"
+                select="substring($str, 1, 1)"/>
+        <xsl:variable name="c2"
+                select="substring($str, 2, 1)"/>
+
+        <xsl:value-of select="$c1"/>
+        <xsl:if test="$c2 != '' and ($c1 = '.' or $c1 = ',') and
+                not(contains($spacechars, $c1) or
+                contains($spacechars, $c2))">
+            <xsl:text>&#x200A;</xsl:text>
+        </xsl:if>
+
+        <xsl:call-template name="intersperse-with-zero-spaces">
+            <xsl:with-param name="str" select="substring($str, 2)"/>
+        </xsl:call-template>
+    </xsl:if>
+</xsl:template>
 
 <xsl:template name="front.cover">
  <xsl:call-template name="page.sequence">

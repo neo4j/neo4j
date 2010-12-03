@@ -24,13 +24,13 @@ $JAVA_HOME/bin/jconsole
 And connect to the process running your Neo4j database instance:
 
 .Connecting JConsole to the Neo4j Java process
-image::../images/operations/jconsole_connect.png[scaledwidth="100%", alt="Connecting with JConsole"]
+image::../images/operations/jconsole_connect.png[scaledwidth="50%", alt="Connecting with JConsole"]
 
 Now, beside the MBeans exposed by the JVM, you will see an org.neo section in the MBeans tab. Under that, you will have access to all the monitoring information exposed by the Neo4j Kernel.
 
 
 .Neo4j MBeans View
-image::../images/operations/jconsole_beans.png[scaledwidth="100%",alt="Neo4j MBeans view"]
+image::../images/operations/jconsole_beans.png[scaledwidth="50%",alt="Neo4j MBeans view"]
 
 
 === How to connect to the JMX monitoring programmatically ===
@@ -65,7 +65,7 @@ Once having access to this information, it can be used to for instance expose th
 
 
 .MBean Memory Mapping
-[options="header"]
+[options="header", cols="45,45,10"]
 |========================================================
 |Attribute|Description    |Type
 |MemoryPools  |Get information about each pool of memory mapped regions from store files with memory mapping enabled
@@ -74,7 +74,7 @@ Once having access to this information, it can be used to for instance expose th
 
 
 .MBean Locking
-[options="header"]
+[options="header", cols="45,45,10"]
 |========================================================
 |Attribute|Description    |Type
 |NumberOfAdvertedDeadlocks  |The number of lock sequences that would have lead to a deadlock situation that Neo4j has detected and adverted (by throwing DeadlockDetectedException).|Integer
@@ -82,7 +82,7 @@ Once having access to this information, it can be used to for instance expose th
 
 
 .MBean Transactions
-[options="header"]
+[options="header", cols="45,45,10"]
 |========================================================
 |Attribute|Description    |Type
 |NumberOfOpenTransactions  |The number of currently open transactions|Integer
@@ -93,7 +93,7 @@ Once having access to this information, it can be used to for instance expose th
 |========================================================
 
 .MBean Cache
-[options="header"]
+[options="header", cols="45,45,10"]
 |========================================================
 |Attribute|Description    |Type
 |CacheType  |The type of cache used by Neo4j|String
@@ -102,7 +102,7 @@ Once having access to this information, it can be used to for instance expose th
 |========================================================
 
 .MBean Configuration
-[options="header"]
+[options="header", cols="<45m,<45,<10"]
 |========================================================
 |Attribute|Description    |Type
 |store_dir  |Relative path for where the Neo4j storage directory is located|String
@@ -122,7 +122,7 @@ Once having access to this information, it can be used to for instance expose th
 |========================================================
 
 .MBean Primitive count
-[options="header"]
+[options="header", cols="45,45,10"]
 |========================================================
 |Attribute|Description    |Type
 |NumberOfNodeIdsInUse  |An estimation of the number of nodes used in this Neo4j instance|Integer
@@ -133,14 +133,14 @@ Once having access to this information, it can be used to for instance expose th
 
 
 .MBean XA Resources
-[options="header"]
+[options="header", cols="45,45,10"]
 |========================================================
 |Attribute|Description    |Type
 |XaResources  |Information about all XA resources managed by the transaction manager | String
 |========================================================
 
 .MBean Store file sizes
-[options="header"]
+[options="header", cols="45,45,10"]
 |========================================================
 |Attribute|Description    |Type
 |TotalStoreSize  |The total disk space used by this Neo4j instance, in bytes.|Integer
@@ -153,10 +153,10 @@ Once having access to this information, it can be used to for instance expose th
 |========================================================
 
 .MBean Kernel
-[options="header"]
+[options="header", cols="45,45,10"]
 |========================================================
 |Attribute|Description    |Type
-|ReadOnly  Whether this is a read only instance.|boolean
+|ReadOnly  |Whether this is a read only instance.|boolean
 |MBeanQuery  |An ObjectName that can be used as a query for getting all management beans for this Neo4j instance.|String
 |KernelStartTime  |The time from which this Neo4j instance was in operational mode|Date
 |StoreCreationDate  |The time when this Neo4j graph store was created|Date
@@ -168,7 +168,7 @@ Once having access to this information, it can be used to for instance expose th
 
 
 .MBean High Availability
-[options="header"]
+[options="header", cols="45,45,10"]
 |========================================================
 |Attribute|Description    |Type
 |MachineId  |The cluster machine id of this instance|String
@@ -176,3 +176,4 @@ Once having access to this information, it can be used to for instance expose th
 |ConnectedSlaves  |A list of conenctede slaves in this clusert|String
 |InstancesInCluster  |Information about the other Neo4j instances in this HA cluster|String
 |========================================================
+

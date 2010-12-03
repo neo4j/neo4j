@@ -27,7 +27,7 @@ Since the operation of the cache is tightly related to the data it stores, a sho
 Neo4j stores data in multiple files and relies on the underlying file system to handle this efficiently.
 Each Neo4j storage file contains uniform fixed size records of a particular type:
 
-[options="header",grid="none",frame="none",cols="<,>m,<"]
+[options="header",grid="none",frame="none",cols="<,>m,<", width="50%"]
 |============================================
 | Store file         | Record size | Contents
 | nodestore          |         9 B | Nodes
@@ -50,7 +50,7 @@ When the hit ratio of an uncached window gets higher than the miss ratio of a ca
 Configuration
 ~~~~~~~~~~~~~
 
-[options="header",frame="none",cols="<m,<,<"]
+[options="header",frame="none",cols="<35m,<30,<35"]
 |========================================================
 | Parameter                 | Possible values   | Effect
 | use_memory_mapped_buffers | `true` or `false` |
@@ -122,7 +122,7 @@ The main configuration parameter for the object cache is the `cache_type` parame
 This specifies which cache implementation to use for the object cache.
 The available cache types are:
 
-[options="header",frame="none",cols="<m,<"]
+[options="header",frame="none",cols="<15m,<85"]
 |==========================================
 | `cache_type` | Description
 | none         | Do not use a high level cache. No objects will be cached.
@@ -144,7 +144,7 @@ Heap memory usage
 
 This table can be used to calculate how much memory the data in the object cache will occupy on a 64bit JVM:
 
-[options="header",frame="none",cols="<,<e,<e"]
+[options="header",frame="none",cols="<15,<15e,<70e"]
 |================================
 | Object           | Size  | Comment
 .5+| Node          .+>m| 344 B | Size for each node (not counting its relationships or properties).
