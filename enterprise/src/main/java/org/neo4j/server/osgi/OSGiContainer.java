@@ -52,7 +52,10 @@ public class OSGiContainer
 
     public OSGiContainer( String bundleDirectory, String cacheDirectory )
     {
-        this( bundleDirectory, cacheDirectory, new HostBridge() );
+        this( bundleDirectory, cacheDirectory,
+                new HostBridge(),
+                new LogServiceBridge()
+        );
     }
 
     public OSGiContainer( String bundleDirectory, String cacheDirectory, BundleActivator... activators )
@@ -69,7 +72,9 @@ public class OSGiContainer
         }
         configMap.put( Constants.FRAMEWORK_STORAGE, cacheDirectory );
         configMap.put( Constants.FRAMEWORK_SYSTEMPACKAGES_EXTRA,
-                "org.neo4j.server.osgi.services; version=1.0.0" );
+                "org.neo4j.server.osgi.services; version=1.0.0" +
+                ", org.osgi.service.log; version=4.2.0"
+        );
 
         osgiFramework = new Felix( configMap );
 

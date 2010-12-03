@@ -20,6 +20,7 @@
 
 package org.neo4j.server.osgi.bundles.service;
 
+import org.neo4j.server.osgi.bundles.BundleJarProducer;
 import org.neo4j.server.osgi.services.ExampleBundleService;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -30,7 +31,7 @@ import org.osgi.framework.ServiceRegistration;
  * participates in the OSGi lifecycle and publishes an
  * implementation instance of a service interface.
  */
-public class ServiceProviderActivator implements BundleActivator
+public class ServiceProviderActivator extends BundleJarProducer implements BundleActivator
 {
     private ServiceRegistration exampleServiceReference;
 
@@ -48,5 +49,23 @@ public class ServiceProviderActivator implements BundleActivator
     {
         exampleServiceReference.unregister();
         System.out.println( "OSGi service provider bundle stopped" );
+    }
+
+    @Override
+    public String getBundleSymbolicName()
+    {
+        return "OSGiServiceProviderBundle";
+    }
+
+    @Override
+    protected Class[] getExtraBundleClasses()
+    {
+        return new Class[] { ExampleServiceImpl.class };
+    }
+
+    @Override
+    public String getImportedPackages()
+    {
+        return "org.neo4j.server.osgi.bundles.service, org.neo4j.server.osgi.services, org.osgi.framework";
     }
 }
