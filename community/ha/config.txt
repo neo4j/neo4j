@@ -55,7 +55,7 @@ For installation instructions of a High Availability cluster please visit the Ne
 Note that while the HighlyAvailableGraphDatabase supports the same API as the EmbeddedGraphDatabase, it does have additional configuration parameters. 
 
 .HighlyAvailableGraphDatabase configuration parameters
-[options="header"]
+[options="header", cols="<30m,<25,<25m,<20"]
 |========================================================================================
 | Parameter Name        | Value                                     | Example value  | Required?
 | ha.machine_id         | integer > 0                               | 1              | yes
