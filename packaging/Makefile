@@ -6,7 +6,7 @@ SRCDIR      = .
 SRCFILE     = $(SRCDIR)/neo4j-manual.txt
 CONFDIR     = $(SRCDIR)/conf
 DOCBOOKFILE = $(BUILDDIR)/neo4j-manual.xml
-FOPDIR      = $(BUILDDIR)/fop
+FOPDIR      = $(BUILDDIR)/pdf
 FOPFILE     = $(FOPDIR)/neo4j-manual.fo
 FOPPDF      = $(FOPDIR)/neo4j-manual.pdf
 
@@ -51,11 +51,11 @@ docbook:
 	asciidoc $(V) --backend docbook --attribute docinfo --doctype book --conf-file=$(CONFDIR)/asciidoc.conf --conf-file=$(CONFDIR)/docbook45.conf --out-file $(DOCBOOKFILE) $(SRCFILE)
 	xmllint --nonet --noout --valid $(DOCBOOKFILE)
 
-pdf:
+pdf-a2x:
 	mkdir -p $(BUILDDIR)/fop
 	a2x $(GENERAL_FLAGS) -f pdf --fop -D $(BUILDDIR)/fop --conf-file=$(CONFDIR)/fop.conf --xsl-file=$(CONFDIR)/fo.xsl --xsltproc-opts "--stringparam toc.section.depth 1 --stringparam admon.graphics 1" $(SRCFILE)
 
-pdf2: docbook
+pdf: docbook
 	mkdir -p $(FOPDIR)
 	cd $(FOPDIR)
 	xsltproc --stringparam toc.section.depth 1 --stringparam admon.graphics 1 --stringparam callout.graphics 0 --stringparam navig.graphics 0 --stringparam admon.textlabel 1  --output $(FOPFILE) $(CONFDIR)/fo.xsl $(DOCBOOKFILE)
