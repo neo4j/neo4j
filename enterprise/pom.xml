@@ -13,16 +13,16 @@
 
   <name>Neo4j Server Assembler</name>
 
-  <version>0.1-SNAPSHOT</version>
+  <version>0.1-1.2.M05</version>
   <description>This project assembles the Neo4j stand-alone distribution,
     pulling together all the deliverable artifacts and packaging them 
       into a downloadable installer.</description>
   <url>http://components.neo4j.org/${project.artifactId}/</url>
 
   <scm>
-    <connection>scm:svn:https://svn.neo4j.org/assemblies/neo4j-standalone/trunk</connection>
-    <developerConnection>scm:svn:https://svn.neo4j.org/assemblies/neo4j-standalone/trunk</developerConnection>
-    <url>https://trac.neo4j.org/browser/assemblies/neo4j-standalone/trunk</url>
+    <connection>scm:svn:https://svn.neo4j.org/assemblies/neo4j-standalone/tags/0.1-1.2.M05</connection>
+    <developerConnection>scm:svn:https://svn.neo4j.org/assemblies/neo4j-standalone/tags/0.1-1.2.M05</developerConnection>
+    <url>https://trac.neo4j.org/browser/assemblies/neo4j-standalone/tags/0.1-1.2.M05</url>
   </scm>
 
   <properties>
