@@ -11,10 +11,6 @@ include::introduction/introduction.txt[]
 
 :leveloffset: 1
 
-include::capabilities/capabilities.txt[]
-
-:leveloffset: 1
-
 include::installation-deployment/index.txt[]
 
 :leveloffset: 1
