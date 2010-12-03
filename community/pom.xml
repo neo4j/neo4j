@@ -45,9 +45,9 @@
     <neo4j.logdir>${neo4j.datadir}/log</neo4j.logdir> <!-- needed? -->
 
     <!-- dependency versions -->
-    <neo4j.version>1.2-SNAPSHOT</neo4j.version>
-    <neo4j-server.version>0.1-SNAPSHOT</neo4j-server.version>
-    <neo4j-examples.version>1.2-SNAPSHOT</neo4j-examples.version>
+    <neo4j.version>1.2.M05</neo4j.version>
+    <neo4j-server.version>0.1-1.2.M05</neo4j-server.version>
+    <neo4j-examples.version>1.2.M05</neo4j-examples.version>
 
     <!-- OSGi Bundle versions -->
     <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
