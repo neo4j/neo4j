@@ -1,7 +1,7 @@
 Installation
 ============
 
-Neo4j can be installed as a server, running either as a headless application or system daemon.
+Neo4j can be installed as a server, running either as a headless application or system service.
 For Java developers, it is also possible to use Neo4j as a library, embedded in your application.
 
 == Server Installation ==
