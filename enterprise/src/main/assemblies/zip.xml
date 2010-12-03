@@ -12,7 +12,7 @@
       <directory>target/</directory>
       <outputDirectory>/</outputDirectory>
       <includes>
-        <include>fop/*.pdf</include>
+        <include>pdf/*.pdf</include>
         <include>html/**</include>
         <include>text/**</include>
       </includes>
