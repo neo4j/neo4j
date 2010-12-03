@@ -48,15 +48,6 @@
         <include>*.bat</include>
       </includes>
     </fileSet>    
-    <!-- der manual -->
-    <fileSet>
-      <directory>target/manual</directory>
-      <outputDirectory>doc/manual/</outputDirectory>
-      <includes>
-        <include>*.pdf</include>
-        <include>*.html</include>
-      </includes>
-    </fileSet>
   </fileSets>
 
   <dependencySets>
@@ -150,6 +141,17 @@
         <include>org.neo4j.app:neo4j-server:*:site</include>
       </includes>
     </dependencySet>
+    <!-- der manual -->
+    <dependencySet>
+      <outputDirectory>doc/manual/</outputDirectory>
+      <unpack>true</unpack>
+      <fileMode>0444</fileMode>
+      <directoryMode>0777</directoryMode>
+      <includes>
+        <include>org.neo4j.doc:neo4j-manual</include>
+      </includes>
+    </dependencySet>
+    
 
   </dependencySets>
 

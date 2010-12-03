@@ -4,7 +4,7 @@
   <parent>
     <artifactId>assembly-pom</artifactId>
     <groupId>org.neo4j.assembly</groupId>
-    <version>7</version>
+    <version>8-SNAPSHOT</version>
   </parent>
 
   <groupId>org.neo4j.assembly</groupId>
@@ -171,6 +171,8 @@
           </execution>
         </executions>
       </plugin>
+      <!--
+           ABKTODO: delete this once the dependencySet works
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-antrun-plugin</artifactId>
@@ -191,8 +193,23 @@
           </execution>
         </executions>
       </plugin>
+      -->
     </plugins>
   </build>
+
+  <repositories>
+    <repository>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <id>neo4j-repository</id>
+      <name>Neo4j Maven 2 repository</name>
+      <url>http://m2.neo4j.org/</url>
+    </repository>
+  </repositories>
 
   <dependencies>
     <dependency>
@@ -296,6 +313,11 @@
       <version>${pax-logging.version}</version>
     </dependency>
 
+    <dependency>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-manual</artifactId>
+      <version>${neo4j.version}</version>
+    </dependency>
   </dependencies>
 
   <developers>
