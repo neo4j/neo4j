@@ -52,7 +52,7 @@ Either take the jar files from the +lib+ directory of the downloaded archive, or
 	<dependency>
    	<groupId>org.neo4j</groupId>
    	<artifactId>neo4j</artifactId>
-   	<version>1.2.M04</version>
+   	<version>1.2.M05</version>
 	</dependency>
 	...
  </dependencies>
