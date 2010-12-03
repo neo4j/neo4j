@@ -17,7 +17,7 @@ The topics should be relevant to architects, administrators, developers and oper
 You should already know about Neo4j and using graphs to store data.
 If you are completely new to Neo4j please check out http://neo4j.org first.
 
-== Why Neo4j ==
+== Neo4j highlights ==
 
 As a robust, scalable and high-performance database, Neo4j is suitable for lightweight projects or full enterprise deployment.  
 
