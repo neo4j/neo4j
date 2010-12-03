@@ -144,28 +144,28 @@ Heap memory usage
 
 This table can be used to calculate how much memory the data in the object cache will occupy on a 64bit JVM:
 
-[options="header",grid="none",frame="none",cols="<,>m,<e"]
+[options="header",frame="none",cols="<,<e,<e"]
 |================================
-| Object        | Size  | Comment
-| Node          | 344 B | Size for each node (not counting its relationships or properties).
-|               |  48 B | Object overhead.
-|               | 136 B | Property storage (ArrayMap `48B`, HashMap `88B`).
-|               | 136 B | Relationship storage (ArrayMap `48B`, HashMap `88B`).
-|               |  24 B | Location of first / next set of relationships.
-| Relationship  | 208 B | Size for each relationship (not counting its properties).
-|               |  48 B | Object overhead.
-|               | 136 B | Property storage (ArrayMap `48B`, HashMap `88B`).
-| Property      | 116 B | Size for each property of a node or relationship.
-|               |  32 B | Data element - allows for transactional modification and keeps track of on disk location.
-|               |  48 B | Entry in the hash table where it is stored.
-|               |  12 B | Space used in hash table, accounts for normal fill ratio.
-|               |  24 B | Property key index.
-| Relationships | 108 B | Size for each relationship type for a node that has a relationship of that type.
-|               |  48 B | Collection of the relationships of this type.
-|               |  48 B | Entry in the hash table where it is stored.
-|               |  12 B | Space used in hash table, accounts for normal fill ratio.
-| Relationships |   8 B | Space used by each relationship related to a particular node (both incoming and outgoing).
-| Primitive     |  24 B | Size of a primitive property value.
-| String        |  64+B | Size of a string property value.
+| Object           | Size  | Comment
+.5+| Node          .+>m| 344 B | Size for each node (not counting its relationships or properties).
+                   .+>m|  48 B | Object overhead.
+                   .+>m| 136 B | Property storage (ArrayMap `48B`, HashMap `88B`).
+                   .+>m| 136 B | Relationship storage (ArrayMap `48B`, HashMap `88B`).
+                   .+>m|  24 B | Location of first / next set of relationships.
+.3+| Relationship  .+>m| 208 B | Size for each relationship (not counting its properties).
+                   .+>m|  48 B | Object overhead.
+                   .+>m| 136 B | Property storage (ArrayMap `48B`, HashMap `88B`).
+.5+| Property      .+>m| 116 B | Size for each property of a node or relationship.
+                   .+>m|  32 B | Data element - allows for transactional modification and keeps track of on disk location.
+                   .+>m|  48 B | Entry in the hash table where it is stored.
+                   .+>m|  12 B | Space used in hash table, accounts for normal fill ratio.
+                   .+>m|  24 B | Property key index.
+.4+| Relationships .+>m| 108 B | Size for each relationship type for a node that has a relationship of that type.
+                   .+>m|  48 B | Collection of the relationships of this type.
+                   .+>m|  48 B | Entry in the hash table where it is stored.
+                   .+>m|  12 B | Space used in hash table, accounts for normal fill ratio.
+| Relationships    .+>m|   8 B | Space used by each relationship related to a particular node (both incoming and outgoing).
+| Primitive        .+>m|  24 B | Size of a primitive property value.
+| String           .+>m|  64+B | Size of a string property value. `64 + 2*len(string) B` (64 bytes, plus two bytes for each character in the string).
 |================================
 
