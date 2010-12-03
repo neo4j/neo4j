@@ -1,6 +1,14 @@
 Installation & Deployment
 =========================
 
+.Neo4j deployment options
+[cols="^s,^,^"]
+|================================
+|            | single  | multiple
+| embedded   | EmbeddedGraphDatabase | HighlyAvailableGraphDatabase
+| standalone | Neo4j Server | not yet available
+|=================================
+
 :leveloffset: 2
 
 include::installation.txt[]
@@ -10,5 +18,4 @@ include::deployment.txt[]
 include::requirements.txt[]
 
 include::upgrades.txt[]
-
 
