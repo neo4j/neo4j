@@ -74,7 +74,7 @@ docbook-shortinfo:
 pdf: docbook
 	mkdir -p $(FOPDIR)
 	cd $(FOPDIR)
-	xsltproc --stringparam toc.section.depth 1 --stringparam admon.graphics 1 --stringparam callout.graphics 0 --stringparam navig.graphics 0 --stringparam admon.textlabel 1 --output $(FOPFILE) $(CONFDIR)/fo.xsl $(DOCBOOKFILE)
+	xsltproc --output $(FOPFILE) $(CONFDIR)/fo.xsl $(DOCBOOKFILE)
 	cd $(SRCDIR)
 	fop -fo $(FOPFILE) -pdf $(FOPPDF)
 ifndef KEEP
@@ -87,7 +87,7 @@ latexpdf:
 
 # currently builds docbook format first
 html:
-	a2x $(GENERAL_FLAGS) -f chunked -D $(BUILDDIR) --conf-file=$(CONFDIR)/chunked.conf --xsl-file=$(CONFDIR)/chunked.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(SRCFILE)
+	a2x $(GENERAL_FLAGS) -f chunked -D $(BUILDDIR) --conf-file=$(CONFDIR)/chunked.conf --xsl-file=$(CONFDIR)/chunked.xsl $(SRCFILE)
 
 # use the asciidoc tool only, not docbook
 singlehtml-asciidoc:
