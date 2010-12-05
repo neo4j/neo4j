@@ -33,5 +33,7 @@ include::operations/index.txt[]
 
 include::troubleshooting.txt[]
 
-// include::glossary.txt[]
+:leveloffset: 1
+
+include::glossary.txt[]
 

@@ -13,6 +13,8 @@
 <xsl:import href="common.xsl"/>
 
 <xsl:import href="footer.xsl"/>
+<xsl:param name="admon.graphics" select="1"></xsl:param>
+<xsl:param name="generate.section.toc.level" select="1"></xsl:param>
 
 <xsl:param name="navig.graphics.path">images/icons/</xsl:param>
 <xsl:param name="admon.graphics.path">images/icons/</xsl:param>
