@@ -42,6 +42,7 @@ import org.mortbay.jetty.webapp.WebAppContext;
 import org.mortbay.resource.Resource;
 import org.mortbay.thread.QueuedThreadPool;
 import org.neo4j.server.NeoServer;
+import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rest.web.AllowAjaxFilter;
 
@@ -61,7 +62,7 @@ public class Jetty6WebServer implements WebServer
     private NeoServer server;
 
 
-    public void setServer( NeoServer server )
+    public void setNeoServer( NeoServer server )
     {
         this.server = server;
     }
@@ -96,7 +97,7 @@ public class Jetty6WebServer implements WebServer
                     HttpServletResponse resp ) throws ServletException,
                     IOException
             {
-                resp.sendRedirect( NeoServer.WEB_ADMIN_PATH );
+                resp.sendRedirect( Configurator.WEB_ADMIN_PATH );
             }
 
         };
@@ -131,7 +132,7 @@ public class Jetty6WebServer implements WebServer
         ServletHolder servletHolder = new ServletHolder(container);
         servletHolder.setInitParameter("com.sun.jersey.config.property.packages", toCommaSeparatedList(packageNames));
         servletHolder.setInitParameter(ResourceConfig.PROPERTY_CONTAINER_RESPONSE_FILTERS, AllowAjaxFilter.class.getName());
-        log.info("Adding JAXRS package [%s] at [%s]", packageNames, serverMountPoint);
+        log.info("Adding JAXRS package %s at [%s]", packageNames, serverMountPoint);
         jaxRSPackages.put(serverMountPoint, servletHolder);
     }
 

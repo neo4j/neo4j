@@ -20,25 +20,46 @@
 
 package org.neo4j.server.rest;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import org.junit.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 
-public class AdminPropertiesServiceTest extends FunctionalTestBase
-{
-	@Test
-	public void shouldRespondWithTheWebadminClientSettings() throws Exception
-	{
-		String url = mangementUri() + "properties/neo4j-servers";
-		ClientResponse response = Client.create().resource( url ).get( ClientResponse.class );
-		String json = response.getEntity( String.class );
+import java.io.IOException;
 
-	    assertEquals( 200, response.getStatus() );
-		assertThat( json, containsString( "\"url\" : \"" + server.baseUri() + "db/data/\"" ) );
-		assertThat( json, containsString( "\"manageUrl\" : \"" + server.baseUri() + "db/manage/\"" ) );
-	}
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.neo4j.server.NeoServer;
+import org.neo4j.server.ServerBuilder;
+
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
+
+public class AdminPropertiesServiceTest {
+    private NeoServer server;
+    private FunctionalTestHelper functionalTestHelper;
+
+    @Before
+    public void setupServer() throws IOException {
+        server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
+        server.start();
+        functionalTestHelper = new FunctionalTestHelper(server);
+    }
+
+    @After
+    public void stopServer() {
+        server.stop();
+        server = null;
+    }
+
+    @Test
+    public void shouldRespondWithTheWebAdminClientSettings() throws Exception {
+        String url = functionalTestHelper.mangementUri() + "properties/neo4j-servers";
+        ClientResponse response = Client.create().resource(url).get(ClientResponse.class);
+        String json = response.getEntity(String.class);
+
+        assertEquals(200, response.getStatus());
+        assertThat(json, containsString("\"url\" : \"" + server.baseUri() + "db/data/\""));
+        assertThat(json, containsString("\"manageUrl\" : \"" + server.baseUri() + "db/manage/\""));
+    }
 }

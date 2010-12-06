@@ -18,17 +18,23 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.server.configuration.validation;
+package org.neo4j.server;
 
-import org.apache.commons.configuration.Configuration;
-import org.neo4j.server.configuration.Configurator;
+import org.junit.Test;
 
-public class DatabaseLocationMustBeSpecifiedRule implements ValidationRule {
-        public void validate(Configuration configuration) throws RuleFailedException {
-        String dbLocation = configuration.getString(Configurator.DATABASE_LOCATION_PROPERTY_KEY);
-        if(dbLocation == null || dbLocation.length() < 1) {
-            throw new RuleFailedException("The key [%s] is missing from the Neo Server configuration.", Configurator.DATABASE_LOCATION_PROPERTY_KEY);
-        }
+public class DatabaseTuningFunctionalTest {
+    @Test
+    public void givenGoodDatabasePropertiesShouldLoadThem() {
+        
     }
-
+    
+    @Test
+    public void givenCorruptDatabasePropertiesShouldLogFailureAndContinueToRunUntuned() {
+        
+    }
+    
+    @Test
+    public void givenNoDatabasePropertiesShouldLogFailureAndContinueToRunUntuned() {
+        
+    }
 }

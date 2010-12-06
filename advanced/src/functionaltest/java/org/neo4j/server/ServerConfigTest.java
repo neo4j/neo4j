@@ -38,14 +38,16 @@ public class ServerConfigTest {
     @Test
     public void shouldPickUpPortFromConfig() throws Exception {
         
-        NeoServer server = server().onPort(NON_DEFAULT_PORT).build();
+        NeoServer server = server().withPassingStartupHealthcheck().onPort(NON_DEFAULT_PORT).build();
         server.start();
         
-        assertEquals(NON_DEFAULT_PORT, server.webServerPort);
+        assertEquals(NON_DEFAULT_PORT, server.getWebServerPort());
         
         Client client = Client.create();
         ClientResponse response = client.resource(server.baseUri()).get(ClientResponse.class);
 
         assertThat(response.getStatus(), is(200));
+        
+        server.stop();
     }
 }
