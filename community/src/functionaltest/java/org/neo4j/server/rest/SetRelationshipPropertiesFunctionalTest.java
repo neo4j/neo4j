@@ -20,40 +20,48 @@
 
 package org.neo4j.server.rest;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.neo4j.server.NeoServer;
-import org.neo4j.server.ServerTestUtils;
-import org.neo4j.server.rest.domain.GraphDbHelper;
-import org.neo4j.server.rest.domain.JsonHelper;
+import static org.junit.Assert.assertEquals;
 
-import javax.ws.rs.core.MediaType;
+import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
+import javax.ws.rs.core.MediaType;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.neo4j.server.NeoServer;
+import org.neo4j.server.ServerBuilder;
+import org.neo4j.server.rest.domain.GraphDbHelper;
+import org.neo4j.server.rest.domain.JsonHelper;
+
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
 
 public class SetRelationshipPropertiesFunctionalTest {
 
-    private static URI propertiesUri;
-    private static URI badUri;
-    public static NeoServer server;
+    private URI propertiesUri;
+    private URI badUri;
 
-    @BeforeClass
-    public static void startWebServer() throws Exception {
-        server = ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
-        long relationshipId = new GraphDbHelper(server.database()).createRelationship("KNOWS");
+    private NeoServer server;
+    
+    @Before
+    public void setupServer() throws IOException, URISyntaxException {
+        server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
+        server.start();
+        
+        long relationshipId = new GraphDbHelper(server.getDatabase()).createRelationship("KNOWS");
         propertiesUri = new URI(server.restApiUri() + "relationship/" + relationshipId + "/properties");
         badUri = new URI(server.restApiUri() + "relationship/" + (relationshipId + 1 * 99999) + "/properties");
     }
-
-    @AfterClass
-    public static void stopServer() throws Exception {
-        ServerTestUtils.nukeServer();
+    
+    @After
+    public void stopServer() {
+        server.stop();
+        server = null;
     }
 
     @Test
@@ -94,7 +102,7 @@ public class SetRelationshipPropertiesFunctionalTest {
                 JsonHelper.createJsonFrom(map)).put(ClientResponse.class);
     }
 
-    private static URI getPropertyUri(String key) throws Exception {
+    private URI getPropertyUri(String key) throws Exception {
         return new URI(propertiesUri.toString() + "/" + key);
     }
 

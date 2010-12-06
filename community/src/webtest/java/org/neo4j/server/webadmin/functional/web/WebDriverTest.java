@@ -22,12 +22,15 @@ package org.neo4j.server.webadmin.functional.web;
 
 import static org.junit.Assert.assertEquals;
 
+import java.io.File;
+import java.io.IOException;
+
+import org.apache.commons.io.FileUtils;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.neo4j.server.NeoServer;
-import org.neo4j.server.ServerTestUtils;
+import org.neo4j.server.ServerBuilder;
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.RenderedWebElement;
@@ -38,163 +41,158 @@ import org.openqa.selenium.firefox.FirefoxDriver;
 public abstract class WebDriverTest {
 
     protected WebDriver webDriver = new FirefoxDriver();
-    public static NeoServer server;
+    private NeoServer server;
 
+    private static final File targetHtmlDir = new File("target/classes/html");
+    private static final File srcHtmlDir = new File("src/main/resources/html");
     @BeforeClass
-    public static void startWebServer() throws Exception
-    {
-	    ServerTestUtils.nukeServer();
-        server = ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
+    public static void copyHtmlToTargetDirectory() throws IOException {
+        FileUtils.copyDirectory(srcHtmlDir, targetHtmlDir);
     }
-
-
-    @AfterClass
-    public static void stopWebServer() throws Exception
-    {
-	    ServerTestUtils.nukeServer();
-    }
-
+    
+    
     @Before
-	public void initWebDriver() {
-		String url = server.webadminUri().toString() + "index-no-feedback.html";
-		System.out.println("testing " + url);
+    public void setupServer() throws IOException {
+        server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
+        server.start();
+        
+        String url = server.webadminUri().toString() + "index-no-feedback.html";
+        System.out.println("testing " + url);
         webDriver.get(url);
-		
+
         waitForElementToAppear(By.className("mor_info"));
-		RenderedWebElement titleElement = waitForElementToAppear(By.xpath("//h1"));
-		assertEquals("Neo4j Web Administration", titleElement.getText());
-	}	
-	
-	@After
-	public void closeWindow() {
-		webDriver.close();
-	}
-	
-	protected ElementReference dashboardMenu = new ElementReference() {
-		public RenderedWebElement getElement() {
-			return (RenderedWebElement) waitForElementToAppear(By.id("mainmenu-dashboard")).findElement(By.tagName("a"));
-		}
-	};
-	
-	protected ElementReference consoleMenu = new ElementReference() {
-		public RenderedWebElement getElement() {
-			return (RenderedWebElement) waitForElementToAppear(By.id("mainmenu-console")).findElement(By.tagName("a"));
-		}
-	};
-	
-	protected ElementReference configMenu = new ElementReference() {
-		public RenderedWebElement getElement() {
-			return (RenderedWebElement) waitForElementToAppear(By.id("mainmenu-config")).findElement(By.tagName("a"));
-		}
-	};
-	 
-	protected ElementReference dataMenu = new ElementReference() {
-		public RenderedWebElement getElement() {
-			return (RenderedWebElement) waitForElementToAppear(By.id("mainmenu-data")).findElement(By.tagName("a"));
-		}
-	}; 
-	
-	protected ElementReference backupMenu = new ElementReference() {
-		public RenderedWebElement getElement() {
-			return (RenderedWebElement) waitForElementToAppear(By.id("mainmenu-backup")).findElement(By.tagName("a"));
-		}
-	};
-	
-	protected ElementReference ioMenu = new ElementReference() {
-		public RenderedWebElement getElement() {
-			return (RenderedWebElement) waitForElementToAppear(By.id("mainmenu-io")).findElement(By.tagName("a"));
-		}
-	};
-	
-	protected ElementReference jmxMenu = new ElementReference() {
-		public RenderedWebElement getElement() {
-			return (RenderedWebElement) waitForElementToAppear(By.id("mainmenu-jmx")).findElement(By.tagName("a"));
-		}
-	};
-	
-	protected ElementReference configDatabaseLocation = new ElementReference() {
-		public RenderedWebElement getElement() {
-			return waitForElementToAppear(By.id("mor_setting_db.root"));
-		}
-	};
-	
-	protected ElementReference consoleWrap = new ElementReference() {
-		public RenderedWebElement getElement() {
-			return waitForElementToAppear(By.className("mor_console_wrap"));
-		}
-	};
-	
-	protected ElementReference consoleInput = new ElementReference() {
-		public RenderedWebElement getElement() {
-			return waitForElementToAppear(By.id("mor_console_input"));
-		}
-	};
-	
-	protected ElementReference dashboardValueTrackers =  new ElementReference() {
-		public RenderedWebElement getElement() {
-			return waitForElementToAppear(By.id("mor_monitor_valuetrackers"));
-		} 
-	};
-	
-	protected void waitForElementToBeVisible(ElementReference elRef){
-		long end = System.currentTimeMillis() + 10000;
-        while (System.currentTimeMillis() < end) {
-        	try {
-	           if(elRef.getElement().getValueOfCssProperty("display") != "none") {
-	        	   return;
-				}
-			} catch(StaleElementReferenceException e ) {
-				
-			}
+        RenderedWebElement titleElement = waitForElementToAppear(By.xpath("//h1"));
+        assertEquals("Neo4j Web Administration", titleElement.getText());
+    }
+
+    @After
+    public void stopServer() {
+        webDriver.close();
+        server.stop();
+    }
+
+    protected ElementReference dashboardMenu = new ElementReference() {
+        public RenderedWebElement getElement() {
+            return (RenderedWebElement) waitForElementToAppear(By.id("mainmenu-dashboard")).findElement(By.tagName("a"));
         }
-        
+    };
+
+    protected ElementReference consoleMenu = new ElementReference() {
+        public RenderedWebElement getElement() {
+            return (RenderedWebElement) waitForElementToAppear(By.id("mainmenu-console")).findElement(By.tagName("a"));
+        }
+    };
+
+    protected ElementReference configMenu = new ElementReference() {
+        public RenderedWebElement getElement() {
+            return (RenderedWebElement) waitForElementToAppear(By.id("mainmenu-config")).findElement(By.tagName("a"));
+        }
+    };
+
+    protected ElementReference dataMenu = new ElementReference() {
+        public RenderedWebElement getElement() {
+            return (RenderedWebElement) waitForElementToAppear(By.id("mainmenu-data")).findElement(By.tagName("a"));
+        }
+    };
+
+    protected ElementReference backupMenu = new ElementReference() {
+        public RenderedWebElement getElement() {
+            return (RenderedWebElement) waitForElementToAppear(By.id("mainmenu-backup")).findElement(By.tagName("a"));
+        }
+    };
+
+    protected ElementReference ioMenu = new ElementReference() {
+        public RenderedWebElement getElement() {
+            return (RenderedWebElement) waitForElementToAppear(By.id("mainmenu-io")).findElement(By.tagName("a"));
+        }
+    };
+
+    protected ElementReference jmxMenu = new ElementReference() {
+        public RenderedWebElement getElement() {
+            return (RenderedWebElement) waitForElementToAppear(By.id("mainmenu-jmx")).findElement(By.tagName("a"));
+        }
+    };
+
+    protected ElementReference configDatabaseLocation = new ElementReference() {
+        public RenderedWebElement getElement() {
+            return waitForElementToAppear(By.id("mor_setting_db.root"));
+        }
+    };
+
+    protected ElementReference consoleWrap = new ElementReference() {
+        public RenderedWebElement getElement() {
+            return waitForElementToAppear(By.className("mor_console_wrap"));
+        }
+    };
+
+    protected ElementReference consoleInput = new ElementReference() {
+        public RenderedWebElement getElement() {
+            return waitForElementToAppear(By.id("mor_console_input"));
+        }
+    };
+
+    protected ElementReference dashboardValueTrackers = new ElementReference() {
+        public RenderedWebElement getElement() {
+            return waitForElementToAppear(By.id("mor_monitor_valuetrackers"));
+        }
+    };
+
+    protected void waitForElementToBeVisible(ElementReference elRef) {
+        long end = System.currentTimeMillis() + 10000;
+        while (System.currentTimeMillis() < end) {
+            try {
+                if (elRef.getElement().getValueOfCssProperty("display") != "none") {
+                    return;
+                }
+            } catch (StaleElementReferenceException e) {
+
+            }
+        }
+
         throw new RuntimeException("Element did not become visible within a reasonable time. Element was: " + elRef.getElement().toString());
-	}
-	
-	protected void waitForAttributeToBe(ElementReference elRef, String attributeName, String expectedValue){
-		long end = System.currentTimeMillis() + 10000;
+    }
+
+    protected void waitForAttributeToBe(ElementReference elRef, String attributeName, String expectedValue) {
+        long end = System.currentTimeMillis() + 10000;
         while (System.currentTimeMillis() < end) {
-        	try {
-	           if(elRef.getElement().getAttribute(attributeName) == expectedValue) {
-	        	   return;
-				}
-			} catch(StaleElementReferenceException e ) {
-				
-			}
+            try {
+                if (elRef.getElement().getAttribute(attributeName) == expectedValue) {
+                    return;
+                }
+            } catch (StaleElementReferenceException e) {
+
+            }
         }
-        
+
         throw new RuntimeException("Element did not become visible within a reasonable time. Element was: " + elRef.getElement().toString());
-	}
-	
-	protected void waitForAttributeToChangeFrom(ElementReference elRef, String attributeName, String currentValue){
-		long end = System.currentTimeMillis() + 10000;
+    }
+
+    protected void waitForAttributeToChangeFrom(ElementReference elRef, String attributeName, String currentValue) {
+        long end = System.currentTimeMillis() + 10000;
         while (System.currentTimeMillis() < end) {
-        	try {
-	        	if(elRef.getElement().getAttribute(attributeName) != currentValue) {
-	        	   return;
-	        	}
-        	} catch(StaleElementReferenceException e ) {
-        		
-        	}
+            try {
+                if (elRef.getElement().getAttribute(attributeName) != currentValue) {
+                    return;
+                }
+            } catch (StaleElementReferenceException e) {
+
+            }
         }
-        
+
         throw new RuntimeException("Element attribute did not change within a reasonable time. Element was: " + elRef.getElement().toString());
-	}
-	
-	protected RenderedWebElement waitForElementToAppear(By findBy) {
-		long end = System.currentTimeMillis() + 10000;
+    }
+
+    protected RenderedWebElement waitForElementToAppear(By findBy) {
+        long end = System.currentTimeMillis() + 10000;
         while (System.currentTimeMillis() < end) {
-        	try{
+            try {
                 return (RenderedWebElement) webDriver.findElement(findBy);
-        	}
-        	catch(NoSuchElementException ex)
-        	{
-        		;
-        	}
+            } catch (NoSuchElementException ex) {
+                ;
+            }
         }
-        
+
         throw new NoSuchElementException("Unable to locate element: " + findBy.toString());
-	}
-	
-	
+    }
+
 }

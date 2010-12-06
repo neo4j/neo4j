@@ -20,38 +20,59 @@
 
 package org.neo4j.server.rest;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import org.junit.Test;
-import org.neo4j.server.rest.domain.JsonHelper;
-
-import javax.ws.rs.core.MediaType;
-import java.util.Map;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class GetOnRootFunctionalTest extends FunctionalTestBase
-{
-    @Test
-    public void assert200OkFromGet() throws Exception
-    {
-        ClientResponse response = Client.create().resource( dataUri() ).get( ClientResponse.class );
-        assertEquals( 200, response.getStatus() );
+import java.io.IOException;
+import java.util.Map;
+
+import javax.ws.rs.core.MediaType;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.neo4j.server.NeoServer;
+import org.neo4j.server.ServerBuilder;
+import org.neo4j.server.rest.domain.JsonHelper;
+
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
+
+public class GetOnRootFunctionalTest {
+
+    private NeoServer server;
+    private FunctionalTestHelper functionalTestHelper;
+
+    @Before
+    public void setupServer() throws IOException {
+        server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
+        server.start();
+        functionalTestHelper = new FunctionalTestHelper(server);
+    }
+
+    @After
+    public void stopServer() {
+        server.stop();
+        server = null;
     }
 
     @Test
-    public void assertResponseHaveCorrectContentFromGet() throws Exception
-    {
-        ClientResponse response = Client.create().resource( dataUri() ).accept( MediaType.APPLICATION_JSON_TYPE ).get( ClientResponse.class );
-        String body = response.getEntity( String.class );
-        Map<String, Object> map = JsonHelper.jsonToMap( body );
-        assertEquals( nodeUri(), map.get( "node" ) );
-        assertNotNull( map.get( "reference_node" ) );
-        assertNotNull( map.get( "index" ) );
+    public void assert200OkFromGet() throws Exception {
+        ClientResponse response = Client.create().resource(functionalTestHelper.dataUri()).get(ClientResponse.class);
+        assertEquals(200, response.getStatus());
+    }
 
-        String referenceNodeUri = (String)map.get( "reference_node" );
-        response = Client.create().resource( referenceNodeUri ).accept( MediaType.APPLICATION_JSON ).get( ClientResponse.class );
-        assertEquals( 200, response.getStatus() );
+    @Test
+    public void assertResponseHaveCorrectContentFromGet() throws Exception {
+        ClientResponse response = Client.create().resource(functionalTestHelper.dataUri()).accept(MediaType.APPLICATION_JSON_TYPE).get(ClientResponse.class);
+        String body = response.getEntity(String.class);
+        Map<String, Object> map = JsonHelper.jsonToMap(body);
+        assertEquals(functionalTestHelper.nodeUri(), map.get("node"));
+        assertNotNull(map.get("reference_node"));
+        assertNotNull(map.get("index"));
+
+        String referenceNodeUri = (String) map.get("reference_node");
+        response = Client.create().resource(referenceNodeUri).accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
+        assertEquals(200, response.getStatus());
     }
 }

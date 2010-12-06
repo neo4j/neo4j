@@ -20,73 +20,84 @@
 
 package org.neo4j.server.rest;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.neo4j.server.rest.domain.GraphDbHelper;
-import org.neo4j.server.rest.domain.JsonHelper;
-
-import javax.ws.rs.core.MediaType;
-import java.net.URI;
-import java.util.Map;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class RetrieveNodeFunctionalTest extends FunctionalTestBase
-{
-    private static URI nodeUri;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Map;
 
-    @BeforeClass
-    public static void startServer() throws Exception
-    {
-        nodeUri = new URI( server.restApiUri().toString() + "node/" + new GraphDbHelper( server.database() ).createNode() );
+import javax.ws.rs.core.MediaType;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.neo4j.server.NeoServer;
+import org.neo4j.server.ServerBuilder;
+import org.neo4j.server.database.DatabaseBlockedException;
+import org.neo4j.server.rest.domain.GraphDbHelper;
+import org.neo4j.server.rest.domain.JsonHelper;
+
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.WebResource;
+
+public class RetrieveNodeFunctionalTest {
+    private URI nodeUri;
+
+    private NeoServer server;
+
+    @Before
+    public void setupServer() throws IOException, DatabaseBlockedException, URISyntaxException {
+        server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
+        server.start();
+
+        nodeUri = new URI(server.restApiUri().toString() + "node/" + new GraphDbHelper(server.getDatabase()).createNode());
+    }
+
+    @After
+    public void stopServer() {
+        server.stop();
+        server = null;
     }
 
     @Test
-    public void shouldGet200WhenRetrievingNode() throws Exception
-    {
-        ClientResponse response = retrieveNodeFromService( nodeUri.toString() );
-        assertEquals( 200, response.getStatus() );
+    public void shouldGet200WhenRetrievingNode() throws Exception {
+        ClientResponse response = retrieveNodeFromService(nodeUri.toString());
+        assertEquals(200, response.getStatus());
     }
 
     @Test
-    public void shouldGetContentLengthHeaderWhenRetrievingNode() throws Exception
-    {
-        ClientResponse response = retrieveNodeFromService( nodeUri.toString() );
-        assertNotNull( response.getHeaders().get( "Content-Length" ) );
+    public void shouldGetContentLengthHeaderWhenRetrievingNode() throws Exception {
+        ClientResponse response = retrieveNodeFromService(nodeUri.toString());
+        assertNotNull(response.getHeaders().get("Content-Length"));
     }
 
     @Test
-    public void shouldHaveJsonMediaTypeOnResponse()
-    {
-        ClientResponse response = retrieveNodeFromService( nodeUri.toString() );
-        assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
+    public void shouldHaveJsonMediaTypeOnResponse() {
+        ClientResponse response = retrieveNodeFromService(nodeUri.toString());
+        assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
     }
 
     @Test
-    public void shouldHaveJsonDataInResponse() throws Exception
-    {
-        ClientResponse response = retrieveNodeFromService( nodeUri.toString() );
+    public void shouldHaveJsonDataInResponse() throws Exception {
+        ClientResponse response = retrieveNodeFromService(nodeUri.toString());
 
-        Map<String, Object> map = JsonHelper.jsonToMap( response.getEntity( String.class ) );
-        assertTrue( map.containsKey( "self" ) );
+        Map<String, Object> map = JsonHelper.jsonToMap(response.getEntity(String.class));
+        assertTrue(map.containsKey("self"));
     }
 
     @Test
-    public void shouldGet404WhenRetrievingNonExistentNode() throws Exception
-    {
-        ClientResponse response = retrieveNodeFromService( nodeUri + "00000" );
-        assertEquals( 404, response.getStatus() );
+    public void shouldGet404WhenRetrievingNonExistentNode() throws Exception {
+        ClientResponse response = retrieveNodeFromService(nodeUri + "00000");
+        assertEquals(404, response.getStatus());
     }
 
-    private ClientResponse retrieveNodeFromService( String uri )
-    {
-        WebResource resource = Client.create().resource( uri );
-        ClientResponse response = resource.accept( MediaType.APPLICATION_JSON ).get( ClientResponse.class );
+    private ClientResponse retrieveNodeFromService(String uri) {
+        WebResource resource = Client.create().resource(uri);
+        ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
         return response;
     }
 }

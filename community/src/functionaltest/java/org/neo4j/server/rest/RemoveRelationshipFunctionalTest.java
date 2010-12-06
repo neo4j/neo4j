@@ -20,34 +20,40 @@
 
 package org.neo4j.server.rest;
 
+import static org.junit.Assert.assertEquals;
+
+import java.io.IOException;
+import java.net.URI;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.neo4j.server.NeoServer;
+import org.neo4j.server.ServerBuilder;
+import org.neo4j.server.rest.domain.GraphDbHelper;
+
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.neo4j.server.NeoServer;
-import org.neo4j.server.ServerTestUtils;
-import org.neo4j.server.rest.domain.GraphDbHelper;
-
-import java.net.URI;
-
-import static org.junit.Assert.assertEquals;
 
 public class RemoveRelationshipFunctionalTest {
 
-    private static GraphDbHelper helper;
-    public static NeoServer server;
-
-    @BeforeClass
-    public static void startServer() throws Exception {
-        server = ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
-        helper = new GraphDbHelper(server.database());
+    private NeoServer server;
+    private FunctionalTestHelper functionalTestHelper;
+    private GraphDbHelper helper;
+    
+    @Before
+    public void setupServer() throws IOException {
+        server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
+        server.start();
+        functionalTestHelper = new FunctionalTestHelper(server);
+        helper = functionalTestHelper.getGraphDbHelper();
     }
-
-    @AfterClass
-    public static void stopServer() throws Exception {
-        ServerTestUtils.nukeServer();
+    
+    @After
+    public void stopServer() {
+        server.stop();
+        server = null;
     }
 
     @Test
@@ -63,7 +69,7 @@ public class RemoveRelationshipFunctionalTest {
     public void shouldGet404WhenRemovingAnInvalidRelationship() throws Exception {
         long relationshipId = helper.createRelationship("KNOWS");
 
-        ClientResponse response = sendDeleteRequest(new URI(server.restApiUri() + "relationship/" + relationshipId * 1000));
+        ClientResponse response = sendDeleteRequest(new URI(server.restApiUri() + "relationship/" + relationshipId + 1 * 1000));
 
         assertEquals(404, response.getStatus());
     }
