@@ -27,6 +27,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import javax.management.MalformedObjectNameException;
 
@@ -94,7 +95,13 @@ public class NeoServer {
     }
 
     private void startDatabase() {
-        this.database = new Database(new File(configurator.configuration().getString(Configurator.DATABASE_LOCATION_PROPERTY_KEY)).getAbsolutePath());
+        String dbLocation = new File(configurator.configuration().getString(Configurator.DATABASE_LOCATION_PROPERTY_KEY)).getAbsolutePath();
+        Map<String, String> databaseTuningProperties = configurator.getDatabaseTuningProperties();
+        if(databaseTuningProperties != null) {
+            this.database = new Database(dbLocation, databaseTuningProperties);
+        } else {
+            this.database = new Database(dbLocation);
+        }
     }
 
     public Configuration getConfiguration() {
