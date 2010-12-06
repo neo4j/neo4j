@@ -118,7 +118,3 @@ ifndef KEEP
 	rm $(TEXTHTMLFILE)
 endif
 
-meta:
-	mkdir -p $(BUILDDIR)/meta-fop
-	a2x $(GENERAL_FLAGS) -f pdf --fop -D $(BUILDDIR)/meta-fop --conf-file=$(CONFDIR)/fop.conf --xsl-file=$(CONFDIR)/fo.xsl --xsltproc-opts "--stringparam toc.section.depth 1 --stringparam admon.graphics 1" $(SRCDIR)/meta/index.txt
-
