@@ -20,6 +20,8 @@
 
 package org.neo4j.kernel.impl.nioneo.store;
 
+import java.util.Arrays;
+
 public class IdRange
 {
     private final long[] defragIds;
@@ -46,5 +48,11 @@ public class IdRange
     public int getRangeLength()
     {
         return rangeLength;
+    }
+    
+    @Override
+    public String toString()
+    {
+        return "IdRange[" + rangeStart + "-" + (rangeStart+rangeLength-1) + ", defrag " + Arrays.toString( defragIds ) + "]";
     }
 }

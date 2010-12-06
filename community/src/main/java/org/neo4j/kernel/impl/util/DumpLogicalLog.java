@@ -20,11 +20,15 @@
 
 package org.neo4j.kernel.impl.util;
 
+import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
+import java.util.Collection;
+import java.util.TreeSet;
 
 import javax.transaction.xa.Xid;
 
@@ -48,24 +52,15 @@ public class DumpLogicalLog
 {
     public static void main( String args[] ) throws IOException
     {
-        String fileName = args[0];
-        boolean single = false;
-        int startIndex = 0;
-        if ( args[0].equals( "-single" ) )
+        for ( String arg : args )
         {
-            single = true;
-            fileName = args[1];
-            startIndex = 1;
-        }
-        for ( int i = startIndex; i < args.length; i++ )
-        {
-            fileName = args[i];
-            FileChannel fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
-            ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
-                    + Xid.MAXBQUALSIZE * 10 );
-            buffer.clear();
-            if ( !single )
+            for ( String fileName : filenamesOf( arg ) )
             {
+                System.out.println( "=== " + fileName + " ===" );
+                FileChannel fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
+                ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
+                        + Xid.MAXBQUALSIZE * 10 );
+                buffer.clear();
                 buffer.limit( 16 );
                 if ( fileChannel.read( buffer ) != 16 )
                 {
@@ -79,16 +74,39 @@ public class DumpLogicalLog
                 long prevLastCommittedTx = buffer.getLong();
                 System.out.println( "Logical log version: " + logVersion + " with prev committed tx[" +
                     prevLastCommittedTx + "]" );
+                long logEntriesFound = 0;
+                XaCommandFactory cf = new CommandFactory();
+                while ( readEntry( fileChannel, buffer, cf ) )
+                {
+                    logEntriesFound++;
+                }
+                fileChannel.close();
             }
-            long logEntriesFound = 0;
-            XaCommandFactory cf = new CommandFactory();
-            while ( readEntry( fileChannel, buffer, cf ) )
+        }
+    }
+
+    private static String[] filenamesOf( String string )
+    {
+        File file = new File( string );
+        if ( file.isDirectory() )
+        {
+            File[] files = file.listFiles( new FilenameFilter()
             {
-                logEntriesFound++;
+                public boolean accept( File dir, String name )
+                {
+                    return name.contains( "_logical.log.v" );
+                }
+            } );
+            Collection<String> result = new TreeSet<String>();
+            for ( int i = 0; i < files.length; i++ )
+            {
+                result.add( files[i].getPath() );
             }
-            System.out.println( "Internal recovery completed, scanned " + logEntriesFound
-                + " log entries." );
-            fileChannel.close();
+            return result.toArray( new String[result.size()] );
+        }
+        else
+        {
+            return new String[] { string };
         }
     }
 
@@ -106,66 +124,64 @@ public class DumpLogicalLog
     
     private static class CommandFactory extends XaCommandFactory
     {
-
         @Override
         public XaCommand readCommand( ReadableByteChannel byteChannel,
                 ByteBuffer buffer ) throws IOException
         {
             return DumpLogicalLog.readCommand( byteChannel, buffer );
         }
-        
     }
 
     static DynamicRecord readDynamicRecord( ReadableByteChannel byteChannel,
             ByteBuffer buffer ) throws IOException
+    {
+        // id+type+in_use(byte)+prev_block(int)+nr_of_bytes(int)+next_block(int)
+        buffer.clear();
+        buffer.limit( 9 );
+        if ( byteChannel.read( buffer ) != buffer.limit() )
         {
-            // id+type+in_use(byte)+prev_block(int)+nr_of_bytes(int)+next_block(int)
+            return null;
+        }
+        buffer.flip();
+        int id = buffer.getInt();
+        int type = buffer.getInt();
+        byte inUseFlag = buffer.get();
+        boolean inUse = false;
+        if ( inUseFlag == Record.IN_USE.byteValue() )
+        {
+            inUse = true;
             buffer.clear();
-            buffer.limit( 9 );
+            buffer.limit( 12 );
             if ( byteChannel.read( buffer ) != buffer.limit() )
             {
                 return null;
             }
             buffer.flip();
-            int id = buffer.getInt();
-            int type = buffer.getInt();
-            byte inUseFlag = buffer.get();
-            boolean inUse = false;
-            if ( inUseFlag == Record.IN_USE.byteValue() )
-            {
-                inUse = true;
-                buffer.clear();
-                buffer.limit( 12 );
-                if ( byteChannel.read( buffer ) != buffer.limit() )
-                {
-                    return null;
-                }
-                buffer.flip();
-            }
-            else if ( inUseFlag != Record.NOT_IN_USE.byteValue() )
-            {
-                throw new IOException( "Illegal in use flag: " + inUseFlag );
-            }
-            DynamicRecord record = new DynamicRecord( id );
-            record.setInUse( inUse, type );
-            if ( inUse )
-            {
-                record.setPrevBlock( buffer.getInt() );
-                int nrOfBytes = buffer.getInt();
-                record.setNextBlock( buffer.getInt() );
-                buffer.clear();
-                buffer.limit( nrOfBytes );
-                if ( byteChannel.read( buffer ) != buffer.limit() )
-                {
-                    return null;
-                }
-                buffer.flip();
-                byte data[] = new byte[nrOfBytes];
-                buffer.get( data );
-                record.setData( data );
-            }
-            return record;
         }
+        else if ( inUseFlag != Record.NOT_IN_USE.byteValue() )
+        {
+            throw new IOException( "Illegal in use flag: " + inUseFlag );
+        }
+        DynamicRecord record = new DynamicRecord( id );
+        record.setInUse( inUse, type );
+        if ( inUse )
+        {
+            record.setPrevBlock( buffer.getInt() );
+            int nrOfBytes = buffer.getInt();
+            record.setNextBlock( buffer.getInt() );
+            buffer.clear();
+            buffer.limit( nrOfBytes );
+            if ( byteChannel.read( buffer ) != buffer.limit() )
+            {
+                return null;
+            }
+            buffer.flip();
+            byte data[] = new byte[nrOfBytes];
+            buffer.get( data );
+            record.setData( data );
+        }
+        return record;
+    }
 
     // means the first byte of the command record was only written but second 
     // (saying what type) did not get written but the file still got expanded
@@ -386,28 +402,17 @@ public class DumpLogicalLog
     {
         switch ( type )
         {
-            case 1:
-                return PropertyType.INT;
-            case 2:
-                return PropertyType.STRING;
-            case 3:
-                return PropertyType.BOOL;
-            case 4:
-                return PropertyType.DOUBLE;
-            case 5:
-                return PropertyType.FLOAT;
-            case 6:
-                return PropertyType.LONG;
-            case 7:
-                return PropertyType.BYTE;
-            case 8:
-                return PropertyType.CHAR;
-            case 9:
-                return PropertyType.ARRAY;
-            case 10:
-                return PropertyType.SHORT;
-            case 0:
-                return null;
+            case 1: return PropertyType.INT;
+            case 2: return PropertyType.STRING;
+            case 3: return PropertyType.BOOL;
+            case 4: return PropertyType.DOUBLE;
+            case 5: return PropertyType.FLOAT;
+            case 6: return PropertyType.LONG;
+            case 7: return PropertyType.BYTE;
+            case 8: return PropertyType.CHAR;
+            case 9: return PropertyType.ARRAY;
+            case 10: return PropertyType.SHORT;
+            case 0: return null;
         }
         throw new InvalidRecordException( "Unknown property type:" + type );
     }
