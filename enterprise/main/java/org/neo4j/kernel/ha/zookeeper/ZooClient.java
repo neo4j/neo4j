@@ -109,7 +109,8 @@ public class ZooClient extends AbstractZooKeeperManager
                 long newSessionId = zooKeeper.getSessionId();
                 Pair<Master, Machine> masterBeforeIWrite = getMasterFromZooKeeper( false );
                 msgLog.logMessage( "Get master before write:" + masterBeforeIWrite );
-                if ( newSessionId != sessionId || masterBeforeIWrite.other().getMachineId() != getCachedMaster().other().getMachineId() )
+                boolean masterBeforeIWriteDiffers = masterBeforeIWrite.other().getMachineId() != getCachedMaster().other().getMachineId();
+                if ( newSessionId != sessionId || masterBeforeIWriteDiffers )
                 {
                     sequenceNr = setup();
                     msgLog.logMessage( "Did setup, seq=" + sequenceNr + " new sessionId=" + newSessionId );
@@ -117,11 +118,11 @@ public class ZooClient extends AbstractZooKeeperManager
                     Pair<Master, Machine> masterAfterIWrote = getMasterFromZooKeeper( false );
                     msgLog.logMessage( "Get master after write:" + masterAfterIWrote );
                     int masterId = masterAfterIWrote.other().getMachineId();
-    //                if ( masterBeforeIWrite.other().getMachineId() != masterId && masterId != machineId )
-    //                {
-                        setDataChangeWatcher( MASTER_NOTIFY_CHILD, masterId );
-    //                }
-                    receiver.newMaster( masterAfterIWrote, new Exception() );
+                    setDataChangeWatcher( MASTER_NOTIFY_CHILD, masterId );
+                    if ( sessionId != -1 )
+                    {
+                        receiver.newMaster( masterAfterIWrote, new Exception() );
+                    }
                     sessionId = newSessionId;
                 }
                 else

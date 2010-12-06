@@ -22,6 +22,7 @@ package org.neo4j.kernel.ha;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -61,7 +62,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public class MasterServer extends CommunicationProtocol implements ChannelPipelineFactory
 {
-    private final static int DEAD_CONNECTIONS_CHECK_INTERVAL = 10;
+    private final static int DEAD_CONNECTIONS_CHECK_INTERVAL = 3;
     private final static int MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS = 200;
     
     private final ChannelFactory channelFactory;
@@ -102,7 +103,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
         {
             public void run()
             {
-//                checkForDeadChannels();
+                checkForDeadChannels();
             }
         }, DEAD_CONNECTIONS_CHECK_INTERVAL, DEAD_CONNECTIONS_CHECK_INTERVAL, TimeUnit.SECONDS );
     }
@@ -183,31 +184,33 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
 //        channelFactory.releaseExternalResources();
     }
 
-//    private void checkForDeadChannels()
-//    {
-//        synchronized ( connectedSlaveChannels )
-//        {
-//            Collection<Channel> channelsToRemove = new ArrayList<Channel>();
-//            for ( Map.Entry<Channel, SlaveContext> entry : connectedSlaveChannels.entrySet() )
-//            {
-//                if ( channelIsClosed( entry.getKey() ) )
-//                {
-//                    realMaster.finishTransaction( entry.getValue() );
-//                }
-//                channelsToRemove.add( entry.getKey() );
-//            }
-//            for ( Channel channel : channelsToRemove )
-//            {
-//                connectedSlaveChannels.remove( channel );
-//                channelBuffers.remove( channel );
-//            }
-//        }
-//    }
+    private void checkForDeadChannels()
+    {
+        synchronized ( connectedSlaveChannels )
+        {
+            Collection<Channel> channelsToRemove = new ArrayList<Channel>();
+            for ( Map.Entry<Channel, SlaveContext> entry : connectedSlaveChannels.entrySet() )
+            {
+                if ( !channelIsOpen( entry.getKey() ) )
+                {
+                    System.out.println( "Found dead channel " + entry.getKey() + ", " + entry.getValue() );
+                    realMaster.finishTransaction( entry.getValue() );
+                    System.out.println( "Removed " + entry.getKey() + ", " + entry.getValue() );
+                }
+                channelsToRemove.add( entry.getKey() );
+            }
+            for ( Channel channel : channelsToRemove )
+            {
+                connectedSlaveChannels.remove( channel );
+                channelBuffers.remove( channel );
+            }
+        }
+    }
     
-//    private boolean channelIsClosed( Channel channel )
-//    {
-//        return channel.isConnected() && channel.isOpen();
-//    }
+    private boolean channelIsOpen( Channel channel )
+    {
+        return channel.isConnected() && channel.isOpen();
+    }
     
     // =====================================================================
     // Just some methods which aren't really used when running an HA cluster,

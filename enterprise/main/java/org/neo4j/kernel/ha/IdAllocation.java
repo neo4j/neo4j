@@ -49,4 +49,10 @@ public final class IdAllocation
     {
         return this.idRange;
     }
+    
+    @Override
+    public String toString()
+    {
+        return "IdAllocation[" + idRange + ", " + highestIdInUse + ", " + defragCount + "]";
+    }
 }

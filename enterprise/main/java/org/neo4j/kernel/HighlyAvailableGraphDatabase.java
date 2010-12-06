@@ -274,6 +274,10 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 startAsSlave();
                 restarted = true;
             }
+            else
+            {
+                ((SlaveIdGeneratorFactory) getConfig().getIdGeneratorFactory()).forgetIdAllocationsFromMaster();
+            }
             tryToEnsureIAmNotABrokenMachine( broker.getMaster() );
         }
         if ( restarted )
@@ -571,7 +575,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     {
         try
         {
-            msgLog.logMessage( "newMaster( " + master + ") called", e, true );
+            msgLog.logMessage( "newMaster(" + master + ") called", e, true );
             reevaluateMyself( master );
         }
         catch ( ZooKeeperException ee )
@@ -587,7 +591,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             t.printStackTrace();
             msgLog.logMessage( "Reevaluation ended in unknown exception " + t
                     + " so shutting down", true );
-            shutdown();
+            shutdown( t instanceof RuntimeException ? (RuntimeException) t : new RuntimeException( t ) );
             if ( t instanceof RuntimeException )
             {
                 throw (RuntimeException) t;

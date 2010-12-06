@@ -20,12 +20,14 @@
 
 package org.neo4j.kernel.ha;
 
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
 
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
@@ -39,7 +41,8 @@ public class SlaveIdGenerator implements IdGenerator
     {
         private final Broker broker;
         private final ResponseReceiver receiver;
-        private final Map<IdType, IdGenerator> generators = new HashMap<IdType, IdGenerator>();
+        private final Map<IdType, SlaveIdGenerator> generators =
+                new EnumMap<IdType, SlaveIdGenerator>( IdType.class );
         private final IdGeneratorFactory localFactory =
                 CommonFactories.defaultIdGeneratorFactory();
 
@@ -53,8 +56,8 @@ public class SlaveIdGenerator implements IdGenerator
         {
             IdGenerator localIdGenerator = localFactory.open( fileName, grabSize,
                     idType, highestIdInUse );
-            IdGenerator generator = new SlaveIdGenerator( idType, highestIdInUse, broker, receiver,
-                    localIdGenerator );
+            SlaveIdGenerator generator = new SlaveIdGenerator( idType, highestIdInUse, broker,
+                    receiver, localIdGenerator );
             generators.put( idType, generator );
             return generator;
         }
@@ -73,13 +76,22 @@ public class SlaveIdGenerator implements IdGenerator
         {
             store.updateIdGenerators();
         }
+        
+        public void forgetIdAllocationsFromMaster()
+        {
+            for ( SlaveIdGenerator idGenerator : generators.values() )
+            {
+                idGenerator.forgetIdAllocationFromMaster();
+            }
+        }
     };
     
     private final Broker broker;
     private final ResponseReceiver receiver;
     private volatile long highestIdInUse;
     private volatile long defragCount;
-    private IdRangeIterator idQueue = new IdRangeIterator( new IdRange( new long[0], 0, 0 ) );
+    private volatile IdRangeIterator idQueue = EMPTY_ID_RANGE_ITERATOR;
+    private volatile int allocationMaster;
     private final IdType idType;
     private final IdGenerator localIdGenerator;
 
@@ -90,6 +102,11 @@ public class SlaveIdGenerator implements IdGenerator
         this.broker = broker;
         this.receiver = receiver;
         this.localIdGenerator = localIdGenerator;
+    }
+    
+    private void forgetIdAllocationFromMaster()
+    {
+        this.idQueue = EMPTY_ID_RANGE_ITERATOR;
     }
 
     public void close()
@@ -116,11 +133,17 @@ public class SlaveIdGenerator implements IdGenerator
         try
         {
             long nextId = nextLocalId();
+            Pair<Master, Machine> master = broker.getMaster();
             if ( nextId == VALUE_REPRESENTING_NULL )
             {
-                // If we dont have anymore grabbed ids from master, grab a bunch 
-                IdAllocation allocation = broker.getMaster().first().allocateIds( idType );
+                // If we dont have anymore grabbed ids from master, grab a bunch
+                IdAllocation allocation = master.first().allocateIds( idType );
+                allocationMaster = master.other().getMachineId();
                 nextId = storeLocally( allocation );
+            }
+            else
+            {
+                assert master.other().getMachineId() == allocationMaster;
             }
             return nextId;
         }
@@ -208,4 +231,14 @@ public class SlaveIdGenerator implements IdGenerator
             }
         }
     }
+    
+    private static IdRangeIterator EMPTY_ID_RANGE_ITERATOR = 
+            new IdRangeIterator( new IdRange( new long[0], 0, 0 ) )
+    {
+        @Override
+        long next()
+        {
+            return VALUE_REPRESENTING_NULL;
+        };
+    };
 }
