@@ -28,7 +28,6 @@ import java.util.Random;
 
 public class ServerTestUtils
 {
-    private static final String TEST_PORT = "7474";
 
     public static File createTempDir() throws IOException
     {
@@ -73,53 +72,5 @@ public class ServerTestUtils
         File f = new File( parentDir, "test-" + new Random().nextInt() + ".properties" );
         f.deleteOnExit();
         return f;
-    }
-
-    public static NeoServer initializeServerWithRandomTemporaryDatabaseDirectory() throws ServerStartupException
-    {
-
-        writeConfig( TEST_PORT );
-
-        NeoServer.main( null );
-
-        return NeoServer.getServer_FOR_TESTS_ONLY_KITTENS_DIE_WHEN_YOU_USE_THIS();
-    }
-
-    private static void writeConfig( String portNo )
-    {
-        try
-        {
-            File temporaryConfigFile = createTempPropertyFile();
-            writePropertyToFile( "org.neo4j.server.database.location", createTempDir().getAbsolutePath(), temporaryConfigFile );
-            writePropertyToFile( "org.neo4j.server.webserver.port", portNo, temporaryConfigFile );
-            writePropertyToFile( NeoServer.WEBADMIN_NAMESPACE_PROPERTY_KEY + "rrdb.location", createTempDir().getAbsolutePath(), temporaryConfigFile );
-            writePropertyToFile( NeoServer.OSGI_BUNDLE_DIR_PROPERTY_KEY, "../", temporaryConfigFile );
-
-            System.setProperty( NeoServer.NEO_CONFIG_FILE_KEY, temporaryConfigFile.getAbsolutePath() );
-
-        } catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
-    public static NeoServer initializeServerWithRandomTemporaryDatabaseDirectoryOnDefaultPort() throws ServerStartupException
-    {
-        return initializeServerWithRandomTemporaryDatabaseDirectory( "7474" );
-    }
-
-    public static void nukeServer()
-    {
-        NeoServer.shutdown();
-        System.clearProperty( NeoServer.NEO_CONFIG_FILE_KEY );
-        System.clearProperty( NeoServer.DATABASE_LOCATION_PROPERTY_KEY );
-    }
-
-    public static NeoServer initializeServerWithRandomTemporaryDatabaseDirectory( String usingPort ) throws ServerStartupException
-    {
-        writeConfig(usingPort);
-        NeoServer.main(null);
-
-        return NeoServer.getServer_FOR_TESTS_ONLY_KITTENS_DIE_WHEN_YOU_USE_THIS();
     }
 }

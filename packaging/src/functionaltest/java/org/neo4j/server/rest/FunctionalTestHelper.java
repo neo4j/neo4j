@@ -20,32 +20,27 @@
 
 package org.neo4j.server.rest;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import java.io.IOException;
+
 import org.neo4j.server.NeoServer;
-import org.neo4j.server.ServerStartupException;
-import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 
-import java.io.IOException;
-
-public abstract class FunctionalTestBase
+public final class FunctionalTestHelper
 {
-    protected static NeoServer server;
-    protected static GraphDbHelper helper;
+    private NeoServer server;
+    private GraphDbHelper helper;
 
-    @BeforeClass
-    public static void startNeoServer() throws ServerStartupException
-    {
-        server = ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
-        helper = new GraphDbHelper( server.database() );
+    public FunctionalTestHelper(NeoServer server) {
+        if(server.getDatabase() == null) {
+            throw new RuntimeException("Server must be started before using " + getClass().getName());
+        }
+        this.helper = new GraphDbHelper(server.getDatabase());
+        this.server = server;
     }
-
-    @AfterClass
-    public static void stopNeoServer() throws Exception
-    {
-        ServerTestUtils.nukeServer();
+ 
+    public GraphDbHelper getGraphDbHelper() {
+        return helper;
     }
 
     void assertLegalJson( String entity ) throws IOException
@@ -55,12 +50,12 @@ public abstract class FunctionalTestBase
 
     String dataUri()
     {
-        return NeoServer.getServer_FOR_TESTS_ONLY_KITTENS_DIE_WHEN_YOU_USE_THIS().restApiUri().toString();
+        return server.restApiUri().toString();
     }
 
     String managementUri()
     {
-        return NeoServer.getServer_FOR_TESTS_ONLY_KITTENS_DIE_WHEN_YOU_USE_THIS().managementApiUri().toString();
+        return server.managementApiUri().toString();
     }
 
     String nodeUri()
@@ -121,7 +116,7 @@ public abstract class FunctionalTestBase
 
 	String mangementUri()
 	{
-		return NeoServer.getServer_FOR_TESTS_ONLY_KITTENS_DIE_WHEN_YOU_USE_THIS().managementApiUri().toString();
+		return server.managementApiUri().toString();
 	}
 
     String indexUri( String indexName )

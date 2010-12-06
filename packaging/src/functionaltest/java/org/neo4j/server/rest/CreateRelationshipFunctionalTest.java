@@ -23,28 +23,47 @@ package org.neo4j.server.rest;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.io.IOException;
 import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
 
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.server.NeoServer;
+import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
+import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.RelationshipRepresentationTest;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
-public class CreateRelationshipFunctionalTest extends FunctionalTestBase
+public class CreateRelationshipFunctionalTest
 {
-    private static String RELATIONSHIP_URI_PATTERN;
-
-    @BeforeClass
-    public static void startServer()
-    {
+    private String RELATIONSHIP_URI_PATTERN;
+    
+    private NeoServer server;
+    private FunctionalTestHelper functionalTestHelper;
+    private GraphDbHelper helper;
+    
+    @Before
+    public void setupServer() throws IOException {
+        server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
+        server.start();
+        functionalTestHelper = new FunctionalTestHelper(server);
+        helper = functionalTestHelper.getGraphDbHelper();
+        
         RELATIONSHIP_URI_PATTERN = server.restApiUri() + "relationship/[0-9]+";
+    }
+    
+    @After
+    public void stopServer() {
+        server.stop();
+        server = null;
     }
 
     @Test

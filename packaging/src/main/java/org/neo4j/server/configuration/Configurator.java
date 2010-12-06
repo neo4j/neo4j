@@ -25,7 +25,6 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.configuration.SystemConfiguration;
-import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.logging.Logger;
 
@@ -33,8 +32,26 @@ import java.io.File;
 
 public class Configurator {
 
+    public static final String DATABASE_LOCATION_PROPERTY_KEY = "org.neo4j.server.database.location";
+    public static final String DEFAULT_CONFIG_DIR = File.separator + "etc" + File.separator + "neo";
+    public static final String NEO_SERVER_CONFIG_FILE_KEY = "org.neo4j.server.properties";
+    public static final String WEBSERVER_PORT_PROPERTY_KEY = "org.neo4j.server.webserver.port";
+    public static final int DEFAULT_WEBSERVER_PORT = 7474;
+    public static final String WEB_ADMIN_PATH = "/webadmin";
+    public static final String STATIC_WEB_CONTENT_LOCATION = "html";
+    public static final String WEB_ADMIN_REST_API_PATH = "/db/manage";
+    public static final String WEB_ADMIN_REST_API_PACKAGE = "org.neo4j.server.webadmin.rest";
+    public static final String REST_API_PATH = "/db/data";
+    public static final String REST_API_PACKAGE = "org.neo4j.server.rest.web";
+    public static final String ENABLE_OSGI_SERVER_PROPERTY_KEY = "org.neo4j.server.osgi.enable";
+    public static final String OSGI_BUNDLE_DIR_PROPERTY_KEY = "org.neo4j.server.osgi.bundledir";
+    public static final String OSGI_CACHE_DIR_PROPERTY_KEY = "org.neo4j.server.osgi.cachedir";
+    public static final String WEBADMIN_NAMESPACE_PROPERTY_KEY = "org.neo4j.server.webadmin";
+    public static final String WEB_ADMIN_PATH_PROPERTY_KEY = "org.neo4j.server.webadmin.management.uri";
+    public static final String WEB_ADMIN_REST_API_PATH_PROPERTY_KEY = "org.neo4j.server.webadmin.data.uri";
+
     public static Logger log = Logger.getLogger(Configurator.class);
-    
+
     private CompositeConfiguration serverConfiguration = new CompositeConfiguration();
 
     private Validator validator = new Validator();
@@ -42,8 +59,7 @@ public class Configurator {
     Configurator() {
         this(new Validator(), null);
     }
-    
-    
+
     public Configurator(File propertiesFile) {
         this(null, propertiesFile);
     }
@@ -51,16 +67,16 @@ public class Configurator {
     public Configurator(Validator v) {
         this(v, null);
     }
-    
+
     public Configurator(Validator v, File propertiesFile) {
         if (propertiesFile == null) {
-            propertiesFile = new File(System.getProperty(NeoServer.NEO_CONFIG_FILE_KEY));
+            propertiesFile = new File(System.getProperty(Configurator.NEO_SERVER_CONFIG_FILE_KEY));
         }
-        
+
         try {
             loadPropertiesConfig(propertiesFile);
-            if (v!=null) {
-              v.validate( this.configuration() );
+            if (v != null) {
+                v.validate(this.configuration());
             }
         } catch (ConfigurationException ce) {
             log.warn(ce);

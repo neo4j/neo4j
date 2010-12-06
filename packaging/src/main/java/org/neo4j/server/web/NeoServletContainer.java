@@ -45,8 +45,8 @@ public class NeoServletContainer extends ServletContainer
 	{
 		super.configure( wc, rc, wa );
 
-		rc.getSingletons().add( new DatabaseProvider( server.database() ) );
-		rc.getSingletons().add( new ConfigurationProvider( server.configuration() ) );
-		rc.getSingletons().add( new RrdDbProvider( server.database().rrdDb() ) );
+		rc.getSingletons().add( new DatabaseProvider( server.getDatabase() ) );
+		rc.getSingletons().add( new ConfigurationProvider( server.getConfiguration() ) );
+		rc.getSingletons().add( new RrdDbProvider( server.getDatabase().rrdDb() ) );
 	}
 }

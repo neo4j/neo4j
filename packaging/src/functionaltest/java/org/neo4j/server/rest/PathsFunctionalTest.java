@@ -20,38 +20,53 @@
 
 package org.neo4j.server.rest;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.neo4j.server.database.DatabaseBlockedException;
-import org.neo4j.server.rest.domain.JsonHelper;
-
-import javax.ws.rs.core.MediaType;
-import java.util.Collection;
-import java.util.Map;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class PathsFunctionalTest extends FunctionalTestBase
-{
-    private static long[] nodes;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Map;
 
-    @BeforeClass
-    public static void startServer() throws DatabaseBlockedException
-    {
-        try
-        {
-            nodes = createMoreComplexGraph();
-        } catch ( Exception e )
-        {
-            e.printStackTrace();
-        }
+import javax.ws.rs.core.MediaType;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.neo4j.server.NeoServer;
+import org.neo4j.server.ServerBuilder;
+import org.neo4j.server.database.DatabaseBlockedException;
+import org.neo4j.server.rest.domain.GraphDbHelper;
+import org.neo4j.server.rest.domain.JsonHelper;
+
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.WebResource;
+
+public class PathsFunctionalTest
+{
+    private long[] nodes;
+    
+    private NeoServer server;
+    private FunctionalTestHelper functionalTestHelper;
+    private GraphDbHelper helper;
+
+    @Before
+    public void setupServer() throws IOException {
+        server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
+        server.start();
+        functionalTestHelper = new FunctionalTestHelper(server);
+        helper = functionalTestHelper.getGraphDbHelper();
+        
+        nodes = createMoreComplexGraph();
     }
 
-    private static long[] createMoreComplexGraph() throws DatabaseBlockedException
+    @After
+    public void stopServer() {
+        server.stop();
+    }
+    
+
+    private long[] createMoreComplexGraph() throws DatabaseBlockedException
     {
         // (a)
         // / \

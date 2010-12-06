@@ -23,7 +23,7 @@ package org.neo4j.server.startup.healthcheck;
 import java.io.File;
 import java.util.Properties;
 
-import org.neo4j.server.NeoServer;
+import org.neo4j.server.configuration.Configurator;
 
 public class ConfigFileMustBePresentRule implements StartupHealthCheckRule {
     private static final String EMPTY_STRING = "";
@@ -34,10 +34,10 @@ public class ConfigFileMustBePresentRule implements StartupHealthCheckRule {
     public boolean execute(Properties properties) {
         ran = true;
 
-        String configFilename = properties.getProperty(NeoServer.NEO_CONFIG_FILE_KEY);
+        String configFilename = properties.getProperty(Configurator.NEO_SERVER_CONFIG_FILE_KEY);
         
         if(configFilename == null) {
-            failureMessage = String.format("Property [%s] has not been set.", NeoServer.NEO_CONFIG_FILE_KEY);
+            failureMessage = String.format("Property [%s] has not been set.", Configurator.NEO_SERVER_CONFIG_FILE_KEY);
             
             return false;
         }

@@ -20,15 +20,16 @@
 
 package org.neo4j.server.startup.healthcheck;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Properties;
 
 import org.junit.Test;
-import org.neo4j.server.NeoServer;
 import org.neo4j.server.ServerTestUtils;
+import org.neo4j.server.configuration.Configurator;
 
 public class ConfigFileMustBePresentRuleTest {
     @Test
@@ -49,19 +50,19 @@ public class ConfigFileMustBePresentRuleTest {
     @Test
     public void shouldPassIfThereIsAConfigFileWhereTheSystemPropertyPoints() throws IOException {
         File propertyFile = ServerTestUtils.createTempPropertyFile();
-        ServerTestUtils.writePropertyToFile(NeoServer.DATABASE_LOCATION_PROPERTY_KEY, "/tmp/foo.db", propertyFile);
+        ServerTestUtils.writePropertyToFile(Configurator.DATABASE_LOCATION_PROPERTY_KEY, "/tmp/foo.db", propertyFile);
         
         ConfigFileMustBePresentRule rule = new ConfigFileMustBePresentRule();
         assertTrue(rule.execute(propertiesWithConfigFileLocation(propertyFile)));
     }
     
     private Properties propertiesWithoutConfigFileLocation() {
-        System.clearProperty(NeoServer.NEO_CONFIG_FILE_KEY);
+        System.clearProperty(Configurator.NEO_SERVER_CONFIG_FILE_KEY);
         return System.getProperties();
     }
     
     private Properties propertiesWithConfigFileLocation(File propertyFile) {
-        System.setProperty(NeoServer.NEO_CONFIG_FILE_KEY, propertyFile.getAbsolutePath());
+        System.setProperty(Configurator.NEO_SERVER_CONFIG_FILE_KEY, propertyFile.getAbsolutePath());
         return System.getProperties();
     }
 }
