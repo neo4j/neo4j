@@ -20,10 +20,20 @@
 
 package org.neo4j.server;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.server.ServerTestUtils.createTempDir;
+import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
+import static org.neo4j.server.ServerTestUtils.writePropertyToFile;
+
 import java.io.File;
 import java.io.IOException;
+import java.util.Properties;
 
-import static org.neo4j.server.ServerTestUtils.*;
+import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
+import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
+import org.neo4j.server.web.Jetty6WebServer;
 
 public class ServerBuilder {
 
@@ -32,51 +42,93 @@ public class ServerBuilder {
     private String rrdbDir = "/tmp/neo.rr.db";
     private String webAdminUri = "http://localhost:7474/db/manage/";
     private String webAdminDataUri = "http://localhost:7474/db/data/";
+    private StartupHealthCheck startupHealthCheck;
+    private AddressResolver addressResolver = new LocalhostAddressResolver();
 
     public static ServerBuilder server() {
         return new ServerBuilder();
     }
-    
+
     public NeoServer build() throws IOException {
         File f = createPropertyFile();
-        System.setProperty(NeoServer.NEO_CONFIG_FILE_KEY, f.getAbsolutePath());
-        return new NeoServer();
+        return new NeoServer(addressResolver, startupHealthCheck, f, new Jetty6WebServer());
     }
 
     private File createPropertyFile() throws IOException {
         File temporaryConfigFile = createTempPropertyFile();
-        writePropertyToFile( "org.neo4j.server.database.location", dbDir, temporaryConfigFile );
-        writePropertyToFile( "org.neo4j.server.webserver.port", portNo, temporaryConfigFile );
-        writePropertyToFile( NeoServer.WEBADMIN_NAMESPACE_PROPERTY_KEY + "rrdb.location", rrdbDir, temporaryConfigFile );
-        writePropertyToFile( "org.neo4j.server.webadmin.management.uri", webAdminUri, temporaryConfigFile );
-        writePropertyToFile( "org.neo4j.server.webadmin.data.uri", webAdminDataUri, temporaryConfigFile );
+        writePropertyToFile(Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir, temporaryConfigFile);
+        if (portNo != null) {
+            writePropertyToFile(Configurator.WEBSERVER_PORT_PROPERTY_KEY, portNo, temporaryConfigFile);
+        }
+        writePropertyToFile(Configurator.WEBADMIN_NAMESPACE_PROPERTY_KEY + ".rrdb.location", rrdbDir, temporaryConfigFile);
+        writePropertyToFile(Configurator.WEB_ADMIN_PATH_PROPERTY_KEY, webAdminUri, temporaryConfigFile);
+        writePropertyToFile(Configurator.WEB_ADMIN_REST_API_PATH_PROPERTY_KEY, webAdminDataUri, temporaryConfigFile);
         return temporaryConfigFile;
     }
 
-    private ServerBuilder() {}
-    
+    private ServerBuilder() {
+    }
+
+    public ServerBuilder withPassingStartupHealthcheck() {
+        startupHealthCheck = mock(StartupHealthCheck.class);
+        when(startupHealthCheck.run()).thenReturn(true);
+        return this;
+    }
+
     public ServerBuilder onPort(int portNo) {
         this.portNo = String.valueOf(portNo);
         return this;
     }
-    
+
     public ServerBuilder usingDatabaseDir(String dbDir) {
         this.dbDir = dbDir;
         return this;
     }
-    
+
+    public ServerBuilder withRandomDatabaseDir() throws IOException {
+        this.dbDir = createTempDir().getAbsolutePath();
+        return this;
+    }
+
     public ServerBuilder usingRoundRobinDatabaseDir(String rrdbDir) {
         this.rrdbDir = rrdbDir;
         return this;
     }
-    
+
     public ServerBuilder withWebAdminUri(String webAdminUri) {
         this.webAdminUri = webAdminUri;
         return this;
     }
-    
+
     public ServerBuilder withWebDataAdminUri(String webAdminDataUri) {
         this.webAdminDataUri = webAdminDataUri;
+        return this;
+    }
+
+    public ServerBuilder withoutWebServerPort() {
+        portNo = null;
+        return this;
+    }
+    
+    public ServerBuilder withNetworkBoundHostnameResolver() {
+        addressResolver = new AddressResolver();
+        return this;
+    }
+
+    public ServerBuilder withFailingStartupHealthcheck() {
+        startupHealthCheck = mock(StartupHealthCheck.class);
+        when(startupHealthCheck.run()).thenReturn(false);
+        when(startupHealthCheck.failedRule()).thenReturn(new StartupHealthCheckRule() {
+
+            public String getFailureMessage() {
+                return "mockFailure";
+            }
+
+            public boolean execute(Properties properties) {
+                // TODO Auto-generated method stub
+                return false;
+            }
+        });
         return this;
     }
 }

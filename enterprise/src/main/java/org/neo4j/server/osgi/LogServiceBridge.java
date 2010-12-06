@@ -20,16 +20,13 @@
 
 package org.neo4j.server.osgi;
 
+import org.apache.log4j.Level;
 import org.apache.log4j.Priority;
 import org.neo4j.server.logging.Logger;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.log.LogService;
-
-import java.util.logging.Level;
-
-import static org.osgi.service.log.LogService.*;
 
 /**
  * Provides an OSGi LogService which pipes through to the Neo4j Logger.
@@ -66,7 +63,6 @@ public class LogServiceBridge implements BundleActivator
         @Override
         public void log( int level, String message )
         {
-            Level neoLogLevel = null;
             switch ( level )
             {
                 case LOG_INFO:
@@ -91,16 +87,16 @@ public class LogServiceBridge implements BundleActivator
             switch ( level )
             {
                 case LOG_INFO:
-                    neoLogPriority = Priority.INFO;
+                    neoLogPriority = Level.INFO;
                     break;
                 case LOG_DEBUG:
-                    neoLogPriority = Priority.DEBUG;
+                    neoLogPriority = Level.DEBUG;
                     break;
                 case LOG_ERROR:
-                    neoLogPriority = Priority.ERROR;
+                    neoLogPriority = Level.ERROR;
                     break;
                 case LOG_WARNING:
-                    neoLogPriority = Priority.WARN;
+                    neoLogPriority = Level.WARN;
                     break;
             }
             log.log(neoLogPriority, message, exception);

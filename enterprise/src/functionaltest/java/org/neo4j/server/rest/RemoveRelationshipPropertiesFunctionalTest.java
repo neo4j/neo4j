@@ -20,20 +20,45 @@
 
 package org.neo4j.server.rest;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import org.junit.Test;
-import org.neo4j.server.database.DatabaseBlockedException;
+import static org.junit.Assert.assertEquals;
 
-import javax.ws.rs.core.MediaType;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
+import javax.ws.rs.core.MediaType;
 
-public class RemoveRelationshipPropertiesFunctionalTest extends
-        FunctionalTestBase
-{
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.neo4j.server.NeoServer;
+import org.neo4j.server.ServerBuilder;
+import org.neo4j.server.database.DatabaseBlockedException;
+import org.neo4j.server.rest.domain.GraphDbHelper;
+
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
+
+public class RemoveRelationshipPropertiesFunctionalTest
+{    
+    private NeoServer server;
+    private FunctionalTestHelper functionalTestHelper;
+    private GraphDbHelper helper;
+
+    @Before
+    public void setupServer() throws IOException {
+        server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
+        server.start();
+        functionalTestHelper = new FunctionalTestHelper(server);
+        helper = functionalTestHelper.getGraphDbHelper();
+    }
+
+    @After
+    public void stopServer() {
+        server.stop();
+        server = null;
+    }
+    
     private String getPropertiesUri( long relationshipId )
     {
         return server.restApiUri() + "relationship/" + relationshipId + "/properties";

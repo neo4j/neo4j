@@ -24,11 +24,11 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
-import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
+import java.net.ServerSocket;
 
 import org.junit.After;
 import org.junit.Before;
@@ -40,92 +40,109 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class NeoServerFunctionalTest {
-    
-    public NeoServer server;
+
+    private NeoServer server;
+    private InMemoryAppender appender;
 
     @Before
-    public void setup() throws Exception {
-        server = ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
+    public void setupServer() throws IOException {
+        server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
+        appender = new InMemoryAppender(NeoServer.log);
+        server.start();
     }
 
     @After
-    public void tearDown() {
-        ServerTestUtils.nukeServer();
+    public void stopServer() {
+        server.stop();
     }
 
     @Test
     public void shouldDefaultToSensiblePortIfNoneSpecifiedInConfig() throws Exception {
-        System.setProperty(NeoServer.NEO_CONFIG_FILE_KEY, configWithoutWebServerPort().getAbsolutePath());
-        ServerTestUtils.nukeServer();
-        ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectoryOnDefaultPort();
+        NeoServer server = ServerBuilder.server().withPassingStartupHealthcheck().withoutWebServerPort().withRandomDatabaseDir().build();
+        server.start();
 
         Client client = Client.create();
         ClientResponse response = client.resource(server.webadminUri()).get(ClientResponse.class);
 
         assertThat(response.getStatus(), is(200));
+        server.stop();
     }
-   
+
+    @Test
+    public void whenServerIsStartedItshouldStartASingleDatabase() throws Exception {
+        assertNotNull(server.getDatabase());
+    }
+
+    @Test
+    public void shouldLogStartup() throws Exception {
+        assertThat(appender.toString(), containsString("Starting Neo Server on port [" + server.restApiUri().getPort() + "]"));
+    }
 
     @Test
     public void shouldRedirectRootToWebadmin() throws Exception {
+        NeoServer server = ServerBuilder.server().withPassingStartupHealthcheck().withRandomDatabaseDir().build();
+        server.start();
 
         Client client = Client.create();
-        assertFalse( server.baseUri().toString().contains( "webadmin" ) );
+        assertFalse(server.baseUri().toString().contains("webadmin"));
         ClientResponse response = client.resource(server.baseUri()).get(ClientResponse.class);
         assertThat(response.getStatus(), is(200));
-        assertThat(response.toString(), containsString( "webadmin" ));
+        assertThat(response.toString(), containsString("webadmin"));
+
+        server.stop();
     }
-    
+
     @Ignore
     @Test
     public void shouldSurviveDoubleMounts() throws Exception {
-
+        NeoServer server = ServerBuilder.server().withPassingStartupHealthcheck().withRandomDatabaseDir().build();
         Client client = Client.create();
-        assertFalse( server.baseUri().toString().contains( "testing" ) );
+        assertFalse(server.baseUri().toString().contains("testing"));
         ClientResponse response = client.resource(server.baseUri() + "db/manage/testing").get(ClientResponse.class);
         assertThat(response.getStatus(), is(200));
-        assertThat(response.toString(), containsString( "dupOne" ));
+        assertThat(response.toString(), containsString("dupOne"));
     }
-    
 
     @Test
-    public void serverShouldProvideAWelcomePage() {
+    public void serverShouldProvideAWelcomePage() throws Exception {
+        NeoServer server = ServerBuilder.server().withPassingStartupHealthcheck().withRandomDatabaseDir().build();
+        server.start();
         Client client = Client.create();
         ClientResponse response = client.resource(server.webadminUri()).get(ClientResponse.class);
 
         assertThat(response.getStatus(), is(200));
         assertThat(response.getHeaders().getFirst("Content-Type"), containsString("html"));
+        server.stop();
     }
 
     @Test
-    public void shouldMakeJAXRSClassesAvailableViaHTTP() throws URISyntaxException {
+    public void shouldMakeJAXRSClassesAvailableViaHTTP() throws Exception {
+        NeoServer server = ServerBuilder.server().withPassingStartupHealthcheck().withRandomDatabaseDir().build();
+        server.start();
         ClientResponse response = Client.create().resource(server.restApiUri()).get(ClientResponse.class);
         assertEquals(200, response.getStatus());
+        server.stop();
     }
 
     @Test
-    public void shouldLogShutdown() {
+    public void shouldLogShutdown() throws Exception {
         InMemoryAppender appender = new InMemoryAppender(NeoServer.log);
-        NeoServer.shutdown();
+        NeoServer server = ServerBuilder.server().withPassingStartupHealthcheck().withRandomDatabaseDir().build();
+        server.start();
+        server.stop();
         assertThat(appender.toString(), containsString("INFO - Successfully shutdown Neo Server on port [7474], database ["));
     }
 
     @Test
     public void shouldComplainIfServerPortIsAlreadyTaken() throws IOException {
+        int contestedPort = 9999;
+        ServerSocket socket = new ServerSocket(contestedPort);
+
         InMemoryAppender appender = new InMemoryAppender(NeoServer.log);
-        NeoServer s1 = new NeoServer();
-        s1.start();
+        NeoServer server = ServerBuilder.server().withPassingStartupHealthcheck().onPort(contestedPort).withRandomDatabaseDir().build();
+        server.start();
 
-        assertThat(appender.toString(), containsString(String.format("ERROR - Failed to start Neo Server on port [%s]", server.restApiUri()
-                .getPort())));
-        s1.stop();
-    }
-
-    private File configWithoutWebServerPort() throws IOException {
-        File tempPropertyFile = ServerTestUtils.createTempPropertyFile();
-        ServerTestUtils.writePropertyToFile("org.neo4j.server.database.location", "/tmp/neo/no-webserver-port.db", tempPropertyFile);
-        ServerTestUtils.writePropertyToFile("org.neo4j.server.webservice.packages", "org.neo4j.server.web", tempPropertyFile);
-
-        return tempPropertyFile;
+        assertThat(appender.toString(), containsString(String.format("ERROR - Failed to start Neo Server on port [%s]", server.restApiUri().getPort())));
+        socket.close();
     }
 }
