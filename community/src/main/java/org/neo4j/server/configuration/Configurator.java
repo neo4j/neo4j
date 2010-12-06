@@ -20,15 +20,17 @@
 
 package org.neo4j.server.configuration;
 
+import java.io.File;
+import java.util.Map;
+
 import org.apache.commons.configuration.CompositeConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.configuration.SystemConfiguration;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.logging.Logger;
-
-import java.io.File;
 
 public class Configurator {
 
@@ -49,12 +51,14 @@ public class Configurator {
     public static final String WEBADMIN_NAMESPACE_PROPERTY_KEY = "org.neo4j.server.webadmin";
     public static final String WEB_ADMIN_PATH_PROPERTY_KEY = "org.neo4j.server.webadmin.management.uri";
     public static final String WEB_ADMIN_REST_API_PATH_PROPERTY_KEY = "org.neo4j.server.webadmin.data.uri";
+    public static final String DB_TUNING_PROPERTY_FILE_KEY = "org.neo4j.server.db.tuning.properties";
 
     public static Logger log = Logger.getLogger(Configurator.class);
 
     private CompositeConfiguration serverConfiguration = new CompositeConfiguration();
 
     private Validator validator = new Validator();
+    private Map<String, String> databaseTuningProperties = null;
 
     Configurator() {
         this(new Validator(), null);
@@ -92,10 +96,30 @@ public class Configurator {
         PropertiesConfiguration propertiesConfig = new PropertiesConfiguration(configFile);
         if (validator.validate(propertiesConfig)) {
             serverConfiguration.addConfiguration(propertiesConfig);
+            loadDatabaseTuningProperties();
         } else {
             String failed = String.format("Error processing [%s], configuration file has failed validation.", configFile.getAbsolutePath());
             log.fatal(failed);
             throw new InvalidServerConfigurationException(failed);
         }
+    }
+
+    private void loadDatabaseTuningProperties() {
+        String databaseTuningPropertyFileLocation = serverConfiguration.getString(DB_TUNING_PROPERTY_FILE_KEY);
+        
+        if(databaseTuningPropertyFileLocation == null) {
+            return;
+        }
+        
+        if(!new File(databaseTuningPropertyFileLocation).exists()) {
+            log.warn("The specified file for database performance tuning properties [%s] does not exist.", databaseTuningPropertyFileLocation);
+            return;
+        }
+
+        databaseTuningProperties = EmbeddedGraphDatabase.loadConfigurations(databaseTuningPropertyFileLocation);
+    }
+
+    public Map<String, String> getDatabaseTuningProperties() {
+        return databaseTuningProperties ;
     }
 }
