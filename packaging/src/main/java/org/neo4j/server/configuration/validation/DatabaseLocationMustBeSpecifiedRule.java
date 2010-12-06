@@ -30,5 +30,4 @@ public class DatabaseLocationMustBeSpecifiedRule implements ValidationRule {
             throw new RuleFailedException("The key [%s] is missing from the Neo Server configuration.", Configurator.DATABASE_LOCATION_PROPERTY_KEY);
         }
     }
-
 }

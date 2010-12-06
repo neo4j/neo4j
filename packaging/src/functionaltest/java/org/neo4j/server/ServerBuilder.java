@@ -26,7 +26,9 @@ import static org.neo4j.server.ServerTestUtils.createTempDir;
 import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
 import static org.neo4j.server.ServerTestUtils.writePropertyToFile;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Properties;
 
@@ -38,12 +40,18 @@ import org.neo4j.server.web.Jetty6WebServer;
 public class ServerBuilder {
 
     private String portNo = "7474";
-    private String dbDir = "/tmo/neo.db";
+    private String dbDir = "/tmp/neo.db";
     private String rrdbDir = "/tmp/neo.rr.db";
     private String webAdminUri = "http://localhost:7474/db/manage/";
     private String webAdminDataUri = "http://localhost:7474/db/data/";
     private StartupHealthCheck startupHealthCheck;
     private AddressResolver addressResolver = new LocalhostAddressResolver();
+    
+    private static enum WhatToDo { CREATE_GOOD_TUNING_FILE, 
+                                    CREATE_DANGLING_TUNING_FILE_PROPERTY,
+                                    CREATE_CORRUPT_TUNING_FILE };
+                                    
+    private WhatToDo action;
 
     public static ServerBuilder server() {
         return new ServerBuilder();
@@ -63,8 +71,39 @@ public class ServerBuilder {
         writePropertyToFile(Configurator.WEBADMIN_NAMESPACE_PROPERTY_KEY + ".rrdb.location", rrdbDir, temporaryConfigFile);
         writePropertyToFile(Configurator.WEB_ADMIN_PATH_PROPERTY_KEY, webAdminUri, temporaryConfigFile);
         writePropertyToFile(Configurator.WEB_ADMIN_REST_API_PATH_PROPERTY_KEY, webAdminDataUri, temporaryConfigFile);
+        
+        if(action == WhatToDo.CREATE_GOOD_TUNING_FILE) {
+            File databaseTuningPropertyFile = createTempPropertyFile();
+            writePropertyToFile("neostore.nodestore.db.mapped_memory", "25M", databaseTuningPropertyFile);
+            writePropertyToFile("neostore.relationshipstore.db.mapped_memory", "50M", databaseTuningPropertyFile);
+            writePropertyToFile("neostore.propertystore.db.mapped_memory", "90M", databaseTuningPropertyFile);
+            writePropertyToFile("neostore.propertystore.db.strings.mapped_memory", "130M", databaseTuningPropertyFile);
+            writePropertyToFile("neostore.propertystore.db.arrays.mapped_memory", "130M", databaseTuningPropertyFile);
+            writePropertyToFile(Configurator.DB_TUNING_PROPERTY_FILE_KEY, databaseTuningPropertyFile.getAbsolutePath(), temporaryConfigFile);
+        } else if(action == WhatToDo.CREATE_DANGLING_TUNING_FILE_PROPERTY) {
+            writePropertyToFile(Configurator.DB_TUNING_PROPERTY_FILE_KEY, createTempPropertyFile().getAbsolutePath(), temporaryConfigFile);
+        } else if(action == WhatToDo.CREATE_CORRUPT_TUNING_FILE) {
+            File corruptTuningFile = trashFile();
+            writePropertyToFile(Configurator.DB_TUNING_PROPERTY_FILE_KEY, corruptTuningFile.getAbsolutePath(), temporaryConfigFile);
+        }
+        
         return temporaryConfigFile;
     }
+
+    private File trashFile() throws IOException {
+        File f = createTempPropertyFile();
+        
+        FileWriter fstream = new FileWriter( f, true );
+        BufferedWriter out = new BufferedWriter( fstream );
+        
+        for(int i = 0; i < 100; i++) {
+            out.write((int)System.currentTimeMillis());
+        }
+        
+        out.close();
+        return f;
+    }
+
 
     private ServerBuilder() {
     }
@@ -129,6 +168,21 @@ public class ServerBuilder {
                 return false;
             }
         });
+        return this;
+    }
+
+    public ServerBuilder withDefaultDatabaseTuning() throws IOException {
+        action = WhatToDo.CREATE_GOOD_TUNING_FILE;
+        return this;
+    }
+
+    public ServerBuilder withNonResolvableTuningFile() throws IOException {
+        action = WhatToDo.CREATE_DANGLING_TUNING_FILE_PROPERTY;
+        return this;
+    }
+
+    public ServerBuilder withCorruptTuningFile() throws IOException {
+        action = WhatToDo.CREATE_CORRUPT_TUNING_FILE;
         return this;
     }
 }
