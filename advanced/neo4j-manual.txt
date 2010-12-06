@@ -19,7 +19,7 @@ include::configuration-performance/index.txt[]
 
 :leveloffset: 1
 
-include::transactions.txt[]
+include::transactions/transactions.txt[]
 
 :leveloffset: 1
 
@@ -31,7 +31,7 @@ include::operations/index.txt[]
 
 :leveloffset: 1
 
-include::troubleshooting.txt[]
+include::troubleshooting/troubleshooting.txt[]
 
 :leveloffset: 1
 

@@ -1,8 +1,0 @@
-Development
-===========
-
-== Useful links ==
-
-* http://www.docbook.org/tdg/en/html/docbook.html[DocBook: The Definitive Guide]
-
-* http://www.sagehill.net/docbookxsl/index.html[DocBook XSL: The Complete Guide]
