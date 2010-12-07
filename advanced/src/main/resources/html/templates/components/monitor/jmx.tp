@@ -1,15 +1,14 @@
 {#template MAIN}
 	<div class="mor_page_leftcol">
-		<h1>JMX beans</h1>
 		<div class="mor_module">
-			<h2>Available beans</h2>
+			<h2>Available information (JMX Beans)</h2>
 			<ul class="mor_jmx_list">
 				{#foreach $T.jmx as domain}
 				<li>
 					<h2>{$T.domain.name}</h2>
 					<ul>
 						{#foreach $T.domain.beans as bean}
-						<li><a class="mor_monitor_jmxbean_button" href="#">{$T.bean.name.split(":")[1]}<input type="hidden" class="bean-name" value="{$T.bean.name}" /></a></li>
+						<li><a class="mor_monitor_jmxbean_button" href="#">{$T.bean.getName()}<input type="hidden" class="bean-name" value="{$T.bean.jmxName}" /></a></li>
 						{#/for}
 					</ul>	
 				</li>
@@ -20,7 +19,7 @@
 	
 	{#if $T.bean}
 	<div class="mor_page_rightcol">
-		<h2>{$T.bean.name}</h2>
+		<h2>{$T.bean.getName()}</h2>
 		<p class="small">{$T.bean.description}</p>
 		<table class="mor_jmx_table" cellspacing="0">
 			<tbody>

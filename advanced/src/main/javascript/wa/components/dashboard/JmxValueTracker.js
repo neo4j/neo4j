@@ -69,12 +69,12 @@ wa.components.dashboard.JmxValueTracker = function(server, beanDomain, beanName,
 	//
 	
 	me.poll = function() {
-		me.jmx.getBean(beanDomain, beanName, function(beans) {
-			if( beans ) {
-				var value = me.extractor(beans[0]);
+		me.jmx.getBean(beanDomain, beanName, function(bean) {
+			if( bean ) {
+				var value = me.extractor(bean);
 				if ( value !== me.prevValue ) {
 					me.prevValue = value;
-					var keepPolling = me.callback({ value:value, bean:beans[0], beanName:me.beanName });
+					var keepPolling = me.callback({ value:value, bean:bean, beanName:me.beanName });
 					
 					if( keepPolling ){
 						

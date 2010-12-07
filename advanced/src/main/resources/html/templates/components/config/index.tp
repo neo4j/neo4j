@@ -1,6 +1,5 @@
 {#template MAIN}
 	<div class="mor_page_leftcol">
-		<h1>Server configuration</h1>
 		<div class="mor_module">
 			<p class="mor_info">Changing settings will always require a restart of the neo4j server, some settings, like changing JVM memory, also requires a JVM restart.</p>
 			

@@ -57,7 +57,7 @@ wa.components.jmx.Jmx = (function($) {
              *            matching beans (usually just one, but could be several
              *            if you use wildcard markers in the name)
              */
-            findBeans : function(name, cb) {
+            findBean : function(name, cb) {
 
                 var beanInfo = me.api.parseBeanName(name);
                 
@@ -135,13 +135,9 @@ wa.components.jmx.Jmx = (function($) {
                 
                 me.jmxData = [];
                     
-                for( var index in data ) {
-
-                    var bean = data[index];
-                    var domainName = me.api.parseBeanName(bean.name).domain;
-                    var domain = me.getDomain(domainName);
-                    
-                    domain.beans.push(bean);
+                for( var i=0, l=data.length; i<l; i++ ) {
+                    var bean = data[i];
+                    me.getDomain(bean.domain).beans.push(bean);
                 }
 
                 me.render();
@@ -169,10 +165,9 @@ wa.components.jmx.Jmx = (function($) {
         var beanName = $.bbq.getState( "jmxbean" );
         
         if( typeof(beanName) !== "undefined" && (me.currentBean === null || beanName !== me.currentBean.name)) {
-            me.api.findBeans(beanName, function(beans) { 
-                if(beans.length > 0) {
-                    me.currentBean = beans[0];
-                    
+            me.api.findBean(beanName, function(bean) { 
+                if(bean) {
+                    me.currentBean = bean;
                     me.render();
                 }
                 
@@ -227,7 +222,7 @@ wa.components.jmx.Jmx = (function($) {
 //
 
 wa.ui.Pages.add("jmx",wa.components.jmx.Jmx);
-wa.ui.MainMenu.add({ label : "JMX", pageKey:"jmx", index:7, requiredServices:['jmx'], perspectives:['server']});
+wa.ui.MainMenu.add({ label : "Server info", pageKey:"jmx", index:7, requiredServices:['jmx'], perspectives:['server']});
 
 wa.bind("init", wa.components.jmx.Jmx.init);
 wa.bind("ui.page.changed", wa.components.jmx.Jmx.pageChanged);
