@@ -16,6 +16,8 @@ TEXTFILE     = $(TEXTDIR)/neo4j-manual.text
 TEXTHTMLFILE = $(TEXTFILE).html
 HTMLDIR      = $(BUILDDIR)/html
 HTMLFILE     = $(HTMLDIR)/neo4j-manual.html
+ANNOTATEDDIR = $(BUILDDIR)/annotated
+ANNOTATEDFILE= $(HTMLDIR)/neo4j-manual.html
 
 ifdef VERBOSE
 	V = -v
@@ -30,7 +32,7 @@ endif
 GENERAL_FLAGS = $(V) $(K)
 GENERAL_ALL_FLAGS = $(VA) $(KA)
 
-.PHONY: all dist docbook help clean pdf latexpdf html singlehtml singlehtml-asciidoc text meta cleanup
+.PHONY: all dist docbook help clean pdf latexpdf html singlehtml singlehtml-asciidoc text meta cleanup annotated
 
 help:
 	@echo "Please use 'make <target>' where <target> is one of"
@@ -42,13 +44,14 @@ help:
 	@echo "  singlehtml  to make a single large HTML file"
 	@echo "  singlehtml-asciidoc  to make a single HTML file using asciidoc only"
 	@echo "  text        to make text files"
+	@echo "  annotated   to make a single annotated HTML file"
 	@echo "  all         to make all formats"
 	@echo "For verbose output, use 'VERBOSE=1'".
 	@echo "To keep temporary files, use 'KEEP=1'".
 
-dist: pdf html singlehtml text cleanup
+dist: pdf html singlehtml annotated text cleanup
 
-all: pdf latexpdf html singlehtml singlehtml-asciidoc text cleanup
+all: pdf latexpdf html singlehtml singlehtml-asciidoc text annotated cleanup
 
 clean:
 	-rm -rf $(BUILDDIR)/*
@@ -100,6 +103,11 @@ singlehtml-asciidoc:
 singlehtml:
 	mkdir -p $(HTMLDIR)
 	a2x $(GENERAL_FLAGS) -f xhtml -D $(HTMLDIR) --conf-file=$(CONFDIR)/xhtml.conf --xsl-file=$(CONFDIR)/xhtml.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(SRCFILE)
+
+# currently builds docbook format first
+annotated:
+	mkdir -p $(ANNOTATEDDIR)
+	a2x $(GENERAL_FLAGS) -a showcomments -f xhtml -D $(ANNOTATEDDIR) --conf-file=$(CONFDIR)/xhtml.conf --xsl-file=$(CONFDIR)/xhtml.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(SRCFILE)
 
 # missing: check what files are needed and copy them
 singlehtml-notworkingrightnow: docbook-shortinfo
