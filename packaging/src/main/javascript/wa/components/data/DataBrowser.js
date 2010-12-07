@@ -47,6 +47,7 @@ wa.components.data.DataBrowser = (function($) {
      * Number of related nodes to show per page.
      */
     me.relatedNodesPerPage = 10;
+
     
     //
     // PUBLIC
@@ -88,7 +89,7 @@ wa.components.data.DataBrowser = (function($) {
             
             init : function() {
                 wa.bind('data.listnames.changed',me.listNamesChanged);
-            	
+
                 $( window ).bind( "hashchange", me.hashchange );
                 me.hashchange();
             },
@@ -358,7 +359,7 @@ wa.components.data.DataBrowser = (function($) {
     	me.api.setDataUrl($(ev.target).attr('href'));
     });
     
-    $("a.mor_data_refresh_button").live("click", function(ev){
+    $("button.mor_data_refresh_button").live("click", function(ev){
     	ev.preventDefault();
     	
     	me.reload();
@@ -376,7 +377,7 @@ wa.components.data.DataBrowser = (function($) {
     	me.api.setDataUrl("relationship/" + $("#mor_data_get_id_input").val() );
     });
     
-    $("a.mor_data_reference_node_button").live("click", function(ev) {
+    $("button.mor_data_reference_node_button").live("click", function(ev) {
     	ev.preventDefault();
     	
     	me.api.setDataUrl("node/0" );
