@@ -20,17 +20,17 @@
 
 package org.neo4j.server;
 
-import java.io.File;
-
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.startup.healthcheck.ConfigFileMustBePresentRule;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.web.Jetty6WebServer;
-import org.tanukisoftware.wrapper.WrapperListener;
 
-public class BootStrapper implements WrapperListener {
+import java.io.File;
+
+public class BootStrapper
+{
 
     public static final Logger log = Logger.getLogger(BootStrapper.class);
 
