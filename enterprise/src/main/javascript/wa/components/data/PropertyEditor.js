@@ -57,9 +57,12 @@ wa.components.data.PropertyEditor = (function($) {
 		if( confirm("Are you sure?")) {
 			var key = me.getKey(ev.target);
 			if( key !== null ) {
-				neo4j.Web.del(me.propertyUrl(key));
+				me.showSavingSaveButton();
+				neo4j.Web.del(me.propertyUrl(key), me.showSavedSaveButton);
+			} else {
+				me.showSavedSaveButton();
 			}
-			$(ev.target).closest("tr").remove();
+			$(ev.target).closest("ul").remove();
 		}
 	};
 	
@@ -67,7 +70,10 @@ wa.components.data.PropertyEditor = (function($) {
 		var key = me.getKey(ev.target);
 		var value = $(ev.target).val();
 		if( key !== null ) {
-		    neo4j.Web.put(me.propertyUrl(key), value);
+			me.showSavingSaveButton();
+		    neo4j.Web.put(me.propertyUrl(key), value, me.showSavedSaveButton);
+		} else {
+			me.showSavedSaveButton();
 		}
 	};
 	
@@ -77,13 +83,16 @@ wa.components.data.PropertyEditor = (function($) {
 		var value = me.getValue(ev.target);
 		
 		if( key != oldKey && value !== null) {
+			
+			me.showSavingSaveButton();
+			
 			// Key has changed
 			if( oldKey !== null && oldKey.length > 0 ) {
 				// Delete old property
-			    neo4j.Web.del(me.propertyUrl(oldKey));
+			    neo4j.Web.del(me.propertyUrl(oldKey), me.showSavedSaveButton);
 			}
 			
-			neo4j.Web.put(me.propertyUrl(key), value);
+			neo4j.Web.put(me.propertyUrl(key), value, me.showSavedSaveButton);
 		}
 	};
 	
@@ -108,7 +117,7 @@ wa.components.data.PropertyEditor = (function($) {
 	 * Get the string key for a given value field. Returns null if key is not set.
 	 */
 	me.getKey = function(valueField) {
-		var val = $(valueField).closest("tr").find("input.mor_data_key_input").val();
+		var val = $(valueField).closest("ul").find("input.mor_data_key_input").val();
 		if(val.length > 0) {
 			return val;
 		} else {
@@ -120,12 +129,27 @@ wa.components.data.PropertyEditor = (function($) {
 	 * Get the string value for a given key field. Returns null if value is not set.
 	 */
 	me.getValue = function(valueField) {
-		var val = $(valueField).closest("tr").find("input.mor_data_value_input").val();
+		var val = $(valueField).closest("ul").find("input.mor_data_value_input").val();
 		if(val.length > 0) {
 			return val;
 		} else {
 			return null;
 		}
+	};
+	
+	me.showUnsavedSaveButton = function() {
+		$("button.mor_data_save").removeAttr('disabled');
+		$("button.mor_data_save").html("Not saved");
+	};
+	
+	me.showSavedSaveButton = function() {
+		$("button.mor_data_save").attr('disabled','disabled');
+		$("button.mor_data_save").html("Saved");
+	};
+	
+	me.showSavingSaveButton = function() {
+		$("button.mor_data_save").attr('disabled','disabled');
+		$("button.mor_data_save").html("Saving..");
 	};
 	
 	//
@@ -140,6 +164,7 @@ wa.components.data.PropertyEditor = (function($) {
 	
 	$("input.mor_data_value_input").live("change", me.propertyValueChanged);
 	$("input.mor_data_key_input").live("change", me.propertyKeyChanged);
+	$("input.mor_data_value_input, input.mor_data_key_input").live("keypress", me.showUnsavedSaveButton);
 	
 	return {};
 	

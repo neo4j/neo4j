@@ -1,5 +1,4 @@
 <div class="mor_page_leftcol">
-	<h1>Neo4j Web Administration</h1>
 	<div id="mor_monitor_lifecycle"></div>
 	<div class="mor_module">
 		<p class="mor_info">Welcome to the Neo4j Web Admin.</p>

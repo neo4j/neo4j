@@ -1,6 +1,5 @@
 {#template MAIN}
     <div class="mor_page_leftcol">
-        <h1>Console</h1>
         <div class="mor_module">
             
             <p>The Neo4j console allows you to use the Gremlin programming language for working with your graph. Gremlin uses XPath expressions as a base for a full Turing-complete language.</p> 
@@ -93,7 +92,7 @@
             <div class="mor_console_wrap">
                 <div id="mor_console" class="mor_console">
                     <p id="mor_console_input_wrap"><span style="float:left;width:13px;"> &gt; </span> <input type="text" id="mor_console_input" value="" /></p>
-                    <p id="blahy"></p>
+                    <p></p>
                 </div>
                 <div class="break"></div>
             </div>
