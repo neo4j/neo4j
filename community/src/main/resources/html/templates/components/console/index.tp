@@ -89,12 +89,7 @@
     <div class="mor_page_rightcol">
         <div class="mor_module">
             <h2>Console</h2>
-            <div class="mor_console_wrap">
-                <div id="mor_console" class="mor_console">
-                    <p id="mor_console_input_wrap"><span style="float:left;width:13px;"> &gt; </span> <input type="text" id="mor_console_input" value="" /></p>
-                    <p></p>
-                </div>
-                <div class="break"></div>
+            <div id="mor_console" class="mor_console">
             </div>
         </div>
     </div>
