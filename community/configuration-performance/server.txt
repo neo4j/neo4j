@@ -1,5 +1,0 @@
-Neo4j Server Configuration
-==========================
-
-todo
-
