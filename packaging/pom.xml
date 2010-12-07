@@ -149,7 +149,7 @@
     <dependency>
       <groupId>org.neo4j.drivers</groupId>
       <artifactId>neo4js</artifactId>
-      <version>0.1</version>
+      <version>0.2-SNAPSHOT</version>
       <type>jar</type>
       <scope>provided</scope>
       <optional>true</optional>
@@ -339,6 +339,7 @@
                 <include>lib/jquery.bbq-min.js</include>
                 <include>lib/jquery.flot-min.js</include>
                 <include>lib/jquery.simplemodal-min.js</include>
+                <include>lib/underscore-min.js</include>
 
                 <include>lib/neo4js.js</include>
 
