@@ -340,6 +340,9 @@
                 <include>lib/jquery.flot-min.js</include>
                 <include>lib/jquery.simplemodal-min.js</include>
                 <include>lib/underscore-min.js</include>
+                <include>lib/termlib-min.js</include>
+                <include>lib/termlib.addons-min.js</include>
+
 
                 <include>lib/neo4js.js</include>
 

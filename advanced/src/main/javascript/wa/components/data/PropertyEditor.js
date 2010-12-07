@@ -44,8 +44,10 @@ wa.components.data.PropertyEditor = (function($) {
 	
 	me.addProperty = function(ev) {
 		ev.preventDefault();
-		var template = $(ev.target).parent().find(".mor_data_property_template");
+
+		var template = $(ev.target).parent().parent().find(".mor_data_property_template");
 		var propertyElement = template.clone();
+
 		propertyElement.removeClass("mor_data_property_template");
 		template.before(propertyElement);
 		propertyElement.show();
@@ -156,7 +158,7 @@ wa.components.data.PropertyEditor = (function($) {
 	// ADD EVENT LISTENERS
 	//
 	
-	$("a.mor_data_add_property").live("click", me.addProperty);
+	$("button.mor_data_add_property").live("click", me.addProperty);
 	$("a.mor_data_remove_property").live("click", me.removeProperty);
 	
 	$("input.mor_data_value_input, input.mor_data_key_input").live("focus", me.propertyFieldFocused);
