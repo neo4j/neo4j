@@ -3,11 +3,11 @@
         <h1>Console</h1>
         <div class="mor_module">
             
-            <p>Gremlin is a programming language for working with graphs. It uses XPath expressions as a base for a full Turing-complete language.</p> 
-            <p>Using gremlin, you can access the underlying database and perform powerful data manipulations.</p>
+            <p>The Neo4j console allows you to use the Gremlin programming language for working with your graph. Gremlin uses XPath expressions as a base for a full Turing-complete language.</p> 
+            <p>Using Gremlin, you can perform powerful data manipulations.</p>
             
 			<div class="mor_module_foldout">
-				<h2><a href="#" class="mor_module_foldout_trigger">Cheat sheet</a></h2>
+				<h2><a href="#" class="mor_module_foldout_trigger">Console cheat sheet</a></h2>
 				<div class="mor_module_foldout_content">
 					<ul class="mor_info_list">
 		                <li>
@@ -89,7 +89,7 @@
     </div>
     <div class="mor_page_rightcol">
         <div class="mor_module">
-            <h2>Gremlin console</h2>
+            <h2>Console</h2>
             <div class="mor_console_wrap">
                 <div id="mor_console" class="mor_console">
                     <p id="mor_console_input_wrap"><span style="float:left;width:13px;"> &gt; </span> <input type="text" id="mor_console_input" value="" /></p>
