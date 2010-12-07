@@ -85,6 +85,7 @@ Configuration
   Specifies the block size for storing arrays.
   This parameter is only honored when the store is created, otherwise it is ignored.
   The default block size is 120 bytes, and the overhead of each block is the same as for string blocks, i.e., 13 bytes.
+| dump_configuration | `true` or `false` | If set to `true` the current configuration settings will be written to the default system output, mostly the console or the logfiles.
 |========================================================
 
 When memory mapped buffers are used (`use_memory_mapped_buffers = true`) the heap size of the JVM must be smaller than the total available memory of the computer, minus the total amount of memory used for the buffers.
