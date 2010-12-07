@@ -1,6 +1,5 @@
 {#template MAIN}
 	<div class="mor_page_leftcol">
-		<h1>Import / Export</h1>
 		<div class="mor_module">
 			<p class="mor_info">Import data to and export data from your neo4j database.</p>
 		</div>

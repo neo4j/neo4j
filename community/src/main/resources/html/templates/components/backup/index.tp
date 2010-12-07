@@ -1,6 +1,5 @@
 {#template MAIN}
 	<div class="mor_page_leftcol">
-		<h1>Backups</h1>
 		<div class="mor_module">
 			<p class="mor_info">Perform backups on your Neo4j database.</p>
 			<div class="mor_module_foldout">

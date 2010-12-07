@@ -1,6 +1,5 @@
 {#template MAIN}
 <div class="mor_page_leftcol">
-	<h1>Data browser</h1>
 	<div class="mor_module">
 		<p class="mor_info">Browse the data in your neo4j server.</p>
 		<ul class="mor_horizontal_menu">
@@ -64,13 +63,20 @@
 {#else}
 	{#if $T.item.isNode }
 		<div class="mor_module mor_span-4">
-			<h2>Node <a href="#" class="mor_data_add_node_button button add-button">New node</a> <a href="#" class="button bad-button mor_data_delete_node_button">Remove</a></h2>
+			<h2>Node
+				<a href="#" class="mor_data_add_node_button button add-button">New node</a> 
+				<a href="#" class="button bad-button mor_data_delete_node_button">Remove</a>
+			    <button class="mor_data_save" disabled="disabled">Saved</button> 
+			</h2>
 			{#include propertyTable root=$T.item}
 		</div>
 		{#include nodeTable root=$T.item.relationships}
 	{#elseif $T.item.isRelationship}
 		<div class="mor_module mor_span-8">
-			<h2>Relationship <a href="#" class="button bad-button mor_data_delete_relationship_button">Remove</a></h2>
+			<h2>Relationship
+				<a href="#" class="button bad-button mor_data_delete_relationship_button">Remove</a>
+				<button class="mor_data_save" disabled="disabled">Saved</button> 
+			</h2>
 			{#param name=propertyEditable value=true}
 			{#include propertyTable root=$T.item}
 		</div>
@@ -108,42 +114,58 @@
 			{#/if }
 		</tr>
 		{#if $T.type }
-		<tr>
-			<th><span class="mor_data_uneditable_key">Type</span></th>
-			<td><span class="mor_data_uneditable_value">{$T.type}</span></td>
-			{#if $P.propertyEditable !== false }
-				<td></td>
-			{#/if }
-		</tr>
+			<tr>
+				<th><span class="mor_data_uneditable_key">Type</span></th>
+				<td><span class="mor_data_uneditable_value">{$T.type}</span></td>
+				{#if $P.propertyEditable !== false }
+					<td></td>
+				{#/if }
+			</tr>
 		{#/if}
-		{#foreach $T.fields as field}
-		<tr>
-			{#if $P.propertyEditable === false }
-				<th><span class="mor_data_uneditable_key">{$T.field}</span></th>
-				<td><span class="mor_data_uneditable_value">{$T.data[$T.field]}</span></td>
-			{#else }
-				<th><input type="text" class="mor_data_key_input" value="{$T.field}" /></th>
-				<td><input type="text" class="mor_data_value_input" value="{$T.data[$T.field]}" /></td>
-				<td><a href="#" class="mor_data_remove_property button bad-button" title="Remove property from node" >Remove</a></td>
-			{#/if}
-		</tr>
-		{#/for}
-		<tr class="mor_data_property_template" style="display:none;">
-			<td><input type="text" class="mor_data_key_input" placeholder="Enter key" /></td>
-			<td><input type="text" class="mor_data_value_input" placeholder="Enter value" /></td>
-			{#if $P.propertyEditable !== false }
-				<td><a href="#" class="mor_data_remove_property button bad-button" title="Remove property from node" >Remove</a></td>
-			{#/if }
-		</tr>
 	</tbody>
 </table>
+<ul class="mor_data_property_list">
+	{#foreach $T.fields as field}
+		<li>
+			{#if $P.propertyEditable === false }
+			    <ul class="mor_data_property_detail">
+					<li class="mor_data_key"><span class="mor_data_uneditable_key">{$T.field}</span></li>
+					<li class="mor_data_value"><span class="mor_data_uneditable_value">{$T.data[$T.field]}</span></li>
+				</ul>
+			{#else }
+			    {#if $T.field !== "type" }
+					<ul class="mor_data_property_detail">
+						<li class="mor_data_key">
+							<a href="#" class="mor_data_remove_property button bad-button" title="Remove property from node" >Remove</a>
+							<span class="mor_data_key_headline">Key</span> 
+							<input type="text" class="mor_data_key_input" value="{$T.field}" /> 
+						</li>
+						<li class="mor_data_value"><span class="mor_data_value_headline">Value</span> <input type="text" class="mor_data_value_input" value="{$T.data[$T.field]}" /></li>
+					</ul>
+				{#/if}
+			{#/if}
+		</li>
+	{#/for}
+	<li class="mor_data_property_template" style="display:none;">
+		<ul class="mor_data_property_detail">
+			<li class="mor_data_key">
+			    {#if $P.propertyEditable !== false }
+			        <a href="#" class="mor_data_remove_property button bad-button" title="Remove property from node" >Remove</a>
+			    {#/if }
+			    <span class="mor_data_key_headline">Key</span> 
+			    <input type="text" class="mor_data_key_input" />
+			</li>
+			<li class="mor_data_value"><span class="mor_data_value_headline">Value</span> <input type="text" class="mor_data_value_input" /></li>
+		</ul>
+	</li>
+</ul>
 {#if $P.propertyEditable != false }
 	<a href="#" class="mor_data_add_property mor_list_button">New property</a>
 {#(if}
 {#/template propertyTable}
 
 {#template nodeTable}
-<div class="data-table-container mor_span-5">
+<div class="data-table-container mor_span-6 mor_last">
 	<div class="actions">
 		Related nodes
 		 <a href="#" class="button mor_data_add_relationship add-button">New relationship</a>
