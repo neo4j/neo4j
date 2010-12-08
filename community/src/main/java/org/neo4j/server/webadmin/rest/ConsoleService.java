@@ -23,16 +23,10 @@ package org.neo4j.server.webadmin.rest;
 import org.apache.log4j.Logger;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.webadmin.console.ConsoleSession;
+import org.neo4j.server.webadmin.console.ScriptSession;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.FormParam;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -46,33 +40,21 @@ import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 @Path( ConsoleService.SERVICE_PATH )
 public class ConsoleService implements AdvertisableService
 {
-
     private static final String SERVICE_NAME = "console";
     static final String SERVICE_PATH = "server/console";
-    private ConsoleSession session;
+    private SessionFactory sessionFactory;
+    private Database database;
 
-    public ConsoleService( ConsoleSession session )
+    public ConsoleService( SessionFactory sessionFactory, Database database )
     {
-        this.session = session;
+        this.sessionFactory = sessionFactory;
+        this.database = database;
     }
 
     public ConsoleService( @Context Database database,
-            @Context HttpServletRequest req )
+                           @Context HttpServletRequest req )
     {
-        this( createSession( req, database ) );
-    }
-
-    private static ConsoleSession createSession( HttpServletRequest req,
-            Database database )
-    {
-        HttpSession httpSession = req.getSession( true );
-        Object session = httpSession.getAttribute( "consoleSession" );
-        if ( session == null )
-        {
-            session = new ConsoleSession( database );
-            httpSession.setAttribute( "consoleSession", session );
-        }
-        return (ConsoleSession) session;
+        this( new SessionFactoryImpl( req.getSession( true ) ), database );
     }
 
     Logger log = Logger.getLogger( ConsoleService.class );
@@ -120,17 +102,23 @@ public class ConsoleService implements AdvertisableService
                         "Missing 'command' parameter in arguments." );
             }
 
-            log.info( session.toString() );
 
-            List<String> resultLines = session.evaluate( (String) args.get( "command" ) );
+            ScriptSession scriptSession = getSession( args );
+            log.info( scriptSession.toString() );
+
+            List<String> resultLines = scriptSession.evaluate( (String)args.get( "command" ) );
 
             return Response.ok( JsonHelper.createJsonFrom( resultLines ) ).header(
                     "Content-Type", MediaType.APPLICATION_JSON ).build();
-        }
-        catch ( IllegalArgumentException e )
+        } catch ( IllegalArgumentException e )
         {
             return Response.status( Status.BAD_REQUEST ).build();
         }
+    }
+
+    private ScriptSession getSession( Map<String, Object> args )
+    {
+        return sessionFactory.createSession( (String)args.get( "engine" ), database );
     }
 
 }

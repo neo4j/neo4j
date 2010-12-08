@@ -20,6 +20,10 @@
 
 package org.neo4j.server.webadmin.rest;
 
+import org.neo4j.server.database.Database;
+import org.neo4j.server.rest.domain.renderers.JsonRenderers;
+import org.neo4j.server.webadmin.rest.representations.ServerRootRepresentation;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -27,9 +31,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-
-import org.neo4j.server.rest.domain.renderers.JsonRenderers;
-import org.neo4j.server.webadmin.rest.representations.ServerRootRepresentation;
 
 @Path( "/" )
 public class RootService
@@ -40,7 +41,7 @@ public class RootService
 	{
 
 		ServerRootRepresentation rootRepresentation = new ServerRootRepresentation( uriInfo.getBaseUri(),
-				new ConsoleService( null ),
+				new ConsoleService( (SessionFactory)null,null ),
 				new JmxService(),
 				new MonitorService( null ) );
 
