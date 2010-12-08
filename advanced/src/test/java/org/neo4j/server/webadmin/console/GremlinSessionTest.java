@@ -30,9 +30,9 @@ import java.util.List;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class ConsoleSessionTest
+public class GremlinSessionTest
 {
-    public ConsoleSession session;
+    public ScriptSession session;
 
     @Test
     public void retrievesTheReferenceNode()
@@ -53,7 +53,7 @@ public class ConsoleSessionTest
     @Before
     public void setUp() throws Exception
     {
-        session = new ConsoleSession( new Database( new ImpermanentGraphDatabase( "target/tempdb" ) ) );
+        session = new GremlinSession( new Database( new ImpermanentGraphDatabase( "target/tempdb" ) ) );
     }
 }
 

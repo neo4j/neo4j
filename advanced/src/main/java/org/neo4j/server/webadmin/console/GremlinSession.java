@@ -35,13 +35,13 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ConsoleSession
+public class GremlinSession implements ScriptSession
 {
     protected ScriptEngine scriptEngine;
     protected StringWriter outputWriter;
     private Database database;
 
-    public ConsoleSession( Database database )
+    public GremlinSession( Database database )
     {
         this.database = database;
         scriptEngine = createGremlinScriptEngine();
@@ -54,6 +54,7 @@ public class ConsoleSession
      * @param script
      * @return
      */
+    @Override
     @SuppressWarnings( "unchecked" )
     public List<String> evaluate( String script )
     {
@@ -115,7 +116,7 @@ public class ConsoleSession
     /**
      * Destroy the internal gremlin evaluator and replace it with a clean slate.
      */
-    public synchronized void reset()
+    private synchronized void reset()
     {
         // #run() will pick up on this and create a new script engine. This
         // ensures it is instantiated in the correct thread context.
@@ -146,13 +147,13 @@ public class ConsoleSession
     // GREMLIN CODE
     //
 
-    public TransactionalGraph getGremlinWrappedGraph()
+    private TransactionalGraph getGremlinWrappedGraph()
             throws DatabaseBlockedException
     {
         return new Neo4jGraph( database.graph, database.indexService );
     }
 
-    public ScriptEngine createGremlinScriptEngine()
+    private ScriptEngine createGremlinScriptEngine()
     {
         try
         {
