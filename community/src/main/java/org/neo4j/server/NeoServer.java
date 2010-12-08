@@ -75,13 +75,13 @@ public class NeoServer {
         startupHealthCheck();
         validateConfiguration();
         startDatabase();
-        startWebServer();
         try {
             startRoundRobinDB();
-            startOgsiContainer();
+            startOsgiContainer();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+        startWebServer();
     }
 
     private void startupHealthCheck() {
@@ -142,7 +142,7 @@ public class NeoServer {
         database.setRrdDb(rrdDb);
     }
 
-    private void startOgsiContainer() throws BundleException {
+    private void startOsgiContainer() throws BundleException {
         // Start embedded OSGi container, maybe
         boolean osgiServerShouldStart = configurator.configuration().getBoolean(Configurator.ENABLE_OSGI_SERVER_PROPERTY_KEY, false);
         if (osgiServerShouldStart) {
