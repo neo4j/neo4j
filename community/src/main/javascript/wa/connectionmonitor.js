@@ -18,19 +18,9 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/**
- * Start webadmin.
- */
-$( function()
-{
-    $.jTemplatesDebugMode(false);
-    
-    // Load UI
-    wa.ui.MainMenu.init();
-    wa.ui.Pages.init();
-    wa.ui.Helpers.init();
-
-    // Trigger init event
-    wa.trigger( "init" );
-    
-} );
+(function() { 
+	// Keep track of server connection
+	neo4j.events.bind("web.connection.failed", function(ev, args){
+		wa.ui.ErrorBox.showError("Unable to connect to the server..");
+	});
+})();

@@ -21,6 +21,7 @@
 /**
  * Module for displaying errors.
  */
+
 wa.ui.ErrorBox = function() {
 
     var currentErrors = {};
@@ -40,11 +41,11 @@ wa.ui.ErrorBox = function() {
 
             if (typeof (currentErrors[error]) !== "undefined")
             {
-                var errObj = currentErrors[error];
+                var errObj = currentErrors[error],
+                    errCount = errObj.count < 5 ? (++errObj.count) : "5+";
                 clearTimeout(errObj.timeout);
 
-                $('.mor_error_count', errObj.elem).html(
-                        "(" + (++errObj.count) + ")");
+                $('.mor_error_count', errObj.elem).html("(" + errCount + ")");
                 $('.mor_error_count', errObj.elem).show();
 
                 errObj.timeout = setTimeout((function(error) {
