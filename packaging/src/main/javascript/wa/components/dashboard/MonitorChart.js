@@ -122,7 +122,7 @@ wa.components.dashboard.MonitorChart = function(server, settings) {
 	controls += "<li><a class='"+me.controlsClass+"' href='#' id='"+me.zoom.year.id +"'>Year</a></li>";
 	controls += "<li><a class='"+me.controlsClass+"' href='#' id='"+me.zoom.month.id +"'>Month</a></li>";
 	controls += "<li><a class='"+me.controlsClass+"' href='#' id='"+me.zoom.week.id +"'>Week</a></li>";
-	controls += "<li><a class='"+me.controlsClass+" current' href='#' id='"+me.zoom.day.id +"'>Day</a></li>";
+	controls += "<li class='current'><a class='"+me.controlsClass+"' href='#' id='"+me.zoom.day.id +"'>Day</a></li>";
 	controls += "<li><a class='"+me.controlsClass+"' href='#' id='"+me.zoom.six_hours.id +"'>6 hours</a></li>";
 	controls += "<li><a class='"+me.controlsClass+"' href='#' id='"+me.zoom.thirty_minutes.id +"'>30 minutes</a></li>";
 	controls += "</ul><div class='break'></div>";
@@ -247,8 +247,8 @@ wa.components.dashboard.MonitorChart = function(server, settings) {
 				ev.preventDefault();
 				me.currentZoom = zoomKey;
 				
-				$("." +me.controlsClass).removeClass("current");
-				$("#" + me.zoom[zoomKey].id).addClass("current");
+				$("." +me.controlsClass).parent().removeClass("current");
+				$("#" + me.zoom[zoomKey].id).parent().addClass("current");
 				
 				me.draw( server.heartbeat.getCachedData() );
 			};
