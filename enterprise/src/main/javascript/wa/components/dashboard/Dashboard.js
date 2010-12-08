@@ -136,11 +136,12 @@ wa.components.dashboard.Dashboard = (function($) {
     };
     
     me.loadMonitors = function(server) {
-    	var box = $("#mor_monitor_valuetrackers");
-    	
-    	var primitiveTracker = wa.components.dashboard.PrimitiveCountWidget(server);
-    	var diskTracker      = wa.components.dashboard.DiskUsageWidget(server);
-    	var cacheTracker      = wa.components.dashboard.CacheWidget(server);
+    	var box = $("#mor_monitor_valuetrackers"),
+    	    primitivesChartWrap = $("#mor_monitor_primitives_chart"),
+    	    memoryChartWrap = $("#mor_monitor_memory_chart"),
+    	    primitiveTracker = wa.components.dashboard.PrimitiveCountWidget(server),
+    	    diskTracker      = wa.components.dashboard.DiskUsageWidget(server),
+    	    cacheTracker     = wa.components.dashboard.CacheWidget(server);
     	
     	var primitivesChart = wa.components.dashboard.MonitorChart(server, {
     		label : 'Primitive entitites',
@@ -176,36 +177,52 @@ wa.components.dashboard.Dashboard = (function($) {
     		}
     	});
     	
-    	
-    	
     	me.valueTrackers.push(primitiveTracker);
     	me.valueTrackers.push(diskTracker);
     	me.valueTrackers.push(cacheTracker);
     	
     	me.charts.push(primitivesChart);
     	me.charts.push(memoryChart);
+    	
+    	me.primitivesChart = primitivesChart;
+    	me.memoryChart = memoryChart;
 
-    	box.append(primitivesChart.render());
-    	box.append(memoryChart.render());
     	box.append(primitiveTracker.render());
     	box.append(diskTracker.render());
     	box.append(cacheTracker.render());
+
+    	primitivesChartWrap.append(primitivesChart.render());
+    	memoryChartWrap.append(memoryChart.render());
     	
     	primitivesChart.startDrawing();
-    	memoryChart.startDrawing();
     };
     
     //
     // CONSTRUCT
     //
     
-    $('.mor_monitor_showjmx').live('click', function(ev) {
-        
-        $.bbq.pushState({
-            p :"morpheus.monitor.jmx"
-        });
+    $("#mor_monitor_memory_chart_tab").live("click", function(ev) {
+    	ev.preventDefault();
+    	
+    	$(ev.target).addClass("current");
+    	$("#mor_monitor_primitives_chart_tab").removeClass("current");
+    	
+    	me.primitivesChart.stopDrawing();
+    	$("#mor_monitor_primitives_chart").hide();
+    	$("#mor_monitor_memory_chart").show();
+    	me.memoryChart.startDrawing();
+    });
     
-        ev.preventDefault();
+    $("#mor_monitor_primitives_chart_tab").live("click", function(ev) {
+    	ev.preventDefault();
+    	
+    	$(ev.target).addClass("current");
+    	$("#mor_monitor_memory_chart_tab").removeClass("current");
+    	
+    	me.memoryChart.stopDrawing();
+    	$("#mor_monitor_memory_chart").hide();
+    	$("#mor_monitor_primitives_chart").show();
+    	me.primitivesChart.startDrawing();
     });
     
     return me.api;
