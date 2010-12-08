@@ -55,9 +55,8 @@
 	</div>
 	<div class="mor_module mor_tabbedmodule mor_span-10 mor_last">
 		<ul class="mor_tabbedmodule_tabs">
-			<li>Show:</li>
-			<li><a href="#" id="mor_monitor_primitives_chart_tab" class="current">Primitives</a></li>
-			<li><a href="#" id="mor_monitor_memory_chart_tab">Memory</a></li>
+			<li class="current tab"><a href="#" id="mor_monitor_primitives_chart_tab">Primitives</a></li>
+			<li class="tab"><a href="#" id="mor_monitor_memory_chart_tab">Memory</a></li>
 		</ul>
 		<ul class="mor_tabbedmodule_views">
 			<li id="mor_monitor_primitives_chart"></li>

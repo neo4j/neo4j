@@ -204,8 +204,8 @@ wa.components.dashboard.Dashboard = (function($) {
     $("#mor_monitor_memory_chart_tab").live("click", function(ev) {
     	ev.preventDefault();
     	
-    	$(ev.target).addClass("current");
-    	$("#mor_monitor_primitives_chart_tab").removeClass("current");
+    	$(ev.target).parent().addClass("current");
+    	$("#mor_monitor_primitives_chart_tab").parent().removeClass("current");
     	
     	me.primitivesChart.stopDrawing();
     	$("#mor_monitor_primitives_chart").hide();
@@ -216,8 +216,8 @@ wa.components.dashboard.Dashboard = (function($) {
     $("#mor_monitor_primitives_chart_tab").live("click", function(ev) {
     	ev.preventDefault();
     	
-    	$(ev.target).addClass("current");
-    	$("#mor_monitor_memory_chart_tab").removeClass("current");
+    	$(ev.target).parent().addClass("current");
+    	$("#mor_monitor_memory_chart_tab").parent().removeClass("current");
     	
     	me.memoryChart.stopDrawing();
     	$("#mor_monitor_memory_chart").hide();
