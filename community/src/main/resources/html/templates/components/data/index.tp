@@ -49,6 +49,8 @@
                 <form action="#">
                     <p class="mor_info">
                         <input type="text" value="{$T.item.relationships.fields.join(",")}" id="mor_data_listfields" />
+                    </p>
+                    <p class="mor_info">
                         <input type="submit" value="Set" id="mor_data_listfields_button" />
                     </p>
                 </form>
@@ -124,44 +126,46 @@
                     {#/if }
                 </tr>
             {#/if}
+            {#if $P.propertyEditable === false }
+	            {#foreach $T.fields as field}
+		            <tr>
+	                    <th><span class="mor_data_uneditable_key">{$T.field}</span></th>
+	                    <td><span class="mor_data_uneditable_value">{$T.data[$T.field]}</span></td>
+	                </tr>
+	            {#/for}
+	        {#/if}
         </tbody>
     </table>
-    <ul class="mor_data_property_list">
-        {#foreach $T.fields as field}
-            <li>
-                {#if $P.propertyEditable === false }
-                    <ul class="mor_data_property_detail">
-                        <li class="mor_data_key"><span class="mor_data_uneditable_key">{$T.field}</span></li>
-                        <li class="mor_data_value"><span class="mor_data_uneditable_value">{$T.data[$T.field]}</span></li>
-                    </ul>
-                {#else }
-                    {#if $T.field !== "type" }
-                        <ul class="mor_data_property_detail">
-                            <li class="mor_data_key">
-                                <a href="#" class="mor_data_remove_property button bad-button" title="Remove property from node" >Remove</a>
-                                <span class="mor_data_key_headline">Key</span>
-                                <input type="text" class="mor_data_key_input" value="{$T.field}" />
-                            </li>
-                            <li class="mor_data_value"><span class="mor_data_value_headline">Value</span> <input type="text" class="mor_data_value_input" value="{$T.data[$T.field]}" /></li>
-                        </ul>
-                    {#/if}
-                {#/if}
-            </li>
-        {#/for}
-        <li class="mor_data_property_template" style="display:none;">
-            <ul class="mor_data_property_detail">
-                <li class="mor_data_key">
-                    {#if $P.propertyEditable !== false }
-                        <a href="#" class="mor_data_remove_property button bad-button" title="Remove property from node" >Remove</a>
-                    {#/if }
-                    <span class="mor_data_key_headline">Key</span>
-                    <input type="text" class="mor_data_key_input" />
-                </li>
-                <li class="mor_data_value"><span class="mor_data_value_headline">Value</span> <input type="text" class="mor_data_value_input" /></li>
-            </ul>
-        </li>
-    </ul>
+    
     {#if $P.propertyEditable != false }
+	    <ul class="mor_data_property_list">
+	        {#foreach $T.fields as field}
+	            <li>
+	                    {#if $T.field !== "type" }
+	                        <ul class="mor_data_property_detail">
+	                            <li class="mor_data_key">
+	                                <a href="#" class="mor_data_remove_property button bad-button" title="Remove property from node" >Remove</a>
+	                                <span class="mor_data_key_headline">Key</span>
+	                                <input type="text" class="mor_data_key_input" value="{$T.field}" />
+	                            </li>
+	                            <li class="mor_data_value"><span class="mor_data_value_headline">Value</span> <input type="text" class="mor_data_value_input" value="{$T.data[$T.field]}" /></li>
+	                        </ul>
+	                    {#/if}
+	            </li>
+	        {#/for}
+	        <li class="mor_data_property_template" style="display:none;">
+	            <ul class="mor_data_property_detail">
+	                <li class="mor_data_key">
+	                    {#if $P.propertyEditable !== false }
+	                        <a href="#" class="mor_data_remove_property button bad-button" title="Remove property from node" >Remove</a>
+	                    {#/if }
+	                    <span class="mor_data_key_headline">Key</span>
+	                    <input type="text" class="mor_data_key_input" />
+	                </li>
+	                <li class="mor_data_value"><span class="mor_data_value_headline">Value</span> <input type="text" class="mor_data_value_input" /></li>
+	            </ul>
+	        </li>
+	    </ul>
         <p class="mor_info"><button class="mor_data_add_property">New property</button></p>
     {#/if}
 {#/template propertyTable}
