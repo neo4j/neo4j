@@ -1,8 +1,8 @@
 # Makefile for the Neo4j documentation
 #
 
-BUILDDIR     = target
-SRCDIR       = .
+SRCDIR       = $(CURDIR)
+BUILDDIR     = $(SRCDIR)/target
 SRCFILE      = $(SRCDIR)/neo4j-manual.txt
 CONFDIR      = $(SRCDIR)/conf
 DOCBOOKFILE  = $(BUILDDIR)/neo4j-manual.xml
