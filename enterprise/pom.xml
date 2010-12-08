@@ -319,6 +319,7 @@
         </executions>
 
         <configuration>
+          <nosuffix>true</nosuffix>
           <sourceDirectory>src/main/javascript</sourceDirectory>
           <aggregations>
             <aggregation>
@@ -330,78 +331,79 @@
 
               <inputDir>${project.build.outputDirectory}</inputDir>
 
-
               <!-- JS Files to include. The order here is important due to dependency reasons, and is the reason all files are listed here. -->
               <includes>
-                <include>lib/jquery.1.4.2-min.js</include>
-                <include>lib/json2-min.js</include>
-                <include>lib/jquery-jtemplates-min.js</include>
-                <include>lib/jquery.bbq-min.js</include>
-                <include>lib/jquery.flot-min.js</include>
-                <include>lib/jquery.simplemodal-min.js</include>
-                <include>lib/underscore-min.js</include>
-                <include>lib/termlib-min.js</include>
-                <include>lib/termlib.addons-min.js</include>
+                <include>lib/jquery.1.4.2.js</include>
+                <include>lib/json2.js</include>
+                <include>lib/jquery-jtemplates.js</include>
+                <include>lib/jquery.bbq.js</include>
+                <include>lib/jquery.flot.js</include>
+                <include>lib/jquery.simplemodal.js</include>
+                <include>lib/underscore.js</include>
+                <include>lib/termlib.js</include>
+                <include>lib/termlib.addons.js</include>
 
 
                 <include>lib/neo4js.js</include>
 
-                <include>wa/__init__-min.js</include>
-                <include>wa/escape-min.js</include>
-                <include>wa/events-min.js</include>
-                <include>wa/PropertyStorage-min.js</include>
-                <include>wa/prop-min.js</include>
-                <include>wa/Servers-min.js</include>
-                <include>wa/ServerSelector-min.js</include>
-                <include>wa/FormValidator-min.js</include>
+                <include>wa/__init__.js</include>
+                <include>wa/escape.js</include>
+                <include>wa/events.js</include>
+                <include>wa/PropertyStorage.js</include>
+                <include>wa/prop.js</include>
+                <include>wa/Servers.js</include>
+                <include>wa/ServerSelector.js</include>
+                <include>wa/FormValidator.js</include>
+                
+                <include>wa/connectionmonitor.js</include>
 
-                <include>wa/ui/__init__-min.js</include>
-                <include>wa/ui/Dialog-min.js</include>
-                <include>wa/ui/Loading-min.js</include>
-                <include>wa/ui/Pages-min.js</include>
-                <include>wa/ui/Helpers-min.js</include>
-                <include>wa/ui/MainMenu-min.js</include>
-                <include>wa/ui/ErrorBox-min.js</include>
+                <include>wa/ui/__init__.js</include>
+                <include>wa/ui/Dialog.js</include>
+                <include>wa/ui/Loading.js</include>
+                <include>wa/ui/Pages.js</include>
+                <include>wa/ui/Helpers.js</include>
+                <include>wa/ui/MainMenu.js</include>
+                <include>wa/ui/ErrorBox.js</include>
 
-                <include>wa/widgets/__init__-min.js</include>
-                <include>wa/widgets/LifecycleWidget-min.js</include>
+                <include>wa/widgets/__init__.js</include>
+                <include>wa/widgets/LifecycleWidget.js</include>
 
-                <include>wa/components/__init__-min.js</include>
+                <include>wa/components/__init__.js</include>
 
-                <include>wa/components/dashboard/__init__-min.js</include>
-                <include>wa/components/dashboard/Dashboard-min.js</include>
-                <include>wa/components/dashboard/PrimitiveCountWidget-min.js</include>
-                <include>wa/components/dashboard/JmxValueTracker-min.js</include>
-                <include>wa/components/dashboard/DiskUsageWidget-min.js</include>
-                <include>wa/components/dashboard/CacheWidget-min.js</include>
-                <include>wa/components/dashboard/CacheWidget-min.js</include>
-                <include>wa/components/dashboard/MonitorChart-min.js</include>
+                <include>wa/components/dashboard/__init__.js</include>
+                <include>wa/components/dashboard/Dashboard.js</include>
+                <include>wa/components/dashboard/PrimitiveCountWidget.js</include>
+                <include>wa/components/dashboard/JmxValueTracker.js</include>
+                <include>wa/components/dashboard/DiskUsageWidget.js</include>
+                <include>wa/components/dashboard/CacheWidget.js</include>
+                <include>wa/components/dashboard/CacheWidget.js</include>
+                <include>wa/components/dashboard/MonitorChart.js</include>
 
-                <include>wa/components/jmx/__init__-min.js</include>
-                <include>wa/components/jmx/Jmx-min.js</include>
+                <include>wa/components/jmx/__init__.js</include>
+                <include>wa/components/jmx/Jmx.js</include>
 
-                <include>wa/components/backup/__init__-min.js</include>
-                <include>wa/components/backup/parseJobData-min.js</include>
-                <include>wa/components/backup/Backup-min.js</include>
-                <include>wa/components/console/__init__-min.js</include>
-                <include>wa/components/console/Console-min.js</include>
+                <include>wa/components/backup/__init__.js</include>
+                <include>wa/components/backup/parseJobData.js</include>
+                <include>wa/components/backup/Backup.js</include>
+                <include>wa/components/console/__init__.js</include>
+                <include>wa/components/console/Console.js</include>
 
-                <include>wa/components/config/__init__-min.js</include>
-                <include>wa/components/config/Config-min.js</include>
+                <include>wa/components/config/__init__.js</include>
+                <include>wa/components/config/Config.js</include>
 
-                <include>wa/components/io/__init__-min.js</include>
-                <include>wa/components/io/GraphIO-min.js</include>
-                <include>wa/components/io/ExportSupport-min.js</include>
-                <include>wa/components/io/ImportSupport-min.js</include>
+                <include>wa/components/io/__init__.js</include>
+                <include>wa/components/io/GraphIO.js</include>
+                <include>wa/components/io/ExportSupport.js</include>
+                <include>wa/components/io/ImportSupport.js</include>
 
-                <include>wa/components/data/__init__-min.js</include>
-                <include>wa/components/data/PropertiesToListManager-min.js</include>
-                <include>wa/components/data/DataBrowser-min.js</include>
-                <include>wa/components/data/PropertyEditor-min.js</include>
-                <include>wa/components/data/NodeManager-min.js</include>
-                <include>wa/components/data/RelationshipManager-min.js</include>
+                <include>wa/components/data/__init__.js</include>
+                <include>wa/components/data/PropertiesToListManager.js</include>
+                <include>wa/components/data/DataBrowser.js</include>
+                <include>wa/components/data/PropertyEditor.js</include>
+                <include>wa/components/data/NodeManager.js</include>
+                <include>wa/components/data/RelationshipManager.js</include>
 
-                <include>boot-min.js</include>
+                <include>boot.js</include>
               </includes>
             </aggregation>
           </aggregations>
