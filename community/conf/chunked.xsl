@@ -12,7 +12,7 @@
 <xsl:import href="http://docbook.sourceforge.net/release/xsl/current/xhtml/chunk.xsl"/>
 <xsl:import href="common.xsl"/>
 
-<xsl:import href="footer.xsl"/>
+<xsl:import href="disqus-footer.xsl"/>
 <xsl:param name="admon.graphics" select="1"></xsl:param>
 <xsl:param name="generate.section.toc.level" select="1"></xsl:param>
 
