@@ -55,27 +55,57 @@ input.uncommitted { background:#A1D46A; }
 .mor_info_list { font-size:70%; list-style:none; margin:0; padding: 5px 10px; }
 .mor_info_list li { }
 .mor_info_list li h3 { margin: 0; padding: 4px 0 0 0; }
-.mor_info_list li p { margin: 0; padding: 2px 4px; }
+.mor_info_list li p { margin: 0; padding: 2px 0; }
 
 /* Modules */
 .mor_module { margin-bottom: 5px; border: 1px solid #d4d4d4; -moz-border-radius: 5px; -webkit-border-radius: 5px; background: #fff; }
 .mor_module .mor_info { font-size:12px; line-height: 13px; padding: 5px 10px; }
 
 .mor_module p { font-size:12px; line-height: 13px; padding: 5px 10px; }
+.mor_module h1 {
+	font-size:14px;
+	padding:0 10px;	
+	margin: 9px 0 4px;
+}
 .mor_module h2 { font-size:13px; line-height: 14px; padding: 13px 10px 2px; margin: 0; font-weight:bold; }
 
-.mor_module > h2 { margin: 0; padding: 7px 5px 6px 10px; color: #444; font-size: 12px; line-height: 16px; font-weight: bold; border-bottom: 1px solid #d4d4d4; -moz-border-radius-topleft: 4px; -webkit-border-top-left-radius: 4px; -moz-border-radius-topright: 4px; -webkit-border-top-right-radius: 4px; background-color: #e6e6e6; }
+.mor_module > h2, .mor_module > .mor_tabbedmodule_tabs { margin: 0; padding: 7px 5px 6px 10px; color: #444; font-size: 12px; line-height: 16px; font-weight: bold; border-bottom: 1px solid #d4d4d4; -moz-border-radius-topleft: 4px; -webkit-border-top-left-radius: 4px; -moz-border-radius-topright: 4px; -webkit-border-top-right-radius: 4px; background-color: #e6e6e6; }
 
 .mor_module_actions { list-style:none; padding: 0; margin:0; float:right; }
 .mor_module_actions li { display:block; float:left; padding: 2px 4px; font-size: 0.8em; }
-.mor_module_actions li a.current { color:#555; }
+.mor_module_actions li a { text-decoration:none; }
+.mor_module_actions li a.current { color:#000; }
+
+.mor_tabbedmodule_tabs {
+	list-style:none;
+	height:16px;
+}
+
+.mor_tabbedmodule_tabs li {
+	display:block;
+	float:left;
+	margin: 0 10px 0 0;
+}
+
+.mor_tabbedmodule_tabs li a {
+	text-decoration:none;	
+}
+.mor_tabbedmodule_tabs li a.current{
+	color: #000;	
+}
+
+.mor_tabbedmodule_views {
+	list-style:none;
+	padding: 4px 10px;
+	margin:0;	
+}
 
 /* Horizontal menu */
 .mor_horizontal_menu { list-style:none; margin: 0; padding: 0 5px; }
 .mor_horizontal_menu li { margin:0; padding:0 0 4px; float:left; }
 
 /* Fancy table */
-table.mor_fancy { margin: 0; padding: 0; border-spacing: none; }
+table.mor_fancy { margin: 0; padding: 0; border-spacing: none; width:100%; }
 table.mor_fancy td, table.mor_fancy th { font-size: 11px; line-height: 15px; vertical-align: top; padding: 5px 10px; }
 table.mor_fancy th { text-align: left; font-size: 12px; font-weight: bold; }
 
@@ -190,7 +220,7 @@ td.mor_data_relationship_direction { padding: 0 4px !important; text-align:cente
 /* UI ROOT */
 
 #mor_header { width:100%; height:50px; background:url(../img/header_bg.png) repeat-x;  }
-#mor_header_icon { float:left; margin: 4px 30px 0 10px; }
+#mor_header_icon { float:left; margin: 4px 30px 0 30px; }
 
 #mor_servers { position:absolute; top: 10px; right:10px; }
 
@@ -301,7 +331,7 @@ td.mor_data_relationship_direction { padding: 0 4px !important; text-align:cente
 .mor_data_remove_property { float:right; border:0; width:16px; height:16px; padding:0; color:transparent; overflow:hidden; display:block; background:url(../img/icons/16x16/actions/delete-inactive.png) no-repeat; }
 .mor_data_remove_property:hover { background:url(../img/icons/16x16/actions/delete.png) no-repeat; border:0; }
 
-.mor_data_delete_node_button, .mor_data_save {
+.mor_data_delete_node_button, .mor_data_save, .mor_data_delete_relationship_button {
 	float : right;
 	margin-top:-5px;	
 }
@@ -319,9 +349,9 @@ td.mor_data_relationship_direction { padding: 0 4px !important; text-align:cente
 }
 /* JMX */
 
-.mor_jmx_list { margin:0; padding:5px; list-style:none; font-size:70%; }
-.mor_jmx_list li h2 { margin: 6px 0; }
-.mor_jmx_list li ul { margin:0; list-style:none; padding: 0 0 0 5px;} 
+.mor_jmx_list { margin:0; padding:5px; list-style:none; font-size:80%; }
+.mor_jmx_list li h2 { margin: 6px 0; padding:4px 5px;}
+.mor_jmx_list li ul { margin:0; list-style:none; padding: 0 0 0 10px;} 
 .mor_jmx_list li ul li { }
 
 .mor_jmx_table { border-spacing:0; table-layout:fixed; width:100%; }

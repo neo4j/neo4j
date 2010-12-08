@@ -1,7 +1,13 @@
 <div class="mor_page_leftcol">
 	<div id="mor_monitor_lifecycle"></div>
 	<div class="mor_module">
-		<p class="mor_info">Welcome to the Neo4j Web Admin.</p>
+		<h1>Welcome to the Neo4j Web Admin</h1>
+		<ul class="mor_info_list">
+			<li>
+				<h3>Data url</h3>
+				<p>{ $T.server.url }</p>
+			</li>
+		</ul>
 		<!--div class="mor_module_foldout">
 			<h2><a href="#" class="mor_module_foldout_trigger">More about lifecycle</a></h2>
 			<div class="mor_module_foldout_content">
@@ -46,5 +52,16 @@
 <div class="mor_page_rightcol">
 	<div id="mor_monitor_valuetrackers">
 	
+	</div>
+	<div class="mor_module mor_tabbedmodule mor_span-10 mor_last">
+		<ul class="mor_tabbedmodule_tabs">
+			<li>Show:</li>
+			<li><a href="#" id="mor_monitor_primitives_chart_tab" class="current">Primitives</a></li>
+			<li><a href="#" id="mor_monitor_memory_chart_tab">Memory</a></li>
+		</ul>
+		<ul class="mor_tabbedmodule_views">
+			<li id="mor_monitor_primitives_chart"></li>
+			<li id="mor_monitor_memory_chart" style="display:none;"></li>
+		</ul>
 	</div>
 </div>
