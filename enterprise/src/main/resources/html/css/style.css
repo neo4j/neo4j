@@ -57,6 +57,19 @@ input.uncommitted { background:#A1D46A; }
 .mor_info_list li h3 { margin: 0; padding: 4px 0 0 0; }
 .mor_info_list li p { margin: 0; padding: 2px 0; }
 
+/* Footer */
+
+#footer {
+	clear:both;
+	padding: 30px;
+}
+.copyright {
+	font-size:10px !important;
+	text-align:center;
+	padding: 0.7em 0 0.3em;
+	margin: 0;
+}
+
 /* Modules */
 .mor_module { margin-bottom: 5px; border: 1px solid #d4d4d4; -moz-border-radius: 5px; -webkit-border-radius: 5px; background: #fff; }
 .mor_module .mor_info { font-size:12px; line-height: 13px; padding: 5px 10px; }
@@ -102,7 +115,7 @@ input.uncommitted { background:#A1D46A; }
 
 /* Horizontal menu */
 .mor_horizontal_menu { list-style:none; margin: 0; padding: 0 5px; }
-.mor_horizontal_menu li { margin:0; padding:0 0 4px; float:left; }
+.mor_horizontal_menu li { margin:0; padding:3px 2px 5px 0; float:left; }
 
 /* Fancy table */
 table.mor_fancy { margin: 0; padding: 0; border-spacing: none; width:100%; }
@@ -292,7 +305,7 @@ td.mor_data_relationship_direction { padding: 0 4px !important; text-align:cente
 /* Data */
 
 .mor_data_uneditable_key, .mor_data_uneditable_value, .mor_data_key_input, .mor_data_value_input { 
-	display:block; margin:0; padding:3px 4px; font-size:12px; font-family:sans-serif; 
+	display:block; margin:0; padding:2px 0; font-size:12px; font-family:sans-serif; 
 }
 
 .mor_data_property_list {
@@ -313,7 +326,7 @@ td.mor_data_relationship_direction { padding: 0 4px !important; text-align:cente
 }
 
 .mor_data_key_headline, .mor_data_value_headline {
-	color:#999999;
+	color:#333;
 	display:block;
 	float:left;
 	font-size:10px;
@@ -322,13 +335,13 @@ td.mor_data_relationship_direction { padding: 0 4px !important; text-align:cente
 	width:50px;
 }
 
-.mor_data_uneditable_key, .mor_data_key_input { width: 90px; font-weight:bold; }
-.mor_data_uneditable_key { color:#999; }
+.mor_data_uneditable_key, .mor_data_key_input { width: 40%; font-weight:bold; }
+.mor_data_uneditable_key { color:#333; }
 
-.mor_data_value_input { width: 170px; }
+.mor_data_value_input { width: 70%; }
 .mor_span-3 .mor_data_value_input { width: 150px; }
 
-.mor_data_remove_property { float:right; border:0; width:16px; height:16px; padding:0; color:transparent; overflow:hidden; display:block; background:url(../img/icons/16x16/actions/delete-inactive.png) no-repeat; }
+.mor_data_remove_property { float:right; border:0; width:16px; margin-right:5px; height:16px; padding:0; color:transparent; overflow:hidden; display:block; background:url(../img/icons/16x16/actions/delete-inactive.png) no-repeat; }
 .mor_data_remove_property:hover { background:url(../img/icons/16x16/actions/delete.png) no-repeat; border:0; }
 
 .mor_data_delete_node_button, .mor_data_save, .mor_data_delete_relationship_button {
