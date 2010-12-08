@@ -127,7 +127,7 @@ wa.components.dashboard.MonitorChart = function(server, settings) {
 	controls += "<li><a class='"+me.controlsClass+"' href='#' id='"+me.zoom.thirty_minutes.id +"'>30 minutes</a></li>";
 	controls += "</ul><div class='break'></div>";
 	
-	me.container = $("<div class='mor_module mor_span-9'><h2>" + me.settings.label + "</h2>" + controls + "<div class='mor_chart_container'><div style='height:"+me.settings.height+"px;' id='" + me.containerId + "'></div></div></div>");
+	me.container = $("<div>" + controls + "<div class='mor_chart_container'><div style='height:"+me.settings.height+"px;' id='" + me.containerId + "'></div></div></div>");
 	
 	me.drawing = false;
 	me.currentZoom = "day";

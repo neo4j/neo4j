@@ -76,7 +76,7 @@
         {#elseif $T.item.isRelationship}
             <div class="mor_module mor_span-8">
                 <h2>Relationship
-                    <button href="#" class="bad-button mor_data_delete_relationship_button">Remove</button>
+                    <button href="#" class="mor_data_delete_relationship_button">Remove</button>
                     <button class="mor_data_save" disabled="disabled">Saved</button>
                 </h2>
                 {#param name=propertyEditable value=true}
