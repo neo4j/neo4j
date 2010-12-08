@@ -9,7 +9,7 @@
                 <li><button class="mor_data_refresh_button">Refresh</button></li>
                 <li><button class="mor_data_reference_node_button">Go to reference node</button></li>
             </ul>
-            <p class="mor_info">&nbsp;</p>
+            <div class="break"></div>
             <div class="mor_module_foldout">
                 <h2><a href="#" class="mor_module_foldout_trigger">More about the data browser</a></h2>
                 <div class="mor_module_foldout_content">
