@@ -87,10 +87,12 @@
         </div>
     </div>
     <div class="mor_page_rightcol">
-        <div class="mor_module">
+        <div class="mor_module" style="width: 570px;">
             <h2>Console</h2>
             <div id="mor_console" class="mor_console">
             </div>
+            <div class="break"></div>
+            <p class="copyright">Terminal powered by <a href="http://www.masswerk.at/termlib/">Termlib</a>.</p>
         </div>
     </div>
 {#/template MAIN}
