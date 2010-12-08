@@ -20,17 +20,17 @@
 
 package org.neo4j.server.webadmin.rest;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.kernel.ImpermanentGraphDatabase;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.webadmin.console.ConsoleSession;
+import org.neo4j.server.webadmin.console.GremlinSession;
+import org.neo4j.server.webadmin.console.ScriptSession;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -38,7 +38,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ConsoleServiceTest
+public class ConsoleServiceTest implements SessionFactory
 {
     public ConsoleService consoleService;
 
@@ -79,8 +79,13 @@ public class ConsoleServiceTest
     @Before
     public void setUp() throws Exception
     {
-        ConsoleSession session = new ConsoleSession( new Database( new ImpermanentGraphDatabase( "target/tempdb" ) ) );
-        this.consoleService = new ConsoleService( session );
+        Database database = new Database( new ImpermanentGraphDatabase() );
+        this.consoleService = new ConsoleService( this, database );
     }
 
+    @Override
+    public ScriptSession createSession( String engineName, Database database )
+    {
+        return new GremlinSession( database );
+    }
 }
