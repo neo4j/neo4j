@@ -88,7 +88,7 @@ wa.components.console.Console = (function($) {
             TermlibInvaders.start(term);
         } else {
 
-            me.getConsoleService().exec(term.lineBuffer, function(lines) {
+            me.getConsoleService().exec(term.lineBuffer, "gremlin", function(lines) {
 
                 for(var i=0, l=lines.length; i < l; i++ ) {
                     term.write(lines[i]);
