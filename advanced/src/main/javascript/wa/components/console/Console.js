@@ -33,7 +33,7 @@ wa.components.console.Console = (function($) {
     
     me.getConsoleService = function() {
         return wa.Servers.getCurrentServer().manage.console;
-    }
+    };
     
     //
     // PUBLIC
@@ -62,7 +62,6 @@ wa.components.console.Console = (function($) {
                         me.render();
                     }
 
-                    
                 } else {
                     me.visible = false;
                     if(me.terminal)
@@ -87,9 +86,8 @@ wa.components.console.Console = (function($) {
         if (term.lineBuffer === "invaders" ) {
             TermlibInvaders.start(term);
         } else {
-
-            me.getConsoleService().exec(term.lineBuffer, "gremlin", function(lines) {
-
+            me.getConsoleService().exec(term.lineBuffer, function(lines) {
+            	
                 for(var i=0, l=lines.length; i < l; i++ ) {
                     term.write(lines[i]);
                     term.newLine();
@@ -110,25 +108,10 @@ wa.components.console.Console = (function($) {
 
         me.terminal = new Terminal({
             "termDiv": 'mor_console',
-            //"bgColor": '#232e45',
             "handler": me.termHandler,
-//            "exitHandler": null,
             "wrapping": true
         });
         me.terminal.open();
-        
-    };
-    
-    /**
-     * Default callback for evaluated console statements. Prints the result to
-     * the ui console.
-     */
-    me.evalCallback = function(originalStatement, data) {
-
-    	for( var key in data ) {
-
-        }
-        
         
     };
     

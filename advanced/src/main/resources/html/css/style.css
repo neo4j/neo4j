@@ -71,8 +71,8 @@ input.uncommitted { background:#A1D46A; }
 .mor_module_actions li a.current { color:#555; }
 
 /* Horizontal menu */
-.mor_horizontal_menu { list-style:none; margin: 0; padding: 0; }
-.mor_horizontal_menu li { margin:0; padding:0; float:left; }
+.mor_horizontal_menu { list-style:none; margin: 0; padding: 0 5px; }
+.mor_horizontal_menu li { margin:0; padding:0 0 4px; float:left; }
 
 /* Fancy table */
 table.mor_fancy { margin: 0; padding: 0; border-spacing: none; }
@@ -293,7 +293,6 @@ td.mor_data_relationship_direction { padding: 0 4px !important; text-align:cente
 }
 
 .mor_data_uneditable_key, .mor_data_key_input { width: 90px; font-weight:bold; }
-
 .mor_data_uneditable_key { color:#999; }
 
 .mor_data_value_input { width: 170px; }
@@ -301,10 +300,11 @@ td.mor_data_relationship_direction { padding: 0 4px !important; text-align:cente
 
 .mor_data_remove_property { float:right; border:0; width:16px; height:16px; padding:0; color:transparent; overflow:hidden; display:block; background:url(../img/icons/16x16/actions/delete-inactive.png) no-repeat; }
 .mor_data_remove_property:hover { background:url(../img/icons/16x16/actions/delete.png) no-repeat; border:0; }
-.mor_data_add_node_button, .mor_data_delete_node_button, .mor_data_delete_relationship_button, .mor_data_save { 
-	float:right; margin-top:-4px; 
+
+.mor_data_delete_node_button, .mor_data_save {
+	float : right;
+	margin-top:-5px;	
 }
-.mor_data_add_relationship  { float:right; margin-top:-2px; }
 
 /* Console */
 
