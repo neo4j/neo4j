@@ -62,8 +62,6 @@ public class MonitorService extends GenericWebService implements AdvertisableSer
 
 	public MonitorService( @Context RrdDb rrdDb )
 	{
-        assert rrdDb != null : "Got a null RrdDb instance";
-
 		this.rrdDb = rrdDb;
 	}
 
