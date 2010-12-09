@@ -241,9 +241,24 @@ td.mor_data_relationship_direction { padding: 0 4px !important; text-align:cente
 .mor_chart_container { padding: 5px 20px 5px 10px; }
 
 /* Errors */
-#mor_errors { position:absolute; top: 0; right:0; }
+#mor_errors { 
+	list-style:none outside none;
+	margin:0 auto;
+	position:absolute;
+	top:0;
+	width:100%;
+	z-index:1010;	
+}
 .mor_error_list { padding:0; margin:0; list-style:none; }
-.mor_error_list li { background:#EB7775; border:1px solid #d5d5d5; padding: 4px 5px; color: #45030B; }
+.mor_error_list li { 
+	background:none repeat scroll 0 0 #EB7775;
+	border:1px solid #D5D5D5;
+	color:#45030B;
+	margin:5px auto;
+	padding:4px 5px;
+	text-align:center;
+	width:400px;	
+}
 .mor_error_list li .mor_error_count { padding: 0 4px; font-size:90%; color: #555; }
 
 /* Dialog */
