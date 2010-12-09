@@ -23,7 +23,6 @@ package org.neo4j.server.webadmin.console;
 import com.tinkerpop.blueprints.pgm.TransactionalGraph;
 import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
 import com.tinkerpop.gremlin.GremlinScriptEngine;
-
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseBlockedException;
@@ -32,7 +31,6 @@ import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import java.io.StringWriter;
-import java.util.ArrayList;
 import java.util.List;
 
 public class GremlinSession implements ScriptSession
@@ -50,76 +48,49 @@ public class GremlinSession implements ScriptSession
     /**
      * Take some gremlin script, evaluate it in the context of this gremlin
      * session, and return the result.
-     * 
+     *
      * @param script
      * @return
      */
     @Override
     @SuppressWarnings( "unchecked" )
-    public List<String> evaluate( String script )
+    public String evaluate( String script )
     {
         try
         {
-            resetOutputWriter();
-            Transaction tx = database.graph.beginTx();
-            List<Object> resultLines = (List<Object>) scriptEngine.eval( script );
-            tx.success();
-            tx.finish();
-            // Handle output data
-            List<String> outputLines = new ArrayList<String>();
+            List<Object> resultLines = runScript( script );
 
-            // Handle eval() result
-            String[] printLines = outputWriter.toString().split( "\n" );
+            StringBuilder result = new StringBuilder();
+            result.append( outputWriter.toString() );
 
-            if ( printLines.length > 0 && printLines[0].length() > 0 )
+            if ( resultLines.size() > 0 )
             {
-                for ( String printLine : printLines )
-                {
-                    outputLines.add( printLine );
-                }
-            }
-
-            if ( resultLines == null
-                 || resultLines.size() == 0
-                 || ( resultLines.size() == 1 && ( resultLines.get( 0 ) == null || resultLines.get(
-                         0 ).toString().length() == 0 ) ) )
-            {
-                // Result was empty, add empty text if there was also no IO
-                // output
-                if ( outputLines.size() == 0 )
-                {
-                    outputLines.add( "" );
-                }
-            }
-            else
-            {
-                // Make sure all lines are strings
                 for ( Object resultLine : resultLines )
                 {
-                    outputLines.add( resultLine.toString() );
+                    result.append( resultLine.toString() );
                 }
             }
 
-            return outputLines;
-        }
-        catch ( ScriptException e )
+            return result.toString();
+        } catch ( ScriptException e )
         {
-            return exceptionToResultList( e );
-        }
-        catch ( RuntimeException e )
+            return e.getMessage();
+        } catch ( RuntimeException e )
         {
             e.printStackTrace();
-            return exceptionToResultList( e );
+            return e.getMessage();
         }
     }
-    
-    private List<String> exceptionToResultList( Exception e )
+
+    private List<Object> runScript( String script )
+            throws ScriptException
     {
-        ArrayList<String> resultList = new ArrayList<String>();
-
-        resultList.add( e.getMessage() );
-
-        return resultList;
+        resetOutputWriter();
+        Transaction tx = database.graph.beginTx();
+        List<Object> resultLines = (List<Object>)scriptEngine.eval( script );
+        tx.success();
+        tx.finish();
+        return resultLines;
     }
 
     private void resetOutputWriter()
@@ -128,10 +99,6 @@ public class GremlinSession implements ScriptSession
         scriptEngine.getContext().setWriter( outputWriter );
         scriptEngine.getContext().setErrorWriter( outputWriter );
     }
-
-    //
-    // GREMLIN CODE
-    //
 
     private TransactionalGraph getGremlinWrappedGraph()
             throws DatabaseBlockedException
@@ -154,15 +121,13 @@ public class GremlinSession implements ScriptSession
             {
                 engine.getBindings( ScriptContext.ENGINE_SCOPE ).put( "$_",
                         graph.getVertex( 0l ) );
-            }
-            catch ( Exception e )
+            } catch ( Exception e )
             {
                 // Om-nom-nom
             }
 
             return engine;
-        }
-        catch ( Throwable e )
+        } catch ( Throwable e )
         {
             // Pokemon catch b/c fails here get hidden until the server exits.
             e.printStackTrace();
