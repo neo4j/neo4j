@@ -8,6 +8,8 @@ This includes topics such as backing up the database and monitoring the health o
 
 include::backup.txt[]
 
+include::security.txt[]
+
 include::monitoring.txt[]
 
 include::webadmin.txt[]
