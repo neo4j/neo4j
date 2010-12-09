@@ -1,3 +1,4 @@
+[[configuration]]
 Configuration & Performance
 ===========================
 
