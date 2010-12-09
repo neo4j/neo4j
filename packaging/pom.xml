@@ -327,7 +327,7 @@
               <insertNewLine>true</insertNewLine>
 
 
-              <output>${project.build.directory}/classes/html/webadmin.js</output>
+              <output>${project.build.directory}/classes/webadmin-html/webadmin.js</output>
 
               <inputDir>${project.build.outputDirectory}</inputDir>
 
