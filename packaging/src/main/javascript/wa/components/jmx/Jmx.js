@@ -23,8 +23,9 @@
  * JMX exploration page module for the monitor component.
  */
 wa.components.jmx.Jmx = (function($) {
-    
-    var me = {};
+	
+    var me = {},
+        NEO4J_DOMAIN = "org.neo4j";
     
     me.basePage = $("<div></div>");
     me.ui = {};
@@ -178,8 +179,25 @@ wa.components.jmx.Jmx = (function($) {
     
     me.render = function() {
         if(me.visible) {
+        	
+        	// Re-order jmx data to show neo4j domain first
+        	if(me.jmxData !== null) {
+        		
+        		jmxData = me.jmxData.sort(function(a,b) {
+        			if( a.name === NEO4J_DOMAIN ) {
+        				return -1;
+        			} else if( b.name === NEO4J_DOMAIN ) {
+        				return 1;
+        			}
+        			return 0;
+        		});
+        		
+        	} else {
+        		jmxData = [];
+        	}
+        	
             me.basePage.processTemplate({
-                jmx : (me.jmxData === null) ? [] : me.jmxData,
+                jmx : jmxData,
                 server : me.server,
                 bean : me.currentBean
             });
