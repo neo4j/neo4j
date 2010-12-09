@@ -29,13 +29,18 @@
     if ( document.title )
     {
        title = document.title;
+       var match = title.match( /^(Chapter|)[0-9\.\s]*(.*)$/ );
+       if ( match && match[2] )
+       {
+         title = match[2];
+       }
     }
   }
   // use pageId for disqus here, if it's defined
   var disqus_shortname = "neo4j";
   var disqus_identifier = pageId;
   var disqus_developer = 1;
-  var disqus_title = "";
+  var disqus_title = title;
 
 /*
   var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
