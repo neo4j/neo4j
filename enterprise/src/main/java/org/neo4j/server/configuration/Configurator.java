@@ -40,7 +40,7 @@ public class Configurator {
     public static final String WEBSERVER_PORT_PROPERTY_KEY = "org.neo4j.server.webserver.port";
     public static final int DEFAULT_WEBSERVER_PORT = 7474;
     public static final String WEB_ADMIN_PATH = "/webadmin";
-    public static final String STATIC_WEB_CONTENT_LOCATION = "html";
+    public static final String WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION = "webadmin-html";
     public static final String WEB_ADMIN_REST_API_PATH = "/db/manage";
     public static final String WEB_ADMIN_REST_API_PACKAGE = "org.neo4j.server.webadmin.rest";
     public static final String REST_API_PATH = "/db/data";

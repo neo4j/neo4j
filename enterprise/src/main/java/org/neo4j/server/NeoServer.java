@@ -118,7 +118,7 @@ public class NeoServer {
         webServer.setPort(webServerPort);
 
         log.info("Mounting webadmin at [%s]", Configurator.WEB_ADMIN_PATH);
-        webServer.addStaticContent(Configurator.STATIC_WEB_CONTENT_LOCATION, Configurator.WEB_ADMIN_PATH);
+        webServer.addStaticContent(Configurator.WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION, Configurator.WEB_ADMIN_PATH);
 
         log.info("Mounting management API at [%s]", Configurator.WEB_ADMIN_REST_API_PATH);
         webServer.addJAXRSPackages(listFrom(new String[] { Configurator.WEB_ADMIN_REST_API_PACKAGE }), Configurator.WEB_ADMIN_REST_API_PATH);
