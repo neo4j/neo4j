@@ -3,22 +3,46 @@
 <xsl:template name="user.footer.content">
 <xsl:text disable-output-escaping="yes">
 <![CDATA[
+<div id="disqus_thread"></div>
 <script type="text/javascript">
-var titles = document.body.getElementsByTagName("h1");
-var pageId;
-if ( titles.length > 0 )
-{
-  pageId = "manual";
-}
-else
-{
-  titles = document.body.getElementsByTagName("h2");
-  if ( titles.length > 0 )
+// DISQUS
+(function() {
+
+  var pageId = "manual";
+  var title = "The Neo4j Manual";
+  if ( document.body.getElementsByTagName("h1").length > 0 )
   {
-    pageId = titles[0].firstChild.getAttribute("id");
+    pageId += "-toc";
   }
-}
-// use pageId for disqus here, if it's defined
+  else
+  {
+    var headings = document.body.getElementsByTagName("h2");
+    if ( headings.length > 0 )
+    {
+      var headingElement = headings[0];
+      if ( headingElement.firstChild )
+      {
+        pageId += "-";
+        pageId += headingElement.firstChild.getAttribute("id");
+      }
+    }
+    if ( document.title )
+    {
+       title = document.title;
+    }
+  }
+  // use pageId for disqus here, if it's defined
+  var disqus_shortname = "neo4j";
+  var disqus_identifier = pageId;
+  var disqus_developer = 1;
+  var disqus_title = "";
+
+/*
+  var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+  dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+*/
+})();
 
 // GA
   var _gaq = _gaq || [];

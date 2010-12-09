@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<assembly>
+  <id>html</id>
+  <includeBaseDirectory>false</includeBaseDirectory>
+  <formats>
+    <format>jar</format>
+  </formats>
+  <fileSets>
+
+    <!-- non-maven jars -->
+    <fileSet>
+      <directory>target/neo4j-manual.chunked</directory>
+      <outputDirectory>/manual-html</outputDirectory>
+      <includes>
+        <include>**</include>
+      </includes>
+    </fileSet>
+  </fileSets>
+</assembly>
