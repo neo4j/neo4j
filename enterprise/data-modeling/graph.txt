@@ -1,3 +1,4 @@
+[[modeling-graphdesign]]
 Graph Design
 ============
 The syntax of a graph can express anything; the structure of a particular graph should make it easy to express the semantics of a domain.

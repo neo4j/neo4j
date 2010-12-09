@@ -1,3 +1,4 @@
+[[introduction]]
 Introduction
 ============
 
@@ -11,12 +12,14 @@ The goal is to be thumb-through and rule-of-thumb friendly.
 Each section should stand on its own, so you can hop right to whatever interests you.
 When possible, the sections distill "rules of thumb" which you can keep in mind whenever you wander out of the house without this manual in your back pocket.
 
+[[introduction-who]]
 == Who should read this ==
 
 The topics should be relevant to architects, administrators, developers and operations personnel.
 You should already know about Neo4j and using graphs to store data.
 If you are completely new to Neo4j please check out http://neo4j.org first.
 
+[[introduction-highlights]]
 == Neo4j highlights ==
 
 As a robust, scalable and high-performance database, Neo4j is suitable for lightweight projects or full enterprise deployment.  

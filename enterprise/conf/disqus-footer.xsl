@@ -36,7 +36,6 @@
        }
     }
   }
-  // use pageId for disqus here, if it's defined
   var disqus_shortname = "neo4j";
   var disqus_identifier = pageId;
   var disqus_developer = 1;
