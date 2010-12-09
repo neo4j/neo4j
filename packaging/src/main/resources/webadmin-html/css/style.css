@@ -280,7 +280,18 @@ td.mor_data_relationship_direction { padding: 0 4px !important; text-align:cente
 #mor_loading_content {display:none;}
 #mor_loading_overlay {background-color:#000; cursor:wait;}
 
-#mor_loading_container {background-color:#eee; color:#000; font: 16px/24px "Lucida Grande",Arial,sans-serif; padding-bottom:4px; width:600px; -moz-border-radius:6px; -webkit-border-radius:6px; border-radius:6px 6px 6px 6px; -moz-box-shadow:0 0 64px #000; -webkit-box-shadow:0 0 64px #000;}
+#mor_loading_container {
+	background-color:#eee; 
+	color:#000; 
+	top:100px;
+	font: 16px/24px "Lucida Grande",Arial,sans-serif; 
+	padding-bottom:4px; width:600px; 
+	-moz-border-radius:6px; 
+	-webkit-border-radius:6px; 
+	border-radius:6px 6px 6px 6px; 
+	-moz-box-shadow:0 0 64px #000; 
+	-webkit-box-shadow:0 0 64px #000;
+}
 
 #mor_loading_container #mor_loading_title {color:#000; background-color:#ddd; border-bottom:1px solid #ccc; font-weight:bold; padding:6px 8px; text-shadow:0 1px 0 #f4f4f4; border-radius:6px 6px 0 0; -moz-border-radius-topleft:6px;-moz-border-radius-topright:6px; -webkit-border-top-left-radius:6px; -webkit-border-top-right-radius:6px; }
 #mor_loading_container #mor_loading_message {font-size:12px; padding:6px 12px;}
@@ -330,6 +341,21 @@ td.mor_data_relationship_direction { padding: 0 4px !important; text-align:cente
 #mor_mainmenu li a { display:block; background:#7a9ea9 url(../img/tab_shade.png) bottom repeat-x; height:22px; float:left; margin:0 4px; padding: 4px 8px 0;  -moz-border-radius-topright: 3px; -webkit-border-top-right-radius: 3px; -moz-border-radius-topleft: 3px; -webkit-border-top-left-radius: 3px; color:#353535; text-decoration:none; }
 #mor_mainmenu li a:hover { background:#e5e5e5 url(../img/tab_shade.png) bottom repeat-x; }
 #mor_mainmenu li.current a { background:#e5e5e5; }
+
+#mor_header_submenu {
+	float:right;
+	padding: 0 30px 0 0;	
+}
+
+#mor_header_submenu a {
+	color: #ddd;
+	font-size:12px;
+	text-decoration:none;	
+}
+
+#mor_header_submenu a:hover {
+	text-decoration:underline;	
+}
 
 /* 
    PAGE STUFF
