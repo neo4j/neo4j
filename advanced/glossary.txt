@@ -1,3 +1,4 @@
+[[glossary]]
 [glossary]
 Glossary
 ========

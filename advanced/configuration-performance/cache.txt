@@ -1,3 +1,4 @@
+[[configuration-caches]]
 Caches in Neo4j
 ===============
 

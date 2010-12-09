@@ -1,3 +1,4 @@
+[[transactions]]
 Transaction management
 ======================
 
@@ -18,6 +19,7 @@ Specifically:
 * Locks are acquired at the Node and Relationship level.
 * Deadlock detection is built into the core transaction management.
 
+[[transactions-interaction]]
 == Interaction cycle ==
 
 All write operations that work with the graph must be performed in a transaction.
@@ -48,12 +50,14 @@ It will be tied to a thread and when that thread gets scheduled to perform work 
 If the leaked transaction state is “marked for rollback” (which will happen if a deadlock was detected) no more work can be performed on that transaction.
 Trying to do so will result in error on each call to a write operation.
 
+[[transactions-isolation]]
 == Isolation levels ==
 
 By default a read operation will read the last committed value unless a local modification within the current transaction exist.
 The default isolation level is very similar to +READ_COMMITTED+: reads do not block or take any locks so non-repeatable reads can occur.
 It is possible to achieve a stronger isolation level (such as +REPETABLE_READ+ and +SERIALIZABLE+) by manually acquiring read and write locks.
 
+[[transactions-locking]]
 == Default locking behavior ==
 
 * When adding, changing or removing a property on a node or relationship a write lock will be taken on the specific node or relationship. 	
@@ -62,6 +66,7 @@ It is possible to achieve a stronger isolation level (such as +REPETABLE_READ+ a
 
 The locks will be added to the transaction and released when the transaction finishes.
 
+[[transactions-deadlocks]]
 == Deadlocks ==
 
 Since locks are used it is possible for deadlocks to happen.
@@ -82,6 +87,7 @@ Deadlocks caused by the use of other synchronization than the locks managed by N
 Since all operations in the Neo4j API are thread safe unless specified otherwise, there is no need for external synchronization.
 Other code that requires synchronization should be synchronized in such a way that it never performs any Neo4j operation in the synchronized block.
 
+[[transactions-delete]]
 == Delete semantics ==
 
 When deleting a node or a relationship all properties for that entity will be automatically removed but the relationships of a node will not be removed.
