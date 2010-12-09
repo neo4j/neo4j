@@ -31,11 +31,13 @@ wa.components.dashboard.Dashboard = (function($) {
     
     me.uiLoaded  = false;
     me.server = null;
+    me.kernelInfo = null;
     
     me.visible = false;
     
     me.valueTrackers = [];
     me.charts = [];
+    me.visibleChart = null;
     
     //
     // PUBLIC
@@ -89,23 +91,37 @@ wa.components.dashboard.Dashboard = (function($) {
     // PRIVATE
     //
     
+    /**
+     * Resets the state of the dashboard, loads appropriate server
+     * information, and dashboard widgets, and re-renders.
+     */
     me.reload = function() {
-        
-        me.basePage.processTemplate({
-            server : me.server
-        });
-        
+
         me.destroyMonitors();
-        
         var server = wa.Servers.getCurrentServer();
         
         if( server ) {
-        	me.loadMonitors(server);
-        	$("#mor_monitor_lifecycle").empty();
-        	//Disable for now
-        	//$("#mor_monitor_lifecycle").append( wa.widgets.LifecycleWidget(server).render() );
+    	
+        	server.manage.jmx.getBean("neo4j", "Kernel", function(kernelBean){
+        		me.kernelInfo = kernelBean;
+    	    	me.render();
+            	me.loadMonitors(server);
+            	
+            	$("#mor_monitor_lifecycle").empty();
+            	//Disable for now
+            	//$("#mor_monitor_lifecycle").append( wa.widgets.LifecycleWidget(server).render() );
+        	});
+        } else {
+        	me.render();
         }
         
+    };
+    
+    me.render = function() {
+    	me.basePage.processTemplate({
+            server : me.server,
+            kernelInfo : me.kernelInfo
+        });
     };
     
     me.destroyMonitors= function() {
@@ -126,8 +142,8 @@ wa.components.dashboard.Dashboard = (function($) {
     };
     
     me.runMonitors = function() {
-    	for( var i = 0, l = me.charts.length; i < l ; i++ ) {
-			me.charts[i].startDrawing();
+    	if( me.visibleChart !== null ) {
+    		me.visibleChart.startDrawing();
     	}
     	
     	for( var i = 0, l = me.valueTrackers.length; i < l ; i++ ) {
@@ -211,6 +227,7 @@ wa.components.dashboard.Dashboard = (function($) {
     	$("#mor_monitor_primitives_chart").hide();
     	$("#mor_monitor_memory_chart").show();
     	me.memoryChart.startDrawing();
+    	me.visibleChart = me.memoryChart;
     });
     
     $("#mor_monitor_primitives_chart_tab").live("click", function(ev) {
@@ -223,6 +240,7 @@ wa.components.dashboard.Dashboard = (function($) {
     	$("#mor_monitor_memory_chart").hide();
     	$("#mor_monitor_primitives_chart").show();
     	me.primitivesChart.startDrawing();
+    	me.visibleChart = me.primitivesChart;
     });
     
     return me.api;
