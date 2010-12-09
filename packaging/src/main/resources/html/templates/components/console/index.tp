@@ -1,10 +1,10 @@
 {#template MAIN}
     <div class="mor_page_leftcol">
         <div class="mor_module">
-            
-            <p>The Neo4j console allows you to use the Gremlin programming language for working with your graph. Gremlin uses XPath expressions as a base for a full Turing-complete language.</p> 
+
+            <p>The Neo4j console allows you to use the Gremlin programming language for working with your graph. Gremlin uses XPath expressions as a base for a full Turing-complete language.</p>
             <p>Using Gremlin, you can perform powerful data manipulations.</p>
-            
+
 			<div class="mor_module_foldout">
 				<h2><a href="#" class="mor_module_foldout_trigger">Console cheat sheet</a></h2>
 				<div class="mor_module_foldout_content">
@@ -71,7 +71,7 @@
 		                    &gt; $_ := ./bothE/inV<br/>
 		                    &gt; foreach $v in $_<br/>
 		                    <div style="width:20px;float:left;">&gt; </div>g:print('vertex ', $v)<br/>
-		                    &gt; end   
+		                    &gt; end
 		                                    </p>
 		                </li>
 		            </ul>
@@ -81,18 +81,21 @@
 				<h2><a href="#" class="mor_module_foldout_trigger">More information</a></h2>
 				<div class="mor_module_foldout_content">
 					<h2>More information</h2>
-					<p>You can find more information about gremlin <a href="http://wiki.github.com/tinkerpop/gremlin/" target="_BLANK">here</a>.</p> 
+					<p>You can find more information about gremlin <a href="http://wiki.github.com/tinkerpop/gremlin/" target="_BLANK">here</a>.</p>
 				</div>
 			</div>
         </div>
     </div>
     <div class="mor_page_rightcol">
-        <div class="mor_module" style="width: 570px;">
+        <div class="mor_module">
             <h2>Console</h2>
-            <div id="mor_console" class="mor_console">
+            <div class="mor_console_wrap">
+                <div id="mor_console" class="mor_console">
+                    <p id="mor_console_input_wrap"><span style="float:left;width:13px;"> &gt; </span> <input type="text" id="mor_console_input" value="" /></p>
+                    <p></p>
+                </div>
+                <div class="break"></div>
             </div>
-            <div class="break"></div>
-            <p class="copyright">Terminal powered by <a href="http://www.masswerk.at/termlib/">Termlib</a>.</p>
         </div>
     </div>
 {#/template MAIN}
