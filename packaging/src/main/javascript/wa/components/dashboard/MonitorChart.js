@@ -122,15 +122,15 @@ wa.components.dashboard.MonitorChart = function(server, settings) {
 	controls += "<li><a class='"+me.controlsClass+"' href='#' id='"+me.zoom.year.id +"'>Year</a></li>";
 	controls += "<li><a class='"+me.controlsClass+"' href='#' id='"+me.zoom.month.id +"'>Month</a></li>";
 	controls += "<li><a class='"+me.controlsClass+"' href='#' id='"+me.zoom.week.id +"'>Week</a></li>";
-	controls += "<li class='current'><a class='"+me.controlsClass+"' href='#' id='"+me.zoom.day.id +"'>Day</a></li>";
+	controls += "<li><a class='"+me.controlsClass+"' href='#' id='"+me.zoom.day.id +"'>Day</a></li>";
 	controls += "<li><a class='"+me.controlsClass+"' href='#' id='"+me.zoom.six_hours.id +"'>6 hours</a></li>";
-	controls += "<li><a class='"+me.controlsClass+"' href='#' id='"+me.zoom.thirty_minutes.id +"'>30 minutes</a></li>";
+	controls += "<li class='current'><a class='"+me.controlsClass+"' href='#' id='"+me.zoom.thirty_minutes.id +"'>30 minutes</a></li>";
 	controls += "</ul><div class='break'></div>";
 	
 	me.container = $("<div>" + controls + "<div class='mor_chart_container'><div style='height:"+me.settings.height+"px;' id='" + me.containerId + "'></div></div></div>");
 	
 	me.drawing = false;
-	me.currentZoom = "day";
+	me.currentZoom = "thirty_minutes";
 	me.currentData = [];
 	
 	me.api = {
