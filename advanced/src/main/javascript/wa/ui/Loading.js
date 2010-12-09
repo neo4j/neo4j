@@ -33,7 +33,7 @@ wa.ui.Loading = (function($){
             closeHTML: null,
             minHeight: 80,
             opacity: 65, 
-            position: ['400',],
+            position: ['100',],
             overlayClose: false
         });
     };

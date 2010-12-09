@@ -7,8 +7,8 @@
   </formats>
   <fileSets>
     <fileSet>
-      <directory>${project.build.outputDirectory}/html</directory>
-      <outputDirectory>/html</outputDirectory>
+      <directory>${project.build.outputDirectory}/webadmin-html</directory>
+      <outputDirectory>/webadmin-html</outputDirectory>
     </fileSet>
   </fileSets>
 
