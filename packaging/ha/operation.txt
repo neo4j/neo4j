@@ -1,3 +1,4 @@
+[[ha-how]]
 How HA operates
 ===============
 

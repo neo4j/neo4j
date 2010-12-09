@@ -1,3 +1,4 @@
+[[deployment-upgrading]]
 Upgrading
 =========
 
