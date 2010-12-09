@@ -39,7 +39,7 @@ public class CreateSimpleGraph {
         URI firstNode = createNode();
         addProperty(firstNode, "name", "Joe Strummer");
         URI secondNode = createNode();
-        addProperty(firstNode, "band", "The Clash");
+        addProperty(secondNode, "band", "The Clash");
         // END SNIPPET: nodesAndProps    
         
         // START SNIPPET: addRel
