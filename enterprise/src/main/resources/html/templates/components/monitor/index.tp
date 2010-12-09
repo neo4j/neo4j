@@ -48,6 +48,10 @@
 				<p>Because of the way neo4j stores data, the different storage files (nodestore, relationshipstore etc.) will sometimes be very small before the server has recieved any requests.</p>
 				<p>It may be surprising to see the storage files grow rapidly when server first recieves requests, but the measurements will actually be correctly reflecting the disk size of the storage files.</p>
 				<p>This is only occurs if you are working on a relatively small graph.</p>
+				<h2>The note on primitive counts</h2>
+				<p>The number of nodes, properties and relations are estimates based on file sizes. Actually counting the nodes is not done for performance reasons. These are usually very accurate, but in certain cases if you have experienced a database crash and subsequent recovery, they may be very wrong.</p>
+				<p>How wrong the numbers are is entirely based on the operations you were doing right before the crash. There is currently no automated way to remedy this problem.</p>
+				
 			</div>
 		</div>
 	</div>

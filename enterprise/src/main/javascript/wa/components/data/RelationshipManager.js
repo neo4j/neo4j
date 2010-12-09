@@ -55,16 +55,19 @@ wa.components.data.RelationshipManager = (function($) {
 			to = me.server().url + to;
 		}
 		
-		me.server().post("node/" + from + "/relationships", {
-				"to" : to,
-				"data" : {},
-				"type": type
-			}, function(data) {
-			    wa.components.data.DataBrowser.reload();
-			}
-		);
-		
-		wa.ui.Dialog.close();
+		if ( to === from ) {
+			wa.ui.ErrorBox.showError("You cannot create self-relationships.");
+		} else {
+			me.server().post("node/" + from + "/relationships", {
+					"to" : to,
+					"data" : {},
+					"type": type
+				}, function(data) {
+				    wa.components.data.DataBrowser.reload();
+					wa.ui.Dialog.close();
+				}
+			);
+		}
 	};
 	
 	/**
