@@ -20,6 +20,8 @@
 
 package org.neo4j.server.webadmin.functional.web;
 
+import java.io.IOException;
+
 import org.junit.Test;
 
 import static org.junit.Assert.assertThat;
@@ -28,8 +30,9 @@ import static org.neo4j.server.webadmin.functional.web.IsVisible.isVisible;
 public class DashboardFunctionalTest extends WebDriverTest {
 
 	@Test
-	public void shouldHaveDashboardWindow() {
+	public void shouldHaveDashboardWindow() throws IOException {
 		dashboardMenu.getElement().click();
+		System.in.read();
 		assertThat(dashboardValueTrackers.getElement(), isVisible());
 	}
 }
