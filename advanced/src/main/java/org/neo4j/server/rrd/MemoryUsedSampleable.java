@@ -47,8 +47,8 @@ public class MemoryUsedSampleable implements Sampleable
         try
         {
             long used = (Long)( (CompositeDataSupport)mbeanServer.getAttribute( memoryName, "HeapMemoryUsage" ) ).get( "used" );
-            long max = 100 * (Long)( (CompositeDataSupport)mbeanServer.getAttribute( memoryName, "HeapMemoryUsage" ) ).get( "max" );
-            return used / max;
+            long max =  (Long)( (CompositeDataSupport)mbeanServer.getAttribute( memoryName, "HeapMemoryUsage" ) ).get( "max" );
+            return Math.round((used / (double)max) * 100);
         }
         catch ( Exception e )
         {
