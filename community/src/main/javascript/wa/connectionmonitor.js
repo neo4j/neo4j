@@ -20,7 +20,22 @@
 
 (function() { 
 	// Keep track of server connection
+	var isShowingConnectionLostDialog = false;
+	
 	neo4j.events.bind("web.connection.failed", function(ev, args){
-		wa.ui.ErrorBox.showError("Unable to connect to the server..");
+		if (! isShowingConnectionLostDialog ){
+			if( wa.Servers.getCurrentServer() !== null) {
+				isShowingConnectionLostDialog = true;
+				wa.ui.Loading.show("Server connection lost","Attempting to re-establish connection..");
+				
+				wa.Servers.getCurrentServer().heartbeat.waitForPulse(function() {
+					wa.ui.Loading.hide();
+					isShowingConnectionLostDialog = false;
+				});
+				
+			} else {
+				wa.ui.ErrorBox.showError("Unknown connection problem.");
+			}
+		}
 	});
 })();
