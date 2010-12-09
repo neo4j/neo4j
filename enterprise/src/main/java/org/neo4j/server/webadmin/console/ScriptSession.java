@@ -24,6 +24,5 @@ import java.util.List;
 
 public interface ScriptSession
 {
-    @SuppressWarnings( "unchecked" )
     List<String> evaluate( String script );
 }

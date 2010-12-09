@@ -112,21 +112,7 @@ public class GremlinSession implements ScriptSession
             return exceptionToResultList( e );
         }
     }
-
-    /**
-     * Destroy the internal gremlin evaluator and replace it with a clean slate.
-     */
-    private synchronized void reset()
-    {
-        // #run() will pick up on this and create a new script engine. This
-        // ensures it is instantiated in the correct thread context.
-        this.scriptEngine = null;
-    }
-
-    //
-    // INTERNALS
-    //
-
+    
     private List<String> exceptionToResultList( Exception e )
     {
         ArrayList<String> resultList = new ArrayList<String>();
