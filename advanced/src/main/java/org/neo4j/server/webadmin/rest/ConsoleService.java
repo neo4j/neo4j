@@ -26,13 +26,17 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.webadmin.console.ScriptSession;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.FormParam;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
-import java.util.List;
 import java.util.Map;
 
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
@@ -106,9 +110,9 @@ public class ConsoleService implements AdvertisableService
             ScriptSession scriptSession = getSession( args );
             log.info( scriptSession.toString() );
 
-            List<String> resultLines = scriptSession.evaluate( (String)args.get( "command" ) );
+            String result = scriptSession.evaluate( (String)args.get( "command" ) );
 
-            return Response.ok( JsonHelper.createJsonFrom( resultLines ) ).header(
+            return Response.ok( JsonHelper.createJsonFrom( result ) ).header(
                     "Content-Type", MediaType.APPLICATION_JSON ).build();
         } catch ( IllegalArgumentException e )
         {
