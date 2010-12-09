@@ -20,9 +20,7 @@
 
 package org.neo4j.server.webadmin.console;
 
-import java.util.List;
-
 public interface ScriptSession
 {
-    List<String> evaluate( String script );
+    String evaluate( String script );
 }
