@@ -21,6 +21,14 @@
     <neo-server.home>target/generated-resources/appassembler/jsw</neo-server.home>
     <neo-server.confdir>target/test-classes/etc/neo-server</neo-server.confdir>
     <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
+    
+    <!-- dependency versions -->
+    <!-- NOTE: This decides the version of documentation that is *web-exposed*, 
+         NOT the documentation neo4j-standalone puts in the "doc" directory. 
+         This MUST be kept in sync with neo4j-standalone (or the two documentations
+         will be out of sync). Anders will remedy this when dependency versioning is centralized. -->
+    <neo4j.version>1.2-SNAPSHOT</neo4j.version>
+    
   </properties>
 
   <packaging>bundle</packaging>
@@ -153,6 +161,14 @@
       <type>jar</type>
       <scope>provided</scope>
       <optional>true</optional>
+    </dependency>
+    
+    <!-- Neo4j manual to be exposed via the web. -->
+    <dependency>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-manual</artifactId>
+      <classifier>html</classifier>
+      <version>${neo4j.version}</version>
     </dependency>
 
     <!-- File uploads -->
