@@ -11,9 +11,9 @@ First of, make sure your database is configured to keep logical logs around, lik
 ----
 keep_logical_logs=true <1>
 ----
-WARNING: If you want to do incremental backups, you need to do make sure that logical logs are kept anytime you modify data or start up the database, otherwise you incremental backups might not work properly.
+<1> See <<configuration>> for information on how you can give the database its settings.
 
-<1> See Configurations to see how you can give the database its settings.
+WARNING: If you want to do incremental backups, you need to do make sure that logical logs are kept anytime you modify data or start up the database, otherwise you incremental backups might not work properly.
 
 Shut down the neo4j database and copy its files to the backup location. Once this is prepared, backups can be run by executing these Java statements:
 
