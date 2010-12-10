@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.server.webadmin.functional.web;
+package org.neo4j.server.webadmin.webtest;
 
 import static org.junit.Assert.assertThat;
 import static org.neo4j.server.webadmin.functional.web.IsVisible.isVisible;
@@ -29,18 +29,14 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.RenderedWebElement;
 
 @Ignore
-public class BackupWebTest extends WebDriverTest {
+public class ConfigurationWebTest extends WebDriverTest {
 
 	@Test
-	public void shouldHaveBackupWindow() {
-		backupMenu.getElement().click();
-		assertThat(manualBackupPath.getElement(), isVisible());
+	public void shouldHaveConfigurationWindow() {
+		configMenu.getElement().click();
+		assertThat(dbRootConfig.getElement(), isVisible());
 	}
 	
-	private ElementReference manualBackupPath = new ElementReference() {
-		public RenderedWebElement getElement() {
-			return waitForElementToAppear(By.className("mor_backup_path"));
-		}
-	};
+	private ElementReference dbRootConfig = new ElementReference(webDriver, By.id("mor_setting_db.root"));
 
 }
