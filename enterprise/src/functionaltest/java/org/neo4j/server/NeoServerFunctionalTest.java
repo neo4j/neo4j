@@ -29,10 +29,9 @@ import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.URI;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
+import org.dummy.web.service.DummyThirdPartyWebService;
 import org.junit.Test;
 import org.neo4j.server.logging.InMemoryAppender;
 
@@ -40,21 +39,6 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class NeoServerFunctionalTest {
-
-    private NeoServer server;
-    private InMemoryAppender appender;
-
-    @Before
-    public void setupServer() throws IOException {
-        server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
-        appender = new InMemoryAppender(NeoServer.log);
-        server.start();
-    }
-
-    @After
-    public void stopServer() {
-        server.stop();
-    }
 
     @Test
     public void shouldDefaultToSensiblePortIfNoneSpecifiedInConfig() throws Exception {
@@ -70,12 +54,19 @@ public class NeoServerFunctionalTest {
 
     @Test
     public void whenServerIsStartedItshouldStartASingleDatabase() throws Exception {
+        NeoServer server = ServerBuilder.server().withPassingStartupHealthcheck().withRandomDatabaseDir().build();
+        server.start();
         assertNotNull(server.getDatabase());
+        server.stop();
     }
 
     @Test
     public void shouldLogStartup() throws Exception {
+        InMemoryAppender appender = new InMemoryAppender(NeoServer.log);
+        NeoServer server = ServerBuilder.server().withPassingStartupHealthcheck().withRandomDatabaseDir().build();
+        server.start();
         assertThat(appender.toString(), containsString("Starting Neo Server on port [" + server.restApiUri().getPort() + "]"));
+        server.stop();
     }
 
     @Test
@@ -90,17 +81,6 @@ public class NeoServerFunctionalTest {
         assertThat(response.toString(), containsString("webadmin"));
 
         server.stop();
-    }
-
-    @Ignore
-    @Test
-    public void shouldSurviveDoubleMounts() throws Exception {
-        NeoServer server = ServerBuilder.server().withPassingStartupHealthcheck().withRandomDatabaseDir().build();
-        Client client = Client.create();
-        assertFalse(server.baseUri().toString().contains("testing"));
-        ClientResponse response = client.resource(server.baseUri() + "db/manage/testing").get(ClientResponse.class);
-        assertThat(response.getStatus(), is(200));
-        assertThat(response.toString(), containsString("dupOne"));
     }
 
     @Test
@@ -144,5 +124,17 @@ public class NeoServerFunctionalTest {
 
         assertThat(appender.toString(), containsString(String.format("ERROR - Failed to start Neo Server on port [%s]", server.restApiUri().getPort())));
         socket.close();
+    }
+    
+    @Test
+    public void shouldLoadThirdPartyJaxRsClasses() throws Exception {
+        NeoServer server = ServerBuilder.server().withThirdPartyJaxRsPackage("org.dummy.web.service", DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT).withPassingStartupHealthcheck().withRandomDatabaseDir().build();
+        server.start();
+
+        URI thirdPartyServiceUri = new URI(server.baseUri().toString() + DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT).normalize();
+        String response = Client.create().resource(thirdPartyServiceUri.toString()).get(String.class);
+        assertEquals("hello", response);
+        
+        server.stop();
     }
 }

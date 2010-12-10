@@ -28,82 +28,85 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.configuration.Configuration;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.validation.Validator;
 
-public class ConfiguratorTest
-{
+public class ConfiguratorTest {
 
-    @BeforeClass
-    public static void setup()
-    {
-        System.setProperty( "org.neo4j.server.properties",
-                "src/test/resources/etc/neo-server/neo-server.properties" );
+    @Test
+    public void shouldProvideAConfiguration() throws IOException {
+        File configFile = PropertyFileBuilder.builder().build();
+        Configuration config = new Configurator(new Validator(), configFile).configuration();
+        assertNotNull(config);
     }
 
     @Test
-    public void shouldProvideAConfiguration()
-    {
-        Configuration config = new Configurator( new Validator() ).configuration();
-        assertNotNull( config );
-    }
+    public void shouldUseSpecifiedConfigFile() throws Exception {
 
-    @Test
-    public void shouldUseSpecifiedConfigFile() throws Exception
-    {
-        File configFile = ServerTestUtils.createTempPropertyFile();
+        File configFile = PropertyFileBuilder.builder().withNameValue("foo", "bar").build();
 
-        FileWriter fstream = new FileWriter( configFile );
-        BufferedWriter out = new BufferedWriter( fstream );
-        out.write( "foo=bar" );
-        out.close();
-
-        Configuration testConf = new Configurator( new Validator(), configFile ).configuration();
+        Configuration testConf = new Configurator(new Validator(), configFile).configuration();
 
         final String EXPECTED_VALUE = "bar";
-        assertEquals( EXPECTED_VALUE, testConf.getString( "foo" ) );
+        assertEquals(EXPECTED_VALUE, testConf.getString("foo"));
     }
 
     @Test
-    public void shouldAcceptDuplicateKeysWithSameValue() throws IOException
-    {
-        File configFile = ServerTestUtils.createTempPropertyFile();
+    public void shouldAcceptDuplicateKeysWithSameValue() throws IOException {
+        File configFile = PropertyFileBuilder.builder().withNameValue("foo", "bar").withNameValue("foo", "bar").build();
 
-        BufferedWriter writer = new BufferedWriter( new FileWriter( configFile ) );
-        writer.write( "foo=bar" );
-        writer.write( System.getProperty( "line.separator" ) );
-        writer.write( "foo=bar" );
-        writer.close();
-
-        Configurator configurator = new Configurator( configFile );
+        Configurator configurator = new Configurator(configFile);
         Configuration testConf = configurator.configuration();
 
-        assertNotNull( testConf );
+        assertNotNull(testConf);
         final String EXPECTED_VALUE = "bar";
-        assertEquals( EXPECTED_VALUE, testConf.getString( "foo" ) );
+        assertEquals(EXPECTED_VALUE, testConf.getString("foo"));
     }
-    
+
     private static final String NEOSTORE_NODESTORE_DB_MAPPED_MEMORY_KEY = "neostore.nodestore.db.mapped_memory";
     private static final String NEOSTORE_NODESTORE_DB_MAPPED_MEMORY = "25M";
     private static final String NEOSTORE_RELATIONSHIPSTORE_DB_MAPPED_MEMORY_KEY = "neostore.relationshipstore.db.mapped_memory";
     private static final String NEOSTORE_RELATIONSHIPSTORE_DB_MAPPED_MEMORY = "50M";
-    
+
     @Test
     public void shouldProvideDatabaseTuningParametersSeparately() throws IOException {
         File databaseTuningPropertyFile = ServerTestUtils.createTempPropertyFile();
         ServerTestUtils.writePropertyToFile(NEOSTORE_NODESTORE_DB_MAPPED_MEMORY_KEY, NEOSTORE_NODESTORE_DB_MAPPED_MEMORY, databaseTuningPropertyFile);
-        ServerTestUtils.writePropertyToFile(NEOSTORE_RELATIONSHIPSTORE_DB_MAPPED_MEMORY_KEY, NEOSTORE_RELATIONSHIPSTORE_DB_MAPPED_MEMORY, databaseTuningPropertyFile);
-        
+        ServerTestUtils.writePropertyToFile(NEOSTORE_RELATIONSHIPSTORE_DB_MAPPED_MEMORY_KEY, NEOSTORE_RELATIONSHIPSTORE_DB_MAPPED_MEMORY,
+                databaseTuningPropertyFile);
+
         File propertyFileWithDbTuningProperty = PropertyFileBuilder.builder().withDbTuningPropertyFile(databaseTuningPropertyFile).build();
-        
+
         Configurator configurator = new Configurator(propertyFileWithDbTuningProperty);
-        
+
         Map<String, String> databaseTuningProperties = configurator.getDatabaseTuningProperties();
         assertNotNull(databaseTuningProperties);
         assertEquals(2, databaseTuningProperties.size());
+    }
+
+    @Test
+    public void shouldFindThirdPartyJaxRsClasses() throws IOException {
+
+        File file = ServerTestUtils.createTempPropertyFile();
+
+        FileWriter fstream = new FileWriter(file, true);
+        BufferedWriter out = new BufferedWriter(fstream);
+        out.write(Configurator.THIRD_PARTY_PACKAGES_KEY);
+        out.write("=");
+        out.write("com.foo.bar=\"mount/point/foo\",");
+        out.write("com.foo.baz=\"/bar\",");
+        out.write("com.foo.foobarbaz=\"/\"");
+        out.write(System.getProperty("line.separator"));
+        out.close();
+
+        Configurator configurator = new Configurator(file);
+
+        Set<ThirdPartyJaxRsPackage> thirdpartyJaxRsClasses = configurator.getThirdpartyJaxRsClasses();
+        assertNotNull(thirdpartyJaxRsClasses);
+        assertEquals(3, thirdpartyJaxRsClasses.size());
     }
 }

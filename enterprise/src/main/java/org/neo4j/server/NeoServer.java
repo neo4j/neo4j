@@ -23,6 +23,7 @@ package org.neo4j.server;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,6 +34,7 @@ import javax.management.MalformedObjectNameException;
 
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
 import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
 import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.database.Database;
@@ -125,6 +127,11 @@ public class NeoServer {
 
         log.info("Mounting REST API at [%s]", Configurator.REST_API_PATH);
         webServer.addJAXRSPackages(listFrom(new String[] { Configurator.REST_API_PACKAGE }), Configurator.REST_API_PATH);
+        
+        for(ThirdPartyJaxRsPackage tpp : configurator.getThirdpartyJaxRsClasses()) {
+            log.info("Mounting third-party JAX-RS package [%s] at [%s]", tpp.getPackageName(), tpp.getMountPoint());
+            webServer.addJAXRSPackages(listFrom(new String[] { tpp.getPackageName() }), tpp.getMountPoint());
+        }
 
         try {
             webServer.start();
@@ -196,7 +203,7 @@ public class NeoServer {
         return database;
     }
 
-    public String baseUri() throws UnknownHostException {
+    public URI baseUri() throws UnknownHostException {
         StringBuilder sb = new StringBuilder();
         sb.append("http");
         int webServerPort = getWebServerPort();
@@ -213,7 +220,11 @@ public class NeoServer {
         }
         sb.append("/");
 
-        return sb.toString();
+        try {
+            return new URI(sb.toString());
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private URI generateUriFor(String serviceName) {
@@ -222,7 +233,7 @@ public class NeoServer {
         }
         StringBuilder sb = new StringBuilder();
         try {
-            sb.append(baseUri());
+            sb.append(baseUri().toString());
             sb.append(serviceName);
             sb.append("/");
 

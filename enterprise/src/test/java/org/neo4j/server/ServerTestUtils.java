@@ -24,6 +24,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Random;
 
 public class ServerTestUtils
@@ -50,6 +51,33 @@ public class ServerTestUtils
         return createTempPropertyFile( createTempDir() );
     }
 
+    public static void writePropertiesToFile( String outerPropertyName, Map<String, String> properties, File propertyFile ) {
+        try
+        {
+            FileWriter fstream = new FileWriter( propertyFile, true );
+            BufferedWriter out = new BufferedWriter( fstream );
+            out.write( outerPropertyName );
+            out.write( "=" );
+            
+            int count = 0;
+            for(String key : properties.keySet()) {
+                out.write(key);
+                out.write("=");
+                out.write(properties.get(key));
+                if(count != properties.size() -1) {
+                    out.write(",");
+                }
+                count ++;
+            }
+            
+            out.write( System.getProperty( "line.separator" ) );
+            out.close();
+        } catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+    
     public static void writePropertyToFile( String name, String value, File propertyFile )
     {
         try
