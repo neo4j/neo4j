@@ -2,6 +2,8 @@
 Capabilities
 ============
 
+// most of this has been included in the introduction
+
 Graphs embrace complexity, easily handling deeply nested, interconnected and dynamic data.
 Queries can span thousands of relationships, revealing rich semantics in any data set.
 As a robust, scalable and high-performance database, Neo4j is suitable for lightweight projects or full enterprise deployment.  

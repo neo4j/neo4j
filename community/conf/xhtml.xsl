@@ -12,7 +12,7 @@
 <xsl:import href="http://docbook.sourceforge.net/release/xsl/current/xhtml/docbook.xsl"/>
 <xsl:import href="common.xsl"/>
 
-<xsl:import href="css.xsl"/>
+<xsl:import href="head.xsl"/>
 
 <xsl:import href="footer.xsl"/>
 
