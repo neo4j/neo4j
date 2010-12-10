@@ -27,26 +27,33 @@ import java.util.Map;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseBlockedException;
 
-public class RootRepresentation implements Representation {
+public class RootRepresentation implements Representation
+{
     private final URI baseUri;
     private final Database database;
-    
 
-    public RootRepresentation(URI baseUri, Database database) {
+
+    public RootRepresentation( URI baseUri, Database database )
+    {
         this.baseUri = baseUri;
         this.database = database;
     }
-    
-    public Map<String, Object> serialize() {
+
+    public Map<String, Object> serialize()
+    {
         Map<String, Object> map = new HashMap<String, Object>();
-        map.put("node", baseUri.toString() + "node");
-        try {
-            map.put("reference_node", new StorageActions(baseUri, database).getReferenceNode().selfUri().toString());
-        } catch (DatabaseBlockedException e) {
-            map.put("reference_node", "null");
+        map.put( "node", baseUri.toString() + "node" );
+        try
+        {
+            map.put( "reference_node", new StorageActions( baseUri, database ).getReferenceNode().selfUri().toString() );
+        } catch ( DatabaseBlockedException e )
+        {
+            map.put( "reference_node", "null" );
         }
 
-        map.put("index", new IndexRootRepresentation(baseUri).selfUri().toString());
+//        map.put("index", new RelationshipIndexRootRepresentation(baseUri).selfUri().toString());
+        map.put( "node index", new NodeIndexRootRepresentation( baseUri, database.getIndexManager() ).selfUri().toString() );
+        map.put( "relationship index", new RelationshipIndexRootRepresentation( baseUri, database.getIndexManager() ).selfUri().toString() );
 
         return map;
     }

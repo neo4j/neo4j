@@ -20,43 +20,27 @@
 
 package org.neo4j.server.rest.domain;
 
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-public class IndexRootRepresentation implements Representation
+public class IndexedRelationshipRepresentation extends RelationshipRepresentation
 {
-    private final URI baseUri;
+    private final IndexedRepresentation indexedRep;
 
-    public IndexRootRepresentation( URI baseUri )
+    public IndexedRelationshipRepresentation( URI baseUri, Relationship relationship, IndexedRepresentation indexedRep )
     {
-        this.baseUri = baseUri;
+        super( baseUri, relationship );
+        this.indexedRep = indexedRep;
     }
     
-    public URI selfUri()
-    {
-        try
-        {
-            return new URI( baseUri.toString() + "index" );
-        }
-        catch ( URISyntaxException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
+    @Override
     public Map<String, Object> serialize()
     {
-        Map<String, Object> map = new HashMap<String, Object>();
-        // TODO Discover index/fulltext-index, also add relationship index
-        
-        List<Map<String, Object>> list = new ArrayList<Map<String,Object>>();
-        list.add( new IndexRepresentation( baseUri, "node",
-                IndexRepresentation.TYPE_LOOKUP ).serialize() );
-        map.put( "node", list );
+        Map<String, Object> map = super.serialize();
+        map.put( "indexed", indexedRep.serialize() );
         return map;
     }
 }
