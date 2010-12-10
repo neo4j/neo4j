@@ -6,12 +6,8 @@ In order to get optimum performance out of Neo4j for your application there are 
 The two main components that can be configured are the the Neo4j caches and the JVM that Neo4j runs in.
 The following sections describe how to tune these. 
 
-Also, there are server specific configuration options described below.
-
 :leveloffset: 2
 
 include::cache.txt[]
 
 include::jvm.txt[]
-
-include::server.txt[]
