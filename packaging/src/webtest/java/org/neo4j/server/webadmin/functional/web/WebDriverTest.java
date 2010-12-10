@@ -60,9 +60,8 @@ public abstract class WebDriverTest {
         System.out.println("testing " + url);
         webDriver.get(url);
 
-        waitForElementToAppear(By.className("mor_info"));
-        RenderedWebElement titleElement = waitForElementToAppear(By.xpath("//h1"));
-        assertEquals("Neo4j Web Administration", titleElement.getText());
+        waitForElementToAppear(By.id("mainmenu-dashboard"));
+        
     }
 
     @After
