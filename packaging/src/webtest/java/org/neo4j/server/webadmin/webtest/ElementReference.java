@@ -20,11 +20,14 @@
 
 package org.neo4j.server.webadmin.webtest;
 
+import java.util.List;
+
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.RenderedWebElement;
 import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 
 /**
  * This is used rather than a direct
@@ -79,6 +82,22 @@ public class ElementReference {
 
         throw new NoSuchElementException("Unable to locate element: " + selector.toString());
     }
+	
+	public RenderedWebElement findElement(By by) {
+		try {
+    		return (RenderedWebElement)this.getElement().findElement(by);
+    	} catch (StaleElementReferenceException e) {
+    		return this.findElement(by);
+        }
+	}
+	
+	public List<WebElement> findElements(By by) {
+		try {
+    		return this.getElement().findElements(by);
+    	} catch (StaleElementReferenceException e) {
+    		return this.findElements(by);
+        }
+	}
 
 	public String getAttribute( String attributeName ) {
 		try {
@@ -101,6 +120,38 @@ public class ElementReference {
     		return this.getElement().getValueOfCssProperty(cssProperty);
     	} catch (StaleElementReferenceException e) {
     		return this.getValueOfCssProperty(cssProperty);
+        }
+	}
+	
+	public void sendKeys(CharSequence ... keysToSend) {
+		try {
+    		this.getElement().sendKeys(keysToSend);
+    	} catch (StaleElementReferenceException e) {
+    		this.sendKeys(keysToSend);
+        }
+	}
+	
+	public String getValue() {
+		try {
+    		return this.getElement().getValue();
+    	} catch (StaleElementReferenceException e) {
+    		return this.getValue();
+        }
+	}
+	
+	public String getText() {
+		try {
+    		return this.getElement().getText();
+    	} catch (StaleElementReferenceException e) {
+    		return this.getText();
+        }
+	}
+	
+	public void clear() {
+		try {
+			this.getElement().clear();
+    	} catch (StaleElementReferenceException e) {
+    		this.clear();
         }
 	}
 	
