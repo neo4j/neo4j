@@ -1,0 +1,11 @@
+[[server]]
+Neo4j Server
+============
+
+foo
+
+
+:leveloffset: 2
+
+
+include::server-performance.txt[]
