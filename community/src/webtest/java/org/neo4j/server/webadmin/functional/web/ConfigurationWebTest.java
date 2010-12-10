@@ -20,24 +20,27 @@
 
 package org.neo4j.server.webadmin.functional.web;
 
+import static org.junit.Assert.assertThat;
+import static org.neo4j.server.webadmin.functional.web.IsVisible.isVisible;
+
+import org.junit.Ignore;
 import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.RenderedWebElement;
 
-import static org.junit.Assert.assertThat;
-import static org.neo4j.server.webadmin.functional.web.IsVisible.isVisible;
+@Ignore
+public class ConfigurationWebTest extends WebDriverTest {
 
-public class JmxFunctionalTest extends WebDriverTest {
- 
 	@Test
-	public void shouldHaveJmxWindow() {
-		jmxMenu.getElement().click();
-		assertThat(jmxList.getElement(), isVisible());
+	public void shouldHaveConfigurationWindow() {
+		configMenu.getElement().click();
+		assertThat(dbRootConfig.getElement(), isVisible());
 	}
 	
-	private ElementReference jmxList = new ElementReference() {
+	private ElementReference dbRootConfig = new ElementReference() {
 		public RenderedWebElement getElement() {
-			return waitForElementToAppear(By.className("mor_jmx_list"));
+			return waitForElementToAppear(By.id("mor_setting_db.root"));
 		}
 	};
+
 }

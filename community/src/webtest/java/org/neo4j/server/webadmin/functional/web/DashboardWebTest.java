@@ -20,22 +20,19 @@
 
 package org.neo4j.server.webadmin.functional.web;
 
-import static org.junit.Assert.assertThat;
-import static org.neo4j.server.webadmin.functional.web.IsVisible.isVisible;
+import java.io.IOException;
 
 import org.junit.Test;
 
-/**
- * Test that the webadmin HTTP console works and produces output as expected.
- */
+import static org.junit.Assert.assertThat;
+import static org.neo4j.server.webadmin.functional.web.IsVisible.isVisible;
 
-public class ConsoleFunctionalTest extends WebDriverTest
-{
-   
-    @Test
-    public void shouldHaveConsoleWindow()
-    {
-        consoleMenu.getElement().click();
-        assertThat( consoleWrap.getElement(), isVisible() );
-    }
+public class DashboardWebTest extends WebDriverTest {
+
+	@Test
+	public void shouldHaveDashboardWindow() throws IOException {
+		dashboardMenu.getElement().click();
+		System.in.read();
+		assertThat(dashboardValueTrackers.getElement(), isVisible());
+	}
 }

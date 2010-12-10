@@ -585,6 +585,51 @@
         </plugins>
       </build>
     </profile>
+    
+    <profile>
+      <id>web-tests</id>
+      <activation>
+        <property>
+          <name>tests</name>
+          <value>web</value>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>build-helper-maven-plugin</artifactId>
+            <version>1.5</version>
+            <executions>
+              <execution>
+                <id>add-test-source</id>
+                <phase>generate-test-sources</phase>
+                <goals>
+                  <goal>add-test-source</goal>
+                </goals>
+                <configuration>
+                  <sources>
+                    <source>src/webtest/java</source>
+                    <!-- Required b/c we use utility classes from here -->
+                    <source>src/functionaltest/java</source>
+                  </sources>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+	        <groupId>org.apache.maven.plugins</groupId>
+	        <artifactId>maven-surefire-plugin</artifactId>
+	        <version>2.6</version>
+	        <configuration>
+	          <includes>
+	            <include>**/*WebTest.java</include>
+	          </includes>
+	        </configuration>
+	      </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 
 
