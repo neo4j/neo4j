@@ -18,29 +18,21 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.server.webadmin.functional.web;
+package org.neo4j.server.webadmin.webtest;
+
+import java.io.IOException;
+
+import org.junit.Test;
 
 import static org.junit.Assert.assertThat;
 import static org.neo4j.server.webadmin.functional.web.IsVisible.isVisible;
 
-import org.junit.Ignore;
-import org.junit.Test;
-import org.openqa.selenium.By;
-import org.openqa.selenium.RenderedWebElement;
-
-@Ignore
-public class ConfigurationWebTest extends WebDriverTest {
+public class DashboardWebTest extends WebDriverTest {
 
 	@Test
-	public void shouldHaveConfigurationWindow() {
-		configMenu.getElement().click();
-		assertThat(dbRootConfig.getElement(), isVisible());
+	public void shouldHaveDashboardWindow() throws IOException {
+		dashboardMenu.getElement().click();
+		assertThat(dashboardValueTrackers.getElement(), isVisible());
 	}
 	
-	private ElementReference dbRootConfig = new ElementReference() {
-		public RenderedWebElement getElement() {
-			return waitForElementToAppear(By.id("mor_setting_db.root"));
-		}
-	};
-
 }
