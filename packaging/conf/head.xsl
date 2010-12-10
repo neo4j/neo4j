@@ -5,6 +5,9 @@
 span.remark {
   background: yellow;
 }
+td p {
+  margin: 0.125em 0;
+}
   </style>
 </xsl:template>
 
