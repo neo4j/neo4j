@@ -18,30 +18,25 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.server.webadmin.functional.web;
+package org.neo4j.server.webadmin.webtest;
 
-import org.hamcrest.Description;
-import org.hamcrest.Factory;
-import org.junit.internal.matchers.TypeSafeMatcher;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.server.webadmin.functional.web.IsVisible.isVisible;
+
+import org.junit.Ignore;
+import org.junit.Test;
+import org.openqa.selenium.By;
 import org.openqa.selenium.RenderedWebElement;
 
-public class IsVisible extends TypeSafeMatcher<RenderedWebElement> {
+@Ignore
+public class BackupWebTest extends WebDriverTest {
 
-	private String displayValue = null;
-	
-	@Factory
-	public static IsVisible isVisible() { 
-		return new IsVisible();
+	@Test
+	public void shouldHaveBackupWindow() {
+		backupMenu.getElement().click();
+		assertThat(manualBackupPath.getElement(), isVisible());
 	}
 	
-	public void describeTo(Description desc) {
-		desc.appendText("Expected element to have a display property != to none, value was " + displayValue + ".");
-	}
+	private ElementReference manualBackupPath = new ElementReference(webDriver,By.className("mor_backup_path"));
 
-	@Override
-	public boolean matchesSafely(RenderedWebElement el) {
-		displayValue = el.getValueOfCssProperty("display");
-		return  displayValue != "none";
-	}
-	
 }

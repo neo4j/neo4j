@@ -18,19 +18,30 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.server.webadmin.functional.web;
+package org.neo4j.server.webadmin.webtest;
 
+import org.hamcrest.Description;
+import org.hamcrest.Factory;
+import org.junit.internal.matchers.TypeSafeMatcher;
 import org.openqa.selenium.RenderedWebElement;
 
-/**
- * This interface is used so that we can define methods that will fetch various
- * elements from the UI. This is used rather than the direct
- * (RenderedWebElement) reference, because our UI renders a lot, and such
- * references can become stale. This allows code that encounters
- * StaleElementReferenceException to simply reload the element.
- */
-public interface ElementReference {
+public class IsVisible extends TypeSafeMatcher<RenderedWebElement> {
 
-	public RenderedWebElement getElement();
+	private String displayValue = null;
+	
+	@Factory
+	public static IsVisible isVisible() { 
+		return new IsVisible();
+	}
+	
+	public void describeTo(Description desc) {
+		desc.appendText("Expected element to have a display property != to none, value was " + displayValue + ".");
+	}
 
+	@Override
+	public boolean matchesSafely(RenderedWebElement el) {
+		displayValue = el.getValueOfCssProperty("display");
+		return  displayValue != "none";
+	}
+	
 }
