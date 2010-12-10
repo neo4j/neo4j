@@ -26,7 +26,6 @@ import static org.neo4j.server.webadmin.webtest.IsVisible.isVisible;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.openqa.selenium.By;
-import org.openqa.selenium.RenderedWebElement;
 
 @Ignore
 public class BackupWebTest extends WebDriverTest {

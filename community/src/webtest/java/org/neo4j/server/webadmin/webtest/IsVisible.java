@@ -35,13 +35,13 @@ public class IsVisible extends TypeSafeMatcher<RenderedWebElement> {
 	}
 	
 	public void describeTo(Description desc) {
-		desc.appendText("Expected element to have a display property != to none, value was " + displayValue + ".");
+		desc.appendText("element to have a display property != to none, value was " + displayValue + ".");
 	}
 
 	@Override
 	public boolean matchesSafely(RenderedWebElement el) {
 		displayValue = el.getValueOfCssProperty("display");
-		return  displayValue != "none";
+		return  ! displayValue.equals("none");
 	}
 	
 }
