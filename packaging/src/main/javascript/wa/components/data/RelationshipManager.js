@@ -38,7 +38,10 @@ wa.components.data.RelationshipManager = (function($) {
 	
 	me.addRelatiohship = function(ev) {
 		ev.preventDefault();
-		wa.ui.Dialog.showUsingTemplate("New relationship","templates/components/data/new_relationship.tp", me.dialogLoaded);
+		wa.ui.Dialog.showUsingTemplate("New relationship",
+				"templates/components/data/new_relationship.tp", 
+				{ fromNode : me.dataCore.getItem() },
+				me.dialogLoaded);
 	};
 	
 	me.saveNewRelationship = function(ev) {

@@ -18,29 +18,23 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.server.webadmin.functional.web;
+package org.neo4j.server.webadmin.webtest;
 
 import static org.junit.Assert.assertThat;
 import static org.neo4j.server.webadmin.functional.web.IsVisible.isVisible;
 
-import org.junit.Ignore;
 import org.junit.Test;
-import org.openqa.selenium.By;
-import org.openqa.selenium.RenderedWebElement;
 
-@Ignore
-public class ImportExportWebTest extends WebDriverTest {
-
-	@Test
-	public void shouldHaveImportExportWindow() {
-		ioMenu.getElement().click();
-		assertThat(ioUrlImportButtonWrap.getElement(), isVisible());
-	}
-	
-	private ElementReference ioUrlImportButtonWrap =  new ElementReference() {
-		public RenderedWebElement getElement() {
-			return waitForElementToAppear(By.className("mor_io_urlImport_button_wrap"));
-		}
-	};
-	
+/**
+ * Test that the webadmin HTTP console works and produces output as expected.
+ */
+public class ConsoleWebTest extends WebDriverTest
+{
+   
+    @Test
+    public void shouldHaveConsoleWindow()
+    {
+        consoleMenu.getElement().click();
+        assertThat( consoleWrap.getElement(), isVisible() );
+    }
 }

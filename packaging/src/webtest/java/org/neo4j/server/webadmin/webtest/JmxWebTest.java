@@ -18,21 +18,22 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.server.webadmin.functional.web;
-
-import java.io.IOException;
+package org.neo4j.server.webadmin.webtest;
 
 import org.junit.Test;
+import org.openqa.selenium.By;
+import org.openqa.selenium.RenderedWebElement;
 
 import static org.junit.Assert.assertThat;
 import static org.neo4j.server.webadmin.functional.web.IsVisible.isVisible;
 
-public class DashboardWebTest extends WebDriverTest {
-
+public class JmxWebTest extends WebDriverTest {
+ 
 	@Test
-	public void shouldHaveDashboardWindow() throws IOException {
-		dashboardMenu.getElement().click();
-		assertThat(dashboardValueTrackers.getElement(), isVisible());
+	public void shouldHaveJmxWindow() {
+		jmxMenu.getElement().click();
+		assertThat(jmxList.getElement(), isVisible());
 	}
 	
+	private ElementReference jmxList = new ElementReference(webDriver, By.className("mor_jmx_list"));
 }
