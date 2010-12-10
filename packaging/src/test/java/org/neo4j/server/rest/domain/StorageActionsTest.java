@@ -487,15 +487,17 @@ public class StorageActionsTest {
         String key = "key";
         String value = "the value with spaces";
         long nodeId = graphdbHelper.createNode();
-        String index = "fulltext-node";
-        assertFalse(actions.getIndexedNodes(index, key, value).iterator().hasNext());
-        actions.addNodeToIndex(index, key, value, nodeId);
-        assertEquals(Arrays.asList(nodeId), graphdbHelper.getIndexedNodes(index, key, value));
-        assertEquals(Arrays.asList(nodeId), graphdbHelper.getIndexedNodes(index, key, "the"));
-        assertEquals(Arrays.asList(nodeId), graphdbHelper.getIndexedNodes(index, key, "value"));
-        assertEquals(Arrays.asList(nodeId), graphdbHelper.getIndexedNodes(index, key, "with"));
-        assertEquals(Arrays.asList(nodeId), graphdbHelper.getIndexedNodes(index, key, "spaces"));
-        assertTrue(graphdbHelper.getIndexedNodes(index, key, "nohit").isEmpty());
+        String indexName = "fulltext-node";
+        graphdbHelper.createNodeFullTextIndex( indexName );
+        assertFalse( actions.getIndexedNodes(indexName, key, value ).iterator().hasNext() );
+        actions.addNodeToIndex(indexName, key, value, nodeId);
+        assertEquals(Arrays.asList(nodeId), graphdbHelper.getIndexedNodes(indexName, key, value));
+        assertEquals(Arrays.asList(nodeId), graphdbHelper.getIndexedNodes(indexName, key, "the value with spaces"));
+        assertEquals(Arrays.asList(nodeId), graphdbHelper.queryIndexedNodes(indexName, key, "the"));
+        assertEquals(Arrays.asList(nodeId), graphdbHelper.queryIndexedNodes(indexName, key, "value"));
+        assertEquals(Arrays.asList(nodeId), graphdbHelper.queryIndexedNodes(indexName, key, "with"));
+        assertEquals(Arrays.asList(nodeId), graphdbHelper.queryIndexedNodes(indexName, key, "spaces"));
+        assertTrue(graphdbHelper.getIndexedNodes(indexName, key, "nohit").isEmpty());
     }
 
     @Test

@@ -20,42 +20,50 @@
 
 package org.neo4j.server.rest.domain;
 
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.index.*;
+import org.neo4j.graphdb.index.Index;
+
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-public abstract class IndexRepresentation implements Representation
+public class NodeIndexRootRepresentation implements Representation
 {
     private final URI baseUri;
-    private final String name;
-    private final Map<String, String> type;
+    private IndexManager indexManager;
 
-    public IndexRepresentation( URI baseUri, String name, Map<String, String> type )
+    public NodeIndexRootRepresentation( URI baseUri, IndexManager indexManager)
     {
         this.baseUri = baseUri;
-        this.name = name;
-        this.type = type;
+        this.indexManager = indexManager;
+    }
+    
+    public URI selfUri()
+    {
+        try
+        {
+            return new URI( baseUri.toString() + "index" );
+        }
+        catch ( URISyntaxException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     public Map<String, Object> serialize()
     {
         Map<String, Object> map = new HashMap<String, Object>();
-        map.put( "template", baseUri.toString() + "index/" + propertyContainerType() + "/" + name + "/{key}/{value}" );
-        map.putAll( type );
-        return map;
-    }
+        indexManager.nodeIndexNames();
 
-    public abstract String propertyContainerType();
-
-    public URI selfUri()
-    {
-        try
-        {
-            return new URI( baseUri.toString() + name );
-        } catch ( URISyntaxException e )
-        {
-            throw new RuntimeException( e );
+        for (String indexName : indexManager.nodeIndexNames()) {
+            Index<Node> index = indexManager.forNodes( indexName );
+           map.put( indexName, new NodeIndexRepresentation( baseUri, indexName, indexManager.getConfiguration( index )).serialize());
         }
+
+        return map;
     }
 }

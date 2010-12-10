@@ -18,3 +18,25 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+package org.neo4j.server.rest.domain;
+
+import org.neo4j.server.rest.domain.IndexRepresentation;
+import org.neo4j.server.rest.domain.Representation;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.Map;
+
+public class NodeIndexRepresentation extends IndexRepresentation
+{
+    public NodeIndexRepresentation( URI baseUri, String name, Map<String, String> type )
+    {
+        super( baseUri, name, type );
+    }
+
+    public String propertyContainerType() {
+        return "node";
+    }
+
+}

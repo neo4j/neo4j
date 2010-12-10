@@ -119,13 +119,13 @@ public final class FunctionalTestHelper
 		return server.managementApiUri().toString();
 	}
 
-    String indexUri( String indexName )
+    String indexUri( String indexName, String forIndexedElementType )
     {
-        return indexUri() + "/" + indexName;
+        return indexUri() + "/" + forIndexedElementType + "/" + indexName;
     }
 
-    String indexUri( String indexName, String key, Object value )
+    String indexUri( String indexName, String key, Object value, String indexElementType )
     {
-        return indexUri( indexName ) + "/" + key + "/" + value;
+        return indexUri( indexName, indexElementType ) + "/" + key + "/" + value;
     }
 }
