@@ -169,6 +169,7 @@
       <artifactId>neo4j-manual</artifactId>
       <classifier>html</classifier>
       <version>${neo4j.version}</version>
+      <optional>true</optional>
     </dependency>
 
     <!-- File uploads -->
