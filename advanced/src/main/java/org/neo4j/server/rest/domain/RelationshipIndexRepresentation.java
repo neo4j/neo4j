@@ -18,3 +18,23 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+package org.neo4j.server.rest.domain;
+
+import org.neo4j.server.rest.domain.IndexRepresentation;
+
+import java.net.URI;
+import java.util.Map;
+
+public class RelationshipIndexRepresentation extends IndexRepresentation
+{
+    public RelationshipIndexRepresentation( URI baseUri, String name, Map<String, String> config )
+    {
+        super( baseUri, name, config );
+    }
+
+    public String propertyContainerType()
+    {
+        return "relationship";
+    }
+
+}
