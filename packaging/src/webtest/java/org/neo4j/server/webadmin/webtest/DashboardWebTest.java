@@ -25,7 +25,7 @@ import java.io.IOException;
 import org.junit.Test;
 
 import static org.junit.Assert.assertThat;
-import static org.neo4j.server.webadmin.functional.web.IsVisible.isVisible;
+import static org.neo4j.server.webadmin.webtest.IsVisible.isVisible;
 
 public class DashboardWebTest extends WebDriverTest {
 
