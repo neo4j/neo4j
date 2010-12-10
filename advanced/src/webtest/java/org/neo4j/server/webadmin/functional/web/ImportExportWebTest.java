@@ -20,19 +20,27 @@
 
 package org.neo4j.server.webadmin.functional.web;
 
-import java.io.IOException;
-
-import org.junit.Test;
-
 import static org.junit.Assert.assertThat;
 import static org.neo4j.server.webadmin.functional.web.IsVisible.isVisible;
 
-public class DashboardFunctionalTest extends WebDriverTest {
+import org.junit.Ignore;
+import org.junit.Test;
+import org.openqa.selenium.By;
+import org.openqa.selenium.RenderedWebElement;
+
+@Ignore
+public class ImportExportWebTest extends WebDriverTest {
 
 	@Test
-	public void shouldHaveDashboardWindow() throws IOException {
-		dashboardMenu.getElement().click();
-		System.in.read();
-		assertThat(dashboardValueTrackers.getElement(), isVisible());
+	public void shouldHaveImportExportWindow() {
+		ioMenu.getElement().click();
+		assertThat(ioUrlImportButtonWrap.getElement(), isVisible());
 	}
+	
+	private ElementReference ioUrlImportButtonWrap =  new ElementReference() {
+		public RenderedWebElement getElement() {
+			return waitForElementToAppear(By.className("mor_io_urlImport_button_wrap"));
+		}
+	};
+	
 }

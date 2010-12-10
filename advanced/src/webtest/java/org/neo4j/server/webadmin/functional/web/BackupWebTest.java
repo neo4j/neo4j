@@ -20,44 +20,27 @@
 
 package org.neo4j.server.webadmin.functional.web;
 
+import static org.junit.Assert.assertThat;
+import static org.neo4j.server.webadmin.functional.web.IsVisible.isVisible;
+
+import org.junit.Ignore;
 import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.RenderedWebElement;
-import org.openqa.selenium.StaleElementReferenceException;
 
+@Ignore
+public class BackupWebTest extends WebDriverTest {
 
-public class DataBrowserFunctionalTest extends WebDriverTest {
-	
 	@Test
-	public void testCreateNewNode() throws InterruptedException {
-		
-		dataMenu.getElement().click();
-		
-		String originalNodeURI;
-		try {
-			originalNodeURI = nodeId.getElement().getAttribute("href");
-		}catch(StaleElementReferenceException e) {
-			originalNodeURI = nodeId.getElement().getAttribute("href");
-		}
-		addNodeButton.getElement().click();
-		
-		waitForAttributeToChangeFrom( nodeId, "href", originalNodeURI );
+	public void shouldHaveBackupWindow() {
+		backupMenu.getElement().click();
+		assertThat(manualBackupPath.getElement(), isVisible());
 	}
 	
-	
-	
-	private ElementReference nodeId = new ElementReference() {
+	private ElementReference manualBackupPath = new ElementReference() {
 		public RenderedWebElement getElement() {
-			return (RenderedWebElement) waitForElementToAppear(By.className("mor_data_item_id")).findElement(By.tagName("a"));
+			return waitForElementToAppear(By.className("mor_backup_path"));
 		}
 	};
-	
-	
-	private ElementReference addNodeButton = new ElementReference() {
-		public RenderedWebElement getElement() {
-			return waitForElementToAppear(By.className("mor_data_add_node_button"));
-		}
-	};
-	
-	
+
 }

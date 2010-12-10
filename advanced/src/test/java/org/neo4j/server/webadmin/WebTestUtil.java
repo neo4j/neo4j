@@ -53,6 +53,7 @@ public class WebTestUtil {
         	{
         		;
         	}
+        	
             // If results have been returned,
             // the results are displayed in a drop down.
             if (resultsDiv != null) {
