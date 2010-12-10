@@ -158,8 +158,13 @@ public class ElementReference {
 	public void waitUntilVisible() {
         long end = System.currentTimeMillis() + 10000;
         while (System.currentTimeMillis() < end) {
-            if (this.getValueOfCssProperty("display") != "none") {
+            if ( ! this.getValueOfCssProperty("display").equals("none")) {
                 return;
+            }
+            try{
+            	Thread.sleep(13);
+            } catch(Exception e) {
+            	throw new RuntimeException(e);
             }
         }
 
@@ -169,8 +174,13 @@ public class ElementReference {
 	public void waitForAttributeToBe(String attributeName, String expectedValue) {
         long end = System.currentTimeMillis() + 10000;
         while (System.currentTimeMillis() < end) {
-            if (this.getAttribute(attributeName) == expectedValue) {
+            if (this.getAttribute(attributeName).equals(expectedValue)) {
                 return;
+            }
+            try{
+            	Thread.sleep(13);
+            } catch(Exception e) {
+            	throw new RuntimeException(e);
             }
         }
 
@@ -180,8 +190,29 @@ public class ElementReference {
 	public void waitForAttributeToChangeFrom(String attributeName, String currentValue) {
         long end = System.currentTimeMillis() + 10000;
         while (System.currentTimeMillis() < end) {
-            if (this.getAttribute(attributeName) != currentValue) {
+            if ( ! this.getAttribute(attributeName).equals(currentValue)) {
                 return;
+            }
+            try{
+            	Thread.sleep(13);
+            } catch(Exception e) {
+            	throw new RuntimeException(e);
+            }
+        }
+
+        throw new RuntimeException("Element attribute did not change within a reasonable time. Element was: " + this.getElement().toString());
+    }
+	
+	public void waitForTextToChangeFrom(String currentValue) {
+        long end = System.currentTimeMillis() + 10000;
+        while (System.currentTimeMillis() < end) {
+            if ( !this.getText().equals(currentValue)) {
+                return;
+            }
+            try{
+            	Thread.sleep(13);
+            } catch(Exception e) {
+            	throw new RuntimeException(e);
             }
         }
 
