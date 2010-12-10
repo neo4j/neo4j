@@ -14,7 +14,7 @@
   
   <dependencySets>
     <dependencySet>
-      <outputDirectory>/webadmin-html</outputDirectory>
+      <outputDirectory>/webadmin-html/</outputDirectory>
       <unpack>true</unpack>
       <fileMode>0444</fileMode>
       <directoryMode>0777</directoryMode>
