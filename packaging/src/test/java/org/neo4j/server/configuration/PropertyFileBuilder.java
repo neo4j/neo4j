@@ -25,6 +25,7 @@ import static org.neo4j.server.ServerTestUtils.writePropertyToFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 
 public class PropertyFileBuilder {
     
@@ -34,7 +35,16 @@ public class PropertyFileBuilder {
     private String webAdminUri = "http://localhost:7474/db/manage/";
     private String webAdminDataUri = "http://localhost:7474/db/data/";
     private String dbTuningPropertyRule = null;
+    private ArrayList<Tuple> nameValuePairs = new ArrayList<Tuple>();
 
+    private static class Tuple {
+        public Tuple(String name, String value) {
+            this.name = name;
+            this.value = value;
+        }
+        public String name;
+        public String value;
+    }
     
     public static PropertyFileBuilder builder() {
         return new PropertyFileBuilder();
@@ -55,12 +65,21 @@ public class PropertyFileBuilder {
             writePropertyToFile(Configurator.DB_TUNING_PROPERTY_FILE_KEY, dbTuningPropertyRule, temporaryConfigFile);
         }
         
+        for(Tuple t: nameValuePairs) {
+            writePropertyToFile(t.name, t.value, temporaryConfigFile);
+        }
+        
         
         return temporaryConfigFile;
     }
 
     public PropertyFileBuilder withDbTuningPropertyFile(File f) {
         dbTuningPropertyRule = f.getAbsolutePath();
+        return this;
+    }
+
+    public PropertyFileBuilder withNameValue(String name, String value) {
+        nameValuePairs.add(new Tuple(name, value));
         return this;
     }
 }

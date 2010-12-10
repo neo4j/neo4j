@@ -20,6 +20,7 @@ package org.neo4j.server.webadmin.rest;
  */
 
 import org.apache.commons.configuration.Configuration;
+import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.rest.domain.renderers.JsonRenderers;
 import org.neo4j.server.webadmin.rest.representations.AdminPropertyRepresentation;
 
@@ -93,7 +94,7 @@ public class AdminPropertiesService
         if ( dataUri != null )
             return dataUri;
         else
-            return hostPath("/db/data/");
+            return hostPath(Configurator.REST_API_PATH);
 
     }
 
@@ -103,7 +104,7 @@ public class AdminPropertiesService
         if ( managementUri != null )
             return managementUri;
         else
-            return hostPath("/db/manage/");
+            return hostPath(Configurator.WEB_ADMIN_REST_API_PATH);
     }
 
     private String hostPath(String path) {
