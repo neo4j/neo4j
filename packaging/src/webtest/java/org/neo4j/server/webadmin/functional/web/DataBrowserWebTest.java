@@ -20,27 +20,46 @@
 
 package org.neo4j.server.webadmin.functional.web;
 
-import static org.junit.Assert.assertThat;
-import static org.neo4j.server.webadmin.functional.web.IsVisible.isVisible;
-
-import org.junit.Ignore;
 import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.RenderedWebElement;
+import org.openqa.selenium.StaleElementReferenceException;
 
-@Ignore
-public class ImportExportFunctionalTest extends WebDriverTest {
-
+/**
+ * Test that the webadmin data browser behaves as expected.
+ */
+public class DataBrowserWebTest extends WebDriverTest {
+	
 	@Test
-	public void shouldHaveImportExportWindow() {
-		ioMenu.getElement().click();
-		assertThat(ioUrlImportButtonWrap.getElement(), isVisible());
+	public void testCreateNewNode() throws InterruptedException {
+		
+		dataMenu.getElement().click();
+		
+		String originalNodeURI;
+		try {
+			originalNodeURI = nodeId.getElement().getAttribute("href");
+		}catch(StaleElementReferenceException e) {
+			originalNodeURI = nodeId.getElement().getAttribute("href");
+		}
+		addNodeButton.getElement().click();
+		
+		waitForAttributeToChangeFrom( nodeId, "href", originalNodeURI );
 	}
 	
-	private ElementReference ioUrlImportButtonWrap =  new ElementReference() {
+	
+	
+	private ElementReference nodeId = new ElementReference() {
 		public RenderedWebElement getElement() {
-			return waitForElementToAppear(By.className("mor_io_urlImport_button_wrap"));
+			return (RenderedWebElement) waitForElementToAppear(By.className("mor_data_item_id")).findElement(By.tagName("a"));
 		}
 	};
+	
+	
+	private ElementReference addNodeButton = new ElementReference() {
+		public RenderedWebElement getElement() {
+			return waitForElementToAppear(By.className("mor_data_add_node_button"));
+		}
+	};
+	
 	
 }
