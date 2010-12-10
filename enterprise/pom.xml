@@ -356,9 +356,6 @@
                 <include>lib/jquery.flot.js</include>
                 <include>lib/jquery.simplemodal.js</include>
                 <include>lib/underscore.js</include>
-                <include>lib/termlib.js</include>
-                <include>lib/termlib.addons.js</include>
-
 
                 <include>lib/neo4js.js</include>
 

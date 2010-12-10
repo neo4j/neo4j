@@ -32,7 +32,7 @@ public class DashboardWebTest extends WebDriverTest {
 	@Test
 	public void shouldHaveDashboardWindow() throws IOException {
 		dashboardMenu.getElement().click();
-		System.in.read();
 		assertThat(dashboardValueTrackers.getElement(), isVisible());
 	}
+	
 }
