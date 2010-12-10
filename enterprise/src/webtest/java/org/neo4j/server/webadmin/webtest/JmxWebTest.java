@@ -22,18 +22,39 @@ package org.neo4j.server.webadmin.webtest;
 
 import org.junit.Test;
 import org.openqa.selenium.By;
-import org.openqa.selenium.RenderedWebElement;
 
 import static org.junit.Assert.assertThat;
 import static org.neo4j.server.webadmin.webtest.IsVisible.isVisible;
+import static org.hamcrest.core.Is.is;
+import static org.hamcrest.Matchers.greaterThan;
 
 public class JmxWebTest extends WebDriverTest {
  
 	@Test
 	public void shouldHaveJmxWindow() {
-		jmxMenu.getElement().click();
+		jmxMenu.click();
 		assertThat(jmxList.getElement(), isVisible());
 	}
 	
+	@Test
+	public void neo4jBeanShouldBeOnTop() {
+		jmxMenu.click();
+		
+		assertThat(jmxList.findElement(By.tagName("h2")).getText(), is("org.neo4j"));
+	}
+	
+	@Test
+	public void shouldBeAbleToReadKernelBean() {
+		jmxMenu.click();
+		
+		kernelBeanButton.click();
+		
+		assertThat(storeIdContainer.getText().length(), greaterThan(0));
+	}
+	
+	
 	private ElementReference jmxList = new ElementReference(webDriver, By.className("mor_jmx_list"));
+	private ElementReference kernelBeanButton = new ElementReference(webDriver, By.xpath("//div[@id='mor_pages']//li[contains(a, 'Kernel')]/a"));
+	
+	private ElementReference storeIdContainer = new ElementReference(webDriver, By.xpath("//table[@class='mor_jmx_table']//tr[contains(td[@class='mor_jmx_table_name']/h3, 'StoreId')]/td[2]"));
 }

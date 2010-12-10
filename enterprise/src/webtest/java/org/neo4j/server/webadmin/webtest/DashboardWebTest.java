@@ -21,18 +21,40 @@
 package org.neo4j.server.webadmin.webtest;
 
 import java.io.IOException;
+import org.openqa.selenium.By;
 
 import org.junit.Test;
 
 import static org.junit.Assert.assertThat;
 import static org.neo4j.server.webadmin.webtest.IsVisible.isVisible;
+import static org.hamcrest.core.IsNot.not;
 
 public class DashboardWebTest extends WebDriverTest {
 
 	@Test
 	public void shouldHaveDashboardWindow() throws IOException {
-		dashboardMenu.getElement().click();
+		dashboardMenu.click();
 		assertThat(dashboardValueTrackers.getElement(), isVisible());
 	}
+	
+	@Test
+	public void shouldBeAbleToSwitchBetweenCharts() {
+		
+		dashboardMenu.click();
+		
+		assertThat(primitivesChart.getElement(), isVisible());
+		assertThat(memoryChart.getElement(), not(isVisible()));
+		
+		memoryChartTab.click();
+		
+		assertThat(memoryChart.getElement(), isVisible());
+		assertThat(primitivesChart.getElement(), not(isVisible()));
+		
+	}
+	
+	private ElementReference primitivesChartTab = new ElementReference(webDriver, By.id("mor_monitor_primitives_chart_tab"));
+	private ElementReference primitivesChart = new ElementReference(webDriver, By.id("mor_monitor_primitives_chart"));
+	private ElementReference memoryChartTab = new ElementReference(webDriver, By.id("mor_monitor_memory_chart_tab"));
+	private ElementReference memoryChart = new ElementReference(webDriver, By.id("mor_monitor_memory_chart"));
 	
 }
