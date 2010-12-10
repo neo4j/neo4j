@@ -25,7 +25,7 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.RenderedWebElement;
 
 import static org.junit.Assert.assertThat;
-import static org.neo4j.server.webadmin.functional.web.IsVisible.isVisible;
+import static org.neo4j.server.webadmin.webtest.IsVisible.isVisible;
 
 public class JmxWebTest extends WebDriverTest {
  

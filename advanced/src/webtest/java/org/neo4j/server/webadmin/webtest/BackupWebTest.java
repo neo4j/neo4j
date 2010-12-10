@@ -21,7 +21,7 @@
 package org.neo4j.server.webadmin.webtest;
 
 import static org.junit.Assert.assertThat;
-import static org.neo4j.server.webadmin.functional.web.IsVisible.isVisible;
+import static org.neo4j.server.webadmin.webtest.IsVisible.isVisible;
 
 import org.junit.Ignore;
 import org.junit.Test;
