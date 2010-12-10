@@ -20,7 +20,6 @@
 
 package org.neo4j.server;
 
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -63,11 +62,10 @@ public class NeoServerStartupLoggingFunctionalTest {
     }
 
     @Test
-    public void whenNoStaticContentAvailableServerShouldLogAndContinueGracefully() throws IOException, ServerStartupException {
+    public void shouldLogStartup() throws IOException, ServerStartupException {
 
         // Check the logs
-        assertThat(appender.toString(),
-                containsString("ERROR - No static content available for Neo Server at port [7474], management console may not be available."));
+        assertThat(appender.toString().length(), is(greaterThan(0)));
 
         // Check the server is alive
         Client client = Client.create();

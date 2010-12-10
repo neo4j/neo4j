@@ -21,7 +21,10 @@
 package org.neo4j.server.configuration;
 
 import java.io.File;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 
 import org.apache.commons.configuration.CompositeConfiguration;
 import org.apache.commons.configuration.Configuration;
@@ -52,6 +55,7 @@ public class Configurator {
     public static final String WEB_ADMIN_PATH_PROPERTY_KEY = "org.neo4j.server.webadmin.management.uri";
     public static final String WEB_ADMIN_REST_API_PATH_PROPERTY_KEY = "org.neo4j.server.webadmin.data.uri";
     public static final String DB_TUNING_PROPERTY_FILE_KEY = "org.neo4j.server.db.tuning.properties";
+    public static final String THIRD_PARTY_PACKAGES_KEY = "org.neo4j.server.thirdparty_jaxrs_classes";
 
     public static Logger log = Logger.getLogger(Configurator.class);
 
@@ -59,6 +63,7 @@ public class Configurator {
 
     private Validator validator = new Validator();
     private Map<String, String> databaseTuningProperties = null;
+    private HashSet<ThirdPartyJaxRsPackage> thirdPartyPackages;
 
     Configurator() {
         this(new Validator(), null);
@@ -121,5 +126,14 @@ public class Configurator {
 
     public Map<String, String> getDatabaseTuningProperties() {
         return databaseTuningProperties ;
+    }
+
+    public Set<ThirdPartyJaxRsPackage> getThirdpartyJaxRsClasses() {
+        thirdPartyPackages = new HashSet<ThirdPartyJaxRsPackage>();
+        Properties properties = this.configuration().getProperties(THIRD_PARTY_PACKAGES_KEY);
+        for(Object key : properties.keySet()) {
+            thirdPartyPackages.add(new ThirdPartyJaxRsPackage(key.toString(), properties.getProperty(key.toString())));
+        }
+        return thirdPartyPackages;
     }
 }

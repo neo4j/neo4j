@@ -25,11 +25,13 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.server.ServerTestUtils.createTempDir;
 import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
 import static org.neo4j.server.ServerTestUtils.writePropertyToFile;
+import static org.neo4j.server.ServerTestUtils.writePropertiesToFile;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Properties;
 
 import org.neo4j.server.configuration.Configurator;
@@ -46,11 +48,12 @@ public class ServerBuilder {
     private String webAdminDataUri = "http://localhost:7474/db/data/";
     private StartupHealthCheck startupHealthCheck;
     private AddressResolver addressResolver = new LocalhostAddressResolver();
-    
-    private static enum WhatToDo { CREATE_GOOD_TUNING_FILE, 
-                                    CREATE_DANGLING_TUNING_FILE_PROPERTY,
-                                    CREATE_CORRUPT_TUNING_FILE };
-                                    
+    private HashMap<String, String> thirdPartyPackages = new HashMap<String, String>();
+
+    private static enum WhatToDo {
+        CREATE_GOOD_TUNING_FILE, CREATE_DANGLING_TUNING_FILE_PROPERTY, CREATE_CORRUPT_TUNING_FILE
+    };
+
     private WhatToDo action;
 
     public static ServerBuilder server() {
@@ -71,8 +74,8 @@ public class ServerBuilder {
         writePropertyToFile(Configurator.WEBADMIN_NAMESPACE_PROPERTY_KEY + ".rrdb.location", rrdbDir, temporaryConfigFile);
         writePropertyToFile(Configurator.WEB_ADMIN_PATH_PROPERTY_KEY, webAdminUri, temporaryConfigFile);
         writePropertyToFile(Configurator.WEB_ADMIN_REST_API_PATH_PROPERTY_KEY, webAdminDataUri, temporaryConfigFile);
-        
-        if(action == WhatToDo.CREATE_GOOD_TUNING_FILE) {
+
+        if (action == WhatToDo.CREATE_GOOD_TUNING_FILE) {
             File databaseTuningPropertyFile = createTempPropertyFile();
             writePropertyToFile("neostore.nodestore.db.mapped_memory", "25M", databaseTuningPropertyFile);
             writePropertyToFile("neostore.relationshipstore.db.mapped_memory", "50M", databaseTuningPropertyFile);
@@ -80,11 +83,15 @@ public class ServerBuilder {
             writePropertyToFile("neostore.propertystore.db.strings.mapped_memory", "130M", databaseTuningPropertyFile);
             writePropertyToFile("neostore.propertystore.db.arrays.mapped_memory", "130M", databaseTuningPropertyFile);
             writePropertyToFile(Configurator.DB_TUNING_PROPERTY_FILE_KEY, databaseTuningPropertyFile.getAbsolutePath(), temporaryConfigFile);
-        } else if(action == WhatToDo.CREATE_DANGLING_TUNING_FILE_PROPERTY) {
+        } else if (action == WhatToDo.CREATE_DANGLING_TUNING_FILE_PROPERTY) {
             writePropertyToFile(Configurator.DB_TUNING_PROPERTY_FILE_KEY, createTempPropertyFile().getAbsolutePath(), temporaryConfigFile);
-        } else if(action == WhatToDo.CREATE_CORRUPT_TUNING_FILE) {
+        } else if (action == WhatToDo.CREATE_CORRUPT_TUNING_FILE) {
             File corruptTuningFile = trashFile();
             writePropertyToFile(Configurator.DB_TUNING_PROPERTY_FILE_KEY, corruptTuningFile.getAbsolutePath(), temporaryConfigFile);
+        }
+
+        if (thirdPartyPackages.keySet().size() > 0) {
+            writePropertiesToFile(Configurator.THIRD_PARTY_PACKAGES_KEY, thirdPartyPackages, temporaryConfigFile);
         }
         
         return temporaryConfigFile;
@@ -92,18 +99,17 @@ public class ServerBuilder {
 
     private File trashFile() throws IOException {
         File f = createTempPropertyFile();
-        
-        FileWriter fstream = new FileWriter( f, true );
-        BufferedWriter out = new BufferedWriter( fstream );
-        
-        for(int i = 0; i < 100; i++) {
-            out.write((int)System.currentTimeMillis());
+
+        FileWriter fstream = new FileWriter(f, true);
+        BufferedWriter out = new BufferedWriter(fstream);
+
+        for (int i = 0; i < 100; i++) {
+            out.write((int) System.currentTimeMillis());
         }
-        
+
         out.close();
         return f;
     }
-
 
     private ServerBuilder() {
     }
@@ -148,7 +154,7 @@ public class ServerBuilder {
         portNo = null;
         return this;
     }
-    
+
     public ServerBuilder withNetworkBoundHostnameResolver() {
         addressResolver = new AddressResolver();
         return this;
@@ -164,7 +170,6 @@ public class ServerBuilder {
             }
 
             public boolean execute(Properties properties) {
-                // TODO Auto-generated method stub
                 return false;
             }
         });
@@ -183,6 +188,11 @@ public class ServerBuilder {
 
     public ServerBuilder withCorruptTuningFile() throws IOException {
         action = WhatToDo.CREATE_CORRUPT_TUNING_FILE;
+        return this;
+    }
+
+    public ServerBuilder withThirdPartyJaxRsPackage(String packageName, String mountPoint) {
+        thirdPartyPackages.put(packageName, mountPoint);
         return this;
     }
 }
