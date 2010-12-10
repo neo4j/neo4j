@@ -53,7 +53,6 @@ public class GremlinSession implements ScriptSession
      * @return
      */
     @Override
-    @SuppressWarnings( "unchecked" )
     public String evaluate( String script )
     {
         try

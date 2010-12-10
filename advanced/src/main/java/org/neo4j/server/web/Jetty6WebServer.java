@@ -103,7 +103,7 @@ public class Jetty6WebServer implements WebServer
         };
         ServletHolder servletHolder = new ServletHolder( redirector );
         log.info( "Adding Redirector at [%s]", "/" );
-        //starting it together with the rest
+        // starting it together with the rest
         jaxRSPackages.put( "/", servletHolder );
 
     }
@@ -130,7 +130,7 @@ public class Jetty6WebServer implements WebServer
     public void addJAXRSPackages(List<String> packageNames, String serverMountPoint) {
         ServletContainer container = new NeoServletContainer(server);
         ServletHolder servletHolder = new ServletHolder(container);
-        servletHolder.setInitParameter("com.sun.jersey.config.property.packages", toCommaSeparatedList(packageNames));
+        servletHolder.setInitParameter("com.sun.jersey.config.property.packages", toCommaSeparatedList(packageNames));        
         servletHolder.setInitParameter(ResourceConfig.PROPERTY_CONTAINER_RESPONSE_FILTERS, AllowAjaxFilter.class.getName());
         log.info("Adding JAXRS package %s at [%s]", packageNames, serverMountPoint);
         jaxRSPackages.put(serverMountPoint, servletHolder);
