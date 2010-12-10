@@ -21,6 +21,8 @@
 package org.neo4j.server.webadmin.webtest;
 
 import java.io.IOException;
+
+import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.openqa.selenium.By;
 
 import org.junit.Test;
@@ -28,6 +30,10 @@ import org.junit.Test;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.server.webadmin.webtest.IsVisible.isVisible;
 import static org.hamcrest.core.IsNot.not;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.greaterThan;
+
 
 public class DashboardWebTest extends WebDriverTest {
 
@@ -50,6 +56,84 @@ public class DashboardWebTest extends WebDriverTest {
 		assertThat(memoryChart.getElement(), isVisible());
 		assertThat(primitivesChart.getElement(), not(isVisible()));
 		
+		primitivesChartTab.click();
+		
+		assertThat(primitivesChart.getElement(), isVisible());
+		assertThat(memoryChart.getElement(), not(isVisible()));
+		
+	}
+	
+	@Test
+	public void shouldShowPrimitives() {
+		dashboardMenu.click();
+		
+		GraphDbHelper dbHelper = new GraphDbHelper(server.getDatabase());
+		
+		assertThat(nodeCount.getText(), equalTo(String.valueOf(dbHelper.getNumberOfNodes())));
+		assertThat(propertyCount.getText(), equalTo("0"));
+		assertThat(relationshipCount.getText(), equalTo(String.valueOf(dbHelper.getNumberOfRelationships())));
+		assertThat(relationshipTypeCount.getText(), equalTo("0"));
+	}
+	
+	@Test
+	public void nodeCountShouldUpdateWhenDatabaseIsModified() {
+		dashboardMenu.click();
+		GraphDbHelper dbHelper = new GraphDbHelper(server.getDatabase());
+		
+		int numberOfNodes = dbHelper.getNumberOfNodes();
+		assertThat(nodeCount.getText(), equalTo(String.valueOf(numberOfNodes)));
+		
+		dbHelper.createNode();
+		
+		nodeCount.waitForTextToChangeFrom(String.valueOf(numberOfNodes));
+		
+		assertThat(nodeCount.getText(), equalTo(String.valueOf(numberOfNodes + 1)));
+	}
+	
+	@Test
+	public void relationshipCountShouldUpdateWhenDatabaseIsModified() {
+		dashboardMenu.click();
+		GraphDbHelper dbHelper = new GraphDbHelper(server.getDatabase());
+		
+		int numberOfRelationships = dbHelper.getNumberOfRelationships();
+		assertThat(relationshipCount.getText(), equalTo(String.valueOf(numberOfRelationships)));
+		
+		dbHelper.createRelationship("SOME RELATIONSHIP");
+		
+		relationshipCount.waitForTextToChangeFrom(String.valueOf(numberOfRelationships));
+		
+		assertThat(relationshipCount.getText(), equalTo(String.valueOf(numberOfRelationships + 1)));
+	}
+	
+	@Test
+	public void relationshipTypeCountShouldUpdateWhenDatabaseIsModified() {
+		dashboardMenu.click();
+		GraphDbHelper dbHelper = new GraphDbHelper(server.getDatabase());
+		
+		assertThat(relationshipTypeCount.getText(), equalTo("0"));
+		
+		dbHelper.createRelationship("SOME RELATIONSHIP");
+		
+		relationshipTypeCount.waitForTextToChangeFrom("0");
+		assertThat(relationshipTypeCount.getText(), equalTo("1"));
+	}
+	
+	@Test
+	public void shouldShowDiskUsage() {
+		dashboardMenu.click();
+		
+		assertThat(totalUsage.getText().length(), greaterThan(0));
+		assertThat(databaseSize.getText().length(), greaterThan(0));
+		assertThat(logicalLogSize.getText().length(), greaterThan(0));
+	}
+	
+	@Test
+	public void shouldShowCacheInformation() {
+		dashboardMenu.click();
+		
+		assertThat(cachedNodes.getText(), equalTo("0"));
+		assertThat(cachedRelationships.getText(), equalTo("0"));
+		assertThat(cacheType.getText().length(), greaterThan(0));
 	}
 	
 	private ElementReference primitivesChartTab = new ElementReference(webDriver, By.id("mor_monitor_primitives_chart_tab"));
@@ -57,4 +141,33 @@ public class DashboardWebTest extends WebDriverTest {
 	private ElementReference memoryChartTab = new ElementReference(webDriver, By.id("mor_monitor_memory_chart_tab"));
 	private ElementReference memoryChart = new ElementReference(webDriver, By.id("mor_monitor_memory_chart"));
 	
+	private ElementReference nodeCount = new ElementReference(webDriver, 
+			By.xpath("//div[@id='mor_monitor_valuetrackers']//tr[contains(th,'Nodes')]/td"));
+	
+	private ElementReference propertyCount = new ElementReference(webDriver, 
+			By.xpath("//div[@id='mor_monitor_valuetrackers']//tr[contains(th,'Properties')]/td"));
+	
+	private ElementReference relationshipCount = new ElementReference(webDriver, 
+			By.xpath("//div[@id='mor_monitor_valuetrackers']//tr[contains(th,'Relationships')]/td"));
+	
+	private ElementReference relationshipTypeCount = new ElementReference(webDriver, 
+			By.xpath("//div[@id='mor_monitor_valuetrackers']//tr[contains(th,'Relationship types')]/td"));
+	
+	private ElementReference totalUsage = new ElementReference(webDriver, 
+			By.xpath("//div[@id='mor_monitor_valuetrackers']//tr[contains(th,'Total usage')]/td"));
+	
+	private ElementReference databaseSize = new ElementReference(webDriver, 
+			By.xpath("//div[@id='mor_monitor_valuetrackers']//tr[contains(th,'Database size')]/td"));
+	
+	private ElementReference logicalLogSize = new ElementReference(webDriver, 
+			By.xpath("//div[@id='mor_monitor_valuetrackers']//tr[contains(th,'Logical log size')]/td"));
+	
+	private ElementReference cachedNodes = new ElementReference(webDriver, 
+			By.xpath("//div[@id='mor_monitor_valuetrackers']//tr[contains(th,'Cached nodes')]/td"));
+	
+	private ElementReference cachedRelationships = new ElementReference(webDriver, 
+			By.xpath("//div[@id='mor_monitor_valuetrackers']//tr[contains(th,'Cached relationships')]/td"));
+	
+	private ElementReference cacheType = new ElementReference(webDriver, 
+			By.xpath("//div[@id='mor_monitor_valuetrackers']//tr[contains(th,'Cache type')]/td"));
 }

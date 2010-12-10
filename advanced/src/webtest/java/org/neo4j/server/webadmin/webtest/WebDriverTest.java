@@ -41,7 +41,7 @@ import org.openqa.selenium.firefox.FirefoxDriver;
 public abstract class WebDriverTest {
 
     protected WebDriver webDriver = new FirefoxDriver();
-    private NeoServer server;
+    protected NeoServer server;
 
     private static final File targetHtmlDir = new File("target/classes/webadmin-html");
     private static final File srcHtmlDir = new File("src/main/resources/webadmin-html");
