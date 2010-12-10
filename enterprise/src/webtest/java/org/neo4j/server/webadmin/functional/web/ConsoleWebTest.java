@@ -23,24 +23,18 @@ package org.neo4j.server.webadmin.functional.web;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.server.webadmin.functional.web.IsVisible.isVisible;
 
-import org.junit.Ignore;
 import org.junit.Test;
-import org.openqa.selenium.By;
-import org.openqa.selenium.RenderedWebElement;
 
-@Ignore
-public class BackupFunctionalTest extends WebDriverTest {
-
-	@Test
-	public void shouldHaveBackupWindow() {
-		backupMenu.getElement().click();
-		assertThat(manualBackupPath.getElement(), isVisible());
-	}
-	
-	private ElementReference manualBackupPath = new ElementReference() {
-		public RenderedWebElement getElement() {
-			return waitForElementToAppear(By.className("mor_backup_path"));
-		}
-	};
-
+/**
+ * Test that the webadmin HTTP console works and produces output as expected.
+ */
+public class ConsoleWebTest extends WebDriverTest
+{
+   
+    @Test
+    public void shouldHaveConsoleWindow()
+    {
+        consoleMenu.getElement().click();
+        assertThat( consoleWrap.getElement(), isVisible() );
+    }
 }
