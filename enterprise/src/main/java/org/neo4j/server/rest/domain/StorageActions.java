@@ -37,6 +37,8 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.index.*;
+import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseBlockedException;
@@ -356,21 +358,37 @@ public class StorageActions {
         Transaction tx = graphdb.graph.beginTx();
         try {
             Node node = graphdb.graph.getNodeById(nodeId);
-            org.neo4j.server.database.NodeIndex index = (org.neo4j.server.database.NodeIndex) graphdb.getIndex(indexName);
-            index.add(node, key, value);
+            Index<Node> index = graphdb.getNodeIndex(indexName);
+            index.add( node, key, value );
             tx.success();
-            return new IndexedRepresentation(baseUri, indexName, key, value, node.getId());
+            return new IndexedRepresentation(baseUri, IndexedRepresentation.NODE, indexName, key, value, node.getId());
+        } finally {
+            tx.finish();
+        }
+    }
+    
+    public IndexedRepresentation addRelationshipToIndex(String indexName, String key, Object value, long nodeId) throws DatabaseBlockedException {
+
+        Transaction tx = graphdb.graph.beginTx();
+        try {
+            Relationship relationship = graphdb.graph.getRelationshipById( nodeId );
+            Index<Relationship> index = graphdb.getRelationshipIndex( indexName );
+            index.add( relationship, key, value );
+            tx.success();
+            return new IndexedRepresentation(baseUri,IndexedRepresentation.RELATIONSHIP, indexName, key, value, relationship.getId());
         } finally {
             tx.finish();
         }
     }
 
-    public boolean nodeIsIndexed(String indexName, String key, Object value, long nodeId) throws DatabaseBlockedException {
+    public boolean relationshipIsIndexed(String indexName, String key, Object value, long relationshipId) throws DatabaseBlockedException {
 
-        org.neo4j.server.database.NodeIndex index = (org.neo4j.server.database.NodeIndex) graphdb.getIndex(indexName);
+        Index<Relationship> index = graphdb.getRelationshipIndex( indexName );
         Transaction tx = graphdb.graph.beginTx();
         try {
-            boolean contains = index.contains(graphdb.graph.getNodeById(nodeId), key, value);
+            Relationship expectedNode = graphdb.graph.getRelationshipById( relationshipId );
+            IndexHits<Relationship> hits = index.get( key, value );
+            boolean contains = iterableContains(hits, expectedNode);
             tx.success();
             return contains;
         } finally {
@@ -378,15 +396,56 @@ public class StorageActions {
         }
     }
 
+    public boolean nodeIsIndexed(String indexName, String key, Object value, long nodeId) throws DatabaseBlockedException {
+
+        Index<Node> index = graphdb.getNodeIndex( indexName );
+        Transaction tx = graphdb.graph.beginTx();
+        try {
+            Node expectedNode = graphdb.graph.getNodeById(nodeId);
+            IndexHits<Node> hits = index.get( key, value );
+            boolean contains = iterableContains( hits, expectedNode );
+            tx.success();
+            return contains;
+        } finally {
+            tx.finish();
+        }
+    }
+
+    private <T> boolean iterableContains(Iterable<T> iterable, T expectedElement )
+    {
+        for(T possibleMatch : iterable) {
+            if (possibleMatch.equals( expectedElement )) return true;
+        }
+        return false;
+    }
+
+
+    public List<IndexedRelationshipRepresentation> getIndexedRelationships(String indexName, String key, Object value) throws DatabaseBlockedException {
+
+        Index<Relationship> index = graphdb.getRelationshipIndex( indexName );
+        
+        Transaction tx = graphdb.graph.beginTx();
+        try {
+            List<IndexedRelationshipRepresentation> result = new ArrayList<IndexedRelationshipRepresentation>();
+            for (Relationship relationship : index.get(key, value)) {
+                result.add(new IndexedRelationshipRepresentation(baseUri, relationship, new IndexedRepresentation(baseUri, IndexedRepresentation.RELATIONSHIP, indexName, key, value, relationship.getId())));
+            }
+            tx.success();
+            return result;
+        } finally {
+            tx.finish();
+        }
+    }
+    
     public List<IndexedNodeRepresentation> getIndexedNodes(String indexName, String key, Object value) throws DatabaseBlockedException {
 
-        org.neo4j.server.database.NodeIndex index = (org.neo4j.server.database.NodeIndex) graphdb.getIndex(indexName);
+        Index<Node> index = graphdb.getNodeIndex( indexName );
         
         Transaction tx = graphdb.graph.beginTx();
         try {
             List<IndexedNodeRepresentation> result = new ArrayList<IndexedNodeRepresentation>();
             for (Node node : index.get(key, value)) {
-                result.add(new IndexedNodeRepresentation(baseUri, node, new IndexedRepresentation(baseUri, indexName, key, value, node.getId())));
+                result.add(new IndexedNodeRepresentation(baseUri, node, new IndexedRepresentation(baseUri, IndexedRepresentation.NODE, indexName, key, value, node.getId())));
             }
             tx.success();
             return result;
@@ -397,12 +456,25 @@ public class StorageActions {
 
     public boolean removeNodeFromIndex(String indexName, String key, Object value, long nodeId) throws DatabaseBlockedException {
 
-        org.neo4j.server.database.NodeIndex index = (org.neo4j.server.database.NodeIndex) graphdb.getIndex(indexName);
+        Index<Node> index = graphdb.getNodeIndex( indexName );
         Transaction tx = graphdb.graph.beginTx();
         try {
-            boolean removed = index.remove(graphdb.graph.getNodeById(nodeId), key, value);
+            index.remove(graphdb.graph.getNodeById(nodeId), key, value);
             tx.success();
-            return removed;
+            return true;
+        } finally {
+            tx.finish();
+        }
+    }
+
+    public boolean removeRelationshipFromIndex(String indexName, String key, Object value, long nodeId) throws DatabaseBlockedException {
+
+        Index<Relationship> index = graphdb.getRelationshipIndex( indexName );
+        Transaction tx = graphdb.graph.beginTx();
+        try {
+            index.remove(graphdb.graph.getRelationshipById(nodeId), key, value);
+            tx.success();
+            return true;
         } finally {
             tx.finish();
         }
@@ -514,5 +586,10 @@ public class StorageActions {
         } finally {
             tx.finish();
         }
+    }
+
+    public NodeIndexRepresentation createNodeIndex( String indexName ) {
+        Index<Node> createdIndex = graphdb.getIndexManager().forNodes( indexName );
+        return new NodeIndexRepresentation( baseUri, indexName, graphdb.getIndexManager().getConfiguration( createdIndex ) );
     }
 }

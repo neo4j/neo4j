@@ -33,20 +33,24 @@ public class IndexedRepresentation implements Representation
     private final Object value;
     private final long objectId;
     private final String indexName;
+    private String indexedElementType;
+    public static final String NODE = "node"; // TODO: probably belongs somewhere else, or should be refactored into obviation
+    public static final String RELATIONSHIP = "relationship";
 
-    public IndexedRepresentation( URI baseUri, String indexName, String key, Object value,
-            long objectId )
+    public IndexedRepresentation( URI baseUri, String indexedElementType, String indexName, String key, Object value,
+                                  long objectId )
     {
         this.baseUri = baseUri;
         this.indexName = indexName;
         this.key = URIHelper.encode( key );
         this.value = URIHelper.encode( value.toString() );
         this.objectId = objectId;
+        this.indexedElementType = indexedElementType;
     }
-    
+
     public Object serialize()
     {
-        return baseUri.toString() + "index/" + indexName + "/" + key + "/" +
+        return baseUri.toString() + "index/" + indexedElementType + "/" + indexName + "/" + key + "/" +
                 value + "/" + objectId;
     }
 }
