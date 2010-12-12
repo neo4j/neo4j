@@ -20,6 +20,7 @@
 
 package org.neo4j.kernel.impl.traversal;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
@@ -33,6 +34,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.Evaluators;
+import org.neo4j.graphdb.traversal.PruneEvaluator;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.Traversal;
@@ -49,7 +51,28 @@ public class TestMultiPruneEvaluators extends AbstractTestBase
                 "e to m", "e to n",
                 "k to o", "k to p", "k to q", "k to r" );
     }
-
+    
+    @Test
+    public void makeSurePruneIsntCalledForStartNode()
+    {
+        final boolean[] calledForStartPosition = new boolean[1];
+        PruneEvaluator evaluator = new PruneEvaluator()
+        {
+            public boolean pruneAfter( Path position )
+            {
+                if ( position.length() == 0 )
+                {
+                    calledForStartPosition[0] = true;
+                }
+                System.out.println( position );
+                return false;
+            }
+        };
+        
+        IteratorUtil.lastOrNull( Traversal.description().prune( evaluator ).traverse( referenceNode() ) );
+        assertFalse( calledForStartPosition[0] );
+    }
+    
     @Test
     public void testMaxDepthAndCustomPruneEvaluatorCombined()
     {

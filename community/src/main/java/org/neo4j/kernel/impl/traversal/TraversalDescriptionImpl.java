@@ -231,6 +231,12 @@ public final class TraversalDescriptionImpl implements TraversalDescription
 
         public Evaluation evaluate( Path path )
         {
+            // Before the Evaluator, when PruneEvaluator was used individually a PruneEvaluator
+            // was never called with the start node as argument. This condition mimics that behaviour.
+            if ( path.length() == 0 )
+            {
+                return Evaluation.INCLUDE_AND_CONTINUE;
+            }
             return pruning.pruneAfter( path ) ? Evaluation.INCLUDE_AND_PRUNE : Evaluation.INCLUDE_AND_CONTINUE;
         }
     }
