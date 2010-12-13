@@ -20,12 +20,7 @@
 
 package org.neo4j.server.rest.domain;
 
-import org.neo4j.server.rest.domain.IndexRepresentation;
-import org.neo4j.server.rest.domain.Representation;
-
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.HashMap;
 import java.util.Map;
 
 public class NodeIndexRepresentation extends IndexRepresentation
