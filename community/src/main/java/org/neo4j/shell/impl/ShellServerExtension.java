@@ -58,7 +58,11 @@ public final class ShellServerExtension extends KernelExtension
     @Override
     protected void unload( KernelData kernel )
     {
-        getServer( kernel ).shutdown();
+        GraphDatabaseShellServer server = getServer( kernel );
+        if ( server != null )
+        {
+            server.shutdown();
+        }
     }
 
     @SuppressWarnings( "boxing" )
