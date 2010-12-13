@@ -3,7 +3,6 @@
     <firstname>Tobias</firstname>
     <surname>Ivarsson</surname>
     <affiliation>
-      <jobtitle>Architect</jobtitle>
       <orgname>Neo Technology</orgname>
     </affiliation>
   </author>
@@ -12,7 +11,6 @@
     <firstname>Andreas</firstname>
     <surname>Kollegger</surname>
     <affiliation>
-      <jobtitle>Developer</jobtitle>
       <orgname>Neo Technology</orgname>
     </affiliation>
   </author>
@@ -21,7 +19,6 @@
     <firstname>Peter</firstname>
     <surname>Neubauer</surname>
     <affiliation>
-      <jobtitle>Chief Operating Officer</jobtitle>
       <orgname>Neo Technology</orgname>
     </affiliation>
   </author>
@@ -30,7 +27,6 @@
     <firstname>Johan</firstname>
     <surname>Svensson</surname>
     <affiliation>
-      <jobtitle>Chief Technology Officer</jobtitle>
       <orgname>Neo Technology</orgname>
     </affiliation>
   </author>
@@ -39,7 +35,6 @@
     <firstname>Andrés</firstname>
     <surname>Taylor</surname>
     <affiliation>
-      <jobtitle>N00b</jobtitle>
       <orgname>Neo Technology</orgname>
     </affiliation>
   </author>
@@ -48,7 +43,6 @@
     <firstname>Anders</firstname>
     <surname>Nawroth</surname>
     <affiliation>
-      <jobtitle>Community Manager</jobtitle>
       <orgname>Neo Technology</orgname>
     </affiliation>
   </editor>
@@ -123,16 +117,3 @@
   </note>
 </legalnotice>
 
-<mediaobject role="cover">
-  <imageobject>
-    <imagedata fileref="images/neo4j-logo.png"/>
-  </imageobject>
-  <textobject><phrase>Neo4j</phrase></textobject>
-</mediaobject>
-
-<mediaobject role="front">
-  <imageobject>
-    <imagedata fileref="images/neo4j-logo.png"/>
-  </imageobject>
-  <textobject><phrase>Neo4j</phrase></textobject>
-</mediaobject>
