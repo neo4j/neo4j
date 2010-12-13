@@ -28,9 +28,11 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.net.ServerSocket;
 import java.net.URI;
 
+import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.dummy.web.service.DummyThirdPartyWebService;
 import org.junit.Test;
 import org.neo4j.server.logging.InMemoryAppender;
@@ -124,6 +126,27 @@ public class NeoServerFunctionalTest {
 
         assertThat(appender.toString(), containsString(String.format("ERROR - Failed to start Neo Server on port [%s]", server.restApiUri().getPort())));
         socket.close();
+    }
+    
+    @Test
+    public void shouldEmitManagementAndDataAndWebadminUrisToConsoleAtStartup() throws IOException {
+        PrintStream oldOut = System.out;
+
+        ByteArrayOutputStream consoleOutput = new ByteArrayOutputStream();
+        PrintStream printStream = new PrintStream(consoleOutput);
+        System.setOut(printStream);
+        
+        NeoServer server = ServerBuilder.server().withPassingStartupHealthcheck().withDefaultDatabaseTuning().withRandomDatabaseDir().build();
+        server.start();
+        server.stop();
+        
+        printStream.flush();
+        System.setOut(oldOut);
+        
+        String consoleString = consoleOutput.toString();
+        assertThat(consoleString, containsString("Neo4j server management URI [http://localhost:7474/db/manage/]"));
+        assertThat(consoleString, containsString("Neo4j server data URI [http://localhost:7474/db/data/]"));
+        assertThat(consoleString, containsString("Neo4j server webadmin URI [http://localhost:7474/webadmin/]"));
     }
     
     @Test
