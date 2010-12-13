@@ -74,16 +74,3 @@
   </note>
 </legalnotice>
 
-<mediaobject role="cover">
-  <imageobject>
-    <imagedata fileref="images/neo4j-logo.png"/>
-  </imageobject>
-  <textobject><phrase>Neo4j</phrase></textobject>
-</mediaobject>
-
-<mediaobject role="front">
-  <imageobject>
-    <imagedata fileref="images/neo4j-logo.png"/>
-  </imageobject>
-  <textobject><phrase>Neo4j</phrase></textobject>
-</mediaobject>
