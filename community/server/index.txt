@@ -2,10 +2,9 @@
 Neo4j Server
 ============
 
-foo
-
 
 :leveloffset: 2
 
 
 include::server-performance.txt[]
+include::server-unmanaged-performance.txt[]
