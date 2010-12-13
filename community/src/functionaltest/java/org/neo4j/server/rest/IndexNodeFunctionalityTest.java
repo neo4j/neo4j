@@ -22,7 +22,6 @@ package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.net.URI;
@@ -39,8 +38,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.index.Index;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
@@ -161,7 +158,6 @@ public class IndexNodeFunctionalityTest
     @Test
     public void shouldGet404WhenRequestingIndexUriWhichDoesntExist() throws DatabaseBlockedException
     {
-        long nodeId = helper.createNode();
         String key = "key3";
         String value = "value";
         String indexName = "nosuchindex";
@@ -180,7 +176,6 @@ public class IndexNodeFunctionalityTest
         String name2 = "Agent Smith";
 
         String indexName = "matrix";
-        Index<Node> index = helper.createNodeIndex( indexName );
         String location1 = Client.create().resource( functionalTestHelper.nodeUri() ).accept( MediaType.APPLICATION_JSON ).entity( "{\"name\":\"" + name1 + "\"}",
                 MediaType.APPLICATION_JSON ).post( ClientResponse.class ).getHeaders().getFirst( HttpHeaders.LOCATION );
         String location2 = Client.create().resource( functionalTestHelper.nodeUri() ).accept( MediaType.APPLICATION_JSON ).entity( "{\"name\":\"" + name2 + "\"}",

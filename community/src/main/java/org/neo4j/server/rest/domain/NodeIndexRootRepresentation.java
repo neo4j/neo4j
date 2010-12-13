@@ -20,16 +20,14 @@
 
 package org.neo4j.server.rest.domain;
 
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.index.*;
-import org.neo4j.graphdb.index.Index;
-
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.IndexManager;
 
 public class NodeIndexRootRepresentation implements Representation
 {

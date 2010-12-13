@@ -20,19 +20,17 @@
 
 package org.neo4j.server.webadmin.webtest;
 
-import java.io.IOException;
-
-import org.neo4j.server.rest.domain.GraphDbHelper;
-import org.openqa.selenium.By;
-
-import org.junit.Test;
-
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.server.webadmin.webtest.IsVisible.isVisible;
-import static org.hamcrest.core.IsNot.not;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.greaterThan;
+
+import java.io.IOException;
+
+import org.junit.Test;
+import org.neo4j.server.rest.domain.GraphDbHelper;
+import org.openqa.selenium.By;
 
 
 public class DashboardWebTest extends WebDriverTest {

@@ -20,6 +20,11 @@
 
 package org.neo4j.server.database;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.commons.io.FileUtils;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -36,11 +41,6 @@ import org.neo4j.onlinebackup.Neo4jBackup;
 import org.neo4j.server.logging.Logger;
 import org.rrd4j.core.RrdDb;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
 public class Database
 {
 
@@ -52,7 +52,6 @@ public class Database
     public Map<String, Index<? extends PropertyContainer>> indicies;
 
     private String databaseStoreDirectory;
-    private String backupDirectory;
     private RrdDb rrdDb;
 
     public Database( AbstractGraphDatabase db )
