@@ -121,12 +121,15 @@ public class NeoServer {
 
         log.info("Mounting webadmin at [%s]", Configurator.WEB_ADMIN_PATH);
         webServer.addStaticContent(Configurator.WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION, Configurator.WEB_ADMIN_PATH);
+        System.out.println(String.format("Neo4j server webadmin URI [%s]", webadminUri().toString()));
 
         log.info("Mounting management API at [%s]", Configurator.WEB_ADMIN_REST_API_PATH);
         webServer.addJAXRSPackages(listFrom(new String[] { Configurator.WEB_ADMIN_REST_API_PACKAGE }), Configurator.WEB_ADMIN_REST_API_PATH);
+        System.out.println(String.format("Neo4j server management URI [%s]", managementApiUri().toString()));
 
         log.info("Mounting REST API at [%s]", Configurator.REST_API_PATH);
         webServer.addJAXRSPackages(listFrom(new String[] { Configurator.REST_API_PACKAGE }), Configurator.REST_API_PATH);
+        System.out.println(String.format("Neo4j server data URI [%s]", restApiUri().toString()));
         
         for(ThirdPartyJaxRsPackage tpp : configurator.getThirdpartyJaxRsClasses()) {
             log.info("Mounting third-party JAX-RS package [%s] at [%s]", tpp.getPackageName(), tpp.getMountPoint());
