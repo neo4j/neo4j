@@ -20,8 +20,6 @@
 
 package org.neo4j.server.webadmin.webtest;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.File;
 import java.io.IOException;
 
@@ -32,9 +30,7 @@ import org.junit.BeforeClass;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.ServerBuilder;
 import org.openqa.selenium.By;
-import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.RenderedWebElement;
-import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
 

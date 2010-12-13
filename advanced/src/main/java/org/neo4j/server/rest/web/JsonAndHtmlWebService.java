@@ -20,19 +20,6 @@
 
 package org.neo4j.server.rest.web;
 
-import org.neo4j.server.database.Database;
-import org.neo4j.server.rest.domain.AmpersandSeparatedList;
-import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.domain.RelationshipDirection;
-import org.neo4j.server.rest.domain.StorageActions.TraverserReturnType;
-import org.neo4j.server.rest.domain.renderers.IndexRootRenderer;
-import org.neo4j.server.rest.domain.renderers.JsonRenderers;
-import org.neo4j.server.rest.domain.renderers.NodeRenderer;
-import org.neo4j.server.rest.domain.renderers.NodesRenderer;
-import org.neo4j.server.rest.domain.renderers.RelationshipRenderer;
-import org.neo4j.server.rest.domain.renderers.RelationshipsRenderer;
-import org.neo4j.server.rest.domain.renderers.RootRenderer;
-
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -45,10 +32,21 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
-import java.net.URI;
-import java.net.URISyntaxException;
+import javax.ws.rs.core.Response.Status;
+
+import org.neo4j.server.database.Database;
+import org.neo4j.server.rest.domain.AmpersandSeparatedList;
+import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.domain.RelationshipDirection;
+import org.neo4j.server.rest.domain.StorageActions.TraverserReturnType;
+import org.neo4j.server.rest.domain.renderers.IndexRootRenderer;
+import org.neo4j.server.rest.domain.renderers.JsonRenderers;
+import org.neo4j.server.rest.domain.renderers.NodeRenderer;
+import org.neo4j.server.rest.domain.renderers.NodesRenderer;
+import org.neo4j.server.rest.domain.renderers.RelationshipRenderer;
+import org.neo4j.server.rest.domain.renderers.RelationshipsRenderer;
+import org.neo4j.server.rest.domain.renderers.RootRenderer;
 
 /* (non-javadoc)
  * I'd really like to split up the JSON and HTML parts in two different
