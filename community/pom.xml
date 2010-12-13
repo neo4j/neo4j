@@ -55,14 +55,14 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j</artifactId>
-      <version>1.2-SNAPSHOT</version>
+      <version>${neo4j.version}</version>
       <type>pom</type>
     </dependency>
 
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.2-1.2.M04</version>
+      <version>1.2-SNAPSHOT</version>
       <classifier>tests</classifier>
     </dependency>
 
@@ -479,6 +479,20 @@
           <execution>
             <goals>
               <goal>check</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>inject-license-in-generated-file</id>
+            <phase>prepare-package</phase>
+            <configuration>
+              <basedir>${project.build.directory}/classes/webadmin-html/</basedir>
+              <includes>
+                <include>webadmin.js</include>
+                <include>htmlbrowse.js</include>
+              </includes>
+            </configuration>
+            <goals>
+              <goal>format</goal>
             </goals>
           </execution>
         </executions>
