@@ -20,11 +20,10 @@
 
 package org.neo4j.server.rest.domain;
 
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-
 import java.net.URI;
 import java.util.Map;
+
+import org.neo4j.graphdb.Relationship;
 
 public class IndexedRelationshipRepresentation extends RelationshipRepresentation
 {

@@ -45,8 +45,6 @@ import javax.ws.rs.core.Response.Status;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.database.Database;
@@ -904,7 +902,6 @@ public class JsonWebServiceTest
         String name2 = "Agent Smith";
 
         String indexName = "matrix";
-        Index<Node> index = helper.createNodeIndex( indexName );
         URI location1 = (URI) service.jsonCreateNode( "{\"name\":\"" + name1 + "\"}" ).getMetadata().getFirst( "Location" );
         URI location2 = (URI) service.jsonCreateNode( "{\"name\":\"" + name2 + "\"}" ).getMetadata().getFirst( "Location" );
         URI indexLocation1 = (URI) service.jsonAddToNodeIndex( indexName, key, value, JsonHelper.createJsonFrom( location1.toString() ) ).getMetadata().getFirst(
