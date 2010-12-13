@@ -6,13 +6,11 @@
 <div id="disqus_thread"></div>
 <script type="text/javascript">
 // DISQUS
-(function() {
-
-  var pageId = "manual";
-  var title = "The Neo4j Manual";
+  var disqus_identifier = "manual";
+  var disqus_title = "The Neo4j Manual";
   if ( document.body.getElementsByTagName("h1").length > 0 )
   {
-    pageId += "-toc";
+    disqus_identifier += "-toc";
   }
   else
   {
@@ -22,30 +20,27 @@
       var headingElement = headings[0];
       if ( headingElement.firstChild )
       {
-        pageId += "-";
-        pageId += headingElement.firstChild.getAttribute("id");
+        disqus_identifier += "-";
+        disqus_identifier += headingElement.firstChild.getAttribute("id");
       }
     }
     if ( document.title )
     {
-       title = document.title;
-       var match = title.match( /^(Chapter|)[0-9\.\s]*(.*)$/ );
+       disqus_title = document.title;
+       var match = disqus_title.match( /^(Chapter|)[0-9\.\s]*(.*)$/ );
        if ( match && match[2] )
        {
-         title = match[2];
+         disqus_title = match[2];
        }
     }
   }
   var disqus_shortname = "neo4j";
-  var disqus_identifier = pageId;
-  var disqus_developer = 1;
-  var disqus_title = title;
+  var disqus_developer = 0;
 
-/*
+(function() {
   var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
   dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
   (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
-*/
 })();
 
 // GA
