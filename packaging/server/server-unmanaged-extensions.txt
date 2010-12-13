@@ -1,0 +1,20 @@
+Unmanaged Extensions 
+====================
+
+.Quick info
+***********
+* Danger Men at Work! The unmanaged extensions are a way of deploying arbitrary JAX-RS code into the nNeo4j server.
+* The unmanaged extensions are exactly that: unmanaged. If you drop poorly tested code into the server, it's highly like you'll degrade its performance, so be careful. 
+***********
+
+
+Some projects want extremely fine control over their server-side code. For this we've introduced an unmanaged extension API. It's a sharp tool, allowing users to deploy arbitrary JAX-RS classes to the server and so you should be careful when thinking about using this. In particular you should understand that it's easy to consume lots of heap space on the server and hinder performance if you're not careful. Still, if you understand the disclaimer, then you load your JAX-RS classes into the Neo4j server simply by adding adding a @Context annotation to your code, compiling against the Neo4j server jar, and then adding your classes to the runtime classpath (just drop it in the lib directory of the Neo4j server). In return you get access to the hosted environment of the Neo4j server like logging through the org.neo4j.server.logging.Logger. 
+
+In your code, you get access to the underlying GraphDatabaseService through the @Context annotation like so:
+
+public MyCoolService(@Context Database database)
+{
+  // Have fun here, but be safe!
+}
+
+Remember, the unmanaged API is a very sharp tool. It's all to easy to compromise the server by deploying code this way, so think first and see if you can't use the managed extensions in preference.
