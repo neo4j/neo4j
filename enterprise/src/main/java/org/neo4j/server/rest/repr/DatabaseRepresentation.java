@@ -18,28 +18,34 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.server.webadmin.rest.representations;
+package org.neo4j.server.rest.repr;
 
-import java.util.ArrayList;
+import org.neo4j.graphdb.GraphDatabaseService;
 
-import org.neo4j.server.rest.domain.Representation;
-
-public class JmxDomainListRepresentation implements Representation
+public class DatabaseRepresentation extends MappingRepresentation implements
+        ExtensibleRepresentation
 {
+    private final GraphDatabaseService graphDb;
 
-    protected ArrayList<String> domains = new ArrayList<String>();
-
-    public JmxDomainListRepresentation( String[] domains )
+    public DatabaseRepresentation( GraphDatabaseService graphDb )
     {
-        for ( String domain : domains )
-        {
-            this.domains.add( domain );
-        }
+        super( RepresentationType.GRAPHDB );
+        this.graphDb = graphDb;
     }
 
-    public Object serialize()
+    @Override
+    public String getIdentity()
     {
-        return this.domains;
+        // This is in fact correct - there is only one graphdb - hence no id
+        return null;
     }
 
+    @Override
+    protected void serialize( MappingSerializer serializer )
+    {
+        serializer.putRelativeUri( "node", "node" );
+        serializer.putRelativeUri( "reference_node",
+                NodeRepresentation.path( graphDb.getReferenceNode() ) );
+        serializer.putRelativeUri( "index", "index" );
+    }
 }

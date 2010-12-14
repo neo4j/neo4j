@@ -19,11 +19,6 @@ package org.neo4j.server.webadmin.rest;
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import org.apache.commons.configuration.Configuration;
-import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.rest.domain.renderers.JsonRenderers;
-import org.neo4j.server.webadmin.rest.representations.AdminPropertyRepresentation;
-
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -33,17 +28,23 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
+import org.apache.commons.configuration.Configuration;
+import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.rest.domain.renderers.JsonRenderers;
+import org.neo4j.server.webadmin.rest.representations.AdminPropertyRepresentation;
+
 @Path("/properties")
 public class AdminPropertiesService
 {
     private final String configurationNamespace = "org.neo4j.server.webadmin.";
-    private Configuration config;
+    private final Configuration config;
     private final UriInfo uriInfo;
     private final String MANAGEMENT_URI_KEY = "management.uri";
     private final String DATA_URI_KEY = "data.uri";
 
     public AdminPropertiesService( @Context UriInfo uriInfo,
-                                   @Context Configuration config )
+                                   @Context Configuration config
+    )
     {
         this.uriInfo = uriInfo;
         this.config = config;
@@ -55,7 +56,7 @@ public class AdminPropertiesService
     public Response getValue( @PathParam("key") String key )
     {
         String lowerCaseKey = key.toLowerCase();
-        String value = null;
+        String value;
 
         if ( "neo4j-servers".equals( lowerCaseKey ) )
         {

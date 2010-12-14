@@ -20,20 +20,6 @@
 
 package org.neo4j.server.rest.web;
 
-import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.server.database.Database;
-import org.neo4j.server.database.DatabaseBlockedException;
-import org.neo4j.server.rest.domain.*;
-import org.neo4j.server.rest.domain.StorageActions.TraverserReturnType;
-import org.neo4j.server.rest.domain.renderers.Renderer;
-
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.ResponseBuilder;
-import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.core.UriInfo;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -41,6 +27,39 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.Response.ResponseBuilder;
+import javax.ws.rs.core.Response.Status;
+
+import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.server.database.Database;
+import org.neo4j.server.database.DatabaseBlockedException;
+import org.neo4j.server.rest.domain.AmpersandSeparatedList;
+import org.neo4j.server.rest.domain.EndNodeNotFoundException;
+import org.neo4j.server.rest.domain.EvaluationException;
+import org.neo4j.server.rest.domain.IndexedNodeRepresentation;
+import org.neo4j.server.rest.domain.IndexedRelationshipRepresentation;
+import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.domain.NodeIndexRepresentation;
+import org.neo4j.server.rest.domain.NodeIndexRootRepresentation;
+import org.neo4j.server.rest.domain.NodeRepresentation;
+import org.neo4j.server.rest.domain.PathRepresentation;
+import org.neo4j.server.rest.domain.PropertiesMap;
+import org.neo4j.server.rest.domain.RelationshipDirection;
+import org.neo4j.server.rest.domain.RelationshipIndexRootRepresentation;
+import org.neo4j.server.rest.domain.RelationshipRepresentation;
+import org.neo4j.server.rest.domain.Representation;
+import org.neo4j.server.rest.domain.RootRepresentation;
+import org.neo4j.server.rest.domain.StartNodeNotFoundException;
+import org.neo4j.server.rest.domain.StartNodeSameAsEndNodeException;
+import org.neo4j.server.rest.domain.StorageActions;
+import org.neo4j.server.rest.domain.StorageActions.TraverserReturnType;
+import org.neo4j.server.rest.domain.renderers.Renderer;
 
 public abstract class GenericWebService
 {
@@ -152,7 +171,8 @@ public abstract class GenericWebService
         try
         {
             properties = new PropertiesMap( JsonHelper.jsonToMap( json ) );
-        } catch ( PropertyValueException e )
+        }
+        catch ( org.neo4j.server.rest.domain.PropertyValueException e )
         {
             return buildBadJsonExceptionResponse( json, e, renderer );
         }
@@ -168,7 +188,8 @@ public abstract class GenericWebService
         try
         {
             properties = new PropertiesMap( JsonHelper.jsonToMap( json ) );
-        } catch ( PropertyValueException e )
+        }
+        catch ( org.neo4j.server.rest.domain.PropertyValueException e )
         {
             return buildBadJsonExceptionResponse( json, e, renderer );
         }
@@ -207,7 +228,8 @@ public abstract class GenericWebService
         try
         {
             properties = new PropertiesMap( JsonHelper.jsonToMap( json ) );
-        } catch ( PropertyValueException e )
+        }
+        catch ( org.neo4j.server.rest.domain.PropertyValueException e )
         {
             return buildBadJsonExceptionResponse( json, e, renderer );
         }
@@ -264,7 +286,8 @@ public abstract class GenericWebService
         } catch ( NotFoundException e )
         {
             return Response.status( Status.NOT_FOUND ).build();
-        } catch ( PropertyValueException e )
+        }
+        catch ( org.neo4j.server.rest.domain.PropertyValueException e )
         {
             return buildBadJsonExceptionResponse( json, e, renderer );
         }
@@ -316,7 +339,8 @@ public abstract class GenericWebService
             {
                 properties = new PropertiesMap( Collections.<String, Object>emptyMap() );
             }
-        } catch ( PropertyValueException e )
+        }
+        catch ( org.neo4j.server.rest.domain.PropertyValueException e )
         {
             return buildBadJsonExceptionResponse( json, e, renderer );
         }
@@ -430,7 +454,8 @@ public abstract class GenericWebService
         try
         {
             properties = new PropertiesMap( JsonHelper.jsonToMap( json ) );
-        } catch ( PropertyValueException e )
+        }
+        catch ( org.neo4j.server.rest.domain.PropertyValueException e )
         {
             return buildBadJsonExceptionResponse( json, e, renderer );
         }
@@ -455,7 +480,8 @@ public abstract class GenericWebService
         } catch ( NotFoundException e )
         {
             return Response.status( Status.NOT_FOUND ).build();
-        } catch ( PropertyValueException e )
+        }
+        catch ( org.neo4j.server.rest.domain.PropertyValueException e )
         {
             return buildBadJsonExceptionResponse( json, e, renderer );
         }
@@ -517,7 +543,8 @@ public abstract class GenericWebService
             String objectUri = JsonHelper.jsonToSingleValue( json ).toString();
             Representation representation = indexType.add( this, indexName, key, value, getNodeIdFromUri( objectUri ), renderer );
             return Response.created( new URI( representation.serialize().toString() ) ).build();
-        } catch ( PropertyValueException e )
+        }
+        catch ( org.neo4j.server.rest.domain.PropertyValueException e )
         {
             return buildBadJsonExceptionResponse( json, e, renderer );
         } catch ( URISyntaxException e )
@@ -675,7 +702,8 @@ public abstract class GenericWebService
         try
         {
             map = description == null || description.length() == 0 ? new HashMap<String, Object>() : JsonHelper.jsonToMap( description );
-        } catch ( PropertyValueException e )
+        }
+        catch ( org.neo4j.server.rest.domain.PropertyValueException e )
         {
             return buildBadJsonExceptionResponse( description, e, renderer );
         }
@@ -714,7 +742,8 @@ public abstract class GenericWebService
         {
             payload = JsonHelper.jsonToMap( description );
             endNodeId = getNodeIdFromUri( (String) payload.get( "to" ) );
-        } catch ( PropertyValueException e )
+        }
+        catch ( org.neo4j.server.rest.domain.PropertyValueException e )
         {
             return buildBadJsonExceptionResponse( description, e, renderer );
         }

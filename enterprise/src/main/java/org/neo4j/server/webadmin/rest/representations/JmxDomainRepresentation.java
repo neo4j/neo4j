@@ -20,16 +20,17 @@
 
 package org.neo4j.server.webadmin.rest.representations;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import org.neo4j.server.rest.repr.ListRepresentation;
+import org.neo4j.server.rest.repr.ObjectRepresentation;
+import org.neo4j.server.rest.repr.ValueRepresentation;
 
 import javax.management.ObjectName;
+import java.util.ArrayList;
 
-import org.neo4j.server.rest.domain.Representation;
+import static org.neo4j.server.rest.repr.ValueRepresentation.string;
 
 
-public class JmxDomainRepresentation implements Representation
+public class JmxDomainRepresentation extends ObjectRepresentation
 {
 
     protected ArrayList<JmxMBeanRepresentation> beans = new ArrayList<JmxMBeanRepresentation>();
@@ -37,28 +38,24 @@ public class JmxDomainRepresentation implements Representation
 
     public JmxDomainRepresentation( String name )
     {
+        super("jmxDomain");
         this.domainName = name;
+    }
+
+    @Mapping( "domain" )
+    public ValueRepresentation getDomainName()
+    {
+        return string( this.domainName );
+    }
+
+    @Mapping( "beans" )
+    public ListRepresentation getBeans( )
+    {
+        return new ListRepresentation( "beans", beans );
     }
 
     public void addBean( ObjectName bean )
     {
         beans.add( new JmxMBeanRepresentation( bean ) );
     }
-
-    public Object serialize()
-    {
-        Map<String, Object> data = new HashMap<String, Object>();
-
-        data.put( "domain", this.domainName );
-
-        ArrayList<Object> serialBeans = new ArrayList<Object>();
-        for ( JmxMBeanRepresentation bean : beans )
-        {
-            serialBeans.add( bean.serialize() );
-        }
-        data.put( "beans", serialBeans );
-
-        return data;
-    }
-
 }
