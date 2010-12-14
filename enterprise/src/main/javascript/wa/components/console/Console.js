@@ -89,7 +89,7 @@ wa.components.console.Console = (function($) {
                 
                 me.hideInput();
                 
-                getConsole().exec(statement, "gremlin", (function(statement, cb) {
+                getConsole().exec(statement, "awesome", (function(statement, cb) {
                     return function(data) {
                         cb(statement, data);
                         me.showInput();

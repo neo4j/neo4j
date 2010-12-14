@@ -18,9 +18,25 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.server.rest.web;
+package org.neo4j.server.rest;
 
-public class PathNotFoundException extends Exception
+import org.junit.Test;
+
+import static junit.framework.Assert.assertEquals;
+
+public abstract class IndexNodeFunctionalityBase
 {
+    /**
+     * GET ${org.neo4j.server.rest.web}/index/node/
+     */
+    @Test
+    public void shouldGetEmptyListOfNodeIndexesWhenNoneExist()
+    {
+        TestResponse response = getIndex_Node();
 
+        assertEquals( 204, response.getStatus() );
+    }
+
+
+    abstract TestResponse getIndex_Node();
 }

@@ -18,9 +18,22 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.server.rest.web;
+package org.neo4j.server.rest;
 
-public class PathNotFoundException extends Exception
+import com.sun.jersey.api.client.ClientResponse;
+
+public class HttpResponse implements  TestResponse
 {
+    private final ClientResponse inner;
 
+    public HttpResponse(ClientResponse inner )
+    {
+        this.inner = inner;
+    }
+
+    @Override
+    public int getStatus()
+    {
+        return inner.getStatus();
+    }
 }
