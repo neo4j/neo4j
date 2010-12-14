@@ -20,11 +20,18 @@
 
 package org.neo4j.server.webadmin.rest;
 
-import java.io.UnsupportedEncodingException;
-import java.lang.management.ManagementFactory;
-import java.net.URLDecoder;
-import java.util.ArrayList;
-import java.util.Collection;
+import org.neo4j.management.Kernel;
+import org.neo4j.server.database.Database;
+import org.neo4j.server.database.DatabaseBlockedException;
+import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.domain.renderers.JsonRenderers;
+import org.neo4j.server.rest.repr.InputFormat;
+import org.neo4j.server.rest.repr.ListRepresentation;
+import org.neo4j.server.rest.repr.OutputFormat;
+import org.neo4j.server.webadmin.rest.representations.ExceptionRepresentation;
+import org.neo4j.server.webadmin.rest.representations.JmxDomainRepresentation;
+import org.neo4j.server.webadmin.rest.representations.JmxMBeanRepresentation;
+import org.neo4j.server.webadmin.rest.representations.ServiceDefinitionRepresentation;
 
 import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
@@ -39,164 +46,174 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.core.Response.Status;
-
-import org.neo4j.management.Kernel;
-import org.neo4j.server.database.Database;
-import org.neo4j.server.database.DatabaseBlockedException;
-import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.domain.renderers.JsonRenderers;
-import org.neo4j.server.webadmin.rest.representations.ExceptionRepresentation;
-import org.neo4j.server.webadmin.rest.representations.JmxDomainListRepresentation;
-import org.neo4j.server.webadmin.rest.representations.JmxDomainRepresentation;
-import org.neo4j.server.webadmin.rest.representations.JmxMBeanRepresentation;
-import org.neo4j.server.webadmin.rest.representations.JmxServiceRepresentation;
+import javax.ws.rs.core.UriInfo;
+import java.io.UnsupportedEncodingException;
+import java.lang.management.ManagementFactory;
+import java.net.URLDecoder;
+import java.util.ArrayList;
+import java.util.Collection;
 
 
-@Path(JmxService.ROOT_PATH)
-public class JmxService implements AdvertisableService {
-
+@Path( JmxService.ROOT_PATH )
+public class JmxService implements AdvertisableService
+{
     public static final String ROOT_PATH = "server/jmx";
 
     public static final String DOMAINS_PATH = "/domain";
-    public static final String DOMAIN_PATH = DOMAINS_PATH + "/{domain}";
-    public static final String BEAN_PATH = DOMAIN_PATH + "/{objectName}";
+    public static final String DOMAIN_TEMPLATE = DOMAINS_PATH + "/{domain}";
+    public static final String BEAN_TEMPLATE = DOMAIN_TEMPLATE + "/{objectName}";
     public static final String QUERY_PATH = "/query";
     public static final String KERNEL_NAME_PATH = "/kernelquery";
-    
+    private final OutputFormat output;
+    private final InputFormat input;
 
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response getServiceDefinition(@Context UriInfo uriInfo) {
-
-        String entity = JsonRenderers.DEFAULT.render(new JmxServiceRepresentation(uriInfo.getBaseUri()));
-
-        return Response.ok(entity).type(MediaType.APPLICATION_JSON).build();
+    public JmxService( @Context OutputFormat output, @Context InputFormat input )
+    {
+        this.output = output;
+        this.input = input;
     }
 
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path(DOMAINS_PATH)
-    public Response listDomains() throws NullPointerException {
+    public Response getServiceDefinition( @Context UriInfo uriInfo )
+    {
+        ServiceDefinitionRepresentation serviceDef = new ServiceDefinitionRepresentation( uriInfo.getBaseUri() + ROOT_PATH );
+        serviceDef.resourceUri( "domains", JmxService.DOMAINS_PATH );
+        serviceDef.resourceTemplate( "domain", JmxService.DOMAIN_TEMPLATE );
+        serviceDef.resourceTemplate( "bean", JmxService.BEAN_TEMPLATE );
+        serviceDef.resourceUri( "query", JmxService.QUERY_PATH );
+        serviceDef.resourceUri( "kernelquery", JmxService.KERNEL_NAME_PATH );
 
-        MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-        String entity = JsonRenderers.DEFAULT.render(new JmxDomainListRepresentation(server.getDomains()));
-
-        return Response.ok(entity).type(MediaType.APPLICATION_JSON).build();
-
+        return output.ok( serviceDef );
     }
 
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path(DOMAIN_PATH)
-    public Response getDomain(@PathParam("domain") String domainName) throws NullPointerException {
+    @Path( DOMAINS_PATH )
+    public Response listDomains() throws NullPointerException
+    {
+        MBeanServer server = ManagementFactory.getPlatformMBeanServer();
+        ListRepresentation domains = ListRepresentation.strings( server.getDomains() );
+        return output.ok( domains );
+    }
 
+    @GET
+    @Path( DOMAIN_TEMPLATE )
+    public Response getDomain( @PathParam( "domain" ) String domainName )
+    {
         MBeanServer server = ManagementFactory.getPlatformMBeanServer();
 
-        JmxDomainRepresentation domain = new JmxDomainRepresentation(domainName);
+        JmxDomainRepresentation domain = new JmxDomainRepresentation( domainName );
 
-        for (Object objName : server.queryNames(null, null)) {
-            if (objName.toString().startsWith(domainName)) {
-                domain.addBean((ObjectName) objName);
+        for ( Object objName : server.queryNames( null, null ) )
+        {
+            if ( objName.toString().startsWith( domainName ) )
+            {
+                domain.addBean( (ObjectName)objName );
             }
         }
 
-        String entity = JsonRenderers.DEFAULT.render(domain);
-
-        return Response.ok(entity).type(MediaType.APPLICATION_JSON).build();
-
+        return output.ok( domain );
     }
 
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path(BEAN_PATH)
-    public Response getBean(@PathParam("domain") String domainName, @PathParam("objectName") String objectName) {
-        try {
-
+    @Path( BEAN_TEMPLATE )
+    public Response getBean( @PathParam( "domain" ) String domainName, @PathParam( "objectName" ) String objectName )
+    {
+        try
+        {
             MBeanServer server = ManagementFactory.getPlatformMBeanServer();
 
-            ArrayList<Object> beans = new ArrayList<Object>();
-            for (Object objName : server.queryNames(new ObjectName(domainName + ":" + URLDecoder.decode(objectName, "UTF-8")), null)) {
-                beans.add((new JmxMBeanRepresentation((ObjectName) objName)).serialize());
+            ArrayList<JmxMBeanRepresentation> beans = new ArrayList<JmxMBeanRepresentation>();
+            for ( Object objName : server.queryNames( new ObjectName( domainName + ":" + URLDecoder.decode( objectName, "UTF-8" ) ), null ) )
+            {
+                beans.add( new JmxMBeanRepresentation( (ObjectName)objName ) );
             }
 
-            String entity = JsonHelper.createJsonFrom(beans);
-
-            return Response.ok(entity).type(MediaType.APPLICATION_JSON).build();
-
-        } catch (MalformedObjectNameException e) {
-            return buildExceptionResponse(Status.BAD_REQUEST, e);
-        } catch (UnsupportedEncodingException e) {
-            return buildExceptionResponse(Status.INTERNAL_SERVER_ERROR, e);
+            return output.ok( new ListRepresentation( "beans", beans ) );
+        } catch ( MalformedObjectNameException e )
+        {
+            return buildExceptionResponse( Status.BAD_REQUEST, e );
+        } catch ( UnsupportedEncodingException e )
+        {
+            return buildExceptionResponse( Status.INTERNAL_SERVER_ERROR, e );
         }
     }
 
-    private Response buildExceptionResponse(Status errorStatus, Exception e) {
-        return Response.status(errorStatus).entity(JsonRenderers.DEFAULT.render(new ExceptionRepresentation(e))).build();
+    private Response buildExceptionResponse( Status errorStatus, Exception e )
+    {
+        return Response.status( errorStatus ).entity( JsonRenderers.DEFAULT.render( new ExceptionRepresentation( e ) ) ).build();
     }
-
 
 
     @POST
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Path(QUERY_PATH)
-    @SuppressWarnings("unchecked")
-    public Response queryBeans(String query) {
-
-        try {
+    @Consumes( MediaType.APPLICATION_JSON )
+    @Path( QUERY_PATH )
+    @SuppressWarnings( "unchecked" )
+    public Response queryBeans( String query )
+    {
+        try
+        {
             MBeanServer server = ManagementFactory.getPlatformMBeanServer();
 
-            String json = dodgeStartingUnicodeMarker(query);
-            Collection<Object> queries = (Collection<Object>) JsonHelper.jsonToSingleValue(json);
 
-            ArrayList<Object> beans = new ArrayList<Object>();
-            for (Object queryObj : queries) {
+
+            String json = dodgeStartingUnicodeMarker( query );
+            Collection<Object> queries = (Collection<Object>)JsonHelper.jsonToSingleValue( json );
+
+            ArrayList<JmxMBeanRepresentation> beans = new ArrayList<JmxMBeanRepresentation>();
+            for ( Object queryObj : queries )
+            {
                 assert queryObj instanceof String;
-                for (Object objName : server.queryNames(new ObjectName((String) queryObj), null)) {
-                    beans.add((new JmxMBeanRepresentation((ObjectName) objName)).serialize());
+                for ( Object objName : server.queryNames( new ObjectName( (String)queryObj ), null ) )
+                {
+                    beans.add( new JmxMBeanRepresentation( (ObjectName)objName ) );
                 }
             }
 
-            String entity = JsonHelper.createJsonFrom(beans);
-
-            return Response.ok(entity).type(MediaType.APPLICATION_JSON).build();
-
-        } catch (MalformedObjectNameException e) {
+            return output.ok( new ListRepresentation( "jmxBeans", beans ) );
+        } catch ( MalformedObjectNameException e )
+        {
             e.printStackTrace();
-            return buildExceptionResponse(Status.BAD_REQUEST, e);
+            return buildExceptionResponse( Status.BAD_REQUEST, e );
         }
 
     }
 
     @POST
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-    @Path(QUERY_PATH)
-    public Response formQueryBeans(@FormParam("value") String data) {
-        return queryBeans(data);
+    @Produces( MediaType.APPLICATION_JSON )
+    @Consumes( MediaType.APPLICATION_FORM_URLENCODED )
+    @Path( QUERY_PATH )
+    public Response formQueryBeans( @FormParam( "value" ) String data )
+    {
+        return queryBeans( data );
     }
 
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path(KERNEL_NAME_PATH)
-    public Response currentKernelInstance(@Context Database database) throws DatabaseBlockedException {
-        Kernel kernelBean = database.graph.getManagementBean(Kernel.class);
-        return Response.ok("\"" + kernelBean.getMBeanQuery().toString() + "\"").type(MediaType.APPLICATION_JSON).build();
+    @Produces( MediaType.APPLICATION_JSON )
+    @Path( KERNEL_NAME_PATH )
+    public Response currentKernelInstance( @Context Database database ) throws DatabaseBlockedException
+    {
+        Kernel kernelBean = database.graph.getManagementBean( Kernel.class );
+        return Response.ok( "\"" + kernelBean.getMBeanQuery().toString() + "\"" ).type( MediaType.APPLICATION_JSON ).build();
     }
-    
-    public String getName() {
+
+    public String getName()
+    {
         return "jmx";
     }
-    public String getServerPath() {
+
+    public String getServerPath()
+    {
         return ROOT_PATH;
     }
-    
-    private static String dodgeStartingUnicodeMarker(String string) {
-        if (string != null && string.length() > 0) {
-            if (string.charAt(0) == 0xfeff) {
-                return string.substring(1);
+
+    private static String dodgeStartingUnicodeMarker( String string )
+    {
+        if ( string != null && string.length() > 0 )
+        {
+            if ( string.charAt( 0 ) == 0xfeff )
+            {
+                return string.substring( 1 );
             }
         }
         return string;

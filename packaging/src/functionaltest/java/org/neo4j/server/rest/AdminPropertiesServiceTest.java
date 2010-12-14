@@ -20,20 +20,19 @@
 
 package org.neo4j.server.rest;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-
-import java.io.IOException;
-
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.ServerBuilder;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
+import java.io.IOException;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
 
 public class AdminPropertiesServiceTest {
     private NeoServer server;
@@ -55,6 +54,7 @@ public class AdminPropertiesServiceTest {
     @Test
     public void shouldRespondWithTheWebAdminClientSettings() throws Exception {
         String url = functionalTestHelper.mangementUri() + "properties/neo4j-servers";
+
         ClientResponse response = Client.create().resource(url).get(ClientResponse.class);
         String json = response.getEntity(String.class);
 

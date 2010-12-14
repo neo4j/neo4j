@@ -28,8 +28,8 @@ import org.neo4j.server.rest.domain.JsonHelper;
 
 public final class FunctionalTestHelper
 {
-    private NeoServer server;
-    private GraphDbHelper helper;
+    private final NeoServer server;
+    private final GraphDbHelper helper;
 
     public FunctionalTestHelper(NeoServer server) {
         if(server.getDatabase() == null) {
@@ -38,7 +38,7 @@ public final class FunctionalTestHelper
         this.helper = new GraphDbHelper(server.getDatabase());
         this.server = server;
     }
- 
+
     public GraphDbHelper getGraphDbHelper() {
         return helper;
     }
@@ -48,7 +48,7 @@ public final class FunctionalTestHelper
         JsonHelper.jsonToMap( entity );
     }
 
-    String dataUri()
+    public String dataUri()
     {
         return server.restApiUri().toString();
     }
@@ -63,7 +63,7 @@ public final class FunctionalTestHelper
         return dataUri() + "node";
     }
 
-    String nodeUri( long id )
+    public String nodeUri( long id )
     {
         return nodeUri() + "/" + id;
     }

@@ -20,45 +20,48 @@
 
 package org.neo4j.server.webadmin.rest;
 
-import org.apache.log4j.Logger;
-import org.neo4j.server.database.Database;
-import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.webadmin.console.ScriptSession;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
-import java.util.Map;
+import javax.ws.rs.core.Response.Status;
 
-import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
+import org.apache.log4j.Logger;
+import org.neo4j.server.database.Database;
+import org.neo4j.server.rest.repr.BadInputException;
+import org.neo4j.server.rest.repr.InputFormat;
+import org.neo4j.server.rest.repr.OutputFormat;
+import org.neo4j.server.rest.repr.ValueRepresentation;
+import org.neo4j.server.webadmin.console.ScriptSession;
+import org.neo4j.server.webadmin.rest.representations.ServiceDefinitionRepresentation;
 
 @Path( ConsoleService.SERVICE_PATH )
 public class ConsoleService implements AdvertisableService
 {
     private static final String SERVICE_NAME = "console";
     static final String SERVICE_PATH = "server/console";
-    private SessionFactory sessionFactory;
-    private Database database;
+    private final SessionFactory sessionFactory;
+    private final Database database;
+    private final OutputFormat output;
 
-    public ConsoleService( SessionFactory sessionFactory, Database database )
+    public ConsoleService( SessionFactory sessionFactory, Database database,
+            OutputFormat output )
     {
         this.sessionFactory = sessionFactory;
         this.database = database;
+        this.output = output;
     }
 
     public ConsoleService( @Context Database database,
-                           @Context HttpServletRequest req )
+                           @Context HttpServletRequest req,
+                           @Context OutputFormat output )
     {
-        this( new SessionFactoryImpl( req.getSession( true ) ), database );
+        this( new SessionFactoryImpl( req.getSession( true ) ), database, output );
     }
 
     Logger log = Logger.getLogger( ConsoleService.class );
@@ -74,55 +77,43 @@ public class ConsoleService implements AdvertisableService
     }
 
     @GET
-    @Produces( MediaType.APPLICATION_JSON )
-    public Response getServiceDefinition( @Context UriInfo uriInfo )
+    public Response getServiceDefinition( final @Context UriInfo uriInfo )
     {
-        return Response.ok(
-                "{ \"resources\" : { \"exec\" : \"" + uriInfo.getBaseUri()
-                        + SERVICE_PATH + "\" }}" ).header( "Content-Type",
-                MediaType.APPLICATION_JSON ).build();
+        ServiceDefinitionRepresentation result = new ServiceDefinitionRepresentation( uriInfo.getBaseUri() + SERVICE_PATH );
+        result.resourceUri( "exec", "" );
+
+        return output.ok( result );
     }
 
     @POST
-    @Produces( MediaType.APPLICATION_JSON )
-    @Consumes( MediaType.APPLICATION_FORM_URLENCODED )
-    public Response formExec( @FormParam( "value" ) String data )
+    public Response exec( @Context InputFormat input, String data )
     {
-        return exec( data );
-    }
-
-    @POST
-    @Produces( MediaType.APPLICATION_JSON )
-    @Consumes( MediaType.APPLICATION_JSON )
-    public Response exec( String data )
-    {
+        Map<String, Object> args;
         try
         {
-            Map<String, Object> args = jsonToMap( data );
-
-            if ( !args.containsKey( "command" ) )
-            {
-                throw new IllegalArgumentException(
-                        "Missing 'command' parameter in arguments." );
-            }
-
-
-            ScriptSession scriptSession = getSession( args );
-            log.info( scriptSession.toString() );
-
-            String result = scriptSession.evaluate( (String)args.get( "command" ) );
-
-            return Response.ok( JsonHelper.createJsonFrom( result ) ).header(
-                    "Content-Type", MediaType.APPLICATION_JSON ).build();
-        } catch ( IllegalArgumentException e )
-        {
-            return Response.status( Status.BAD_REQUEST ).build();
+            args = input.readMap( data );
         }
+        catch ( BadInputException e )
+        {
+            return output.badRequest( e );
+        }
+
+        if ( !args.containsKey( "command" ) )
+        {
+            return Response.status( Status.BAD_REQUEST ).entity(
+                    "Expected command argument not present." ).build();
+        }
+
+        ScriptSession scriptSession = getSession( args );
+        log.info( scriptSession.toString() );
+
+        String result = scriptSession.evaluate( (String)args.get( "command" ) );
+
+        return output.ok( ValueRepresentation.string( result ) );
     }
 
     private ScriptSession getSession( Map<String, Object> args )
     {
         return sessionFactory.createSession( (String)args.get( "engine" ), database );
     }
-
 }

@@ -20,6 +20,7 @@
 
 package org.neo4j.server.rest.domain;
 
+@Deprecated
 public interface Representation
 {
     Object serialize();
