@@ -20,20 +20,8 @@
 
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
-import java.io.IOException;
-import java.net.URI;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response.Status;
-
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -45,10 +33,20 @@ import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.URIHelper;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response.Status;
+import java.io.IOException;
+import java.net.URI;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
-public class IndexNodeFunctionalityTest
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
+public class IndexNodeFunctionalityHttpTest extends IndexNodeFunctionalityBase
 {
     private NeoServer server;
     private FunctionalTestHelper functionalTestHelper;
@@ -69,18 +67,11 @@ public class IndexNodeFunctionalityTest
         server.stop();
     }
 
-    /**
-     * GET ${org.neo4j.server.rest.web}/index/node/
-     */
-    @Test
-    public void shouldGetEmptyListOfNodeIndexesWhenNoneExist()
+    @Override
+    TestResponse getIndex_Node()
     {
-
-        ClientResponse response = Client.create().resource( functionalTestHelper.indexUri() + "/node/" )
-                .accept( MediaType.APPLICATION_JSON ).get( ClientResponse.class );
-
-        assertEquals( 204, response.getStatus() );
-
+        return new HttpResponse( Client.create().resource( functionalTestHelper.indexUri() + "/node/" )
+                .accept( MediaType.APPLICATION_JSON ).get( ClientResponse.class ) );
     }
 
     /**
@@ -128,7 +119,7 @@ public class IndexNodeFunctionalityTest
                 .entity( entity ).post( ClientResponse.class );
         assertEquals( 201, response.getStatus() );
         assertNotNull( response.getHeaders().getFirst( "Location" ) );
-        assertEquals( Arrays.asList( (Long) nodeId ), helper.getIndexedNodes( indexName, key, value ) );
+        assertEquals( Arrays.asList( (Long)nodeId ), helper.getIndexedNodes( indexName, key, value ) );
     }
 
     @Test
@@ -182,7 +173,7 @@ public class IndexNodeFunctionalityTest
                 MediaType.APPLICATION_JSON ).post( ClientResponse.class ).getHeaders().getFirst( HttpHeaders.LOCATION );
         String indexLocation1 = Client.create().resource( functionalTestHelper.indexUri() + "/node/" + indexName + "/" + key + "/" + value ).entity(
                 JsonHelper.createJsonFrom( location1 ), MediaType.APPLICATION_JSON ).post( ClientResponse.class ).getHeaders().getFirst( HttpHeaders.LOCATION );
-        String indexLocation2 = Client.create().resource( functionalTestHelper.indexUri() + "/node/"+ indexName + "/" + key + "/" + value ).entity(
+        String indexLocation2 = Client.create().resource( functionalTestHelper.indexUri() + "/node/" + indexName + "/" + key + "/" + value ).entity(
                 JsonHelper.createJsonFrom( location2 ), MediaType.APPLICATION_JSON ).post( ClientResponse.class ).getHeaders().getFirst( HttpHeaders.LOCATION );
         Map<String, String> uriToName = new HashMap<String, String>();
         uriToName.put( indexLocation1.toString(), name1 );
@@ -191,14 +182,14 @@ public class IndexNodeFunctionalityTest
         ClientResponse response = Client.create().resource( functionalTestHelper.indexUri() + "/node/" + indexName + "/" + key + "/" + value ).accept( MediaType.APPLICATION_JSON )
                 .get( ClientResponse.class );
         assertEquals( 200, response.getStatus() );
-        Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( response.getEntity( String.class ) );
+        Collection<?> items = (Collection<?>)JsonHelper.jsonToSingleValue( response.getEntity( String.class ) );
         int counter = 0;
         for ( Object item : items )
         {
-            Map<?, ?> map = (Map<?, ?>) item;
-            Map<?, ?> properties = (Map<?, ?>) map.get( "data" );
+            Map<?, ?> map = (Map<?, ?>)item;
+            Map<?, ?> properties = (Map<?, ?>)map.get( "data" );
             assertNotNull( map.get( "self" ) );
-            String indexedUri = (String) map.get( "indexed" );
+            String indexedUri = (String)map.get( "indexed" );
             assertEquals( uriToName.get( indexedUri ), properties.get( "name" ) );
             counter++;
         }
@@ -216,7 +207,7 @@ public class IndexNodeFunctionalityTest
     }
 
     @Test
-    @Ignore("Unclear contract: remove the index itself? That is unsupported in the new index api")
+    @Ignore( "Unclear contract: remove the index itself? That is unsupported in the new index api" )
     public void shouldGet200AndBeAbleToRemoveIndexing() throws DatabaseBlockedException
     {
         ClientResponse response = Client.create().resource( functionalTestHelper.nodeUri() ).type( MediaType.APPLICATION_FORM_URLENCODED ).accept(
@@ -251,13 +242,13 @@ public class IndexNodeFunctionalityTest
         response = Client.create().resource( functionalTestHelper.indexUri( indexName, key, value, "node" ) ).accept( MediaType.APPLICATION_JSON_TYPE )
                 .get( ClientResponse.class );
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
-        Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue( response.getEntity( String.class ) );
+        Collection<?> hits = (Collection<?>)JsonHelper.jsonToSingleValue( response.getEntity( String.class ) );
         assertEquals( 1, hits.size() );
 
         Client.create().resource( location ).delete();
-        response = Client.create().resource( functionalTestHelper.indexUri( indexName, key, value, "node") ).accept( MediaType.APPLICATION_JSON_TYPE )
+        response = Client.create().resource( functionalTestHelper.indexUri( indexName, key, value, "node" ) ).accept( MediaType.APPLICATION_JSON_TYPE )
                 .get( ClientResponse.class );
-        hits = (Collection<?>) JsonHelper.jsonToSingleValue( response.getEntity( String.class ) );
+        hits = (Collection<?>)JsonHelper.jsonToSingleValue( response.getEntity( String.class ) );
         assertEquals( 0, hits.size() );
     }
 
