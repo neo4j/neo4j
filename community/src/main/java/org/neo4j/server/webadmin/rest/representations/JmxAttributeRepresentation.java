@@ -20,10 +20,10 @@
 
 package org.neo4j.server.webadmin.rest.representations;
 
-import java.lang.management.ManagementFactory;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import org.neo4j.server.rest.repr.ListRepresentation;
+import org.neo4j.server.rest.repr.ObjectRepresentation;
+import org.neo4j.server.rest.repr.Representation;
+import org.neo4j.server.rest.repr.ValueRepresentation;
 
 import javax.management.AttributeNotFoundException;
 import javax.management.InstanceNotFoundException;
@@ -34,10 +34,10 @@ import javax.management.ObjectName;
 import javax.management.ReflectionException;
 import javax.management.RuntimeMBeanException;
 import javax.management.openmbean.CompositeData;
+import java.lang.management.ManagementFactory;
+import java.util.ArrayList;
 
-import org.neo4j.server.rest.domain.Representation;
-
-public class JmxAttributeRepresentation implements Representation
+public class JmxAttributeRepresentation extends ObjectRepresentation
 {
 
     protected ObjectName objectName;
@@ -45,89 +45,109 @@ public class JmxAttributeRepresentation implements Representation
     protected MBeanServer jmxServer = ManagementFactory.getPlatformMBeanServer();
 
     public JmxAttributeRepresentation( ObjectName objectName,
-            MBeanAttributeInfo attrInfo )
+                                       MBeanAttributeInfo attrInfo )
     {
+        super( "jmxAttribute" );
         this.objectName = objectName;
         this.attrInfo = attrInfo;
     }
 
-    public Object serialize()
+    @Mapping( "name" )
+    public ValueRepresentation getName()
     {
-        Map<String, Object> data = new HashMap<String, Object>();
+        return ValueRepresentation.string( attrInfo.getName() );
+    }
 
-        data.put( "name", attrInfo.getName() );
-        data.put( "description", attrInfo.getDescription() );
-        data.put( "type", attrInfo.getType() );
+    @Mapping( "description" )
+    public ValueRepresentation getDescription()
+    {
+        return ValueRepresentation.string( attrInfo.getDescription() );
+    }
 
-        data.put( "isReadable", attrInfo.isReadable() ? "true" : "false" );
-        data.put( "isWriteable", attrInfo.isWritable() ? "true" : "false" );
-        data.put( "isIs", attrInfo.isIs() ? "true" : "false" );
+    @Mapping( "type" )
+    public ValueRepresentation getType()
+    {
+        return ValueRepresentation.string( attrInfo.getType() );
+    }
 
+    @Mapping( "isReadable" )
+    public ValueRepresentation isReadable()
+    {
+        return bool( attrInfo.isReadable() );
+    }
+
+    @Mapping( "isWriteable" )
+    public ValueRepresentation isWriteable()
+    {
+        return bool( attrInfo.isWritable() );
+    }
+
+    @Mapping( "isIs" )
+    public ValueRepresentation isIs()
+    {
+        return bool( attrInfo.isIs() );
+    }
+
+    private ValueRepresentation bool( Boolean value )
+    {
+        return ValueRepresentation.string( value ? "true" : "false " );
+    }
+
+
+    @Mapping( "value" )
+    public Representation getValue()
+    {
         try
         {
-            Object value = jmxServer.getAttribute( objectName,
-                    attrInfo.getName() );
+            Object value = jmxServer.getAttribute( objectName, attrInfo.getName() );
 
             if ( value == null )
             {
-                data.put( "value", null );
-            }
-            else if ( value.getClass().isArray() )
+                return null;
+            } else if ( value.getClass().isArray() )
             {
-                ArrayList<Object> values = new ArrayList<Object>();
-                
+                ArrayList<Representation> values = new ArrayList<Representation>();
+
                 for ( Object subValue : values )
                 {
                     if ( subValue instanceof CompositeData )
                     {
-                        values.add( ( new JmxCompositeDataRepresentation(
-                                (CompositeData) subValue ) ).serialize() );
-                    }
-                    else
+                        values.add( new JmxCompositeDataRepresentation( (CompositeData)subValue ) );
+                    } else
                     {
-                        values.add( subValue.toString() );
+                        values.add( ValueRepresentation.string( subValue.toString() ) );
                     }
                 }
 
-                data.put( "value", values );
-            }
-            else
+                return new ListRepresentation( "", values );
+            } else
             {
-                data.put( "value", value.toString() );
+                return ValueRepresentation.string( value.toString() );
             }
 
-        }
-        catch ( AttributeNotFoundException e )
+        } catch ( AttributeNotFoundException e )
         {
             e.printStackTrace();
-            data.put( "value", "N/A" );
-        }
-        catch ( InstanceNotFoundException e )
+            return ValueRepresentation.string( "N/A" );
+        } catch ( InstanceNotFoundException e )
         {
             e.printStackTrace();
-            data.put( "value", "N/A" );
-        }
-        catch ( MBeanException e )
+            return ValueRepresentation.string( "N/A" );
+        } catch ( MBeanException e )
         {
             e.printStackTrace();
-            data.put( "value", "N/A" );
-        }
-        catch ( ReflectionException e )
+            return ValueRepresentation.string( "N/A" );
+        } catch ( ReflectionException e )
         {
             e.printStackTrace();
-            data.put( "value", "N/A" );
-        }
-        catch ( RuntimeMBeanException e )
+            return ValueRepresentation.string( "N/A" );
+        } catch ( RuntimeMBeanException e )
         {
-            data.put( "value", "N/A" );
-        }
-        catch ( ClassCastException e )
+            return ValueRepresentation.string( "N/A" );
+        } catch ( ClassCastException e )
         {
             e.printStackTrace();
-            data.put( "value", "N/A" );
+            return ValueRepresentation.string( "N/A" );
         }
-
-        return data;
-
     }
 }

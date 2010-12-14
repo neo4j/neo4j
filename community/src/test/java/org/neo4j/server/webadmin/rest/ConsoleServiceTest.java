@@ -20,23 +20,24 @@
 
 package org.neo4j.server.webadmin.rest;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.kernel.ImpermanentGraphDatabase;
 import org.neo4j.server.database.Database;
+import org.neo4j.server.rest.repr.OutputFormat;
+import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.webadmin.console.GremlinSession;
 import org.neo4j.server.webadmin.console.ScriptSession;
-
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
-import java.net.URI;
-import java.net.URISyntaxException;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class ConsoleServiceTest implements SessionFactory
 {
@@ -45,7 +46,8 @@ public class ConsoleServiceTest implements SessionFactory
     @Test
     public void retrievesTheReferenceNode()
     {
-        Response evaluatedGremlinResponse = consoleService.exec( "{ \"command\" : \"$_\" }" );
+        Response evaluatedGremlinResponse = consoleService.exec( new JsonFormat(),
+                "{ \"command\" : \"$_\" }" );
 
         assertEquals(200, evaluatedGremlinResponse.getStatus());
         assertThat((String)evaluatedGremlinResponse.getEntity(), containsString("v[0]"));
@@ -54,21 +56,22 @@ public class ConsoleServiceTest implements SessionFactory
     @Test
     public void canCreateNodesInGremlinLand()
     {
-        Response evaluatedGremlinResponse = consoleService.exec( "{ \"command\" : \"g:add-v()\" }" );
+        Response evaluatedGremlinResponse = consoleService.exec( new JsonFormat(),
+                "{ \"command\" : \"g:add-v()\" }" );
 
         assertEquals(200, evaluatedGremlinResponse.getStatus());
         assertThat((String)evaluatedGremlinResponse.getEntity(), containsString("v[1]"));
-        evaluatedGremlinResponse = consoleService.exec( "{ \"command\" : \"g:add-v()\" }" );
+        evaluatedGremlinResponse = consoleService.exec( new JsonFormat(),
+                "{ \"command\" : \"g:add-v()\" }" );
         assertEquals(200, evaluatedGremlinResponse.getStatus());
         assertThat((String)evaluatedGremlinResponse.getEntity(), containsString("v[2]"));
     }
-    
+
     @Test
     public void correctRepresentation() throws URISyntaxException
     {
-        UriInfo mockUri = mock(UriInfo.class);
-        URI uri = new URI("http://peteriscool.com:6666/");
-        when(mockUri.getBaseUri()).thenReturn(uri);
+        URI uri = new URI( "http://peteriscool.com:6666/" );
+        UriInfo mockUri = new FakeUriInfo( uri );
         Response consoleResponse = consoleService.getServiceDefinition( mockUri );
 
         assertEquals(200, consoleResponse.getStatus());
@@ -80,7 +83,8 @@ public class ConsoleServiceTest implements SessionFactory
     public void setUp() throws Exception
     {
         Database database = new Database( new ImpermanentGraphDatabase() );
-        this.consoleService = new ConsoleService( this, database );
+        this.consoleService = new ConsoleService( this, database, new OutputFormat(
+                new JsonFormat(), null, null ) );
     }
 
     @Override

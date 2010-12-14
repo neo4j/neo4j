@@ -20,55 +20,68 @@
 
 package org.neo4j.server.webadmin.rest.representations;
 
+import org.neo4j.server.rest.repr.ListRepresentation;
+import org.neo4j.server.rest.repr.ObjectRepresentation;
+import org.neo4j.server.rest.repr.Representation;
+import org.neo4j.server.rest.repr.ValueRepresentation;
+
+import javax.management.openmbean.CompositeData;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.management.openmbean.CompositeData;
-
-import org.neo4j.server.rest.domain.Representation;
-
-public class JmxCompositeDataRepresentation implements Representation
+public class JmxCompositeDataRepresentation extends ObjectRepresentation
 {
-
     protected CompositeData data;
 
     public JmxCompositeDataRepresentation( CompositeData data )
     {
+        super( "jmxCompositeData" );
         this.data = data;
     }
 
-    public Object serialize()
+    @Mapping( "type" )
+    public ValueRepresentation getType()
+    {
+        return ValueRepresentation.string( data.getCompositeType().getTypeName() );
+    }
+
+
+    @Mapping( "description" )
+    public ValueRepresentation getDescription()
+    {
+        return ValueRepresentation.string( data.getCompositeType().getDescription() );
+    }
+
+    @Mapping( "value" )
+    public ListRepresentation getValue()
     {
         Map<String, Object> serialData = new HashMap<String, Object>();
 
         serialData.put( "type", data.getCompositeType().getTypeName() );
         serialData.put( "description", data.getCompositeType().getDescription() );
 
-        ArrayList<Object> values = new ArrayList<Object>();
+        ArrayList<Representation> values = new ArrayList<Representation>();
         for ( Object key : data.getCompositeType().keySet() )
         {
-            Map<String, Object> value = new HashMap<String, Object>();
-            value.put( "name", key );
-            value.put( "description", data.getCompositeType().getDescription(
-                    (String) key ) );
+            String name = key.toString();
+            String description = data.getCompositeType().getDescription( name );
+            Representation value = representationify( data.get( name ) );
 
-            Object rawValue = data.get( (String) key );
-            if ( rawValue instanceof CompositeData )
-            {
-                value.put( "value", ( new JmxCompositeDataRepresentation(
-                        (CompositeData) rawValue ) ).serialize() );
-            }
-            else
-            {
-                value.put( "value", rawValue.toString() );
-            }
-
-            values.add( value );
+            values.add( new NameDescriptionValueRepresentation( name, description, value ) );
         }
 
-        serialData.put( "value", values );
+        return new ListRepresentation( "values", values );
+    }
 
-        return serialData;
+    private Representation representationify( Object rawValue )
+    {
+        if ( rawValue instanceof CompositeData )
+        {
+            return new JmxCompositeDataRepresentation( (CompositeData)rawValue );
+        } else
+        {
+            return ValueRepresentation.string( rawValue.toString() );
+        }
     }
 }
