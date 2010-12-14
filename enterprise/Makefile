@@ -49,7 +49,7 @@ help:
 	@echo "For verbose output, use 'VERBOSE=1'".
 	@echo "To keep temporary files, use 'KEEP=1'".
 
-dist: pdf html singlehtml annotated text cleanup
+dist: pdf html annotated text cleanup
 
 all: pdf latexpdf html singlehtml singlehtml-asciidoc text annotated cleanup
 
