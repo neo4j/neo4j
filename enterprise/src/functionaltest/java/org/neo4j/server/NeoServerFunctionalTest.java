@@ -27,6 +27,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.ServerSocket;
@@ -39,6 +40,8 @@ import org.neo4j.server.logging.InMemoryAppender;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
+import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
+import org.neo4j.server.web.WebServer;
 
 public class NeoServerFunctionalTest {
 
@@ -160,4 +163,5 @@ public class NeoServerFunctionalTest {
         
         server.stop();
     }
+
 }
