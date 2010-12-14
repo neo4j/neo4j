@@ -22,6 +22,7 @@ package org.neo4j.server.rest;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
+import junit.framework.Assert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -46,7 +47,7 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class IndexNodeFunctionalityHttpTest extends IndexNodeFunctionalityBase
+public class IndexNodeFunctionalityTest
 {
     private NeoServer server;
     private FunctionalTestHelper functionalTestHelper;
@@ -67,11 +68,16 @@ public class IndexNodeFunctionalityHttpTest extends IndexNodeFunctionalityBase
         server.stop();
     }
 
-    @Override
-    TestResponse getIndex_Node()
+    /**
+     * GET ${org.neo4j.server.rest.web}/index/node/
+     */
+    @Test
+    public void shouldGetEmptyListOfNodeIndexesWhenNoneExist()
     {
-        return new HttpResponse( Client.create().resource( functionalTestHelper.indexUri() + "/node/" )
-                .accept( MediaType.APPLICATION_JSON ).get( ClientResponse.class ) );
+        ClientResponse response = Client.create().resource( functionalTestHelper.indexUri() + "/node/" )
+                .accept( MediaType.APPLICATION_JSON ).get( ClientResponse.class );
+
+        Assert.assertEquals( 204, response.getStatus() );
     }
 
     /**
