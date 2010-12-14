@@ -27,6 +27,7 @@ import org.neo4j.server.rest.repr.formats.JsonFormat;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -39,7 +40,7 @@ public class JmxServiceTest
     public JmxService jmxService;
 
     @Test
-    public void correctRepresentation() throws URISyntaxException
+    public void correctRepresentation() throws URISyntaxException, UnsupportedEncodingException
     {
         URI uri = new URI( "http://peteriscool.com:6666/" );
         UriInfo mockUri = new FakeUriInfo( uri );
@@ -47,9 +48,10 @@ public class JmxServiceTest
 
         assertEquals( 200, resp.getStatus() );
 
-        String json = (String)resp.getEntity();
+        String json = new String((byte[])resp.getEntity(), "UTF-8");
         assertThat( json, containsString( "resources" ) );
-        assertThat( json, containsString( uri.toString() ) );
+        assertThat( json, containsString
+                ( uri.toString() ) );
         assertThat( json, containsString( "jmx/domain/{domain}/{objectName}" ) );
     }
 
