@@ -20,33 +20,41 @@
 
 package org.neo4j.server.web;
 
+import org.neo4j.server.NeoServer;
+import org.neo4j.server.configuration.ConfigurationProvider;
+import org.neo4j.server.database.DatabaseProvider;
+import org.neo4j.server.rest.repr.InputFormatProvider;
+import org.neo4j.server.rest.repr.OutputFormatProvider;
+import org.neo4j.server.rest.repr.RepresentationFormatRepository;
+import org.neo4j.server.rrd.RrdDbProvider;
+
 import com.sun.jersey.api.core.ResourceConfig;
 import com.sun.jersey.spi.container.WebApplication;
 import com.sun.jersey.spi.container.servlet.ServletContainer;
 import com.sun.jersey.spi.container.servlet.WebConfig;
-import org.neo4j.server.NeoServer;
-import org.neo4j.server.configuration.ConfigurationProvider;
-import org.neo4j.server.database.DatabaseProvider;
-import org.neo4j.server.rrd.RrdDbProvider;
 
 @SuppressWarnings( "serial" )
 public class NeoServletContainer extends ServletContainer
 {
-	private NeoServer server;
+    private final NeoServer server;
 
-	public NeoServletContainer( NeoServer server )
-	{
-		this.server = server;
-	}
+    public NeoServletContainer( NeoServer server )
+    {
+        this.server = server;
+    }
 
-	@Override
-	protected void configure( WebConfig wc, ResourceConfig rc,
-	                          WebApplication wa )
-	{
-		super.configure( wc, rc, wa );
+    @Override
+    protected void configure( WebConfig wc, ResourceConfig rc,
+                              WebApplication wa )
+    {
+        super.configure( wc, rc, wa );
 
-		rc.getSingletons().add( new DatabaseProvider( server.getDatabase() ) );
-		rc.getSingletons().add( new ConfigurationProvider( server.getConfiguration() ) );
-		rc.getSingletons().add( new RrdDbProvider( server.getDatabase().rrdDb() ) );
-	}
+        rc.getSingletons().add( new DatabaseProvider( server.getDatabase() ) );
+        rc.getSingletons().add( new ConfigurationProvider( server.getConfiguration() ) );
+        rc.getSingletons().add( new RrdDbProvider( server.getDatabase().rrdDb() ) );
+
+        RepresentationFormatRepository repository = new RepresentationFormatRepository( null );
+        rc.getSingletons().add( new InputFormatProvider( repository ) );
+        rc.getSingletons().add( new OutputFormatProvider( repository ) );
+    }
 }

@@ -20,20 +20,19 @@
 
 package org.neo4j.server.webadmin.rest;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.net.URI;
-import java.net.URISyntaxException;
+import org.junit.Before;
+import org.junit.Test;
+import org.neo4j.server.rest.repr.OutputFormat;
+import org.neo4j.server.rest.repr.formats.JsonFormat;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import java.net.URI;
+import java.net.URISyntaxException;
 
-import org.junit.Before;
-import org.junit.Test;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
 
 public class JmxServiceTest
 {
@@ -42,21 +41,37 @@ public class JmxServiceTest
     @Test
     public void correctRepresentation() throws URISyntaxException
     {
-        UriInfo mockUri = mock(UriInfo.class);
-        URI uri = new URI("http://peteriscool.com:6666/");
-        when(mockUri.getBaseUri()).thenReturn(uri);
+        URI uri = new URI( "http://peteriscool.com:6666/" );
+        UriInfo mockUri = new FakeUriInfo( uri );
         Response resp = jmxService.getServiceDefinition( mockUri );
 
-        assertEquals(200, resp.getStatus());
-        assertThat((String)resp.getEntity(), containsString("resources"));
-        assertThat((String)resp.getEntity(), containsString(uri.toString()));
-        assertThat((String)resp.getEntity(), containsString("jmx/domain/{domain}/{objectName}"));
+        assertEquals( 200, resp.getStatus() );
+
+        String json = (String)resp.getEntity();
+        assertThat( json, containsString( "resources" ) );
+        assertThat( json, containsString( uri.toString() ) );
+        assertThat( json, containsString( "jmx/domain/{domain}/{objectName}" ) );
+    }
+
+
+    @Test
+    public void shouldListDomainsCorrectly() throws Exception
+    {
+        Response resp = jmxService.listDomains();
+
+        assertEquals( 200, resp.getStatus() );
+    }
+
+    @Test
+    public void testwork() throws Exception
+    {
+        jmxService.queryBeans( "[\"*:*\"]" );
     }
 
     @Before
     public void setUp() throws Exception
     {
-        this.jmxService = new JmxService(  );
+        this.jmxService = new JmxService( new OutputFormat( new JsonFormat(), null, null ), null );
     }
 
 }
