@@ -65,7 +65,7 @@ public class ServerBuilder {
         return new NeoServer(addressResolver, startupHealthCheck, f, new Jetty6WebServer());
     }
 
-    private File createPropertyFile() throws IOException {
+    public File createPropertyFile() throws IOException {
         File temporaryConfigFile = createTempPropertyFile();
         writePropertyToFile(Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir, temporaryConfigFile);
         if (portNo != null) {
