@@ -61,16 +61,17 @@ public class NeoServer {
     private RoundRobinJobScheduler jobScheduler = new RoundRobinJobScheduler();
 
     private AddressResolver addressResolver;
-
-    public NeoServer(StartupHealthCheck startupHealthCheck, File configFile, WebServer ws) {
-        this.startupHealthCheck = startupHealthCheck;
-        this.configFile = configFile;
-        this.webServer = ws;
-    }
+    private OSGiContainer osgiContainer;
 
     public NeoServer(AddressResolver addressResolver, StartupHealthCheck startupHealthCheck, File configFile, WebServer webServer) {
-        this(startupHealthCheck, configFile, webServer);
         this.addressResolver = addressResolver;
+        this.startupHealthCheck = startupHealthCheck;
+        this.configFile = configFile;
+        this.webServer = webServer;
+    }
+
+    public NeoServer(StartupHealthCheck startupHealthCheck, File configFile, WebServer ws) {
+        this(new LocalhostAddressResolver(), startupHealthCheck, configFile, ws);
     }
 
     public void start() {
@@ -158,8 +159,15 @@ public class NeoServer {
         if (osgiServerShouldStart) {
             String bundleDirectory = configurator.configuration().getString(Configurator.OSGI_BUNDLE_DIR_PROPERTY_KEY, "../");
             String cacheDirectory = configurator.configuration().getString(Configurator.OSGI_CACHE_DIR_PROPERTY_KEY, "../");
-            OSGiContainer container = new OSGiContainer(bundleDirectory, cacheDirectory);
-            container.start();
+            osgiContainer = new OSGiContainer(bundleDirectory, cacheDirectory);
+            osgiContainer.start();
+        }
+    }
+
+    private void stopOsgiContainer() throws BundleException, InterruptedException
+    {
+        if (osgiContainer != null) {
+            osgiContainer.shutdown();
         }
     }
 
@@ -168,6 +176,7 @@ public class NeoServer {
             stopJobs();
             stopDatabase();
             stopWebServer();
+            stopOsgiContainer();
             log.info("Successfully shutdown Neo Server on port [%d], database [%s]", getWebServerPort(), getDatabase().getLocation());
         } catch (Exception e) {
             log.warn("Failed to cleanly shutdown Neo Server on port [%d], database [%s]. Reason: %s", 
