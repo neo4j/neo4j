@@ -29,6 +29,7 @@ import javax.management.MalformedObjectNameException;
 import java.io.IOException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.core.Is.is;
 
 public class NodeIdsInUseSampleableTest
@@ -47,7 +48,7 @@ public class NodeIdsInUseSampleableTest
     {
         createNode( db );
 
-        assertThat( sampleable.getValue(), is( 2L ) ); 
+        assertThat( sampleable.getValue(), greaterThan( 2L ) );
     }
 
     private void createNode( ImpermanentGraphDatabase db )

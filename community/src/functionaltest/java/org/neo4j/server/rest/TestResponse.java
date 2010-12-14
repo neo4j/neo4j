@@ -18,9 +18,9 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.server.rest.web;
+package org.neo4j.server.rest;
 
-public class PathNotFoundException extends Exception
+public interface TestResponse
 {
-
+    int getStatus();
 }
