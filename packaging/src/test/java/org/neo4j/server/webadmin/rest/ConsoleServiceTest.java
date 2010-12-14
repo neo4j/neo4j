@@ -20,16 +20,6 @@
 
 package org.neo4j.server.webadmin.rest;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-
-import java.net.URI;
-import java.net.URISyntaxException;
-
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.kernel.ImpermanentGraphDatabase;
@@ -39,44 +29,64 @@ import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.webadmin.console.GremlinSession;
 import org.neo4j.server.webadmin.console.ScriptSession;
 
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URISyntaxException;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+
 public class ConsoleServiceTest implements SessionFactory
 {
     public ConsoleService consoleService;
 
     @Test
-    public void retrievesTheReferenceNode()
+    public void retrievesTheReferenceNode() throws UnsupportedEncodingException
     {
         Response evaluatedGremlinResponse = consoleService.exec( new JsonFormat(),
                 "{ \"command\" : \"$_\" }" );
 
-        assertEquals(200, evaluatedGremlinResponse.getStatus());
-        assertThat((String)evaluatedGremlinResponse.getEntity(), containsString("v[0]"));
+        assertEquals( 200, evaluatedGremlinResponse.getStatus() );
+        String response = decode( evaluatedGremlinResponse );
+        assertThat( response, containsString( "v[0]" ) );
+    }
+
+    private String decode( final Response evaluatedGremlinResponse )
+            throws UnsupportedEncodingException
+    {
+        return new String( (byte[])evaluatedGremlinResponse.getEntity(), "UTF-8" );
     }
 
     @Test
-    public void canCreateNodesInGremlinLand()
+    public void canCreateNodesInGremlinLand() throws UnsupportedEncodingException
     {
         Response evaluatedGremlinResponse = consoleService.exec( new JsonFormat(),
                 "{ \"command\" : \"g:add-v()\" }" );
 
-        assertEquals(200, evaluatedGremlinResponse.getStatus());
-        assertThat((String)evaluatedGremlinResponse.getEntity(), containsString("v[1]"));
-        evaluatedGremlinResponse = consoleService.exec( new JsonFormat(),
-                "{ \"command\" : \"g:add-v()\" }" );
-        assertEquals(200, evaluatedGremlinResponse.getStatus());
-        assertThat((String)evaluatedGremlinResponse.getEntity(), containsString("v[2]"));
+        assertEquals( 200, evaluatedGremlinResponse.getStatus() );
+        String response = decode( evaluatedGremlinResponse );
+        assertThat( response, containsString( "v[1]" ) );
+
+        evaluatedGremlinResponse = consoleService.exec( new JsonFormat(), "{ \"command\" : \"g:add-v()\" }" );
+        response = decode( evaluatedGremlinResponse );
+        assertEquals( 200, evaluatedGremlinResponse.getStatus() );
+        assertThat( response, containsString( "v[2]" ) );
     }
 
     @Test
-    public void correctRepresentation() throws URISyntaxException
+    public void correctRepresentation() throws URISyntaxException, UnsupportedEncodingException
     {
         URI uri = new URI( "http://peteriscool.com:6666/" );
         UriInfo mockUri = new FakeUriInfo( uri );
         Response consoleResponse = consoleService.getServiceDefinition( mockUri );
 
-        assertEquals(200, consoleResponse.getStatus());
-        assertThat((String)consoleResponse.getEntity(), containsString("resources"));
-        assertThat((String)consoleResponse.getEntity(), containsString(uri.toString()));
+        assertEquals( 200, consoleResponse.getStatus() );
+        String response = decode( consoleResponse );
+        assertThat( response, containsString( "resources" ) );
+        assertThat( response, containsString( uri.toString() ) );
     }
 
     @Before
