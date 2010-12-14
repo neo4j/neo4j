@@ -28,13 +28,13 @@ It features:
 
 * true ACID transactions
 * high availability
-* scales to billion of nodes and relationships
+* scales to billions of nodes and relationships
 * high speed querying through traversals
 
 Proper ACID behavior is the foundation of data reliability.
 Neo4j enforces that all mutating operations occur within a transaction, guaranteeing consistent data.
 This robustness extends from single instance embedded graphs to multi-server high availability installations.
-For details, see the chapter on Transactions.
+For details, see <<transactions>>.
 
 Reliable graph storage can easily be added to any application.
 A property graph can scale in size and complexity as the application evolves, with little impact on performance.
@@ -42,7 +42,7 @@ Whether starting new development, or augmenting existing functionality, Neo4j is
 
 A single server instance can handle a graph of billions of nodes and relationships.
 When data throughput is insufficient, the graph database can be distributed among multiple servers in a high availability configuration. 
-See the chapter on High Availability to learn more. 
+See <<ha>> to learn more. 
 
 The graph database storage shines when storing richly-connected data. 
 Querying is performed through traversals, which can perform millions of "joins" per second.
