@@ -23,7 +23,10 @@
 
 <xsl:param name="admon.graphics.path">images/icons/</xsl:param>
 
-<!-- xsl:param name="callout.graphics.path" select="'images/icons/callouts/'"/ -->
+<xsl:param name="callout.graphics" select="0"/>
+<xsl:param name="callout.unicode" select="1"/>
+<!-- restriction when using the unicode callouts -->
+<xsl:param name="callout.graphics.number.limit" select="10"/>
 
 <xsl:param name="use.id.as.filename" select="1"></xsl:param>
 
