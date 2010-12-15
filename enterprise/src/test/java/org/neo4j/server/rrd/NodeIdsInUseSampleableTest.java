@@ -20,17 +20,19 @@
 
 package org.neo4j.server.rrd;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.core.Is.is;
+
+import java.io.IOException;
+
+import javax.management.MalformedObjectNameException;
+
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.ImpermanentGraphDatabase;
-
-import javax.management.MalformedObjectNameException;
-import java.io.IOException;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.core.Is.is;
 
 public class NodeIdsInUseSampleableTest
 {
@@ -46,9 +48,11 @@ public class NodeIdsInUseSampleableTest
     @Test
     public void addANodeAndSampleableGoesUp() throws IOException, MalformedObjectNameException
     {
+        long oldValue = sampleable.getValue();
+
         createNode( db );
 
-        assertThat( sampleable.getValue(), greaterThan( 2L ) );
+        assertThat( sampleable.getValue(), greaterThan( oldValue ) );
     }
 
     private void createNode( ImpermanentGraphDatabase db )
@@ -64,5 +68,11 @@ public class NodeIdsInUseSampleableTest
     {
         db = new ImpermanentGraphDatabase();
         sampleable = new NodeIdsInUseSampleable( db );
+    }
+
+    @After
+    public void shutdown()
+    {
+        db.shutdown();
     }
 }
