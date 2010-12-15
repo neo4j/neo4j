@@ -20,11 +20,11 @@
 
 package org.neo4j.server.rest.repr;
 
-import static org.junit.Assert.fail;
+import org.junit.Test;
 
 import javax.ws.rs.core.MediaType;
 
-import org.junit.Test;
+import static org.junit.Assert.fail;
 
 public class RepresentationFormatRepositoryTest
 {
@@ -47,6 +47,7 @@ public class RepresentationFormatRepositoryTest
     public void canNotGetInputFormatBasedOnWildcardMediaType() throws Exception
     {
         InputFormat format = repository.inputFormat( MediaType.WILDCARD_TYPE );
+        format.readValue( "foo" );
         fail( "Got InputFormat based on wild card type: " + format );
     }
 }
