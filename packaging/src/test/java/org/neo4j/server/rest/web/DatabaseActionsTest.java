@@ -39,7 +39,6 @@ import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
@@ -63,7 +62,6 @@ import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import org.neo4j.server.rest.web.DatabaseActions.IndexType;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 
-@Ignore( "not enabled yet" )
 public class DatabaseActionsTest {
 
     private static final URI BASE_URI;
@@ -576,15 +574,16 @@ public class DatabaseActionsTest {
         String key = "key";
         String value = "the value with spaces";
         long nodeId = graphdbHelper.createNode();
-        String index = "fulltext-node";
-        assertFalse( serialize( actions.getIndexedObjects( IndexType.node, index, key, value ) ).iterator().hasNext() );
-        actions.addToIndex( IndexType.node, index, key, value, nodeId );
-        assertEquals(Arrays.asList(nodeId), graphdbHelper.getIndexedNodes(index, key, value));
-        assertEquals(Arrays.asList(nodeId), graphdbHelper.getIndexedNodes(index, key, "the"));
-        assertEquals(Arrays.asList(nodeId), graphdbHelper.getIndexedNodes(index, key, "value"));
-        assertEquals(Arrays.asList(nodeId), graphdbHelper.getIndexedNodes(index, key, "with"));
-        assertEquals(Arrays.asList(nodeId), graphdbHelper.getIndexedNodes(index, key, "spaces"));
-        assertTrue(graphdbHelper.getIndexedNodes(index, key, "nohit").isEmpty());
+        String indexName = "fulltext-node";
+        assertFalse( serialize( actions.getIndexedObjects( IndexType.node, indexName, key, value ) ).iterator().hasNext() );
+        actions.addToIndex( IndexType.node, indexName, key, value, nodeId );
+        assertEquals(Arrays.asList(nodeId), graphdbHelper.getIndexedNodes(indexName, key, value));
+        assertEquals(Arrays.asList(nodeId), graphdbHelper.getIndexedNodes(indexName, key, "the value with spaces"));
+        assertEquals(Arrays.asList(nodeId), graphdbHelper.queryIndexedNodes(indexName, key, "the"));
+        assertEquals(Arrays.asList(nodeId), graphdbHelper.queryIndexedNodes(indexName, key, "value"));
+        assertEquals(Arrays.asList(nodeId), graphdbHelper.queryIndexedNodes(indexName, key, "with"));
+        assertEquals(Arrays.asList(nodeId), graphdbHelper.queryIndexedNodes(indexName, key, "spaces"));
+        assertTrue(graphdbHelper.getIndexedNodes(indexName, key, "nohit").isEmpty());
     }
 
     @Test
