@@ -20,18 +20,25 @@
 
 package org.neo4j.server.rest.repr;
 
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import java.util.Collection;
 
-import javax.ws.rs.core.MediaType;
-
-public class MediaTypeNotSupportedException extends Exception
+public class MediaTypeNotSupportedException extends WebApplicationException
 {
-    public MediaTypeNotSupportedException( Collection<MediaType> supported, MediaType... requested )
+    public MediaTypeNotSupportedException( Response.Status status, Collection<MediaType> supported,
+                                           MediaType... requested )
     {
-        super( buildMessage( supported, requested ) );
+        super( createResponse( status, message( supported, requested ) ) );
     }
 
-    private static String buildMessage( Collection<MediaType> supported, MediaType[] requested )
+    private static Response createResponse( Response.Status status, String message )
+    {
+        return Response.status( status ).entity( message ).build();
+    }
+
+    private static String message( Collection<MediaType> supported, MediaType[] requested )
     {
         StringBuilder message = new StringBuilder( "No matching representation format found.\n" );
         if ( requested.length == 0 )
