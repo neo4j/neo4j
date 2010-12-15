@@ -52,12 +52,38 @@ public class GetIndexRootFunctionalTest
         server.stop();
         server = null;
     }
-    
+
+    /**
+     * /db/data/index is not itself a resource
+     *
+     */
     @Test
-    public void shouldRespondWithIndexes() throws Exception
+    public void shouldRespondWith404ForNonResourceIndexPath() throws Exception
     {
         ClientResponse response = Client.create().resource(functionalTestHelper.indexUri() ).get( ClientResponse.class );
-        assertEquals( 200, response.getStatus() );
+        assertEquals( 404, response.getStatus() );
+    }
+
+    /**
+     * /db/data/index/node should be a resource with no content
+     * @throws Exception
+     */
+    @Test
+    public void shouldRespondWithNodeIndexes() throws Exception
+    {
+        ClientResponse response = Client.create().resource(functionalTestHelper.indexNodeUri() ).get( ClientResponse.class );
+        assertEquals( 204, response.getStatus() );
+    }
+
+    /**
+     * /db/data/index/relationship should be a resource with no content
+     * @throws Exception
+     */
+    @Test
+    public void shouldRespondWithRelationshipIndexes() throws Exception
+    {
+        ClientResponse response = Client.create().resource(functionalTestHelper.indexRelationshipUri() ).get( ClientResponse.class );
+        assertEquals( 204, response.getStatus() );
     }
 
     // TODO More tests...
