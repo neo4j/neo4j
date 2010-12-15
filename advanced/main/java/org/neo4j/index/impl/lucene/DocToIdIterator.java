@@ -50,8 +50,7 @@ class DocToIdIterator extends AbstractIndexHits<Long>
                 break;
             }
             Document doc = source.next();
-            Long id = Long.parseLong(
-                doc.getField( LuceneIndex.KEY_DOC_ID ).stringValue() );
+            Long id = Long.parseLong( doc.getField( LuceneIndex.KEY_DOC_ID ).stringValue() );
             if ( exclude == null || !exclude.contains( id ) )
             {
                 result = id;

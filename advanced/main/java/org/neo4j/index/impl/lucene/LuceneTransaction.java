@@ -110,6 +110,10 @@ class LuceneTransaction extends XaTransaction
             commands = new CommandList();
             commandMap.put( indexId, commands );
         }
+        if ( command instanceof DeleteCommand )
+        {
+            commands.clear();
+        }
         commands.add( command );
         return commands;
     }
@@ -218,9 +222,9 @@ class LuceneTransaction extends XaTransaction
                 }
                 
                 IndexIdentifier identifier = entry.getKey();
-                IndexType type = identifier == LuceneCommand.CreateIndexCommand.FAKE_IDENTIFIER ? null :
-                        dataSource.getType( identifier );
                 CommandList commandList = entry.getValue();
+                IndexType type = identifier == LuceneCommand.CreateIndexCommand.FAKE_IDENTIFIER || !commandList.containsWrites() ? null :
+                    dataSource.getType( identifier );
                 CommitContext context = new CommitContext( dataSource, identifier, type, commandList );
                 for ( LuceneCommand command : commandList.commands )
                 {
@@ -228,9 +232,8 @@ class LuceneTransaction extends XaTransaction
                 }
                 
                 applyDocuments( context.writer, type, context.documents );
-                if ( context.writer != null && !context.isRecovery )
+                if ( context.writer != null )
                 {
-                    context.safeCloseWriter();
                     dataSource.invalidateIndexSearcher( identifier );
                 }
             }
@@ -316,7 +319,6 @@ class LuceneTransaction extends XaTransaction
     @Override
     protected void doRollback()
     {
-        // TODO Auto-generated method stub
         commandMap.clear();
         closeTxData();
     }
@@ -409,6 +411,18 @@ class LuceneTransaction extends XaTransaction
             this.commands.add( command );
         }
         
+        boolean containsWrites()
+        {
+            return addCount+removeCount > 0;
+        }
+        
+        void clear()
+        {
+            commands.clear();
+            addCount = 0;
+            removeCount = 0;
+        }
+
         void incCounter( LuceneCommand command )
         {
             if ( command instanceof AddCommand )

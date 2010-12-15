@@ -241,12 +241,7 @@ abstract class LuceneCommand extends XaCommand
         void perform( CommitContext context )
         {
             context.documents.clear();
-            context.safeCloseWriter();
-            context.dataSource.deleteIndex( context.identifier );
-            if ( context.isRecovery )
-            {
-                context.dataSource.removeRecoveryIndexWriter( context.identifier );
-            }
+            context.dataSource.deleteIndex( context.identifier, context.recovery );
         }
     }
     

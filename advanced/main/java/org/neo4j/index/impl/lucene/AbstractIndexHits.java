@@ -36,7 +36,7 @@ public abstract class AbstractIndexHits<T> extends PrefetchingIterator<T> implem
     public void close()
     {
     }
-
+    
     public T getSingle()
     {
         try
