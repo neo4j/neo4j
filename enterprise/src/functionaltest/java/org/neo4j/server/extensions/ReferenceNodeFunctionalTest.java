@@ -162,12 +162,6 @@ public class ReferenceNodeFunctionalTest
             return new RegExp( pattern, MatchType.end );
         }
 
-        @Factory
-        public static Matcher<String> matches( String regexp )
-        {
-            return new RegExp( regexp, MatchType.matches );
-        }
-
         @Override
         public boolean matchesSafely( String string )
         {
