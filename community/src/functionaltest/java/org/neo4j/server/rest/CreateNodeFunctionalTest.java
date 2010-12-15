@@ -110,7 +110,7 @@ public class CreateNodeFunctionalTest
     {
         Client client = Client.create();
         WebResource resource = client.resource( server.restApiUri() + "node/" );
-        ClientResponse response = resource.accept( MediaType.APPLICATION_JSON ).entity( "{\"foo\" : \"bar\"}" ).post( ClientResponse.class );
+        ClientResponse response = resource.type( MediaType.APPLICATION_JSON_TYPE ).accept( MediaType.APPLICATION_JSON ).entity( "{\"foo\" : \"bar\"}" ).post( ClientResponse.class );
         assertEquals( 400, response.getStatus() );
 
     }

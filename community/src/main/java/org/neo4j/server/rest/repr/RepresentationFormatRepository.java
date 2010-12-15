@@ -20,18 +20,14 @@
 
 package org.neo4j.server.rest.repr;
 
+import org.neo4j.helpers.Service;
+import org.neo4j.server.rest.repr.formats.NullFormat;
+
+import javax.ws.rs.core.MediaType;
 import java.net.URI;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-
-import org.neo4j.helpers.Service;
 
 public final class RepresentationFormatRepository
 {
@@ -49,7 +45,6 @@ public final class RepresentationFormatRepository
     }
 
     public OutputFormat outputFormat( List<MediaType> acceptable, URI baseUri )
-            throws MediaTypeNotSupportedException
     {
         for ( MediaType type : acceptable )
         {
@@ -60,13 +55,15 @@ public final class RepresentationFormatRepository
             }
         }
 
-        throw new MediaTypeNotSupportedException( formats.keySet(),
-                acceptable.toArray( new MediaType[acceptable.size()] ) );
+        return new OutputFormat( new NullFormat(formats.keySet(), acceptable.toArray( new MediaType[acceptable.size()] )), baseUri, injector );
     }
 
-    public InputFormat inputFormat( MediaType type ) throws MediaTypeNotSupportedException
+    public InputFormat inputFormat( MediaType type )
     {
-        if ( type == null ) return NULL_FORMAT;
+        if(type == null)
+        {
+            return new NullFormat( formats.keySet() );
+        }
 
         RepresentationFormat format = formats.get( type );
         if ( format != null )
@@ -80,44 +77,7 @@ public final class RepresentationFormatRepository
             return format;
         }
 
-        throw new MediaTypeNotSupportedException( formats.keySet(), type );
+        return new NullFormat( formats.keySet(), type );
     }
 
-    private static final InputFormat NULL_FORMAT = new InputFormat()
-    {
-        public Object readValue( String input )
-        {
-            if ( empty( input ) ) return null;
-            throw new WebApplicationException( noMediaType() );
-        }
-
-        public URI readUri( String input )
-        {
-            if ( empty( input ) ) return null;
-            throw new WebApplicationException( noMediaType() );
-        }
-
-        public Map<String, Object> readMap( String input )
-        {
-            if ( empty( input ) ) return Collections.emptyMap();
-            throw new WebApplicationException( noMediaType() );
-        }
-
-        public List<Object> readList( String input )
-        {
-            if ( empty( input ) ) return Collections.emptyList();
-            throw new WebApplicationException( noMediaType() );
-        }
-
-        private boolean empty( String input )
-        {
-            return input == null || "".equals( input.trim() );
-        }
-
-        private Response noMediaType()
-        {
-            return Response.status( Status.UNSUPPORTED_MEDIA_TYPE ).entity(
-                    "Supplied data has no media type." ).build();
-        }
-    };
 }
