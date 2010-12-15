@@ -42,7 +42,6 @@ public class ServerTestUtils
         {
             throw new RuntimeException( "temp config directory not created" );
         }
-        d.deleteOnExit();
         return d;
     }
 
@@ -97,8 +96,6 @@ public class ServerTestUtils
 
     public static File createTempPropertyFile( File parentDir ) throws IOException
     {
-        File f = new File( parentDir, "test-" + new Random().nextInt() + ".properties" ); 
-        f.deleteOnExit();
-        return f;
+        return new File( parentDir, "test-" + new Random().nextInt() + ".properties" );
     }
 }
