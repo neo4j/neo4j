@@ -20,12 +20,10 @@
 
 package org.neo4j.server;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.server.ServerTestUtils.createTempDir;
-import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
-import static org.neo4j.server.ServerTestUtils.writePropertyToFile;
-import static org.neo4j.server.ServerTestUtils.writePropertiesToFile;
+import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
+import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
+import org.neo4j.server.web.Jetty6WebServer;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -34,10 +32,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Properties;
 
-import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
-import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
-import org.neo4j.server.web.Jetty6WebServer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.server.ServerTestUtils.*;
 
 public class ServerBuilder {
 
@@ -62,7 +59,7 @@ public class ServerBuilder {
 
     public NeoServer build() throws IOException {
         File f = createPropertyFile();
-        return new NeoServer(addressResolver, startupHealthCheck, f, new Jetty6WebServer());
+        return new CleaningNeoServer(addressResolver, startupHealthCheck, f, new Jetty6WebServer(), dbDir);
     }
 
     public File createPropertyFile() throws IOException {
