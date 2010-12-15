@@ -149,7 +149,7 @@ public abstract class ObjectRepresentation extends MappingRepresentation
         extraData( serializer.writer );
     }
 
-    void extraData( @SuppressWarnings( "unused" ) MappingWriter writer )
+    void extraData( MappingWriter writer )
     {
     }
 }
