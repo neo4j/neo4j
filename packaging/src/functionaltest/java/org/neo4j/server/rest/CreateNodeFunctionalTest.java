@@ -64,7 +64,6 @@ public class CreateNodeFunctionalTest
     @After
     public void stopServer() {
         server.stop();
-        server = null;
     }
     
     @Test
