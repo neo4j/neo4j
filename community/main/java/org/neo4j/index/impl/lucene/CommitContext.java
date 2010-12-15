@@ -37,9 +37,9 @@ class CommitContext
     final LuceneDataSource dataSource;
     final IndexIdentifier identifier;
     final IndexType indexType;
-    final boolean isRecovery;
     final Map<Long, DocumentContext> documents = new HashMap<Long, DocumentContext>();
     final CommandList commandList;
+    final boolean recovery;
     
     IndexWriter writer;
     IndexSearcher searcher;
@@ -50,37 +50,15 @@ class CommitContext
         this.identifier = identifier;
         this.indexType = indexType;
         this.commandList = commandList;
-        
-        // TODO There's an issue with recovery mode when you apply individual transactions
-        // so this is disabled a.t.m. an enabled recovery mode would yield much higher
-        // recovery performance.
-        this.isRecovery = false; // commandList.isRecovery();
-    }
-    
-    void safeCloseWriter()
-    {
-        if ( this.writer != null )
-        {
-            LuceneDataSource.closeWriter( this.writer );
-            this.writer = null;
-        }
+        this.recovery = commandList.isRecovery();
     }
     
     void ensureWriterInstantiated()
     {
         if ( writer == null )
         {
-            if ( isRecovery )
-            {
-                writer = dataSource.getRecoveryIndexWriter( identifier );
-            }
-            else
-            {
-                writer = dataSource.getIndexWriter( identifier );
-                writer.setMaxBufferedDocs( commandList.addCount + 100 );
-                writer.setMaxBufferedDeleteTerms( commandList.removeCount + 100 );
-            }
-            searcher = dataSource.getIndexSearcher( identifier ).getSearcher();
+            writer = dataSource.getIndexWriter( identifier );
+            searcher = dataSource.getIndexSearcher( identifier, false ).getSearcher();
         }
     }
     

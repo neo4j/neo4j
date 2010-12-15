@@ -249,7 +249,7 @@ public class TestLuceneIndex
 //        }
 //    }
 
-    @Test()
+    @Test
     public void makeSureYouGetLatestTxModificationsInQueryByDefault()
     {
         Index<Node> index = nodeIndex( "failing-index", LuceneIndexProvider.FULLTEXT_CONFIG );
@@ -705,56 +705,6 @@ public class TestLuceneIndex
         node3.delete();
     }
 
-    private <T extends PropertyContainer> void testInsertionSpeed(
-            Index<T> index,
-            EntityCreator<T> creator )
-    {
-        long t = System.currentTimeMillis();
-        for ( int i = 0; i < 1000000; i++ )
-        {
-            T entity = creator.create();
-            if ( i % 5000 == 5 )
-            {
-                index.query( new TermQuery( new Term( "name", "The name " + i ) ) );
-            }
-            index.query( new QueryContext( new TermQuery( new Term( "name", "The name " + i ) ) ).tradeCorrectnessForSpeed() );
-            index.get( "name", "The name " + i );
-            index.add( entity, "name", "The name " + i );
-            index.add( entity, "title", "Some title " + i );
-            index.add( entity, "something", i + "Nothing" );
-            index.add( entity, "else", i + "kdfjkdjf" + i );
-            if ( i % 10000 == 0 )
-            {
-                restartTx();
-                System.out.println( i );
-            }
-        }
-        System.out.println( "insert:" + ( System.currentTimeMillis() - t ) );
-
-        t = System.currentTimeMillis();
-        int count = 1000;
-        int resultCount = 0;
-        for ( int i = 0; i < count; i++ )
-        {
-            for ( T entity : index.get( "name", "The name " + i*900 ) )
-            {
-                resultCount++;
-            }
-        }
-        System.out.println( "get(" + resultCount + "):" + (double)( System.currentTimeMillis() - t ) / (double)count );
-
-        t = System.currentTimeMillis();
-        resultCount = 0;
-        for ( int i = 0; i < count; i++ )
-        {
-            for ( T entity : index.get( "something", i*900 + "Nothing" ) )
-            {
-                resultCount++;
-            }
-        }
-        System.out.println( "get(" + resultCount + "):" + (double)( System.currentTimeMillis() - t ) / (double)count );
-    }
-
     @Test
     public void testSorting()
     {
@@ -874,7 +824,56 @@ public class TestLuceneIndex
         assertEquals( node1, index.query( "key", "10" ).getSingle() );
     }
 
-    @Ignore
+    private <T extends PropertyContainer> void testInsertionSpeed(
+            Index<T> index,
+            EntityCreator<T> creator )
+    {
+        long t = System.currentTimeMillis();
+        for ( int i = 0; i < 300000; i++ )
+        {
+            T entity = creator.create();
+            if ( i % 5000 == 5 )
+            {
+                index.query( new TermQuery( new Term( "name", "The name " + i ) ) );
+            }
+            IteratorUtil.lastOrNull( (Iterable<T>) index.query( new QueryContext( new TermQuery( new Term( "name", "The name " + i ) ) ).tradeCorrectnessForSpeed() ) );
+            IteratorUtil.lastOrNull( (Iterable<T>) index.get( "name", "The name " + i ) );
+            index.add( entity, "name", "The name " + i );
+            index.add( entity, "title", "Some title " + i );
+            index.add( entity, "something", i + "Nothing" );
+            index.add( entity, "else", i + "kdfjkdjf" + i );
+            if ( i % 10000 == 0 )
+            {
+                restartTx();
+                System.out.println( i );
+            }
+        }
+        System.out.println( "insert:" + ( System.currentTimeMillis() - t ) );
+
+        t = System.currentTimeMillis();
+        int count = 1000;
+        int resultCount = 0;
+        for ( int i = 0; i < count; i++ )
+        {
+            for ( T entity : index.get( "name", "The name " + i*900 ) )
+            {
+                resultCount++;
+            }
+        }
+        System.out.println( "get(" + resultCount + "):" + (double)( System.currentTimeMillis() - t ) / (double)count );
+
+        t = System.currentTimeMillis();
+        resultCount = 0;
+        for ( int i = 0; i < count; i++ )
+        {
+            for ( T entity : index.get( "something", i*900 + "Nothing" ) )
+            {
+                resultCount++;
+            }
+        }
+        System.out.println( "get(" + resultCount + "):" + (double)( System.currentTimeMillis() - t ) / (double)count );
+    }
+    
     @Test
     public void testNodeInsertionSpeed()
     {
