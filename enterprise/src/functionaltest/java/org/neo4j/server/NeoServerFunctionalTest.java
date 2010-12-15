@@ -20,25 +20,21 @@
 
 package org.neo4j.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
+import org.apache.commons.io.output.ByteArrayOutputStream;
+import org.dummy.web.service.DummyThirdPartyWebService;
+import org.junit.Test;
+import org.neo4j.server.logging.InMemoryAppender;
 
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.ServerSocket;
 import java.net.URI;
 
-import org.apache.commons.io.output.ByteArrayOutputStream;
-import org.dummy.web.service.DummyThirdPartyWebService;
-import org.junit.Test;
-import org.neo4j.server.logging.InMemoryAppender;
-
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.*;
 
 public class NeoServerFunctionalTest {
 
@@ -126,6 +122,7 @@ public class NeoServerFunctionalTest {
 
         assertThat(appender.toString(), containsString(String.format("ERROR - Failed to start Neo Server on port [%s]", server.restApiUri().getPort())));
         socket.close();
+        server.stop();
     }
     
     @Test
