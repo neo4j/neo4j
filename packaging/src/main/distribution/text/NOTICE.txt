@@ -32,7 +32,7 @@ The Apache Software License, Version 2.0: Apache Log4j, Apache ServiceMix :: Bun
  Xerces2 Java Parser, webdriver-chrome, webdriver-common, webdriver-firefox, webdriver-htmlunit,
  webdriver-remote-client, webdriver-remote-common, webdriver-support, commons-beanutils:commons-beanutils,
  Geronimo Java Transaction API, Quartz Enterprise Job Scheduler, larvalabs collections,
- Servlet Specification API, ExplorerCanvas
+ Servlet Specification API, ExplorerCanvas, ZooKeeper
 
 MIT License: SLF4J API Module, SLF4J LOG4J-12 Binding, Base64.js, jTemplates, jQuery, jQuery BBQ,
  jQuery hashchange event, SimpleModal, jQuery flot including colorhelpers

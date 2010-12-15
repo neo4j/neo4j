@@ -153,6 +153,7 @@ JAX-RS provider for JSON content type
 Neko HTML
 XML Commons External Components XML APIs
 Xalan Java, Xalan Java Serializer, Xerces2 Java Parser
+ZooKeeper
 -----------------------------
 
                                  Apache License
