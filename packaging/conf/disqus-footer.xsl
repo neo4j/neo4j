@@ -34,6 +34,22 @@
        }
     }
   }
+  var disqus_url = window.location;
+  if ( disqus_url.protocol !== "http:" && disqus_url.protocol !== "https:" )
+  {
+    var docsLocation = "http://docs.neo4j.org/chunked/snapshot/";
+    var path = disqus_url.pathname;
+    var position = path.lastIndexOf('/');
+    if ( position === -1 )
+    {
+      position = path.lastIndexOf('\\');
+    }
+    if ( position > 0 )
+    {
+      var page = path.substring( position + 1 );
+      disqus_url = docsLocation + page;
+    }
+  }
   var disqus_shortname = "neo4j";
   var disqus_developer = 0;
 
