@@ -594,6 +594,13 @@
               </execution>
             </executions>
           </plugin>
+          <plugin>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <skip>false</skip>
+              <argLine>-Xmx1024m</argLine>
+            </configuration>
+          </plugin>
         </plugins>
       </build>
     </profile>
