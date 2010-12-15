@@ -20,48 +20,52 @@
 
 package org.neo4j.server;
 
+import java.io.File;
+
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.web.Jetty6WebServer;
-
-import java.io.File;
-import java.util.Arrays;
 
 public class CleaningNeoServer extends NeoServer
 {
     private final String dir;
-    private static String lastOpened;
+    private static RuntimeException lastStarted;
 
     public CleaningNeoServer( final AddressResolver addressResolver, final StartupHealthCheck startupHealthCheck,
                               final File configFile, final Jetty6WebServer jetty6WebServer, final String dir )
     {
         super( addressResolver, startupHealthCheck, configFile, jetty6WebServer );
         this.dir = dir;
-        if ( lastOpened != null )
+        if ( lastStarted != null )
         {
-            String message = lastOpened + " didn't shut down the server correctly!-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_";
-            lastOpened = null;
-            System.out.println(message);
+            try
+            {
+                throw lastStarted;
+            }
+            finally
+            {
+                lastStarted = null; // only report this once
+            }
         }
-        lastOpened = originatingTestClass();
+    }
+
+    @Override
+    public void start()
+    {
+        super.start();
+        lastStarted = new RuntimeException( originatingTestClass()
+                                            + " didn't shut down the server correctly!" );
     }
 
     private String originatingTestClass()
     {
-        try
+        for ( StackTraceElement el : Thread.currentThread().getStackTrace() )
         {
-            throw new RuntimeException();
-        } catch ( RuntimeException e )
-        {
-            for ( StackTraceElement el : Arrays.asList( e.getStackTrace() ) )
+            String className = el.getClassName();
+            if ( className.contains( "Test" ) )
             {
-                String className = el.getClassName();
-                if ( className.contains( "Test" ) )
-                {
-                    return className;
-                }
+                return className;
             }
         }
-
         return "N/A";
     }
 
@@ -70,7 +74,7 @@ public class CleaningNeoServer extends NeoServer
     {
         super.stop();
         recursiveDelete( dir );
-        lastOpened = null;
+        lastStarted = null;
     }
 
     private void secureDelete( File f )

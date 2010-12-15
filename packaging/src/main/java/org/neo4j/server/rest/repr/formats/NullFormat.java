@@ -33,7 +33,6 @@ public class NullFormat extends RepresentationFormat
         {
             return null;
         }
-
         throw new MediaTypeNotSupportedException( Response.Status.UNSUPPORTED_MEDIA_TYPE, supported, requested );
     }
 
@@ -44,7 +43,7 @@ public class NullFormat extends RepresentationFormat
         {
             return null;
         }
-        throw new WebApplicationException( noInputType() );
+        throw new MediaTypeNotSupportedException( Response.Status.UNSUPPORTED_MEDIA_TYPE, supported, requested );
     }
 
     @Override
@@ -54,7 +53,7 @@ public class NullFormat extends RepresentationFormat
         {
             return Collections.emptyMap();
         }
-        throw new WebApplicationException( noInputType() );
+        throw new MediaTypeNotSupportedException( Response.Status.UNSUPPORTED_MEDIA_TYPE, supported, requested );
     }
 
     @Override
@@ -64,7 +63,7 @@ public class NullFormat extends RepresentationFormat
         {
             return Collections.emptyList();
         }
-        throw new WebApplicationException( noInputType() );
+        throw new MediaTypeNotSupportedException( Response.Status.UNSUPPORTED_MEDIA_TYPE, supported, requested );
     }
 
     private boolean empty( String input )
@@ -72,45 +71,33 @@ public class NullFormat extends RepresentationFormat
         return input == null || "".equals( input.trim() );
     }
 
-    private Response noInputType()
-    {
-        return Response.status( Response.Status.UNSUPPORTED_MEDIA_TYPE ).entity(
-                "Supplied data has no media type." ).build();
-    }
-
-    private Response noOutputType()
-    {
-        return Response.status( Response.Status.NOT_ACCEPTABLE ).entity(
-                "Expected output type not supported." ).build();
-    }
-
     @Override
     protected String serializeValue( final String type, final Object value )
     {
-        throw new WebApplicationException( noOutputType() );
+        throw new MediaTypeNotSupportedException( Response.Status.NOT_ACCEPTABLE, supported, requested );
     }
 
     @Override
     protected ListWriter serializeList( final String type )
     {
-        throw new WebApplicationException( noOutputType() );
+        throw new MediaTypeNotSupportedException( Response.Status.NOT_ACCEPTABLE, supported, requested );
     }
 
     @Override
     protected MappingWriter serializeMapping( final String type )
     {
-        throw new WebApplicationException( noOutputType() );
+        throw new MediaTypeNotSupportedException( Response.Status.NOT_ACCEPTABLE, supported, requested );
     }
 
     @Override
     protected String complete( final ListWriter serializer )
     {
-        throw new WebApplicationException( noOutputType() );
+        throw new MediaTypeNotSupportedException( Response.Status.NOT_ACCEPTABLE, supported, requested );
     }
 
     @Override
     protected String complete( final MappingWriter serializer )
     {
-        throw new WebApplicationException( noOutputType() );
+        throw new MediaTypeNotSupportedException( Response.Status.NOT_ACCEPTABLE, supported, requested );
     }
 }
