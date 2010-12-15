@@ -97,7 +97,7 @@ public class ServerTestUtils
 
     public static File createTempPropertyFile( File parentDir ) throws IOException
     {
-        File f = new File( parentDir, "test-" + new Random().nextInt() + ".properties" );
+        File f = new File( parentDir, "test-" + new Random().nextInt() + ".properties" ); 
         f.deleteOnExit();
         return f;
     }
