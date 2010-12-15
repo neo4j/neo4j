@@ -32,7 +32,6 @@ import java.io.PrintStream;
 import java.net.ServerSocket;
 import java.net.URI;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.dummy.web.service.DummyThirdPartyWebService;
 import org.junit.Test;
