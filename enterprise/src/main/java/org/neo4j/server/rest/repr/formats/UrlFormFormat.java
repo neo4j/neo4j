@@ -1,0 +1,119 @@
+package org.neo4j.server.rest.repr.formats;
+
+import org.neo4j.server.rest.repr.BadInputException;
+import org.neo4j.server.rest.repr.ListWriter;
+import org.neo4j.server.rest.repr.MappingWriter;
+import org.neo4j.server.rest.repr.RepresentationFormat;
+
+import javax.ws.rs.core.MediaType;
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URLDecoder;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class UrlFormFormat extends RepresentationFormat
+{
+    public UrlFormFormat()
+    {
+        super( MediaType.APPLICATION_FORM_URLENCODED_TYPE );
+    }
+
+    @Override
+    protected String serializeValue( final String type, final Object value )
+    {
+        throw new RuntimeException( "Not implemented!" );
+    }
+
+    @Override
+    protected ListWriter serializeList( final String type )
+    {
+        throw new RuntimeException( "Not implemented!" );
+    }
+
+    @Override
+    protected MappingWriter serializeMapping( final String type )
+    {
+        throw new RuntimeException( "Not implemented!" );
+    }
+
+    @Override
+    protected String complete( final ListWriter serializer )
+    {
+        throw new RuntimeException( "Not implemented!" );
+    }
+
+    @Override
+    protected String complete( final MappingWriter serializer )
+    {
+        throw new RuntimeException( "Not implemented!" );
+    }
+
+    @Override
+    public Object readValue( final String input ) throws BadInputException
+    {
+        throw new RuntimeException( "Not implemented!" );
+    }
+
+    @Override
+    public Map<String, Object> readMap( final String input ) throws BadInputException
+    {
+        HashMap<String, Object> result = new HashMap<String, Object>();
+        if ( input.isEmpty() )
+        {
+            return result;
+        }
+
+        for ( String pair : input.split( "\\&" ) )
+        {
+            String[] fields = pair.split( "=" );
+            String key;
+            String value;
+
+            try
+            {
+                key = URLDecoder.decode( fields[ 0 ], "UTF-8" ); //Shouldn't this come from the outside?
+                value = URLDecoder.decode( fields[ 1 ], "UTF-8" );
+            } catch ( UnsupportedEncodingException e )
+            {
+                throw new BadInputException( e );
+            }
+
+            Object old = result.get( key );
+            if ( old == null )
+            {
+                result.put( key, value );
+            } else
+            {
+                List<Object> list;
+                if ( old instanceof List<?> )
+                {
+                    list = (List<Object>)old;
+                } else
+                {
+                    list = new ArrayList<Object>();
+                    result.put(key,list);
+                    list.add( old );
+                }
+                list.add( value );
+            }
+        }
+
+
+        return result;
+    }
+
+    @Override
+    public List<Object> readList( final String input ) throws BadInputException
+    {
+        throw new RuntimeException( "Not implemented!" );
+    }
+
+    @Override
+    public URI readUri( final String input ) throws BadInputException
+    {
+        throw new RuntimeException( "Not implemented!" );
+    }
+}
