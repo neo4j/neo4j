@@ -20,19 +20,21 @@
 
 package org.neo4j.server.rrd;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
+
+import java.io.IOException;
+import java.util.UUID;
+
+import javax.management.MalformedObjectNameException;
+
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.ImpermanentGraphDatabase;
-
-import javax.management.MalformedObjectNameException;
-import java.io.IOException;
-import java.util.UUID;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
 
 public class PropertyCountSampleableTest
 {
@@ -42,7 +44,7 @@ public class PropertyCountSampleableTest
     @Test
     public void emptyDbHasZeroNodesInUse() throws IOException, MalformedObjectNameException
     {
-        assertThat( sampleable.getValue(), is( 0L ) ); 
+        assertThat( sampleable.getValue(), is( 0L ) );
     }
 
     @Test
@@ -51,7 +53,7 @@ public class PropertyCountSampleableTest
         addPropertyToReferenceNode( );
 
         assertThat( sampleable.getValue(), is( 1L ) );
-        
+
         addNodeIntoGraph( );
         addNodeIntoGraph( );
 
@@ -68,7 +70,7 @@ public class PropertyCountSampleableTest
                 return "knows_about";
             }
         });
-        
+
         tx.success();
         tx.finish();
     }
@@ -87,5 +89,11 @@ public class PropertyCountSampleableTest
     {
         db = new ImpermanentGraphDatabase();
         sampleable = new PropertyCountSampleable( db );
+    }
+
+    @After
+    public void shutdownDatabase()
+    {
+        this.db.shutdown();
     }
 }

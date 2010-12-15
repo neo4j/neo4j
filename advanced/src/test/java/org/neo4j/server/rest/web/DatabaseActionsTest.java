@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -84,6 +85,12 @@ public class DatabaseActionsTest {
 
         graphdbHelper = new GraphDbHelper(database);
         this.actions = new DatabaseActions( database );
+    }
+
+    @After
+    public void shutdownDatabase()
+    {
+        this.database.shutdown();
     }
 
     private long createNode(Map<String, Object> properties) throws DatabaseBlockedException {
