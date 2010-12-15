@@ -280,6 +280,14 @@ public class JsonAndHtmlWebService extends GenericWebService
         return createNodeIndex( json, JsonRenderers.DEFAULT );
     }
 
+    @POST
+    @Path(PATH_RELATIONSHIP_INDEX)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response jsonCreateRelationshipIndex( String json )
+    {
+        return createRelationshipIndex( json, JsonRenderers.DEFAULT );
+    }
+
     @GET
     @Path(PATH_RELATIONSHIP_INDEX)
     @Produces(MediaType.APPLICATION_JSON)
@@ -394,6 +402,14 @@ public class JsonAndHtmlWebService extends GenericWebService
         return paths( startNode, description, JsonRenderers.ARRAY );
     }
 
+    @GET
+    @Path(PATH_RELATIONSHIP_INDEX_QUERY)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response jsonGetIndexedRelationships( @PathParam("indexName") String indexName, @PathParam("key") String key, @PathParam("value") String value )
+    {
+        return getIndexedRelationships( indexName, key, value, JsonRenderers.ARRAY );
+    }
+
     // ===== HTML =====
 
     @GET
@@ -454,13 +470,12 @@ public class JsonAndHtmlWebService extends GenericWebService
         return getRelationshipIndexRoot( new IndexRootRenderer() );
     }
 
-
     @GET
     @Path(PATH_NODE_INDEX_QUERY)
     @Produces(MediaType.TEXT_HTML)
     public Response htmlGetIndexedNodes( @PathParam("indexName") String indexName, @PathParam("key") String key, @PathParam("value") String value )
     {
-        return getIndexedObjects( indexName, key, value, new NodesRenderer() );
+        return getIndexedNodes( indexName, key, value, new NodesRenderer() );
     }
 
     @GET
@@ -468,6 +483,7 @@ public class JsonAndHtmlWebService extends GenericWebService
     @Produces(MediaType.TEXT_HTML)
     public Response htmlGetIndexedRelationships( @PathParam("indexName") String indexName, @PathParam("key") String key, @PathParam("value") String value )
     {
-        return getIndexedObjects( indexName, key, value, new RelationshipRenderer() );
+        return getIndexedRelationships( indexName, key, value, new RelationshipRenderer() );
     }
+
 }

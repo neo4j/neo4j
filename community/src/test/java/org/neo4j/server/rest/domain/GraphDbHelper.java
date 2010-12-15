@@ -318,6 +318,16 @@ public class GraphDbHelper
         return database.getIndexManager().forNodes( named );
     }
 
+    public String[] getRelationshipIndexes()
+    {
+        return database.getIndexManager().relationshipIndexNames();
+    }
+
+    public Index<Relationship> getRelationshipIndex( String indexName )
+    {
+        return database.getIndexManager().forRelationships( indexName );
+    }
+
     public Index<Relationship> createRelationshipFullTextIndex( String named )
     {
         return database.getIndexManager().forRelationships( named, MapUtil.stringMap( "provider", "lucene", "type", "fulltext" ) );

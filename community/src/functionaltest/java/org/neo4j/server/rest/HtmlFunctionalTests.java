@@ -102,7 +102,7 @@ public class HtmlFunctionalTests {
 
     @Test
     public void shouldGetTrinityWhenSearchingForHer() {
-        ClientResponse response = Client.create().resource(functionalTestHelper.indexUri("node", "name", "Trinity", null )).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
+        ClientResponse response = Client.create().resource(functionalTestHelper.indexNodeUri("node", "name", "Trinity" )).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
         String entity = response.getEntity(String.class);
         assertTrue(entity.contains("Trinity"));
