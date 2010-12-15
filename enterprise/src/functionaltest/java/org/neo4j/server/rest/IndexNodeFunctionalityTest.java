@@ -74,7 +74,7 @@ public class IndexNodeFunctionalityTest
     @Test
     public void shouldGetEmptyListOfNodeIndexesWhenNoneExist()
     {
-        ClientResponse response = Client.create().resource( functionalTestHelper.indexUri() + "/node/" )
+        ClientResponse response = Client.create().resource( functionalTestHelper.indexNodeUri() )
                 .accept( MediaType.APPLICATION_JSON ).get( ClientResponse.class );
 
         Assert.assertEquals( 204, response.getStatus() );
@@ -92,20 +92,13 @@ public class IndexNodeFunctionalityTest
         String indexName = "favorites";
         Map<String, String> indexSpecification = new HashMap<String, String>();
         indexSpecification.put( "name", indexName );
-        ClientResponse response = Client.create().resource( functionalTestHelper.indexUri() + "/node/" ).type( MediaType.APPLICATION_JSON )
+        ClientResponse response = Client.create().resource( functionalTestHelper.indexNodeUri() ).type( MediaType.APPLICATION_JSON )
                 .entity( JsonHelper.createJsonFrom( indexSpecification ) ).post( ClientResponse.class );
         assertEquals( 201, response.getStatus() );
         assertNotNull( response.getHeaders().getFirst( "Location" ) );
         assertEquals( helper.getNodeIndexes().length, 1 );
         assertNotNull( helper.getNodeIndex( indexName ) );
     }
-
-    @Test
-    public void shouldListExistingNodeIndex()
-    {
-
-    }
-
 
     /**
      * POST ${org.neo4j.server.rest.web}/index/node/{indexName}/{key}/{value}
@@ -121,7 +114,7 @@ public class IndexNodeFunctionalityTest
         helper.createNodeIndex( indexName );
         String entity = functionalTestHelper.nodeUri( nodeId );
         System.out.println( "posting: " + entity );
-        ClientResponse response = Client.create().resource( functionalTestHelper.indexUri() + "/node/" + indexName + "/" + key + "/" + value ).type( MediaType.TEXT_PLAIN )
+        ClientResponse response = Client.create().resource( functionalTestHelper.indexUri() + "node/" + indexName + "/" + key + "/" + value ).type( MediaType.TEXT_PLAIN )
                 .entity( entity ).post( ClientResponse.class );
         assertEquals( 201, response.getStatus() );
         assertNotNull( response.getHeaders().getFirst( "Location" ) );
@@ -137,7 +130,8 @@ public class IndexNodeFunctionalityTest
 
         String indexName = "mindex";
         helper.createNodeIndex( indexName );
-        ClientResponse response = Client.create().resource( functionalTestHelper.indexUri() + "/node/" + indexName + "/" + key + "/" + value ).type( MediaType.APPLICATION_JSON )
+        ClientResponse response = Client.create().resource( functionalTestHelper.indexNodeUri() + indexName + "/" + key + "/" + value )
+                .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON ).entity( JsonHelper.createJsonFrom( functionalTestHelper.nodeUri( nodeId ) ) ).post( ClientResponse.class );
 
         assertEquals( Status.CREATED.getStatusCode(), response.getStatus() );
@@ -158,7 +152,7 @@ public class IndexNodeFunctionalityTest
         String key = "key3";
         String value = "value";
         String indexName = "nosuchindex";
-        String indexUri = functionalTestHelper.indexUri() + "node/" + indexName + "/" + key + "/" + value;
+        String indexUri = functionalTestHelper.indexNodeUri() + indexName + "/" + key + "/" + value;
         ClientResponse response = Client.create().resource( indexUri ).accept( MediaType.APPLICATION_JSON ).get( ClientResponse.class );
         assertEquals( Status.NOT_FOUND.getStatusCode(), response.getStatus() );
     }
@@ -177,15 +171,15 @@ public class IndexNodeFunctionalityTest
                 MediaType.APPLICATION_JSON ).post( ClientResponse.class ).getHeaders().getFirst( HttpHeaders.LOCATION );
         String location2 = Client.create().resource( functionalTestHelper.nodeUri() ).accept( MediaType.APPLICATION_JSON ).entity( "{\"name\":\"" + name2 + "\"}",
                 MediaType.APPLICATION_JSON ).post( ClientResponse.class ).getHeaders().getFirst( HttpHeaders.LOCATION );
-        String indexLocation1 = Client.create().resource( functionalTestHelper.indexUri() + "/node/" + indexName + "/" + key + "/" + value ).entity(
+        String indexLocation1 = Client.create().resource( functionalTestHelper.indexNodeUri() + indexName + "/" + key + "/" + value ).entity(
                 JsonHelper.createJsonFrom( location1 ), MediaType.APPLICATION_JSON ).post( ClientResponse.class ).getHeaders().getFirst( HttpHeaders.LOCATION );
-        String indexLocation2 = Client.create().resource( functionalTestHelper.indexUri() + "/node/" + indexName + "/" + key + "/" + value ).entity(
+        String indexLocation2 = Client.create().resource( functionalTestHelper.indexNodeUri() + indexName + "/" + key + "/" + value ).entity(
                 JsonHelper.createJsonFrom( location2 ), MediaType.APPLICATION_JSON ).post( ClientResponse.class ).getHeaders().getFirst( HttpHeaders.LOCATION );
         Map<String, String> uriToName = new HashMap<String, String>();
         uriToName.put( indexLocation1.toString(), name1 );
         uriToName.put( indexLocation2.toString(), name2 );
 
-        ClientResponse response = Client.create().resource( functionalTestHelper.indexUri() + "/node/" + indexName + "/" + key + "/" + value ).accept( MediaType.APPLICATION_JSON )
+        ClientResponse response = Client.create().resource( functionalTestHelper.indexNodeUri() + indexName + "/" + key + "/" + value ).accept( MediaType.APPLICATION_JSON )
                 .get( ClientResponse.class );
         assertEquals( 200, response.getStatus() );
         Collection<?> items = (Collection<?>)JsonHelper.jsonToSingleValue( response.getEntity( String.class ) );
@@ -207,7 +201,7 @@ public class IndexNodeFunctionalityTest
     {
         String indexName = "empty-index";
         helper.createNodeIndex( indexName );
-        ClientResponse response = Client.create().resource( functionalTestHelper.indexUri() + "/node/" + indexName + "/non-existent-key/non-existent-value" ).accept(
+        ClientResponse response = Client.create().resource( functionalTestHelper.indexNodeUri() + indexName + "/non-existent-key/non-existent-value" ).accept(
                 MediaType.APPLICATION_JSON ).get( ClientResponse.class );
         assertEquals( 200, response.getStatus() );
     }
@@ -241,18 +235,18 @@ public class IndexNodeFunctionalityTest
         value = URIHelper.encode( value );
         String indexName = "spacey-values";
         helper.createNodeIndex( indexName );
-        ClientResponse response = Client.create().resource( functionalTestHelper.indexUri( indexName, key, value, "node" ) ).entity(
+        ClientResponse response = Client.create().resource( functionalTestHelper.indexNodeUri( indexName, key, value ) ).entity(
                 JsonHelper.createJsonFrom( functionalTestHelper.nodeUri( nodeId ) ), MediaType.APPLICATION_JSON ).post( ClientResponse.class );
         assertEquals( Status.CREATED.getStatusCode(), response.getStatus() );
         URI location = response.getLocation();
-        response = Client.create().resource( functionalTestHelper.indexUri( indexName, key, value, "node" ) ).accept( MediaType.APPLICATION_JSON_TYPE )
+        response = Client.create().resource( functionalTestHelper.indexNodeUri( indexName, key, value ) ).accept( MediaType.APPLICATION_JSON_TYPE )
                 .get( ClientResponse.class );
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
         Collection<?> hits = (Collection<?>)JsonHelper.jsonToSingleValue( response.getEntity( String.class ) );
         assertEquals( 1, hits.size() );
 
         Client.create().resource( location ).delete();
-        response = Client.create().resource( functionalTestHelper.indexUri( indexName, key, value, "node" ) ).accept( MediaType.APPLICATION_JSON_TYPE )
+        response = Client.create().resource( functionalTestHelper.indexNodeUri( indexName, key, value ) ).accept( MediaType.APPLICATION_JSON_TYPE )
                 .get( ClientResponse.class );
         hits = (Collection<?>)JsonHelper.jsonToSingleValue( response.getEntity( String.class ) );
         assertEquals( 0, hits.size() );
@@ -266,7 +260,7 @@ public class IndexNodeFunctionalityTest
         String value = "value";
         String indexName = "botherable-index";
         helper.createNodeIndex( indexName );
-        ClientResponse response = Client.create().resource( functionalTestHelper.indexUri() + "/node/" + indexName + "/" + key + "/" + value ).type( MediaType.APPLICATION_JSON )
+        ClientResponse response = Client.create().resource( functionalTestHelper.indexNodeUri() + indexName + "/" + key + "/" + value ).type( MediaType.APPLICATION_JSON )
                 .entity( functionalTestHelper.nodeUri( nodeId ) ).post( ClientResponse.class );
         assertEquals( 400, response.getStatus() );
     }
