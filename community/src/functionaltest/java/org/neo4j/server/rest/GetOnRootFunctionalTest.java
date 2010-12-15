@@ -69,7 +69,8 @@ public class GetOnRootFunctionalTest {
         Map<String, Object> map = JsonHelper.jsonToMap(body);
         assertEquals(functionalTestHelper.nodeUri(), map.get("node"));
         assertNotNull(map.get("reference_node"));
-        assertNotNull(map.get("index"));
+        assertNotNull(map.get("node index"));
+        assertNotNull(map.get("relationship index"));
 
         String referenceNodeUri = (String) map.get("reference_node");
         response = Client.create().resource(referenceNodeUri).accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
