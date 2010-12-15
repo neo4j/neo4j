@@ -20,17 +20,19 @@
 
 package org.neo4j.server.webadmin.console;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.kernel.ImpermanentGraphDatabase;
 import org.neo4j.server.database.Database;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-
 public class GremlinSessionTest
 {
-    public ScriptSession session;
+    private ScriptSession session;
+    private Database database;
 
     @Test
     public void retrievesTheReferenceNode()
@@ -51,7 +53,14 @@ public class GremlinSessionTest
     @Before
     public void setUp() throws Exception
     {
-        session = new GremlinSession( new Database( new ImpermanentGraphDatabase( "target/tempdb" ) ) );
+        this.database = new Database( new ImpermanentGraphDatabase( "target/tempdb" ) );
+        session = new GremlinSession( database );
+    }
+
+    @After
+    public void shutdownDatabase()
+    {
+        this.database.shutdown();
     }
 }
 

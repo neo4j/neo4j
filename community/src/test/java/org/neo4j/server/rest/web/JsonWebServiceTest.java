@@ -43,6 +43,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.core.Response.Status;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
@@ -69,6 +70,12 @@ public class JsonWebServiceTest
         database = new Database( ServerTestUtils.createTempDir().getAbsolutePath() );
         helper = new GraphDbHelper( database );
         service = new JsonAndHtmlWebService( uriInfo(), database );
+    }
+
+    @After
+    public void shutdownDatabase()
+    {
+        this.database.shutdown();
     }
 
     private UriInfo uriInfo()
