@@ -39,25 +39,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseBlockedException;
-import org.neo4j.server.rest.domain.AmpersandSeparatedList;
-import org.neo4j.server.rest.domain.EndNodeNotFoundException;
-import org.neo4j.server.rest.domain.EvaluationException;
-import org.neo4j.server.rest.domain.IndexedNodeRepresentation;
-import org.neo4j.server.rest.domain.IndexedRelationshipRepresentation;
-import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.domain.NodeIndexRepresentation;
-import org.neo4j.server.rest.domain.NodeIndexRootRepresentation;
-import org.neo4j.server.rest.domain.NodeRepresentation;
-import org.neo4j.server.rest.domain.PathRepresentation;
-import org.neo4j.server.rest.domain.PropertiesMap;
-import org.neo4j.server.rest.domain.RelationshipDirection;
-import org.neo4j.server.rest.domain.RelationshipIndexRootRepresentation;
-import org.neo4j.server.rest.domain.RelationshipRepresentation;
-import org.neo4j.server.rest.domain.Representation;
-import org.neo4j.server.rest.domain.RootRepresentation;
-import org.neo4j.server.rest.domain.StartNodeNotFoundException;
-import org.neo4j.server.rest.domain.StartNodeSameAsEndNodeException;
-import org.neo4j.server.rest.domain.StorageActions;
+import org.neo4j.server.rest.domain.*;
 import org.neo4j.server.rest.domain.StorageActions.TraverserReturnType;
 import org.neo4j.server.rest.domain.renderers.Renderer;
 
@@ -197,6 +179,22 @@ public abstract class GenericWebService
         return Response.created( nodeIndexRep.selfUri() ).build();
     }
 
+    protected Response createRelationshipIndex( String json, Renderer renderer )
+    {
+        json = dodgeStartingUnicodeMarker( json );
+        PropertiesMap properties;
+        try
+        {
+            properties = new PropertiesMap( JsonHelper.jsonToMap( json ) );
+        }
+        catch ( org.neo4j.server.rest.domain.PropertyValueException e )
+        {
+            return buildBadJsonExceptionResponse( json, e, renderer );
+        }
+        RelationshipIndexRepresentation relationshipIndexRep = actions.createRelationshipIndex( (String) properties.getValue( "name" ) );
+        return Response.created( relationshipIndexRep.selfUri() ).build();
+    }
+
     protected Response buildExceptionResponse( Status status, String message, Exception e, Renderer renderer )
     {
         return Response.status( status ).entity( renderer.renderException( message, e ) ).build();
@@ -327,7 +325,7 @@ public abstract class GenericWebService
         try
         {
             Map<String, Object> payload = JsonHelper.jsonToMap( json );
-            endNodeId = getNodeIdFromUri( (String) payload.get( "to" ) );
+            endNodeId = getObjectIdFromUri( (String) payload.get( "to" ) );
             type = ((String) payload.get( "type" )).toString();
             @SuppressWarnings("unchecked")
             Map<String, Object> props = (Map<String, Object>) payload.get( "data" );
@@ -415,7 +413,7 @@ public abstract class GenericWebService
         }
     }
 
-    private long getNodeIdFromUri( String uri )
+    private long getObjectIdFromUri( String uri )
     {
         return Long.parseLong( uri.substring( uri.lastIndexOf( "/" ) + 1 ) );
     }
@@ -541,7 +539,7 @@ public abstract class GenericWebService
         try
         {
             String objectUri = JsonHelper.jsonToSingleValue( json ).toString();
-            Representation representation = indexType.add( this, indexName, key, value, getNodeIdFromUri( objectUri ), renderer );
+            Representation representation = indexType.add( this, indexName, key, value, getObjectIdFromUri( objectUri ), renderer );
             return Response.created( new URI( representation.serialize().toString() ) ).build();
         }
         catch ( org.neo4j.server.rest.domain.PropertyValueException e )
@@ -602,7 +600,7 @@ public abstract class GenericWebService
         return addHeaders( Response.ok( entity, renderer.getMediaType() ) ).build();
     }
 
-    private Response getIndexedRelationships( String indexName, String key, String value, Renderer renderer )
+    protected Response getIndexedRelationships( String indexName, String key, String value, Renderer renderer )
     {
         if (!database.getIndexManager().existsForRelationships( indexName )) {
             return Response.status( Status.NOT_FOUND ).build();
@@ -741,7 +739,7 @@ public abstract class GenericWebService
         try
         {
             payload = JsonHelper.jsonToMap( description );
-            endNodeId = getNodeIdFromUri( (String) payload.get( "to" ) );
+            endNodeId = getObjectIdFromUri( (String) payload.get( "to" ) );
         }
         catch ( org.neo4j.server.rest.domain.PropertyValueException e )
         {

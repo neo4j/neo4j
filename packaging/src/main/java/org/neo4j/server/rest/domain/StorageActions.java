@@ -592,4 +592,9 @@ public class StorageActions {
         Index<Node> createdIndex = graphdb.getIndexManager().forNodes( indexName );
         return new NodeIndexRepresentation( baseUri, indexName, graphdb.getIndexManager().getConfiguration( createdIndex ) );
     }
+
+    public RelationshipIndexRepresentation createRelationshipIndex( String indexName ) {
+        RelationshipIndex createdIndex = graphdb.getIndexManager().forRelationships( indexName );
+        return new RelationshipIndexRepresentation( baseUri, indexName, graphdb.getIndexManager().getConfiguration( createdIndex ) );
+    }
 }

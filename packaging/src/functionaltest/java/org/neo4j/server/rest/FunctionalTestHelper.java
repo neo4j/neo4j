@@ -31,15 +31,18 @@ public final class FunctionalTestHelper
     private final NeoServer server;
     private final GraphDbHelper helper;
 
-    public FunctionalTestHelper(NeoServer server) {
-        if(server.getDatabase() == null) {
-            throw new RuntimeException("Server must be started before using " + getClass().getName());
+    public FunctionalTestHelper( NeoServer server )
+    {
+        if ( server.getDatabase() == null )
+        {
+            throw new RuntimeException( "Server must be started before using " + getClass().getName() );
         }
-        this.helper = new GraphDbHelper(server.getDatabase());
+        this.helper = new GraphDbHelper( server.getDatabase() );
         this.server = server;
     }
 
-    public GraphDbHelper getGraphDbHelper() {
+    public GraphDbHelper getGraphDbHelper()
+    {
         return helper;
     }
 
@@ -111,21 +114,41 @@ public final class FunctionalTestHelper
 
     String indexUri()
     {
-        return dataUri() + "index";
+        return dataUri() + "index/";
     }
 
-	String mangementUri()
-	{
-		return server.managementApiUri().toString();
-	}
-
-    String indexUri( String indexName, String forIndexedElementType )
+    String indexNodeUri()
     {
-        return indexUri() + "/" + forIndexedElementType + "/" + indexName;
+        return indexUri() + "node/";
     }
 
-    String indexUri( String indexName, String key, Object value, String indexElementType )
+    String indexRelationshipUri()
     {
-        return indexUri( indexName, indexElementType ) + "/" + key + "/" + value;
+        return indexUri() + "relationship/";
+    }
+
+    String mangementUri()
+    {
+        return server.managementApiUri().toString();
+    }
+
+    String indexNodeUri( String indexName )
+    {
+        return indexNodeUri() + indexName;
+    }
+
+    String indexRelationshipUri( String indexName )
+    {
+        return indexRelationshipUri() + indexName;
+    }
+
+    String indexNodeUri( String indexName, String key, Object value )
+    {
+        return indexNodeUri( indexName ) + "/" + key + "/" + value;
+    }
+
+    String indexRelationshipUri( String indexName, String key, Object value )
+    {
+        return indexRelationshipUri( indexName ) + "/" + key + "/" + value;
     }
 }
