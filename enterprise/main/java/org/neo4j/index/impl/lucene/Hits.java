@@ -20,13 +20,21 @@
 
 package org.neo4j.index.impl.lucene;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.search.*;
-
 import java.io.IOException;
 import java.util.ConcurrentModificationException;
 import java.util.Vector;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopFieldCollector;
+import org.apache.lucene.search.Weight;
 
 /** A ranked list of documents, used to hold search results.
  * <p>
@@ -206,7 +214,7 @@ public final class Hits {
     }
 
     if (hitDoc.doc == null) {
-      hitDoc.doc = searcher.doc(hitDoc.id);  // cache miss: read document
+        hitDoc.doc = searcher.doc(hitDoc.id);  // cache miss: read document
     }
 
     return hitDoc.doc;

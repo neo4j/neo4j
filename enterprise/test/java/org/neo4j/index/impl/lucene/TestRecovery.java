@@ -171,4 +171,19 @@ public class TestRecovery
         // This doesn't seem to trigger recovery... it really should
         new EmbeddedGraphDatabase( getDbPath() ).shutdown();
     }
+    
+    @Test
+    public void testIndexDeleteIssue() throws Exception
+    {
+        GraphDatabaseService db = newGraphDbService();
+        db.index().forNodes( "index" );
+        db.shutdown();
+        
+        Runtime.getRuntime().exec( new String[] { "java", "-cp", System.getProperty( "java.class.path" ),
+                AddDeleteQuit.class.getName(), getDbPath()
+        } ).waitFor();
+        
+        new EmbeddedGraphDatabase( getDbPath() ).shutdown();
+        db.shutdown();
+    }
 }

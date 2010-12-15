@@ -216,7 +216,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         IndexSearcherRef searcher = null;
         try
         {
-            searcher = service.dataSource().getIndexSearcher( identifier );
+            searcher = service.dataSource().getIndexSearcher( identifier, true );
             if ( searcher != null )
             {
                 boolean foundInCache = false;
@@ -300,7 +300,6 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
     {
         try
         {
-            searcher.incRef();
             IndexHits<Document> result = null;
             if ( additionalParametersOrNull != null && additionalParametersOrNull.topHits > 0 )
             {

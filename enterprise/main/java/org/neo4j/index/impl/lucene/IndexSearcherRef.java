@@ -30,7 +30,7 @@ class IndexSearcherRef
     private final IndexIdentifier identifier;
     private final IndexSearcher searcher;
     private final AtomicInteger refCount = new AtomicInteger( 0 );
-    private boolean isClosed;
+    private volatile boolean isClosed;
     
     /**
      * We need this because we only want to close the reader/searcher if
@@ -38,7 +38,7 @@ class IndexSearcherRef
      * has any reference to it, only an iterator out in the client has a ref.
      * And when that client calls close() it should be closed.
      */
-    private boolean detached;
+    private volatile boolean detached;
     
     public IndexSearcherRef( IndexIdentifier identifier, IndexSearcher searcher )
     {
