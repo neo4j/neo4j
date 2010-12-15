@@ -255,7 +255,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         }
 
         idIterator = idIterator == null ? new ConstantScoreIterator<Long>( ids, 0 ) : idIterator;
-        return new IdToEntityIterator<T>( idIterator, searcher )
+        return new IdToEntityIterator<T>( idIterator )
         {
             @Override
             protected T underlyingObjectToObject( Long id )

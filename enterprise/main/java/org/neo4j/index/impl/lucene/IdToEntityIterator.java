@@ -35,14 +35,11 @@ public abstract class IdToEntityIterator<T extends PropertyContainer>
 {
     private final IndexHits<Long> ids;
     private final Set<Long> alreadyReturned = new HashSet<Long>();
-    private boolean isExhausted;
-    private IndexSearcherRef searcher;
     
-    public IdToEntityIterator( IndexHits<Long> ids, IndexSearcherRef searcher )
+    public IdToEntityIterator( IndexHits<Long> ids )
     {
         super( ids );
         this.ids = ids;
-        this.searcher = searcher;
     }
     
     @Override
@@ -62,7 +59,6 @@ public abstract class IdToEntityIterator<T extends PropertyContainer>
                 return id;
             }
         }
-        isExhausted = true;
         return null;
     }
     
@@ -83,13 +79,7 @@ public abstract class IdToEntityIterator<T extends PropertyContainer>
 
     public void close()
     {
-        // Don't call close on the searcherRef if we've exhausted this iterator,
-        // because by then the underlying DocToIdIterator have already closed it.
-        if ( searcher != null && !isExhausted )
-        {
-            searcher.closeStrict();
-            searcher = null;
-        }
+        ids.close();
     }
 
     public T getSingle()

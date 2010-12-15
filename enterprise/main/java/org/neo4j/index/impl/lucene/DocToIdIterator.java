@@ -28,7 +28,7 @@ import org.neo4j.graphdb.index.IndexHits;
 class DocToIdIterator extends AbstractIndexHits<Long>
 {
     private final Collection<Long> exclude;
-    private final IndexSearcherRef searcherOrNull;
+    private IndexSearcherRef searcherOrNull;
     private final IndexHits<Document> source;
     
     DocToIdIterator( IndexHits<Document> source, Collection<Long> exclude, IndexSearcherRef searcherOrNull )
@@ -62,9 +62,16 @@ class DocToIdIterator extends AbstractIndexHits<Long>
     
     protected void endReached()
     {
+        close();
+    }
+    
+    @Override
+    public void close()
+    {
         if ( this.searcherOrNull != null )
         {
             this.searcherOrNull.closeStrict();
+            this.searcherOrNull = null;
         }
     }
 
