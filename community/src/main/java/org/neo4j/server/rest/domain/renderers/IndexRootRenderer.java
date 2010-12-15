@@ -31,20 +31,15 @@ public class IndexRootRenderer extends HtmlRenderer
     public String render(
             Representation... oneOrManyRepresentations )
     {
-        Map<?, ?> serialized = (Map<?, ?>)oneOrManyRepresentations[ 0 ].serialize();
+        Map<String, ?> serialized = (Map<String, ?>)oneOrManyRepresentations[ 0 ].serialize();
         String javascript = "";
         StringBuilder builder = HtmlHelper.start( HtmlHelper.ObjectType.INDEX_ROOT,
                 javascript );
         int counter = 0;
-        for ( String objectType : new String[]{"node", "relationship"} )
+        for ( String indexName : serialized.keySet() )
         {
-            List<?> list = (List<?>)serialized.get( objectType );
-            if ( list == null )
-            {
-                continue;
-            }
+            Map<?,?> indexMapObject = (Map<?,?>)serialized.get( indexName );
             builder.append( "<ul>" );
-            for ( Object indexMapObject : list )
             {
                 builder.append( "<li>" );
                 Map<?, ?> indexMap = (Map<?, ?>)indexMapObject;

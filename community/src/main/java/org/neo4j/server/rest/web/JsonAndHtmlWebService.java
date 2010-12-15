@@ -456,6 +456,7 @@ public class JsonAndHtmlWebService extends GenericWebService
         return getRelationship( relId, new RelationshipRenderer() );
     }
 
+    @GET
     @Produces(MediaType.TEXT_HTML)
     @Path(PATH_NODE_INDEX)
     public Response htmlGetNodeIndexRoot()
@@ -463,6 +464,7 @@ public class JsonAndHtmlWebService extends GenericWebService
         return getNodeIndexRoot( new IndexRootRenderer() );
     }
 
+    @GET
     @Produces(MediaType.TEXT_HTML)
     @Path(PATH_RELATIONSHIP_INDEX)
     public Response htmlGetRelationshipIndexRoot()

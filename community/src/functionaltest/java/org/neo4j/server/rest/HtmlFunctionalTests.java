@@ -58,18 +58,20 @@ public class HtmlFunctionalTests {
         functionalTestHelper = new FunctionalTestHelper(server);
         helper = functionalTestHelper.getGraphDbHelper();
 
-
         // Create the matrix example
         thomasAnderson = createAndIndexNode("Thomas Anderson");
         trinity = createAndIndexNode("Trinity");
         long tank = createAndIndexNode("Tank");
 
-        
-        helper.createRelationship("KNOWS", thomasAnderson, trinity);
+        long knowsRelationshipId = helper.createRelationship( "KNOWS", thomasAnderson, trinity );
         thomasAndersonLovesTrinity = helper.createRelationship("LOVES", thomasAnderson, trinity);
-        helper.setRelationshipProperties(thomasAndersonLovesTrinity, Collections.singletonMap("strength", (Object) 100));
+        helper.setRelationshipProperties( thomasAndersonLovesTrinity, Collections.singletonMap( "strength", (Object) 100 ) );
         helper.createRelationship("KNOWS", thomasAnderson, tank);
         helper.createRelationship("KNOWS", trinity, tank);
+
+        // index a relationship
+        helper.createRelationshipIndex( "relationships" );
+        helper.addRelationshipToIndex( "relationships", "key", "value", knowsRelationshipId );
 
     }
 
@@ -94,8 +96,15 @@ public class HtmlFunctionalTests {
     }
 
     @Test
-    public void shouldGetIndexRoot() {
-        ClientResponse response = Client.create().resource(functionalTestHelper.indexUri()).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
+    public void shouldGetNodeIndexRoot() {
+        ClientResponse response = Client.create().resource(functionalTestHelper.indexNodeUri()).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
+        assertEquals(Status.OK.getStatusCode(), response.getStatus());
+        assertValidHtml(response.getEntity(String.class));
+    }
+
+    @Test
+    public void shouldGetRelationshipIndexRoot() {
+        ClientResponse response = Client.create().resource(functionalTestHelper.indexRelationshipUri()).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
         assertValidHtml(response.getEntity(String.class));
     }
