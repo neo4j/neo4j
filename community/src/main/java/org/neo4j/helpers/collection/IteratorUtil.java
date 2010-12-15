@@ -112,7 +112,7 @@ public abstract class IteratorUtil
         {
             throw new NoSuchElementException( "More than one element in " +
                 iterator + ". First element is '" + result +
-                "' and the element value is '" + iterator.next() + "'" );
+                "' and the second element is '" + iterator.next() + "'" );
         }
         return result;
     }
