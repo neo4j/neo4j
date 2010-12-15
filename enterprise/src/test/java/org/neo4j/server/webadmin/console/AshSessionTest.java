@@ -86,4 +86,5 @@
 //        database = new Database( new ImpermanentGraphDatabase() );
 //        session = new AshSession( database );
 //    }
+//    // TODO: if this class is ever not just one big comment it needs an @After method
 //}

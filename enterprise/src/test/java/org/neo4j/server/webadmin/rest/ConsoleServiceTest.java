@@ -20,6 +20,18 @@
 
 package org.neo4j.server.webadmin.rest;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URISyntaxException;
+
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
+
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.kernel.ImpermanentGraphDatabase;
@@ -29,19 +41,10 @@ import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.webadmin.console.GremlinSession;
 import org.neo4j.server.webadmin.console.ScriptSession;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
-import java.io.UnsupportedEncodingException;
-import java.net.URI;
-import java.net.URISyntaxException;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-
 public class ConsoleServiceTest implements SessionFactory
 {
-    public ConsoleService consoleService;
+    private ConsoleService consoleService;
+    private Database database;
 
     @Test
     public void retrievesTheReferenceNode() throws UnsupportedEncodingException
@@ -92,9 +95,15 @@ public class ConsoleServiceTest implements SessionFactory
     @Before
     public void setUp() throws Exception
     {
-        Database database = new Database( new ImpermanentGraphDatabase() );
+        this.database = new Database( new ImpermanentGraphDatabase() );
         this.consoleService = new ConsoleService( this, database, new OutputFormat(
                 new JsonFormat(), null, null ) );
+    }
+
+    @After
+    public void shutdownDatabase()
+    {
+        this.database.shutdown();
     }
 
     @Override
