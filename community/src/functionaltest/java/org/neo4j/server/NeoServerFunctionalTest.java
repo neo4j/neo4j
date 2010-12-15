@@ -27,6 +27,7 @@ import org.dummy.web.service.DummyThirdPartyWebService;
 import org.junit.Test;
 import org.neo4j.server.logging.InMemoryAppender;
 
+import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.ServerSocket;
@@ -97,7 +98,7 @@ public class NeoServerFunctionalTest {
     public void shouldMakeJAXRSClassesAvailableViaHTTP() throws Exception {
         NeoServer server = ServerBuilder.server().withPassingStartupHealthcheck().withRandomDatabaseDir().build();
         server.start();
-        ClientResponse response = Client.create().resource(server.restApiUri()).get(ClientResponse.class);
+        ClientResponse response = Client.create().resource(server.restApiUri()).accept( MediaType.APPLICATION_JSON_TYPE ).get(ClientResponse.class);
         assertEquals(200, response.getStatus());
         server.stop();
     }
