@@ -32,6 +32,7 @@ import java.net.URISyntaxException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.kernel.ImpermanentGraphDatabase;
@@ -43,6 +44,7 @@ import org.rrd4j.core.RrdDb;
 public class MonitorServiceTest implements JobScheduler
 {
     public MonitorService monitorService;
+    private ImpermanentGraphDatabase database;
 
     @Test
     public void correctRepresentation() throws URISyntaxException
@@ -57,7 +59,7 @@ public class MonitorServiceTest implements JobScheduler
         assertThat((String)resp.getEntity(), containsString(uri.toString()));
         assertThat((String)resp.getEntity(), containsString("monitor/fetch/{start}/{stop}"));
     }
-    
+
     @Test
     public void canFetchData() throws URISyntaxException
     {
@@ -75,11 +77,17 @@ public class MonitorServiceTest implements JobScheduler
     @Before
     public void setUp() throws Exception
     {
-	    RrdDb rrdDb = RrdFactory.createRrdDbAndSampler( new ImpermanentGraphDatabase(), this );
+        this.database = new ImpermanentGraphDatabase();
+        RrdDb rrdDb = RrdFactory.createRrdDbAndSampler( database, this );
 	    this.monitorService = new MonitorService( rrdDb );
     }
 
-	
+    @After
+    public void shutdownDatabase()
+    {
+        this.database.shutdown();
+    }
+
 	public void scheduleToRunEveryXSeconds( Job job, int runEveryXSeconds )
 	{
 	}

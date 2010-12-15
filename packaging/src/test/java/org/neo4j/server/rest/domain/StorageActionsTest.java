@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -64,17 +65,23 @@ public class StorageActionsTest {
     private StorageActions actions;
     private GraphDbHelper graphdbHelper;
     private Database database;
-    
+
     @Before
     public void clearDb() throws IOException {
         database = new Database(ServerTestUtils.createTempDir().getAbsolutePath());
-        
-        graphdbHelper = new GraphDbHelper(database); 
+
+        graphdbHelper = new GraphDbHelper(database);
         this.actions = new StorageActions(BASE_URI, database);
     }
 
+    @After
+    public void shutdownDatabase()
+    {
+        this.database.shutdown();
+    }
+
     private long createNode(Map<String, Object> properties) throws DatabaseBlockedException {
-        
+
         long nodeId;
         Transaction tx = database.graph.beginTx();
         try {
@@ -94,7 +101,7 @@ public class StorageActionsTest {
     @Test
     public void createdNodeShouldBeInDatabase() throws Exception {
         NodeRepresentation noderep = actions.createNode(new PropertiesMap(Collections.<String, Object> emptyMap()));
-        
+
         Transaction tx = database.graph.beginTx();
         try {
             assertNotNull(database.graph.getNodeById(noderep.getId()));
@@ -116,7 +123,7 @@ public class StorageActionsTest {
         properties.put("foo", "bar");
         properties.put("baz", 17);
         actions.setNodeProperties(nodeId, new PropertiesMap(properties));
-        
+
         Transaction tx = database.graph.beginTx();
         try {
             Node node = database.graph.getNodeById(nodeId);
@@ -155,7 +162,7 @@ public class StorageActionsTest {
 
     @Test
     public void shouldBeAbleToGetPropertiesOnNode() throws DatabaseBlockedException {
-        
+
         long nodeId;
         Map<String, Object> properties = new HashMap<String, Object>();
         properties.put("foo", "bar");
@@ -218,7 +225,7 @@ public class StorageActionsTest {
         properties.put("number", 15);
         long nodeId = createNode(properties);
         actions.removeNodeProperties(nodeId);
-        
+
         Transaction tx = database.graph.beginTx();
         try {
             Node node = database.graph.getNodeById(nodeId);
@@ -242,7 +249,7 @@ public class StorageActionsTest {
         properties.put("string", "value");
         properties.put("integer", 17);
         long relId = actions.createRelationship("LOVES", graphdbHelper.createNode(), graphdbHelper.createNode(), new PropertiesMap(properties)).getId();
-        
+
         Transaction tx = database.graph.beginTx();
         try {
             Relationship rel = database.graph.getRelationshipById(relId);
@@ -294,7 +301,7 @@ public class StorageActionsTest {
         properties.put("number", 15);
         long nodeId = createNode(properties);
         actions.removeNodeProperty(nodeId, "foo");
-        
+
         Transaction tx = database.graph.beginTx();
         try {
             Node node = database.graph.getNodeById(nodeId);
@@ -332,7 +339,7 @@ public class StorageActionsTest {
 
     @Test
     public void shouldBeAbleToGetPropertiesOnRelationship() throws DatabaseBlockedException {
-        
+
         long relationshipId;
         Map<String, Object> properties = new HashMap<String, Object>();
         properties.put("foo", "bar");

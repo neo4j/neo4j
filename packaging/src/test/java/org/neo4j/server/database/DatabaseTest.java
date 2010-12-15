@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -41,30 +42,33 @@ public class DatabaseTest {
 
     @Before
     public void setup() throws Exception {
-        if(theDatabase != null) {
-            theDatabase.shutdown();
-        }
         databaseDirectory = ServerTestUtils.createTempDir();
         theDatabase = new Database(databaseDirectory.getAbsolutePath());
     }
-    
+
+    @After
+    public void shutdownDatabase()
+    {
+        this.theDatabase.shutdown();
+    }
+
     @Test
     public void shouldLogOnSuccessfulStartup() {
         InMemoryAppender appender = new InMemoryAppender(Database.log);
-        
+
         theDatabase.startup();
-        
+
         assertThat(appender.toString(), containsString("Successfully started database"));
     }
-    
+
 
     @Test
     public void shouldShutdownCleanly() {
         InMemoryAppender appender = new InMemoryAppender(Database.log);
-        
+
         theDatabase.startup();
         theDatabase.shutdown();
-        
+
         assertThat(appender.toString(), containsString("Successfully shutdown database"));
     }
 

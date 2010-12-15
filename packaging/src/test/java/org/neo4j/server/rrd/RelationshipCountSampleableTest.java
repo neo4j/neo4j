@@ -20,18 +20,20 @@
 
 package org.neo4j.server.rrd;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
+
+import java.io.IOException;
+
+import javax.management.MalformedObjectNameException;
+
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.ImpermanentGraphDatabase;
-
-import javax.management.MalformedObjectNameException;
-import java.io.IOException;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
 
 public class RelationshipCountSampleableTest
 {
@@ -67,5 +69,11 @@ public class RelationshipCountSampleableTest
     {
         db = new ImpermanentGraphDatabase();
         sampleable = new RelationshipCountSampleable( db );
+    }
+
+    @After
+    public void shutdownDatabase()
+    {
+        this.db.shutdown();
     }
 }
