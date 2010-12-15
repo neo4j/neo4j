@@ -30,6 +30,9 @@ import java.util.Map;
 
 public class StringLogger
 {
+    public static final StringLogger SYSTEM = 
+        new StringLogger( new PrintWriter( System.out ) );
+    
     private final PrintWriter out;
     
     private StringLogger( String filename )
