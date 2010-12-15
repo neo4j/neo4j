@@ -70,7 +70,14 @@ public class XaResourceManager
     synchronized void setLogicalLog( XaLogicalLog log )
     {
         this.log = log;
-        this.msgLog = log.getStringLogger();
+        if ( log != null )
+        {
+            this.msgLog = log.getStringLogger();
+        }
+        else
+        {
+            this.msgLog = StringLogger.SYSTEM;
+        }
     }
 
     synchronized XaTransaction getXaTransaction( XAResource xaRes )

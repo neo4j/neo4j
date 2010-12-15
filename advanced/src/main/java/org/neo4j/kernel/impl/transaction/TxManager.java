@@ -181,6 +181,8 @@ public class TxManager implements TransactionManager
                 recover( danglingRecordList );
                 log.info( "Recovery completed, all transactions have been " + 
                     "resolved to a consistent state." );
+                msgLog.logMessage( "Recovery completed, all transactions have been " + 
+                    "resolved to a consistent state." );            
             }
             getTxLog().truncate();
             tmOk = true;

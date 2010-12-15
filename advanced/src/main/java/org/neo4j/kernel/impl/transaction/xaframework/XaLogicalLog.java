@@ -835,11 +835,14 @@ public class XaLogicalLog
         if ( xidIdentMap.size() == 0 )
         {
             log.fine( "Recovery completed." );
+            msgLog.logMessage( "Recovery on log [" + logFileName + "] completed." );
         }
         else
         {
             log.fine( "[" + logFileName + "] Found " + xidIdentMap.size()
                 + " prepared 2PC transactions." );
+            msgLog.logMessage( "Recovery on log [" + logFileName + 
+                    "] completed with " + xidIdentMap + " prepared transactions found." );
             for ( LogEntry.Start startEntry : xidIdentMap.values() )
             {
                 log.fine( "[" + logFileName + "] 2PC xid[" + 
