@@ -20,10 +20,12 @@
 
 package org.neo4j.server;
 
-import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
-import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
-import org.neo4j.server.web.Jetty6WebServer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.server.ServerTestUtils.createTempDir;
+import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
+import static org.neo4j.server.ServerTestUtils.writePropertiesToFile;
+import static org.neo4j.server.ServerTestUtils.writePropertyToFile;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -32,20 +34,22 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Properties;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.server.ServerTestUtils.*;
+import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
+import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
+import org.neo4j.server.web.Jetty6WebServer;
 
 public class ServerBuilder {
 
     private String portNo = "7474";
-    private String dbDir = "/tmp/neo.db";
-    private String rrdbDir = "/tmp/neo.rr.db";
+    private String dbDir = null;
+    private String rrdbDir = "/tmp/neo.rr.db"; // TODO: should we require this
+                                               // to be null as well?
     private String webAdminUri = "http://localhost:7474/db/manage/";
     private String webAdminDataUri = "http://localhost:7474/db/data/";
     private StartupHealthCheck startupHealthCheck;
     private AddressResolver addressResolver = new LocalhostAddressResolver();
-    private HashMap<String, String> thirdPartyPackages = new HashMap<String, String>();
+    private final HashMap<String, String> thirdPartyPackages = new HashMap<String, String>();
 
     private static enum WhatToDo {
         CREATE_GOOD_TUNING_FILE, CREATE_DANGLING_TUNING_FILE_PROPERTY, CREATE_CORRUPT_TUNING_FILE
@@ -58,6 +62,10 @@ public class ServerBuilder {
     }
 
     public NeoServer build() throws IOException {
+        if ( dbDir == null )
+        {
+            throw new IllegalStateException( "database directory must be configured." );
+        }
         File f = createPropertyFile();
         return new CleaningNeoServer(addressResolver, startupHealthCheck, f, new Jetty6WebServer(), dbDir);
     }
@@ -90,7 +98,7 @@ public class ServerBuilder {
         if (thirdPartyPackages.keySet().size() > 0) {
             writePropertiesToFile(Configurator.THIRD_PARTY_PACKAGES_KEY, thirdPartyPackages, temporaryConfigFile);
         }
-        
+
         return temporaryConfigFile;
     }
 
