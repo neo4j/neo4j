@@ -45,7 +45,6 @@ import javax.ws.rs.core.Response.Status;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.ServerTestUtils;
@@ -60,7 +59,6 @@ import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 import org.neo4j.server.rest.web.RestfulGraphDatabase.AmpersandSeparatedCollection;
 
-@Ignore( "not enabled yet" )
 public class RestfulGraphDatabaseTest {
     private static final String BASE_URI = "http://neo4j.org/";
     private RestfulGraphDatabase service;
