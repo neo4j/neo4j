@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
+
 import org.codehaus.jackson.map.ser.MapSerializer;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -111,7 +112,7 @@ public class DatabaseActions
     {
         if ( value instanceof Collection<?> )
         {
-            Collection<?> collection = (Collection<?>)value;
+            Collection<?> collection = (Collection<?>) value;
             Object[] array = null;
             Iterator<?> objects = collection.iterator();
             for ( int i = 0; objects.hasNext(); i++ )
@@ -119,12 +120,13 @@ public class DatabaseActions
                 Object object = objects.next();
                 if ( array == null )
                 {
-                    array = (Object[])Array.newInstance( object.getClass(), collection.size() );
+                    array = (Object[]) Array.newInstance( object.getClass(), collection.size() );
                 }
-                array[ i ] = object;
+                array[i] = object;
             }
             return array;
-        } else
+        }
+        else
         {
             return value;
         }
@@ -372,7 +374,8 @@ public class DatabaseActions
         if ( types.isEmpty() )
         {
             expander = Traversal.expanderForAllTypes( direction.internal );
-        } else
+        }
+        else
         {
             expander = Traversal.emptyExpander();
             for ( String type : types )
@@ -489,7 +492,7 @@ public class DatabaseActions
             this.pathPrefix = pathPrefix;
         }
 
-        @SuppressWarnings( "boxing" )
+        @SuppressWarnings("boxing")
         String path( String indexName, String key, String value, long id )
         {
             return String.format( "%s/%s/%s/%s/%s", pathPrefix, indexName, key, value, id );
@@ -507,16 +510,18 @@ public class DatabaseActions
     }
 
     public IndexedEntityRepresentation addToRelationshipIndex( String indexName, String key,
-                                                       String value, long relationshipId )
+                                                               String value, long relationshipId )
     {
         Transaction tx = graphDb.beginTx();
-        try {
+        try
+        {
             Relationship relationship = graphDb.getRelationshipById( relationshipId );
             Index<Relationship> index = graphDb.index().forRelationships( indexName );
             index.add( relationship, key, value );
             tx.success();
-            return new IndexedEntityRepresentation( relationship, key, value, new RelationshipIndexRepresentation( indexName, Collections.EMPTY_MAP ));
-        } finally {
+            return new IndexedEntityRepresentation( relationship, key, value, new RelationshipIndexRepresentation( indexName, Collections.EMPTY_MAP ) );
+        } finally
+        {
             tx.finish();
         }
     }
@@ -525,13 +530,15 @@ public class DatabaseActions
                                                        String value, long nodeId )
     {
         Transaction tx = graphDb.beginTx();
-        try {
-            Node node = graphDb.getNodeById(nodeId);
+        try
+        {
+            Node node = graphDb.getNodeById( nodeId );
             Index<Node> index = graphDb.index().forNodes( indexName );
             index.add( node, key, value );
             tx.success();
-            return new IndexedEntityRepresentation( node, key, value, new NodeIndexRepresentation( indexName, Collections.EMPTY_MAP));
-        } finally {
+            return new IndexedEntityRepresentation( node, key, value, new NodeIndexRepresentation( indexName, Collections.EMPTY_MAP ) );
+        } finally
+        {
             tx.finish();
         }
     }
@@ -543,12 +550,18 @@ public class DatabaseActions
                 "Not implemented: DatabaseActions.removeFromIndex()" );
     }
 
-    public IndexedEntityRepresentation getIndexedObject( IndexType type, String indexName,
-                                                         String key, String value, long id )
+    public IndexedEntityRepresentation getIndexedNode( String indexName,
+                                                       String key, String value, long id )
     {
-        // TODO tobias: Implement getIndexedObject() [Dec 13, 2010]
-        throw new UnsupportedOperationException(
-                "Not implemented: DatabaseActions.getIndexedObject()" );
+        Node node = graphDb.getNodeById( id );
+        return new IndexedEntityRepresentation( node, key, value, new NodeIndexRepresentation( indexName, Collections.EMPTY_MAP ) );
+    }
+
+    public IndexedEntityRepresentation getIndexedRelationship( String indexName,
+                                                       String key, String value, long id )
+    {
+        Relationship node = graphDb.getRelationshipById( id );
+        return new IndexedEntityRepresentation( node, key, value, new RelationshipIndexRepresentation( indexName, Collections.EMPTY_MAP ) );
     }
 
     public ListRepresentation getIndexedObjects( IndexType type, String indexName, String key,
@@ -573,11 +586,14 @@ public class DatabaseActions
         {
             switch ( returnType )
             {
-                case node: result.add( new NodeRepresentation( position.endNode() ) );
+                case node:
+                    result.add( new NodeRepresentation( position.endNode() ) );
                     break;
-                case relationship: result.add( new RelationshipRepresentation( position.lastRelationship() ) );
+                case relationship:
+                    result.add( new RelationshipRepresentation( position.lastRelationship() ) );
                     break;
-                case path: result.add( new PathRepresentation( position ) );
+                case path:
+                    result.add( new PathRepresentation( position ) );
                     break;
             }
         }
