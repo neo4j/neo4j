@@ -620,10 +620,10 @@ public class DatabaseActionsTest {
         actions.addToNodeIndex( indexName, key, value2, nodeId );
         assertEquals(1, graphdbHelper.getIndexedNodes(indexName, key, value).size());
         assertEquals(1, graphdbHelper.getIndexedNodes(indexName, key, value2).size());
-        actions.removeFromIndex( IndexType.node, indexName, key, value, nodeId );
+        actions.removeFromNodeIndex( indexName, key, value, nodeId );
         assertEquals(0, graphdbHelper.getIndexedNodes(indexName, key, value).size());
         assertEquals(1, graphdbHelper.getIndexedNodes(indexName, key, value2).size());
-        actions.removeFromIndex( IndexType.node, indexName, key, value2, nodeId );
+        actions.removeFromNodeIndex( indexName, key, value2, nodeId );
         assertEquals(0, graphdbHelper.getIndexedNodes(indexName, key, value).size());
         assertEquals(0, graphdbHelper.getIndexedNodes(indexName, key, value2).size());
     }
