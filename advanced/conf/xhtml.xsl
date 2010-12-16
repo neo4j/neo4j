@@ -16,5 +16,23 @@
 
 <xsl:import href="footer.xsl"/>
 
+<xsl:param name="generate.legalnotice.link" select="1"/>
+<xsl:param name="legalnotice.filename">legalnotice.html</xsl:param>
+<xsl:param name="generate.revhistory.link" select="1"/>
+
+<xsl:template name="section.titlepage.before.recto">
+  <xsl:variable name="top-anchor">
+    <xsl:call-template name="object.id">
+      <xsl:with-param name="object" select="/*[1]"/>
+    </xsl:call-template>
+  </xsl:variable>
+
+  <p class="returntotop">
+    <a href="#{$top-anchor}">
+      <xsl:text>Return to top</xsl:text>
+    </a>
+  </p>
+</xsl:template>
+
 </xsl:stylesheet>
 
