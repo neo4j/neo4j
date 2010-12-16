@@ -107,7 +107,7 @@ public class OutputFormat
         return representation.serialize( format, baseUri, extensions );
     }
 
-    public Response nocontent()
+    public Response noContent()
     {
         return Response.status( Status.NO_CONTENT ).build();
     }
