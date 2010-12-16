@@ -71,7 +71,7 @@ public class RestfulGraphDatabaseTest
         database = new Database( ServerTestUtils.createTempDir().getAbsolutePath() );
         helper = new GraphDbHelper( database );
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
-        service = new RestfulGraphDatabase( uriInfo(), database, new JsonFormat(),
+        service = new RestfulGraphDatabase( uriInfo(), database, null, new JsonFormat(),
                 output );
     }
 

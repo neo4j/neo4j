@@ -23,6 +23,7 @@ package org.neo4j.server.web;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.ConfigurationProvider;
 import org.neo4j.server.database.DatabaseProvider;
+import org.neo4j.server.extensions.ExtensionInvocatorProvider;
 import org.neo4j.server.rest.repr.InputFormatProvider;
 import org.neo4j.server.rest.repr.OutputFormatProvider;
 import org.neo4j.server.rest.repr.RepresentationFormatRepository;
@@ -52,9 +53,10 @@ public class NeoServletContainer extends ServletContainer
         rc.getSingletons().add( new DatabaseProvider( server.getDatabase() ) );
         rc.getSingletons().add( new ConfigurationProvider( server.getConfiguration() ) );
         rc.getSingletons().add( new RrdDbProvider( server.getDatabase().rrdDb() ) );
-
-        RepresentationFormatRepository repository = new RepresentationFormatRepository( null );
+        RepresentationFormatRepository repository = new RepresentationFormatRepository(
+                server.getExtensionManager() );
         rc.getSingletons().add( new InputFormatProvider( repository ) );
         rc.getSingletons().add( new OutputFormatProvider( repository ) );
+        rc.getSingletons().add( new ExtensionInvocatorProvider( server.getExtensionManager() ) );
     }
 }

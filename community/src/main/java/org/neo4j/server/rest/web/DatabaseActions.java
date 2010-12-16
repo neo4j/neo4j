@@ -34,17 +34,24 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.server.database.Database;
+import org.neo4j.server.extensions.BadExtensionInvocationException;
+import org.neo4j.server.extensions.ExtensionInvocationFailureException;
+import org.neo4j.server.extensions.ExtensionInvocator;
+import org.neo4j.server.extensions.ExtensionLookupException;
+import org.neo4j.server.extensions.ParameterList;
 import org.neo4j.server.rest.domain.EndNodeNotFoundException;
 import org.neo4j.server.rest.domain.RelationshipExpanderBuilder;
 import org.neo4j.server.rest.domain.StartNodeNotFoundException;
 import org.neo4j.server.rest.domain.StartNodeSameAsEndNodeException;
 import org.neo4j.server.rest.domain.StorageActions.TraverserReturnType;
+import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.domain.TraversalDescriptionBuilder;
 import org.neo4j.server.rest.repr.DatabaseRepresentation;
 import org.neo4j.server.rest.repr.IndexRepresentation;
@@ -59,6 +66,7 @@ import org.neo4j.server.rest.repr.RelationshipIndexRepresentation;
 import org.neo4j.server.rest.repr.RelationshipIndexRootRepresentation;
 import org.neo4j.server.rest.repr.RelationshipRepresentation;
 import org.neo4j.server.rest.repr.Representation;
+import org.neo4j.server.rest.repr.ServerExtensionRepresentation;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -71,10 +79,12 @@ import java.util.Map;
 // TODO: move this to another package. domain?
 public class DatabaseActions
 {
-    private final GraphDatabaseService graphDb;
+    private final AbstractGraphDatabase graphDb;
+    private final ExtensionInvocator extensions;
 
-    DatabaseActions( Database database )
+    DatabaseActions( Database database, ExtensionInvocator extensions )
     {
+        this.extensions = extensions;
         this.graphDb = database.graph;
     }
 
@@ -704,43 +714,59 @@ public class DatabaseActions
 
     // Extensions
 
-    public Representation extensionsList()
-    {
-        // TODO tobias: Implement extensionsList() [Dec 14, 2010]
-        throw new UnsupportedOperationException(
-                "Not implemented: DatabaseActions.extensionsList()" );
-    }
-
-    public Representation getExtensionDetails( String extensionName )
+    public Representation getExtensionsList()
     {
         // TODO tobias: Implement getExtensionDetails() [Dec 14, 2010]
         throw new UnsupportedOperationException(
                 "Not implemented: DatabaseActions.getExtensionDetails()" );
     }
 
-    public Representation invokeGraphDatabaseExtension( String extensionName, String method )
+    public Representation getExtensionList( String extensionName ) throws ExtensionLookupException
     {
-        // TODO tobias: Implement invokeGraphDatabaseExtension() [Dec 14, 2010]
-        throw new UnsupportedOperationException(
-                "Not implemented: DatabaseActions.invokeGraphDatabaseExtension()" );
+        return new ServerExtensionRepresentation( extensionName,
+                extensions.describeAll( extensionName ) );
     }
 
-    public Representation invokeNodeExtension( long nodeId, String extensionName, String method )
-            throws NodeNotFoundException
+    public Representation invokeGraphDatabaseExtension( String extensionName, String method,
+            ParameterList data ) throws ExtensionLookupException, BadInputException,
+            ExtensionInvocationFailureException, BadExtensionInvocationException
     {
-        Node node = node( nodeId );
-        // TODO tobias: Implement invokeNodeExtension() [Dec 14, 2010]
-        throw new UnsupportedOperationException(
-                "Not implemented: DatabaseActions.invokeNodeExtension()" );
+        return extensions.invoke( graphDb, extensionName, GraphDatabaseService.class, method,
+                graphDb, data );
+    }
+
+    public Representation describeGraphDatabaseExtension( String extensionName, String method )
+            throws ExtensionLookupException
+    {
+        return extensions.describe( extensionName, GraphDatabaseService.class, method );
+    }
+
+    public Representation invokeNodeExtension( long nodeId, String extensionName, String method,
+            ParameterList data ) throws NodeNotFoundException, ExtensionLookupException,
+            BadInputException, ExtensionInvocationFailureException, BadExtensionInvocationException
+    {
+        return extensions.invoke( graphDb, extensionName, Node.class, method, node( nodeId ), data );
+    }
+
+    public Representation describeNodeExtension( String extensionName, String method )
+            throws ExtensionLookupException
+    {
+        return extensions.describe( extensionName, Node.class, method );
     }
 
     public Representation invokeRelationshipExtension( long relationshipId, String extensionName,
-                                                       String method ) throws RelationshipNotFoundException
+            String method, ParameterList data ) throws RelationshipNotFoundException,
+            ExtensionLookupException, BadInputException, ExtensionInvocationFailureException,
+            BadExtensionInvocationException
     {
-        Relationship relationship = relationship( relationshipId );
-        // TODO tobias: Implement invokeRelationshipExtension() [Dec 14, 2010]
-        throw new UnsupportedOperationException(
-                "Not implemented: DatabaseActions.invokeRelationshipExtension()" );
+        return extensions.invoke( graphDb, extensionName, Relationship.class, method,
+                relationship( relationshipId ), data );
+    }
+
+    public Representation describeRelationshipExtension( String extensionName, String method )
+            throws ExtensionLookupException
+    {
+        return extensions.describe( extensionName, Relationship.class, method );
     }
 
     private class FindParams

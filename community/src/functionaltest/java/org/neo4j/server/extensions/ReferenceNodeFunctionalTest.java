@@ -21,6 +21,7 @@
 package org.neo4j.server.extensions;
 
 import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
@@ -34,17 +35,16 @@ import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.rest.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.repr.NodeRepresentationTest;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
-@Ignore( "disabled since the extension provider is not wired in." )
 public class ReferenceNodeFunctionalTest
 {
     private NeoServer server;
@@ -98,16 +98,51 @@ public class ReferenceNodeFunctionalTest
 
         Map<String, Object> map = JsonHelper.jsonToMap( body );
         map = (Map<String, Object>) map.get( "extensions" );
-        System.out.println( map );
         map = (Map<String, Object>) map.get( ReferenceNode.class.getSimpleName() );
-
-        System.out.println( map );
 
         assertThat( (String) map.get( ReferenceNode.GET_REFERENCE_NODE ),
                 RegExp.endsWith( String.format( "/ext/%s/graphdb/%s",
                         ReferenceNode.class.getSimpleName(), ReferenceNode.GET_REFERENCE_NODE ) ) );
-        assertThat( (String) map.get( "description" ),
-                RegExp.endsWith( "/ext/" + ReferenceNode.class.getSimpleName() ) );
+    }
+
+    @Test
+    public void canGetExtensionDescription() throws Exception
+    {
+        ClientResponse response = Client.create().resource( functionalTestHelper.dataUri() ).accept(
+                MediaType.APPLICATION_JSON_TYPE ).get( ClientResponse.class );
+        String body = response.getEntity( String.class );
+
+        Map<String, Object> map = JsonHelper.jsonToMap( body );
+        map = (Map<String, Object>) map.get( "extensions" );
+        map = (Map<String, Object>) map.get( ReferenceNode.class.getSimpleName() );
+
+        response = Client.create().resource( (String) map.get( ReferenceNode.GET_REFERENCE_NODE ) ).accept(
+                MediaType.APPLICATION_JSON_TYPE ).get( ClientResponse.class );
+
+        assertEquals( 200, response.getStatus() );
+
+        Map<String, Object> description = JsonHelper.jsonToMap( response.getEntity( String.class ) );
+    }
+
+    @Test
+    public void canInvokeExtensionMethod() throws Exception
+    {
+        ClientResponse response = Client.create().resource( functionalTestHelper.dataUri() ).accept(
+                MediaType.APPLICATION_JSON_TYPE ).get( ClientResponse.class );
+        String body = response.getEntity( String.class );
+
+        Map<String, Object> map = JsonHelper.jsonToMap( body );
+        map = (Map<String, Object>) map.get( "extensions" );
+        map = (Map<String, Object>) map.get( ReferenceNode.class.getSimpleName() );
+
+        response = Client.create().resource( (String) map.get( ReferenceNode.GET_REFERENCE_NODE ) ).accept(
+                MediaType.APPLICATION_JSON_TYPE ).post( ClientResponse.class );
+
+        assertEquals( 200, response.getStatus() );
+
+        Map<String, Object> description = JsonHelper.jsonToMap( response.getEntity( String.class ) );
+
+        NodeRepresentationTest.verifySerialisation( description );
     }
 
     private static class RegExp extends TypeSafeMatcher<String>

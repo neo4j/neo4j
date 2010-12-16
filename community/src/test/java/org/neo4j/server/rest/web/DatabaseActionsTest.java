@@ -77,7 +77,7 @@ public class DatabaseActionsTest {
         database = new Database(ServerTestUtils.createTempDir().getAbsolutePath());
 
         graphdbHelper = new GraphDbHelper(database);
-        this.actions = new DatabaseActions( database );
+        this.actions = new DatabaseActions( database, null );
     }
 
     @After

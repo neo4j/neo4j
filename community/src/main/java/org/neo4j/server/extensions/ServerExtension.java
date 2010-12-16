@@ -20,7 +20,9 @@
 
 package org.neo4j.server.extensions;
 
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -30,34 +32,68 @@ import org.neo4j.helpers.Service;
 
 public abstract class ServerExtension
 {
-    private final String name;
+    final String name;
 
     public ServerExtension( String name )
     {
-        this.name = name;
+        this.name = verifyName( name );
     }
 
     public ServerExtension()
     {
-        this.name = getClass().getSimpleName();
+        this.name = verifyName( getClass().getSimpleName() );
     }
 
-    public Collection<MediaExtender> getServerMediaExtenders( Configuration serverConfig )
+    static String verifyName( String name )
     {
-        List<MediaExtender> result = new ArrayList<MediaExtender>();
-        for ( Method method : getClass().getMethods() )
+        if ( name == null )
         {
-            ExtensionTarget discovery = method.getAnnotation( ExtensionTarget.class );
-            if ( discovery != null )
+            throw new IllegalArgumentException( "Name may not be null" );
+        }
+        try
+        {
+            if ( !URLEncoder.encode( name, "UTF-8" ).equals( name ) )
             {
-                result.add( ServerExtensionMethod.createFrom( this, method, discovery.value() ) );
+                throw new IllegalArgumentException( "Name contained illegal characters" );
             }
         }
-        return result;
+        catch ( UnsupportedEncodingException e )
+        {
+            throw new Error( "UTF-8 should be supported", e );
+        }
+        return name;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "ServerExtension[" + name + "]";
     }
 
     static Iterable<ServerExtension> load()
     {
         return Service.load( ServerExtension.class );
+    }
+
+    protected void loadServerExtender( ServerExtender extender, Configuration serverConfig )
+    {
+        for ( ExtensionPoint extension : getDefaultExtensionPoints( serverConfig ) )
+        {
+            extender.addExtension( extension.forType(), extension );
+        }
+    }
+
+    protected Collection<ExtensionPoint> getDefaultExtensionPoints( Configuration serverConfig )
+    {
+        List<ExtensionPoint> result = new ArrayList<ExtensionPoint>();
+        for ( Method method : getClass().getMethods() )
+        {
+            ExtensionTarget target = method.getAnnotation( ExtensionTarget.class );
+            if ( target != null )
+            {
+                result.add( ServerExtensionMethod.createFrom( this, method, target.value() ) );
+            }
+        }
+        return result;
     }
 }
