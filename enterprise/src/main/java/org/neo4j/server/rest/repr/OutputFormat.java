@@ -29,7 +29,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 
-public final class OutputFormat
+public class OutputFormat
 {
     private static final String UTF8 = "UTF-8";
     private final RepresentationFormat format;
@@ -82,7 +82,7 @@ public final class OutputFormat
         return URI.create( format( representation.selfUri() ) );
     }
 
-    private Response response( ResponseBuilder response, Representation representation )
+    protected Response response( ResponseBuilder response, Representation representation )
     {
         String entity = format( representation );
         byte[] entityAsBytes;
@@ -106,5 +106,10 @@ public final class OutputFormat
     public String format( Representation representation )
     {
         return representation.serialize( format, baseUri, extensions );
+    }
+
+    public Response nocontent()
+    {
+        return Response.status( Status.NO_CONTENT ).build();
     }
 }
