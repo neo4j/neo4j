@@ -51,12 +51,12 @@ import org.neo4j.server.rest.domain.renderers.RootRenderer;
 /* (non-javadoc)
  * I'd really like to split up the JSON and HTML parts in two different
  * classes, but Jersey can't handle that (2010-03-30).
- * 
+ *
  * Instead we end up with json/html prefixed methods... URGH!
  * But it's... ok, kind of, since it doesn't really matter what the
  * methods are called. They only ones who could get upset are the tests.
  */
-@Path("/")
+@Path( "/" )
 public class JsonAndHtmlWebService extends GenericWebService
 {
 

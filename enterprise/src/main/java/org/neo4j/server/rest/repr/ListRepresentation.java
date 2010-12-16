@@ -20,10 +20,10 @@
 
 package org.neo4j.server.rest.repr;
 
-import org.neo4j.helpers.collection.IterableWrapper;
-
 import java.net.URI;
 import java.util.Arrays;
+
+import org.neo4j.helpers.collection.IterableWrapper;
 
 public final class ListRepresentation extends Representation
 {
@@ -35,7 +35,8 @@ public final class ListRepresentation extends Representation
         this.content = content;
     }
 
-    public ListRepresentation( RepresentationType type, final Iterable<Representation> content )
+    public ListRepresentation( RepresentationType type,
+            final Iterable<? extends Representation> content )
     {
         super( type );
         this.content = content;

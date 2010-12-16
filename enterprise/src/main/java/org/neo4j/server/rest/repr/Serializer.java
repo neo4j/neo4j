@@ -21,6 +21,7 @@
 package org.neo4j.server.rest.repr;
 
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 
 abstract class Serializer
@@ -36,23 +37,36 @@ abstract class Serializer
 
     final void serialize( MappingWriter mapping, MappingRepresentation value )
     {
-        if ( value instanceof ExtensibleRepresentation && extensions != null )
+        injectExtensions( mapping, value, baseUri, extensions );
+        value.serialize( new MappingSerializer( mapping, baseUri, extensions ) );
+        mapping.done();
+    }
+
+    static void injectExtensions( MappingWriter mapping, MappingRepresentation value, URI baseUri,
+            ExtensionInjector injector )
+    {
+        if ( value instanceof ExtensibleRepresentation && injector != null )
         {
-            Map<String/*name*/, ExtensionUri> serviceData = extensions.getExensionsFor( value.type.extend );
-            if ( serviceData != null )
+            Map<String/*name*/, List<String/*method*/>> extData = injector.getExensionsFor( value.type.extend );
+            String entityIdentity = ( (ExtensibleRepresentation) value ).getIdentity();
+            if ( extData != null )
             {
-                MappingWriter services = mapping.newMapping( RepresentationType.SERVICES,
-                        "services" );
-                for ( Map.Entry<String, ExtensionUri> service : serviceData.entrySet() )
+                MappingWriter extensions = mapping.newMapping( RepresentationType.EXTENSIONS, "extensions" );
+                for ( Map.Entry<String, List<String>> ext : extData.entrySet() )
                 {
-                    service.getValue().serialize(
-                            services.newMapping( RepresentationType.SERVICE, service.getKey() ),
-                            baseUri, ( (ExtensibleRepresentation) value ).getIdentity() );
+                    MappingWriter extension = extensions.newMapping( RepresentationType.EXTENSION, ext.getKey() );
+                    for ( String method : ext.getValue() )
+                    {
+                        StringBuilder path = new StringBuilder( "/ext/" ).append( ext.getKey() );
+                        path.append( "/" ).append( value.type.valueName );
+                        if ( entityIdentity != null ) path.append( "/" ).append( entityIdentity );
+                        path.append( "/" ).append( method );
+                        extension.writeValue( RepresentationType.URI, method, relative( baseUri,
+                                path.toString() ) );
+                    }
                 }
             }
         }
-        value.serialize( new MappingSerializer( mapping, baseUri, extensions ) );
-        mapping.done();
     }
 
     final void serialize( ListWriter list, ListRepresentation value )

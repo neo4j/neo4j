@@ -20,28 +20,30 @@
 
 package org.neo4j.server.rest.repr;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 
-import java.util.HashMap;
-import java.util.Map;
-
-final class RepresentationType
+public final class RepresentationType
 {
     private static final Map<String, RepresentationType> types = new HashMap<String, RepresentationType>();
+    private static final Map<Class<?>, RepresentationType> extended = new HashMap<Class<?>, RepresentationType>();
     // Graph database types
-    static final RepresentationType GRAPHDB = new RepresentationType( "graphdb", null,
-            GraphDatabaseService.class ),//
+    public static final RepresentationType GRAPHDB = new RepresentationType( "graphdb", null, GraphDatabaseService.class ),//
             NODE = new RepresentationType( "node", "nodes", Node.class ),//
-            RELATIONSHIP = new RepresentationType( "relationship", "relationships",
-                    Relationship.class ),//
-            PATH = new RepresentationType( "path", "paths", Path.class ),//
-            RELATIONSHIP_TYPE = new RepresentationType( "relationship-type", null ),//
+            RELATIONSHIP = new RepresentationType( "relationship", "relationships", Relationship.class ),//
+            PATH = new RepresentationType( "path", "paths", Path.class );
+    static final RepresentationType RELATIONSHIP_TYPE = new RepresentationType( "relationship-type", null ),//
             PROPERTIES = new RepresentationType( "properties" ),//
-            SERVICES = new RepresentationType( "services" ),//
-            SERVICE = new RepresentationType( "service" ),//
+            EXTENSIONS = new RepresentationType( "extensions" ),//
+            EXTENSION = new RepresentationType( "extension" ),//
+            EXTENSION_POINT_DESCRIPTION = new RepresentationType( "extension-point" ),//
+            SERVER_EXTENSION_DESCRIPTION = new RepresentationType( "server-extension", null ),//
+            EXTENSION_PARAMETER = new RepresentationType( "extension-parameter", "extension-parameter-list" ),//
             // Value types
             URI = new RepresentationType( "uri", null ),//
             TEMPLATE = new RepresentationType( "uri-template" ),//
@@ -73,6 +75,7 @@ final class RepresentationType
         this.listName = listName;
         this.extend = extend;
         if ( valueName != null ) types.put( valueName.replace( "-", "" ), this );
+        if ( extend != null ) extended.put( extend, this );
     }
 
     RepresentationType( String type )
@@ -127,5 +130,10 @@ final class RepresentationType
             }
         }
         return false;
+    }
+
+    static RepresentationType extended( Class<?> extend )
+    {
+        return extended.get( extend );
     }
 }

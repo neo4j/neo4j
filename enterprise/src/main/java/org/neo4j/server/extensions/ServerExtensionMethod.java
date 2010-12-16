@@ -21,14 +21,39 @@
 package org.neo4j.server.extensions;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
-class ServerExtensionMethod extends MediaExtender
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.server.rest.repr.BadInputException;
+import org.neo4j.server.rest.repr.Representation;
+
+class ServerExtensionMethod extends ExtensionPoint
 {
-    ServerExtensionMethod( String name, Class<?> discovery, ServerExtension extension,
-            Method method, DataExtractor[] extractors )
+    private final ServerExtension extension;
+    private final Method method;
+    private final DataExtractor[] extractors;
+    private final ResultConverter result;
+
+    private ServerExtensionMethod( String name, Class<?> discovery, ServerExtension extension,
+            ResultConverter result, Method method, DataExtractor[] extractors,
+            Description description )
     {
-        super( discovery, name );
+        super( discovery, name, description == null ? "" : description.value() );
+        this.extension = extension;
+        this.result = result;
+        this.method = method;
+        this.extractors = extractors;
     }
 
     static ServerExtensionMethod createFrom( ServerExtension extension, Method method,
@@ -78,11 +103,11 @@ class ServerExtensionMethod extends MediaExtender
                     throw new IllegalStateException(
                             "Server Extension methods may have at most one Source parameter." );
                 }
-                extractors[i] = sourceExtractor = new SourceExtractor( source );
+                extractors[i] = sourceExtractor = new SourceExtractor( source, description );
             }
             else if ( param != null )
             {
-                extractors[i] = new ParameterExtractor( param );
+                extractors[i] = parameterExtractor( types[i], param, description );
             }
             else
             {
@@ -90,8 +115,8 @@ class ServerExtensionMethod extends MediaExtender
                         "Parameters of Server Extension methods must be annotated as either Source or Parameter." );
             }
         }
-        return new ServerExtensionMethod( nameOf( method ), discovery, extension, method,
-                extractors );
+        return new ServerExtensionMethod( nameOf( method ), discovery, extension, result, method,
+                extractors, method.getAnnotation( Description.class ) );
     }
 
     private static String nameOf( Method method )
@@ -101,24 +126,403 @@ class ServerExtensionMethod extends MediaExtender
         {
             return name.value();
         }
-        return method.getName(); // TODO: should we restructure the name?
+        return method.getName();
     }
 
     private static abstract class DataExtractor
     {
-    }
+        abstract Object extract( AbstractGraphDatabase graphDb, Object source,
+                ParameterList parameters ) throws BadInputException;
 
-    private static class SourceExtractor extends DataExtractor
-    {
-        SourceExtractor( Source source )
+        void describe( ParameterDescriptionConsumer consumer )
         {
         }
     }
 
+    private static class SourceExtractor extends DataExtractor
+    {
+        SourceExtractor( Source source, Description description )
+        {
+        }
+
+        @Override
+        Object extract( AbstractGraphDatabase graphDb, Object source, ParameterList parameters )
+        {
+            return source;
+        }
+    }
+
+    private static ParameterExtractor parameterExtractor( Type type, Parameter parameter,
+            Description description )
+    {
+        if ( description instanceof ParameterizedType )
+        {
+            ParameterizedType paramType = (ParameterizedType) description;
+            Class<?> raw = (Class<?>) paramType.getRawType();
+            if ( Set.class.isAssignableFrom( raw ) )
+            {
+                TypeCaster caster = TYPES.get( raw );
+                if ( caster != null )
+                {
+                    return new ListParameterExtractor( caster, raw, parameter, description );
+                }
+            }
+            else if ( Iterable.class.isAssignableFrom( raw ) )
+            {
+                TypeCaster caster = TYPES.get( raw );
+                if ( caster != null )
+                {
+                    return new ListParameterExtractor( caster, raw, parameter, description );
+                }
+            }
+        }
+        else if ( type instanceof Class<?> )
+        {
+            Class<?> raw = (Class<?>) type;
+            TypeCaster caster = TYPES.get( raw );
+            if ( caster != null )
+            {
+                return new ParameterExtractor( caster, raw, parameter, description );
+            }
+        }
+        throw new IllegalStateException( "Unsupported parameter type: " + type );
+    }
+
     private static class ParameterExtractor extends DataExtractor
     {
-        ParameterExtractor( Parameter param )
+        final String name;
+        final Class<?> type;
+        final boolean optional;
+        final String description;
+        final TypeCaster caster;
+
+        ParameterExtractor( TypeCaster caster, Class<?> type, Parameter param,
+                Description description )
         {
+            this.caster = caster;
+            this.type = type;
+            this.name = param.name();
+            this.optional = param.optional();
+            this.description = description == null ? "" : description.value();
+        }
+
+        @Override
+        Object extract( AbstractGraphDatabase graphDb, Object source, ParameterList parameters )
+                throws BadInputException
+        {
+            Object result = caster.get( graphDb, parameters, name );
+            if ( optional || result != null ) return result;
+            throw new IllegalArgumentException( "Mandatory argument \"" + name + "\" not supplied." );
+        }
+
+        @Override
+        void describe( ParameterDescriptionConsumer consumer )
+        {
+            consumer.describeParameter( name, type, optional, description );
+        }
+    }
+
+    private static class ListParameterExtractor extends ParameterExtractor
+    {
+        ListParameterExtractor( TypeCaster caster, Class<?> type, Parameter param,
+                Description description )
+        {
+            super( caster, type, param, description );
+        }
+
+        @Override
+        Object extract( AbstractGraphDatabase graphDb, Object source, ParameterList parameters )
+                throws BadInputException
+        {
+            Object result = caster.getList( graphDb, parameters, name );
+            if ( optional || result != null ) return result;
+            throw new IllegalArgumentException( "Mandatory argument \"" + name + "\" not supplied." );
+        }
+
+        @Override
+        void describe( ParameterDescriptionConsumer consumer )
+        {
+            consumer.describeListParameter( name, type, optional, description );
+        }
+    }
+
+    private interface TypeCaster
+    {
+        Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+                throws BadInputException;
+
+        Object getList( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+                throws BadInputException;
+    }
+
+    private static final Map<Class<?>, TypeCaster> TYPES = new HashMap<Class<?>, TypeCaster>();
+    static
+    {
+        put( TYPES, new TypeCaster()
+        {
+            @Override
+            public Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+                    throws BadInputException
+            {
+                return parameters.getString( name );
+            }
+
+            @Override
+            public Object getList( AbstractGraphDatabase graphDb, ParameterList parameters,
+                    String name ) throws BadInputException
+            {
+                return null;
+            }
+        }, String.class );
+        put( TYPES, new TypeCaster()
+        {
+            @Override
+            public Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+                    throws BadInputException
+            {
+                return parameters.getByte( name );
+            }
+
+            @Override
+            public Object getList( AbstractGraphDatabase graphDb, ParameterList parameters,
+                    String name ) throws BadInputException
+            {
+                return null;
+            }
+        }, byte.class, Byte.class );
+        put( TYPES, new TypeCaster()
+        {
+            @Override
+            public Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+                    throws BadInputException
+            {
+                return parameters.getShort( name );
+            }
+
+            @Override
+            public Object getList( AbstractGraphDatabase graphDb, ParameterList parameters,
+                    String name ) throws BadInputException
+            {
+                return null;
+            }
+        }, short.class, Short.class );
+        put( TYPES, new TypeCaster()
+        {
+            @Override
+            public Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+                    throws BadInputException
+            {
+                return parameters.getInteger( name );
+            }
+
+            @Override
+            public Object getList( AbstractGraphDatabase graphDb, ParameterList parameters,
+                    String name ) throws BadInputException
+            {
+                return null;
+            }
+        }, int.class, Integer.class );
+        put( TYPES, new TypeCaster()
+        {
+            @Override
+            public Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+                    throws BadInputException
+            {
+                return parameters.getLong( name );
+            }
+
+            @Override
+            public Object getList( AbstractGraphDatabase graphDb, ParameterList parameters,
+                    String name ) throws BadInputException
+            {
+                return null;
+            }
+        }, long.class, Long.class );
+        put( TYPES, new TypeCaster()
+        {
+            @Override
+            public Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+                    throws BadInputException
+            {
+                return parameters.getCharacter( name );
+            }
+
+            @Override
+            public Object getList( AbstractGraphDatabase graphDb, ParameterList parameters,
+                    String name ) throws BadInputException
+            {
+                return null;
+            }
+        }, char.class, Character.class );
+        put( TYPES, new TypeCaster()
+        {
+            @Override
+            public Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+                    throws BadInputException
+            {
+                return parameters.getBoolean( name );
+            }
+
+            @Override
+            public Object getList( AbstractGraphDatabase graphDb, ParameterList parameters,
+                    String name ) throws BadInputException
+            {
+                return null;
+            }
+        }, boolean.class, Boolean.class );
+        put( TYPES, new TypeCaster()
+        {
+            @Override
+            public Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+                    throws BadInputException
+            {
+                return parameters.getFloat( name );
+            }
+
+            @Override
+            public Object getList( AbstractGraphDatabase graphDb, ParameterList parameters,
+                    String name ) throws BadInputException
+            {
+                return null;
+            }
+        }, float.class, Float.class );
+        put( TYPES, new TypeCaster()
+        {
+            @Override
+            public Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+                    throws BadInputException
+            {
+                return parameters.getDouble( name );
+            }
+
+            @Override
+            public Object getList( AbstractGraphDatabase graphDb, ParameterList parameters,
+                    String name ) throws BadInputException
+            {
+                return null;
+            }
+        }, double.class, Double.class );
+        put( TYPES, new TypeCaster()
+        {
+            @Override
+            public Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+                    throws BadInputException
+            {
+                return parameters.getNode( graphDb, name );
+            }
+
+            @Override
+            public Object getList( AbstractGraphDatabase graphDb, ParameterList parameters,
+                    String name ) throws BadInputException
+            {
+                return null;
+            }
+        }, Node.class );
+        put( TYPES, new TypeCaster()
+        {
+            @Override
+            public Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+                    throws BadInputException
+            {
+                return parameters.getRelationship( graphDb, name );
+            }
+
+            @Override
+            public Object getList( AbstractGraphDatabase graphDb, ParameterList parameters,
+                    String name ) throws BadInputException
+            {
+                return null;
+            }
+        }, Relationship.class );
+        put( TYPES, new TypeCaster()
+        {
+            @Override
+            public Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+                    throws BadInputException
+            {
+                return parameters.getUri( name );
+            }
+
+            @Override
+            public Object getList( AbstractGraphDatabase graphDb, ParameterList parameters,
+                    String name ) throws BadInputException
+            {
+                return null;
+            }
+        }, URI.class );
+        put( TYPES, new TypeCaster()
+        {
+            @Override
+            public Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+                    throws BadInputException
+            {
+                try
+                {
+                    return parameters.getUri( name ).toURL();
+                }
+                catch ( MalformedURLException e )
+                {
+                    throw new BadInputException( e );
+                }
+            }
+
+            @Override
+            public Object getList( AbstractGraphDatabase graphDb, ParameterList parameters,
+                    String name ) throws BadInputException
+            {
+                return null;
+            }
+        }, URL.class );
+    }
+
+    private static void put( Map<Class<?>, TypeCaster> types, TypeCaster caster, Class<?>... keys )
+    {
+        for ( Class<?> key : keys )
+        {
+            types.put( key, caster );
+        }
+    }
+
+    @Override
+    public Representation invoke( AbstractGraphDatabase graphDb, Object source, ParameterList params )
+            throws BadExtensionInvocationException, ExtensionInvocationFailureException,
+            BadInputException
+    {
+        Object[] arguments = new Object[extractors.length];
+        for ( int i = 0; i < arguments.length; i++ )
+        {
+            arguments[i] = extractors[i].extract( graphDb, source, params );
+        }
+        try
+        {
+            return result.convert( method.invoke( extension, arguments ) );
+        }
+        catch ( InvocationTargetException exc )
+        {
+            Throwable targetExc = exc.getTargetException();
+            for ( Class<?> excType : method.getExceptionTypes() )
+            {
+                if ( excType.isInstance( targetExc ) )
+                    throw new BadExtensionInvocationException( targetExc );
+            }
+            throw new ExtensionInvocationFailureException( targetExc );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            throw new ExtensionInvocationFailureException( e );
+        }
+        catch ( IllegalAccessException e )
+        {
+            throw new ExtensionInvocationFailureException( e );
+        }
+    }
+
+    @Override
+    protected void describeParameters( ParameterDescriptionConsumer consumer )
+    {
+        for ( DataExtractor extractor : extractors )
+        {
+            extractor.describe( consumer );
         }
     }
 }

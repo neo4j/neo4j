@@ -25,7 +25,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.IterableWrapper;
 
-public class PathRepresentation extends ObjectRepresentation implements ExtensibleRepresentation
+public class PathRepresentation extends ObjectRepresentation //implements ExtensibleRepresentation
 {
     private final Path path;
 
@@ -35,6 +35,7 @@ public class PathRepresentation extends ObjectRepresentation implements Extensib
         this.path = path;
     }
 
+    /*
     @Override
     public String getIdentity()
     {
@@ -48,6 +49,7 @@ public class PathRepresentation extends ObjectRepresentation implements Extensib
         result.append( "+" ).append( Long.toString( path.endNode().getId() ) );
         return result.toString();
     }
+    */
 
     @Mapping( "start" )
     public ValueRepresentation startNode()

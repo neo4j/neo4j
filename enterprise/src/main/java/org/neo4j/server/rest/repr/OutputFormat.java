@@ -76,6 +76,12 @@ public class OutputFormat
                 new ExceptionRepresentation( exception ) );
     }
 
+    public Response serverError( Throwable exception )
+    {
+        return response( Response.status( Status.INTERNAL_SERVER_ERROR ),
+                new ExceptionRepresentation( exception ) );
+    }
+
     private URI uri( EntityRepresentation representation )
     {
         return URI.create( format( representation.selfUri() ) );

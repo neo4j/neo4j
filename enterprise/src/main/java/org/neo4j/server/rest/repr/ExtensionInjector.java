@@ -20,9 +20,10 @@
 
 package org.neo4j.server.rest.repr;
 
+import java.util.List;
 import java.util.Map;
 
 public interface ExtensionInjector
 {
-    Map<String, ExtensionUri> getExensionsFor( Class<?> type );
+    Map<String, List<String>> getExensionsFor( Class<?> type );
 }
