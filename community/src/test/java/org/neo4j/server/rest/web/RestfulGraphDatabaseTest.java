@@ -97,7 +97,7 @@ public class RestfulGraphDatabaseTest
 
     private static String entityAsString( Response response )
     {
-        byte[] bytes = (byte[])response.getEntity();
+        byte[] bytes = (byte[]) response.getEntity();
         try
         {
             return new String( bytes, "UTF-8" );
@@ -140,14 +140,14 @@ public class RestfulGraphDatabaseTest
 
         assertTrue( map.containsKey( "self" ) );
 
-        @SuppressWarnings( "unchecked" )
-        Map<String, Object> data = (Map<String, Object>)map.get( "data" );
+        @SuppressWarnings("unchecked")
+        Map<String, Object> data = (Map<String, Object>) map.get( "data" );
 
         assertEquals( "bar", data.get( "foo" ) );
     }
 
     @Test
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     public void shouldRespondWith201LocationHeaderAndNodeRepresentationInJSONWhenPopulatedNodeCreatedWithArrays() throws Exception
     {
         Response response = service.createNode( "{\"foo\" : [\"bar\", \"baz\"] }" );
@@ -160,9 +160,9 @@ public class RestfulGraphDatabaseTest
 
         assertNotNull( map );
 
-        Map<String, Object> data = (Map<String, Object>)map.get( "data" );
+        Map<String, Object> data = (Map<String, Object>) map.get( "data" );
 
-        List<String> foo = (List<String>)data.get( "foo" );
+        List<String> foo = (List<String>) data.get( "foo" );
         assertNotNull( foo );
         assertEquals( 2, foo.size() );
     }
@@ -413,8 +413,8 @@ public class RestfulGraphDatabaseTest
         assertTrue( map.containsKey( "self" ) );
         assertEquals( response.getMetadata().getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
 
-        @SuppressWarnings( "unchecked" )
-        Map<String, Object> data = (Map<String, Object>)map.get( "data" );
+        @SuppressWarnings("unchecked")
+        Map<String, Object> data = (Map<String, Object>) map.get( "data" );
 
         assertEquals( "bar", data.get( "foo" ) );
     }
@@ -434,7 +434,7 @@ public class RestfulGraphDatabaseTest
     {
         long nodeId = helper.createNode();
         Response response = service.createRelationship( nodeId, "{\"to\" : \"" + BASE_URI
-                + ( nodeId * 1000 )
+                + (nodeId * 1000)
                 + "\", \"type\" : \"LOVES\"}" );
         assertEquals( 400, response.getStatus() );
     }
@@ -511,7 +511,7 @@ public class RestfulGraphDatabaseTest
         properties.put( "number", 15 );
         helper.setNodeProperties( nodeId, properties );
         service.deleteNodeProperty( nodeId, "foo" );
-        assertEquals( Collections.singletonMap( "number", (Object)new Integer( 15 ) ), helper.getNodeProperties( nodeId ) );
+        assertEquals( Collections.singletonMap( "number", (Object) new Integer( 15 ) ), helper.getNodeProperties( nodeId ) );
     }
 
     @Test
@@ -656,7 +656,7 @@ public class RestfulGraphDatabaseTest
         helper.createRelationship( "LIKES", nodeId, helper.createNode() );
         Response response = service.getNodeRelationships( nodeId, RelationshipDirection.all,
                 new AmpersandSeparatedCollection( "LIKES&LIKES" ) );
-        Collection<?> array = (Collection<?>)JsonHelper.jsonToSingleValue( entityAsString( response ) );
+        Collection<?> array = (Collection<?>) JsonHelper.jsonToSingleValue( entityAsString( response ) );
         assertEquals( 1, array.size() );
     }
 
@@ -756,7 +756,7 @@ public class RestfulGraphDatabaseTest
     public void shouldRespondWith204WhenSuccessfullyRemovedRelationshipProperties() throws DatabaseBlockedException
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
-        helper.setRelationshipProperties( relationshipId, Collections.singletonMap( "foo", (Object)"bar" ) );
+        helper.setRelationshipProperties( relationshipId, Collections.singletonMap( "foo", (Object) "bar" ) );
 
         Response response = service.deleteAllRelationshipProperties( relationshipId );
         assertEquals( 204, response.getStatus() );
@@ -784,7 +784,7 @@ public class RestfulGraphDatabaseTest
     public void shouldRespondWith204WhenRemovingRelationshipProperty() throws DatabaseBlockedException
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
-        helper.setRelationshipProperties( relationshipId, Collections.singletonMap( "foo", (Object)"bar" ) );
+        helper.setRelationshipProperties( relationshipId, Collections.singletonMap( "foo", (Object) "bar" ) );
 
         Response response = service.deleteRelationshipProperty( relationshipId, "foo" );
 
@@ -865,7 +865,7 @@ public class RestfulGraphDatabaseTest
     public void shouldBeAbleToIndexNode() throws DatabaseBlockedException
     {
         Response response = service.createNode( null );
-        URI nodeUri = (URI)response.getMetadata().getFirst( "Location" );
+        URI nodeUri = (URI) response.getMetadata().getFirst( "Location" );
 
         String key = "key";
         String value = "value";
@@ -921,15 +921,15 @@ public class RestfulGraphDatabaseTest
 
         String name1 = "Thomas Anderson";
         String name2 = "Agent Smith";
-        URI location1 = (URI)service.createNode( "{\"name\":\"" + name1 + "\"}" ).getMetadata().getFirst(
+        URI location1 = (URI) service.createNode( "{\"name\":\"" + name1 + "\"}" ).getMetadata().getFirst(
                 "Location" );
-        URI location2 = (URI)service.createNode( "{\"name\":\"" + name2 + "\"}" ).getMetadata().getFirst(
+        URI location2 = (URI) service.createNode( "{\"name\":\"" + name2 + "\"}" ).getMetadata().getFirst(
                 "Location" );
         String indexName = "matrixal-nodes";
-        URI indexLocation1 = (URI)service.addToNodeIndex( indexName, key, value,
+        URI indexLocation1 = (URI) service.addToNodeIndex( indexName, key, value,
                 JsonHelper.createJsonFrom( location1.toString() ) ).getMetadata().getFirst(
                 "Location" );
-        URI indexLocation2 = (URI)service.addToNodeIndex( indexName, key, value,
+        URI indexLocation2 = (URI) service.addToNodeIndex( indexName, key, value,
                 JsonHelper.createJsonFrom( location2.toString() ) ).getMetadata().getFirst(
                 "Location" );
         Map<String, String> uriToName = new HashMap<String, String>();
@@ -938,14 +938,14 @@ public class RestfulGraphDatabaseTest
 
         Response response = service.getIndexedNodes( indexName, key, value );
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
-        Collection<?> items = (Collection<?>)JsonHelper.jsonToSingleValue( entityAsString( response ) );
+        Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( entityAsString( response ) );
         int counter = 0;
         for ( Object item : items )
         {
-            Map<?, ?> map = (Map<?, ?>)item;
-            Map<?, ?> properties = (Map<?, ?>)map.get( "data" );
+            Map<?, ?> map = (Map<?, ?>) item;
+            Map<?, ?> properties = (Map<?, ?>) map.get( "data" );
             assertNotNull( map.get( "self" ) );
-            String indexedUri = (String)map.get( "indexed" );
+            String indexedUri = (String) map.get( "indexed" );
             assertEquals( uriToName.get( indexedUri ), properties.get( "name" ) );
             counter++;
         }
@@ -967,24 +967,24 @@ public class RestfulGraphDatabaseTest
         long relationshipId2 = helper.createRelationship( relationshipType2, startNodeId, endNodeId );
 
         String indexName = "matrixal-relationships";
-        helper.createRelationshipIndex( indexName);
+        helper.createRelationshipIndex( indexName );
         helper.addRelationshipToIndex( indexName, key, value, relationshipId1 );
         helper.addRelationshipToIndex( indexName, key, value, relationshipId2 );
 
         Response response = service.getIndexedRelationships( indexName, key, value );
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
-        Collection<?> items = (Collection<?>)JsonHelper.jsonToSingleValue( entityAsString( response ) );
+        Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( entityAsString( response ) );
         int counter = 0;
         for ( Object item : items )
         {
-            Map<?, ?> map = (Map<?, ?>)item;
-            Map<?, ?> properties = (Map<?, ?>)map.get( "data" );
+            Map<?, ?> map = (Map<?, ?>) item;
+            Map<?, ?> properties = (Map<?, ?>) map.get( "data" );
             assertNotNull( map.get( "self" ) );
-            String indexedUri = (String)map.get( "indexed" );
-            assertThat(indexedUri, containsString( key ));
-            assertThat(indexedUri, containsString( value ));
-            assertTrue(indexedUri.endsWith( Long.toString(relationshipId1) ) ||
-                    indexedUri.endsWith( Long.toString( relationshipId2 ) ));
+            String indexedUri = (String) map.get( "indexed" );
+            assertThat( indexedUri, containsString( key ) );
+            assertThat( indexedUri, containsString( value ) );
+            assertTrue( indexedUri.endsWith( Long.toString( relationshipId1 ) ) ||
+                    indexedUri.endsWith( Long.toString( relationshipId2 ) ) );
             counter++;
         }
         assertEquals( 2, counter );
@@ -999,7 +999,7 @@ public class RestfulGraphDatabaseTest
         String entity = entityAsString( response );
         Object parsedJson = JsonHelper.jsonToSingleValue( entity );
         assertTrue( parsedJson instanceof Collection<?> );
-        assertTrue( ( (Collection<?>)parsedJson ).isEmpty() );
+        assertTrue( ((Collection<?>) parsedJson).isEmpty() );
     }
 
     @Test
@@ -1013,6 +1013,23 @@ public class RestfulGraphDatabaseTest
         Response response = service.deleteFromNodeIndex( "node", key, value, nodeId );
         assertEquals( Status.NO_CONTENT.getStatusCode(), response.getStatus() );
         assertEquals( 0, helper.getIndexedNodes( "node", key, value ).size() );
+    }
+
+    @Test
+    public void shouldBeAbleToRemoveRelationshipFromIndex() throws DatabaseBlockedException
+    {
+        long startNodeId = helper.createNode();
+        long endNodeId = helper.createNode();
+        String relationshipType = "related-to";
+        long relationshipId = helper.createRelationship( relationshipType, startNodeId, endNodeId );
+        String key = "key_remove";
+        String value = "value";
+        String indexName = "relationships";
+        helper.addRelationshipToIndex( indexName, key, value, relationshipId );
+        assertEquals( 1, helper.getIndexedRelationships( indexName, key, value ).size() );
+        Response response = service.deleteFromRelationshipIndex( indexName, key, value, relationshipId );
+        assertEquals( Status.NO_CONTENT.getStatusCode(), response.getStatus() );
+        assertEquals( 0, helper.getIndexedRelationships( indexName, key, value ).size() );
     }
 
     @Test
@@ -1109,7 +1126,7 @@ public class RestfulGraphDatabaseTest
 
     private static String markWithUnicodeMarker( String string )
     {
-        return String.valueOf( (char)0xfeff ) + string;
+        return String.valueOf( (char) 0xfeff ) + string;
     }
 
     @Test
@@ -1123,16 +1140,16 @@ public class RestfulGraphDatabaseTest
                 "algorithm", "shortestPath",
                 "to", Long.toString( n2 ),
                 "relationships", MapUtil.map(
-                            "type", "knows",
-                            "direction", "out" ) );
+                "type", "knows",
+                "direction", "out" ) );
 
         String payload = JsonHelper.createJsonFrom( config );
 
         Response response = service.singlePath( n1, payload );
-        assertThat(response.getStatus(), is(200));
+        assertThat( response.getStatus(), is( 200 ) );
 
         Map<String, Object> resultAsMap = output.getResultAsMap();
-        assertThat((Integer)resultAsMap.get( "length" ), is(1));
+        assertThat( (Integer) resultAsMap.get( "length" ), is( 1 ) );
     }
 
     @Test
@@ -1146,16 +1163,16 @@ public class RestfulGraphDatabaseTest
                 "algorithm", "shortestPath",
                 "to", Long.toString( n2 ),
                 "relationships", MapUtil.map(
-                            "type", "knows",
-                            "direction", "out" ) );
+                "type", "knows",
+                "direction", "out" ) );
 
         String payload = JsonHelper.createJsonFrom( config );
 
         Response response = service.allPaths( n1, payload );
-        assertThat(response.getStatus(), is(200));
+        assertThat( response.getStatus(), is( 200 ) );
 
         List<Object> resultAsList = output.getResultAsList();
-        assertThat(resultAsList.size(), is(1));
+        assertThat( resultAsList.size(), is( 1 ) );
     }
 
     @Test
