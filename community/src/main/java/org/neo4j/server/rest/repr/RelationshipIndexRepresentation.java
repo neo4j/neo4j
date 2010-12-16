@@ -20,10 +20,17 @@
 
 package org.neo4j.server.rest.repr;
 
+import java.util.Collections;
 import java.util.Map;
 
 public class RelationshipIndexRepresentation extends IndexRepresentation
 {
+
+    public RelationshipIndexRepresentation( String name )
+    {
+        this( name, Collections.EMPTY_MAP );
+    }
+
     public RelationshipIndexRepresentation( String name, Map<String, String> config )
     {
         super( name, config );
