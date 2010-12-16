@@ -20,27 +20,25 @@
 
 package org.neo4j.server.rest.web;
 
-import java.lang.reflect.Array;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Map;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Expander;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.domain.EndNodeNotFoundException;
 import org.neo4j.server.rest.domain.StartNodeNotFoundException;
 import org.neo4j.server.rest.domain.StartNodeSameAsEndNodeException;
 import org.neo4j.server.rest.domain.StorageActions.TraverserReturnType;
+import org.neo4j.server.rest.domain.TraversalDescriptionBuilder;
 import org.neo4j.server.rest.repr.DatabaseRepresentation;
 import org.neo4j.server.rest.repr.IndexedEntityRepresentation;
 import org.neo4j.server.rest.repr.ListRepresentation;
@@ -49,6 +47,13 @@ import org.neo4j.server.rest.repr.PathRepresentation;
 import org.neo4j.server.rest.repr.PropertiesRepresentation;
 import org.neo4j.server.rest.repr.RelationshipRepresentation;
 import org.neo4j.server.rest.repr.Representation;
+
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 // TODO: move this to another package. domain?
 public class DatabaseActions
@@ -105,7 +110,7 @@ public class DatabaseActions
     {
         if ( value instanceof Collection<?> )
         {
-            Collection<?> collection = (Collection<?>) value;
+            Collection<?> collection = (Collection<?>)value;
             Object[] array = null;
             Iterator<?> objects = collection.iterator();
             for ( int i = 0; objects.hasNext(); i++ )
@@ -113,13 +118,12 @@ public class DatabaseActions
                 Object object = objects.next();
                 if ( array == null )
                 {
-                    array = (Object[]) Array.newInstance( object.getClass(), collection.size() );
+                    array = (Object[])Array.newInstance( object.getClass(), collection.size() );
                 }
-                array[i] = object;
+                array[ i ] = object;
             }
             return array;
-        }
-        else
+        } else
         {
             return value;
         }
@@ -231,7 +235,9 @@ public class DatabaseActions
         try
         {
             if ( node.removeProperty( key ) == null )
+            {
                 throw new NoSuchPropertyException( node, key );
+            }
             tx.success();
         } finally
         {
@@ -300,11 +306,14 @@ public class DatabaseActions
     }
 
     public RelationshipRepresentation createRelationship( long startNodeId, long endNodeId,
-                                                          String type, Map<String, Object> properties ) throws StartNodeNotFoundException,
+                                                          String type,
+                                                          Map<String, Object> properties ) throws StartNodeNotFoundException,
             EndNodeNotFoundException, StartNodeSameAsEndNodeException, PropertyValueException
     {
         if ( startNodeId == endNodeId )
+        {
             throw new StartNodeSameAsEndNodeException();
+        }
         Node start, end;
         try
         {
@@ -362,8 +371,7 @@ public class DatabaseActions
         if ( types.isEmpty() )
         {
             expander = Traversal.expanderForAllTypes( direction.internal );
-        }
-        else
+        } else
         {
             expander = Traversal.emptyExpander();
             for ( String type : types )
@@ -453,7 +461,9 @@ public class DatabaseActions
         try
         {
             if ( relationship.removeProperty( key ) == null )
+            {
                 throw new NoSuchPropertyException( relationship, key );
+            }
             tx.success();
         } finally
         {
@@ -478,7 +488,7 @@ public class DatabaseActions
             this.pathPrefix = pathPrefix;
         }
 
-        @SuppressWarnings("boxing")
+        @SuppressWarnings( "boxing" )
         String path( String indexName, String key, String value, long id )
         {
             return String.format( "%s/%s/%s/%s/%s", pathPrefix, indexName, key, value, id );
@@ -532,8 +542,25 @@ public class DatabaseActions
     public ListRepresentation traverse( long startNode, Map<String, Object> description,
                                         TraverserReturnType returnType )
     {
-        // TODO tobias: Implement traverse() [Dec 13, 2010]
-        throw new UnsupportedOperationException( "Not implemented: DatabaseActions.traverse()" );
+        Node node = graphDb.getNodeById( startNode );
+
+        List<Representation> result = new ArrayList<Representation>();
+
+        TraversalDescription traversalDescription = TraversalDescriptionBuilder.from( description );
+        for ( Path position : traversalDescription.traverse( node ) )
+        {
+            switch ( returnType )
+            {
+                case node: result.add( new NodeRepresentation( position.endNode() ) );
+                    break;
+                case relationship: result.add( new RelationshipRepresentation( position.lastRelationship() ) );
+                    break;
+                case path: result.add( new PathRepresentation( position ) );
+                    break;
+            }
+        }
+
+        return new ListRepresentation( "traversal-result", result );
     }
 
     public PathRepresentation findSinglePath( long startNode, long endNode,
