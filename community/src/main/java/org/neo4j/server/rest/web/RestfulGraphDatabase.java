@@ -78,9 +78,15 @@ public class RestfulGraphDatabase
     private static final String PATH_NODE_PATH = PATH_NODE + "/path";
     private static final String PATH_NODE_PATHS = PATH_NODE + "/paths";
 
-    private static final String PATH_INDEX = "index";
-    private static final String PATH_INDEX_QUERY = PATH_INDEX + "/{indexName}/{key}/{value}";
-    private static final String PATH_INDEX_ID = PATH_INDEX_QUERY + "/{id}";
+    protected static final String PATH_NODE_INDEX = "index/node";
+    protected static final String PATH_NAMED_NODE_INDEX = PATH_NODE_INDEX + "/{indexName}";
+    protected static final String PATH_NODE_INDEX_QUERY = PATH_NODE_INDEX + "/{indexName}/{key}/{value}";
+    protected static final String PATH_NODE_INDEX_ID = PATH_NODE_INDEX_QUERY + "/{id}";
+
+    protected static final String PATH_RELATIONSHIP_INDEX = "index/relationship";
+    protected static final String PATH_NAMED_RELATIONSHIP_INDEX = PATH_RELATIONSHIP_INDEX + "/{indexName}";
+    protected static final String PATH_RELATIONSHIP_INDEX_QUERY = PATH_RELATIONSHIP_INDEX + "/{indexName}/{key}/{value}";
+    protected static final String PATH_RELATIONSHIP_INDEX_ID = PATH_RELATIONSHIP_INDEX_QUERY + "/{id}";
 
     private final DatabaseActions server;
     private final OutputFormat output;
@@ -541,15 +547,41 @@ public class RestfulGraphDatabase
     // Index
 
     @GET
-    @Path( PATH_INDEX )
-    public Response getIndexRoot()
+    @Path( PATH_NODE_INDEX )
+    public Response getNodeIndexRoot()
     {
-        return output.ok( server.indexRoot() );
+        return output.response( Response.Status.NO_CONTENT, null );
+//        return output.ok( server.indexNodeRoot() );
+    }
+
+    @GET
+    @Path( PATH_RELATIONSHIP_INDEX )
+    public Response getRelationshipIndexRoot()
+    {
+        return output.response( Response.Status.NO_CONTENT, null );
+//        return output.ok( server.indexNodeRoot() );
     }
 
     @POST
-    @Path( PATH_INDEX_QUERY )
-    public Response addToIndex( @PathParam( "indexName" ) String indexName,
+    @Path( PATH_NODE_INDEX_QUERY )
+    public Response addToNodeIndex( @PathParam( "indexName" ) String indexName,
+            @PathParam( "key" ) String key, @PathParam( "value" ) String value, String objectUri )
+    {
+        try
+        {
+            return output.created( server.addToIndex( IndexType.node, indexName, key, value,
+                    extractNodeId( input.readUri( objectUri ).toString() ) ) );
+        }
+        catch ( BadInputException e )
+        {
+            return output.badRequest( e );
+        }
+    }
+
+
+    @POST
+    @Path( PATH_RELATIONSHIP_INDEX_QUERY )
+    public Response addToRelationshipIndex( @PathParam( "indexName" ) String indexName,
             @PathParam( "key" ) String key, @PathParam( "value" ) String value, String objectUri )
     {
         try
@@ -564,8 +596,8 @@ public class RestfulGraphDatabase
     }
 
     @GET
-    @Path( PATH_INDEX_ID )
-    public Response getObjectFromIndexUri( @PathParam( "indexName" ) String indexName,
+    @Path( PATH_NODE_INDEX_ID )
+    public Response getNodeFromIndexUri( @PathParam( "indexName" ) String indexName,
             @PathParam( "key" ) String key, @PathParam( "value" ) String value,
             @PathParam( "id" ) long id )
     {
@@ -573,16 +605,43 @@ public class RestfulGraphDatabase
     }
 
     @GET
-    @Path( PATH_INDEX_QUERY )
-    public Response getIndexedObjects( @PathParam( "indexName" ) String indexName,
+    @Path( PATH_RELATIONSHIP_INDEX_ID )
+    public Response getRelationshipFromIndexUri( @PathParam( "indexName" ) String indexName,
+            @PathParam( "key" ) String key, @PathParam( "value" ) String value,
+            @PathParam( "id" ) long id )
+    {
+        return output.ok( server.getIndexedObject( IndexType.node, indexName, key, value, id ) );
+    }
+
+    @GET
+    @Path( PATH_NODE_INDEX_QUERY )
+    public Response getIndexedNodes( @PathParam( "indexName" ) String indexName,
+            @PathParam( "key" ) String key, @PathParam( "value" ) String value )
+    {
+        return output.ok( server.getIndexedObjects( IndexType.node, indexName, key, value ) );
+    }
+
+    @GET
+    @Path( PATH_RELATIONSHIP_INDEX_QUERY )
+    public Response getIndexedRelationships( @PathParam( "indexName" ) String indexName,
             @PathParam( "key" ) String key, @PathParam( "value" ) String value )
     {
         return output.ok( server.getIndexedObjects( IndexType.node, indexName, key, value ) );
     }
 
     @DELETE
-    @Path( PATH_INDEX_ID )
-    public Response deleteFromIndex( @PathParam( "indexName" ) String indexName,
+    @Path( PATH_NODE_INDEX_ID )
+    public Response deleteFromNodeIndex( @PathParam( "indexName" ) String indexName,
+            @PathParam( "key" ) String key, @PathParam( "value" ) String value,
+            @PathParam( "id" ) long id )
+    {
+        server.removeFromIndex( IndexType.node, indexName, key, value, id );
+        return nothing();
+    }
+
+    @DELETE
+    @Path( PATH_NODE_INDEX_ID )
+    public Response deleteFromRelationshipIndex( @PathParam( "indexName" ) String indexName,
             @PathParam( "key" ) String key, @PathParam( "value" ) String value,
             @PathParam( "id" ) long id )
     {
