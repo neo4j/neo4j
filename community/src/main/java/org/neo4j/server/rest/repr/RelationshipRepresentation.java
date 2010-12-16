@@ -23,8 +23,6 @@ package org.neo4j.server.rest.repr;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.IterableWrapper;
 
-import java.net.URI;
-
 public final class RelationshipRepresentation extends ObjectRepresentation implements
         ExtensibleRepresentation, EntityRepresentation
 {
@@ -48,7 +46,7 @@ public final class RelationshipRepresentation extends ObjectRepresentation imple
     }
 
     @Mapping( "self" )
-    public URI selfUri()
+    public ValueRepresentation selfUri()
     {
         return ValueRepresentation.uri( path( "" ) );
     }
