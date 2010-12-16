@@ -20,14 +20,13 @@
 
 package org.neo4j.server.rest.repr;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URI;
-
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
 
 public class OutputFormat
 {
