@@ -512,7 +512,7 @@ public class RestfulGraphDatabase
     {
         if ( server.getNodeIndexNames().length == 0 )
         {
-            return output.nocontent();
+            return output.noContent();
         }
         return output.ok( server.nodeIndexRoot() );
     }
@@ -523,7 +523,7 @@ public class RestfulGraphDatabase
     {
         if ( server.getRelationshipIndexNames().length == 0 )
         {
-            return output.nocontent();
+            return output.noContent();
         }
         return output.ok( server.relationshipIndexRoot() );
     }
@@ -642,14 +642,18 @@ public class RestfulGraphDatabase
         {
             description = input.readMap( body );
             endNode = extractNodeId( (String) description.get( "to" ) );
+            return output.ok( server.findSinglePath( startNode, endNode, description ) );
         } catch ( BadInputException e )
         {
             return output.badRequest( e );
         } catch ( ClassCastException e )
         {
             return output.badRequest( e );
+        } catch ( NotFoundException e )
+        {
+            return output.noContent();
         }
-        return output.ok( server.findSinglePath( startNode, endNode, description ) );
+
     }
 
     @POST
