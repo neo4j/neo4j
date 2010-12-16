@@ -23,8 +23,7 @@ package org.neo4j.server.rest.repr;
 import java.net.URI;
 import java.util.Map;
 
-public abstract class IndexRepresentation extends MappingRepresentation implements ExtensibleRepresentation,
-        EntityRepresentation
+public abstract class IndexRepresentation extends MappingRepresentation implements EntityRepresentation
 {
     private final URI baseUri;
     private final String name;
