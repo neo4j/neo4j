@@ -45,19 +45,9 @@ import org.neo4j.server.rest.domain.StartNodeNotFoundException;
 import org.neo4j.server.rest.domain.StartNodeSameAsEndNodeException;
 import org.neo4j.server.rest.domain.StorageActions.TraverserReturnType;
 import org.neo4j.server.rest.domain.TraversalDescriptionBuilder;
-import org.neo4j.server.rest.repr.DatabaseRepresentation;
-import org.neo4j.server.rest.repr.IndexedEntityRepresentation;
-import org.neo4j.server.rest.repr.ListRepresentation;
-import org.neo4j.server.rest.repr.NodeIndexRepresentation;
-import org.neo4j.server.rest.repr.NodeIndexRootRepresentation;
-import org.neo4j.server.rest.repr.NodeRepresentation;
-import org.neo4j.server.rest.repr.PathRepresentation;
-import org.neo4j.server.rest.repr.PropertiesRepresentation;
-import org.neo4j.server.rest.repr.RelationshipIndexRepresentation;
-import org.neo4j.server.rest.repr.RelationshipIndexRootRepresentation;
-import org.neo4j.server.rest.repr.RelationshipRepresentation;
-import org.neo4j.server.rest.repr.Representation;
+import org.neo4j.server.rest.repr.*;
 
+import javax.ws.rs.core.Response;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -571,12 +561,49 @@ public class DatabaseActions
         return new IndexedEntityRepresentation( node, key, value, new RelationshipIndexRepresentation( indexName, Collections.EMPTY_MAP ) );
     }
 
-    public ListRepresentation getIndexedObjects( IndexType type, String indexName, String key,
-                                                 String value )
+    public ListRepresentation getIndexedNodes( String indexName, String key,
+                                               String value )
     {
-        // TODO tobias: Implement getIndexedObjects() [Dec 13, 2010]
-        throw new UnsupportedOperationException(
-                "Not implemented: DatabaseActions.getIndexedObjects()" );
+        List<IndexedEntityRepresentation> representations = new ArrayList<IndexedEntityRepresentation>();
+        Index<Node> index = graphDb.index().forNodes( indexName );
+
+        Transaction tx = graphDb.beginTx();
+        try
+        {
+            IndexRepresentation indexRepresentation = new NodeIndexRepresentation( indexName );
+            for ( Node node : index.get( key, value ) )
+            {
+                representations.add( new IndexedEntityRepresentation( node, key, value,  indexRepresentation ));
+            }
+            tx.success();
+            return new ListRepresentation( "nodes", representations );
+        } finally
+        {
+            tx.finish();
+        }
+    }
+
+
+    public ListRepresentation getIndexedRelationships( String indexName, String key,
+                                                       String value )
+    {
+        List<IndexedEntityRepresentation> representations = new ArrayList<IndexedEntityRepresentation>();
+        Index<Relationship> index = graphDb.index().forRelationships( indexName );
+
+        Transaction tx = graphDb.beginTx();
+        try
+        {
+            IndexRepresentation indexRepresentation = new NodeIndexRepresentation( indexName );
+            for ( Relationship node : index.get( key, value ) )
+            {
+                representations.add( new IndexedEntityRepresentation( node, key, value,  indexRepresentation ));
+            }
+            tx.success();
+            return new ListRepresentation( "relationships", representations );
+        } finally
+        {
+            tx.finish();
+        }
     }
 
     // Traversal
