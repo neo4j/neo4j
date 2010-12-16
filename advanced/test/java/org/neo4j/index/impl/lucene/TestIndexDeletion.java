@@ -31,14 +31,17 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.Neo4jTestCase;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.index.Neo4jTestCase.assertContains;
 import static org.neo4j.index.impl.lucene.Contains.contains;
 import static org.neo4j.index.impl.lucene.HasThrownException.hasThrownException;
@@ -238,6 +241,34 @@ public class TestIndexDeletion
         assertThat( secondTx.queryIndex( key, value ), contains( node ) );
 
         firstTx.rollback();
+    }
+    
+    @Test
+    public void indexDeleteShouldDeleteDirectory()
+    {
+        String otherIndexName = "other-index";
+        File pathToLuceneIndex = new File( ((AbstractGraphDatabase)graphDb).getStoreDir() + "/index/lucene/node/" + INDEX_NAME );
+        File pathToOtherLuceneIndex = new File( ((AbstractGraphDatabase)graphDb).getStoreDir() + "/index/lucene/node/" + otherIndexName );
+        Index<Node> otherIndex = graphDb.index().forNodes( otherIndexName );
+        Node node = graphDb.createNode();
+        otherIndex.add( node, "someKey", "someValue" );
+        assertFalse( pathToLuceneIndex.exists() );
+        assertFalse( pathToOtherLuceneIndex.exists() );
+        restartTx();
+        
+        // Here "index" and "other-index" indexes should exist
+        
+        assertTrue( pathToLuceneIndex.exists() );
+        assertTrue( pathToOtherLuceneIndex.exists() );
+        index.delete();
+        assertTrue( pathToLuceneIndex.exists() );
+        assertTrue( pathToOtherLuceneIndex.exists() );
+        restartTx();
+        
+        // Here only "other-index" should exist
+        
+        assertFalse( pathToLuceneIndex.exists() );
+        assertTrue( pathToOtherLuceneIndex.exists() );
     }
 
     private WorkThread createWorker()
