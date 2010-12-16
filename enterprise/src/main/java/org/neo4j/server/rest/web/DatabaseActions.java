@@ -36,6 +36,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.domain.EndNodeNotFoundException;
@@ -120,7 +121,7 @@ public class DatabaseActions
     {
         if ( value instanceof Collection<?> )
         {
-            Collection<?> collection = (Collection<?>) value;
+            Collection<?> collection = (Collection<?>)value;
             Object[] array = null;
             Iterator<?> objects = collection.iterator();
             for ( int i = 0; objects.hasNext(); i++ )
@@ -128,13 +129,12 @@ public class DatabaseActions
                 Object object = objects.next();
                 if ( array == null )
                 {
-                    array = (Object[]) Array.newInstance( object.getClass(), collection.size() );
+                    array = (Object[])Array.newInstance( object.getClass(), collection.size() );
                 }
-                array[i] = object;
+                array[ i ] = object;
             }
             return array;
-        }
-        else
+        } else
         {
             return value;
         }
@@ -382,8 +382,7 @@ public class DatabaseActions
         if ( types.isEmpty() )
         {
             expander = Traversal.expanderForAllTypes( direction.internal );
-        }
-        else
+        } else
         {
             expander = Traversal.emptyExpander();
             for ( String type : types )
@@ -500,7 +499,7 @@ public class DatabaseActions
             this.pathPrefix = pathPrefix;
         }
 
-        @SuppressWarnings("boxing")
+        @SuppressWarnings( "boxing" )
         String path( String indexName, String key, String value, long id )
         {
             return String.format( "%s/%s/%s/%s/%s", pathPrefix, indexName, key, value, id );
@@ -566,7 +565,7 @@ public class DatabaseActions
     }
 
     public IndexedEntityRepresentation getIndexedRelationship( String indexName,
-                                                       String key, String value, long id )
+                                                               String key, String value, long id )
     {
         Relationship node = graphDb.getRelationshipById( id );
         return new IndexedEntityRepresentation( node, key, value, new RelationshipIndexRepresentation( indexName, Collections.EMPTY_MAP ) );
@@ -609,44 +608,38 @@ public class DatabaseActions
         return new ListRepresentation( "traversal-result", result );
     }
 
-    private PathFinder<Path> getAlgorithm( String algorithm, RelationshipExpander expander, int maxDepth )
-    {
-            if (algorithm.equals("shortestPath")) {
-                return GraphAlgoFactory.shortestPath( expander, maxDepth);
-            } else if (algorithm.equals("allSimplePaths")) {
-                return GraphAlgoFactory.allSimplePaths(expander, maxDepth);
-            } else if (algorithm.equals("allPaths")) {
-                return GraphAlgoFactory.allPaths( expander, maxDepth );
-            }
-
-        throw new RuntimeException( "Failed to find matching algorithm" );
-    }
-
     public PathRepresentation findSinglePath( long startId, long endId,
                                               Map<String, Object> map )
     {
-        Node startNode = graphDb.getNodeById( startId );
-        Node endNode = graphDb.getNodeById( endId );
+        FindParams findParams = new FindParams( startId, endId, map ).invoke();
+        PathFinder<Path> finder = findParams.getFinder();
+        Node startNode = findParams.getStartNode();
+        Node endNode = findParams.getEndNode();
 
-        Integer maxDepthObj = (Integer)map.get( "max depth" );
-        int maxDepth = ( maxDepthObj != null ) ? maxDepthObj : 1;
-
-        RelationshipExpander expander = RelationshipExpanderBuilder.describeRelationships( map );
-
-        String algorithm = (String)map.get( "algorithm" );
-        algorithm = ( algorithm != null ) ? algorithm : "shortestPath";
-
-        PathFinder<Path> finder = getAlgorithm( algorithm, expander, maxDepth );
-
-        Path path = finder.findSinglePath(startNode, endNode);
+        Path path = finder.findSinglePath( startNode, endNode );
         return new PathRepresentation( path );
     }
 
-    public ListRepresentation findPaths( long startNode, long endNode,
-                                         Map<String, Object> description )
+    public ListRepresentation findPaths( long startId, long endId,
+                                         Map<String, Object> map )
     {
-        // TODO tobias: Implement allPaths() [Dec 13, 2010]
-        throw new UnsupportedOperationException( "Not implemented: DatabaseActions.findPaths()" );
+        FindParams findParams = new FindParams( startId, endId, map ).invoke();
+        PathFinder<Path> finder = findParams.getFinder();
+        Node startNode = findParams.getStartNode();
+        Node endNode = findParams.getEndNode();
+
+        Iterable<Path> paths = finder.findAllPaths( startNode, endNode );
+
+        IterableWrapper<PathRepresentation, Path> pathRepresentations = new IterableWrapper<PathRepresentation, Path>( paths )
+        {
+            @Override
+            protected PathRepresentation underlyingObjectToObject( final Path path )
+            {
+                return new PathRepresentation( path );
+            }
+        };
+
+        return new ListRepresentation( "paths", pathRepresentations );
     }
 
     // Extensions
@@ -688,5 +681,70 @@ public class DatabaseActions
         // TODO tobias: Implement invokeRelationshipExtension() [Dec 14, 2010]
         throw new UnsupportedOperationException(
                 "Not implemented: DatabaseActions.invokeRelationshipExtension()" );
+    }
+
+    private class FindParams
+    {
+        private final long startId;
+        private final long endId;
+        private final Map<String, Object> map;
+        private Node startNode;
+        private Node endNode;
+        private PathFinder<Path> finder;
+
+        public FindParams( final long startId, final long endId, final Map<String, Object> map )
+        {
+            this.startId = startId;
+            this.endId = endId;
+            this.map = map;
+        }
+
+        public Node getStartNode()
+        {
+            return startNode;
+        }
+
+        public Node getEndNode()
+        {
+            return endNode;
+        }
+
+        public PathFinder<Path> getFinder()
+        {
+            return finder;
+        }
+
+        public FindParams invoke()
+        {
+            startNode = graphDb.getNodeById( startId );
+            endNode = graphDb.getNodeById( endId );
+
+            Integer maxDepthObj = (Integer)map.get( "max depth" );
+            int maxDepth = ( maxDepthObj != null ) ? maxDepthObj : 1;
+
+            RelationshipExpander expander = RelationshipExpanderBuilder.describeRelationships( map );
+
+            String algorithm = (String)map.get( "algorithm" );
+            algorithm = ( algorithm != null ) ? algorithm : "shortestPath";
+
+            finder = getAlgorithm( algorithm, expander, maxDepth );
+            return this;
+        }
+
+        private PathFinder<Path> getAlgorithm( String algorithm, RelationshipExpander expander, int maxDepth )
+        {
+            if ( algorithm.equals( "shortestPath" ) )
+            {
+                return GraphAlgoFactory.shortestPath( expander, maxDepth );
+            } else if ( algorithm.equals( "allSimplePaths" ) )
+            {
+                return GraphAlgoFactory.allSimplePaths( expander, maxDepth );
+            } else if ( algorithm.equals( "allPaths" ) )
+            {
+                return GraphAlgoFactory.allPaths( expander, maxDepth );
+            }
+
+            throw new RuntimeException( "Failed to find matching algorithm" );
+        }
     }
 }

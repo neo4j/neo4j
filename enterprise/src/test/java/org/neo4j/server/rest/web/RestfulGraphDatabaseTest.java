@@ -1096,6 +1096,29 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
+    public void shouldBeAbleToFindSinglePathBetweenTwoNodesEvenWhenAskingForAllPaths() throws Exception
+    {
+        long n1 = helper.createNode();
+        long n2 = helper.createNode();
+        long r = helper.createRelationship( "knows", n1, n2 );
+        Map<String, Object> config = MapUtil.map(
+                "max depth", 3,
+                "algorithm", "shortestPath",
+                "to", Long.toString( n2 ),
+                "relationships", MapUtil.map(
+                            "type", "knows",
+                            "direction", "out" ) );
+
+        String payload = JsonHelper.createJsonFrom( config );
+
+        Response response = service.allPaths( n1, payload );
+        assertThat(response.getStatus(), is(200));
+
+        List<Object> resultAsList = output.getResultAsList();
+        assertThat(resultAsList.size(), is(1));
+    }
+
+    @Test
     public void shouldBeAbleToParseJsonEvenWithUnicodeMarkerAtTheStart() throws DatabaseBlockedException
     {
         Response response = service.createNode( markWithUnicodeMarker( "{\"name\":\"Mattias\"}" ) );
