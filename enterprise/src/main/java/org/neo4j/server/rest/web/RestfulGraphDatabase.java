@@ -565,7 +565,7 @@ public class RestfulGraphDatabase
                                          @PathParam("key") String key, @PathParam("value") String value,
                                          @PathParam("id") long id )
     {
-        return output.ok( server.getIndexedObject( IndexType.node, indexName, key, value, id ) );
+        return output.ok( server.getIndexedNode( indexName, key, value, id ) );
     }
 
     @GET
@@ -574,7 +574,7 @@ public class RestfulGraphDatabase
                                                  @PathParam("key") String key, @PathParam("value") String value,
                                                  @PathParam("id") long id )
     {
-        return output.ok( server.getIndexedObject( IndexType.node, indexName, key, value, id ) );
+        return output.ok( server.getIndexedRelationship( indexName, key, value, id ) );
     }
 
     @GET
