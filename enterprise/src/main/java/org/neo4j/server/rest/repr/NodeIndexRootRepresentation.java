@@ -28,13 +28,11 @@ import java.net.URI;
 
 public class NodeIndexRootRepresentation extends MappingRepresentation
 {
-    private final URI baseUri;
     private IndexManager indexManager;
 
-    public NodeIndexRootRepresentation( URI baseUri, IndexManager indexManager )
+    public NodeIndexRootRepresentation( IndexManager indexManager )
     {
         super("node-index");
-        this.baseUri = baseUri;
         this.indexManager = indexManager;
     }
 
@@ -46,7 +44,7 @@ public class NodeIndexRootRepresentation extends MappingRepresentation
         for ( String indexName : indexManager.nodeIndexNames() )
         {
             Index<Node> index = indexManager.forNodes( indexName );
-            serializer.putMapping( indexName, new NodeIndexRepresentation( baseUri, indexName, indexManager.getConfiguration( index ) ) );
+            serializer.putMapping( indexName, new NodeIndexRepresentation( indexName, indexManager.getConfiguration( index ) ) );
         }
     }
 }
