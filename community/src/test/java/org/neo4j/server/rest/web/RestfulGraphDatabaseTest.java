@@ -69,8 +69,9 @@ public class RestfulGraphDatabaseTest {
     public void doBefore() throws IOException {
         database = new Database(ServerTestUtils.createTempDir().getAbsolutePath());
         helper = new GraphDbHelper(database);
+        OutputFormat outputFormat = new EntityOutputFormat(); // new OutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
         service = new RestfulGraphDatabase( uriInfo(), database, new JsonFormat(),
-                new OutputFormat( new JsonFormat(), URI.create( BASE_URI ), null ) );
+                outputFormat );
     }
 
     @After
@@ -736,7 +737,15 @@ public class RestfulGraphDatabaseTest {
     }
 
     @Test
+    public void shouldRespondWithNoContentNoNodeIndexesExist() {
+        Response response = service.getNodeIndexRoot();
+        assertEquals(204, response.getStatus());
+    }
+
+    @Test
     public void shouldRespondWithAvailableIndexNodeRoots() {
+        String indexName = "nodeIndex";
+        helper.createNodeIndex( indexName );
         Response response = service.getNodeIndexRoot();
         assertEquals(200, response.getStatus());
         String entity = entityAsString(response);
@@ -744,6 +753,12 @@ public class RestfulGraphDatabaseTest {
         assertNotNull(map.get("node"));
         assertFalse(((Collection<?>) map.get("node")).isEmpty());
         assertEquals(response.getMetadata().getFirst(HttpHeaders.CONTENT_ENCODING), "UTF-8");
+    }
+
+    @Test
+    public void shouldRespondWithNoContentWhenNoRelationshipIndexesExist() {
+        Response response = service.getNodeIndexRoot();
+        assertEquals(204, response.getStatus());
     }
 
     @Test
@@ -789,7 +804,7 @@ public class RestfulGraphDatabaseTest {
         long nodeId = helper.createNode();
         Response response = service.addToNodeIndex( "node", key, value,
                 JsonHelper.createJsonFrom( BASE_URI + "node/"
-                + nodeId));
+                        + nodeId ) );
         response = service.getNodeFromIndexUri( "node", key, value, nodeId );
         assertEquals(200, response.getStatus());
         assertEquals(response.getMetadata().getFirst(HttpHeaders.CONTENT_ENCODING), "UTF-8");
@@ -979,7 +994,7 @@ public class RestfulGraphDatabaseTest {
                 markWithUnicodeMarker("{\"name\":\"Something\",\"number\":10}")).getStatus());
 
         assertEquals( Status.CREATED.getStatusCode(), service.addToNodeIndex( "node", "foo", "bar",
-                markWithUnicodeMarker(JsonHelper.createJsonFrom(nodeLocation))).getStatus());
+                markWithUnicodeMarker( JsonHelper.createJsonFrom( nodeLocation ) ) ).getStatus());
 
         assertEquals( Status.OK.getStatusCode(), service.traverse( node, TraverserReturnType.node,
                 markWithUnicodeMarker( "{\"max depth\":2}" ) ).getStatus() );
