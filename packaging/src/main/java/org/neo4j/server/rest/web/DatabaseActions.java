@@ -35,6 +35,7 @@ import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.Traversal;
@@ -551,11 +552,28 @@ public class DatabaseActions
         }
     }
 
-    public void removeFromIndex( IndexType type, String indexName, String key, String value, long id )
+    public void removeFromNodeIndex( String indexName, String key, String value, long id )
     {
-        // TODO tobias: Implement removeFromIndex() [Dec 13, 2010]
-        throw new UnsupportedOperationException(
-                "Not implemented: DatabaseActions.removeFromIndex()" );
+        Index<Node> index = graphDb.index().forNodes( indexName );
+        Transaction tx = graphDb.beginTx();
+        try {
+            index.remove(graphDb.getNodeById(id), key, value);
+            tx.success();
+        } finally {
+            tx.finish();
+        }
+    }
+
+    public void removeFromRelationshipIndex( String indexName, String key, String value, long id )
+    {
+        RelationshipIndex index = graphDb.index().forRelationships( indexName );
+        Transaction tx = graphDb.beginTx();
+        try {
+            index.remove(graphDb.getRelationshipById(id), key, value);
+            tx.success();
+        } finally {
+            tx.finish();
+        }
     }
 
     public IndexedEntityRepresentation getIndexedNode( String indexName,
