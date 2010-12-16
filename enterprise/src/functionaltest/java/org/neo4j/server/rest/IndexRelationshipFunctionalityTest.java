@@ -88,13 +88,17 @@ public class IndexRelationshipFunctionalityTest
      */
     public JaxRsResponse httpGetIndexRelationshipRoot()
     {
-        return httpGet( functionalTestHelper.indexRelationshipUri(), MediaType.APPLICATION_JSON_TYPE );
+        return httpGet( functionalTestHelper.relationshipIndexUri(), MediaType.APPLICATION_JSON_TYPE );
     }
 
     /**
      * POST ${org.neo4j.server.rest.web}/index/relationship
      * {
      * "name":"index-name"
+     * "config":{ // optional map of index configuration params
+     * "key1":"value1",
+     * "key2":"value2"
+     * }
      * }
      */
     @Test
@@ -112,7 +116,9 @@ public class IndexRelationshipFunctionalityTest
 
     private JaxRsResponse httpPostIndexRelationshipRoot( String jsonIndexSpecification )
     {
-        return new JaxRsResponse( Client.create().resource( functionalTestHelper.indexRelationshipUri() ).type( MediaType.APPLICATION_JSON )
+        return new JaxRsResponse( Client.create().resource( functionalTestHelper.relationshipIndexUri() )
+                .type( MediaType.APPLICATION_JSON )
+                .accept( MediaType.APPLICATION_JSON )
                 .entity( jsonIndexSpecification ).post( ClientResponse.class ) );
     }
 
@@ -140,14 +146,14 @@ public class IndexRelationshipFunctionalityTest
 
     private JaxRsResponse httpGetIndexRelationshipNameKeyValue( String indexName, String key, String value, MediaType acceptType )
     {
-        return new JaxRsResponse( Client.create().resource( functionalTestHelper.indexRelationshipUri() + indexName + "/" + key + "/" + value )
+        return new JaxRsResponse( Client.create().resource( functionalTestHelper.relationshipIndexUri() + indexName + "/" + key + "/" + value )
                 .accept( acceptType )
                 .get( ClientResponse.class ) );
     }
 
     private JaxRsResponse httpPostIndexRelationshipNameKeyValue( String indexName, String key, String value, String entity, MediaType postType, MediaType acceptType )
     {
-        return new JaxRsResponse( Client.create().resource( functionalTestHelper.indexRelationshipUri() + indexName + "/" + key + "/" + value )
+        return new JaxRsResponse( Client.create().resource( functionalTestHelper.relationshipIndexUri() + indexName + "/" + key + "/" + value )
                 .type( postType )
                 .accept( acceptType )
                 .entity( entity ).post( ClientResponse.class ) );
@@ -190,7 +196,7 @@ public class IndexRelationshipFunctionalityTest
         String key = "key3";
         String value = "value";
         String indexName = "nosuchindex";
-        String indexUri = functionalTestHelper.indexRelationshipUri() + indexName + "/" + key + "/" + value;
+        String indexUri = functionalTestHelper.relationshipIndexUri() + indexName + "/" + key + "/" + value;
         JaxRsResponse response = httpGet( indexUri, MediaType.APPLICATION_JSON_TYPE );
         assertEquals( Status.NOT_FOUND.getStatusCode(), response.getStatus() );
     }
@@ -215,7 +221,7 @@ public class IndexRelationshipFunctionalityTest
         jsonString = jsonRelationshipCreationSpecification( relationshipName2, endNode, key, value );
         createRelationshipResponse = httpPostCreateRelationship( startNode, jsonString );
         assertEquals( 201, createRelationshipResponse.getStatus() );
-        String relationshipLocation2 = createRelationshipResponse.getHeaders().get(HttpHeaders.LOCATION).get(0);
+        String relationshipLocation2 = createRelationshipResponse.getHeaders().get( HttpHeaders.LOCATION ).get( 0 );
 
         String indexName = "matrix";
         JaxRsResponse indexCreationResponse = httpPostIndexRelationshipRoot( "{\"name\":\"" + indexName + "\"}" );
@@ -225,18 +231,18 @@ public class IndexRelationshipFunctionalityTest
                 JsonHelper.createJsonFrom( relationshipLocation1 ),
                 MediaType.APPLICATION_JSON_TYPE, MediaType.APPLICATION_JSON_TYPE );
         String indexLocation1 = indexedRelationshipResponse
-                .getHeaders().get(HttpHeaders.LOCATION).get( 0 );
+                .getHeaders().get( HttpHeaders.LOCATION ).get( 0 );
         indexedRelationshipResponse = httpPostIndexRelationshipNameKeyValue( indexName, key, value,
                 JsonHelper.createJsonFrom( relationshipLocation2 ),
                 MediaType.APPLICATION_JSON_TYPE, MediaType.APPLICATION_JSON_TYPE );
         String indexLocation2 = indexedRelationshipResponse
-                .getHeaders().get(HttpHeaders.LOCATION).get(0);
+                .getHeaders().get( HttpHeaders.LOCATION ).get( 0 );
 
         Map<String, String> uriToName = new HashMap<String, String>();
         uriToName.put( indexLocation1.toString(), relationshipName1 );
         uriToName.put( indexLocation2.toString(), relationshipName2 );
 
-        ClientResponse response = Client.create().resource( functionalTestHelper.indexRelationshipUri(indexName, key, value) ).accept( MediaType.APPLICATION_JSON )
+        ClientResponse response = Client.create().resource( functionalTestHelper.indexRelationshipUri( indexName, key, value ) ).accept( MediaType.APPLICATION_JSON )
                 .get( ClientResponse.class );
         assertEquals( 200, response.getStatus() );
         Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( response.getEntity( String.class ) );
@@ -264,8 +270,8 @@ public class IndexRelationshipFunctionalityTest
     private String jsonRelationshipCreationSpecification( String relationshipName, long endNode, String key, String value )
     {
         return "{\"to\" : \"" + server.restApiUri() + "node/" + endNode + "\"," +
-            "\"type\" : \"" + relationshipName + "\", " +
-            "\"data\" : {\"" + key + "\" : \"" + value + "\"}}";
+                "\"type\" : \"" + relationshipName + "\", " +
+                "\"data\" : {\"" + key + "\" : \"" + value + "\"}}";
     }
 
     @Test
@@ -273,7 +279,7 @@ public class IndexRelationshipFunctionalityTest
     {
         String indexName = "empty-index";
         helper.createRelationshipIndex( indexName );
-        ClientResponse response = Client.create().resource( functionalTestHelper.indexRelationshipUri() + indexName + "/non-existent-key/non-existent-value" ).accept(
+        ClientResponse response = Client.create().resource( functionalTestHelper.relationshipIndexUri() + indexName + "/non-existent-key/non-existent-value" ).accept(
                 MediaType.APPLICATION_JSON ).get( ClientResponse.class );
         assertEquals( 200, response.getStatus() );
     }
@@ -313,7 +319,7 @@ public class IndexRelationshipFunctionalityTest
         helper.createRelationshipIndex( indexName );
         String entity = functionalTestHelper.relationshipUri( relationshipId );
         JaxRsResponse response = httpPostIndexRelationshipNameKeyValue( indexName, key, value, entity,
-                MediaType.TEXT_PLAIN_TYPE,  MediaType.APPLICATION_JSON_TYPE);
+                MediaType.TEXT_PLAIN_TYPE, MediaType.APPLICATION_JSON_TYPE );
         assertEquals( Status.CREATED.getStatusCode(), response.getStatus() );
         URI location = response.getLocation();
         response = httpGetIndexRelationshipNameKeyValue( indexName, key, value, MediaType.APPLICATION_JSON_TYPE );
@@ -324,7 +330,7 @@ public class IndexRelationshipFunctionalityTest
 
         Client.create().resource( location ).delete();
         response = httpGetIndexRelationshipNameKeyValue( indexName, key, value, MediaType.APPLICATION_JSON_TYPE );
-        assertEquals(200, response.getStatus());
+        assertEquals( 200, response.getStatus() );
         responseEntity = response.getEntity( String.class );
         hits = (Collection<?>) JsonHelper.jsonToSingleValue( responseEntity );
         assertEquals( 0, hits.size() );
@@ -342,7 +348,7 @@ public class IndexRelationshipFunctionalityTest
         String indexName = "botherable-index";
         helper.createRelationshipIndex( indexName );
         JaxRsResponse response = httpPostIndexRelationshipNameKeyValue( indexName, key, value,
-                functionalTestHelper.relationshipUri( relationshipId ), MediaType.APPLICATION_JSON_TYPE, MediaType.APPLICATION_JSON_TYPE);
+                functionalTestHelper.relationshipUri( relationshipId ), MediaType.APPLICATION_JSON_TYPE, MediaType.APPLICATION_JSON_TYPE );
         assertEquals( 400, response.getStatus() );
     }
 }
