@@ -20,10 +20,15 @@
 
 package org.neo4j.server.rest.repr;
 
+import java.util.Collections;
 import java.util.Map;
 
 public class NodeIndexRepresentation extends IndexRepresentation
 {
+    public NodeIndexRepresentation( String name) {
+        this(name, Collections.EMPTY_MAP);
+    }
+
     public NodeIndexRepresentation( String name, Map<String, String> type )
     {
         super( name, type );

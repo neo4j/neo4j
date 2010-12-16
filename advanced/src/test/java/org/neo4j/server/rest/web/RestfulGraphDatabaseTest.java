@@ -49,10 +49,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
+import static org.mockito.Matchers.anyMap;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -924,17 +925,18 @@ public class RestfulGraphDatabaseTest
                 "Location" );
         URI location2 = (URI)service.createNode( "{\"name\":\"" + name2 + "\"}" ).getMetadata().getFirst(
                 "Location" );
-        URI indexLocation1 = (URI)service.addToNodeIndex( "node", key, value,
+        String indexName = "matrixal-nodes";
+        URI indexLocation1 = (URI)service.addToNodeIndex( indexName, key, value,
                 JsonHelper.createJsonFrom( location1.toString() ) ).getMetadata().getFirst(
                 "Location" );
-        URI indexLocation2 = (URI)service.addToNodeIndex( "node", key, value,
+        URI indexLocation2 = (URI)service.addToNodeIndex( indexName, key, value,
                 JsonHelper.createJsonFrom( location2.toString() ) ).getMetadata().getFirst(
                 "Location" );
         Map<String, String> uriToName = new HashMap<String, String>();
         uriToName.put( indexLocation1.toString(), name1 );
         uriToName.put( indexLocation2.toString(), name2 );
 
-        Response response = service.getIndexedNodes( "node", key, value );
+        Response response = service.getIndexedNodes( indexName, key, value );
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
         Collection<?> items = (Collection<?>)JsonHelper.jsonToSingleValue( entityAsString( response ) );
         int counter = 0;
@@ -945,6 +947,44 @@ public class RestfulGraphDatabaseTest
             assertNotNull( map.get( "self" ) );
             String indexedUri = (String)map.get( "indexed" );
             assertEquals( uriToName.get( indexedUri ), properties.get( "name" ) );
+            counter++;
+        }
+        assertEquals( 2, counter );
+    }
+
+    @Test
+    public void shouldBeAbleToGetListOfRelationshipRepresentationsFromIndexLookup() throws DatabaseBlockedException
+    {
+        String key = "key_get";
+        String value = "value";
+
+        long startNodeId = helper.createNode();
+        long endNodeId = helper.createNode();
+
+        String relationshipType1 = "KNOWS";
+        long relationshipId1 = helper.createRelationship( relationshipType1, startNodeId, endNodeId );
+        String relationshipType2 = "PLAYS-NICE-WITH";
+        long relationshipId2 = helper.createRelationship( relationshipType2, startNodeId, endNodeId );
+
+        String indexName = "matrixal-relationships";
+        helper.createRelationshipIndex( indexName);
+        helper.addRelationshipToIndex( indexName, key, value, relationshipId1 );
+        helper.addRelationshipToIndex( indexName, key, value, relationshipId2 );
+
+        Response response = service.getIndexedRelationships( indexName, key, value );
+        assertEquals( Status.OK.getStatusCode(), response.getStatus() );
+        Collection<?> items = (Collection<?>)JsonHelper.jsonToSingleValue( entityAsString( response ) );
+        int counter = 0;
+        for ( Object item : items )
+        {
+            Map<?, ?> map = (Map<?, ?>)item;
+            Map<?, ?> properties = (Map<?, ?>)map.get( "data" );
+            assertNotNull( map.get( "self" ) );
+            String indexedUri = (String)map.get( "indexed" );
+            assertThat(indexedUri, containsString( key ));
+            assertThat(indexedUri, containsString( value ));
+            assertTrue(indexedUri.endsWith( Long.toString(relationshipId1) ) ||
+                    indexedUri.endsWith( Long.toString( relationshipId2 ) ));
             counter++;
         }
         assertEquals( 2, counter );
