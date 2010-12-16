@@ -20,13 +20,8 @@
 
 package org.neo4j.server.rest.web;
 
-import java.lang.reflect.Array;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.Map;
-
-import org.codehaus.jackson.map.ser.MapSerializer;
+import org.neo4j.graphalgo.GraphAlgoFactory;
+import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Expander;
@@ -36,23 +31,36 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.domain.EndNodeNotFoundException;
+import org.neo4j.server.rest.domain.RelationshipExpanderBuilder;
 import org.neo4j.server.rest.domain.StartNodeNotFoundException;
 import org.neo4j.server.rest.domain.StartNodeSameAsEndNodeException;
 import org.neo4j.server.rest.domain.StorageActions.TraverserReturnType;
 import org.neo4j.server.rest.domain.TraversalDescriptionBuilder;
-import org.neo4j.server.rest.repr.*;
+import org.neo4j.server.rest.repr.DatabaseRepresentation;
+import org.neo4j.server.rest.repr.IndexedEntityRepresentation;
+import org.neo4j.server.rest.repr.ListRepresentation;
+import org.neo4j.server.rest.repr.NodeIndexRepresentation;
+import org.neo4j.server.rest.repr.NodeIndexRootRepresentation;
+import org.neo4j.server.rest.repr.NodeRepresentation;
+import org.neo4j.server.rest.repr.PathRepresentation;
+import org.neo4j.server.rest.repr.PropertiesRepresentation;
+import org.neo4j.server.rest.repr.RelationshipIndexRepresentation;
+import org.neo4j.server.rest.repr.RelationshipIndexRootRepresentation;
+import org.neo4j.server.rest.repr.RelationshipRepresentation;
+import org.neo4j.server.rest.repr.Representation;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -601,12 +609,37 @@ public class DatabaseActions
         return new ListRepresentation( "traversal-result", result );
     }
 
-    public PathRepresentation findSinglePath( long startNode, long endNode,
-                                              Map<String, Object> description )
+    private PathFinder<Path> getAlgorithm( String algorithm, RelationshipExpander expander, int maxDepth )
     {
-        // TODO tobias: Implement singlePath() [Dec 13, 2010]
-        throw new UnsupportedOperationException(
-                "Not implemented: DatabaseActions.findSinglePath()" );
+            if (algorithm.equals("shortestPath")) {
+                return GraphAlgoFactory.shortestPath( expander, maxDepth);
+            } else if (algorithm.equals("allSimplePaths")) {
+                return GraphAlgoFactory.allSimplePaths(expander, maxDepth);
+            } else if (algorithm.equals("allPaths")) {
+                return GraphAlgoFactory.allPaths( expander, maxDepth );
+            }
+
+        throw new RuntimeException( "Failed to find matching algorithm" );
+    }
+
+    public PathRepresentation findSinglePath( long startId, long endId,
+                                              Map<String, Object> map )
+    {
+        Node startNode = graphDb.getNodeById( startId );
+        Node endNode = graphDb.getNodeById( endId );
+
+        Integer maxDepthObj = (Integer)map.get( "max depth" );
+        int maxDepth = ( maxDepthObj != null ) ? maxDepthObj : 1;
+
+        RelationshipExpander expander = RelationshipExpanderBuilder.describeRelationships( map );
+
+        String algorithm = (String)map.get( "algorithm" );
+        algorithm = ( algorithm != null ) ? algorithm : "shortestPath";
+
+        PathFinder<Path> finder = getAlgorithm( algorithm, expander, maxDepth );
+
+        Path path = finder.findSinglePath(startNode, endNode);
+        return new PathRepresentation( path );
     }
 
     public ListRepresentation findPaths( long startNode, long endNode,
