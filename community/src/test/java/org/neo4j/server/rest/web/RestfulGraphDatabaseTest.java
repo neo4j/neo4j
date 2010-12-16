@@ -879,10 +879,30 @@ public class RestfulGraphDatabaseTest
         String key = "key_get_noderep";
         String value = "value";
         long nodeId = helper.createNode();
-        Response response = service.addToNodeIndex( "node", key, value,
-                JsonHelper.createJsonFrom( BASE_URI + "node/"
-                        + nodeId ) );
-        response = service.getNodeFromIndexUri( "node", key, value, nodeId );
+        String indexName = "all-the-best-nodes";
+        helper.addNodeToIndex( indexName, key, value, nodeId );
+        Response response = service.getNodeFromIndexUri( indexName, key, value, nodeId );
+        assertEquals( 200, response.getStatus() );
+        assertEquals( response.getMetadata().getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+        assertNull( response.getMetadata().get( "Location" ) );
+        Map<String, Object> map = JsonHelper.jsonToMap( entityAsString( response ) );
+        assertNotNull( map );
+        assertTrue( map.containsKey( "self" ) );
+    }
+
+    @Test
+    public void shouldBeAbleToGetRelationshipRepresentationFromIndexUri() throws DatabaseBlockedException
+    {
+        String key = "key_get_noderep";
+        String value = "value";
+        long startNodeId = helper.createNode();
+        long endNodeId = helper.createNode();
+        String relationshipType = "knows";
+        long relationshipId = helper.createRelationship( relationshipType, startNodeId, endNodeId );
+
+        String indexName = "all-the-best-relationships";
+        helper.addRelationshipToIndex( indexName, key, value, relationshipId );
+        Response response = service.getRelationshipFromIndexUri( indexName, key, value, relationshipId );
         assertEquals( 200, response.getStatus() );
         assertEquals( response.getMetadata().getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
         assertNull( response.getMetadata().get( "Location" ) );
@@ -977,7 +997,7 @@ public class RestfulGraphDatabaseTest
 
         List<Object> resultAsList = output.getResultAsList();
 
-        assertThat(resultAsList.size(), is(0));
+        assertThat( resultAsList.size(), is( 0 ) );
     }
 
     @Test
