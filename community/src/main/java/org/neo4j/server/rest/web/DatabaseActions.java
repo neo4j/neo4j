@@ -45,9 +45,20 @@ import org.neo4j.server.rest.domain.StartNodeNotFoundException;
 import org.neo4j.server.rest.domain.StartNodeSameAsEndNodeException;
 import org.neo4j.server.rest.domain.StorageActions.TraverserReturnType;
 import org.neo4j.server.rest.domain.TraversalDescriptionBuilder;
-import org.neo4j.server.rest.repr.*;
+import org.neo4j.server.rest.repr.DatabaseRepresentation;
+import org.neo4j.server.rest.repr.IndexRepresentation;
+import org.neo4j.server.rest.repr.IndexedEntityRepresentation;
+import org.neo4j.server.rest.repr.ListRepresentation;
+import org.neo4j.server.rest.repr.NodeIndexRepresentation;
+import org.neo4j.server.rest.repr.NodeIndexRootRepresentation;
+import org.neo4j.server.rest.repr.NodeRepresentation;
+import org.neo4j.server.rest.repr.PathRepresentation;
+import org.neo4j.server.rest.repr.PropertiesRepresentation;
+import org.neo4j.server.rest.repr.RelationshipIndexRepresentation;
+import org.neo4j.server.rest.repr.RelationshipIndexRootRepresentation;
+import org.neo4j.server.rest.repr.RelationshipRepresentation;
+import org.neo4j.server.rest.repr.Representation;
 
-import javax.ws.rs.core.Response;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -644,6 +655,10 @@ public class DatabaseActions
         Node endNode = findParams.getEndNode();
 
         Path path = finder.findSinglePath( startNode, endNode );
+        if(path == null)
+        {
+            throw new NotFoundException();
+        }
         return new PathRepresentation( path );
     }
 
