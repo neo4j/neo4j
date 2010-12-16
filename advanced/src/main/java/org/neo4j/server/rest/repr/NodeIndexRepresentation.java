@@ -37,4 +37,5 @@ public class NodeIndexRepresentation extends IndexRepresentation
     public String propertyContainerType() {
         return "node";
     }
+
 }

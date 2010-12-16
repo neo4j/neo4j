@@ -20,9 +20,11 @@
 
 package org.neo4j.server.rest.repr;
 
+import org.neo4j.server.rest.domain.URIHelper;
+
 import java.util.Map;
 
-public abstract class IndexRepresentation extends MappingRepresentation
+public abstract class IndexRepresentation extends MappingRepresentation implements EntityRepresentation
 {
     private final String name;
     private final Map<String, String> type;
@@ -46,7 +48,18 @@ public abstract class IndexRepresentation extends MappingRepresentation
 
     public String relativeUriFor( String key, String value, long entityId )
     {
-        return "index/" + propertyContainerType() + "/" + name + "/" + key + "/" + value + "/" + Long.toString( entityId );
+        return path() + URIHelper.encode(key) + "/" + URIHelper.encode(value) + "/" + Long.toString( entityId );
+    }
+
+    @Override
+    public ValueRepresentation selfUri()
+    {
+        return ValueRepresentation.uri( path() );
+    }
+
+    private String path()
+    {
+        return "index/" + propertyContainerType() + "/" +  name + "/";
     }
 
     public abstract String propertyContainerType();

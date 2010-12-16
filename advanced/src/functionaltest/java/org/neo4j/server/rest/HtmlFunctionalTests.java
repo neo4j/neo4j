@@ -97,14 +97,14 @@ public class HtmlFunctionalTests {
 
     @Test
     public void shouldGetNodeIndexRoot() {
-        ClientResponse response = Client.create().resource(functionalTestHelper.indexNodeUri()).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
+        ClientResponse response = Client.create().resource(functionalTestHelper.nodeIndexUri()).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
         assertValidHtml(response.getEntity(String.class));
     }
 
     @Test
     public void shouldGetRelationshipIndexRoot() {
-        ClientResponse response = Client.create().resource(functionalTestHelper.indexRelationshipUri()).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
+        ClientResponse response = Client.create().resource(functionalTestHelper.relationshipIndexUri()).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
         assertValidHtml(response.getEntity(String.class));
     }
