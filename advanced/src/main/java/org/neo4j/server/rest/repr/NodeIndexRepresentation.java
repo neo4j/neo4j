@@ -33,10 +33,4 @@ public class NodeIndexRepresentation extends IndexRepresentation
     public String propertyContainerType() {
         return "node";
     }
-
-    @Override
-    public String getIdentity()
-    {
-        return null;  //To change body of implemented methods use File | Settings | File Templates.
-    }
 }
