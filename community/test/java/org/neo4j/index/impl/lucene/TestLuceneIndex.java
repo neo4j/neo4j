@@ -874,6 +874,7 @@ public class TestLuceneIndex
         System.out.println( "get(" + resultCount + "):" + (double)( System.currentTimeMillis() - t ) / (double)count );
     }
     
+    @Ignore
     @Test
     public void testNodeInsertionSpeed()
     {
