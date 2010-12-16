@@ -41,20 +41,6 @@ public class RelationshipIndexRootRepresentation extends MappingRepresentation
         this.indexManager = indexManager;
     }
 
-//    public Map<String, Object> serialize()
-//    {
-//        Map<String, Object> map = new HashMap<String, Object>();
-//        indexManager.relationshipIndexNames();
-//
-//        for ( String indexName : indexManager.relationshipIndexNames() )
-//        {
-//            RelationshipIndex index = indexManager.forRelationships( indexName );
-//            map.put( indexName, new NodeIndexRepresentation( baseUri, indexName, indexManager.getConfiguration( index ) ).serialize() );
-//        }
-//
-//        return map;
-//    }
-
     @Override
     protected void serialize( MappingSerializer serializer )
     {
