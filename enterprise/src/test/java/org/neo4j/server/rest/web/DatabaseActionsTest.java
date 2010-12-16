@@ -42,7 +42,6 @@ import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.NodeRepresentation;
 import org.neo4j.server.rest.repr.NodeRepresentationTest;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
-import org.neo4j.server.rest.web.DatabaseActions.IndexType;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 
 import java.io.IOException;
@@ -54,6 +53,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.hamcrest.Matchers.hasKey;
 import static org.junit.Assert.*;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.serialize;
 
@@ -573,12 +573,12 @@ public class DatabaseActionsTest {
         String indexName = "fulltext-node";
         assertFalse( serialize( actions.getIndexedNodes( indexName, key, value ) ).iterator().hasNext() );
         actions.addToNodeIndex( indexName, key, value, nodeId );
-        assertEquals(Arrays.asList(nodeId), graphdbHelper.getIndexedNodes(indexName, key, value));
+        assertEquals( Arrays.asList( nodeId ), graphdbHelper.getIndexedNodes( indexName, key, value ) );
         assertEquals(Arrays.asList(nodeId), graphdbHelper.getIndexedNodes(indexName, key, "the value with spaces"));
-        assertEquals(Arrays.asList(nodeId), graphdbHelper.queryIndexedNodes(indexName, key, "the"));
-        assertEquals(Arrays.asList(nodeId), graphdbHelper.queryIndexedNodes(indexName, key, "value"));
-        assertEquals(Arrays.asList(nodeId), graphdbHelper.queryIndexedNodes(indexName, key, "with"));
-        assertEquals(Arrays.asList(nodeId), graphdbHelper.queryIndexedNodes(indexName, key, "spaces"));
+        assertEquals(Arrays.asList(nodeId), graphdbHelper.queryIndexedNodes( indexName, key, "the" ));
+        assertEquals(Arrays.asList(nodeId), graphdbHelper.queryIndexedNodes( indexName, key, "value" ));
+        assertEquals(Arrays.asList(nodeId), graphdbHelper.queryIndexedNodes( indexName, key, "with" ));
+        assertEquals(Arrays.asList(nodeId), graphdbHelper.queryIndexedNodes( indexName, key, "spaces" ));
         assertTrue(graphdbHelper.getIndexedNodes(indexName, key, "nohit").isEmpty());
     }
 
@@ -734,8 +734,9 @@ public class DatabaseActionsTest {
     @Test
     public void shouldBeAbleToGetRelationshipsIfSpecified() throws DatabaseBlockedException {
         long startNode = createBasicTraversableGraph();
-        List<Object> hits = serialize( actions.traverse( startNode, new HashMap<String, Object>(),
-                TraverserReturnType.relationship ) );
+        ListRepresentation traverse = actions.traverse( startNode, new HashMap<String, Object>(),
+                TraverserReturnType.relationship );
+        List<Object> hits = serialize( traverse );
         for ( Object hit : hits )
         {
             RelationshipRepresentationTest.verifySerialisation( (Map<String, Object>) hit );
@@ -747,9 +748,13 @@ public class DatabaseActionsTest {
         long startNode = createBasicTraversableGraph();
         List<Object> hits = serialize( actions.traverse( startNode, new HashMap<String, Object>(),
                 TraverserReturnType.path ) );
+
         for ( Object hit : hits )
         {
-            RelationshipRepresentationTest.verifySerialisation( (Map<String, Object>) hit );
+            Map<String,Object> map = (Map<String, Object>)hit;
+            assertThat(map, hasKey("start"));
+            assertThat(map, hasKey("end"));
+            assertThat(map, hasKey("length"));
         }
     }
 
