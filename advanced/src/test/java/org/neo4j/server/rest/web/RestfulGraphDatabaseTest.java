@@ -49,6 +49,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.hamcrest.Matchers.hasKey;
 import static org.junit.Assert.*;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.mock;
@@ -815,32 +816,33 @@ public class RestfulGraphDatabaseTest
     @Test
     public void shouldRespondWithAvailableIndexNodeRoots()
     {
-        String indexName = "nodeIndex";
+        String indexName = "someNodes";
         helper.createNodeIndex( indexName );
         Response response = service.getNodeIndexRoot();
         assertEquals( 200, response.getStatus() );
 
         Map<String, Object> resultAsMap = output.getResultAsMap();
-        assertThat(resultAsMap.size(), is(1));
+        assertThat( resultAsMap.size(), is( 1 ) );
+        assertThat( resultAsMap, hasKey( indexName ) );
     }
 
     @Test
     public void shouldRespondWithNoContentWhenNoRelationshipIndexesExist()
     {
-        Response response = service.getNodeIndexRoot();
+        Response response = service.getRelationshipIndexRoot();
         assertEquals( 204, response.getStatus() );
     }
 
     @Test
     public void shouldRespondWithAvailableIndexRelationshipRoots()
     {
-        Response response = service.getNodeIndexRoot();
+        String indexName = "someRelationships";
+        helper.createRelationshipIndex( indexName );
+        Response response = service.getRelationshipIndexRoot();
         assertEquals( 200, response.getStatus() );
-        String entity = entityAsString( response );
-        Map<String, Object> map = JsonHelper.jsonToMap( entity );
-        assertNotNull( map.get( "node" ) );
-        assertFalse( ( (Collection<?>)map.get( "node" ) ).isEmpty() );
-        assertEquals( response.getMetadata().getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+        Map<String, Object> resultAsMap = output.getResultAsMap();
+        assertThat( resultAsMap.size(), is( 1 ) );
+        assertThat( resultAsMap, hasKey( indexName ) );
     }
 
     @Test
@@ -852,7 +854,8 @@ public class RestfulGraphDatabaseTest
         Map<String, Object> map = JsonHelper.jsonToMap( entity );
         assertNotNull( map.get( "node" ) );
         assertNotNull( map.get( "reference_node" ) );
-        assertNotNull( map.get( "index" ) );
+        assertNotNull( map.get( "node-index" ) );
+        assertNotNull( map.get( "relationship-index" ) );
         assertEquals( response.getMetadata().getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
     }
 

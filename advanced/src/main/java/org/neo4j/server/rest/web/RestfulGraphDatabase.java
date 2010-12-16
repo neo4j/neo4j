@@ -535,7 +535,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            return output.created( server.addToIndex( IndexType.node, indexName, key, value,
+            return output.created( server.addToNodeIndex( indexName, key, value,
                     extractNodeId( input.readUri( objectUri ).toString() ) ) );
         } catch ( BadInputException e )
         {
@@ -551,7 +551,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            return output.created( server.addToIndex( IndexType.node, indexName, key, value,
+            return output.created( server.addToRelationshipIndex( indexName, key, value,
                     extractNodeId( input.readUri( objectUri ).toString() ) ) );
         } catch ( BadInputException e )
         {
