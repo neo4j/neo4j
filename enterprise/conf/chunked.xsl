@@ -28,6 +28,10 @@
 <!-- restriction when using the unicode callouts -->
 <xsl:param name="callout.graphics.number.limit" select="10"/>
 
+<xsl:param name="generate.legalnotice.link" select="1"/>
+
+<xsl:param name="generate.revhistory.link" select="1"/>
+
 <xsl:param name="use.id.as.filename" select="1"></xsl:param>
 
 </xsl:stylesheet>

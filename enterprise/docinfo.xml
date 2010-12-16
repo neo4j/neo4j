@@ -1,7 +1,7 @@
 <authorgroup>
   <corpauthor>Neo Technology
-    <ulink url="http://neotechnology.com/"><citetitle>neotechnology.com</citetitle></ulink>
     <ulink url="http://neo4j.org/"><citetitle>neo4j.org</citetitle></ulink>
+    <ulink url="http://neotechnology.com/"><citetitle>neotechnology.com</citetitle></ulink>
   </corpauthor>
 </authorgroup>
 
@@ -13,7 +13,7 @@
 <revhistory>
   <revision>
     <revnumber>1.2.M05</revnumber>
-    <date>December 2010</date>
+    <date>December 3, 2010</date>
     <revremark>
       First release.
     </revremark>
