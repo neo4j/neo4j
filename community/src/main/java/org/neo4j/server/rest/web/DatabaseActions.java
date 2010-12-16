@@ -20,6 +20,12 @@
 
 package org.neo4j.server.rest.web;
 
+import java.lang.reflect.Array;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.Map;
+import org.codehaus.jackson.map.ser.MapSerializer;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Expander;
@@ -31,6 +37,8 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.server.database.Database;
@@ -39,14 +47,7 @@ import org.neo4j.server.rest.domain.StartNodeNotFoundException;
 import org.neo4j.server.rest.domain.StartNodeSameAsEndNodeException;
 import org.neo4j.server.rest.domain.StorageActions.TraverserReturnType;
 import org.neo4j.server.rest.domain.TraversalDescriptionBuilder;
-import org.neo4j.server.rest.repr.DatabaseRepresentation;
-import org.neo4j.server.rest.repr.IndexedEntityRepresentation;
-import org.neo4j.server.rest.repr.ListRepresentation;
-import org.neo4j.server.rest.repr.NodeRepresentation;
-import org.neo4j.server.rest.repr.PathRepresentation;
-import org.neo4j.server.rest.repr.PropertiesRepresentation;
-import org.neo4j.server.rest.repr.RelationshipRepresentation;
-import org.neo4j.server.rest.repr.Representation;
+import org.neo4j.server.rest.repr.*;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -497,21 +498,42 @@ public class DatabaseActions
 
     public Representation nodeIndexRoot()
     {
-        // TODO tobias: Implement indexRoot() [Dec 13, 2010]
-        throw new UnsupportedOperationException( "Not implemented: DatabaseActions.indexRoot()" );
+        return new NodeIndexRootRepresentation( graphDb.index() );
     }
 
     public Representation relationshipIndexRoot()
     {
-        // TODO tobias: Implement indexRoot() [Dec 13, 2010]
-        throw new UnsupportedOperationException( "Not implemented: DatabaseActions.indexRoot()" );
+        return new RelationshipIndexRootRepresentation( graphDb.index() );
     }
 
-    public IndexedEntityRepresentation addToIndex( IndexType type, String indexName, String key,
-                                                   String value, long nodeId )
+    public IndexedEntityRepresentation addToRelationshipIndex( String indexName, String key,
+                                                       String value, long relationshipId )
     {
-        // TODO tobias: Implement addToIndex() [Dec 13, 2010]
-        throw new UnsupportedOperationException( "Not implemented: DatabaseActions.addToIndex()" );
+        Transaction tx = graphDb.beginTx();
+        try {
+            Relationship relationship = graphDb.getRelationshipById( relationshipId );
+            Index<Relationship> index = graphDb.index().forRelationships( indexName );
+            index.add( relationship, key, value );
+            tx.success();
+            return new IndexedEntityRepresentation( relationship, key, value, new RelationshipIndexRepresentation( indexName, Collections.EMPTY_MAP ));
+        } finally {
+            tx.finish();
+        }
+    }
+
+    public IndexedEntityRepresentation addToNodeIndex( String indexName, String key,
+                                                       String value, long nodeId )
+    {
+        Transaction tx = graphDb.beginTx();
+        try {
+            Node node = graphDb.getNodeById(nodeId);
+            Index<Node> index = graphDb.index().forNodes( indexName );
+            index.add( node, key, value );
+            tx.success();
+            return new IndexedEntityRepresentation( node, key, value, new NodeIndexRepresentation( indexName, Collections.EMPTY_MAP));
+        } finally {
+            tx.finish();
+        }
     }
 
     public void removeFromIndex( IndexType type, String indexName, String key, String value, long id )

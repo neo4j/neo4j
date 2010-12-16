@@ -20,19 +20,16 @@
 
 package org.neo4j.server.rest.repr;
 
-import java.net.URI;
 import java.util.Map;
 
-public abstract class IndexRepresentation extends MappingRepresentation implements EntityRepresentation
+public abstract class IndexRepresentation extends MappingRepresentation
 {
-    private final URI baseUri;
     private final String name;
     private final Map<String, String> type;
 
-    public IndexRepresentation( URI baseUri, String name, Map<String, String> type )
+    public IndexRepresentation( String name, Map<String, String> type )
     {
         super( "index" );
-        this.baseUri = baseUri;
         this.name = name;
         this.type = type;
     }
@@ -40,17 +37,18 @@ public abstract class IndexRepresentation extends MappingRepresentation implemen
     @Override
     protected void serialize( final MappingSerializer serializer )
     {
-        serializer.putRelativeUriTemplate( "template", baseUri.toString() + "index/" + propertyContainerType() + "/" + name + "/{key}/{value}" );
+        serializer.putRelativeUriTemplate( "template", "index/" + propertyContainerType() + "/" + name + "/{key}/{value}" );
         for ( Map.Entry<String, String> pair : type.entrySet() )
         {
             serializer.putString( pair.getKey(), pair.getValue() );
         }
     }
 
+    public String relativeUriFor( String key, String value, long entityId )
+    {
+        return "index/" + propertyContainerType() + "/" + name + "/" + key + "/" + value + "/" + Long.toString( entityId );
+    }
+
     public abstract String propertyContainerType();
 
-    public ValueRepresentation selfUri()
-    {
-        return ValueRepresentation.uri( baseUri.toString() + name );
-    }
 }

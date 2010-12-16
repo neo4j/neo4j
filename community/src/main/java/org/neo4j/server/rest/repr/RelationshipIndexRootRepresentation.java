@@ -31,22 +31,21 @@ import java.util.Map;
 
 public class RelationshipIndexRootRepresentation extends MappingRepresentation
 {
-    private final URI baseUri;
     private IndexManager indexManager;
 
-    public RelationshipIndexRootRepresentation( URI baseUri, IndexManager indexManager )
+    public RelationshipIndexRootRepresentation( IndexManager indexManager )
     {
-        super("relationship-index");
-        this.baseUri = baseUri;
+        super( "relationship-index" );
         this.indexManager = indexManager;
     }
 
     @Override
     protected void serialize( MappingSerializer serializer )
     {
-        for (String indexName : indexManager.relationshipIndexNames()) {
+        for ( String indexName : indexManager.relationshipIndexNames() )
+        {
             RelationshipIndex index = indexManager.forRelationships( indexName );
-           serializer.putMapping( indexName, new RelationshipIndexRepresentation( baseUri, indexName, indexManager.getConfiguration( index ) ) );
+            serializer.putMapping( indexName, new RelationshipIndexRepresentation( indexName, indexManager.getConfiguration( index ) ) );
         }
     }
 }

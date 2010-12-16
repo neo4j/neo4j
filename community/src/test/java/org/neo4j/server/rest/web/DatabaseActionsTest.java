@@ -565,7 +565,7 @@ public class DatabaseActionsTest {
         String value = "myvalue";
         long nodeId = graphdbHelper.createNode();
         assertFalse( serialize( actions.getIndexedObjects( IndexType.node, "node", key, value ) ).iterator().hasNext() );
-        actions.addToIndex( IndexType.node, "node", key, value, nodeId );
+        actions.addToNodeIndex( "node", key, value, nodeId );
         assertEquals(Arrays.asList(nodeId), graphdbHelper.getIndexedNodes("node", key, value));
     }
 
@@ -576,7 +576,7 @@ public class DatabaseActionsTest {
         long nodeId = graphdbHelper.createNode();
         String indexName = "fulltext-node";
         assertFalse( serialize( actions.getIndexedObjects( IndexType.node, indexName, key, value ) ).iterator().hasNext() );
-        actions.addToIndex( IndexType.node, indexName, key, value, nodeId );
+        actions.addToNodeIndex( indexName, key, value, nodeId );
         assertEquals(Arrays.asList(nodeId), graphdbHelper.getIndexedNodes(indexName, key, value));
         assertEquals(Arrays.asList(nodeId), graphdbHelper.getIndexedNodes(indexName, key, "the value with spaces"));
         assertEquals(Arrays.asList(nodeId), graphdbHelper.queryIndexedNodes(indexName, key, "the"));
@@ -619,8 +619,8 @@ public class DatabaseActionsTest {
         String value2 = "myvalue2";
         String indexName = "node";
         long nodeId = graphdbHelper.createNode();
-        actions.addToIndex( IndexType.node, indexName, key, value, nodeId );
-        actions.addToIndex( IndexType.node, indexName, key, value2, nodeId );
+        actions.addToNodeIndex( indexName, key, value, nodeId );
+        actions.addToNodeIndex( indexName, key, value2, nodeId );
         assertEquals(1, graphdbHelper.getIndexedNodes(indexName, key, value).size());
         assertEquals(1, graphdbHelper.getIndexedNodes(indexName, key, value2).size());
         actions.removeFromIndex( IndexType.node, indexName, key, value, nodeId );
