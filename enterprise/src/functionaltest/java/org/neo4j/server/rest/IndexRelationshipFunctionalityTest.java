@@ -137,8 +137,9 @@ public class IndexRelationshipFunctionalityTest
         helper.createRelationshipIndex( indexName );
         String relationshipType = "related-to";
         long relationshipId = helper.createRelationship( relationshipType );
-        String entity = functionalTestHelper.relationshipUri( relationshipId );
-        JaxRsResponse response = httpPostIndexRelationshipNameKeyValue( indexName, key, value, entity, MediaType.TEXT_PLAIN_TYPE, MediaType.APPLICATION_JSON_TYPE );
+        String entity = JsonHelper.createJsonFrom( functionalTestHelper.relationshipUri( relationshipId ) );
+        JaxRsResponse response = httpPostIndexRelationshipNameKeyValue( indexName, key, value, entity,
+                MediaType.APPLICATION_JSON_TYPE, MediaType.APPLICATION_JSON_TYPE );
         assertEquals( 201, response.getStatus() );
         assertNotNull( response.getHeaders().get( "Location" ).get( 0 ) );
         assertEquals( Arrays.asList( (Long) relationshipId ), helper.getIndexedRelationships( indexName, key, value ) );
@@ -317,9 +318,9 @@ public class IndexRelationshipFunctionalityTest
         value = URIHelper.encode( value );
         String indexName = "spacey-values";
         helper.createRelationshipIndex( indexName );
-        String entity = functionalTestHelper.relationshipUri( relationshipId );
+        String entity = JsonHelper.createJsonFrom( functionalTestHelper.relationshipUri( relationshipId ));
         JaxRsResponse response = httpPostIndexRelationshipNameKeyValue( indexName, key, value, entity,
-                MediaType.TEXT_PLAIN_TYPE, MediaType.APPLICATION_JSON_TYPE );
+                MediaType.APPLICATION_JSON_TYPE, MediaType.APPLICATION_JSON_TYPE );
         assertEquals( Status.CREATED.getStatusCode(), response.getStatus() );
         URI location = response.getLocation();
         response = httpGetIndexRelationshipNameKeyValue( indexName, key, value, MediaType.APPLICATION_JSON_TYPE );
