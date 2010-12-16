@@ -599,7 +599,7 @@ public class RestfulGraphDatabase
                                          @PathParam("key") String key, @PathParam("value") String value,
                                          @PathParam("id") long id )
     {
-        server.removeFromIndex( IndexType.node, indexName, key, value, id );
+        server.removeFromNodeIndex( indexName, key, value, id );
         return nothing();
     }
 
@@ -609,7 +609,7 @@ public class RestfulGraphDatabase
                                                  @PathParam("key") String key, @PathParam("value") String value,
                                                  @PathParam("id") long id )
     {
-        server.removeFromIndex( IndexType.node, indexName, key, value, id );
+        server.removeFromRelationshipIndex( indexName, key, value, id );
         return nothing();
     }
 
