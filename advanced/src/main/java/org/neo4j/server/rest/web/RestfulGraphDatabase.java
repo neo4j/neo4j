@@ -599,8 +599,14 @@ public class RestfulGraphDatabase
                                          @PathParam("key") String key, @PathParam("value") String value,
                                          @PathParam("id") long id )
     {
-        server.removeFromNodeIndex( indexName, key, value, id );
-        return nothing();
+        try
+        {
+            server.removeFromNodeIndex( indexName, key, value, id );
+            return nothing();
+        } catch ( NotFoundException nfe )
+        {
+            return output.notFound( nfe );
+        }
     }
 
     @DELETE
@@ -609,8 +615,15 @@ public class RestfulGraphDatabase
                                                  @PathParam("key") String key, @PathParam("value") String value,
                                                  @PathParam("id") long id )
     {
-        server.removeFromRelationshipIndex( indexName, key, value, id );
-        return nothing();
+        try
+        {
+            server.removeFromRelationshipIndex( indexName, key, value, id );
+            return nothing();
+        } catch ( NotFoundException nfe )
+        {
+            return output.notFound( nfe );
+        }
+
     }
 
     // Traversal
