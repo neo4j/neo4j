@@ -39,6 +39,7 @@ public abstract class MappingRepresentation extends Representation
     String serialize( RepresentationFormat format, URI baseUri, ExtensionInjector extensions )
     {
         MappingWriter writer = format.serializeMapping( type );
+        Serializer.injectExtensions( writer, this, baseUri, extensions );
         serialize( new MappingSerializer( writer, baseUri, extensions ) );
         writer.done();
         return format.complete( writer );

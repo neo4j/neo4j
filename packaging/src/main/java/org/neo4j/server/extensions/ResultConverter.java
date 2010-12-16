@@ -22,24 +22,31 @@ package org.neo4j.server.extensions;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.net.URI;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.server.rest.domain.NodeRepresentation;
-import org.neo4j.server.rest.domain.PathRepresentation;
-import org.neo4j.server.rest.domain.RelationshipRepresentation;
-import org.neo4j.server.rest.domain.Representation;
+import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.server.rest.repr.ListRepresentation;
+import org.neo4j.server.rest.repr.NodeRepresentation;
+import org.neo4j.server.rest.repr.PathRepresentation;
+import org.neo4j.server.rest.repr.RelationshipRepresentation;
+import org.neo4j.server.rest.repr.Representation;
+import org.neo4j.server.rest.repr.RepresentationType;
 
 abstract class ResultConverter
 {
     static ResultConverter get( Type type )
     {
+        return get( type, true );
+    }
+
+    private static ResultConverter get( Type type, boolean allowComplex )
+    {
         if ( type instanceof Class<?> )
         {
             Class<?> cls = (Class<?>) type;
-            if ( Representation.class.isAssignableFrom( cls ) )
+            if ( allowComplex && Representation.class.isAssignableFrom( cls ) )
             {
                 return IDENTITY_RESULT;
             }
@@ -56,12 +63,12 @@ abstract class ResultConverter
                 return PATH_RESULT;
             }
         }
-        else if ( type instanceof ParameterizedType )
+        else if ( allowComplex && type instanceof ParameterizedType )
         {
             ParameterizedType parameterizedType = (ParameterizedType) type;
             Class<?> raw = (Class<?>) parameterizedType.getRawType();
             Type paramType = parameterizedType.getActualTypeArguments()[0];
-            if ( !( paramType instanceof Class ) )
+            if ( !( paramType instanceof Class<?> ) )
             {
                 throw new IllegalStateException(
                         "Parameterized result types must have a concrete type parameter." );
@@ -69,43 +76,69 @@ abstract class ResultConverter
             Class<?> param = (Class<?>) paramType;
             if ( Iterable.class.isAssignableFrom( raw ) )
             {
-                return new ListResult( get( param ) );
+                return new ListResult( get( param, false ) );
             }
         }
         throw new IllegalStateException( "Illegal result type: " + type );
     }
 
-    abstract Representation convert( URI baseUri, Object obj );
+    abstract Representation convert( Object obj );
+
+    abstract RepresentationType type();
 
     private static final ResultConverter//
             IDENTITY_RESULT = new ResultConverter()
             {
                 @Override
-                Representation convert( URI baseUri, Object obj )
+                Representation convert( Object obj )
                 {
                     return (Representation) obj;
+                }
+
+                @Override
+                RepresentationType type()
+                {
+                    return null;
                 }
             },
             NODE_RESULT = new ResultConverter()
             {
                 @Override
-                Representation convert( URI baseUri, Object obj )
+                Representation convert( Object obj )
                 {
-                    return new NodeRepresentation( baseUri, (Node) obj );
+                    return new NodeRepresentation( (Node) obj );
+                }
+
+                @Override
+                RepresentationType type()
+                {
+                    return RepresentationType.NODE;
                 }
             }, RELATIONSHIP_RESULT = new ResultConverter()
             {
                 @Override
-                Representation convert( URI baseUri, Object obj )
+                Representation convert( Object obj )
                 {
-                    return new RelationshipRepresentation( baseUri, (Relationship) obj );
+                    return new RelationshipRepresentation( (Relationship) obj );
+                }
+
+                @Override
+                RepresentationType type()
+                {
+                    return RepresentationType.RELATIONSHIP;
                 }
             }, PATH_RESULT = new ResultConverter()
             {
                 @Override
-                Representation convert( URI baseUri, Object obj )
+                Representation convert( Object obj )
                 {
-                    return new PathRepresentation( baseUri, (Path) obj );
+                    return new PathRepresentation( (Path) obj );
+                }
+
+                @Override
+                RepresentationType type()
+                {
+                    return RepresentationType.PATH;
                 }
             };
 
@@ -119,10 +152,24 @@ abstract class ResultConverter
         }
 
         @Override
-        Representation convert( URI baseUri, Object obj )
+        @SuppressWarnings( "unchecked" )
+        Representation convert( Object obj )
         {
-            // TODO tobias: Implement convert() [Dec 8, 2010]
-            throw new UnsupportedOperationException( "Not implemented: ResultConverter.convert()" );
+            return new ListRepresentation( itemConverter.type(),
+                    new IterableWrapper<Representation, Object>( (Iterable<Object>) obj )
+                    {
+                        @Override
+                        protected Representation underlyingObjectToObject( Object object )
+                        {
+                            return itemConverter.convert( object );
+                        }
+                    } );
+        }
+
+        @Override
+        RepresentationType type()
+        {
+            return null;
         }
     }
 }
