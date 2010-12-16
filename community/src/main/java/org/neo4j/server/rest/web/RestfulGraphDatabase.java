@@ -610,7 +610,7 @@ public class RestfulGraphDatabase
     }
 
     @DELETE
-    @Path(PATH_NODE_INDEX_ID)
+    @Path(PATH_RELATIONSHIP_INDEX_ID)
     public Response deleteFromRelationshipIndex( @PathParam("indexName") String indexName,
                                                  @PathParam("key") String key, @PathParam("value") String value,
                                                  @PathParam("id") long id )
