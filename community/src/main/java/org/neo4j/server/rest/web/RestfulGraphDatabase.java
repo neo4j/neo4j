@@ -582,7 +582,7 @@ public class RestfulGraphDatabase
     public Response getIndexedNodes( @PathParam("indexName") String indexName,
                                      @PathParam("key") String key, @PathParam("value") String value )
     {
-        return output.ok( server.getIndexedObjects( IndexType.node, indexName, key, value ) );
+        return output.ok( server.getIndexedNodes( indexName, key, value ) );
     }
 
     @GET
@@ -590,7 +590,7 @@ public class RestfulGraphDatabase
     public Response getIndexedRelationships( @PathParam("indexName") String indexName,
                                              @PathParam("key") String key, @PathParam("value") String value )
     {
-        return output.ok( server.getIndexedObjects( IndexType.node, indexName, key, value ) );
+        return output.ok( server.getIndexedRelationships( indexName, key, value ) );
     }
 
     @DELETE
