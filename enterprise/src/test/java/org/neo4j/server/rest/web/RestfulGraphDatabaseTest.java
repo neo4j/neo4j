@@ -736,8 +736,19 @@ public class RestfulGraphDatabaseTest {
     }
 
     @Test
-    public void shouldRespondWithAvailableIndexRoots() {
-        Response response = service.getIndexRoot();
+    public void shouldRespondWithAvailableIndexNodeRoots() {
+        Response response = service.getNodeIndexRoot();
+        assertEquals(200, response.getStatus());
+        String entity = entityAsString(response);
+        Map<String, Object> map = JsonHelper.jsonToMap(entity);
+        assertNotNull(map.get("node"));
+        assertFalse(((Collection<?>) map.get("node")).isEmpty());
+        assertEquals(response.getMetadata().getFirst(HttpHeaders.CONTENT_ENCODING), "UTF-8");
+    }
+
+    @Test
+    public void shouldRespondWithAvailableIndexRelationshipRoots() {
+        Response response = service.getNodeIndexRoot();
         assertEquals(200, response.getStatus());
         String entity = entityAsString(response);
         Map<String, Object> map = JsonHelper.jsonToMap(entity);
@@ -765,7 +776,7 @@ public class RestfulGraphDatabaseTest {
 
         String key = "key";
         String value = "value";
-        response = service.addToIndex( "node", key, value,
+        response = service.addToNodeIndex( "node", key, value,
                 JsonHelper.createJsonFrom( nodeUri.toString() ) );
         assertEquals(201, response.getStatus());
         assertNotNull(response.getMetadata().getFirst("Location"));
@@ -776,10 +787,10 @@ public class RestfulGraphDatabaseTest {
         String key = "key_get_noderep";
         String value = "value";
         long nodeId = helper.createNode();
-        Response response = service.addToIndex( "node", key, value,
+        Response response = service.addToNodeIndex( "node", key, value,
                 JsonHelper.createJsonFrom( BASE_URI + "node/"
                 + nodeId));
-        response = service.getObjectFromIndexUri( "node", key, value, nodeId );
+        response = service.getNodeFromIndexUri( "node", key, value, nodeId );
         assertEquals(200, response.getStatus());
         assertEquals(response.getMetadata().getFirst(HttpHeaders.CONTENT_ENCODING), "UTF-8");
         assertNull(response.getMetadata().get("Location"));
@@ -799,17 +810,17 @@ public class RestfulGraphDatabaseTest {
                 "Location" );
         URI location2 = (URI) service.createNode( "{\"name\":\"" + name2 + "\"}" ).getMetadata().getFirst(
                 "Location" );
-        URI indexLocation1 = (URI) service.addToIndex( "node", key, value,
+        URI indexLocation1 = (URI) service.addToNodeIndex( "node", key, value,
                 JsonHelper.createJsonFrom( location1.toString() ) ).getMetadata().getFirst(
                 "Location");
-        URI indexLocation2 = (URI) service.addToIndex( "node", key, value,
+        URI indexLocation2 = (URI) service.addToNodeIndex( "node", key, value,
                 JsonHelper.createJsonFrom( location2.toString() ) ).getMetadata().getFirst(
                 "Location");
         Map<String, String> uriToName = new HashMap<String, String>();
         uriToName.put(indexLocation1.toString(), name1);
         uriToName.put(indexLocation2.toString(), name2);
 
-        Response response = service.getIndexedObjects( "node", key, value );
+        Response response = service.getIndexedNodes( "node", key, value );
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
         Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue(entityAsString(response));
         int counter = 0;
@@ -826,7 +837,7 @@ public class RestfulGraphDatabaseTest {
 
     @Test
     public void shouldGet200AndEmptyListWhenNothingFoundInIndexLookup() throws DatabaseBlockedException {
-        Response response = service.getIndexedObjects( "node", "fooo", "baaar" );
+        Response response = service.getIndexedNodes( "node", "fooo", "baaar" );
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
         assertEquals(response.getMetadata().getFirst(HttpHeaders.CONTENT_ENCODING), "UTF-8");
         String entity = entityAsString(response);
@@ -842,14 +853,14 @@ public class RestfulGraphDatabaseTest {
         String value = "value";
         helper.addNodeToIndex("node", key, value, nodeId);
         assertEquals(1, helper.getIndexedNodes("node", key, value).size());
-        Response response = service.deleteFromIndex( "node", key, value, nodeId );
+        Response response = service.deleteFromNodeIndex( "node", key, value, nodeId );
         assertEquals(Status.NO_CONTENT.getStatusCode(), response.getStatus());
         assertEquals(0, helper.getIndexedNodes("node", key, value).size());
     }
 
     @Test
     public void shouldGet404IfRemovingNonExistentIndexing() throws DatabaseBlockedException {
-        Response response = service.deleteFromIndex( "node", "bogus", "bogus", 999999 );
+        Response response = service.deleteFromNodeIndex( "node", "bogus", "bogus", 999999 );
         assertEquals(Status.NOT_FOUND.getStatusCode(), response.getStatus());
     }
 
@@ -967,7 +978,7 @@ public class RestfulGraphDatabaseTest {
                 service.setAllRelationshipProperties( relationship,
                 markWithUnicodeMarker("{\"name\":\"Something\",\"number\":10}")).getStatus());
 
-        assertEquals( Status.CREATED.getStatusCode(), service.addToIndex( "node", "foo", "bar",
+        assertEquals( Status.CREATED.getStatusCode(), service.addToNodeIndex( "node", "foo", "bar",
                 markWithUnicodeMarker(JsonHelper.createJsonFrom(nodeLocation))).getStatus());
 
         assertEquals( Status.OK.getStatusCode(), service.traverse( node, TraverserReturnType.node,
