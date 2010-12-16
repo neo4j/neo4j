@@ -28,6 +28,7 @@ import org.neo4j.server.rest.repr.RepresentationTestBase;
 
 import javax.ws.rs.core.Response;
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 
 public class EntityOutputFormat extends OutputFormat
@@ -55,5 +56,10 @@ public class EntityOutputFormat extends OutputFormat
     public Representation getRepresentation()
     {
         return representation;
+    }
+
+    public List<Object> getResultAsList()
+    {
+        return (List<Object>)RepresentationTestBase.serialize( representation );
     }
 }

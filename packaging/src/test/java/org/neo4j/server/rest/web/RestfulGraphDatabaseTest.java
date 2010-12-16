@@ -971,10 +971,10 @@ public class RestfulGraphDatabaseTest
         long startNode = helper.createNode();
         Response response = service.traverse( startNode, TraverserReturnType.node, "" );
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
-        Object parsedJson = JsonHelper.jsonToSingleValue( entityAsString( response ) );
-        assertTrue( parsedJson instanceof Collection<?> );
-        assertTrue( ( (Collection<?>)parsedJson ).isEmpty() );
-        assertEquals( response.getMetadata().getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+
+        List<Object> resultAsList = output.getResultAsList();
+
+        assertThat(resultAsList.size(), is(0));
     }
 
     @Test
