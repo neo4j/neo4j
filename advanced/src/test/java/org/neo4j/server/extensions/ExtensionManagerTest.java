@@ -20,18 +20,32 @@
 
 package org.neo4j.server.extensions;
 
+import static org.hamcrest.Matchers.hasItem;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.ws.rs.core.MediaType;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.ImpermanentGraphDatabase;
+import org.neo4j.server.rest.repr.formats.NullFormat;
 
 public class ExtensionManagerTest
 {
     private static ExtensionManager manager;
+    private static AbstractGraphDatabase graphDb;
 
     @BeforeClass
-    public static void loadExtensionManager()
+    public static void loadExtensionManager() throws Exception
     {
+        graphDb = new ImpermanentGraphDatabase();
         manager = new ExtensionManager( null );
     }
 
@@ -39,11 +53,24 @@ public class ExtensionManagerTest
     public static void destroyExtensionManager()
     {
         manager = null;
+        if ( graphDb != null ) graphDb.shutdown();
+        graphDb = null;
     }
 
     @Test
     public void canGetUrisForNode() throws Exception
     {
-        manager.getExensionsFor( Node.class );
+        Map<String, List<String>> extensions = manager.getExensionsFor( GraphDatabaseService.class );
+        List<String> methods = extensions.get( ReferenceNode.class.getSimpleName() );
+        assertNotNull( methods );
+        assertThat( methods, hasItem( ReferenceNode.GET_REFERENCE_NODE ) );
+    }
+
+    @Test
+    public void canInvokeExtension() throws Exception
+    {
+        manager.invoke( graphDb, ReferenceNode.class.getSimpleName(), GraphDatabaseService.class,
+                ReferenceNode.GET_REFERENCE_NODE, graphDb,
+                new NullFormat( null, (MediaType[]) null ).readParameterList( "" ) );
     }
 }

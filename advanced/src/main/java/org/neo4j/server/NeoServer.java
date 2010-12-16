@@ -38,6 +38,7 @@ import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
 import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
 import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.database.Database;
+import org.neo4j.server.extensions.ExtensionManager;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.osgi.OSGiContainer;
 import org.neo4j.server.rrd.RrdFactory;
@@ -52,16 +53,17 @@ public class NeoServer {
 
     public static final Logger log = Logger.getLogger(NeoServer.class);
 
-    private File configFile;
+    private final File configFile;
     private Configurator configurator;
     private Database database;
     private WebServer webServer;
     private final StartupHealthCheck startupHealthCheck;
 
-    private RoundRobinJobScheduler jobScheduler = new RoundRobinJobScheduler();
+    private final RoundRobinJobScheduler jobScheduler = new RoundRobinJobScheduler();
 
-    private AddressResolver addressResolver;
+    private final AddressResolver addressResolver;
     private OSGiContainer osgiContainer;
+    private ExtensionManager extensions;
 
     public NeoServer(AddressResolver addressResolver, StartupHealthCheck startupHealthCheck, File configFile, WebServer webServer) {
         this.addressResolver = addressResolver;
@@ -84,6 +86,7 @@ public class NeoServer {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+        loadExtensions();
         startWebServer();
     }
 
@@ -131,7 +134,7 @@ public class NeoServer {
         log.info("Mounting REST API at [%s]", Configurator.REST_API_PATH);
         webServer.addJAXRSPackages(listFrom(new String[] { Configurator.REST_API_PACKAGE }), Configurator.REST_API_PATH);
         System.out.println(String.format("Neo4j server data URI [%s]", restApiUri().toString()));
-        
+
         for(ThirdPartyJaxRsPackage tpp : configurator.getThirdpartyJaxRsClasses()) {
             log.info("Mounting third-party JAX-RS package [%s] at [%s]", tpp.getPackageName(), tpp.getMountPoint());
             webServer.addJAXRSPackages(listFrom(new String[] { tpp.getPackageName() }), tpp.getMountPoint());
@@ -179,7 +182,7 @@ public class NeoServer {
             stopOsgiContainer();
             log.info("Successfully shutdown Neo Server on port [%d], database [%s]", getWebServerPort(), getDatabase().getLocation());
         } catch (Exception e) {
-            log.warn("Failed to cleanly shutdown Neo Server on port [%d], database [%s]. Reason: %s", 
+            log.warn("Failed to cleanly shutdown Neo Server on port [%d], database [%s]. Reason: %s",
                     getWebServerPort(), getDatabase().getLocation(),
                     e.getMessage());
         }
@@ -213,6 +216,16 @@ public class NeoServer {
 
     public Database getDatabase() {
         return database;
+    }
+
+    private void loadExtensions()
+    {
+        this.extensions = new ExtensionManager( getConfiguration() );
+    }
+
+    public ExtensionManager getExtensionManager()
+    {
+        return extensions;
     }
 
     public URI baseUri() throws UnknownHostException {

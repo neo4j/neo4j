@@ -20,106 +20,137 @@
 
 package org.neo4j.server.extensions;
 
-import java.util.Collection;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.log4j.Logger;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.Relationship;
+import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.ExtensionInjector;
-import org.neo4j.server.rest.repr.ExtensionUri;
+import org.neo4j.server.rest.repr.ExtensionPointRepresentation;
+import org.neo4j.server.rest.repr.Representation;
 
-public class ExtensionManager implements ExtensionInjector
+public final class ExtensionManager implements ExtensionInjector, ExtensionInvocator
 {
     private static final Logger log = Logger.getLogger( ExtensionManager.class );
-    private final Map<Class<?>, Map<String, ExtensionUri>> mediaExtenders = newExtendersMap();
+    private final Map<String/*name*/, ServerExtender> extensions = new HashMap<String, ServerExtender>();
 
     public ExtensionManager( Configuration serverConfig )
     {
-        LOADING_EXTENSIONS: for ( ServerExtension extension : ServerExtension.load() )
+        @SuppressWarnings( { "hiding", "unchecked" } )
+        Map<String, Pair<ServerExtension, ServerExtender>> extensions = new HashMap();
+        for ( ServerExtension extension : ServerExtension.load() )
         {
-            final Collection<MediaExtender> extenders;
+            final ServerExtender extender = new ServerExtender();
             try
             {
-                extenders = extension.getServerMediaExtenders( serverConfig );
+                extension.loadServerExtender( extender, serverConfig );
             }
-            catch ( Exception e )
+            catch ( Exception ex )
             {
-                error( extension, "Exception while loading extension", e );
+                log.warn( "Failed to load extension: " + extension, ex );
                 continue;
             }
-            Map<Class<?>, Map<String, MediaExtender>> additions = newExtendersMap();
-            for ( MediaExtender extender : extenders )
+            catch ( LinkageError err )
             {
-                Map<String, MediaExtender> map = additions.get( extender.forType() );
-                if ( map == null )
-                {
-                    error( extension, "Cannot extend type: " + extender.forType(), null );
-                    continue LOADING_EXTENSIONS;
-                }
-                if ( map.put( extender.name(), extender ) != null )
-                {
-                    error( extension, "Multiple definitions of \"" + extender.name() + "\" for "
-                                      + extender.forType().getSimpleName(), null );
-                    continue LOADING_EXTENSIONS;
-                }
-                if ( mediaExtenders.get( extender.forType() ).containsKey( extender.name() ) )
-                {
-                    error( extension, "The extension \"" + extender.name()
-                                      + "\" is already defined for "
-                                      + extender.forType().getSimpleName(), null );
-                    continue LOADING_EXTENSIONS;
-                }
+                log.warn( "Failed to load extension: " + extension, err );
+                continue;
             }
-            for ( Map.Entry<Class<?>, Map<String, MediaExtender>> add : additions.entrySet() )
+            Pair<ServerExtension, ServerExtender> old = extensions.put( extension.name, Pair.of(
+                    extension, extender ) );
+            if ( old != null )
             {
-                Map<String, MediaExtender> map = add.getValue();
-                Map<String, ExtensionUri> uris = mediaExtenders.get( add.getKey() );
-                for ( Map.Entry<String, MediaExtender> entry : map.entrySet() )
-                {
-                    uris.put( entry.getKey(), /*TODO: compute extension uri:*/null );
-                }
+                log.warn( String.format(
+                        "Extension naming conflict \"%s\" between \"%s\" and \"%s\"",
+                        extension.name, old.first().getClass(), extension.getClass() ) );
             }
         }
-    }
-
-    private void error( ServerExtension extension, String message, Exception cause )
-    {
-        if ( cause == null )
+        for ( Pair<ServerExtension, ServerExtender> extension : extensions.values() )
         {
-            log.warn( "Failed to load server extension: " + extension + "\n" + message );
+            this.extensions.put( extension.first().name, extension.other() );
         }
-        else
-        {
-            log.warn( "Failed to load server extension: " + extension + "\n" + message, cause );
-        }
-    }
-
-    private static final Class<?>[] EXTENSIBLE_TYPES = { GraphDatabaseService.class, Node.class,
-            Relationship.class, Path.class };
-
-    private static <T> Map<Class<?>, Map<String, T>> newExtendersMap()
-    {
-        @SuppressWarnings( "unchecked" ) Map<Class<?>, Map<String, T>> extendersMap = new HashMap();
-        for ( Class<?> type : EXTENSIBLE_TYPES )
-        {
-            extendersMap.put( type, new HashMap<String, T>() );
-        }
-        return Collections.unmodifiableMap( extendersMap );
     }
 
     @Override
-    public Map<String, ExtensionUri> getExensionsFor( Class<?> type )
+    public Map<String, List<String>> getExensionsFor( Class<?> type )
     {
-        System.out.println( "I'm here! (don't be a gurly gurl)" );
-        if ( /*implementation not done yet:*/true ) return null;
-        Map<String, ExtensionUri> extenders = mediaExtenders.get( type );
-        if ( extenders == null || extenders.isEmpty() ) return null;
-        return Collections.unmodifiableMap( extenders );
+        Map<String, List<String>> result = new HashMap<String, List<String>>();
+        for ( Map.Entry<String, ServerExtender> extension : extensions.entrySet() )
+        {
+            List<String> methods = new ArrayList<String>();
+            for ( ExtensionPoint method : extension.getValue().getExtensionsFor( type ) )
+            {
+                methods.add( method.name() );
+            }
+            if ( !methods.isEmpty() ) result.put( extension.getKey(), methods );
+        }
+        return result;
+    }
+
+    private ExtensionPoint extension( String name, Class<?> type, String method )
+            throws ExtensionLookupException
+    {
+        ServerExtender extender = extensions.get( name );
+        if ( extender == null )
+        {
+            throw new ExtensionLookupException( "No such ServerExtension: \"" + name + "\"" );
+        }
+        return extender.getExtensionPoint( type, method );
+    }
+
+    @Override
+    public Representation describe( String name, Class<?> type, String method )
+            throws ExtensionLookupException
+    {
+        return extension( name, type, method ).descibe();
+    }
+
+    @Override
+    public List<ExtensionPointRepresentation> describeAll( String name )
+            throws ExtensionLookupException
+    {
+        ServerExtender extender = extensions.get( name );
+        if ( extender == null )
+        {
+            throw new ExtensionLookupException( "No such ServerExtension: \"" + name + "\"" );
+        }
+        List<ExtensionPointRepresentation> result = new ArrayList<ExtensionPointRepresentation>();
+        for ( ExtensionPoint extension : extender.all() )
+        {
+            result.add( extension.descibe() );
+        }
+        return result;
+    }
+
+    @Override
+    public <T> Representation invoke( AbstractGraphDatabase graphDb, String name, Class<T> type,
+            String method, T context, ParameterList params ) throws ExtensionLookupException,
+            BadInputException, ExtensionInvocationFailureException, BadExtensionInvocationException
+    {
+        ExtensionPoint extension = extension( name, type, method );
+        try
+        {
+            return extension.invoke( graphDb, context, params );
+        }
+        catch ( BadInputException e )
+        {
+            throw e;
+        }
+        catch ( BadExtensionInvocationException e )
+        {
+            throw e;
+        }
+        catch ( ExtensionInvocationFailureException e )
+        {
+            throw e;
+        }
+        catch ( Exception e )
+        {
+            throw new ExtensionInvocationFailureException( e );
+        }
     }
 }
