@@ -1033,9 +1033,16 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldGet404IfRemovingNonExistentIndexing() throws DatabaseBlockedException
+    public void shouldGet404IfRemovingNonExistentNodeIndexing() throws DatabaseBlockedException
     {
-        Response response = service.deleteFromNodeIndex( "node", "bogus", "bogus", 999999 );
+        Response response = service.deleteFromNodeIndex( "nodes", "bogus", "bogus", 999999 );
+        assertEquals( Status.NOT_FOUND.getStatusCode(), response.getStatus() );
+    }
+
+    @Test
+    public void shouldGet404IfRemovingNonExistentRelationshipIndexing() throws DatabaseBlockedException
+    {
+        Response response = service.deleteFromRelationshipIndex( "relationships", "bogus", "bogus", 999999 );
         assertEquals( Status.NOT_FOUND.getStatusCode(), response.getStatus() );
     }
 
