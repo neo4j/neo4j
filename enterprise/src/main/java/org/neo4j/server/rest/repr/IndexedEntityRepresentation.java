@@ -23,8 +23,6 @@ package org.neo4j.server.rest.repr;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 
-import java.net.URI;
-
 public final class IndexedEntityRepresentation extends MappingRepresentation implements
         ExtensibleRepresentation, EntityRepresentation
 {
@@ -56,7 +54,7 @@ public final class IndexedEntityRepresentation extends MappingRepresentation imp
         return ( (ExtensibleRepresentation) entity ).getIdentity();
     }
 
-    public URI selfUri()
+    public ValueRepresentation selfUri()
     {
         return selfUri;
     }
