@@ -64,9 +64,8 @@ public class DatabaseActions
     {
         try
         {
-        return graphDb.getNodeById( id );
-        }
-        catch ( NotFoundException e )
+            return graphDb.getNodeById( id );
+        } catch ( NotFoundException e )
         {
             throw new NodeNotFoundException();
         }
@@ -77,8 +76,7 @@ public class DatabaseActions
         try
         {
             return graphDb.getRelationshipById( id );
-        }
-        catch ( NotFoundException e )
+        } catch ( NotFoundException e )
         {
             throw new RelationshipNotFoundException();
         }
@@ -94,8 +92,7 @@ public class DatabaseActions
                 try
                 {
                     entity.setProperty( property.getKey(), property( property.getValue() ) );
-                }
-                catch ( IllegalArgumentException ex )
+                } catch ( IllegalArgumentException ex )
                 {
                     throw new PropertyValueException( property.getKey(), property.getValue() );
                 }
@@ -155,8 +152,7 @@ public class DatabaseActions
         {
             result = new NodeRepresentation( set( graphDb.createNode(), properties ) );
             tx.success();
-        }
-        finally
+        } finally
         {
             tx.finish();
         }
@@ -176,14 +172,12 @@ public class DatabaseActions
         {
             node.delete();
             tx.success();
-        }
-        finally
+        } finally
         {
             try
             {
                 tx.finish();
-            }
-            catch ( TransactionFailureException e )
+            } catch ( TransactionFailureException e )
             {
                 throw new OperationFailureException();
             }
@@ -204,8 +198,7 @@ public class DatabaseActions
         try
         {
             return PropertiesRepresentation.value( node.getProperty( key ) );
-        }
-        catch ( NotFoundException e )
+        } catch ( NotFoundException e )
         {
             throw new NoSuchPropertyException( node, key );
         }
@@ -221,12 +214,10 @@ public class DatabaseActions
         {
             node.setProperty( key, value );
             tx.success();
-        }
-        catch ( IllegalArgumentException e )
+        } catch ( IllegalArgumentException e )
         {
             throw new PropertyValueException( key, value );
-        }
-        finally
+        } finally
         {
             tx.finish();
         }
@@ -242,8 +233,7 @@ public class DatabaseActions
             if ( node.removeProperty( key ) == null )
                 throw new NoSuchPropertyException( node, key );
             tx.success();
-        }
-        finally
+        } finally
         {
             tx.finish();
         }
@@ -264,8 +254,7 @@ public class DatabaseActions
         {
             set( clear( node ), properties );
             tx.success();
-        }
-        finally
+        } finally
         {
             tx.finish();
         }
@@ -279,11 +268,20 @@ public class DatabaseActions
         {
             clear( node );
             tx.success();
-        }
-        finally
+        } finally
         {
             tx.finish();
         }
+    }
+
+    public String[] getNodeIndexNames()
+    {
+        return graphDb.index().nodeIndexNames();
+    }
+
+    public String[] getRelationshipIndexNames()
+    {
+        return graphDb.index().relationshipIndexNames();
     }
 
     // Relationships
@@ -302,24 +300,23 @@ public class DatabaseActions
     }
 
     public RelationshipRepresentation createRelationship( long startNodeId, long endNodeId,
-            String type, Map<String, Object> properties ) throws StartNodeNotFoundException,
+                                                          String type, Map<String, Object> properties ) throws StartNodeNotFoundException,
             EndNodeNotFoundException, StartNodeSameAsEndNodeException, PropertyValueException
     {
-        if ( startNodeId == endNodeId ) throw new StartNodeSameAsEndNodeException();
+        if ( startNodeId == endNodeId )
+            throw new StartNodeSameAsEndNodeException();
         Node start, end;
         try
         {
             start = node( startNodeId );
-        }
-        catch ( NodeNotFoundException e )
+        } catch ( NodeNotFoundException e )
         {
             throw new StartNodeNotFoundException();
         }
         try
         {
             end = node( endNodeId );
-        }
-        catch ( NodeNotFoundException e )
+        } catch ( NodeNotFoundException e )
         {
             throw new EndNodeNotFoundException();
         }
@@ -330,8 +327,7 @@ public class DatabaseActions
             result = new RelationshipRepresentation( set( start.createRelationshipTo( end,
                     DynamicRelationshipType.withName( type ) ), properties ) );
             tx.success();
-        }
-        finally
+        } finally
         {
             tx.finish();
         }
@@ -352,15 +348,14 @@ public class DatabaseActions
         {
             relationship.delete();
             tx.success();
-        }
-        finally
+        } finally
         {
             tx.finish();
         }
     }
 
     public ListRepresentation getNodeRelationships( long nodeId, RelationshipDirection direction,
-            Collection<String> types ) throws NodeNotFoundException
+                                                    Collection<String> types ) throws NodeNotFoundException
     {
         Node node = node( nodeId );
         Expander expander;
@@ -395,8 +390,7 @@ public class DatabaseActions
         try
         {
             return PropertiesRepresentation.value( relationship.getProperty( key ) );
-        }
-        catch ( NotFoundException e )
+        } catch ( NotFoundException e )
         {
             throw new NoSuchPropertyException( relationship, key );
         }
@@ -411,8 +405,7 @@ public class DatabaseActions
         {
             set( clear( relationship ), properties );
             tx.success();
-        }
-        finally
+        } finally
         {
             tx.finish();
         }
@@ -428,10 +421,10 @@ public class DatabaseActions
         {
             relationship.setProperty( key, value );
             tx.success();
-        } catch (IllegalArgumentException e) {
+        } catch ( IllegalArgumentException e )
+        {
             throw new PropertyValueException( key, value );
-        }
-        finally
+        } finally
         {
             tx.finish();
         }
@@ -446,8 +439,7 @@ public class DatabaseActions
         {
             clear( relationship );
             tx.success();
-        }
-        finally
+        } finally
         {
             tx.finish();
         }
@@ -463,8 +455,7 @@ public class DatabaseActions
             if ( relationship.removeProperty( key ) == null )
                 throw new NoSuchPropertyException( relationship, key );
             tx.success();
-        }
-        finally
+        } finally
         {
             tx.finish();
         }
@@ -475,11 +466,11 @@ public class DatabaseActions
     public enum IndexType
     {
         node( "index" )
-        {
-        },
+                {
+                },
         relationship( "index" )
-        {
-        };
+                {
+                };
         private final String pathPrefix;
 
         private IndexType( String pathPrefix )
@@ -487,21 +478,27 @@ public class DatabaseActions
             this.pathPrefix = pathPrefix;
         }
 
-        @SuppressWarnings( "boxing" )
+        @SuppressWarnings("boxing")
         String path( String indexName, String key, String value, long id )
         {
             return String.format( "%s/%s/%s/%s/%s", pathPrefix, indexName, key, value, id );
         }
     }
 
-    public Representation indexRoot()
+    public Representation nodeIndexRoot()
+    {
+        // TODO tobias: Implement indexRoot() [Dec 13, 2010]
+        throw new UnsupportedOperationException( "Not implemented: DatabaseActions.indexRoot()" );
+    }
+
+    public Representation relationshipIndexRoot()
     {
         // TODO tobias: Implement indexRoot() [Dec 13, 2010]
         throw new UnsupportedOperationException( "Not implemented: DatabaseActions.indexRoot()" );
     }
 
     public IndexedEntityRepresentation addToIndex( IndexType type, String indexName, String key,
-            String value, long nodeId )
+                                                   String value, long nodeId )
     {
         // TODO tobias: Implement addToIndex() [Dec 13, 2010]
         throw new UnsupportedOperationException( "Not implemented: DatabaseActions.addToIndex()" );
@@ -515,7 +512,7 @@ public class DatabaseActions
     }
 
     public IndexedEntityRepresentation getIndexedObject( IndexType type, String indexName,
-            String key, String value, long id )
+                                                         String key, String value, long id )
     {
         // TODO tobias: Implement getIndexedObject() [Dec 13, 2010]
         throw new UnsupportedOperationException(
@@ -523,7 +520,7 @@ public class DatabaseActions
     }
 
     public ListRepresentation getIndexedObjects( IndexType type, String indexName, String key,
-            String value )
+                                                 String value )
     {
         // TODO tobias: Implement getIndexedObjects() [Dec 13, 2010]
         throw new UnsupportedOperationException(
@@ -533,14 +530,14 @@ public class DatabaseActions
     // Traversal
 
     public ListRepresentation traverse( long startNode, Map<String, Object> description,
-            TraverserReturnType returnType )
+                                        TraverserReturnType returnType )
     {
         // TODO tobias: Implement traverse() [Dec 13, 2010]
         throw new UnsupportedOperationException( "Not implemented: DatabaseActions.traverse()" );
     }
 
     public PathRepresentation findSinglePath( long startNode, long endNode,
-            Map<String, Object> description )
+                                              Map<String, Object> description )
     {
         // TODO tobias: Implement singlePath() [Dec 13, 2010]
         throw new UnsupportedOperationException(
@@ -548,7 +545,7 @@ public class DatabaseActions
     }
 
     public ListRepresentation findPaths( long startNode, long endNode,
-            Map<String, Object> description )
+                                         Map<String, Object> description )
     {
         // TODO tobias: Implement allPaths() [Dec 13, 2010]
         throw new UnsupportedOperationException( "Not implemented: DatabaseActions.findPaths()" );
@@ -587,7 +584,7 @@ public class DatabaseActions
     }
 
     public Representation invokeRelationshipExtension( long relationshipId, String extensionName,
-            String method ) throws RelationshipNotFoundException
+                                                       String method ) throws RelationshipNotFoundException
     {
         Relationship relationship = relationship( relationshipId );
         // TODO tobias: Implement invokeRelationshipExtension() [Dec 14, 2010]
