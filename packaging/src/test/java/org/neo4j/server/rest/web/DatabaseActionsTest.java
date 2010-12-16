@@ -571,14 +571,15 @@ public class DatabaseActionsTest {
         String value = "the value with spaces";
         long nodeId = graphdbHelper.createNode();
         String indexName = "fulltext-node";
-        assertFalse( serialize( actions.getIndexedNodes( indexName, key, value ) ).iterator().hasNext() );
-        actions.addToNodeIndex( indexName, key, value, nodeId );
-        assertEquals( Arrays.asList( nodeId ), graphdbHelper.getIndexedNodes( indexName, key, value ) );
+        graphdbHelper.createNodeFullTextIndex( indexName );
+        assertFalse( serialize(actions.getIndexedNodes(indexName, key, value )).iterator().hasNext() );
+        actions.addToNodeIndex(indexName, key, value, nodeId);
+        assertEquals(Arrays.asList(nodeId), graphdbHelper.getIndexedNodes(indexName, key, value));
         assertEquals(Arrays.asList(nodeId), graphdbHelper.getIndexedNodes(indexName, key, "the value with spaces"));
-        assertEquals(Arrays.asList(nodeId), graphdbHelper.queryIndexedNodes( indexName, key, "the" ));
-        assertEquals(Arrays.asList(nodeId), graphdbHelper.queryIndexedNodes( indexName, key, "value" ));
-        assertEquals(Arrays.asList(nodeId), graphdbHelper.queryIndexedNodes( indexName, key, "with" ));
-        assertEquals(Arrays.asList(nodeId), graphdbHelper.queryIndexedNodes( indexName, key, "spaces" ));
+        assertEquals(Arrays.asList(nodeId), graphdbHelper.queryIndexedNodes(indexName, key, "the"));
+        assertEquals(Arrays.asList(nodeId), graphdbHelper.queryIndexedNodes(indexName, key, "value"));
+        assertEquals(Arrays.asList(nodeId), graphdbHelper.queryIndexedNodes(indexName, key, "with"));
+        assertEquals(Arrays.asList(nodeId), graphdbHelper.queryIndexedNodes(indexName, key, "spaces"));
         assertTrue(graphdbHelper.getIndexedNodes(indexName, key, "nohit").isEmpty());
     }
 
