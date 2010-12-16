@@ -727,7 +727,7 @@ public class DatabaseActions
         Transaction tx = graphDb.beginTx();
         try
         {
-            IndexRepresentation indexRepresentation = new NodeIndexRepresentation( indexName );
+            IndexRepresentation indexRepresentation = new RelationshipIndexRepresentation( indexName );
             for ( Relationship node : index.get( key, value ) )
             {
                 representations.add( new IndexedEntityRepresentation( node, key, value, indexRepresentation ) );
