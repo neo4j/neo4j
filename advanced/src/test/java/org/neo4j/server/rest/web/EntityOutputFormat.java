@@ -20,18 +20,23 @@
 
 package org.neo4j.server.rest.web;
 
+import org.neo4j.server.rest.repr.ExtensionInjector;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.Representation;
+import org.neo4j.server.rest.repr.RepresentationFormat;
+import org.neo4j.server.rest.repr.RepresentationTestBase;
 
 import javax.ws.rs.core.Response;
+import java.net.URI;
+import java.util.Map;
 
 public class EntityOutputFormat extends OutputFormat
 {
     private Representation representation;
 
-    public EntityOutputFormat(  )
+    public EntityOutputFormat(  RepresentationFormat format, URI baseUri, ExtensionInjector extensions  )
     {
-        super( null, null, null );
+        super( format, baseUri, extensions);
     }
 
     @Override
@@ -39,7 +44,12 @@ public class EntityOutputFormat extends OutputFormat
     {
         this.representation = representation;
 
-        return response.build();
+        return super.response(response, representation);
+    }
+
+    public Map<String,Object> getResultAsMap()
+    {
+        return (Map<String, Object>)RepresentationTestBase.serialize( representation );
     }
 
     public Representation getRepresentation()
