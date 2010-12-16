@@ -117,12 +117,12 @@ public final class FunctionalTestHelper
         return dataUri() + "index/";
     }
 
-    String indexNodeUri()
+    String nodeIndexUri()
     {
         return indexUri() + "node/";
     }
 
-    String indexRelationshipUri()
+    String relationshipIndexUri()
     {
         return indexUri() + "relationship/";
     }
@@ -134,12 +134,12 @@ public final class FunctionalTestHelper
 
     String indexNodeUri( String indexName )
     {
-        return indexNodeUri() + indexName;
+        return nodeIndexUri() + indexName;
     }
 
     String indexRelationshipUri( String indexName )
     {
-        return indexRelationshipUri() + indexName;
+        return relationshipIndexUri() + indexName;
     }
 
     String indexNodeUri( String indexName, String key, Object value )

@@ -56,7 +56,7 @@ import org.neo4j.server.rest.domain.renderers.RootRenderer;
  * But it's... ok, kind of, since it doesn't really matter what the
  * methods are called. They only ones who could get upset are the tests.
  */
-@Path( "/" )
+@Path( "/deprecated" )
 public class JsonAndHtmlWebService extends GenericWebService
 {
 

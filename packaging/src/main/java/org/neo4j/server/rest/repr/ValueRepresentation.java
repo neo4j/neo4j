@@ -25,6 +25,7 @@ import java.net.URI;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.PropertyTypeDispatcher;
 import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.server.rest.domain.URIHelper;
 
 public class ValueRepresentation extends Representation
 {

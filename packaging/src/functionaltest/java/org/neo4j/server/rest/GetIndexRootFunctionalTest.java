@@ -71,7 +71,7 @@ public class GetIndexRootFunctionalTest
     @Test
     public void shouldRespondWithNodeIndexes() throws Exception
     {
-        ClientResponse response = Client.create().resource(functionalTestHelper.indexNodeUri() ).get( ClientResponse.class );
+        ClientResponse response = Client.create().resource(functionalTestHelper.nodeIndexUri() ).get( ClientResponse.class );
         assertEquals( 204, response.getStatus() );
     }
 
@@ -82,7 +82,7 @@ public class GetIndexRootFunctionalTest
     @Test
     public void shouldRespondWithRelationshipIndexes() throws Exception
     {
-        ClientResponse response = Client.create().resource(functionalTestHelper.indexRelationshipUri() ).get( ClientResponse.class );
+        ClientResponse response = Client.create().resource(functionalTestHelper.relationshipIndexUri() ).get( ClientResponse.class );
         assertEquals( 204, response.getStatus() );
     }
 
