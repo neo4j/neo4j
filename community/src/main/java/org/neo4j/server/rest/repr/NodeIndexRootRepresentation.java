@@ -25,43 +25,28 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
 
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.Map;
 
-public class NodeIndexRootRepresentation implements ExtensibleRepresentation, EntityRepresentation
+public class NodeIndexRootRepresentation extends MappingRepresentation
 {
     private final URI baseUri;
     private IndexManager indexManager;
 
     public NodeIndexRootRepresentation( URI baseUri, IndexManager indexManager )
     {
+        super("node-index");
         this.baseUri = baseUri;
         this.indexManager = indexManager;
     }
 
-    public ValueRepresentation selfUri()
+    @Override
+    protected void serialize( final MappingSerializer serializer )
     {
-        return null; // new URI( baseUri.toString() + "index" );
-    }
-
-    public Map<String, Object> serialize()
-    {
-        Map<String, Object> map = new HashMap<String, Object>();
         indexManager.nodeIndexNames();
 
         for ( String indexName : indexManager.nodeIndexNames() )
         {
             Index<Node> index = indexManager.forNodes( indexName );
-            map.put( indexName, new NodeIndexRepresentation( baseUri, indexName, indexManager.getConfiguration( index ) ).serialize() );
+            serializer.putMapping( indexName, new NodeIndexRepresentation( baseUri, indexName, indexManager.getConfiguration( index ) ) );
         }
-
-        return map;
-    }
-
-    @Override
-    public String getIdentity()
-    {
-        return null;  //To change body of implemented methods use File | Settings | File Templates.
     }
 }
