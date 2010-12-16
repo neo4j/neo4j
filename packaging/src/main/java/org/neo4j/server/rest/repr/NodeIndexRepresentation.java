@@ -20,14 +20,13 @@
 
 package org.neo4j.server.rest.repr;
 
-import java.net.URI;
 import java.util.Map;
 
 public class NodeIndexRepresentation extends IndexRepresentation
 {
-    public NodeIndexRepresentation( URI baseUri, String name, Map<String, String> type )
+    public NodeIndexRepresentation( String name, Map<String, String> type )
     {
-        super( baseUri, name, type );
+        super( name, type );
     }
 
     public String propertyContainerType() {

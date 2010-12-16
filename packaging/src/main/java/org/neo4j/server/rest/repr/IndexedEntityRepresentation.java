@@ -29,29 +29,29 @@ public final class IndexedEntityRepresentation extends MappingRepresentation imp
     private final MappingRepresentation entity;
     private final ValueRepresentation selfUri;
 
-    @SuppressWarnings( "boxing" )
-    public IndexedEntityRepresentation( Node node, String indexPath )
+    @SuppressWarnings("boxing")
+    public IndexedEntityRepresentation( Node node, String key, String value, IndexRepresentation indexRepresentation )
     {
-        this( new NodeRepresentation( node ), ValueRepresentation.uri( indexPath ) );
+        this( new NodeRepresentation( node ), node.getId(), key, value, indexRepresentation );
     }
 
-    @SuppressWarnings( "boxing" )
-    public IndexedEntityRepresentation( Relationship rel, String indexPath )
+    @SuppressWarnings("boxing")
+    public IndexedEntityRepresentation( Relationship rel, String key, String value, IndexRepresentation indexRepresentation )
     {
-        this( new RelationshipRepresentation( rel ), ValueRepresentation.uri( indexPath ) );
+        this( new RelationshipRepresentation( rel ), rel.getId(), key, value, indexRepresentation );
     }
 
-    private IndexedEntityRepresentation( MappingRepresentation entity, ValueRepresentation selfUri )
+    private IndexedEntityRepresentation( MappingRepresentation entity, long entityId, String key, String value, IndexRepresentation indexRepresentation )
     {
         super( entity.type );
         this.entity = entity;
-        this.selfUri = selfUri;
+        selfUri = ValueRepresentation.uri( indexRepresentation.relativeUriFor( key, value, entityId ) );
     }
 
     @Override
     public String getIdentity()
     {
-        return ( (ExtensibleRepresentation) entity ).getIdentity();
+        return ((ExtensibleRepresentation) entity).getIdentity();
     }
 
     public ValueRepresentation selfUri()
