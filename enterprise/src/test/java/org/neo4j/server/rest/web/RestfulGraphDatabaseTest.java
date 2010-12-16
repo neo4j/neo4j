@@ -49,9 +49,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
 import static org.hamcrest.Matchers.hasKey;
-import static org.junit.Assert.*;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -1069,6 +1070,29 @@ public class RestfulGraphDatabaseTest
     private static String markWithUnicodeMarker( String string )
     {
         return String.valueOf( (char)0xfeff ) + string;
+    }
+
+    @Test
+    public void shouldBeAbleToFindSinglePathBetweenTwoNodes() throws Exception
+    {
+        long n1 = helper.createNode();
+        long n2 = helper.createNode();
+        long r = helper.createRelationship( "knows", n1, n2 );
+        Map<String, Object> config = MapUtil.map(
+                "max depth", 3,
+                "algorithm", "shortestPath",
+                "to", Long.toString( n2 ),
+                "relationships", MapUtil.map(
+                            "type", "knows",
+                            "direction", "out" ) );
+
+        String payload = JsonHelper.createJsonFrom( config );
+
+        Response response = service.singlePath( n1, payload );
+        assertThat(response.getStatus(), is(200));
+
+        Map<String, Object> resultAsMap = output.getResultAsMap();
+        assertThat((Integer)resultAsMap.get( "length" ), is(1));
     }
 
     @Test
