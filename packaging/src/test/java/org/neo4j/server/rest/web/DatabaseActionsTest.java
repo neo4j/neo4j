@@ -20,23 +20,6 @@
 
 package org.neo4j.server.rest.web;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.server.rest.repr.RepresentationTestBase.serialize;
-
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -61,6 +44,18 @@ import org.neo4j.server.rest.repr.NodeRepresentationTest;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import org.neo4j.server.rest.web.DatabaseActions.IndexType;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.Assert.*;
+import static org.neo4j.server.rest.repr.RepresentationTestBase.serialize;
 
 public class DatabaseActionsTest {
 
@@ -768,12 +763,6 @@ public class DatabaseActionsTest {
                         "to", "direction", "out" ) ) ) );
         assertPaths( 2, nodes, 2, result );
 
-        // /paths {single: true}
-        result = serialize( actions.findPaths( nodes[0], nodes[1], MapUtil.map( "max depth", 2,
-                "algorithm", "shortestPath", "relationships", MapUtil.map( "type", "to",
-                        "direction", "out" ), "single", true ) ) );
-        assertPaths( 1, nodes, 2, result );
-
         // /path
         Map<String, Object> path = serialize( actions.findSinglePath( nodes[0], nodes[1],
                 MapUtil.map( "max depth", 2, "algorithm", "shortestPath", "relationships",
@@ -785,12 +774,15 @@ public class DatabaseActionsTest {
                 "algorithm", "shortestPath", "relationships", MapUtil.map( "type", "to",
                         "direction", "out" ), "single", false ) ) );
         assertPaths( 1, nodes, 2, Arrays.<Object>asList( path ) );
+    }
 
-        // /path {max depth: 1} (should get no hits)
-        path = serialize( actions.findSinglePath( nodes[0], nodes[1], MapUtil.map( "max depth", 2,
+    @Test(expected = NotFoundException.class)
+    public void shouldHandleNoFoundPathsCorrectly()
+    {
+        long[] nodes = createMoreComplexGraph();
+        serialize( actions.findSinglePath( nodes[0], nodes[1], MapUtil.map( "max depth", 2,
                 "algorithm", "shortestPath", "relationships", MapUtil.map( "type", "to",
                         "direction", "in" ), "single", false ) ) );
-        assertTrue( path == null || path.isEmpty() );
     }
 
     private void assertPaths( int numPaths, long[] nodes, int length, List<Object> result )
