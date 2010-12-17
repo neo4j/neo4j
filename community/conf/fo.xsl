@@ -214,6 +214,16 @@
   </fo:inline>
 </xsl:template>
 
+<!-- color for links -->
+<xsl:attribute-set name="xref.properties">
+  <xsl:attribute name="color">
+    <xsl:choose>
+      <xsl:when test="self::ulink">blue</xsl:when>
+      <xsl:otherwise>inherit</xsl:otherwise>
+    </xsl:choose>
+  </xsl:attribute>
+</xsl:attribute-set>
+
 <!-- Actual space intercalation: recursive -->
 <xsl:template name="intersperse-with-zero-spaces">
     <xsl:param name="str"/>
