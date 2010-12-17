@@ -6,7 +6,17 @@ This component builds the runnable server component.
 build-test-run
 --------------
 
-`mvn clean package exec:java`
+When building for the first time, do:
+
+`mvn clean package -P initial-build`
+
+Subsequent builds can simply:
+
+`mvn clean package`
+
+Finally, run the server using:
+
+`mvn exec:java`
 
 functional-tests
 ----------------
