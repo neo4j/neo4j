@@ -20,14 +20,6 @@
 
 package org.neo4j.server.rest.web;
 
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphdb.Direction;
@@ -61,7 +53,7 @@ import org.neo4j.server.rest.domain.RelationshipExpanderBuilder;
 import org.neo4j.server.rest.domain.StartNodeNotFoundException;
 import org.neo4j.server.rest.domain.StartNodeSameAsEndNodeException;
 import org.neo4j.server.rest.domain.TraversalDescriptionBuilder;
-import org.neo4j.server.rest.domain.StorageActions.TraverserReturnType;
+import org.neo4j.server.rest.domain.TraverserReturnType;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.DatabaseRepresentation;
 import org.neo4j.server.rest.repr.IndexRepresentation;
@@ -78,6 +70,14 @@ import org.neo4j.server.rest.repr.RelationshipRepresentation;
 import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.RepresentationType;
 import org.neo4j.server.rest.repr.ServerExtensionRepresentation;
+
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 // TODO: move this to another package. domain?
 public class DatabaseActions

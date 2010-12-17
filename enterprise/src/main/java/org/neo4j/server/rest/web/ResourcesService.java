@@ -20,16 +20,15 @@
 
 package org.neo4j.server.rest.web;
 
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.UriInfo;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.UriInfo;
 
 @Path("/resource")
 public class ResourcesService {
@@ -72,7 +71,7 @@ public class ResourcesService {
         StringBuilder out = new StringBuilder();
         Reader reader = null;
         try {
-            reader = new InputStreamReader(input, GenericWebService.UTF8);
+            reader = new InputStreamReader(input, "UTF-8" );
             int read;
             do {
                 read = reader.read(buffer, 0, buffer.length);
