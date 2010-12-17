@@ -722,7 +722,7 @@ public class RestfulGraphDatabase
             return output.badRequest( e );
         } catch ( NotFoundException e )
         {
-            return output.noContent();
+            return output.notFound();
         }
 
     }
