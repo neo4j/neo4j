@@ -20,20 +20,11 @@
 
 package org.neo4j.server.webadmin.rest;
 
-import org.neo4j.management.Kernel;
-import org.neo4j.server.database.Database;
-import org.neo4j.server.database.DatabaseBlockedException;
-import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.domain.renderers.JsonRenderers;
-import org.neo4j.server.rest.repr.BadInputException;
-import org.neo4j.server.rest.repr.InputFormat;
-import org.neo4j.server.rest.repr.ListRepresentation;
-import org.neo4j.server.rest.repr.OutputFormat;
-import org.neo4j.server.rest.web.PropertyValueException;
-import org.neo4j.server.webadmin.rest.representations.ExceptionRepresentation;
-import org.neo4j.server.webadmin.rest.representations.JmxDomainRepresentation;
-import org.neo4j.server.webadmin.rest.representations.JmxMBeanRepresentation;
-import org.neo4j.server.webadmin.rest.representations.ServiceDefinitionRepresentation;
+import java.io.UnsupportedEncodingException;
+import java.lang.management.ManagementFactory;
+import java.net.URLDecoder;
+import java.util.ArrayList;
+import java.util.Collection;
 
 import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
@@ -48,13 +39,22 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
-import java.io.UnsupportedEncodingException;
-import java.lang.management.ManagementFactory;
-import java.net.URLDecoder;
-import java.util.ArrayList;
-import java.util.Collection;
+import javax.ws.rs.core.Response.Status;
+
+import org.neo4j.management.Kernel;
+import org.neo4j.server.database.Database;
+import org.neo4j.server.database.DatabaseBlockedException;
+import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.domain.renderers.JsonRenderers;
+import org.neo4j.server.rest.repr.BadInputException;
+import org.neo4j.server.rest.repr.InputFormat;
+import org.neo4j.server.rest.repr.ListRepresentation;
+import org.neo4j.server.rest.repr.OutputFormat;
+import org.neo4j.server.webadmin.rest.representations.ExceptionRepresentation;
+import org.neo4j.server.webadmin.rest.representations.JmxDomainRepresentation;
+import org.neo4j.server.webadmin.rest.representations.JmxMBeanRepresentation;
+import org.neo4j.server.webadmin.rest.representations.ServiceDefinitionRepresentation;
 
 
 @Path( JmxService.ROOT_PATH )
@@ -149,7 +149,7 @@ public class JmxService implements AdvertisableService
                 beans.add( new JmxMBeanRepresentation( (ObjectName)objName ) );
             }
 
-            return output.ok( new ListRepresentation( "beans", beans ) );
+            return output.ok( new ListRepresentation( "bean", beans ) );
         } catch ( MalformedObjectNameException e )
         {
             return buildExceptionResponse( Status.BAD_REQUEST, e );
@@ -199,7 +199,7 @@ public class JmxService implements AdvertisableService
                 }
             }
 
-            return output.ok( new ListRepresentation( "jmxBeans", beans ) );
+            return output.ok( new ListRepresentation( "jmxBean", beans ) );
         } catch ( MalformedObjectNameException e )
         {
             e.printStackTrace();

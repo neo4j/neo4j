@@ -39,6 +39,9 @@ public final class RepresentationType
             PATH = new RepresentationType( "path", "paths", Path.class );
     static final RepresentationType RELATIONSHIP_TYPE = new RepresentationType( "relationship-type", null ),//
             PROPERTIES = new RepresentationType( "properties" ),//
+            INDEX = new RepresentationType( "index" ),//
+            NODE_INDEX_ROOT = new RepresentationType( "node-index" ),//
+            RELATIONSHIP_INDEX_ROOT = new RepresentationType( "relationship-index" ),//
             EXTENSIONS = new RepresentationType( "extensions" ),//
             EXTENSION = new RepresentationType( "extension" ),//
             EXTENSION_POINT_DESCRIPTION = new RepresentationType( "extension-point" ),//
