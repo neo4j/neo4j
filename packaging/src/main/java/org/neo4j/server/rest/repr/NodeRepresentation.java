@@ -122,10 +122,17 @@ public final class NodeRepresentation extends ObjectRepresentation implements
     }
 
     @Override
-    void extraData( MappingWriter writer )
+    void extraData( MappingSerializer serializer )
     {
+        MappingWriter writer = serializer.writer;
         MappingWriter properties = writer.newMapping( RepresentationType.PROPERTIES, "data" );
         new PropertiesRepresentation( node ).serialize( properties );
+        if ( writer.isInteractive() )
+        {
+            serializer.putList(
+                    "relationship-types",
+                    ListRepresentation.relationshipTypes( node.getGraphDatabase().getRelationshipTypes() ) );
+        }
         properties.done();
     }
 

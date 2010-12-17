@@ -27,6 +27,11 @@ public abstract class MappingWriter
         return newMapping( type.valueName, param );
     }
 
+    protected boolean isInteractive()
+    {
+        return false;
+    }
+
     protected abstract MappingWriter newMapping( String type, String key );
 
     ListWriter newList( RepresentationType type, String param )
