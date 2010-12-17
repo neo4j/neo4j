@@ -1,3 +1,4 @@
+[preface]
 [[introduction]]
 Introduction
 ============
@@ -11,6 +12,8 @@ The goal is to be thumb-through and rule-of-thumb friendly.
 
 Each section should stand on its own, so you can hop right to whatever interests you.
 When possible, the sections distill "rules of thumb" which you can keep in mind whenever you wander out of the house without this manual in your back pocket.
+
+:leveloffset: 1
 
 [[introduction-who]]
 == Who should read this ==

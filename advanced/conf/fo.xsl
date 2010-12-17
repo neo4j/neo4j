@@ -151,14 +151,17 @@
 
 <xsl:param name="admon.graphics" select="1"></xsl:param>
 <xsl:param name="admon.textlabel" select="1"></xsl:param>
+<xsl:param name="admon.graphics.extension">.svg</xsl:param>
+<xsl:param name="admon.graphics.path">images/icons/admon/</xsl:param>
 
 <xsl:param name="toc.section.depth" select="1"></xsl:param>
 
 <xsl:param name="callout.graphics" select="1"></xsl:param>
+<xsl:param name="callout.graphics.extension">.svg</xsl:param>
 
 <xsl:param name="navig.graphics" select="0"></xsl:param>
 
-<xsl:param name="generate.section.toc.level" select="1"></xsl:param>
+<xsl:param name="generate.section.toc.level" select="0"></xsl:param>
 
 <xsl:param name="body.font.family" select="'serif'"/>
 <xsl:param name="body.font.master">12</xsl:param>
