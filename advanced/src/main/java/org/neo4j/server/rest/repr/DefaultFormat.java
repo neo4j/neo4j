@@ -50,7 +50,7 @@ public class DefaultFormat extends RepresentationFormat
     }
 
     @Override
-    protected String serializeValue( String type, Object value )
+    protected String serializeValue( String type, Object value ) throws BadInputException
     {
         return inner.serializeValue( type, value );
     }
@@ -74,7 +74,7 @@ public class DefaultFormat extends RepresentationFormat
     }
 
     @Override
-    protected String complete( MappingWriter serializer )
+    protected String complete( MappingWriter serializer ) throws BadInputException
     {
         return inner.complete( serializer );
     }
