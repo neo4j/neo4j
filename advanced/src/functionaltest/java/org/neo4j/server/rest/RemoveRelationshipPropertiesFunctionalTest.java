@@ -20,14 +20,8 @@
 
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.ws.rs.core.MediaType;
-
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,8 +30,12 @@ import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
+import javax.ws.rs.core.MediaType;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
 
 public class RemoveRelationshipPropertiesFunctionalTest
 {    
@@ -119,13 +117,13 @@ public class RemoveRelationshipPropertiesFunctionalTest
     @Test
     public void shouldReturn404WhenPropertyRemovedFromARelationshipWhichDoesNotExist()
     {
-        ClientResponse response = Client.create().resource( getPropertyUri( 999999, "foo" ) ).delete( ClientResponse.class );
+        ClientResponse response = Client.create().resource( getPropertyUri( 999999, "foo" ) ).accept( MediaType.APPLICATION_JSON_TYPE ).delete( ClientResponse.class );
         assertEquals( 404, response.getStatus() );
     }
 
     private ClientResponse removeRelationshipPropertyOnServer( long nodeId,
                                                                String key )
     {
-        return Client.create().resource( getPropertyUri( nodeId, key ) ).delete( ClientResponse.class );
+        return Client.create().resource( getPropertyUri( nodeId, key ) ).accept( MediaType.APPLICATION_JSON_TYPE ).delete( ClientResponse.class );
     }
 }
