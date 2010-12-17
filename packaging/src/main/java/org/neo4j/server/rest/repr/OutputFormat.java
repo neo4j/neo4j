@@ -42,7 +42,7 @@ public class OutputFormat
         this.extensions = extensions;
     }
 
-    public final Response ok( Representation representation ) throws BadInputException
+    public final Response ok( Representation representation )
     {
         return response( Response.ok(), representation );
     }

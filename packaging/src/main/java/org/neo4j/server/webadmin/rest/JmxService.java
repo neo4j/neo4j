@@ -20,11 +20,17 @@
 
 package org.neo4j.server.webadmin.rest;
 
-import java.io.UnsupportedEncodingException;
-import java.lang.management.ManagementFactory;
-import java.net.URLDecoder;
-import java.util.ArrayList;
-import java.util.Collection;
+import org.neo4j.management.Kernel;
+import org.neo4j.server.database.Database;
+import org.neo4j.server.database.DatabaseBlockedException;
+import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.repr.BadInputException;
+import org.neo4j.server.rest.repr.InputFormat;
+import org.neo4j.server.rest.repr.ListRepresentation;
+import org.neo4j.server.rest.repr.OutputFormat;
+import org.neo4j.server.webadmin.rest.representations.JmxDomainRepresentation;
+import org.neo4j.server.webadmin.rest.representations.JmxMBeanRepresentation;
+import org.neo4j.server.webadmin.rest.representations.ServiceDefinitionRepresentation;
 
 import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
@@ -36,25 +42,16 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-import javax.ws.rs.core.Response.Status;
-
-import org.neo4j.management.Kernel;
-import org.neo4j.server.database.Database;
-import org.neo4j.server.database.DatabaseBlockedException;
-import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.domain.renderers.JsonRenderers;
-import org.neo4j.server.rest.repr.BadInputException;
-import org.neo4j.server.rest.repr.InputFormat;
-import org.neo4j.server.rest.repr.ListRepresentation;
-import org.neo4j.server.rest.repr.OutputFormat;
-import org.neo4j.server.webadmin.rest.representations.ExceptionRepresentation;
-import org.neo4j.server.webadmin.rest.representations.JmxDomainRepresentation;
-import org.neo4j.server.webadmin.rest.representations.JmxMBeanRepresentation;
-import org.neo4j.server.webadmin.rest.representations.ServiceDefinitionRepresentation;
+import java.io.UnsupportedEncodingException;
+import java.lang.management.ManagementFactory;
+import java.net.URLDecoder;
+import java.util.ArrayList;
+import java.util.Collection;
 
 @Path( JmxService.ROOT_PATH )
 public class JmxService implements AdvertisableService
@@ -85,33 +82,21 @@ public class JmxService implements AdvertisableService
         serviceDef.resourceUri( "query", JmxService.QUERY_PATH );
         serviceDef.resourceUri( "kernelquery", JmxService.KERNEL_NAME_PATH );
 
-        try
-        {
-            return output.ok( serviceDef );
-        } catch ( BadInputException e )
-        {
-            return buildExceptionResponse( Status.BAD_REQUEST, e );
-        }
+        return output.ok( serviceDef );
     }
 
     @GET
-    @Path(DOMAINS_PATH)
+    @Path( DOMAINS_PATH )
     public Response listDomains() throws NullPointerException
     {
         MBeanServer server = ManagementFactory.getPlatformMBeanServer();
         ListRepresentation domains = ListRepresentation.strings( server.getDomains() );
-        try
-        {
-            return output.ok( domains );
-        } catch ( BadInputException e )
-        {
-            return buildExceptionResponse( Status.INTERNAL_SERVER_ERROR, e );
-        }
+        return output.ok( domains );
     }
 
     @GET
-    @Path(DOMAIN_TEMPLATE)
-    public Response getDomain( @PathParam("domain") String domainName )
+    @Path( DOMAIN_TEMPLATE )
+    public Response getDomain( @PathParam( "domain" ) String domainName )
     {
         MBeanServer server = ManagementFactory.getPlatformMBeanServer();
 
@@ -121,56 +106,47 @@ public class JmxService implements AdvertisableService
         {
             if ( objName.toString().startsWith( domainName ) )
             {
-                domain.addBean( (ObjectName) objName );
+                domain.addBean( (ObjectName)objName );
             }
         }
 
-        try
-        {
-            return output.ok( domain );
-        } catch ( BadInputException e )
-        {
-            return buildExceptionResponse( Status.BAD_REQUEST, e );
-        }
+        return output.ok( domain );
     }
 
     @GET
-    @Path(BEAN_TEMPLATE)
-    public Response getBean( @PathParam("domain") String domainName, @PathParam("objectName") String objectName )
+    @Path( BEAN_TEMPLATE )
+    public Response getBean( @PathParam( "domain" ) String domainName, @PathParam( "objectName" ) String objectName )
+    {
+        MBeanServer server = ManagementFactory.getPlatformMBeanServer();
+
+        ArrayList<JmxMBeanRepresentation> beans = new ArrayList<JmxMBeanRepresentation>();
+        for ( Object objName : server.queryNames( createObjectName( domainName, objectName ), null ) )
+        {
+            beans.add( new JmxMBeanRepresentation( (ObjectName)objName ) );
+        }
+
+        return output.ok( new ListRepresentation( "bean", beans ) );
+    }
+
+    private ObjectName createObjectName( final String domainName, final String objectName )
     {
         try
         {
-            MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-
-            ArrayList<JmxMBeanRepresentation> beans = new ArrayList<JmxMBeanRepresentation>();
-            for ( Object objName : server.queryNames( new ObjectName( domainName + ":" + URLDecoder.decode( objectName, "UTF-8" ) ), null ) )
-            {
-                beans.add( new JmxMBeanRepresentation( (ObjectName) objName ) );
-            }
-
-            return output.ok( new ListRepresentation( "bean", beans ) );
+            return new ObjectName( domainName + ":" + URLDecoder.decode( objectName, "UTF-8" ) );
         } catch ( MalformedObjectNameException e )
         {
-            return buildExceptionResponse( Status.BAD_REQUEST, e );
+            throw new WebApplicationException( e, 400 );
         } catch ( UnsupportedEncodingException e )
         {
-            return buildExceptionResponse( Status.INTERNAL_SERVER_ERROR, e );
-        } catch ( BadInputException e )
-        {
-            return buildExceptionResponse( Status.BAD_REQUEST, e );
+            throw new WebApplicationException( e, 400 );
         }
-    }
-
-    private Response buildExceptionResponse( Status errorStatus, Exception e )
-    {
-        return Response.status( errorStatus ).entity( JsonRenderers.DEFAULT.render( new ExceptionRepresentation( e ) ) ).build();
     }
 
 
     @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Path(QUERY_PATH)
-    @SuppressWarnings("unchecked")
+    @Consumes( MediaType.APPLICATION_JSON )
+    @Path( QUERY_PATH )
+    @SuppressWarnings( "unchecked" )
     public Response queryBeans( String query )
     {
         try
@@ -179,43 +155,41 @@ public class JmxService implements AdvertisableService
 
 
             String json = dodgeStartingUnicodeMarker( query );
-            Collection<Object> queries = (Collection<Object>) JsonHelper.jsonToSingleValue( json );
+            Collection<Object> queries = (Collection<Object>)JsonHelper.jsonToSingleValue( json );
 
             ArrayList<JmxMBeanRepresentation> beans = new ArrayList<JmxMBeanRepresentation>();
             for ( Object queryObj : queries )
             {
                 assert queryObj instanceof String;
-                for ( Object objName : server.queryNames( new ObjectName( (String) queryObj ), null ) )
+                for ( Object objName : server.queryNames( new ObjectName( (String)queryObj ), null ) )
                 {
-                    beans.add( new JmxMBeanRepresentation( (ObjectName) objName ) );
+                    beans.add( new JmxMBeanRepresentation( (ObjectName)objName ) );
                 }
             }
 
             return output.ok( new ListRepresentation( "jmxBean", beans ) );
         } catch ( MalformedObjectNameException e )
         {
-            e.printStackTrace();
-            return buildExceptionResponse( Status.BAD_REQUEST, e );
+            return output.badRequest( e );
         } catch ( BadInputException e )
         {
-            e.printStackTrace();
-            return buildExceptionResponse( Status.BAD_REQUEST, e );
+            return output.badRequest( e );
         }
 
     }
 
     @POST
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-    @Path(QUERY_PATH)
-    public Response formQueryBeans( @FormParam("value") String data )
+    @Produces( MediaType.APPLICATION_JSON )
+    @Consumes( MediaType.APPLICATION_FORM_URLENCODED )
+    @Path( QUERY_PATH )
+    public Response formQueryBeans( @FormParam( "value" ) String data )
     {
         return queryBeans( data );
     }
 
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path(KERNEL_NAME_PATH)
+    @Produces( MediaType.APPLICATION_JSON )
+    @Path( KERNEL_NAME_PATH )
     public Response currentKernelInstance( @Context Database database ) throws DatabaseBlockedException
     {
         Kernel kernelBean = database.graph.getManagementBean( Kernel.class );
