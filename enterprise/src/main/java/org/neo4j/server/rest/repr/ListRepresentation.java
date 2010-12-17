@@ -23,6 +23,7 @@ package org.neo4j.server.rest.repr;
 import java.net.URI;
 import java.util.Arrays;
 
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.collection.IterableWrapper;
 
 public final class ListRepresentation extends Representation
@@ -87,5 +88,18 @@ public final class ListRepresentation extends Representation
                 return ValueRepresentation.string( value );
             }
         } );
+    }
+
+    public static ListRepresentation relationshipTypes( Iterable<RelationshipType> types )
+    {
+        return new ListRepresentation( RepresentationType.RELATIONSHIP_TYPE,
+                new IterableWrapper<Representation, RelationshipType>( types )
+                {
+                    @Override
+                    protected Representation underlyingObjectToObject( RelationshipType value )
+                    {
+                        return ValueRepresentation.relationshipType( value );
+                    }
+                } );
     }
 }

@@ -146,10 +146,10 @@ public abstract class ObjectRepresentation extends MappingRepresentation
         {
             property.getValue().putTo( serializer, this, property.getKey() );
         }
-        extraData( serializer.writer );
+        extraData( serializer );
     }
 
-    void extraData( MappingWriter writer )
+    void extraData( MappingSerializer serializer )
     {
     }
 }
