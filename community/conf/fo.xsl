@@ -128,8 +128,6 @@
   <xsl:attribute name="margin-bottom">6pt</xsl:attribute>
 </xsl:attribute-set>
 
-<xsl:param name="callout.graphics" select="'1'"/>
-
 <!-- Only shade programlisting and screen verbatim elements -->
 <xsl:param name="shade.verbatim" select="1"/>
 <xsl:attribute-set name="shade.verbatim.style">
