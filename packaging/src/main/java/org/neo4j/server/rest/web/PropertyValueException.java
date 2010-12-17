@@ -20,12 +20,28 @@
 
 package org.neo4j.server.rest.web;
 
-//TODO: move this to another package. domain?
-public class PropertyValueException extends Exception
+import org.neo4j.server.rest.repr.BadInputException;
+
+//TODO: move this to another package. domain? or repr?
+public class PropertyValueException extends BadInputException
 {
     public PropertyValueException( String key, Object value )
     {
         super( "Could not set property \"" + key + "\", unsupported type: " + value );
     }
 
+    public PropertyValueException( String message, Throwable cause )
+    {
+        super( message, cause );
+    }
+
+    public PropertyValueException( String message )
+    {
+        super( message );
+    }
+
+    public PropertyValueException( Throwable cause )
+    {
+        super( cause );
+    }
 }

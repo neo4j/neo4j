@@ -32,7 +32,9 @@ import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.domain.JsonParseRuntimeException;
 import org.neo4j.server.rest.domain.URIHelper;
+import org.neo4j.server.rest.web.PropertyValueException;
 
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
@@ -87,7 +89,7 @@ public class IndexNodeFunctionalityTest
      * }
      */
     @Test
-    public void shouldCreateANamedNodeIndex()
+    public void shouldCreateANamedNodeIndex() throws JsonParseRuntimeException
     {
         String indexName = "favorites";
         Map<String, String> indexSpecification = new HashMap<String, String>();
@@ -107,7 +109,7 @@ public class IndexNodeFunctionalityTest
      * "http://uri.for.node.to.index"
      */
     @Test
-    public void shouldRespondWith201CreatedWhenIndexingJsonNodeUri() throws DatabaseBlockedException
+    public void shouldRespondWith201CreatedWhenIndexingJsonNodeUri() throws DatabaseBlockedException, JsonParseRuntimeException
     {
         long nodeId = helper.createNode();
         String key = "key";
@@ -125,7 +127,7 @@ public class IndexNodeFunctionalityTest
     }
 
     @Test
-    public void shouldGetNodeRepresentationFromIndexUri() throws DatabaseBlockedException
+    public void shouldGetNodeRepresentationFromIndexUri() throws DatabaseBlockedException, JsonParseRuntimeException
     {
         long nodeId = helper.createNode();
         String key = "key2";
@@ -161,7 +163,7 @@ public class IndexNodeFunctionalityTest
     }
 
     @Test
-    public void shouldGet200AndArrayOfNodeRepsWhenGettingFromIndex()
+    public void shouldGet200AndArrayOfNodeRepsWhenGettingFromIndex() throws PropertyValueException
     {
         String key = "key_get";
         String value = "value";
@@ -225,7 +227,7 @@ public class IndexNodeFunctionalityTest
 
     @Test
     @Ignore("Unclear contract: remove the index itself? That is unsupported in the new index api")
-    public void shouldGet200AndBeAbleToRemoveIndexing() throws DatabaseBlockedException
+    public void shouldGet200AndBeAbleToRemoveIndexing() throws DatabaseBlockedException, JsonParseRuntimeException
     {
         ClientResponse response = Client.create().resource( functionalTestHelper.nodeUri() ).type( MediaType.APPLICATION_FORM_URLENCODED ).accept(
                 MediaType.APPLICATION_JSON ).post( ClientResponse.class );

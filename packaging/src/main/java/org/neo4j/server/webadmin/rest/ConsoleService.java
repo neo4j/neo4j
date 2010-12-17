@@ -82,7 +82,13 @@ public class ConsoleService implements AdvertisableService
         ServiceDefinitionRepresentation result = new ServiceDefinitionRepresentation( uriInfo.getBaseUri() + SERVICE_PATH );
         result.resourceUri( "exec", "" );
 
-        return output.ok( result );
+        try
+        {
+            return output.ok( result );
+        } catch ( BadInputException e )
+        {
+            return output.badRequest( e );
+        }
     }
 
     @POST
@@ -109,7 +115,13 @@ public class ConsoleService implements AdvertisableService
 
         String result = scriptSession.evaluate( (String)args.get( "command" ) );
 
-        return output.ok( ValueRepresentation.string( result ) );
+        try
+        {
+            return output.ok( ValueRepresentation.string( result ) );
+        } catch ( BadInputException e )
+        {
+            return output.badRequest( e );
+        }
     }
 
     private ScriptSession getSession( Map<String, Object> args )

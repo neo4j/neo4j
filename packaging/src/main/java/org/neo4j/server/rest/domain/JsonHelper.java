@@ -28,22 +28,25 @@ import java.util.Map;
 
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.neo4j.server.rest.web.*;
 
 public class JsonHelper {
     
     static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @SuppressWarnings("unchecked")
-    public static Map<String, Object> jsonToMap(String json) {
+    public static Map<String, Object> jsonToMap(String json) throws JsonParseRuntimeException
+    {
         return (Map<String, Object>) readJson( json );
     }
 
     @SuppressWarnings("unchecked")
-    public static List<Map<String, Object>> jsonToListOfRelationshipRepresentations(String json) {
+    public static List<Map<String, Object>> jsonToListOfRelationshipRepresentations(String json) throws JsonParseRuntimeException
+    {
         return (List<Map<String, Object>>) readJson( json );
     }
     
-    private static Object readJson( String json )
+    private static Object readJson( String json ) throws JsonParseRuntimeException
     {
         ObjectMapper mapper = new ObjectMapper();
         try {
@@ -53,13 +56,15 @@ public class JsonHelper {
         }
     }
 
-    public static Object jsonToSingleValue(String json) {
+    public static Object jsonToSingleValue(String json) throws org.neo4j.server.rest.web.PropertyValueException
+    {
         Object jsonObject = readJson( json );
         return jsonObject instanceof Collection<?> ? jsonObject :
                 PropertiesMap.assertSupportedPropertyValue( jsonObject );
     }
 
-    public static String createJsonFrom(Object data) {
+    public static String createJsonFrom(Object data) throws JsonParseRuntimeException
+    {
         try {
             StringWriter writer = new StringWriter();
             JsonGenerator generator = OBJECT_MAPPER.getJsonFactory()

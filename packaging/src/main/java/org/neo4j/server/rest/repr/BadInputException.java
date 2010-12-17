@@ -31,4 +31,9 @@ public class BadInputException extends Exception
     {
         super( message );
     }
+
+    public BadInputException( String message, Throwable cause )
+    {
+        super( message, cause );
+    }
 }

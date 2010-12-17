@@ -38,7 +38,7 @@ public class ValueRepresentation extends Representation
     }
 
     @Override
-    String serialize( RepresentationFormat format, URI baseUri, ExtensionInjector extensions )
+    String serialize( RepresentationFormat format, URI baseUri, ExtensionInjector extensions ) throws BadInputException
     {
         return format.serializeValue( type, value );
     }

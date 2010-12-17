@@ -43,10 +43,12 @@ import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.domain.JsonParseRuntimeException;
 import org.neo4j.server.rest.domain.URIHelper;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
+import org.neo4j.server.rest.web.PropertyValueException;
 
 public class IndexRelationshipFunctionalityTest
 {
@@ -102,7 +104,7 @@ public class IndexRelationshipFunctionalityTest
      * }
      */
     @Test
-    public void shouldCreateANamedRelationshipIndex()
+    public void shouldCreateANamedRelationshipIndex() throws JsonParseRuntimeException
     {
         String indexName = "favorites";
         Map<String, String> indexSpecification = new HashMap<String, String>();
@@ -128,7 +130,7 @@ public class IndexRelationshipFunctionalityTest
      * "http://uri.for.node.to.index"
      */
     @Test
-    public void shouldRespondWith201CreatedWhenIndexingRelationship() throws DatabaseBlockedException
+    public void shouldRespondWith201CreatedWhenIndexingRelationship() throws DatabaseBlockedException, JsonParseRuntimeException
     {
         long nodeId = helper.createNode();
         String key = "key";
@@ -161,7 +163,7 @@ public class IndexRelationshipFunctionalityTest
     }
 
     @Test
-    public void shouldGetRelationshipRepresentationFromIndexUri() throws DatabaseBlockedException
+    public void shouldGetRelationshipRepresentationFromIndexUri() throws DatabaseBlockedException, JsonParseRuntimeException
     {
         long nodeId = helper.createNode();
         String key = "key2";
@@ -203,7 +205,7 @@ public class IndexRelationshipFunctionalityTest
     }
 
     @Test
-    public void shouldGet200AndArrayOfRelationshipRepsWhenGettingFromIndex()
+    public void shouldGet200AndArrayOfRelationshipRepsWhenGettingFromIndex() throws PropertyValueException
     {
         long startNode = helper.createNode();
         long endNode = helper.createNode();
@@ -287,7 +289,7 @@ public class IndexRelationshipFunctionalityTest
 
     @Test
     @Ignore("Unclear contract: remove the index itself? That is unsupported in the new index api")
-    public void shouldGet200AndBeAbleToRemoveIndexing() throws DatabaseBlockedException
+    public void shouldGet200AndBeAbleToRemoveIndexing() throws DatabaseBlockedException, JsonParseRuntimeException
     {
         ClientResponse response = Client.create().resource( functionalTestHelper.nodeUri() ).type( MediaType.APPLICATION_FORM_URLENCODED ).accept(
                 MediaType.APPLICATION_JSON ).post( ClientResponse.class );

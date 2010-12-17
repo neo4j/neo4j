@@ -20,11 +20,7 @@
 
 package org.neo4j.server.rest.web;
 
-import org.neo4j.server.rest.repr.ExtensionInjector;
-import org.neo4j.server.rest.repr.OutputFormat;
-import org.neo4j.server.rest.repr.Representation;
-import org.neo4j.server.rest.repr.RepresentationFormat;
-import org.neo4j.server.rest.repr.RepresentationTestBase;
+import org.neo4j.server.rest.repr.*;
 
 import javax.ws.rs.core.Response;
 import java.net.URI;
@@ -41,14 +37,14 @@ public class EntityOutputFormat extends OutputFormat
     }
 
     @Override
-    protected Response response( Response.ResponseBuilder response, Representation representation )
+    protected Response response( Response.ResponseBuilder response, Representation representation ) throws BadInputException
     {
         this.representation = representation;
 
         return super.response(response, representation);
     }
 
-    public Map<String,Object> getResultAsMap()
+    public Map<String,Object> getResultAsMap() throws BadInputException
     {
         return (Map<String, Object>)RepresentationTestBase.serialize( representation );
     }
@@ -58,7 +54,7 @@ public class EntityOutputFormat extends OutputFormat
         return representation;
     }
 
-    public List<Object> getResultAsList()
+    public List<Object> getResultAsList() throws BadInputException
     {
         return (List<Object>)RepresentationTestBase.serialize( representation );
     }

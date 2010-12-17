@@ -134,7 +134,13 @@ public class RestfulGraphDatabase
     @GET
     public Response getRoot()
     {
-        return output.ok( server.root() );
+        try
+        {
+            return output.ok( server.root() );
+        } catch ( BadInputException e )
+        {
+            return output.serverError( e );
+        }
     }
 
     // Nodes
@@ -147,9 +153,6 @@ public class RestfulGraphDatabase
         {
             return output.created( server.createNode( input.readMap( body ) ) );
         } catch ( BadInputException e )
-        {
-            return output.badRequest( e );
-        } catch ( PropertyValueException e )
         {
             return output.badRequest( e );
         }
@@ -165,6 +168,9 @@ public class RestfulGraphDatabase
         } catch ( NodeNotFoundException e )
         {
             return output.notFound( e );
+        } catch ( BadInputException e )
+        {
+            return output.badRequest( e );
         }
     }
 
@@ -200,9 +206,6 @@ public class RestfulGraphDatabase
         } catch ( NodeNotFoundException e )
         {
             return output.notFound( e );
-        } catch ( PropertyValueException e )
-        {
-            return output.badRequest( e );
         }
         return nothing();
     }
@@ -225,7 +228,13 @@ public class RestfulGraphDatabase
         }
         else
         {
-            return output.ok( properties );
+            try
+            {
+                return output.ok( properties );
+            } catch ( BadInputException e )
+            {
+                return output.badRequest( e );
+            }
         }
     }
 
@@ -243,9 +252,6 @@ public class RestfulGraphDatabase
         } catch ( NodeNotFoundException e )
         {
             return output.notFound( e );
-        } catch ( PropertyValueException e )
-        {
-            return output.badRequest( e );
         }
         return nothing();
     }
@@ -264,6 +270,9 @@ public class RestfulGraphDatabase
         } catch ( NoSuchPropertyException e )
         {
             return output.notFound( e );
+        } catch ( BadInputException e )
+        {
+            return output.badRequest( e );
         }
     }
 
@@ -338,6 +347,9 @@ public class RestfulGraphDatabase
         } catch ( PropertyValueException e )
         {
             return output.badRequest( e );
+        } catch ( BadInputException e )
+        {
+            return output.badRequest( e );
         }
     }
 
@@ -351,6 +363,9 @@ public class RestfulGraphDatabase
         } catch ( RelationshipNotFoundException e )
         {
             return output.notFound( e );
+        } catch ( BadInputException e )
+        {
+            return output.badRequest( e );
         }
     }
 
@@ -380,6 +395,9 @@ public class RestfulGraphDatabase
         } catch ( NodeNotFoundException e )
         {
             return output.notFound( e );
+        } catch ( BadInputException e )
+        {
+            return output.badRequest( e );
         }
     }
 
@@ -395,6 +413,9 @@ public class RestfulGraphDatabase
         } catch ( NodeNotFoundException e )
         {
             return output.notFound( e );
+        } catch ( BadInputException e )
+        {
+            return output.badRequest( e );
         }
     }
 
@@ -418,7 +439,13 @@ public class RestfulGraphDatabase
         }
         else
         {
-            return output.ok( properties );
+            try
+            {
+                return output.ok( properties );
+            } catch ( BadInputException e )
+            {
+                return output.badRequest( e );
+            }
         }
     }
 
@@ -436,6 +463,9 @@ public class RestfulGraphDatabase
         } catch ( NoSuchPropertyException e )
         {
             return output.notFound( e );
+        } catch ( BadInputException e )
+        {
+            return output.badRequest( e );
         }
     }
 
@@ -454,9 +484,6 @@ public class RestfulGraphDatabase
         } catch ( RelationshipNotFoundException e )
         {
             return output.notFound( e );
-        } catch ( PropertyValueException e )
-        {
-            return output.badRequest( e );
         }
         return nothing();
     }
@@ -476,9 +503,6 @@ public class RestfulGraphDatabase
         } catch ( RelationshipNotFoundException e )
         {
             return output.notFound( e );
-        } catch ( PropertyValueException e )
-        {
-            return output.badRequest( e );
         }
         return nothing();
     }
@@ -526,7 +550,13 @@ public class RestfulGraphDatabase
         {
             return output.noContent();
         }
-        return output.ok( server.nodeIndexRoot() );
+        try
+        {
+            return output.ok( server.nodeIndexRoot() );
+        } catch ( BadInputException e )
+        {
+            return output.serverError( e );
+        }
     }
 
     @POST
@@ -551,7 +581,13 @@ public class RestfulGraphDatabase
         {
             return output.noContent();
         }
-        return output.ok( server.relationshipIndexRoot() );
+        try
+        {
+            return output.ok( server.relationshipIndexRoot() );
+        } catch ( BadInputException e )
+        {
+            return output.serverError( e );
+        }
     }
 
     @POST
@@ -611,6 +647,9 @@ public class RestfulGraphDatabase
         } catch ( NotFoundException nfe )
         {
             return output.notFound( nfe );
+        } catch ( BadInputException e )
+        {
+            return output.badRequest( e );
         }
     }
 
@@ -620,7 +659,13 @@ public class RestfulGraphDatabase
                                                  @PathParam("key") String key, @PathParam("value") String value,
                                                  @PathParam("id") long id )
     {
-        return output.ok( server.getIndexedRelationship( indexName, key, value, id ) );
+        try
+        {
+            return output.ok( server.getIndexedRelationship( indexName, key, value, id ) );
+        } catch ( BadInputException e )
+        {
+            return output.badRequest( e );
+        }
     }
 
     @GET
@@ -634,6 +679,9 @@ public class RestfulGraphDatabase
         } catch ( NotFoundException nfe )
         {
             return output.notFound( nfe );
+        } catch ( BadInputException e )
+        {
+            return output.badRequest( e );
         }
     }
 
@@ -648,6 +696,9 @@ public class RestfulGraphDatabase
         } catch ( NotFoundException nfe )
         {
             return output.notFound( nfe );
+        } catch ( BadInputException e )
+        {
+            return output.badRequest( e );
         }
     }
 
@@ -737,6 +788,7 @@ public class RestfulGraphDatabase
         {
             description = input.readMap( body );
             endNode = extractNodeId( (String) description.get( "to" ) );
+            return output.ok( server.findPaths( startNode, endNode, description ) );
         } catch ( BadInputException e )
         {
             return output.badRequest( e );
@@ -744,7 +796,6 @@ public class RestfulGraphDatabase
         {
             return output.badRequest( e );
         }
-        return output.ok( server.findPaths( startNode, endNode, description ) );
     }
 
     // Extensions
@@ -753,7 +804,13 @@ public class RestfulGraphDatabase
     @Path(PATH_EXTENSION_ROOT)
     public Response getExtensionsList()
     {
-        return output.ok( server.getExtensionsList() );
+        try
+        {
+            return output.ok( server.getExtensionsList() );
+        } catch ( BadInputException e )
+        {
+            return output.serverError( e );
+        }
     }
 
     @GET
@@ -766,6 +823,9 @@ public class RestfulGraphDatabase
         } catch ( ExtensionLookupException e )
         {
             return output.notFound( e );
+        } catch ( BadInputException e )
+        {
+            return output.badRequest( e );
         }
     }
 
@@ -804,6 +864,9 @@ public class RestfulGraphDatabase
         } catch ( ExtensionLookupException e )
         {
             return output.notFound( e );
+        } catch ( BadInputException e )
+        {
+            return output.badRequest( e );
         }
     }
 
@@ -845,6 +908,9 @@ public class RestfulGraphDatabase
         } catch ( ExtensionLookupException e )
         {
             return output.notFound( e );
+        } catch ( BadInputException e )
+        {
+            return output.badRequest( e );
         }
     }
 
@@ -887,6 +953,9 @@ public class RestfulGraphDatabase
         } catch ( ExtensionLookupException e )
         {
             return output.notFound( e );
+        } catch ( BadInputException e )
+        {
+            return output.badRequest( e );
         }
     }
 }

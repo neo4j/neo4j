@@ -31,6 +31,7 @@ import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.domain.JsonParseRuntimeException;
 import org.neo4j.server.rest.domain.RelationshipRepresentationTest;
 
 import javax.ws.rs.core.MediaType;
@@ -78,7 +79,8 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
         return resource.accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
     }
 
-    private void verifyRelReps(int expectedSize, String json) {
+    private void verifyRelReps(int expectedSize, String json) throws JsonParseRuntimeException
+    {
         List<Map<String, Object>> relreps = JsonHelper.jsonToListOfRelationshipRepresentations(json);
         assertEquals(expectedSize, relreps.size());
         for (Map<String, Object> relrep : relreps) {
@@ -87,7 +89,8 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     }
 
     @Test
-    public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingAllRelationshipsForANode() {
+    public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingAllRelationshipsForANode() throws JsonParseRuntimeException
+    {
         ClientResponse response = sendRetrieveRequestToServer(nodeWithRelationships, "/all");
         assertEquals(200, response.getStatus());
         assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
@@ -95,7 +98,8 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     }
 
     @Test
-    public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingIncomingRelationshipsForANode() {
+    public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingIncomingRelationshipsForANode() throws JsonParseRuntimeException
+    {
         ClientResponse response = sendRetrieveRequestToServer(nodeWithRelationships, "/in");
         assertEquals(200, response.getStatus());
         assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
@@ -103,7 +107,8 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     }
 
     @Test
-    public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingOutgoingRelationshipsForANode() {
+    public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingOutgoingRelationshipsForANode() throws JsonParseRuntimeException
+    {
         ClientResponse response = sendRetrieveRequestToServer(nodeWithRelationships, "/out");
         assertEquals(200, response.getStatus());
         assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
@@ -111,7 +116,8 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     }
 
     @Test
-    public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingAllTypedRelationshipsForANode() {
+    public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingAllTypedRelationshipsForANode() throws JsonParseRuntimeException
+    {
         ClientResponse response = sendRetrieveRequestToServer(nodeWithRelationships, "/all/LIKES&HATES");
         assertEquals(200, response.getStatus());
         assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
@@ -119,7 +125,8 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     }
 
     @Test
-    public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingIncomingTypedRelationshipsForANode() {
+    public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingIncomingTypedRelationshipsForANode() throws JsonParseRuntimeException
+    {
         ClientResponse response = sendRetrieveRequestToServer(nodeWithRelationships, "/in/LIKES");
         assertEquals(200, response.getStatus());
         assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
@@ -127,7 +134,8 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     }
 
     @Test
-    public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingOutgoingTypedRelationshipsForANode() {
+    public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingOutgoingTypedRelationshipsForANode() throws JsonParseRuntimeException
+    {
         ClientResponse response = sendRetrieveRequestToServer(nodeWithRelationships, "/out/HATES");
         assertEquals(200, response.getStatus());
         assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
@@ -135,7 +143,8 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     }
 
     @Test
-    public void shouldRespondWith200AndEmptyListOfRelationshipRepresentationsWhenGettingAllRelationshipsForANodeWithoutRelationships() {
+    public void shouldRespondWith200AndEmptyListOfRelationshipRepresentationsWhenGettingAllRelationshipsForANodeWithoutRelationships() throws JsonParseRuntimeException
+    {
         ClientResponse response = sendRetrieveRequestToServer(nodeWithoutRelationships, "/all");
         assertEquals(200, response.getStatus());
         assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
@@ -143,7 +152,8 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     }
 
     @Test
-    public void shouldRespondWith200AndEmptyListOfRelationshipRepresentationsWhenGettingIncomingRelationshipsForANodeWithoutRelationships() {
+    public void shouldRespondWith200AndEmptyListOfRelationshipRepresentationsWhenGettingIncomingRelationshipsForANodeWithoutRelationships() throws JsonParseRuntimeException
+    {
         ClientResponse response = sendRetrieveRequestToServer(nodeWithoutRelationships, "/in");
         assertEquals(200, response.getStatus());
         assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
@@ -151,7 +161,8 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     }
 
     @Test
-    public void shouldRespondWith200AndEmptyListOfRelationshipRepresentationsWhenGettingOutgoingRelationshipsForANodeWithoutRelationships() {
+    public void shouldRespondWith200AndEmptyListOfRelationshipRepresentationsWhenGettingOutgoingRelationshipsForANodeWithoutRelationships() throws JsonParseRuntimeException
+    {
         ClientResponse response = sendRetrieveRequestToServer(nodeWithoutRelationships, "/out");
         assertEquals(200, response.getStatus());
         assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
@@ -180,7 +191,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     public void shouldGet200WhenRetrievingValidRelationship() throws DatabaseBlockedException {
         long relationshipId = helper.createRelationship("LIKES");
 
-        ClientResponse response = Client.create().resource(server.restApiUri() + "relationship/" + relationshipId).accept( MediaType.APPLICATION_JSON_TYPE ).get(ClientResponse.class);
+        ClientResponse response = Client.create().resource( server.restApiUri() + "relationship/" + relationshipId ).accept( MediaType.APPLICATION_JSON_TYPE ).get(ClientResponse.class);
 
         assertEquals(200, response.getStatus());
     }
@@ -197,7 +208,8 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
         isLegalJson(entity);
     }
 
-    private void isLegalJson(String entity) throws IOException {
+    private void isLegalJson(String entity) throws IOException, JsonParseRuntimeException
+    {
         JsonHelper.jsonToMap(entity);
     }
 }

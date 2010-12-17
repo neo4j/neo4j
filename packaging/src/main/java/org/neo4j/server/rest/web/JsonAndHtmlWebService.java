@@ -38,6 +38,7 @@ import javax.ws.rs.core.Response.Status;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.domain.AmpersandSeparatedList;
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.domain.JsonParseRuntimeException;
 import org.neo4j.server.rest.domain.RelationshipDirection;
 import org.neo4j.server.rest.domain.StorageActions.TraverserReturnType;
 import org.neo4j.server.rest.domain.renderers.IndexRootRenderer;
@@ -47,6 +48,7 @@ import org.neo4j.server.rest.domain.renderers.NodesRenderer;
 import org.neo4j.server.rest.domain.renderers.RelationshipRenderer;
 import org.neo4j.server.rest.domain.renderers.RelationshipsRenderer;
 import org.neo4j.server.rest.domain.renderers.RootRenderer;
+import org.neo4j.server.rest.repr.BadInputException;
 
 /* (non-javadoc)
  * I'd really like to split up the JSON and HTML parts in two different
@@ -69,7 +71,7 @@ public class JsonAndHtmlWebService extends GenericWebService
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public Response jsonGetRoot()
+    public Response jsonGetRoot() throws BadInputException
     {
         return getRoot( JsonRenderers.DEFAULT );
     }
@@ -87,7 +89,7 @@ public class JsonAndHtmlWebService extends GenericWebService
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Path(PATH_NODES)
-    public Response jsonCreateEmptyNode( @Context HttpHeaders headers, String body )
+    public Response jsonCreateEmptyNode( @Context HttpHeaders headers, String body ) throws BadInputException
     {
         // This is a somewhat cumbersome hack. Because this resource does not
         // declare a @Consumes media type (and it shouldn't, since it
@@ -118,7 +120,7 @@ public class JsonAndHtmlWebService extends GenericWebService
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path(PATH_NODE)
-    public Response jsonGetNode( @PathParam("nodeId") long nodeId )
+    public Response jsonGetNode( @PathParam("nodeId") long nodeId ) throws BadInputException
     {
         return getNode( nodeId, JsonRenderers.DEFAULT );
     }
@@ -134,7 +136,7 @@ public class JsonAndHtmlWebService extends GenericWebService
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path(PATH_NODE_PROPERTIES)
-    public Response jsonGetNodeProperties( @PathParam("nodeId") long nodeId )
+    public Response jsonGetNodeProperties( @PathParam("nodeId") long nodeId ) throws BadInputException
     {
         return getNodeProperties( nodeId, JsonRenderers.DEFAULT );
     }
@@ -157,7 +159,7 @@ public class JsonAndHtmlWebService extends GenericWebService
     @GET
     @Path(PATH_NODE_PROPERTY)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response jsonGetNodeProperty( @PathParam("nodeId") long nodeId, @PathParam("key") String key )
+    public Response jsonGetNodeProperty( @PathParam("nodeId") long nodeId, @PathParam("key") String key ) throws JsonParseRuntimeException
     {
         return getNodeProperty( nodeId, key, JsonRenderers.DEFAULT );
     }
@@ -173,7 +175,7 @@ public class JsonAndHtmlWebService extends GenericWebService
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @Path(PATH_NODE_RELATIONSHIPS)
-    public Response jsonCreateRelationship( @PathParam("nodeId") long startNodeId, String json )
+    public Response jsonCreateRelationship( @PathParam("nodeId") long startNodeId, String json ) throws BadInputException
     {
         return createRelationship( startNodeId, json, JsonRenderers.DEFAULT );
     }
@@ -188,7 +190,7 @@ public class JsonAndHtmlWebService extends GenericWebService
     @GET
     @Path(PATH_RELATIONSHIP)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response jsonGetRelationship( @PathParam("relationshipId") long relationshipId )
+    public Response jsonGetRelationship( @PathParam("relationshipId") long relationshipId ) throws BadInputException
     {
         return getRelationship( relationshipId, JsonRenderers.DEFAULT );
     }
@@ -196,7 +198,7 @@ public class JsonAndHtmlWebService extends GenericWebService
     @GET
     @Path(PATH_RELATIONSHIP_PROPERTIES)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response jsonGetRelationshipProperties( @PathParam("relationshipId") long relationshipId )
+    public Response jsonGetRelationshipProperties( @PathParam("relationshipId") long relationshipId ) throws BadInputException
     {
         return getRelationshipProperties( relationshipId, JsonRenderers.DEFAULT );
     }
@@ -204,7 +206,7 @@ public class JsonAndHtmlWebService extends GenericWebService
     @GET
     @Path(PATH_RELATIONSHIP_PROPERTY)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response jsonGetRelationshipProperty( @PathParam("relationshipId") long relationshipId, @PathParam("key") String key )
+    public Response jsonGetRelationshipProperty( @PathParam("relationshipId") long relationshipId, @PathParam("key") String key ) throws JsonParseRuntimeException
     {
         return getRelationshipProperty( relationshipId, key, JsonRenderers.DEFAULT );
     }
@@ -219,7 +221,7 @@ public class JsonAndHtmlWebService extends GenericWebService
     @GET
     @Path(PATH_NODE_RELATIONSHIPS_W_DIR)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response jsonGetRelationships( @PathParam("nodeId") long nodeId, @PathParam("direction") RelationshipDirection direction )
+    public Response jsonGetRelationships( @PathParam("nodeId") long nodeId, @PathParam("direction") RelationshipDirection direction ) throws BadInputException
     {
         return getRelationships( nodeId, direction, new AmpersandSeparatedList(), JsonRenderers.ARRAY );
     }
@@ -228,7 +230,7 @@ public class JsonAndHtmlWebService extends GenericWebService
     @Path(PATH_NODE_RELATIONSHIPS_W_DIR_N_TYPES)
     @Produces(MediaType.APPLICATION_JSON)
     public Response jsonGetRelationships( @PathParam("nodeId") long nodeId, @PathParam("direction") RelationshipDirection direction,
-                                          @PathParam("types") AmpersandSeparatedList types )
+                                          @PathParam("types") AmpersandSeparatedList types ) throws BadInputException
     {
         return getRelationships( nodeId, direction, types, JsonRenderers.ARRAY );
     }
@@ -267,7 +269,7 @@ public class JsonAndHtmlWebService extends GenericWebService
     @GET
     @Path(PATH_NODE_INDEX)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response jsonGetNodeIndexRoot()
+    public Response jsonGetNodeIndexRoot() throws BadInputException
     {
         return getNodeIndexRoot( JsonRenderers.DEFAULT );
     }
@@ -291,7 +293,7 @@ public class JsonAndHtmlWebService extends GenericWebService
     @GET
     @Path(PATH_RELATIONSHIP_INDEX)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response jsonGetRelationshipIndexRoot()
+    public Response jsonGetRelationshipIndexRoot() throws BadInputException
     {
         return getRelationshipIndexRoot( JsonRenderers.DEFAULT );
     }
@@ -300,7 +302,7 @@ public class JsonAndHtmlWebService extends GenericWebService
     @Path(PATH_NODE_INDEX_QUERY)
     @Consumes(MediaType.TEXT_PLAIN)
     public Response jsonAddToNodeIndexPlainText( @PathParam("indexName") String indexName, @PathParam("key") String key, @PathParam("value") String value,
-                                                 String objectUri )
+                                                 String objectUri ) throws JsonParseRuntimeException
     {
         return addToIndex( IndexType.NODE, indexName, key, value, JsonHelper.createJsonFrom( objectUri ), JsonRenderers.DEFAULT );
     }
@@ -317,7 +319,7 @@ public class JsonAndHtmlWebService extends GenericWebService
     @Path(PATH_RELATIONSHIP_INDEX_QUERY)
     @Consumes(MediaType.TEXT_PLAIN)
     public Response jsonAddToRelationshipIndexPlainText( @PathParam("indexName") String indexName, @PathParam("key") String key, @PathParam("value") String value,
-                                                         String objectUri )
+                                                         String objectUri ) throws JsonParseRuntimeException
     {
         return addToIndex( IndexType.RELATIONSHIP, indexName, key, value, JsonHelper.createJsonFrom( objectUri ), JsonRenderers.DEFAULT );
     }
@@ -352,7 +354,7 @@ public class JsonAndHtmlWebService extends GenericWebService
     @GET
     @Path(PATH_NODE_INDEX_QUERY)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response jsonGetIndexedNodes( @PathParam("indexName") String indexName, @PathParam("key") String key, @PathParam("value") String value )
+    public Response jsonGetIndexedNodes( @PathParam("indexName") String indexName, @PathParam("key") String key, @PathParam("value") String value ) throws BadInputException
 
     {
         return getIndexedNodes( indexName, key, value, JsonRenderers.ARRAY );
@@ -379,7 +381,7 @@ public class JsonAndHtmlWebService extends GenericWebService
     @Path(PATH_NODE_TRAVERSE)
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response jsonTraverse( @PathParam("nodeId") long startNode, @PathParam("returnType") TraverserReturnType returnType, String description )
+    public Response jsonTraverse( @PathParam("nodeId") long startNode, @PathParam("returnType") TraverserReturnType returnType, String description ) throws BadInputException
     {
         return traverse( startNode, returnType, description, JsonRenderers.ARRAY );
     }
@@ -388,7 +390,7 @@ public class JsonAndHtmlWebService extends GenericWebService
     @Path(PATH_NODE_PATH)
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response jsonPath( @PathParam("nodeId") long startNode, String description )
+    public Response jsonPath( @PathParam("nodeId") long startNode, String description ) throws BadInputException
     {
         return path( startNode, description, JsonRenderers.DEFAULT );
     }
@@ -397,7 +399,7 @@ public class JsonAndHtmlWebService extends GenericWebService
     @Path(PATH_NODE_PATHS)
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response jsonPaths( @PathParam("nodeId") long startNode, String description )
+    public Response jsonPaths( @PathParam("nodeId") long startNode, String description ) throws BadInputException
     {
         return paths( startNode, description, JsonRenderers.ARRAY );
     }
@@ -405,7 +407,7 @@ public class JsonAndHtmlWebService extends GenericWebService
     @GET
     @Path(PATH_RELATIONSHIP_INDEX_QUERY)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response jsonGetIndexedRelationships( @PathParam("indexName") String indexName, @PathParam("key") String key, @PathParam("value") String value )
+    public Response jsonGetIndexedRelationships( @PathParam("indexName") String indexName, @PathParam("key") String key, @PathParam("value") String value ) throws BadInputException
     {
         return getIndexedRelationships( indexName, key, value, JsonRenderers.ARRAY );
     }
@@ -414,7 +416,7 @@ public class JsonAndHtmlWebService extends GenericWebService
 
     @GET
     @Produces(MediaType.TEXT_HTML)
-    public Response htmlGetRoot()
+    public Response htmlGetRoot() throws BadInputException
     {
         return getRoot( new RootRenderer() );
     }
@@ -422,7 +424,7 @@ public class JsonAndHtmlWebService extends GenericWebService
     @GET
     @Produces(MediaType.TEXT_HTML)
     @Path(PATH_NODE)
-    public Response htmlGetNode( @PathParam("nodeId") long nodeId )
+    public Response htmlGetNode( @PathParam("nodeId") long nodeId ) throws BadInputException
 
     {
         return getNode( nodeId, new NodeRenderer( database.graph.getRelationshipTypes() ) );
@@ -431,7 +433,7 @@ public class JsonAndHtmlWebService extends GenericWebService
     @GET
     @Produces(MediaType.TEXT_HTML)
     @Path(PATH_NODE_RELATIONSHIPS_W_DIR)
-    public Response htmlGetRelationships( @PathParam("nodeId") long nodeId, @PathParam("direction") RelationshipDirection direction )
+    public Response htmlGetRelationships( @PathParam("nodeId") long nodeId, @PathParam("direction") RelationshipDirection direction ) throws BadInputException
 
     {
         return getRelationships( nodeId, direction, new AmpersandSeparatedList(), new RelationshipsRenderer() );
@@ -441,7 +443,7 @@ public class JsonAndHtmlWebService extends GenericWebService
     @Produces(MediaType.TEXT_HTML)
     @Path(PATH_NODE_RELATIONSHIPS_W_DIR_N_TYPES)
     public Response htmlGetRelationships( @PathParam("nodeId") long nodeId, @PathParam("direction") RelationshipDirection direction,
-                                          @PathParam("types") AmpersandSeparatedList types )
+                                          @PathParam("types") AmpersandSeparatedList types ) throws BadInputException
 
     {
         return getRelationships( nodeId, direction, types, new RelationshipsRenderer() );
@@ -450,7 +452,7 @@ public class JsonAndHtmlWebService extends GenericWebService
     @GET
     @Produces(MediaType.TEXT_HTML)
     @Path(PATH_RELATIONSHIP)
-    public Response htmlGetRelationship( @PathParam("relationshipId") long relId )
+    public Response htmlGetRelationship( @PathParam("relationshipId") long relId ) throws BadInputException
 
     {
         return getRelationship( relId, new RelationshipRenderer() );
@@ -459,7 +461,7 @@ public class JsonAndHtmlWebService extends GenericWebService
     @GET
     @Produces(MediaType.TEXT_HTML)
     @Path(PATH_NODE_INDEX)
-    public Response htmlGetNodeIndexRoot()
+    public Response htmlGetNodeIndexRoot() throws BadInputException
     {
         return getNodeIndexRoot( new IndexRootRenderer() );
     }
@@ -467,7 +469,7 @@ public class JsonAndHtmlWebService extends GenericWebService
     @GET
     @Produces(MediaType.TEXT_HTML)
     @Path(PATH_RELATIONSHIP_INDEX)
-    public Response htmlGetRelationshipIndexRoot()
+    public Response htmlGetRelationshipIndexRoot() throws BadInputException
     {
         return getRelationshipIndexRoot( new IndexRootRenderer() );
     }
@@ -475,7 +477,7 @@ public class JsonAndHtmlWebService extends GenericWebService
     @GET
     @Path(PATH_NODE_INDEX_QUERY)
     @Produces(MediaType.TEXT_HTML)
-    public Response htmlGetIndexedNodes( @PathParam("indexName") String indexName, @PathParam("key") String key, @PathParam("value") String value )
+    public Response htmlGetIndexedNodes( @PathParam("indexName") String indexName, @PathParam("key") String key, @PathParam("value") String value ) throws BadInputException
     {
         return getIndexedNodes( indexName, key, value, new NodesRenderer() );
     }
@@ -483,7 +485,7 @@ public class JsonAndHtmlWebService extends GenericWebService
     @GET
     @Path(PATH_RELATIONSHIP_INDEX_QUERY)
     @Produces(MediaType.TEXT_HTML)
-    public Response htmlGetIndexedRelationships( @PathParam("indexName") String indexName, @PathParam("key") String key, @PathParam("value") String value )
+    public Response htmlGetIndexedRelationships( @PathParam("indexName") String indexName, @PathParam("key") String key, @PathParam("value") String value ) throws BadInputException
     {
         return getIndexedRelationships( indexName, key, value, new RelationshipRenderer() );
     }

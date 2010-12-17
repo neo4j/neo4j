@@ -21,6 +21,7 @@
 package org.neo4j.server.webadmin.rest;
 
 import org.neo4j.server.rest.domain.renderers.JsonRenderers;
+import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.web.GenericWebService;
 import org.neo4j.server.rrd.RrdFactory;
 import org.neo4j.server.webadmin.rest.representations.MonitorServiceRepresentation;
@@ -79,10 +80,17 @@ public class MonitorService extends GenericWebService implements AdvertisableSer
 	public Response getServiceDefinition( @Context UriInfo uriInfo )
 	{
 
-		String entity = JsonRenderers.DEFAULT.render( new MonitorServiceRepresentation(
-				uriInfo.getBaseUri() ) );
+        String entity = null;
+        try
+        {
+            entity = JsonRenderers.DEFAULT.render( new MonitorServiceRepresentation(
+                    uriInfo.getBaseUri() ) );
+        } catch ( BadInputException e )
+        {
+            return Response.status( Status.BAD_REQUEST ).build();
+        }
 
-		return Response.ok( entity, JsonRenderers.DEFAULT.getMediaType() ).build();
+        return Response.ok( entity, JsonRenderers.DEFAULT.getMediaType() ).build();
 	}
 
 	@GET

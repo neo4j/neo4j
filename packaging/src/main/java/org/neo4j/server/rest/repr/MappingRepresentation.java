@@ -36,7 +36,7 @@ public abstract class MappingRepresentation extends Representation
     }
 
     @Override
-    String serialize( RepresentationFormat format, URI baseUri, ExtensionInjector extensions )
+    String serialize( RepresentationFormat format, URI baseUri, ExtensionInjector extensions ) throws BadInputException
     {
         MappingWriter writer = format.serializeMapping( type );
         Serializer.injectExtensions( writer, this, baseUri, extensions );

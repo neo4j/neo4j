@@ -21,12 +21,13 @@
 package org.neo4j.server.rest.domain.renderers;
 
 import org.neo4j.server.rest.domain.Representation;
+import org.neo4j.server.rest.repr.BadInputException;
 
 import javax.ws.rs.core.MediaType;
 
 public interface Renderer
 {
-    String render( Representation... oneOrManyRepresentations );
+    String render( Representation... oneOrManyRepresentations ) throws BadInputException;
     
     MediaType getMediaType();
     
