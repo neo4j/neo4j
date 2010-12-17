@@ -43,7 +43,7 @@ The following procedure should work on most popular Linux distributions:
 == Embedded Installation ==
 
 To embed Neo4j in your Java application, include the Neo4j library jars in your build.
-Either take the jar files from the +lib+ directory of the downloaded archive, or use the artifacts available from http://repo1.maven.org/maven2/org/neo4j/[Maven Central Repository].
+Either take the jar files from the +lib+ directory of the downloaded archive, or use the artifacts available from Maven Central Repository footnote:[http://repo1.maven.org/maven2/org/neo4j/].
 
 .Maven dependency
 [source,xml]
@@ -64,5 +64,5 @@ Either take the jar files from the +lib+ directory of the downloaded archive, or
 
 <1> Where \{neo4j-version} is for example {neo4j-version}.
 
-NOTE: Stable and milestone releases are available at http://repo1.maven.org/maven2/org/neo4j/[Maven Central Repository].
+NOTE: Stable and milestone releases are available at Maven Central Repository.
 
