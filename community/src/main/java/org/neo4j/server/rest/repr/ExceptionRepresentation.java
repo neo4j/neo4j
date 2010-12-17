@@ -34,5 +34,16 @@ class ExceptionRepresentation extends MappingRepresentation
     protected void serialize( MappingSerializer serializer )
     {
         serializer.putString( "message", exception.getMessage() );
+        serializer.putString( "exception", exception.toString() );
+        StackTraceElement[] trace = exception.getStackTrace();
+        if ( trace != null )
+        {
+            String[] lines = new String[trace.length];
+            for ( int i = 0; i < lines.length; i++ )
+            {
+                lines[i] = trace[i].toString();
+            }
+            serializer.putList( "stacktrace", ListRepresentation.strings( lines ) );
+        }
     }
 }

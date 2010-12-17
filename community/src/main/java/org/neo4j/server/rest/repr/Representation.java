@@ -26,6 +26,9 @@ public abstract class Representation
 {
     // non-inlineable constants
     public static final String GRAPHDB = RepresentationType.GRAPHDB.valueName;
+    public static final String INDEX = RepresentationType.INDEX.valueName;
+    public static final String NODE_INDEXES = RepresentationType.NODE_INDEX_ROOT.valueName;
+    public static final String RELATIONSHIP_INDEXES = RepresentationType.RELATIONSHIP_INDEX_ROOT.valueName;
     public static final String NODE = RepresentationType.NODE.valueName;
     public static final String NODE_LIST = RepresentationType.NODE.listName;
     public static final String RELATIONSHIP = RepresentationType.RELATIONSHIP.valueName;
@@ -56,6 +59,7 @@ public abstract class Representation
     public static final String DOUBLE_LIST = RepresentationType.DOUBLE.listName;
     public static final String BOOLEAN = RepresentationType.BOOLEAN.valueName;
     public static final String BOOLEAN_LIST = RepresentationType.BOOLEAN.listName;
+    public static final String EXCEPTION = RepresentationType.EXCEPTION.valueName;
 
     final RepresentationType type;
 

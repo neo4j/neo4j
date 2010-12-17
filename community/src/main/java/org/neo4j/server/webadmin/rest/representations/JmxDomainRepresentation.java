@@ -20,14 +20,15 @@
 
 package org.neo4j.server.webadmin.rest.representations;
 
+import static org.neo4j.server.rest.repr.ValueRepresentation.string;
+
+import java.util.ArrayList;
+
+import javax.management.ObjectName;
+
 import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.ObjectRepresentation;
 import org.neo4j.server.rest.repr.ValueRepresentation;
-
-import javax.management.ObjectName;
-import java.util.ArrayList;
-
-import static org.neo4j.server.rest.repr.ValueRepresentation.string;
 
 
 public class JmxDomainRepresentation extends ObjectRepresentation
@@ -51,7 +52,7 @@ public class JmxDomainRepresentation extends ObjectRepresentation
     @Mapping( "beans" )
     public ListRepresentation getBeans( )
     {
-        return new ListRepresentation( "beans", beans );
+        return new ListRepresentation( "bean", beans );
     }
 
     public void addBean( ObjectName bean )
