@@ -32,7 +32,7 @@ import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.domain.JsonParseRuntimeException;
+import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.web.PropertyValueException;
 
 import javax.ws.rs.core.MediaType;
@@ -127,7 +127,7 @@ public class PathsFunctionalTest
     }
 
     @Test
-    public void shouldBeAbleToFetchSingleShortestPath() throws JsonParseRuntimeException
+    public void shouldBeAbleToFetchSingleShortestPath() throws JsonParseException
     {
         Client client = Client.create();
 

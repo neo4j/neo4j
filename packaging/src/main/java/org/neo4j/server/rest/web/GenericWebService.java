@@ -161,13 +161,7 @@ public abstract class GenericWebService
         }
         NodeRepresentation noderep = actions.createNode( properties );
         String entity = null;
-        try
-        {
             entity = renderer.render( noderep );
-        } catch ( BadInputException e )
-        {
-            throw new RuntimeException( e );
-        }
         return addHeaders( Response.created( noderep.selfUri() ).entity( entity ).type( renderer.getMediaType() ) ).build();
     }
 
@@ -298,7 +292,7 @@ public abstract class GenericWebService
         }
     }
 
-    protected Response getNodeProperty( long nodeId, String key, Renderer renderer ) throws JsonParseRuntimeException
+    protected Response getNodeProperty( long nodeId, String key, Renderer renderer ) throws JsonParseException
     {
         try
         {
@@ -408,7 +402,7 @@ public abstract class GenericWebService
         }
     }
 
-    protected Response getRelationshipProperty( long relationshipId, String key, Renderer renderer ) throws JsonParseRuntimeException
+    protected Response getRelationshipProperty( long relationshipId, String key, Renderer renderer ) throws JsonParseException
     {
         try
         {

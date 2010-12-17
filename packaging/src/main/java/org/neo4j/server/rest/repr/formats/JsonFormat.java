@@ -31,7 +31,7 @@ import java.util.Map;
 import javax.ws.rs.core.MediaType;
 
 import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.domain.JsonParseRuntimeException;
+import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.ListWriter;
 import org.neo4j.server.rest.repr.MappingWriter;
@@ -51,7 +51,7 @@ public class JsonFormat extends RepresentationFormat
     }
 
     @Override
-    protected String complete( ListWriter serializer ) throws JsonParseRuntimeException
+    protected String complete( ListWriter serializer )
     {
         return JsonHelper.createJsonFrom( ( (ListWrappingWriter) serializer ).data );
     }
@@ -63,13 +63,13 @@ public class JsonFormat extends RepresentationFormat
     }
 
     @Override
-    protected String complete( MappingWriter serializer ) throws JsonParseRuntimeException
+    protected String complete( MappingWriter serializer )
     {
         return JsonHelper.createJsonFrom( ( (MapWrappingWriter) serializer ).data );
     }
 
     @Override
-    protected String serializeValue( String type, Object value ) throws JsonParseRuntimeException
+    protected String serializeValue( String type, Object value )
     {
         return JsonHelper.createJsonFrom( value );
     }
@@ -87,7 +87,7 @@ public class JsonFormat extends RepresentationFormat
         {
             return JsonHelper.jsonToMap( stripByteOrderMark( input ) );
         }
-        catch ( JsonParseRuntimeException ex )
+        catch ( JsonParseException ex )
         {
             throw new BadInputException( ex );
         }
@@ -108,7 +108,7 @@ public class JsonFormat extends RepresentationFormat
         {
             return JsonHelper.jsonToSingleValue( stripByteOrderMark( input ) );
         }
-        catch ( JsonParseRuntimeException ex )
+        catch ( JsonParseException ex )
         {
             throw new BadInputException( ex );
         }

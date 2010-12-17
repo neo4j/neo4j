@@ -40,7 +40,7 @@ import org.neo4j.server.rest.domain.JsonHelper;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
-import org.neo4j.server.rest.domain.JsonParseRuntimeException;
+import org.neo4j.server.rest.domain.JsonParseException;
 
 public class SetRelationshipPropertiesFunctionalTest {
 
@@ -66,7 +66,7 @@ public class SetRelationshipPropertiesFunctionalTest {
     }
 
     @Test
-    public void shouldReturn204WhenPropertiesAreUpdated() throws JsonParseRuntimeException
+    public void shouldReturn204WhenPropertiesAreUpdated() throws JsonParseException
     {
         Map<String, Object> map = new HashMap<String, Object>();
         map.put("jim", "tobias");
@@ -75,7 +75,7 @@ public class SetRelationshipPropertiesFunctionalTest {
     }
 
     @Test
-    public void shouldReturn400WhenSendinIncompatibleJsonProperties() throws JsonParseRuntimeException
+    public void shouldReturn400WhenSendinIncompatibleJsonProperties() throws JsonParseException
     {
         Map<String, Object> map = new HashMap<String, Object>();
         map.put("jim", new HashMap<String, Object>());
@@ -91,7 +91,7 @@ public class SetRelationshipPropertiesFunctionalTest {
     }
 
     @Test
-    public void shouldReturn404WhenPropertiesSentToANodeWhichDoesNotExist() throws JsonParseRuntimeException
+    public void shouldReturn404WhenPropertiesSentToANodeWhichDoesNotExist() throws JsonParseException
     {
         Map<String, Object> map = new HashMap<String, Object>();
         map.put("jim", "tobias");
@@ -101,7 +101,7 @@ public class SetRelationshipPropertiesFunctionalTest {
         assertEquals(404, response.getStatus());
     }
 
-    private ClientResponse updatePropertiesOnServer(Map<String, Object> map) throws JsonParseRuntimeException
+    private ClientResponse updatePropertiesOnServer(Map<String, Object> map) throws JsonParseException
     {
         return Client.create().resource(propertiesUri).type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(
                 JsonHelper.createJsonFrom(map)).put(ClientResponse.class);

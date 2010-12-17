@@ -38,7 +38,7 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
-import org.neo4j.server.rest.domain.JsonParseRuntimeException;
+import org.neo4j.server.rest.domain.JsonParseException;
 
 public class GetNodePropertiesFunctionalTest {
     
@@ -67,7 +67,7 @@ public class GetNodePropertiesFunctionalTest {
     }
 
     @Test
-    public void shouldGet200ForProperties() throws JsonParseRuntimeException
+    public void shouldGet200ForProperties() throws JsonParseException
     {
         Client client = Client.create();
         WebResource createResource = client.resource(server.restApiUri() + "node/");
@@ -80,7 +80,7 @@ public class GetNodePropertiesFunctionalTest {
     }
 
     @Test
-    public void shouldGetContentLengthHeaderForRetrievingProperties() throws JsonParseRuntimeException
+    public void shouldGetContentLengthHeaderForRetrievingProperties() throws JsonParseException
     {
         Client client = Client.create();
         WebResource createResource = client.resource(server.restApiUri() + "node/");
@@ -101,7 +101,7 @@ public class GetNodePropertiesFunctionalTest {
     }
 
     @Test
-    public void shouldBeJSONContentTypeOnPropertiesResponse() throws JsonParseRuntimeException
+    public void shouldBeJSONContentTypeOnPropertiesResponse() throws JsonParseException
     {
         Client client = Client.create();
         WebResource createResource = client.resource(server.restApiUri() + "node/");
@@ -125,7 +125,7 @@ public class GetNodePropertiesFunctionalTest {
     }
 
     @Test
-    public void shouldGet200ForProperty() throws JsonParseRuntimeException
+    public void shouldGet200ForProperty() throws JsonParseException
     {
         Client client = Client.create();
         WebResource createResource = client.resource(server.restApiUri() + "node/");
@@ -147,7 +147,7 @@ public class GetNodePropertiesFunctionalTest {
     }
 
     @Test
-    public void shouldBeJSONContentTypeOnPropertyResponse() throws JsonParseRuntimeException
+    public void shouldBeJSONContentTypeOnPropertyResponse() throws JsonParseException
     {
         Client client = Client.create();
         WebResource createResource = client.resource(server.restApiUri() + "node/");
