@@ -90,11 +90,11 @@ public final class RelationshipRepresentation extends ObjectRepresentation imple
     {
         return ValueRepresentation.template( path( "/properties/{key}" ) );
     }
-
+    
     @Override
-    void extraData( MappingWriter writer )
+    void extraData( MappingSerializer serializer )
     {
-        MappingWriter properties = writer.newMapping( RepresentationType.PROPERTIES, "data" );
+        MappingWriter properties = serializer.writer.newMapping( RepresentationType.PROPERTIES, "data" );
         new PropertiesRepresentation( rel ).serialize( properties );
         properties.done();
     }

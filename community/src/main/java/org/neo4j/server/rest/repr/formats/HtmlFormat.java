@@ -33,7 +33,6 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.HtmlHelper;
 import org.neo4j.server.rest.repr.BadInputException;
@@ -48,9 +47,6 @@ public class HtmlFormat extends RepresentationFormat
     {
         super( MediaType.TEXT_HTML_TYPE );
     }
-
-    // FIXME: needed by noderep
-    private static Iterable<RelationshipType> relationshipTypes = Collections.emptyList();
 
     private enum MappingTemplate
     {
@@ -77,9 +73,10 @@ public class HtmlFormat extends RepresentationFormat
 
                 try
                 {
-                    for ( RelationshipType type : relationshipTypes )
+                    for ( String relationshipType : (List<String>) serialized.get( "relationship-types" ) )
                     {
-                        builder.append( "<option selected='selected' value='" ).append( type.name() ).append( "'>" ).append( type.name() ).append( "</option>" );
+                        builder.append( "<option selected='selected' value='" ).append( relationshipType ).append( "'>" );
+                        builder.append( relationshipType ).append( "</option>" );
                     }
                 }
                 catch ( DatabaseBlockedException e )
@@ -275,7 +272,7 @@ public class HtmlFormat extends RepresentationFormat
 
         public HtmlMap( MappingTemplate template )
         {
-            super( new HashMap<String, Object>() );
+            super( new HashMap<String, Object>(), true );
             this.template = template;
         }
 
@@ -291,7 +288,7 @@ public class HtmlFormat extends RepresentationFormat
 
         public HtmlList( ListTemplate template )
         {
-            super( new ArrayList<Object>() );
+            super( new ArrayList<Object>(), true );
             this.template = template;
         }
 
