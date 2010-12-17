@@ -3,7 +3,7 @@ JVM Settings
 ============
 
 Properly configuring memory utilization of the JVM is crucial for optimal performance. 
-As an example, a poorly tweaked JVM could spend all CPU time performing garbage collection (blocking all threads from performing any work). 
+As an example, a poorly configured JVM could spend all CPU time performing garbage collection (blocking all threads from performing any work). 
 Requirements such as latency, total throughput and available hardware have to be considered to find the right setup. 
 In production, Neo4j should run on a multi core/CPU platform with the JVM in server mode.
  
@@ -25,7 +25,7 @@ It is well suited for low latency requirements were GC interuptions are not acce
 When running Neo4j on Windows, keep in mind that the memory mapped buffers are allocated on heap by default, so need to be taken into consideration when determining heap size.
 
 .Guidelines for heap size
-[format="csv",width="60%",cols="4"]
+[format="csv",width="75%",cols="4"]
 [frame="topbot",grid="none",options="header"]
 |======================================================================================================
 Number of primitives,RAM size,Heap configuration,Reserved RAM for the OS
