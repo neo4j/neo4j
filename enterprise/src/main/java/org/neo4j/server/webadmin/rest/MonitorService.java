@@ -46,107 +46,100 @@ import static javax.ws.rs.core.Response.Status;
  * This exposes data from an internal round-robin database that tracks various
  * system KPIs over time.
  */
-@Path( MonitorService.ROOT_PATH )
+@Path(MonitorService.ROOT_PATH)
 public class MonitorService extends GenericWebService implements AdvertisableService
 {
-	private RrdDb rrdDb;
+    private RrdDb rrdDb;
 
-	public String getName()
-	{
-		return "monitor";
-	}
+    public String getName()
+    {
+        return "monitor";
+    }
 
-	public String getServerPath()
-	{
-		return ROOT_PATH;
-	}
+    public String getServerPath()
+    {
+        return ROOT_PATH;
+    }
 
-	public MonitorService( @Context RrdDb rrdDb )
-	{
-		this.rrdDb = rrdDb;
-	}
+    public MonitorService( @Context RrdDb rrdDb )
+    {
+        this.rrdDb = rrdDb;
+    }
 
-	public static final String ROOT_PATH = "server/monitor";
-	public static final String DATA_PATH = "/fetch";
-	public static final String DATA_FROM_PATH = DATA_PATH + "/{start}";
-	public static final String DATA_SPAN_PATH = DATA_PATH + "/{start}/{stop}";
+    public static final String ROOT_PATH = "server/monitor";
+    public static final String DATA_PATH = "/fetch";
+    public static final String DATA_FROM_PATH = DATA_PATH + "/{start}";
+    public static final String DATA_SPAN_PATH = DATA_PATH + "/{start}/{stop}";
 
-	public static final long MAX_TIMESPAN = 1000l * 60l * 60l * 24l * 365l * 5;
-	public static final long DEFAULT_TIMESPAN = 1000 * 60 * 60 * 24;
+    public static final long MAX_TIMESPAN = 1000l * 60l * 60l * 24l * 365l * 5;
+    public static final long DEFAULT_TIMESPAN = 1000 * 60 * 60 * 24;
 
 
-	@GET
-	@Produces( MediaType.APPLICATION_JSON )
-	public Response getServiceDefinition( @Context UriInfo uriInfo )
-	{
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getServiceDefinition( @Context UriInfo uriInfo )
+    {
 
-        String entity = null;
-        try
-        {
-            entity = JsonRenderers.DEFAULT.render( new MonitorServiceRepresentation(
-                    uriInfo.getBaseUri() ) );
-        } catch ( BadInputException e )
-        {
-            return Response.status( Status.BAD_REQUEST ).build();
-        }
+        String entity = JsonRenderers.DEFAULT.render( new MonitorServiceRepresentation(
+                uriInfo.getBaseUri() ) );
 
         return Response.ok( entity, JsonRenderers.DEFAULT.getMediaType() ).build();
-	}
+    }
 
-	@GET
-	@Produces( MediaType.APPLICATION_JSON )
-	@Path( DATA_PATH )
-	public Response getData()
-	{
-		long time = new Date().getTime();
-		return getData( time - DEFAULT_TIMESPAN, time );
-	}
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path(DATA_PATH)
+    public Response getData()
+    {
+        long time = new Date().getTime();
+        return getData( time - DEFAULT_TIMESPAN, time );
+    }
 
-	@GET
-	@Produces( MediaType.APPLICATION_JSON )
-	@Path( DATA_FROM_PATH )
-	public Response getData( @PathParam( "start" ) long start )
-	{
-		return getData( start, new Date().getTime() );
-	}
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path(DATA_FROM_PATH)
+    public Response getData( @PathParam("start") long start )
+    {
+        return getData( start, new Date().getTime() );
+    }
 
-	@GET
-	@Produces( MediaType.APPLICATION_JSON )
-	@Path( DATA_SPAN_PATH )
-	public Response getData( @PathParam( "start" ) long start,
-	                         @PathParam( "stop" ) long stop )
-	{
-		if ( start >= stop || ( stop - start ) > MAX_TIMESPAN )
-		{
-			String message = String.format( "Start time must be before stop time, and the total time span can be no bigger than %dms. Time span was %dms.", MAX_TIMESPAN, ( stop - start ) );
-			return buildExceptionResponse( Status.BAD_REQUEST, message, new IllegalArgumentException(), JsonRenderers.DEFAULT );
-		}
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path(DATA_SPAN_PATH)
+    public Response getData( @PathParam("start") long start,
+                             @PathParam("stop") long stop )
+    {
+        if ( start >= stop || (stop - start) > MAX_TIMESPAN )
+        {
+            String message = String.format( "Start time must be before stop time, and the total time span can be no bigger than %dms. Time span was %dms.", MAX_TIMESPAN, (stop - start) );
+            return buildExceptionResponse( Status.BAD_REQUEST, message, new IllegalArgumentException(), JsonRenderers.DEFAULT );
+        }
 
-		try
-		{
+        try
+        {
 
-			FetchRequest request = rrdDb.createFetchRequest(
-					ConsolFun.AVERAGE, start, stop,
-					getResolutionFor( stop - start ) );
+            FetchRequest request = rrdDb.createFetchRequest(
+                    ConsolFun.AVERAGE, start, stop,
+                    getResolutionFor( stop - start ) );
 
-			String entity = JsonRenderers.DEFAULT.render( new
-					RrdDataRepresentation(
-					request.fetchData() ) );
+            String entity = JsonRenderers.DEFAULT.render( new
+                    RrdDataRepresentation(
+                    request.fetchData() ) );
 
-			return Response.ok( entity, JsonRenderers.DEFAULT.getMediaType() ).build();
-		} catch ( Exception e )
-		{
-			return buildExceptionResponse( Status.INTERNAL_SERVER_ERROR,
-					"SEVERE: Round robin IO error.", e, JsonRenderers.DEFAULT );
-		}
-	}
+            return Response.ok( entity, JsonRenderers.DEFAULT.getMediaType() ).build();
+        } catch ( Exception e )
+        {
+            return buildExceptionResponse( Status.INTERNAL_SERVER_ERROR,
+                    "SEVERE: Round robin IO error.", e, JsonRenderers.DEFAULT );
+        }
+    }
 
-	private long getResolutionFor( long timespan )
-	{
-		long preferred = (long) Math.floor( timespan / ( RrdFactory.STEPS_PER_ARCHIVE * 2 ) );
+    private long getResolutionFor( long timespan )
+    {
+        long preferred = (long) Math.floor( timespan / (RrdFactory.STEPS_PER_ARCHIVE * 2) );
 
-		// Don't allow resolutions smaller than the actual minimum resolution
-		return preferred > RrdFactory.STEP_SIZE ? preferred : RrdFactory.STEP_SIZE;
-	}
+        // Don't allow resolutions smaller than the actual minimum resolution
+        return preferred > RrdFactory.STEP_SIZE ? preferred : RrdFactory.STEP_SIZE;
+    }
 
 }

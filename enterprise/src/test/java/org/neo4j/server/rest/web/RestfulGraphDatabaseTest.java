@@ -29,7 +29,7 @@ import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.domain.JsonParseRuntimeException;
+import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.domain.RelationshipRepresentationTest;
 import org.neo4j.server.rest.domain.StorageActions.TraverserReturnType;
 import org.neo4j.server.rest.repr.BadInputException;
@@ -55,7 +55,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
-import static org.mockito.Matchers.anyMap;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -617,7 +616,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingRelationshipsForANode() throws DatabaseBlockedException, JsonParseRuntimeException
+    public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingRelationshipsForANode() throws DatabaseBlockedException, JsonParseException
     {
         long nodeId = helper.createNode();
         helper.createRelationship( "LIKES", nodeId, helper.createNode() );
@@ -662,7 +661,7 @@ public class RestfulGraphDatabaseTest
         assertEquals( 1, array.size() );
     }
 
-    private void verifyRelReps( int expectedSize, String entity ) throws JsonParseRuntimeException
+    private void verifyRelReps( int expectedSize, String entity ) throws JsonParseException
     {
         List<Map<String, Object>> relreps = JsonHelper.jsonToListOfRelationshipRepresentations( entity );
         assertEquals( expectedSize, relreps.size() );
@@ -674,7 +673,7 @@ public class RestfulGraphDatabaseTest
 
     @Test
     public void shouldRespondWith200AndEmptyListOfRelationshipRepresentationsWhenGettingRelationshipsForANodeWithoutRelationships()
-            throws DatabaseBlockedException, JsonParseRuntimeException
+            throws DatabaseBlockedException, JsonParseException
     {
         long nodeId = helper.createNode();
 
@@ -850,7 +849,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToGetRoot() throws JsonParseRuntimeException
+    public void shouldBeAbleToGetRoot() throws JsonParseException
     {
         Response response = service.getRoot();
         assertEquals( 200, response.getStatus() );
@@ -864,7 +863,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToIndexNode() throws DatabaseBlockedException, JsonParseRuntimeException
+    public void shouldBeAbleToIndexNode() throws DatabaseBlockedException, JsonParseException
     {
         Response response = service.createNode( null );
         URI nodeUri = (URI) response.getMetadata().getFirst( "Location" );
@@ -878,7 +877,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToGetNodeRepresentationFromIndexUri() throws DatabaseBlockedException, JsonParseRuntimeException
+    public void shouldBeAbleToGetNodeRepresentationFromIndexUri() throws DatabaseBlockedException, JsonParseException
     {
         String key = "key_get_noderep";
         String value = "value";
@@ -895,7 +894,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToGetRelationshipRepresentationFromIndexUri() throws DatabaseBlockedException, JsonParseRuntimeException
+    public void shouldBeAbleToGetRelationshipRepresentationFromIndexUri() throws DatabaseBlockedException, JsonParseException
     {
         String key = "key_get_noderep";
         String value = "value";
@@ -1187,7 +1186,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToParseJsonEvenWithUnicodeMarkerAtTheStart() throws DatabaseBlockedException, JsonParseRuntimeException
+    public void shouldBeAbleToParseJsonEvenWithUnicodeMarkerAtTheStart() throws DatabaseBlockedException, JsonParseException
     {
         Response response = service.createNode( markWithUnicodeMarker( "{\"name\":\"Mattias\"}" ) );
         assertEquals( Status.CREATED.getStatusCode(), response.getStatus() );

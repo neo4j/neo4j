@@ -56,12 +56,12 @@ public abstract class RepresentationFormat implements InputFormat
         return String.format( "%s[%s]", getClass().getSimpleName(), mediaType );
     }
 
-    String serializeValue( RepresentationType type, Object value ) throws BadInputException
+    String serializeValue( RepresentationType type, Object value )
     {
         return serializeValue( type.valueName, value );
     }
 
-    protected abstract String serializeValue( String type, Object value ) throws BadInputException;
+    protected abstract String serializeValue( String type, Object value );
 
     ListWriter serializeList( RepresentationType type )
     {
@@ -85,7 +85,7 @@ public abstract class RepresentationFormat implements InputFormat
      * this method to convert the {@link ListWriter} argument to the
      * implementation class returned by {@link #serializeList(String)}.
      */
-    protected abstract String complete( ListWriter serializer ) throws BadInputException;
+    protected abstract String complete( ListWriter serializer ) ;
 
     /**
      * Will be invoked (when serialization is done) with the result retrieved
@@ -93,7 +93,7 @@ public abstract class RepresentationFormat implements InputFormat
      * this method to convert the {@link MappingWriter} argument to the
      * implementation class returned by {@link #serializeMapping(String)}.
      */
-    protected abstract String complete( MappingWriter serializer ) throws BadInputException;
+    protected abstract String complete( MappingWriter serializer ) ;
 
     @Override
     public ParameterList readParameterList( String input ) throws BadInputException
