@@ -4,10 +4,16 @@ The Neo4j Manual v{revnumber}
 
 :neo4j-version: {revnumber}
 
-:leveloffset: 1
-
 include::introduction/introduction.txt[]
 
+:leveloffset: 0
+
+[[reference-documentation]]
+Reference Documentation
+=======================
+////
+[partintro]
+////
 :leveloffset: 1
 
 include::installation-deployment/index.txt[]
@@ -28,7 +34,23 @@ include::ha/index.txt[]
 
 include::operations/index.txt[]
 
+:leveloffset: 0
+
+[[troubleshooting]]
+Troubleshooting
+================
+
+////
+[partintro]
+////
+
 :leveloffset: 1
 
 include::troubleshooting/troubleshooting.txt[]
+
+////
+:leveloffset: 0
+
+include::glossary.txt[]
+////
 
