@@ -110,8 +110,8 @@ public class CreateNodeFunctionalTest
     {
         Client client = Client.create();
         WebResource resource = client.resource( server.restApiUri() + "node/" );
-        ClientResponse response = resource.accept( MediaType.APPLICATION_JSON ).entity( "{\"foo\" : \"bar\"}" ).post( ClientResponse.class );
-        assertEquals( 400, response.getStatus() );
+        ClientResponse response = resource.type( MediaType.APPLICATION_JSON_TYPE ).accept( MediaType.APPLICATION_JSON ).entity( "{\"foo\" : \"bar\"}" ).post( ClientResponse.class );
+        assertEquals( 201, response.getStatus() );
 
     }
 
@@ -212,6 +212,11 @@ public class CreateNodeFunctionalTest
 
     private ClientResponse sendDeleteRequestToServer( long id ) throws Exception
     {
-        return Client.create().resource( new URI( server.restApiUri() + "node/" + id ) ).delete( ClientResponse.class );
+        return Client.
+                create().
+                resource( new URI( server.restApiUri() + "node/" + id ) ).
+                type( MediaType.APPLICATION_JSON_TYPE ).
+                accept( MediaType.APPLICATION_JSON_TYPE ).
+                delete( ClientResponse.class );
     }
 }
