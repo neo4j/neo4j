@@ -35,16 +35,17 @@ When working with transactions the interaction cycle looks like this:
 . Mark the transaction as successful or not.
 . Finish the transaction.
 
-It is very important to finish each transaction since failing to do so the transaction will not release the locks or memory it has acquired.
+_It is very important to finish each transaction_. The transaction will not release the locks or memory it has acquired until it has been finished.
 The idiomatic use of transactions in Neo4j is to use a try-finally block, starting the transaction and then try to perform the write operations.
 The last operation in the try block should mark the transaction as successful while the finally block should finish the transaction.
 Finishing the transaction will perform commit or rollback depending on the success status.
 
-All modifications performed in a transaction are kept in memory.
+[CAUTION]
+_All modifications performed in a transaction are kept in memory._
 This means that very large updates they have to be split into several top level transactions to avoid running out of memory.
 It must be a top level transaction since splitting up the work in many nested transactions will just add all the work to the top level transaction.
 
-In an environment that makes use of ((thread pooling)) other errors may occur when failing to finish a transaction properly.
+In an environment that makes use of _((thread pooling))_ other errors may occur when failing to finish a transaction properly.
 Consider a leaked transaction that did not get finished properly.
 It will be tied to a thread and when that thread gets scheduled to perform work starting a new (what looks to be a) top level transaction it will actually be a nested transaction.
 If the leaked transaction state is “marked for rollback” (which will happen if a deadlock was detected) no more work can be performed on that transaction.
@@ -83,6 +84,7 @@ One solution is to make sure that updates always happens in the same order (firs
 Another solution is to make sure that each thread/transaction does not have any conflicting writes to a node or relationship as some other concurrent transaction.
 This can for example be achieved by letting a single thread do all updates of a specific type.
 
+[IMPORTANT]
 Deadlocks caused by the use of other synchronization than the locks managed by Neo4j can still happen.
 Since all operations in the Neo4j API are thread safe unless specified otherwise, there is no need for external synchronization.
 Other code that requires synchronization should be synchronized in such a way that it never performs any Neo4j operation in the synchronized block.
@@ -91,10 +93,13 @@ Other code that requires synchronization should be synchronized in such a way th
 == Delete semantics ==
 
 When deleting a node or a relationship all properties for that entity will be automatically removed but the relationships of a node will not be removed.
-Neo4j enforces a constraint (upon commit) that all relationships must have a valid start and end node.
+
+[CAUTION]
+Neo4j enforces a constraint (upon commit) that all relationships must have a valid start node and end node.
 In effect this means that trying to delete a node that still has relationships attached to it will throw an exception upon commit.
 It is however possible to choose in which order to delete the node and the attached relationships as long as no relationships exist when the transaction is committed.
-Delete semantics can be summarized in the following bullets:
+
+The delete semantics can be summarized in the following bullets:
 
 * All properties of a node or relationship will be removed when it is deleted.
 * A deleted node can not have any attached relationships when the transaction commits.

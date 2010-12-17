@@ -14,8 +14,8 @@ File buffer cache
 .Quick info
 ***********
 * The file buffer cache is sometimes called _low level cache_ or _file system cache_.
-* Caches the Neo4j data as stored on the durable media.
-* Uses the operating system memory mapping features when possible.
+* It caches the Neo4j data as stored on the durable media.
+* It uses the operating system memory mapping features when possible.
 * Neo4j will configure the cache automatically as long as the heap size of the JVM is configured properly.
 ***********
 
@@ -101,7 +101,7 @@ Object cache
 .Quick info
 ***********
 * The object cache is sometimes called _high level cache_.
-* Caches the Neo4j data in a form optimized for fast traversal.
+* It caches the Neo4j data in a form optimized for fast traversal.
 ***********
 
 The object cache caches individual nodes and relationships and their properties in a form that is optimized for fast traversal of the graph.
