@@ -20,9 +20,9 @@
 
 package org.neo4j.server.rest.repr;
 
-import org.neo4j.server.rest.domain.URIHelper;
-
 import java.util.Map;
+
+import org.neo4j.server.rest.domain.URIHelper;
 
 public abstract class IndexRepresentation extends MappingRepresentation implements EntityRepresentation
 {
@@ -31,7 +31,7 @@ public abstract class IndexRepresentation extends MappingRepresentation implemen
 
     public IndexRepresentation( String name, Map<String, String> type )
     {
-        super( "index" );
+        super( RepresentationType.INDEX );
         this.name = name;
         this.type = type;
     }
@@ -62,6 +62,6 @@ public abstract class IndexRepresentation extends MappingRepresentation implemen
         return "index/" + propertyContainerType() + "/" +  name + "/";
     }
 
-    public abstract String propertyContainerType();
+    protected abstract String propertyContainerType();
 
 }

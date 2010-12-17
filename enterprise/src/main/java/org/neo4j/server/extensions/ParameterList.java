@@ -23,6 +23,7 @@ package org.neo4j.server.extensions;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -38,6 +39,11 @@ public abstract class ParameterList
     public ParameterList( Map<String, Object> data )
     {
         this.data = data;
+    }
+
+    public Map<String, Object> asMap()
+    {
+        return Collections.unmodifiableMap( data );
     }
 
     private static abstract class Converter<T> {

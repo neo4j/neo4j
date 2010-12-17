@@ -20,6 +20,14 @@
 
 package org.neo4j.server.rest.web;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphdb.Direction;
@@ -34,12 +42,12 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.graphdb.index.IndexHits;
-import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseBlockedException;
@@ -52,9 +60,9 @@ import org.neo4j.server.rest.domain.EndNodeNotFoundException;
 import org.neo4j.server.rest.domain.RelationshipExpanderBuilder;
 import org.neo4j.server.rest.domain.StartNodeNotFoundException;
 import org.neo4j.server.rest.domain.StartNodeSameAsEndNodeException;
+import org.neo4j.server.rest.domain.TraversalDescriptionBuilder;
 import org.neo4j.server.rest.domain.StorageActions.TraverserReturnType;
 import org.neo4j.server.rest.repr.BadInputException;
-import org.neo4j.server.rest.domain.TraversalDescriptionBuilder;
 import org.neo4j.server.rest.repr.DatabaseRepresentation;
 import org.neo4j.server.rest.repr.IndexRepresentation;
 import org.neo4j.server.rest.repr.IndexedEntityRepresentation;
@@ -68,15 +76,8 @@ import org.neo4j.server.rest.repr.RelationshipIndexRepresentation;
 import org.neo4j.server.rest.repr.RelationshipIndexRootRepresentation;
 import org.neo4j.server.rest.repr.RelationshipRepresentation;
 import org.neo4j.server.rest.repr.Representation;
+import org.neo4j.server.rest.repr.RepresentationType;
 import org.neo4j.server.rest.repr.ServerExtensionRepresentation;
-
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 
 // TODO: move this to another package. domain?
 public class DatabaseActions
@@ -708,7 +709,7 @@ public class DatabaseActions
                 representations.add( new IndexedEntityRepresentation( node, key, value, indexRepresentation ) );
             }
             tx.success();
-            return new ListRepresentation( "nodes", representations );
+            return new ListRepresentation( RepresentationType.NODE, representations );
         } finally
         {
             tx.finish();
@@ -733,7 +734,7 @@ public class DatabaseActions
                 representations.add( new IndexedEntityRepresentation( node, key, value, indexRepresentation ) );
             }
             tx.success();
-            return new ListRepresentation( "relationships", representations );
+            return new ListRepresentation( RepresentationType.RELATIONSHIP, representations );
         } finally
         {
             tx.finish();
@@ -766,7 +767,7 @@ public class DatabaseActions
             }
         }
 
-        return new ListRepresentation( "traversal-result", result );
+        return new ListRepresentation( returnType.repType, result );
     }
 
     public PathRepresentation findSinglePath( long startId, long endId,
@@ -804,7 +805,7 @@ public class DatabaseActions
             }
         };
 
-        return new ListRepresentation( "paths", pathRepresentations );
+        return new ListRepresentation( RepresentationType.PATH, pathRepresentations );
     }
 
     // Extensions

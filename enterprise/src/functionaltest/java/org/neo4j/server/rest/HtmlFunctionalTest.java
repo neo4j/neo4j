@@ -42,7 +42,7 @@ import org.neo4j.server.rest.domain.RelationshipDirection;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
-public class HtmlFunctionalTests {
+public class HtmlFunctionalTest {
     private long thomasAnderson;
     private long trinity;
     private long thomasAndersonLovesTrinity;
