@@ -51,7 +51,7 @@ public class JsonFormat extends RepresentationFormat
     }
 
     @Override
-    protected String complete( ListWriter serializer )
+    protected String complete( ListWriter serializer ) throws JsonParseRuntimeException
     {
         return JsonHelper.createJsonFrom( ( (ListWrappingWriter) serializer ).data );
     }
@@ -63,13 +63,13 @@ public class JsonFormat extends RepresentationFormat
     }
 
     @Override
-    protected String complete( MappingWriter serializer )
+    protected String complete( MappingWriter serializer ) throws JsonParseRuntimeException
     {
         return JsonHelper.createJsonFrom( ( (MapWrappingWriter) serializer ).data );
     }
 
     @Override
-    protected String serializeValue( String type, Object value )
+    protected String serializeValue( String type, Object value ) throws JsonParseRuntimeException
     {
         return JsonHelper.createJsonFrom( value );
     }

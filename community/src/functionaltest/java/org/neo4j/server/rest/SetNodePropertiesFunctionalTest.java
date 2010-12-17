@@ -40,6 +40,7 @@ import org.neo4j.server.rest.domain.JsonHelper;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
+import org.neo4j.server.rest.domain.JsonParseRuntimeException;
 
 public class SetNodePropertiesFunctionalTest {
 
@@ -69,7 +70,8 @@ public class SetNodePropertiesFunctionalTest {
     }
 
     @Test
-    public void shouldReturn204WhenPropertiesAreUpdated() {
+    public void shouldReturn204WhenPropertiesAreUpdated() throws JsonParseRuntimeException
+    {
         Map<String, Object> map = new HashMap<String, Object>();
         map.put("jim", "tobias");
         ClientResponse response = updateNodePropertiesOnServer(map);
@@ -77,7 +79,8 @@ public class SetNodePropertiesFunctionalTest {
     }
 
     @Test
-    public void shouldReturn400WhenSendinIncompatibleJsonProperties() {
+    public void shouldReturn400WhenSendinIncompatibleJsonProperties() throws JsonParseRuntimeException
+    {
         Map<String, Object> map = new HashMap<String, Object>();
         map.put("jim", new HashMap<String, Object>());
         ClientResponse response = updateNodePropertiesOnServer(map);
@@ -92,7 +95,8 @@ public class SetNodePropertiesFunctionalTest {
     }
 
     @Test
-    public void shouldReturn404WhenPropertiesSentToANodeWhichDoesNotExist() {
+    public void shouldReturn404WhenPropertiesSentToANodeWhichDoesNotExist() throws JsonParseRuntimeException
+    {
         Map<String, Object> map = new HashMap<String, Object>();
         map.put("jim", "tobias");
         ClientResponse response = Client.create().resource(badUri).type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(
@@ -100,7 +104,8 @@ public class SetNodePropertiesFunctionalTest {
         assertEquals(404, response.getStatus());
     }
 
-    private ClientResponse updateNodePropertiesOnServer(Map<String, Object> map) {
+    private ClientResponse updateNodePropertiesOnServer(Map<String, Object> map) throws JsonParseRuntimeException
+    {
         return Client.create().resource(propertiesUri).type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(
                 JsonHelper.createJsonFrom(map)).put(ClientResponse.class);
     }

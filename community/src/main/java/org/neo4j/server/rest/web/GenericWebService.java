@@ -42,6 +42,7 @@ import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.*;
 import org.neo4j.server.rest.domain.StorageActions.TraverserReturnType;
 import org.neo4j.server.rest.domain.renderers.Renderer;
+import org.neo4j.server.rest.repr.BadInputException;
 
 public abstract class GenericWebService
 {
@@ -122,13 +123,13 @@ public abstract class GenericWebService
         return builder;
     }
 
-    protected Response getRoot( Renderer renderer )
+    protected Response getRoot( Renderer renderer ) throws BadInputException
     {
         String entity = renderer.render( new RootRepresentation( uriInfo.getBaseUri(), database ) );
         return addHeaders( Response.ok( entity, renderer.getMediaType() ) ).build();
     }
 
-    protected Response createEmptyNode( String body, Renderer renderer )
+    protected Response createEmptyNode( String body, Renderer renderer ) throws BadInputException
 
     {
         if ( !isNullOrEmpty( body ) )
@@ -154,12 +155,19 @@ public abstract class GenericWebService
         {
             properties = new PropertiesMap( JsonHelper.jsonToMap( json ) );
         }
-        catch ( org.neo4j.server.rest.domain.PropertyValueException e )
+        catch ( BadInputException e )
         {
             return buildBadJsonExceptionResponse( json, e, renderer );
         }
         NodeRepresentation noderep = actions.createNode( properties );
-        String entity = renderer.render( noderep );
+        String entity = null;
+        try
+        {
+            entity = renderer.render( noderep );
+        } catch ( BadInputException e )
+        {
+            throw new RuntimeException( e );
+        }
         return addHeaders( Response.created( noderep.selfUri() ).entity( entity ).type( renderer.getMediaType() ) ).build();
     }
 
@@ -171,7 +179,7 @@ public abstract class GenericWebService
         {
             properties = new PropertiesMap( JsonHelper.jsonToMap( json ) );
         }
-        catch ( org.neo4j.server.rest.domain.PropertyValueException e )
+        catch ( BadInputException e )
         {
             return buildBadJsonExceptionResponse( json, e, renderer );
         }
@@ -187,7 +195,7 @@ public abstract class GenericWebService
         {
             properties = new PropertiesMap( JsonHelper.jsonToMap( json ) );
         }
-        catch ( org.neo4j.server.rest.domain.PropertyValueException e )
+        catch ( BadInputException e )
         {
             return buildBadJsonExceptionResponse( json, e, renderer );
         }
@@ -205,8 +213,7 @@ public abstract class GenericWebService
         return buildExceptionResponse( Status.BAD_REQUEST, "\n----\n" + json + "\n----", e, renderer );
     }
 
-    protected Response getNode( long nodeId, Renderer renderer )
-
+    protected Response getNode( long nodeId, Renderer renderer ) throws BadInputException
     {
         NodeRepresentation noderep;
         try
@@ -227,7 +234,7 @@ public abstract class GenericWebService
         {
             properties = new PropertiesMap( JsonHelper.jsonToMap( json ) );
         }
-        catch ( org.neo4j.server.rest.domain.PropertyValueException e )
+        catch ( BadInputException e )
         {
             return buildBadJsonExceptionResponse( json, e, renderer );
         }
@@ -241,7 +248,7 @@ public abstract class GenericWebService
         return Response.noContent().build();
     }
 
-    protected Response getNodeProperties( long nodeId, Renderer renderer )
+    protected Response getNodeProperties( long nodeId, Renderer renderer ) throws BadInputException
 
     {
         try
@@ -285,13 +292,13 @@ public abstract class GenericWebService
         {
             return Response.status( Status.NOT_FOUND ).build();
         }
-        catch ( org.neo4j.server.rest.domain.PropertyValueException e )
+        catch ( BadInputException e )
         {
             return buildBadJsonExceptionResponse( json, e, renderer );
         }
     }
 
-    protected Response getNodeProperty( long nodeId, String key, Renderer renderer )
+    protected Response getNodeProperty( long nodeId, String key, Renderer renderer ) throws JsonParseRuntimeException
     {
         try
         {
@@ -316,7 +323,7 @@ public abstract class GenericWebService
         }
     }
 
-    protected Response createRelationship( long startNodeId, String json, Renderer renderer )
+    protected Response createRelationship( long startNodeId, String json, Renderer renderer ) throws BadInputException
     {
         json = dodgeStartingUnicodeMarker( json );
         long endNodeId;
@@ -338,7 +345,7 @@ public abstract class GenericWebService
                 properties = new PropertiesMap( Collections.<String, Object>emptyMap() );
             }
         }
-        catch ( org.neo4j.server.rest.domain.PropertyValueException e )
+        catch ( BadInputException e )
         {
             return buildBadJsonExceptionResponse( json, e, renderer );
         }
@@ -371,7 +378,7 @@ public abstract class GenericWebService
         }
     }
 
-    protected Response getRelationship( long relationshipId, Renderer renderer )
+    protected Response getRelationship( long relationshipId, Renderer renderer ) throws BadInputException
 
     {
         RelationshipRepresentation relrep;
@@ -385,7 +392,7 @@ public abstract class GenericWebService
         return addHeaders( Response.ok( renderer.render( relrep ), renderer.getMediaType() ) ).build();
     }
 
-    protected Response getRelationshipProperties( long relationshipId, Renderer renderer )
+    protected Response getRelationshipProperties( long relationshipId, Renderer renderer ) throws BadInputException
     {
         try
         {
@@ -401,7 +408,7 @@ public abstract class GenericWebService
         }
     }
 
-    protected Response getRelationshipProperty( long relationshipId, String key, Renderer renderer )
+    protected Response getRelationshipProperty( long relationshipId, String key, Renderer renderer ) throws JsonParseRuntimeException
     {
         try
         {
@@ -430,7 +437,7 @@ public abstract class GenericWebService
         }
     }
 
-    protected Response getRelationships( long nodeId, RelationshipDirection direction, AmpersandSeparatedList types, Renderer renderer )
+    protected Response getRelationships( long nodeId, RelationshipDirection direction, AmpersandSeparatedList types, Renderer renderer ) throws BadInputException
     {
         List<RelationshipRepresentation> relreps;
         try
@@ -453,7 +460,7 @@ public abstract class GenericWebService
         {
             properties = new PropertiesMap( JsonHelper.jsonToMap( json ) );
         }
-        catch ( org.neo4j.server.rest.domain.PropertyValueException e )
+        catch ( BadInputException e )
         {
             return buildBadJsonExceptionResponse( json, e, renderer );
         }
@@ -479,7 +486,7 @@ public abstract class GenericWebService
         {
             return Response.status( Status.NOT_FOUND ).build();
         }
-        catch ( org.neo4j.server.rest.domain.PropertyValueException e )
+        catch ( BadInputException e )
         {
             return buildBadJsonExceptionResponse( json, e, renderer );
         }
@@ -515,7 +522,7 @@ public abstract class GenericWebService
         }
     }
 
-    protected Response getNodeIndexRoot( Renderer renderer )
+    protected Response getNodeIndexRoot( Renderer renderer ) throws BadInputException
     {
         if ( database.getIndexManager().nodeIndexNames().length == 0 )
         {
@@ -524,7 +531,7 @@ public abstract class GenericWebService
         return addHeaders( Response.ok( renderer.render( new NodeIndexRootRepresentation( uriInfo.getBaseUri(), database.getIndexManager() ) ), renderer.getMediaType() ) ).build();
     }
 
-    protected Response getRelationshipIndexRoot( Renderer renderer )
+    protected Response getRelationshipIndexRoot( Renderer renderer ) throws BadInputException
     {
         if ( database.getIndexManager().relationshipIndexNames().length == 0 )
         {
@@ -542,7 +549,7 @@ public abstract class GenericWebService
             Representation representation = indexType.add( this, indexName, key, value, getObjectIdFromUri( objectUri ), renderer );
             return Response.created( new URI( representation.serialize().toString() ) ).build();
         }
-        catch ( org.neo4j.server.rest.domain.PropertyValueException e )
+        catch ( BadInputException e )
         {
             return buildBadJsonExceptionResponse( json, e, renderer );
         } catch ( URISyntaxException e )
@@ -590,7 +597,7 @@ public abstract class GenericWebService
         }
     }
 
-    protected Response getIndexedNodes( String indexName, String key, String value, Renderer renderer )
+    protected Response getIndexedNodes( String indexName, String key, String value, Renderer renderer ) throws BadInputException
     {
         if (!database.getIndexManager().existsForNodes( indexName )) {
             return Response.status( Status.NOT_FOUND ).build();
@@ -600,7 +607,7 @@ public abstract class GenericWebService
         return addHeaders( Response.ok( entity, renderer.getMediaType() ) ).build();
     }
 
-    protected Response getIndexedRelationships( String indexName, String key, String value, Renderer renderer )
+    protected Response getIndexedRelationships( String indexName, String key, String value, Renderer renderer ) throws BadInputException
     {
         if (!database.getIndexManager().existsForRelationships( indexName )) {
             return Response.status( Status.NOT_FOUND ).build();
@@ -629,14 +636,26 @@ public abstract class GenericWebService
                             return Response.status( Status.NOT_FOUND ).build();
                         }
 
-                        return service.getNode( id, renderer );
+                        try
+                        {
+                            return service.getNode( id, renderer );
+                        } catch ( BadInputException e )
+                        {
+                            return Response.status( Status.BAD_REQUEST ).build();
+                        }
                     }
 
                     @Override
                     public Response get( GenericWebService service, String indexName, String key, String value, Renderer renderer )
 
                     {
-                        return service.getIndexedNodes( indexName, key, value, renderer );
+                        try
+                        {
+                            return service.getIndexedNodes( indexName, key, value, renderer );
+                        } catch ( BadInputException e )
+                        {
+                            return Response.status( Status.BAD_REQUEST ).build();
+                        }
                     }
 
                     @Override
@@ -662,13 +681,25 @@ public abstract class GenericWebService
                         {
                             return Response.status( Status.NOT_FOUND ).build();
                         }
-                        return service.getRelationship( id, renderer );
+                        try
+                        {
+                            return service.getRelationship( id, renderer );
+                        } catch ( BadInputException e )
+                        {
+                            return Response.status(Status.BAD_REQUEST).build();
+                        }
                     }
 
                     @Override
                     public Response get( GenericWebService service, String indexName, String key, String value, Renderer renderer )
                     {
-                        return service.getIndexedRelationships( indexName, key, value, renderer );
+                        try
+                        {
+                            return service.getIndexedRelationships( indexName, key, value, renderer );
+                        } catch ( BadInputException e )
+                        {
+                            return Response.status(Status.BAD_REQUEST).build();
+                        }
                     }
 
                     @Override
@@ -693,7 +724,7 @@ public abstract class GenericWebService
         abstract boolean remove( GenericWebService service, String indexName, String key, String value, long id, Renderer renderer );
     }
 
-    protected Response traverse( long startNode, TraverserReturnType returnType, String description, Renderer renderer )
+    protected Response traverse( long startNode, TraverserReturnType returnType, String description, Renderer renderer ) throws BadInputException
     {
         description = dodgeStartingUnicodeMarker( description );
         Map<String, Object> map = null;
@@ -701,7 +732,7 @@ public abstract class GenericWebService
         {
             map = description == null || description.length() == 0 ? new HashMap<String, Object>() : JsonHelper.jsonToMap( description );
         }
-        catch ( org.neo4j.server.rest.domain.PropertyValueException e )
+        catch ( BadInputException e )
         {
             return buildBadJsonExceptionResponse( description, e, renderer );
         }
@@ -721,17 +752,17 @@ public abstract class GenericWebService
         return addHeaders( Response.ok( renderer.render( representations.toArray( new Representation[representations.size()] ) ), renderer.getMediaType() ) ).build();
     }
 
-    protected Response path( long startNodeId, String description, Renderer renderer )
+    protected Response path( long startNodeId, String description, Renderer renderer ) throws BadInputException
     {
         return findPaths( startNodeId, description, true, renderer );
     }
 
-    protected Response paths( long startNodeId, String description, Renderer renderer )
+    protected Response paths( long startNodeId, String description, Renderer renderer ) throws BadInputException
     {
         return findPaths( startNodeId, description, false, renderer );
     }
 
-    private Response findPaths( long startNodeId, String description, boolean single, Renderer renderer )
+    private Response findPaths( long startNodeId, String description, boolean single, Renderer renderer ) throws BadInputException
     {
         description = dodgeStartingUnicodeMarker( description );
         long endNodeId;

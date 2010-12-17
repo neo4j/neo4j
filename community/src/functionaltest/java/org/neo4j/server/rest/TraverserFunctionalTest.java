@@ -44,6 +44,8 @@ import org.neo4j.server.rest.domain.JsonHelper;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
+import org.neo4j.server.rest.domain.JsonParseRuntimeException;
+import org.neo4j.server.rest.web.PropertyValueException;
 
 public class TraverserFunctionalTest {
     private long startNode;
@@ -109,14 +111,16 @@ public class TraverserFunctionalTest {
     }
 
     @Test
-    public void shouldGetSomeHitsWhenTraversingWithDefaultDescription() {
+    public void shouldGetSomeHitsWhenTraversingWithDefaultDescription() throws PropertyValueException
+    {
         ClientResponse response = traverse(startNode, "");
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
         String entity = response.getEntity(String.class);
         expectNodes(entity, child1_l1, child2_l1);
     }
 
-    private void expectNodes(String entity, long... nodes) {
+    private void expectNodes(String entity, long... nodes) throws PropertyValueException
+    {
         Set<String> expected = new HashSet<String>();
         for (long node : nodes) {
             expected.add(functionalTestHelper.nodeUri(node));
@@ -131,7 +135,8 @@ public class TraverserFunctionalTest {
     }
 
     @Test
-    public void shouldGetExpectedHitsWhenTraversingWithDescription() {
+    public void shouldGetExpectedHitsWhenTraversingWithDescription() throws PropertyValueException
+    {
         String description = JsonHelper.createJsonFrom(MapUtil.map("prune evaluator", MapUtil.map("language", "builtin", "name", "none"), "return filter",
                 MapUtil.map("language", "javascript", "body", "position.endNode().getProperty('name').toLowerCase().contains('t')")));
         ClientResponse response = traverse(startNode, description);

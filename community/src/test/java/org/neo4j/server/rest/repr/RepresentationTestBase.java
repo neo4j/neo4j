@@ -39,7 +39,7 @@ public abstract class RepresentationTestBase
     static final String NODE_URI_PATTERN = "http://.*/node/[0-9]+";
     static final String RELATIONSHIP_URI_PATTERN = "http://.*/relationship/[0-9]+";
 
-    static void assertUriMatches( String expectedRegex, ValueRepresentation uriRepr )
+    static void assertUriMatches( String expectedRegex, ValueRepresentation uriRepr ) throws BadInputException
     {
         assertUriMatches( expectedRegex, serialize( uriRepr ) );
     }
@@ -49,7 +49,7 @@ public abstract class RepresentationTestBase
         assertUriMatches( expectedRegex, actualUri.toString() );
     }
 
-    public static Object serialize( Representation repr )
+    public static Object serialize( Representation repr ) throws BadInputException
     {
         if ( repr instanceof ValueRepresentation )
         {
@@ -69,7 +69,7 @@ public abstract class RepresentationTestBase
         }
     }
 
-    public static String serialize( ValueRepresentation repr )
+    public static String serialize( ValueRepresentation repr ) throws BadInputException
     {
         return repr.serialize( new StringFormat(), BASE_URI, null );
     }

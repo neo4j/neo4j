@@ -21,6 +21,7 @@
 package org.neo4j.server.webadmin.rest;
 
 import org.neo4j.server.rest.domain.renderers.JsonRenderers;
+import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.webadmin.rest.representations.ServerRootRepresentation;
 
 import javax.ws.rs.GET;
@@ -44,8 +45,15 @@ public class RootService
 				new JmxService(null,null),
 				new MonitorService( null ) );
 
-		String entity = JsonRenderers.DEFAULT.render( rootRepresentation );
+        String entity = null;
+        try
+        {
+            entity = JsonRenderers.DEFAULT.render( rootRepresentation );
+        } catch ( BadInputException e )
+        {
+            return Response.serverError().build();
+        }
 
-		return Response.ok( entity ).header( "Content-Type", MediaType.APPLICATION_JSON ).build();
+        return Response.ok( entity ).header( "Content-Type", MediaType.APPLICATION_JSON ).build();
 	}
 }

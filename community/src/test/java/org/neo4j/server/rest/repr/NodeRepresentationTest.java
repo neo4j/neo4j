@@ -33,73 +33,73 @@ import org.neo4j.graphdb.Node;
 public class NodeRepresentationTest extends RepresentationTestBase
 {
     @Test
-    public void shouldHaveSelfLink()
+    public void shouldHaveSelfLink() throws BadInputException
     {
         assertUriMatches( uriPattern( "" ), noderep( 1234 ).selfUri() );
     }
 
     @Test
-    public void shouldHaveAllRelationshipsLink()
+    public void shouldHaveAllRelationshipsLink() throws BadInputException
     {
         assertUriMatches( uriPattern( "/relationships/all" ), noderep( 1234 ).allRelationshipsUri() );
     }
 
     @Test
-    public void shouldHaveIncomingRelationshipsLink()
+    public void shouldHaveIncomingRelationshipsLink() throws BadInputException
     {
         assertUriMatches( uriPattern( "/relationships/in" ),
                 noderep( 1234 ).incomingRelationshipsUri() );
     }
 
     @Test
-    public void shouldHaveOutgoingRelationshipsLink()
+    public void shouldHaveOutgoingRelationshipsLink() throws BadInputException
     {
         assertUriMatches( uriPattern( "/relationships/out" ),
                 noderep( 1234 ).outgoingRelationshipsUri() );
     }
 
     @Test
-    public void shouldHaveAllTypedRelationshipsLinkTemplate()
+    public void shouldHaveAllTypedRelationshipsLinkTemplate() throws BadInputException
     {
         assertUriMatches( uriPattern( "/relationships/all/\\{-list\\|&\\|types\\}" ),
                 noderep( 1234 ).allTypedRelationshipsUriTemplate() );
     }
 
     @Test
-    public void shouldHaveIncomingTypedRelationshipsLinkTemplate()
+    public void shouldHaveIncomingTypedRelationshipsLinkTemplate() throws BadInputException
     {
         assertUriMatches( uriPattern( "/relationships/in/\\{-list\\|&\\|types\\}" ),
                 noderep( 1234 ).incomingTypedRelationshipsUriTemplate() );
     }
 
     @Test
-    public void shouldHaveOutgoingTypedRelationshipsLinkTemplate()
+    public void shouldHaveOutgoingTypedRelationshipsLinkTemplate() throws BadInputException
     {
         assertUriMatches( uriPattern( "/relationships/out/\\{-list\\|&\\|types\\}" ),
                 noderep( 1234 ).outgoingTypedRelationshipsUriTemplate() );
     }
 
     @Test
-    public void shouldHaveRelationshipCreationLink()
+    public void shouldHaveRelationshipCreationLink() throws BadInputException
     {
         assertUriMatches( uriPattern( "/relationships" ), noderep( 1234 ).relationshipCreationUri() );
     }
 
     @Test
-    public void shouldHavePropertiesLink()
+    public void shouldHavePropertiesLink() throws BadInputException
     {
         assertUriMatches( uriPattern( "/properties" ), noderep( 1234 ).propertiesUri() );
     }
 
     @Test
-    public void shouldHavePropertyLinkTemplate()
+    public void shouldHavePropertyLinkTemplate() throws BadInputException
     {
         assertUriMatches( uriPattern( "/properties/\\{key\\}" ),
                 noderep( 1234 ).propertyUriTemplate() );
     }
 
     @Test
-    public void shouldHaveTraverseLinkTemplate()
+    public void shouldHaveTraverseLinkTemplate() throws BadInputException
     {
         assertUriMatches( uriPattern( "/traverse/\\{returnType\\}" ),
                 noderep( 1234 ).traverseUriTemplate() );

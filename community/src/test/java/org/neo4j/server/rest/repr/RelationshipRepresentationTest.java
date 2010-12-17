@@ -35,7 +35,7 @@ import org.neo4j.graphdb.RelationshipType;
 public class RelationshipRepresentationTest extends RepresentationTestBase
 {
     @Test
-    public void shouldHaveSelfLink()
+    public void shouldHaveSelfLink() throws BadInputException
     {
         assertUriMatches( RELATIONSHIP_URI_PATTERN, relrep( 1234 ).selfUri() );
     }
@@ -47,25 +47,25 @@ public class RelationshipRepresentationTest extends RepresentationTestBase
     }
 
     @Test
-    public void shouldHaveStartNodeLink()
+    public void shouldHaveStartNodeLink() throws BadInputException
     {
         assertUriMatches( NODE_URI_PATTERN, relrep( 1234 ).startNodeUri() );
     }
 
     @Test
-    public void shouldHaveEndNodeLink()
+    public void shouldHaveEndNodeLink() throws BadInputException
     {
         assertUriMatches( NODE_URI_PATTERN, relrep( 1234 ).endNodeUri() );
     }
 
     @Test
-    public void shouldHavePropertiesLink()
+    public void shouldHavePropertiesLink() throws BadInputException
     {
         assertUriMatches( RELATIONSHIP_URI_PATTERN + "/properties", relrep( 1234 ).propertiesUri() );
     }
 
     @Test
-    public void shouldHavePropertyLinkTemplate()
+    public void shouldHavePropertyLinkTemplate() throws BadInputException
     {
         assertUriMatches( RELATIONSHIP_URI_PATTERN + "/properties/\\{key\\}",
                 relrep( 1234 ).propertyUriTemplate() );
