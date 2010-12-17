@@ -314,5 +314,6 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
     {
         msgLog.logMessage( "MasterClient shutdown", true );
         channelPool.close( true );
+        executor.shutdownNow();
     }
 }
