@@ -20,17 +20,6 @@
 
 package org.neo4j.server.webadmin.rest;
 
-import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
-import javax.ws.rs.core.Response.Status;
-
 import org.apache.log4j.Logger;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.repr.BadInputException;
@@ -39,6 +28,16 @@ import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.ValueRepresentation;
 import org.neo4j.server.webadmin.console.ScriptSession;
 import org.neo4j.server.webadmin.rest.representations.ServiceDefinitionRepresentation;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.core.UriInfo;
+import java.util.Map;
 
 @Path( ConsoleService.SERVICE_PATH )
 public class ConsoleService implements AdvertisableService
@@ -82,13 +81,7 @@ public class ConsoleService implements AdvertisableService
         ServiceDefinitionRepresentation result = new ServiceDefinitionRepresentation( uriInfo.getBaseUri() + SERVICE_PATH );
         result.resourceUri( "exec", "" );
 
-        try
-        {
-            return output.ok( result );
-        } catch ( BadInputException e )
-        {
-            return output.badRequest( e );
-        }
+        return output.ok( result );
     }
 
     @POST
@@ -115,13 +108,7 @@ public class ConsoleService implements AdvertisableService
 
         String result = scriptSession.evaluate( (String)args.get( "command" ) );
 
-        try
-        {
-            return output.ok( ValueRepresentation.string( result ) );
-        } catch ( BadInputException e )
-        {
-            return output.badRequest( e );
-        }
+        return output.ok( ValueRepresentation.string( result ) );
     }
 
     private ScriptSession getSession( Map<String, Object> args )
