@@ -36,6 +36,8 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
+import javax.ws.rs.core.MediaType;
+
 public class RemoveRelationshipFunctionalTest {
 
     private NeoServer server;
@@ -76,8 +78,8 @@ public class RemoveRelationshipFunctionalTest {
 
     private ClientResponse sendDeleteRequest(URI requestUri) {
         Client client = Client.create();
-        WebResource resource = client.resource(requestUri);
-        ClientResponse response = resource.delete(ClientResponse.class);
+        WebResource.Builder resource = client.resource(requestUri).accept( MediaType.APPLICATION_JSON );
+        ClientResponse response = resource.delete( ClientResponse.class );
         return response;
     }
 }
