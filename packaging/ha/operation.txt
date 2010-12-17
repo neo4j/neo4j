@@ -1,21 +1,23 @@
 [[ha-how]]
-How HA operates
-===============
+How Neo4j HA operates
+=====================
 
-An HA cluster operates cooperatively, coordinating activity through Zookeeper.
+A Neo4j HA cluster operates cooperatively, coordinating activity through Zookeeper.
 
 On startup a Neo4j HA instance will connect to the ZooKeeper service to register itself and ask, "who is master?"
 If some other machine is master, the new instance will start as slave and connect to that master.
 If the machine starting up was the first to register -- or should become master according to the master election algorithm -- it will start as master.
 
-When performing a write transaction on a slave each write operation will be synchronized with the master (locks will be acquired on both master and slave) and when the transaction commits it will first happen on the master.
-If master commit is successful the transaction will be committed on the slave.
-To ensure consistency, a slave has to be up to date with the master before performing a write operation; this is built into the communication protocol between the slave and master, so updates will happen automatically if needed.
+When performing a write transaction on a slave each write operation will be synchronized with the master (locks will be acquired on both master and slave).
+When the transaction commits it will first occur on the master.
+If the master commit is successful the transaction will be committed on the slave as well.
+To ensure consistency, a slave has to be up to date with the master before performing a write operation.
+This is built into the communication protocol between the slave and master, so that updates will happen automatically if needed.
 
 When performing a write on the master it will execute in the same way as running in normal embedded mode.
 Currently the master will not push updates to the slave. 
 Instead, slaves can be configured to have a pull interval.
-Without polling, updates will only happen on slaves whenever they sync a write with the master.
+Without polling, updates will only happen on slaves whenever they synchronize a write with the master.
 
 Having all writes go through slaves has the benefit that the data will be replicated on two machines.
 This is recommended to avoid rollbacks in case of a master failure that could potentially happen when the new master is elected.
