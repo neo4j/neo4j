@@ -37,8 +37,12 @@ import org.neo4j.server.rest.domain.EndNodeNotFoundException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.StartNodeNotFoundException;
 import org.neo4j.server.rest.domain.StartNodeSameAsEndNodeException;
-import org.neo4j.server.rest.domain.StorageActions.TraverserReturnType;
-import org.neo4j.server.rest.repr.*;
+import org.neo4j.server.rest.domain.TraverserReturnType;
+import org.neo4j.server.rest.repr.BadInputException;
+import org.neo4j.server.rest.repr.ListRepresentation;
+import org.neo4j.server.rest.repr.NodeRepresentation;
+import org.neo4j.server.rest.repr.NodeRepresentationTest;
+import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 
 import java.io.IOException;
