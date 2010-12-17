@@ -649,6 +649,18 @@
         </plugins>
       </build>
     </profile>
+
+    <profile>
+      <id>initial-build</id>
+      <repositories>
+        <repository>
+          <id>neo4j-dev</id>
+          <name>Neo4j Developer Repository</name>
+          <url>https://repo.neo4j.org/content/groups/dev/</url>
+        </repository>
+      </repositories>
+    </profile>
+
   </profiles>
 
 
@@ -711,6 +723,28 @@
     <repository>
       <id>selenium-repository</id>
       <url>http://selenium.googlecode.com/svn/repository/</url>
+    </repository>
+    <repository>
+      <id>neo4j-releases</id>
+      <name>Neo4j non-maven-central releases</name>
+      <url>http://m2.neo4j.org/releases/</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+    </repository>
+    <repository>
+      <id>neo4j-snapshots</id>
+      <name>Neo4j non-maven-central snapshots</name>
+      <url>http://m2.neo4j.org/snapshots/</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
     </repository>
   </repositories>
 
