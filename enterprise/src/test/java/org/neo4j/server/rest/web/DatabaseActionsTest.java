@@ -38,10 +38,7 @@ import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.StartNodeNotFoundException;
 import org.neo4j.server.rest.domain.StartNodeSameAsEndNodeException;
 import org.neo4j.server.rest.domain.StorageActions.TraverserReturnType;
-import org.neo4j.server.rest.repr.ListRepresentation;
-import org.neo4j.server.rest.repr.NodeRepresentation;
-import org.neo4j.server.rest.repr.NodeRepresentationTest;
-import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
+import org.neo4j.server.rest.repr.*;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 
 import java.io.IOException;
@@ -254,7 +251,7 @@ public class DatabaseActionsTest
 
     @Test
     public void shouldBeAbleToGetPropertyOnNode() throws DatabaseBlockedException,
-            NodeNotFoundException, NoSuchPropertyException
+            NodeNotFoundException, NoSuchPropertyException, BadInputException
     {
         String key = "foo";
         Object value = "bar";
@@ -444,7 +441,7 @@ public class DatabaseActionsTest
 
     @Test
     public void shouldBeAbleToRetrieveASinglePropertyFromARelationship()
-            throws DatabaseBlockedException, NoSuchPropertyException, RelationshipNotFoundException
+            throws DatabaseBlockedException, NoSuchPropertyException, RelationshipNotFoundException, BadInputException
     {
         Map<String, Object> properties = new HashMap<String, Object>();
         properties.put( "foo", "bar" );

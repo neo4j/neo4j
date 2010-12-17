@@ -24,7 +24,9 @@ package org.neo4j.server.rest.domain;
  * Thrown if there's something wrong regarding property values/types
  */
 @SuppressWarnings("serial")
+@Deprecated
 public class PropertyValueException extends RuntimeException
+
 {
     public PropertyValueException()
     {

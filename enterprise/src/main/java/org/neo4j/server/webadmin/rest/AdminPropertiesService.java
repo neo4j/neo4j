@@ -31,6 +31,7 @@ import javax.ws.rs.core.UriInfo;
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.rest.domain.renderers.JsonRenderers;
+import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.webadmin.rest.representations.AdminPropertyRepresentation;
 
 @Path("/properties")
@@ -65,9 +66,15 @@ public class AdminPropertiesService
 	        representation.addUrl( "url", getDataUri() );
 	        representation.addUrl( "manageUrl", getManagementUri() );
 
-	        return Response.ok( JsonRenderers.DEFAULT.render( representation ) ).
-			        type( MediaType.APPLICATION_JSON ).
-			        build();
+            try
+            {
+                return Response.ok( JsonRenderers.DEFAULT.render( representation ) ).
+                        type( MediaType.APPLICATION_JSON ).
+                        build();
+            } catch ( BadInputException e )
+            {
+                return Response.status( Response.Status.BAD_REQUEST ).build();
+            }
         }
         else if ( DATA_URI_KEY.equals( lowerCaseKey ) )
         {

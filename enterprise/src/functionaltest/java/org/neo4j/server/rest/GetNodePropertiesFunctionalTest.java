@@ -38,6 +38,7 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
+import org.neo4j.server.rest.domain.JsonParseRuntimeException;
 
 public class GetNodePropertiesFunctionalTest {
     
@@ -66,7 +67,8 @@ public class GetNodePropertiesFunctionalTest {
     }
 
     @Test
-    public void shouldGet200ForProperties() {
+    public void shouldGet200ForProperties() throws JsonParseRuntimeException
+    {
         Client client = Client.create();
         WebResource createResource = client.resource(server.restApiUri() + "node/");
         String entity = JsonHelper.createJsonFrom(Collections.singletonMap("foo", "bar"));
@@ -78,7 +80,8 @@ public class GetNodePropertiesFunctionalTest {
     }
 
     @Test
-    public void shouldGetContentLengthHeaderForRetrievingProperties() {
+    public void shouldGetContentLengthHeaderForRetrievingProperties() throws JsonParseRuntimeException
+    {
         Client client = Client.create();
         WebResource createResource = client.resource(server.restApiUri() + "node/");
         String entity = JsonHelper.createJsonFrom(Collections.singletonMap("foo", "bar"));
@@ -98,7 +101,8 @@ public class GetNodePropertiesFunctionalTest {
     }
 
     @Test
-    public void shouldBeJSONContentTypeOnPropertiesResponse() {
+    public void shouldBeJSONContentTypeOnPropertiesResponse() throws JsonParseRuntimeException
+    {
         Client client = Client.create();
         WebResource createResource = client.resource(server.restApiUri() + "node/");
         String entity = JsonHelper.createJsonFrom(Collections.singletonMap("foo", "bar"));
@@ -121,7 +125,8 @@ public class GetNodePropertiesFunctionalTest {
     }
 
     @Test
-    public void shouldGet200ForProperty() {
+    public void shouldGet200ForProperty() throws JsonParseRuntimeException
+    {
         Client client = Client.create();
         WebResource createResource = client.resource(server.restApiUri() + "node/");
         String entity = JsonHelper.createJsonFrom(Collections.singletonMap("foo", "bar"));
@@ -142,7 +147,8 @@ public class GetNodePropertiesFunctionalTest {
     }
 
     @Test
-    public void shouldBeJSONContentTypeOnPropertyResponse() {
+    public void shouldBeJSONContentTypeOnPropertyResponse() throws JsonParseRuntimeException
+    {
         Client client = Client.create();
         WebResource createResource = client.resource(server.restApiUri() + "node/");
         String entity = JsonHelper.createJsonFrom(Collections.singletonMap("foo", "bar"));

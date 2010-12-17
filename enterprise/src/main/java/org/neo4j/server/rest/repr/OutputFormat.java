@@ -42,32 +42,44 @@ public class OutputFormat
         this.extensions = extensions;
     }
 
-    public final Response ok( Representation representation )
+    public final Response ok( Representation representation ) throws BadInputException
     {
         return response( Response.ok(), representation );
     }
 
     public final <REPR extends Representation & EntityRepresentation> Response created(
-            REPR representation )
+            REPR representation ) throws BadInputException
     {
         return response( Response.created( uri( representation ) ), representation );
     }
 
-    public final Response response( Status status, Representation representation )
+    public final Response response( Status status, Representation representation ) throws BadInputException
     {
         return response( Response.status( status ), representation );
     }
 
     public Response badRequest( Throwable exception )
     {
-        return response( Response.status( Status.BAD_REQUEST ), new ExceptionRepresentation(
-                exception ) );
+        try
+        {
+            return response( Response.status( Status.BAD_REQUEST ), new ExceptionRepresentation(
+                    exception ) );
+        } catch ( BadInputException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     public Response notFound( Throwable exception )
     {
-        return response( Response.status( Status.NOT_FOUND ), new ExceptionRepresentation(
-                exception ) );
+        try
+        {
+            return response( Response.status( Status.NOT_FOUND ), new ExceptionRepresentation(
+                    exception ) );
+        } catch ( BadInputException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     public Response notFound()
@@ -77,22 +89,34 @@ public class OutputFormat
 
     public Response conflict( Throwable exception )
     {
-        return response( Response.status( Status.CONFLICT ),
-                new ExceptionRepresentation( exception ) );
+        try
+        {
+            return response( Response.status( Status.CONFLICT ),
+                    new ExceptionRepresentation( exception ) );
+        } catch ( BadInputException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     public Response serverError( Throwable exception )
     {
-        return response( Response.status( Status.INTERNAL_SERVER_ERROR ),
-                new ExceptionRepresentation( exception ) );
+        try
+        {
+            return response( Response.status( Status.INTERNAL_SERVER_ERROR ),
+                    new ExceptionRepresentation( exception ) );
+        } catch ( BadInputException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
-    private URI uri( EntityRepresentation representation )
+    private URI uri( EntityRepresentation representation ) throws BadInputException
     {
         return URI.create( format( representation.selfUri() ) );
     }
 
-    protected Response response( ResponseBuilder response, Representation representation )
+    protected Response response( ResponseBuilder response, Representation representation ) throws BadInputException
     {
         String entity = format( representation );
         byte[] entityAsBytes;
@@ -113,7 +137,7 @@ public class OutputFormat
         return format.mediaType;
     }
 
-    public String format( Representation representation )
+    public String format( Representation representation ) throws BadInputException
     {
         return representation.serialize( format, baseUri, extensions );
     }

@@ -21,7 +21,9 @@
 package org.neo4j.server.rest.domain.renderers;
 
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.domain.JsonParseRuntimeException;
 import org.neo4j.server.rest.domain.Representation;
+import org.neo4j.server.rest.repr.BadInputException;
 
 import javax.ws.rs.core.MediaType;
 import java.io.PrintWriter;
@@ -31,18 +33,20 @@ public enum JsonRenderers implements Renderer
 {
     DEFAULT {
         @Override
-        public String render( Representation... representations) {
+        public String render( Representation... representations) throws JsonParseRuntimeException
+        {
             return JsonHelper.createJsonFrom( RepresentationUtil.serialize(false, representations));
         }
     },
     ARRAY {
         @Override
-        public String render(Representation... representations) {
+        public String render(Representation... representations) throws JsonParseRuntimeException
+        {
             return JsonHelper.createJsonFrom(RepresentationUtil.serialize(true, representations));
         }
     };
     
-    public abstract String render(Representation... representations);
+    public abstract String render(Representation... representations) throws BadInputException;
 
     public MediaType getMediaType() {
         return MediaType.APPLICATION_JSON_TYPE;

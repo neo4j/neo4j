@@ -29,8 +29,10 @@ import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.domain.JsonParseRuntimeException;
 import org.neo4j.server.rest.domain.RelationshipRepresentationTest;
 import org.neo4j.server.rest.domain.StorageActions.TraverserReturnType;
+import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 import org.neo4j.server.rest.web.RestfulGraphDatabase.AmpersandSeparatedCollection;
@@ -573,7 +575,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldGet200WhenSuccessfullyRetrievedPropertyOnRelationship() throws DatabaseBlockedException
+    public void shouldGet200WhenSuccessfullyRetrievedPropertyOnRelationship() throws DatabaseBlockedException, PropertyValueException
     {
 
         long relationshipId = helper.createRelationship( "knows" );
@@ -615,7 +617,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingRelationshipsForANode() throws DatabaseBlockedException
+    public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingRelationshipsForANode() throws DatabaseBlockedException, JsonParseRuntimeException
     {
         long nodeId = helper.createNode();
         helper.createRelationship( "LIKES", nodeId, helper.createNode() );
@@ -650,7 +652,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldNotReturnDuplicatesIfSameTypeSpecifiedMoreThanOnce() throws DatabaseBlockedException
+    public void shouldNotReturnDuplicatesIfSameTypeSpecifiedMoreThanOnce() throws DatabaseBlockedException, PropertyValueException
     {
         long nodeId = helper.createNode();
         helper.createRelationship( "LIKES", nodeId, helper.createNode() );
@@ -660,7 +662,7 @@ public class RestfulGraphDatabaseTest
         assertEquals( 1, array.size() );
     }
 
-    private void verifyRelReps( int expectedSize, String entity )
+    private void verifyRelReps( int expectedSize, String entity ) throws JsonParseRuntimeException
     {
         List<Map<String, Object>> relreps = JsonHelper.jsonToListOfRelationshipRepresentations( entity );
         assertEquals( expectedSize, relreps.size() );
@@ -672,7 +674,7 @@ public class RestfulGraphDatabaseTest
 
     @Test
     public void shouldRespondWith200AndEmptyListOfRelationshipRepresentationsWhenGettingRelationshipsForANodeWithoutRelationships()
-            throws DatabaseBlockedException
+            throws DatabaseBlockedException, JsonParseRuntimeException
     {
         long nodeId = helper.createNode();
 
@@ -816,7 +818,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWithAvailableIndexNodeRoots()
+    public void shouldRespondWithAvailableIndexNodeRoots() throws BadInputException
     {
         String indexName = "someNodes";
         helper.createNodeIndex( indexName );
@@ -836,7 +838,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWithAvailableIndexRelationshipRoots()
+    public void shouldRespondWithAvailableIndexRelationshipRoots() throws BadInputException
     {
         String indexName = "someRelationships";
         helper.createRelationshipIndex( indexName );
@@ -848,7 +850,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToGetRoot()
+    public void shouldBeAbleToGetRoot() throws JsonParseRuntimeException
     {
         Response response = service.getRoot();
         assertEquals( 200, response.getStatus() );
@@ -862,7 +864,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToIndexNode() throws DatabaseBlockedException
+    public void shouldBeAbleToIndexNode() throws DatabaseBlockedException, JsonParseRuntimeException
     {
         Response response = service.createNode( null );
         URI nodeUri = (URI) response.getMetadata().getFirst( "Location" );
@@ -876,7 +878,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToGetNodeRepresentationFromIndexUri() throws DatabaseBlockedException
+    public void shouldBeAbleToGetNodeRepresentationFromIndexUri() throws DatabaseBlockedException, JsonParseRuntimeException
     {
         String key = "key_get_noderep";
         String value = "value";
@@ -893,7 +895,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToGetRelationshipRepresentationFromIndexUri() throws DatabaseBlockedException
+    public void shouldBeAbleToGetRelationshipRepresentationFromIndexUri() throws DatabaseBlockedException, JsonParseRuntimeException
     {
         String key = "key_get_noderep";
         String value = "value";
@@ -914,7 +916,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToGetListOfNodeRepresentationsFromIndexLookup() throws DatabaseBlockedException
+    public void shouldBeAbleToGetListOfNodeRepresentationsFromIndexLookup() throws DatabaseBlockedException, PropertyValueException
     {
         String key = "key_get";
         String value = "value";
@@ -953,7 +955,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToGetListOfRelationshipRepresentationsFromIndexLookup() throws DatabaseBlockedException
+    public void shouldBeAbleToGetListOfRelationshipRepresentationsFromIndexLookup() throws DatabaseBlockedException, PropertyValueException
     {
         String key = "key_get";
         String value = "value";
@@ -991,7 +993,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldGet200AndEmptyListWhenNothingFoundInIndexLookup() throws DatabaseBlockedException
+    public void shouldGet200AndEmptyListWhenNothingFoundInIndexLookup() throws DatabaseBlockedException, PropertyValueException
     {
         String indexName = "nothing-in-this-index";
         helper.createNodeIndex( indexName );
@@ -1056,7 +1058,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldGet200WhenNoHitsReturnedFromTraverse() throws DatabaseBlockedException
+    public void shouldGet200WhenNoHitsReturnedFromTraverse() throws DatabaseBlockedException, BadInputException
     {
         long startNode = helper.createNode();
         Response response = service.traverse( startNode, TraverserReturnType.node, "" );
@@ -1185,7 +1187,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToParseJsonEvenWithUnicodeMarkerAtTheStart() throws DatabaseBlockedException
+    public void shouldBeAbleToParseJsonEvenWithUnicodeMarkerAtTheStart() throws DatabaseBlockedException, JsonParseRuntimeException
     {
         Response response = service.createNode( markWithUnicodeMarker( "{\"name\":\"Mattias\"}" ) );
         assertEquals( Status.CREATED.getStatusCode(), response.getStatus() );

@@ -50,6 +50,8 @@ import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.StorageActions.TraverserReturnType;
+import org.neo4j.server.rest.web.*;
+import org.neo4j.server.rest.web.PropertyValueException;
 
 public class StorageActionsTest {
 
@@ -117,7 +119,8 @@ public class StorageActionsTest {
     }
 
     @Test
-    public void shouldBeAbleToStorePropertiesInAnExistingNode() throws DatabaseBlockedException {
+    public void shouldBeAbleToStorePropertiesInAnExistingNode() throws DatabaseBlockedException, org.neo4j.server.rest.web.PropertyValueException
+    {
         long nodeId = graphdbHelper.createNode();
         Map<String, Object> properties = new HashMap<String, Object>();
         properties.put("foo", "bar");
@@ -134,7 +137,8 @@ public class StorageActionsTest {
     }
 
     @Test
-    public void shouldOverwriteExistingProperties() throws DatabaseBlockedException {
+    public void shouldOverwriteExistingProperties() throws DatabaseBlockedException, PropertyValueException
+    {
 
         long nodeId;
         Transaction tx = database.graph.beginTx();
@@ -423,7 +427,8 @@ public class StorageActionsTest {
     }
 
     @Test
-    public void shouldBeAbleToSetRelationshipProperties() throws DatabaseBlockedException {
+    public void shouldBeAbleToSetRelationshipProperties() throws DatabaseBlockedException, PropertyValueException
+    {
         long relationshipId = graphdbHelper.createRelationship("KNOWS");
         Map<String, Object> properties = new HashMap<String, Object>();
         properties.put("foo", "bar");
