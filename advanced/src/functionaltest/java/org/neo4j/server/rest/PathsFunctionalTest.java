@@ -20,17 +20,12 @@
 
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Map;
-
-import javax.ws.rs.core.MediaType;
-
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.WebResource;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.ServerBuilder;
@@ -38,9 +33,13 @@ import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
+import javax.ws.rs.core.MediaType;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class PathsFunctionalTest
 {
@@ -97,16 +96,14 @@ public class PathsFunctionalTest
     }
 
     @Test
-    public void shouldBeAbleToFindShortestPaths()
+    public void shouldBeAbleToFindAllShortestPaths()
     {
         Client client = Client.create();
 
         // Get all shortest paths
-        String json = "{\"to\":\"" + server.restApiUri() + "node/" + nodes[ 1 ]
-                + "\", \"max depth\":3, \"relationships\":{\"type\":\"to\", \"direction\":\"out\"}, \"algorithm\":\"shortestPath\"}";
-        
+
         WebResource resource = client.resource( server.restApiUri() + "node/" + nodes[ 0 ] + "/paths" );
-        ClientResponse response = resource.type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( json ).post( ClientResponse.class );
+        ClientResponse response = resource.type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( getAllShortestPathPayLoad() ).post( ClientResponse.class );
         assertEquals( 200, response.getStatus() );
         assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
         String entity = response.getEntity( String.class );
@@ -119,29 +116,55 @@ public class PathsFunctionalTest
             assertTrue( path.get( "end" ).toString().endsWith( "/node/" + nodes[ 1 ] ) );
             assertEquals( 2, path.get( "length" ) );
         }
+    }
+
+    private String getAllShortestPathPayLoad()
+    {
+        return "{\"to\":\"" + server.restApiUri() + "node/" + nodes[ 1 ]
+                    + "\", \"max depth\":3, \"relationships\":{\"type\":\"to\", \"direction\":\"out\"}, \"algorithm\":\"shortestPath\"}";
+    }
+
+    @Test
+    public void shouldBeAbleToFetchSingleShortestPath()
+    {
+        Client client = Client.create();
 
         // Get single shortest path
-        resource = client.resource( server.restApiUri() + "node/" + nodes[ 0 ] + "/path" );
-        response = resource.type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( json ).post( ClientResponse.class );
+        WebResource resource = client.resource( server.restApiUri() + "node/" + nodes[ 0 ] + "/path" );
+        ClientResponse response = resource.type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( getAllShortestPathPayLoad() ).post( ClientResponse.class );
         assertEquals( 200, response.getStatus() );
         Map<?, ?> path = (Map<?, ?>)JsonHelper.jsonToMap( response.getEntity( String.class ) );
         assertTrue( path.get( "start" ).toString().endsWith( "/node/" + nodes[ 0 ] ) );
         assertTrue( path.get( "end" ).toString().endsWith( "/node/" + nodes[ 1 ] ) );
         assertEquals( 2, path.get( "length" ) );
+    }
+
+    @Test
+    public void shouldReturn404WhenFailingToFindASinglePath()
+    {
+        Client client = Client.create();
+
 
         // Get single shortest path and expect no answer (404)
         String noHitsJson = "{\"to\":\"" + server.restApiUri() + "node/" + nodes[ 1 ]
                 + "\", \"max depth\":3, \"relationships\":{\"type\":\"to\", \"direction\":\"in\"}, \"algorithm\":\"shortestPath\"}";
-        resource = client.resource( server.restApiUri() + "node/" + nodes[ 0 ] + "/path" );
-        response = resource.type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( noHitsJson ).post( ClientResponse.class );
+        WebResource resource = client.resource( server.restApiUri() + "node/" + nodes[ 0 ] + "/path" );
+        ClientResponse response = resource.type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( noHitsJson ).post( ClientResponse.class );
         assertEquals( 404, response.getStatus() );
+    }
+
+    @Test
+    @Ignore("Should we really support this case?")
+    public void shouldBeAbleToReturn204WhenNoPathsFound()
+    {
+        Client client = Client.create();
 
         // Get single shortest paths and expect no content (since using /paths
         // {single:true} instead of /path)
         String noHitsSingleJson = "{\"to\":\"" + server.restApiUri() + "node/" + nodes[ 1 ]
                 + "\", \"max depth\":3, \"relationships\":{\"type\":\"to\", \"direction\":\"in\"}, \"algorithm\":\"shortestPath\", \"single\":true}";
-        resource = client.resource( server.restApiUri() + "node/" + nodes[ 0 ] + "/paths" );
-        response = resource.type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( noHitsSingleJson ).post( ClientResponse.class );
+        WebResource resource = client.resource( server.restApiUri() + "node/" + nodes[ 0 ] + "/paths" );
+        ClientResponse response = resource.type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( noHitsSingleJson ).post( ClientResponse.class );
         assertEquals( 204, response.getStatus() );
     }
 }
