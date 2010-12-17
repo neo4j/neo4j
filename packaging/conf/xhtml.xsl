@@ -12,13 +12,12 @@
 <xsl:import href="http://docbook.sourceforge.net/release/xsl/current/xhtml/docbook.xsl"/>
 <xsl:import href="common.xsl"/>
 
+<xsl:import href="html-params.xsl"/>
+
 <xsl:import href="head.xsl"/>
 
 <xsl:import href="footer.xsl"/>
 
-<xsl:param name="generate.legalnotice.link" select="1"/>
-<xsl:param name="legalnotice.filename">legalnotice.html</xsl:param>
-<xsl:param name="generate.revhistory.link" select="1"/>
 
 <xsl:template name="section.titlepage.before.recto">
   <xsl:variable name="top-anchor">
