@@ -21,7 +21,7 @@
 package org.neo4j.server.rest.repr;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.server.rest.repr.formats.NullFormat;
+import org.neo4j.server.rest.repr.formats.JsonFormat;
 
 import javax.ws.rs.core.MediaType;
 import java.net.URI;
@@ -55,14 +55,14 @@ public final class RepresentationFormatRepository
             }
         }
 
-        return new OutputFormat( new NullFormat(formats.keySet(), acceptable.toArray( new MediaType[acceptable.size()] )), baseUri, injector );
+        return new OutputFormat( useDefault( acceptable ), baseUri, injector );
     }
 
     public InputFormat inputFormat( MediaType type )
     {
-        if(type == null)
+        if ( type == null )
         {
-            return new NullFormat( formats.keySet() );
+            return useDefault();
         }
 
         RepresentationFormat format = formats.get( type );
@@ -77,7 +77,16 @@ public final class RepresentationFormatRepository
             return format;
         }
 
-        return new NullFormat( formats.keySet(), type );
+        return useDefault( type );
     }
 
+    private DefaultFormat useDefault( final List<MediaType> acceptable )
+    {
+        return  useDefault( acceptable.toArray( new MediaType[ acceptable.size() ] ) );
+    }
+
+    private DefaultFormat useDefault( final MediaType... type )
+    {
+        return new DefaultFormat( new JsonFormat(), formats.keySet(), type );
+    }
 }

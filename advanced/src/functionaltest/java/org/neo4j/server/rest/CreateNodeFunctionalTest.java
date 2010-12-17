@@ -20,17 +20,9 @@
 
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
-import java.io.IOException;
-import java.net.URI;
-import java.util.List;
-import java.util.Map;
-
-import javax.ws.rs.core.MediaType;
-
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.WebResource;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -40,9 +32,13 @@ import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.NodeRepresentationTest;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
+import javax.ws.rs.core.MediaType;
+import java.io.IOException;
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.Assert.*;
 
 public class CreateNodeFunctionalTest
 {
@@ -94,24 +90,6 @@ public class CreateNodeFunctionalTest
     {
         ClientResponse response = sendCreateRequestToServer( "{\"foo\":null}" );
         assertEquals( 400, response.getStatus() );
-    }
-
-    @Test
-    public void should415IfNotASupportedMediaType()
-    {
-        Client client = Client.create();
-        WebResource resource = client.resource( server.restApiUri() + "node/" );
-        ClientResponse response = resource.type( "junk/media-type" ).accept( MediaType.APPLICATION_JSON ).entity( "{\"foo\" : \"bar\"}" ).post( ClientResponse.class );
-        assertEquals( 415, response.getStatus() );
-    }
-
-    @Test
-    public void should415IfEntityBodyButNoEntityTypeProvidedWhenCreatingAnEmptyNode()
-    {
-        Client client = Client.create();
-        WebResource resource = client.resource( server.restApiUri() + "node/" );
-        ClientResponse response = resource.accept( MediaType.APPLICATION_JSON ).entity( "{\"foo\" : \"bar\"}" ).post( ClientResponse.class );
-        assertEquals( 415, response.getStatus() );
     }
 
     @Test
