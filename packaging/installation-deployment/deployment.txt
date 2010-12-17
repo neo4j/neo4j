@@ -19,7 +19,7 @@ Neo4j is normally accessed as a standalone server, either directly through a RES
 == Embedded ==
 
 Neo4j can be embedded directly in a server application by including the appropriate Java libraries.
-When programming, you can refer to the GraphDatabaseService API.
-To switch from a single instance to multiple highly available instances, simply switch from the concrete EmbeddedGraphDatabase to the HighlyAvailableGraphDatabase.
+When programming, you can refer to the +GraphDatabaseService+ API.
+To switch from a single instance to multiple highly available instances, simply switch from the concrete +EmbeddedGraphDatabase+ to the +HighlyAvailableGraphDatabase+.
 
 
