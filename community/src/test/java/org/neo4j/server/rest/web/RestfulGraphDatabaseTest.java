@@ -993,7 +993,9 @@ public class RestfulGraphDatabaseTest
     @Test
     public void shouldGet200AndEmptyListWhenNothingFoundInIndexLookup() throws DatabaseBlockedException
     {
-        Response response = service.getIndexedNodes( "node", "fooo", "baaar" );
+        String indexName = "nothing-in-this-index";
+        helper.createNodeIndex( indexName );
+        Response response = service.getIndexedNodes( indexName, "fooo", "baaar" );
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
         assertEquals( response.getMetadata().getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
         String entity = entityAsString( response );
