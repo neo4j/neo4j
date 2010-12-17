@@ -70,6 +70,11 @@ public class OutputFormat
                 exception ) );
     }
 
+    public Response notFound()
+    {
+        return Response.status( Status.NOT_FOUND ).build();
+    }
+
     public Response conflict( Throwable exception )
     {
         return response( Response.status( Status.CONFLICT ),
