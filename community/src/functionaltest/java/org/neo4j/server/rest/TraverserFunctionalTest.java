@@ -44,7 +44,6 @@ import org.neo4j.server.rest.domain.JsonHelper;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
-import org.neo4j.server.rest.domain.JsonParseRuntimeException;
 import org.neo4j.server.rest.web.PropertyValueException;
 
 public class TraverserFunctionalTest {

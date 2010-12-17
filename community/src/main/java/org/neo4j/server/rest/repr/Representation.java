@@ -74,7 +74,7 @@ public abstract class Representation
     }
 
     abstract String serialize( RepresentationFormat format, URI baseUri,
-            ExtensionInjector extensions ) throws BadInputException;
+            ExtensionInjector extensions ) ;
 
     abstract void addTo( ListSerializer serializer );
 

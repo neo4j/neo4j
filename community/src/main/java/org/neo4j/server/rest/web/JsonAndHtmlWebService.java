@@ -38,7 +38,7 @@ import javax.ws.rs.core.Response.Status;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.domain.AmpersandSeparatedList;
 import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.domain.JsonParseRuntimeException;
+import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.domain.RelationshipDirection;
 import org.neo4j.server.rest.domain.StorageActions.TraverserReturnType;
 import org.neo4j.server.rest.domain.renderers.IndexRootRenderer;
@@ -159,7 +159,7 @@ public class JsonAndHtmlWebService extends GenericWebService
     @GET
     @Path(PATH_NODE_PROPERTY)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response jsonGetNodeProperty( @PathParam("nodeId") long nodeId, @PathParam("key") String key ) throws JsonParseRuntimeException
+    public Response jsonGetNodeProperty( @PathParam("nodeId") long nodeId, @PathParam("key") String key ) throws JsonParseException
     {
         return getNodeProperty( nodeId, key, JsonRenderers.DEFAULT );
     }
@@ -206,7 +206,7 @@ public class JsonAndHtmlWebService extends GenericWebService
     @GET
     @Path(PATH_RELATIONSHIP_PROPERTY)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response jsonGetRelationshipProperty( @PathParam("relationshipId") long relationshipId, @PathParam("key") String key ) throws JsonParseRuntimeException
+    public Response jsonGetRelationshipProperty( @PathParam("relationshipId") long relationshipId, @PathParam("key") String key ) throws JsonParseException
     {
         return getRelationshipProperty( relationshipId, key, JsonRenderers.DEFAULT );
     }
@@ -302,7 +302,7 @@ public class JsonAndHtmlWebService extends GenericWebService
     @Path(PATH_NODE_INDEX_QUERY)
     @Consumes(MediaType.TEXT_PLAIN)
     public Response jsonAddToNodeIndexPlainText( @PathParam("indexName") String indexName, @PathParam("key") String key, @PathParam("value") String value,
-                                                 String objectUri ) throws JsonParseRuntimeException
+                                                 String objectUri ) throws JsonParseException
     {
         return addToIndex( IndexType.NODE, indexName, key, value, JsonHelper.createJsonFrom( objectUri ), JsonRenderers.DEFAULT );
     }
@@ -319,7 +319,7 @@ public class JsonAndHtmlWebService extends GenericWebService
     @Path(PATH_RELATIONSHIP_INDEX_QUERY)
     @Consumes(MediaType.TEXT_PLAIN)
     public Response jsonAddToRelationshipIndexPlainText( @PathParam("indexName") String indexName, @PathParam("key") String key, @PathParam("value") String value,
-                                                         String objectUri ) throws JsonParseRuntimeException
+                                                         String objectUri ) throws JsonParseException
     {
         return addToIndex( IndexType.RELATIONSHIP, indexName, key, value, JsonHelper.createJsonFrom( objectUri ), JsonRenderers.DEFAULT );
     }

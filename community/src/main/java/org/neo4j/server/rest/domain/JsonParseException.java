@@ -18,18 +18,24 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.server.rest.domain.renderers;
+package org.neo4j.server.rest.domain;
 
-import org.neo4j.server.rest.domain.Representation;
-import org.neo4j.server.rest.repr.BadInputException;
-
-import javax.ws.rs.core.MediaType;
-
-public interface Renderer
+@SuppressWarnings("serial")
+public class JsonParseException extends org.neo4j.server.rest.web.PropertyValueException
 {
-    String render( Representation... oneOrManyRepresentations );
-    
-    MediaType getMediaType();
-    
-    String renderException( String subjectOrNull, Exception exception );
+
+    public JsonParseException( String message, Throwable cause )
+    {
+        super( message, cause );
+    }
+
+    public JsonParseException( String message )
+    {
+        super( message );
+    }
+
+    public JsonParseException( Throwable cause )
+    {
+        super( cause );
+    }
 }

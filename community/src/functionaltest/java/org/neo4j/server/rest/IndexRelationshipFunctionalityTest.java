@@ -43,7 +43,7 @@ import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.domain.JsonParseRuntimeException;
+import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.domain.URIHelper;
 
 import com.sun.jersey.api.client.Client;
@@ -104,7 +104,7 @@ public class IndexRelationshipFunctionalityTest
      * }
      */
     @Test
-    public void shouldCreateANamedRelationshipIndex() throws JsonParseRuntimeException
+    public void shouldCreateANamedRelationshipIndex() throws JsonParseException
     {
         String indexName = "favorites";
         Map<String, String> indexSpecification = new HashMap<String, String>();
@@ -130,7 +130,7 @@ public class IndexRelationshipFunctionalityTest
      * "http://uri.for.node.to.index"
      */
     @Test
-    public void shouldRespondWith201CreatedWhenIndexingRelationship() throws DatabaseBlockedException, JsonParseRuntimeException
+    public void shouldRespondWith201CreatedWhenIndexingRelationship() throws DatabaseBlockedException, JsonParseException
     {
         long nodeId = helper.createNode();
         String key = "key";
@@ -163,7 +163,7 @@ public class IndexRelationshipFunctionalityTest
     }
 
     @Test
-    public void shouldGetRelationshipRepresentationFromIndexUri() throws DatabaseBlockedException, JsonParseRuntimeException
+    public void shouldGetRelationshipRepresentationFromIndexUri() throws DatabaseBlockedException, JsonParseException
     {
         long nodeId = helper.createNode();
         String key = "key2";
@@ -289,7 +289,7 @@ public class IndexRelationshipFunctionalityTest
 
     @Test
     @Ignore("Unclear contract: remove the index itself? That is unsupported in the new index api")
-    public void shouldGet200AndBeAbleToRemoveIndexing() throws DatabaseBlockedException, JsonParseRuntimeException
+    public void shouldGet200AndBeAbleToRemoveIndexing() throws DatabaseBlockedException, JsonParseException
     {
         ClientResponse response = Client.create().resource( functionalTestHelper.nodeUri() ).type( MediaType.APPLICATION_FORM_URLENCODED ).accept(
                 MediaType.APPLICATION_JSON ).post( ClientResponse.class );

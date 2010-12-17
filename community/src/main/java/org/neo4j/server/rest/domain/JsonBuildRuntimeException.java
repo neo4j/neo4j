@@ -21,20 +21,20 @@
 package org.neo4j.server.rest.domain;
 
 @SuppressWarnings("serial")
-public class JsonParseRuntimeException extends org.neo4j.server.rest.web.PropertyValueException
+public class JsonBuildRuntimeException extends RuntimeException
 {
 
-    public JsonParseRuntimeException( String message, Throwable cause )
+    public JsonBuildRuntimeException( String message, Throwable cause )
     {
         super( message, cause );
     }
 
-    public JsonParseRuntimeException( String message )
+    public JsonBuildRuntimeException( String message )
     {
         super( message );
     }
 
-    public JsonParseRuntimeException( Throwable cause )
+    public JsonBuildRuntimeException( Throwable cause )
     {
         super( cause );
     }

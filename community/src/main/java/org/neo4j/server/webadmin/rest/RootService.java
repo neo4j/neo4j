@@ -45,14 +45,7 @@ public class RootService
 				new JmxService(null,null),
 				new MonitorService( null ) );
 
-        String entity = null;
-        try
-        {
-            entity = JsonRenderers.DEFAULT.render( rootRepresentation );
-        } catch ( BadInputException e )
-        {
-            return Response.serverError().build();
-        }
+        String entity = JsonRenderers.DEFAULT.render( rootRepresentation );
 
         return Response.ok( entity ).header( "Content-Type", MediaType.APPLICATION_JSON ).build();
 	}

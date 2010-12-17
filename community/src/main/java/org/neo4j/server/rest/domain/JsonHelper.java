@@ -28,31 +28,30 @@ import java.util.Map;
 
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.neo4j.server.rest.web.*;
 
 public class JsonHelper {
     
     static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @SuppressWarnings("unchecked")
-    public static Map<String, Object> jsonToMap(String json) throws JsonParseRuntimeException
+    public static Map<String, Object> jsonToMap(String json) throws JsonParseException
     {
         return (Map<String, Object>) readJson( json );
     }
 
     @SuppressWarnings("unchecked")
-    public static List<Map<String, Object>> jsonToListOfRelationshipRepresentations(String json) throws JsonParseRuntimeException
+    public static List<Map<String, Object>> jsonToListOfRelationshipRepresentations(String json) throws JsonParseException
     {
         return (List<Map<String, Object>>) readJson( json );
     }
     
-    private static Object readJson( String json ) throws JsonParseRuntimeException
+    private static Object readJson( String json ) throws JsonParseException
     {
         ObjectMapper mapper = new ObjectMapper();
         try {
             return mapper.readValue(json, Object.class);
         } catch (IOException e) {
-            throw new JsonParseRuntimeException( e );
+            throw new JsonParseException( e );
         }
     }
 
@@ -63,7 +62,7 @@ public class JsonHelper {
                 PropertiesMap.assertSupportedPropertyValue( jsonObject );
     }
 
-    public static String createJsonFrom(Object data) throws JsonParseRuntimeException
+    public static String createJsonFrom(Object data) throws JsonBuildRuntimeException
     {
         try {
             StringWriter writer = new StringWriter();
@@ -73,7 +72,7 @@ public class JsonHelper {
             writer.close();
             return writer.getBuffer().toString();
         } catch (IOException e) {
-            throw new JsonParseRuntimeException( e );
+            throw new JsonBuildRuntimeException( e );
         }
     }
 }
