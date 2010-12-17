@@ -90,7 +90,7 @@ latexpdf:
 
 # currently builds docbook format first
 html:
-	a2x $(GENERAL_FLAGS) -f chunked -D $(BUILDDIR) --conf-file=$(CONFDIR)/chunked.conf --xsl-file=$(CONFDIR)/chunked.xsl $(SRCFILE)
+	a2x $(GENERAL_FLAGS) -f chunked -D $(BUILDDIR) --conf-file=$(CONFDIR)/chunked.conf --xsl-file=$(CONFDIR)/chunked.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(SRCFILE)
 
 # use the asciidoc tool only, not docbook
 singlehtml-asciidoc:
