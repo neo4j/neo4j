@@ -60,26 +60,14 @@ public class OutputFormat
 
     public Response badRequest( Throwable exception )
     {
-        try
-        {
-            return response( Response.status( Status.BAD_REQUEST ), new ExceptionRepresentation(
-                    exception ) );
-        } catch ( BadInputException e )
-        {
-            throw new RuntimeException( e );
-        }
+        return response( Response.status( Status.BAD_REQUEST ), new ExceptionRepresentation(
+                exception ) );
     }
 
     public Response notFound( Throwable exception )
     {
-        try
-        {
-            return response( Response.status( Status.NOT_FOUND ), new ExceptionRepresentation(
-                    exception ) );
-        } catch ( BadInputException e )
-        {
-            throw new RuntimeException( e );
-        }
+        return response( Response.status( Status.NOT_FOUND ), new ExceptionRepresentation(
+                exception ) );
     }
 
     public Response notFound()
@@ -89,26 +77,14 @@ public class OutputFormat
 
     public Response conflict( Throwable exception )
     {
-        try
-        {
-            return response( Response.status( Status.CONFLICT ),
-                    new ExceptionRepresentation( exception ) );
-        } catch ( BadInputException e )
-        {
-            throw new RuntimeException( e );
-        }
+        return response( Response.status( Status.CONFLICT ),
+                new ExceptionRepresentation( exception ) );
     }
 
     public Response serverError( Throwable exception )
     {
-        try
-        {
-            return response( Response.status( Status.INTERNAL_SERVER_ERROR ),
-                    new ExceptionRepresentation( exception ) );
-        } catch ( BadInputException e )
-        {
-            throw new RuntimeException( e );
-        }
+        return response( Response.status( Status.INTERNAL_SERVER_ERROR ),
+                new ExceptionRepresentation( exception ) );
     }
 
     private URI uri( EntityRepresentation representation ) throws BadInputException
@@ -116,15 +92,14 @@ public class OutputFormat
         return URI.create( format( representation.selfUri() ) );
     }
 
-    protected Response response( ResponseBuilder response, Representation representation ) throws BadInputException
+    protected Response response( ResponseBuilder response, Representation representation )
     {
         String entity = format( representation );
         byte[] entityAsBytes;
         try
         {
             entityAsBytes = entity.getBytes( UTF8 );
-        }
-        catch ( UnsupportedEncodingException e )
+        } catch ( UnsupportedEncodingException e )
         {
             throw new RuntimeException( "Could not encode string as UTF-8", e );
         }
@@ -137,7 +112,7 @@ public class OutputFormat
         return format.mediaType;
     }
 
-    public String format( Representation representation ) throws BadInputException
+    public String format( Representation representation )
     {
         return representation.serialize( format, baseUri, extensions );
     }

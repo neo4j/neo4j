@@ -37,7 +37,7 @@ public class EntityOutputFormat extends OutputFormat
     }
 
     @Override
-    protected Response response( Response.ResponseBuilder response, Representation representation ) throws BadInputException
+    protected Response response( Response.ResponseBuilder response, Representation representation )
     {
         this.representation = representation;
 

@@ -56,7 +56,6 @@ import org.neo4j.server.webadmin.rest.representations.JmxDomainRepresentation;
 import org.neo4j.server.webadmin.rest.representations.JmxMBeanRepresentation;
 import org.neo4j.server.webadmin.rest.representations.ServiceDefinitionRepresentation;
 
-
 @Path( JmxService.ROOT_PATH )
 public class JmxService implements AdvertisableService
 {
@@ -96,7 +95,7 @@ public class JmxService implements AdvertisableService
     }
 
     @GET
-    @Path( DOMAINS_PATH )
+    @Path(DOMAINS_PATH)
     public Response listDomains() throws NullPointerException
     {
         MBeanServer server = ManagementFactory.getPlatformMBeanServer();
@@ -111,8 +110,8 @@ public class JmxService implements AdvertisableService
     }
 
     @GET
-    @Path( DOMAIN_TEMPLATE )
-    public Response getDomain( @PathParam( "domain" ) String domainName )
+    @Path(DOMAIN_TEMPLATE)
+    public Response getDomain( @PathParam("domain") String domainName )
     {
         MBeanServer server = ManagementFactory.getPlatformMBeanServer();
 
@@ -122,7 +121,7 @@ public class JmxService implements AdvertisableService
         {
             if ( objName.toString().startsWith( domainName ) )
             {
-                domain.addBean( (ObjectName)objName );
+                domain.addBean( (ObjectName) objName );
             }
         }
 
@@ -136,8 +135,8 @@ public class JmxService implements AdvertisableService
     }
 
     @GET
-    @Path( BEAN_TEMPLATE )
-    public Response getBean( @PathParam( "domain" ) String domainName, @PathParam( "objectName" ) String objectName )
+    @Path(BEAN_TEMPLATE)
+    public Response getBean( @PathParam("domain") String domainName, @PathParam("objectName") String objectName )
     {
         try
         {
@@ -146,7 +145,7 @@ public class JmxService implements AdvertisableService
             ArrayList<JmxMBeanRepresentation> beans = new ArrayList<JmxMBeanRepresentation>();
             for ( Object objName : server.queryNames( new ObjectName( domainName + ":" + URLDecoder.decode( objectName, "UTF-8" ) ), null ) )
             {
-                beans.add( new JmxMBeanRepresentation( (ObjectName)objName ) );
+                beans.add( new JmxMBeanRepresentation( (ObjectName) objName ) );
             }
 
             return output.ok( new ListRepresentation( "bean", beans ) );
@@ -164,20 +163,14 @@ public class JmxService implements AdvertisableService
 
     private Response buildExceptionResponse( Status errorStatus, Exception e )
     {
-        try
-        {
-            return Response.status( errorStatus ).entity( JsonRenderers.DEFAULT.render( new ExceptionRepresentation( e ) ) ).build();
-        } catch ( BadInputException internalError )
-        {
-            return Response.serverError().build();
-        }
+        return Response.status( errorStatus ).entity( JsonRenderers.DEFAULT.render( new ExceptionRepresentation( e ) ) ).build();
     }
 
 
     @POST
-    @Consumes( MediaType.APPLICATION_JSON )
-    @Path( QUERY_PATH )
-    @SuppressWarnings( "unchecked" )
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Path(QUERY_PATH)
+    @SuppressWarnings("unchecked")
     public Response queryBeans( String query )
     {
         try
@@ -185,17 +178,16 @@ public class JmxService implements AdvertisableService
             MBeanServer server = ManagementFactory.getPlatformMBeanServer();
 
 
-
             String json = dodgeStartingUnicodeMarker( query );
-            Collection<Object> queries = (Collection<Object>)JsonHelper.jsonToSingleValue( json );
+            Collection<Object> queries = (Collection<Object>) JsonHelper.jsonToSingleValue( json );
 
             ArrayList<JmxMBeanRepresentation> beans = new ArrayList<JmxMBeanRepresentation>();
             for ( Object queryObj : queries )
             {
                 assert queryObj instanceof String;
-                for ( Object objName : server.queryNames( new ObjectName( (String)queryObj ), null ) )
+                for ( Object objName : server.queryNames( new ObjectName( (String) queryObj ), null ) )
                 {
-                    beans.add( new JmxMBeanRepresentation( (ObjectName)objName ) );
+                    beans.add( new JmxMBeanRepresentation( (ObjectName) objName ) );
                 }
             }
 
@@ -213,17 +205,17 @@ public class JmxService implements AdvertisableService
     }
 
     @POST
-    @Produces( MediaType.APPLICATION_JSON )
-    @Consumes( MediaType.APPLICATION_FORM_URLENCODED )
-    @Path( QUERY_PATH )
-    public Response formQueryBeans( @FormParam( "value" ) String data )
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    @Path(QUERY_PATH)
+    public Response formQueryBeans( @FormParam("value") String data )
     {
         return queryBeans( data );
     }
 
     @GET
-    @Produces( MediaType.APPLICATION_JSON )
-    @Path( KERNEL_NAME_PATH )
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path(KERNEL_NAME_PATH)
     public Response currentKernelInstance( @Context Database database ) throws DatabaseBlockedException
     {
         Kernel kernelBean = database.graph.getManagementBean( Kernel.class );

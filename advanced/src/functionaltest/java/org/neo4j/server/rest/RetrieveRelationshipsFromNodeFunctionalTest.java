@@ -31,7 +31,7 @@ import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.domain.JsonParseRuntimeException;
+import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.domain.RelationshipRepresentationTest;
 
 import javax.ws.rs.core.MediaType;
@@ -79,7 +79,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
         return resource.accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
     }
 
-    private void verifyRelReps(int expectedSize, String json) throws JsonParseRuntimeException
+    private void verifyRelReps(int expectedSize, String json) throws JsonParseException
     {
         List<Map<String, Object>> relreps = JsonHelper.jsonToListOfRelationshipRepresentations(json);
         assertEquals(expectedSize, relreps.size());
@@ -89,7 +89,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     }
 
     @Test
-    public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingAllRelationshipsForANode() throws JsonParseRuntimeException
+    public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingAllRelationshipsForANode() throws JsonParseException
     {
         ClientResponse response = sendRetrieveRequestToServer(nodeWithRelationships, "/all");
         assertEquals(200, response.getStatus());
@@ -98,7 +98,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     }
 
     @Test
-    public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingIncomingRelationshipsForANode() throws JsonParseRuntimeException
+    public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingIncomingRelationshipsForANode() throws JsonParseException
     {
         ClientResponse response = sendRetrieveRequestToServer(nodeWithRelationships, "/in");
         assertEquals(200, response.getStatus());
@@ -107,7 +107,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     }
 
     @Test
-    public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingOutgoingRelationshipsForANode() throws JsonParseRuntimeException
+    public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingOutgoingRelationshipsForANode() throws JsonParseException
     {
         ClientResponse response = sendRetrieveRequestToServer(nodeWithRelationships, "/out");
         assertEquals(200, response.getStatus());
@@ -116,7 +116,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     }
 
     @Test
-    public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingAllTypedRelationshipsForANode() throws JsonParseRuntimeException
+    public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingAllTypedRelationshipsForANode() throws JsonParseException
     {
         ClientResponse response = sendRetrieveRequestToServer(nodeWithRelationships, "/all/LIKES&HATES");
         assertEquals(200, response.getStatus());
@@ -125,7 +125,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     }
 
     @Test
-    public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingIncomingTypedRelationshipsForANode() throws JsonParseRuntimeException
+    public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingIncomingTypedRelationshipsForANode() throws JsonParseException
     {
         ClientResponse response = sendRetrieveRequestToServer(nodeWithRelationships, "/in/LIKES");
         assertEquals(200, response.getStatus());
@@ -134,7 +134,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     }
 
     @Test
-    public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingOutgoingTypedRelationshipsForANode() throws JsonParseRuntimeException
+    public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingOutgoingTypedRelationshipsForANode() throws JsonParseException
     {
         ClientResponse response = sendRetrieveRequestToServer(nodeWithRelationships, "/out/HATES");
         assertEquals(200, response.getStatus());
@@ -143,7 +143,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     }
 
     @Test
-    public void shouldRespondWith200AndEmptyListOfRelationshipRepresentationsWhenGettingAllRelationshipsForANodeWithoutRelationships() throws JsonParseRuntimeException
+    public void shouldRespondWith200AndEmptyListOfRelationshipRepresentationsWhenGettingAllRelationshipsForANodeWithoutRelationships() throws JsonParseException
     {
         ClientResponse response = sendRetrieveRequestToServer(nodeWithoutRelationships, "/all");
         assertEquals(200, response.getStatus());
@@ -152,7 +152,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     }
 
     @Test
-    public void shouldRespondWith200AndEmptyListOfRelationshipRepresentationsWhenGettingIncomingRelationshipsForANodeWithoutRelationships() throws JsonParseRuntimeException
+    public void shouldRespondWith200AndEmptyListOfRelationshipRepresentationsWhenGettingIncomingRelationshipsForANodeWithoutRelationships() throws JsonParseException
     {
         ClientResponse response = sendRetrieveRequestToServer(nodeWithoutRelationships, "/in");
         assertEquals(200, response.getStatus());
@@ -161,7 +161,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     }
 
     @Test
-    public void shouldRespondWith200AndEmptyListOfRelationshipRepresentationsWhenGettingOutgoingRelationshipsForANodeWithoutRelationships() throws JsonParseRuntimeException
+    public void shouldRespondWith200AndEmptyListOfRelationshipRepresentationsWhenGettingOutgoingRelationshipsForANodeWithoutRelationships() throws JsonParseException
     {
         ClientResponse response = sendRetrieveRequestToServer(nodeWithoutRelationships, "/out");
         assertEquals(200, response.getStatus());
@@ -208,7 +208,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
         isLegalJson(entity);
     }
 
-    private void isLegalJson(String entity) throws IOException, JsonParseRuntimeException
+    private void isLegalJson(String entity) throws IOException, JsonParseException
     {
         JsonHelper.jsonToMap(entity);
     }

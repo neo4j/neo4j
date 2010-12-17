@@ -42,7 +42,7 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
-import org.neo4j.server.rest.domain.JsonParseRuntimeException;
+import org.neo4j.server.rest.domain.JsonParseException;
 
 public class GetRelationshipPropertiesFunctionalTest
 {
@@ -147,7 +147,7 @@ public class GetRelationshipPropertiesFunctionalTest
     }
 
     @Test
-    public void shouldBeValidJSONOnResponse() throws JsonParseRuntimeException
+    public void shouldBeValidJSONOnResponse() throws JsonParseException
     {
         WebResource resource = Client.create().resource( getPropertyUri( "foo" ) );
         ClientResponse response = resource.accept( MediaType.APPLICATION_JSON ).get( ClientResponse.class );

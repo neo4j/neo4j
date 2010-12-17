@@ -330,7 +330,7 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldRespondWith404ForGetNonExistentNodeProperty() throws DatabaseBlockedException, JsonParseRuntimeException
+    public void shouldRespondWith404ForGetNonExistentNodeProperty() throws DatabaseBlockedException, JsonParseException
     {
         long nodeId = helper.createNode();
         Response response = service.jsonGetNodeProperty( nodeId, "foo" );
@@ -338,7 +338,7 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldRespondWith404ForGetNodePropertyOnNonExistentNode() throws DatabaseBlockedException, JsonParseRuntimeException
+    public void shouldRespondWith404ForGetNodePropertyOnNonExistentNode() throws DatabaseBlockedException, JsonParseException
     {
         long nodeId = 999999;
         Response response = service.jsonGetNodeProperty( nodeId, "foo" );
@@ -346,7 +346,7 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldRespondWith200ForGetNodeProperty() throws DatabaseBlockedException, JsonParseRuntimeException
+    public void shouldRespondWith200ForGetNodeProperty() throws DatabaseBlockedException, JsonParseException
     {
         long nodeId = helper.createNode();
         String key = "foo";
@@ -574,7 +574,7 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldGet404WhenCannotResolveAPropertyOnRelationship() throws DatabaseBlockedException, JsonParseRuntimeException
+    public void shouldGet404WhenCannotResolveAPropertyOnRelationship() throws DatabaseBlockedException, JsonParseException
     {
         long relationshipId = helper.createRelationship( "knows" );
         Response response = service.jsonGetRelationshipProperty( relationshipId, "some-key" );
@@ -645,7 +645,7 @@ public class JsonWebServiceTest
         assertEquals( 1, array.size() );
     }
 
-    private void verifyRelReps( int expectedSize, String entity ) throws JsonParseRuntimeException
+    private void verifyRelReps( int expectedSize, String entity ) throws JsonParseException
     {
         List<Map<String, Object>> relreps = JsonHelper.jsonToListOfRelationshipRepresentations( entity );
         assertEquals( expectedSize, relreps.size() );
@@ -866,7 +866,7 @@ public class JsonWebServiceTest
 
 
     @Test
-    public void shouldBeAbleToGetRelationshipRepresentationFromIndexUri() throws DatabaseBlockedException, JsonParseRuntimeException
+    public void shouldBeAbleToGetRelationshipRepresentationFromIndexUri() throws DatabaseBlockedException, JsonParseException
     {
         String key = "key_get_noderep";
         String value = "value";
@@ -887,7 +887,7 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldBeAbleToGetNodeRepresentationFromIndexUri() throws DatabaseBlockedException, JsonParseRuntimeException
+    public void shouldBeAbleToGetNodeRepresentationFromIndexUri() throws DatabaseBlockedException, JsonParseException
     {
         String key = "key_get_noderep";
         String value = "value";
