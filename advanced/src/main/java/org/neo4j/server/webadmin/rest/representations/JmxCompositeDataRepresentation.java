@@ -20,15 +20,16 @@
 
 package org.neo4j.server.webadmin.rest.representations;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.management.openmbean.CompositeData;
+
 import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.ObjectRepresentation;
 import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.ValueRepresentation;
-
-import javax.management.openmbean.CompositeData;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 
 public class JmxCompositeDataRepresentation extends ObjectRepresentation
 {
@@ -71,7 +72,7 @@ public class JmxCompositeDataRepresentation extends ObjectRepresentation
             values.add( new NameDescriptionValueRepresentation( name, description, value ) );
         }
 
-        return new ListRepresentation( "values", values );
+        return new ListRepresentation( "value", values );
     }
 
     private Representation representationify( Object rawValue )

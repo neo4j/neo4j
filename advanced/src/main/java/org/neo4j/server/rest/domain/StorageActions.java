@@ -37,11 +37,13 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.index.*;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.IndexHits;
+import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseBlockedException;
+import org.neo4j.server.rest.repr.RepresentationType;
 
 public class StorageActions {
 
@@ -366,7 +368,7 @@ public class StorageActions {
             tx.finish();
         }
     }
-    
+
     public IndexedRepresentation addRelationshipToIndex(String indexName, String key, Object value, long nodeId) throws DatabaseBlockedException {
 
         Transaction tx = graphdb.graph.beginTx();
@@ -423,7 +425,7 @@ public class StorageActions {
     public List<IndexedRelationshipRepresentation> getIndexedRelationships(String indexName, String key, Object value) throws DatabaseBlockedException {
 
         Index<Relationship> index = graphdb.getRelationshipIndex( indexName );
-        
+
         Transaction tx = graphdb.graph.beginTx();
         try {
             List<IndexedRelationshipRepresentation> result = new ArrayList<IndexedRelationshipRepresentation>();
@@ -436,11 +438,11 @@ public class StorageActions {
             tx.finish();
         }
     }
-    
+
     public List<IndexedNodeRepresentation> getIndexedNodes(String indexName, String key, Object value) throws DatabaseBlockedException {
 
         Index<Node> index = graphdb.getNodeIndex( indexName );
-        
+
         Transaction tx = graphdb.graph.beginTx();
         try {
             List<IndexedNodeRepresentation> result = new ArrayList<IndexedNodeRepresentation>();
@@ -498,24 +500,33 @@ public class StorageActions {
     }
 
     public static enum TraverserReturnType {
-        node {
+        node( RepresentationType.NODE )
+        {
             @Override
             public Representation toRepresentation(URI baseUri, Path position) {
                 return new NodeRepresentation(baseUri, position.endNode());
             }
         },
-        relationship {
+        relationship( RepresentationType.RELATIONSHIP )
+        {
             @Override
             public Representation toRepresentation(URI baseUri, Path position) {
                 return new RelationshipRepresentation(baseUri, position.lastRelationship());
             }
         },
-        path {
+        path( RepresentationType.PATH )
+        {
             @Override
             public Representation toRepresentation(URI baseUri, Path position) {
                 return new PathRepresentation(baseUri, position);
             }
         };
+        public final RepresentationType repType;
+
+        private TraverserReturnType( RepresentationType repType )
+        {
+            this.repType = repType;
+        }
 
         abstract Representation toRepresentation(URI baseUri, Path position);
     }

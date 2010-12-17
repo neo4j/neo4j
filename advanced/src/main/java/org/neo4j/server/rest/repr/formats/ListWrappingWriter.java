@@ -28,7 +28,7 @@ import java.util.Map;
 import org.neo4j.server.rest.repr.ListWriter;
 import org.neo4j.server.rest.repr.MappingWriter;
 
-public final class ListWrappingWriter extends ListWriter
+public class ListWrappingWriter extends ListWriter
 {
     final List<Object> data;
 
