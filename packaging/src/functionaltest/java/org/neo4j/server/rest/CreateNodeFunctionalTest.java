@@ -20,9 +20,16 @@
 
 package org.neo4j.server.rest;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+import java.io.IOException;
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
+
+import javax.ws.rs.core.MediaType;
 
 import org.junit.After;
 import org.junit.Before;
@@ -33,16 +40,9 @@ import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.NodeRepresentationTest;
 
-import javax.ws.rs.core.MediaType;
-
-import java.io.IOException;
-import java.net.URI;
-import java.util.List;
-import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.WebResource;
 
 public class CreateNodeFunctionalTest
 {
@@ -106,13 +106,12 @@ public class CreateNodeFunctionalTest
     }
 
     @Test
-    public void should400IfEntityBodyProvidedWhenCreatingAnEmptyNode()
+    public void should415IfEntityBodyButNoEntityTypeProvidedWhenCreatingAnEmptyNode()
     {
         Client client = Client.create();
         WebResource resource = client.resource( server.restApiUri() + "node/" );
-        ClientResponse response = resource.type( MediaType.APPLICATION_JSON_TYPE ).accept( MediaType.APPLICATION_JSON ).entity( "{\"foo\" : \"bar\"}" ).post( ClientResponse.class );
-        assertEquals( 201, response.getStatus() );
-
+        ClientResponse response = resource.accept( MediaType.APPLICATION_JSON ).entity( "{\"foo\" : \"bar\"}" ).post( ClientResponse.class );
+        assertEquals( 415, response.getStatus() );
     }
 
     @Test
@@ -215,7 +214,6 @@ public class CreateNodeFunctionalTest
         return Client.
                 create().
                 resource( new URI( server.restApiUri() + "node/" + id ) ).
-                type( MediaType.APPLICATION_JSON_TYPE ).
                 accept( MediaType.APPLICATION_JSON_TYPE ).
                 delete( ClientResponse.class );
     }
