@@ -25,6 +25,7 @@ import java.io.IOException;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.domain.JsonParseRuntimeException;
 
 public final class FunctionalTestHelper
 {
@@ -46,7 +47,7 @@ public final class FunctionalTestHelper
         return helper;
     }
 
-    void assertLegalJson( String entity ) throws IOException
+    void assertLegalJson( String entity ) throws IOException, JsonParseRuntimeException
     {
         JsonHelper.jsonToMap( entity );
     }

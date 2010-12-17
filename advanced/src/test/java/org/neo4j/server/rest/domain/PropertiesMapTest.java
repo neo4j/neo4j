@@ -36,6 +36,8 @@ import java.util.Map;
 import org.junit.Test;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.server.rest.domain.PropertiesMap;
+import org.neo4j.server.rest.web.*;
+import org.neo4j.server.rest.web.PropertyValueException;
 
 public class PropertiesMapTest {
 
@@ -48,7 +50,8 @@ public class PropertiesMapTest {
     }
 
     @Test
-    public void shouldContainAddedPropertiesWhenCreatedFromMap() {
+    public void shouldContainAddedPropertiesWhenCreatedFromMap() throws org.neo4j.server.rest.web.PropertyValueException
+    {
         Map<String, Object> values = new HashMap<String, Object>();
         values.put("foo", "bar");
         PropertiesMap properties = new PropertiesMap(values);
@@ -66,7 +69,8 @@ public class PropertiesMapTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldConvertToNeo4jValueTypesWhenCreatingFromMap() {
+    public void shouldConvertToNeo4jValueTypesWhenCreatingFromMap() throws PropertyValueException
+    {
         Map<String, Object> values = new HashMap<String, Object>();
         values.put("string", "value");
         values.put("int", 5);
@@ -116,7 +120,8 @@ public class PropertiesMapTest {
     }
 
     @Test
-    public void shouldBeAbleToSignalEmptiness() {
+    public void shouldBeAbleToSignalEmptiness() throws PropertyValueException
+    {
         Map<String, Object> values = new HashMap<String, Object>();
         PropertiesMap properties = new PropertiesMap(values);
         values.put("key", "value");

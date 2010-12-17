@@ -25,9 +25,11 @@ import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.renderers.JsonRenderers;
+import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.OutputFormat;
+import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.server.webadmin.rest.representations.ExceptionRepresentation;
 import org.neo4j.server.webadmin.rest.representations.JmxDomainRepresentation;
 import org.neo4j.server.webadmin.rest.representations.JmxMBeanRepresentation;
@@ -84,7 +86,13 @@ public class JmxService implements AdvertisableService
         serviceDef.resourceUri( "query", JmxService.QUERY_PATH );
         serviceDef.resourceUri( "kernelquery", JmxService.KERNEL_NAME_PATH );
 
-        return output.ok( serviceDef );
+        try
+        {
+            return output.ok( serviceDef );
+        } catch ( BadInputException e )
+        {
+            return buildExceptionResponse( Status.BAD_REQUEST, e );
+        }
     }
 
     @GET
@@ -93,7 +101,13 @@ public class JmxService implements AdvertisableService
     {
         MBeanServer server = ManagementFactory.getPlatformMBeanServer();
         ListRepresentation domains = ListRepresentation.strings( server.getDomains() );
-        return output.ok( domains );
+        try
+        {
+            return output.ok( domains );
+        } catch ( BadInputException e )
+        {
+            return buildExceptionResponse( Status.INTERNAL_SERVER_ERROR, e );
+        }
     }
 
     @GET
@@ -112,7 +126,13 @@ public class JmxService implements AdvertisableService
             }
         }
 
-        return output.ok( domain );
+        try
+        {
+            return output.ok( domain );
+        } catch ( BadInputException e )
+        {
+            return buildExceptionResponse( Status.BAD_REQUEST, e );
+        }
     }
 
     @GET
@@ -136,12 +156,21 @@ public class JmxService implements AdvertisableService
         } catch ( UnsupportedEncodingException e )
         {
             return buildExceptionResponse( Status.INTERNAL_SERVER_ERROR, e );
+        } catch ( BadInputException e )
+        {
+            return buildExceptionResponse( Status.BAD_REQUEST, e );
         }
     }
 
     private Response buildExceptionResponse( Status errorStatus, Exception e )
     {
-        return Response.status( errorStatus ).entity( JsonRenderers.DEFAULT.render( new ExceptionRepresentation( e ) ) ).build();
+        try
+        {
+            return Response.status( errorStatus ).entity( JsonRenderers.DEFAULT.render( new ExceptionRepresentation( e ) ) ).build();
+        } catch ( BadInputException internalError )
+        {
+            return Response.serverError().build();
+        }
     }
 
 
@@ -172,6 +201,10 @@ public class JmxService implements AdvertisableService
 
             return output.ok( new ListRepresentation( "jmxBeans", beans ) );
         } catch ( MalformedObjectNameException e )
+        {
+            e.printStackTrace();
+            return buildExceptionResponse( Status.BAD_REQUEST, e );
+        } catch ( BadInputException e )
         {
             e.printStackTrace();
             return buildExceptionResponse( Status.BAD_REQUEST, e );

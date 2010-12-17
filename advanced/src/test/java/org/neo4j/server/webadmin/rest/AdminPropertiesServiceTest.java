@@ -23,6 +23,7 @@ package org.neo4j.server.webadmin.rest;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.junit.Test;
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.domain.JsonParseRuntimeException;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
@@ -53,7 +54,7 @@ public class AdminPropertiesServiceTest
     }
 
     @Test
-    public void shouldSupportLegacyWebAdminUris() throws URISyntaxException
+    public void shouldSupportLegacyWebAdminUris() throws URISyntaxException, JsonParseRuntimeException
     {
         PropertiesConfiguration config = new PropertiesConfiguration();
         String managementUri = "http://neo-is-awesome.se/manage";
@@ -73,7 +74,7 @@ public class AdminPropertiesServiceTest
         assertThat( (String) response.getEntity(), containsString( dataUri ) );
     }
 
-    private void assertIsValidJson( String entity )
+    private void assertIsValidJson( String entity ) throws JsonParseRuntimeException
     {
         JsonHelper.jsonToMap( entity );
     }

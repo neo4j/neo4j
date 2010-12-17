@@ -43,7 +43,7 @@ public final class ListRepresentation extends Representation
     }
 
     @Override
-    String serialize( RepresentationFormat format, URI baseUri, ExtensionInjector extensions )
+    String serialize( RepresentationFormat format, URI baseUri, ExtensionInjector extensions ) throws BadInputException
     {
         ListWriter writer = format.serializeList( type );
         serialize( new ListSerializer( writer, baseUri, extensions ) );

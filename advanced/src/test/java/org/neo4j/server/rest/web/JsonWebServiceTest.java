@@ -50,12 +50,9 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseBlockedException;
-import org.neo4j.server.rest.domain.AmpersandSeparatedList;
-import org.neo4j.server.rest.domain.GraphDbHelper;
-import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.domain.RelationshipDirection;
-import org.neo4j.server.rest.domain.RelationshipRepresentationTest;
+import org.neo4j.server.rest.domain.*;
 import org.neo4j.server.rest.domain.StorageActions.TraverserReturnType;
+import org.neo4j.server.rest.repr.BadInputException;
 
 public class JsonWebServiceTest
 {
@@ -333,7 +330,7 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldRespondWith404ForGetNonExistentNodeProperty() throws DatabaseBlockedException
+    public void shouldRespondWith404ForGetNonExistentNodeProperty() throws DatabaseBlockedException, JsonParseRuntimeException
     {
         long nodeId = helper.createNode();
         Response response = service.jsonGetNodeProperty( nodeId, "foo" );
@@ -341,7 +338,7 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldRespondWith404ForGetNodePropertyOnNonExistentNode() throws DatabaseBlockedException
+    public void shouldRespondWith404ForGetNodePropertyOnNonExistentNode() throws DatabaseBlockedException, JsonParseRuntimeException
     {
         long nodeId = 999999;
         Response response = service.jsonGetNodeProperty( nodeId, "foo" );
@@ -349,7 +346,7 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldRespondWith200ForGetNodeProperty() throws DatabaseBlockedException
+    public void shouldRespondWith200ForGetNodeProperty() throws DatabaseBlockedException, JsonParseRuntimeException
     {
         long nodeId = helper.createNode();
         String key = "foo";
@@ -372,7 +369,7 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldRespondWith201AndLocationWhenRelationshipIsCreatedWithoutProperties() throws DatabaseBlockedException
+    public void shouldRespondWith201AndLocationWhenRelationshipIsCreatedWithoutProperties() throws DatabaseBlockedException, BadInputException
     {
         long startNode = helper.createNode();
         long endNode = helper.createNode();
@@ -383,7 +380,7 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldRespondWith201AndLocationWhenRelationshipIsCreatedWithProperties() throws DatabaseBlockedException
+    public void shouldRespondWith201AndLocationWhenRelationshipIsCreatedWithProperties() throws DatabaseBlockedException, BadInputException
     {
         long startNode = helper.createNode();
         long endNode = helper.createNode();
@@ -412,7 +409,7 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldRespondWith404WhenTryingToCreateRelationshipFromNonExistentNode() throws DatabaseBlockedException
+    public void shouldRespondWith404WhenTryingToCreateRelationshipFromNonExistentNode() throws DatabaseBlockedException, BadInputException
     {
         long nodeId = helper.createNode();
         Response response = service.jsonCreateRelationship( nodeId * 1000, "{\"to\" : \"" + BASE_URI + nodeId
@@ -421,7 +418,7 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldRespondWith400WhenTryingToCreateRelationshipToNonExistentNode() throws DatabaseBlockedException
+    public void shouldRespondWith400WhenTryingToCreateRelationshipToNonExistentNode() throws DatabaseBlockedException, BadInputException
     {
         long nodeId = helper.createNode();
         Response response = service.jsonCreateRelationship( nodeId, "{\"to\" : \"" + BASE_URI + (nodeId * 1000)
@@ -430,7 +427,7 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldRespondWith400WhenTryingToCreateRelationshipToStartNode() throws DatabaseBlockedException
+    public void shouldRespondWith400WhenTryingToCreateRelationshipToStartNode() throws DatabaseBlockedException, BadInputException
     {
         long nodeId = helper.createNode();
         Response response = service.jsonCreateRelationship( nodeId, "{\"to\" : \"" + BASE_URI + nodeId
@@ -439,7 +436,7 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldRespondWith400WhenTryingToCreateRelationshipWithBadJson() throws DatabaseBlockedException
+    public void shouldRespondWith400WhenTryingToCreateRelationshipWithBadJson() throws DatabaseBlockedException, BadInputException
     {
         long startNode = helper.createNode();
         long endNode = helper.createNode();
@@ -449,7 +446,7 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldRespondWith400WhenTryingToCreateRelationshipWithUnsupportedProperties() throws DatabaseBlockedException
+    public void shouldRespondWith400WhenTryingToCreateRelationshipWithUnsupportedProperties() throws DatabaseBlockedException, BadInputException
     {
         long startNode = helper.createNode();
         long endNode = helper.createNode();
@@ -523,7 +520,7 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldGet200WhenRetrievingARelationshipFromANode() throws DatabaseBlockedException
+    public void shouldGet200WhenRetrievingARelationshipFromANode() throws DatabaseBlockedException, BadInputException
     {
         long relationshipId = helper.createRelationship( "BEATS" );
         Response response = service.jsonGetRelationship( relationshipId );
@@ -532,7 +529,7 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldGet404WhenRetrievingRelationshipThatDoesNotExist() throws DatabaseBlockedException
+    public void shouldGet404WhenRetrievingRelationshipThatDoesNotExist() throws DatabaseBlockedException, BadInputException
     {
         Response response = service.jsonGetRelationship( 999999 );
         assertEquals( 404, response.getStatus() );
@@ -553,7 +550,7 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldRespondWith204ForGetNoRelationshipProperties() throws DatabaseBlockedException
+    public void shouldRespondWith204ForGetNoRelationshipProperties() throws DatabaseBlockedException, BadInputException
     {
         long relationshipId = helper.createRelationship( "knows" );
         Response response = service.jsonGetRelationshipProperties( relationshipId );
@@ -561,7 +558,7 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldGet200WhenSuccessfullyRetrievedPropertyOnRelationship() throws DatabaseBlockedException
+    public void shouldGet200WhenSuccessfullyRetrievedPropertyOnRelationship() throws DatabaseBlockedException, PropertyValueException
     {
 
         long relationshipId = helper.createRelationship( "knows" );
@@ -577,7 +574,7 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldGet404WhenCannotResolveAPropertyOnRelationship() throws DatabaseBlockedException
+    public void shouldGet404WhenCannotResolveAPropertyOnRelationship() throws DatabaseBlockedException, JsonParseRuntimeException
     {
         long relationshipId = helper.createRelationship( "knows" );
         Response response = service.jsonGetRelationshipProperty( relationshipId, "some-key" );
@@ -603,7 +600,7 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingRelationshipsForANode() throws DatabaseBlockedException
+    public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingRelationshipsForANode() throws DatabaseBlockedException, BadInputException
     {
         long nodeId = helper.createNode();
         helper.createRelationship( "LIKES", nodeId, helper.createNode() );
@@ -615,7 +612,13 @@ public class JsonWebServiceTest
         assertEquals( response.getMetadata().getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
         verifyRelReps( 3, entityAsString( response ) );
 
-        response = service.jsonGetRelationships( nodeId, RelationshipDirection.in, new AmpersandSeparatedList() );
+        try
+        {
+            response = service.jsonGetRelationships( nodeId, RelationshipDirection.in, new AmpersandSeparatedList() );
+        } catch ( BadInputException e )
+        {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
         assertEquals( 200, response.getStatus() );
         verifyRelReps( 1, entityAsString( response ) );
 
@@ -633,7 +636,7 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldNotReturnDuplicatesIfSameTypeSpecifiedMoreThanOnce() throws DatabaseBlockedException
+    public void shouldNotReturnDuplicatesIfSameTypeSpecifiedMoreThanOnce() throws DatabaseBlockedException, BadInputException
     {
         long nodeId = helper.createNode();
         helper.createRelationship( "LIKES", nodeId, helper.createNode() );
@@ -642,7 +645,7 @@ public class JsonWebServiceTest
         assertEquals( 1, array.size() );
     }
 
-    private void verifyRelReps( int expectedSize, String entity )
+    private void verifyRelReps( int expectedSize, String entity ) throws JsonParseRuntimeException
     {
         List<Map<String, Object>> relreps = JsonHelper.jsonToListOfRelationshipRepresentations( entity );
         assertEquals( expectedSize, relreps.size() );
@@ -654,7 +657,7 @@ public class JsonWebServiceTest
 
     @Test
     public void shouldRespondWith200AndEmptyListOfRelationshipRepresentationsWhenGettingRelationshipsForANodeWithoutRelationships()
-            throws DatabaseBlockedException
+            throws DatabaseBlockedException, BadInputException
     {
         long nodeId = helper.createNode();
 
@@ -665,7 +668,7 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldRespondWith404WhenGettingIncomingRelationshipsForNonExistingNode() throws DatabaseBlockedException
+    public void shouldRespondWith404WhenGettingIncomingRelationshipsForNonExistingNode() throws DatabaseBlockedException, BadInputException
     {
         Response response = service.jsonGetRelationships( 999999, RelationshipDirection.all, new AmpersandSeparatedList() );
         assertEquals( 404, response.getStatus() );
@@ -789,7 +792,7 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldRespondWithEmptyNodeIndexRootsUntilAnIndexIsCreated()
+    public void shouldRespondWithEmptyNodeIndexRootsUntilAnIndexIsCreated() throws BadInputException
     {
         Response response = service.jsonGetNodeIndexRoot();
         assertEquals( 204, response.getStatus() );
@@ -797,14 +800,15 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldRespondWithAvailableNodeIndexRootsAfterAnIndexHasBeenCreated()
+    public void shouldRespondWithAvailableNodeIndexRootsAfterAnIndexHasBeenCreated() throws BadInputException
     {
         String indexName = "my-first-point";
         database.getIndexManager().forNodes( indexName );
         Response response = service.jsonGetNodeIndexRoot();
         assertEquals( 200, response.getStatus() );
         String entity = entityAsString( response );
-        Map<String, Object> map = JsonHelper.jsonToMap( entity );
+        Map<String, Object> map = null;
+        map = JsonHelper.jsonToMap( entity );
         assertNotNull( map.get( indexName ) );
         assertFalse( ((Map) map.get( indexName )).isEmpty() );
         assertEquals( response.getMetadata().getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
@@ -812,7 +816,7 @@ public class JsonWebServiceTest
 
 
     @Test
-    public void shouldRespondWithEmptyRelationshipIndexRootsUntilAnIndexIsCreated()
+    public void shouldRespondWithEmptyRelationshipIndexRootsUntilAnIndexIsCreated() throws BadInputException
     {
         Response response = service.jsonGetRelationshipIndexRoot();
         assertEquals( 204, response.getStatus() );
@@ -820,7 +824,7 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldRespondWithAvailableRelationshipIndexRootsAfterAnIndexHasBeenCreated()
+    public void shouldRespondWithAvailableRelationshipIndexRootsAfterAnIndexHasBeenCreated() throws BadInputException
     {
         String indexName = "some-of-these-things-belong-together";
         database.getIndexManager().forRelationships( indexName );
@@ -834,7 +838,7 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldBeAbleToGetRoot()
+    public void shouldBeAbleToGetRoot() throws BadInputException
     {
         Response response = service.jsonGetRoot();
         assertEquals( 200, response.getStatus() );
@@ -848,7 +852,7 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldBeAbleToIndexNode() throws DatabaseBlockedException
+    public void shouldBeAbleToIndexNode() throws DatabaseBlockedException, BadInputException
     {
         Response response = service.jsonCreateEmptyNode( null, null );
         URI nodeUri = (URI) response.getMetadata().getFirst( "Location" );
@@ -862,7 +866,7 @@ public class JsonWebServiceTest
 
 
     @Test
-    public void shouldBeAbleToGetRelationshipRepresentationFromIndexUri() throws DatabaseBlockedException
+    public void shouldBeAbleToGetRelationshipRepresentationFromIndexUri() throws DatabaseBlockedException, JsonParseRuntimeException
     {
         String key = "key_get_noderep";
         String value = "value";
@@ -883,7 +887,7 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldBeAbleToGetNodeRepresentationFromIndexUri() throws DatabaseBlockedException
+    public void shouldBeAbleToGetNodeRepresentationFromIndexUri() throws DatabaseBlockedException, JsonParseRuntimeException
     {
         String key = "key_get_noderep";
         String value = "value";
@@ -900,7 +904,7 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldBeAbleToGetListOfNodeRepresentationsFromIndexLookup() throws DatabaseBlockedException
+    public void shouldBeAbleToGetListOfNodeRepresentationsFromIndexLookup() throws DatabaseBlockedException, BadInputException
     {
         String key = "key_get";
         String value = "value";
@@ -936,7 +940,7 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldGet200AndEmptyListWhenNothingFoundInIndexLookup() throws DatabaseBlockedException
+    public void shouldGet200AndEmptyListWhenNothingFoundInIndexLookup() throws DatabaseBlockedException, BadInputException
     {
         String indexName = "node";
         helper.createNodeIndex( indexName );
@@ -997,26 +1001,27 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldGet404WhentTraversingFromNonExistentNode() throws DatabaseBlockedException
+    public void shouldGet404WhentTraversingFromNonExistentNode() throws DatabaseBlockedException, BadInputException
     {
         Response response = service.jsonTraverse( 9999999, TraverserReturnType.node, "{}" );
         assertEquals( Status.NOT_FOUND.getStatusCode(), response.getStatus() );
     }
 
     @Test
-    public void shouldGet200WhenNoHitsReturnedFromTraverse() throws DatabaseBlockedException
+    public void shouldGet200WhenNoHitsReturnedFromTraverse() throws DatabaseBlockedException, BadInputException
     {
         long startNode = helper.createNode();
         Response response = service.jsonTraverse( startNode, TraverserReturnType.node, "" );
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
-        Object parsedJson = JsonHelper.jsonToSingleValue( entityAsString( response ) );
+        Object parsedJson = null;
+        parsedJson = JsonHelper.jsonToSingleValue( entityAsString( response ) );
         assertTrue( parsedJson instanceof Collection<?> );
         assertTrue( ((Collection<?>) parsedJson).isEmpty() );
         assertEquals( response.getMetadata().getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
     }
 
     @Test
-    public void shouldGetSomeHitsWhenTraversingWithDefaultDescription() throws DatabaseBlockedException
+    public void shouldGetSomeHitsWhenTraversingWithDefaultDescription() throws DatabaseBlockedException, BadInputException
     {
         long startNode = helper.createNode();
         long child1_l1 = helper.createNode();
@@ -1034,7 +1039,7 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldBeAbleToDescribeTraverser() throws DatabaseBlockedException
+    public void shouldBeAbleToDescribeTraverser() throws DatabaseBlockedException, BadInputException
     {
         long startNode = helper.createNode( MapUtil.map( "name", "Mattias" ) );
         long node1 = helper.createNode( MapUtil.map( "name", "Emil" ) );
@@ -1056,7 +1061,7 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldBeAbleToGetOtherResultTypesWhenTraversing() throws DatabaseBlockedException
+    public void shouldBeAbleToGetOtherResultTypesWhenTraversing() throws DatabaseBlockedException, BadInputException
     {
         long startNode = helper.createNode( MapUtil.map( "name", "Mattias" ) );
         long node1 = helper.createNode( MapUtil.map( "name", "Emil" ) );
@@ -1087,7 +1092,7 @@ public class JsonWebServiceTest
     }
 
     @Test
-    public void shouldBeAbleToParseJsonEvenWithUnicodeMarkerAtTheStart() throws DatabaseBlockedException
+    public void shouldBeAbleToParseJsonEvenWithUnicodeMarkerAtTheStart() throws DatabaseBlockedException, BadInputException
     {
         Response response = service.jsonCreateNode( markWithUnicodeMarker( "{\"name\":\"Mattias\"}" ) );
         assertEquals( Status.CREATED.getStatusCode(), response.getStatus() );

@@ -31,6 +31,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.extensions.ParameterList;
 import org.neo4j.server.rest.web.NodeNotFoundException;
+import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.server.rest.web.RelationshipNotFoundException;
 
 /**
@@ -55,12 +56,12 @@ public abstract class RepresentationFormat implements InputFormat
         return String.format( "%s[%s]", getClass().getSimpleName(), mediaType );
     }
 
-    String serializeValue( RepresentationType type, Object value )
+    String serializeValue( RepresentationType type, Object value ) throws BadInputException
     {
         return serializeValue( type.valueName, value );
     }
 
-    protected abstract String serializeValue( String type, Object value );
+    protected abstract String serializeValue( String type, Object value ) throws BadInputException;
 
     ListWriter serializeList( RepresentationType type )
     {
@@ -84,7 +85,7 @@ public abstract class RepresentationFormat implements InputFormat
      * this method to convert the {@link ListWriter} argument to the
      * implementation class returned by {@link #serializeList(String)}.
      */
-    protected abstract String complete( ListWriter serializer );
+    protected abstract String complete( ListWriter serializer ) throws BadInputException;
 
     /**
      * Will be invoked (when serialization is done) with the result retrieved
@@ -92,7 +93,7 @@ public abstract class RepresentationFormat implements InputFormat
      * this method to convert the {@link MappingWriter} argument to the
      * implementation class returned by {@link #serializeMapping(String)}.
      */
-    protected abstract String complete( MappingWriter serializer );
+    protected abstract String complete( MappingWriter serializer ) throws BadInputException;
 
     @Override
     public ParameterList readParameterList( String input ) throws BadInputException

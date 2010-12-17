@@ -29,6 +29,8 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.server.rest.web.*;
+import org.neo4j.server.rest.web.PropertyValueException;
 
 public class PropertiesMap implements Representation
 {
@@ -41,7 +43,8 @@ public class PropertiesMap implements Representation
         }
     }
 
-    public PropertiesMap(Map<String, Object> map) {
+    public PropertiesMap(Map<String, Object> map) throws PropertyValueException
+    {
         for (Map.Entry<String, Object> entry : map.entrySet()) {
             values.put(entry.getKey(), toInternalType(entry.getValue()));
         }
@@ -67,7 +70,8 @@ public class PropertiesMap implements Representation
     }
 
     @SuppressWarnings("unchecked")
-    private static Object toInternalType(Object value) {
+    private static Object toInternalType(Object value) throws org.neo4j.server.rest.web.PropertyValueException
+    {
         if (value instanceof List) {
             List list = (List) value;
             if (list.isEmpty()) {
@@ -81,7 +85,7 @@ public class PropertiesMap implements Representation
                 } else if (first instanceof Boolean) {
                     return booleanArray(list);
                 } else {
-                    throw new PropertyValueException("Unsupported array type " + first.getClass() +
+                    throw new org.neo4j.server.rest.web.PropertyValueException("Unsupported array type " + first.getClass() +
                             ". Supported array types are arrays of all java primitives (" +
                             "byte[], char[], short[], int[], long[], float[], double[]) " +
                             "and String[]" );
@@ -92,18 +96,19 @@ public class PropertiesMap implements Representation
         }
     }
 
-    public static Object assertSupportedPropertyValue( Object value )
+    public static Object assertSupportedPropertyValue( Object value ) throws PropertyValueException
     {
         if ( value == null )
         {
-            throw new PropertyValueException( "null value not supported" );
+            throw new org.neo4j.server.rest.web.PropertyValueException( "null value not supported" );
+
         }
 
         if (value instanceof String) {
         } else if (value instanceof Number) {
         } else if (value instanceof Boolean) {
         } else {
-            throw new PropertyValueException("Unsupported value type " + value.getClass() + "." +
+            throw new org.neo4j.server.rest.web.PropertyValueException("Unsupported value type " + value.getClass() + "." +
                     " Supported value types are all java primitives (byte, char, short, int, " +
                     "long, float, double) and String, as well as arrays of all those types" );
         }
