@@ -21,8 +21,7 @@
 package org.neo4j.server.webadmin.rest;
 
 import org.neo4j.server.rest.domain.renderers.JsonRenderers;
-import org.neo4j.server.rest.repr.BadInputException;
-import org.neo4j.server.rest.web.GenericWebService;
+import org.neo4j.server.rest.domain.renderers.Renderer;
 import org.neo4j.server.rrd.RrdFactory;
 import org.neo4j.server.webadmin.rest.representations.MonitorServiceRepresentation;
 import org.neo4j.server.webadmin.rest.representations.RrdDataRepresentation;
@@ -47,7 +46,7 @@ import static javax.ws.rs.core.Response.Status;
  * system KPIs over time.
  */
 @Path(MonitorService.ROOT_PATH)
-public class MonitorService extends GenericWebService implements AdvertisableService
+public class MonitorService implements AdvertisableService
 {
     private RrdDb rrdDb;
 
@@ -142,4 +141,8 @@ public class MonitorService extends GenericWebService implements AdvertisableSer
         return preferred > RrdFactory.STEP_SIZE ? preferred : RrdFactory.STEP_SIZE;
     }
 
+    private Response buildExceptionResponse( Status status, String message, Exception e, Renderer renderer )
+    {
+        return Response.status( status ).entity( renderer.renderException( message, e ) ).build();
+    }
 }

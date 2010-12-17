@@ -20,9 +20,21 @@
 
 package org.neo4j.server.rest.web;
 
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.Map;
+import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.server.database.Database;
+import org.neo4j.server.extensions.BadExtensionInvocationException;
+import org.neo4j.server.extensions.ExtensionInvocationFailureException;
+import org.neo4j.server.extensions.ExtensionInvocator;
+import org.neo4j.server.extensions.ExtensionLookupException;
+import org.neo4j.server.rest.domain.EndNodeNotFoundException;
+import org.neo4j.server.rest.domain.StartNodeNotFoundException;
+import org.neo4j.server.rest.domain.StartNodeSameAsEndNodeException;
+import org.neo4j.server.rest.domain.TraverserReturnType;
+import org.neo4j.server.rest.repr.BadInputException;
+import org.neo4j.server.rest.repr.InputFormat;
+import org.neo4j.server.rest.repr.OutputFormat;
+import org.neo4j.server.rest.repr.PropertiesRepresentation;
+import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -35,25 +47,10 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Map;
 
-import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.server.database.Database;
-import org.neo4j.server.extensions.BadExtensionInvocationException;
-import org.neo4j.server.extensions.ExtensionInvocationFailureException;
-import org.neo4j.server.extensions.ExtensionInvocator;
-import org.neo4j.server.extensions.ExtensionLookupException;
-import org.neo4j.server.rest.domain.EndNodeNotFoundException;
-import org.neo4j.server.rest.domain.StartNodeNotFoundException;
-import org.neo4j.server.rest.domain.StartNodeSameAsEndNodeException;
-import org.neo4j.server.rest.domain.StorageActions.TraverserReturnType;
-import org.neo4j.server.rest.domain.renderers.JsonRenderers;
-import org.neo4j.server.rest.repr.BadInputException;
-import org.neo4j.server.rest.repr.InputFormat;
-import org.neo4j.server.rest.repr.OutputFormat;
-import org.neo4j.server.rest.repr.PropertiesRepresentation;
-import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
-
-//TODO: replace JsonAndHtmlWebSercice with this class
 @Path("/")
 public class RestfulGraphDatabase
 {
