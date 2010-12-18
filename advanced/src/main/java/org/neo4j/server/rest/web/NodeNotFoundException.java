@@ -20,8 +20,7 @@
 
 package org.neo4j.server.rest.web;
 
-//TODO: move this to another package. domain?
 public class NodeNotFoundException extends Exception
 {
-
+    private static final long serialVersionUID = 7292603734007524712L;
 }

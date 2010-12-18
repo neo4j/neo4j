@@ -20,11 +20,10 @@
 
 package org.neo4j.server.rest.domain.renderers;
 
+import java.util.Map;
+
 import org.neo4j.server.rest.domain.HtmlHelper;
 import org.neo4j.server.rest.domain.Representation;
-
-import java.util.List;
-import java.util.Map;
 
 public class IndexRootRenderer extends HtmlRenderer
 {
