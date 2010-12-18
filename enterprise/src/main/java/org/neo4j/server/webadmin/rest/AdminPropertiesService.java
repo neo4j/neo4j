@@ -31,8 +31,6 @@ import javax.ws.rs.core.UriInfo;
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.rest.domain.renderers.JsonRenderers;
-import org.neo4j.server.rest.repr.BadInputException;
-import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.server.webadmin.rest.representations.AdminPropertyRepresentation;
 
 @Path("/properties")
