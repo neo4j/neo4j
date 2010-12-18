@@ -21,7 +21,6 @@
 package org.neo4j.server.webadmin.rest;
 
 import org.neo4j.server.rest.domain.renderers.JsonRenderers;
-import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.webadmin.rest.representations.ServerRootRepresentation;
 
 import javax.ws.rs.GET;
@@ -43,7 +42,7 @@ public class RootService
 		ServerRootRepresentation rootRepresentation = new ServerRootRepresentation( uriInfo.getBaseUri(),
 				new ConsoleService( (SessionFactory)null,null, null ),
 				new JmxService(null,null),
-				new MonitorService( null ) );
+				new MonitorService( null,null,null ) );
 
         String entity = JsonRenderers.DEFAULT.render( rootRepresentation );
 
