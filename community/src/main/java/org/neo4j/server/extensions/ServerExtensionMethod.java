@@ -28,7 +28,9 @@ import java.lang.reflect.Type;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -60,7 +62,7 @@ class ServerExtensionMethod extends ExtensionPoint
             Class<?> discovery )
     {
         ResultConverter result = ResultConverter.get( method.getReturnType() );
-        Class<?>[] types = method.getParameterTypes();
+        Type[] types = method.getGenericParameterTypes();
         Annotation[][] annotations = method.getParameterAnnotations();
         SourceExtractor sourceExtractor = null;
         DataExtractor[] extractors = new DataExtractor[types.length];
@@ -164,7 +166,14 @@ class ServerExtensionMethod extends ExtensionPoint
                 TypeCaster caster = TYPES.get( raw );
                 if ( caster != null )
                 {
-                    return new ListParameterExtractor( caster, raw, parameter, description );
+                    return new ListParameterExtractor( caster, raw, parameter, description )
+                    {
+                        @Override
+                        Object convert( Object[] result )
+                        {
+                            return new HashSet<Object>( Arrays.asList( result ) );
+                        }
+                    };
                 }
             }
             else if ( Iterable.class.isAssignableFrom( raw ) )
@@ -172,17 +181,42 @@ class ServerExtensionMethod extends ExtensionPoint
                 TypeCaster caster = TYPES.get( raw );
                 if ( caster != null )
                 {
-                    return new ListParameterExtractor( caster, raw, parameter, description );
+                    return new ListParameterExtractor( caster, raw, parameter, description )
+                    {
+                        @Override
+                        Object convert( Object[] result )
+                        {
+                            return Arrays.asList( result );
+                        }
+                    };
                 }
             }
         }
         else if ( type instanceof Class<?> )
         {
             Class<?> raw = (Class<?>) type;
-            TypeCaster caster = TYPES.get( raw );
-            if ( caster != null )
+            if ( raw.isArray() )
             {
-                return new ParameterExtractor( caster, raw, parameter, description );
+                TypeCaster caster = TYPES.get( raw.getComponentType() );
+                if ( caster != null )
+                {
+                    return new ListParameterExtractor( caster, raw, parameter, description )
+                    {
+                        @Override
+                        Object convert( Object[] result )
+                        {
+                            return result;
+                        }
+                    };
+                }
+            }
+            else
+            {
+                TypeCaster caster = TYPES.get( raw );
+                if ( caster != null )
+                {
+                    return new ParameterExtractor( caster, raw, parameter, description );
+                }
             }
         }
         throw new IllegalStateException( "Unsupported parameter type: " + type );
@@ -222,7 +256,7 @@ class ServerExtensionMethod extends ExtensionPoint
         }
     }
 
-    private static class ListParameterExtractor extends ParameterExtractor
+    private static abstract class ListParameterExtractor extends ParameterExtractor
     {
         ListParameterExtractor( TypeCaster caster, Class<?> type, Parameter param,
                 Description description )
@@ -234,10 +268,13 @@ class ServerExtensionMethod extends ExtensionPoint
         Object extract( AbstractGraphDatabase graphDb, Object source, ParameterList parameters )
                 throws BadInputException
         {
-            Object result = caster.getList( graphDb, parameters, name );
-            if ( optional || result != null ) return result;
+            Object[] result = caster.getList( graphDb, parameters, name );
+            if ( result != null ) return convert( result );
+            if ( optional ) return null;
             throw new IllegalArgumentException( "Mandatory argument \"" + name + "\" not supplied." );
         }
+
+        abstract Object convert( Object[] result );
 
         @Override
         void describe( ParameterDescriptionConsumer consumer )
@@ -251,7 +288,7 @@ class ServerExtensionMethod extends ExtensionPoint
         Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
                 throws BadInputException;
 
-        Object getList( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+        Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
                 throws BadInputException;
     }
 
@@ -268,10 +305,10 @@ class ServerExtensionMethod extends ExtensionPoint
             }
 
             @Override
-            public Object getList( AbstractGraphDatabase graphDb, ParameterList parameters,
+            public Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters,
                     String name ) throws BadInputException
             {
-                return null;
+                return parameters.getStringList( name );
             }
         }, String.class );
         put( TYPES, new TypeCaster()
@@ -284,10 +321,10 @@ class ServerExtensionMethod extends ExtensionPoint
             }
 
             @Override
-            public Object getList( AbstractGraphDatabase graphDb, ParameterList parameters,
+            public Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters,
                     String name ) throws BadInputException
             {
-                return null;
+                return parameters.getByteList( name );
             }
         }, byte.class, Byte.class );
         put( TYPES, new TypeCaster()
@@ -300,10 +337,10 @@ class ServerExtensionMethod extends ExtensionPoint
             }
 
             @Override
-            public Object getList( AbstractGraphDatabase graphDb, ParameterList parameters,
+            public Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters,
                     String name ) throws BadInputException
             {
-                return null;
+                return parameters.getShortList( name );
             }
         }, short.class, Short.class );
         put( TYPES, new TypeCaster()
@@ -316,10 +353,10 @@ class ServerExtensionMethod extends ExtensionPoint
             }
 
             @Override
-            public Object getList( AbstractGraphDatabase graphDb, ParameterList parameters,
+            public Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters,
                     String name ) throws BadInputException
             {
-                return null;
+                return parameters.getIntegerList( name );
             }
         }, int.class, Integer.class );
         put( TYPES, new TypeCaster()
@@ -332,10 +369,10 @@ class ServerExtensionMethod extends ExtensionPoint
             }
 
             @Override
-            public Object getList( AbstractGraphDatabase graphDb, ParameterList parameters,
+            public Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters,
                     String name ) throws BadInputException
             {
-                return null;
+                return parameters.getLongList( name );
             }
         }, long.class, Long.class );
         put( TYPES, new TypeCaster()
@@ -348,10 +385,10 @@ class ServerExtensionMethod extends ExtensionPoint
             }
 
             @Override
-            public Object getList( AbstractGraphDatabase graphDb, ParameterList parameters,
+            public Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters,
                     String name ) throws BadInputException
             {
-                return null;
+                return parameters.getCharacterList( name );
             }
         }, char.class, Character.class );
         put( TYPES, new TypeCaster()
@@ -364,10 +401,10 @@ class ServerExtensionMethod extends ExtensionPoint
             }
 
             @Override
-            public Object getList( AbstractGraphDatabase graphDb, ParameterList parameters,
+            public Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters,
                     String name ) throws BadInputException
             {
-                return null;
+                return parameters.getBooleanList( name );
             }
         }, boolean.class, Boolean.class );
         put( TYPES, new TypeCaster()
@@ -380,10 +417,10 @@ class ServerExtensionMethod extends ExtensionPoint
             }
 
             @Override
-            public Object getList( AbstractGraphDatabase graphDb, ParameterList parameters,
+            public Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters,
                     String name ) throws BadInputException
             {
-                return null;
+                return parameters.getFloatList( name );
             }
         }, float.class, Float.class );
         put( TYPES, new TypeCaster()
@@ -396,10 +433,10 @@ class ServerExtensionMethod extends ExtensionPoint
             }
 
             @Override
-            public Object getList( AbstractGraphDatabase graphDb, ParameterList parameters,
+            public Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters,
                     String name ) throws BadInputException
             {
-                return null;
+                return parameters.getDoubleList( name );
             }
         }, double.class, Double.class );
         put( TYPES, new TypeCaster()
@@ -412,10 +449,10 @@ class ServerExtensionMethod extends ExtensionPoint
             }
 
             @Override
-            public Object getList( AbstractGraphDatabase graphDb, ParameterList parameters,
+            public Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters,
                     String name ) throws BadInputException
             {
-                return null;
+                return parameters.getNodeList( graphDb, name );
             }
         }, Node.class );
         put( TYPES, new TypeCaster()
@@ -428,10 +465,10 @@ class ServerExtensionMethod extends ExtensionPoint
             }
 
             @Override
-            public Object getList( AbstractGraphDatabase graphDb, ParameterList parameters,
+            public Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters,
                     String name ) throws BadInputException
             {
-                return null;
+                return parameters.getRelationshipList( graphDb, name );
             }
         }, Relationship.class );
         put( TYPES, new TypeCaster()
@@ -444,10 +481,10 @@ class ServerExtensionMethod extends ExtensionPoint
             }
 
             @Override
-            public Object getList( AbstractGraphDatabase graphDb, ParameterList parameters,
+            public Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters,
                     String name ) throws BadInputException
             {
-                return null;
+                return parameters.getUriList( name );
             }
         }, URI.class );
         put( TYPES, new TypeCaster()
@@ -467,10 +504,23 @@ class ServerExtensionMethod extends ExtensionPoint
             }
 
             @Override
-            public Object getList( AbstractGraphDatabase graphDb, ParameterList parameters,
+            public Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters,
                     String name ) throws BadInputException
             {
-                return null;
+                URI[] uris = parameters.getUriList( name );
+                URL[] urls = new URL[uris.length];
+                try
+                {
+                    for ( int i = 0; i < urls.length; i++ )
+                    {
+                        urls[i] = uris[i].toURL();
+                    }
+                }
+                catch ( MalformedURLException e )
+                {
+                    throw new BadInputException( e );
+                }
+                return urls;
             }
         }, URL.class );
     }
