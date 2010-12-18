@@ -41,8 +41,7 @@ public final class ExtensionManager implements ExtensionInjector, ExtensionInvoc
 
     public ExtensionManager( Configuration serverConfig )
     {
-        @SuppressWarnings( { "hiding", "unchecked" } )
-        Map<String, Pair<ServerExtension, ServerExtender>> extensions = new HashMap();
+        Map<String, Pair<ServerExtension, ServerExtender>> extensions = new HashMap<String, Pair<ServerExtension, ServerExtender>>();
         for ( ServerExtension extension : ServerExtension.load() )
         {
             final ServerExtender extender = new ServerExtender();

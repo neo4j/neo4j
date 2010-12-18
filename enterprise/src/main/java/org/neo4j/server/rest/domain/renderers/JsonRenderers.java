@@ -20,14 +20,13 @@
 
 package org.neo4j.server.rest.domain.renderers;
 
-import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.domain.JsonParseException;
-import org.neo4j.server.rest.domain.Representation;
-import org.neo4j.server.rest.repr.BadInputException;
-
-import javax.ws.rs.core.MediaType;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+
+import javax.ws.rs.core.MediaType;
+
+import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.domain.Representation;
 
 public enum JsonRenderers implements Renderer
 {

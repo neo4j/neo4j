@@ -124,7 +124,6 @@ public class TraversalDescriptionBuilder
         return result;
     }
 
-    @SuppressWarnings("unchecked")
     private static TraversalDescription describeUniqueness(
             TraversalDescription result, Map<String, Object> description )
     {

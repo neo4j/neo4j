@@ -81,13 +81,12 @@ public class HtmlHelper
         builder.append( "<p class=\"message\">" + message + "</p>" );
     }
 
-    @SuppressWarnings("unchecked")
     public static void append( final StringBuilder builder, final Object object, final ObjectType objectType )
     {
         if ( object instanceof Collection )
         {
             builder.append( "<ul>\n" );
-            for ( Object item : (Collection) object )
+            for ( Object item : (Collection<?>) object )
             {
                 builder.append( "<li>" );
                 append( builder, item, objectType );

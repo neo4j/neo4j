@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.server.rest.web.*;
 import org.neo4j.server.rest.web.PropertyValueException;
 
 public class PropertiesMap implements Representation

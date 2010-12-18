@@ -132,7 +132,6 @@ public class IndexRelationshipFunctionalityTest
     @Test
     public void shouldRespondWith201CreatedWhenIndexingRelationship() throws DatabaseBlockedException, JsonParseException
     {
-        long nodeId = helper.createNode();
         String key = "key";
         String value = "value";
         String indexName = "testy";
@@ -165,7 +164,6 @@ public class IndexRelationshipFunctionalityTest
     @Test
     public void shouldGetRelationshipRepresentationFromIndexUri() throws DatabaseBlockedException, JsonParseException
     {
-        long nodeId = helper.createNode();
         String key = "key2";
         String value = "value";
 
@@ -253,7 +251,6 @@ public class IndexRelationshipFunctionalityTest
         for ( Object item : items )
         {
             Map<?, ?> map = (Map<?, ?>) item;
-            Map<?, ?> properties = (Map<?, ?>) map.get( "data" );
             assertNotNull( map.get( "self" ) );
             String indexedUri = (String) map.get( "indexed" );
             assertEquals( uriToName.get( indexedUri ), map.get( "type" ) );

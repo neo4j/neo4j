@@ -22,9 +22,9 @@ package org.neo4j.server.rest.web;
 
 import org.neo4j.graphdb.PropertyContainer;
 
-//TODO: move this to another package. domain?
 public class NoSuchPropertyException extends Exception
 {
+    private static final long serialVersionUID = -2078314214014212029L;
 
     public NoSuchPropertyException( PropertyContainer entity, String key )
     {
