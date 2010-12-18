@@ -20,12 +20,13 @@
 
 package org.neo4j.server.extensions;
 
+import java.util.List;
+import java.util.Set;
+
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.ExtensionPointRepresentation;
 import org.neo4j.server.rest.repr.Representation;
-
-import java.util.List;
 
 public interface ExtensionInvocator
 {
@@ -33,11 +34,11 @@ public interface ExtensionInvocator
             String method, T context, ParameterList params ) throws ExtensionLookupException,
             BadInputException, ExtensionInvocationFailureException, BadExtensionInvocationException;
 
-    Representation describe( String name, Class<?> type, String method )
+    ExtensionPointRepresentation describe( String name, Class<?> type, String method )
             throws ExtensionLookupException;
 
     List<ExtensionPointRepresentation> describeAll( String extensionName )
             throws ExtensionLookupException;
 
-//    List<String> listExtensions();
+    Set<String> extensionNames();
 }
