@@ -20,32 +20,33 @@
 
 package org.neo4j.server.webadmin.rest;
 
-import org.neo4j.server.rest.domain.renderers.JsonRenderers;
+import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.webadmin.rest.representations.ServerRootRepresentation;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 @Path( "/" )
 public class RootService
 {
-	@GET
-	@Produces( MediaType.APPLICATION_JSON )
-	public Response getServiceDefinition( @Context UriInfo uriInfo )
-	{
+    @GET
+    public Response getServiceDefinition( @Context UriInfo uriInfo, @Context OutputFormat output )
+    {
+        ServerRootRepresentation representation = new ServerRootRepresentation( uriInfo.getBaseUri(), services() );
 
-		ServerRootRepresentation rootRepresentation = new ServerRootRepresentation( uriInfo.getBaseUri(),
-				new ConsoleService( (SessionFactory)null,null, null ),
-				new JmxService(null,null),
-				new MonitorService( null,null,null ) );
+        return output.ok( representation );
+    }
 
-        String entity = JsonRenderers.DEFAULT.render( rootRepresentation );
+    private AdvertisableService[] services()
+    {
+        AdvertisableService console = new ConsoleService( (SessionFactory)null, null, null );
+        AdvertisableService jmx = new JmxService( null, null );
+        MonitorService monitor = new MonitorService( null, null, null );
 
-        return Response.ok( entity ).header( "Content-Type", MediaType.APPLICATION_JSON ).build();
-	}
+        return new AdvertisableService[]{console, jmx, monitor};
+    }
+
 }
