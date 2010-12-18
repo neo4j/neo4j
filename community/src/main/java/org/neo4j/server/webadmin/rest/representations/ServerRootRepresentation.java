@@ -20,20 +20,22 @@
 
 package org.neo4j.server.webadmin.rest.representations;
 
-import org.neo4j.server.rest.domain.Representation;
+import org.neo4j.server.rest.repr.MappingRepresentation;
+import org.neo4j.server.rest.repr.MappingSerializer;
 import org.neo4j.server.webadmin.rest.AdvertisableService;
 
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ServerRootRepresentation implements Representation
+public class ServerRootRepresentation extends MappingRepresentation
 {
     private HashMap<String, String> services = new HashMap<String, String>();
 
     public ServerRootRepresentation( URI baseUri,
                                      AdvertisableService... advertisableServices )
     {
+        super( "services" );
         for ( AdvertisableService svc : advertisableServices )
         {
             services.put( svc.getName(), baseUri.toString() + svc.getServerPath() );
@@ -42,8 +44,27 @@ public class ServerRootRepresentation implements Representation
 
     public Map<String, Map<String, String>> serialize()
     {
-        HashMap<String, Map<String, String>> result = new HashMap<String, Map<String,String>>();
-        result.put("services", services);
+        HashMap<String, Map<String, String>> result = new HashMap<String, Map<String, String>>();
+        result.put( "services", services );
         return result;
+    }
+
+    @Override
+    protected void serialize( MappingSerializer serializer )
+    {
+        MappingRepresentation apa = new MappingRepresentation( "services" )
+        {
+
+            @Override
+            protected void serialize( MappingSerializer serializer )
+            {
+                for ( Map.Entry<String, String> entry : services.entrySet() )
+                {
+                    serializer.putString( entry.getKey(), entry.getValue() );
+                }
+            }
+        };
+
+        serializer.putMapping( "services", apa );
     }
 }
