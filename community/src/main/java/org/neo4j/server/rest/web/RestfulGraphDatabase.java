@@ -20,6 +20,22 @@
 
 package org.neo4j.server.rest.web;
 
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Map;
+
+import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
+
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.extensions.ExtensionInvocator;
@@ -33,22 +49,9 @@ import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.PropertiesRepresentation;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.Map;
+//TODO: replace JsonAndHtmlWebSercice with this class
+@Path("/")
 
-@Path( "/" )
 public class RestfulGraphDatabase
 {
     @SuppressWarnings( "serial" )

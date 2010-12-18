@@ -22,12 +22,6 @@ package org.neo4j.server.rest.repr;
 
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
-import org.neo4j.server.rest.domain.NodeIndexRepresentation;
-
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.Map;
 
 public class RelationshipIndexRootRepresentation extends MappingRepresentation
 {
