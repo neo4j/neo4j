@@ -20,6 +20,25 @@
 
 package org.neo4j.server.rest.web;
 
+import static org.hamcrest.Matchers.hasKey;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.server.rest.repr.RepresentationTestBase.serialize;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -44,19 +63,6 @@ import org.neo4j.server.rest.repr.NodeRepresentation;
 import org.neo4j.server.rest.repr.NodeRepresentationTest;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
-
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.hamcrest.Matchers.hasKey;
-import static org.junit.Assert.*;
-import static org.neo4j.server.rest.repr.RepresentationTestBase.serialize;
 
 public class DatabaseActionsTest
 {
@@ -84,7 +90,7 @@ public class DatabaseActionsTest
         database = new Database( ServerTestUtils.createTempDir().getAbsolutePath() );
 
         graphdbHelper = new GraphDbHelper( database );
-        this.actions = new DatabaseActions( database, null );
+        this.actions = new DatabaseActions( database );
     }
 
     @After

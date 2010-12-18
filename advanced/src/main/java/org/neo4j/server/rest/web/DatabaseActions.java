@@ -20,12 +20,19 @@
 
 package org.neo4j.server.rest.web;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Expander;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Path;
@@ -43,18 +50,12 @@ import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseBlockedException;
-import org.neo4j.server.extensions.BadExtensionInvocationException;
-import org.neo4j.server.extensions.ExtensionInvocationFailureException;
-import org.neo4j.server.extensions.ExtensionInvocator;
-import org.neo4j.server.extensions.ExtensionLookupException;
-import org.neo4j.server.extensions.ParameterList;
 import org.neo4j.server.rest.domain.EndNodeNotFoundException;
 import org.neo4j.server.rest.domain.RelationshipExpanderBuilder;
 import org.neo4j.server.rest.domain.StartNodeNotFoundException;
 import org.neo4j.server.rest.domain.StartNodeSameAsEndNodeException;
 import org.neo4j.server.rest.domain.TraversalDescriptionBuilder;
 import org.neo4j.server.rest.domain.TraverserReturnType;
-import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.DatabaseRepresentation;
 import org.neo4j.server.rest.repr.IndexRepresentation;
 import org.neo4j.server.rest.repr.IndexedEntityRepresentation;
@@ -69,25 +70,14 @@ import org.neo4j.server.rest.repr.RelationshipIndexRootRepresentation;
 import org.neo4j.server.rest.repr.RelationshipRepresentation;
 import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.RepresentationType;
-import org.neo4j.server.rest.repr.ServerExtensionRepresentation;
-
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 
 // TODO: move this to another package. domain?
 public class DatabaseActions
 {
     private final AbstractGraphDatabase graphDb;
-    private final ExtensionInvocator extensions;
 
-    public DatabaseActions( Database database, ExtensionInvocator extensions )
+    public DatabaseActions( Database database )
     {
-        this.extensions = extensions;
         this.graphDb = database.graph;
     }
 
@@ -806,63 +796,6 @@ public class DatabaseActions
         };
 
         return new ListRepresentation( RepresentationType.PATH, pathRepresentations );
-    }
-
-    // Extensions
-
-    public Representation getExtensionsList()
-    {
-        // TODO tobias: Implement getExtensionDetails() [Dec 14, 2010]
-        throw new UnsupportedOperationException(
-                "Not implemented: DatabaseActions.getExtensionDetails()" );
-    }
-
-    public Representation getExtensionList( String extensionName ) throws ExtensionLookupException
-    {
-        return new ServerExtensionRepresentation( extensionName,
-                extensions.describeAll( extensionName ) );
-    }
-
-    public Representation invokeGraphDatabaseExtension( String extensionName, String method,
-                                                        ParameterList data ) throws ExtensionLookupException, BadInputException,
-            ExtensionInvocationFailureException, BadExtensionInvocationException
-    {
-        return extensions.invoke( graphDb, extensionName, GraphDatabaseService.class, method,
-                graphDb, data );
-    }
-
-    public Representation describeGraphDatabaseExtension( String extensionName, String method )
-            throws ExtensionLookupException
-    {
-        return extensions.describe( extensionName, GraphDatabaseService.class, method );
-    }
-
-    public Representation invokeNodeExtension( long nodeId, String extensionName, String method,
-                                               ParameterList data ) throws NodeNotFoundException, ExtensionLookupException,
-            BadInputException, ExtensionInvocationFailureException, BadExtensionInvocationException
-    {
-        return extensions.invoke( graphDb, extensionName, Node.class, method, node( nodeId ), data );
-    }
-
-    public Representation describeNodeExtension( String extensionName, String method )
-            throws ExtensionLookupException
-    {
-        return extensions.describe( extensionName, Node.class, method );
-    }
-
-    public Representation invokeRelationshipExtension( long relationshipId, String extensionName,
-                                                       String method, ParameterList data ) throws RelationshipNotFoundException,
-            ExtensionLookupException, BadInputException, ExtensionInvocationFailureException,
-            BadExtensionInvocationException
-    {
-        return extensions.invoke( graphDb, extensionName, Relationship.class, method,
-                relationship( relationshipId ), data );
-    }
-
-    public Representation describeRelationshipExtension( String extensionName, String method )
-            throws ExtensionLookupException
-    {
-        return extensions.describe( extensionName, Relationship.class, method );
     }
 
     private class FindParams

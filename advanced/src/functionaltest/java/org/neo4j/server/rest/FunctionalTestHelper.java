@@ -152,4 +152,29 @@ public final class FunctionalTestHelper
     {
         return indexRelationshipUri( indexName ) + "/" + key + "/" + value;
     }
+
+    String extensionUri()
+    {
+        return dataUri() + "ext";
+    }
+
+    String extensionUri( String name )
+    {
+        return extensionUri() + "/" + name;
+    }
+
+    String graphdbExtensionUri( String name, String method )
+    {
+        return extensionUri( name ) + "/graphdb/" + method;
+    }
+
+    String nodeExtensionUri( String name, String method, long id )
+    {
+        return extensionUri( name ) + "/node/" + id + "/" + method;
+    }
+
+    String relationshipExtensionUri( String name, String method, long id )
+    {
+        return extensionUri( name ) + "/relationship/" + id + "/" + method;
+    }
 }

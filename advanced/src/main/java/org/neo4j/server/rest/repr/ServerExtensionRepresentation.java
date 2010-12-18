@@ -20,22 +20,62 @@
 
 package org.neo4j.server.rest.repr;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public final class ServerExtensionRepresentation extends MappingRepresentation
 {
-    private final List<ExtensionPointRepresentation> methods;
+    private final Map<String, EntityExtensionRepresentation> extended;
 
     public ServerExtensionRepresentation( String name, List<ExtensionPointRepresentation> methods )
     {
         super( RepresentationType.SERVER_EXTENSION_DESCRIPTION );
-        this.methods = methods;
+        this.extended = new HashMap<String, EntityExtensionRepresentation>();
+        for ( ExtensionPointRepresentation extension : methods )
+        {
+            EntityExtensionRepresentation entity = extended.get( extension.getExtendedEntity() );
+            if ( entity == null )
+            {
+                extended.put( extension.getExtendedEntity(),
+                        entity = new EntityExtensionRepresentation() );
+            }
+            entity.add( extension );
+        }
     }
 
     @Override
     protected void serialize( MappingSerializer serializer )
     {
-        serializer.putList( "extension-points", new ListRepresentation(
-                RepresentationType.EXTENSION_POINT_DESCRIPTION, methods ) );
+        for ( Map.Entry<String, EntityExtensionRepresentation> entity : extended.entrySet() )
+        {
+            serializer.putMapping( entity.getKey(), entity.getValue() );
+        }
+    }
+
+    private static class EntityExtensionRepresentation extends MappingRepresentation
+    {
+        private final List<ExtensionPointRepresentation> extensions;
+
+        EntityExtensionRepresentation()
+        {
+            super( "entity-extensions" );
+            this.extensions = new ArrayList<ExtensionPointRepresentation>();
+        }
+
+        void add( ExtensionPointRepresentation extension )
+        {
+            extensions.add( extension );
+        }
+
+        @Override
+        protected void serialize( MappingSerializer serializer )
+        {
+            for ( ExtensionPointRepresentation extension : extensions )
+            {
+                serializer.putMapping( extension.getName(), extension );
+            }
+        }
     }
 }
