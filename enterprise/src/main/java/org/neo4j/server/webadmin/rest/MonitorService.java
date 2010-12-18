@@ -22,9 +22,11 @@ package org.neo4j.server.webadmin.rest;
 
 import org.neo4j.server.rest.domain.renderers.JsonRenderers;
 import org.neo4j.server.rest.domain.renderers.Renderer;
+import org.neo4j.server.rest.repr.InputFormat;
+import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rrd.RrdFactory;
-import org.neo4j.server.webadmin.rest.representations.MonitorServiceRepresentation;
 import org.neo4j.server.webadmin.rest.representations.RrdDataRepresentation;
+import org.neo4j.server.webadmin.rest.representations.ServiceDefinitionRepresentation;
 import org.rrd4j.ConsolFun;
 import org.rrd4j.core.FetchRequest;
 import org.rrd4j.core.RrdDb;
@@ -45,10 +47,11 @@ import static javax.ws.rs.core.Response.Status;
  * This exposes data from an internal round-robin database that tracks various
  * system KPIs over time.
  */
-@Path(MonitorService.ROOT_PATH)
+@Path( MonitorService.ROOT_PATH )
 public class MonitorService implements AdvertisableService
 {
     private RrdDb rrdDb;
+    private final OutputFormat output;
 
     public String getName()
     {
@@ -60,9 +63,10 @@ public class MonitorService implements AdvertisableService
         return ROOT_PATH;
     }
 
-    public MonitorService( @Context RrdDb rrdDb )
+    public MonitorService( @Context RrdDb rrdDb, @Context OutputFormat output, @Context InputFormat input )
     {
         this.rrdDb = rrdDb;
+        this.output = output;
     }
 
     public static final String ROOT_PATH = "server/monitor";
@@ -75,19 +79,20 @@ public class MonitorService implements AdvertisableService
 
 
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
+    @Produces( MediaType.APPLICATION_JSON )
     public Response getServiceDefinition( @Context UriInfo uriInfo )
     {
+        ServiceDefinitionRepresentation sdr = new ServiceDefinitionRepresentation( uriInfo.getBaseUri() + ROOT_PATH );
+        sdr.resourceTemplate( "data_from", MonitorService.DATA_FROM_PATH );
+        sdr.resourceTemplate( "data_period", MonitorService.DATA_SPAN_PATH );
+        sdr.resourceUri( "latest_data", MonitorService.DATA_PATH );
 
-        String entity = JsonRenderers.DEFAULT.render( new MonitorServiceRepresentation(
-                uriInfo.getBaseUri() ) );
-
-        return Response.ok( entity, JsonRenderers.DEFAULT.getMediaType() ).build();
+        return output.ok( sdr );
     }
 
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path(DATA_PATH)
+    @Produces( MediaType.APPLICATION_JSON )
+    @Path( DATA_PATH )
     public Response getData()
     {
         long time = new Date().getTime();
@@ -95,22 +100,22 @@ public class MonitorService implements AdvertisableService
     }
 
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path(DATA_FROM_PATH)
-    public Response getData( @PathParam("start") long start )
+    @Produces( MediaType.APPLICATION_JSON )
+    @Path( DATA_FROM_PATH )
+    public Response getData( @PathParam( "start" ) long start )
     {
         return getData( start, new Date().getTime() );
     }
 
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path(DATA_SPAN_PATH)
-    public Response getData( @PathParam("start") long start,
-                             @PathParam("stop") long stop )
+    @Produces( MediaType.APPLICATION_JSON )
+    @Path( DATA_SPAN_PATH )
+    public Response getData( @PathParam( "start" ) long start,
+                             @PathParam( "stop" ) long stop )
     {
-        if ( start >= stop || (stop - start) > MAX_TIMESPAN )
+        if ( start >= stop || ( stop - start ) > MAX_TIMESPAN )
         {
-            String message = String.format( "Start time must be before stop time, and the total time span can be no bigger than %dms. Time span was %dms.", MAX_TIMESPAN, (stop - start) );
+            String message = String.format( "Start time must be before stop time, and the total time span can be no bigger than %dms. Time span was %dms.", MAX_TIMESPAN, ( stop - start ) );
             return buildExceptionResponse( Status.BAD_REQUEST, message, new IllegalArgumentException(), JsonRenderers.DEFAULT );
         }
 
@@ -135,7 +140,7 @@ public class MonitorService implements AdvertisableService
 
     private long getResolutionFor( long timespan )
     {
-        long preferred = (long) Math.floor( timespan / (RrdFactory.STEPS_PER_ARCHIVE * 2) );
+        long preferred = (long)Math.floor( timespan / ( RrdFactory.STEPS_PER_ARCHIVE * 2 ) );
 
         // Don't allow resolutions smaller than the actual minimum resolution
         return preferred > RrdFactory.STEP_SIZE ? preferred : RrdFactory.STEP_SIZE;
