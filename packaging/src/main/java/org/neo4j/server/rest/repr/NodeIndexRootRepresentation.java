@@ -24,8 +24,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
 
-import java.net.URI;
-
 public class NodeIndexRootRepresentation extends MappingRepresentation
 {
     private IndexManager indexManager;

@@ -20,19 +20,19 @@
 
 package org.neo4j.server.rest.repr.formats;
 
-import org.neo4j.server.rest.repr.ListWriter;
-import org.neo4j.server.rest.repr.MappingWriter;
-import org.neo4j.server.rest.repr.MediaTypeNotSupportedException;
-import org.neo4j.server.rest.repr.RepresentationFormat;
-
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+
+import org.neo4j.server.rest.repr.ListWriter;
+import org.neo4j.server.rest.repr.MappingWriter;
+import org.neo4j.server.rest.repr.MediaTypeNotSupportedException;
+import org.neo4j.server.rest.repr.RepresentationFormat;
 
 public class NullFormat extends RepresentationFormat
 {
