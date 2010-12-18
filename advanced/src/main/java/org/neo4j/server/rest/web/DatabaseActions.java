@@ -85,7 +85,7 @@ public class DatabaseActions
     private final AbstractGraphDatabase graphDb;
     private final ExtensionInvocator extensions;
 
-    DatabaseActions( Database database, ExtensionInvocator extensions )
+    public DatabaseActions( Database database, ExtensionInvocator extensions )
     {
         this.extensions = extensions;
         this.graphDb = database.graph;

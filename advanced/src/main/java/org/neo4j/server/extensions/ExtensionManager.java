@@ -20,11 +20,6 @@
 
 package org.neo4j.server.extensions;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.commons.configuration.Configuration;
 import org.apache.log4j.Logger;
 import org.neo4j.helpers.Pair;
@@ -33,6 +28,11 @@ import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.ExtensionInjector;
 import org.neo4j.server.rest.repr.ExtensionPointRepresentation;
 import org.neo4j.server.rest.repr.Representation;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public final class ExtensionManager implements ExtensionInjector, ExtensionInvocator
 {
