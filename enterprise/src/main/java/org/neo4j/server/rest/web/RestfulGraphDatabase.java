@@ -38,7 +38,6 @@ import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.extensions.ExtensionInvocator;
 import org.neo4j.server.rest.domain.EndNodeNotFoundException;
 import org.neo4j.server.rest.domain.StartNodeNotFoundException;
 import org.neo4j.server.rest.domain.StartNodeSameAsEndNodeException;
@@ -49,9 +48,7 @@ import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.PropertiesRepresentation;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 
-//TODO: replace JsonAndHtmlWebSercice with this class
-@Path("/")
-
+@Path( "/" )
 public class RestfulGraphDatabase
 {
     @SuppressWarnings( "serial" )
@@ -98,12 +95,11 @@ public class RestfulGraphDatabase
     private final InputFormat input;
 
     public RestfulGraphDatabase( @Context UriInfo uriInfo, @Context Database database,
-                                 @Context ExtensionInvocator extensions, @Context InputFormat input,
-                                 @Context OutputFormat output )
+                                 @Context InputFormat input, @Context OutputFormat output )
     {
         this.input = input;
         this.output = output;
-        this.server = new DatabaseActions( database, extensions );
+        this.server = new DatabaseActions( database );
     }
 
     private static Response nothing()
