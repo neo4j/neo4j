@@ -20,34 +20,37 @@
 
 package org.neo4j.server.webadmin.rest;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.neo4j.kernel.ImpermanentGraphDatabase;
+import org.neo4j.server.rest.repr.formats.JsonFormat;
+import org.neo4j.server.rest.web.EntityOutputFormat;
+import org.neo4j.server.rrd.Job;
+import org.neo4j.server.rrd.JobScheduler;
+import org.neo4j.server.rrd.RrdFactory;
+import org.rrd4j.core.RrdDb;
+
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Map;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.neo4j.kernel.ImpermanentGraphDatabase;
-import org.neo4j.server.rrd.Job;
-import org.neo4j.server.rrd.JobScheduler;
-import org.neo4j.server.rrd.RrdFactory;
-import org.rrd4j.core.RrdDb;
-
 public class MonitorServiceTest implements JobScheduler
 {
     public MonitorService monitorService;
     private ImpermanentGraphDatabase database;
+    private EntityOutputFormat output;
 
     @Test
-    public void correctRepresentation() throws URISyntaxException
+    public void correctRepresentation() throws Exception
     {
         UriInfo mockUri = mock(UriInfo.class);
         URI uri = new URI("http://peteriscool.com:6666/");
@@ -55,9 +58,13 @@ public class MonitorServiceTest implements JobScheduler
         Response resp = monitorService.getServiceDefinition( mockUri );
 
         assertEquals(200, resp.getStatus());
-        assertThat((String)resp.getEntity(), containsString("resources"));
-        assertThat((String)resp.getEntity(), containsString(uri.toString()));
-        assertThat((String)resp.getEntity(), containsString("monitor/fetch/{start}/{stop}"));
+
+        Map<String, Object> resultAsMap = output.getResultAsMap();
+        Map<String,Object> resources = (Map<String, Object>)resultAsMap.get( "resources" );
+        assertThat( (String)resources.get( "data_from" ), containsString( "/fetch/{start}" ));
+        assertThat( (String)resources.get( "data_period" ), containsString( "/fetch/{start}/{stop}" ));
+        URI latest_data = (URI)resources.get( "latest_data" );
+        assertThat( latest_data.toString(), containsString( "/fetch" ));
     }
 
     @Test
@@ -77,9 +84,11 @@ public class MonitorServiceTest implements JobScheduler
     @Before
     public void setUp() throws Exception
     {
-        this.database = new ImpermanentGraphDatabase();
+        database = new ImpermanentGraphDatabase();
         RrdDb rrdDb = RrdFactory.createRrdDbAndSampler( database, this );
-	    this.monitorService = new MonitorService( rrdDb );
+
+        output = new EntityOutputFormat( new JsonFormat(), null, null );
+        monitorService = new MonitorService( rrdDb, output, null );
     }
 
     @After
