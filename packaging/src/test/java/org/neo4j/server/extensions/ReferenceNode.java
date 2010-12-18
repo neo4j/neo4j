@@ -26,7 +26,7 @@ import org.neo4j.graphdb.Node;
 @Description( "An extension for accessing the reference node of the graph database, this can be used as the root for your graph." )
 public class ReferenceNode extends ServerExtension
 {
-    static final String GET_REFERENCE_NODE = "reference_node_uri";
+    public static final String GET_REFERENCE_NODE = "reference_node_uri";
 
     @Description( "Get the reference node from the graph database" )
     @ExtensionTarget( GraphDatabaseService.class )

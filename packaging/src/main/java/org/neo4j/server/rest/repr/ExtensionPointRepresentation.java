@@ -25,7 +25,7 @@ import java.util.List;
 
 import org.neo4j.server.extensions.ParameterDescriptionConsumer;
 
-public final class ExtensionPointRepresentation extends MappingRepresentation implements
+public final class ExtensionPointRepresentation extends ObjectRepresentation implements
         ParameterDescriptionConsumer
 {
     private final RepresentationType extended;
@@ -54,14 +54,38 @@ public final class ExtensionPointRepresentation extends MappingRepresentation im
         parameters.add( new ParameterRepresentation( name, type, optional, description, true ) );
     }
 
-    @Override
-    protected void serialize( MappingSerializer serializer )
+    public String getName()
     {
-        serializer.putString( "name", name );
-        serializer.putString( "description", desciption );
-        serializer.putString( "extends", extended.valueName );
-        serializer.putList( "parameters", new ListRepresentation(
-                RepresentationType.EXTENSION_PARAMETER, parameters ) );
+        return name;
+    }
+
+    public String getExtendedEntity()
+    {
+        return extended.valueName;
+    }
+
+    @Mapping( "name" )
+    public ValueRepresentation methodName()
+    {
+        return ValueRepresentation.string( name );
+    }
+
+    @Mapping( "description" )
+    public ValueRepresentation description()
+    {
+        return ValueRepresentation.string( desciption );
+    }
+
+    @Mapping( "extends" )
+    public ValueRepresentation extendedEntity()
+    {
+        return ValueRepresentation.string( getExtendedEntity() );
+    }
+
+    @Mapping( "parameters" )
+    public ListRepresentation parametersList()
+    {
+        return new ListRepresentation( RepresentationType.EXTENSION_PARAMETER, parameters );
     }
 
     private static class ParameterRepresentation extends MappingRepresentation
