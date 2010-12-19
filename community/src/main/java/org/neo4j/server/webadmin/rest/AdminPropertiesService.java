@@ -22,16 +22,16 @@ package org.neo4j.server.webadmin.rest;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.rest.domain.renderers.JsonRenderers;
-import org.neo4j.server.webadmin.rest.representations.AdminPropertyRepresentation;
+import org.neo4j.server.rest.repr.MappingRepresentation;
+import org.neo4j.server.rest.repr.MappingSerializer;
+import org.neo4j.server.rest.repr.OutputFormat;
+import org.neo4j.server.rest.repr.ValueRepresentation;
 
 @Path("/properties")
 public class AdminPropertiesService
@@ -41,17 +41,18 @@ public class AdminPropertiesService
     private final UriInfo uriInfo;
     private final String MANAGEMENT_URI_KEY = "management.uri";
     private final String DATA_URI_KEY = "data.uri";
+    private final OutputFormat output;
 
     public AdminPropertiesService( @Context UriInfo uriInfo,
-                                   @Context Configuration config
-    )
+                                   @Context Configuration config,
+                                   @Context OutputFormat output )
     {
         this.uriInfo = uriInfo;
         this.config = config;
+        this.output = output;
     }
 
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     @Path("/{key}")
     public Response getValue( @PathParam("key") String key )
     {
@@ -60,14 +61,23 @@ public class AdminPropertiesService
 
         if ( "neo4j-servers".equals( lowerCaseKey ) )
         {
-	        AdminPropertyRepresentation representation = new AdminPropertyRepresentation( uriInfo.getBaseUri().toString() );
-
-	        representation.addUrl( "url", getDataUri() );
-	        representation.addUrl( "manageUrl", getManagementUri() );
-
-            return Response.ok( JsonRenderers.DEFAULT.render( representation ) ).
-                    type( MediaType.APPLICATION_JSON ).
-                    build();
+            return output.ok( new MappingRepresentation( "neo4j-servers" )
+            {
+                @Override
+                protected void serialize( MappingSerializer serializer )
+                {
+                    serializer.putMapping( uriInfo.getBaseUri().toString(),
+                            new MappingRepresentation( "urls" )
+                            {
+                                @Override
+                                protected void serialize( MappingSerializer serializer )
+                                {
+                                    serializer.putString( "url", getDataUri() );
+                                    serializer.putString( "manageUrl", getManagementUri() );
+                                }
+                            } );
+                }
+            } );
         }
         else if ( DATA_URI_KEY.equals( lowerCaseKey ) )
         {
@@ -86,7 +96,7 @@ public class AdminPropertiesService
         {
             value = "undefined";
         }
-        return Response.ok( value ).type( MediaType.APPLICATION_JSON ).build();
+        return output.ok( ValueRepresentation.string( value ) );
     }
 
     private String getDataUri()

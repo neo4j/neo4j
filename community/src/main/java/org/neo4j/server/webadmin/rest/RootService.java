@@ -20,14 +20,14 @@
 
 package org.neo4j.server.webadmin.rest;
 
-import org.neo4j.server.rest.repr.OutputFormat;
-import org.neo4j.server.webadmin.rest.representations.ServerRootRepresentation;
-
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+
+import org.neo4j.server.rest.repr.OutputFormat;
+import org.neo4j.server.webadmin.rest.representations.ServerRootRepresentation;
 
 @Path( "/" )
 public class RootService
@@ -44,7 +44,7 @@ public class RootService
     {
         AdvertisableService console = new ConsoleService( (SessionFactory)null, null, null );
         AdvertisableService jmx = new JmxService( null, null );
-        MonitorService monitor = new MonitorService( null, null, null );
+        MonitorService monitor = new MonitorService( null, null );
 
         return new AdvertisableService[]{console, jmx, monitor};
     }
