@@ -100,13 +100,13 @@ public class ValueRepresentation extends Representation
             @Override
             void addTo( ListSerializer serializer )
             {
-                serializer.addRelativeUri( path );
+                serializer.addUri( path );
             }
 
             @Override
             void putTo( MappingSerializer serializer, String key )
             {
-                serializer.putRelativeUri( key, path );
+                serializer.putUri( key, path );
             }
         };
     }
@@ -124,13 +124,13 @@ public class ValueRepresentation extends Representation
             @Override
             void addTo( ListSerializer serializer )
             {
-                serializer.addRelativeUriTemplate( path );
+                serializer.addUriTemplate( path );
             }
 
             @Override
             void putTo( MappingSerializer serializer, String key )
             {
-                serializer.putRelativeUriTemplate( key, path );
+                serializer.putUriTemplate( key, path );
             }
         };
     }

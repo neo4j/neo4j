@@ -32,24 +32,14 @@ public class ListSerializer extends Serializer
         this.writer = writer;
     }
 
-    public void addAbsoluteUri( URI uri )
+    public void addUri( String path )
     {
-        writer.writeValue( RepresentationType.URI, uri );
+        writer.writeValue( RepresentationType.URI, relativeUri( path ) );
     }
 
-    public void addRelativeUri( String path )
+    public void addUriTemplate( String template )
     {
-        addAbsoluteUri( relativeUri( path ) );
-    }
-
-    public void addAbsoluteUriTemplate( String template )
-    {
-        writer.writeValue( RepresentationType.TEMPLATE, template );
-    }
-
-    public void addRelativeUriTemplate( String template )
-    {
-        addAbsoluteUriTemplate( relativeTemplate( template ) );
+        writer.writeValue( RepresentationType.TEMPLATE, relativeTemplate( template ) );
     }
 
     public void addString( String value )

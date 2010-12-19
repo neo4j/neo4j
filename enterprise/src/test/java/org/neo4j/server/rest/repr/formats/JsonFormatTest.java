@@ -23,7 +23,6 @@ package org.neo4j.server.rest.repr.formats;
 import static org.junit.Assert.assertEquals;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -105,19 +104,12 @@ public class JsonFormatTest
             @Override
             protected void serialize( MappingSerializer serializer )
             {
-                try
-                {
-                    serializer.putAbsoluteUri( "URL", new URI( "http://localhost/" ) );
-                }
-                catch ( URISyntaxException e )
-                {
-                    throw new RuntimeException( e );
-                }
+                serializer.putUri( "URL", "subpath" );
             }
         } );
 
         assertEquals( JsonHelper.createJsonFrom( Collections.singletonMap( "URL",
-                "http://localhost/" ) ), entity );
+                "http://localhost/subpath" ) ), entity );
     }
 
     @Test

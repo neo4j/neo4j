@@ -20,6 +20,19 @@
 
 package org.neo4j.server.webadmin.rest;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Map;
+
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,18 +44,6 @@ import org.neo4j.server.rrd.JobScheduler;
 import org.neo4j.server.rrd.RrdFactory;
 import org.rrd4j.core.RrdDb;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Map;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 public class MonitorServiceTest implements JobScheduler
 {
     public MonitorService monitorService;
@@ -53,9 +54,7 @@ public class MonitorServiceTest implements JobScheduler
     public void correctRepresentation() throws Exception
     {
         UriInfo mockUri = mock(UriInfo.class);
-        URI uri = new URI("http://peteriscool.com:6666/");
-        when(mockUri.getBaseUri()).thenReturn(uri);
-        Response resp = monitorService.getServiceDefinition( mockUri );
+        Response resp = monitorService.getServiceDefinition();
 
         assertEquals(200, resp.getStatus());
 
@@ -87,7 +86,8 @@ public class MonitorServiceTest implements JobScheduler
         database = new ImpermanentGraphDatabase();
         RrdDb rrdDb = RrdFactory.createRrdDbAndSampler( database, this );
 
-        output = new EntityOutputFormat( new JsonFormat(), null, null );
+        output = new EntityOutputFormat( new JsonFormat(),
+                URI.create( "http://peteriscool.com:6666/" ), null );
         monitorService = new MonitorService( rrdDb, output, null );
     }
 

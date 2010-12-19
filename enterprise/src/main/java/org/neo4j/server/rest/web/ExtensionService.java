@@ -262,7 +262,7 @@ public class ExtensionService
             {
                 for ( String extension : extensions.extensionNames() )
                 {
-                    serializer.putRelativeUri( extension, "ext/" + extension );
+                    serializer.putUri( extension, "ext/" + extension );
                 }
             }
         };
