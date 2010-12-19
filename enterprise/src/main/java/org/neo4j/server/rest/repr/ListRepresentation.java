@@ -22,9 +22,11 @@ package org.neo4j.server.rest.repr;
 
 import java.net.URI;
 import java.util.Arrays;
+import java.util.Iterator;
 
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 
 public final class ListRepresentation extends Representation
 {
@@ -99,6 +101,51 @@ public final class ListRepresentation extends Representation
                     protected Representation underlyingObjectToObject( RelationshipType value )
                     {
                         return ValueRepresentation.relationshipType( value );
+                    }
+                } );
+    }
+
+    public static ListRepresentation numbers( final long... values )
+    {
+        return new ListRepresentation( RepresentationType.LONG, new Iterable<ValueRepresentation>()
+        {
+            @Override
+            public Iterator<ValueRepresentation> iterator()
+            {
+                return new PrefetchingIterator<ValueRepresentation>()
+                {
+                    int pos = 0;
+
+                    @Override
+                    protected ValueRepresentation fetchNextOrNull()
+                    {
+                        if ( pos >= values.length ) return null;
+                        return ValueRepresentation.number( values[pos++] );
+                    }
+                };
+            }
+        } );
+    }
+
+    public static ListRepresentation numbers( final double[] values )
+    {
+        return new ListRepresentation( RepresentationType.DOUBLE,
+                new Iterable<ValueRepresentation>()
+                {
+                    @Override
+                    public Iterator<ValueRepresentation> iterator()
+                    {
+                        return new PrefetchingIterator<ValueRepresentation>()
+                        {
+                            int pos = 0;
+
+                            @Override
+                            protected ValueRepresentation fetchNextOrNull()
+                            {
+                                if ( pos >= values.length ) return null;
+                                return ValueRepresentation.number( values[pos++] );
+                            }
+                        };
                     }
                 } );
     }

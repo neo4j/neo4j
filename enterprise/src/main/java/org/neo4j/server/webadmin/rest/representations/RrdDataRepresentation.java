@@ -20,42 +20,57 @@
 
 package org.neo4j.server.webadmin.rest.representations;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.neo4j.server.rest.domain.Representation;
+import org.neo4j.server.rest.repr.ListRepresentation;
+import org.neo4j.server.rest.repr.MappingRepresentation;
+import org.neo4j.server.rest.repr.MappingSerializer;
+import org.neo4j.server.rest.repr.ObjectRepresentation;
+import org.neo4j.server.rest.repr.ValueRepresentation;
 import org.rrd4j.core.FetchData;
 
-@Deprecated
-public class RrdDataRepresentation implements Representation
+public class RrdDataRepresentation extends ObjectRepresentation
 {
-
     private final FetchData rrdData;
 
     public RrdDataRepresentation( FetchData rrdData )
     {
+        super( "rrd-data" );
         this.rrdData = rrdData;
     }
 
-    public Object serialize()
+    @Mapping( "start_time" )
+    public ValueRepresentation getStartTime()
     {
-        Map<String, Object> data = new HashMap<String, Object>();
-
-        data.put( "start_time", rrdData.getFirstTimestamp() );
-        data.put( "end_time", rrdData.getLastTimestamp() );
-
-        data.put( "timestamps", rrdData.getTimestamps() );
-
-        Map<String, Object> datasources = new HashMap<String, Object>();
-        for ( int i = 0, l = rrdData.getDsNames().length; i < l; i++ )
-        {
-            datasources.put( rrdData.getDsNames()[i], rrdData.getValues( i ) );
-        }
-
-        data.put( "data", datasources );
-
-        return data;
+        return ValueRepresentation.number( rrdData.getFirstTimestamp() );
     }
 
+    @Mapping( "end_time" )
+    public ValueRepresentation getEndTime()
+    {
+        return ValueRepresentation.number( rrdData.getLastTimestamp() );
+    }
+
+    @Mapping( "timestamps" )
+    public ListRepresentation getTimestamps()
+    {
+        return ListRepresentation.numbers( rrdData.getTimestamps() );
+    }
+
+    @Mapping( "data" )
+    public MappingRepresentation getDatasources()
+    {
+        return new MappingRepresentation( "datasources" )
+        {
+            @Override
+            protected void serialize( MappingSerializer serializer )
+            {
+                String[] dsNames = rrdData.getDsNames();
+                for ( int i = 0, l = dsNames.length; i < l; i++ )
+                {
+                    serializer.putList( dsNames[i],
+                            ListRepresentation.numbers( rrdData.getValues( i ) ) );
+                }
+            }
+        };
+    }
 }
 
