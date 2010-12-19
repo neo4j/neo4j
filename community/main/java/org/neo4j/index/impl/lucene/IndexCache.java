@@ -25,34 +25,39 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.LruCache;
 
-public class Cache
+public class IndexCache
 {
-    private final Map<IndexIdentifier, Map<String,LruCache<String,Collection<Long>>>> caching = 
-            Collections.synchronizedMap( 
-                    new HashMap<IndexIdentifier, Map<String,LruCache<String,Collection<Long>>>>() );
+    private final Map<IndexIdentifier, Map<String,Cache<String,Collection<Long>>>> caching = 
+            Collections.synchronizedMap( new HashMap<IndexIdentifier, Map<String,Cache<String,Collection<Long>>>>() );
     
-    public void setCapacity( IndexIdentifier identifier, String key, int size )
+    public void enable( IndexIdentifier identifier, String key, int size )
     {
-        Map<String, LruCache<String, Collection<Long>>> map = caching.get( identifier );
-        if ( map == null )
-        {
-            map = new HashMap<String, LruCache<String,Collection<Long>>>();
-            caching.put( identifier, map );
-        }
-        map.put( key, new LruCache<String, Collection<Long>>( key, size, null ) );
+        enable( identifier, key, new LruCache<String, Collection<Long>>( key, size, null ) );
     }
     
-    public LruCache<String, Collection<Long>> get( IndexIdentifier identifier, String key )
+    public void enable( IndexIdentifier identifier, String key, Cache<String, Collection<Long>> cache )
     {
-        Map<String, LruCache<String, Collection<Long>>> map = caching.get( identifier );
+        Map<String, Cache<String, Collection<Long>>> map = caching.get( identifier );
+        if ( map == null )
+        {
+            map = new HashMap<String, Cache<String,Collection<Long>>>();
+            caching.put( identifier, map );
+        }
+        map.put( key, cache );
+    }
+    
+    public Cache<String, Collection<Long>> get( IndexIdentifier identifier, String key )
+    {
+        Map<String, Cache<String, Collection<Long>>> map = caching.get( identifier );
         return map != null ? map.get( key ) : null;
     }
     
     public void disable( IndexIdentifier identifier, String key )
     {
-        Map<String, LruCache<String, Collection<Long>>> map = caching.get( identifier );
+        Map<String, Cache<String, Collection<Long>>> map = caching.get( identifier );
         if ( map != null )
         {
             map.remove( key );
@@ -61,7 +66,7 @@ public class Cache
     
     public void disable( IndexIdentifier identifier )
     {
-        Map<String, LruCache<String, Collection<Long>>> map = caching.get( identifier );
+        Map<String, Cache<String, Collection<Long>>> map = caching.get( identifier );
         if ( map != null )
         {
             map.clear();
