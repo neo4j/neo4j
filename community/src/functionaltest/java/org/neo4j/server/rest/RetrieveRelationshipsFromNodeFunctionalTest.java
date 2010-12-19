@@ -20,9 +20,15 @@
 
 package org.neo4j.server.rest;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+
+import javax.ws.rs.core.MediaType;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,18 +38,14 @@ import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
-import org.neo4j.server.rest.domain.RelationshipRepresentationTest;
+import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 
-import javax.ws.rs.core.MediaType;
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.WebResource;
 
 public class RetrieveRelationshipsFromNodeFunctionalTest {
-    
+
     private long nodeWithRelationships;
     private long nodeWithoutRelationships;
     private long nonExistingNode;
