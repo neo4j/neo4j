@@ -25,15 +25,9 @@ import java.util.Date;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
 
-import org.neo4j.server.rest.domain.renderers.JsonRenderers;
-import org.neo4j.server.rest.domain.renderers.Renderer;
-import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rrd.RrdFactory;
 import org.neo4j.server.webadmin.rest.representations.RrdDataRepresentation;
@@ -62,7 +56,7 @@ public class MonitorService implements AdvertisableService
         return ROOT_PATH;
     }
 
-    public MonitorService( @Context RrdDb rrdDb, @Context OutputFormat output, @Context InputFormat input )
+    public MonitorService( @Context RrdDb rrdDb, @Context OutputFormat output )
     {
         this.rrdDb = rrdDb;
         this.output = output;
@@ -78,7 +72,6 @@ public class MonitorService implements AdvertisableService
 
 
     @GET
-    @Produces( MediaType.APPLICATION_JSON )
     public Response getServiceDefinition()
     {
         ServiceDefinitionRepresentation sdr = new ServiceDefinitionRepresentation( ROOT_PATH );
@@ -90,7 +83,6 @@ public class MonitorService implements AdvertisableService
     }
 
     @GET
-    @Produces( MediaType.APPLICATION_JSON )
     @Path( DATA_PATH )
     public Response getData()
     {
@@ -99,7 +91,6 @@ public class MonitorService implements AdvertisableService
     }
 
     @GET
-    @Produces( MediaType.APPLICATION_JSON )
     @Path( DATA_FROM_PATH )
     public Response getData( @PathParam( "start" ) long start )
     {
@@ -107,7 +98,6 @@ public class MonitorService implements AdvertisableService
     }
 
     @GET
-    @Produces( MediaType.APPLICATION_JSON )
     @Path( DATA_SPAN_PATH )
     public Response getData( @PathParam( "start" ) long start,
                              @PathParam( "stop" ) long stop )
@@ -115,7 +105,7 @@ public class MonitorService implements AdvertisableService
         if ( start >= stop || ( stop - start ) > MAX_TIMESPAN )
         {
             String message = String.format( "Start time must be before stop time, and the total time span can be no bigger than %dms. Time span was %dms.", MAX_TIMESPAN, ( stop - start ) );
-            return buildExceptionResponse( Status.BAD_REQUEST, message, new IllegalArgumentException(), JsonRenderers.DEFAULT );
+            return output.badRequest( new IllegalArgumentException( message ) );
         }
 
         try
@@ -125,15 +115,10 @@ public class MonitorService implements AdvertisableService
                     ConsolFun.AVERAGE, start, stop,
                     getResolutionFor( stop - start ) );
 
-            String entity = JsonRenderers.DEFAULT.render( new
-                    RrdDataRepresentation(
-                    request.fetchData() ) );
-
-            return Response.ok( entity, JsonRenderers.DEFAULT.getMediaType() ).build();
+            return output.ok( new RrdDataRepresentation( request.fetchData() ) );
         } catch ( Exception e )
         {
-            return buildExceptionResponse( Status.INTERNAL_SERVER_ERROR,
-                    "SEVERE: Round robin IO error.", e, JsonRenderers.DEFAULT );
+            return output.serverError( e );
         }
     }
 
@@ -143,10 +128,5 @@ public class MonitorService implements AdvertisableService
 
         // Don't allow resolutions smaller than the actual minimum resolution
         return preferred > RrdFactory.STEP_SIZE ? preferred : RrdFactory.STEP_SIZE;
-    }
-
-    private Response buildExceptionResponse( Status status, String message, Exception e, Renderer renderer )
-    {
-        return Response.status( status ).entity( renderer.renderException( message, e ) ).build();
     }
 }
