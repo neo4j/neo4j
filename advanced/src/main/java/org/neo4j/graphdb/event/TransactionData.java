@@ -48,6 +48,14 @@ public interface TransactionData
      * @return all nodes that were deleted during the transaction.
      */
     Iterable<Node> deletedNodes();
+    
+    /**
+     * Returns whether or not {@code node} is deleted in this transaction.
+     * @param node the {@link Node} to check whether or not it is deleted
+     * in this transaction.
+     * @return whether or not {@code node} is deleted in this transaction.
+     */
+    boolean isDeleted( Node node );
 
     /**
      * Get the properties that had a value assigned or overwritten on a node
@@ -92,6 +100,14 @@ public interface TransactionData
      * @return all relationships that were deleted during the transaction.
      */
     Iterable<Relationship> deletedRelationships();
+    
+    /**
+     * Returns whether or not {@code relationship} is deleted in this transaction.
+     * @param node the {@link Relationship} to check whether or not it is deleted
+     * in this transaction.
+     * @return whether or not {@code relationship} is deleted in this transaction.
+     */
+    boolean isDeleted( Relationship relationship );
 
     /**
      * Get the properties that had a value assigned on a relationship during the

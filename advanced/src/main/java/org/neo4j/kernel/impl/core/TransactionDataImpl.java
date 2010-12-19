@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -35,8 +36,8 @@ class TransactionDataImpl implements TransactionData
             newCollection();
     private final Collection<Node> createdNodes = newCollection();
     private final Collection<Relationship> createdRelationships = newCollection();
-    private final Collection<Node> deletedNodes = newCollection();
-    private final Collection<Relationship> deletedRelationships = newCollection();
+    private final Collection<Node> deletedNodes = new HashSet<Node>();
+    private final Collection<Relationship> deletedRelationships = new HashSet<Relationship>();
     private final Collection<PropertyEntry<Node>> removedNodeProperties = newCollection();
     private final Collection<PropertyEntry<Relationship>> removedRelationshipProperties =
             newCollection();
@@ -71,10 +72,20 @@ class TransactionDataImpl implements TransactionData
     {
         return this.deletedNodes;
     }
+    
+    public boolean isDeleted( Node node )
+    {
+        return this.deletedNodes.contains( node );
+    }
 
     public Iterable<Relationship> deletedRelationships()
     {
         return this.deletedRelationships;
+    }
+    
+    public boolean isDeleted( Relationship relationship )
+    {
+        return this.deletedRelationships.contains( relationship );
     }
 
     public Iterable<PropertyEntry<Node>> removedNodeProperties()
