@@ -24,6 +24,8 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 
+import javax.ws.rs.core.MediaType;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -52,7 +54,9 @@ public class AdminEndpointsFunctionalTest {
 
     @Test
     public void shouldRespondWithIndexes() throws Exception {
-        ClientResponse response = Client.create().resource(functionalTestHelper.managementUri() + "properties/neo4j-servers").get(ClientResponse.class);
+        ClientResponse response = Client.create().resource(
+                functionalTestHelper.managementUri() + "properties/neo4j-servers" ).accept(
+                MediaType.APPLICATION_JSON_TYPE ).get( ClientResponse.class );
         assertEquals(200, response.getStatus());
     }
 

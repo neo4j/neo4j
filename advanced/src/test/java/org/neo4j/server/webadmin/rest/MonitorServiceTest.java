@@ -26,6 +26,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
@@ -67,17 +68,19 @@ public class MonitorServiceTest implements JobScheduler
     }
 
     @Test
-    public void canFetchData() throws URISyntaxException
+    public void canFetchData() throws URISyntaxException, UnsupportedEncodingException
     {
         UriInfo mockUri = mock(UriInfo.class);
         URI uri = new URI("http://peteriscool.com:6666/");
         when(mockUri.getBaseUri()).thenReturn(uri);
         Response resp = monitorService.getData();
 
-        assertEquals(resp.getEntity().toString(), 200, resp.getStatus());
-        assertThat((String)resp.getEntity(), containsString("timestamps"));
-        assertThat((String)resp.getEntity(), containsString("end_time"));
-        assertThat((String)resp.getEntity(), containsString("property_count"));
+        String entity = new String( (byte[]) resp.getEntity(), "UTF-8" );
+
+        assertEquals( entity, 200, resp.getStatus() );
+        assertThat( entity, containsString( "timestamps" ) );
+        assertThat( entity, containsString( "end_time" ) );
+        assertThat( entity, containsString( "property_count" ) );
     }
 
     @Before
@@ -88,7 +91,7 @@ public class MonitorServiceTest implements JobScheduler
 
         output = new EntityOutputFormat( new JsonFormat(),
                 URI.create( "http://peteriscool.com:6666/" ), null );
-        monitorService = new MonitorService( rrdDb, output, null );
+        monitorService = new MonitorService( rrdDb, output );
     }
 
     @After
