@@ -32,24 +32,14 @@ public class MappingSerializer extends Serializer
         this.writer = writer;
     }
 
-    public void putAbsoluteUri( String key, URI uri )
+    public void putUri( String key, String path )
     {
-        writer.writeValue( RepresentationType.URI, key, uri );
+        writer.writeValue( RepresentationType.URI, key, relativeUri( path ) );
     }
 
-    public void putRelativeUri( String key, String path )
+    public void putUriTemplate( String key, String template )
     {
-        putAbsoluteUri( key, relativeUri( path ) );
-    }
-
-    public void putAbsoluteUriTemplate( String key, String template )
-    {
-        writer.writeValue( RepresentationType.TEMPLATE, key, template );
-    }
-
-    public void putRelativeUriTemplate( String key, String template )
-    {
-        putAbsoluteUriTemplate( key, relativeTemplate( template ) );
+        writer.writeValue( RepresentationType.TEMPLATE, key, relativeTemplate( template ) );
     }
 
     public void putString( String key, String value )

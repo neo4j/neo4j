@@ -20,38 +20,36 @@
 
 package org.neo4j.server.webadmin.rest;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URISyntaxException;
+
+import javax.ws.rs.core.Response;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
-import java.io.UnsupportedEncodingException;
-import java.net.URI;
-import java.net.URISyntaxException;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-
 public class JmxServiceTest
 {
     public JmxService jmxService;
+    private final URI uri = URI.create( "http://peteriscool.com:6666/" );
 
     @Test
     public void correctRepresentation() throws URISyntaxException, UnsupportedEncodingException
     {
-        URI uri = new URI( "http://peteriscool.com:6666/" );
-        UriInfo mockUri = new FakeUriInfo( uri );
-        Response resp = jmxService.getServiceDefinition( mockUri );
+        Response resp = jmxService.getServiceDefinition();
 
         assertEquals( 200, resp.getStatus() );
 
         String json = new String((byte[])resp.getEntity(), "UTF-8");
         assertThat( json, containsString( "resources" ) );
-        assertThat( json, containsString
-                ( uri.toString() ) );
+        assertThat( json, containsString( uri.toString() ) );
         assertThat( json, containsString( "jmx/domain/{domain}/{objectName}" ) );
     }
 
@@ -73,7 +71,7 @@ public class JmxServiceTest
     @Before
     public void setUp() throws Exception
     {
-        this.jmxService = new JmxService( new OutputFormat( new JsonFormat(), null, null ), null );
+        this.jmxService = new JmxService( new OutputFormat( new JsonFormat(), uri, null ), null );
     }
 
 }

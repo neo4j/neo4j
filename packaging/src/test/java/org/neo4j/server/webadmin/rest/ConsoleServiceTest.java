@@ -29,7 +29,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 
 import org.junit.After;
 import org.junit.Before;
@@ -45,6 +44,7 @@ public class ConsoleServiceTest implements SessionFactory
 {
     private ConsoleService consoleService;
     private Database database;
+    private final URI uri = URI.create( "http://peteriscool.com:6666/" );
 
     @Test
     public void retrievesTheReferenceNode() throws UnsupportedEncodingException
@@ -82,9 +82,7 @@ public class ConsoleServiceTest implements SessionFactory
     @Test
     public void correctRepresentation() throws URISyntaxException, UnsupportedEncodingException
     {
-        URI uri = new URI( "http://peteriscool.com:6666/" );
-        UriInfo mockUri = new FakeUriInfo( uri );
-        Response consoleResponse = consoleService.getServiceDefinition( mockUri );
+        Response consoleResponse = consoleService.getServiceDefinition();
 
         assertEquals( 200, consoleResponse.getStatus() );
         String response = decode( consoleResponse );
@@ -97,7 +95,7 @@ public class ConsoleServiceTest implements SessionFactory
     {
         this.database = new Database( new ImpermanentGraphDatabase() );
         this.consoleService = new ConsoleService( this, database, new OutputFormat(
-                new JsonFormat(), null, null ) );
+                new JsonFormat(), uri, null ) );
     }
 
     @After

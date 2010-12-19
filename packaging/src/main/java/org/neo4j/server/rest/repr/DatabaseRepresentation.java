@@ -43,11 +43,11 @@ public class DatabaseRepresentation extends MappingRepresentation implements
     @Override
     protected void serialize( MappingSerializer serializer )
     {
-        serializer.putRelativeUri( "node", "node" );
-        serializer.putRelativeUri( "reference_node",
+        serializer.putUri( "node", "node" );
+        serializer.putUri( "reference_node",
                 NodeRepresentation.path( graphDb.getReferenceNode() ) );
-        serializer.putRelativeUri( "node-index", "index/node" );
-        serializer.putRelativeUri( "relationship-index", "index/relationship" );
-        serializer.putRelativeUri( "extensions-info", "ext" );
+        serializer.putUri( "node-index", "index/node" );
+        serializer.putUri( "relationship-index", "index/relationship" );
+        serializer.putUri( "extensions-info", "ext" );
     }
 }
