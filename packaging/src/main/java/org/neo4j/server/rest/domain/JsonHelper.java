@@ -28,9 +28,10 @@ import java.util.Map;
 
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.neo4j.server.rest.web.PropertyValueException;
 
 public class JsonHelper {
-    
+
     static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @SuppressWarnings("unchecked")
@@ -44,7 +45,7 @@ public class JsonHelper {
     {
         return (List<Map<String, Object>>) readJson( json );
     }
-    
+
     private static Object readJson( String json ) throws JsonParseException
     {
         ObjectMapper mapper = new ObjectMapper();
@@ -58,8 +59,38 @@ public class JsonHelper {
     public static Object jsonToSingleValue(String json) throws org.neo4j.server.rest.web.PropertyValueException
     {
         Object jsonObject = readJson( json );
-        return jsonObject instanceof Collection<?> ? jsonObject :
-                PropertiesMap.assertSupportedPropertyValue( jsonObject );
+        return jsonObject instanceof Collection<?> ? jsonObject
+                : assertSupportedPropertyValue( jsonObject );
+    }
+
+    private static Object assertSupportedPropertyValue( Object jsonObject )
+            throws PropertyValueException
+    {
+        if ( jsonObject == null )
+        {
+            throw new org.neo4j.server.rest.web.PropertyValueException( "null value not supported" );
+
+        }
+
+        if ( jsonObject instanceof String )
+        {
+        }
+        else if ( jsonObject instanceof Number )
+        {
+        }
+        else if ( jsonObject instanceof Boolean )
+        {
+        }
+        else
+        {
+            throw new org.neo4j.server.rest.web.PropertyValueException(
+                    "Unsupported value type "
+                            + jsonObject.getClass()
+                            + "."
+                            + " Supported value types are all java primitives (byte, char, short, int, "
+                            + "long, float, double) and String, as well as arrays of all those types" );
+        }
+        return jsonObject;
     }
 
     public static String createJsonFrom(Object data) throws JsonBuildRuntimeException
