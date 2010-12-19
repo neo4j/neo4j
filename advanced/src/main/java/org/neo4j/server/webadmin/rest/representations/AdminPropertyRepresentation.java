@@ -21,15 +21,16 @@
 package org.neo4j.server.webadmin.rest.representations;
 
 
-import org.neo4j.server.rest.domain.Representation;
-
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.server.rest.domain.Representation;
+
+@Deprecated
 public class AdminPropertyRepresentation implements Representation
 {
-	private Map<String, Map<String, String>> value;
-	private String baseUri;
+	private final Map<String, Map<String, String>> value;
+	private final String baseUri;
 
 	public AdminPropertyRepresentation(String baseUri)
 	{

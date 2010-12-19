@@ -743,18 +743,7 @@ public class DatabaseActions
         TraversalDescription traversalDescription = TraversalDescriptionBuilder.from( description );
         for ( Path position : traversalDescription.traverse( node ) )
         {
-            switch ( returnType )
-            {
-                case node:
-                    result.add( new NodeRepresentation( position.endNode() ) );
-                    break;
-                case relationship:
-                    result.add( new RelationshipRepresentation( position.lastRelationship() ) );
-                    break;
-                case path:
-                    result.add( new PathRepresentation( position ) );
-                    break;
-            }
+            result.add( returnType.toRepresentation( position ) );
         }
 
         return new ListRepresentation( returnType.repType, result );

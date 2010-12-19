@@ -20,9 +20,17 @@
 
 package org.neo4j.server.rest;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+import java.io.IOException;
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
+
+import javax.ws.rs.core.MediaType;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,15 +38,11 @@ import org.neo4j.server.NeoServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.domain.NodeRepresentationTest;
+import org.neo4j.server.rest.repr.NodeRepresentationTest;
 
-import javax.ws.rs.core.MediaType;
-import java.io.IOException;
-import java.net.URI;
-import java.util.List;
-import java.util.Map;
-
-import static org.junit.Assert.*;
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.WebResource;
 
 public class CreateNodeFunctionalTest
 {
@@ -48,7 +52,7 @@ public class CreateNodeFunctionalTest
     private NeoServer server;
     private FunctionalTestHelper functionalTestHelper;
     private GraphDbHelper helper;
-    
+
     @Before
     public void setupServer() throws IOException {
         server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
@@ -56,12 +60,12 @@ public class CreateNodeFunctionalTest
         functionalTestHelper = new FunctionalTestHelper(server);
         helper = functionalTestHelper.getGraphDbHelper();
     }
-    
+
     @After
     public void stopServer() {
         server.stop();
     }
-    
+
     @Test
     public void shouldGet201WhenCreatingNode() throws Exception
     {

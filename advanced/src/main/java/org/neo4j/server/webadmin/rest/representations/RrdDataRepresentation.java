@@ -26,10 +26,11 @@ import java.util.Map;
 import org.neo4j.server.rest.domain.Representation;
 import org.rrd4j.core.FetchData;
 
+@Deprecated
 public class RrdDataRepresentation implements Representation
 {
 
-    private FetchData rrdData;
+    private final FetchData rrdData;
 
     public RrdDataRepresentation( FetchData rrdData )
     {
