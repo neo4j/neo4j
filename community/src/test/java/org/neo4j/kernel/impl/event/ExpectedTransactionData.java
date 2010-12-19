@@ -20,6 +20,7 @@
 
 package org.neo4j.kernel.impl.event;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -87,6 +88,7 @@ class ExpectedTransactionData
         {
 //            System.out.println( "Created node:" + node );
             assertTrue( expectedCreatedNodes.remove( node ) );
+            assertFalse( data.isDeleted( node ) );
         }
         assertTrue( expectedCreatedNodes.isEmpty() );
         
@@ -94,6 +96,7 @@ class ExpectedTransactionData
         {
 //            System.out.println( "Created rel:" + rel );
             assertTrue( expectedCreatedRelationships.remove( rel ) );
+            assertFalse( data.isDeleted( rel ) );
         }
         assertTrue( expectedCreatedRelationships.isEmpty() );
         
@@ -101,6 +104,7 @@ class ExpectedTransactionData
         {
 //            System.out.println( "Deleted node:" + node );
             assertTrue( expectedDeletedNodes.remove( node ) );
+            assertTrue( data.isDeleted( node ) );
         }
         assertTrue( expectedDeletedNodes.isEmpty() );
         
@@ -108,6 +112,7 @@ class ExpectedTransactionData
         {
 //            System.out.println( "Deleted rel:" + rel );
             assertTrue( expectedDeletedRelationships.remove( rel ) );
+            assertTrue( data.isDeleted( rel ) );
         }
         assertTrue( expectedDeletedRelationships.isEmpty() );
         
@@ -115,6 +120,7 @@ class ExpectedTransactionData
         {
 //            System.out.println( "Assigned property:" + entry );
             checkAssigned( expectedAssignedNodeProperties, entry );
+            assertFalse( data.isDeleted( entry.entity() ) );
         }
         assertTrue( expectedAssignedNodeProperties.isEmpty() );
 
@@ -122,6 +128,7 @@ class ExpectedTransactionData
         {
 //            System.out.println( "Assigned property:" + entry );
             checkAssigned( expectedAssignedRelationshipProperties, entry );
+            assertFalse( data.isDeleted( entry.entity() ) );
         }
         assertTrue( expectedAssignedRelationshipProperties.isEmpty() );
 
