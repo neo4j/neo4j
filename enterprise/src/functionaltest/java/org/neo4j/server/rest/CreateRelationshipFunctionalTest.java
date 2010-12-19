@@ -37,7 +37,7 @@ import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.domain.RelationshipRepresentationTest;
+import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
@@ -45,21 +45,21 @@ import com.sun.jersey.api.client.ClientResponse;
 public class CreateRelationshipFunctionalTest
 {
     private String RELATIONSHIP_URI_PATTERN;
-    
+
     private NeoServer server;
     private FunctionalTestHelper functionalTestHelper;
     private GraphDbHelper helper;
-    
+
     @Before
     public void setupServer() throws IOException {
         server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper(server);
         helper = functionalTestHelper.getGraphDbHelper();
-        
+
         RELATIONSHIP_URI_PATTERN = server.restApiUri() + "relationship/[0-9]+";
     }
-    
+
     @After
     public void stopServer() {
         server.stop();
