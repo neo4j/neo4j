@@ -20,17 +20,11 @@
 
 package org.neo4j.server.webadmin.rest;
 
-import org.neo4j.management.Kernel;
-import org.neo4j.server.database.Database;
-import org.neo4j.server.database.DatabaseBlockedException;
-import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.repr.BadInputException;
-import org.neo4j.server.rest.repr.InputFormat;
-import org.neo4j.server.rest.repr.ListRepresentation;
-import org.neo4j.server.rest.repr.OutputFormat;
-import org.neo4j.server.webadmin.rest.representations.JmxDomainRepresentation;
-import org.neo4j.server.webadmin.rest.representations.JmxMBeanRepresentation;
-import org.neo4j.server.webadmin.rest.representations.ServiceDefinitionRepresentation;
+import java.io.UnsupportedEncodingException;
+import java.lang.management.ManagementFactory;
+import java.net.URLDecoder;
+import java.util.ArrayList;
+import java.util.Collection;
 
 import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
@@ -46,12 +40,18 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
-import java.io.UnsupportedEncodingException;
-import java.lang.management.ManagementFactory;
-import java.net.URLDecoder;
-import java.util.ArrayList;
-import java.util.Collection;
+
+import org.neo4j.management.Kernel;
+import org.neo4j.server.database.Database;
+import org.neo4j.server.database.DatabaseBlockedException;
+import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.repr.BadInputException;
+import org.neo4j.server.rest.repr.InputFormat;
+import org.neo4j.server.rest.repr.ListRepresentation;
+import org.neo4j.server.rest.repr.OutputFormat;
+import org.neo4j.server.webadmin.rest.representations.JmxDomainRepresentation;
+import org.neo4j.server.webadmin.rest.representations.JmxMBeanRepresentation;
+import org.neo4j.server.webadmin.rest.representations.ServiceDefinitionRepresentation;
 
 @Path( JmxService.ROOT_PATH )
 public class JmxService implements AdvertisableService
@@ -73,9 +73,9 @@ public class JmxService implements AdvertisableService
     }
 
     @GET
-    public Response getServiceDefinition( @Context UriInfo uriInfo )
+    public Response getServiceDefinition()
     {
-        ServiceDefinitionRepresentation serviceDef = new ServiceDefinitionRepresentation( uriInfo.getBaseUri() + ROOT_PATH );
+        ServiceDefinitionRepresentation serviceDef = new ServiceDefinitionRepresentation( ROOT_PATH );
         serviceDef.resourceUri( "domains", JmxService.DOMAINS_PATH );
         serviceDef.resourceTemplate( "domain", JmxService.DOMAIN_TEMPLATE );
         serviceDef.resourceTemplate( "bean", JmxService.BEAN_TEMPLATE );
