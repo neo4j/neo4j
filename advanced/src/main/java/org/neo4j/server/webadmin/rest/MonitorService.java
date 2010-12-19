@@ -20,6 +20,17 @@
 
 package org.neo4j.server.webadmin.rest;
 
+import java.util.Date;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
+
 import org.neo4j.server.rest.domain.renderers.JsonRenderers;
 import org.neo4j.server.rest.domain.renderers.Renderer;
 import org.neo4j.server.rest.repr.InputFormat;
@@ -31,18 +42,6 @@ import org.rrd4j.ConsolFun;
 import org.rrd4j.core.FetchRequest;
 import org.rrd4j.core.RrdDb;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
-import java.util.Date;
-
-import static javax.ws.rs.core.Response.Status;
-
 /**
  * This exposes data from an internal round-robin database that tracks various
  * system KPIs over time.
@@ -50,7 +49,7 @@ import static javax.ws.rs.core.Response.Status;
 @Path( MonitorService.ROOT_PATH )
 public class MonitorService implements AdvertisableService
 {
-    private RrdDb rrdDb;
+    private final RrdDb rrdDb;
     private final OutputFormat output;
 
     public String getName()
@@ -80,9 +79,9 @@ public class MonitorService implements AdvertisableService
 
     @GET
     @Produces( MediaType.APPLICATION_JSON )
-    public Response getServiceDefinition( @Context UriInfo uriInfo )
+    public Response getServiceDefinition()
     {
-        ServiceDefinitionRepresentation sdr = new ServiceDefinitionRepresentation( uriInfo.getBaseUri() + ROOT_PATH );
+        ServiceDefinitionRepresentation sdr = new ServiceDefinitionRepresentation( ROOT_PATH );
         sdr.resourceTemplate( "data_from", MonitorService.DATA_FROM_PATH );
         sdr.resourceTemplate( "data_period", MonitorService.DATA_SPAN_PATH );
         sdr.resourceUri( "latest_data", MonitorService.DATA_PATH );

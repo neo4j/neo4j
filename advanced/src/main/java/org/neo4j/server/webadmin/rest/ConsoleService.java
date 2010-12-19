@@ -20,14 +20,7 @@
 
 package org.neo4j.server.webadmin.rest;
 
-import org.apache.log4j.Logger;
-import org.neo4j.server.database.Database;
-import org.neo4j.server.rest.repr.BadInputException;
-import org.neo4j.server.rest.repr.InputFormat;
-import org.neo4j.server.rest.repr.OutputFormat;
-import org.neo4j.server.rest.repr.ValueRepresentation;
-import org.neo4j.server.webadmin.console.ScriptSession;
-import org.neo4j.server.webadmin.rest.representations.ServiceDefinitionRepresentation;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
@@ -36,8 +29,15 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.core.UriInfo;
-import java.util.Map;
+
+import org.apache.log4j.Logger;
+import org.neo4j.server.database.Database;
+import org.neo4j.server.rest.repr.BadInputException;
+import org.neo4j.server.rest.repr.InputFormat;
+import org.neo4j.server.rest.repr.OutputFormat;
+import org.neo4j.server.rest.repr.ValueRepresentation;
+import org.neo4j.server.webadmin.console.ScriptSession;
+import org.neo4j.server.webadmin.rest.representations.ServiceDefinitionRepresentation;
 
 @Path( ConsoleService.SERVICE_PATH )
 public class ConsoleService implements AdvertisableService
@@ -76,9 +76,9 @@ public class ConsoleService implements AdvertisableService
     }
 
     @GET
-    public Response getServiceDefinition( final @Context UriInfo uriInfo )
+    public Response getServiceDefinition()
     {
-        ServiceDefinitionRepresentation result = new ServiceDefinitionRepresentation( uriInfo.getBaseUri() + SERVICE_PATH );
+        ServiceDefinitionRepresentation result = new ServiceDefinitionRepresentation( SERVICE_PATH );
         result.resourceUri( "exec", "" );
 
         return output.ok( result );
