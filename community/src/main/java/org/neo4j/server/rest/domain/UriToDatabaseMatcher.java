@@ -25,15 +25,16 @@ import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+// FIXME: remove this class? only used from test case
 public class UriToDatabaseMatcher {
 
 	private static ArrayList<Tuple> tuples = new ArrayList<Tuple>();
-	
+
 	public GraphDatabaseName lookup(URI requestUri) {
-		
+
 		for(int i = 0; i < tuples.size(); i ++) {
 			Tuple t = tuples.get(i);
-			
+
 			// Matchers aren't thread-safe, so they have to be created per-request
 			Matcher matcher = t.pattern.matcher(requestUri.getPath());
 
@@ -41,7 +42,7 @@ public class UriToDatabaseMatcher {
 				return t.graphDatabaseName;
 			}
 		}
-		
+
 		return GraphDatabaseName.NO_NAME;
 	}
 
@@ -53,32 +54,34 @@ public class UriToDatabaseMatcher {
 		// Patterns are thread safe and immutable, so compile them once only
 		tuples.add(new Tuple(Pattern.compile("^.*" + databaseName.getName() + ".*$"), databaseName));
 	}
-	
-	public String toString() {
-		
+
+	@Override
+    public String toString() {
+
 		StringBuilder sb = new StringBuilder();
 		for(int i = tuples.size() -1; i >=0; i--) {
 			Tuple t = tuples.get(i);
-			
+
 			sb.append(t);
-			
+
 		}
-		
+
 		return sb.toString();
-		
+
 	}
-	
+
 	private static class Tuple {
 		public GraphDatabaseName graphDatabaseName;
 		public Pattern pattern;
-		
+
 		public Tuple(Pattern pattern, GraphDatabaseName graphDatabaseName) {
 			this.pattern = pattern;
 			this.graphDatabaseName = graphDatabaseName;
-			
+
 		}
-		
-		public String toString() {
+
+		@Override
+        public String toString() {
 			return pattern.toString() + " => " + graphDatabaseName + System.getProperty("line.separator");
 		}
 	}
