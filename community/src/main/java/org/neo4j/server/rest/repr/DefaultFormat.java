@@ -70,7 +70,7 @@ public class DefaultFormat extends RepresentationFormat
     @Override
     protected String complete( ListWriter serializer )
     {
-        return complete( serializer );
+        return inner.complete( serializer );
     }
 
     @Override
