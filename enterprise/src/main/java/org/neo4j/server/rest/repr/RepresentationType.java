@@ -36,8 +36,8 @@ public final class RepresentationType
     public static final RepresentationType GRAPHDB = new RepresentationType( "graphdb", null, GraphDatabaseService.class ),//
             NODE = new RepresentationType( "node", "nodes", Node.class ),//
             RELATIONSHIP = new RepresentationType( "relationship", "relationships", Relationship.class ),//
-            PATH = new RepresentationType( "path", "paths", Path.class );
-    static final RepresentationType RELATIONSHIP_TYPE = new RepresentationType( "relationship-type", "relationship-types" ),//
+            PATH = new RepresentationType( "path", "paths", Path.class ),//
+            RELATIONSHIP_TYPE = new RepresentationType( "relationship-type", "relationship-types" ),//
             PROPERTIES = new RepresentationType( "properties" ),//
             INDEX = new RepresentationType( "index" ),//
             NODE_INDEX_ROOT = new RepresentationType( "node-index" ),//
@@ -60,6 +60,7 @@ public final class RepresentationType
             FLOAT = new RepresentationType( "float", "floats" ),//
             DOUBLE = new RepresentationType( "double", "doubles" ),//
             BOOLEAN = new RepresentationType( "boolean", "booleans" ),//
+            NOTHING = new RepresentationType( "void", null ),//
             // System
             EXCEPTION = new RepresentationType( "exception" );
 
