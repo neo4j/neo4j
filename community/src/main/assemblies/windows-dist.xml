@@ -61,7 +61,12 @@
         <include>org.apache.servicemix.bundles:org.apache.servicemix.bundles.jline</include>
         <include>org.apache.servicemix.bundles:org.apache.servicemix.bundles.lucene</include>
         <include>com.google.protobuf:protobuf-java</include>
+        <include>org.jboss.netty:netty</include>
       </includes>
+      <excludes>
+        <exclude>*:javadoc:*</exclude>
+        <exclude>*:pom:*</exclude>
+      </excludes>
     </dependencySet>
     <dependencySet>
       <outputDirectory>system/lib</outputDirectory>
@@ -75,6 +80,7 @@
         <exclude>org.apache.servicemix.bundles:org.apache.servicemix.bundles.jline</exclude>
         <exclude>org.apache.servicemix.bundles:org.apache.servicemix.bundles.lucene</exclude>
         <exclude>com.google.protobuf:protobuf-java</exclude>
+        <exclude>org.jboss.netty:netty</exclude>
       </excludes>
     </dependencySet>
     <!-- java examples -->
