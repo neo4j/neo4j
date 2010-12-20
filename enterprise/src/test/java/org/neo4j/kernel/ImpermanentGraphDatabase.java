@@ -94,12 +94,10 @@ public class ImpermanentGraphDatabase extends AbstractGraphDatabase
             {
                 deleteRecursively( child );
             }
-        } else
+        }
+        if ( !file.delete() )
         {
-            if ( !file.delete() )
-            {
-                throw new RuntimeException( "Couldn't empty database." );
-            }
+            throw new RuntimeException( "Couldn't empty database." );
         }
     }
 
