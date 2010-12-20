@@ -23,8 +23,8 @@ package org.neo4j.server.rest.repr;
 import java.net.URI;
 
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.helpers.PropertyTypeDispatcher;
 import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.server.helpers.PropertyTypeDispatcher;
 
 public class ValueRepresentation extends Representation
 {
