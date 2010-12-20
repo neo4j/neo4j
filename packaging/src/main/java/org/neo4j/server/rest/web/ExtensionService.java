@@ -20,21 +20,17 @@
 
 package org.neo4j.server.rest.web;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.Response;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.plugins.*;
+import org.neo4j.server.plugins.BadPluginInvocationException;
+import org.neo4j.server.plugins.ParameterList;
 import org.neo4j.server.plugins.PluginInvocationFailureException;
+import org.neo4j.server.plugins.PluginInvocator;
+import org.neo4j.server.plugins.PluginLookupException;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.MappingRepresentation;
@@ -43,15 +39,22 @@ import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.ServerExtensionRepresentation;
 
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Response;
+
 @Path( "ext" )
 public class ExtensionService
 {
     private static final String PATH_EXTENSION = "/{name}";
     private static final String PATH_GRAPHDB_EXTENSION_METHOD = PATH_EXTENSION
                                                                 + "/graphdb/{method}";
-    private static final String PATH_NODE_EXTENSION_METHOD = PATH_EXTENSION + "/node/{method}";
+    private static final String PATH_NODE_EXTENSION_METHOD = PATH_EXTENSION + "/node/{nodeId}/{method}";
     private static final String PATH_RELATIONSHIP_EXTENSION_METHOD = PATH_EXTENSION
-                                                                     + "/relationship/{method}";
+                                                                     + "/relationship/{relationshipId}/{method}";
     private final InputFormat input;
     private final OutputFormat output;
     private final PluginInvocator extensions;
