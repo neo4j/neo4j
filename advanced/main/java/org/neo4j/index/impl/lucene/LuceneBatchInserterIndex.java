@@ -41,7 +41,6 @@ import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.batchinsert.BatchInserter;
 import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
-import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 
@@ -54,7 +53,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
     private boolean writerModified;
     private IndexSearcher searcher;
     private final boolean createdNow;
-    private Map<String, Cache<String, Collection<Long>>> cache;
+    private Map<String, LruCache<String, Collection<Long>>> cache;
 
     LuceneBatchInserterIndex( LuceneBatchInserterIndexProvider provider,
             BatchInserter inserter, IndexIdentifier identifier, Map<String, String> config )
@@ -103,7 +102,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         }
         
         String valueAsString = value.toString();
-        Cache<String, Collection<Long>> cache = this.cache.get( key );
+        LruCache<String, Collection<Long>> cache = this.cache.get( key );
         if ( cache != null )
         {
             Collection<Long> ids = cache.get( valueAsString );
@@ -124,7 +123,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         }
         
         String valueAsString = value.toString();
-        Cache<String, Collection<Long>> cache = this.cache.get( key );
+        LruCache<String, Collection<Long>> cache = this.cache.get( key );
         if ( cache != null )
         {
             cache.put( valueAsString, ids );
@@ -139,7 +138,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         }
         
         String valueAsString = value.toString();
-        Cache<String, Collection<Long>> cache = this.cache.get( key );
+        LruCache<String, Collection<Long>> cache = this.cache.get( key );
         if ( cache != null )
         {
             Collection<Long> ids = cache.get( valueAsString );
@@ -190,7 +189,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         }
         
         String valueAsString = value.toString();
-        Cache<String, Collection<Long>> cache = this.cache.get( key );
+        LruCache<String, Collection<Long>> cache = this.cache.get( key );
         if ( cache != null )
         {
             Collection<Long> ids = cache.get( valueAsString );
@@ -351,17 +350,21 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         writerModified = true;
     }
     
-    public void setCacheCapacity( String key, Cache<String, Collection<Long>> cache )
+    public void setCacheCapacity( String key, int size )
     {
         if ( this.cache == null )
         {
-            this.cache = new HashMap<String, Cache<String,Collection<Long>>>();
+            this.cache = new HashMap<String, LruCache<String,Collection<Long>>>();
         }
-        this.cache.put( key, cache );
-    }
-
-    public void setCacheCapacity( String key, int size )
-    {
-        setCacheCapacity( key, new LruCache<String, Collection<Long>>( key, size, null ) );
+        LruCache<String, Collection<Long>> cache = this.cache.get( key );
+        if ( cache != null )
+        {
+            cache.resize( size );
+        }
+        else
+        {
+            cache = new LruCache<String, Collection<Long>>( "Batch inserter cache for " + key, size, null );
+            this.cache.put( key, cache );
+        }
     }
 }

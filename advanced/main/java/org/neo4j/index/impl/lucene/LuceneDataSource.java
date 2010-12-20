@@ -57,7 +57,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.Config;
-import org.neo4j.kernel.impl.cache.Cache;
+import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.index.IndexProviderStore;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBackedXaDataSource;
@@ -127,7 +127,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
     final IndexProviderStore providerStore;
     private final IndexTypeCache typeCache;
     private boolean closed;
-    private final IndexCache caching;
+    private final Cache caching;
     EntityType nodeEntityType;
     EntityType relationshipEntityType;
     final Map<IndexIdentifier, LuceneIndex<? extends PropertyContainer>> indexes =
@@ -144,7 +144,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
         throws InstantiationException
     {
         super( params );
-        caching = new IndexCache();
+        caching = new Cache();
         String storeDir = (String) params.get( "store_dir" );
         this.baseStorePath = getStoreDir( storeDir ).first();
         cleanWriteLocks( baseStorePath );
@@ -659,25 +659,25 @@ public class LuceneDataSource extends LogBackedXaDataSource
         }
     }
 
-    Cache<String,Collection<Long>> getFromCache( IndexIdentifier identifier, String key )
+    LruCache<String,Collection<Long>> getFromCache( IndexIdentifier identifier, String key )
     {
         return caching.get( identifier, key );
     }
 
     void setCacheCapacity( IndexIdentifier identifier, String key, int maxNumberOfCachedEntries )
     {
-        this.caching.enable( identifier, key, maxNumberOfCachedEntries );
+        this.caching.setCapacity( identifier, key, maxNumberOfCachedEntries );
     }
     
     Integer getCacheCapacity( IndexIdentifier identifier, String key )
     {
-        Cache<String, Collection<Long>> cache = this.caching.get( identifier, key );
+        LruCache<String, Collection<Long>> cache = this.caching.get( identifier, key );
         return cache != null ? cache.maxSize() : null;
     }
     
     void invalidateCache( IndexIdentifier identifier, String key, Object value )
     {
-        Cache<String,Collection<Long>> cache = caching.get( identifier, key );
+        LruCache<String,Collection<Long>> cache = caching.get( identifier, key );
         if ( cache != null )
         {
             cache.remove( value.toString() );
