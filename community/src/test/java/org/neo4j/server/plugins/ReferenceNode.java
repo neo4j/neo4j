@@ -18,12 +18,21 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.server.extensions;
+package org.neo4j.server.plugins;
 
-public final class ExtensionInvocationFailureException extends Exception
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+
+@Description( "An extension for accessing the reference node of the graph database, this can be used as the root for your graph." )
+public class ReferenceNode extends ServerPlugin
 {
-    ExtensionInvocationFailureException( Throwable cause )
+    public static final String GET_REFERENCE_NODE = "reference_node_uri";
+
+    @Description( "Get the reference node from the graph database" )
+    @ExtensionTarget( GraphDatabaseService.class )
+    @Name( GET_REFERENCE_NODE )
+    public Node getReferenceNode( @Source GraphDatabaseService graphDb )
     {
-        super( cause );
+        return graphDb.getReferenceNode();
     }
 }

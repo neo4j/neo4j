@@ -38,7 +38,7 @@ import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
 import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
 import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.extensions.ExtensionManager;
+import org.neo4j.server.plugins.ExtensionManager;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.osgi.OSGiContainer;
 import org.neo4j.server.rrd.RrdFactory;

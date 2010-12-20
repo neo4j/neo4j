@@ -23,7 +23,7 @@ package org.neo4j.server.rest.repr;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.server.extensions.ParameterDescriptionConsumer;
+import org.neo4j.server.plugins.ParameterDescriptionConsumer;
 
 public final class ExtensionPointRepresentation extends ObjectRepresentation implements
         ParameterDescriptionConsumer

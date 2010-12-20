@@ -18,11 +18,12 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.server.extensions;
+package org.neo4j.server.plugins;
 
-public interface ParameterDescriptionConsumer
+public class ExtensionLookupException extends Exception
 {
-    void describeParameter( String name, Class<?> type, boolean optional, String description );
-
-    void describeListParameter( String name, Class<?> type, boolean optional, String description );
+    ExtensionLookupException( String message )
+    {
+        super( message );
+    }
 }
