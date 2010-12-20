@@ -20,10 +20,10 @@
 
 package org.neo4j.server.plugins;
 
-public class ExtensionLookupException extends Exception
+public final class BadPluginInvocationException extends Exception
 {
-    ExtensionLookupException( String message )
+    public BadPluginInvocationException( Throwable cause )
     {
-        super( message );
+        super( cause );
     }
 }
