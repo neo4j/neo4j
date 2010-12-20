@@ -83,7 +83,7 @@ public final class PluginManager implements ExtensionInjector, ExtensionInvocato
         for ( Map.Entry<String, ServerExtender> extension : extensions.entrySet() )
         {
             List<String> methods = new ArrayList<String>();
-            for ( ExtensionPoint method : extension.getValue().getExtensionsFor( type ) )
+            for ( PluginPoint method : extension.getValue().getExtensionsFor( type ) )
             {
                 methods.add( method.name() );
             }
@@ -92,7 +92,7 @@ public final class PluginManager implements ExtensionInjector, ExtensionInvocato
         return result;
     }
 
-    private ExtensionPoint extension( String name, Class<?> type, String method )
+    private PluginPoint extension( String name, Class<?> type, String method )
             throws ExtensionLookupException
     {
         ServerExtender extender = extensions.get( name );
@@ -120,9 +120,9 @@ public final class PluginManager implements ExtensionInjector, ExtensionInvocato
             throw new ExtensionLookupException( "No such ServerPlugin: \"" + name + "\"" );
         }
         List<ExtensionPointRepresentation> result = new ArrayList<ExtensionPointRepresentation>();
-        for ( ExtensionPoint extension : extender.all() )
+        for ( PluginPoint plugin : extender.all() )
         {
-            result.add( extension.descibe() );
+            result.add( plugin.descibe() );
         }
         return result;
     }
@@ -132,10 +132,10 @@ public final class PluginManager implements ExtensionInjector, ExtensionInvocato
             String method, T context, ParameterList params ) throws ExtensionLookupException,
             BadInputException, PluginInvocationFailureException, BadExtensionInvocationException
     {
-        ExtensionPoint extension = extension( name, type, method );
+        PluginPoint plugin = extension( name, type, method );
         try
         {
-            return extension.invoke( graphDb, context, params );
+            return plugin.invoke( graphDb, context, params );
         }
         catch ( BadInputException e )
         {

@@ -144,34 +144,34 @@ public abstract class ServerPlugin
     /**
      * Loads the extension points of this server extension. Override this method
      * to provide your own, custom way of loading extension points. The default
-     * implementation loads {@link ExtensionPoint} based on methods with the
+     * implementation loads {@link PluginPoint} based on methods with the
      * {@link PluginTarget} annotation.
      *
-     * @param extender the collection of {@link ExtensionPoint}s for this
+     * @param extender the collection of {@link PluginPoint}s for this
      *            {@link ServerPlugin}.
      * @param serverConfig the configuration parameters for the server.
      */
     protected void loadServerExtender( ServerExtender extender, Configuration serverConfig )
     {
-        for ( ExtensionPoint extension : getDefaultExtensionPoints( serverConfig ) )
+        for ( PluginPoint plugin : getDefaultExtensionPoints( serverConfig ) )
         {
-            extender.addExtension( extension.forType(), extension );
+            extender.addExtension( plugin.forType(), plugin );
         }
     }
 
     /**
      * Loads the extension points of this server extension. Override this method
      * to provide your own, custom way of loading extension points. The default
-     * implementation loads {@link ExtensionPoint} based on methods with the
+     * implementation loads {@link PluginPoint} based on methods with the
      * {@link PluginTarget} annotation.
      * 
      * @param serverConfig the configuration parameters for the server.
-     * @return the collection of {@link ExtensionPoint}s for this
+     * @return the collection of {@link PluginPoint}s for this
      *         {@link ServerPlugin}.
      */
-    protected Collection<ExtensionPoint> getDefaultExtensionPoints( Configuration serverConfig )
+    protected Collection<PluginPoint> getDefaultExtensionPoints( Configuration serverConfig )
     {
-        List<ExtensionPoint> result = new ArrayList<ExtensionPoint>();
+        List<PluginPoint> result = new ArrayList<PluginPoint>();
         for ( Method method : getClass().getMethods() )
         {
             PluginTarget target = method.getAnnotation( PluginTarget.class );

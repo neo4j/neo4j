@@ -40,7 +40,7 @@ import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.Representation;
 
-class PluginMethod extends ExtensionPoint
+class PluginMethod extends PluginPoint
 {
     private final ServerPlugin plugin;
     private final Method method;
