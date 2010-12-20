@@ -64,6 +64,7 @@
       <artifactId>neo4j-kernel</artifactId>
       <version>1.2-SNAPSHOT</version>
       <classifier>tests</classifier>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -111,6 +112,12 @@
       <groupId>com.tinkerpop</groupId>
       <artifactId>gremlin</artifactId>
       <version>0.5.5</version>
+      <exclusions>
+        <exclusion>
+          <groupId>jline</groupId>
+          <artifactId>jline</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
@@ -133,14 +140,6 @@
     </dependency>
 
     <dependency>
-      <groupId>tanukisoft</groupId>
-      <artifactId>wrapper</artifactId>
-      <version>3.2.3</version>
-      <scope>provided</scope>
-      <optional>true</optional>
-    </dependency>
-
-    <dependency>
       <groupId>org.rrd4j</groupId>
       <artifactId>rrd4j</artifactId>
       <version>2.0.6</version>
@@ -152,6 +151,12 @@
       <version>1.8.0</version>
       <type>jar</type>
       <scope>compile</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>javax.transaction</groupId>
+          <artifactId>jta</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
