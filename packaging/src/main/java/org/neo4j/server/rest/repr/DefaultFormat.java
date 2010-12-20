@@ -42,7 +42,7 @@ public class DefaultFormat extends RepresentationFormat
     public DefaultFormat( RepresentationFormat inner,
                           Collection<MediaType> supported, MediaType... requested )
     {
-        super( new MediaType( "N/A", "N/A" ) );
+        super( MediaType.APPLICATION_JSON_TYPE );
 
         this.inner = inner;
         this.supported = supported;
