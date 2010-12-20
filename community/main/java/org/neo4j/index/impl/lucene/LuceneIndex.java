@@ -39,7 +39,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
-import org.neo4j.kernel.impl.cache.Cache;
+import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 
@@ -220,7 +220,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
             if ( searcher != null )
             {
                 boolean foundInCache = false;
-                Cache<String, Collection<Long>> cachedIdsMap = null;
+                LruCache<String, Collection<Long>> cachedIdsMap = null;
                 if ( keyForDirectLookup != null )
                 {
                     cachedIdsMap = service.dataSource().getFromCache(
@@ -271,7 +271,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
     }
     
     private boolean fillFromCache(
-            Cache<String, Collection<Long>> cachedNodesMap,
+            LruCache<String, Collection<Long>> cachedNodesMap,
             List<Long> ids, String key, String valueAsString,
             Collection<Long> deletedNodes )
     {
