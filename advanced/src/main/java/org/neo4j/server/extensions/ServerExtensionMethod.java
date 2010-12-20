@@ -61,7 +61,7 @@ class ServerExtensionMethod extends ExtensionPoint
     static ServerExtensionMethod createFrom( ServerExtension extension, Method method,
             Class<?> discovery )
     {
-        ResultConverter result = ResultConverter.get( method.getReturnType() );
+        ResultConverter result = ResultConverter.get( method.getGenericReturnType() );
         Type[] types = method.getGenericParameterTypes();
         Annotation[][] annotations = method.getParameterAnnotations();
         SourceExtractor sourceExtractor = null;

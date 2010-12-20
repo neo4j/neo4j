@@ -79,4 +79,37 @@ public abstract class Representation
     abstract void addTo( ListSerializer serializer );
 
     abstract void putTo( MappingSerializer serializer, String key );
+
+    boolean isEmpty()
+    {
+        return false;
+    }
+
+    public static Representation emptyRepresentation()
+    {
+        return new Representation( (RepresentationType) null )
+        {
+            @Override
+            boolean isEmpty()
+            {
+                return true;
+            }
+
+            @Override
+            String serialize( RepresentationFormat format, URI baseUri, ExtensionInjector extensions )
+            {
+                return "";
+            }
+
+            @Override
+            void putTo( MappingSerializer serializer, String key )
+            {
+            }
+
+            @Override
+            void addTo( ListSerializer serializer )
+            {
+            }
+        };
+    }
 }
