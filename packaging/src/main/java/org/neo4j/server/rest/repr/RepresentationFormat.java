@@ -29,7 +29,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.server.extensions.ParameterList;
+import org.neo4j.server.plugins.ParameterList;
 import org.neo4j.server.rest.web.NodeNotFoundException;
 import org.neo4j.server.rest.web.RelationshipNotFoundException;
 

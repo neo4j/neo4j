@@ -18,12 +18,16 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.server.extensions;
+package org.neo4j.server.plugins;
 
-public final class BadExtensionInvocationException extends Exception
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+@Target( ElementType.METHOD )
+@Retention( RetentionPolicy.RUNTIME )
+public @interface ExtensionTarget
 {
-    public BadExtensionInvocationException( Throwable cause )
-    {
-        super( cause );
-    }
+    Class<?> value();
 }
