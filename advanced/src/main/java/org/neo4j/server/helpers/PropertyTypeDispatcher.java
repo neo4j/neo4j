@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.helpers;
+package org.neo4j.server.helpers;
 
 import java.util.ArrayList;
 import java.util.Collection;

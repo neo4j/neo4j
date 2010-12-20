@@ -21,7 +21,7 @@
 package org.neo4j.server.rest.repr;
 
 import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.helpers.PropertyTypeDispatcher;
+import org.neo4j.server.helpers.PropertyTypeDispatcher;
 
 public final class PropertiesRepresentation extends MappingRepresentation
 {
