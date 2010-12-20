@@ -73,6 +73,10 @@ public class HtmlFunctionalTest {
         helper.createRelationshipIndex( "relationships" );
         helper.addRelationshipToIndex( "relationships", "key", "value", knowsRelationshipId );
 
+        // index a relationship
+        helper.createRelationshipIndex( "relationships2" );
+        helper.addRelationshipToIndex( "relationships2", "key2", "value2", knowsRelationshipId );
+
     }
 
     @After
