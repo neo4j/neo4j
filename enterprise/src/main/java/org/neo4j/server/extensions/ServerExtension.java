@@ -120,7 +120,7 @@ public abstract class ServerExtension
         {
             if ( !URLEncoder.encode( name, "UTF-8" ).equals( name ) )
             {
-                throw new IllegalArgumentException( "Name contained illegal characters" );
+                throw new IllegalArgumentException( "Name contains illegal characters" );
             }
         }
         catch ( UnsupportedEncodingException e )
