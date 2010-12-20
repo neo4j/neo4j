@@ -37,8 +37,8 @@ public abstract class Representation
     public static final String PATH_LIST = RepresentationType.PATH.listName;
     public static final String RELATIONSHIP_TYPE = RepresentationType.RELATIONSHIP_TYPE.valueName;
     public static final String PROPERTIES_MAP = RepresentationType.PROPERTIES.valueName;
-    public static final String EXTENSIONS_MAP = RepresentationType.EXTENSIONS.valueName;
-    public static final String EXTENSION = RepresentationType.EXTENSION.valueName;
+    public static final String EXTENSIONS_MAP = RepresentationType.PLUGINS.valueName;
+    public static final String EXTENSION = RepresentationType.PLUGIN.valueName;
     public static final String URI = RepresentationType.URI.valueName;
     public static final String URI_TEMPLATE = RepresentationType.TEMPLATE.valueName;
     public static final String STRING = RepresentationType.STRING.valueName;
