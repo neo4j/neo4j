@@ -24,7 +24,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.server.extensions.ParameterList;
+import org.neo4j.server.plugins.ParameterList;
 
 public interface InputFormat
 {

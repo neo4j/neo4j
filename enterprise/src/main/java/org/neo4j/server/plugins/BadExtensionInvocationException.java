@@ -18,25 +18,12 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.server.extensions;
+package org.neo4j.server.plugins;
 
-import org.neo4j.server.database.AbstractInjectableProvider;
-
-import com.sun.jersey.api.core.HttpContext;
-
-public class ExtensionInvocatorProvider extends AbstractInjectableProvider<ExtensionInvocator>
+public final class BadExtensionInvocationException extends Exception
 {
-    private final ExtensionInvocator invocator;
-
-    public ExtensionInvocatorProvider( ExtensionInvocator invocator )
+    public BadExtensionInvocationException( Throwable cause )
     {
-        super( ExtensionInvocator.class );
-        this.invocator = invocator;
-    }
-
-    @Override
-    public ExtensionInvocator getValue( HttpContext c )
-    {
-        return invocator;
+        super( cause );
     }
 }

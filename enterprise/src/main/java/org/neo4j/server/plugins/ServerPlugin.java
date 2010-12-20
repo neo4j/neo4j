@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.server.extensions;
+package org.neo4j.server.plugins;
 
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
@@ -36,7 +36,7 @@ import org.neo4j.helpers.Service;
  * Extensions are created by creating a subclass of this class. The subclass
  * should have a public no-argument constructor. Then place this class in a
  * jar-file that contains a file called
- * <code>META-INF/services/org.neo4j.server.extensions.ServerPlugin</code>.
+ * <code>META-INF/services/org.neo4j.server.plugins.ServerPlugin</code>.
  * This file should contain the fully qualified name of the class that extends
  * {@link ServerPlugin}, e.g. <code>com.example.MyNeo4jServerExtension</code>
  * on a single line. If the jar contains multiple extensions to the Neo4j

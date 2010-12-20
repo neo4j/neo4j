@@ -18,12 +18,18 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.server.extensions;
+package org.neo4j.server.plugins;
 
-public class ExtensionLookupException extends Exception
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+@Target( ElementType.PARAMETER )
+@Retention( RetentionPolicy.RUNTIME )
+public @interface Parameter
 {
-    ExtensionLookupException( String message )
-    {
-        super( message );
-    }
+    String name();
+
+    boolean optional() default false;
 }

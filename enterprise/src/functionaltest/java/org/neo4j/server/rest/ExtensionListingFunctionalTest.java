@@ -37,7 +37,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.ServerBuilder;
-import org.neo4j.server.extensions.ReferenceNode;
+import org.neo4j.server.plugins.ReferenceNode;
 import org.neo4j.server.rest.domain.JsonHelper;
 
 import com.sun.jersey.api.client.Client;

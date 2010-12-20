@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.server.extensions;
+package org.neo4j.server.plugins;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -27,7 +27,7 @@ import java.lang.annotation.Target;
 
 @Target( ElementType.METHOD )
 @Retention( RetentionPolicy.RUNTIME )
-public @interface ExtensionTarget
+public @interface Name
 {
-    Class<?> value();
+    String value();
 }
