@@ -73,6 +73,7 @@ public class ReferenceNodeFunctionalTest
 
         Map<String, Object> map = JsonHelper.jsonToMap( body );
 
+        assertEquals(200, response.getStatus());
         assertThat( map.get( "extensions" ), instanceOf( Map.class ) );
     }
 
