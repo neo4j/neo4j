@@ -20,13 +20,11 @@
 
 package org.neo4j.graphdb.index;
 
-import java.util.Collection;
 import java.util.Map;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.impl.batchinsert.BatchInserter;
-import org.neo4j.kernel.impl.cache.Cache;
 
 /**
  * The {@link BatchInserter} version of {@link Index}. Additions/updates to a
@@ -169,18 +167,4 @@ public interface BatchInserterIndex
      * @param size the number of values to cache results for.
      */
     void setCacheCapacity( String key, int size );
-
-    /**
-     * Sets the cache for key/value pairs for the given {@code key}.
-     * Caching values may increase {@link #get(String, Object)} lookups significantly,
-     * but may at the same time slow down insertion of data some.
-     * 
-     * Be sure to call this method to enable caching for keys that will be
-     * used a lot in lookups. It's also best to call this method for your keys
-     * right after the index has been created.
-     * 
-     * @param key the key to set cache capacity for.
-     * @param cache the {@link Cache} to use to store results in.
-     */
-    void setCacheCapacity( String key, Cache<String, Collection<Long>> cache );
 }
