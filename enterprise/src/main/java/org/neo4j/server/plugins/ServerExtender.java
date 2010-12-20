@@ -34,18 +34,18 @@ import org.neo4j.helpers.collection.NestingIterable;
 public final class ServerExtender
 {
     @SuppressWarnings( "unchecked" )
-    private final Map<Class<?>, Map<String, PluginPoint>> extensions = new HashMap();
+    private final Map<Class<?>, Map<String, PluginPoint>> targetToPluginMap = new HashMap();
 
     ServerExtender()
     {
-        extensions.put( Node.class, new ConcurrentHashMap<String, PluginPoint>() );
-        extensions.put( Relationship.class, new ConcurrentHashMap<String, PluginPoint>() );
-        extensions.put( GraphDatabaseService.class, new ConcurrentHashMap<String, PluginPoint>() );
+        targetToPluginMap.put( Node.class, new ConcurrentHashMap<String, PluginPoint>() );
+        targetToPluginMap.put( Relationship.class, new ConcurrentHashMap<String, PluginPoint>() );
+        targetToPluginMap.put( GraphDatabaseService.class, new ConcurrentHashMap<String, PluginPoint>() );
     }
 
     Iterable<PluginPoint> getExtensionsFor( Class<?> type )
     {
-        Map<String, PluginPoint> ext = extensions.get( type );
+        Map<String, PluginPoint> ext = targetToPluginMap.get( type );
         if ( ext == null ) return Collections.emptyList();
         return ext.values();
     }
@@ -53,7 +53,7 @@ public final class ServerExtender
     Iterable<PluginPoint> all()
     {
         return new NestingIterable<PluginPoint, Map<String, PluginPoint>>(
-                extensions.values() )
+                targetToPluginMap.values() )
         {
             @Override
             protected Iterator<PluginPoint> createNestedIterator(
@@ -65,9 +65,9 @@ public final class ServerExtender
     }
 
     PluginPoint getExtensionPoint( Class<?> type, String method )
-            throws ExtensionLookupException
+            throws PluginLookupException
     {
-        Map<String, PluginPoint> ext = extensions.get( type );
+        Map<String, PluginPoint> ext = targetToPluginMap.get( type );
         PluginPoint plugin = null;
         if ( ext != null )
         {
@@ -75,31 +75,31 @@ public final class ServerExtender
         }
         if ( plugin == null )
         {
-            throw new ExtensionLookupException( "No plugin \"" + method + "\" for " + type );
+            throw new PluginLookupException( "No plugin \"" + method + "\" for " + type );
         }
         return plugin;
     }
 
     void addExtension( Class<?> type, PluginPoint plugin )
     {
-        Map<String, PluginPoint> ext = extensions.get( type );
+        Map<String, PluginPoint> ext = targetToPluginMap.get( type );
         if ( ext == null ) throw new IllegalStateException( "Cannot extend " + type );
         add( ext, plugin );
     }
 
     public void addGraphDatabaseExtensions( PluginPoint plugin )
     {
-        add( extensions.get( GraphDatabaseService.class ), plugin );
+        add( targetToPluginMap.get( GraphDatabaseService.class ), plugin );
     }
 
     public void addNodeExtensions( PluginPoint plugin )
     {
-        add( extensions.get( Node.class ), plugin );
+        add( targetToPluginMap.get( Node.class ), plugin );
     }
 
     public void addRelationshipExtensions( PluginPoint plugin )
     {
-        add( extensions.get( Relationship.class ), plugin );
+        add( targetToPluginMap.get( Relationship.class ), plugin );
     }
 
     private static void add( Map<String, PluginPoint> extensions, PluginPoint plugin )
