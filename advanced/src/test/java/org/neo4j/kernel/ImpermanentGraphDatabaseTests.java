@@ -20,13 +20,14 @@
 
 package org.neo4j.kernel;
 
+import static junit.framework.Assert.assertEquals;
+
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
-
-import static junit.framework.Assert.assertEquals;
 
 public class ImpermanentGraphDatabaseTests
 {
@@ -34,8 +35,14 @@ public class ImpermanentGraphDatabaseTests
 
     @Before
 	public void Given() {
-		db = new ImpermanentGraphDatabase( "neodb" );
+		db = new ImpermanentGraphDatabase( "target/var/ineodb" );
 	}
+    
+    @After
+    public void tearDown()
+    {
+        db.shutdown();
+    }
 
 	@Test
     public void should_keep_data_between_start_and_shutdown()
