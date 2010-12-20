@@ -195,6 +195,11 @@
       <name>Neo4j Maven 2 repository</name>
       <url>http://m2.neo4j.org/</url>
     </repository>
+     <repository>
+        <id>java.net</id>
+        <name>maven release repository</name>
+        <url>http://download.java.net/maven/2</url>
+      </repository>
   </repositories>
 
   <dependencies>
