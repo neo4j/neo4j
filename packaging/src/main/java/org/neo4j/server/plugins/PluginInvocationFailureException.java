@@ -20,9 +20,9 @@
 
 package org.neo4j.server.plugins;
 
-public final class ExtensionInvocationFailureException extends Exception
+public final class PluginInvocationFailureException extends Exception
 {
-    ExtensionInvocationFailureException( Throwable cause )
+    PluginInvocationFailureException( Throwable cause )
     {
         super( cause );
     }
