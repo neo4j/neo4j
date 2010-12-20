@@ -102,7 +102,7 @@ public class GremlinSession implements ScriptSession
     private TransactionalGraph getGremlinWrappedGraph()
             throws DatabaseBlockedException
     {
-        return new Neo4jGraph( database.graph, database.indexService );
+        return new Neo4jGraph( database.graph );
     }
 
     private ScriptEngine createGremlinScriptEngine()
