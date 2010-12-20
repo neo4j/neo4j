@@ -37,16 +37,16 @@ import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.ImpermanentGraphDatabase;
 import org.neo4j.server.rest.repr.formats.NullFormat;
 
-public class ExtensionManagerTest
+public class PluginManagerTest
 {
-    private static ExtensionManager manager;
+    private static PluginManager manager;
     private static AbstractGraphDatabase graphDb;
 
     @BeforeClass
     public static void loadExtensionManager() throws Exception
     {
         graphDb = new ImpermanentGraphDatabase();
-        manager = new ExtensionManager( null );
+        manager = new PluginManager( null );
     }
 
     @AfterClass

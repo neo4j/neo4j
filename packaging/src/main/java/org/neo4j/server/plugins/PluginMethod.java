@@ -40,16 +40,16 @@ import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.Representation;
 
-class ServerExtensionMethod extends ExtensionPoint
+class PluginMethod extends ExtensionPoint
 {
     private final ServerPlugin plugin;
     private final Method method;
     private final DataExtractor[] extractors;
     private final ResultConverter result;
 
-    private ServerExtensionMethod( String name, Class<?> discovery, ServerPlugin plugin,
-            ResultConverter result, Method method, DataExtractor[] extractors,
-            Description description )
+    private PluginMethod( String name, Class<?> discovery, ServerPlugin plugin,
+                          ResultConverter result, Method method, DataExtractor[] extractors,
+                          Description description )
     {
         super( discovery, name, description == null ? "" : description.value() );
         this.plugin = plugin;
@@ -58,7 +58,7 @@ class ServerExtensionMethod extends ExtensionPoint
         this.extractors = extractors;
     }
 
-    static ServerExtensionMethod createFrom( ServerPlugin plugin, Method method,
+    static PluginMethod createFrom( ServerPlugin plugin, Method method,
             Class<?> discovery )
     {
         ResultConverter result = ResultConverter.get( method.getGenericReturnType() );
@@ -117,7 +117,7 @@ class ServerExtensionMethod extends ExtensionPoint
                         "Parameters of Server Extension methods must be annotated as either Source or Parameter." );
             }
         }
-        return new ServerExtensionMethod( nameOf( method ), discovery, plugin, result, method,
+        return new PluginMethod( nameOf( method ), discovery, plugin, result, method,
                 extractors, method.getAnnotation( Description.class ) );
     }
 

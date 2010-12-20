@@ -38,7 +38,7 @@ import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
 import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
 import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.plugins.ExtensionManager;
+import org.neo4j.server.plugins.PluginManager;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.osgi.OSGiContainer;
 import org.neo4j.server.rrd.RrdFactory;
@@ -63,7 +63,7 @@ public class NeoServer {
 
     private final AddressResolver addressResolver;
     private OSGiContainer osgiContainer;
-    private ExtensionManager extensions;
+    private PluginManager extensions;
 
     public NeoServer(AddressResolver addressResolver, StartupHealthCheck startupHealthCheck, File configFile, WebServer webServer) {
         this.addressResolver = addressResolver;
@@ -220,10 +220,10 @@ public class NeoServer {
 
     private void loadExtensions()
     {
-        this.extensions = new ExtensionManager( getConfiguration() );
+        this.extensions = new PluginManager( getConfiguration() );
     }
 
-    public ExtensionManager getExtensionManager()
+    public PluginManager getExtensionManager()
     {
         return extensions;
     }

@@ -36,12 +36,12 @@ import org.neo4j.server.rest.repr.ExtensionInjector;
 import org.neo4j.server.rest.repr.ExtensionPointRepresentation;
 import org.neo4j.server.rest.repr.Representation;
 
-public final class ExtensionManager implements ExtensionInjector, ExtensionInvocator
+public final class PluginManager implements ExtensionInjector, ExtensionInvocator
 {
-    private static final Logger log = Logger.getLogger( ExtensionManager.class );
+    private static final Logger log = Logger.getLogger( PluginManager.class );
     private final Map<String/*name*/, ServerExtender> extensions = new HashMap<String, ServerExtender>();
 
-    public ExtensionManager( Configuration serverConfig )
+    public PluginManager( Configuration serverConfig )
     {
         Map<String, Pair<ServerPlugin, ServerExtender>> extensions = new HashMap<String, Pair<ServerPlugin, ServerExtender>>();
         for ( ServerPlugin plugin : ServerPlugin.load() )
