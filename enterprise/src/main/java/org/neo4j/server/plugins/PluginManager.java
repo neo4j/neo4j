@@ -130,7 +130,7 @@ public final class PluginManager implements ExtensionInjector, ExtensionInvocato
     @Override
     public <T> Representation invoke( AbstractGraphDatabase graphDb, String name, Class<T> type,
             String method, T context, ParameterList params ) throws ExtensionLookupException,
-            BadInputException, ExtensionInvocationFailureException, BadExtensionInvocationException
+            BadInputException, PluginInvocationFailureException, BadExtensionInvocationException
     {
         ExtensionPoint extension = extension( name, type, method );
         try
@@ -145,13 +145,13 @@ public final class PluginManager implements ExtensionInjector, ExtensionInvocato
         {
             throw e;
         }
-        catch ( ExtensionInvocationFailureException e )
+        catch ( PluginInvocationFailureException e )
         {
             throw e;
         }
         catch ( Exception e )
         {
-            throw new ExtensionInvocationFailureException( e );
+            throw new PluginInvocationFailureException( e );
         }
     }
 

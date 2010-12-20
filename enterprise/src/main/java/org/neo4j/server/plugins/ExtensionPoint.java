@@ -55,7 +55,7 @@ public abstract class ExtensionPoint
 
     public abstract Representation invoke( AbstractGraphDatabase graphDb, Object context,
             ParameterList params ) throws BadInputException, BadExtensionInvocationException,
-            ExtensionInvocationFailureException;
+            PluginInvocationFailureException;
 
     final ExtensionPointRepresentation descibe()
     {

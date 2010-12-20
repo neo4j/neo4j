@@ -33,11 +33,8 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.plugins.BadExtensionInvocationException;
-import org.neo4j.server.plugins.ExtensionInvocationFailureException;
-import org.neo4j.server.plugins.ExtensionInvocator;
-import org.neo4j.server.plugins.ExtensionLookupException;
-import org.neo4j.server.plugins.ParameterList;
+import org.neo4j.server.plugins.*;
+import org.neo4j.server.plugins.PluginInvocationFailureException;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.MappingRepresentation;
@@ -135,7 +132,7 @@ public class ExtensionService
         {
             return output.badRequest( e.getCause() );
         }
-        catch ( ExtensionInvocationFailureException e )
+        catch ( PluginInvocationFailureException e )
         {
             return output.serverError( e.getCause() );
         }
@@ -182,7 +179,7 @@ public class ExtensionService
         {
             return output.badRequest( e.getCause() );
         }
-        catch ( ExtensionInvocationFailureException e )
+        catch ( PluginInvocationFailureException e )
         {
             return output.serverError( e.getCause() );
         }
@@ -230,7 +227,7 @@ public class ExtensionService
         {
             return output.badRequest( e.getCause() );
         }
-        catch ( ExtensionInvocationFailureException e )
+        catch ( PluginInvocationFailureException e )
         {
             return output.serverError( e.getCause() );
         }
@@ -276,7 +273,7 @@ public class ExtensionService
 
     protected Representation invokeGraphDatabaseExtension( String extensionName, String method,
             ParameterList data ) throws ExtensionLookupException, BadInputException,
-            ExtensionInvocationFailureException, BadExtensionInvocationException
+            PluginInvocationFailureException, BadExtensionInvocationException
     {
         return extensions.invoke( graphDb, extensionName, GraphDatabaseService.class, method,
                 graphDb, data );
@@ -290,7 +287,7 @@ public class ExtensionService
 
     protected Representation invokeNodeExtension( long nodeId, String extensionName, String method,
             ParameterList data ) throws NodeNotFoundException, ExtensionLookupException,
-            BadInputException, ExtensionInvocationFailureException, BadExtensionInvocationException
+            BadInputException, PluginInvocationFailureException, BadExtensionInvocationException
     {
         return extensions.invoke( graphDb, extensionName, Node.class, method, node( nodeId ), data );
     }
@@ -304,7 +301,7 @@ public class ExtensionService
     protected Representation invokeRelationshipExtension( long relationshipId,
             String extensionName, String method, ParameterList data )
             throws RelationshipNotFoundException, ExtensionLookupException, BadInputException,
-            ExtensionInvocationFailureException, BadExtensionInvocationException
+            PluginInvocationFailureException, BadExtensionInvocationException
     {
         return extensions.invoke( graphDb, extensionName, Relationship.class, method,
                 relationship( relationshipId ), data );
