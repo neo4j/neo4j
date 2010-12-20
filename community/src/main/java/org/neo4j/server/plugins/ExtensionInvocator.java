@@ -32,7 +32,7 @@ public interface ExtensionInvocator
 {
     <T> Representation invoke( AbstractGraphDatabase graphDb, String name, Class<T> type,
             String method, T context, ParameterList params ) throws ExtensionLookupException,
-            BadInputException, ExtensionInvocationFailureException, BadExtensionInvocationException;
+            BadInputException, PluginInvocationFailureException, BadExtensionInvocationException;
 
     ExtensionPointRepresentation describe( String name, Class<?> type, String method )
             throws ExtensionLookupException;
