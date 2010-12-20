@@ -35,7 +35,7 @@ public final class ExtensionPointRepresentation extends ObjectRepresentation imp
 
     public ExtensionPointRepresentation( String name, Class<?> extended, String desciption )
     {
-        super( RepresentationType.EXTENSION_POINT_DESCRIPTION );
+        super( RepresentationType.PLUGIN_DESCRIPTION );
         this.name = name;
         this.desciption = desciption;
         this.extended = RepresentationType.extended( extended );
@@ -85,7 +85,7 @@ public final class ExtensionPointRepresentation extends ObjectRepresentation imp
     @Mapping( "parameters" )
     public ListRepresentation parametersList()
     {
-        return new ListRepresentation( RepresentationType.EXTENSION_PARAMETER, parameters );
+        return new ListRepresentation( RepresentationType.PLUGIN_PARAMETER, parameters );
     }
 
     private static class ParameterRepresentation extends MappingRepresentation
@@ -99,7 +99,7 @@ public final class ExtensionPointRepresentation extends ObjectRepresentation imp
         ParameterRepresentation( String name, Class<?> type, boolean optional, String description,
                 boolean list )
         {
-            super( RepresentationType.EXTENSION_PARAMETER );
+            super( RepresentationType.PLUGIN_PARAMETER );
             this.name = name;
             this.optional = optional;
             this.list = list;
