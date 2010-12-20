@@ -80,10 +80,24 @@ public class MultiJvmTest extends AbstractHaTest
         shutdownDbs();
         
         GraphDatabaseService masterDb = new EmbeddedGraphDatabase( dbPath( 0 ).getAbsolutePath() );
-        for ( int i = 1; i < jvms.size(); i++ )
+        try
         {
-            GraphDatabaseService slaveDb = new EmbeddedGraphDatabase( dbPath( i ).getAbsolutePath() );
-            verify( masterDb, slaveDb );
+            for ( int i = 1; i < jvms.size(); i++ )
+            {
+                GraphDatabaseService slaveDb = new EmbeddedGraphDatabase( dbPath( i ).getAbsolutePath() );
+                try
+                {
+                    verify( masterDb, slaveDb );
+                }
+                finally
+                {
+                    slaveDb.shutdown();
+                }
+            }
+        }
+        finally
+        {
+            masterDb.shutdown();
         }
     }
 
