@@ -54,11 +54,11 @@ public class ExtensionService
                                                                      + "/relationship/{method}";
     private final InputFormat input;
     private final OutputFormat output;
-    private final ExtensionInvocator extensions;
+    private final PluginInvocator extensions;
     private final AbstractGraphDatabase graphDb;
 
     public ExtensionService( @Context InputFormat input, @Context OutputFormat output,
-            @Context ExtensionInvocator extensions, @Context Database database )
+            @Context PluginInvocator extensions, @Context Database database )
     {
         this.input = input;
         this.output = output;
@@ -104,7 +104,7 @@ public class ExtensionService
         {
             return output.ok( this.extensionList( name ) );
         }
-        catch ( ExtensionLookupException e )
+        catch ( PluginLookupException e )
         {
             return output.notFound( e );
         }
@@ -124,11 +124,11 @@ public class ExtensionService
         {
             return output.badRequest( e );
         }
-        catch ( ExtensionLookupException e )
+        catch ( PluginLookupException e )
         {
             return output.notFound( e );
         }
-        catch ( BadExtensionInvocationException e )
+        catch ( BadPluginInvocationException e )
         {
             return output.badRequest( e.getCause() );
         }
@@ -147,7 +147,7 @@ public class ExtensionService
         {
             return output.ok( this.describeGraphDatabaseExtension( name, method ) );
         }
-        catch ( ExtensionLookupException e )
+        catch ( PluginLookupException e )
         {
             return output.notFound( e );
         }
@@ -171,11 +171,11 @@ public class ExtensionService
         {
             return output.badRequest( e );
         }
-        catch ( ExtensionLookupException e )
+        catch ( PluginLookupException e )
         {
             return output.notFound( e );
         }
-        catch ( BadExtensionInvocationException e )
+        catch ( BadPluginInvocationException e )
         {
             return output.badRequest( e.getCause() );
         }
@@ -194,7 +194,7 @@ public class ExtensionService
         {
             return output.ok( this.describeNodeExtension( name, method ) );
         }
-        catch ( ExtensionLookupException e )
+        catch ( PluginLookupException e )
         {
             return output.notFound( e );
         }
@@ -219,11 +219,11 @@ public class ExtensionService
         {
             return output.badRequest( e );
         }
-        catch ( ExtensionLookupException e )
+        catch ( PluginLookupException e )
         {
             return output.notFound( e );
         }
-        catch ( BadExtensionInvocationException e )
+        catch ( BadPluginInvocationException e )
         {
             return output.badRequest( e.getCause() );
         }
@@ -242,7 +242,7 @@ public class ExtensionService
         {
             return output.ok( this.describeRelationshipExtension( name, method ) );
         }
-        catch ( ExtensionLookupException e )
+        catch ( PluginLookupException e )
         {
             return output.notFound( e );
         }
@@ -265,50 +265,50 @@ public class ExtensionService
         };
     }
 
-    protected Representation extensionList( String extensionName ) throws ExtensionLookupException
+    protected Representation extensionList( String extensionName ) throws PluginLookupException
     {
         return new ServerExtensionRepresentation( extensionName,
                 extensions.describeAll( extensionName ) );
     }
 
     protected Representation invokeGraphDatabaseExtension( String extensionName, String method,
-            ParameterList data ) throws ExtensionLookupException, BadInputException,
-            PluginInvocationFailureException, BadExtensionInvocationException
+            ParameterList data ) throws PluginLookupException, BadInputException,
+            PluginInvocationFailureException, BadPluginInvocationException
     {
         return extensions.invoke( graphDb, extensionName, GraphDatabaseService.class, method,
                 graphDb, data );
     }
 
     protected Representation describeGraphDatabaseExtension( String extensionName, String method )
-            throws ExtensionLookupException
+            throws PluginLookupException
     {
         return extensions.describe( extensionName, GraphDatabaseService.class, method );
     }
 
     protected Representation invokeNodeExtension( long nodeId, String extensionName, String method,
-            ParameterList data ) throws NodeNotFoundException, ExtensionLookupException,
-            BadInputException, PluginInvocationFailureException, BadExtensionInvocationException
+            ParameterList data ) throws NodeNotFoundException, PluginLookupException,
+            BadInputException, PluginInvocationFailureException, BadPluginInvocationException
     {
         return extensions.invoke( graphDb, extensionName, Node.class, method, node( nodeId ), data );
     }
 
     protected Representation describeNodeExtension( String extensionName, String method )
-            throws ExtensionLookupException
+            throws PluginLookupException
     {
         return extensions.describe( extensionName, Node.class, method );
     }
 
     protected Representation invokeRelationshipExtension( long relationshipId,
             String extensionName, String method, ParameterList data )
-            throws RelationshipNotFoundException, ExtensionLookupException, BadInputException,
-            PluginInvocationFailureException, BadExtensionInvocationException
+            throws RelationshipNotFoundException, PluginLookupException, BadInputException,
+            PluginInvocationFailureException, BadPluginInvocationException
     {
         return extensions.invoke( graphDb, extensionName, Relationship.class, method,
                 relationship( relationshipId ), data );
     }
 
     protected Representation describeRelationshipExtension( String extensionName, String method )
-            throws ExtensionLookupException
+            throws PluginLookupException
     {
         return extensions.describe( extensionName, Relationship.class, method );
     }

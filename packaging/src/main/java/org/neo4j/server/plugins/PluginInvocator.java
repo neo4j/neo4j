@@ -28,17 +28,17 @@ import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.ExtensionPointRepresentation;
 import org.neo4j.server.rest.repr.Representation;
 
-public interface ExtensionInvocator
+public interface PluginInvocator
 {
     <T> Representation invoke( AbstractGraphDatabase graphDb, String name, Class<T> type,
-            String method, T context, ParameterList params ) throws ExtensionLookupException,
-            BadInputException, PluginInvocationFailureException, BadExtensionInvocationException;
+            String method, T context, ParameterList params ) throws PluginLookupException,
+            BadInputException, PluginInvocationFailureException, BadPluginInvocationException;
 
     ExtensionPointRepresentation describe( String name, Class<?> type, String method )
-            throws ExtensionLookupException;
+            throws PluginLookupException;
 
     List<ExtensionPointRepresentation> describeAll( String extensionName )
-            throws ExtensionLookupException;
+            throws PluginLookupException;
 
     Set<String> extensionNames();
 }

@@ -23,7 +23,7 @@ package org.neo4j.server.web;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.ConfigurationProvider;
 import org.neo4j.server.database.DatabaseProvider;
-import org.neo4j.server.plugins.ExtensionInvocatorProvider;
+import org.neo4j.server.plugins.PluginInvocatorProvider;
 import org.neo4j.server.rest.repr.InputFormatProvider;
 import org.neo4j.server.rest.repr.OutputFormatProvider;
 import org.neo4j.server.rest.repr.RepresentationFormatRepository;
@@ -57,6 +57,6 @@ public class NeoServletContainer extends ServletContainer
                 server.getExtensionManager() );
         rc.getSingletons().add( new InputFormatProvider( repository ) );
         rc.getSingletons().add( new OutputFormatProvider( repository ) );
-        rc.getSingletons().add( new ExtensionInvocatorProvider( server.getExtensionManager() ) );
+        rc.getSingletons().add( new PluginInvocatorProvider( server.getExtensionManager() ) );
     }
 }

@@ -36,7 +36,7 @@ import org.neo4j.server.rest.repr.ExtensionInjector;
 import org.neo4j.server.rest.repr.ExtensionPointRepresentation;
 import org.neo4j.server.rest.repr.Representation;
 
-public final class PluginManager implements ExtensionInjector, ExtensionInvocator
+public final class PluginManager implements ExtensionInjector, PluginInvocator
 {
     private static final Logger log = Logger.getLogger( PluginManager.class );
     private final Map<String/*name*/, ServerExtender> extensions = new HashMap<String, ServerExtender>();
@@ -93,31 +93,31 @@ public final class PluginManager implements ExtensionInjector, ExtensionInvocato
     }
 
     private PluginPoint extension( String name, Class<?> type, String method )
-            throws ExtensionLookupException
+            throws PluginLookupException
     {
         ServerExtender extender = extensions.get( name );
         if ( extender == null )
         {
-            throw new ExtensionLookupException( "No such ServerPlugin: \"" + name + "\"" );
+            throw new PluginLookupException( "No such ServerPlugin: \"" + name + "\"" );
         }
         return extender.getExtensionPoint( type, method );
     }
 
     @Override
     public ExtensionPointRepresentation describe( String name, Class<?> type, String method )
-            throws ExtensionLookupException
+            throws PluginLookupException
     {
         return extension( name, type, method ).descibe();
     }
 
     @Override
     public List<ExtensionPointRepresentation> describeAll( String name )
-            throws ExtensionLookupException
+            throws PluginLookupException
     {
         ServerExtender extender = extensions.get( name );
         if ( extender == null )
         {
-            throw new ExtensionLookupException( "No such ServerPlugin: \"" + name + "\"" );
+            throw new PluginLookupException( "No such ServerPlugin: \"" + name + "\"" );
         }
         List<ExtensionPointRepresentation> result = new ArrayList<ExtensionPointRepresentation>();
         for ( PluginPoint plugin : extender.all() )
@@ -129,8 +129,8 @@ public final class PluginManager implements ExtensionInjector, ExtensionInvocato
 
     @Override
     public <T> Representation invoke( AbstractGraphDatabase graphDb, String name, Class<T> type,
-            String method, T context, ParameterList params ) throws ExtensionLookupException,
-            BadInputException, PluginInvocationFailureException, BadExtensionInvocationException
+            String method, T context, ParameterList params ) throws PluginLookupException,
+            BadInputException, PluginInvocationFailureException, BadPluginInvocationException
     {
         PluginPoint plugin = extension( name, type, method );
         try
@@ -141,7 +141,7 @@ public final class PluginManager implements ExtensionInjector, ExtensionInvocato
         {
             throw e;
         }
-        catch ( BadExtensionInvocationException e )
+        catch ( BadPluginInvocationException e )
         {
             throw e;
         }

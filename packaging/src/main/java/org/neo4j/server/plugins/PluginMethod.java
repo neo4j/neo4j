@@ -535,7 +535,7 @@ class PluginMethod extends PluginPoint
 
     @Override
     public Representation invoke( AbstractGraphDatabase graphDb, Object source, ParameterList params )
-            throws BadExtensionInvocationException, PluginInvocationFailureException,
+            throws BadPluginInvocationException, PluginInvocationFailureException,
             BadInputException
     {
         Object[] arguments = new Object[extractors.length];
@@ -553,7 +553,7 @@ class PluginMethod extends PluginPoint
             for ( Class<?> excType : method.getExceptionTypes() )
             {
                 if ( excType.isInstance( targetExc ) )
-                    throw new BadExtensionInvocationException( targetExc );
+                    throw new BadPluginInvocationException( targetExc );
             }
             throw new PluginInvocationFailureException( targetExc );
         }
