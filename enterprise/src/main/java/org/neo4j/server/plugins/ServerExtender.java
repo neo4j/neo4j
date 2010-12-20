@@ -34,82 +34,82 @@ import org.neo4j.helpers.collection.NestingIterable;
 public final class ServerExtender
 {
     @SuppressWarnings( "unchecked" )
-    private final Map<Class<?>, Map<String, ExtensionPoint>> extensions = new HashMap();
+    private final Map<Class<?>, Map<String, PluginPoint>> extensions = new HashMap();
 
     ServerExtender()
     {
-        extensions.put( Node.class, new ConcurrentHashMap<String, ExtensionPoint>() );
-        extensions.put( Relationship.class, new ConcurrentHashMap<String, ExtensionPoint>() );
-        extensions.put( GraphDatabaseService.class, new ConcurrentHashMap<String, ExtensionPoint>() );
+        extensions.put( Node.class, new ConcurrentHashMap<String, PluginPoint>() );
+        extensions.put( Relationship.class, new ConcurrentHashMap<String, PluginPoint>() );
+        extensions.put( GraphDatabaseService.class, new ConcurrentHashMap<String, PluginPoint>() );
     }
 
-    Iterable<ExtensionPoint> getExtensionsFor( Class<?> type )
+    Iterable<PluginPoint> getExtensionsFor( Class<?> type )
     {
-        Map<String, ExtensionPoint> ext = extensions.get( type );
+        Map<String, PluginPoint> ext = extensions.get( type );
         if ( ext == null ) return Collections.emptyList();
         return ext.values();
     }
 
-    Iterable<ExtensionPoint> all()
+    Iterable<PluginPoint> all()
     {
-        return new NestingIterable<ExtensionPoint, Map<String, ExtensionPoint>>(
+        return new NestingIterable<PluginPoint, Map<String, PluginPoint>>(
                 extensions.values() )
         {
             @Override
-            protected Iterator<ExtensionPoint> createNestedIterator(
-                    Map<String, ExtensionPoint> item )
+            protected Iterator<PluginPoint> createNestedIterator(
+                    Map<String, PluginPoint> item )
             {
                 return item.values().iterator();
             }
         };
     }
 
-    ExtensionPoint getExtensionPoint( Class<?> type, String method )
+    PluginPoint getExtensionPoint( Class<?> type, String method )
             throws ExtensionLookupException
     {
-        Map<String, ExtensionPoint> ext = extensions.get( type );
-        ExtensionPoint extension = null;
+        Map<String, PluginPoint> ext = extensions.get( type );
+        PluginPoint plugin = null;
         if ( ext != null )
         {
-            extension = ext.get( method );
+            plugin = ext.get( method );
         }
-        if ( extension == null )
+        if ( plugin == null )
         {
-            throw new ExtensionLookupException( "No extension \"" + method + "\" for " + type );
+            throw new ExtensionLookupException( "No plugin \"" + method + "\" for " + type );
         }
-        return extension;
+        return plugin;
     }
 
-    void addExtension( Class<?> type, ExtensionPoint extension )
+    void addExtension( Class<?> type, PluginPoint plugin )
     {
-        Map<String, ExtensionPoint> ext = extensions.get( type );
+        Map<String, PluginPoint> ext = extensions.get( type );
         if ( ext == null ) throw new IllegalStateException( "Cannot extend " + type );
-        add( ext, extension );
+        add( ext, plugin );
     }
 
-    public void addGraphDatabaseExtensions( ExtensionPoint extension )
+    public void addGraphDatabaseExtensions( PluginPoint plugin )
     {
-        add( extensions.get( GraphDatabaseService.class ), extension );
+        add( extensions.get( GraphDatabaseService.class ), plugin );
     }
 
-    public void addNodeExtensions( ExtensionPoint extension )
+    public void addNodeExtensions( PluginPoint plugin )
     {
-        add( extensions.get( Node.class ), extension );
+        add( extensions.get( Node.class ), plugin );
     }
 
-    public void addRelationshipExtensions( ExtensionPoint extension )
+    public void addRelationshipExtensions( PluginPoint plugin )
     {
-        add( extensions.get( Relationship.class ), extension );
+        add( extensions.get( Relationship.class ), plugin );
     }
 
-    private static void add( Map<String, ExtensionPoint> extensions, ExtensionPoint extension )
+    private static void add( Map<String, PluginPoint> extensions, PluginPoint plugin )
     {
-        if ( extensions.get( extension.name() ) != null )
+        if ( extensions.get( plugin.name() ) != null )
         {
             throw new IllegalArgumentException(
-                    "This extension already has an extension point with the name \""
-                            + extension.name() + "\"" );
+                    "This plugin already has an plugin point with the name \""
+                            + plugin.name() + "\"" );
         }
-        extensions.put( extension.name(), extension );
+        extensions.put( plugin.name(), plugin );
     }
 }
