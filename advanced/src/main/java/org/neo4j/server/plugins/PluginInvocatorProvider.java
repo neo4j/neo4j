@@ -20,10 +20,23 @@
 
 package org.neo4j.server.plugins;
 
-public final class BadExtensionInvocationException extends Exception
+import org.neo4j.server.database.AbstractInjectableProvider;
+
+import com.sun.jersey.api.core.HttpContext;
+
+public class PluginInvocatorProvider extends AbstractInjectableProvider<PluginInvocator>
 {
-    public BadExtensionInvocationException( Throwable cause )
+    private final PluginInvocator invocator;
+
+    public PluginInvocatorProvider( PluginInvocator invocator )
     {
-        super( cause );
+        super( PluginInvocator.class );
+        this.invocator = invocator;
+    }
+
+    @Override
+    public PluginInvocator getValue( HttpContext c )
+    {
+        return invocator;
     }
 }

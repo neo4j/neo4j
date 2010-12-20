@@ -20,23 +20,10 @@
 
 package org.neo4j.server.plugins;
 
-import org.neo4j.server.database.AbstractInjectableProvider;
-
-import com.sun.jersey.api.core.HttpContext;
-
-public class ExtensionInvocatorProvider extends AbstractInjectableProvider<ExtensionInvocator>
+public class PluginLookupException extends Exception
 {
-    private final ExtensionInvocator invocator;
-
-    public ExtensionInvocatorProvider( ExtensionInvocator invocator )
+    PluginLookupException( String message )
     {
-        super( ExtensionInvocator.class );
-        this.invocator = invocator;
-    }
-
-    @Override
-    public ExtensionInvocator getValue( HttpContext c )
-    {
-        return invocator;
+        super( message );
     }
 }
