@@ -51,10 +51,10 @@ abstract class Serializer
             String entityIdentity = ( (ExtensibleRepresentation) value ).getIdentity();
             if ( extData != null )
             {
-                MappingWriter extensions = mapping.newMapping( RepresentationType.EXTENSIONS, "extensions" );
+                MappingWriter extensions = mapping.newMapping( RepresentationType.PLUGINS, "extensions" );
                 for ( Map.Entry<String, List<String>> ext : extData.entrySet() )
                 {
-                    MappingWriter extension = extensions.newMapping( RepresentationType.EXTENSION, ext.getKey() );
+                    MappingWriter extension = extensions.newMapping( RepresentationType.PLUGIN, ext.getKey() );
                     for ( String method : ext.getValue() )
                     {
                         StringBuilder path = new StringBuilder( "/ext/" ).append( ext.getKey() );
