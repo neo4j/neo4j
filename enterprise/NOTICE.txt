@@ -18,7 +18,7 @@ Full license texts are found in LICENSES.txt.
 
 GNU General Public License Version 2: Tanuki Java Service Wrapper
 
-GNU General Public License Version 2 with classpath exception: MIME streaming extension,
+GNU General Public License Version 2 with classpath exception: MIME streaming plugin,
  jersey-client, jersey-core, jersey-multipart, jersey-server, jsr311-api
 
 GNU Lesser General Public License (LGPL), Version 2.1: JAX-RS provider for JSON content type, CSS Parser

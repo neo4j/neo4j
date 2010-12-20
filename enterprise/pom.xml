@@ -212,7 +212,7 @@
 
     <dependency>
       <!-- Provides Autoprocessor.
-      This dependency makes the extension loader Felix-specific 
+      This dependency makes the plugin loader Felix-specific
       rather than generic. Consider refactoring out this dependency, 
       or don't worry about it and always uses Felix. -->
       <groupId>org.apache.felix</groupId>

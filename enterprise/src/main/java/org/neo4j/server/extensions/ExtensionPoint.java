@@ -35,7 +35,7 @@ public abstract class ExtensionPoint
     {
         this.extendsType = type;
         this.description = description == null ? "" : description;
-        this.name = ServerExtension.verifyName( name );
+        this.name = ServerPlugin.verifyName( name );
     }
 
     protected ExtensionPoint( Class<?> type, String name )

@@ -42,23 +42,23 @@ import org.neo4j.server.rest.repr.Representation;
 
 class ServerExtensionMethod extends ExtensionPoint
 {
-    private final ServerExtension extension;
+    private final ServerPlugin plugin;
     private final Method method;
     private final DataExtractor[] extractors;
     private final ResultConverter result;
 
-    private ServerExtensionMethod( String name, Class<?> discovery, ServerExtension extension,
+    private ServerExtensionMethod( String name, Class<?> discovery, ServerPlugin plugin,
             ResultConverter result, Method method, DataExtractor[] extractors,
             Description description )
     {
         super( discovery, name, description == null ? "" : description.value() );
-        this.extension = extension;
+        this.plugin = plugin;
         this.result = result;
         this.method = method;
         this.extractors = extractors;
     }
 
-    static ServerExtensionMethod createFrom( ServerExtension extension, Method method,
+    static ServerExtensionMethod createFrom( ServerPlugin plugin, Method method,
             Class<?> discovery )
     {
         ResultConverter result = ResultConverter.get( method.getGenericReturnType() );
@@ -117,7 +117,7 @@ class ServerExtensionMethod extends ExtensionPoint
                         "Parameters of Server Extension methods must be annotated as either Source or Parameter." );
             }
         }
-        return new ServerExtensionMethod( nameOf( method ), discovery, extension, result, method,
+        return new ServerExtensionMethod( nameOf( method ), discovery, plugin, result, method,
                 extractors, method.getAnnotation( Description.class ) );
     }
 
@@ -545,7 +545,7 @@ class ServerExtensionMethod extends ExtensionPoint
         }
         try
         {
-            return result.convert( method.invoke( extension, arguments ) );
+            return result.convert( method.invoke( plugin, arguments ) );
         }
         catch ( InvocationTargetException exc )
         {
