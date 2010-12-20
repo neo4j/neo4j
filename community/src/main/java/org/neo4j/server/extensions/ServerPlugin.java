@@ -36,9 +36,9 @@ import org.neo4j.helpers.Service;
  * Extensions are created by creating a subclass of this class. The subclass
  * should have a public no-argument constructor. Then place this class in a
  * jar-file that contains a file called
- * <code>META-INF/services/org.neo4j.server.extensions.ServerExtension</code>.
+ * <code>META-INF/services/org.neo4j.server.extensions.ServerPlugin</code>.
  * This file should contain the fully qualified name of the class that extends
- * {@link ServerExtension}, e.g. <code>com.example.MyNeo4jServerExtension</code>
+ * {@link ServerPlugin}, e.g. <code>com.example.MyNeo4jServerExtension</code>
  * on a single line. If the jar contains multiple extensions to the Neo4j
  * server, this file should contain the fully qualified class names of all
  * extension classes, each class name on its own line in the file. When the jar
@@ -87,7 +87,7 @@ import org.neo4j.helpers.Service;
  *
  * @author Tobias Ivarsson <tobias.ivarsson@neotechnology.com>
  */
-public abstract class ServerExtension
+public abstract class ServerPlugin
 {
     final String name;
 
@@ -96,16 +96,16 @@ public abstract class ServerExtension
      *
      * @param name the name of this extension.
      */
-    public ServerExtension( String name )
+    public ServerPlugin( String name )
     {
         this.name = verifyName( name );
     }
 
     /**
      * Create a server extension using the simple name of the concrete class
-     * that extends {@link ServerExtension} as the name for the extension.
+     * that extends {@link ServerPlugin} as the name for the extension.
      */
-    public ServerExtension()
+    public ServerPlugin()
     {
         this.name = verifyName( getClass().getSimpleName() );
     }
@@ -133,12 +133,12 @@ public abstract class ServerExtension
     @Override
     public String toString()
     {
-        return "ServerExtension[" + name + "]";
+        return "ServerPlugin[" + name + "]";
     }
 
-    static Iterable<ServerExtension> load()
+    static Iterable<ServerPlugin> load()
     {
-        return Service.load( ServerExtension.class );
+        return Service.load( ServerPlugin.class );
     }
 
     /**
@@ -148,7 +148,7 @@ public abstract class ServerExtension
      * {@link ExtensionTarget} annotation.
      *
      * @param extender the collection of {@link ExtensionPoint}s for this
-     *            {@link ServerExtension}.
+     *            {@link ServerPlugin}.
      * @param serverConfig the configuration parameters for the server.
      */
     protected void loadServerExtender( ServerExtender extender, Configuration serverConfig )
@@ -167,7 +167,7 @@ public abstract class ServerExtension
      * 
      * @param serverConfig the configuration parameters for the server.
      * @return the collection of {@link ExtensionPoint}s for this
-     *         {@link ServerExtension}.
+     *         {@link ServerPlugin}.
      */
     protected Collection<ExtensionPoint> getDefaultExtensionPoints( Configuration serverConfig )
     {
