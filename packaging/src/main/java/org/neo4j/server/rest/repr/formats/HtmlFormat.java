@@ -124,7 +124,8 @@ public class HtmlFormat extends RepresentationFormat
             String render( Map<String, Object> serialized )
             {
                 Map<Object, Object> map = new HashMap<Object, Object>();
-                transfer( serialized, map, "index", "reference node" );
+                transfer( serialized, map, "index", "reference_node", "node-index",
+                        "relationship-index"/*, "extensions-info"*/);
                 return HtmlHelper.from( map, HtmlHelper.ObjectType.ROOT );
             }
         },
