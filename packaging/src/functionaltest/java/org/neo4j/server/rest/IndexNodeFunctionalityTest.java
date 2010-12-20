@@ -117,7 +117,7 @@ public class IndexNodeFunctionalityTest
         String indexName = "testy";
         helper.createNodeIndex( indexName );
         String entity = JsonHelper.createJsonFrom( functionalTestHelper.nodeUri( nodeId ) );
-        ClientResponse response = Client.create().resource( functionalTestHelper.nodeIndexUri() + indexName + "/" + key + "/" + value )
+        ClientResponse response = Client.create().resource( functionalTestHelper.indexNodeUri( indexName, key, value ) )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
                 .entity( entity ).post( ClientResponse.class );
@@ -135,12 +135,14 @@ public class IndexNodeFunctionalityTest
 
         String indexName = "mindex";
         helper.createNodeIndex( indexName );
-        ClientResponse response = Client.create().resource( functionalTestHelper.nodeIndexUri() + indexName + "/" + key + "/" + value )
+        ClientResponse response = Client.create().resource( functionalTestHelper.indexNodeUri( indexName, key, value ) )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON ).entity( JsonHelper.createJsonFrom( functionalTestHelper.nodeUri( nodeId ) ) ).post( ClientResponse.class );
 
         assertEquals( Status.CREATED.getStatusCode(), response.getStatus() );
         String indexUri = response.getHeaders().getFirst( "Location" );
+        
+        System.out.println(indexUri);
 
         response = Client.create().resource( indexUri ).accept( MediaType.APPLICATION_JSON ).get( ClientResponse.class );
         assertEquals( 200, response.getStatus() );
@@ -182,13 +184,13 @@ public class IndexNodeFunctionalityTest
                 MediaType.APPLICATION_JSON ).post( ClientResponse.class );
         assertEquals( 201, responseToPost.getStatus() );
         String location2 = responseToPost.getHeaders().getFirst( HttpHeaders.LOCATION );
-        responseToPost = Client.create().resource( functionalTestHelper.nodeIndexUri() + indexName + "/" + key + "/" + value )
+        responseToPost = Client.create().resource( functionalTestHelper.indexNodeUri( indexName, key, value ) )
                 .entity( JsonHelper.createJsonFrom( location1 ), MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
                 .post( ClientResponse.class );
         assertEquals( 201, responseToPost.getStatus() );
         String indexLocation1 = responseToPost.getHeaders().getFirst( HttpHeaders.LOCATION );
-        responseToPost = Client.create().resource( functionalTestHelper.nodeIndexUri() + indexName + "/" + key + "/" + value )
+        responseToPost = Client.create().resource( functionalTestHelper.indexNodeUri( indexName, key, value ) )
                 .entity( JsonHelper.createJsonFrom( location2 ), MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
                 .post( ClientResponse.class );
@@ -198,7 +200,7 @@ public class IndexNodeFunctionalityTest
         uriToName.put( indexLocation1.toString(), name1 );
         uriToName.put( indexLocation2.toString(), name2 );
 
-        ClientResponse response = Client.create().resource( functionalTestHelper.nodeIndexUri() + indexName + "/" + key + "/" + value ).accept( MediaType.APPLICATION_JSON )
+        ClientResponse response = Client.create().resource( functionalTestHelper.indexNodeUri( indexName, key, value ) ).accept( MediaType.APPLICATION_JSON )
                 .get( ClientResponse.class );
         assertEquals( 200, response.getStatus() );
         Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( response.getEntity( String.class ) );
@@ -220,7 +222,7 @@ public class IndexNodeFunctionalityTest
     {
         String indexName = "empty-index";
         helper.createNodeIndex( indexName );
-        ClientResponse response = Client.create().resource( functionalTestHelper.nodeIndexUri() + indexName + "/non-existent-key/non-existent-value" ).accept(
+        ClientResponse response = Client.create().resource( functionalTestHelper.indexNodeUri( indexName, "non-existent-key", "non-existent-value" ) ).accept(
                 MediaType.APPLICATION_JSON ).get( ClientResponse.class );
         assertEquals( 200, response.getStatus() );
     }
@@ -281,7 +283,7 @@ public class IndexNodeFunctionalityTest
         String value = "value";
         String indexName = "botherable-index";
         helper.createNodeIndex( indexName );
-        ClientResponse response = Client.create().resource( functionalTestHelper.nodeIndexUri() + indexName + "/" + key + "/" + value )
+        ClientResponse response = Client.create().resource( functionalTestHelper.indexNodeUri( indexName, key, value ) )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
                 .entity( functionalTestHelper.nodeUri( nodeId ) ).post( ClientResponse.class );
