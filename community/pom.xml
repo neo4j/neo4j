@@ -71,26 +71,22 @@
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
       <version>1.2-SNAPSHOT</version>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-management</artifactId>
       <version>1.2-SNAPSHOT</version>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-shell</artifactId>
       <version>1.2-SNAPSHOT</version>
-      <scope>provided</scope>
     </dependency>
     <!--dependency> <groupId>org.neo4j</groupId> <artifactId>neo4j-index</artifactId> <version>1.2-SNAPSHOT</version> </dependency -->
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-lucene-index</artifactId>
       <version>0.2-SNAPSHOT</version>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.zookeeper</groupId>
@@ -111,12 +107,10 @@
       <groupId>org.jboss.netty</groupId>
       <artifactId>netty</artifactId>
       <version>3.2.1.Final</version>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>log4j</groupId>
       <artifactId>log4j</artifactId>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>commons-io</groupId>
@@ -127,7 +121,6 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <scope>provided</scope>
     </dependency>
   </dependencies>
 
