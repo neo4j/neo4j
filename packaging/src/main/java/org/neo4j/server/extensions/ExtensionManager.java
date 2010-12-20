@@ -43,34 +43,34 @@ public final class ExtensionManager implements ExtensionInjector, ExtensionInvoc
 
     public ExtensionManager( Configuration serverConfig )
     {
-        Map<String, Pair<ServerExtension, ServerExtender>> extensions = new HashMap<String, Pair<ServerExtension, ServerExtender>>();
-        for ( ServerExtension extension : ServerExtension.load() )
+        Map<String, Pair<ServerPlugin, ServerExtender>> extensions = new HashMap<String, Pair<ServerPlugin, ServerExtender>>();
+        for ( ServerPlugin plugin : ServerPlugin.load() )
         {
             final ServerExtender extender = new ServerExtender();
             try
             {
-                extension.loadServerExtender( extender, serverConfig );
+                plugin.loadServerExtender( extender, serverConfig );
             }
             catch ( Exception ex )
             {
-                log.warn( "Failed to load extension: " + extension, ex );
+                log.warn( "Failed to load plugin: " + plugin, ex );
                 continue;
             }
             catch ( LinkageError err )
             {
-                log.warn( "Failed to load extension: " + extension, err );
+                log.warn( "Failed to load plugin: " + plugin, err );
                 continue;
             }
-            Pair<ServerExtension, ServerExtender> old = extensions.put( extension.name, Pair.of(
-                    extension, extender ) );
+            Pair<ServerPlugin, ServerExtender> old = extensions.put( plugin.name, Pair.of(
+                    plugin, extender ) );
             if ( old != null )
             {
                 log.warn( String.format(
                         "Extension naming conflict \"%s\" between \"%s\" and \"%s\"",
-                        extension.name, old.first().getClass(), extension.getClass() ) );
+                        plugin.name, old.first().getClass(), plugin.getClass() ) );
             }
         }
-        for ( Pair<ServerExtension, ServerExtender> extension : extensions.values() )
+        for ( Pair<ServerPlugin, ServerExtender> extension : extensions.values() )
         {
             this.extensions.put( extension.first().name, extension.other() );
         }
@@ -98,7 +98,7 @@ public final class ExtensionManager implements ExtensionInjector, ExtensionInvoc
         ServerExtender extender = extensions.get( name );
         if ( extender == null )
         {
-            throw new ExtensionLookupException( "No such ServerExtension: \"" + name + "\"" );
+            throw new ExtensionLookupException( "No such ServerPlugin: \"" + name + "\"" );
         }
         return extender.getExtensionPoint( type, method );
     }
@@ -117,7 +117,7 @@ public final class ExtensionManager implements ExtensionInjector, ExtensionInvoc
         ServerExtender extender = extensions.get( name );
         if ( extender == null )
         {
-            throw new ExtensionLookupException( "No such ServerExtension: \"" + name + "\"" );
+            throw new ExtensionLookupException( "No such ServerPlugin: \"" + name + "\"" );
         }
         List<ExtensionPointRepresentation> result = new ArrayList<ExtensionPointRepresentation>();
         for ( ExtensionPoint extension : extender.all() )
