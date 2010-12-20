@@ -29,7 +29,7 @@ import java.util.Map;
 public class HtmlHelper
 {
     private final static String STYLE_LOCATION = "http://resources.neo4j.org/style/";
-    private final static String HTML_JAVASCRIPT_LOCATION = "/resource/htmlbrowse.js";
+    private final static String HTML_JAVASCRIPT_LOCATION = "/webadmin/htmlbrowse.js";
     
     public static String from( final Object object, final ObjectType objectType )
     {
