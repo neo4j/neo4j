@@ -69,7 +69,6 @@ public class GetRelationshipPropertiesFunctionalTest
     @After
     public void stopServer() {
         server.stop();
-        server = null;
     }
     
     

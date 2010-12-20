@@ -78,7 +78,6 @@ public class HtmlFunctionalTest {
     @After
     public void stopServer() {
         server.stop();
-        server = null;
     }
 
     private long createAndIndexNode(String name) throws DatabaseBlockedException {
