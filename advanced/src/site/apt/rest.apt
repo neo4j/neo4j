@@ -37,8 +37,14 @@ curl -H Accept:application/json http://localhost:7474/db/data/
 *** 200
 
 ---
-{ "reference node": "http://localhost:7474/db/data/node/0",
-  "index": "http://localhost:7474/db/data/index"
+{
+  "node" : "http://localhost:7474/db/data/node",
+  "node-index" : "http://localhost:7474/db/data/index/node",
+  "relationship-index" : "http://localhost:7474/db/data/index/relationship",
+  "reference_node" : "http://localhost:7474/db/data/node/0",
+  "extensions-info" : "http://localhost:7474/db/data/ext",
+  "extensions" : {
+  }
 }
 ---
 
@@ -470,14 +476,14 @@ curl -H Accept:application/json http://localhost:7474/db/data/node/123/relations
 
 *** 404: Node not found
 
-* {Listing indexes}
+* {Listing node indexes}
 
-** GET /index
+** GET /index/node
 
 ** Example using curl
 
 ---
-curl -H Accept:application/json http://localhost:7474/db/data/index
+curl -H Accept:application/json http://localhost:7474/db/data/index/node
 ---
 
 ** Response
@@ -485,19 +491,42 @@ curl -H Accept:application/json http://localhost:7474/db/data/index
 *** 200: OK
 
 ---
-{ "node": [
-  { "type": "lookup",
-    "template": "http://localhost:7474/db/data/index/node/{key}/{value}"
-  },
-  { "type": "fulltext",
-    "template": "http://localhost:7474/db/data/index/node-fulltext/{key}/{value}"
-  } ]
+{
+  "my_nodes" : {
+    "template" : "http://localhost:7474/db/data/index/node/my_nodes/{key}/{value}",
+    "provider" : "lucene",
+    "type" : "exact"
+  }
+}
+---
+
+* {Listing relationship indexes}
+
+** GET /index/relationship
+
+** Example using curl
+
+---
+curl -H Accept:application/json http://localhost:7474/db/data/index/relationship
+---
+
+** Response
+
+*** 200: OK
+
+---
+{
+  "my_relationships" : {
+    "template" : "http://localhost:7474/db/data/index/relationship/my_relationships/{key}/{value}",
+    "provider" : "lucene",
+    "type" : "exact"
+  }
 }
 ---
 
 * {Add to index}
 
-** POST /index/node/foo/bar
+** POST /index/node/my_nodes/foo/bar
 
 ---
 "http://localhost:7474/db/data/node/123"
@@ -506,28 +535,48 @@ curl -H Accept:application/json http://localhost:7474/db/data/index
 ** Example using curl
 
 ---
-curl -X POST -d '"http://localhost:7474/db/data/node/123"' http://localhost:7474/db/data/index/node/foo/bar
+curl -HContent-Type:application/json -X POST -d '"http://localhost:7474/db/data/node/123"' http://localhost:7474/db/data/index/node/my_nodes/foo/bar
 ---
 
 ** Response
 
-*** 201: OK, indexed the object with key/value
+*** 201: OK, indexed the node with key/value
 
-    <<Location>>: http://localhost:7474/db/data/index/node/foo/bar/123
+    <<Location>>: http://localhost:7474/db/data/index/node/my_nodes/foo/bar/123
+
+** POST /index/relationship/my_relationships/foo/bar
+
+---
+"http://localhost:7474/db/data/relationship/456"
+---
+
+** Example using curl
+
+---
+curl -HContent-Type:application/json -X POST -d '"http://localhost:7474/db/data/relationship/123"' http://localhost:7474/db/data/index/relationship/my_relationships/foo/bar
+---
+
+** Response
+
+*** 201: OK, indexed the node with key/value
+
+    <<Location>>: http://localhost:7474/db/data/index/relationships/my_relationships/foo/bar/456
 
 * {Remove from index}
 
-** DELETE /index/node/foo/bar/123
+** DELETE /index/node/my_nodes/foo/bar/123
 
     Such a URI is gotten from either a query to an index, where they
     will be included in the node/relationship returned
     representation. They are also returned (as Location in response
     header) when adding to an index.
+
+    Similarly for relationship indexes.
     
 ** Example using curl
 
 ---
-curl -X DELETE http://localhost:7474/db/data/index/node/foo/bar/123
+curl -X DELETE http://localhost:7474/db/data/index/node/my_nodes/foo/bar/123
 ---
 
 ** Response
@@ -538,12 +587,12 @@ curl -X DELETE http://localhost:7474/db/data/index/node/foo/bar/123
 
 * {Query index}
 
-** GET /index/node/foo/bar
+** GET /index/node/my_nodes/foo/bar
 
 ** Example using curl
 
 ---
-curl -H Accept:application/json http://localhost:7474/db/data/index/node/foo/bar
+curl -H Accept:application/json http://localhost:7474/db/data/index/node/my_nodes/foo/bar
 ---
 
 ** Response
@@ -567,6 +616,8 @@ curl -H Accept:application/json http://localhost:7474/db/data/index/node/foo/bar
 
     With node/relationship representations with an additional index
     URI used when removing it from the index.
+
+    Similarly for relationship indexes.
 
 * {Traverse}
 
