@@ -25,20 +25,20 @@ import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.ExtensionPointRepresentation;
 import org.neo4j.server.rest.repr.Representation;
 
-public abstract class ExtensionPoint
+public abstract class PluginPoint
 {
     private final String name;
     private final Class<?> extendsType;
     private final String description;
 
-    protected ExtensionPoint( Class<?> type, String name, String description )
+    protected PluginPoint( Class<?> type, String name, String description )
     {
         this.extendsType = type;
         this.description = description == null ? "" : description;
         this.name = ServerPlugin.verifyName( name );
     }
 
-    protected ExtensionPoint( Class<?> type, String name )
+    protected PluginPoint( Class<?> type, String name )
     {
         this( type, name, null );
     }
