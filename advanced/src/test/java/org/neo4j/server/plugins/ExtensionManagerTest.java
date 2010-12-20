@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.server.extensions;
+package org.neo4j.server.plugins;
 
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertNotNull;

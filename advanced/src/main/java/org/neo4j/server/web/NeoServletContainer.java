@@ -23,7 +23,7 @@ package org.neo4j.server.web;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.ConfigurationProvider;
 import org.neo4j.server.database.DatabaseProvider;
-import org.neo4j.server.extensions.ExtensionInvocatorProvider;
+import org.neo4j.server.plugins.ExtensionInvocatorProvider;
 import org.neo4j.server.rest.repr.InputFormatProvider;
 import org.neo4j.server.rest.repr.OutputFormatProvider;
 import org.neo4j.server.rest.repr.RepresentationFormatRepository;

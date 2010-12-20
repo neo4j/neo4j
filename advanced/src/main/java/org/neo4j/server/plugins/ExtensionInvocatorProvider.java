@@ -18,21 +18,25 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.server.extensions;
+package org.neo4j.server.plugins;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
+import org.neo4j.server.database.AbstractInjectableProvider;
 
-@Description( "An extension for accessing the reference node of the graph database, this can be used as the root for your graph." )
-public class ReferenceNode extends ServerPlugin
+import com.sun.jersey.api.core.HttpContext;
+
+public class ExtensionInvocatorProvider extends AbstractInjectableProvider<ExtensionInvocator>
 {
-    public static final String GET_REFERENCE_NODE = "reference_node_uri";
+    private final ExtensionInvocator invocator;
 
-    @Description( "Get the reference node from the graph database" )
-    @ExtensionTarget( GraphDatabaseService.class )
-    @Name( GET_REFERENCE_NODE )
-    public Node getReferenceNode( @Source GraphDatabaseService graphDb )
+    public ExtensionInvocatorProvider( ExtensionInvocator invocator )
     {
-        return graphDb.getReferenceNode();
+        super( ExtensionInvocator.class );
+        this.invocator = invocator;
+    }
+
+    @Override
+    public ExtensionInvocator getValue( HttpContext c )
+    {
+        return invocator;
     }
 }
