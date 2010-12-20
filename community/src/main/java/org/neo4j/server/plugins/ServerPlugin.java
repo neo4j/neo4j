@@ -47,8 +47,8 @@ import org.neo4j.helpers.Service;
  *
  * The easiest way to implement Neo4j server extensions is by defining public
  * methods on the extension class annotated with
- * <code>@{@link ExtensionTarget}</code>. The parameter for the
- * {@link ExtensionTarget} annotation should be the class representing the
+ * <code>@{@link PluginTarget}</code>. The parameter for the
+ * {@link PluginTarget} annotation should be the class representing the
  * entity that the method extends. The entities that can be extended are
  * currently:
  * <ul>
@@ -78,7 +78,7 @@ import org.neo4j.helpers.Service;
  * of the above types.</li>
  * </ul>
  *
- * All exceptions thrown by an {@link ExtensionTarget} method are treated as
+ * All exceptions thrown by an {@link PluginTarget} method are treated as
  * server errors, unless the method has declared the ability to throw such an
  * exception, in that case the exception is treated as a bad request and
  * propagated to the invoking client.
@@ -145,7 +145,7 @@ public abstract class ServerPlugin
      * Loads the extension points of this server extension. Override this method
      * to provide your own, custom way of loading extension points. The default
      * implementation loads {@link ExtensionPoint} based on methods with the
-     * {@link ExtensionTarget} annotation.
+     * {@link PluginTarget} annotation.
      *
      * @param extender the collection of {@link ExtensionPoint}s for this
      *            {@link ServerPlugin}.
@@ -163,7 +163,7 @@ public abstract class ServerPlugin
      * Loads the extension points of this server extension. Override this method
      * to provide your own, custom way of loading extension points. The default
      * implementation loads {@link ExtensionPoint} based on methods with the
-     * {@link ExtensionTarget} annotation.
+     * {@link PluginTarget} annotation.
      * 
      * @param serverConfig the configuration parameters for the server.
      * @return the collection of {@link ExtensionPoint}s for this
@@ -174,10 +174,10 @@ public abstract class ServerPlugin
         List<ExtensionPoint> result = new ArrayList<ExtensionPoint>();
         for ( Method method : getClass().getMethods() )
         {
-            ExtensionTarget target = method.getAnnotation( ExtensionTarget.class );
+            PluginTarget target = method.getAnnotation( PluginTarget.class );
             if ( target != null )
             {
-                result.add( ServerExtensionMethod.createFrom( this, method, target.value() ) );
+                result.add( PluginMethod.createFrom( this, method, target.value() ) );
             }
         }
         return result;

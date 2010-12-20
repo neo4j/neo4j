@@ -29,7 +29,7 @@ public class ReferenceNode extends ServerPlugin
     public static final String GET_REFERENCE_NODE = "reference_node_uri";
 
     @Description( "Get the reference node from the graph database" )
-    @ExtensionTarget( GraphDatabaseService.class )
+    @PluginTarget( GraphDatabaseService.class )
     @Name( GET_REFERENCE_NODE )
     public Node getReferenceNode( @Source GraphDatabaseService graphDb )
     {
