@@ -65,9 +65,9 @@ public class HtmlFormat extends RepresentationFormat
                 builder.append( "<form action='javascript:neo4jHtmlBrowse.getRelationships();'><fieldset><legend>Get relationships</legend>\n" );
                 builder.append( "<label for='direction'>with direction</label>\n"
                         + "<select id='direction'>" );
-                builder.append( "<option value='" ).append( serialized.get( "all typed relationships" ) ).append( "'>all</option>" );
-                builder.append( "<option value='" ).append( serialized.get( "incoming typed relationships" ) ).append( "'>in</option>" );
-                builder.append( "<option value='" ).append( serialized.get( "outgoing typed relationships" ) ).append( "'>out</option>" );
+                builder.append( "<option value='" ).append( serialized.get( "all_typed_relationships" ) ).append( "'>all</option>" );
+                builder.append( "<option value='" ).append( serialized.get( "incoming_typed_relationships" ) ).append( "'>in</option>" );
+                builder.append( "<option value='" ).append( serialized.get( "outgoing_typed_relationships" ) ).append( "'>out</option>" );
                 builder.append( "</select>\n" );
                 builder.append( "<label for='types'>for type(s)</label><select id='types' multiple='multiple'>" );
 
@@ -251,8 +251,8 @@ public class HtmlFormat extends RepresentationFormat
                 String valueId = "value_" + counter;
                 builder.append( "<form action='javascript:neo4jHtmlBrowse.search(\"" ).append(
                         indexMap.get( "template" ) ).append( "\",\"" ).append( keyId ).append(
-                        "\",\"" ).append( valueId ).append( "\");'><fieldset><legend>" ).append(
-                        indexMap.get( "type" ) ).append( "</legend>\n" );
+                        "\",\"" ).append( valueId ).append( "\");'><fieldset><legend> name: " ).append( indexName ).append(" (configuration: ").append(
+                        indexMap.get( "type" ) ).append( ")</legend>\n" );
                 builder.append( "<label for='" ).append( keyId ).append( "'>Key</label><input id='" ).append(
                         keyId ).append( "'>\n" );
                 builder.append( "<label for='" ).append( valueId ).append(
