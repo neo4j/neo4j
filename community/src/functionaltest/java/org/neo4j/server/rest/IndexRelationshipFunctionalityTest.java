@@ -45,10 +45,10 @@ import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.domain.URIHelper;
+import org.neo4j.server.rest.web.PropertyValueException;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
-import org.neo4j.server.rest.web.PropertyValueException;
 
 public class IndexRelationshipFunctionalityTest
 {
@@ -148,14 +148,16 @@ public class IndexRelationshipFunctionalityTest
 
     private JaxRsResponse httpGetIndexRelationshipNameKeyValue( String indexName, String key, String value, MediaType acceptType )
     {
-        return new JaxRsResponse( Client.create().resource( functionalTestHelper.relationshipIndexUri() + indexName + "/" + key + "/" + value )
+        return new JaxRsResponse( Client.create().resource( functionalTestHelper.indexRelationshipUri( indexName, key, value ) )
                 .accept( acceptType )
                 .get( ClientResponse.class ) );
     }
 
     private JaxRsResponse httpPostIndexRelationshipNameKeyValue( String indexName, String key, String value, String entity, MediaType postType, MediaType acceptType )
     {
-        return new JaxRsResponse( Client.create().resource( functionalTestHelper.relationshipIndexUri() + indexName + "/" + key + "/" + value )
+        return new JaxRsResponse(
+                Client.create().resource(
+                        functionalTestHelper.indexRelationshipUri( indexName, key, value ) )
                 .type( postType )
                 .accept( acceptType )
                 .entity( entity ).post( ClientResponse.class ) );
@@ -279,7 +281,7 @@ public class IndexRelationshipFunctionalityTest
     {
         String indexName = "empty-index";
         helper.createRelationshipIndex( indexName );
-        ClientResponse response = Client.create().resource( functionalTestHelper.relationshipIndexUri() + indexName + "/non-existent-key/non-existent-value" ).accept(
+        ClientResponse response = Client.create().resource( functionalTestHelper.indexRelationshipUri( indexName, "non-existent-key", "non-existent-value" ) ).accept(
                 MediaType.APPLICATION_JSON ).get( ClientResponse.class );
         assertEquals( 200, response.getStatus() );
     }
