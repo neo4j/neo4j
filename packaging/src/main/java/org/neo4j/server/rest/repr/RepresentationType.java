@@ -42,11 +42,11 @@ public final class RepresentationType
             INDEX = new RepresentationType( "index" ),//
             NODE_INDEX_ROOT = new RepresentationType( "node-index" ),//
             RELATIONSHIP_INDEX_ROOT = new RepresentationType( "relationship-index" ),//
-            EXTENSIONS = new RepresentationType( "extensions" ),//
-            EXTENSION = new RepresentationType( "extension" ),//
-            EXTENSION_POINT_DESCRIPTION = new RepresentationType( "extension-point" ),//
-            SERVER_EXTENSION_DESCRIPTION = new RepresentationType( "server-extension", null ),//
-            EXTENSION_PARAMETER = new RepresentationType( "extension-parameter", "extension-parameter-list" ),//
+            PLUGINS = new RepresentationType( "plugins" ),//
+            PLUGIN = new RepresentationType( "plugin" ),//
+            PLUGIN_DESCRIPTION = new RepresentationType( "plugin-point" ),//
+            SERVER_PLUGIN_DESCRIPTION = new RepresentationType( "server-plugin", null ),//
+            PLUGIN_PARAMETER = new RepresentationType( "plugin-parameter", "plugin-parameter-list" ),//
             // Value types
             URI = new RepresentationType( "uri", null ),//
             TEMPLATE = new RepresentationType( "uri-template" ),//

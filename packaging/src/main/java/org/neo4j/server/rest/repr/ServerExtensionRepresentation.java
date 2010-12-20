@@ -31,7 +31,7 @@ public final class ServerExtensionRepresentation extends MappingRepresentation
 
     public ServerExtensionRepresentation( String name, List<ExtensionPointRepresentation> methods )
     {
-        super( RepresentationType.SERVER_EXTENSION_DESCRIPTION );
+        super( RepresentationType.SERVER_PLUGIN_DESCRIPTION );
         this.extended = new HashMap<String, EntityExtensionRepresentation>();
         for ( ExtensionPointRepresentation extension : methods )
         {
