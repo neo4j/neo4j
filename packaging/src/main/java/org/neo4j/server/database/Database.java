@@ -27,13 +27,9 @@ import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
-import org.neo4j.index.IndexService;
-import org.neo4j.index.lucene.LuceneFulltextIndexService;
-import org.neo4j.index.lucene.LuceneIndexService;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.onlinebackup.Backup;
@@ -47,9 +43,6 @@ public class Database
     public static Logger log = Logger.getLogger( Database.class );
 
     public AbstractGraphDatabase graph;
-    public IndexService indexService;
-    public IndexService fulltextIndexService;
-    public Map<String, Index<? extends PropertyContainer>> indicies;
 
     private String databaseStoreDirectory;
     private RrdDb rrdDb;
@@ -58,7 +51,6 @@ public class Database
     {
         this.databaseStoreDirectory = db.getStoreDir();
         graph = db;
-        ensureIndexServiceIsAvailable();
     }
 
     public Database( String databaseStoreDirectory )
@@ -91,31 +83,6 @@ public class Database
         return new EmbeddedGraphDatabase( databaseStoreDirectory, databaseTuningProperties );
     }
 
-    private synchronized void ensureIndexServiceIsAvailable() throws DatabaseBlockedException
-    {
-        if ( indexService == null )
-        {
-            if ( graph instanceof AbstractGraphDatabase )
-            {
-                indexService = new LuceneIndexService( graph );
-                fulltextIndexService = new LuceneFulltextIndexService( graph );
-                indicies = instantiateSomeIndicies();
-            }
-            else
-            {
-                // TODO: Indexing for remote dbs
-                throw new UnsupportedOperationException( "Indexing is not yet available in neo4j-rest for remote databases." );
-            }
-        }
-    }
-
-    private Map<String, Index<? extends PropertyContainer>> instantiateSomeIndicies()
-    {
-        Map<String, Index<? extends PropertyContainer>> map = new HashMap<String, Index<? extends PropertyContainer>>();
-        map.put( "node", new NodeIndex( indexService ) );
-        map.put( "fulltext-node", new NodeIndex( fulltextIndexService ) );
-        return map;
-    }
 
     public void startup()
     {
