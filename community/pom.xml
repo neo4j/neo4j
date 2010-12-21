@@ -9,15 +9,15 @@
 
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-management</artifactId>
-  <version>1.2-1.2.M06</version>
+  <version>1.2-SNAPSHOT</version>
   <name>Neo4j - Graph Database Monitoring and Management tools</name>
   <description>Management support using JMX.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
-    <connection>scm:svn:https://svn.neo4j.org/components/management/tags/1.2-1.2.M06</connection>
-    <developerConnection>scm:svn:https://svn.neo4j.org/components/management/tags/1.2-1.2.M06</developerConnection>
-    <url>scm:svn:https://svn.neo4j.org/components/management/tags/1.2-1.2.M06</url>
+    <connection>scm:svn:https://svn.neo4j.org/components/management/trunk/</connection>
+    <developerConnection>scm:svn:https://svn.neo4j.org/components/management/trunk/</developerConnection>
+    <url>https://trac.neo4j.org/browser/components/management</url>
   </scm>
 
   <properties>
