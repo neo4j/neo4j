@@ -25,9 +25,10 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 @Description( "An extension for accessing the reference node of the graph database, this can be used as the root for your graph." )
-public class ReferenceNode extends ServerPlugin
+public class Plugin extends ServerPlugin
 {
     public static final String GET_REFERENCE_NODE = "reference_node_uri";
     public static final String GET_CONNECTED_NODES = "connected_nodes";
@@ -42,15 +43,31 @@ public class ReferenceNode extends ServerPlugin
 
     @Name( GET_CONNECTED_NODES )
     @PluginTarget( Node.class )
-    public Iterable<Node> getAllConnectedNodes(@Source Node start)
+    public Iterable<Node> getAllConnectedNodes( @Source Node start )
     {
-        ArrayList<Node> nodes = new ArrayList<Node>(  );
+        ArrayList<Node> nodes = new ArrayList<Node>();
 
-        for(Relationship rel : start.getRelationships())
+        for ( Relationship rel : start.getRelationships() )
         {
             nodes.add( rel.getOtherNode( start ) );
         }
 
         return nodes;
     }
+
+    @PluginTarget( GraphDatabaseService.class )
+    public Node methodWithIntParam(
+            @Source GraphDatabaseService db,
+            @Parameter( name = "id", optional = false ) Integer id )
+    {
+        return db.getNodeById( id );
+    }
+
+    @PluginTarget( Relationship.class )
+    public Iterable<Node> methodOnRelationship( @Source Relationship rel )
+    {
+        return Arrays.asList( rel.getNodes() );
+    }
+
+
 }

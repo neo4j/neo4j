@@ -88,7 +88,7 @@ public final class FunctionalTestHelper
         return dataUri() + "relationship";
     }
 
-    String relationshipUri( long id )
+    public String relationshipUri( long id )
     {
         return relationshipUri() + "/" + id;
     }
