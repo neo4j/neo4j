@@ -29,6 +29,7 @@ import org.hamcrest.TypeSafeMatcher;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.rest.FunctionalTestHelper;
@@ -45,7 +46,7 @@ import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
-public class ReferenceNodeFunctionalTest
+public class PluginFunctionalTest
 {
     private NeoServer server;
     private FunctionalTestHelper functionalTestHelper;
@@ -80,7 +81,7 @@ public class ReferenceNodeFunctionalTest
         Map<String, Object> map = makeGet( functionalTestHelper.dataUri() );
         map = (Map<String, Object>)map.get( "extensions" );
 
-        assertThat( map.get( ReferenceNode.class.getSimpleName() ), instanceOf( Map.class ) );
+        assertThat( map.get( Plugin.class.getSimpleName() ), instanceOf( Map.class ) );
     }
 
     @Test
@@ -88,11 +89,11 @@ public class ReferenceNodeFunctionalTest
     {
         Map<String, Object> map = makeGet( functionalTestHelper.dataUri() );
         map = (Map<String, Object>)map.get( "extensions" );
-        map = (Map<String, Object>)map.get( ReferenceNode.class.getSimpleName() );
+        map = (Map<String, Object>)map.get( Plugin.class.getSimpleName() );
 
-        assertThat( (String)map.get( ReferenceNode.GET_REFERENCE_NODE ),
+        assertThat( (String)map.get( Plugin.GET_REFERENCE_NODE ),
                 RegExp.endsWith( String.format( "/ext/%s/graphdb/%s",
-                        ReferenceNode.class.getSimpleName(), ReferenceNode.GET_REFERENCE_NODE ) ) );
+                        Plugin.class.getSimpleName(), Plugin.GET_REFERENCE_NODE ) ) );
     }
 
     @Test
@@ -100,9 +101,9 @@ public class ReferenceNodeFunctionalTest
     {
         Map<String, Object> map = makeGet( functionalTestHelper.dataUri() );
         map = (Map<String, Object>)map.get( "extensions" );
-        map = (Map<String, Object>)map.get( ReferenceNode.class.getSimpleName() );
+        map = (Map<String, Object>)map.get( Plugin.class.getSimpleName() );
 
-        String uri = (String)map.get( ReferenceNode.GET_REFERENCE_NODE );
+        String uri = (String)map.get( Plugin.GET_REFERENCE_NODE );
         makeGet( uri );
     }
 
@@ -111,9 +112,9 @@ public class ReferenceNodeFunctionalTest
     {
         Map<String, Object> map = makeGet( functionalTestHelper.dataUri() );
         map = (Map<String, Object>)map.get( "extensions" );
-        map = (Map<String, Object>)map.get( ReferenceNode.class.getSimpleName() );
+        map = (Map<String, Object>)map.get( Plugin.class.getSimpleName() );
 
-        String uri = (String)map.get( ReferenceNode.GET_REFERENCE_NODE );
+        String uri = (String)map.get( Plugin.GET_REFERENCE_NODE );
         Map<String, Object> description = makePostMap( uri );
 
         NodeRepresentationTest.verifySerialisation( description );
@@ -126,14 +127,54 @@ public class ReferenceNodeFunctionalTest
 
         Map<String, Object> map = makeGet( functionalTestHelper.nodeUri( n ) );
         map = (Map<String, Object>)map.get( "extensions" );
-        map = (Map<String, Object>)map.get( ReferenceNode.class.getSimpleName() );
+        map = (Map<String, Object>)map.get( Plugin.class.getSimpleName() );
 
-        String uri = (String)map.get( ReferenceNode.GET_CONNECTED_NODES );
+        String uri = (String)map.get( Plugin.GET_CONNECTED_NODES );
         List<Map<String, Object>> response = makePostList( uri );
-        for( Map<String, Object> nodeMap : response)
+        verifyNodes( response );
+    }
+
+    private void verifyNodes( final List<Map<String, Object>> response )
+    {
+        for ( Map<String, Object> nodeMap : response )
         {
             NodeRepresentationTest.verifySerialisation( nodeMap );
         }
+    }
+
+    @Test
+    public void canInvokePluginWithParam() throws Exception
+    {
+        long n = functionalTestHelper.getGraphDbHelper().createNode();
+
+        Map<String, Object> map = makeGet( functionalTestHelper.dataUri() );
+        map = (Map<String, Object>)map.get( "extensions" );
+        map = (Map<String, Object>)map.get( Plugin.class.getSimpleName() );
+
+        String uri = (String)map.get( "methodWithIntParam" );
+        Map<String, Object> params = MapUtil.map( "id", n );
+        Map<String, Object> node = makePostMap( uri, params );
+
+        NodeRepresentationTest.verifySerialisation( node );
+    }
+
+
+    @Test
+    public void canInvokePluginOnRelationship() throws Exception
+    {
+        long n1 = functionalTestHelper.getGraphDbHelper().createNode();
+        long n2 = functionalTestHelper.getGraphDbHelper().createNode();
+        long relId = functionalTestHelper.getGraphDbHelper().createRelationship( "pals", n1, n2 );
+
+        Map<String, Object> map = makeGet( functionalTestHelper.relationshipUri( relId ) );
+        map = (Map<String, Object>)map.get( "extensions" );
+        map = (Map<String, Object>)map.get( Plugin.class.getSimpleName() );
+
+        String uri = (String)map.get( "methodOnRelationship" );
+        Map<String, Object> params = MapUtil.map( "id", relId );
+        List<Map<String, Object>> nodes = makePostList( uri, params );
+
+        verifyNodes( nodes );
     }
 
 
@@ -181,6 +222,17 @@ public class ReferenceNodeFunctionalTest
         return deserializeMap( body );
     }
 
+    private Map<String, Object> makePostMap( String url, Map<String, Object> params ) throws JsonParseException
+    {
+        String json = JsonHelper.createJsonFrom( params );
+        ClientResponse response = Client.create().resource( url ).accept(
+                MediaType.APPLICATION_JSON_TYPE ).entity( json, MediaType.APPLICATION_JSON_TYPE ).post( ClientResponse.class );
+
+        String body = getResponseText( response );
+
+        return deserializeMap( body );
+    }
+
     private List<Map<String, Object>> makePostList( String url ) throws JsonParseException
     {
         ClientResponse response = Client.create().resource( url ).accept(
@@ -191,6 +243,16 @@ public class ReferenceNodeFunctionalTest
         return deserializeList( body );
     }
 
+    private List<Map<String, Object>> makePostList( String url, Map<String, Object> params ) throws JsonParseException
+    {
+        String json = JsonHelper.createJsonFrom( params );
+        ClientResponse response = Client.create().resource( url ).accept(
+                MediaType.APPLICATION_JSON_TYPE ).entity( json, MediaType.APPLICATION_JSON_TYPE ).post( ClientResponse.class );
+
+        String body = getResponseText( response );
+
+        return deserializeList( body );
+    }
 
     private static class RegExp extends TypeSafeMatcher<String>
     {
