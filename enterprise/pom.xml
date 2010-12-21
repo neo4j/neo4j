@@ -48,14 +48,14 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j</artifactId>
-      <version>1.2.M06</version>
+      <version>1.2-SNAPSHOT</version>
       <type>pom</type>
     </dependency>
 
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.2-1.2.M06</version>
+      <version>1.2-SNAPSHOT</version>
       <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
@@ -155,7 +155,7 @@
     <dependency>
       <groupId>org.neo4j.drivers</groupId>
       <artifactId>neo4js</artifactId>
-      <version>0.2-1.2.M06</version>
+      <version>0.2-SNAPSHOT</version>
       <type>jar</type>
       <scope>provided</scope>
       <optional>true</optional>
@@ -166,7 +166,7 @@
       <groupId>org.neo4j.doc</groupId>
       <artifactId>neo4j-manual</artifactId>
       <classifier>html</classifier>
-      <version>1.2.M06</version>
+      <version>1.2-SNAPSHOT</version>
       <optional>true</optional>
     </dependency>
 
