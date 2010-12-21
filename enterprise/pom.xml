@@ -11,9 +11,9 @@
   <artifactId>neo4j-standalone</artifactId>
   <packaging>pom</packaging>
 
-  <name>Neo4j Server Assembler</name>
+  <name>Neo4j - Server Assembler</name>
 
-  <version>0.1-SNAPSHOT</version>
+  <version>1.2-SNAPSHOT</version>
   <description>This project assembles the Neo4j stand-alone distribution,
     pulling together all the deliverable artifacts and packaging them 
       into a downloadable installer.</description>
@@ -43,11 +43,6 @@
     <neo4j.confdir>${neo4j.home}/conf</neo4j.confdir> <!-- needed? -->
     <neo4j.datadir>${neo4j.home}/data</neo4j.datadir> <!-- needed? -->
     <neo4j.logdir>${neo4j.datadir}/log</neo4j.logdir> <!-- needed? -->
-
-    <!-- dependency versions -->
-    <neo4j.version>1.2-SNAPSHOT</neo4j.version>
-    <neo4j-server.version>0.1-SNAPSHOT</neo4j-server.version>
-    <neo4j-examples.version>1.2-SNAPSHOT</neo4j-examples.version>
 
     <!-- OSGi Bundle versions -->
     <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
@@ -98,7 +93,7 @@
               <descriptors>
                 <descriptor>src/main/assemblies/unix-dist.xml</descriptor>
               </descriptors>
-              <finalName>${server.shortname}-${neo4j.version}</finalName>
+              <finalName>${server.shortname}-${project.version}</finalName>
             </configuration>
           </execution>
           <execution>
@@ -111,7 +106,7 @@
               <descriptors>
                 <descriptor>src/main/assemblies/windows-dist.xml</descriptor>
               </descriptors>
-              <finalName>${server.shortname}-${neo4j.version}</finalName>
+              <finalName>${server.shortname}-${project.version}</finalName>
               <appendAssemblyId>true</appendAssemblyId>
               <assemblyId />
             </configuration>
@@ -206,7 +201,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j</artifactId>
-      <version>${neo4j.version}</version>
+      <version>${project.version}</version>
       <exclusions>
         <exclusion>
           <artifactId>neo4j-udc</artifactId>
@@ -217,7 +212,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j</artifactId>
-      <version>${neo4j.version}</version>
+      <version>${project.version}</version>
       <classifier>javadoc</classifier>
       <exclusions>
         <exclusion>
@@ -229,7 +224,7 @@
     <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
-      <version>${neo4j-server.version}</version>
+      <version>0.1-SNAPSHOT</version>
       <classifier>site</classifier>
       <exclusions>
         <exclusion>
@@ -241,7 +236,7 @@
     <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
-      <version>${neo4j-server.version}</version>
+      <version>0.1-SNAPSHOT</version>
       <exclusions>
         <exclusion>
           <artifactId>neo4j-udc</artifactId>
@@ -252,13 +247,13 @@
     <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
-      <version>${neo4j-server.version}</version>
+      <version>0.1-SNAPSHOT</version>
       <classifier>static-web</classifier> 
     </dependency>
     <dependency>
       <groupId>org.neo4j.examples</groupId>
       <artifactId>neo4j-examples</artifactId>
-      <version>${neo4j-examples.version}</version>
+      <version>${project.version}</version>
         <exclusions>
           <exclusion>
             <artifactId>neo4j-udc</artifactId>
@@ -269,22 +264,21 @@
     <dependency>
       <groupId>org.neo4j.examples</groupId>
       <artifactId>neo4j-examples</artifactId>
-      <version>${neo4j-examples.version}</version>
+      <version>${project.version}</version>
       <classifier>sources</classifier>
     </dependency>
     <dependency>
       <groupId>org.neo4j.examples</groupId>
       <artifactId>neo4j-examples</artifactId>
-      <version>${neo4j-examples.version}</version>
+      <version>${project.version}</version>
       <classifier>test-sources</classifier>
     </dependency>
     <dependency>
       <groupId>org.neo4j.examples</groupId>
       <artifactId>neo4j-examples</artifactId>
-      <version>${neo4j-examples.version}</version>
+      <version>${project.version}</version>
       <classifier>site</classifier>
     </dependency>
-    <!--dependency> <groupId>org.neo4j.app</groupId> <artifactId>neo4j-server</artifactId> <version>${neo4j-server.version}</version> <classifier>static-web</classifier> </dependency -->
 
     <!-- OSGi Bundles -->
     <dependency>
@@ -307,7 +301,7 @@
     <dependency>
       <groupId>org.neo4j.doc</groupId>
       <artifactId>neo4j-manual</artifactId>
-      <version>${neo4j.version}</version>
+      <version>${project.version}</version>
     </dependency>
   </dependencies>
 
