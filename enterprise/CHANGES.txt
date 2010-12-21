@@ -30,7 +30,6 @@ o Added back links to the first page in the HTML format.
 o updating to Gremlin 0.6
 o Updated the component site documentation with the new index API.
 
-
 0.1-1.2.M05 (2010-12-02)
 ------------------------
 
