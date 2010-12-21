@@ -30,7 +30,7 @@ ProxyPass /neo4jdb/data http://localhost:7474/db/data
 ProxyPassReverse /neo4jdb/data http://localhost:7474/db/data
 ---------------
 
-* Simle load balancing in a clustered environment to load-balance read load using the Apache `mod_proxy_balancer` footnote:[http://httpd.apache.org/docs/2.2/mod/mod_proxy_balancer.html] plugin
+* Simple load balancing in a clustered environment to load-balance read load using the Apache `mod_proxy_balancer` footnote:[http://httpd.apache.org/docs/2.2/mod/mod_proxy_balancer.html] plugin
 +
 --------------
 <Proxy balancer://mycluster>
