@@ -1,0 +1,11 @@
+Server Configuration 
+====================
+
+.Quick info
+***********
+* The server's primary configuration file is found under conf/neo4j-server.properties 
+* The conf/log4j.properties file contains the default server logging configuration
+* Low-level performance tuning parameters are found in conf/neo4j.properties
+***********
+
+
