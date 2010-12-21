@@ -8,4 +8,116 @@ Server Plugins
 * the plugin functionality within representations as clients interact through  
 ***********
 
+Plugins provide an easy way to extend the Neo4j REST API with new functionality, without the need to
+invent your own API. Think of plugins as server-side scripts that can add functions for retrieving and
+manipulating nodes, relationships, paths or properties.
 
+[WARNING]
+If you want to have full control over your API, and are willing to put in the effort, and understand
+the risks, then Neo4j server also provides [[Unmanaged Extensions]] hooks for unmanaged extensions
+based on JAX-RS.   
+
+To create a plugin, your code must inherit from the ServerPlugin class, and ensure that it can produce 
+an (Iterable of) Node, Relationship or Path, specify parameters, a point of extension and of course 
+the application logic. An example of a plugin which augments the database (as opposed to nodes or
+relations) follows:
+
+[source,java]
+----
+@Description( "An extension to the Neo4j Server for getting all nodes or relationships" )
+public class GetAll extends ServerPlugin
+{
+  @Name( "get_all_nodes" )
+  @Description( "Get all nodes from the Neo4j graph database" )
+  @PluginTarget( GraphDatabaseService.class )
+  public Iterable<Node> getAllNodes( @Source GraphDatabaseService graphDb )
+  {
+      return graphDb.getAllNodes();
+  }
+ 
+
+@Description( "Get all relationships from the Neo4j graph database" )
+  @PluginTarget( GraphDatabaseService.class )
+  public Iterable<Relationship> getAllRelationships( @Source GraphDatabaseService graphDb )
+  {
+      return new NestingIterable<Relationship, Node>( graphDb.getAllNodes() )
+      {
+          @Override
+          protected Iterator<Relationship> createNestedIterator( Node item )
+          {
+              return item.getRelationships( Direction.OUTGOING ).iterator();
+          }
+      };
+  }
+}
+----
+
+To deploy the code, simply compile it into a .jar file and place it onto the server classpath (which by
+convention is $NEO4J_HOME/plugins). The .jar file must include the file 
+META-INF/services/org.neo4j.server.plugins.ServerPlugin with the fully qualified name of the implementation
+class. In this case, we'd have only a single entry in our config file, though multiple entries are allowed, 
+each on a separate line:
+
+[source,java]
+----
+org.neo4j.server.examples.GetAll
+# Any other plugins in the same jar file must be listed here 
+---- 
+
+The code above makes an extension visible in the database representation (via the @PluginTarget annotation)
+whenever it is served from the Neo4j Server. Simply changing the @PluginTarget parameter to Node.class or
+Relationship.class allows us to target those parts of the datamodel should we wish. The functionality 
+extensions provided by the plugin are automatically advertised in representations on the wire. For example,
+clients can discover the extension implemented by the above plugin easily by examining the representations
+they receive as responses from the server, e.g. by performing a GET on the default database URI:
+
+ 
+[source, shell]
+----
+curl -v http://localhost:7474/db/data/
+---- 
+
+The response to the GET request will contain (by default) a JSON container that itself contains a container
+called "extensions" where the available plugins are listed. In the following case, we only have the GetAll
+plugin registered with the server, so only its extension functionality is available:
+
+[source, java]
+----
+{
+"extensions-info" : "http://localhost:7474/db/data/ext",
+"node" : "http://localhost:7474/db/data/node",
+"node-index" : "http://localhost:7474/db/data/index/node",
+"relationship-index" : "http://localhost:7474/db/data/index/relationship",
+"reference_node" : "http://localhost:7474/db/data/node/0",
+"extensions" : {
+  "GetAll" : {
+    "get_all_nodes" : "http://localhost:7474/db/data/ext/GetAll/graphdb/get_all_nodes",
+    "get_all_relationships" : "http://localhost:7474/db/data/ext/GetAll/graphdb/getAllRelationships"
+  }
+}
+----
+ 
+Performing a GET on one of the two extension URIs...
+
+[source, shell]
+----
+curl http://localhost:7474/db/data/ext/GetAll/graphdb/get_all_nodes
+----
+
+...gives back the meta information about the service:
+
+[source, java]
+----
+{
+  "extends" : "graphdb",
+  "description" : "Get all nodes from the Neo4j graph database",
+  "name" : "get_all_nodes",
+  "parameters" : [ ]
+}
+----
+
+To use it, just POST to this URL, with parameters as specified in the description (though there are none in this case).
+
+Through this model, any plugin can naturally fit into the general hypermedia scheme that Neo4j espouses - meaning that
+clients can still take advantage of abstractions like  Nodes, Relationships and Paths with a straightforward upgrade
+path as servers are enriched with plugins (old clients don't break).
