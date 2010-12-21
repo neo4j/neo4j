@@ -14,7 +14,13 @@
   <description>
 		A generic command shell with a client and server part.
 	</description>
-  <url>http://components.neo4j.org/${project.artifactId}/</url>
+  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+
+  <scm>
+    <connection>scm:svn:https://svn.neo4j.org/components/shell/trunk/</connection>
+    <developerConnection>scm:svn:https://svn.neo4j.org/components/shell/trunk/</developerConnection>
+    <url>https://trac.neo4j.org/browser/components/shell</url>
+  </scm>
 
   <properties>
     <sun.jta.version>1.1</sun.jta.version>
@@ -32,12 +38,6 @@
   </properties>
 
   <packaging>bundle</packaging>
-
-  <scm>
-    <connection>scm:svn:https://svn.neo4j.org/components/shell/trunk/</connection>
-    <developerConnection>scm:svn:https://svn.neo4j.org/components/shell/trunk/</developerConnection>
-    <url>https://trac.neo4j.org/browser/components/shell</url>
-  </scm>
 
   <licenses>
     <license>
@@ -161,5 +161,13 @@
       <artifactId>junit</artifactId>
     </dependency>
   </dependencies>
+
+  <distributionManagement>
+    <site>
+      <id>neo4j-site</id>
+      <url>scpexe://components.neo4j.org/home/neo/components/${project.artifactId}/${project.version}</url>
+    </site>
+  </distributionManagement>
+
 </project>
 
