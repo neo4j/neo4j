@@ -21,6 +21,7 @@
 package org.neo4j.server.plugins;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -224,6 +225,27 @@ class PluginMethod extends PluginPoint
                 if ( caster != null )
                 {
                     return new ParameterExtractor( caster, raw, parameter, description );
+                }
+            }
+        }
+        else if ( type instanceof GenericArrayType )
+        {
+            GenericArrayType array = (GenericArrayType) type;
+            Type component = array.getGenericComponentType();
+            if ( component instanceof Class<?> )
+            {
+                TypeCaster caster = TYPES.get( component );
+                if ( caster != null )
+                {
+                    return new ListParameterExtractor( caster, (Class<?>) component, parameter,
+                            description )
+                    {
+                        @Override
+                        Object convert( Object[] result )
+                        {
+                            return result;
+                        }
+                    };
                 }
             }
         }
