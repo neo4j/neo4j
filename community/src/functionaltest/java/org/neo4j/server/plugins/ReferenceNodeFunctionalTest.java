@@ -20,15 +20,8 @@
 
 package org.neo4j.server.plugins;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-
-import java.io.IOException;
-import java.util.Map;
-
-import javax.ws.rs.core.MediaType;
-
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
 import org.hamcrest.Description;
 import org.hamcrest.Factory;
 import org.hamcrest.Matcher;
@@ -40,10 +33,17 @@ import org.neo4j.server.NeoServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.rest.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.NodeRepresentationTest;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
+import javax.ws.rs.core.MediaType;
+import java.util.List;
+import java.util.Map;
+
+import static org.hamcrest.Matchers.*;
+import static org.hamcrest.core.IsNull.nullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 public class ReferenceNodeFunctionalTest
 {
@@ -51,7 +51,7 @@ public class ReferenceNodeFunctionalTest
     private FunctionalTestHelper functionalTestHelper;
 
     @Before
-    public void setupServer() throws IOException
+    public void setupServer() throws Exception
     {
         server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
         server.start();
@@ -61,31 +61,24 @@ public class ReferenceNodeFunctionalTest
     @After
     public void stopServer()
     {
-        if ( server != null ) server.stop();
+        if ( server != null )
+        {
+            server.stop();
+        }
     }
 
     @Test
     public void canGetGraphDatabaseExtensionList() throws Exception
     {
-        ClientResponse response = Client.create().resource( functionalTestHelper.dataUri() ).accept(
-                MediaType.APPLICATION_JSON_TYPE ).get( ClientResponse.class );
-        String body = response.getEntity( String.class );
-
-        Map<String, Object> map = JsonHelper.jsonToMap( body );
-
-        assertEquals(200, response.getStatus());
+        Map<String, Object> map = makeGet( functionalTestHelper.dataUri() );
         assertThat( map.get( "extensions" ), instanceOf( Map.class ) );
     }
 
     @Test
     public void canGetExtensionDefinitionForReferenceNodeExtension() throws Exception
     {
-        ClientResponse response = Client.create().resource( functionalTestHelper.dataUri() ).accept(
-                MediaType.APPLICATION_JSON_TYPE ).get( ClientResponse.class );
-        String body = response.getEntity( String.class );
-
-        Map<String, Object> map = JsonHelper.jsonToMap( body );
-        map = (Map<String, Object>) map.get( "extensions" );
+        Map<String, Object> map = makeGet( functionalTestHelper.dataUri() );
+        map = (Map<String, Object>)map.get( "extensions" );
 
         assertThat( map.get( ReferenceNode.class.getSimpleName() ), instanceOf( Map.class ) );
     }
@@ -93,15 +86,11 @@ public class ReferenceNodeFunctionalTest
     @Test
     public void canGetExtensionDataForGetReferenceNode() throws Exception
     {
-        ClientResponse response = Client.create().resource( functionalTestHelper.dataUri() ).accept(
-                MediaType.APPLICATION_JSON_TYPE ).get( ClientResponse.class );
-        String body = response.getEntity( String.class );
+        Map<String, Object> map = makeGet( functionalTestHelper.dataUri() );
+        map = (Map<String, Object>)map.get( "extensions" );
+        map = (Map<String, Object>)map.get( ReferenceNode.class.getSimpleName() );
 
-        Map<String, Object> map = JsonHelper.jsonToMap( body );
-        map = (Map<String, Object>) map.get( "extensions" );
-        map = (Map<String, Object>) map.get( ReferenceNode.class.getSimpleName() );
-
-        assertThat( (String) map.get( ReferenceNode.GET_REFERENCE_NODE ),
+        assertThat( (String)map.get( ReferenceNode.GET_REFERENCE_NODE ),
                 RegExp.endsWith( String.format( "/ext/%s/graphdb/%s",
                         ReferenceNode.class.getSimpleName(), ReferenceNode.GET_REFERENCE_NODE ) ) );
     }
@@ -109,64 +98,120 @@ public class ReferenceNodeFunctionalTest
     @Test
     public void canGetExtensionDescription() throws Exception
     {
-        ClientResponse response = Client.create().resource( functionalTestHelper.dataUri() ).accept(
-                MediaType.APPLICATION_JSON_TYPE ).get( ClientResponse.class );
-        String body = response.getEntity( String.class );
+        Map<String, Object> map = makeGet( functionalTestHelper.dataUri() );
+        map = (Map<String, Object>)map.get( "extensions" );
+        map = (Map<String, Object>)map.get( ReferenceNode.class.getSimpleName() );
 
-        Map<String, Object> map = JsonHelper.jsonToMap( body );
-        map = (Map<String, Object>) map.get( "extensions" );
-        map = (Map<String, Object>) map.get( ReferenceNode.class.getSimpleName() );
-
-        response = Client.create().resource( (String) map.get( ReferenceNode.GET_REFERENCE_NODE ) ).accept(
-                MediaType.APPLICATION_JSON_TYPE ).get( ClientResponse.class );
-
-        assertEquals( 200, response.getStatus() );
-
-        Map<String, Object> description = JsonHelper.jsonToMap( response.getEntity( String.class ) );
+        String uri = (String)map.get( ReferenceNode.GET_REFERENCE_NODE );
+        makeGet( uri );
     }
 
     @Test
-    public void canInvokeExtensionMethod() throws Exception
+    public void canInvokeExtensionMethodWithNoArguments() throws Exception
     {
-        ClientResponse response = Client.create().resource( functionalTestHelper.dataUri() ).accept(
-                MediaType.APPLICATION_JSON_TYPE ).get( ClientResponse.class );
-        String body = response.getEntity( String.class );
+        Map<String, Object> map = makeGet( functionalTestHelper.dataUri() );
+        map = (Map<String, Object>)map.get( "extensions" );
+        map = (Map<String, Object>)map.get( ReferenceNode.class.getSimpleName() );
 
-        Map<String, Object> map = JsonHelper.jsonToMap( body );
-        map = (Map<String, Object>) map.get( "extensions" );
-        map = (Map<String, Object>) map.get( ReferenceNode.class.getSimpleName() );
-
-        response = Client.create().resource( (String) map.get( ReferenceNode.GET_REFERENCE_NODE ) ).accept(
-                MediaType.APPLICATION_JSON_TYPE ).post( ClientResponse.class );
-
-        assertEquals( 200, response.getStatus() );
-
-        Map<String, Object> description = JsonHelper.jsonToMap( response.getEntity( String.class ) );
+        String uri = (String)map.get( ReferenceNode.GET_REFERENCE_NODE );
+        Map<String, Object> description = makePostMap( uri );
 
         NodeRepresentationTest.verifySerialisation( description );
     }
+
+    @Test
+    public void canInvokeNodePlugin() throws Exception
+    {
+        long n = functionalTestHelper.getGraphDbHelper().createNode();
+
+        Map<String, Object> map = makeGet( functionalTestHelper.nodeUri( n ) );
+        map = (Map<String, Object>)map.get( "extensions" );
+        map = (Map<String, Object>)map.get( ReferenceNode.class.getSimpleName() );
+
+        String uri = (String)map.get( ReferenceNode.GET_CONNECTED_NODES );
+        List<Map<String, Object>> response = makePostList( uri );
+        for( Map<String, Object> nodeMap : response)
+        {
+            NodeRepresentationTest.verifySerialisation( nodeMap );
+        }
+    }
+
+
+    private Map<String, Object> makeGet( String url ) throws JsonParseException
+    {
+        ClientResponse response = Client.create().resource( url ).accept(
+                MediaType.APPLICATION_JSON_TYPE ).get( ClientResponse.class );
+
+        String body = getResponseText( response );
+
+        return deserializeMap( body );
+    }
+
+    private Map<String, Object> deserializeMap( final String body )
+            throws JsonParseException
+    {
+        Map<String, Object> result = JsonHelper.jsonToMap( body );
+        assertThat( result, is( not( nullValue() ) ) );
+        return result;
+    }
+
+    private List<Map<String, Object>> deserializeList( final String body )
+            throws JsonParseException
+    {
+        List<Map<String, Object>> result = JsonHelper.jsonToList( body );
+        assertThat( result, is( not( nullValue() ) ) );
+        return result;
+    }
+
+    private String getResponseText( final ClientResponse response )
+    {
+        String body = response.getEntity( String.class );
+
+        assertEquals( 200, response.getStatus() );
+        return body;
+    }
+
+    private Map<String, Object> makePostMap( String url ) throws JsonParseException
+    {
+        ClientResponse response = Client.create().resource( url ).accept(
+                MediaType.APPLICATION_JSON_TYPE ).post( ClientResponse.class );
+
+        String body = getResponseText( response );
+
+        return deserializeMap( body );
+    }
+
+    private List<Map<String, Object>> makePostList( String url ) throws JsonParseException
+    {
+        ClientResponse response = Client.create().resource( url ).accept(
+                MediaType.APPLICATION_JSON_TYPE ).post( ClientResponse.class );
+
+        String body = getResponseText( response );
+
+        return deserializeList( body );
+    }
+
 
     private static class RegExp extends TypeSafeMatcher<String>
     {
         enum MatchType
         {
             end( "ends with" )
-            {
-                @Override
-                boolean match( String pattern, String string )
-                {
-                    return string.endsWith( pattern );
-                }
-            },
+                    {
+                        @Override
+                        boolean match( String pattern, String string )
+                        {
+                            return string.endsWith( pattern );
+                        }
+                    },
             matches()
-            {
-                @Override
-                boolean match( String pattern, String string )
-                {
-                    return string.matches( pattern );
-                }
-            },
-            ;
+                    {
+                        @Override
+                        boolean match( String pattern, String string )
+                        {
+                            return string.matches( pattern );
+                        }
+                    },;
             private final String description;
 
             abstract boolean match( String pattern, String string );

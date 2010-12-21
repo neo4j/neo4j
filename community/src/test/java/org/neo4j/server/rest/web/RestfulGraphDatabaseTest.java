@@ -668,7 +668,7 @@ public class RestfulGraphDatabaseTest
 
     private void verifyRelReps( int expectedSize, String entity ) throws JsonParseException
     {
-        List<Map<String, Object>> relreps = JsonHelper.jsonToListOfRelationshipRepresentations( entity );
+        List<Map<String, Object>> relreps = JsonHelper.jsonToList( entity );
         assertEquals( expectedSize, relreps.size() );
         for ( Map<String, Object> relrep : relreps )
         {

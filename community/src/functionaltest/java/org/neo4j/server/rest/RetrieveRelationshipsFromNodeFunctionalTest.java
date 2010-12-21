@@ -83,7 +83,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
 
     private void verifyRelReps(int expectedSize, String json) throws JsonParseException
     {
-        List<Map<String, Object>> relreps = JsonHelper.jsonToListOfRelationshipRepresentations(json);
+        List<Map<String, Object>> relreps = JsonHelper.jsonToList( json );
         assertEquals(expectedSize, relreps.size());
         for (Map<String, Object> relrep : relreps) {
             RelationshipRepresentationTest.verifySerialisation(relrep);
