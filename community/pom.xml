@@ -236,7 +236,7 @@
     <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
-      <version>0.1-SNAPSHOT</version>
+      <version>0.5-SNAPSHOT</version>
       <exclusions>
         <exclusion>
           <artifactId>neo4j-udc</artifactId>
@@ -247,7 +247,7 @@
     <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
-      <version>0.1-SNAPSHOT</version>
+      <version>0.5-SNAPSHOT</version>
       <classifier>static-web</classifier> 
     </dependency>
     <dependency>
