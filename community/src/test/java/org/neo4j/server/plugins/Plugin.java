@@ -20,12 +20,12 @@
 
 package org.neo4j.server.plugins;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+
+import java.util.ArrayList;
+import java.util.Arrays;
 
 @Description( "An extension for accessing the reference node of the graph database, this can be used as the root for your graph." )
 public class Plugin extends ServerPlugin
@@ -41,6 +41,7 @@ public class Plugin extends ServerPlugin
     static Float _float;
     static Double _double;
     static Boolean _boolean;
+    static Long optional;
 
     @Description( "Get the reference node from the graph database" )
     @PluginTarget( GraphDatabaseService.class )
@@ -64,6 +65,19 @@ public class Plugin extends ServerPlugin
         return nodes;
     }
 
+    @PluginTarget( Node.class )
+    public Node getThisNodeOrById( @Source Node start, @Parameter( name = "id", optional = true ) Long id )
+    {
+        optional = id;
+
+        if ( id == null )
+        {
+            return start;
+        }
+
+        return start.getGraphDatabase().getNodeById( id );
+    }
+
     @PluginTarget( GraphDatabaseService.class )
     public Node methodWithIntParam(
             @Source GraphDatabaseService db,
@@ -79,7 +93,7 @@ public class Plugin extends ServerPlugin
     }
 
     @PluginTarget( GraphDatabaseService.class )
-    public void methodWithAllParams(
+    public Node methodWithAllParams(
             @Source GraphDatabaseService db,
             @Parameter( name = "id", optional = false ) String a,
             @Parameter( name = "id2", optional = false ) Byte b,
@@ -100,5 +114,7 @@ public class Plugin extends ServerPlugin
         _float = g;
         _double = h;
         _boolean = i;
+
+        return db.getReferenceNode();
     }
 }
