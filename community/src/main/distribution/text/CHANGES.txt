@@ -1,3 +1,74 @@
+1.2-1.2.M06 (2010-12-21)
+------------------------
+
+- Neo4j-Standalone
+o Switched to dependencySet for including neo4j-manual.
+o Avoid downloading sources.
+o Excluding manual from the server classpath.
+o Added the key for the database tuning properties file.
+
+- Kernel
+o Fixed an issues with PruneEvaluators getting invoked with the start node as argument.
+  PruneEvaluators was never invoked with the start node before the arrival of Evaluator interface.
+o Added logging of recovery completion.
+o Added TransactionData#isDeleted(Node) and #isDeleted(Relationship) and also made
+  the collection to hold these a HashSet instead of ArrayList. This allows fast
+  lookups for asking if a node/relationship is deleted in a transaction.
+o More flexible caching (can instantiate an arbitrary Cache object).
+
+- Shell
+o Fixed a problem where ShellServerExtension assumed the shell was enabled during shutdown, which could result in NPE.
+
+- Lucene-index
+o More flexible caching (can instantiate an arbitrary Cache object).
+o Merged the fast-writes branch. Basically it makes committing changes to lucene indexes
+  faster and more throughput-friendly for multiple threads. The performance improvement
+  for committing lucene transactions shows best for small transactions, but will improve
+  all modifying operations to lucene indexes.
+o Fixed bug which could close an IndexSearcher before it was supposed to when
+  there was exactly one item in the result set, two or more threads did this at
+  the same time as there was another thread doing an update... AND the reading
+  threads all called IndexHits#getSingle() on the result.
+
+- HA
+o When a new master is chosen, slaves throws away the id allocations they got from the previous master. This fixes a problem where occupied ids where reused.
+o Enabled (and fixed problem with) thread on master which checks for dead slave connections and rolls back those transactions, so that their locks are released.
+  This fixes a problem where an HA cluster would seem to freeze up and become unresponsive to write requests.
+o Adding Log4j and Netty license information.
+o Also closes the executor containing the connections.
+o Changed dependency scopes.
+o Shuts down databases after verifying them.
+
+- Server
+o Bridge OSGi LogService to server Logger. Bundle log messages and stdout pipe through correctly.
+o Refactoring of functional tests to remove static dependencies. Introduced a server builder to deal with it instead.
+o Can now add performance-tweaking properties to the database hosted by the server. It uses the same neo4j.properties file as the embedded version, but you need to add a property: 
+  org.neo4j.server.db.tuning.properties into the neo4j-server.properties file.
+o Webadmin: Removed component titles, added save button to data browser, minor change to data browser layout.
+o Webadmin: Minor UI updates, added error message that shows up when server connection is lost.
+o Webadmin: Moved charts into tabbed box, minor UI updates.
+o Fixed an issue with initialization order of things in the server to make sure that RRD is initialized when it is needed.
+o Webadmin: Added proper tab-like styling to chart tabs and scale selectors.
+o Fixed bug in RRD memory usage sampler, making rounding happen at end of calculations, instead of in the midst of.
+o Webadmin: Made 30minutes the default view in charts.
+o Webadmin: Added kernel version to dashboard, fixed bug in chart drawing (was drawing when the charts are not visible under certain conditions).
+o Webadmin: Disallow self relationships in UI, and show error message explaining this.
+o Can now load 3rd party JAX-RS jars from the classpath.
+o Updated static assembly to properly include both webadmin statics and documentation. Documentation now tested and ships properly down to neo4j-standalone.
+o Webadmin: Made the current node show up by default when adding new relations in webadmin.
+o Webadmin: Dashboard shows charts with tabs, and allows switching between charts.
+o Added a basic readme with instructions for building, running, and functional testing.
+o Updating the way to create temporary files to solve the functional test problem where lots of files stick around.
+o re-implemented REST to expose indexing of nodes and relationships (new index API)
+o single path algo works in RestfulGraphDatabase now
+o fixed duplicate paths for delete node or relationship from index
+o Http DELETE requires the proper mediatype to accept
+o All indexes must be created to use them.
+o Added the ability extend the REST API with server plugins.
+o Added back links to the first page in the HTML format.
+o updating to Gremlin 0.6
+o Updated the component site documentation with the new index API.
+
 1.2.M05 (2010-12-02)
 --------------------
 
