@@ -1,6 +1,5 @@
 The Neo4j Manual v{revnumber}
 =============================
-:Revision: 1.2-SNAPSHOT
 
 :neo4j-version: {revnumber}
 
