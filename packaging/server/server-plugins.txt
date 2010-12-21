@@ -1,0 +1,11 @@
+Server Plugins 
+==============
+
+.Quick info
+***********
+* The server's functionality can be extended by adding plugins. Plugins are user-specified code which
+* extend the capabilities of the database, nodes, or relations. The neo4j server will then advertise
+* the plugin functionality within representations as clients interact through  
+***********
+
+
