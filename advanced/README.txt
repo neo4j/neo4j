@@ -26,3 +26,10 @@ To run the functional tests:
 `mvn clean package -Dtests=functional`
 
 
+
+integration-tests
+----------------
+
+To run the webdriver-selenium-integration tests:
+
+`mvn clean package -Dtests=web`
