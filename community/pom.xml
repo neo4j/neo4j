@@ -224,7 +224,7 @@
     <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
-      <version>0.1-SNAPSHOT</version>
+      <version>0.5-1.2.M06</version>
       <classifier>site</classifier>
       <exclusions>
         <exclusion>
@@ -236,7 +236,7 @@
     <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
-      <version>0.5-SNAPSHOT</version>
+      <version>0.5-1.2.M06</version>
       <exclusions>
         <exclusion>
           <artifactId>neo4j-udc</artifactId>
@@ -247,7 +247,7 @@
     <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
-      <version>0.5-SNAPSHOT</version>
+      <version>0.5-1.2.M06</version>
       <classifier>static-web</classifier> 
     </dependency>
     <dependency>
