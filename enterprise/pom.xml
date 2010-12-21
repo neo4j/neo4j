@@ -11,7 +11,7 @@
   <version>1.2-SNAPSHOT</version>
   <name>Neo4j - Reference Manual</name>
   <description>Neo4j Reference Manual.</description>
-  <url>http://neo4j.org/</url>
+  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
   <packaging>pom</packaging>
 
   <properties>
@@ -107,6 +107,10 @@
       <uniqueVersion>false</uniqueVersion>
       <url>https://repo.neo4j.org/content/repositories/snapshots</url>
     </snapshotRepository>
+    <site>
+      <id>neo4j-site</id>
+      <url>scpexe://components.neo4j.org/home/neo/components/${project.artifactId}/${project.version}</url>
+    </site>
   </distributionManagement>
 
 </project>
