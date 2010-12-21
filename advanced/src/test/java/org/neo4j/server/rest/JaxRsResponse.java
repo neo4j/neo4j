@@ -20,18 +20,18 @@
 
 package org.neo4j.server.rest;
 
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.core.util.MultivaluedMapImpl;
-import com.sun.jersey.core.util.StringKeyObjectValueIgnoreCaseMultivaluedMap;
-import com.sun.net.httpserver.Headers;
-
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
+
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response;
+
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.core.util.StringKeyObjectValueIgnoreCaseMultivaluedMap;
+import com.sun.net.httpserver.Headers;
 
 public class JaxRsResponse extends Response
 {
