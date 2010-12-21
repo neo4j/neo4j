@@ -29,8 +29,10 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -157,11 +159,11 @@ class PluginMethod extends PluginPoint
     private static ParameterExtractor parameterExtractor( Type type, Parameter parameter,
             Description description )
     {
-        if ( description instanceof ParameterizedType )
+        if ( type instanceof ParameterizedType )
         {
-            ParameterizedType paramType = (ParameterizedType) description;
+            ParameterizedType paramType = (ParameterizedType) type;
             Class<?> raw = (Class<?>) paramType.getRawType();
-            if ( Set.class.isAssignableFrom( raw ) )
+            if ( Set.class == raw )
             {
                 TypeCaster caster = TYPES.get( paramType.getActualTypeArguments()[0] );
                 if ( caster != null )
@@ -176,7 +178,7 @@ class PluginMethod extends PluginPoint
                     };
                 }
             }
-            else if ( Iterable.class.isAssignableFrom( raw ) )
+            else if ( List.class == raw || Collection.class == raw || Iterable.class == raw )
             {
                 TypeCaster caster = TYPES.get( paramType.getActualTypeArguments()[0] );
                 if ( caster != null )
