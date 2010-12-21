@@ -1,3 +1,19 @@
+1.2-1.2.M06 (2010-12-21)
+------------------------
+
+o More flexible caching (can instantiate an arbitrary Cache object).
+
+o Merged the fast-writes branch. Basically it makes committing changes to lucene indexes
+  faster and more throughput-friendly for multiple threads. The performance improvement
+  for committing lucene transactions shows best for small transactions, but will improve
+  all modifying operations to lucene indexes.
+
+o Fixed bug which could close an IndexSearcher before it was supposed to when
+  there was exactly one item in the result set, two or more threads did this at
+  the same time as there was another thread doing an update... AND the reading
+  threads all called IndexHits#getSingle() on the result.
+
+
 1.2-1.2.M05 (2010-12-02)
 ------------------------
 
