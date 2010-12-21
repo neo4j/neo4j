@@ -9,3 +9,17 @@ Server Configuration
 ***********
 
 
+[source,shell]
+----
+conf/neo4j-server.properties
+----
+
+[source,shell]
+----
+conf/log4j.properties
+----
+
+[source,shell]
+----
+conf/neo4j-server.properties
+----
