@@ -1,7 +1,7 @@
 ${server.fullname} Manual
 ==================
 
-The ${server.fullname} can be managed with command line scripts. 
+${server.fullname} can be managed with command line scripts. 
 
 Usage - Windows
 ---------------
