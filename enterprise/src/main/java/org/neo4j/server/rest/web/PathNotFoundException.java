@@ -22,5 +22,6 @@ package org.neo4j.server.rest.web;
 
 public class PathNotFoundException extends Exception
 {
+    private static final long serialVersionUID = 3067232188093597955L;
 
 }
