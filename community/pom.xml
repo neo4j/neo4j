@@ -9,7 +9,7 @@
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-ha</artifactId>
   <name>Neo4j - High Availability</name>
-  <version>0.5-SNAPSHOT</version>
+  <version>0.5-1.2.M06</version>
   <description>This component provides the means to set up a cluster of Neo4j instances that act together
     as a cluster, providing Master-Slave replication and other features.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}/</url>
@@ -21,9 +21,9 @@
   </properties>
 
   <scm>
-    <connection>scm:svn:https://svn.neo4j.org/components/ha/trunk</connection>
-    <developerConnection>scm:svn:https://svn.neo4j.org/components/ha/trunk</developerConnection>
-    <url>scm:svn:https://svn.neo4j.org/components/ha/</url>
+    <connection>scm:svn:https://svn.neo4j.org/components/ha/tags/0.5-1.2.M06</connection>
+    <developerConnection>scm:svn:https://svn.neo4j.org/components/ha/tags/0.5-1.2.M06</developerConnection>
+    <url>scm:svn:https://svn.neo4j.org/components/ha/tags/0.5-1.2.M06</url>
   </scm>
 
   <licenses>
