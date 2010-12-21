@@ -27,6 +27,8 @@ import java.util.Collection;
 
 public class MediaTypeNotSupportedException extends WebApplicationException
 {
+    private static final long serialVersionUID = 5159216782240337940L;
+
     public MediaTypeNotSupportedException( Response.Status status, Collection<MediaType> supported,
                                            MediaType... requested )
     {
