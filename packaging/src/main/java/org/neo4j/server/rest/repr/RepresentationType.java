@@ -20,16 +20,28 @@
 
 package org.neo4j.server.rest.repr;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 
-import java.util.HashMap;
-import java.util.Map;
-
 public final class RepresentationType
 {
+    private static final Map<Class<?>, Class<?>> boxed = new HashMap<Class<?>, Class<?>>();
+    static
+    {
+        boxed.put( byte.class, Byte.class );
+        boxed.put( char.class, Character.class );
+        boxed.put( short.class, Short.class );
+        boxed.put( int.class, Integer.class );
+        boxed.put( long.class, Long.class );
+        boxed.put( float.class, Float.class );
+        boxed.put( double.class, Double.class );
+        boxed.put( boolean.class, Boolean.class );
+    }
     private static final Map<String, RepresentationType> types = new HashMap<String, RepresentationType>();
     private static final Map<Class<?>, RepresentationType> extended = new HashMap<Class<?>, RepresentationType>();
     // Graph database types
@@ -53,14 +65,14 @@ public final class RepresentationType
             TEMPLATE = new RepresentationType( "uri-template" ),//
             STRING = new RepresentationType( "string", "strings", String.class ),//
             // primitives
-            BYTE = new RepresentationType( "byte", "bytes", Byte.class ),//
-            CHAR = new RepresentationType( "character", "characters", Character.class ),//
-            SHORT = new RepresentationType( "short", "shorts", Short.class ),//
-            INTEGER = new RepresentationType( "integer", "integers", Integer.class ),//
-            LONG = new RepresentationType( "long", "longs", Long.class ),//
-            FLOAT = new RepresentationType( "float", "floats", Float.class ),//
-            DOUBLE = new RepresentationType( "double", "doubles", Double.class ),//
-            BOOLEAN = new RepresentationType( "boolean", "booleans", Boolean.class ),//
+            BYTE = new RepresentationType( "byte", "bytes", byte.class ),//
+            CHAR = new RepresentationType( "character", "characters", char.class ),//
+            SHORT = new RepresentationType( "short", "shorts", short.class ),//
+            INTEGER = new RepresentationType( "integer", "integers", int.class ),//
+            LONG = new RepresentationType( "long", "longs", long.class ),//
+            FLOAT = new RepresentationType( "float", "floats", float.class ),//
+            DOUBLE = new RepresentationType( "double", "doubles", double.class ),//
+            BOOLEAN = new RepresentationType( "boolean", "booleans", boolean.class ),//
             NOTHING = new RepresentationType( "void", null ),//
             // System
             EXCEPTION = new RepresentationType( "exception" );
@@ -80,7 +92,11 @@ public final class RepresentationType
         this.listName = listName;
         this.extend = extend;
         if ( valueName != null ) types.put( valueName.replace( "-", "" ), this );
-        if ( extend != null ) extended.put( extend, this );
+        if ( extend != null )
+        {
+            extended.put( extend, this );
+            if ( extend.isPrimitive() ) extended.put( boxed.get( extend ), this );
+        }
     }
 
     RepresentationType( String type )
