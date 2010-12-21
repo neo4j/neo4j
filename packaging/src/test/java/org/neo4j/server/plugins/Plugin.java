@@ -20,11 +20,6 @@
 
 package org.neo4j.server.plugins;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -33,7 +28,12 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.FilteringIterable;
 
-@Description( "An extension for accessing the reference node of the graph database, this can be used as the root for your graph." )
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+
+@Description( "Here you can describe your plugin. It will show up in the description of the methods." )
 public class Plugin extends ServerPlugin
 {
     public static final String GET_REFERENCE_NODE = "reference_node_uri";
@@ -192,6 +192,14 @@ public class Plugin extends ServerPlugin
     @PluginTarget( GraphDatabaseService.class )
     public Node methodWithIntArray( @Source GraphDatabaseService db,
             @Parameter( name = "ints", optional = false ) int[] params )
+    {
+        intArray = params;
+        return db.getReferenceNode();
+    }
+
+    @PluginTarget( GraphDatabaseService.class )
+    public Node methodWithOptionalArray( @Source GraphDatabaseService db,
+            @Parameter( name = "ints", optional = true ) int[] params )
     {
         intArray = params;
         return db.getReferenceNode();
