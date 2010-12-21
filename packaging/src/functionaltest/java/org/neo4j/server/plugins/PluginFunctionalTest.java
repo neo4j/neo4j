@@ -20,24 +20,15 @@
 
 package org.neo4j.server.plugins;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.core.IsNull.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-
-import java.util.List;
-import java.util.Map;
-
-import javax.ws.rs.core.MediaType;
-
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
 import org.hamcrest.Description;
 import org.hamcrest.Factory;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.NeoServer;
@@ -47,8 +38,18 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.NodeRepresentationTest;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
+import javax.ws.rs.core.MediaType;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static org.hamcrest.Matchers.*;
+import static org.hamcrest.core.IsNull.nullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 public class PluginFunctionalTest
 {
@@ -213,15 +214,15 @@ public class PluginFunctionalTest
 
         makePostMap( methodUri, params );
 
-        assertThat(Plugin._string, is(a));
-        assertThat(Plugin._byte, is(b));
-        assertThat(Plugin._character, is(c));
-        assertThat(Plugin._short, is(d));
-        assertThat(Plugin._integer, is(e));
-        assertThat(Plugin._long, is(f));
-        assertThat(Plugin._float, is(g));
-        assertThat(Plugin._double, is(h));
-        assertThat(Plugin._boolean, is(i));
+        assertThat( Plugin._string, is( a ) );
+        assertThat( Plugin._byte, is( b ) );
+        assertThat( Plugin._character, is( c ) );
+        assertThat( Plugin._short, is( d ) );
+        assertThat( Plugin._integer, is( e ) );
+        assertThat( Plugin._long, is( f ) );
+        assertThat( Plugin._float, is( g ) );
+        assertThat( Plugin._double, is( h ) );
+        assertThat( Plugin._boolean, is( i ) );
     }
 
     @Test
@@ -233,7 +234,7 @@ public class PluginFunctionalTest
         NodeRepresentationTest.verifySerialisation( map );
     }
 
-        @Test
+    @Test
     public void shouldHandleOptionalValuesCorrectly2() throws Exception
     {
         long n = functionalTestHelper.getGraphDbHelper().createNode();
@@ -243,7 +244,50 @@ public class PluginFunctionalTest
 
         makePostMap( methodUri, params );
 
-        assertThat(Plugin.optional, is(id));
+        assertThat( Plugin.optional, is( id ) );
+    }
+
+    @Test
+    @Ignore
+    public void shouldHandleSets() throws Exception
+    {
+        String methodUri = getPluginMethodUri( functionalTestHelper.dataUri(), "methodWithSet" );
+        List<String> strings = Arrays.asList( "aaa", "bbb", "aaa" );
+        Map<String, Object> params = MapUtil.map( "strings", strings );
+
+        makePostMap( methodUri, params );
+
+        Set<String> stringsSet = new HashSet<String>( strings );
+
+        assertThat( Plugin.stringSet, is( stringsSet ) );
+    }
+
+    @Test
+    @Ignore
+    public void shouldHandleLists() throws Exception
+    {
+        String methodUri = getPluginMethodUri( functionalTestHelper.dataUri(), "methodWithList" );
+        List<String> strings = Arrays.asList( "aaa", "bbb", "aaa" );
+        Map<String, Object> params = MapUtil.map( "strings", strings );
+
+        makePostMap( methodUri, params );
+
+        List<String> stringsList = new ArrayList<String>( strings );
+
+        assertThat( Plugin.stringList, is( stringsList ) );
+    }
+
+    @Test
+    public void shouldHandleArrays() throws Exception
+    {
+        String methodUri = getPluginMethodUri( functionalTestHelper.dataUri(), "methodWithArray" );
+        String[] stringArray = {"aaa", "bbb", "aaa"};
+        List<String> strings = Arrays.asList( stringArray );
+        Map<String, Object> params = MapUtil.map( "strings", strings );
+
+        makePostMap( methodUri, params );
+
+        assertThat( Plugin.stringArray, is( stringArray ) );
     }
 
     private Map<String, Object> makeGet( String url ) throws JsonParseException
