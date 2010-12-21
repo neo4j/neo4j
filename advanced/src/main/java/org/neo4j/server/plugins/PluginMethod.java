@@ -163,7 +163,7 @@ class PluginMethod extends PluginPoint
             Class<?> raw = (Class<?>) paramType.getRawType();
             if ( Set.class.isAssignableFrom( raw ) )
             {
-                TypeCaster caster = TYPES.get( raw );
+                TypeCaster caster = TYPES.get( paramType.getActualTypeArguments()[0] );
                 if ( caster != null )
                 {
                     return new ListParameterExtractor( caster, raw, parameter, description )
@@ -178,7 +178,7 @@ class PluginMethod extends PluginPoint
             }
             else if ( Iterable.class.isAssignableFrom( raw ) )
             {
-                TypeCaster caster = TYPES.get( raw );
+                TypeCaster caster = TYPES.get( paramType.getActualTypeArguments()[0] );
                 if ( caster != null )
                 {
                     return new ListParameterExtractor( caster, raw, parameter, description )
