@@ -9,7 +9,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.app</groupId>
   <artifactId>neo4j-server</artifactId>
-  <version>0.5.M06</version>
+  <version>0.5-SNAPSHOT</version>
   <name>Neo4j Server</name>
   <description>Standalone Neo4j server application.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -27,9 +27,9 @@
   <packaging>bundle</packaging>
 
   <scm>
-    <connection>scm:svn:https://svn.neo4j.org/components/server/tags/0.5.M06</connection>
-    <developerConnection>scm:svn:https://svn.neo4j.org/components/server/tags/0.5.M06</developerConnection>
-    <url>scm:svn:https://svn.neo4j.org/components/server/tags/0.5.M06</url>
+    <connection>scm:svn:https://svn.neo4j.org/components/server/trunk/</connection>
+    <developerConnection>scm:svn:https://svn.neo4j.org/components/server/trunk/</developerConnection>
+    <url>https://trac.neo4j.org/browser/components/server</url>
   </scm>
 
   <licenses>
