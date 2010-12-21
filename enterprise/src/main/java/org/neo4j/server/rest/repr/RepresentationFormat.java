@@ -336,9 +336,12 @@ public abstract class RepresentationFormat implements InputFormat
     @SuppressWarnings( "boxing" )
     protected Short convertShort( Object value ) throws BadInputException
     {
-        if ( value instanceof Short )
+        if ( value instanceof Number && !( value instanceof Float || value instanceof Double ) )
         {
-            return (Short) value;
+            short primitive = ( (Number) value ).shortValue();
+            if ( primitive != ( (Number) value ).longValue() )
+                throw new BadInputException( "Input did not fit in short" );
+            return primitive;
         }
         if ( value instanceof String )
         {
@@ -357,9 +360,10 @@ public abstract class RepresentationFormat implements InputFormat
     @SuppressWarnings( "boxing" )
     protected Long convertLong( Object value ) throws BadInputException
     {
-        if ( value instanceof Long )
+        if ( value instanceof Number && !( value instanceof Float || value instanceof Double ) )
         {
-            return (Long) value;
+            long primitive = ( (Number) value ).longValue();
+            return primitive;
         }
         if ( value instanceof String )
         {
@@ -378,9 +382,12 @@ public abstract class RepresentationFormat implements InputFormat
     @SuppressWarnings( "boxing" )
     protected Integer convertInteger( Object value ) throws BadInputException
     {
-        if ( value instanceof Integer )
+        if ( value instanceof Number && !( value instanceof Float || value instanceof Double ) )
         {
-            return (Integer) value;
+            int primitive = ( (Number) value ).intValue();
+            if ( primitive != ( (Number) value ).longValue() )
+                throw new BadInputException( "Input did not fit in int" );
+            return primitive;
         }
         if ( value instanceof String )
         {
@@ -399,9 +406,9 @@ public abstract class RepresentationFormat implements InputFormat
     @SuppressWarnings( "boxing" )
     protected Float convertFloat( Object value ) throws BadInputException
     {
-        if ( value instanceof Float )
+        if ( value instanceof Number )
         {
-            return (Float) value;
+            return ( (Number) value ).floatValue();
         }
         if ( value instanceof String )
         {
@@ -420,9 +427,9 @@ public abstract class RepresentationFormat implements InputFormat
     @SuppressWarnings( "boxing" )
     protected Double convertDouble( Object value ) throws BadInputException
     {
-        if ( value instanceof Double )
+        if ( value instanceof Number )
         {
-            return (Double) value;
+            return ( (Number) value ).doubleValue();
         }
         if ( value instanceof String )
         {
@@ -445,6 +452,13 @@ public abstract class RepresentationFormat implements InputFormat
         {
             return (Character) value;
         }
+        if ( value instanceof Number )
+        {
+            int primitive = ( (Number) value ).intValue();
+            if ( primitive != ( (Number) value ).longValue() || ( primitive > 0xFFFF ) )
+                throw new BadInputException( "Input did not fit in char" );
+            return Character.valueOf( (char) primitive );
+        }
         if ( value instanceof String && ( (String) value ).length() == 1 )
         {
             return ( (String) value ).charAt( 0 );
@@ -455,9 +469,12 @@ public abstract class RepresentationFormat implements InputFormat
     @SuppressWarnings( "boxing" )
     protected Byte convertByte( Object value ) throws BadInputException
     {
-        if ( value instanceof Byte )
+        if ( value instanceof Number )
         {
-            return (Byte) value;
+            byte primitive = ( (Number) value ).byteValue();
+            if ( primitive != ( (Number) value ).longValue() )
+                throw new BadInputException( "Input did not fit in byte" );
+            return primitive;
         }
         if ( value instanceof String )
         {

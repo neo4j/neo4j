@@ -269,7 +269,11 @@ class PluginMethod extends PluginPoint
                 throws BadInputException
         {
             Object[] result = caster.getList( graphDb, parameters, name );
-            if ( result != null ) return convert( result );
+            if ( result != null )
+            {
+                if ( type.isPrimitive() ) return caster.convert( result );
+                return convert( result );
+            }
             if ( optional ) return null;
             throw new IllegalArgumentException( "Mandatory argument \"" + name + "\" not supplied." );
         }
@@ -283,13 +287,18 @@ class PluginMethod extends PluginPoint
         }
     }
 
-    private interface TypeCaster
+    private static abstract class TypeCaster
     {
-        Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+        abstract Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
                 throws BadInputException;
 
-        Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
-                throws BadInputException;
+        Object convert( Object[] result ) throws BadInputException
+        {
+            throw new BadInputException( "Cannot convert to primitive array: " + result );
+        }
+
+        abstract Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters,
+                String name ) throws BadInputException;
     }
 
     private static final Map<Class<?>, TypeCaster> TYPES = new HashMap<Class<?>, TypeCaster>();
@@ -298,15 +307,15 @@ class PluginMethod extends PluginPoint
         put( TYPES, new TypeCaster()
         {
             @Override
-            public Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+            Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
                     throws BadInputException
             {
                 return parameters.getString( name );
             }
 
             @Override
-            public Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters,
-                    String name ) throws BadInputException
+            Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+                    throws BadInputException
             {
                 return parameters.getStringList( name );
             }
@@ -314,143 +323,247 @@ class PluginMethod extends PluginPoint
         put( TYPES, new TypeCaster()
         {
             @Override
-            public Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+            Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
                     throws BadInputException
             {
                 return parameters.getByte( name );
             }
 
             @Override
-            public Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters,
-                    String name ) throws BadInputException
+            Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+                    throws BadInputException
             {
                 return parameters.getByteList( name );
+            }
+
+            @Override
+            @SuppressWarnings( "boxing" )
+            byte[] convert( Object[] data ) throws BadInputException
+            {
+                Byte[] incoming = (Byte[]) data;
+                byte[] result = new byte[incoming.length];
+                for ( int i = 0; i < result.length; i++ )
+                {
+                    result[i] = incoming[i];
+                }
+                return result;
             }
         }, byte.class, Byte.class );
         put( TYPES, new TypeCaster()
         {
             @Override
-            public Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+            Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
                     throws BadInputException
             {
                 return parameters.getShort( name );
             }
 
             @Override
-            public Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters,
-                    String name ) throws BadInputException
+            Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+                    throws BadInputException
             {
                 return parameters.getShortList( name );
+            }
+
+            @Override
+            @SuppressWarnings( "boxing" )
+            short[] convert( Object[] data ) throws BadInputException
+            {
+                Short[] incoming = (Short[]) data;
+                short[] result = new short[incoming.length];
+                for ( int i = 0; i < result.length; i++ )
+                {
+                    result[i] = incoming[i];
+                }
+                return result;
             }
         }, short.class, Short.class );
         put( TYPES, new TypeCaster()
         {
             @Override
-            public Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+            Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
                     throws BadInputException
             {
                 return parameters.getInteger( name );
             }
 
             @Override
-            public Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters,
-                    String name ) throws BadInputException
+            Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+                    throws BadInputException
             {
                 return parameters.getIntegerList( name );
+            }
+
+            @Override
+            @SuppressWarnings( "boxing" )
+            int[] convert( Object[] data ) throws BadInputException
+            {
+                Integer[] incoming = (Integer[]) data;
+                int[] result = new int[incoming.length];
+                for ( int i = 0; i < result.length; i++ )
+                {
+                    result[i] = incoming[i];
+                }
+                return result;
             }
         }, int.class, Integer.class );
         put( TYPES, new TypeCaster()
         {
             @Override
-            public Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+            Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
                     throws BadInputException
             {
                 return parameters.getLong( name );
             }
 
             @Override
-            public Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters,
-                    String name ) throws BadInputException
+            Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+                    throws BadInputException
             {
                 return parameters.getLongList( name );
+            }
+
+            @Override
+            @SuppressWarnings( "boxing" )
+            long[] convert( Object[] data ) throws BadInputException
+            {
+                Long[] incoming = (Long[]) data;
+                long[] result = new long[incoming.length];
+                for ( int i = 0; i < result.length; i++ )
+                {
+                    result[i] = incoming[i];
+                }
+                return result;
             }
         }, long.class, Long.class );
         put( TYPES, new TypeCaster()
         {
             @Override
-            public Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+            Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
                     throws BadInputException
             {
                 return parameters.getCharacter( name );
             }
 
             @Override
-            public Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters,
-                    String name ) throws BadInputException
+            Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+                    throws BadInputException
             {
                 return parameters.getCharacterList( name );
+            }
+
+            @Override
+            @SuppressWarnings( "boxing" )
+            char[] convert( Object[] data ) throws BadInputException
+            {
+                Character[] incoming = (Character[]) data;
+                char[] result = new char[incoming.length];
+                for ( int i = 0; i < result.length; i++ )
+                {
+                    result[i] = incoming[i];
+                }
+                return result;
             }
         }, char.class, Character.class );
         put( TYPES, new TypeCaster()
         {
             @Override
-            public Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+            Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
                     throws BadInputException
             {
                 return parameters.getBoolean( name );
             }
 
             @Override
-            public Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters,
-                    String name ) throws BadInputException
+            Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+                    throws BadInputException
             {
                 return parameters.getBooleanList( name );
+            }
+
+            @Override
+            @SuppressWarnings( "boxing" )
+            boolean[] convert( Object[] data ) throws BadInputException
+            {
+                Boolean[] incoming = (Boolean[]) data;
+                boolean[] result = new boolean[incoming.length];
+                for ( int i = 0; i < result.length; i++ )
+                {
+                    result[i] = incoming[i];
+                }
+                return result;
             }
         }, boolean.class, Boolean.class );
         put( TYPES, new TypeCaster()
         {
             @Override
-            public Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+            Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
                     throws BadInputException
             {
                 return parameters.getFloat( name );
             }
 
             @Override
-            public Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters,
-                    String name ) throws BadInputException
+            Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+                    throws BadInputException
             {
                 return parameters.getFloatList( name );
+            }
+
+            @Override
+            @SuppressWarnings( "boxing" )
+            float[] convert( Object[] data ) throws BadInputException
+            {
+                Float[] incoming = (Float[]) data;
+                float[] result = new float[incoming.length];
+                for ( int i = 0; i < result.length; i++ )
+                {
+                    result[i] = incoming[i];
+                }
+                return result;
             }
         }, float.class, Float.class );
         put( TYPES, new TypeCaster()
         {
             @Override
-            public Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+            Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
                     throws BadInputException
             {
                 return parameters.getDouble( name );
             }
 
             @Override
-            public Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters,
-                    String name ) throws BadInputException
+            Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+                    throws BadInputException
             {
                 return parameters.getDoubleList( name );
+            }
+
+            @Override
+            @SuppressWarnings( "boxing" )
+            double[] convert( Object[] data ) throws BadInputException
+            {
+                Double[] incoming = (Double[]) data;
+                double[] result = new double[incoming.length];
+                for ( int i = 0; i < result.length; i++ )
+                {
+                    result[i] = incoming[i];
+                }
+                return result;
             }
         }, double.class, Double.class );
         put( TYPES, new TypeCaster()
         {
             @Override
-            public Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+            Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
                     throws BadInputException
             {
                 return parameters.getNode( graphDb, name );
             }
 
             @Override
-            public Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters,
-                    String name ) throws BadInputException
+            Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+                    throws BadInputException
             {
                 return parameters.getNodeList( graphDb, name );
             }
@@ -458,15 +571,15 @@ class PluginMethod extends PluginPoint
         put( TYPES, new TypeCaster()
         {
             @Override
-            public Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+            Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
                     throws BadInputException
             {
                 return parameters.getRelationship( graphDb, name );
             }
 
             @Override
-            public Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters,
-                    String name ) throws BadInputException
+            Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+                    throws BadInputException
             {
                 return parameters.getRelationshipList( graphDb, name );
             }
@@ -474,15 +587,15 @@ class PluginMethod extends PluginPoint
         put( TYPES, new TypeCaster()
         {
             @Override
-            public Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+            Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
                     throws BadInputException
             {
                 return parameters.getUri( name );
             }
 
             @Override
-            public Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters,
-                    String name ) throws BadInputException
+            Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+                    throws BadInputException
             {
                 return parameters.getUriList( name );
             }
@@ -490,7 +603,7 @@ class PluginMethod extends PluginPoint
         put( TYPES, new TypeCaster()
         {
             @Override
-            public Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+            Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
                     throws BadInputException
             {
                 try
@@ -504,8 +617,8 @@ class PluginMethod extends PluginPoint
             }
 
             @Override
-            public Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters,
-                    String name ) throws BadInputException
+            Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+                    throws BadInputException
             {
                 URI[] uris = parameters.getUriList( name );
                 URL[] urls = new URL[uris.length];
