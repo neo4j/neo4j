@@ -28,6 +28,10 @@ import java.util.Set;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.collection.FilteringIterable;
 
 @Description( "An extension for accessing the reference node of the graph database, this can be used as the root for your graph." )
 public class Plugin extends ServerPlugin
@@ -69,6 +73,43 @@ public class Plugin extends ServerPlugin
         }
 
         return nodes;
+    }
+
+    @PluginTarget( Node.class )
+    public Iterable<Relationship> getRelationshipsBetween( final @Source Node start,
+            final @Parameter( name = "other" ) Node end )
+    {
+        return new FilteringIterable<Relationship>( start.getRelationships(),
+                new Predicate<Relationship>()
+                {
+                    @Override
+                    public boolean accept( Relationship item )
+                    {
+                        return item.getOtherNode( start ).equals( end );
+                    }
+                } );
+    }
+
+    @PluginTarget( Node.class )
+    public Iterable<Relationship> createRelationships( @Source Node start,
+            @Parameter( name = "type" ) RelationshipType type,
+            @Parameter( name = "nodes" ) Iterable<Node> nodes )
+    {
+        List<Relationship> result = new ArrayList<Relationship>();
+        Transaction tx = start.getGraphDatabase().beginTx();
+        try
+        {
+            for ( Node end : nodes )
+            {
+                result.add( start.createRelationshipTo( end, type ) );
+            }
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+        return result;
     }
 
     @PluginTarget( Node.class )

@@ -43,8 +43,13 @@ public final class PluginManager implements ExtensionInjector, PluginInvocator
 
     public PluginManager( Configuration serverConfig )
     {
+        this( serverConfig, ServerPlugin.load() );
+    }
+
+    PluginManager( Configuration serverConfig, Iterable<ServerPlugin> plugins )
+    {
         Map<String, Pair<ServerPlugin, ServerExtender>> extensions = new HashMap<String, Pair<ServerPlugin, ServerExtender>>();
-        for ( ServerPlugin plugin : ServerPlugin.load() )
+        for ( ServerPlugin plugin : plugins )
         {
             final ServerExtender extender = new ServerExtender();
             try

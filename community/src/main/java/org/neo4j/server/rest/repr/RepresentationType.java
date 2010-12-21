@@ -27,6 +27,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 
 public final class RepresentationType
 {
@@ -50,7 +51,7 @@ public final class RepresentationType
             NODE = new RepresentationType( "node", "nodes", Node.class ),//
             RELATIONSHIP = new RepresentationType( "relationship", "relationships", Relationship.class ),//
             PATH = new RepresentationType( "path", "paths", Path.class ),//
-            RELATIONSHIP_TYPE = new RepresentationType( "relationship-type", "relationship-types" ),//
+            RELATIONSHIP_TYPE = new RepresentationType( "relationship-type", "relationship-types", RelationshipType.class ),//
             PROPERTIES = new RepresentationType( "properties" ),//
             INDEX = new RepresentationType( "index" ),//
             NODE_INDEX_ROOT = new RepresentationType( "node-index" ),//

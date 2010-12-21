@@ -50,6 +50,7 @@ import org.neo4j.server.rest.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.NodeRepresentationTest;
+import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
@@ -248,6 +249,56 @@ public class PluginFunctionalTest
         makePostMap( methodUri, params );
 
         assertThat( Plugin.optional, is( id ) );
+    }
+
+    @Test
+    public void canInvokePluginWithNodeParam() throws Exception
+    {
+        long n = functionalTestHelper.getGraphDbHelper().createNode();
+        long m = functionalTestHelper.getGraphDbHelper().createNode();
+        functionalTestHelper.getGraphDbHelper().createRelationship( "LOVES", n, m );
+        functionalTestHelper.getGraphDbHelper().createRelationship( "LOVES", m, n );
+        functionalTestHelper.getGraphDbHelper().createRelationship( "KNOWS", m,
+                functionalTestHelper.getGraphDbHelper().createNode() );
+        functionalTestHelper.getGraphDbHelper().createRelationship( "KNOWS", n,
+                functionalTestHelper.getGraphDbHelper().createNode() );
+
+        Map<String, Object> map = makeGet( functionalTestHelper.nodeUri( n ) );
+        map = (Map<String, Object>) map.get( "extensions" );
+        map = (Map<String, Object>) map.get( Plugin.class.getSimpleName() );
+
+        String uri = (String) map.get( "getRelationshipsBetween" );
+        List<Map<String, Object>> response = makePostList( uri, MapUtil.map( "other",
+                functionalTestHelper.nodeUri( m ) ) );
+        assertEquals( 2, response.size() );
+        verifyRelationships( response );
+    }
+
+    @Test
+    public void canInvokePluginWithNodeListParam() throws Exception
+    {
+        long n = functionalTestHelper.getGraphDbHelper().createNode();
+        Map<String, Object> map = makeGet( functionalTestHelper.nodeUri( n ) );
+        map = (Map<String, Object>) map.get( "extensions" );
+        map = (Map<String, Object>) map.get( Plugin.class.getSimpleName() );
+        List<String> nodes = Arrays.asList(
+                functionalTestHelper.nodeUri( functionalTestHelper.getGraphDbHelper().createNode() ),
+                functionalTestHelper.nodeUri( functionalTestHelper.getGraphDbHelper().createNode() ),
+                functionalTestHelper.nodeUri( functionalTestHelper.getGraphDbHelper().createNode() ) );
+
+        String uri = (String) map.get( "createRelationships" );
+        List<Map<String, Object>> response = makePostList( uri, MapUtil.map( "type", "KNOWS",
+                "nodes", nodes ) );
+        assertEquals( nodes.size(), response.size() );
+        verifyRelationships( response );
+    }
+
+    private void verifyRelationships( final List<Map<String, Object>> response )
+    {
+        for ( Map<String, Object> relMap : response )
+        {
+            RelationshipRepresentationTest.verifySerialisation( relMap );
+        }
     }
 
     @Test
