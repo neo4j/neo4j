@@ -20,15 +20,28 @@
 
 package org.neo4j.server.plugins;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.core.IsNull.nullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.ws.rs.core.MediaType;
+
 import org.hamcrest.Description;
 import org.hamcrest.Factory;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.NeoServer;
@@ -38,18 +51,8 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.NodeRepresentationTest;
 
-import javax.ws.rs.core.MediaType;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import static org.hamcrest.Matchers.*;
-import static org.hamcrest.core.IsNull.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
 
 public class PluginFunctionalTest
 {
@@ -248,7 +251,6 @@ public class PluginFunctionalTest
     }
 
     @Test
-    @Ignore
     public void shouldHandleSets() throws Exception
     {
         String methodUri = getPluginMethodUri( functionalTestHelper.dataUri(), "methodWithSet" );
@@ -263,7 +265,6 @@ public class PluginFunctionalTest
     }
 
     @Test
-    @Ignore
     public void shouldHandleLists() throws Exception
     {
         String methodUri = getPluginMethodUri( functionalTestHelper.dataUri(), "methodWithList" );
