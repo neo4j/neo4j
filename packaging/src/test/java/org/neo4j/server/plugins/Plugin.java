@@ -32,6 +32,15 @@ public class Plugin extends ServerPlugin
 {
     public static final String GET_REFERENCE_NODE = "reference_node_uri";
     public static final String GET_CONNECTED_NODES = "connected_nodes";
+    static String _string;
+    static Byte _byte;
+    static Character _character;
+    static Integer _integer;
+    static Short _short;
+    static Long _long;
+    static Float _float;
+    static Double _double;
+    static Boolean _boolean;
 
     @Description( "Get the reference node from the graph database" )
     @PluginTarget( GraphDatabaseService.class )
@@ -69,5 +78,27 @@ public class Plugin extends ServerPlugin
         return Arrays.asList( rel.getNodes() );
     }
 
-
+    @PluginTarget( GraphDatabaseService.class )
+    public void methodWithAllParams(
+            @Source GraphDatabaseService db,
+            @Parameter( name = "id", optional = false ) String a,
+            @Parameter( name = "id2", optional = false ) Byte b,
+            @Parameter( name = "id3", optional = false ) Character c,
+            @Parameter( name = "id4", optional = false ) Short d,
+            @Parameter( name = "id5", optional = false ) Integer e,
+            @Parameter( name = "id6", optional = false ) Long f,
+            @Parameter( name = "id7", optional = false ) Float g,
+            @Parameter( name = "id8", optional = false ) Double h,
+            @Parameter( name = "id9", optional = false ) Boolean i )
+    {
+        _string = a;
+        _byte = b;
+        _character = c;
+        _short = d;
+        _integer = e;
+        _long = f;
+        _float = g;
+        _double = h;
+        _boolean = i;
+    }
 }

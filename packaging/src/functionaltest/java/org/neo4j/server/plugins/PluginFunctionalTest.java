@@ -28,6 +28,7 @@ import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.NeoServer;
@@ -166,17 +167,60 @@ public class PluginFunctionalTest
         long n2 = functionalTestHelper.getGraphDbHelper().createNode();
         long relId = functionalTestHelper.getGraphDbHelper().createRelationship( "pals", n1, n2 );
 
-        Map<String, Object> map = makeGet( functionalTestHelper.relationshipUri( relId ) );
-        map = (Map<String, Object>)map.get( "extensions" );
-        map = (Map<String, Object>)map.get( Plugin.class.getSimpleName() );
+        String uri = getPluginMethodUri( functionalTestHelper.relationshipUri( relId ), "methodOnRelationship" );
 
-        String uri = (String)map.get( "methodOnRelationship" );
         Map<String, Object> params = MapUtil.map( "id", relId );
         List<Map<String, Object>> nodes = makePostList( uri, params );
 
         verifyNodes( nodes );
     }
 
+    private String getPluginMethodUri( String startUrl, String methodName )
+            throws JsonParseException
+    {
+        Map<String, Object> map = makeGet( startUrl );
+        map = (Map<String, Object>)map.get( "extensions" );
+        map = (Map<String, Object>)map.get( Plugin.class.getSimpleName() );
+        return (String)map.get( methodName );
+    }
+
+    @Test
+    @Ignore("Should not be ignored!")
+    public void shouldBeAbleToInvokePluginWithLotsOfParams() throws Exception
+    {
+        String methodUri = getPluginMethodUri( functionalTestHelper.dataUri(), "methodWithAllParams" );
+        String a = "a";
+        byte b = (byte)0xff;
+        char c = 'c';
+        short d = (short)4;
+        int e = 365;
+        long f = (long)4;
+        float g = (float)4.5;
+        double h = Math.PI;
+        boolean i = false;
+        Map<String, Object> params = MapUtil.map(
+                "id", a,
+                "id2", b,
+                "id3", c,
+                "id4", d,
+                "id5", e,
+                "id6", f,
+                "id7", g,
+                "id8", h,
+                "id9", i );
+
+        makePostMap( methodUri, params );
+
+        assertThat(Plugin._string, is(a));
+        assertThat(Plugin._byte, is(b));
+        assertThat(Plugin._character, is(c));
+        assertThat(Plugin._short, is(d));
+        assertThat(Plugin._integer, is(e));
+        assertThat(Plugin._long, is(f));
+        assertThat(Plugin._float, is(g));
+        assertThat(Plugin._double, is(h));
+        assertThat(Plugin._boolean, is(i));
+    }
 
     private Map<String, Object> makeGet( String url ) throws JsonParseException
     {
