@@ -36,8 +36,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.Representation;
@@ -590,6 +592,31 @@ class PluginMethod extends PluginPoint
                 return parameters.getRelationshipList( graphDb, name );
             }
         }, Relationship.class );
+        put( TYPES, new TypeCaster()
+        {
+            @Override
+            Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+                    throws BadInputException
+            {
+                String typeName = parameters.getString( name );
+                if ( typeName == null ) return null;
+                return DynamicRelationshipType.withName( typeName );
+            }
+
+            @Override
+            Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+                    throws BadInputException
+            {
+                String[] strings = parameters.getStringList( name );
+                if ( strings == null ) return null;
+                RelationshipType[] result = new RelationshipType[strings.length];
+                for ( int i = 0; i < result.length; i++ )
+                {
+                    result[i] = DynamicRelationshipType.withName( strings[i] );
+                }
+                return result;
+            }
+        }, RelationshipType.class );
         put( TYPES, new TypeCaster()
         {
             @Override
