@@ -12,7 +12,7 @@
   <version>1.2-SNAPSHOT</version>
   <name>Neo4j</name>
   <packaging>jar</packaging>
-  <url>http://components.neo4j.org/${project.artifactId}/</url>
+  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
   <description>A meta package containing the most used Neo4j libraries. Intended use: as a Maven dependency.</description>
 
   <properties>
@@ -237,4 +237,12 @@
     </plugins>
   </reporting>
 
+  <distributionManagement>
+    <site>
+      <id>neo4j-site</id>
+      <url>scpexe://components.neo4j.org/home/neo/components/${project.artifactId}/${project.version}</url>
+    </site>
+  </distributionManagement>
+
 </project>
+
