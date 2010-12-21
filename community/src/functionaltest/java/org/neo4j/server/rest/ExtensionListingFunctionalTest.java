@@ -20,28 +20,24 @@
 
 package org.neo4j.server.rest;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasKey;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-
-import java.io.IOException;
-import java.net.URI;
-import java.util.Map;
-
-import javax.ws.rs.core.MediaType;
-
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.ServerBuilder;
-import org.neo4j.server.plugins.ReferenceNode;
+import org.neo4j.server.plugins.Plugin;
 import org.neo4j.server.rest.domain.JsonHelper;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
+import javax.ws.rs.core.MediaType;
+import java.io.IOException;
+import java.net.URI;
+import java.util.Map;
+
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasKey;
+import static org.junit.Assert.*;
 
 public class ExtensionListingFunctionalTest
 {
@@ -89,15 +85,21 @@ public class ExtensionListingFunctionalTest
         ClientResponse response = Client.create().resource( functionalTestHelper.extensionUri() ).accept(
                 MediaType.APPLICATION_JSON_TYPE ).get( ClientResponse.class );
         assertThat( response.getStatus(), equalTo( 200 ) );
+
         Map<String, Object> json = JsonHelper.jsonToMap( response.getEntity( String.class ) );
-        String refNodeService = (String) json.get( ReferenceNode.class.getSimpleName() );
+        String refNodeService = (String) json.get( Plugin.class.getSimpleName() );
 
         response = Client.create().resource( refNodeService ).accept(
                 MediaType.APPLICATION_JSON_TYPE ).get( ClientResponse.class );
+        String result = response.getEntity( String.class );
+
+        System.out.println(result);
+
         assertThat( response.getStatus(), equalTo( 200 ) );
-        json = JsonHelper.jsonToMap( response.getEntity( String.class ) );
+
+        json = JsonHelper.jsonToMap( result );
         System.out.println( json );
         json = (Map<String, Object>) json.get( "graphdb" );
-        assertThat( json, hasKey( ReferenceNode.GET_REFERENCE_NODE ) );
+        assertThat( json, hasKey( Plugin.GET_REFERENCE_NODE ) );
     }
 }
