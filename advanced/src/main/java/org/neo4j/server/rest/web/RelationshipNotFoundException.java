@@ -23,5 +23,6 @@ package org.neo4j.server.rest.web;
 //TODO: move this to another package. domain?
 public class RelationshipNotFoundException extends Exception
 {
+    private static final long serialVersionUID = -1177555212368703516L;
 
 }
