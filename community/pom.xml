@@ -15,9 +15,9 @@
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-graph-matching</artifactId>
   <version>0.8-SNAPSHOT</version>
-  <name>Graph matching for Neo4j</name>
+  <name>Neo4j - Graph Matching</name>
   <description>A graph pattern matcher for Neo4j.</description>
-  <url>http://components.neo4j.org/${project.artifactId}/</url>
+  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
     <connection>
@@ -72,5 +72,12 @@
       <version>1.1-SNAPSHOT</version>
     </dependency>
   </dependencies>
+
+  <distributionManagement>
+    <site>
+      <id>neo4j-site</id>
+      <url>scpexe://components.neo4j.org/home/neo/components/${project.artifactId}/${project.version}</url>
+    </site>
+  </distributionManagement>
 
 </project>
