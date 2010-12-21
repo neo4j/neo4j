@@ -50,6 +50,7 @@
             <argument>VERBOSE=1</argument>
             <argument>clean</argument>
             <argument>dist</argument>
+            <argument>VERSION=${project.version}</argument>
           </arguments>
         </configuration>
       </plugin>
