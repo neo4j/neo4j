@@ -1,0 +1,35 @@
+Server-Plugins
+
+    Server-plugins are an easy way to extend the Neo4j REST API with your own functionality.
+    In order to compile your plugin, you should include the neo4j-server-xx.jar in your classpath,
+    e.g. via pom.xml:
+    
+---
+<dependency>
+  <groupId>org.neo4j.app</groupId>
+  <artifactId>neo4j-server</artifactId>
+  <version>0.5-SNAPSHOT</version>
+</dependency>
+----
+    
+    from the neo4j repository at http://m2.neo4j.org/org/neo4j/app/neo4j-server/ or in the system/lib
+    directory of the Neo4j Server distribution.
+    
+    
+%{source-code|snippet=GetAll|file=src/main/java/org/neo4j/examples/server/plugins/GetAll.java}
+
+  In order to let the Neo4j Server find your extension, you need to add the file /META-INF/services/org.neo4j.server.plugins.ServerPlugin
+  to the resulting .jar file, containing the classname of your plugin as a single line per plugin:
+  
+---
+org.neo4j.examples.server.plugins.GetAll
+---
+  
+  Now, place the myextension.jar (and any custom dependencies) into the $NEO$J_SERVER_HOME/plugins directory, start the server check out the
+  database representation for the listing of your extension:
+  
+---
+curl -v htto://localhost:7474/db/data
+---
+  
+  Full source code: {{{./xref/org/neo4j/examples/server/plugins/GetAll.html}GetAll.java}}

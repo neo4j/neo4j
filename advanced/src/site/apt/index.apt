@@ -2,6 +2,9 @@ Neo4j Server
 
     * {{{./server-rest-api.html}Programming in Java against the Neo4j Server REST API}}
 
+    * {{{./server-plugins.html}Extending the Neo4j Server REST API with custom functionality}}
+
+
 Neo4j Embedded
 
     Neo4j examples contains code examples using the different components
