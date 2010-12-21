@@ -1,3 +1,14 @@
+1.2-1.2.M06 (2010-12-21)
+------------------------
+
+o When a new master is chosen, slaves throws away the id allocations they got from the previous master. This fixes a problem where occupied ids where reused.
+o Enabled (and fixed problem with) thread on master which checks for dead slave connections and rolls back those transactions, so that their locks are released.
+  This fixes a problem where an HA cluster would seem to freeze up and become unresponsive to write requests.
+o Adding Log4j and Netty license information.
+o Also closes the executor containing the connections.
+o Changed dependency scopes.
+o Shuts down databases after verifying them.
+
 1.2-1.2.M05 (2010-12-02)
 ------------------------
 
