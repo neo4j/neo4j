@@ -29,8 +29,14 @@ ifdef KEEP
 	KA = KEEP=1
 endif
 
-GENERAL_FLAGS = $(V) $(K)
-GENERAL_ALL_FLAGS = $(VA) $(KA)
+ifdef VERSION
+    VERS = --attribute revnumber=$(VERSION)
+else
+    VERS = --attribute revnumber=-neo4j-version
+endif
+
+
+GENERAL_FLAGS = $(V) $(K) $(VERS)
 
 .PHONY: all dist docbook help clean pdf latexpdf html singlehtml singlehtml-asciidoc text meta cleanup annotated
 
@@ -42,12 +48,12 @@ help:
 	@echo "  latexpdf    to generate a PDF file using LaTeX"
 	@echo "  html        to make standalone HTML files"
 	@echo "  singlehtml  to make a single large HTML file"
-	@echo "  singlehtml-asciidoc  to make a single HTML file using asciidoc only"
 	@echo "  text        to make text files"
 	@echo "  annotated   to make a single annotated HTML file"
 	@echo "  all         to make all formats"
 	@echo "For verbose output, use 'VERBOSE=1'".
 	@echo "To keep temporary files, use 'KEEP=1'".
+	@echo "To set the version, use 'VERSION=[the version]'".
 
 dist: pdf html annotated text cleanup
 
@@ -66,12 +72,12 @@ endif
 
 docbook:
 	mkdir -p $(BUILDDIR)
-	asciidoc $(V) --backend docbook --attribute docinfo --doctype book --conf-file=$(CONFDIR)/asciidoc.conf --conf-file=$(CONFDIR)/docbook45.conf --out-file $(DOCBOOKFILE) $(SRCFILE)
+	asciidoc $(V) $(VERS) --backend docbook --attribute docinfo --doctype book --conf-file=$(CONFDIR)/asciidoc.conf --conf-file=$(CONFDIR)/docbook45.conf --out-file $(DOCBOOKFILE) $(SRCFILE)
 	xmllint --nonet --noout --valid $(DOCBOOKFILE)
 
 docbook-shortinfo:
 	mkdir -p $(BUILDDIR)
-	asciidoc $(V) --backend docbook --attribute docinfo1 --doctype book --conf-file=$(CONFDIR)/asciidoc.conf --conf-file=$(CONFDIR)/docbook45.conf --out-file $(DOCBOOKSHORTINFOFILE) $(SRCFILE)
+	asciidoc $(V) $(VERS) --backend docbook --attribute docinfo1 --doctype book --conf-file=$(CONFDIR)/asciidoc.conf --conf-file=$(CONFDIR)/docbook45.conf --out-file $(DOCBOOKSHORTINFOFILE) $(SRCFILE)
 	xmllint --nonet --noout --valid $(DOCBOOKSHORTINFOFILE)
 
 pdf: docbook
@@ -91,13 +97,6 @@ latexpdf:
 # currently builds docbook format first
 html:
 	a2x $(GENERAL_FLAGS) -f chunked -D $(BUILDDIR) --conf-file=$(CONFDIR)/chunked.conf --xsl-file=$(CONFDIR)/chunked.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(SRCFILE)
-
-# use the asciidoc tool only, not docbook
-singlehtml-asciidoc:
-	mkdir -p $(BUILDDIR)/singlehtml/images
-	#cp -R images/* $(BUILDDIR)/singlehtml/images
-	svn export --force images $(BUILDDIR)/singlehtml/images
-	asciidoc $(V) -a docinfo -a icons -d book -o $(BUILDDIR)/singlehtml/index.html --conf-file=$(CONFDIR)/asciidoc.conf $(SRCFILE)
 
 # currently builds docbook format first
 singlehtml:
