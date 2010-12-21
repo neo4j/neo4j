@@ -46,6 +46,11 @@
       <classifier>neo4j</classifier>
     </dependency>
     <dependency>
+      <groupId>org.neo4j.app</groupId>
+      <artifactId>neo4j-server</artifactId>
+      <version>0.5-SNAPSHOT</version>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit-dep</artifactId>
     </dependency>
@@ -116,13 +121,8 @@
               <mainClass>org.neo4j.shell.StartClient</mainClass>
               <name>neo4j-shell</name>
             </program>
-            <!--
-              Disabled since there's no longer such a main class. It'd be nice
-              to have something which runs the tests instead though
-            -->
-            <!--
-              program> <mainClass> org.neo4j.examples.socnet.Main </mainClass>
-              <name>social-network-application</name> </program -->
+            <!-- Disabled since there's no longer such a main class. It'd be nice to have something which runs the tests instead though -->
+            <!-- program> <mainClass> org.neo4j.examples.socnet.Main </mainClass> <name>social-network-application</name> </program -->
             <program>
               <mainClass>org.neo4j.examples.CalculateShortestPath</mainClass>
               <name>calculate-shortest-path</name>
@@ -321,7 +321,12 @@
       </plugin>
     </plugins>
   </build>
-
+  <repositories>
+    <repository>
+      <id>java.net</id>
+      <url>http://download.java.net/maven/2/</url>
+    </repository>
+  </repositories>
   <reporting>
     <plugins>
       <plugin>
