@@ -1,3 +1,13 @@
+1.2-1.2.M06 (2010-12-21)
+------------------------
+- Fixed an issues with PruneEvaluators getting invoked with the start node as argument.
+PruneEvaluators was never invoked with the start node before the arrival of Evaluator interface.
+- Added logging of recovery completion.
+- Added TransactionData#isDeleted(Node) and #isDeleted(Relationship) and also made
+the collection to hold these a HashSet instead of ArrayList. This allows fast
+lookups for asking if a node/relationship is deleted in a transaction.
+- More flexible caching (can instantiate an arbitrary Cache object).
+
 1.2-1.2.M05 (2010-12-02)
 ------------------------
 
