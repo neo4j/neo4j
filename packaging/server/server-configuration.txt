@@ -78,4 +78,5 @@ conf/neo4j.properties
 The graph database engine has a range of performance tuning options which are enumerated in
 [[Tuning the server performance]]. Note that other factors than Neo4j tuning should be considered
 when performance tuning a server, including general server load, memory and file contention, 
-and even garbage collection penalties on the JVM. 
+and even garbage collection penalties on the JVM, though such considerations are beyond the scope
+of this configuration document.
