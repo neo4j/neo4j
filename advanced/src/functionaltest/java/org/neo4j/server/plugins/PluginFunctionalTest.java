@@ -291,6 +291,19 @@ public class PluginFunctionalTest
         assertThat( Plugin.stringArray, is( stringArray ) );
     }
 
+    @Test
+    public void shouldHandlePrimitiveArrays() throws Exception
+    {
+        String methodUri = getPluginMethodUri( functionalTestHelper.dataUri(), "methodWithIntArray" );
+        Integer[] intArray = { 5, 6, 7, 8 };
+        List<Integer> ints = Arrays.asList( intArray );
+        Map<String, Object> params = MapUtil.map( "ints", ints );
+
+        makePostMap( methodUri, params );
+
+        assertThat( Plugin.intArray, is( new int[] { 5, 6, 7, 8 } ) );
+    }
+
     private Map<String, Object> makeGet( String url ) throws JsonParseException
     {
         ClientResponse response = Client.create().resource( url ).accept(
