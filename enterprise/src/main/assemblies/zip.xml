@@ -13,9 +13,16 @@
       <outputDirectory>/</outputDirectory>
       <includes>
         <include>pdf/*.pdf</include>
-        <include>html/**</include>
         <include>text/**</include>
+      </includes>
+    </fileSet>
+    <fileSet>
+      <directory>target/neo4j-manual.chunked</directory>
+      <outputDirectory>/html</outputDirectory>
+      <includes>
+        <include>**</include>
       </includes>
     </fileSet>
   </fileSets>
 </assembly>
+
