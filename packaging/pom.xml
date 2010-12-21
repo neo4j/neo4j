@@ -22,13 +22,6 @@
     <neo-server.confdir>target/test-classes/etc/neo-server</neo-server.confdir>
     <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
     
-    <!-- dependency versions -->
-    <!-- NOTE: This decides the version of documentation that is *web-exposed*, 
-         NOT the documentation neo4j-standalone puts in the "doc" directory. 
-         This MUST be kept in sync with neo4j-standalone (or the two documentations
-         will be out of sync). Anders will remedy this when dependency versioning is centralized. -->
-    <neo4j.version>1.2-SNAPSHOT</neo4j.version>
-    
   </properties>
 
   <packaging>bundle</packaging>
@@ -55,7 +48,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j</artifactId>
-      <version>${neo4j.version}</version>
+      <version>1.2-SNAPSHOT</version>
       <type>pom</type>
     </dependency>
 
@@ -173,7 +166,7 @@
       <groupId>org.neo4j.doc</groupId>
       <artifactId>neo4j-manual</artifactId>
       <classifier>html</classifier>
-      <version>${neo4j.version}</version>
+      <version>1.2-SNAPSHOT</version>
       <optional>true</optional>
     </dependency>
 
