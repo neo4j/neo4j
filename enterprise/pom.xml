@@ -18,7 +18,7 @@
   <packaging>bundle</packaging>
   <name>Neo4j - Graph Algorithms</name>
   <description>Graph algorithms for Neo4j.</description>
-  <url>http://components.neo4j.org/${project.artifactId}/</url>
+  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
     <connection>scm:svn:https://svn.neo4j.org/components/graph-algo/trunk/</connection>
@@ -96,4 +96,13 @@
       </plugin>
     </plugins>
   </build>
+
+  <distributionManagement>
+    <site>
+      <id>neo4j-site</id>
+      <url>scpexe://components.neo4j.org/home/neo/components/${project.artifactId}/${project.version}</url>
+    </site>
+  </distributionManagement>
+
 </project>
+
