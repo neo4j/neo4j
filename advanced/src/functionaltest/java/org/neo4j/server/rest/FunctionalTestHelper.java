@@ -20,12 +20,13 @@
 
 package org.neo4j.server.rest;
 
-import java.io.IOException;
-
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
+
+import java.io.IOException;
 
 public final class FunctionalTestHelper
 {
@@ -176,5 +177,10 @@ public final class FunctionalTestHelper
     String relationshipExtensionUri( String name, String method, long id )
     {
         return extensionUri( name ) + "/relationship/" + id + "/" + method;
+    }
+
+    public AbstractGraphDatabase getDatabase()
+    {
+        return server.getDatabase().graph;
     }
 }
