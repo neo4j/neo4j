@@ -224,6 +224,28 @@ public class PluginFunctionalTest
         assertThat(Plugin._boolean, is(i));
     }
 
+    @Test
+    public void shouldHandleOptionalValuesCorrectly1() throws Exception
+    {
+        long n = functionalTestHelper.getGraphDbHelper().createNode();
+        String methodUri = getPluginMethodUri( functionalTestHelper.nodeUri( n ), "getThisNodeOrById" );
+        Map<String, Object> map = makePostMap( methodUri );
+        NodeRepresentationTest.verifySerialisation( map );
+    }
+
+        @Test
+    public void shouldHandleOptionalValuesCorrectly2() throws Exception
+    {
+        long n = functionalTestHelper.getGraphDbHelper().createNode();
+        String methodUri = getPluginMethodUri( functionalTestHelper.nodeUri( n ), "getThisNodeOrById" );
+        long id = functionalTestHelper.getGraphDbHelper().getReferenceNode();
+        Map<String, Object> params = MapUtil.map( "id", id );
+
+        makePostMap( methodUri, params );
+
+        assertThat(Plugin.optional, is(id));
+    }
+
     private Map<String, Object> makeGet( String url ) throws JsonParseException
     {
         ClientResponse response = Client.create().resource( url ).accept(
@@ -254,7 +276,7 @@ public class PluginFunctionalTest
     {
         String body = response.getEntity( String.class );
 
-        assertEquals( 200, response.getStatus() );
+        assertEquals( body, 200, response.getStatus() );
         return body;
     }
 
