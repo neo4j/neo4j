@@ -64,12 +64,10 @@ public class JmxService implements AdvertisableService
     public static final String QUERY_PATH = "/query";
     public static final String KERNEL_NAME_PATH = "/kernelquery";
     private final OutputFormat output;
-    private final InputFormat input;
 
     public JmxService( @Context OutputFormat output, @Context InputFormat input )
     {
         this.output = output;
-        this.input = input;
     }
 
     @GET
