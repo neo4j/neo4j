@@ -47,6 +47,7 @@ public class Plugin extends ServerPlugin
     static Set<String> stringSet;
     static List<String> stringList;
     static String[] stringArray;
+    public static int[] intArray;
 
     @Description( "Get the reference node from the graph database" )
     @PluginTarget( GraphDatabaseService.class )
@@ -147,5 +148,11 @@ public class Plugin extends ServerPlugin
         return db.getReferenceNode();
     }
 
-
+    @PluginTarget( GraphDatabaseService.class )
+    public Node methodWithIntArray( @Source GraphDatabaseService db,
+            @Parameter( name = "ints", optional = false ) int[] params )
+    {
+        intArray = params;
+        return db.getReferenceNode();
+    }
 }
