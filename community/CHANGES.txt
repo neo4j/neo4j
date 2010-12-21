@@ -1,3 +1,8 @@
+1.2-1.2.M06 (2010-12-21)
+------------------------
+
+o Fixed a problem where ShellServerExtension assumed the shell was enabled during shutdown, which could result in NPE.
+
 1.2-1.2.M05 (2010-12-02)
 ------------------------
 
