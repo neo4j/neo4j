@@ -20,14 +20,14 @@
 
 package org.neo4j.server.plugins;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 
 @Description( "An extension for accessing the reference node of the graph database, this can be used as the root for your graph." )
 public class Plugin extends ServerPlugin
@@ -122,22 +122,22 @@ public class Plugin extends ServerPlugin
 
         return db.getReferenceNode();
     }
-//
-//    @PluginTarget( GraphDatabaseService.class )
-//    public Node methodWithSet( @Source GraphDatabaseService db,
-//                               @Parameter( name = "strings", optional = false ) Set<String> params )
-//    {
-//        stringSet = params;
-//        return db.getReferenceNode();
-//    }
 
-//    @PluginTarget( GraphDatabaseService.class )
-//    public Node methodWithList( @Source GraphDatabaseService db,
-//                                @Parameter( name = "strings", optional = false ) List<String> params )
-//    {
-//        stringList = params;
-//        return db.getReferenceNode();
-//    }
+    @PluginTarget( GraphDatabaseService.class )
+    public Node methodWithSet( @Source GraphDatabaseService db,
+            @Parameter( name = "strings", optional = false ) Set<String> params )
+    {
+        stringSet = params;
+        return db.getReferenceNode();
+    }
+
+    @PluginTarget( GraphDatabaseService.class )
+    public Node methodWithList( @Source GraphDatabaseService db,
+            @Parameter( name = "strings", optional = false ) List<String> params )
+    {
+        stringList = params;
+        return db.getReferenceNode();
+    }
 
     @PluginTarget( GraphDatabaseService.class )
     public Node methodWithArray( @Source GraphDatabaseService db,
