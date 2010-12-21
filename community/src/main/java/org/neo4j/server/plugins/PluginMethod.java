@@ -163,12 +163,15 @@ class PluginMethod extends PluginPoint
         {
             ParameterizedType paramType = (ParameterizedType) type;
             Class<?> raw = (Class<?>) paramType.getRawType();
+            Type componentType = paramType.getActualTypeArguments()[0];
+            Class<?> component = null;
+            if ( componentType instanceof Class<?> ) component = (Class<?>) componentType;
             if ( Set.class == raw )
             {
-                TypeCaster caster = TYPES.get( paramType.getActualTypeArguments()[0] );
+                TypeCaster caster = TYPES.get( component );
                 if ( caster != null )
                 {
-                    return new ListParameterExtractor( caster, raw, parameter, description )
+                    return new ListParameterExtractor( caster, component, parameter, description )
                     {
                         @Override
                         Object convert( Object[] result )
@@ -180,10 +183,10 @@ class PluginMethod extends PluginPoint
             }
             else if ( List.class == raw || Collection.class == raw || Iterable.class == raw )
             {
-                TypeCaster caster = TYPES.get( paramType.getActualTypeArguments()[0] );
+                TypeCaster caster = TYPES.get( component );
                 if ( caster != null )
                 {
-                    return new ListParameterExtractor( caster, raw, parameter, description )
+                    return new ListParameterExtractor( caster, component, parameter, description )
                     {
                         @Override
                         Object convert( Object[] result )
@@ -202,7 +205,8 @@ class PluginMethod extends PluginPoint
                 TypeCaster caster = TYPES.get( raw.getComponentType() );
                 if ( caster != null )
                 {
-                    return new ListParameterExtractor( caster, raw, parameter, description )
+                    return new ListParameterExtractor( caster, raw.getComponentType(), parameter,
+                            description )
                     {
                         @Override
                         Object convert( Object[] result )
