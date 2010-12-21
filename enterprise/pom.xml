@@ -12,6 +12,13 @@
   <version>1.2-SNAPSHOT</version>
   <name>Neo4j - Graph Database Monitoring and Management tools</name>
   <description>Management support using JMX.</description>
+  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+
+  <scm>
+    <connection>scm:svn:https://svn.neo4j.org/components/management/trunk/</connection>
+    <developerConnection>scm:svn:https://svn.neo4j.org/components/management/trunk/</developerConnection>
+    <url>https://trac.neo4j.org/browser/components/management</url>
+  </scm>
 
   <properties>
     <bundle.namespace>org.neo4j.management</bundle.namespace>
@@ -38,12 +45,6 @@
     </profile>
   </profiles>
 
-  <scm>
-    <connection>scm:svn:https://svn.neo4j.org/components/management/trunk/</connection>
-    <developerConnection>scm:svn:https://svn.neo4j.org/components/management/trunk/</developerConnection>
-    <url>https://trac.neo4j.org/browser/components/management</url>
-  </scm>
-  <url>https://trac.neo4j.org/browser/components/management/trunk</url>
   <licenses>
     <license>
       <name>GNU Affero General Public License, Version 3</name>
@@ -162,4 +163,12 @@
     </plugins>
   </build>
 
+  <distributionManagement>
+    <site>
+      <id>neo4j-site</id>
+      <url>scpexe://components.neo4j.org/home/neo/components/${project.artifactId}/${project.version}</url>
+    </site>
+  </distributionManagement>
+
 </project>
+
