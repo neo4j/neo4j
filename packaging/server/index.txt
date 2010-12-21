@@ -5,6 +5,7 @@ Neo4j Server
 
 :leveloffset: 2
 
-
+include::server-configuration.txt[]
+include::server-plugins.txt[]
 include::server-performance.txt[]
 include::server-unmanaged-performance.txt[]
