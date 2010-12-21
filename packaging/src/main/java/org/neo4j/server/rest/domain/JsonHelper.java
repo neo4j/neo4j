@@ -20,15 +20,15 @@
 
 package org.neo4j.server.rest.domain;
 
+import org.codehaus.jackson.JsonGenerator;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.neo4j.server.rest.web.PropertyValueException;
+
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.neo4j.server.rest.web.PropertyValueException;
 
 public class JsonHelper {
 
@@ -41,7 +41,7 @@ public class JsonHelper {
     }
 
     @SuppressWarnings("unchecked")
-    public static List<Map<String, Object>> jsonToListOfRelationshipRepresentations(String json) throws JsonParseException
+    public static List<Map<String, Object>> jsonToList( String json ) throws JsonParseException
     {
         return (List<Map<String, Object>>) readJson( json );
     }
