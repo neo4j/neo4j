@@ -42,6 +42,12 @@
 
 <revhistory>
   <revision>
+    <revnumber>1.2.M06</revnumber>
+    <date>December 21, 2010</date>
+    <revremark>
+      Added sercurity section and more configuration information.
+    </revremark>
+  <revision>
     <revnumber>1.2.M05</revnumber>
     <date>December 3, 2010</date>
     <revremark>
