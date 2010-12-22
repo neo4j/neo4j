@@ -984,7 +984,6 @@ public class RestfulGraphDatabaseTest
         for ( Object item : items )
         {
             Map<?, ?> map = (Map<?, ?>) item;
-            Map<?, ?> properties = (Map<?, ?>) map.get( "data" );
             assertNotNull( map.get( "self" ) );
             String indexedUri = (String) map.get( "indexed" );
             assertThat( indexedUri, containsString( key ) );
@@ -1149,7 +1148,7 @@ public class RestfulGraphDatabaseTest
     {
         long n1 = helper.createNode();
         long n2 = helper.createNode();
-        long r = helper.createRelationship( "knows", n1, n2 );
+        helper.createRelationship( "knows", n1, n2 );
         Map<String, Object> config = MapUtil.map(
                 "max depth", 3,
                 "algorithm", "shortestPath",
@@ -1172,7 +1171,7 @@ public class RestfulGraphDatabaseTest
     {
         long n1 = helper.createNode();
         long n2 = helper.createNode();
-        long r = helper.createRelationship( "knows", n1, n2 );
+        helper.createRelationship( "knows", n1, n2 );
         Map<String, Object> config = MapUtil.map(
                 "max depth", 3,
                 "algorithm", "shortestPath",
