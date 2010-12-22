@@ -1,3 +1,4 @@
+[[server-performance]]
 Tuning the server performance
 =============================
 
@@ -7,7 +8,7 @@ configurations, using the same file format. The only difference is that the serv
 .Quick info
 ***********
 * The neo4j.properties file is a standard configuration file that databases load in order to tune their memory use and caching strategies.
-* See the [[Caches in Neo4j]] page for more information.
+* See <<configuration-caches>> for more information.
 ***********
 
 Specifying the tuning properties
@@ -21,3 +22,4 @@ property to point to a valid neo4j.properties file:
  
  On restarting the server the tuning enhancements specified in the neo4j.properties file will be loaded and configured into the underlying
  database engine.
+

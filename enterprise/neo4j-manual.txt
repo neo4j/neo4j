@@ -27,6 +27,10 @@ include::transactions/transactions.txt[]
 
 :leveloffset: 1
 
+include::server/index.txt[]
+
+:leveloffset: 1
+
 include::ha/index.txt[]
 
 :leveloffset: 1

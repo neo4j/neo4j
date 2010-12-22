@@ -1,23 +1,26 @@
 # Makefile for the Neo4j documentation
 #
 
-SRCDIR       = $(CURDIR)
-BUILDDIR     = $(SRCDIR)/target
-SRCFILE      = $(SRCDIR)/neo4j-manual.txt
-CONFDIR      = $(SRCDIR)/conf
-DOCBOOKFILE  = $(BUILDDIR)/neo4j-manual.xml
+SRCDIR           = $(CURDIR)
+BUILDDIR         = $(SRCDIR)/target
+SRCFILE          = $(SRCDIR)/neo4j-manual.txt
+CONFDIR          = $(SRCDIR)/conf
+DOCBOOKFILE      = $(BUILDDIR)/neo4j-manual.xml
 DOCBOOKSHORTINFOFILE = $(BUILDDIR)/neo4j-manual-shortinfo.xml
-FOPDIR       = $(BUILDDIR)/pdf
-FOPFILE      = $(FOPDIR)/neo4j-manual.fo
-FOPPDF       = $(FOPDIR)/neo4j-manual.pdf
-TEXTWIDTH    = 80
-TEXTDIR      = $(BUILDDIR)/text
-TEXTFILE     = $(TEXTDIR)/neo4j-manual.text
-TEXTHTMLFILE = $(TEXTFILE).html
-HTMLDIR      = $(BUILDDIR)/html
-HTMLFILE     = $(HTMLDIR)/neo4j-manual.html
-ANNOTATEDDIR = $(BUILDDIR)/annotated
-ANNOTATEDFILE= $(HTMLDIR)/neo4j-manual.html
+FOPDIR           = $(BUILDDIR)/pdf
+FOPFILE          = $(FOPDIR)/neo4j-manual.fo
+FOPPDF           = $(FOPDIR)/neo4j-manual.pdf
+TEXTWIDTH        = 80
+TEXTDIR          = $(BUILDDIR)/text
+TEXTFILE         = $(TEXTDIR)/neo4j-manual.txt
+TEXTHTMLFILE     = $(TEXTFILE).html
+SINGLEHTMLDIR    = $(BUILDDIR)/html
+SINGLEHTMLFILE   = $(SINGLEHTMLDIR)/neo4j-manual.html
+ANNOTATEDDIR     = $(BUILDDIR)/annotated
+ANNOTATEDFILE    = $(HTMLDIR)/neo4j-manual.html
+CHUNKEDHTMLDIR   = $(BUILDDIR)/chunked/
+CHUNKEDOFFLINEHTMLDIR = $(BUILDDIR)/chunked-offline/
+CHUNKEDTARGET     = $(BUILDDIR)/neo4j-manual.chunked
 
 ifdef VERBOSE
 	V = -v
@@ -38,7 +41,7 @@ endif
 
 GENERAL_FLAGS = $(V) $(K) $(VERS)
 
-.PHONY: all dist docbook help clean pdf latexpdf html singlehtml singlehtml-asciidoc text meta cleanup annotated
+.PHONY: all dist docbook help clean pdf latexpdf html offline-html singlehtml text cleanup annotated
 
 help:
 	@echo "Please use 'make <target>' where <target> is one of"
@@ -55,9 +58,9 @@ help:
 	@echo "To keep temporary files, use 'KEEP=1'".
 	@echo "To set the version, use 'VERSION=[the version]'".
 
-dist: pdf html annotated text cleanup
+dist: pdf html offline-html annotated text cleanup
 
-all: pdf latexpdf html singlehtml singlehtml-asciidoc text annotated cleanup
+all: pdf latexpdf html offline-html singlehtml text annotated cleanup
 
 clean:
 	-rm -rf $(BUILDDIR)/*
@@ -97,11 +100,17 @@ latexpdf:
 # currently builds docbook format first
 html:
 	a2x $(GENERAL_FLAGS) -f chunked -D $(BUILDDIR) --conf-file=$(CONFDIR)/chunked.conf --xsl-file=$(CONFDIR)/chunked.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(SRCFILE)
+	mv $(CHUNKEDTARGET) $(CHUNKEDHTMLDIR)
+
+# currently builds docbook format first
+offline-html:
+	a2x $(GENERAL_FLAGS) -f chunked -D $(BUILDDIR) --conf-file=$(CONFDIR)/chunked.conf --xsl-file=$(CONFDIR)/chunked-offline.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(SRCFILE)
+	mv $(CHUNKEDTARGET) $(CHUNKEDOFFLINEHTMLDIR)
 
 # currently builds docbook format first
 singlehtml:
-	mkdir -p $(HTMLDIR)
-	a2x $(GENERAL_FLAGS) -f xhtml -D $(HTMLDIR) --conf-file=$(CONFDIR)/xhtml.conf --xsl-file=$(CONFDIR)/xhtml.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(SRCFILE)
+	mkdir -p $(SINGLEHTMLDIR)
+	a2x $(GENERAL_FLAGS) -f xhtml -D $(SINGLEHTMLDIR) --conf-file=$(CONFDIR)/xhtml.conf --xsl-file=$(CONFDIR)/xhtml.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(SRCFILE)
 
 # currently builds docbook format first
 annotated:
@@ -110,9 +119,9 @@ annotated:
 
 # missing: check what files are needed and copy them
 singlehtml-notworkingrightnow: docbook-shortinfo
-	mkdir -p $(HTMLDIR)
-	cd $(HTMLDIR)
-	xsltproc --stringparam admon.graphics 1 --stringparam callout.graphics 0 --stringparam navig.graphics 0 --stringparam admon.textlabel 1  --output $(HTMLFILE) $(CONFDIR) $(DOCBOOKSHORTINFOFILE)
+	mkdir -p $(SINGLEHTMLDIR)
+	cd $(SINGLEHTMLDIR)
+	xsltproc --stringparam admon.graphics 1 --stringparam callout.graphics 0 --stringparam navig.graphics 0 --stringparam admon.textlabel 1  --output $(SINGLEHTMLFILE) $(CONFDIR) $(DOCBOOKSHORTINFOFILE)
 	cd $(SRCDIR)
 
 text: docbook-shortinfo
