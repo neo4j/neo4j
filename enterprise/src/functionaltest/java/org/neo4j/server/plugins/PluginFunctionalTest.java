@@ -28,6 +28,7 @@ import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.NeoServer;
@@ -360,6 +361,31 @@ public class PluginFunctionalTest
 
         assertThat( Plugin.intArray, is( nullValue() ) );
     }
+
+    @Test
+    public void shouldBeAbleToReturnPaths() throws Exception
+    {
+        long n = functionalTestHelper.getGraphDbHelper().createNode();
+        long r = functionalTestHelper.getGraphDbHelper().getReferenceNode();
+        functionalTestHelper.getGraphDbHelper().createRelationship( "friend", n, r );
+
+        String methodUri = getPluginMethodUri( functionalTestHelper.nodeUri( n ), "pathToReference" );
+
+        Map<String, Object> maps = makePostMap( methodUri );
+
+        assertThat( (String)maps.get( "start" ), endsWith( Long.toString( r ) ) );
+        assertThat( (String)maps.get( "end" ), endsWith( Long.toString( n ) ) );
+    }
+
+    @Test
+    @Ignore
+    public void shouldHandleNullPath() throws Exception
+    {
+        long n = functionalTestHelper.getGraphDbHelper().createNode();
+
+        String methodUri = getPluginMethodUri( functionalTestHelper.nodeUri( n ), "pathToReference" );
+    }
+
 
     private Map<String, Object> makeGet( String url ) throws JsonParseException
     {
