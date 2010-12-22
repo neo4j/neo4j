@@ -98,7 +98,7 @@ public class UdcExtensionImplTest {
     public void shouldRecordFailuresWhenThereIsNoServer() throws Exception {
         Map<String, String> config = new HashMap<String, String>();
         config.put(UdcExtensionImpl.FIRST_DELAY_CONFIG_KEY, "100"); // first delay must be long enough to allow class initialization to complete
-        config.put(UdcExtensionImpl.UDC_HOST_ADDRESS_KEY, "127.0.0.1:1"); // first delay must be long enough to allow class initialization to complete
+        config.put(UdcExtensionImpl.UDC_HOST_ADDRESS_KEY, "127.0.0.1:1");
         EmbeddedGraphDatabase graphdb = new EmbeddedGraphDatabase("should-record-failures", config);
         assertGotFailureWithRetry( IS_GREATER_THAN_ZERO );
         destroy(graphdb);
