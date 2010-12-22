@@ -44,9 +44,9 @@ public class Configurator {
     public static final int DEFAULT_WEBSERVER_PORT = 7474;
     public static final String WEB_ADMIN_PATH = "/webadmin";
     public static final String WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION = "webadmin-html";
-    public static final String WEB_ADMIN_REST_API_PATH = "/db/manage";
+    public static final String DEFAULT_WEB_ADMIN_REST_API_PATH = "/db/manage";
     public static final String WEB_ADMIN_REST_API_PACKAGE = "org.neo4j.server.webadmin.rest";
-    public static final String REST_API_PATH = "/db/data";
+     public static final String DEFAULT_REST_API_PATH = "/db/data"; // kill me
     public static final String REST_API_PACKAGE = "org.neo4j.server.rest.web";
     public static final String ENABLE_OSGI_SERVER_PROPERTY_KEY = "org.neo4j.server.osgi.enable";
     public static final String OSGI_BUNDLE_DIR_PROPERTY_KEY = "org.neo4j.server.osgi.bundledir";
