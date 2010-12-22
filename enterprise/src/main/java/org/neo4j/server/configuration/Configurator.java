@@ -21,6 +21,8 @@
 package org.neo4j.server.configuration;
 
 import java.io.File;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
@@ -135,5 +137,20 @@ public class Configurator {
             thirdPartyPackages.add(new ThirdPartyJaxRsPackage(key.toString(), properties.getProperty(key.toString())));
         }
         return thirdPartyPackages;
+    }
+
+    public URI getRestApiMountPoint() {
+        if(configuration().containsKey(WEB_ADMIN_REST_API_PATH_PROPERTY_KEY) ) {
+            try {
+                return new URI(configuration().getProperty(WEB_ADMIN_REST_API_PATH_PROPERTY_KEY).toString());
+            } catch (URISyntaxException e) {
+                try {
+                    return new URI(DEFAULT_REST_API_PATH);
+                } catch (URISyntaxException e1) {
+                    log.debug("Unable to compose the  Webadmin API URI");
+                }
+            }
+        }
+        return null;
     }
 }
