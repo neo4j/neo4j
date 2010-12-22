@@ -201,6 +201,7 @@ wa.components.dashboard.Dashboard = (function($) {
     	me.charts.push(memoryChart);
     	
     	me.primitivesChart = primitivesChart;
+    	me.visibleChart = me.primitivesChart;
     	me.memoryChart = memoryChart;
 
     	box.append(primitiveTracker.render());
