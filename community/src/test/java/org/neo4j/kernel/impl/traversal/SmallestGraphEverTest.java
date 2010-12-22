@@ -20,10 +20,12 @@
 
 package org.neo4j.kernel.impl.traversal;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -127,5 +129,19 @@ public class SmallestGraphEverTest extends AbstractTestBase
         Traverser traverser = traversal.uniqueness( uniqueness ).traverse(
                 referenceNode() );
         assertFalse( "empty traversal", IteratorUtil.count( traverser ) == 0 );
+    }
+
+    @Test
+    @SuppressWarnings( "deprecation" )
+    public void testTraverseRelationshipsWithStartNodeNotIncluded() throws Exception
+    {
+        TraversalDescription traversal = Traversal.description().filter(
+                Traversal.returnAllButStartNode() );
+        int count = 0;
+        for ( Relationship rel : traversal.traverse( referenceNode() ).relationships() )
+        {
+            count++;
+        }
+        assertEquals( 1, count );
     }
 }
