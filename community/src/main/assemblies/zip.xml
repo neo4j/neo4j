@@ -17,7 +17,7 @@
       </includes>
     </fileSet>
     <fileSet>
-      <directory>target/neo4j-manual.chunked</directory>
+      <directory>target/chunked-offline</directory>
       <outputDirectory>/html</outputDirectory>
       <includes>
         <include>**</include>

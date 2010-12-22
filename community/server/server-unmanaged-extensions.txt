@@ -1,3 +1,4 @@
+[[server-unmanaged-extensions]]
 Unmanaged Extensions 
 ====================
 
@@ -12,9 +13,13 @@ Some projects want extremely fine control over their server-side code. For this 
 
 In your code, you get access to the underlying GraphDatabaseService through the @Context annotation like so:
 
+[source,java]
+--------
 public MyCoolService(@Context Database database)
 {
   // Have fun here, but be safe!
 }
+--------
 
 Remember, the unmanaged API is a very sharp tool. It's all to easy to compromise the server by deploying code this way, so think first and see if you can't use the managed extensions in preference.
+

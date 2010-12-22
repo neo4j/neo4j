@@ -1,3 +1,4 @@
+[[server-plugins]]
 Server Plugins 
 ==============
 
@@ -14,7 +15,7 @@ manipulating nodes, relationships, paths or properties.
 
 [WARNING]
 If you want to have full control over your API, and are willing to put in the effort, and understand
-the risks, then Neo4j server also provides [[Unmanaged Extensions]] hooks for unmanaged extensions
+the risks, then Neo4j server also provides hooks for <<server-unmanaged-extensions,unmanaged extensions>>
 based on JAX-RS.   
 
 To create a plugin, your code must inherit from the ServerPlugin class, and ensure that it can produce 
@@ -81,7 +82,7 @@ The response to the GET request will contain (by default) a JSON container that 
 called "extensions" where the available plugins are listed. In the following case, we only have the GetAll
 plugin registered with the server, so only its extension functionality is available:
 
-[source, java]
+[source, javascript]
 ----
 {
 "extensions-info" : "http://localhost:7474/db/data/ext",
@@ -104,9 +105,9 @@ Performing a GET on one of the two extension URIs...
 curl http://localhost:7474/db/data/ext/GetAll/graphdb/get_all_nodes
 ----
 
-...gives back the meta information about the service:
+... gives back the meta information about the service:
 
-[source, java]
+[source, javascript]
 ----
 {
   "extends" : "graphdb",
@@ -121,3 +122,4 @@ To use it, just POST to this URL, with parameters as specified in the descriptio
 Through this model, any plugin can naturally fit into the general hypermedia scheme that Neo4j espouses - meaning that
 clients can still take advantage of abstractions like  Nodes, Relationships and Paths with a straightforward upgrade
 path as servers are enriched with plugins (old clients don't break).
+

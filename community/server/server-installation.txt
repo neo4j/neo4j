@@ -1,10 +1,8 @@
-[[deployument-installation]]
-Installation
-============
+[[server-installation]]
+Server Installation
+===================
 
 Neo4j can be installed as a server, running either as a headless application or system service.
-
-== Server Installation ==
 
 1. Download the latest release from http://neo4j.org/download
    * select the appropriate version for your platform
@@ -23,7 +21,6 @@ With administrative rights, Neo4j can be isntalled as a Windows service.
 2. Choose `Run as administrator`
 
 To uninstall, run `UninstallNeo4j` as ad administrator.
-
 
 === Linux Service ===
 
