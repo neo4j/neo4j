@@ -20,17 +20,8 @@
 
 package org.neo4j.server.web;
 
-import java.io.IOException;
-import java.net.URL;
-import java.util.HashMap;
-import java.util.List;
-
-import javax.servlet.Servlet;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import com.sun.jersey.api.core.ResourceConfig;
+import com.sun.jersey.spi.container.servlet.ServletContainer;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.SessionManager;
 import org.mortbay.jetty.handler.MovedContextHandler;
@@ -46,8 +37,15 @@ import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rest.web.AllowAjaxFilter;
 
-import com.sun.jersey.api.core.ResourceConfig;
-import com.sun.jersey.spi.container.servlet.ServletContainer;
+import javax.servlet.Servlet;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.List;
 
 public class Jetty6WebServer implements WebServer
 {
@@ -97,7 +95,14 @@ public class Jetty6WebServer implements WebServer
                     HttpServletResponse resp ) throws ServletException,
                     IOException
             {
-                resp.sendRedirect( Configurator.WEB_ADMIN_PATH );
+                if( req.getPathInfo().equals( "/" ) )
+                {
+                    resp.sendRedirect( Configurator.WEB_ADMIN_PATH );
+                }
+                else
+                {
+                    resp.sendError( 404 );
+                }
             }
 
         };
