@@ -73,7 +73,7 @@ public class NeoServer {
     }
 
     public NeoServer(StartupHealthCheck startupHealthCheck, File configFile, WebServer ws) {
-        this(new LocalhostAddressResolver(), startupHealthCheck, configFile, ws);
+        this(new AddressResolver(), startupHealthCheck, configFile, ws);
     }
 
     public void start() {

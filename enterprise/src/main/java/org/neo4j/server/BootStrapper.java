@@ -53,7 +53,7 @@ public class BootStrapper
         try {
             StartupHealthCheck startupHealthCheck = new StartupHealthCheck(new ConfigFileMustBePresentRule());
             Jetty6WebServer webServer = new Jetty6WebServer();
-            server = new NeoServer(startupHealthCheck, 
+            server = new NeoServer(new AddressResolver(), startupHealthCheck, 
                     getConfigFile(),
                     webServer);
             server.start();
