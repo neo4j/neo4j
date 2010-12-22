@@ -58,7 +58,6 @@ public class PropertiesRepresentationTest extends RepresentationTestBase
     }
 
     @Test
-    @SuppressWarnings( "unchecked" )
     public void shouldSerializeToMap()
     {
         Map<String, Object> values = new HashMap<String, Object>();
