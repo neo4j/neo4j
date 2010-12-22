@@ -26,14 +26,16 @@ import java.net.URLConnection;
 import java.util.Map;
 
 public class Pinger {
-    
-    private String address;
-    private Map<String, String> usageDataMap;
+
+    private final String address;
+    private final Map<String, String> usageDataMap;
     private int pingCount = 0;
 
-    public Pinger(String address, Map<String, String> usageDataMap) {
+    public Pinger( String address, Map<String, String> usageDataMap, boolean crashPing )
+    {
         this.address = address;
         this.usageDataMap = usageDataMap;
+        if ( crashPing ) pingCount = -1;
     }
 
 
@@ -50,7 +52,15 @@ public class Pinger {
         }
 
         // append counts
-        uri.append("p=").append(pingCount);
+        if ( pingCount == 0 )
+        {
+            uri.append( "p=-1" );
+            pingCount++;
+        }
+        else
+        {
+            uri.append( "p=" ).append( pingCount );
+        }
 
         URL url = new URL(uri.toString());
         URLConnection con = url.openConnection();

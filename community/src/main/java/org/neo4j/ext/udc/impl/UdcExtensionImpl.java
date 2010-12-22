@@ -75,7 +75,7 @@ public class UdcExtensionImpl extends KernelExtension implements UdcProperties {
 
     /**
      * No-arg constructor, sets the extension key to "kernel udc".
-     *  
+     *
      */
     public UdcExtensionImpl() {
         super("kernel udc");
@@ -102,8 +102,9 @@ public class UdcExtensionImpl extends KernelExtension implements UdcProperties {
         if (!disabled) {
             timer = new Timer();
             NeoStoreXaDataSource ds = (NeoStoreXaDataSource) kernel.getConfig().getTxModule().getXaDataSourceManager().getXaDataSource("nioneodb");
+            boolean crashPing = ds.getXaContainer().getLogicalLog().wasNonClean();
             String storeId = Long.toHexString(ds.getRandomIdentifier());
-            UdcTimerTask task = new UdcTimerTask(hostAddress, Version.VERSION.getRevision(), storeId);
+            UdcTimerTask task = new UdcTimerTask(hostAddress, Version.VERSION.getRevision(), storeId, crashPing);
             timer.scheduleAtFixedRate(task, firstDelay, interval);
         }
     }
@@ -126,7 +127,7 @@ public class UdcExtensionImpl extends KernelExtension implements UdcProperties {
      *   <li>system property</li>
      *   <li>hard-coded default value</li>
      * <ol>
-     * 
+     *
      * @param config user defined configuration parameters
      */
     private void configure(Config config) {
@@ -138,7 +139,7 @@ public class UdcExtensionImpl extends KernelExtension implements UdcProperties {
             }
             firstDelay = Integer.parseInt(firstDelayAsString);
         } catch (Exception e) {
-           ; 
+           ;
         }
         try {
             String intervalAsString = (String) config.getParams().get(INTERVAL_CONFIG_KEY);
@@ -169,7 +170,7 @@ public class UdcExtensionImpl extends KernelExtension implements UdcProperties {
            sysProps.load(getClass().getResourceAsStream("/org/neo4j/ext/udc/udc.properties"));
        } catch (Exception e) {
            System.err.println("failed to load udc.properties, because: " + e);
-           ; // fail silently, 
+           ; // fail silently,
        }
        return sysProps;
    }

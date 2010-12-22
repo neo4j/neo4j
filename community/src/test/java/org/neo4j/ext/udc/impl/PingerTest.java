@@ -24,6 +24,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
@@ -98,7 +99,7 @@ public class PingerTest {
         udcFields.put("id", EXPECTED_STORE_ID);
         udcFields.put("v", EXPTECTED_KERNEL_VERSION);
 
-        Pinger p = new Pinger(hostURL, udcFields);
+        Pinger p = new Pinger( hostURL, udcFields, false );
         Exception thrownException = null;
         try {
             p.ping();
@@ -120,7 +121,7 @@ public class PingerTest {
         final String hostURL = hostname + ":" + server.getServicePort();
         final Map<String,String> udcFields = new HashMap<String, String>();
 
-        Pinger p = new Pinger(hostURL, udcFields);
+        Pinger p = new Pinger( hostURL, udcFields, false );
         for (int i=0; i<EXPECTED_PING_COUNT; i++) {
             p.ping();
         }
@@ -129,6 +130,38 @@ public class PingerTest {
 
         Map<String, String> actualQueryMap = handler.getQueryMap();
         assertThat(actualQueryMap.get("p"), is(Integer.toString(EXPECTED_PING_COUNT)));
+    }
+
+    @Test
+    public void normalPingSequenceShouldBeOneThenTwoThenThreeEtc() throws Exception
+    {
+        int[] expectedSequence = { 1, 2, 3, 4 };
+        final String hostURL = hostname + ":" + server.getServicePort();
+        final Map<String, String> udcFields = new HashMap<String, String>();
+
+        Pinger p = new Pinger( hostURL, udcFields, false );
+        for ( int i = 0; i < expectedSequence.length; i++ )
+        {
+            p.ping();
+            int count = Integer.parseInt( handler.getQueryMap().get( "p" ) );
+            assertEquals( expectedSequence[i], count );
+        }
+    }
+
+    @Test
+    public void crashPingSequenceShouldBeMinusOneThenTwoThenThreeEtc() throws Exception
+    {
+        int[] expectedSequence = { -1, 2, 3, 4 };
+        final String hostURL = hostname + ":" + server.getServicePort();
+        final Map<String, String> udcFields = new HashMap<String, String>();
+
+        Pinger p = new Pinger( hostURL, udcFields, true );
+        for ( int i = 0; i < expectedSequence.length; i++ )
+        {
+            p.ping();
+            int count = Integer.parseInt( handler.getQueryMap().get( "p" ) );
+            assertEquals( expectedSequence[i], count );
+        }
     }
 
     @After
