@@ -5,7 +5,7 @@
 		<ul class="mor_info_list">
 			<li>
 				<h3>Data url</h3>
-				<p>{ $T.server.url }</p>
+				<p><a href="{ $T.server.url }">{ $T.server.url }</a></p>
 			</li>
 			<li>
 				<h3>Kernel version</h3>
