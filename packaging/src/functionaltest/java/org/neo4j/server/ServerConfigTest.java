@@ -28,13 +28,11 @@ import static org.neo4j.server.ServerBuilder.server;
 import java.io.IOException;
 
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
-@Ignore
 public class ServerConfigTest {
 
     private NeoServer server;
