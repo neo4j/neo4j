@@ -26,7 +26,7 @@ import org.junit.Test;
 
 public class DatabaseLocationMustBeSpecifiedRuleTest {
     @Test(expected=RuleFailedException.class)
-    public void shouldFailWhenDatabaseLocationIsAbsentFromConfig() {
+    public void shouldFailWhenDatabaseLocationIsAbsentFromConfig() throws RuleFailedException {
         DatabaseLocationMustBeSpecifiedRule theRule = new DatabaseLocationMustBeSpecifiedRule();
         BaseConfiguration config = new BaseConfiguration();
         config.addProperty("foo", "bar");

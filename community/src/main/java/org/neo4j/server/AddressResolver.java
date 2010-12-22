@@ -32,5 +32,4 @@ public class AddressResolver {
             return "localhost";
         }
     }
-    
 }
