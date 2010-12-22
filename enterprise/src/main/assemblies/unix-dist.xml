@@ -70,6 +70,7 @@
       <excludes>
         <exclude>*:javadoc:*</exclude>
         <exclude>*:pom:*</exclude>
+        <exclude>org.neo4j:neo4j:jar</exclude>
       </excludes>
     </dependencySet>
     <dependencySet>
