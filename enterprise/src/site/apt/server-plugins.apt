@@ -31,5 +31,42 @@ org.neo4j.examples.server.plugins.GetAll
 ---
 curl -v htto://localhost:7474/db/data
 ---
+  will get you 
+
+---
+{
+"extensions-info" : "http://localhost:7474/db/data/ext",
+"node" : "http://localhost:7474/db/data/node",
+"node-index" : "http://localhost:7474/db/data/index/node",
+"relationship-index" : "http://localhost:7474/db/data/index/relationship",
+"reference_node" : "http://localhost:7474/db/data/node/0",
+"extensions" : {
+  "GetAll" : {
+    "get_all_nodes" : "http://localhost:7474/db/data/ext/GetAll/graphdb/get_all_nodes",
+    "getAllRelationships" : "http://localhost:7474/db/data/ext/GetAll/graphdb/getAllRelationships"
+  }
+}
+---
+
+  Also, all extensions are listed upon a GET to `http://localhost:7474/db/data/ext/`
+
+  Requesting a GET on one of the two extension endpoints...
+
+---
+curl http://localhost:7474/db/data/ext/GetAll/graphdb/get_all_nodes
+---
+ 
+  ...gives back the meta information about the service:
+  
+---
+{
+  "extends" : "graphdb",
+  "description" : "Get all nodes from the Neo4j graph database",
+  "name" : "get_all_nodes",
+  "parameters" : [ ]
+}
+---
+
+  To use it, just POST to this URL, with parameters as specified in the description (none in this case).
   
   Full source code: {{{./xref/org/neo4j/examples/server/plugins/GetAll.html}GetAll.java}}
