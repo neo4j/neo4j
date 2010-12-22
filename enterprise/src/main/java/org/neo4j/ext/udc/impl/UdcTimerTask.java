@@ -22,18 +22,22 @@ package org.neo4j.ext.udc.impl;
 
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+import java.util.TimerTask;
 
 public class UdcTimerTask extends TimerTask {
 
     // ABKTODO: make this thread safe
     public static final Map<String, Integer> successCounts = new HashMap<String, Integer>();
     public static final Map<String, Integer> failureCounts = new HashMap<String, Integer>();
-    
-    private String storeId;
-    private Pinger pinger;
 
-    public UdcTimerTask(String host, String version, String storeId)
+    private final String storeId;
+    private final Pinger pinger;
+
+    public UdcTimerTask( String host, String version, String storeId, boolean crashPing )
     {
         successCounts.put(storeId, 0);
         failureCounts.put(storeId, 0);
@@ -44,7 +48,7 @@ public class UdcTimerTask extends TimerTask {
         udcFields.put("id", storeId);
         udcFields.put("v", version);
 
-        pinger = new Pinger(host, mergeSystemPropertiesWith(udcFields));
+        pinger = new Pinger( host, mergeSystemPropertiesWith( udcFields ), crashPing );
     }
 
     private Map<String, String> mergeSystemPropertiesWith(Map<String, String> udcFields) {
