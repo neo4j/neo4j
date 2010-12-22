@@ -43,8 +43,8 @@ public class Validator {
         for(ValidationRule vr : validationRules) {
             try {
                 vr.validate(configuration);
-            } catch(RuntimeException re) {
-                log.debug(re.getMessage());
+            } catch(RuleFailedException rfe) {
+                log.warn(rfe.getMessage());
                 return false;
             }
         }
