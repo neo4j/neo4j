@@ -312,7 +312,7 @@
 
         <executions>
           <execution>
-            <phase>generate-sources</phase>
+            <phase>compile</phase>
             <goals>
               <goal>compress</goal>
             </goals>
