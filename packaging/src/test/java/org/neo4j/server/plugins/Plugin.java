@@ -20,13 +20,17 @@
 
 package org.neo4j.server.plugins;
 
+import org.neo4j.graphalgo.GraphAlgoFactory;
+import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.FilteringIterable;
+import org.neo4j.kernel.Traversal;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -203,5 +207,12 @@ public class Plugin extends ServerPlugin
     {
         intArray = params;
         return db.getReferenceNode();
+    }
+
+    @PluginTarget( Node.class )
+    public Path pathToReference( @Source Node me )
+    {
+        PathFinder<Path> finder = GraphAlgoFactory.shortestPath( Traversal.expanderForAllTypes(), 6 );
+        return finder.findSinglePath( me.getGraphDatabase().getReferenceNode(), me );
     }
 }
