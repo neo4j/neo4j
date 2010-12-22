@@ -25,6 +25,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.server.ServerBuilder.server;
 
+import java.io.IOException;
+
 import org.junit.Test;
 
 import com.sun.jersey.api.client.Client;
@@ -32,12 +34,10 @@ import com.sun.jersey.api.client.ClientResponse;
 
 public class ServerConfigTest {
 
-    private static final int NON_DEFAULT_PORT = 54321;
-
-
     @Test
     public void shouldPickUpPortFromConfig() throws Exception {
-
+        final int NON_DEFAULT_PORT = 54321;
+        
         NeoServer server = server().withRandomDatabaseDir().withPassingStartupHealthcheck().onPort(
                 NON_DEFAULT_PORT ).build();
         server.start();
@@ -50,5 +50,33 @@ public class ServerConfigTest {
         assertThat(response.getStatus(), is(200));
 
         server.stop();
+    }
+    
+    @Test
+    public void shouldPickupRelativeUrisForWebAdminAndWebAdminRest() throws IOException {
+        String webAdminDataUri = "/a/different/relative/webadmin/data/uri";
+        String webAdminUri = "/a/different/relative/webadmin/uri";
+        
+        NeoServer server = server().withRandomDatabaseDir().withWebDataAdminUri(webAdminDataUri).withWebAdminUri(webAdminUri).withPassingStartupHealthcheck().build();
+        server.start();
+        
+        Client client = Client.create();
+        ClientResponse response = client.resource("http://localhost:7474" + webAdminDataUri).get(ClientResponse.class);
+        assertEquals(200, response.getStatus());
+        
+        response = client.resource("http://localhost:7474" + webAdminUri).get(ClientResponse.class);
+        assertEquals(200, response.getStatus());
+        
+        server.stop();
+    }
+    
+    @Test
+    public void shouldPickupAbsoluteUrisForWebAdminAndWebAdminRest() {
+        
+    }
+    
+    @Test
+    public void shouldDealWithNonNormalizedUrisForWebAdminAndWebAdminRest() {
+        
     }
 }

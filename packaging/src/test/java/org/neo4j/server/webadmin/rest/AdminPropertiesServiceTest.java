@@ -33,26 +33,33 @@ import java.net.URISyntaxException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
+import org.neo4j.server.NeoServer;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 
-public class AdminPropertiesServiceTest
-{
+public class AdminPropertiesServiceTest {
     @Test
     public void simpleQueryShouldReturn200AndTheExpectedValue() throws Exception
     {
-        PropertiesConfiguration config = new PropertiesConfiguration();
-        config.setProperty( "org.neo4j.server.webadmin.foo", "bar" );
         UriInfo mockUri = mock( UriInfo.class );
-        URI baseUri = new URI( "http://peteriscool.com:6666/" );
-        when( mockUri.getBaseUri() ).thenReturn( baseUri );
+        when( mockUri.getBaseUri() ).thenReturn( new URI( "http://peteriscool.com:6666/" ) );
+        
+        NeoServer mockServer = mock(NeoServer.class);
+        when(mockServer.managementApiUri()).thenReturn(new URI( "http://peteriscool.com:6666/management" ));
+        when(mockServer.restApiUri()).thenReturn(new URI( "http://peteriscool.com:6666/data" ));
+        
+        Configuration dummyConfig = mock(Configuration.class);
+        when(dummyConfig.getProperty("foo")).thenReturn("bar");
+        when(dummyConfig.containsKey("foo")).thenReturn(true);
+        
+        when(mockServer.getConfiguration()).thenReturn(dummyConfig);
 
         AdminPropertiesService adminPropertiesService = new AdminPropertiesService( mockUri,
-                config, new OutputFormat( new JsonFormat(), baseUri, null ) );
+                mockServer, new OutputFormat( new JsonFormat(), new URI( "http://peteriscool.com:6666/" ), null ) );
 
         Response response = adminPropertiesService.getValue( "foo" );
         assertThat( response.getStatus(), is( 200 ) );
@@ -60,117 +67,46 @@ public class AdminPropertiesServiceTest
     }
 
     @Test
-    public void shouldSupportLegacyWebAdminUris() throws URISyntaxException, JsonParseException,
-            UnsupportedEncodingException
-    {
-        PropertiesConfiguration config = new PropertiesConfiguration();
-        String managementUri = "http://neo-is-awesome.se/manage";
-        config.setProperty( "org.neo4j.server.webadmin.management.uri", managementUri );
-        String dataUri = "http://jimsucks.com/data";
-        config.setProperty( "org.neo4j.server.webadmin.data.uri", dataUri );
+    public void shouldSupportLegacyWebAdminUris() throws URISyntaxException, JsonParseException, UnsupportedEncodingException {
+        UriInfo mockUri = mock(UriInfo.class);
+        URI baseUri = new URI("http://peteriscool.com:6666/foo/bar?awesome=true");
+        when(mockUri.getBaseUri()).thenReturn(baseUri);
+        
+        NeoServer mockServer = mock(NeoServer.class);
+        when(mockServer.managementApiUri()).thenReturn(new URI( "http://peteriscool.com:6666/management" ));
+        when(mockServer.restApiUri()).thenReturn(new URI( "http://peteriscool.com:6666/data" ));
 
-        UriInfo mockUri = mock( UriInfo.class );
-        URI baseUri = new URI( "http://peteriscool.com:6666/foo/bar?awesome=true" );
-        when( mockUri.getBaseUri() ).thenReturn( baseUri );
+        AdminPropertiesService adminPropertiesService = new AdminPropertiesService(mockUri, mockServer, new OutputFormat(new JsonFormat(), baseUri, null));
 
-        AdminPropertiesService adminPropertiesService = new AdminPropertiesService( mockUri,
-                config, new OutputFormat( new JsonFormat(), baseUri, null ) );
+        Response response = adminPropertiesService.getValue("neo4j-servers");
 
-        Response response = adminPropertiesService.getValue( "neo4j-servers" );
-
-        String entity = new String( (byte[]) response.getEntity(), "UTF-8" );
-        assertIsValidJson( entity );
-        assertThat( entity, containsString( managementUri ) );
-        assertThat( entity, containsString( dataUri ) );
+        String entity = new String((byte[]) response.getEntity(), "UTF-8");
+        assertIsValidJson(entity);
+        assertThat(entity, containsString(mockServer.managementApiUri().toString()));
+        assertThat(entity, containsString(mockServer.restApiUri().toString()));
     }
 
-    private void assertIsValidJson( String entity ) throws JsonParseException
-    {
-        JsonHelper.jsonToMap( entity );
+    private void assertIsValidJson(String entity) throws JsonParseException {
+        JsonHelper.jsonToMap(entity);
     }
 
     @Test
-    public void shouldYieldUndefinedForUnknownProperties() throws URISyntaxException,
-            UnsupportedEncodingException
-    {
-        PropertiesConfiguration config = new PropertiesConfiguration();
-        UriInfo mockUri = mock( UriInfo.class );
-        URI baseUri = new URI( "http://peteriscool.com:6666/" );
-        when( mockUri.getBaseUri() ).thenReturn( baseUri );
+    public void shouldYieldUndefinedForUnknownProperties() throws URISyntaxException, UnsupportedEncodingException {
+        UriInfo mockUri = mock(UriInfo.class);
+        URI baseUri = new URI("http://peteriscool.com:6666/");
+        when(mockUri.getBaseUri()).thenReturn(baseUri);
+        
+        NeoServer mockServer = mock(NeoServer.class);
+        when(mockServer.managementApiUri()).thenReturn(new URI( "http://peteriscool.com:6666/management" ));
+        when(mockServer.restApiUri()).thenReturn(new URI( "http://peteriscool.com:6666/data" ));
+        
+        Configuration dummyConfig = mock(Configuration.class);
+        when(mockServer.getConfiguration()).thenReturn(dummyConfig);
 
-        AdminPropertiesService adminPropertiesService = new AdminPropertiesService( mockUri,
-                config, new OutputFormat( new JsonFormat(), baseUri, null ) );
+        AdminPropertiesService adminPropertiesService = new AdminPropertiesService(mockUri, mockServer, new OutputFormat(new JsonFormat(), baseUri, null));
 
-        Response response = adminPropertiesService.getValue( "foo" );
+        Response response = adminPropertiesService.getValue("foo");
 
-        assertThat( new String( (byte[]) response.getEntity(), "UTF-8" ),
-                containsString( "undefined" ) );
-    }
-
-
-    @Test
-    public void shouldAppendSlashToDataUriIfMissing() throws URISyntaxException,
-            UnsupportedEncodingException
-    {
-        PropertiesConfiguration config = new PropertiesConfiguration();
-        String unterminatedUri = "http://foo:22/get/yer/data/here";
-        config.setProperty( "org.neo4j.server.webadmin.data.uri", unterminatedUri );
-
-        UriInfo mockUri = mock( UriInfo.class );
-        URI baseUri = new URI( "http://peteriscool.com:6666/" );
-        when( mockUri.getBaseUri() ).thenReturn( baseUri );
-
-        AdminPropertiesService adminPropertiesService = new AdminPropertiesService( mockUri,
-                config, new OutputFormat( new JsonFormat(), baseUri, null ) );
-
-        Response response = adminPropertiesService.getValue( "data.uri" );
-
-        assertThat( new String( (byte[]) response.getEntity(), "UTF-8" ),
-                containsString( unterminatedUri + "/" ) );
-    }
-
-    @Test
-    public void shouldAppendSlashToManagementUriIfMissing() throws URISyntaxException,
-            UnsupportedEncodingException
-    {
-        PropertiesConfiguration config = new PropertiesConfiguration();
-        String unterminatedUri = "http://foo:22/get/yer/data/here";
-        config.setProperty( "org.neo4j.server.webadmin.management.uri", unterminatedUri );
-
-        UriInfo mockUri = mock( UriInfo.class );
-        URI baseUri = new URI( "http://peteriscool.com:6666/" );
-        when( mockUri.getBaseUri() ).thenReturn( baseUri );
-
-        AdminPropertiesService adminPropertiesService = new AdminPropertiesService( mockUri,
-                config, new OutputFormat( new JsonFormat(), baseUri, null ) );
-
-        Response response = adminPropertiesService.getValue( "management.uri" );
-
-        assertThat( new String( (byte[]) response.getEntity(), "UTF-8" ),
-                containsString( unterminatedUri + "/" ) );
-    }
-
-    @Test
-    public void shouldAppendSlashToDataUriIfMissingWithinNeo4jServerProperty()
-            throws URISyntaxException, UnsupportedEncodingException
-    {
-        PropertiesConfiguration config = new PropertiesConfiguration();
-        String unterminatedDataUri = "http://foo:22/get/yer/data/here";
-        config.setProperty( "org.neo4j.server.webadmin.data.uri", unterminatedDataUri );
-        String unterminatedManagementUri = "http://neo-is-awesome.se/manage";
-        config.setProperty( "org.neo4j.server.webadmin.management.uri", unterminatedManagementUri );
-
-        UriInfo mockUri = mock( UriInfo.class );
-        URI baseUri = new URI( "http://peteriscool.com:6666/" );
-        when( mockUri.getBaseUri() ).thenReturn( baseUri );
-
-        AdminPropertiesService adminPropertiesService = new AdminPropertiesService( mockUri,
-                config, new OutputFormat( new JsonFormat(), baseUri, null ) );
-
-        Response response = adminPropertiesService.getValue( "neo4j-servers" );
-        String entity = new String( (byte[]) response.getEntity(), "UTF-8" );
-
-        assertThat( entity, containsString( unterminatedDataUri + "/" ) );
-        assertThat( entity, containsString( unterminatedManagementUri + "/" ) );
+        assertThat(new String((byte[]) response.getEntity(), "UTF-8"), containsString("undefined"));
     }
 }

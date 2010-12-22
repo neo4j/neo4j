@@ -1,4 +1,5 @@
 package org.neo4j.server.webadmin.rest;
+
 /**
  * Copyright (c) 2002-2010 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -26,7 +27,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
-import org.apache.commons.configuration.Configuration;
+import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.rest.repr.MappingRepresentation;
 import org.neo4j.server.rest.repr.MappingSerializer;
@@ -34,101 +35,49 @@ import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.ValueRepresentation;
 
 @Path("/properties")
-public class AdminPropertiesService
-{
-    private final String configurationNamespace = "org.neo4j.server.webadmin.";
-    private final Configuration config;
+public class AdminPropertiesService {
     private final UriInfo uriInfo;
-    private final String MANAGEMENT_URI_KEY = "management.uri";
-    private final String DATA_URI_KEY = "data.uri";
     private final OutputFormat output;
+    private final NeoServer server;
 
-    public AdminPropertiesService( @Context UriInfo uriInfo,
-                                   @Context Configuration config,
-                                   @Context OutputFormat output )
-    {
+    public AdminPropertiesService(@Context UriInfo uriInfo, @Context NeoServer server, @Context OutputFormat output) {
         this.uriInfo = uriInfo;
-        this.config = config;
+        this.server = server;
         this.output = output;
     }
 
     @GET
     @Path("/{key}")
-    public Response getValue( @PathParam("key") String key )
-    {
+    public Response getValue(@PathParam("key") String key) {
         String lowerCaseKey = key.toLowerCase();
-        String value;
+        String value = null;
 
-        if ( "neo4j-servers".equals( lowerCaseKey ) )
-        {
-            return output.ok( new MappingRepresentation( "neo4j-servers" )
-            {
+        if ("neo4j-servers".equals(lowerCaseKey)) {
+            return output.ok(new MappingRepresentation("neo4j-servers") {
                 @Override
-                protected void serialize( MappingSerializer serializer )
-                {
-                    serializer.putMapping( uriInfo.getBaseUri().toString(),
-                            new MappingRepresentation( "urls" )
-                            {
-                                @Override
-                                protected void serialize( MappingSerializer serializer )
-                                {
-                                    serializer.putString( "url", getDataUri() );
-                                    serializer.putString( "manageUrl", getManagementUri() );
-                                }
-                            } );
+                protected void serialize(MappingSerializer serializer) {
+                    serializer.putMapping(uriInfo.getBaseUri().toString(), new MappingRepresentation("urls") {
+                        @Override
+                        protected void serialize(MappingSerializer serializer) {
+                            serializer.putString("url", server.restApiUri().toString());
+                            serializer.putString("manageUrl", server.managementApiUri().toString());
+                        }
+                    });
                 }
-            } );
-        }
-        else if ( DATA_URI_KEY.equals( lowerCaseKey ) )
-        {
-            value = getDataUri();
-        }
-        else if ( MANAGEMENT_URI_KEY.equals( lowerCaseKey ) )
-        {
-            value = getManagementUri();
-        }
-        else
-        {
-            value = config.getString( configurationNamespace + key );
+            });
+        } else if (Configurator.WEB_ADMIN_REST_API_PATH_PROPERTY_KEY.endsWith(lowerCaseKey)) {
+            value = server.restApiUri().toString();
+        } else if (Configurator.WEB_ADMIN_PATH_PROPERTY_KEY.endsWith(lowerCaseKey)) {
+            value = server.managementApiUri().toString();
+        } else {
+            if(server.getConfiguration().containsKey(lowerCaseKey)) {
+                value = (String) server.getConfiguration().getProperty(lowerCaseKey);
+            }
         }
 
-        if ( value == null )
-        {
+        if (value == null) {
             value = "undefined";
         }
-        return output.ok( ValueRepresentation.string( value ) );
-    }
-
-    private String getDataUri()
-    {
-        String dataUri = slashTerminatedUri( config.getString( configurationNamespace + DATA_URI_KEY ) );
-        if ( dataUri != null )
-            return dataUri;
-        else
-            return hostPath(Configurator.REST_API_PATH);
-
-    }
-
-    private String getManagementUri()
-    {
-        String managementUri = slashTerminatedUri( config.getString( configurationNamespace + MANAGEMENT_URI_KEY ) );
-        if ( managementUri != null )
-            return managementUri;
-        else
-            return hostPath(Configurator.WEB_ADMIN_REST_API_PATH);
-    }
-
-    private String hostPath(String path) {
-	    return uriInfo.getBaseUriBuilder().replacePath( path ).build( ).toString();
-    }
-
-    private String slashTerminatedUri( String uri )
-    {
-        if (uri == null) return null;
-        if ( !uri.endsWith( "/" ) )
-        {
-            return uri + "/";
-        }
-        return uri;
+        return output.ok(ValueRepresentation.string(value));
     }
 }
