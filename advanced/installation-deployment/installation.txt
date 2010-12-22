@@ -1,26 +1,21 @@
-[[deployument-installation]]
+[[deployment-installation]]
 Installation
 ============
 
 Neo4j can be installed as a server, running either as a headless application or system service.
 For Java developers, it is also possible to use Neo4j as a library, embedded in your application.
 
-
-2. Extract the contents of the archive
-   * refer to the top-level extracted directory as +NEO4J-HOME+
-3. Use the scripts in the +bin+ directory
-   * for Linux/MacOS, run `$NEO4J_HOME/bin/neo4j start`
-   * for Windows, double-click on `%NEO4J_HOME%\bin\Neo4j`
-4. Refer to the packaged information in the +doc+ directory for details
+For information on installing Neo4j as a server, see <<server-installation>>.
 
 == Embedded Installation ==
 
 The latest release is always available from from http://neo4j.org/download, packaged as part of the Neo4j server.
 After selecting the appropriate version for your platform, embed Neo4j in your Java application, by including the 
 Neo4j library jars in your build. Either take the jar files from the +lib+ directory of the download, or directly 
-use the artifacts available from Maven Central.
+use the artifacts available from Maven Central Repository footnote:[http://repo1.maven.org/maven2/org/neo4j/].
 
 .Maven dependency
+[source,xml] 
 --------------------------------------------
 <project>
 ...
@@ -28,12 +23,15 @@ use the artifacts available from Maven Central.
 	<dependency>
    	<groupId>org.neo4j</groupId>
    	<artifactId>neo4j</artifactId>
-   	<version>{neo4j-version}</version>
+   	<version>{neo4j-version}</version>   <1>
 	</dependency>
 	...
  </dependencies>
 ...
 </project>
-
 --------------------------------------------
 
+<1> Where \{neo4j-version} is for example {neo4j-version}.                    
+                                                                              
+NOTE: Stable and milestone releases are available at Maven Central Repository.
+                                                                              
