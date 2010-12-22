@@ -31,8 +31,6 @@ import static org.junit.Assert.fail;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.serialize;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -66,20 +64,6 @@ import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 
 public class DatabaseActionsTest
 {
-
-    private static final URI BASE_URI;
-
-    static
-    {
-        try
-        {
-            BASE_URI = new URI( "http://neo4j.org/" );
-        } catch ( URISyntaxException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
     private DatabaseActions actions;
     private GraphDbHelper graphdbHelper;
     private Database database;
