@@ -21,6 +21,7 @@
 package org.neo4j.server.web;
 
 import org.neo4j.server.NeoServer;
+import org.neo4j.server.NeoServerProvider;
 import org.neo4j.server.configuration.ConfigurationProvider;
 import org.neo4j.server.database.DatabaseProvider;
 import org.neo4j.server.plugins.PluginInvocatorProvider;
@@ -34,29 +35,25 @@ import com.sun.jersey.spi.container.WebApplication;
 import com.sun.jersey.spi.container.servlet.ServletContainer;
 import com.sun.jersey.spi.container.servlet.WebConfig;
 
-@SuppressWarnings( "serial" )
-public class NeoServletContainer extends ServletContainer
-{
+@SuppressWarnings("serial")
+public class NeoServletContainer extends ServletContainer {
     private final NeoServer server;
 
-    public NeoServletContainer( NeoServer server )
-    {
+    public NeoServletContainer(NeoServer server) {
         this.server = server;
     }
 
     @Override
-    protected void configure( WebConfig wc, ResourceConfig rc,
-                              WebApplication wa )
-    {
-        super.configure( wc, rc, wa );
+    protected void configure(WebConfig wc, ResourceConfig rc, WebApplication wa) {
+        super.configure(wc, rc, wa);
 
-        rc.getSingletons().add( new DatabaseProvider( server.getDatabase() ) );
-        rc.getSingletons().add( new ConfigurationProvider( server.getConfiguration() ) );
-        rc.getSingletons().add( new RrdDbProvider( server.getDatabase().rrdDb() ) );
-        RepresentationFormatRepository repository = new RepresentationFormatRepository(
-                server.getExtensionManager() );
-        rc.getSingletons().add( new InputFormatProvider( repository ) );
-        rc.getSingletons().add( new OutputFormatProvider( repository ) );
-        rc.getSingletons().add( new PluginInvocatorProvider( server.getExtensionManager() ) );
+        rc.getSingletons().add(new DatabaseProvider(server.getDatabase()));
+        rc.getSingletons().add(new NeoServerProvider(server));
+        rc.getSingletons().add(new ConfigurationProvider(server.getConfiguration()));
+        rc.getSingletons().add(new RrdDbProvider(server.getDatabase().rrdDb()));
+        RepresentationFormatRepository repository = new RepresentationFormatRepository(server.getExtensionManager());
+        rc.getSingletons().add(new InputFormatProvider(repository));
+        rc.getSingletons().add(new OutputFormatProvider(repository));
+        rc.getSingletons().add(new PluginInvocatorProvider(server.getExtensionManager()));
     }
 }
