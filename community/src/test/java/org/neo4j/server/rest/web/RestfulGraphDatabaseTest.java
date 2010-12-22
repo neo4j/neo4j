@@ -984,7 +984,6 @@ public class RestfulGraphDatabaseTest
         for ( Object item : items )
         {
             Map<?, ?> map = (Map<?, ?>) item;
-            Map<?, ?> properties = (Map<?, ?>) map.get( "data" );
             assertNotNull( map.get( "self" ) );
             String indexedUri = (String) map.get( "indexed" );
             assertThat( indexedUri, containsString( key ) );
