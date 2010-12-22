@@ -147,21 +147,6 @@
       <optional>true</optional>
     </dependency>
 
-    <dependency>
-      <groupId>org.quartz-scheduler</groupId>
-      <artifactId>quartz</artifactId>
-      <version>1.8.0</version>
-      <type>jar</type>
-      <scope>compile</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>javax.transaction</groupId>
-          <artifactId>jta</artifactId>
-        </exclusion>
-      </exclusions>
-   </dependency>
-
-    
     <!-- Neo4j manual to be exposed via the web. -->
     <dependency>
       <groupId>org.neo4j.doc</groupId>
