@@ -9,7 +9,7 @@
 
     <!-- non-maven jars -->
     <fileSet>
-      <directory>target/neo4j-manual.chunked</directory>
+      <directory>target/chunked-offline</directory>
       <outputDirectory>/docs</outputDirectory>
       <includes>
         <include>**</include>
