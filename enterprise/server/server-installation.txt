@@ -13,7 +13,7 @@ Neo4j can be installed as a server, running either as a headless application or 
    * for Windows, double-click on `%NEO4J_HOME%\bin\Neo4j`
 4. Refer to the packaged information in the +doc+ directory for details
 
-=== As a Windows service ===
+== As a Windows service ==
 
 With administrative rights, Neo4j can be isntalled as a Windows service.
 
@@ -22,7 +22,7 @@ With administrative rights, Neo4j can be isntalled as a Windows service.
 
 To uninstall, run `UninstallNeo4j` as ad administrator.
 
-=== Linux Service ===
+== Linux Service ==
 
 Neo4j can participate in the normal system startup and shutdown process.
 The following procedure should work on most popular Linux distributions:
