@@ -20,22 +20,31 @@
 
 package org.neo4j.helpers.collection;
 
+import java.util.Collections;
 import java.util.Iterator;
 
 /**
  * Combining one or more {@link Iterator}s, making them look like they were
  * one big iterator. All iteration/combining is done lazily.
- * 
+ *
  * @param <T> the type of items in the iteration.
  */
 public class CombiningIterator<T> extends PrefetchingIterator<T>
 {
     private Iterator<? extends Iterator<T>> iterators;
     private Iterator<T> currentIterator;
-    
+
     public CombiningIterator( Iterable<? extends Iterator<T>> iterators )
     {
         this.iterators = iterators.iterator();
+    }
+
+    public CombiningIterator( T first, Iterator<T> rest )
+    {
+        this( Collections.<Iterator<T>>emptyList() );
+        this.hasFetchedNext = true;
+        this.nextObject = first;
+        this.currentIterator = rest;
     }
 
     @Override
@@ -54,7 +63,7 @@ public class CombiningIterator<T> extends PrefetchingIterator<T>
         }
         return currentIterator != null && currentIterator.hasNext() ? currentIterator.next() : null;
     }
-    
+
     protected Iterator<T> currentIterator()
     {
         return currentIterator;

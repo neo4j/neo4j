@@ -29,6 +29,7 @@ import org.neo4j.graphdb.traversal.BranchSelector;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.UniquenessFilter;
+import org.neo4j.helpers.collection.CombiningIterator;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 
@@ -68,8 +69,12 @@ class TraverserImpl implements Traverser
             public Iterator<Relationship> iterator()
             {
                 Iterator<Relationship> iter = super.iterator();
-                iter.next(); // Skip the first, it is null
-                return iter;
+                Relationship first = iter.next();
+                // If the first position represents the start node, the first
+                // relationship will be null, in that case skip it.
+                if ( first == null ) return iter;
+                // Otherwise re-include it.
+                return new CombiningIterator<Relationship>( first, iter );
             }
 
             @Override
@@ -101,7 +106,7 @@ class TraverserImpl implements Traverser
         {
             return this.uniquness.checkFirst( source );
         }
-        
+
         boolean okToProceed( TraversalBranch source )
         {
             return this.uniquness.check( source, true );
