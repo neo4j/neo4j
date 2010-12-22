@@ -54,7 +54,6 @@ public class MonitorServiceTest implements JobScheduler
     @Test
     public void correctRepresentation() throws Exception
     {
-        UriInfo mockUri = mock(UriInfo.class);
         Response resp = monitorService.getServiceDefinition();
 
         assertEquals(200, resp.getStatus());
