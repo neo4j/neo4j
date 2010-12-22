@@ -20,6 +20,14 @@
 
 package org.neo4j.server.plugins;
 
+import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.server.rest.repr.BadInputException;
+import org.neo4j.server.rest.repr.Representation;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.InvocationTargetException;
@@ -36,14 +44,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.server.rest.repr.BadInputException;
-import org.neo4j.server.rest.repr.Representation;
 
 class PluginMethod extends PluginPoint
 {
@@ -713,7 +713,15 @@ class PluginMethod extends PluginPoint
         }
         try
         {
-            return result.convert( method.invoke( plugin, arguments ) );
+            Object returned = method.invoke( plugin, arguments );
+
+            if ( returned == null )
+            {
+                return Representation.emptyRepresentation();
+            } else
+            {
+                return result.convert( returned );
+            }
         }
         catch ( InvocationTargetException exc )
         {

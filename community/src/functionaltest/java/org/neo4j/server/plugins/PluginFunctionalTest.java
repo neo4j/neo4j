@@ -28,7 +28,6 @@ import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.NeoServer;
@@ -378,12 +377,15 @@ public class PluginFunctionalTest
     }
 
     @Test
-    @Ignore
     public void shouldHandleNullPath() throws Exception
     {
         long n = functionalTestHelper.getGraphDbHelper().createNode();
 
-        String methodUri = getPluginMethodUri( functionalTestHelper.nodeUri( n ), "pathToReference" );
+        String url = getPluginMethodUri( functionalTestHelper.nodeUri( n ), "pathToReference" );
+
+        ClientResponse response = Client.create().resource( url ).accept( MediaType.APPLICATION_JSON_TYPE ).post( ClientResponse.class );
+
+        assertThat( response.getStatus(), is(204) );
     }
 
 
