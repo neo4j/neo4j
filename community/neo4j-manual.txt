@@ -49,7 +49,7 @@ Troubleshooting
 
 :leveloffset: 1
 
-include::troubleshooting/troubleshooting.txt[]
+include::troubleshooting/index.txt[]
 
 ////
 :leveloffset: 0
