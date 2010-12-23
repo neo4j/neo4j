@@ -1,0 +1,11 @@
+[[community-support]]
+Community support
+=================
+
+The get help from the Neo4j open source community, here are some starting points:
+
+* http://www.mail-archive.com/user@lists.neo4j.org/info.html[Searchable user mailing list archive].
+* https://lists.neo4j.org/mailman/listinfo/user[User mailing list].
+* http://wiki.neo4j.org/[Neo4j wiki]
+* IRC channel: irc://irc.freenode.net/neo4j
+
