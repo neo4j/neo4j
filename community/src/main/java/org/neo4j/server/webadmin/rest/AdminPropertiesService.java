@@ -65,7 +65,7 @@ public class AdminPropertiesService {
                     });
                 }
             });
-        } else if (Configurator.WEB_ADMIN_REST_API_PATH_PROPERTY_KEY.endsWith(lowerCaseKey)) {
+        } else if (Configurator.REST_API_PATH_PROPERTY_KEY.endsWith(lowerCaseKey)) {
             value = server.restApiUri().toString();
         } else if (Configurator.WEB_ADMIN_PATH_PROPERTY_KEY.endsWith(lowerCaseKey)) {
             value = server.managementApiUri().toString();

@@ -43,6 +43,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
@@ -97,7 +99,7 @@ public class Jetty6WebServer implements WebServer
             {
                 if( req.getPathInfo().equals( "/" ) )
                 {
-                    resp.sendRedirect( Configurator.WEB_ADMIN_PATH );
+                    resp.sendRedirect( Configurator.DEFAULT_WEB_ADMIN_PATH );
                 }
                 else
                 {
@@ -132,13 +134,40 @@ public class Jetty6WebServer implements WebServer
         jetty.setThreadPool(new QueuedThreadPool(maxThreads));
     }
 
-    public void addJAXRSPackages(List<String> packageNames, String serverMountPoint) {
+    public void addJAXRSPackages(List<String> packageNames, String mountPoint) {
+        // We don't want absolute URIs at this point
+        mountPoint = ensureRelativeUri(mountPoint);
+        
+        // Trim any trailing slash to keep Jetty happy
+        mountPoint = trimTrailingSlash(mountPoint);
+        
         ServletContainer container = new NeoServletContainer(server);
         ServletHolder servletHolder = new ServletHolder(container);
         servletHolder.setInitParameter("com.sun.jersey.config.property.packages", toCommaSeparatedList(packageNames));        
         servletHolder.setInitParameter(ResourceConfig.PROPERTY_CONTAINER_RESPONSE_FILTERS, AllowAjaxFilter.class.getName());
-        log.info("Adding JAXRS package %s at [%s]", packageNames, serverMountPoint);
-        jaxRSPackages.put(serverMountPoint, servletHolder);
+        log.info("Adding JAXRS package %s at [%s]", packageNames, mountPoint);
+        jaxRSPackages.put(mountPoint, servletHolder);
+    }
+
+    private String trimTrailingSlash(String mountPoint) {
+        if(mountPoint.endsWith("/")) {
+            mountPoint = mountPoint.substring(0, mountPoint.length() -1);
+        }
+        return mountPoint;
+    }
+
+    private String ensureRelativeUri(String mountPoint) {
+        try {
+            URI result = new URI(mountPoint);
+            if(result.isAbsolute()) {
+                return result.getPath();
+            } else {
+                return result.toString();
+            }
+        } catch (URISyntaxException e) {
+            log.debug("Unable to translate [%s] to a relative URI in ensureRelativeUri(String mountPoint)", mountPoint);
+            return mountPoint;
+        }
     }
 
     public void addStaticContent(String contentLocation, String serverMountPoint) {
@@ -174,8 +203,9 @@ public class Jetty6WebServer implements WebServer
 
     private void loadJAXRSPackages() {
         for (String mountPoint : jaxRSPackages.keySet()) {
+            
             ServletHolder servletHolder = jaxRSPackages.get(mountPoint);
-            log.info("Mounting JAXRS package at [%s]", mountPoint);
+            log.info("Mounting servlet at [%s]", mountPoint);
             Context jerseyContext = new Context(jetty, mountPoint);
             SessionManager sm = new HashSessionManager();
             SessionHandler sh = new SessionHandler(sm);
