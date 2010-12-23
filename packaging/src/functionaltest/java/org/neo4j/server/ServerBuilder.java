@@ -31,6 +31,8 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Properties;
 
@@ -45,8 +47,8 @@ public class ServerBuilder {
     private String dbDir = null;
     private String rrdbDir = "/tmp/neo.rr.db"; // TODO: should we require this
                                                // to be null as well?
-    private String webAdminUri = "http://localhost:7474/db/manage/";
-    private String webAdminDataUri = "http://localhost:7474/db/data/";
+    private String webAdminUri = "/db/manage/";
+    private String webAdminDataUri = "/db/data/";
     private StartupHealthCheck startupHealthCheck;
     private AddressResolver addressResolver = new LocalhostAddressResolver();
     private final HashMap<String, String> thirdPartyPackages = new HashMap<String, String>();
@@ -78,7 +80,7 @@ public class ServerBuilder {
         }
         writePropertyToFile(Configurator.WEBADMIN_NAMESPACE_PROPERTY_KEY + ".rrdb.location", rrdbDir, temporaryConfigFile);
         writePropertyToFile(Configurator.WEB_ADMIN_PATH_PROPERTY_KEY, webAdminUri, temporaryConfigFile);
-        writePropertyToFile(Configurator.WEB_ADMIN_REST_API_PATH_PROPERTY_KEY, webAdminDataUri, temporaryConfigFile);
+        writePropertyToFile(Configurator.REST_API_PATH_PROPERTY_KEY, webAdminDataUri, temporaryConfigFile);
 
         if (action == WhatToDo.CREATE_GOOD_TUNING_FILE) {
             File databaseTuningPropertyFile = createTempPropertyFile();
@@ -98,7 +100,7 @@ public class ServerBuilder {
         if (thirdPartyPackages.keySet().size() > 0) {
             writePropertiesToFile(Configurator.THIRD_PARTY_PACKAGES_KEY, thirdPartyPackages, temporaryConfigFile);
         }
-
+        
         return temporaryConfigFile;
     }
 
@@ -145,13 +147,31 @@ public class ServerBuilder {
         return this;
     }
 
-    public ServerBuilder withWebAdminUri(String webAdminUri) {
-        this.webAdminUri = webAdminUri;
+    public ServerBuilder withRelativeWebAdminUriPath(String webAdminUri) {
+        try {
+            URI theUri = new URI(webAdminUri);
+            if(theUri.isAbsolute()) {
+                this.webAdminUri = theUri.getPath();
+            } else {
+                this.webAdminUri = theUri.toString();
+            }
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
         return this;
     }
 
-    public ServerBuilder withWebDataAdminUri(String webAdminDataUri) {
-        this.webAdminDataUri = webAdminDataUri;
+    public ServerBuilder withRelativeWebDataAdminUriPath(String webAdminDataUri) {
+        try {
+            URI theUri = new URI(webAdminDataUri);
+            if(theUri.isAbsolute()) {
+                this.webAdminDataUri = theUri.getPath();
+            } else {
+                this.webAdminDataUri = theUri.toString();
+            }
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
         return this;
     }
 
