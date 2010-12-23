@@ -12,7 +12,7 @@
       <directory>target/manpages</directory>
       <outputDirectory>/</outputDirectory>
       <includes>
-        <include>manpages/**</include>
+        <include>**</include>
       </includes>
     </fileSet>
   </fileSets>
