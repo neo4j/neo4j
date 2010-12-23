@@ -51,6 +51,9 @@ import org.rrd4j.core.RrdDb;
 
 public class NeoServer {
 
+    private static final String DEFAULT_WEB_ADMIN_REST_API_PATH = "/db/manage";
+    private static final String DEFAULT_REST_API_PATH = "/db/data";
+
     public static final Logger log = Logger.getLogger(NeoServer.class);
 
     private final File configFile;
@@ -103,7 +106,7 @@ public class NeoServer {
     private void startDatabase() {
         String dbLocation = new File(configurator.configuration().getString(Configurator.DATABASE_LOCATION_PROPERTY_KEY)).getAbsolutePath();
         Map<String, String> databaseTuningProperties = configurator.getDatabaseTuningProperties();
-        if(databaseTuningProperties != null) {
+        if (databaseTuningProperties != null) {
             this.database = new Database(dbLocation, databaseTuningProperties);
         } else {
             this.database = new Database(dbLocation);
@@ -123,19 +126,23 @@ public class NeoServer {
         log.info("Starting Neo Server on port [%s]", webServerPort);
         webServer.setPort(webServerPort);
 
-        log.info("Mounting webadmin at [%s]", Configurator.WEB_ADMIN_PATH);
-        webServer.addStaticContent(Configurator.WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION, Configurator.WEB_ADMIN_PATH);
+        log.info("Mounting webadmin at [%s]", Configurator.DEFAULT_WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION); // Webadmin
+                                                                                                           // is
+                                                                                                           // hardcoded
+                                                                                                           // for
+                                                                                                           // now
+        webServer.addStaticContent(Configurator.DEFAULT_WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION, Configurator.DEFAULT_WEB_ADMIN_PATH);
         System.out.println(String.format("Neo4j server webadmin URI [%s]", webadminUri().toString()));
 
-        log.info("Mounting management API at [%s]", Configurator.DEFAULT_WEB_ADMIN_REST_API_PATH);
-        webServer.addJAXRSPackages(listFrom(new String[] { Configurator.WEB_ADMIN_REST_API_PACKAGE }), Configurator.DEFAULT_WEB_ADMIN_REST_API_PATH);
+        log.info("Mounting management API at [%s]", managementApiUri().toString());
+        webServer.addJAXRSPackages(listFrom(new String[] { Configurator.WEB_ADMIN_REST_API_PACKAGE }), managementApiUri().toString());
         System.out.println(String.format("Neo4j server management URI [%s]", managementApiUri().toString()));
 
-        log.info("Mounting REST API at [%s]", Configurator.DEFAULT_REST_API_PATH);
-        webServer.addJAXRSPackages(listFrom(new String[] { Configurator.REST_API_PACKAGE }), Configurator.DEFAULT_REST_API_PATH);
+        log.info("Mounting REST API at [%s]", restApiUri().toString());
+        webServer.addJAXRSPackages(listFrom(new String[] { Configurator.REST_API_PACKAGE }), restApiUri().toString());
         System.out.println(String.format("Neo4j server data URI [%s]", restApiUri().toString()));
 
-        for(ThirdPartyJaxRsPackage tpp : configurator.getThirdpartyJaxRsClasses()) {
+        for (ThirdPartyJaxRsPackage tpp : configurator.getThirdpartyJaxRsClasses()) {
             log.info("Mounting third-party JAX-RS package [%s] at [%s]", tpp.getPackageName(), tpp.getMountPoint());
             webServer.addJAXRSPackages(listFrom(new String[] { tpp.getPackageName() }), tpp.getMountPoint());
         }
@@ -143,6 +150,7 @@ public class NeoServer {
         try {
             webServer.start();
         } catch (Exception e) {
+            e.printStackTrace();
             log.error("Failed to start Neo Server on port [%d], reason [%s]", getWebServerPort(), e.getMessage());
         }
     }
@@ -167,8 +175,7 @@ public class NeoServer {
         }
     }
 
-    private void stopOsgiContainer() throws BundleException, InterruptedException
-    {
+    private void stopOsgiContainer() throws BundleException, InterruptedException {
         if (osgiContainer != null) {
             osgiContainer.shutdown();
         }
@@ -182,8 +189,7 @@ public class NeoServer {
             stopOsgiContainer();
             log.info("Successfully shutdown Neo Server on port [%d], database [%s]", getWebServerPort(), getDatabase().getLocation());
         } catch (Exception e) {
-            log.warn("Failed to cleanly shutdown Neo Server on port [%d], database [%s]. Reason: %s",
-                    getWebServerPort(), getDatabase().getLocation(),
+            log.warn("Failed to cleanly shutdown Neo Server on port [%d], database [%s]. Reason: %s", getWebServerPort(), getDatabase().getLocation(),
                     e.getMessage());
         }
     }
@@ -218,13 +224,11 @@ public class NeoServer {
         return database;
     }
 
-    private void loadExtensions()
-    {
-        this.extensions = new PluginManager( getConfiguration() );
+    private void loadExtensions() {
+        this.extensions = new PluginManager(getConfiguration());
     }
 
-    public PluginManager getExtensionManager()
-    {
+    public PluginManager getExtensionManager() {
         return extensions;
     }
 
@@ -269,14 +273,31 @@ public class NeoServer {
     }
 
     public URI managementApiUri() {
-        return generateUriFor(Configurator.DEFAULT_WEB_ADMIN_REST_API_PATH);
+        if (configurator.configuration().containsKey(Configurator.WEB_ADMIN_PATH_PROPERTY_KEY)) {
+            try {
+                return new URI(configurator.configuration().getProperty(Configurator.WEB_ADMIN_PATH_PROPERTY_KEY).toString());
+            } catch (URISyntaxException e) {
+                // do nothing - fall through to the defaul return block
+            }
+        }
+        log.warn("Could not establish the Webadmin API URI from configuration, defaulting to [%s]", generateUriFor(DEFAULT_WEB_ADMIN_REST_API_PATH));
+        return generateUriFor(DEFAULT_WEB_ADMIN_REST_API_PATH);
     }
 
     public URI restApiUri() {
-        return generateUriFor(Configurator.DEFAULT_REST_API_PATH);
+        if (configurator.configuration().containsKey(Configurator.REST_API_PATH_PROPERTY_KEY)) {
+            try {
+                return new URI(configurator.configuration().getProperty(Configurator.REST_API_PATH_PROPERTY_KEY).toString());
+            } catch (URISyntaxException e) {
+                // do nothing - fall through to the defaul return block
+            }
+        }
+        log.warn("Could not establish the REST API URI from configuration, defaulting to [%s]", generateUriFor(DEFAULT_REST_API_PATH));
+        return generateUriFor(DEFAULT_REST_API_PATH);
     }
 
     public URI webadminUri() {
-        return generateUriFor(Configurator.WEB_ADMIN_PATH);
+        // Webadmin location is hardcoded for now
+        return generateUriFor(Configurator.DEFAULT_WEB_ADMIN_PATH);
     }
 }

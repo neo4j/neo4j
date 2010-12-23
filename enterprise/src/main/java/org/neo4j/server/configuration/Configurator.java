@@ -23,6 +23,7 @@ package org.neo4j.server.configuration;
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
@@ -38,25 +39,24 @@ import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.logging.Logger;
 
 public class Configurator {
-
-    public static final String DATABASE_LOCATION_PROPERTY_KEY = "org.neo4j.server.database.location";
+    public static final String DB_TUNING_PROPERTY_FILE_KEY = "org.neo4j.server.db.tuning.properties";
     public static final String DEFAULT_CONFIG_DIR = File.separator + "etc" + File.separator + "neo";
+    public static final String DATABASE_LOCATION_PROPERTY_KEY = "org.neo4j.server.database.location";
     public static final String NEO_SERVER_CONFIG_FILE_KEY = "org.neo4j.server.properties";
-    public static final String WEBSERVER_PORT_PROPERTY_KEY = "org.neo4j.server.webserver.port";
+
     public static final int DEFAULT_WEBSERVER_PORT = 7474;
-    public static final String WEB_ADMIN_PATH = "/webadmin";
-    public static final String WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION = "webadmin-html";
-    public static final String DEFAULT_WEB_ADMIN_REST_API_PATH = "/db/manage";
-    public static final String WEB_ADMIN_REST_API_PACKAGE = "org.neo4j.server.webadmin.rest";
-     public static final String DEFAULT_REST_API_PATH = "/db/data"; // kill me
+    public static final String WEBSERVER_PORT_PROPERTY_KEY = "org.neo4j.server.webserver.port";
+    public static final String DEFAULT_WEB_ADMIN_PATH = "/webadmin";
+    public static final String DEFAULT_WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION = "webadmin-html";
+
     public static final String REST_API_PACKAGE = "org.neo4j.server.rest.web";
     public static final String ENABLE_OSGI_SERVER_PROPERTY_KEY = "org.neo4j.server.osgi.enable";
     public static final String OSGI_BUNDLE_DIR_PROPERTY_KEY = "org.neo4j.server.osgi.bundledir";
     public static final String OSGI_CACHE_DIR_PROPERTY_KEY = "org.neo4j.server.osgi.cachedir";
+    public static final String WEB_ADMIN_REST_API_PACKAGE = "org.neo4j.server.webadmin.rest";
     public static final String WEBADMIN_NAMESPACE_PROPERTY_KEY = "org.neo4j.server.webadmin";
     public static final String WEB_ADMIN_PATH_PROPERTY_KEY = "org.neo4j.server.webadmin.management.uri";
-    public static final String WEB_ADMIN_REST_API_PATH_PROPERTY_KEY = "org.neo4j.server.webadmin.data.uri";
-    public static final String DB_TUNING_PROPERTY_FILE_KEY = "org.neo4j.server.db.tuning.properties";
+    public static final String REST_API_PATH_PROPERTY_KEY = "org.neo4j.server.webadmin.data.uri";
     public static final String THIRD_PARTY_PACKAGES_KEY = "org.neo4j.server.thirdparty_jaxrs_classes";
 
     public static Logger log = Logger.getLogger(Configurator.class);
@@ -86,6 +86,7 @@ public class Configurator {
 
         try {
             loadPropertiesConfig(propertiesFile);
+            normalizeUris();
             if (v != null) {
                 v.validate(this.configuration());
             }
@@ -111,14 +112,53 @@ public class Configurator {
         }
     }
 
+    private void normalizeUris() {
+        try {
+            for (String key : new String[] { WEB_ADMIN_PATH_PROPERTY_KEY, REST_API_PATH_PROPERTY_KEY }) {
+                if (configuration().containsKey(key)) {
+                    URI normalizedUri = makeAbsoluteAndNormalized(new URI((String) configuration().getProperty(key)));
+                    configuration().clearProperty(key);
+                    configuration().addProperty(key, normalizedUri.toString());
+                }
+            }
+
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    private URI makeAbsoluteAndNormalized(URI uri) {
+        if (uri.isAbsolute())
+            return uri.normalize();
+
+        String portNo = (String) configuration().getProperty(WEBSERVER_PORT_PROPERTY_KEY);
+        if (portNo == null)
+            portNo = "80";
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("http://localhost");
+        if (portNo != "80") {
+            sb.append(":");
+            sb.append(portNo);
+        }
+        sb.append("/");
+        sb.append(uri.toString());
+        try {
+            return new URI(sb.toString()).normalize();
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private void loadDatabaseTuningProperties() {
         String databaseTuningPropertyFileLocation = serverConfiguration.getString(DB_TUNING_PROPERTY_FILE_KEY);
-        
-        if(databaseTuningPropertyFileLocation == null) {
+
+        if (databaseTuningPropertyFileLocation == null) {
             return;
         }
-        
-        if(!new File(databaseTuningPropertyFileLocation).exists()) {
+
+        if (!new File(databaseTuningPropertyFileLocation).exists()) {
             log.warn("The specified file for database performance tuning properties [%s] does not exist.", databaseTuningPropertyFileLocation);
             return;
         }
@@ -127,30 +167,15 @@ public class Configurator {
     }
 
     public Map<String, String> getDatabaseTuningProperties() {
-        return databaseTuningProperties ;
+        return databaseTuningProperties;
     }
 
     public Set<ThirdPartyJaxRsPackage> getThirdpartyJaxRsClasses() {
         thirdPartyPackages = new HashSet<ThirdPartyJaxRsPackage>();
         Properties properties = this.configuration().getProperties(THIRD_PARTY_PACKAGES_KEY);
-        for(Object key : properties.keySet()) {
+        for (Object key : properties.keySet()) {
             thirdPartyPackages.add(new ThirdPartyJaxRsPackage(key.toString(), properties.getProperty(key.toString())));
         }
         return thirdPartyPackages;
-    }
-
-    public URI getRestApiMountPoint() {
-        if(configuration().containsKey(WEB_ADMIN_REST_API_PATH_PROPERTY_KEY) ) {
-            try {
-                return new URI(configuration().getProperty(WEB_ADMIN_REST_API_PATH_PROPERTY_KEY).toString());
-            } catch (URISyntaxException e) {
-                try {
-                    return new URI(DEFAULT_REST_API_PATH);
-                } catch (URISyntaxException e1) {
-                    log.debug("Unable to compose the  Webadmin API URI");
-                }
-            }
-        }
-        return null;
     }
 }

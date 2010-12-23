@@ -27,13 +27,14 @@ import static org.neo4j.server.ServerBuilder.server;
 
 import java.io.IOException;
 
+import javax.ws.rs.core.MediaType;
+
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
-@Ignore
+
 public class ServerConfigTest {
 
     private NeoServer server;
@@ -63,17 +64,17 @@ public class ServerConfigTest {
     
     @Test
     public void shouldPickupRelativeUrisForWebAdminAndWebAdminRest() throws IOException {
-        String webAdminDataUri = "/a/different/relative/webadmin/data/uri";
-        String webAdminUri = "/a/different/relative/webadmin/uri";
+        String webAdminDataUri = "/a/different/webadmin/data/uri/";
+        String webAdminManagementUri = "/a/different/webadmin/management/uri/";
         
-        server = server().withRandomDatabaseDir().withWebDataAdminUri(webAdminDataUri).withWebAdminUri(webAdminUri).withPassingStartupHealthcheck().build();
+        server = server().withRandomDatabaseDir().withRelativeWebDataAdminUriPath(webAdminDataUri).withRelativeWebAdminUriPath(webAdminManagementUri).withPassingStartupHealthcheck().build();
         server.start();
         
         Client client = Client.create();
-        ClientResponse response = client.resource("http://localhost:7474" + webAdminDataUri).get(ClientResponse.class);
+        ClientResponse response = client.resource("http://localhost:7474" + webAdminDataUri).accept(MediaType.TEXT_HTML).get(ClientResponse.class);
         assertEquals(200, response.getStatus());
         
-        response = client.resource("http://localhost:7474" + webAdminUri).get(ClientResponse.class);
+        response = client.resource("http://localhost:7474" + webAdminManagementUri).accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
         assertEquals(200, response.getStatus());
     }
     
