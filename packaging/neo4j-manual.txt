@@ -37,6 +37,10 @@ include::ha/index.txt[]
 
 include::operations/index.txt[]
 
+:leveloffset: 1
+
+//include::tools/index.txt[]
+
 :leveloffset: 0
 
 [[troubleshooting]]
@@ -51,9 +55,13 @@ Troubleshooting
 
 include::troubleshooting/index.txt[]
 
+:leveloffset: 0
+:numbered!:
+
+include::manpages.txt[]
+
 ////
 :leveloffset: 0
-
 include::glossary.txt[]
 ////
 
