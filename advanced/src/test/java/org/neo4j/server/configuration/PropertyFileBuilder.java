@@ -60,7 +60,7 @@ public class PropertyFileBuilder {
         }
         writePropertyToFile(Configurator.WEBADMIN_NAMESPACE_PROPERTY_KEY + ".rrdb.location", rrdbDir, temporaryConfigFile);
         writePropertyToFile(Configurator.WEB_ADMIN_PATH_PROPERTY_KEY, webAdminUri, temporaryConfigFile);
-        writePropertyToFile(Configurator.WEB_ADMIN_REST_API_PATH_PROPERTY_KEY, webAdminDataUri, temporaryConfigFile);
+        writePropertyToFile(Configurator.REST_API_PATH_PROPERTY_KEY, webAdminDataUri, temporaryConfigFile);
         if(dbTuningPropertyRule != null) {
             writePropertyToFile(Configurator.DB_TUNING_PROPERTY_FILE_KEY, dbTuningPropertyRule, temporaryConfigFile);
         }
