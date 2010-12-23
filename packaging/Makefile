@@ -133,4 +133,7 @@ text: docbook-shortinfo
 ifndef KEEP
 	rm $(TEXTHTMLFILE)
 endif
+ifndef KEEP
+	rm  $(TEXTDIR)/*.html
+endif
 
