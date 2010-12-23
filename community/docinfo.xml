@@ -12,6 +12,13 @@
 
 <revhistory>
   <revision>
+    <revnumber>1.2.M06</revnumber>
+    <date>December 21, 2010</date>
+    <revremark>
+      Added sercurity section and more configuration information.
+    </revremark>
+  </revision>
+  <revision>
     <revnumber>1.2.M05</revnumber>
     <date>December 3, 2010</date>
     <revremark>
@@ -21,7 +28,7 @@
 </revhistory>
 
 <legalnotice>
-  <title>License</title>
+  <title>License: Creative Commons 3.0</title>
   <simpara>This book is presented in open source and licensed through
     Creative Commons 3.0.
     You are free to copy, distribute, transmit,

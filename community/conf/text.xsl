@@ -58,4 +58,15 @@
      <xsl:text>&gt;</xsl:text>
   </xsl:template>
 
+  <!-- Neo4j customizations -->
+
+  <!-- Remove revision history -->
+  <xsl:template match="revhistory" mode="titlepage.mode"/>
+
+  <!-- Remove license, only use title
+    (the generated html file will be removed by the build) -->
+  <xsl:param name="generate.legalnotice.link" select="1"></xsl:param>
+  <xsl:param name="legalnotice.filename">license.html</xsl:param>
+
 </xsl:stylesheet>
+
