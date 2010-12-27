@@ -69,12 +69,19 @@ class TraverserImpl implements Traverser
             public Iterator<Relationship> iterator()
             {
                 Iterator<Relationship> iter = super.iterator();
-                Relationship first = iter.next();
-                // If the first position represents the start node, the first
-                // relationship will be null, in that case skip it.
-                if ( first == null ) return iter;
-                // Otherwise re-include it.
-                return new CombiningIterator<Relationship>( first, iter );
+                if ( iter.hasNext() )
+                {
+                    Relationship first = iter.next();
+                    // If the first position represents the start node, the
+                    // first relationship will be null, in that case skip it.
+                    if ( first == null ) return iter;
+                    // Otherwise re-include it.
+                    return new CombiningIterator<Relationship>( first, iter );
+                }
+                else
+                {
+                    return iter;
+                }
             }
 
             @Override
