@@ -24,8 +24,6 @@ import java.beans.ConstructorProperties;
 import java.io.Serializable;
 import java.util.Map;
 
-import javax.management.remote.JMXServiceURL;
-
 public final class SlaveInfo extends InstanceInfo
 {
     private static final long serialVersionUID = 1L;
@@ -58,7 +56,7 @@ public final class SlaveInfo extends InstanceInfo
 
     @ConstructorProperties( { "address", "instanceId", "machineId", "master",
             "lastCommittedTransactionId", "txInfo" } )
-    public SlaveInfo( JMXServiceURL address, String instanceId, int machineId, boolean master,
+    public SlaveInfo( String address, String instanceId, int machineId, boolean master,
             long lastTxId, SlaveTransaction... txInfo )
     {
         super( address, instanceId, machineId, master, lastTxId );
