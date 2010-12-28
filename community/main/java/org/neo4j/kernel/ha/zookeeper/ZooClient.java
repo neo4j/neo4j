@@ -460,16 +460,17 @@ public class ZooClient extends AbstractZooKeeperManager
 
     public synchronized void setJmxConnectionData( JMXServiceURL jmxUrl, String instanceId )
     {
-        String path = rootPath + "/" + HA_SERVERS_CHILD + "/" + machineId + "/jmx";
+        String path = rootPath + "/" + HA_SERVERS_CHILD + "/" + machineId + "-jmx";
         String url = jmxUrl.toString();
         byte[] data = new byte[( url.length() + instanceId.length() ) * 2 + 4];
         ByteBuffer buffer = ByteBuffer.wrap( data );
         // write URL
         buffer.putShort( (short) url.length() );
         buffer.asCharBuffer().put( url.toCharArray() );
+        buffer.position( buffer.position() + url.length() * 2 );
         // write instanceId
         buffer.putShort( (short) instanceId.length() );
-        buffer.asCharBuffer().put( url.toCharArray() );
+        buffer.asCharBuffer().put( instanceId.toCharArray() );
         // truncate array
         if ( buffer.limit() != data.length )
         {
@@ -479,7 +480,21 @@ public class ZooClient extends AbstractZooKeeperManager
         }
         try
         {
-            zooKeeper.setData( path, data, -1 );
+            try
+            {
+                zooKeeper.setData( path, data, -1 );
+            }
+            catch ( KeeperException e )
+            {
+                if ( e.code() == KeeperException.Code.NONODE )
+                {
+                    zooKeeper.create( path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL );
+                }
+                else
+                {
+                    msgLog.logMessage( "Unable to set jxm connection info", e );
+                }
+            }
         }
         catch ( KeeperException e )
         {
@@ -494,7 +509,7 @@ public class ZooClient extends AbstractZooKeeperManager
 
     public void getJmxConnectionData( ConnectionInformation connection )
     {
-        String path = rootPath + "/" + HA_SERVERS_CHILD + "/" + machineId + "/jmx";
+        String path = rootPath + "/" + HA_SERVERS_CHILD + "/" + machineId + "-jmx";
         byte[] data;
         try
         {
@@ -517,6 +532,7 @@ public class ZooClient extends AbstractZooKeeperManager
             // read URL
             url = new char[buffer.getShort()];
             buffer.asCharBuffer().get( url );
+            buffer.position( buffer.position() + url.length * 2 );
             // read instanceId
             instanceId = new char[buffer.getShort()];
             buffer.asCharBuffer().get( instanceId );
