@@ -22,6 +22,7 @@ package org.neo4j.management;
 
 import java.beans.ConstructorProperties;
 import java.io.Serializable;
+import java.net.MalformedURLException;
 
 import javax.management.remote.JMXServiceURL;
 
@@ -30,7 +31,7 @@ import org.neo4j.helpers.Pair;
 public class InstanceInfo implements Serializable
 {
     private static final long serialVersionUID = 1L;
-    private final JMXServiceURL address;
+    private final String address;
     private final String instanceId;
     private final int machineId;
     private final boolean master;
@@ -38,7 +39,7 @@ public class InstanceInfo implements Serializable
 
     @ConstructorProperties( { "address", "instanceId", "machineId", "master",
             "lastCommittedTransactionId" } )
-    public InstanceInfo( JMXServiceURL address, String instanceId, int machineId, boolean master,
+    public InstanceInfo( String address, String instanceId, int machineId, boolean master,
             long lastTxId )
     {
         this.address = address;
@@ -48,12 +49,20 @@ public class InstanceInfo implements Serializable
         this.lastTxId = lastTxId;
     }
 
+    @Override
+    @SuppressWarnings( "boxing" )
+    public String toString()
+    {
+        return String.format( "Neo4jHaInstance[id=%s,address=%s,machineId=%s,lastTxId=%s]",
+                instanceId, address, machineId, lastTxId );
+    }
+
     public boolean isMaster()
     {
         return master;
     }
 
-    public JMXServiceURL getAddress()
+    public String getAddress()
     {
         return address;
     }
@@ -84,7 +93,19 @@ public class InstanceInfo implements Serializable
         {
             throw new IllegalStateException( "The instance does not have a public JMX server." );
         }
-        Neo4jManager manager = Neo4jManager.get( address, username, password, instanceId );
+        Neo4jManager manager = Neo4jManager.get( url(), username, password, instanceId );
         return Pair.of( manager, manager.getBean( HighAvailability.class ) );
+    }
+
+    private JMXServiceURL url()
+    {
+        try
+        {
+            return new JMXServiceURL( address );
+        }
+        catch ( MalformedURLException e )
+        {
+            throw new IllegalStateException( "The instance does not have a valid JMX server URL." );
+        }
     }
 }
