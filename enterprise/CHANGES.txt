@@ -1,3 +1,7 @@
+0.8 (2010-12-29)
+----------------
+o Made it possible to discover the JMX connection for all servers in the HA cluster through the HighAvailability management bean of one server.
+
 0.8-1.2.M06 (2010-12-21)
 ------------------------
 o no changes
