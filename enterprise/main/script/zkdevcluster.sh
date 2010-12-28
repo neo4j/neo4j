@@ -26,8 +26,10 @@ for ZK in {1,2,3}; do
     mkdir -p data/zk$ZK
     echo $ZK > data/zk$ZK/myid
 
-    java -cp $LIBDIR/log4j-1.2.15.jar:$LIBDIR/zookeeper-3.2.1.jar\
-         $MAINCLASS $ZKCONF &
+    log4j=`echo $LIBDIR/log4j-*.jar`
+    zookeeper=`echo $LIBDIR/zookeeper-*.jar`
+
+    java -cp $log4j:$zookeeper $MAINCLASS $ZKCONF &
     echo $! >> pid/zk
 done
 

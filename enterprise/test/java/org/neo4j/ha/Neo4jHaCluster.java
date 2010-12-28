@@ -21,25 +21,29 @@
 package org.neo4j.ha;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.junit.Ignore;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.Config;
+import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 
 @Ignore
-public class CreateEmptyDb
+public class Neo4jHaCluster
 {
-    public static void main( String[] args )
+    public Neo4jHaCluster( LocalhostZooKeeperCluster zk )
     {
-        at( args[0] );
     }
 
-    public static void at( String storeDir )
+    public static HighlyAvailableGraphDatabase single( LocalhostZooKeeperCluster zk, File storeDir,
+            int haPort, Map<String, String> config )
     {
-        new EmbeddedGraphDatabase( storeDir ).shutdown();
-    }
-
-    public static void at( File storeDir )
-    {
-        at( storeDir.getAbsolutePath() );
+        config = new HashMap<String, String>( config );
+        config.put( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, "1" );
+        config.put( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS, zk.getConnectionString() );
+        config.put( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVER, ( "127.0.0.1:" + haPort ) );
+        config.put( Config.ENABLE_REMOTE_SHELL, "true" );
+        config.put( Config.KEEP_LOGICAL_LOGS, "true" );
+        return new HighlyAvailableGraphDatabase( storeDir.getAbsolutePath(), config );
     }
 }
