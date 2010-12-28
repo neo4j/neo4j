@@ -120,6 +120,14 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel</artifactId>
+      <version>1.2-SNAPSHOT</version>
+      <classifier>tests</classifier>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
