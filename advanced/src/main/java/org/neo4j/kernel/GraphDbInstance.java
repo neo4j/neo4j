@@ -20,18 +20,6 @@
 
 package org.neo4j.kernel;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.kernel.impl.core.LockReleaser;
-import org.neo4j.kernel.impl.nioneo.xa.NioNeoDbPersistenceSource;
-import org.neo4j.kernel.impl.transaction.LockManager;
-import org.neo4j.kernel.impl.transaction.TxModule;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
-import org.neo4j.kernel.impl.util.FileUtils;
-import org.neo4j.kernel.impl.util.StringLogger;
-
-import javax.transaction.TransactionManager;
 import java.io.File;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
@@ -43,10 +31,23 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeSet;
 
+import javax.transaction.TransactionManager;
+
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.kernel.impl.core.LockReleaser;
+import org.neo4j.kernel.impl.nioneo.xa.NioNeoDbPersistenceSource;
+import org.neo4j.kernel.impl.transaction.LockManager;
+import org.neo4j.kernel.impl.transaction.TxModule;
+import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.kernel.impl.util.StringLogger;
+
 class GraphDbInstance
 {
     private boolean started = false;
-    private boolean create;
+    private final boolean create;
     private String storeDir;
 
     GraphDbInstance( String storeDir, boolean create, Config config )
@@ -150,7 +151,7 @@ class GraphDbInstance
         persistenceSource.init();
         config.getIdGeneratorModule().init();
         config.getGraphDbModule().init();
-        
+
         kernelExtensionLoader.init();
 
         config.getTxModule().start();
@@ -167,8 +168,8 @@ class GraphDbInstance
         logger.logMessage( "Kernel version: " + Version.get() );
         RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
         OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
-        logger.logMessage( "Operating System: " + os.getName() + "; version: " + os.getVersion()
-                           + "; arch: " + os.getArch() );
+        logger.logMessage( String.format( "Operating System: %s; version: %s; arch: %s; cpus: %s",
+                os.getName(), os.getVersion(), os.getArch(), os.getAvailableProcessors() ) );
         logger.logMessage( "VM Name: " + runtime.getVmName() );
         logger.logMessage( "VM Vendor: " + runtime.getVmVendor() );
         logger.logMessage( "VM Version: " + runtime.getVmVersion() );
