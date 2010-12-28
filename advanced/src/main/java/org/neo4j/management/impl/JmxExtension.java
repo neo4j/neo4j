@@ -23,6 +23,7 @@ package org.neo4j.management.impl;
 import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
@@ -130,13 +131,18 @@ public final class JmxExtension extends KernelExtension
                     url = getUrlFrom( (String) importFrom.invoke( null, Integer.valueOf( 0 ) ) );
                 }
             }
+            catch ( InvocationTargetException e )
+            {
+                log.log( Level.CONFIG, "Failed to load local JMX connection URL.",
+                        e.getTargetException() );
+            }
             catch ( LinkageError e )
             {
-                log.log( Level.INFO, "Failed to load local JMX configuration.", e );
+                log.log( Level.CONFIG, "Failed to load local JMX connection URL.", e );
             }
             catch ( Exception e )
             {
-                log.log( Level.INFO, "Failed to load local JMX configuration.", e );
+                log.log( Level.CONFIG, "Failed to load local JMX connection URL.", e );
             }
             // No previous connection server -- create one!
             if ( url == null )
@@ -169,19 +175,34 @@ public final class JmxExtension extends KernelExtension
                     {
                         useSSL = Boolean.parseBoolean( (String) useSslObj );
                     }
+                    log.log( Level.CONFIG, "Creating new MBean server on port %s%s", new Object[] {
+                            port, useSSL ? " using ssl" : "" } );
                     JMXConnectorServer server = createServer( port, useSSL );
                     if ( server != null )
                     {
                         try
                         {
-                            server.getMBeanServer().registerMBean( server,
-                                    getObjectName( kernel, null, "JMX Server" ) );
+                            server.start();
                         }
-                        catch ( Exception e )
+                        catch ( IOException e )
                         {
-                            log.log( Level.INFO, "Failed to register MBean server as JMX bean", e );
+                            log.log( Level.CONFIG, "Failed to start MBean server", e );
+                            server = null;
                         }
-                        url = server.getAddress();
+                        if ( server != null )
+                        {
+                            try
+                            {
+                                server.getMBeanServer().registerMBean( server,
+                                        getObjectName( kernel, null, "JMX Server" ) );
+                            }
+                            catch ( Exception e )
+                            {
+                                log.log( Level.CONFIG,
+                                        "Failed to register MBean server as JMX bean", e );
+                            }
+                            url = server.getAddress();
+                        }
                     }
                 }
             }
