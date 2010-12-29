@@ -48,6 +48,7 @@ public class HelloWorldResource
 
 Now, include your class in neo4j-server.properties with something like
 
+[source]
 ------
 #Comma separated list of JAXRS classes, one class for each extension to be loaded.
 org.neo4j.server.thirdparty_jaxrs_classes=com.example.HelloWorldResource
