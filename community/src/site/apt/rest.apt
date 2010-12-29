@@ -39,10 +39,10 @@ curl -H Accept:application/json http://localhost:7474/db/data/
 ---
 {
   "node" : "http://localhost:7474/db/data/node",
-  "node-index" : "http://localhost:7474/db/data/index/node",
-  "relationship-index" : "http://localhost:7474/db/data/index/relationship",
+  "node_index" : "http://localhost:7474/db/data/index/node",
+  "relationship_index" : "http://localhost:7474/db/data/index/relationship",
   "reference_node" : "http://localhost:7474/db/data/node/0",
-  "extensions-info" : "http://localhost:7474/db/data/ext",
+  "extensions_info" : "http://localhost:7474/db/data/ext",
   "extensions" : {
   }
 }

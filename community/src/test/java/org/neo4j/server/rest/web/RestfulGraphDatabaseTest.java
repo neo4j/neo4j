@@ -862,8 +862,9 @@ public class RestfulGraphDatabaseTest
         Map<String, Object> map = JsonHelper.jsonToMap( entity );
         assertNotNull( map.get( "node" ) );
         assertNotNull( map.get( "reference_node" ) );
-        assertNotNull( map.get( "node-index" ) );
-        assertNotNull( map.get( "relationship-index" ) );
+        assertNotNull( map.get( "node_index" ) );
+        assertNotNull( map.get( "extensions_info" ) );
+        assertNotNull( map.get( "relationship_index" ) );
         assertEquals( response.getMetadata().getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
     }
 
