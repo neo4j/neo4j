@@ -7,7 +7,7 @@
   </parent>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-lucene-index</artifactId>
-  <version>0.2-1.2</version>
+  <version>0.2-SNAPSHOT</version>
   <name>Neo4j - Lucene Index</name>
   <description>
 Integration layer between Neo4j and Lucene, providing one possible implementation of the Index API.
@@ -15,9 +15,9 @@ Integration layer between Neo4j and Lucene, providing one possible implementatio
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
   
   <scm>
-    <connection>scm:svn:https://svn.neo4j.org/components/lucene-index/tags/0.2-1.2</connection>
-    <developerConnection>scm:svn:https://svn.neo4j.org/components/lucene-index/tags/0.2-1.2</developerConnection>
-    <url>https://trac.neo4j.org/browser/components/lucene-index/tags/0.2-1.2</url>
+    <connection>scm:svn:https://svn.neo4j.org/components/lucene-index/trunk/</connection>
+    <developerConnection>scm:svn:https://svn.neo4j.org/components/lucene-index/trunk/</developerConnection>
+    <url>https://trac.neo4j.org/browser/components/lucene-index/trunk</url>
   </scm>
 
   <properties>
