@@ -1,22 +1,28 @@
-1.2-1.2.M06 (2010-12-21)
+0.7-1.2 (2010-12-29)
+--------------------
+
+o No changes made for 1.2.
+
+
+0.7-1.2.M06 (2010-12-21)
 ------------------------
 
 o No changes made for M06.
 
-1.2-1.2.M05 (2010-12-02)
+0.7-1.2.M05 (2010-12-02)
 ------------------------
 
 o Added a convenience method for instantiating dijkstra with a 
   RelationshipExpander and a String for the cost property.
 
-1.2-1.2.M04 (2010-11-18)
+0.7-1.2.M04 (2010-11-18)
 ------------------------
 
 o Implemented "paths" app which can run path algos f.ex. shortest path, all paths, all simple paths.
 o Removed "-d" option from "ls" in favor of f.ex. "-f KNOWS:out,LOVES:in" which is more flexible.
 o Some tweaking of output for relationships (and its types).
 
-1.2-1.2.M03 (2010-11-04)
+0.7-1.2.M03 (2010-11-04)
 ------------------------
 
 o Made the example code less confusing.
