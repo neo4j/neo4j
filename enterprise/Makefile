@@ -144,4 +144,5 @@ manpages:
 	mkdir -p $(MANPAGES)
 	a2x -k -f manpage -d  manpage -D $(MANPAGES) $(SRCDIR)/tools/neo4j-shell.1.txt
 	mv $(MANPAGES)/*.xml $(BUILDDIR)
+	gzip $(MANPAGES)/*
 
