@@ -23,7 +23,7 @@ use the artifacts available from Maven Central Repository footnote:[http://repo1
 	<dependency>
    	<groupId>org.neo4j</groupId>
    	<artifactId>neo4j</artifactId>
-   	<version>{neo4j-version}</version>   <1>
+   	<version>{neo4j-version}</version>
 	</dependency>
 	...
  </dependencies>
@@ -31,7 +31,7 @@ use the artifacts available from Maven Central Repository footnote:[http://repo1
 </project>
 --------------------------------------------
 
-<1> Where \{neo4j-version} is for example {neo4j-version}.                    
+_Where \{neo4j-version} is for example {neo4j-version}._
                                                                               
 NOTE: Stable and milestone releases are available at Maven Central Repository.
                                                                               
