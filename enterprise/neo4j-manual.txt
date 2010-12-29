@@ -37,9 +37,19 @@ include::ha/index.txt[]
 
 include::operations/index.txt[]
 
+:leveloffset: 0
+
+[[tools]]
+Tools
+=====
+
+////
+[partintro]
+////
+
 :leveloffset: 1
 
-//include::tools/index.txt[]
+include::tools/index.txt[]
 
 :leveloffset: 0
 

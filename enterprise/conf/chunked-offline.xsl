@@ -16,5 +16,9 @@
 
 <xsl:import href="head.xsl"/>
 
+<xsl:import href="syntaxhighlight.xsl"/>
+
+<xsl:import href="offline-footer.xsl"/>
+
 </xsl:stylesheet>
 
