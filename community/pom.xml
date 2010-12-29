@@ -9,7 +9,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-shell</artifactId>
-  <version>1.2-SNAPSHOT</version>
+  <version>1.3-SNAPSHOT</version>
   <name>Neo4j - Generic shell</name>
   <description>
 		A generic command shell with a client and server part.
@@ -135,13 +135,13 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>SNAPSHOT-SNAPSHOT</version>
+      <version>1.3-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-management</artifactId>
-      <version>SNAPSHOT-SNAPSHOT</version>
+      <version>1.3-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
