@@ -75,10 +75,10 @@
   <HR/>
   <a>
     <xsl:attribute name="href">
-      <xsl:apply-templates select="//legalnotice[1]" mode="chunk-filename"/>
+      <xsl:apply-templates select="/book/bookinfo/legalnotice[1]" mode="chunk-filename"/>
     </xsl:attribute>
 
-    <xsl:apply-templates select="//copyright[1]" mode="titlepage.mode"/>
+    <xsl:apply-templates select="/book/bookinfo/copyright[1]" mode="titlepage.mode"/>
   </a>
 </xsl:template>
 
