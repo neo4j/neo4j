@@ -2,6 +2,7 @@
 --------------------
 
 o Minor bug fixes and some code cleanup.
+o Changed REST representations to use only underscores for keys instead of hyphens.
 
 0.5-1.2.M06 (2010-12-21)
 ------------------------
