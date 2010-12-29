@@ -65,7 +65,7 @@ public class ExtensionListingFunctionalTest
                 MediaType.APPLICATION_JSON_TYPE ).get( ClientResponse.class );
         assertThat( response.getStatus(), equalTo( 200 ) );
         Map<String, Object> json = JsonHelper.jsonToMap( response.getEntity( String.class ) );
-        String extInfo = (String) json.get( "extensions-info" );
+        String extInfo = (String) json.get( "extensions_info" );
         assertNotNull( new URI( extInfo ) );
     }
 

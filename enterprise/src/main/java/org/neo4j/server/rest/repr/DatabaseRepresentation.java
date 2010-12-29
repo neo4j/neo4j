@@ -46,8 +46,8 @@ public class DatabaseRepresentation extends MappingRepresentation implements
         serializer.putUri( "node", "node" );
         serializer.putUri( "reference_node",
                 NodeRepresentation.path( graphDb.getReferenceNode() ) );
-        serializer.putUri( "node-index", "index/node" );
-        serializer.putUri( "relationship-index", "index/relationship" );
-        serializer.putUri( "extensions-info", "ext" );
+        serializer.putUri( "node_index", "index/node" );
+        serializer.putUri( "relationship_index", "index/relationship" );
+        serializer.putUri( "extensions_info", "ext" );
     }
 }
