@@ -1,3 +1,12 @@
+1.2 (2010-12-29)
+----------------
+
+-New components since 1.1:
+o neo4j-ha, providing High Availability (first in 1.2.M05)
+o neo4j-management, JMX support moved to its own component (first in 1.2.M03)
+o lucene-index, an integrated index API (first in 1.2.M02)
+o udc, Usage Data Collector (first in 1.2.M01)
+
 1.2.M05 (2010-12-02)
 --------------------
 
@@ -12,8 +21,6 @@ o integrated index is now supported by the shell
 
 1.2.M04 (2010-11-18)
 --------------------
--New components
-o neo4j-server, providing REST api, web and admin APIs
 
 -Important changes
 o added more configuration options to neo4j-lucene-index
