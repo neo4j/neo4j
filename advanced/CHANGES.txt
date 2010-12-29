@@ -1,9 +1,9 @@
-1.2-1.2 (2010-12-29)
+0.2-1.2 (2010-12-29)
 --------------------
 
 o No changes.
 
-1.2-1.2.M06 (2010-12-21)
+0.2-1.2.M06 (2010-12-21)
 ------------------------
 
 o More flexible caching (can instantiate an arbitrary Cache object).
@@ -19,13 +19,13 @@ o Fixed bug which could close an IndexSearcher before it was supposed to when
   threads all called IndexHits#getSingle() on the result.
 
 
-1.2-1.2.M05 (2010-12-02)
+0.2-1.2.M05 (2010-12-02)
 ------------------------
 
 o Added IndexHits#currentScore which exposes the most recently fetched
   IndexHits item's score from the search, if any.
 
-1.2-1.2.M04 (2010-11-18)
+0.2-1.2.M04 (2010-11-18)
 ------------------------
 o Index configuration handling moved to IndexManager (graphDb.index()) and added
 setConfiguration/removeConfiguration which can modify index configuration, but
@@ -36,7 +36,7 @@ o Made config recognition more flexible for forNodes(indexName,config) and
 forRelationships(indexName,config) so that the config can contain differences,
 just as long as they yield the same storage format.
 
-1.2-1.2.M03 (2010-11-04)
+0.2-1.2.M03 (2010-11-04)
 ------------------------
 
 o Added support for modifying index configurations as well as listing
