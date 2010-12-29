@@ -1,9 +1,9 @@
-1.2-1.2 (2010-12-29)
+0.5-1.2 (2010-12-29)
 --------------------
 
 o Minor bug fixes and some code cleanup.
 
-1.2-1.2.M06 (2010-12-21)
+0.5-1.2.M06 (2010-12-21)
 ------------------------
 
 o Added support for server plugins that extend the functionality of the graph database, a node, or a relationship.
