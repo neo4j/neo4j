@@ -1,5 +1,5 @@
-1.2 (2010-12-29)
-----------------
+1.2-1.2 (2010-12-29)
+--------------------
 o Made it possible to detect if recovery was performed as part of startup of the current instance.
 o Fix for an issue that sometimes excluded the first relationship when iterating over the relationships of a traversal.
 
