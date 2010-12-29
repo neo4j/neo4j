@@ -15,7 +15,7 @@ Neo4j can be installed as a server, running either as a headless application or 
 
 == As a Windows service ==
 
-With administrative rights, Neo4j can be isntalled as a Windows service.
+With administrative rights, Neo4j can be installed as a Windows service.
 
 1. Right-click on `%NEO4J_HOME%\bin\InstallNeo4j`
 2. Choose `Run as administrator`
