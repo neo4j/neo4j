@@ -1,8 +1,9 @@
-0.5 (2010-12-29)
-----------------
+0.5-1.2 (2010-12-29)
+--------------------
+
 o HighAvailability management bean loaded properly.
 
-1.2-1.2.M06 (2010-12-21)
+0.5-1.2.M06 (2010-12-21)
 ------------------------
 
 o When a new master is chosen, slaves throws away the id allocations they got from the previous master. This fixes a problem where occupied ids where reused.
@@ -13,7 +14,8 @@ o Also closes the executor containing the connections.
 o Changed dependency scopes.
 o Shuts down databases after verifying them.
 
-1.2-1.2.M05 (2010-12-02)
+0.5-1.2.M05 (2010-12-02)
 ------------------------
 
 o initial release
+
