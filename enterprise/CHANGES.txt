@@ -1,6 +1,12 @@
+1.2-1.2 (2010-12-29)
+--------------------
+
+o Minor bug fixes and some code cleanup.
+
 1.2-1.2.M06 (2010-12-21)
 ------------------------
 
+o Added support for server plugins that extend the functionality of the graph database, a node, or a relationship.
 o Bridge OSGi LogService to server Logger. Bundle log messages and stdout pipe through correctly.
 o Refactoring of functional tests to remove static dependencies. Introduced a server builder to deal with it instead.
 o Can now add performance-tweaking properties to the database hosted by the server. It uses the same neo4j.properties file as the embedded version, but you need to add a property: 
