@@ -1,3 +1,23 @@
+1.2 (2010-12-29)
+----------------
+
+- New components:
+o Neo4j Server, including Web Admin
+o Neo4j High Availability
+o Neo4j Graph Database Monitoring and Management tools moved to its own component
+o Neo4j Index API integrated in the GraphDatabaseService API
+o Neo4j Usage Data Collection
+
+- Other changes:
+o Additional services (extensions) for the Neo4j kernel are loaded automatically or can be injected in a running instance.
+o Improved memory footprint and read performance.
+o A weak reference cache is now available for high load low latency workloads.
+o The old index API has been deprecated (but still included and have been updated to use Lucene version 3.0.1).
+o There is a new index API based on Lucene supporting multiple indexes both for nodes and relationships.
+o Path algos can now be performed using the shell.
+
+o All known bugs have been fixed. For more details see the individual milestone releases below.
+
 1.2.M06 (2010-12-21)
 --------------------
 
