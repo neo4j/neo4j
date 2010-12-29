@@ -9,7 +9,7 @@
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-ha</artifactId>
   <name>Neo4j - High Availability</name>
-  <version>0.5-SNAPSHOT</version>
+  <version>0.6-SNAPSHOT</version>
   <description>This component provides the means to set up a cluster of Neo4j instances that act together
     as a cluster, providing Master-Slave replication and other features.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}/</url>
@@ -69,23 +69,23 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>SNAPSHOT-SNAPSHOT</version>
+      <version>1.3-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-management</artifactId>
-      <version>SNAPSHOT-SNAPSHOT</version>
+      <version>1.3-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-shell</artifactId>
-      <version>SNAPSHOT-SNAPSHOT</version>
+      <version>1.3-SNAPSHOT</version>
     </dependency>
     <!--dependency> <groupId>org.neo4j</groupId> <artifactId>neo4j-index</artifactId> <version>1.2-SNAPSHOT</version> </dependency -->
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-lucene-index</artifactId>
-      <version>0.2-SNAPSHOT</version>
+      <version>0.5-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.apache.zookeeper</groupId>
@@ -125,7 +125,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>SNAPSHOT-SNAPSHOT</version>
+      <version>1.3-SNAPSHOT</version>
       <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
