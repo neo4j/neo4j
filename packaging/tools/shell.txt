@@ -192,9 +192,9 @@ It's possible to reach and manipulate indexes (i.e. instances of +IndexService+)
 * +-i+ which will http://components.neo4j.org/neo4j-index/apidocs/org/neo4j/index/IndexService.html#index(org.neo4j.graphdb.Node,%20java.lang.String,%20java.lang.Object)[index] a key-value pair for the current node. If no value is given the property value for that key for the current node is used as value.
 * +-r+ which will http://components.neo4j.org/neo4j-index/apidocs/org/neo4j/index/IndexService.html#removeIndex(org.neo4j.graphdb.Node,%20java.lang.String,%20java.lang.Object)[remove] a key-value pair (if it exists) from the index for the current node. If no value is given the property value for that key for the current node is used as value.
 
-== Extending the shell: Adding your own apps ==
+== Extending the shell: Adding your own commands ==
 
-Of course the shell is extendable and has a generic core which has nothing to do with Neo4j... only some of the http://components.neo4j.org/neo4j-shell/apidocs/org/neo4j/shell/App.html[apps] do.
+Of course the shell is extendable and has a generic core which has nothing to do with Neo4j... only some of the http://components.neo4j.org/neo4j-shell/apidocs/org/neo4j/shell/App.html[commands] do.
 
 So you say you'd like to start a Neo4j http://api.neo4j.org/current/org/neo4j/graphdb/GraphDatabaseService.html[graph database], <<shell-enabling-remote,enable the remote shell>> and add your own apps to it so that your apps and the standard Neo4j apps co-exist side by side? Well, here's an example of how an app could look like:
 
