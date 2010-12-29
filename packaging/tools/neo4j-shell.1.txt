@@ -1,12 +1,13 @@
 NEO4J-SHELL(1)
 ==============
-
+:author: The Neo4j Team
 
 NAME
 ----
 neo4j-shell - a command-line tool for exploring and manipulating a graph database
 
 
+[[shell-manpage]]
 SYNOPSIS
 --------
 *neo4j-shell* ['REMOTE OPTIONS']

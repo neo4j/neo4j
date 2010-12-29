@@ -18,6 +18,9 @@
 
 <xsl:import href="footer.xsl"/>
 
+<xsl:import href="syntaxhighlight.xsl"/>
+
+<!-- Add links back to top -->
 
 <xsl:template name="section.titlepage.before.recto">
   <xsl:variable name="top-anchor">

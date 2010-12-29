@@ -18,8 +18,8 @@ SINGLEHTMLDIR    = $(BUILDDIR)/html
 SINGLEHTMLFILE   = $(SINGLEHTMLDIR)/neo4j-manual.html
 ANNOTATEDDIR     = $(BUILDDIR)/annotated
 ANNOTATEDFILE    = $(HTMLDIR)/neo4j-manual.html
-CHUNKEDHTMLDIR   = $(BUILDDIR)/chunked/
-CHUNKEDOFFLINEHTMLDIR = $(BUILDDIR)/chunked-offline/
+CHUNKEDHTMLDIR   = $(BUILDDIR)/chunked
+CHUNKEDOFFLINEHTMLDIR = $(BUILDDIR)/chunked-offline
 CHUNKEDTARGET     = $(BUILDDIR)/neo4j-manual.chunked
 MANPAGES         = $(BUILDDIR)/manpages
 
@@ -91,7 +91,7 @@ pdf:  docbook
 	cd $(SRCDIR)
 	fop -fo $(FOPFILE) -pdf $(FOPPDF)
 ifndef KEEP
-	rm $(FOPFILE)
+	rm -f $(FOPFILE)
 endif
 
 latexpdf:  manpages
@@ -102,21 +102,25 @@ latexpdf:  manpages
 html:  manpages
 	a2x $(GENERAL_FLAGS) -L -f chunked -D $(BUILDDIR) --conf-file=$(CONFDIR)/chunked.conf --xsl-file=$(CONFDIR)/chunked.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(SRCFILE)
 	mv $(CHUNKEDTARGET) $(CHUNKEDHTMLDIR)
+	cp -fr $(SRCDIR)/js $(CHUNKEDHTMLDIR)/js
 
 # currently builds docbook format first
 offline-html:  manpages
 	a2x $(GENERAL_FLAGS) -L -f chunked -D $(BUILDDIR) --conf-file=$(CONFDIR)/chunked.conf --xsl-file=$(CONFDIR)/chunked-offline.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(SRCFILE)
 	mv $(CHUNKEDTARGET) $(CHUNKEDOFFLINEHTMLDIR)
+	cp -fr $(SRCDIR)/js $(CHUNKEDOFFLINEHTMLDIR)/js
 
 # currently builds docbook format first
 singlehtml:  manpages
 	mkdir -p $(SINGLEHTMLDIR)
 	a2x $(GENERAL_FLAGS) -L -f xhtml -D $(SINGLEHTMLDIR) --conf-file=$(CONFDIR)/xhtml.conf --xsl-file=$(CONFDIR)/xhtml.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(SRCFILE)
+	cp -fr $(SRCDIR)/js $(SINGLEHTMLDIR)/js
 
 # currently builds docbook format first
 annotated:  manpages
 	mkdir -p $(ANNOTATEDDIR)
 	a2x $(GENERAL_FLAGS) -L -a showcomments -f xhtml -D $(ANNOTATEDDIR) --conf-file=$(CONFDIR)/xhtml.conf --xsl-file=$(CONFDIR)/xhtml.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(SRCFILE)
+	cp -fr $(SRCDIR)/js $(ANNOTATEDDIR)/js
 
 # missing: check what files are needed and copy them
 singlehtml-notworkingrightnow: docbook-shortinfo
@@ -132,8 +136,8 @@ text: docbook-shortinfo
 	cd $(SRCDIR)
 	w3m -cols $(TEXTWIDTH) -dump -T text/html -no-graph $(TEXTHTMLFILE) > $(TEXTFILE)
 ifndef KEEP
-	rm $(TEXTHTMLFILE)
-	rm  $(TEXTDIR)/*.html
+	rm -f $(TEXTHTMLFILE)
+	rm -f $(TEXTDIR)/*.html
 endif
 
 manpages:

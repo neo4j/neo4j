@@ -16,6 +16,8 @@
 
 <xsl:import href="head.xsl"/>
 
+<xsl:import href="syntaxhighlight.xsl"/>
+
 <xsl:import href="disqus-footer.xsl"/>
 
 </xsl:stylesheet>
