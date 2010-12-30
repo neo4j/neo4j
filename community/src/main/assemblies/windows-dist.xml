@@ -62,6 +62,7 @@
         <include>org.apache.servicemix.bundles:org.apache.servicemix.bundles.lucene</include>
         <include>com.google.protobuf:protobuf-java</include>
         <include>org.jboss.netty:netty</include>
+        <include>org.apache.zookeeper:zookeeper</include>
       </includes>
       <excludes>
         <exclude>*:javadoc:*</exclude>
@@ -82,6 +83,7 @@
         <exclude>org.apache.servicemix.bundles:org.apache.servicemix.bundles.lucene</exclude>
         <exclude>com.google.protobuf:protobuf-java</exclude>
         <exclude>org.jboss.netty:netty</exclude>
+        <exclude>org.apache.zookeeper:zookeeper</exclude>
       </excludes>
     </dependencySet>
     <!-- java examples -->
