@@ -202,7 +202,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j</artifactId>
-      <version>1.2</version>
+      <version>1.3-SNAPSHOT</version>
       <exclusions>
         <exclusion>
           <artifactId>neo4j-udc</artifactId>
@@ -213,7 +213,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j</artifactId>
-      <version>1.2</version>
+      <version>1.3-SNAPSHOT</version>
       <classifier>javadoc</classifier>
       <exclusions>
         <exclusion>
@@ -225,7 +225,7 @@
     <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
-      <version>0.5-1.2</version>
+      <version>0.6-SNAPSHOT</version>
       <classifier>site</classifier>
       <exclusions>
         <exclusion>
@@ -237,7 +237,7 @@
     <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
-      <version>0.5-1.2</version>
+      <version>0.6-SNAPSHOT</version>
       <exclusions>
         <exclusion>
           <artifactId>neo4j-udc</artifactId>
@@ -248,13 +248,13 @@
     <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
-      <version>0.5-1.2</version>
+      <version>0.6-SNAPSHOT</version>
       <classifier>static-web</classifier> 
     </dependency>
     <dependency>
       <groupId>org.neo4j.examples</groupId>
       <artifactId>neo4j-examples</artifactId>
-      <version>1.2</version>
+      <version>1.3-SNAPSHOT</version>
         <exclusions>
           <exclusion>
             <artifactId>neo4j-udc</artifactId>
@@ -265,19 +265,19 @@
     <dependency>
       <groupId>org.neo4j.examples</groupId>
       <artifactId>neo4j-examples</artifactId>
-      <version>1.2</version>
+      <version>1.3-SNAPSHOT</version>
       <classifier>sources</classifier>
     </dependency>
     <dependency>
       <groupId>org.neo4j.examples</groupId>
       <artifactId>neo4j-examples</artifactId>
-      <version>1.2</version>
+      <version>1.3-SNAPSHOT</version>
       <classifier>test-sources</classifier>
     </dependency>
     <dependency>
       <groupId>org.neo4j.examples</groupId>
       <artifactId>neo4j-examples</artifactId>
-      <version>1.2</version>
+      <version>1.3-SNAPSHOT</version>
       <classifier>site</classifier>
     </dependency>
 
@@ -302,7 +302,7 @@
     <dependency>
       <groupId>org.neo4j.doc</groupId>
       <artifactId>neo4j-manual</artifactId>
-      <version>1.2</version>
+      <version>1.3-SNAPSHOT</version>
     </dependency>
   </dependencies>
 
