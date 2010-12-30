@@ -130,7 +130,7 @@ public final class NodeRepresentation extends ObjectRepresentation implements
         if ( writer.isInteractive() )
         {
             serializer.putList(
-                    "relationship-types",
+                    "relationship_types",
                     ListRepresentation.relationshipTypes( node.getGraphDatabase().getRelationshipTypes() ) );
         }
         properties.done();
