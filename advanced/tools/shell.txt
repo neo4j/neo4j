@@ -13,6 +13,7 @@ It consists of two parts:
 It's a nice tool for development and debugging.
 This guide will show you how to get it going!
 
+[[shell-starting]]
 == Starting the shell ==
 
 When used together with Neo4j started as a server, simply issue the following at the command line:
@@ -103,6 +104,7 @@ $ neo4j-shell -c "cd -a 24 && set name Mattias"
 $ neo4j-shell -c "trav -r KNOWS" | less
 ----
 
+[[shell-options]]
 == Passing options and arguments ==
 
 Passing options and arguments to your commands is very similar to many CLI commands in an *nix environment. Options are prefixed with a +-+ and can contain one or more options. Some options expect a value to be associated with it. Arguments are string values which aren't prefixed with +-+. Let's look at +ls+ as an example:
@@ -121,12 +123,14 @@ Some options expects a value which is one of the values in an enum, f.ex. direct
 
 Some commands makes use of filters for varying purposes. F.ex. +-f+ in +ls+ and in +trav+. A filter is supplied as a http://www.json.org/[json] object (w/ or w/o the surrounding +{}+ brackets and where both keys and values can contain regular expressions for a more flexible matching. An example of a filter could be +.\*url.\*:http.\*neo4j.*,name:Neo4j+. The filter option is also accompanied by the options +-i+ and +-l+ which stands for +ignore case+ (ignore casing of the characters) and +loose matching+ (it's considered a match even if the filter value just matches a part of the compared value, not necessarily the entire value). So for a case-insensitive, loose filter you can supply a filter with +-f -i -l+ or +-fil+ for short.
 
+[[shell-titles]]
 == Node titles ==
 
 To make it easier to navigate your graph the shell can display a title for each node, f.ex. in a +ls -r+ command. It will display the relationships as well as the nodes on the other side of the relationships. The title is displayed together with each node and its best suited property value from a list of property keys.
 
 If you're standing on a node which has two +KNOWS+ relationships to other nodes it'd be difficult to know which friend is which. The title feature addresses this by reading a list of property keys and grabbing the first existing property value of those keys and displays it as a title for the node. So you may specify a list (with or without regular expressions), f.ex: +name,title.\*,caption+ and the title for each node will be the property value of the first existing key in that list. The list is defined by the client (you) using the +TITLE_KEYS+ <<shell-env-vars,environment variable>> and the default being +.\*name.\*,.\*title.*+
 
+[[shell-commands]]
 == How to use (individual commands) ==
 
 The shell is modeled after Unix shells like bash that you use to walk around your local file system. It has some of the same commands, like +cd+ and +ls+. When you first start the shell (see instructions above), you will get a list of all the available commands. Use +man <command>+ to get more info about a particular command. Some notes:
@@ -186,15 +190,16 @@ You can traverse the graph with the +trav+ command which allows for simple trave
 === Indexing ===
 It's possible to reach and manipulate indexes (i.e. instances of +IndexService+) via the +index+ command. You control which index service to use with the +INDEX_CLASS_NAME+ <<shell-env-vars,environment variable>> (defaults to +org.neo4j.index.lucene.LuceneIndexService+ if none is given). Options to the index command are:
 
-* +-g+ which will http://components.neo4j.org/neo4j-index/apidocs/org/neo4j/index/IndexService.html#getNodes(java.lang.String,%20java.lang.Object)[query the index] and display hits. You can supply +-c+ with a command to be executed for each hit.
+* +-g+ which will http://components.neo4j.org/neo4j-index/{neo4j-index-version}/apidocs/org/neo4j/index/IndexService.html#getNodes(java.lang.String,%20java.lang.Object)[query the index] and display hits. You can supply +-c+ with a command to be executed for each hit.
 * +--cd+ which will imply the +-g+ option and will <<shell-current-pos,change current location>> to the hit from the query. It's just a convenience for using the +-c+ option.
 * +--ls+ which will imply the +-g+ option and will <<shell-listing,do a listing of the contents>> for each hit. It's just a convenience for using the +-c+ option.
-* +-i+ which will http://components.neo4j.org/neo4j-index/apidocs/org/neo4j/index/IndexService.html#index(org.neo4j.graphdb.Node,%20java.lang.String,%20java.lang.Object)[index] a key-value pair for the current node. If no value is given the property value for that key for the current node is used as value.
-* +-r+ which will http://components.neo4j.org/neo4j-index/apidocs/org/neo4j/index/IndexService.html#removeIndex(org.neo4j.graphdb.Node,%20java.lang.String,%20java.lang.Object)[remove] a key-value pair (if it exists) from the index for the current node. If no value is given the property value for that key for the current node is used as value.
+* +-i+ which will http://components.neo4j.org/neo4j-index/{neo4j-index-version}/apidocs/org/neo4j/index/IndexService.html#index(org.neo4j.graphdb.Node,%20java.lang.String,%20java.lang.Object)[index] a key-value pair for the current node. If no value is given the property value for that key for the current node is used as value.
+* +-r+ which will http://components.neo4j.org/neo4j-index/{neo4j-index-version}/apidocs/org/neo4j/index/IndexService.html#removeIndex(org.neo4j.graphdb.Node,%20java.lang.String,%20java.lang.Object)[remove] a key-value pair (if it exists) from the index for the current node. If no value is given the property value for that key for the current node is used as value.
 
+[[shell-extending]]
 == Extending the shell: Adding your own commands ==
 
-Of course the shell is extendable and has a generic core which has nothing to do with Neo4j... only some of the http://components.neo4j.org/neo4j-shell/apidocs/org/neo4j/shell/App.html[commands] do.
+Of course the shell is extendable and has a generic core which has nothing to do with Neo4j... only some of the http://components.neo4j.org/neo4j-shell/{neo4j-shell-version}/apidocs/org/neo4j/shell/App.html[commands] do.
 
 So you say you'd like to start a Neo4j http://api.neo4j.org/current/org/neo4j/graphdb/GraphDatabaseService.html[graph database], <<shell-enabling-remote,enable the remote shell>> and add your own apps to it so that your apps and the standard Neo4j apps co-exist side by side? Well, here's an example of how an app could look like:
 
