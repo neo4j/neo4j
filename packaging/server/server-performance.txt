@@ -20,6 +20,5 @@ property to point to a valid neo4j.properties file:
 
  org.neo4j.server.db.tuning.properties={neo4j.properties file}
  
- On restarting the server the tuning enhancements specified in the neo4j.properties file will be loaded and configured into the underlying
- database engine.
+On restarting the server the tuning enhancements specified in the neo4j.properties file will be loaded and configured into the underlying database engine.
 
