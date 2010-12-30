@@ -8,20 +8,65 @@
 // DISQUS
   var disqus_identifier = "manual";
   var disqus_title = "The Neo4j Manual";
-  if ( document.body.getElementsByTagName("h1").length > 0 )
+  function getIdFromHeading ( headingElement )
   {
-    disqus_identifier += "-toc";
+    var id = disqus_identifier;
+    var child = headingElement.firstChild;
+    if ( !child || child.nodeName.toLowerCase() !== "a")
+    {
+      return null;
+    }
+    var attr = child.getAttribute("id");
+    if ( !attr )
+    {
+      return null;
+    }
+    id += "-";
+    id += headingElement.firstChild.getAttribute("id");
+    return id;
+  }
+  var headings = document.body.getElementsByTagName("h1");
+  if ( headings.length > 0 )
+  {
+    var h1Id = getIdFromHeading ( headings[0] );
+    if ( h1Id )
+    {
+      if ( h1Id.length > 2 && h1Id.substr( 0, 9) === "manual-id" )
+      {
+        disqus_identifier += "-toc";
+      }
+      else
+      {
+        disqus_identifier = h1Id;
+      }
+    }
   }
   else
   {
-    var headings = document.body.getElementsByTagName("h2");
+    headings = document.body.getElementsByTagName("h2");
     if ( headings.length > 0 )
     {
-      var headingElement = headings[0];
-      if ( headingElement.firstChild )
+      var id = getIdFromHeading( headings[0] );
+      if ( id )
       {
-        disqus_identifier += "-";
-        disqus_identifier += headingElement.firstChild.getAttribute("id");
+        disqus_identifier = id;      
+      }
+      else
+      {
+        var divs = document.body.getElementsByTagName("div");
+        for ( var i=0, l=divs.length; i<l; i+=1)
+        {
+          var div = divs[i];
+          if ( div.className === "refsynopsisdiv")
+          {
+            var divId = getIdFromHeading( div );
+            if ( divId )
+            {
+              disqus_identifier = divId;
+            }
+            break;
+          }
+        }
       }
     }
     if ( document.title )
