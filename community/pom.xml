@@ -162,6 +162,17 @@
     </dependency>
   </dependencies>
 
+  <reporting>
+    <plugins>
+      <plugin>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <excludePackageNames>*.impl.*</excludePackageNames>
+        </configuration>
+      </plugin>
+    </plugins>
+  </reporting>
+
   <distributionManagement>
     <site>
       <id>neo4j-site</id>
