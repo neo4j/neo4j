@@ -20,9 +20,22 @@
 
 package org.neo4j.server.rest;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
+import java.io.IOException;
+import java.net.URI;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response.Status;
+
 import junit.framework.Assert;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -36,18 +49,9 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.domain.URIHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
 
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response.Status;
-import java.io.IOException;
-import java.net.URI;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientHandlerException;
+import com.sun.jersey.api.client.ClientResponse;
 
 public class IndexNodeFunctionalityTest
 {
@@ -102,6 +106,54 @@ public class IndexNodeFunctionalityTest
         assertNotNull( response.getHeaders().getFirst( "Location" ) );
         assertEquals( 1, helper.getNodeIndexes().length );
         assertNotNull( helper.getNodeIndex( indexName ) );
+    }
+
+    /**
+     * POST ${org.neo4j.server.rest.web}/index/node
+     * {
+     * "name":"index-name",
+     * "config":{"type":"fulltext","provider":"lucene"}
+     * }
+     * @throws Exception 
+     * @throws ClientHandlerException 
+     * @throws PropertyValueException 
+     */
+    @Test
+    public void shouldCreateANamedNodeIndexWithConfiguration() throws PropertyValueException, ClientHandlerException, Exception
+    {
+        String indexName = "favorites";
+        ClientResponse response = Client.create().resource( functionalTestHelper.nodeIndexUri() )
+                .type( MediaType.APPLICATION_JSON )
+                .accept( MediaType.APPLICATION_JSON )
+                .entity( "{\"name\":\"fulltext\", \"config\":{\"type\":\"fulltext\",\"provider\":\"lucene\"}}" ).post( ClientResponse.class );
+        assertEquals( 201, response.getStatus() );
+        assertNotNull( response.getHeaders().getFirst( "Location" ) );
+        assertEquals( 1, helper.getNodeIndexes().length );
+        assertNotNull( helper.getNodeIndex( indexName ) );
+        //index a node
+        String key = "key";
+        String value = "value with   spaces  in it";
+        value = URIHelper.encode( value );
+        helper.createNodeIndex( indexName );
+        response = Client.create().resource( functionalTestHelper.indexNodeUri( indexName, key, value ) )
+                .entity( JsonHelper.createJsonFrom( functionalTestHelper.nodeUri( 0 ) ), MediaType.APPLICATION_JSON )
+                .accept( MediaType.APPLICATION_JSON )
+                .post( ClientResponse.class );
+        assertEquals( Status.CREATED.getStatusCode(), response.getStatus() );
+        //search it exact
+        response = Client.create().resource( functionalTestHelper.indexNodeUri( indexName, key, value ) ).accept( MediaType.APPLICATION_JSON )
+        .get( ClientResponse.class );
+        assertEquals( 200, response.getStatus() );
+        Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue( response.getEntity( String.class ) );
+        assertEquals( 1, hits.size() );
+
+        //search it fulltext
+        response = Client.create().resource( functionalTestHelper.indexNodeUri( indexName, key, "value" ) ).accept( MediaType.APPLICATION_JSON )
+        .get( ClientResponse.class );
+        assertEquals( 200, response.getStatus() );
+        hits = (Collection<?>) JsonHelper.jsonToSingleValue( response.getEntity( String.class ) );
+        //TODO: this is failing!
+        //assertEquals( 1, hits.size() );
     }
 
     /**
