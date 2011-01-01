@@ -500,6 +500,28 @@ curl -H Accept:application/json http://localhost:7474/db/data/index/node
 }
 ---
 
+* {Add indices with provided configuration parameters}
+
+** POST /index/node
+
+** Example using curl
+
+---
+curl-X POST -H Accept:application/json -HContent-Type:application/json -d '{"name":"fulltext", "config":{"type":"fulltext","provider":"lucene"}}' http://localhost:7474/db/data/index/node
+---
+
+** Response
+
+*** 200: OK
+
+---
+{
+  "template" : "http://localhost:7474/db/data/index/node/testing-fulltext/{key}/{value}",
+  "provider" : "lucene",
+  "type" : "fulltext"
+}
+---
+
 * {Listing relationship indexes}
 
 ** GET /index/relationship
@@ -535,14 +557,14 @@ curl -H Accept:application/json http://localhost:7474/db/data/index/relationship
 ** Example using curl
 
 ---
-curl -HContent-Type:application/json -X POST -d '"http://localhost:7474/db/data/node/123"' http://localhost:7474/db/data/index/node/my_nodes/foo/bar
+curl -HContent-Type:application/json -X POST -d '"http://localhost:7474/db/data/node/123"' http://localhost:7474/db/data/index/node/my_nodes/foo/bar%20with%20space
 ---
 
 ** Response
 
 *** 201: OK, indexed the node with key/value
 
-    <<Location>>: http://localhost:7474/db/data/index/node/my_nodes/foo/bar/123
+    <<Location>>: http://localhost:7474/db/data/index/node/my_nodes/foo/bar%20with%20space/123
 
 ** POST /index/relationship/my_relationships/foo/bar
 
@@ -592,7 +614,7 @@ curl -X DELETE http://localhost:7474/db/data/index/node/my_nodes/foo/bar/123
 ** Example using curl
 
 ---
-curl -H Accept:application/json http://localhost:7474/db/data/index/node/my_nodes/foo/bar
+curl -H Accept:application/json http://localhost:7474/db/data/index/node/my_nodes/foo/bar%20with%20space
 ---
 
 ** Response
@@ -609,7 +631,7 @@ curl -H Accept:application/json http://localhost:7474/db/data/index/node/my_node
   { "self": "http://localhost:7474/db/data/node/325",
     "data": { "name": "Agent Smith" },
     ...
-    "indexed": "http://localhost:7474/db/data/index/node/foo/bar/325"
+    "indexed": "http://localhost:7474/db/data/index/node/foo/bar%20with%20space/325"
   }
 ]
 ---
