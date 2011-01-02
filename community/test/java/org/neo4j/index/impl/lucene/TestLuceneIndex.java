@@ -24,6 +24,7 @@ import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -256,6 +257,17 @@ public class TestLuceneIndex
         Node node = graphDb.createNode();
         index.add( node, "key", "value" );
         assertThat( index.query( "key:value" ), contains( node ) );
+    }
+    
+    
+    @Test
+    public void testStartupInExistingDirectory() {
+        String dir = "target/temp/";
+        (new File(dir)).mkdir();
+        EmbeddedGraphDatabase graphDatabase = new EmbeddedGraphDatabase(dir);
+        Index<Node> index = graphDatabase.index().forNodes("nodes");
+        assertNotNull(index);
+        
     }
 
     @Test
