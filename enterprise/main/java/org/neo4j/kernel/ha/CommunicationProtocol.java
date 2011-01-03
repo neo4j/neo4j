@@ -28,11 +28,13 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.ha.MasterServer.PartialRequest;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
 
 public abstract class CommunicationProtocol
@@ -237,25 +239,71 @@ public abstract class CommunicationProtocol
     {
         // TODO Not very pretty solution (to pass in MasterServer here)
         // but what the heck.
-        RequestType type = RequestType.values()[buffer.readByte()];
-        SlaveContext context = null;
-        if ( type.includesSlaveContext() )
+        
+        // TODO Too long method, refactor please
+        byte continuation = buffer.readByte();
+        Map<Channel, PartialRequest> partialRequests = server.getPartialRequests();
+        if ( continuation == ChunkingChannelBuffer.CONTINUATION_MORE )
         {
-            context = readSlaveContext( buffer );
+            PartialRequest partialRequest = partialRequests.get( channel );
+            if ( partialRequest == null )
+            {
+                // This is the first chunk
+                RequestType type = RequestType.values()[buffer.readByte()];
+                SlaveContext context = null;
+                if ( type.includesSlaveContext() )
+                {
+                    context = readSlaveContext( buffer );
+                }
+                Pair<ChannelBuffer, ByteBuffer> targetBuffers = server.mapSlave( channel, context );
+                partialRequest = new PartialRequest( type, context, targetBuffers );
+                partialRequests.put( channel, partialRequest );
+            }
+            partialRequest.add( buffer );
+            
+            // TODO
+            return null;
         }
-        Pair<ChannelBuffer, ByteBuffer> targetBuffers = server.mapSlave( channel, context );
-        targetBuffers.first().clear();
-        Response<?> response = type.caller.callMaster( realMaster, context, buffer );
-        type.serializer.write( response.response(), targetBuffers.first() );
-        if ( type.includesSlaveContext() )
+        else
         {
-            writeTransactionStreams( response.transactions(), targetBuffers.first(), targetBuffers.other() );
+            PartialRequest partialRequest = partialRequests.remove( channel );
+            RequestType type = null;
+            SlaveContext context = null;
+            Pair<ChannelBuffer, ByteBuffer> targetBuffers;
+            ChannelBuffer bufferToReadFrom = null;
+            if ( partialRequest == null )
+            {
+                type = RequestType.values()[buffer.readByte()];
+                if ( type.includesSlaveContext() )
+                {
+                    context = readSlaveContext( buffer );
+                }
+                targetBuffers = server.mapSlave( channel, context );
+                bufferToReadFrom = buffer;
+            }
+            else
+            {
+                type = partialRequest.type;
+                context = partialRequest.slaveContext;
+                targetBuffers = partialRequest.buffers;
+                partialRequest.add( buffer );
+                bufferToReadFrom = targetBuffers.first();
+            }
+            
+            Response<?> response = type.caller.callMaster( realMaster, context, bufferToReadFrom );
+            targetBuffers.first().clear();
+            ChannelBuffer theBuffer = new ChunkingChannelBuffer( targetBuffers.first(), channel, MAX_FRAME_LENGTH );
+            type.serializer.write( response.response(), theBuffer );
+            if ( type.includesSlaveContext() )
+            {
+                writeTransactionStreams( response.transactions(), theBuffer, targetBuffers.other() );
+            }
+            if ( type == RequestType.FINISH || type == RequestType.PULL_UPDATES )
+            {
+                server.unmapSlave( channel, context );
+            }
+            return theBuffer;
         }
-        if ( type == RequestType.FINISH || type == RequestType.PULL_UPDATES )
-        {
-            server.unmapSlave( channel, context );
-        }
-        return targetBuffers.first();
     }
     
     private static <T> void writeTransactionStreams( TransactionStreams txStreams,

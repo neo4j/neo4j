@@ -122,6 +122,7 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
     private <T> Response<T> sendRequest( RequestType type,
             SlaveContext slaveContext, Serializer serializer, Deserializer<T> deserializer )
     {
+        // TODO Refactor, break into smaller methods
         Triplet<Channel, ChannelBuffer, ByteBuffer> channelContext = null;
         try
         {
@@ -130,21 +131,47 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
             Channel channel = channelContext.first();
             ChannelBuffer buffer = channelContext.other();
             buffer.clear();
+            buffer = new ChunkingChannelBuffer( buffer, channel, MAX_FRAME_LENGTH );
             buffer.writeByte( type.ordinal() );
             if ( type.includesSlaveContext() )
             {
                 writeSlaveContext( buffer, slaveContext );
             }
             serializer.write( buffer, channelContext.third() );
-            channel.write( buffer );
+            if ( buffer.writerIndex() > 0 )
+            {
+                channel.write( buffer );
+            }
+            
             BlockingReadHandler<ChannelBuffer> reader = (BlockingReadHandler<ChannelBuffer>)
                     channel.getPipeline().get( "blockingHandler" );
-
-            ChannelBuffer message =  reader.read( READ_RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS );
-            if ( message == null )
+            ChannelBuffer message = null;
+            while ( true )
             {
-                channelPool.dispose( channelContext );
-                throw new HaCommunicationException( "Channel has been closed" );
+                ChannelBuffer messagePart = reader.read( READ_RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS );
+                if ( messagePart == null )
+                {
+                    channelPool.dispose( channelContext );
+                    throw new HaCommunicationException( "Channel has been closed" );
+                }
+                byte continuation = messagePart.readByte();
+                if ( continuation == ChunkingChannelBuffer.CONTINUATION_MORE )
+                {
+                    message = message != null ? message : ChannelBuffers.dynamicBuffer();
+                    message.writeBytes( messagePart );
+                }
+                else
+                {
+                    if ( message == null )
+                    {
+                        message = messagePart;
+                    }
+                    else
+                    {
+                        message.writeBytes( messagePart );
+                    }
+                    break;
+                }
             }
             T response = deserializer.read( message );
             TransactionStreams txStreams = type.includesSlaveContext() ?

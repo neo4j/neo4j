@@ -75,8 +75,9 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
     private final Map<Channel, Pair<ChannelBuffer, ByteBuffer>> channelBuffers =
             new HashMap<Channel, Pair<ChannelBuffer,ByteBuffer>>();
     private final ExecutorService executor;
-
     private final StringLogger msgLog;
+    private final Map<Channel, PartialRequest> partialRequests =
+            Collections.synchronizedMap( new HashMap<Channel, PartialRequest>() );
     
     public MasterServer( Master realMaster, final int port, String storeDir )
     {
@@ -117,6 +118,11 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
         pipeline.addLast( "serverHandler", new ServerHandler() );
         return pipeline;
     }
+    
+    Map<Channel, PartialRequest> getPartialRequests()
+    {
+        return partialRequests;
+    }
 
     private class ServerHandler extends SimpleChannelHandler
     {
@@ -129,7 +135,17 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
                 ChannelBuffer message = (ChannelBuffer) event.getMessage();
                 ChannelBuffer result = handleRequest( realMaster, message, 
                         event.getChannel(), MasterServer.this );
-                event.getChannel().write( result );
+                if ( result != null )
+                {
+                    if ( result.writerIndex() > 0 )
+                    {
+                        event.getChannel().write( result );
+                    }
+                }
+                else
+                {
+                    // TODO This was just a chunk, send something back at all?
+                }
             }
             catch ( Exception e )
             {
@@ -161,6 +177,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
                 buffer = Pair.of( ChannelBuffers.dynamicBuffer(), ByteBuffer.allocateDirect( 1*1024*1024 ) );
                 channelBuffers.put( channel, buffer );
             }
+            buffer.first().clear();
         }
         return buffer;
     }
@@ -203,6 +220,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
             {
                 connectedSlaveChannels.remove( channel );
                 channelBuffers.remove( channel );
+                partialRequests.remove( channel );
             }
         }
     }
@@ -241,5 +259,24 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
             }
         }
         return new TreeMap<Integer, Collection<SlaveContext>>( ongoingTransactions );
+    }
+    
+    static class PartialRequest
+    {
+        final SlaveContext slaveContext;
+        final Pair<ChannelBuffer, ByteBuffer> buffers;
+        final RequestType type;
+        
+        public PartialRequest( RequestType type, SlaveContext slaveContext, Pair<ChannelBuffer, ByteBuffer> buffers )
+        {
+            this.type = type;
+            this.slaveContext = slaveContext;
+            this.buffers = buffers;
+        }
+        
+        public void add( ChannelBuffer buffer )
+        {
+            this.buffers.first().writeBytes( buffer );
+        }
     }
 }
