@@ -23,7 +23,6 @@ package org.neo4j.server.configuration;
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
