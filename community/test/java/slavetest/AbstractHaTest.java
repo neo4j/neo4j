@@ -514,9 +514,18 @@ public abstract class AbstractHaTest
         pullUpdates();
     }
     
+    @Test
     public void testVeryLargeTransaction() throws Exception
     {
         initializeDbs( 1 );
         executeJob( new CommonJobs.LargeTransactionJob(), 0 );
+    }
+    
+    @Test
+    public void testPullVeryLargeTransaction() throws Exception
+    {
+        initializeDbs( 1 );
+        executeJobOnMaster( new CommonJobs.LargeTransactionJob() );
+        pullUpdates();
     }
 }
