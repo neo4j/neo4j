@@ -153,7 +153,7 @@ public class IndexNodeFunctionalityTest
         assertEquals( 200, response.getStatus() );
         hits = (Collection<?>) JsonHelper.jsonToSingleValue( response.getEntity( String.class ) );
         //TODO: this is failing!
-        //assertEquals( 1, hits.size() );
+        assertEquals( 1, hits.size() );
     }
 
     /**
