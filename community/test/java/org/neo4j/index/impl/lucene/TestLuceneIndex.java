@@ -262,12 +262,12 @@ public class TestLuceneIndex
     
     @Test
     public void testStartupInExistingDirectory() {
-        String dir = "target/temp/";
-        (new File(dir)).mkdir();
-        EmbeddedGraphDatabase graphDatabase = new EmbeddedGraphDatabase(dir);
+        File dir = new File( "target/temp/" );
+        Neo4jTestCase.deleteFileOrDirectory( dir );
+        dir.mkdir();
+        EmbeddedGraphDatabase graphDatabase = new EmbeddedGraphDatabase( dir.getAbsolutePath() );
         Index<Node> index = graphDatabase.index().forNodes("nodes");
         assertNotNull(index);
-        
     }
 
     @Test
