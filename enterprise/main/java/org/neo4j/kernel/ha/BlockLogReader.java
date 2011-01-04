@@ -32,18 +32,15 @@ public class BlockLogReader implements ReadableByteChannel
         }
     }
 
-    @Override
     public boolean isOpen()
     {
         return true;
     }
 
-    @Override
     public void close() throws IOException
     {
     }
 
-    @Override
     public int read( ByteBuffer dst ) throws IOException
     {
         int bytesWanted = dst.limit();
