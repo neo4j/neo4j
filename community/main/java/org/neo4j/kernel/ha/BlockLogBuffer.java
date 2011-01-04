@@ -30,10 +30,10 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 public class BlockLogBuffer implements LogBuffer
 {
     private static final byte FULL_BLOCK_AND_MORE = 0;
-    private static final int MAX_SIZE = 255;
-    
+    private static final int MAX_SIZE = 256/*incl. header*/;
+
     private final ChannelBuffer target;
-    private final byte[] byteArray = new byte[MAX_SIZE+7];
+    private final byte[] byteArray = new byte[MAX_SIZE + 8/*largest atom*/];
     private final ByteBuffer byteBuffer = ByteBuffer.wrap( byteArray );
 
     public BlockLogBuffer( ChannelBuffer target )
@@ -41,14 +41,14 @@ public class BlockLogBuffer implements LogBuffer
         this.target = target;
         clearInternalBuffer();
     }
-    
+
     private void clearInternalBuffer()
     {
         byteBuffer.clear();
         // reserve space for size - assume we are going to fill the buffer
         byteBuffer.put( FULL_BLOCK_AND_MORE );
     }
-    
+
     private LogBuffer checkFlush()
     {
         if ( byteBuffer.position() > MAX_SIZE )
@@ -56,47 +56,41 @@ public class BlockLogBuffer implements LogBuffer
             target.writeBytes( byteArray, 0, MAX_SIZE );
             int pos = byteBuffer.position();
             clearInternalBuffer();
-            byteBuffer.put( byteArray, MAX_SIZE, MAX_SIZE - pos );
+            byteBuffer.put( byteArray, MAX_SIZE, pos - MAX_SIZE );
         }
         return this;
     }
-    
-    @Override
+
     public LogBuffer put( byte b ) throws IOException
     {
         byteBuffer.put( b );
         return checkFlush();
     }
 
-    @Override
     public LogBuffer putInt( int i ) throws IOException
     {
         byteBuffer.putInt( i );
         return checkFlush();
     }
 
-    @Override
     public LogBuffer putLong( long l ) throws IOException
     {
         byteBuffer.putLong( l );
         return checkFlush();
     }
 
-    @Override
     public LogBuffer putFloat( float f ) throws IOException
     {
         byteBuffer.putFloat( f );
         return checkFlush();
     }
 
-    @Override
     public LogBuffer putDouble( double d ) throws IOException
     {
         byteBuffer.putDouble( d );
         return checkFlush();
     }
 
-    @Override
     public LogBuffer put( byte[] bytes ) throws IOException
     {
         for ( int pos = 0; pos < bytes.length; )
@@ -109,16 +103,15 @@ public class BlockLogBuffer implements LogBuffer
         return this;
     }
 
-    @Override
     public LogBuffer put( char[] chars ) throws IOException
     {
-        for ( int bytePos = 0; bytePos < chars.length*2; )
+        for ( int bytePos = 0; bytePos < chars.length * 2; )
         {
-            int bytesToWrite = Math.min( byteBuffer.remaining(), chars.length*2 - bytePos );
-            bytesToWrite -= (bytesToWrite%2);
+            int bytesToWrite = Math.min( byteBuffer.remaining(), chars.length * 2 - bytePos );
+            bytesToWrite -= ( bytesToWrite % 2 );
             for ( int i = 0; i < bytesToWrite / 2; i++ )
             {
-                byteBuffer.putChar( chars[(bytePos/2)+i] );
+                byteBuffer.putChar( chars[( bytePos / 2 ) + i] );
             }
             checkFlush();
             bytePos += bytesToWrite;
@@ -126,29 +119,26 @@ public class BlockLogBuffer implements LogBuffer
         return this;
     }
 
-    @Override
     public void force() throws IOException
     {
         // Do nothing
     }
 
-    @Override
     public long getFileChannelPosition() throws IOException
     {
         throw new UnsupportedOperationException( "BlockLogBuffer does not have a FileChannel" );
     }
 
-    @Override
     public FileChannel getFileChannel()
     {
         throw new UnsupportedOperationException( "BlockLogBuffer does not have a FileChannel" );
     }
-    
+
     public void done()
     {
         assert byteBuffer.position() > 1 : "buffer should contain more than the header";
         assert byteBuffer.position() <= MAX_SIZE : "buffer should not be over full";
-        byteBuffer.put( 0, (byte)(byteBuffer.position()-1) );
+        byteBuffer.put( 0, (byte) ( byteBuffer.position() - 1 ) );
         byteBuffer.flip();
         target.writeBytes( byteBuffer );
         clearInternalBuffer();
