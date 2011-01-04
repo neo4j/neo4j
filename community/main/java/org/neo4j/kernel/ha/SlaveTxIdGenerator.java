@@ -44,13 +44,13 @@ public class SlaveTxIdGenerator implements TxIdGenerator
             this.broker = broker;
             this.receiver = receiver;
         }
-        
+
         public TxIdGenerator create( TransactionManager txManager )
         {
             return new SlaveTxIdGenerator( broker, receiver, txManager );
         }
     }
-    
+
     private final Broker broker;
     private final ResponseReceiver receiver;
     private final TxManager txManager;
@@ -72,7 +72,6 @@ public class SlaveTxIdGenerator implements TxIdGenerator
                     receiver.getSlaveContext( eventIdentifier ),
                     dataSource.getName(), new TxExtractor()
                     {
-                        @Override
                         public void extract( LogBuffer buffer )
                         {
                             try
@@ -84,8 +83,7 @@ public class SlaveTxIdGenerator implements TxIdGenerator
                                 throw new RuntimeException( e );
                             }
                         }
-                        
-                        @Override
+
                         public ReadableByteChannel extract()
                         {
                             try

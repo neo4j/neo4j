@@ -43,7 +43,7 @@ public abstract class CommunicationProtocol
     public static final int PORT = 8901;
     private static final int MEGA = 1024 * 1024;
     static final int MAX_FRAME_LENGTH = 16*MEGA;
-    
+
     static final ObjectSerializer<Integer> INTEGER_SERIALIZER = new ObjectSerializer<Integer>()
     {
         @SuppressWarnings( "boxing" )
@@ -182,13 +182,11 @@ public abstract class CommunicationProtocol
                 final ReadableByteChannel reader = new BlockLogReader( input );
                 return master.commitSingleResourceTransaction( context, resource, new TxExtractor()
                 {
-                    @Override
                     public ReadableByteChannel extract()
                     {
                         return reader;
                     }
-                    
-                    @Override
+
                     public void extract( LogBuffer buffer )
                     {
                         throw new UnsupportedOperationException();
@@ -235,12 +233,12 @@ public abstract class CommunicationProtocol
             this.serializer = serializer;
             this.includesSlaveContext = includesSlaveContext;
         }
-        
+
         private <T> RequestType( MasterCaller<T> caller, ObjectSerializer<T> serializer )
         {
             this( caller, serializer, true );
         }
-        
+
         public boolean includesSlaveContext()
         {
             return this.includesSlaveContext;
@@ -253,7 +251,7 @@ public abstract class CommunicationProtocol
     {
         // TODO Not very pretty solution (to pass in MasterServer here)
         // but what the heck.
-        
+
         // TODO Too long method, refactor please
         byte continuation = buffer.readByte();
         Map<Channel, PartialRequest> partialRequests = server.getPartialRequests();
@@ -274,7 +272,7 @@ public abstract class CommunicationProtocol
                 partialRequests.put( channel, partialRequest );
             }
             partialRequest.add( buffer );
-            
+
             // TODO
             return null;
         }
@@ -303,7 +301,7 @@ public abstract class CommunicationProtocol
                 partialRequest.add( buffer );
                 bufferToReadFrom = targetBuffers.first();
             }
-            
+
             Response<?> response = type.caller.callMaster( realMaster, context, bufferToReadFrom );
             targetBuffers.first().clear();
             ChannelBuffer theBuffer = new ChunkingChannelBuffer( targetBuffers.first(), channel, MAX_FRAME_LENGTH );
@@ -319,7 +317,7 @@ public abstract class CommunicationProtocol
             return theBuffer;
         }
     }
-    
+
     private static <T> void writeTransactionStreams( TransactionStreams txStreams,
             ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
     {
@@ -362,7 +360,7 @@ public abstract class CommunicationProtocol
             channel.other().close();
         }
     }
-    
+
     private static Pair<Long, ReadableByteChannel> readSingleTransaction( ChannelBuffer buffer )
     {
         long txId = buffer.readLong();
