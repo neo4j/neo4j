@@ -43,12 +43,13 @@ public class TestBlockLogBuffer
         ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
         wrappedBuffer.resetWriterIndex();
         BlockLogBuffer buffer = new BlockLogBuffer( wrappedBuffer );
+
         byte byteValue = 5;
         int intValue = 1234;
         long longValue = 574853;
         float floatValue = 304985.5f;
         double doubleValue = 48493.22d;
-        final byte[] bytesValue = new byte[] { 1,5,2,6,3 };
+        final byte[] bytesValue = new byte[] { 1, 5, 2, 6, 3 };
         final char[] charsValue = "This is chars".toCharArray();
         buffer.put( byteValue );
         buffer.putInt( intValue );
@@ -58,7 +59,7 @@ public class TestBlockLogBuffer
         buffer.put( bytesValue );
         buffer.put( charsValue );
         buffer.done();
-        
+
         ByteBuffer verificationBuffer = ByteBuffer.wrap( bytes );
         assertEquals( 56, verificationBuffer.get() );
         assertEquals( byteValue, verificationBuffer.get() );
@@ -68,21 +69,103 @@ public class TestBlockLogBuffer
         assertEquals( doubleValue, verificationBuffer.getDouble(), 0.0 );
         byte[] actualBytes = new byte[bytesValue.length];
         verificationBuffer.get( actualBytes );
-        assertThat(actualBytes, new ArrayMatches<byte[]>( bytesValue ));
+        assertThat( actualBytes, new ArrayMatches<byte[]>( bytesValue ) );
         char[] actualChars = new char[charsValue.length];
         verificationBuffer.asCharBuffer().get( actualChars );
-        assertThat(actualChars, new ArrayMatches<char[]>( charsValue ));
+        assertThat( actualChars, new ArrayMatches<char[]>( charsValue ) );
     }
-    
-    private class ArrayMatches<T> extends BaseMatcher<T> {
+
+    @Test
+    public void onlyOneFullBlock() throws Exception
+    {
+        byte[] bytes = new byte[256];
+        ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
+        wrappedBuffer.resetWriterIndex();
+        BlockLogBuffer buffer = new BlockLogBuffer( wrappedBuffer );
+
+        byte[] bytesValue = new byte[255];
+        bytesValue[0] = 1;
+        bytesValue[254] = -1;
+        buffer.put( bytesValue );
+        buffer.done();
+
+        ByteBuffer verificationBuffer = ByteBuffer.wrap( bytes );
+        assertEquals( (byte) 255, verificationBuffer.get() );
+        byte[] actualBytes = new byte[bytesValue.length];
+        verificationBuffer.get( actualBytes );
+        assertThat( actualBytes, new ArrayMatches<byte[]>( bytesValue ) );
+    }
+
+    @Test
+    public void canWriteLargestAtomAfterFillingBuffer() throws Exception
+    {
+        byte[] bytes = new byte[300];
+        ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
+        wrappedBuffer.resetWriterIndex();
+        BlockLogBuffer buffer = new BlockLogBuffer( wrappedBuffer );
+
+        byte[] bytesValue = new byte[255];
+        bytesValue[0] = 1;
+        bytesValue[254] = -1;
+        long longValue = 123456;
+        buffer.put( bytesValue );
+        buffer.putLong( longValue );
+        buffer.done();
+
+        ByteBuffer verificationBuffer = ByteBuffer.wrap( bytes );
+        assertEquals( (byte) 0, verificationBuffer.get() );
+        byte[] actualBytes = new byte[bytesValue.length];
+        verificationBuffer.get( actualBytes );
+        assertThat( actualBytes, new ArrayMatches<byte[]>( bytesValue ) );
+        assertEquals( (byte) 8, verificationBuffer.get() );
+        assertEquals( longValue, verificationBuffer.getLong() );
+    }
+
+    @Test
+    public void canWriteReallyLargeByteArray() throws Exception
+    {
+        byte[] bytes = new byte[650];
+        ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
+        wrappedBuffer.resetWriterIndex();
+        BlockLogBuffer buffer = new BlockLogBuffer( wrappedBuffer );
+
+        byte[] bytesValue = new byte[600];
+        bytesValue[1] = 1;
+        bytesValue[99] = 2;
+        bytesValue[199] = 3;
+        bytesValue[299] = 4;
+        bytesValue[399] = 5;
+        bytesValue[499] = 6;
+        bytesValue[599] = 7;
+        buffer.put( bytesValue );
+        buffer.done();
+
+        byte[] actual;
+        ByteBuffer verificationBuffer = ByteBuffer.wrap( bytes );
+        assertEquals( (byte) 0, verificationBuffer.get() );
+        actual = new byte[255];
+        verificationBuffer.get( actual );
+        assertThat( actual, new ArrayMatches<byte[]>( Arrays.copyOfRange( bytesValue, 0, 255 ) ) );
+        assertEquals( (byte) 0, verificationBuffer.get() );
+        actual = new byte[255];
+        verificationBuffer.get( actual );
+        assertThat( actual, new ArrayMatches<byte[]>( Arrays.copyOfRange( bytesValue, 255, 510 ) ) );
+        assertEquals( (byte) 90, verificationBuffer.get() );
+        actual = new byte[90];
+        verificationBuffer.get( actual );
+        assertThat( actual, new ArrayMatches<byte[]>( Arrays.copyOfRange( bytesValue, 510, 600 ) ) );
+    }
+
+    private class ArrayMatches<T> extends BaseMatcher<T>
+    {
         private final T expected;
         private Object actual;
 
-        public ArrayMatches(T expected)
+        public ArrayMatches( T expected )
         {
             this.expected = expected;
         }
-        @Override
+
         public boolean matches( Object actual )
         {
             this.actual = actual;
@@ -97,21 +180,21 @@ public class TestBlockLogBuffer
             return false;
         }
 
-        @Override
         public void describeTo( Description descr )
         {
-            descr.appendText( String.format( "expected %s, got %s",
-                    toString( expected ), toString( actual ) ) );
+            descr.appendText( String.format( "expected %s, got %s", toString( expected ),
+                    toString( actual ) ) );
         }
+
         private String toString( Object value )
         {
             if ( value instanceof byte[] )
             {
-                return Arrays.toString( (byte[]) value);
+                return Arrays.toString( (byte[]) value ) + "; len=" + ( (byte[]) value ).length;
             }
             if ( value instanceof char[] )
             {
-                return Arrays.toString( (char[]) value);
+                return Arrays.toString( (char[]) value ) + "; len=" + ( (char[]) value ).length;
             }
             return "" + value;
         }
