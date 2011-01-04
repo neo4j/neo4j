@@ -213,8 +213,8 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
                     System.out.println( "Found dead channel " + entry.getKey() + ", " + entry.getValue() );
                     realMaster.finishTransaction( entry.getValue() );
                     System.out.println( "Removed " + entry.getKey() + ", " + entry.getValue() );
+                    channelsToRemove.add( entry.getKey() );
                 }
-                channelsToRemove.add( entry.getKey() );
             }
             for ( Channel channel : channelsToRemove )
             {
@@ -227,6 +227,10 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
     
     private boolean channelIsOpen( Channel channel )
     {
+        /**
+         * "open" is defined as the lowest means of connectedness
+         * "connected" may be that data is actually sent or something
+         */
         return channel.isConnected() && channel.isOpen();
     }
     
