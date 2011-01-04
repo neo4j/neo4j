@@ -22,13 +22,12 @@ package org.neo4j.kernel.ha;
 
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
-import java.util.Arrays;
 
 import javax.transaction.TransactionManager;
 
-import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.transaction.TxManager;
+import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
@@ -64,21 +63,42 @@ public class SlaveTxIdGenerator implements TxIdGenerator
         this.txManager = (TxManager) txManager;
     }
 
-    public long generate( XaDataSource dataSource, int identifier )
+    public long generate( final XaDataSource dataSource, final int identifier )
     {
         try
         {
-            int eventIdentifier = txManager.getEventIdentifier();
-            Pair<Long, ReadableByteChannel> tx = new Pair<Long, ReadableByteChannel>( -1L,
-                    dataSource.getPreparedTransaction( identifier ) );
+            final int eventIdentifier = txManager.getEventIdentifier();
             Response<Long> response = broker.getMaster().first().commitSingleResourceTransaction(
                     receiver.getSlaveContext( eventIdentifier ),
-                    dataSource.getName(), new TransactionStream( Arrays.asList( tx ) ) );
+                    dataSource.getName(), new TxExtractor()
+                    {
+                        @Override
+                        public void extract( LogBuffer buffer )
+                        {
+                            try
+                            {
+                                dataSource.getPreparedTransaction( identifier, buffer );
+                            }
+                            catch ( IOException e )
+                            {
+                                throw new RuntimeException( e );
+                            }
+                        }
+                        
+                        @Override
+                        public ReadableByteChannel extract()
+                        {
+                            try
+                            {
+                                return dataSource.getPreparedTransaction( identifier );
+                            }
+                            catch ( IOException e )
+                            {
+                                throw new RuntimeException( e );
+                            }
+                        }
+                    });
             return receiver.receive( response );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
         }
         catch ( ZooKeeperException e )
         {

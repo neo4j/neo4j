@@ -269,14 +269,16 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
     }
 
     public Response<Long> commitSingleResourceTransaction( SlaveContext context,
-            final String resource, final TransactionStream transactionStream )
+            final String resource, final TxExtractor txGetter )
     {
         return sendRequest( RequestType.COMMIT, context, new Serializer()
         {
             public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
             {
                 writeString( buffer, resource );
-                writeTransactionStream(buffer, readBuffer, transactionStream);
+                BlockLogBuffer blockLogBuffer = new BlockLogBuffer( buffer );
+                txGetter.extract( blockLogBuffer );
+                blockLogBuffer.done();
             }
         }, new Deserializer<Long>()
         {

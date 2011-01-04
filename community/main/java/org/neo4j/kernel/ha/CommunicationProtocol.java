@@ -36,6 +36,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.MasterServer.PartialRequest;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
+import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 
 public abstract class CommunicationProtocol
 {
@@ -178,8 +179,21 @@ public abstract class CommunicationProtocol
                     ChannelBuffer input )
             {
                 String resource = readString( input );
-                TransactionStream transactionStream = readTransactionStream( input );
-                return master.commitSingleResourceTransaction( context, resource, transactionStream );
+                final ReadableByteChannel reader = new BlockLogReader( input );
+                return master.commitSingleResourceTransaction( context, resource, new TxExtractor()
+                {
+                    @Override
+                    public ReadableByteChannel extract()
+                    {
+                        return reader;
+                    }
+                    
+                    @Override
+                    public void extract( LogBuffer buffer )
+                    {
+                        throw new UnsupportedOperationException();
+                    }
+                } );
             }
         }, LONG_SERIALIZER ),
         PULL_UPDATES( new MasterCaller<Void>()
@@ -348,6 +362,15 @@ public abstract class CommunicationProtocol
             channel.other().close();
         }
     }
+    
+    private static Pair<Long, ReadableByteChannel> readSingleTransaction( ChannelBuffer buffer )
+    {
+        long txId = buffer.readLong();
+        byte[] data = new byte[buffer.readInt()];
+        buffer.readBytes( data );
+        ReadableByteChannel channel = new ByteArrayChannel( data );
+        return Pair.of( txId, channel );
+    }
 
     private static TransactionStream readTransactionStream( ChannelBuffer buffer )
     {
@@ -356,11 +379,7 @@ public abstract class CommunicationProtocol
         int size = buffer.readInt();
         for ( int i = 0; i < size; i++ )
         {
-            long txId = buffer.readLong();
-            byte[] data = new byte[buffer.readInt()];
-            buffer.readBytes( data );
-            ReadableByteChannel channel = new ByteArrayChannel( data );
-            channels.add( new Pair<Long, ReadableByteChannel>( txId, channel ) );
+            channels.add( readSingleTransaction( buffer ) );
         }
         return new TransactionStream( channels );
     }
