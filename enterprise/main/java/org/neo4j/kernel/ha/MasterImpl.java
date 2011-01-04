@@ -260,16 +260,14 @@ public class MasterImpl implements Master
     }
 
     public Response<Long> commitSingleResourceTransaction( SlaveContext context,
-            String resource, TransactionStream transactionStream )
+            String resource, TxExtractor txGetter )
     {
         Transaction otherTx = suspendOtherAndResumeThis( context );
         try
         {
             XaDataSource dataSource = graphDbConfig.getTxModule()
                     .getXaDataSourceManager().getXaDataSource( resource );
-            // Always exactly one transaction (ReadableByteChannel)
-            final long txId = dataSource.applyPreparedTransaction(
-                    transactionStream.getChannels().iterator().next().other() );
+            final long txId = dataSource.applyPreparedTransaction( txGetter.extract() );
             Predicate<Long> notThisTx = new Predicate<Long>()
             {
                 public boolean accept( Long item )

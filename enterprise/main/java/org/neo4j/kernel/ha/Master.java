@@ -41,7 +41,7 @@ public interface Master
     Response<LockResult> acquireRelationshipReadLock( SlaveContext context, long... relationships );
 
     Response<Long> commitSingleResourceTransaction( SlaveContext context,
-            String resource, TransactionStream transactionStream );
+            String resource, TxExtractor txGetter );
     
     Response<Void> finishTransaction( SlaveContext context );
     
