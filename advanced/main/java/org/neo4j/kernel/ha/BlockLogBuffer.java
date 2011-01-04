@@ -29,8 +29,8 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 
 public class BlockLogBuffer implements LogBuffer
 {
-    private static final byte FULL_BLOCK_AND_MORE = 0;
-    private static final int MAX_SIZE = 256/*incl. header*/;
+    static final byte FULL_BLOCK_AND_MORE = 0;
+    static final int MAX_SIZE = 256/*incl. header*/;
 
     private final ChannelBuffer target;
     private final byte[] byteArray = new byte[MAX_SIZE + 8/*largest atom*/];
