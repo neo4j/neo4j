@@ -26,7 +26,6 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -920,13 +919,13 @@ public class XaLogicalLog
         return channel;
     }
 
-    private List<LogEntry> extractPreparedTransactionFromLog( int identifier,
-            FileChannel log ) throws IOException
+    private void extractPreparedTransactionFromLog( int identifier,
+            FileChannel log, LogBuffer targetBuffer ) throws IOException
     {
         LogEntry.Start startEntry = xidIdentMap.get( identifier );
         log.position( startEntry.getStartPosition() );
-        List<LogEntry> logEntryList = new ArrayList<LogEntry>();
         LogEntry entry;
+        boolean found = false;
         while ( (entry = LogIoUtils.readEntry( buffer, log, cf )) != null )
         {
             // TODO For now just skip Prepare entries
@@ -940,19 +939,19 @@ public class XaLogicalLog
             }
             if ( entry instanceof LogEntry.Start || entry instanceof LogEntry.Command )
             {
-                logEntryList.add( entry );
+                LogIoUtils.writeLogEntry( entry, targetBuffer );
+                found = true;
             }
             else
             {
                 throw new RuntimeException( "Expected start or command entry but found: " + entry );
             }
         }
-        if ( logEntryList.isEmpty() )
+        if ( !found )
         {
             throw new IOException( "Transaction for internal identifier[" + identifier +
                     "] not found in current log" );
         }
-        return logEntryList;
     }
 
     private List<LogEntry> extractTransactionFromLog( long txId,
@@ -1030,10 +1029,10 @@ public class XaLogicalLog
             throws IOException
     {
         FileChannel log = (FileChannel) getLogicalLogOrMyself( logVersion, 0 );
-        List<LogEntry> logEntryList = extractPreparedTransactionFromLog( identifier, log );
+        InMemoryLogBuffer buffer = new InMemoryLogBuffer();
+        extractPreparedTransactionFromLog( identifier, log, buffer );
         log.close();
-
-        return wrapInMemoryLogEntryRepresentation( logEntryList );
+        return buffer;
 
 //        File txFile = createTempFile( "temp-write-out", "-" + identifier );
 //        writeOutLogEntryList( logEntryList, txFile, false );
@@ -1049,6 +1048,14 @@ public class XaLogicalLog
             LogIoUtils.writeLogEntry( entry, buffer );
         }
         return buffer;
+    }
+    
+    public synchronized void getPreparedTransaction( int identifier, LogBuffer targetBuffer )
+            throws IOException
+    {
+        FileChannel log = (FileChannel) getLogicalLogOrMyself( logVersion, 0 );
+        extractPreparedTransactionFromLog( identifier, log, targetBuffer );
+        log.close();
     }
 
 //    private void writeOutLogEntryList( List<LogEntry> logEntryList, File txFile, boolean tempWriteOutFirst ) throws IOException
