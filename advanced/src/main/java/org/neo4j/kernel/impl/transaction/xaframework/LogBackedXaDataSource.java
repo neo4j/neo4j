@@ -27,13 +27,13 @@ import java.util.Map;
 public abstract class LogBackedXaDataSource extends XaDataSource
 {
     private XaLogicalLog logicalLog;
-    
+
     public LogBackedXaDataSource( Map<?, ?> params )
             throws InstantiationException
     {
         super( params );
     }
-    
+
     /**
      * Sets the {@link XaLogicalLog} at creation time (in constructor). It is
      * done with this method because it can be so problematic in so many ways
@@ -114,17 +114,23 @@ public abstract class LogBackedXaDataSource extends XaDataSource
     {
         logicalLog.makeBackupSlave();
     }
-    
+
     @Override
     public String getFileName( long version )
     {
         return logicalLog.getFileName( version );
     }
-    
+
     @Override
     public ReadableByteChannel getCommittedTransaction( long txId ) throws IOException
     {
         return logicalLog.getCommittedTransaction( txId );
+    }
+
+    @Override
+    public void getCommittedTransaction( long txId, LogBuffer buffer ) throws IOException
+    {
+        logicalLog.getCommittedTransaction( txId, buffer );
     }
 
     @Override
@@ -138,7 +144,7 @@ public abstract class LogBackedXaDataSource extends XaDataSource
     {
         logicalLog.getPreparedTransaction( identifier, targetBuffer );
     }
-    
+
     @Override
     public int getMasterForCommittedTx( long txId ) throws IOException
     {

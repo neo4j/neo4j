@@ -40,13 +40,13 @@ import org.neo4j.kernel.impl.util.StringLogger;
  * {@link XaContainer} and extend the {@link XaConnectionHelpImpl} as your
  * {@link XaConnection} implementation. Here is an example:
  * <p>
- * 
+ *
  * <pre>
  * <CODE>
  * public class MyDataSource implements XaDataSource {
  *     MyDataSource( params ) {
  *         // ... initalization stuff
- *         container = XaContainer.create( myLogicalLogFile, myCommandFactory, 
+ *         container = XaContainer.create( myLogicalLogFile, myCommandFactory,
  *             myTransactionFactory );
  *         // ... more initialization stuff
  *         container.openLogicalLog();
@@ -66,11 +66,11 @@ public abstract class XaDataSource
 {
     private byte[] branchId = null;
     private String name = null;
-    
+
     private final StringLogger msgLog;
     /**
      * Constructor used by the Neo4j kernel to create datasources.
-     * 
+     *
      * @param params
      *            A map containing configuration parameters
      */
@@ -82,7 +82,7 @@ public abstract class XaDataSource
 
     /**
      * Creates a XA connection to the resource this data source represents.
-     * 
+     *
      * @return A connection to an XA resource
      */
     public abstract XaConnection getXaConnection();
@@ -94,9 +94,9 @@ public abstract class XaDataSource
     public abstract void close();
 
     /**
-     * Used by the container/transaction manager in place to assign a branch 
+     * Used by the container/transaction manager in place to assign a branch
      * id for this data source.
-     * 
+     *
      * @param branchId the branch id
      */
     public void setBranchId( byte branchId[] )
@@ -106,7 +106,7 @@ public abstract class XaDataSource
 
     /**
      * Returns any assigned or default branch id for this data source.
-     * 
+     *
      * @return the branch id
      */
     public byte[] getBranchId()
@@ -116,22 +116,22 @@ public abstract class XaDataSource
 
 
     /**
-     * Returns a timestamp when this data source was created. Note this is not 
-     * the timestamp for the creation of the data source object instance, if  
-     * the data source is for example a database timestamp is meant to be when 
+     * Returns a timestamp when this data source was created. Note this is not
+     * the timestamp for the creation of the data source object instance, if
+     * the data source is for example a database timestamp is meant to be when
      * the database was created.
      * <p>
-     * Creation time together with random identifier can be used to uniqley 
-     * identify a data source (since it is possible to have multiple sources 
+     * Creation time together with random identifier can be used to uniqley
+     * identify a data source (since it is possible to have multiple sources
      * of same type).
-     * 
+     *
      * @return timestamp when this datasource was created
      */
     public long getCreationTime()
     {
         throw new UnsupportedOperationException();
     }
-    
+
     public String getFileName( long version )
     {
         throw new UnsupportedOperationException();
@@ -145,46 +145,46 @@ public abstract class XaDataSource
      * Creation time together with the random identifier can be used to uniquely
      * identify a data source (since it is possible to have multiple sources of
      * the same type).
-     * 
+     *
      * @return random identifier for this data source
      */
     public long getRandomIdentifier()
     {
         throw new UnsupportedOperationException();
     }
-    
+
     /**
-     * Returns the current version of this data source. A invoke to the 
-     * {@link #rotateLogicalLog()} when {@link #keepLogicalLogs(boolean)} is 
+     * Returns the current version of this data source. A invoke to the
+     * {@link #rotateLogicalLog()} when {@link #keepLogicalLogs(boolean)} is
      * set to <code>true</code> will result in a log with that version created.
-     * 
+     *
      * @return the current version of the logical log
      */
     public long getCurrentLogVersion()
     {
         throw new UnsupportedOperationException();
     }
-    
+
     /**
      * Attempts to apply a logical log to this data source.
-     * 
+     *
      * @param byteChannel readable channel containing the logical log data
-     * 
+     *
      * @throws IOException if a problem with reading the log occurs
-     * @throws IllegalStateException if log being applied is not of right 
+     * @throws IllegalStateException if log being applied is not of right
      * version, if not in backup slave mode or there are active transactions
      */
     public void applyLog( ReadableByteChannel byteChannel ) throws IOException
     {
         throw new UnsupportedOperationException();
     }
-    
+
     /**
-     * Rotates this logical log. If {@link #keepLogicalLogs(boolean)} is 
-     * configured to true the log will be saved and can be retrieved with the 
-     * {@link #getLogicalLog(long)} method. If not it will be deleted. Active 
+     * Rotates this logical log. If {@link #keepLogicalLogs(boolean)} is
+     * configured to true the log will be saved and can be retrieved with the
+     * {@link #getLogicalLog(long)} method. If not it will be deleted. Active
      * transactions get copied to a new logical log.
-     * 
+     *
      * @throws IOException if unable to read old log or write to new one
      */
     public void rotateLogicalLog() throws IOException
@@ -194,7 +194,7 @@ public abstract class XaDataSource
 
     /**
      * Returns a readable byte channel of the specified logical log.
-     * 
+     *
      * @param version version of the logical log
      * @return readable byte channel of the logical log
      * @throws IOException if no such log exist
@@ -203,10 +203,10 @@ public abstract class XaDataSource
     {
         throw new UnsupportedOperationException();
     }
-    
+
     /**
      * Tests if a specific logical log exists.
-     * 
+     *
      * @param version the version of the logical log
      * @return <CODE>true</CODE> if the log exists
      */
@@ -220,12 +220,12 @@ public abstract class XaDataSource
     {
         throw new UnsupportedOperationException();
     }
-    
+
     /**
      * Deletes a log specific logical log.
-     * 
+     *
      * @param version version of log to delete
-     * 
+     *
      * @return true if the log existed and was deleted
      */
     public boolean deleteLogicalLog( long version )
@@ -234,25 +234,25 @@ public abstract class XaDataSource
     }
 
     /**
-     * Sets wether logical logs should be saved upon rotation or not. Default 
+     * Sets wether logical logs should be saved upon rotation or not. Default
      * is <CODE>false</CODE>.
-     * 
-     * @param keepLogs <CODE>true</CODE> means save, <CODE>false</CODE> means 
+     *
+     * @param keepLogs <CODE>true</CODE> means save, <CODE>false</CODE> means
      * delete
      */
     public void keepLogicalLogs( boolean keepLogs )
     {
         throw new UnsupportedOperationException();
     }
-    
+
     public boolean isLogicalLogKept()
     {
         throw new UnsupportedOperationException();
     }
-    
+
     /**
-     * Used by the container to assign a name to this resource. 
-     * 
+     * Used by the container to assign a name to this resource.
+     *
      * @param name name of this resource
      */
     public void setName( String name )
@@ -262,7 +262,7 @@ public abstract class XaDataSource
 
     /**
      * Returns the assigned name of this resource.
-     * 
+     *
      * @return the assigned name of this resource
      */
     public String getName()
@@ -271,9 +271,9 @@ public abstract class XaDataSource
     }
 
     /**
-     * Makes this data source a backup slave. This method can not be called 
-     * while there are active transactions. Once set in "backup slave" mode 
-     * no new transactions can start, the resource has to be closed and 
+     * Makes this data source a backup slave. This method can not be called
+     * while there are active transactions. Once set in "backup slave" mode
+     * no new transactions can start, the resource has to be closed and
      * reopened for that.
      *
      * @throws IllegalStateException if this resource has active transactions
@@ -282,10 +282,10 @@ public abstract class XaDataSource
     {
         throw new UnsupportedOperationException();
     }
-    
+
     /**
      * Turns off/on auto rotate of logical logs. Default is <CODE>true</CODE>.
-     * 
+     *
      * @param rotate <CODE>true</CODE> to turn on
      */
     public void setAutoRotate( boolean rotate )
@@ -294,9 +294,9 @@ public abstract class XaDataSource
     }
 
     /**
-     * Sets the target size of the logical log that will cause a rotation of 
+     * Sets the target size of the logical log that will cause a rotation of
      * the log if {@link #setAutoRotate(boolean)} is set to <CODE>true</CODE>.
-     * 
+     *
      * @param size target size in bytes
      */
     public void setLogicalLogTargetSize( long size )
@@ -315,7 +315,7 @@ public abstract class XaDataSource
      * </ul>
      * The first and last are recommended, since the data source names are really
      * an implementation detail.
-     * 
+     *
      * @param config the configuration value specified by user configuration.
      * @param resourceName the name of the xa data source to check.
      * @return whether or not logical logs should be kept for the data source
@@ -341,42 +341,47 @@ public abstract class XaDataSource
         }
         return false;
     }
-    
+
     public ReadableByteChannel getCommittedTransaction( long txId ) throws IOException
     {
         throw new UnsupportedOperationException();
     }
-    
+
+    public void getCommittedTransaction( long tx, LogBuffer buffer ) throws IOException
+    {
+        throw new UnsupportedOperationException();
+    }
+
     public ReadableByteChannel getPreparedTransaction( int identifier ) throws IOException
     {
         throw new UnsupportedOperationException();
     }
-    
+
     public void getPreparedTransaction( int identifier, LogBuffer targetBuffer ) throws IOException
     {
         throw new UnsupportedOperationException();
     }
-    
+
     public void applyCommittedTransaction( long txId, ReadableByteChannel transaction ) throws IOException
     {
         getXaContainer().getResourceManager().applyCommittedTransaction( transaction, txId );
     }
-    
+
     public long applyPreparedTransaction( ReadableByteChannel transaction ) throws IOException
     {
         return getXaContainer().getResourceManager().applyPreparedTransaction( transaction );
     }
-    
+
     public long getLastCommittedTxId()
     {
         throw new UnsupportedOperationException();
     }
-    
+
     public XaContainer getXaContainer()
     {
         throw new UnsupportedOperationException();
     }
-    
+
     public int getMasterForCommittedTx( long txId ) throws IOException
     {
         throw new UnsupportedOperationException();
