@@ -1049,7 +1049,7 @@ public class XaLogicalLog
         }
         return buffer;
     }
-    
+
     public synchronized void getPreparedTransaction( int identifier, LogBuffer targetBuffer )
             throws IOException
     {
@@ -1093,17 +1093,9 @@ public class XaLogicalLog
 
     private List<LogEntry> extractLogEntryList( long txId ) throws IOException
     {
-        String name = getExtractedTxFileName( txId );
-        File txFile = new File( name );
+        // TODO: could we refactor this to take a LogBuffer as argument to avoid
+        //       creating the in-memory representation?
         List<LogEntry> logEntryList = null;
-        if ( txFile.exists() )
-        {
-            // It was already written out to file?
-            FileChannel channel = new RandomAccessFile( name, "r" ).getChannel();
-            logEntryList = extractTransactionFromLog( txId, -1, channel );
-            channel.close();
-            return logEntryList;
-        }
         Triplet<Long, Integer, Long> cachedInfo = this.txStartPositionCache.get( txId );
         if ( cachedInfo != null )
         {
@@ -1134,23 +1126,20 @@ public class XaLogicalLog
         return logEntryList;
     }
 
-    private String getExtractedTxFileName( long txId )
-    {
-        return fileName + ".tx_" + txId;
-    }
-
     public synchronized ReadableByteChannel getCommittedTransaction( long txId )
         throws IOException
     {
-        String name = getExtractedTxFileName( txId );
-        File txFile = new File( name );
-        if ( txFile.exists() )
-        {
-            return new RandomAccessFile( txFile, "r" ).getChannel();
-        }
-
         List<LogEntry> logEntryList = extractLogEntryList( txId );
         return wrapInMemoryLogEntryRepresentation( logEntryList );
+    }
+
+    public synchronized void getCommittedTransaction( long txId, LogBuffer buffer )
+            throws IOException
+    {
+        for ( LogEntry entry : extractLogEntryList( txId ) )
+        {
+            LogIoUtils.writeLogEntry( entry, buffer );
+        }
     }
 
     public static final int MASTER_ID_REPRESENTING_NO_MASTER = -1;
