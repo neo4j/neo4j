@@ -81,7 +81,7 @@ public class Machine
     public static Pair<String, Integer> splitIpAndPort( String server )
     {
         int pos = server.indexOf( ":" );
-        return new Pair<String, Integer>( server.substring( 0, pos ),
+        return Pair.of( server.substring( 0, pos ),
                 Integer.parseInt( server.substring( pos + 1 ) ) );
     }
 }
