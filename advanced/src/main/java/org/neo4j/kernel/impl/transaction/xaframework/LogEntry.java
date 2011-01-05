@@ -24,6 +24,7 @@ import javax.transaction.xa.Xid;
 
 public abstract class LogEntry
 {
+    private static final byte CURRENT_LOG_VERSION = 0;
     // empty record due to memory mapped file
     public static final byte EMPTY = (byte) 0;
     public static final byte TX_START = (byte) 1;
@@ -34,50 +35,71 @@ public abstract class LogEntry
     public static final byte TX_2P_COMMIT = (byte) 6;
 
     private int identifier;
-    
+
+    // private final byte version;
+
     LogEntry( int identifier )
     {
-        this.identifier = identifier;
+        this( identifier, CURRENT_LOG_VERSION );
     }
-    
+
+    LogEntry( int identifier, byte version )
+    {
+        this.identifier = identifier;
+        // this.version = version;
+    }
+
     public int getIdentifier()
     {
         return identifier;
     }
-    
+
+    public byte getVersion()
+    {
+        return CURRENT_LOG_VERSION;// version;
+    }
+
     public static class Start extends LogEntry
     {
         private final Xid xid;
         private long startPosition;
-        
+
+        Start( Xid xid, int identifier, byte version, long startPosition )
+        {
+            super( identifier, version );
+            this.xid = xid;
+            this.startPosition = startPosition;
+        }
+
         Start( Xid xid, int identifier, long startPosition )
         {
             super( identifier );
             this.xid = xid;
             this.startPosition = startPosition;
         }
-        
+
         public Xid getXid()
         {
             return xid;
         }
-        
+
         public long getStartPosition()
         {
             return startPosition;
         }
-        
+
         void setStartPosition( long position )
         {
             this.startPosition = position;
         }
-        
+
+        @Override
         public String toString()
         {
             return "Start[" + getIdentifier() + "]";
         }
     }
-    
+
     static class Prepare extends LogEntry
     {
         Prepare( int identifier )
@@ -85,42 +107,44 @@ public abstract class LogEntry
             super( identifier );
         }
 
+        @Override
         public String toString()
         {
             return "Prepare[" + getIdentifier() + "]";
         }
     }
-    
+
     public static abstract class Commit extends LogEntry
     {
         private final long txId;
         private final int masterId;
-        
+
         Commit( int identifier, long txId, int masterId )
         {
             super( identifier );
             this.txId = txId;
             this.masterId = masterId;
         }
-        
+
         public long getTxId()
         {
             return txId;
         }
-        
+
         public int getMasterId()
         {
             return masterId;
         }
     }
-    
+
     public static class OnePhaseCommit extends Commit
     {
         OnePhaseCommit( int identifier, long txId, int masterId )
         {
             super( identifier, txId, masterId );
         }
-        
+
+        @Override
         public String toString()
         {
             return "1PC[" + getIdentifier() + ", txId=" + getTxId() + ", masterId=" + getMasterId() + "]";
@@ -133,7 +157,8 @@ public abstract class LogEntry
         {
             super( identifier );
         }
-    
+
+        @Override
         public String toString()
         {
             return "Done[" + getIdentifier() + "]";
@@ -146,7 +171,8 @@ public abstract class LogEntry
         {
             super( identifier, txId, masterId );
         }
-        
+
+        @Override
         public String toString()
         {
             return "2PC[" + getIdentifier() + ", txId=" + getTxId() + ", machineId=" + getMasterId() + "]";
@@ -156,18 +182,19 @@ public abstract class LogEntry
     public static class Command extends LogEntry
     {
         private final XaCommand command;
-        
+
         Command( int identifier, XaCommand command )
         {
             super( identifier );
             this.command = command;
         }
-        
+
         public XaCommand getXaCommand()
         {
             return command;
         }
-    
+
+        @Override
         public String toString()
         {
             return "Command[" + getIdentifier() + ", " + command + "]";
