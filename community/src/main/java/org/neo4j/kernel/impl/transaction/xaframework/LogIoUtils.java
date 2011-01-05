@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.transaction.XidImpl;
 
 public class LogIoUtils
 {
-    public static LogEntry readEntry( ByteBuffer buffer, ReadableByteChannel channel, 
+    public static LogEntry readEntry( ByteBuffer buffer, ReadableByteChannel channel,
             XaCommandFactory cf ) throws IOException
     {
         try
@@ -61,10 +61,11 @@ public class LogIoUtils
             return null;
         }
     }
-    
-    private static LogEntry.Start readTxStartEntry( ByteBuffer buf, 
+
+    private static LogEntry.Start readTxStartEntry( ByteBuffer buf,
             ReadableByteChannel channel ) throws IOException, ReadPastEndException
     {
+        // byte version = readNextByte( buf, channel );
         byte globalIdLength = readNextByte( buf, channel );
         byte branchIdLength = readNextByte( buf, channel );
         byte globalId[] = new byte[globalIdLength];
@@ -73,40 +74,40 @@ public class LogIoUtils
         readIntoBufferAndFlip( ByteBuffer.wrap( branchId ), channel, branchIdLength );
         int identifier = readNextInt( buf, channel );
         int formatId = readNextInt( buf, channel );
-        
+
         // re-create the transaction
         Xid xid = new XidImpl( globalId, branchId, formatId );
-        return new LogEntry.Start( xid, identifier, -1 );
+        return new LogEntry.Start( xid, identifier, /*version,*/-1 );
     }
 
-    private static LogEntry.Prepare readTxPrepareEntry( ByteBuffer buf, 
+    private static LogEntry.Prepare readTxPrepareEntry( ByteBuffer buf,
             ReadableByteChannel channel ) throws IOException, ReadPastEndException
     {
         return new LogEntry.Prepare( readNextInt( buf, channel ) );
     }
-    
-    private static LogEntry.OnePhaseCommit readTxOnePhaseCommitEntry( ByteBuffer buf, 
+
+    private static LogEntry.OnePhaseCommit readTxOnePhaseCommitEntry( ByteBuffer buf,
             ReadableByteChannel channel ) throws IOException, ReadPastEndException
     {
         return new LogEntry.OnePhaseCommit( readNextInt( buf, channel ),
                 readNextLong( buf, channel ), readNextInt( buf, channel ) );
     }
-    
-    private static LogEntry.Done readTxDoneEntry( ByteBuffer buf, 
+
+    private static LogEntry.Done readTxDoneEntry( ByteBuffer buf,
             ReadableByteChannel channel ) throws IOException, ReadPastEndException
     {
         return new LogEntry.Done( readNextInt( buf, channel ) );
     }
 
-    private static LogEntry.TwoPhaseCommit readTxTwoPhaseCommitEntry( ByteBuffer buf, 
+    private static LogEntry.TwoPhaseCommit readTxTwoPhaseCommitEntry( ByteBuffer buf,
             ReadableByteChannel channel ) throws IOException, ReadPastEndException
     {
         return new LogEntry.TwoPhaseCommit( readNextInt( buf, channel ),
                 readNextLong( buf, channel ), readNextInt( buf, channel ) );
     }
-    
-    private static LogEntry.Command readTxCommandEntry( 
-            ByteBuffer buf, ReadableByteChannel channel, XaCommandFactory cf ) 
+
+    private static LogEntry.Command readTxCommandEntry(
+            ByteBuffer buf, ReadableByteChannel channel, XaCommandFactory cf )
             throws IOException, ReadPastEndException
     {
         int identifier = readNextInt( buf, channel );
@@ -117,50 +118,79 @@ public class LogIoUtils
         }
         return new LogEntry.Command( identifier, command );
     }
-    
-    public static void writeLogEntry( LogEntry entry, LogBuffer buffer ) 
+
+    public static void writeLogEntry( LogEntry entry, LogBuffer buffer )
         throws IOException
     {
         if ( entry instanceof LogEntry.Command )
         {
-            buffer.put( LogEntry.COMMAND ).putInt( entry.getIdentifier() );
-            XaCommand command = ((LogEntry.Command) entry).getXaCommand();
-            command.writeToFile( buffer );
+            writeCommand( buffer, entry.getIdentifier(), ((LogEntry.Command) entry).getXaCommand() );
         }
         else if ( entry instanceof LogEntry.Start )
         {
-            LogEntry.Start start = (LogEntry.Start) entry;
-            Xid xid = start.getXid();
-            byte globalId[] = xid.getGlobalTransactionId();
-            byte branchId[] = xid.getBranchQualifier();
-            int formatId = xid.getFormatId();
-            int identifier = start.getIdentifier();
-            buffer.put( LogEntry.TX_START ).put( (byte) globalId.length ).put(
-                (byte) branchId.length ).put( globalId ).put( branchId )
-                .putInt( identifier ).putInt( formatId );
+            writeStart( buffer, entry.getIdentifier(), entry.getVersion(),
+                    ( (LogEntry.Start) entry ).getXid() );
         }
         else if ( entry instanceof LogEntry.Done )
         {
-            buffer.put( LogEntry.DONE ).putInt( entry.getIdentifier() );
+            writeDone( buffer, entry.getIdentifier() );
         }
         else if ( entry instanceof LogEntry.OnePhaseCommit )
         {
             LogEntry.Commit commit = (LogEntry.Commit) entry;
-            buffer.put( LogEntry.TX_1P_COMMIT ).putInt( 
-                    commit.getIdentifier() ).putLong( 
-                            commit.getTxId() ).putInt( commit.getMasterId() );
+            writeCommit( false, buffer, commit.getIdentifier(), commit.getTxId(),
+                    commit.getMasterId() );
         }
         else if ( entry instanceof LogEntry.Prepare )
         {
-            buffer.put( LogEntry.TX_PREPARE ).putInt( entry.getIdentifier() );
+            writePrepare( buffer, entry.getIdentifier() );
         }
         else if ( entry instanceof LogEntry.TwoPhaseCommit )
         {
             LogEntry.Commit commit = (LogEntry.Commit) entry;
-            buffer.put( LogEntry.TX_2P_COMMIT ).putInt( 
-                    commit.getIdentifier() ).putLong( 
-                            commit.getTxId() ).putInt( commit.getMasterId() );
+            writeCommit( true, buffer, commit.getIdentifier(), commit.getTxId(),
+                    commit.getMasterId() );
         }
+    }
+
+    public static void writePrepare( LogBuffer buffer, int identifier ) throws IOException
+    {
+        buffer.put( LogEntry.TX_PREPARE ).putInt( identifier );
+    }
+
+    public static void writeCommit( boolean twoPhase, LogBuffer buffer, int identifier, long txId,
+            int masterId ) throws IOException
+    {
+        buffer.put( twoPhase ? LogEntry.TX_2P_COMMIT : LogEntry.TX_1P_COMMIT )
+              .putInt( identifier ).putLong( txId ).putInt( masterId );
+    }
+
+    public static void writeDone( LogBuffer buffer, int identifier ) throws IOException
+    {
+        buffer.put( LogEntry.DONE ).putInt( identifier );
+    }
+
+    public static void writeDone( ByteBuffer buffer, int identifier )
+    {
+        buffer.put( LogEntry.DONE ).putInt( identifier );
+    }
+
+    public static void writeStart( LogBuffer buffer, int identifier, byte version, Xid xid )
+            throws IOException
+    {
+        byte globalId[] = xid.getGlobalTransactionId();
+        byte branchId[] = xid.getBranchQualifier();
+        int formatId = xid.getFormatId();
+        buffer.put( LogEntry.TX_START )/*.put( version )*/.put( (byte) globalId.length ).put(
+                (byte) branchId.length ).put( globalId ).put( branchId ).putInt( identifier ).putInt(
+                formatId );
+    }
+
+    public static void writeCommand( LogBuffer buffer, int identifier, XaCommand command )
+            throws IOException
+    {
+        buffer.put( LogEntry.COMMAND ).putInt( identifier );
+        command.writeToFile( buffer );
     }
 
     private static int readNextInt( ByteBuffer buf, ReadableByteChannel channel )
@@ -174,7 +204,7 @@ public class LogIoUtils
     {
         return readIntoBufferAndFlip( buf, channel, 8 ).getLong();
     }
-    
+
     private static byte readNextByte( ByteBuffer buf, ReadableByteChannel channel )
             throws IOException, ReadPastEndException
     {
