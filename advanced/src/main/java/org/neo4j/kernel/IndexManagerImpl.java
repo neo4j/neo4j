@@ -43,7 +43,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 class IndexManagerImpl implements IndexManager
 {
     private static final String KEY_INDEX_PROVIDER = "provider";
-    
+
     private final IndexStore indexStore;
     private final Map<String, IndexProvider> indexProviders = new HashMap<String, IndexProvider>();
 
@@ -61,7 +61,7 @@ class IndexManagerImpl implements IndexManager
         {
             throw new IllegalArgumentException( "No 'provider' given in configuration map" );
         }
-        
+
         synchronized ( this.indexProviders )
         {
             IndexProvider result = this.indexProviders.get( provider );
@@ -72,12 +72,12 @@ class IndexManagerImpl implements IndexManager
             throw new IllegalArgumentException( "No index provider '" + provider + "' found" );
         }
     }
-    
+
     void addProvider( String name, IndexProvider provider )
     {
         this.indexProviders.put( name, provider );
     }
-    
+
     private Pair<Map<String, String>, Boolean> findIndexConfig( Class<? extends PropertyContainer> cls,
             String indexName, Map<String, String> suppliedConfig, Map<?, ?> dbConfig )
     {
@@ -87,15 +87,15 @@ class IndexManagerImpl implements IndexManager
         {
             return Pair.of( storedConfig, Boolean.FALSE );
         }
-        
+
         Map<String, String> configToUse = null;
-        
+
         // 2. Check config supplied by the user for this method call
         if ( configToUse == null )
         {
             configToUse = suppliedConfig;
         }
-        
+
         // 3. Check db config properties for provider
         IndexProvider indexProvider = null;
         if ( configToUse == null )
@@ -109,7 +109,7 @@ class IndexManagerImpl implements IndexManager
                     provider = (String) dbConfig.get( "index" );
                 }
             }
-            
+
             // 4. Default to lucene
             if ( provider == null )
             {
@@ -122,7 +122,7 @@ class IndexManagerImpl implements IndexManager
         {
             indexProvider = getIndexProvider( configToUse.get( KEY_INDEX_PROVIDER ) );
         }
-        
+
         // Do they match (stored vs. supplied)?
         if ( storedConfig != null )
         {
@@ -134,11 +134,11 @@ class IndexManagerImpl implements IndexManager
             }
             configToUse = storedConfig;
         }
-        
+
         boolean created = indexStore.setIfNecessary( cls, indexName, configToUse );
-        return new Pair<Map<String, String>, Boolean>( Collections.unmodifiableMap( configToUse ), created );
+        return Pair.of( Collections.unmodifiableMap( configToUse ), created );
     }
-    
+
     private Map<String, String> getOrCreateIndexConfig( Class<? extends PropertyContainer> cls,
             String indexName, Map<String, String> suppliedConfig )
     {
@@ -164,7 +164,7 @@ class IndexManagerImpl implements IndexManager
         }
         return result.first();
     }
-    
+
     private class IndexCreatorThread extends Thread
     {
         private final String indexName;
@@ -179,7 +179,7 @@ class IndexManagerImpl implements IndexManager
             this.indexName = indexName;
             this.config = config;
         }
-        
+
         @Override
         public void run()
         {
@@ -205,7 +205,7 @@ class IndexManagerImpl implements IndexManager
             }
         }
     }
-    
+
     public boolean existsForNodes( String indexName )
     {
         return indexStore.get( Node.class, indexName ) != null;
@@ -223,12 +223,12 @@ class IndexManagerImpl implements IndexManager
                 customConfiguration );
         return getIndexProvider( config.get( KEY_INDEX_PROVIDER ) ).nodeIndex( indexName, config );
     }
-    
+
     public String[] nodeIndexNames()
     {
         return indexStore.getNames( Node.class );
     }
-    
+
     public boolean existsForRelationships( String indexName )
     {
         return indexStore.get( Relationship.class, indexName ) != null;
@@ -249,12 +249,12 @@ class IndexManagerImpl implements IndexManager
         return getIndexProvider( config.get( KEY_INDEX_PROVIDER ) ).relationshipIndex( indexName,
                 config );
     }
-    
+
     public String[] relationshipIndexNames()
     {
         return indexStore.getNames( Relationship.class );
     }
-    
+
     public Map<String, String> getConfiguration( Index<? extends PropertyContainer> index )
     {
         Map<String, String> config = indexStore.get( index.getEntityType(), index.getName() );
@@ -265,7 +265,7 @@ class IndexManagerImpl implements IndexManager
         }
         return config;
     }
-    
+
     public String setConfiguration( Index<? extends PropertyContainer> index, String key, String value )
     {
         assertLegalConfigKey( key );

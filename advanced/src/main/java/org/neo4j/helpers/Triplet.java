@@ -20,13 +20,16 @@
 
 package org.neo4j.helpers;
 
-public class Triplet<T1, T2, T3> extends Pair<T1, T2>
+public class Triplet<T1, T2, T3> extends Pair<T1, Pair<T2, T3>>
 {
+    private final T1 first;
+    private final T2 second;
     private final T3 third;
 
-    public Triplet( T1 first, T2 other, T3 third )
+    private Triplet( T1 first, T2 second, T3 third )
     {
-        super( first, other );
+        this.first = first;
+        this.second = second;
         this.third = third;
     }
 
@@ -35,21 +38,44 @@ public class Triplet<T1, T2, T3> extends Pair<T1, T2>
         return new Triplet<T1, T2, T3>( first, other, third );
     }
 
+    @Override
+    public T1 first()
+    {
+        return this.first;
+    }
+
+    /**
+     * @return the second object in the triplet.
+     */
+    public T2 second()
+    {
+        return this.second;
+    }
+
+    /**
+     * @return the third object in the triplet.
+     */
     public T3 third()
     {
         return this.third;
     }
 
     @Override
+    public Pair<T2, T3> other()
+    {
+        return Pair.of( second, third );
+    }
+
+    @Override
     public String toString()
     {
-        return "(" + first() + ", " + other() + ", " + third + ")";
+        return "(" + first() + ", " + second() + ", " + third() + ")";
     }
 
     @Override
     public int hashCode()
     {
-        return ( 31 * super.hashCode() ) | hashCode( third );
+        return ( ( 31 * hashCode( first() ) ) | hashCode( second() ) ) * 31 | hashCode( third() );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -61,7 +87,8 @@ public class Triplet<T1, T2, T3> extends Pair<T1, T2>
         {
             if ( obj.getClass() != this.getClass() ) return false;
             Triplet that = (Triplet) obj;
-            return this.pairEquals( that ) && equals( this.third, that.third );
+            return equals( this.first, that.first ) && equals( this.second, that.second )
+                   && equals( this.third, that.third );
         }
         return false;
     }

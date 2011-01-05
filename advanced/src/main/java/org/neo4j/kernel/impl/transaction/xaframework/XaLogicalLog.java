@@ -1154,7 +1154,7 @@ public class XaLogicalLog
         Triplet<Long, Integer, Long> cache = this.txStartPositionCache.get( txId );
         if ( cache != null )
         {
-            return cache.other();
+            return cache.second();
         }
 
         List<LogEntry> logEntryList = extractLogEntryList( txId );

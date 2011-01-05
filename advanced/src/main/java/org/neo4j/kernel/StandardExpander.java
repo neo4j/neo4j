@@ -241,8 +241,7 @@ public abstract class StandardExpander implements Expander
                 protected Pair<Relationship, Node> underlyingObjectToObject(
                         Relationship rel )
                 {
-                    return new Pair<Relationship, Node>( rel,
-                            rel.getOtherNode( start ) );
+                    return Pair.of( rel, rel.getOtherNode( start ) );
                 }
             };
         }
