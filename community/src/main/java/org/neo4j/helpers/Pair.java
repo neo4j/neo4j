@@ -42,7 +42,7 @@ public abstract class Pair<T1, T2>
             @Override
             public T1 first()
             {
-                return first();
+                return first;
             }
 
             @Override
