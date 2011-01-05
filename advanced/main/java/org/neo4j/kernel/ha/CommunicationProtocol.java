@@ -327,7 +327,9 @@ public abstract class CommunicationProtocol
         {
             buffer.writeByte( datasourceId.get( tx.first() ) );
             buffer.writeLong( tx.other() );
-            tx.third().extract( new BlockLogBuffer( buffer ) );
+            BlockLogBuffer blockBuffer = new BlockLogBuffer( buffer );
+            tx.third().extract( blockBuffer );
+            blockBuffer.done();
         }
         buffer.writeByte( 0/*no more transactions*/);
     }
