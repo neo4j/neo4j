@@ -23,9 +23,9 @@ package org.neo4j.kernel.ha;
 public class Response<T>
 {
     private final T response;
-    private final TransactionStreams transactions;
+    private final TransactionStream transactions;
 
-    public Response( T response, TransactionStreams transactions )
+    public Response( T response, TransactionStream transactions )
     {
         this.response = response;
         this.transactions = transactions;
@@ -36,13 +36,13 @@ public class Response<T>
         return response;
     }
 
-    public TransactionStreams transactions()
+    public TransactionStream transactions()
     {
         return transactions;
     }
 
     public static <R> Response<R> wrapResponseObjectOnly( R response )
     {
-        return new Response<R>( response, TransactionStreams.EMPTY );
+        return new Response<R>( response, TransactionStream.EMPTY );
     }
 }

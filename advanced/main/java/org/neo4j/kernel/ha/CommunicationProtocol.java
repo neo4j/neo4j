@@ -23,8 +23,9 @@ package org.neo4j.kernel.ha;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -33,10 +34,11 @@ import java.util.Map;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Triplet;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.MasterServer.PartialRequest;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
-import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 
 public abstract class CommunicationProtocol
 {
@@ -180,18 +182,8 @@ public abstract class CommunicationProtocol
             {
                 String resource = readString( input );
                 final ReadableByteChannel reader = new BlockLogReader( input );
-                return master.commitSingleResourceTransaction( context, resource, new TxExtractor()
-                {
-                    public ReadableByteChannel extract()
-                    {
-                        return reader;
-                    }
-
-                    public void extract( LogBuffer buffer )
-                    {
-                        throw new UnsupportedOperationException();
-                    }
-                } );
+                return master.commitSingleResourceTransaction( context, resource,
+                        TxExtractor.create( reader ) );
             }
         }, LONG_SERIALIZER ),
         PULL_UPDATES( new MasterCaller<Void>()
@@ -318,68 +310,54 @@ public abstract class CommunicationProtocol
         }
     }
 
-    private static <T> void writeTransactionStreams( TransactionStreams txStreams,
+    private static <T> void writeTransactionStreams( TransactionStream txStream,
             ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
     {
-        Collection<Pair<String, TransactionStream>> streams = txStreams.getStreams();
-        buffer.writeByte( streams.size() );
-        for ( Pair<String, TransactionStream> streamPair : streams )
+        String[] datasources = txStream.dataSourceNames();
+        assert datasources.length <= 255 : "too many data sources";
+        buffer.writeByte( datasources.length );
+        Map<String, Integer> datasourceId = new HashMap<String, Integer>();
+        for ( int i = 0; i < datasources.length; i++ )
         {
-            writeString( buffer, streamPair.first() );
-            writeTransactionStream( buffer, readBuffer, streamPair.other() );
+            String datasource = datasources[i];
+            writeString( buffer, datasource );
+            datasourceId.put( datasource, i + 1/*0 means "no more transactions"*/);
         }
-        txStreams.close();
+        for ( Triplet<String, Long, TxExtractor> tx : IteratorUtil.asIterable( txStream ) )
+        {
+            buffer.writeByte( datasourceId.get( tx.first() ) );
+            buffer.writeLong( tx.other() );
+            tx.third().extract( new BlockLogBuffer( buffer ) );
+        }
+        buffer.writeByte( 0/*no more transactions*/);
     }
 
-    protected static TransactionStreams readTransactionStreams( ChannelBuffer buffer )
+    protected static TransactionStream readTransactionStreams( final ChannelBuffer buffer )
     {
-        final TransactionStreams result = new TransactionStreams();
-        for ( int count = buffer.readByte(); count > 0; count-- )
+        final String[] datasources = new String[buffer.readUnsignedByte() + 1];
+        datasources[0] = null; // identifier for "no more transactions"
+        for ( int i = 1; i < datasources.length; i++ )
         {
-            String resource = readString( buffer );
-            TransactionStream stream = readTransactionStream( buffer );
-            result.add( resource, stream );
+            datasources[i] = readString( buffer );
         }
-        return result;
-    }
-
-    protected static void writeTransactionStream( ChannelBuffer dest, ByteBuffer readBuffer,
-            TransactionStream transactionStream ) throws IOException
-    {
-        Collection<Pair<Long, ReadableByteChannel>> channels = transactionStream.getChannels();
-        dest.writeInt( channels.size() );
-        for ( Pair<Long, ReadableByteChannel> channel : channels )
+        return new TransactionStream()
         {
-            dest.writeLong( channel.first() );
-            ByteData data = new ByteData( channel.other(), readBuffer );
-            dest.writeInt( data.size() );
-            for ( byte[] bytes : data )
+            @Override
+            protected Triplet<String, Long, TxExtractor> fetchNextOrNull()
             {
-                dest.writeBytes( bytes );
+                String datasource = datasources[buffer.readUnsignedByte()];
+                if ( datasource == null ) return null;
+                long txId = buffer.readLong();
+                TxExtractor extractor = TxExtractor.create( new BlockLogReader( buffer ) );
+                return Triplet.of( datasource, txId, extractor );
             }
-            channel.other().close();
-        }
-    }
 
-    private static Pair<Long, ReadableByteChannel> readSingleTransaction( ChannelBuffer buffer )
-    {
-        long txId = buffer.readLong();
-        byte[] data = new byte[buffer.readInt()];
-        buffer.readBytes( data );
-        ReadableByteChannel channel = new ByteArrayChannel( data );
-        return Pair.of( txId, channel );
-    }
-
-    private static TransactionStream readTransactionStream( ChannelBuffer buffer )
-    {
-        Collection<Pair<Long, ReadableByteChannel>> channels =
-                new ArrayList<Pair<Long,ReadableByteChannel>>();
-        int size = buffer.readInt();
-        for ( int i = 0; i < size; i++ )
-        {
-            channels.add( readSingleTransaction( buffer ) );
-        }
-        return new TransactionStream( channels );
+            @Override
+            public String[] dataSourceNames()
+            {
+                return Arrays.copyOfRange( datasources, 1, datasources.length );
+            }
+        };
     }
 
     private static class ByteArrayChannel implements ReadableByteChannel
