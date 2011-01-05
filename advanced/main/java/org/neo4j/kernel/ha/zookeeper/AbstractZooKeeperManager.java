@@ -46,22 +46,22 @@ public abstract class AbstractZooKeeperManager implements Watcher
 {
     protected static final String HA_SERVERS_CHILD = "ha-servers";
     protected static final int SESSION_TIME_OUT = 5000;
-    
+
     private final String servers;
     private final Map<Integer, String> haServersCache = Collections.synchronizedMap(
             new HashMap<Integer, String>() );
-    private Pair<Master, Machine> cachedMaster = new Pair<Master, Machine>( null, Machine.NO_MACHINE );
+    private Pair<Master, Machine> cachedMaster = Pair.<Master, Machine>of( null, Machine.NO_MACHINE );
 
     private final String storeDir;
     private final StringLogger msgLog;
-    
+
     public AbstractZooKeeperManager( String servers, String storeDir )
     {
         this.servers = servers;
         this.storeDir = storeDir;
         msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
     }
-    
+
     protected ZooKeeper instantiateZooKeeper()
     {
         try
@@ -70,15 +70,15 @@ public abstract class AbstractZooKeeperManager implements Watcher
         }
         catch ( IOException e )
         {
-            throw new ZooKeeperException( 
+            throw new ZooKeeperException(
                 "Unable to create zoo keeper client", e );
         }
     }
-    
+
     protected abstract ZooKeeper getZooKeeper();
-    
+
     public abstract String getRoot();
-    
+
     protected Pair<Integer, Integer> parseChild( String child )
     {
         int index = child.indexOf( '_' );
@@ -87,17 +87,17 @@ public abstract class AbstractZooKeeperManager implements Watcher
             return null;
         }
         int id = Integer.parseInt( child.substring( 0, index ) );
-        int seq = Integer.parseInt( child.substring( index + 1 ) );                
-        return new Pair<Integer, Integer>( id, seq );
+        int seq = Integer.parseInt( child.substring( index + 1 ) );
+        return Pair.of( id, seq );
     }
-    
+
     protected long readDataAsLong( String path ) throws InterruptedException, KeeperException
     {
         byte[] data = getZooKeeper().getData( path, false, null );
         ByteBuffer buf = ByteBuffer.wrap( data );
         return buf.getLong();
     }
-    
+
     private void invalidateMaster()
     {
         if ( cachedMaster != null )
@@ -107,10 +107,10 @@ public abstract class AbstractZooKeeperManager implements Watcher
             {
                 client.shutdown();
             }
-            cachedMaster = new Pair<Master, Machine>( null, Machine.NO_MACHINE );
+            cachedMaster = Pair.<Master, Machine>of( null, Machine.NO_MACHINE );
         }
     }
-    
+
     protected Pair<Master, Machine> getMasterFromZooKeeper( boolean wait )
     {
         Machine master = getMasterBasedOn( getAllMachines( wait ).values() );
@@ -118,23 +118,23 @@ public abstract class AbstractZooKeeperManager implements Watcher
         if ( cachedMaster.other().getMachineId() != master.getMachineId() )
         {
             invalidateMaster();
-            if ( master != Machine.NO_MACHINE && 
+            if ( master != Machine.NO_MACHINE &&
                     master.getMachineId() != getMyMachineId() )
             {
                 masterClient = new MasterClient( master, storeDir );
             }
-            cachedMaster = new Pair<Master, Machine>( masterClient, master );
+            cachedMaster = Pair.<Master, Machine>of( masterClient, master );
         }
         return cachedMaster;
     }
-    
+
     protected abstract int getMyMachineId();
 
     public Pair<Master, Machine> getCachedMaster()
     {
         return cachedMaster;
     }
-    
+
     protected Machine getMasterBasedOn( Collection<Machine> machines )
     {
         Collection<Triplet<Integer, Long, Integer>> debugData =
@@ -144,7 +144,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
         long highestTxId = -1;
         for ( Machine info : machines )
         {
-            debugData.add( new Triplet<Integer,Long,Integer>( info.getMachineId(),
+            debugData.add( Triplet.of( info.getMachineId(),
                     info.getLastCommittedTxId(), info.getSequenceId() ) );
             if ( info.getLastCommittedTxId() >= highestTxId )
             {
@@ -179,7 +179,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
                 {
                     continue;
                 }
-                
+
                 try
                 {
                     int id = parsedChild.first();
@@ -194,7 +194,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
                 {
                     if ( inner.code() != KeeperException.Code.NONODE )
                     {
-                        throw new ZooKeeperException( "Unabe to get master.", 
+                        throw new ZooKeeperException( "Unabe to get master.",
                             inner );
                     }
                 }
@@ -211,7 +211,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
             throw new ZooKeeperException( "Interrupted.", e );
         }
     }
-    
+
     protected String getHaServer( int machineId, boolean wait )
     {
         String result = haServersCache.get( machineId );
@@ -222,7 +222,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
         }
         return result;
     }
-    
+
     protected String readHaServer( int machineId, boolean wait )
     {
         if ( wait )
@@ -252,21 +252,21 @@ public abstract class AbstractZooKeeperManager implements Watcher
             throw new ZooKeeperException( "Interrupted", e );
         }
     }
-    
+
     public void shutdown()
     {
         try
         {
             invalidateMaster();
-            cachedMaster = new Pair<Master, Machine>( null, Machine.NO_MACHINE );
+            cachedMaster = Pair.<Master, Machine>of( null, Machine.NO_MACHINE );
             getZooKeeper().close();
         }
         catch ( InterruptedException e )
         {
-            throw new ZooKeeperException( 
+            throw new ZooKeeperException(
                 "Error closing zookeeper connection", e );
         }
     }
-    
+
     public abstract void waitForSyncConnected();
 }

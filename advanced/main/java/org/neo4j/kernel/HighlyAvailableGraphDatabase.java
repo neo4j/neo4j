@@ -540,8 +540,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         int i = 0;
         for ( XaDataSource dataSource : dataSources )
         {
-            txs[i++] = new Pair<String, Long>(
-                    dataSource.getName(), dataSource.getLastCommittedTxId() );
+            txs[i++] = Pair.of( dataSource.getName(), dataSource.getLastCommittedTxId() );
         }
         return new SlaveContext( machineId, eventIdentifier, txs );
     }
@@ -556,7 +555,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             {
                 String resourceName = tx.first();
                 XaDataSource dataSource = localDataSourceManager.getXaDataSource( resourceName );
-                dataSource.applyCommittedTransaction( tx.other(), tx.third().extract() );
+                dataSource.applyCommittedTransaction( tx.second(), tx.third().extract() );
             }
             updateTime();
             return response.response();

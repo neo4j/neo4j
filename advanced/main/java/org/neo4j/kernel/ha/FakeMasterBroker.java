@@ -30,28 +30,28 @@ public class FakeMasterBroker extends AbstractBroker
     {
         super( myMachineId, storeDir );
     }
-    
+
     public Machine getMasterMachine()
     {
         return new Machine( getMyMachineId(), 0, 1, null );
     }
-    
+
     public Pair<Master, Machine> getMaster()
     {
-        return new Pair<Master,Machine>( null, new Machine( getMyMachineId(), 0, 1, null ) );
+        return Pair.<Master, Machine>of( null, new Machine( getMyMachineId(), 0, 1, null ) );
         // throw new UnsupportedOperationException( "I am master" );
     }
 
     public Pair<Master, Machine> getMasterReally()
     {
-        return new Pair<Master,Machine>( null, new Machine( getMyMachineId(), 0, 1, null ) );
+        return Pair.<Master, Machine>of( null, new Machine( getMyMachineId(), 0, 1, null ) );
     }
-    
+
     public boolean iAmMaster()
     {
         return getMyMachineId() == 0;
     }
-    
+
     public Object instantiateMasterServer( GraphDatabaseService graphDb )
     {
         return new MasterServer( new MasterImpl( graphDb ), CommunicationProtocol.PORT, getStoreDir() );

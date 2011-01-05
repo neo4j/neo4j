@@ -38,14 +38,14 @@ public class FakeSlaveBroker extends AbstractBroker
 
     public Pair<Master, Machine> getMaster()
     {
-        return new Pair<Master, Machine>( master, Machine.NO_MACHINE );
+        return Pair.<Master, Machine>of( master, Machine.NO_MACHINE );
     }
-    
+
     public Pair<Master, Machine> getMasterReally()
     {
-        return new Pair<Master, Machine>( master, Machine.NO_MACHINE );
+        return Pair.<Master, Machine>of( master, Machine.NO_MACHINE );
     }
-    
+
     public boolean iAmMaster()
     {
         return false;

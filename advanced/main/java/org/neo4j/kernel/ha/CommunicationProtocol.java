@@ -326,7 +326,7 @@ public abstract class CommunicationProtocol
         for ( Triplet<String, Long, TxExtractor> tx : IteratorUtil.asIterable( txStream ) )
         {
             buffer.writeByte( datasourceId.get( tx.first() ) );
-            buffer.writeLong( tx.other() );
+            buffer.writeLong( tx.second() );
             BlockLogBuffer blockBuffer = new BlockLogBuffer( buffer );
             tx.third().extract( blockBuffer );
             blockBuffer.done();
@@ -544,8 +544,7 @@ public abstract class CommunicationProtocol
         Pair<String, Long>[] lastAppliedTransactions = new Pair[txsSize];
         for ( int i = 0; i < txsSize; i++ )
         {
-            lastAppliedTransactions[i] = new Pair<String, Long>(
-                    readString( buffer ), buffer.readLong() );
+            lastAppliedTransactions[i] = Pair.of( readString( buffer ), buffer.readLong() );
         }
         return new SlaveContext( machineId, eventIdentifier, lastAppliedTransactions );
     }
