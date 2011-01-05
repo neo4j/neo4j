@@ -129,7 +129,7 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
             // Send 'em over the wire
             channelContext = getChannel();
             Channel channel = channelContext.first();
-            ChannelBuffer buffer = channelContext.other();
+            ChannelBuffer buffer = channelContext.second();
             buffer.clear();
             buffer = new ChunkingChannelBuffer( buffer, channel, MAX_FRAME_LENGTH );
             buffer.writeByte( type.ordinal() );
