@@ -515,17 +515,32 @@ public abstract class AbstractHaTest
     }
     
     @Test
-    public void testVeryLargeTransaction() throws Exception
+    public void testLargeTransaction() throws Exception
     {
         initializeDbs( 1 );
-        executeJob( new CommonJobs.LargeTransactionJob(), 0 );
+        executeJob( new CommonJobs.LargeTransactionJob( 20, 1 ), 0 );
     }
     
     @Test
-    public void testPullVeryLargeTransaction() throws Exception
+    public void testPullLargeTransaction() throws Exception
     {
         initializeDbs( 1 );
-        executeJobOnMaster( new CommonJobs.LargeTransactionJob() );
+        executeJobOnMaster( new CommonJobs.LargeTransactionJob( 20, 1 ) );
+        pullUpdates();
+    }
+    
+    @Test
+    public void testLargeTransactionData() throws Exception
+    {
+        initializeDbs( 1 );
+        executeJob( new CommonJobs.LargeTransactionJob( 1, 20 ), 0 );
+    }
+
+    @Test
+    public void testPullLargeTransactionData() throws Exception
+    {
+        initializeDbs( 1 );
+        executeJobOnMaster( new CommonJobs.LargeTransactionJob( 1, 20 ) );
         pullUpdates();
     }
 }
