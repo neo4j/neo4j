@@ -26,7 +26,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
@@ -39,6 +42,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.DeadlockDetectedException;
@@ -48,6 +52,7 @@ import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
+import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 
@@ -59,7 +64,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 public class MasterImpl implements Master
 {
     private static final int ID_GRAB_SIZE = 1000;
-    
+
     private static final Predicate<Long> ALL = new Predicate<Long>()
     {
         public boolean accept( Long item )
@@ -70,7 +75,7 @@ public class MasterImpl implements Master
 
     private final GraphDatabaseService graphDb;
     private final Config graphDbConfig;
-    
+
     private final Map<SlaveContext, Transaction> transactions =
             Collections.synchronizedMap( new HashMap<SlaveContext, Transaction>() );
 
@@ -79,7 +84,7 @@ public class MasterImpl implements Master
         this.graphDb = db;
         this.graphDbConfig = ((AbstractGraphDatabase) db).getConfig();
     }
-    
+
     public GraphDatabaseService getGraphDb()
     {
         return this.graphDb;
@@ -256,7 +261,7 @@ public class MasterImpl implements Master
     {
         IdGenerator generator = graphDbConfig.getIdGeneratorFactory().get( idType );
         return new IdAllocation( generator.nextIdBatch( ID_GRAB_SIZE ),
-                generator.getHighId(), generator.getDefragCount() ); 
+                generator.getHighId(), generator.getDefragCount() );
     }
 
     public Response<Long> commitSingleResourceTransaction( SlaveContext context,
@@ -287,7 +292,7 @@ public class MasterImpl implements Master
             suspendThisAndResumeOther( otherTx, context );
         }
     }
-    
+
     public Response<Void> finishTransaction( SlaveContext context )
     {
         Transaction otherTx = suspendOtherAndResumeThis( context );
@@ -314,39 +319,57 @@ public class MasterImpl implements Master
         return packResponse( context, id, ALL );
     }
 
-    private <T> Response<T> packResponse( SlaveContext context, T response,
-            Predicate<Long> filter )
+    private <T> Response<T> packResponse( SlaveContext context, T response, Predicate<Long> filter )
     {
-        try
+        List<Triplet<String, Long, TxExtractor>> stream = new ArrayList<Triplet<String, Long, TxExtractor>>();
+        Set<String> resourceNames = new HashSet<String>();
+        for ( Pair<String, Long> txEntry : context.lastAppliedTransactions() )
         {
-            TransactionStreams streams = new TransactionStreams();
-            for ( Pair<String, Long> txEntry : context.lastAppliedTransactions() )
+            String resourceName = txEntry.first();
+            final XaDataSource dataSource = graphDbConfig.getTxModule().getXaDataSourceManager().getXaDataSource(
+                    resourceName );
+            if ( dataSource == null )
             {
-                String resourceName = txEntry.first();
-                XaDataSource dataSource = graphDbConfig.getTxModule().getXaDataSourceManager()
-                        .getXaDataSource( resourceName );
-                if ( dataSource == null )
-                {
-                    throw new RuntimeException( "No data source '" + resourceName + "' found" );
-                }
-                long masterLastTx = dataSource.getLastCommittedTxId();
-                Collection<Pair<Long, ReadableByteChannel>> channels = new ArrayList<Pair<Long, ReadableByteChannel>>();
-                for ( long txId = txEntry.other()+1; txId <= masterLastTx; txId++ )
-                {
-                    if ( filter.accept( txId ) )
-                    {
-                        channels.add( new Pair<Long, ReadableByteChannel>( txId, dataSource.getCommittedTransaction( txId ) ) );
-                    }
-                }
-                streams.add( resourceName, new TransactionStream( channels ) );
+                throw new RuntimeException( "No data source '" + resourceName + "' found" );
             }
-            return new Response<T>( response, streams );
+            resourceNames.add( resourceName );
+            long masterLastTx = dataSource.getLastCommittedTxId();
+            for ( long txId = txEntry.other() + 1; txId <= masterLastTx; txId++ )
+            {
+                if ( filter.accept( txId ) )
+                {
+                    final long tx = txId;
+                    TxExtractor extractor = new TxExtractor()
+                    {
+                        public ReadableByteChannel extract()
+                        {
+                            try
+                            {
+                                return dataSource.getCommittedTransaction( tx );
+                            }
+                            catch ( IOException e )
+                            {
+                                throw new RuntimeException( e );
+                            }
+                        }
+
+                        public void extract( LogBuffer buffer )
+                        {
+                            try
+                            {
+                                dataSource.getCommittedTransaction( tx, buffer );
+                            }
+                            catch ( IOException e )
+                            {
+                                throw new RuntimeException( e );
+                            }
+                        }
+                    };
+                    stream.add( Triplet.of( resourceName, txId, extractor ) );
+                }
+            }
         }
-        catch ( IOException e )
-        {
-            e.printStackTrace();
-            return new FailedResponse<T>();
-        }
+        return new Response<T>( response, TransactionStream.create( resourceNames, stream ) );
     }
 
     public Response<Void> pullUpdates( SlaveContext context )
@@ -367,7 +390,7 @@ public class MasterImpl implements Master
             return XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER;
         }
     }
-    
+
     private static interface LockGrabber
     {
         void grab( LockManager lockManager, LockReleaser lockReleaser, Object entity );
@@ -390,12 +413,12 @@ public class MasterImpl implements Master
             lockReleaser.addLockToTransaction( entity, LockType.WRITE );
         }
     };
-    
+
     // =====================================================================
     // Just some methods which aren't really used when running a HA cluster,
     // but exposed so that other tools can reach that information.
     // =====================================================================
-    
+
     public Map<Integer, Collection<SlaveContext>> getOngoingTransactions()
     {
         Map<Integer, Collection<SlaveContext>> result = new HashMap<Integer, Collection<SlaveContext>>();

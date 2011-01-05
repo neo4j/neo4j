@@ -22,7 +22,6 @@ package org.neo4j.kernel;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.nio.channels.ReadableByteChannel;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +40,8 @@ import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Triplet;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.ha.BranchedDataException;
 import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.BrokerFactory;
@@ -54,7 +55,7 @@ import org.neo4j.kernel.ha.SlaveContext;
 import org.neo4j.kernel.ha.SlaveRelationshipTypeCreator;
 import org.neo4j.kernel.ha.SlaveTxRollbackHook;
 import org.neo4j.kernel.ha.TimeUtil;
-import org.neo4j.kernel.ha.TransactionStream;
+import org.neo4j.kernel.ha.TxExtractor;
 import org.neo4j.kernel.ha.ZooKeeperLastCommittedTxIdSetter;
 import org.neo4j.kernel.ha.MasterTxIdGenerator.MasterTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.SlaveIdGenerator.SlaveIdGeneratorFactory;
@@ -496,14 +497,14 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             this.localGraph = null;
         }
     }
-    
+
     public synchronized void shutdown( RuntimeException cause )
     {
         if ( causeOfShutdown != null )
         {
             return;
         }
-        
+
         causeOfShutdown = cause;
         msgLog.logMessage( "Shutdown[" + machineId + "], " + this, true );
         if ( this.broker != null )
@@ -551,15 +552,11 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         {
             XaDataSourceManager localDataSourceManager =
                 getConfig().getTxModule().getXaDataSourceManager();
-            for ( Pair<String, TransactionStream> streams : response.transactions().getStreams() )
+            for ( Triplet<String, Long, TxExtractor> tx : IteratorUtil.asIterable( response.transactions() ) )
             {
-                String resourceName = streams.first();
+                String resourceName = tx.first();
                 XaDataSource dataSource = localDataSourceManager.getXaDataSource( resourceName );
-                for ( Pair<Long, ReadableByteChannel> channel : streams.other().getChannels() )
-                {
-                    dataSource.applyCommittedTransaction( channel.first(), channel.other() );
-                    channel.other().close();
-                }
+                dataSource.applyCommittedTransaction( tx.other(), tx.third().extract() );
             }
             updateTime();
             return response.response();

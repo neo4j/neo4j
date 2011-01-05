@@ -80,10 +80,10 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
                 msgLog.logMessage( "Opened a new channel to " + address, true );
                 return channel;
             }
-            
+
             // TODO Here it would be neat if we could ask the db to find us a new master
             // and if this still will be a slave then retry to connect.
-            
+
             String msg = "MasterClient could not connect to " + address;
             msgLog.logMessage( msg, true );
             throw new HaCommunicationException( msg );
@@ -142,10 +142,11 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
             {
                 channel.write( buffer );
             }
-            
+
             BlockingReadHandler<ChannelBuffer> reader = (BlockingReadHandler<ChannelBuffer>)
                     channel.getPipeline().get( "blockingHandler" );
             ChannelBuffer message = null;
+            // TODO: read lazy
             while ( true )
             {
                 ChannelBuffer messagePart = reader.read( READ_RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS );
@@ -174,8 +175,9 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
                 }
             }
             T response = deserializer.read( message );
-            TransactionStreams txStreams = type.includesSlaveContext() ?
-                    readTransactionStreams( message ) : TransactionStreams.EMPTY;
+            // TODO: wrap instead of read up
+            TransactionStream txStreams = type.includesSlaveContext() ? readTransactionStreams( message )
+                    : TransactionStream.EMPTY;
             return new Response<T>( response, txStreams );
         }
         catch ( ClosedChannelException e )

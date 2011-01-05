@@ -20,34 +20,50 @@
 
 package org.neo4j.kernel.ha;
 
-import java.io.IOException;
-import java.nio.channels.ReadableByteChannel;
 import java.util.Collection;
+import java.util.Iterator;
 
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Triplet;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 
 /**
- * Represents a stream of the data of one or more consecutive transactions. 
+ * Represents a stream of the data of one or more consecutive transactions.
  */
-public final class TransactionStream
+public abstract class TransactionStream extends
+        PrefetchingIterator<Triplet<String/*datasource*/, Long/*txid*/, TxExtractor>>
 {
-    private final Collection<Pair<Long, ReadableByteChannel>> channels;
-
-    public TransactionStream( Collection<Pair<Long, ReadableByteChannel>> channels )
+    public static final TransactionStream EMPTY = new TransactionStream()
     {
-        this.channels = channels;
-    }
-
-    public Collection<Pair<Long, ReadableByteChannel>> getChannels()
-    {
-        return channels;
-    }
-
-    public void close() throws IOException
-    {
-        for ( Pair<Long, ReadableByteChannel> channel : channels )
+        @Override
+        protected Triplet<String, Long, TxExtractor> fetchNextOrNull()
         {
-            channel.other().close();
+            return null;
         }
+    };
+    private final String[] datasources;
+
+    public TransactionStream( String... datasources )
+    {
+        this.datasources = datasources;
+    }
+
+    public String[] dataSourceNames()
+    {
+        return datasources.clone();
+    }
+
+    public static TransactionStream create( Collection<String> datasources,
+            Iterable<Triplet<String, Long, TxExtractor>> streamSource )
+    {
+        final Iterator<Triplet<String, Long, TxExtractor>> stream = streamSource.iterator();
+        return new TransactionStream( datasources.toArray( new String[datasources.size()] ) )
+        {
+            @Override
+            protected Triplet<String, Long, TxExtractor> fetchNextOrNull()
+            {
+                if ( stream.hasNext() ) return stream.next();
+                return null;
+            }
+        };
     }
 }
