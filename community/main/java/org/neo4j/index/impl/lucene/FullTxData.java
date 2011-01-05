@@ -45,13 +45,14 @@ class FullTxData extends ExactTxData
     private boolean modified;
     private IndexReader reader;
     private IndexSearcher searcher;
-    private Map<Long, Document> cachedDocuments = new HashMap<Long, Document>();
-    
+    private final Map<Long, Document> cachedDocuments = new HashMap<Long, Document>();
+
     FullTxData( LuceneIndex index )
     {
         super( index );
     }
-    
+
+    @Override
     TxData add( Object entityId, String key, Object value )
     {
         super.add( entityId, key, value );
@@ -85,7 +86,7 @@ class FullTxData extends ExactTxData
     {
         return cachedDocuments.get( id );
     }
-    
+
     private void ensureLuceneDataInstantiated()
     {
         if ( this.directory == null )
@@ -103,6 +104,7 @@ class FullTxData extends ExactTxData
         }
     }
 
+    @Override
     TxData remove( Object entityId, String key, Object value )
     {
         super.remove( entityId, key, value );
@@ -131,23 +133,24 @@ class FullTxData extends ExactTxData
             throw new RuntimeException( e );
         }
     }
-    
+
+    @Override
     Pair<Collection<Long>, TxData> query( Query query, QueryContext contextOrNull )
     {
         return internalQuery( query, contextOrNull );
     }
-    
+
     private Pair<Collection<Long>, TxData> internalQuery( Query query, QueryContext contextOrNull )
     {
         if ( this.directory == null )
         {
-            return new Pair<Collection<Long>, TxData>( Collections.<Long>emptySet(), this );
+            return Pair.<Collection<Long>, TxData>of( Collections.<Long>emptySet(), this );
         }
-        
+
         try
         {
             Sort sorting = contextOrNull != null ? contextOrNull.sorting : null;
-            boolean prioritizeCorrectness = contextOrNull == null || !contextOrNull.tradeCorrectnessForSpeed; 
+            boolean prioritizeCorrectness = contextOrNull == null || !contextOrNull.tradeCorrectnessForSpeed;
             Hits hits = new Hits( searcher( prioritizeCorrectness ), query, null, sorting, prioritizeCorrectness );
             Collection<Long> result = new ArrayList<Long>();
             for ( int i = 0; i < hits.length(); i++ )
@@ -155,14 +158,15 @@ class FullTxData extends ExactTxData
                 result.add( Long.parseLong( hits.doc( i ).getField(
                     LuceneIndex.KEY_DOC_ID ).stringValue() ) );
             }
-            return new Pair<Collection<Long>, TxData>( result, this );
+            return Pair.<Collection<Long>, TxData>of( result, this );
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
         }
     }
-    
+
+    @Override
     void close()
     {
         safeClose( this.writer );
@@ -174,14 +178,14 @@ class FullTxData extends ExactTxData
     {
         this.modified = true;
     }
-    
+
     private IndexSearcher searcher( boolean allowRefreshSearcher )
     {
         if ( this.searcher != null && (!modified || !allowRefreshSearcher) )
         {
             return this.searcher;
         }
-        
+
         try
         {
             IndexReader newReader = this.reader == null ? this.writer.getReader() : this.reader.reopen();
@@ -207,14 +211,14 @@ class FullTxData extends ExactTxData
         }
         return this.searcher;
     }
-    
+
     private static void safeClose( Object object )
     {
         if ( object == null )
         {
             return;
         }
-        
+
         try
         {
             if ( object instanceof IndexWriter )
