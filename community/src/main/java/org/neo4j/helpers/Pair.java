@@ -23,10 +23,11 @@ package org.neo4j.helpers;
 /**
  * Utility to handle pairs of objects.
  */
-public class Pair<T1, T2>
+public abstract class Pair<T1, T2>
 {
-    private final T1 first;
-    private final T2 other;
+    Pair()
+    {
+    }
 
     /**
      * Create a new pair of objects.
@@ -34,43 +35,44 @@ public class Pair<T1, T2>
      * @param first the first object in the pair.
      * @param other the other object in the pair.
      */
-    public Pair( T1 first, T2 other )
+    public static <T1, T2> Pair<T1, T2> of( final T1 first, final T2 other )
     {
-        this.first = first;
-        this.other = other;
-    }
+        return new Pair<T1, T2>()
+        {
+            @Override
+            public T1 first()
+            {
+                return first();
+            }
 
-    public static <T1, T2> Pair<T1, T2> of( T1 first, T2 other )
-    {
-        return new Pair<T1, T2>( first, other );
+            @Override
+            public T2 other()
+            {
+                return other;
+            }
+        };
     }
 
     /**
      * @return the first object in the pair.
      */
-    public T1 first()
-    {
-        return first;
-    }
+    public abstract T1 first();
 
     /**
      * @return the other object in the pair.
      */
-    public T2 other()
-    {
-        return other;
-    }
+    public abstract T2 other();
 
     @Override
     public String toString()
     {
-        return "(" + first + ", " + other + ")";
+        return "(" + first() + ", " + other() + ")";
     }
 
     @Override
     public int hashCode()
     {
-        return ( 31 * hashCode( first ) ) | hashCode( other );
+        return ( 31 * hashCode( first() ) ) | hashCode( other() );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -81,14 +83,10 @@ public class Pair<T1, T2>
         if ( obj instanceof Pair )
         {
             if ( obj.getClass() != this.getClass() ) return false;
-            return pairEquals( (Pair) obj );
+            Pair that = (Pair) obj;
+            return equals( this.first(), that.first() ) && equals( this.other(), that.other() );
         }
         return false;
-    }
-
-    boolean pairEquals( Pair that )
-    {
-        return equals( this.first, that.first ) && equals( this.other, that.other );
     }
 
     static int hashCode( Object obj )
