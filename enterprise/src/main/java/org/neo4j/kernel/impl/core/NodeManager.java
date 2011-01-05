@@ -38,10 +38,10 @@ import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
 import org.neo4j.kernel.impl.cache.Cache;
-import org.neo4j.kernel.impl.cache.StrongReferenceCache;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.cache.NoCache;
 import org.neo4j.kernel.impl.cache.SoftLruCache;
+import org.neo4j.kernel.impl.cache.StrongReferenceCache;
 import org.neo4j.kernel.impl.cache.WeakLruCache;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
@@ -105,7 +105,7 @@ public class NodeManager
         this.idGenerator = idGenerator;
         this.relTypeHolder = new RelationshipTypeHolder( transactionManager,
             persistenceManager, idGenerator, relTypeCreator );
-        
+
         this.cacheType = cacheType;
         this.nodeCache = cacheType.node( cacheManager );
         this.relCache = cacheType.relationship( cacheManager );
@@ -616,10 +616,9 @@ public class NodeManager
             relationshipSet.add( relId );
         }
         // relCache.putAll( relsMap );
-        return new Pair<ArrayMap<String,IntArray>,Map<Integer,RelationshipImpl>>( 
-                newRelationshipMap, relsMap );
+        return Pair.of( newRelationshipMap, relsMap );
     }
-    
+
     void putAllInRelCache( Map<Integer,RelationshipImpl> map )
     {
         relCache.putAll( map );
@@ -963,12 +962,12 @@ public class NodeManager
         int keyId = persistenceManager.getKeyIdForProperty( propertyId );
         return propertyIndexManager.getIndexFor( keyId ).getKey();
     }
-    
+
     public RelationshipTypeHolder getRelationshipTypeHolder()
     {
         return this.relTypeHolder;
     }
-    
+
     public static enum CacheType
     {
         weak( false, "weak reference cache" )
@@ -1042,23 +1041,23 @@ public class NodeManager
                 return new StrongReferenceCache<Integer,RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
             }
         };
-        
+
         private static final String NODE_CACHE_NAME = "NodeCache";
         private static final String RELATIONSHIP_CACHE_NAME = "RelationshipCache";
-        
+
         final boolean needsCacheManagerRegistration;
         private final String description;
-        
+
         private CacheType( boolean needsCacheManagerRegistration, String description )
         {
             this.needsCacheManagerRegistration = needsCacheManagerRegistration;
             this.description = description;
         }
-        
+
         abstract Cache<Integer,NodeImpl> node( AdaptiveCacheManager cacheManager );
-        
+
         abstract Cache<Integer,RelationshipImpl> relationship( AdaptiveCacheManager cacheManager );
-        
+
         public String getDescription()
         {
             return this.description;
