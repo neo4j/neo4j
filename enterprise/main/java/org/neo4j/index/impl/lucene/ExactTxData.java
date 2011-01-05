@@ -34,7 +34,7 @@ import org.neo4j.helpers.Pair;
 public class ExactTxData extends TxData
 {
     private Map<String, Map<Object, Set<Object>>> data;
-    
+
     ExactTxData( LuceneIndex index )
     {
         super( index );
@@ -46,7 +46,7 @@ public class ExactTxData extends TxData
         idCollection( key, value, true ).add( entityId );
         return this;
     }
-    
+
     private Set<Object> idCollection( String key, Object value, boolean create )
     {
         Map<Object, Set<Object>> keyMap = keyMap( key, create );
@@ -54,7 +54,7 @@ public class ExactTxData extends TxData
         {
             return null;
         }
-        
+
         Set<Object> ids = keyMap.get( value );
         if ( ids == null && create )
         {
@@ -77,7 +77,7 @@ public class ExactTxData extends TxData
                 return null;
             }
         }
-        
+
         Map<Object, Set<Object>> inner = data.get( key );
         if ( inner == null && create )
         {
@@ -118,9 +118,9 @@ public class ExactTxData extends TxData
     {
         if ( contextOrNull != null && contextOrNull.tradeCorrectnessForSpeed )
         {
-            return new Pair<Collection<Long>, TxData>( Collections.<Long>emptyList(), this );
+            return Pair.<Collection<Long>, TxData>of( Collections.<Long>emptyList(), this );
         }
-        
+
         return toFullTxData().query( query, contextOrNull );
     }
 
@@ -138,7 +138,7 @@ public class ExactTxData extends TxData
         }
         return this;
     }
-    
+
     @Override
     Pair<Collection<Long>, TxData> get( String key, Object value )
     {
@@ -146,11 +146,11 @@ public class ExactTxData extends TxData
         Set<Object> ids = idCollection( key, value, false );
         if ( ids == null || ids.isEmpty() )
         {
-            return new Pair<Collection<Long>, TxData>( Collections.<Long>emptySet(), this );
+            return Pair.<Collection<Long>, TxData>of( Collections.<Long>emptySet(), this );
         }
-        return new Pair<Collection<Long>, TxData>( toLongs( ids ), this );
+        return Pair.<Collection<Long>, TxData>of( toLongs( ids ), this );
     }
-    
+
     private Collection<Long> toLongs( Set<Object> ids )
     {
         if ( ids.iterator().next() instanceof Long )
