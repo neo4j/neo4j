@@ -314,15 +314,10 @@ public class XaLogicalLog
         int xidIdent = getNextIdentifier();
         try
         {
-            byte globalId[] = xid.getGlobalTransactionId();
-            byte branchId[] = xid.getBranchQualifier();
-            int formatId = xid.getFormatId();
             long position = writeBuffer.getFileChannelPosition();
-            writeBuffer.put( LogEntry.TX_START ).put( (byte) globalId.length ).put(
-                (byte) branchId.length ).put( globalId ).put( branchId )
-                .putInt( xidIdent ).putInt( formatId );
-            xidIdentMap.put( xidIdent,
-                    new LogEntry.Start( xid, xidIdent, position ) );
+            LogEntry.Start start = new LogEntry.Start( xid, xidIdent, position );
+            LogIoUtils.writeStart( writeBuffer, xidIdent, start.getVersion(), xid );
+            xidIdentMap.put( xidIdent, start );
         }
         catch ( IOException e )
         {
@@ -339,8 +334,7 @@ public class XaLogicalLog
         assert startEntry != null;
         try
         {
-            writeBuffer.put( LogEntry.TX_PREPARE ).putInt( identifier );
-            writeBuffer.force();
+            LogIoUtils.writePrepare( writeBuffer, identifier );
         }
         catch ( IOException e )
         {
@@ -358,8 +352,7 @@ public class XaLogicalLog
         assert txId != -1;
         try
         {
-            writeBuffer.put( LogEntry.TX_1P_COMMIT ).putInt(
-                identifier ).putLong( txId ).putInt( masterId );
+            LogIoUtils.writeCommit( false, writeBuffer, identifier, txId, masterId );
             writeBuffer.force();
             cacheTxStartPosition( txId, masterId, startEntry );
         }
@@ -391,7 +384,7 @@ public class XaLogicalLog
         assert xidIdentMap.get( identifier ) != null;
         try
         {
-            writeBuffer.put( LogEntry.DONE ).putInt( identifier );
+            LogIoUtils.writeDone( writeBuffer, identifier );
             xidIdentMap.remove( identifier );
         }
         catch ( IOException e )
@@ -405,7 +398,7 @@ public class XaLogicalLog
     synchronized void doneInternal( int identifier ) throws IOException
     {
         buffer.clear();
-        buffer.put( LogEntry.DONE ).putInt( identifier );
+        LogIoUtils.writeDone( buffer, identifier );
         buffer.flip();
         fileChannel.write( buffer );
         xidIdentMap.remove( identifier );
@@ -423,8 +416,7 @@ public class XaLogicalLog
         assert txId != -1;
         try
         {
-            writeBuffer.put( LogEntry.TX_2P_COMMIT ).putInt(
-                identifier ).putLong( txId ).putInt( masterId );
+            LogIoUtils.writeCommit( true, writeBuffer, identifier, txId, masterId );
             writeBuffer.force();
             cacheTxStartPosition( txId, masterId, startEntry );
         }
@@ -441,8 +433,7 @@ public class XaLogicalLog
     {
         checkLogRotation();
         assert xidIdentMap.get( identifier ) != null;
-        writeBuffer.put( LogEntry.COMMAND ).putInt( identifier );
-        command.writeToFile( writeBuffer ); // fileChannel, buffer );
+        LogIoUtils.writeCommand( writeBuffer, identifier, command );
     }
 
     private void applyEntry( LogEntry entry ) throws IOException
