@@ -673,34 +673,43 @@ public abstract class CommonJobs
         }
     }
 
-    public static class LargeTransactionJob extends TransactionalJob<Boolean>
+    public static class LargeTransactionJob extends AbstractJob<Void>
     {
-        public LargeTransactionJob()
+        private final int txSizeMb;
+        private final int numTxs;
+
+        public LargeTransactionJob( int txSizeMb, int numTxs )
         {
+            this.txSizeMb = txSizeMb;
+            this.numTxs = numTxs;
         }
         
         @Override
-        protected Boolean executeInTransaction( GraphDatabaseService db, Transaction tx )
+        public Void execute( GraphDatabaseService db ) throws RemoteException
         {
             byte[] largeArray = new byte[1*1024*1024];
-            for ( int i = 0; i < largeArray.length; i++ )
+            for ( int t = 0; t < numTxs; t++ )
             {
-                largeArray[i] = (byte) (i % 256);
-            }
-            try
-            {
-                for ( int i = 0; i < 50; i++ )
+                Transaction tx = db.beginTx();
+                try
                 {
-                    Node node = db.createNode();
-                    node.setProperty( "data", largeArray );
+                    for ( int i = 0; i < largeArray.length; i++ )
+                    {
+                        largeArray[i] = (byte) (i % 256);
+                    }
+                    for ( int i = 0; i < txSizeMb; i++ )
+                    {
+                        Node node = db.createNode();
+                        node.setProperty( "data", largeArray );
+                    }
+                    tx.success();
                 }
-                tx.success();
+                finally
+                {
+                    tx.finish();
+                }
             }
-            catch ( Exception e )
-            {
-                throw new RuntimeException( e );
-            }
-            return true;
+            return null;
         }
     }
 }
