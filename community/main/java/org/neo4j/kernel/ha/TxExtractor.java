@@ -24,9 +24,27 @@ import java.nio.channels.ReadableByteChannel;
 
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 
-public interface TxExtractor
+public abstract class TxExtractor
 {
-    void extract( LogBuffer buffer );
-    
-    ReadableByteChannel extract();
+    public abstract void extract( LogBuffer buffer );
+
+    public abstract ReadableByteChannel extract();
+
+    public static TxExtractor create( final ReadableByteChannel data )
+    {
+        return new TxExtractor()
+        {
+            @Override
+            public ReadableByteChannel extract()
+            {
+                return data;
+            }
+
+            @Override
+            public void extract( LogBuffer buffer )
+            {
+                throw new UnsupportedOperationException( "Not meant to be extracted to LogBuffer" );
+            }
+        };
+    }
 }
