@@ -52,6 +52,11 @@
         <exclude>*.bat</exclude>
       </excludes>
     </fileSet>
+    <!-- java examples - libs -->
+    <fileSet>
+      <directory>target/appassembler/lib</directory>
+      <outputDirectory>examples/java/lib</outputDirectory>
+    </fileSet>
   </fileSets>
 
   <dependencySets>
