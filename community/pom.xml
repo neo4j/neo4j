@@ -118,9 +118,9 @@
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>appassembler-maven-plugin</artifactId>
         <configuration>
-          <repositoryName>../../lib</repositoryName>
+          <repositoryName>lib</repositoryName>
           <repositoryLayout>flat</repositoryLayout>
-          <generateRepository>false</generateRepository>
+          <generateRepository>true</generateRepository>
           <programs>
             <program>
               <mainClass>org.neo4j.examples.EmbeddedNeo4j</mainClass>
@@ -145,6 +145,10 @@
             <program>
               <mainClass>org.neo4j.examples.UsingIntegratedIndex</mainClass>
               <name>using-integrated-index</name>
+            </program>
+            <program>
+              <mainClass>org.neo4j.examples.server.CreateSimpleGraph</mainClass>
+              <name>create-graph-using-REST-from-Java</name>
             </program>
           </programs>
         </configuration>
