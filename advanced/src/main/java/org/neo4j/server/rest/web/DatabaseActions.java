@@ -682,7 +682,7 @@ public class DatabaseActions
         return new IndexedEntityRepresentation( node, key, value, new RelationshipIndexRepresentation( indexName, Collections.EMPTY_MAP ) );
     }
 
-    public ListRepresentation getIndexedNodes( String indexName, String key,
+    public ListRepresentation getIndexedNodesByExactMatch( String indexName, String key,
                                                String value )
     {
         if ( !graphDb.index().existsForNodes( indexName ) )
