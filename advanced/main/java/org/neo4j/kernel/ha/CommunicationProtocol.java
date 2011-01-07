@@ -24,11 +24,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -212,9 +208,9 @@ public abstract class CommunicationProtocol
             }
         }, INTEGER_SERIALIZER, false );
 
-        @SuppressWarnings( "unchecked" )
+        @SuppressWarnings( "rawtypes" )
         final MasterCaller caller;
-        @SuppressWarnings( "unchecked" )
+        @SuppressWarnings( "rawtypes" )
         final ObjectSerializer serializer;
         private final boolean includesSlaveContext;
 
@@ -238,8 +234,8 @@ public abstract class CommunicationProtocol
     }
 
     @SuppressWarnings( "unchecked" )
-    protected static ChannelBuffer handleRequest( Master realMaster,
-            ChannelBuffer buffer, Channel channel, MasterServer server ) throws IOException
+    protected static void handleRequest( Master realMaster,
+            ChannelBuffer buffer, final Channel channel, final MasterServer server ) throws IOException
     {
         // TODO Not very pretty solution (to pass in MasterServer here)
         // but what the heck.
@@ -264,9 +260,6 @@ public abstract class CommunicationProtocol
                 partialRequests.put( channel, partialRequest );
             }
             partialRequest.add( buffer );
-
-            // TODO
-            return null;
         }
         else
         {
@@ -294,19 +287,36 @@ public abstract class CommunicationProtocol
                 bufferToReadFrom = targetBuffers.first();
             }
 
-            Response<?> response = type.caller.callMaster( realMaster, context, bufferToReadFrom );
+            final Response<?> response = type.caller.callMaster( realMaster, context, bufferToReadFrom );
             targetBuffers.first().clear();
-            ChannelBuffer theBuffer = new ChunkingChannelBuffer( targetBuffers.first(), channel, MAX_FRAME_LENGTH );
-            type.serializer.write( response.response(), theBuffer );
-            if ( type.includesSlaveContext() )
+            final ChunkingChannelBuffer chunkingBuffer = new ChunkingChannelBuffer( targetBuffers.first(), channel, MAX_FRAME_LENGTH );
+            final ByteBuffer targetByteBuffer = targetBuffers.other();
+            final RequestType finalType = type;
+            final SlaveContext finalContext = context;
+            new Thread()
             {
-                writeTransactionStreams( response.transactions(), theBuffer, targetBuffers.other() );
-            }
-            if ( type == RequestType.FINISH || type == RequestType.PULL_UPDATES )
-            {
-                server.unmapSlave( channel, context );
-            }
-            return theBuffer;
+                public void run()
+                {
+                    try
+                    {
+                        finalType.serializer.write( response.response(), chunkingBuffer );
+                        if ( finalType.includesSlaveContext() )
+                        {
+                            writeTransactionStreams( response.transactions(), chunkingBuffer, targetByteBuffer );
+                        }
+                        chunkingBuffer.done();
+                        if ( finalType == RequestType.FINISH || finalType == RequestType.PULL_UPDATES )
+                        {
+                            server.unmapSlave( channel, finalContext );
+                        }
+                    }
+                    catch ( IOException e )
+                    {
+                        e.printStackTrace();
+                        throw new RuntimeException( e );
+                    }
+                }
+            }.start();
         }
     }
 
@@ -334,14 +344,9 @@ public abstract class CommunicationProtocol
         buffer.writeByte( 0/*no more transactions*/);
     }
 
-    protected static TransactionStream readTransactionStreams( final ChannelBuffer buffer )
+    protected static TransactionStream readTransactionStreams( final String[] datasources,
+            final ChannelBuffer buffer )
     {
-        final String[] datasources = new String[buffer.readUnsignedByte() + 1];
-        datasources[0] = null; // identifier for "no more transactions"
-        for ( int i = 1; i < datasources.length; i++ )
-        {
-            datasources[i] = readString( buffer );
-        }
         return new TransactionStream()
         {
             @Override
@@ -361,36 +366,21 @@ public abstract class CommunicationProtocol
             }
         };
     }
-
-    private static class ByteArrayChannel implements ReadableByteChannel
+    
+    protected static Pair<Byte, Long> readTransactionHeader( ChannelBuffer buffer )
     {
-        private final byte[] data;
-        private int pos;
+        return Pair.of( buffer.readByte(), buffer.readLong() );
+    }
 
-        ByteArrayChannel( byte[] data )
+    protected static String[] readTransactionStreamHeader( ChannelBuffer buffer )
+    {
+        final String[] datasources = new String[buffer.readUnsignedByte() + 1];
+        datasources[0] = null; // identifier for "no more transactions"
+        for ( int i = 1; i < datasources.length; i++ )
         {
-            this.data = data;
-            this.pos = 0;
+            datasources[i] = readString( buffer );
         }
-
-        public int read( ByteBuffer dst ) throws IOException
-        {
-            if ( pos >= data.length ) return -1;
-            int size = Math.min( data.length - pos, dst.limit() - dst.position() );
-            dst.put( data, pos, size );
-            pos += size;
-            return size;
-        }
-
-        public void close() throws IOException
-        {
-            pos = -1;
-        }
-
-        public boolean isOpen()
-        {
-            return pos > 0;
-        }
+        return datasources;
     }
 
     protected static class AcquireLockSerializer implements Serializer
@@ -426,40 +416,6 @@ public abstract class CommunicationProtocol
         }
 
         abstract Response<LockResult> lock( Master master, SlaveContext context, long... ids );
-    }
-
-    protected static class ByteData implements Iterable<byte[]>
-    {
-        private final Collection<byte[]> data;
-        private final int size;
-
-        @SuppressWarnings( "hiding" )
-        ByteData( ReadableByteChannel channel, ByteBuffer readBuffer ) throws IOException
-        {
-            int size = 0, chunk = 0;
-            List<byte[]> data = new LinkedList<byte[]>();
-            while ( ( chunk = channel.read( readBuffer ) ) >= 0 )
-            {
-                size += chunk;
-                byte[] bytes = new byte[chunk];
-                readBuffer.flip();
-                readBuffer.get( bytes );
-                readBuffer.clear();
-                data.add( bytes );
-            }
-            this.data = data;
-            this.size = size;
-        }
-
-        int size()
-        {
-            return size;
-        }
-
-        public Iterator<byte[]> iterator()
-        {
-            return data.iterator();
-        }
     }
 
     protected static interface Serializer
@@ -541,6 +497,7 @@ public abstract class CommunicationProtocol
         int machineId = buffer.readInt();
         int eventIdentifier = buffer.readInt();
         int txsSize = buffer.readByte();
+        @SuppressWarnings( "unchecked" )
         Pair<String, Long>[] lastAppliedTransactions = new Pair[txsSize];
         for ( int i = 0; i < txsSize; i++ )
         {

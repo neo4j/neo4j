@@ -41,6 +41,7 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
+import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.zookeeper.Machine;
@@ -102,9 +103,11 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
             if ( channel.isConnected() ) channel.close();
         }
     };
+    private final ResponseReceiver receiver;
 
-    public MasterClient( String hostNameOrIp, int port, String storeDir )
+    public MasterClient( String hostNameOrIp, int port, String storeDir, ResponseReceiver receiver )
     {
+        this.receiver = receiver;
         this.address = new InetSocketAddress( hostNameOrIp, port );
         executor = Executors.newCachedThreadPool();
         bootstrap = new ClientBootstrap( new NioClientSocketChannelFactory(
@@ -114,9 +117,9 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
         msgLog.logMessage( "Client connected to " + hostNameOrIp + ":" + port, true );
     }
 
-    public MasterClient( Machine machine, String storeDir )
+    public MasterClient( Machine machine, String storeDir, ResponseReceiver receiver )
     {
-        this( machine.getServer().first(), machine.getServer().other(), storeDir );
+        this( machine.getServer().first(), machine.getServer().other(), storeDir, receiver );
     }
 
     private <T> Response<T> sendRequest( RequestType type,
@@ -143,41 +146,32 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
                 channel.write( buffer );
             }
 
+            // Read the response
+            @SuppressWarnings( "unchecked" )
             BlockingReadHandler<ChannelBuffer> reader = (BlockingReadHandler<ChannelBuffer>)
                     channel.getPipeline().get( "blockingHandler" );
-            ChannelBuffer message = null;
-            // TODO: read lazy
-            while ( true )
+            Pair<ChannelBuffer, Boolean> messageContext = readNextMessage( channelContext, reader );
+            ChannelBuffer message = messageContext.first();
+            T response = deserializer.read( message );
+            String[] datasources = type.includesSlaveContext() ? readTransactionStreamHeader( message ) : null;
+            if ( messageContext.other() )
             {
-                ChannelBuffer messagePart = reader.read( READ_RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS );
-                if ( messagePart == null )
+                // This message consists of multiple chunks, apply transactions as early as possible
+                message = createDynamicBufferFrom( message );
+                boolean more = true;
+                while ( more )
                 {
-                    channelPool.dispose( channelContext );
-                    throw new HaCommunicationException( "Channel has been closed" );
-                }
-                byte continuation = messagePart.readByte();
-                if ( continuation == ChunkingChannelBuffer.CONTINUATION_MORE )
-                {
-                    message = message != null ? message : ChannelBuffers.dynamicBuffer();
-                    message.writeBytes( messagePart );
-                }
-                else
-                {
-                    if ( message == null )
-                    {
-                        message = messagePart;
-                    }
-                    else
-                    {
-                        message.writeBytes( messagePart );
-                    }
-                    break;
+                    Pair<ChannelBuffer, Boolean> followingMessage = readNextMessage( channelContext, reader );
+                    more = followingMessage.other();
+                    message.writeBytes( followingMessage.first() );
+                    message = applyFullyAvailableTransactions( datasources, message );
                 }
             }
-            T response = deserializer.read( message );
-            // TODO: wrap instead of read up
-            TransactionStream txStreams = type.includesSlaveContext() ? readTransactionStreams( message )
-                    : TransactionStream.EMPTY;
+            
+            // Here's the remaining transactions if the message consisted of multiple chunks,
+            // or all transactions if it only consisted of one chunk.
+            TransactionStream txStreams = type.includesSlaveContext() ?
+                    readTransactionStreams( datasources, message ) : TransactionStream.EMPTY;
             return new Response<T>( response, txStreams );
         }
         catch ( ClosedChannelException e )
@@ -197,6 +191,86 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
         {
             throw new HaCommunicationException( e );
         }
+    }
+    
+    private ChannelBuffer createDynamicBufferFrom( ChannelBuffer message )
+    {
+        ChannelBuffer result = ChannelBuffers.dynamicBuffer();
+        result.writeBytes( message );
+        return result;
+    }
+
+    private ChannelBuffer applyFullyAvailableTransactions( String[] datasources, ChannelBuffer message )
+    {
+        int numberOfTxEnds = scanForTxEnds( message );
+        if ( numberOfTxEnds > 0 )
+        {
+            TransactionStream stream = readTransactionStreams( datasources, message );
+            for ( int i = 0; i < numberOfTxEnds; i++ )
+            {
+                Triplet<String, Long, TxExtractor> tx = stream.next();
+                receiver.applyTransaction( tx.first(), tx.second(), tx.third().extract() );
+            }
+            return discardAppliedTransactions( message );
+        }
+        return message;
+    }
+
+    private int scanForTxEnds( ChannelBuffer buffer )
+    {
+        int positionBeforeScanning = buffer.readerIndex();
+        try
+        {
+            int result = 0;
+            while ( buffer.readableBytes() > 10 /*Transaction header + 1 block header*/ )
+            {
+                readTransactionHeader( buffer );
+                while ( buffer.readable() )
+                {
+                    int blockSize = buffer.readUnsignedByte();
+                    boolean fullBlock = blockSize == BlockLogBuffer.FULL_BLOCK_AND_MORE;
+                    if ( !fullBlock && buffer.readableBytes() >= blockSize )
+                    {
+                        // This means that there's a block which isn't full. If there's <blockSize>
+                        // more bytes in this buffer then that's a tx ending, right there.
+                        result++;
+                    }
+                    buffer.skipBytes( Math.min( fullBlock ? BlockLogBuffer.DATA_SIZE : blockSize,
+                            buffer.readableBytes() ) );
+                    if ( !fullBlock )
+                    {
+                        break;
+                    }
+                }
+            }
+            return result;
+        }
+        finally
+        {
+            buffer.readerIndex( positionBeforeScanning );
+        }
+    }
+
+    private ChannelBuffer discardAppliedTransactions( ChannelBuffer message )
+    {
+        // This won't shrink the buffer, but just move the bytes from the end
+        // to the beginning so that new bytes can be written after those. So this will keep
+        // the buffer from growing more than the biggest transaction in the stream.
+        message.discardReadBytes();
+        return message;
+    }
+    
+    private Pair<ChannelBuffer, Boolean> readNextMessage( Triplet<Channel, ChannelBuffer, ByteBuffer> channelContext,
+            BlockingReadHandler<ChannelBuffer> reader ) throws InterruptedException, IOException
+    {
+        ChannelBuffer result = reader.read( READ_RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS );
+        if ( result == null )
+        {
+            channelPool.dispose( channelContext );
+            throw new HaCommunicationException( "Channel has been closed" );
+        }
+        byte continuation = result.readByte();
+        return Pair.of( result, continuation == ChunkingChannelBuffer.CONTINUATION_MORE );
     }
 
     private Triplet<Channel, ChannelBuffer, ByteBuffer> getChannel() throws Exception
