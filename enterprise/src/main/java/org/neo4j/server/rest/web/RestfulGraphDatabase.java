@@ -608,7 +608,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            return output.ok( server.getIndexedNodes( indexName, key, value ) );
+            return output.ok( server.getIndexedNodesByExactMatch( indexName, key, value ) );
         } catch ( NotFoundException nfe )
         {
             return output.notFound( nfe );
