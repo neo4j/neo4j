@@ -42,9 +42,11 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.AbstractBroker;
 import org.neo4j.kernel.ha.Broker;
+import org.neo4j.kernel.ha.DelegatingResponseReceiver;
 import org.neo4j.kernel.ha.FakeMasterBroker;
 import org.neo4j.kernel.ha.FakeSlaveBroker;
 import org.neo4j.kernel.ha.MasterImpl;
+import org.neo4j.kernel.ha.ResponseReceiver;
 
 public class SingleJvmTest extends AbstractHaTest
 {
@@ -67,13 +69,14 @@ public class SingleJvmTest extends AbstractHaTest
             for ( int i = 1; i <= numSlaves; i++ )
             {
                 File slavePath = dbPath( i );
-                Broker broker = makeSlaveBroker( master, 0, i, slavePath.getAbsolutePath() );
+                DelegatingResponseReceiver receiver = new DelegatingResponseReceiver();
+                Broker broker = makeSlaveBroker( master, 0, i, slavePath.getAbsolutePath(), receiver );
                 Map<String,String> cfg = new HashMap<String, String>(config);
                 cfg.put( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, Integer.toString(i) );
                 cfg.put( Config.KEEP_LOGICAL_LOGS, "true" );
                 HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase(
                         slavePath.getAbsolutePath(), cfg, AbstractBroker.wrapSingleBroker( broker ) );
-                // db.newMaster( null, new Exception() );
+                receiver.setTarget( db );
                 haDbs.add( db );
             }
         }
@@ -101,7 +104,7 @@ public class SingleJvmTest extends AbstractHaTest
         return new FakeMasterBroker( masterId, path );
     }
 
-    protected Broker makeSlaveBroker( MasterImpl master, int masterId, int id, String path )
+    protected Broker makeSlaveBroker( MasterImpl master, int masterId, int id, String path, ResponseReceiver receiver )
     {
         return new FakeSlaveBroker( master, masterId, id, path );
     }

@@ -25,13 +25,36 @@ import java.nio.channels.ReadableByteChannel;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 
-public interface ResponseReceiver
+public class DelegatingResponseReceiver implements ResponseReceiver
 {
-    SlaveContext getSlaveContext( int eventIdentifier );
+    private ResponseReceiver target;
+
+    public void setTarget( ResponseReceiver target )
+    {
+        this.target = target;
+    }
     
-    <T> T receive( Response<T> response );
-    
-    void applyTransaction( String datasourceName, long txId, ReadableByteChannel stream );
-    
-    void newMaster( Pair<Master, Machine> master, Exception e );
+    @Override
+    public SlaveContext getSlaveContext( int eventIdentifier )
+    {
+        return target.getSlaveContext( eventIdentifier );
+    }
+
+    @Override
+    public <T> T receive( Response<T> response )
+    {
+        return target.receive( response );
+    }
+
+    @Override
+    public void applyTransaction( String datasourceName, long txId, ReadableByteChannel stream )
+    {
+        target.applyTransaction( datasourceName, txId, stream );
+    }
+
+    @Override
+    public void newMaster( Pair<Master, Machine> master, Exception e )
+    {
+        target.newMaster( master, e );
+    }
 }

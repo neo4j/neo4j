@@ -22,6 +22,7 @@ package org.neo4j.kernel;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.channels.ReadableByteChannel;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -364,8 +365,8 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         }
     }
 
-    private boolean recreateDbSomehow()
-    {
+//    private boolean recreateDbSomehow()
+//    {
         // This is temporary and shouldn't be used in production, but the
         // functionality is the same: I come to the conclusion that this db
         // is void and should be recreated from some source.
@@ -385,8 +386,8 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 //            return true;
 //        }
 //        return false;
-        throw new UnsupportedOperationException();
-    }
+//        throw new UnsupportedOperationException();
+//    }
 
     private void instantiateAutoUpdatePullerIfConfigSaysSo()
     {
@@ -559,6 +560,23 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             }
             updateTime();
             return response.response();
+        }
+        catch ( IOException e )
+        {
+            newMaster( broker.getMaster(), e );
+            throw new RuntimeException( e );
+        }
+    }
+    
+    @Override
+    public void applyTransaction( String datasourceName, long txId, ReadableByteChannel stream )
+    {
+        try
+        {
+            XaDataSourceManager localDataSourceManager =
+                getConfig().getTxModule().getXaDataSourceManager();
+            XaDataSource dataSource = localDataSourceManager.getXaDataSource( datasourceName );
+            dataSource.applyCommittedTransaction( txId, stream );
         }
         catch ( IOException e )
         {

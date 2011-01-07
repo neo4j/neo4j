@@ -687,7 +687,7 @@ public abstract class CommonJobs
         @Override
         public Void execute( GraphDatabaseService db ) throws RemoteException
         {
-            byte[] largeArray = new byte[1*1024*1024];
+            byte[] largeArray = new byte[1*1024*1021]; /* 1021 So that it doesn't align with block size in BlockLogBuffer and all that :) */
             for ( int t = 0; t < numTxs; t++ )
             {
                 Transaction tx = db.beginTx();

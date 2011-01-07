@@ -34,6 +34,7 @@ import org.jboss.netty.buffer.ChannelBufferFactory;
 import org.jboss.netty.buffer.ChannelBufferIndexFinder;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelFuture;
 
 public class ChunkingChannelBuffer implements ChannelBuffer
 {
@@ -44,6 +45,7 @@ public class ChunkingChannelBuffer implements ChannelBuffer
     private final Channel channel;
     private final int capacity;
     private int continuationPosition;
+    private ChannelFuture mostRecentWriteFuture;
 
     public ChunkingChannelBuffer( ChannelBuffer buffer, Channel channel, int capacity )
     {
@@ -484,9 +486,32 @@ public class ChunkingChannelBuffer implements ChannelBuffer
         if ( writerIndex()+bytesPlus >= capacity )
         {
             setContinuation( CONTINUATION_MORE );
-            channel.write( buffer );
+            writeCurrentChunk();
+            
+            // TODO Don't send too much to Netty, since it'll totally freak out.
+            // write some code here to check how much there is in Nettys buffers and
+            // do some Thread.sleeping or something to go around the Netty limitations
+            
+            // TODO Reuse buffers?
             buffer = ChannelBuffers.dynamicBuffer();
             addRoomForContinuationHeader();
+        }
+    }
+
+    private void writeCurrentChunk()
+    {
+        if ( mostRecentWriteFuture != null )
+        {
+            mostRecentWriteFuture.awaitUninterruptibly();
+        }
+        mostRecentWriteFuture = channel.write( buffer );
+    }
+
+    public void done()
+    {
+        if ( writable() )
+        {
+            writeCurrentChunk();
         }
     }
 
