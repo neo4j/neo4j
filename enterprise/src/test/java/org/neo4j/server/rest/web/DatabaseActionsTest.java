@@ -598,7 +598,7 @@ public class DatabaseActionsTest
 
         actions.createNodeIndex( MapUtil.map( "name", indexName ) );
 
-        assertFalse( serialize( actions.getIndexedNodes( indexName, key, value ) ).iterator().hasNext() );
+        assertFalse( serialize( actions.getIndexedNodesByExactMatch( indexName, key, value ) ).iterator().hasNext() );
         actions.addToNodeIndex( indexName, key, value, nodeId );
         assertEquals( Arrays.asList( nodeId ), graphdbHelper.getIndexedNodes( indexName, key, value ) );
     }
@@ -611,7 +611,7 @@ public class DatabaseActionsTest
         long nodeId = graphdbHelper.createNode();
         String indexName = "fulltext-node";
         graphdbHelper.createNodeFullTextIndex( indexName );
-        assertFalse( serialize( actions.getIndexedNodes( indexName, key, value ) ).iterator().hasNext() );
+        assertFalse( serialize( actions.getIndexedNodesByExactMatch( indexName, key, value ) ).iterator().hasNext() );
         actions.addToNodeIndex( indexName, key, value, nodeId );
         assertEquals( Arrays.asList( nodeId ), graphdbHelper.getIndexedNodes( indexName, key, value ) );
         assertEquals( Arrays.asList( nodeId ), graphdbHelper.getIndexedNodes( indexName, key, "the value with spaces" ) );
@@ -641,7 +641,7 @@ public class DatabaseActionsTest
         String indexName = "node";
         graphdbHelper.addNodeToIndex( indexName, key, value, nodeId );
         int counter = 0;
-        for ( Object rep : serialize( actions.getIndexedNodes( indexName, key, value ) ) )
+        for ( Object rep : serialize( actions.getIndexedNodesByExactMatch( indexName, key, value ) ) )
         {
             Map<String, Object> serialized = (Map<String, Object>)rep;
             NodeRepresentationTest.verifySerialisation( serialized );
