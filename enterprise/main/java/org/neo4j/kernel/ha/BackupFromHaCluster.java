@@ -44,9 +44,11 @@ public class BackupFromHaCluster
         Map<String, String> config = MapUtil.stringMap(
                 HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID,
                 String.valueOf( master.getMachineId() ) );
+        DelegatingResponseReceiver receiver = new DelegatingResponseReceiver();
         HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase( storeDir, config,
                 AbstractBroker.wrapSingleBroker( new BackupBroker( new MasterClient(
-                        master.getServer().first(), master.getServer().other(), storeDir ), storeDir ) ) );
+                        master.getServer().first(), master.getServer().other(), storeDir, receiver ), storeDir ) ) );
+        receiver.setTarget( db );
         System.out.println( "Leaching backup from master " + master );
         try
         {

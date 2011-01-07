@@ -36,6 +36,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterClient;
+import org.neo4j.kernel.ha.ResponseReceiver;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -54,12 +55,19 @@ public abstract class AbstractZooKeeperManager implements Watcher
 
     private final String storeDir;
     private final StringLogger msgLog;
+    private final ResponseReceiver receiver;
 
-    public AbstractZooKeeperManager( String servers, String storeDir )
+    public AbstractZooKeeperManager( String servers, String storeDir, ResponseReceiver receiver )
     {
         this.servers = servers;
         this.storeDir = storeDir;
+        this.receiver = receiver;
         msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
+    }
+    
+    protected ResponseReceiver getReceiver()
+    {
+        return this.receiver;
     }
 
     protected ZooKeeper instantiateZooKeeper()
@@ -121,7 +129,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
             if ( master != Machine.NO_MACHINE &&
                     master.getMachineId() != getMyMachineId() )
             {
-                masterClient = new MasterClient( master, storeDir );
+                masterClient = new MasterClient( master, storeDir, receiver );
             }
             cachedMaster = Pair.<Master, Machine>of( masterClient, master );
         }

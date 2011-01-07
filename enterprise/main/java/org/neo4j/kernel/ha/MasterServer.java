@@ -133,19 +133,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
             try
             {
                 ChannelBuffer message = (ChannelBuffer) event.getMessage();
-                ChannelBuffer result = handleRequest( realMaster, message, 
-                        event.getChannel(), MasterServer.this );
-                if ( result != null )
-                {
-                    if ( result.writerIndex() > 0 )
-                    {
-                        event.getChannel().write( result );
-                    }
-                }
-                else
-                {
-                    // TODO This was just a chunk, send something back at all?
-                }
+                handleRequest( realMaster, message, event.getChannel(), MasterServer.this );
             }
             catch ( Exception e )
             {

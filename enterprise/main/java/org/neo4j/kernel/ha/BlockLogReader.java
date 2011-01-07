@@ -47,7 +47,7 @@ public class BlockLogReader implements ReadableByteChannel
             int blockSize = source.readUnsignedByte();
             byteBuffer.clear();
             moreBlocks = blockSize == BlockLogBuffer.FULL_BLOCK_AND_MORE;
-            int limit = moreBlocks ? BlockLogBuffer.MAX_SIZE-1 : blockSize;
+            int limit = moreBlocks ? BlockLogBuffer.DATA_SIZE : blockSize;
             byteBuffer.limit( limit );
             source.readBytes( byteBuffer );
             byteBuffer.flip();

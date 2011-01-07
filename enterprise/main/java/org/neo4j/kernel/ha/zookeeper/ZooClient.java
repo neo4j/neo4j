@@ -53,7 +53,6 @@ public class ZooClient extends AbstractZooKeeperManager
 
     private volatile KeeperState keeperState = KeeperState.Disconnected;
     private volatile boolean shutdown = false;
-    private final ResponseReceiver receiver;
     private final String rootPath;
     private final String haServer;
 
@@ -64,10 +63,9 @@ public class ZooClient extends AbstractZooKeeperManager
     public ZooClient( String servers, int machineId, long storeCreationTime,
         long storeId, long committedTx, ResponseReceiver receiver, String haServer, String storeDir )
     {
-        super( servers, storeDir );
+        super( servers, storeDir, receiver );
         this.rootPath = "/" + storeCreationTime + "_" + storeId;
         this.haServer = haServer;
-        this.receiver = receiver;
         this.machineId = machineId;
         this.committedTx = committedTx;
         this.sequenceNr = "not initialized yet";
@@ -121,7 +119,7 @@ public class ZooClient extends AbstractZooKeeperManager
                     setDataChangeWatcher( MASTER_NOTIFY_CHILD, masterId );
                     if ( sessionId != -1 )
                     {
-                        receiver.newMaster( masterAfterIWrote, new Exception() );
+                        getReceiver().newMaster( masterAfterIWrote, new Exception() );
                     }
                     sessionId = newSessionId;
                 }
@@ -143,7 +141,7 @@ public class ZooClient extends AbstractZooKeeperManager
                     setDataChangeWatcher( MASTER_NOTIFY_CHILD, -1 );
                     if ( currentMaster.other().getMachineId() == machineId )
                     {
-                        receiver.newMaster( currentMaster, new Exception() );
+                        getReceiver().newMaster( currentMaster, new Exception() );
                     }
                 }
                 else if ( path.contains( MASTER_REBOUND_CHILD ) )
@@ -151,7 +149,7 @@ public class ZooClient extends AbstractZooKeeperManager
                     setDataChangeWatcher( MASTER_REBOUND_CHILD, -1 );
                     if ( currentMaster.other().getMachineId() != machineId )
                     {
-                        receiver.newMaster( currentMaster, new Exception() );
+                        getReceiver().newMaster( currentMaster, new Exception() );
                     }
                 }
                 else

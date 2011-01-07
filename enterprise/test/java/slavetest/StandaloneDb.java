@@ -35,6 +35,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.AbstractBroker;
 import org.neo4j.kernel.ha.CommunicationProtocol;
+import org.neo4j.kernel.ha.DelegatingResponseReceiver;
 import org.neo4j.kernel.ha.FakeMasterBroker;
 import org.neo4j.kernel.ha.FakeSlaveBroker;
 import org.neo4j.kernel.ha.Master;
@@ -91,13 +92,15 @@ public class StandaloneDb extends UnicastRemoteObject implements StandaloneDbCom
                 boolean isMaster = args.getBoolean( "master", false ).booleanValue();
                 tempMachineId = args.getNumber( "id", null ).intValue();
                 Number masterId = args.getNumber( "master-id", null );
-                Master master = new MasterClient( "localhost", CommunicationProtocol.PORT, storeDir );
+                DelegatingResponseReceiver receiver = new DelegatingResponseReceiver();
+                Master master = new MasterClient( "localhost", CommunicationProtocol.PORT, storeDir, receiver );
                 AbstractBroker broker = isMaster ? new FakeMasterBroker( tempMachineId, storeDir ) :
                         new FakeSlaveBroker( master, masterId.intValue(), tempMachineId, storeDir );
                 haDb = new HighlyAvailableGraphDatabase( storeDir, MapUtil.stringMap(
                         HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, "" + tempMachineId,
                         "index", args.get( "index", null ) ),
                         AbstractBroker.wrapSingleBroker( broker ) );
+                receiver.setTarget( haDb );
                 System.out.println( "Started HA db (w/o zoo keeper)" );
             }
             this.location = location;

@@ -31,6 +31,7 @@ public class BlockLogBuffer implements LogBuffer
 {
     static final byte FULL_BLOCK_AND_MORE = 0;
     static final int MAX_SIZE = 256/*incl. header*/;
+    static final int DATA_SIZE = MAX_SIZE-1;
 
     private final ChannelBuffer target;
     private final byte[] byteArray = new byte[MAX_SIZE + 8/*largest atom*/];
