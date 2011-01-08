@@ -105,6 +105,7 @@ public abstract class CommonJobs
             this.value = value;
         }
         
+        @Override
         protected Long executeInTransaction( GraphDatabaseService db, Transaction tx )
         {
             Node node = db.createNode();
@@ -197,6 +198,7 @@ public abstract class CommonJobs
             this.value = value;
         }
         
+        @Override
         protected Object executeInTransaction( GraphDatabaseService db, Transaction tx )
         {
             Node refNode = db.getReferenceNode();
@@ -593,8 +595,8 @@ public abstract class CommonJobs
     
     public static class CreateNodeAndIndexJob extends TransactionalJob<Long>
     {
-        private String key;
-        private Object value;
+        private final String key;
+        private final Object value;
 
         public CreateNodeAndIndexJob( String key, Object value )
         {
@@ -618,8 +620,8 @@ public abstract class CommonJobs
     
     public static class CreateNodeAndNewIndexJob extends TransactionalJob<Long>
     {
-        private String key;
-        private Object value;
+        private final String key;
+        private final Object value;
         private final String indexName;
         private final String key2;
         private final Object value2;
@@ -684,7 +686,6 @@ public abstract class CommonJobs
             this.numTxs = numTxs;
         }
         
-        @Override
         public Void execute( GraphDatabaseService db ) throws RemoteException
         {
             byte[] largeArray = new byte[1*1024*1021]; /* 1021 So that it doesn't align with block size in BlockLogBuffer and all that :) */
