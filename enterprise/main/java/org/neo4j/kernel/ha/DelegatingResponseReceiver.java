@@ -34,25 +34,21 @@ public class DelegatingResponseReceiver implements ResponseReceiver
         this.target = target;
     }
     
-    @Override
     public SlaveContext getSlaveContext( int eventIdentifier )
     {
         return target.getSlaveContext( eventIdentifier );
     }
 
-    @Override
     public <T> T receive( Response<T> response )
     {
         return target.receive( response );
     }
 
-    @Override
     public void applyTransaction( String datasourceName, long txId, ReadableByteChannel stream )
     {
         target.applyTransaction( datasourceName, txId, stream );
     }
 
-    @Override
     public void newMaster( Pair<Master, Machine> master, Exception e )
     {
         target.newMaster( master, e );
