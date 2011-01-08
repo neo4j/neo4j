@@ -568,7 +568,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         }
     }
     
-    @Override
     public void applyTransaction( String datasourceName, long txId, ReadableByteChannel stream )
     {
         try
