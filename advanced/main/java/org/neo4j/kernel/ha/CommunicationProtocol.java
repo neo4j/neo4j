@@ -290,14 +290,15 @@ public abstract class CommunicationProtocol
         buffer.writeByte( 0/*no more transactions*/);
     }
 
-    protected static TransactionStream readTransactionStreams( final String[] datasources,
-            final ChannelBuffer buffer )
+    protected static TransactionStream readTransactionStreams( final ChannelBuffer buffer )
     {
+        final String[] datasources = readTransactionStreamHeader( buffer );
         return new TransactionStream()
         {
             @Override
             protected Triplet<String, Long, TxExtractor> fetchNextOrNull()
             {
+                makeSureNextTransactionIsFullyFetched( buffer );
                 String datasource = datasources[buffer.readUnsignedByte()];
                 if ( datasource == null ) return null;
                 long txId = buffer.readLong();
@@ -313,11 +314,28 @@ public abstract class CommunicationProtocol
         };
     }
 
-    protected static Pair<Byte, Long> readTransactionHeader( ChannelBuffer buffer )
+    private static void makeSureNextTransactionIsFullyFetched( ChannelBuffer buffer )
     {
-        return Pair.of( buffer.readByte(), buffer.readLong() );
+        buffer.markReaderIndex();
+        try
+        {
+            if ( buffer.readByte() > 0 /* datasource id */ )
+            {
+                buffer.skipBytes( 8 ); // tx id
+                int blockSize = 0;
+                while ( (blockSize = buffer.readUnsignedByte()) == 0 )
+                {
+                    buffer.skipBytes( BlockLogBuffer.DATA_SIZE );
+                }
+                buffer.skipBytes( blockSize );
+            }
+        }
+        finally
+        {
+            buffer.resetReaderIndex();
+        }
     }
-
+    
     protected static String[] readTransactionStreamHeader( ChannelBuffer buffer )
     {
         final String[] datasources = new String[buffer.readUnsignedByte() + 1];

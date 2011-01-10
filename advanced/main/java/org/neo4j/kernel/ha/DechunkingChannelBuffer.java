@@ -33,17 +33,18 @@ import java.util.concurrent.TimeUnit;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBufferFactory;
 import org.jboss.netty.buffer.ChannelBufferIndexFinder;
+import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
 
 public class DechunkingChannelBuffer implements ChannelBuffer
 {
     private final BlockingReadHandler<ChannelBuffer> reader;
-    private final ChannelBuffer buffer;
+    private ChannelBuffer buffer;
     private boolean more;
+    private boolean hasMarkedReaderIndex;
 
-    DechunkingChannelBuffer( ChannelBuffer buffer, BlockingReadHandler<ChannelBuffer> reader )
+    DechunkingChannelBuffer( BlockingReadHandler<ChannelBuffer> reader )
     {
-        this.buffer = buffer;
         this.reader = reader;
         readNextChunk();
     }
@@ -76,22 +77,18 @@ public class DechunkingChannelBuffer implements ChannelBuffer
     {
         ChannelBuffer readBuffer = readNext();
         more = readBuffer.readByte() == ChunkingChannelBuffer.CONTINUATION_MORE;
-        discardReadBytes();
-        buffer.writeBytes( readBuffer );
-    }
-    
-    public boolean expectsMoreChunks()
-    {
-        return more;
-    }
-    
-    public void forceReadNextChunk()
-    {
-        if ( !more )
+        if ( !more && buffer == null )
         {
-            throw new RuntimeException( "There aren't any more chunks expected" );
+            // Optimization: this is the first chunk and it'll be the only chunk
+            // in this message.
+            buffer = readBuffer;
         }
-        readNextChunk();
+        else
+        {
+            buffer = buffer == null ? ChannelBuffers.dynamicBuffer() : buffer;
+            discardReadBytes();
+            buffer.writeBytes( readBuffer );
+        }
     }
 
     public ChannelBufferFactory factory()
@@ -119,31 +116,26 @@ public class DechunkingChannelBuffer implements ChannelBuffer
 
     public int readerIndex()
     {
-        // TODO Take into account previous chunks?
         return buffer.readerIndex();
     }
 
     public void readerIndex( int readerIndex )
     {
-        // TODO Take into account previous chunks?
         buffer.readerIndex( readerIndex );
     }
 
     public int writerIndex()
     {
-        // TODO Take into account previous chunks?
         return buffer.writerIndex();
     }
 
     public void writerIndex( int writerIndex )
     {
-        // TODO Take into account previous chunks?
         buffer.writerIndex( writerIndex );
     }
 
     public void setIndex( int readerIndex, int writerIndex )
     {
-        // TODO Take into account previous chunks?
         buffer.setIndex( readerIndex, writerIndex );
     }
 
@@ -182,11 +174,13 @@ public class DechunkingChannelBuffer implements ChannelBuffer
     public void markReaderIndex()
     {
         buffer.markReaderIndex();
+        hasMarkedReaderIndex = true;
     }
 
     public void resetReaderIndex()
     {
         buffer.resetReaderIndex();
+        hasMarkedReaderIndex = false;
     }
 
     public void markWriterIndex()
@@ -201,7 +195,17 @@ public class DechunkingChannelBuffer implements ChannelBuffer
 
     public void discardReadBytes()
     {
+        int oldReaderIndex = buffer.readerIndex();
+        if ( hasMarkedReaderIndex )
+        {
+            buffer.resetReaderIndex();
+        }
+        int bytesToDiscard = buffer.readerIndex();
         buffer.discardReadBytes();
+        if ( hasMarkedReaderIndex )
+        {
+            buffer.readerIndex( oldReaderIndex-bytesToDiscard );
+        }
     }
 
     public void ensureWritableBytes( int writableBytes )
