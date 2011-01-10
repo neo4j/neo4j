@@ -111,7 +111,7 @@ public abstract class CommunicationProtocol
         ALLOCATE_IDS( new MasterCaller<IdAllocation>()
         {
             public Response<IdAllocation> callMaster( Master master, SlaveContext context,
-                    ChannelBuffer input )
+                    ChannelBuffer input, ChannelBuffer target )
             {
                 IdType idType = IdType.values()[input.readByte()];
                 return Response.wrapResponseObjectOnly( master.allocateIds( idType ) );
@@ -135,7 +135,7 @@ public abstract class CommunicationProtocol
         CREATE_RELATIONSHIP_TYPE( new MasterCaller<Integer>()
         {
             public Response<Integer> callMaster( Master master, SlaveContext context,
-                    ChannelBuffer input )
+                    ChannelBuffer input, ChannelBuffer target )
             {
                 return master.createRelationshipType( context, readString( input ) );
             }
@@ -175,7 +175,7 @@ public abstract class CommunicationProtocol
         COMMIT( new MasterCaller<Long>()
         {
             public Response<Long> callMaster( Master master, SlaveContext context,
-                    ChannelBuffer input )
+                    ChannelBuffer input, ChannelBuffer target )
             {
                 String resource = readString( input );
                 final ReadableByteChannel reader = new BlockLogReader( input );
@@ -186,7 +186,7 @@ public abstract class CommunicationProtocol
         PULL_UPDATES( new MasterCaller<Void>()
         {
             public Response<Void> callMaster( Master master, SlaveContext context,
-                    ChannelBuffer input )
+                    ChannelBuffer input, ChannelBuffer target )
             {
                 return master.pullUpdates( context );
             }
@@ -194,7 +194,7 @@ public abstract class CommunicationProtocol
         FINISH( new MasterCaller<Void>()
         {
             public Response<Void> callMaster( Master master, SlaveContext context,
-                    ChannelBuffer input )
+                    ChannelBuffer input, ChannelBuffer target )
             {
                 return master.finishTransaction( context );
             }
@@ -202,12 +202,36 @@ public abstract class CommunicationProtocol
         GET_MASTER_ID_FOR_TX( new MasterCaller<Integer>()
         {
             public Response<Integer> callMaster( Master master, SlaveContext context,
-                    ChannelBuffer input )
+                    ChannelBuffer input, ChannelBuffer target )
             {
                 int masterId = master.getMasterIdForCommittedTx( input.readLong() );
                 return Response.wrapResponseObjectOnly( masterId );
             }
-        }, INTEGER_SERIALIZER, false );
+        }, INTEGER_SERIALIZER, false ),
+        COPY_STORE( new MasterCaller<Void>()
+        {
+            public Response<Void> callMaster( Master master, SlaveContext context,
+                    ChannelBuffer input, final ChannelBuffer target )
+            {
+                return master.copyStore( context, new StoreWriter()
+                {
+                    public void write( String path, ReadableByteChannel data ) throws IOException
+                    {
+                        char[] chars = path.toCharArray();
+                        target.writeShort( chars.length );
+                        writeChars( target, chars );
+                        BlockLogBuffer buffer = new BlockLogBuffer( target );
+                        buffer.write( data );
+                        buffer.done();
+                    }
+
+                    public void done()
+                    {
+                        target.writeShort( 0 );
+                    }
+                } );
+            }
+        }, VOID_SERIALIZER );
 
         @SuppressWarnings( "rawtypes" )
         final MasterCaller caller;
@@ -233,7 +257,7 @@ public abstract class CommunicationProtocol
             return this.includesSlaveContext;
         }
     }
-    
+
     static void addLengthFieldPipes( ChannelPipeline pipeline )
     {
         pipeline.addLast( "frameDecoder",
@@ -288,7 +312,7 @@ public abstract class CommunicationProtocol
             }
         };
     }
-    
+
     protected static Pair<Byte, Long> readTransactionHeader( ChannelBuffer buffer )
     {
         return Pair.of( buffer.readByte(), buffer.readLong() );
@@ -327,7 +351,7 @@ public abstract class CommunicationProtocol
     static abstract class AquireLockCall implements MasterCaller<LockResult>
     {
         public Response<LockResult> callMaster( Master master, SlaveContext context,
-                ChannelBuffer input )
+                ChannelBuffer input, ChannelBuffer target )
         {
             long[] ids = new long[input.readInt()];
             for ( int i = 0; i < ids.length; i++ )
@@ -357,7 +381,8 @@ public abstract class CommunicationProtocol
 
     protected interface MasterCaller<T>
     {
-        Response<T> callMaster( Master master, SlaveContext context, ChannelBuffer input );
+        Response<T> callMaster( Master master, SlaveContext context, ChannelBuffer input,
+                ChannelBuffer target );
     }
 
     protected static IdAllocation readIdAllocation( ChannelBuffer buffer )
@@ -380,7 +405,11 @@ public abstract class CommunicationProtocol
     {
         char[] chars = name.toCharArray();
         buffer.writeInt( chars.length );
+        writeChars( buffer, chars );
+    }
 
+    private static void writeChars( ChannelBuffer buffer, char[] chars )
+    {
         // TODO optimize?
         for ( char ch : chars )
         {
@@ -390,7 +419,11 @@ public abstract class CommunicationProtocol
 
     protected static String readString( ChannelBuffer buffer )
     {
-        int length = buffer.readInt();
+        return readString( buffer, buffer.readInt() );
+    }
+
+    protected static String readString( ChannelBuffer buffer, int length )
+    {
         char[] chars = new char[length];
         for ( int i = 0; i < length; i++ )
         {
