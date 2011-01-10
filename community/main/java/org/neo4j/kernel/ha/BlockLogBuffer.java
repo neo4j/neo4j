@@ -23,6 +23,7 @@ package org.neo4j.kernel.ha;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
@@ -143,5 +144,10 @@ public class BlockLogBuffer implements LogBuffer
         byteBuffer.flip();
         target.writeBytes( byteBuffer );
         clearInternalBuffer();
+    }
+
+    public void write( ReadableByteChannel data ) throws IOException
+    {
+        while ( data.read( byteBuffer ) >= 0 ) checkFlush();
     }
 }
