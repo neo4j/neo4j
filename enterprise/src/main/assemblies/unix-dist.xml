@@ -72,6 +72,7 @@
         <include>com.google.protobuf:protobuf-java</include>
         <include>org.jboss.netty:netty</include>
         <include>org.apache.zookeeper:zookeeper</include>
+        <include>log4j:log4j</include>
       </includes>
       <excludes>
         <exclude>*:javadoc:*</exclude>
@@ -94,6 +95,7 @@
         <exclude>com.google.protobuf:protobuf-java</exclude>
         <exclude>org.jboss.netty:netty</exclude>
         <exclude>org.apache.zookeeper:zookeeper</exclude>
+        <exclude>log4j:log4j</exclude>
       </excludes>
     </dependencySet>
     <!-- java examples -->
