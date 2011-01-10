@@ -29,6 +29,9 @@ import java.util.Map;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelPipeline;
+import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
+import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -231,6 +234,13 @@ public abstract class CommunicationProtocol
         {
             return this.includesSlaveContext;
         }
+    }
+    
+    static void addLengthFieldPipes( ChannelPipeline pipeline )
+    {
+        pipeline.addLast( "frameDecoder",
+                new LengthFieldBasedFrameDecoder( MAX_FRAME_LENGTH+4, 0, 4, 0, 4 ) );
+        pipeline.addLast( "frameEncoder", new LengthFieldPrepender( 4 ) );
     }
 
     @SuppressWarnings( "unchecked" )
