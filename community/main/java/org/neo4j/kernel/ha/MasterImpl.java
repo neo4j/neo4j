@@ -21,7 +21,6 @@
 package org.neo4j.kernel.ha;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
@@ -423,26 +422,27 @@ public class MasterImpl implements Master
 
         for ( XaDataSource ds : sources )
         {
-            for ( File storefile : ds.listStoreFiles() )
-            {
-                try
-                {
-                    FileInputStream stream = new FileInputStream( storefile );
-                    try
-                    {
-                        writer.write( relativePath( baseDir, storefile ), stream.getChannel() );
-                    }
-                    finally
-                    {
-                        stream.close();
-                    }
-                }
-                catch ( IOException e )
-                {
-                    // TODO: what about error message?
-                    return new FailedResponse<Void>();
-                }
-            }
+            // TODO Awaiting changes in kernel
+//            for ( File storefile : ds.listStoreFiles() )
+//            {
+//                try
+//                {
+//                    FileInputStream stream = new FileInputStream( storefile );
+//                    try
+//                    {
+//                        writer.write( relativePath( baseDir, storefile ), stream.getChannel() );
+//                    }
+//                    finally
+//                    {
+//                        stream.close();
+//                    }
+//                }
+//                catch ( IOException e )
+//                {
+//                    // TODO: what about error message?
+//                    return new FailedResponse<Void>();
+//                }
+//            }
             writer.done();
         }
         return packResponse( context, null, ALL );

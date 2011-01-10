@@ -20,6 +20,8 @@
 
 package slavetest;
 
+import static org.junit.Assert.assertTrue;
+
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Pair;
@@ -30,10 +32,7 @@ import org.neo4j.kernel.ha.CommunicationProtocol;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterClient;
 import org.neo4j.kernel.ha.MasterImpl;
-import org.neo4j.kernel.ha.ResponseReceiver;
 import org.neo4j.kernel.ha.zookeeper.Machine;
-
-import static org.junit.Assert.assertTrue;
 
 public class SingleJvmWithNettyTest extends SingleJvmTest
 {
@@ -47,11 +46,11 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
     }
 
     @Override
-    protected Broker makeSlaveBroker( MasterImpl master, int masterId, int id, String storeDir, ResponseReceiver receiver )
+    protected Broker makeSlaveBroker( MasterImpl master, int masterId, int id, String storeDir )
     {
         final Machine masterMachine = new Machine( masterId, -1, 1,//
                 "localhost:" + CommunicationProtocol.PORT );
-        final Master client = new MasterClient( masterMachine, storeDir, receiver );
+        final Master client = new MasterClient( masterMachine, storeDir );
         return new AbstractBroker( id, storeDir )
         {
             public boolean iAmMaster()
