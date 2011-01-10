@@ -38,7 +38,7 @@ public class ClusterManager extends AbstractZooKeeperManager
     
     public ClusterManager( String zooKeeperServers )
     {
-        super( zooKeeperServers, null, null );
+        super( zooKeeperServers, null );
         this.zooKeeper = instantiateZooKeeper();
     }
     

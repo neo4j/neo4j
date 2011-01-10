@@ -59,11 +59,13 @@ public class ZooClient extends AbstractZooKeeperManager
     private final StringLogger msgLog;
 
     private long sessionId = -1;
+    private final ResponseReceiver receiver;
 
     public ZooClient( String servers, int machineId, long storeCreationTime,
         long storeId, long committedTx, ResponseReceiver receiver, String haServer, String storeDir )
     {
-        super( servers, storeDir, receiver );
+        super( servers, storeDir );
+        this.receiver = receiver;
         this.rootPath = "/" + storeCreationTime + "_" + storeId;
         this.haServer = haServer;
         this.machineId = machineId;
@@ -119,7 +121,7 @@ public class ZooClient extends AbstractZooKeeperManager
                     setDataChangeWatcher( MASTER_NOTIFY_CHILD, masterId );
                     if ( sessionId != -1 )
                     {
-                        getReceiver().newMaster( masterAfterIWrote, new Exception() );
+                        receiver.newMaster( masterAfterIWrote, new Exception() );
                     }
                     sessionId = newSessionId;
                 }
@@ -141,7 +143,7 @@ public class ZooClient extends AbstractZooKeeperManager
                     setDataChangeWatcher( MASTER_NOTIFY_CHILD, -1 );
                     if ( currentMaster.other().getMachineId() == machineId )
                     {
-                        getReceiver().newMaster( currentMaster, new Exception() );
+                        receiver.newMaster( currentMaster, new Exception() );
                     }
                 }
                 else if ( path.contains( MASTER_REBOUND_CHILD ) )
@@ -149,7 +151,7 @@ public class ZooClient extends AbstractZooKeeperManager
                     setDataChangeWatcher( MASTER_REBOUND_CHILD, -1 );
                     if ( currentMaster.other().getMachineId() != machineId )
                     {
-                        getReceiver().newMaster( currentMaster, new Exception() );
+                        receiver.newMaster( currentMaster, new Exception() );
                     }
                 }
                 else

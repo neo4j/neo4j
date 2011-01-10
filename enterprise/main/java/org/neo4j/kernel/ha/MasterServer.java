@@ -172,6 +172,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
             SlaveContext context = null;
             Pair<ChannelBuffer, ByteBuffer> targetBuffers;
             ChannelBuffer bufferToReadFrom = null;
+            ChannelBuffer bufferToWriteTo = null;
             if ( partialRequest == null )
             {
                 type = RequestType.values()[buffer.readByte()];
@@ -181,6 +182,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
                 }
                 targetBuffers = mapSlave( channel, context );
                 bufferToReadFrom = buffer;
+                bufferToWriteTo = targetBuffers.first();
             }
             else
             {
@@ -189,10 +191,11 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
                 targetBuffers = partialRequest.buffers;
                 partialRequest.add( buffer );
                 bufferToReadFrom = targetBuffers.first();
+                bufferToWriteTo = ChannelBuffers.dynamicBuffer();
             }
 
-            targetBuffers.first().clear();
-            final ChunkingChannelBuffer chunkingBuffer = new ChunkingChannelBuffer( targetBuffers.first(), channel, MAX_FRAME_LENGTH );
+            bufferToWriteTo.clear();
+            final ChunkingChannelBuffer chunkingBuffer = new ChunkingChannelBuffer( bufferToWriteTo, channel, MAX_FRAME_LENGTH );
             final Response<?> response = type.caller.callMaster( realMaster, context,
                     bufferToReadFrom, chunkingBuffer );
             final ByteBuffer targetByteBuffer = targetBuffers.other();
