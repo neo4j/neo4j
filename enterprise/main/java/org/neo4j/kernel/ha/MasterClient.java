@@ -41,6 +41,7 @@ import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
+import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.zookeeper.Machine;
@@ -174,7 +175,7 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
                     dechunkingBuffer.forceReadNextChunk();
                 }
             }
-            
+
             // Here's the remaining transactions if the message consisted of multiple chunks,
             // or all transactions if it only consisted of one chunk.
             TransactionStream txStreams = type.includesSlaveContext() ?
@@ -389,6 +390,27 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
                 buffer.writeLong( txId );
             }
         }, INTEGER_DESERIALIZER ).response();
+    }
+
+    public Response<Void> copyStore( SlaveContext context, final StoreWriter writer )
+    {
+        context = new SlaveContext( context.machineId(), context.getEventIdentifier(), new Pair[0] );
+
+        return sendRequest( RequestType.COPY_STORE, context, EMPTY_SERIALIZER, new Deserializer<Void>()
+        {
+            // NOTICE: this assumes a "smart" ChannelBuffer that continues to next chunk
+            public Void read( ChannelBuffer buffer ) throws IOException
+            {
+                int pathLength;
+                while ( 0 != ( pathLength = buffer.readUnsignedShort() ) )
+                {
+                    String path = readString( buffer, pathLength );
+                    writer.write( path, new BlockLogReader( buffer ) );
+                }
+                writer.done();
+                return null;
+            }
+        } );
     }
 
     public ChannelPipeline getPipeline() throws Exception

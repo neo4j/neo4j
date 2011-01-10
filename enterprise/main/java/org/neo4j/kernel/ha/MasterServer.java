@@ -63,7 +63,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
 {
     private final static int DEAD_CONNECTIONS_CHECK_INTERVAL = 3;
     private final static int MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS = 200;
-    
+
     private final ChannelFactory channelFactory;
     private final ServerBootstrap bootstrap;
     private final Master realMaster;
@@ -77,7 +77,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
     private final StringLogger msgLog;
     private final Map<Channel, PartialRequest> partialRequests =
             Collections.synchronizedMap( new HashMap<Channel, PartialRequest>() );
-    
+
     public MasterServer( Master realMaster, final int port, String storeDir )
     {
         this.realMaster = realMaster;
@@ -115,7 +115,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
         pipeline.addLast( "serverHandler", new ServerHandler() );
         return pipeline;
     }
-    
+
     private class ServerHandler extends SimpleChannelHandler
     {
         @Override
@@ -140,14 +140,11 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
             e.getCause().printStackTrace();
         }
     }
-    
+
     @SuppressWarnings( "unchecked" )
     private void handleRequest( Master realMaster, ChannelBuffer buffer,
             final Channel channel ) throws IOException
     {
-        // TODO Not very pretty solution (to pass in MasterServer here)
-        // but what the heck.
-
         // TODO Too long method, refactor please
         byte continuation = buffer.readByte();
         if ( continuation == ChunkingChannelBuffer.CONTINUATION_MORE )
@@ -194,13 +191,14 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
                 bufferToReadFrom = targetBuffers.first();
             }
 
-            final Response<?> response = type.caller.callMaster( realMaster, context, bufferToReadFrom );
             targetBuffers.first().clear();
             final ChunkingChannelBuffer chunkingBuffer = new ChunkingChannelBuffer( targetBuffers.first(), channel, MAX_FRAME_LENGTH );
+            final Response<?> response = type.caller.callMaster( realMaster, context,
+                    bufferToReadFrom, chunkingBuffer );
             final ByteBuffer targetByteBuffer = targetBuffers.other();
             final RequestType finalType = type;
             final SlaveContext finalContext = context;
-            
+
             executor.submit( new Runnable()
             {
                 public void run()
@@ -227,7 +225,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
             } );
         }
     }
-    
+
     protected Pair<ChannelBuffer, ByteBuffer> mapSlave( Channel channel, SlaveContext slave )
     {
         channelGroup.add( channel );
@@ -248,7 +246,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
         }
         return buffer;
     }
-    
+
     protected void unmapSlave( Channel channel, SlaveContext slave )
     {
         synchronized ( connectedSlaveChannels )
@@ -256,7 +254,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
             connectedSlaveChannels.remove( channel );
         }
     }
-    
+
     public void shutdown()
     {
         // Close all open connections
@@ -291,7 +289,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
             }
         }
     }
-    
+
     private boolean channelIsOpen( Channel channel )
     {
         /**
@@ -300,12 +298,12 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
          */
         return channel.isConnected() && channel.isOpen();
     }
-    
+
     // =====================================================================
     // Just some methods which aren't really used when running an HA cluster,
     // but exposed so that other tools can reach that information.
     // =====================================================================
-    
+
     public Map<Integer, Collection<SlaveContext>> getSlaveInformation()
     {
         // Which slaves are connected a.t.m?
@@ -317,7 +315,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
                 machineIds.add( context.machineId() );
             }
         }
-        
+
         // Insert missing slaves into the map so that all connected slave
         // are in the returned map
         Map<Integer, Collection<SlaveContext>> ongoingTransactions =
@@ -331,20 +329,20 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
         }
         return new TreeMap<Integer, Collection<SlaveContext>>( ongoingTransactions );
     }
-    
+
     static class PartialRequest
     {
         final SlaveContext slaveContext;
         final Pair<ChannelBuffer, ByteBuffer> buffers;
         final RequestType type;
-        
+
         public PartialRequest( RequestType type, SlaveContext slaveContext, Pair<ChannelBuffer, ByteBuffer> buffers )
         {
             this.type = type;
             this.slaveContext = slaveContext;
             this.buffers = buffers;
         }
-        
+
         public void add( ChannelBuffer buffer )
         {
             this.buffers.first().writeBytes( buffer );

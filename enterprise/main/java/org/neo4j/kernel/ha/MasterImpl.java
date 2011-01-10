@@ -20,6 +20,9 @@
 
 package org.neo4j.kernel.ha;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
@@ -49,9 +52,11 @@ import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
@@ -341,6 +346,7 @@ public class MasterImpl implements Master
                     final long tx = txId;
                     TxExtractor extractor = new TxExtractor()
                     {
+                        @Override
                         public ReadableByteChannel extract()
                         {
                             try
@@ -353,6 +359,7 @@ public class MasterImpl implements Master
                             }
                         }
 
+                        @Override
                         public void extract( LogBuffer buffer )
                         {
                             try
@@ -389,6 +396,81 @@ public class MasterImpl implements Master
         {
             return XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER;
         }
+    }
+
+    public Response<Void> copyStore( SlaveContext context, StoreWriter writer )
+    {
+        Collection<XaDataSource> sources = graphDbConfig.getTxModule().getXaDataSourceManager().getAllRegisteredDataSources();
+        Pair<String, Long>[] appliedTransactions = new Pair[sources.size()];
+        int i = 0;
+        for ( XaDataSource ds : sources )
+        {
+            appliedTransactions[i] = Pair.of( ds.getName(), ds.getLastCommittedTxId() );
+            try
+            {
+                ds.rotateLogicalLog();
+            }
+            catch ( IOException e )
+            {
+                // TODO: what about error message?
+                return new FailedResponse<Void>();
+            }
+        }
+
+        context = new SlaveContext( context.machineId(), context.getEventIdentifier(), appliedTransactions );
+
+        File baseDir = getBaseDir();
+
+        for ( XaDataSource ds : sources )
+        {
+            for ( File storefile : ds.listStoreFiles() )
+            {
+                try
+                {
+                    FileInputStream stream = new FileInputStream( storefile );
+                    try
+                    {
+                        writer.write( relativePath( baseDir, storefile ), stream.getChannel() );
+                    }
+                    finally
+                    {
+                        stream.close();
+                    }
+                }
+                catch ( IOException e )
+                {
+                    // TODO: what about error message?
+                    return new FailedResponse<Void>();
+                }
+            }
+            writer.done();
+        }
+        return packResponse( context, null, ALL );
+    }
+
+    private File getBaseDir()
+    {
+        XaDataSourceManager mgr = graphDbConfig.getTxModule().getXaDataSourceManager();
+        NeoStoreXaDataSource nioneodb = (NeoStoreXaDataSource) mgr.getXaDataSource( "nioneodb" );
+        File path;
+        try
+        {
+            return new File( nioneodb.getStoreDir() ).getCanonicalFile().getAbsoluteFile();
+        }
+        catch ( IOException e )
+        {
+            return new File( nioneodb.getStoreDir() ).getAbsoluteFile();
+        }
+    }
+
+    private String relativePath( File baseDir, File storeFile ) throws FileNotFoundException
+    {
+        String prefix = baseDir.getAbsolutePath();
+        String path = storeFile.getAbsolutePath();
+        if ( !path.startsWith( prefix ) ) throw new FileNotFoundException();
+        path = path.substring( prefix.length() );
+        if ( path.startsWith( "/" ) ) return path.substring( 1 );
+        return path;
     }
 
     private static interface LockGrabber
