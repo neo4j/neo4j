@@ -20,6 +20,7 @@
 
 package org.neo4j.kernel.ha;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -115,11 +116,6 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
         return pipeline;
     }
     
-    Map<Channel, PartialRequest> getPartialRequests()
-    {
-        return partialRequests;
-    }
-
     private class ServerHandler extends SimpleChannelHandler
     {
         @Override
@@ -129,7 +125,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
             try
             {
                 ChannelBuffer message = (ChannelBuffer) event.getMessage();
-                handleRequest( realMaster, message, event.getChannel(), MasterServer.this );
+                handleRequest( realMaster, message, event.getChannel() );
             }
             catch ( Exception e )
             {
@@ -142,6 +138,93 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
         public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e ) throws Exception
         {
             e.getCause().printStackTrace();
+        }
+    }
+    
+    @SuppressWarnings( "unchecked" )
+    private void handleRequest( Master realMaster, ChannelBuffer buffer,
+            final Channel channel ) throws IOException
+    {
+        // TODO Not very pretty solution (to pass in MasterServer here)
+        // but what the heck.
+
+        // TODO Too long method, refactor please
+        byte continuation = buffer.readByte();
+        if ( continuation == ChunkingChannelBuffer.CONTINUATION_MORE )
+        {
+            PartialRequest partialRequest = partialRequests.get( channel );
+            if ( partialRequest == null )
+            {
+                // This is the first chunk
+                RequestType type = RequestType.values()[buffer.readByte()];
+                SlaveContext context = null;
+                if ( type.includesSlaveContext() )
+                {
+                    context = readSlaveContext( buffer );
+                }
+                Pair<ChannelBuffer, ByteBuffer> targetBuffers = mapSlave( channel, context );
+                partialRequest = new PartialRequest( type, context, targetBuffers );
+                partialRequests.put( channel, partialRequest );
+            }
+            partialRequest.add( buffer );
+        }
+        else
+        {
+            PartialRequest partialRequest = partialRequests.remove( channel );
+            RequestType type = null;
+            SlaveContext context = null;
+            Pair<ChannelBuffer, ByteBuffer> targetBuffers;
+            ChannelBuffer bufferToReadFrom = null;
+            if ( partialRequest == null )
+            {
+                type = RequestType.values()[buffer.readByte()];
+                if ( type.includesSlaveContext() )
+                {
+                    context = readSlaveContext( buffer );
+                }
+                targetBuffers = mapSlave( channel, context );
+                bufferToReadFrom = buffer;
+            }
+            else
+            {
+                type = partialRequest.type;
+                context = partialRequest.slaveContext;
+                targetBuffers = partialRequest.buffers;
+                partialRequest.add( buffer );
+                bufferToReadFrom = targetBuffers.first();
+            }
+
+            final Response<?> response = type.caller.callMaster( realMaster, context, bufferToReadFrom );
+            targetBuffers.first().clear();
+            final ChunkingChannelBuffer chunkingBuffer = new ChunkingChannelBuffer( targetBuffers.first(), channel, MAX_FRAME_LENGTH );
+            final ByteBuffer targetByteBuffer = targetBuffers.other();
+            final RequestType finalType = type;
+            final SlaveContext finalContext = context;
+            
+            executor.submit( new Runnable()
+            {
+                public void run()
+                {
+                    try
+                    {
+                        finalType.serializer.write( response.response(), chunkingBuffer );
+                        if ( finalType.includesSlaveContext() )
+                        {
+                            writeTransactionStreams( response.transactions(), chunkingBuffer, targetByteBuffer );
+                        }
+                        chunkingBuffer.done();
+                        if ( finalType == RequestType.FINISH || finalType == RequestType.PULL_UPDATES )
+                        {
+                            unmapSlave( channel, finalContext );
+                        }
+                    }
+                    catch ( IOException e )
+                    {
+                        e.printStackTrace();
+                        throw new RuntimeException( e );
+                    }
+                }
+            } );
         }
     }
     
