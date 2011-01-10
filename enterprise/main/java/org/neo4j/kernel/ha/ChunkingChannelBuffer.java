@@ -487,11 +487,6 @@ public class ChunkingChannelBuffer implements ChannelBuffer
         {
             setContinuation( CONTINUATION_MORE );
             writeCurrentChunk();
-            
-            // TODO Don't send too much to Netty, since it'll totally freak out.
-            // write some code here to check how much there is in Nettys buffers and
-            // do some Thread.sleeping or something to go around the Netty limitations
-            
             // TODO Reuse buffers?
             buffer = ChannelBuffers.dynamicBuffer();
             addRoomForContinuationHeader();

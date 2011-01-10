@@ -51,8 +51,6 @@ import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
-import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
-import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -112,9 +110,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
     public ChannelPipeline getPipeline() throws Exception
     {
         ChannelPipeline pipeline = Channels.pipeline();
-        pipeline.addLast( "frameDecoder", new LengthFieldBasedFrameDecoder( MAX_FRAME_LENGTH,
-                0, 4, 0, 4 ) );
-        pipeline.addLast( "frameEncoder", new LengthFieldPrepender( 4 ) );
+        addLengthFieldPipes( pipeline );
         pipeline.addLast( "serverHandler", new ServerHandler() );
         return pipeline;
     }
