@@ -42,7 +42,7 @@ rmiregistry -J-Djava.class.path=neo4j-remote-graphdb-<VERSION>.jar
     method in the RmiTransport class that does this:
 
 ---
-java -cp neo4j-kernel-<VERSION>.jar:jta_1.1.jar:neo4j-remote-graphdb-<VERSION>.jar
+java -cp neo4j-kernel-<VERSION>.jar:geronimo-jta_1.1_spec-1.1.1.jar:neo4j-remote-graphdb-<VERSION>.jar
 	org.neo4j.remote.transports.RmiTransport path/to/neo/store rmi://rmi-server/neo-service
 ---
 
