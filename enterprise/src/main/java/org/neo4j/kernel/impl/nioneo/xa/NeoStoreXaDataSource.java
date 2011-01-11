@@ -24,6 +24,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -457,5 +459,21 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     public XaContainer getXaContainer()
     {
         return xaContainer;
+    }
+    
+    @Override
+    public Iterable<File> listStoreFiles()
+    {
+        // TODO Filter in a more reliable manner
+        Collection<File> files = new ArrayList<File>();
+        for ( File neostoreFile : new File( storeDir ).listFiles() )
+        {
+            String name = neostoreFile.getName();
+            if ( neostoreFile.isFile() && !name.contains( "log" ) )
+            {
+                files.add( neostoreFile );
+            }
+        }
+        return files;
     }
 }
