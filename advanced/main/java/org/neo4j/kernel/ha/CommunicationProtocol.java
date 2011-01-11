@@ -215,14 +215,18 @@ public abstract class CommunicationProtocol
             {
                 return master.copyStore( context, new StoreWriter()
                 {
-                    public void write( String path, ReadableByteChannel data ) throws IOException
+                    public void write( String path, ReadableByteChannel data, boolean hasData ) throws IOException
                     {
                         char[] chars = path.toCharArray();
                         target.writeShort( chars.length );
                         writeChars( target, chars );
+                        target.writeByte( hasData ? 1 : 0 );
                         BlockLogBuffer buffer = new BlockLogBuffer( target );
-                        buffer.write( data );
-                        buffer.done();
+                        if ( hasData )
+                        {
+                            buffer.write( data );
+                            buffer.done();
+                        }
                     }
 
                     public void done()

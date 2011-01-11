@@ -146,8 +146,15 @@ public class BlockLogBuffer implements LogBuffer
         clearInternalBuffer();
     }
 
-    public void write( ReadableByteChannel data ) throws IOException
+    public int write( ReadableByteChannel data ) throws IOException
     {
-        while ( data.read( byteBuffer ) >= 0 ) checkFlush();
+        int result = 0;
+        int bytesRead = 0;
+        while ( (bytesRead = data.read( byteBuffer )) >= 0 )
+        {
+            checkFlush();
+            result += bytesRead;
+        }
+        return result;
     }
 }

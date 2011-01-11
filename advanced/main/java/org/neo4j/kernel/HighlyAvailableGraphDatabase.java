@@ -20,6 +20,7 @@
 
 package org.neo4j.kernel;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.channels.ReadableByteChannel;
@@ -50,18 +51,19 @@ import org.neo4j.kernel.ha.HaCommunicationException;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterIdGeneratorFactory;
 import org.neo4j.kernel.ha.MasterServer;
+import org.neo4j.kernel.ha.ToFileStoreWriter;
+import org.neo4j.kernel.ha.MasterTxIdGenerator.MasterTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.Response;
 import org.neo4j.kernel.ha.ResponseReceiver;
 import org.neo4j.kernel.ha.SlaveContext;
+import org.neo4j.kernel.ha.SlaveIdGenerator.SlaveIdGeneratorFactory;
+import org.neo4j.kernel.ha.SlaveLockManager.SlaveLockManagerFactory;
 import org.neo4j.kernel.ha.SlaveRelationshipTypeCreator;
+import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.SlaveTxRollbackHook;
 import org.neo4j.kernel.ha.TimeUtil;
 import org.neo4j.kernel.ha.TxExtractor;
 import org.neo4j.kernel.ha.ZooKeeperLastCommittedTxIdSetter;
-import org.neo4j.kernel.ha.MasterTxIdGenerator.MasterTxIdGeneratorFactory;
-import org.neo4j.kernel.ha.SlaveIdGenerator.SlaveIdGeneratorFactory;
-import org.neo4j.kernel.ha.SlaveLockManager.SlaveLockManagerFactory;
-import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
@@ -140,6 +142,22 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 
     private void startUp()
     {
+        if ( !new File( storeDir, "neostore" ).exists() )
+        {
+            Pair<Master, Machine> master = broker.getMaster();
+            master = master != null ? master : broker.getMasterReally();
+            if ( master != null && master.first() != null )
+            {
+                master.first().copyStore( new SlaveContext( machineId, 0, new Pair[0] ),
+                        new ToFileStoreWriter( storeDir ) );
+            }
+            else
+            {
+                // The database files will be created when it starts up
+                // Assuming this is the master
+            }
+        }
+        
         newMaster( null, new Exception() );
         localGraph();
     }
