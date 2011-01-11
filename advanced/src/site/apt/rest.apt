@@ -195,13 +195,13 @@ curl -X DELETE http://localhost:7474/db/data/node/123/properties
 ** PUT /node/123/properties/foo
 
 ---
-"bar"
+"the_value"
 ---
 
 ** Example using curl
 
 ---
-curl -H Content-Type:application/json -X PUT -d '"bar"' http://localhost:7474/db/data/node/123/properties/foo
+curl -H Content-Type:application/json -X PUT -d '"the_value"' http://localhost:7474/db/data/node/123/properties/foo
 ---
 	
 ** Response
@@ -225,7 +225,7 @@ curl -H Accept:application/json http://localhost:7474/db/data/node/123/propertie
 *** 200: OK
 
 ---
-"bar"
+"the_value"
 ---
 
 *** 404: Node or property not found
@@ -360,13 +360,13 @@ curl -X DELETE http://localhost:7474/db/data/relationship/456/properties
 ** PUT /relationship/456/properties/foo
 
 ---
-"bar"
+"the_value"
 ---
 
 ** Example using curl
 
 ---
-curl -H Content-Type:application/json -X PUT -d '"bar"' http://localhost:7474/db/data/relationship/456/properties/foo
+curl -H Content-Type:application/json -X PUT -d '"the_value"' http://localhost:7474/db/data/relationship/456/properties/foo
 ---
 	
 ** Response
@@ -392,7 +392,7 @@ curl -H Accept:application/json http://localhost:7474/db/data/relationship/456/p
 *** 200: OK
 
 ---
-"bar"
+"the_value"
 ---
 
 *** 404: Relationship or property not found
@@ -548,7 +548,7 @@ curl -H Accept:application/json http://localhost:7474/db/data/index/relationship
 
 * {Add to index}
 
-** POST /index/node/my_nodes/foo/bar
+** POST /index/node/my_nodes/the_key/the_value
 
 ---
 "http://localhost:7474/db/data/node/123"
@@ -557,16 +557,16 @@ curl -H Accept:application/json http://localhost:7474/db/data/index/relationship
 ** Example using curl
 
 ---
-curl -HContent-Type:application/json -X POST -d '"http://localhost:7474/db/data/node/123"' http://localhost:7474/db/data/index/node/my_nodes/foo/bar%20with%20space
+curl -HContent-Type:application/json -X POST -d '"http://localhost:7474/db/data/node/123"' http://localhost:7474/db/data/index/node/my_nodes/the_key/the_value%20with%20space
 ---
 
 ** Response
 
 *** 201: OK, indexed the node with key/value
 
-    <<Location>>: http://localhost:7474/db/data/index/node/my_nodes/foo/bar%20with%20space/123
+    <<Location>>: http://localhost:7474/db/data/index/node/my_nodes/the_key/the_value%20with%20space/123
 
-** POST /index/relationship/my_relationships/foo/bar
+** POST /index/relationship/my_relationships/the_key/the_value
 
 ---
 "http://localhost:7474/db/data/relationship/456"
@@ -575,18 +575,18 @@ curl -HContent-Type:application/json -X POST -d '"http://localhost:7474/db/data/
 ** Example using curl
 
 ---
-curl -HContent-Type:application/json -X POST -d '"http://localhost:7474/db/data/relationship/123"' http://localhost:7474/db/data/index/relationship/my_relationships/foo/bar
+curl -HContent-Type:application/json -X POST -d '"http://localhost:7474/db/data/relationship/123"' http://localhost:7474/db/data/index/relationship/my_relationships/the_key/the_value
 ---
 
 ** Response
 
 *** 201: OK, indexed the node with key/value
 
-    <<Location>>: http://localhost:7474/db/data/index/relationships/my_relationships/foo/bar/456
+    <<Location>>: http://localhost:7474/db/data/index/relationships/my_relationships/the_key/the_value/456
 
 * {Remove from index}
 
-** DELETE /index/node/my_nodes/foo/bar/123
+** DELETE /index/node/my_nodes/the_key/the_value/123
 
     Such a URI is gotten from either a query to an index, where they
     will be included in the node/relationship returned
@@ -598,7 +598,7 @@ curl -HContent-Type:application/json -X POST -d '"http://localhost:7474/db/data/
 ** Example using curl
 
 ---
-curl -X DELETE http://localhost:7474/db/data/index/node/my_nodes/foo/bar/123
+curl -X DELETE http://localhost:7474/db/data/index/node/my_nodes/the_key/the_value/123
 ---
 
 ** Response
@@ -609,12 +609,12 @@ curl -X DELETE http://localhost:7474/db/data/index/node/my_nodes/foo/bar/123
 
 * {Query index}
 
-** GET /index/node/my_nodes/foo/bar
+** GET /index/node/my_nodes/the_key/the_value
 
 ** Example using curl
 
 ---
-curl -H Accept:application/json http://localhost:7474/db/data/index/node/my_nodes/foo/bar%20with%20space
+curl -H Accept:application/json http://localhost:7474/db/data/index/node/my_nodes/the_key/the_value%20with%20space
 ---
 
 ** Response
@@ -626,12 +626,12 @@ curl -H Accept:application/json http://localhost:7474/db/data/index/node/my_node
   { "self": "http://localhost:7474/db/data/node/5",
     "data": { "name": "Thomas Anderson" },
     ...
-    "indexed": "http://localhost:7474/db/data/index/node/foo/bar/5"
+    "indexed": "http://localhost:7474/db/data/index/node/the_key/the_value/5"
   },
   { "self": "http://localhost:7474/db/data/node/325",
     "data": { "name": "Agent Smith" },
     ...
-    "indexed": "http://localhost:7474/db/data/index/node/foo/bar%20with%20space/325"
+    "indexed": "http://localhost:7474/db/data/index/node/the_key/the_value%20with%20space/325"
   }
 ]
 ---
