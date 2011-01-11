@@ -44,7 +44,6 @@ import javax.transaction.RollbackException;
 import javax.transaction.Status;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
@@ -60,7 +59,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
  * <CODE>UserTransaction</CODE>, don't use this class.
  * <p>
  */
-public class TxManager implements TransactionManager
+public class TxManager extends AbstractTransactionManager
 {
     private static Logger log = Logger.getLogger( TxManager.class.getName() );
 
@@ -102,7 +101,7 @@ public class TxManager implements TransactionManager
         return eventIdentifierCounter++;
     }
 
-    void stop()
+    public void stop()
     {
         if ( txLog != null )
         {
@@ -120,7 +119,7 @@ public class TxManager implements TransactionManager
         StringLogger.close( txLogDir + "/messages.log" );
     }
 
-    void init( XaDataSourceManager xaDsManagerToUse )
+    public void init( XaDataSourceManager xaDsManagerToUse )
     {
         this.xaDsManager = xaDsManagerToUse;
         txThreadMap = new ArrayMap<Thread,TransactionImpl>( 5, true, true );
