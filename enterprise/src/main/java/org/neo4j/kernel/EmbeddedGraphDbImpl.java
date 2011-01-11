@@ -174,7 +174,7 @@ class EmbeddedGraphDbImpl
     {
         return Boolean.parseBoolean( inputParams.get( Config.READ_ONLY ) ) ? new TxModule( true,
                 kernelPanicEventGenerator ) : new TxModule( this.storeDir,
-                kernelPanicEventGenerator, rollbackHook );
+                kernelPanicEventGenerator, rollbackHook, inputParams.get(Config.TXMANAGER_IMPLEMENTATION) );
     }
 
     <T> T getManagementBean( Class<T> beanClass )
