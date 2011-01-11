@@ -29,7 +29,6 @@ import javax.transaction.RollbackException;
 import javax.transaction.Status;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 
@@ -37,7 +36,7 @@ import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResource;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
-class ReadOnlyTxManager implements TransactionManager
+class ReadOnlyTxManager extends AbstractTransactionManager
 {
     private static Logger log = Logger.getLogger( ReadOnlyTxManager.class.getName() );
 
@@ -56,11 +55,11 @@ class ReadOnlyTxManager implements TransactionManager
         return eventIdentifierCounter++;
     }
 
-    void stop()
+    public void stop()
     {
     }
 
-    void init( XaDataSourceManager xaDsManagerToUse )
+    public void init( XaDataSourceManager xaDsManagerToUse )
     {
         this.xaDsManager = xaDsManagerToUse;
         txThreadMap = new ArrayMap<Thread,ReadOnlyTransactionImpl>( 5, true, true );

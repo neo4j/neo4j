@@ -25,6 +25,7 @@ import java.util.Map;
 import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.helpers.Service;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
@@ -34,7 +35,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
  * <p>
  * This module will create a instance of each {@link XaDataSource} once started
  * and will close them once stopped.
- * 
+ *
  * @see XaDataSourceManager
  */
 public class TxModule
@@ -44,24 +45,37 @@ public class TxModule
     private boolean startIsOk = true;
     private String txLogDir = "var/tm";
 
-    private final TransactionManager txManager;
+    private final AbstractTransactionManager txManager;
     private final XaDataSourceManager xaDsManager;
     private final KernelPanicEventGenerator kpe;
 
-    public TxModule( String txLogDir, KernelPanicEventGenerator kpe, TxFinishHook rollbackHook )
+    public TxModule( String txLogDir, KernelPanicEventGenerator kpe, TxFinishHook rollbackHook, String serviceName )
     {
         this.txLogDir = txLogDir;
         this.kpe = kpe;
-        this.txManager = new TxManager( txLogDir, kpe, rollbackHook );
+        TransactionManagerProvider provider;
+        if ( serviceName == null )
+        {
+            provider = new DefaultTransactionManagerProvider();
+        }
+        else {
+            provider = Service.load( TransactionManagerProvider.class, serviceName );
+            if ( provider == null )
+            {
+                throw new IllegalStateException( "Unknown transaction manager implementation: "
+                                                 + serviceName );
+            }
+        }
+        txManager = provider.loadTransactionManager( txLogDir, kpe, rollbackHook );
         this.xaDsManager = new XaDataSourceManager();
     }
-    
+
     public TxModule( boolean readOnly, KernelPanicEventGenerator kpe )
     {
         this.kpe = kpe;
         if ( readOnly )
         {
-            this.txManager = new ReadOnlyTxManager(); 
+            this.txManager = new ReadOnlyTxManager();
             this.xaDsManager = new XaDataSourceManager();
         }
         else
@@ -80,14 +94,7 @@ public class TxModule
         {
             return;
         }
-        if ( txManager instanceof TxManager )
-        {
-            ((TxManager)txManager).init( xaDsManager );
-        }
-        else
-        {
-            ((ReadOnlyTxManager)txManager).init( xaDsManager );
-        }
+        txManager.init( xaDsManager );
         startIsOk = false;
     }
 
@@ -100,14 +107,7 @@ public class TxModule
     public void stop()
     {
         xaDsManager.unregisterAllDataSources();
-        if ( txManager instanceof TxManager )
-        {
-            ((TxManager)txManager).stop();
-        }
-        else
-        {
-            ((ReadOnlyTxManager)txManager).stop();
-        }
+        txManager.stop();
     }
 
     public void destroy()
@@ -122,7 +122,7 @@ public class TxModule
     /**
      * Use this method to add data source that can participate in transactions
      * if you don't want a data source configuration file.
-     * 
+     *
      * @param name
      *            The data source name
      * @param className
@@ -151,7 +151,7 @@ public class TxModule
         }
         catch ( Exception e )
         {
-            throw new TransactionFailureException( 
+            throw new TransactionFailureException(
                 "Could not create data source [" + name
                 + "], see nested exception for cause of error", e );
         }
@@ -179,7 +179,7 @@ public class TxModule
         }
         catch ( Exception e )
         {
-            throw new TransactionFailureException( 
+            throw new TransactionFailureException(
                 "Could not create data source " + name + "[" + name + "]", e );
         }
     }
@@ -193,7 +193,7 @@ public class TxModule
     {
         return txManager;
     }
-    
+
     public XaDataSourceManager getXaDataSourceManager()
     {
         return xaDsManager;
@@ -216,7 +216,7 @@ public class TxModule
         }
         return 0;
     }
-    
+
     public int getRolledbackTxCount()
     {
         if ( txManager instanceof TxManager )
@@ -225,7 +225,7 @@ public class TxModule
         }
         return 0;
     }
-    
+
     public int getActiveTxCount()
     {
         if ( txManager instanceof TxManager )
@@ -234,7 +234,7 @@ public class TxModule
         }
         return 0;
     }
-    
+
     public int getPeakConcurrentTxCount()
     {
         if ( txManager instanceof TxManager )
