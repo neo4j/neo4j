@@ -55,7 +55,9 @@ public class StandaloneDb extends UnicastRemoteObject implements StandaloneDbCom
         super();
         
         storeDir = args.get( "path", null );
-        out = new PrintStream( new File( new File( storeDir ), "output" ) )
+        File storeDirFile = new File( storeDir );
+        storeDirFile.mkdirs();
+        out = new PrintStream( new File( storeDirFile, "output" ) )
         {
             public void println(String x)
             {

@@ -318,6 +318,7 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
         }, INTEGER_DESERIALIZER ).response();
     }
 
+    @SuppressWarnings( "unchecked" )
     public Response<Void> copyStore( SlaveContext context, final StoreWriter writer )
     {
         context = new SlaveContext( context.machineId(), context.getEventIdentifier(), new Pair[0] );
@@ -331,7 +332,8 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
                 while ( 0 != ( pathLength = buffer.readUnsignedShort() ) )
                 {
                     String path = readString( buffer, pathLength );
-                    writer.write( path, new BlockLogReader( buffer ) );
+                    boolean hasData = buffer.readByte() == 1;
+                    writer.write( path, hasData ? new BlockLogReader( buffer ) : null, hasData );
                 }
                 writer.done();
                 return null;

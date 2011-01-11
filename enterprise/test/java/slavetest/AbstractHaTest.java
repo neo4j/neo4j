@@ -44,7 +44,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 public abstract class AbstractHaTest
 {
@@ -286,18 +285,14 @@ public abstract class AbstractHaTest
         return buffer.toString();
     }
 
-    protected void createDeadDbs( int numSlaves ) throws IOException
+    private void clearDbs() throws IOException
     {
         FileUtils.deleteDirectory( PARENT_PATH );
-        new EmbeddedGraphDatabase( SKELETON_DB_PATH.getAbsolutePath() ).shutdown();
-        for ( int i = 0; i <= numSlaves; i++ )
-        {
-            FileUtils.copyDirectory( SKELETON_DB_PATH, dbPath( i ) );
-        }
     }
     
     protected final void initializeDbs( int numSlaves ) throws Exception
     {
+        clearDbs();
         initializeDbs( numSlaves, MapUtil.stringMap( ) );
     }
 

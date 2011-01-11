@@ -46,7 +46,6 @@ public class MultiJvmTest extends AbstractHaTest
         jvms = new ArrayList<StandaloneDbCom>();
         try
         {
-            createDeadDbs( numSlaves );
             startUpMaster( config );
             for ( int i = 1; i <= numSlaves; i++ )
             {

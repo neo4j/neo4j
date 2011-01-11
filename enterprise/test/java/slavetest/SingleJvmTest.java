@@ -23,7 +23,6 @@ package slavetest;
 import static org.junit.Assert.fail;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -57,33 +56,25 @@ public class SingleJvmTest extends AbstractHaTest
     }
 
     @Override
-    protected void initializeDbs( int numSlaves, Map<String,String> config )
+    protected void initializeDbs( int numSlaves, Map<String,String> config ) throws Exception
     {
-        try
+        haDbs = new ArrayList<GraphDatabaseService>();
+        startUpMaster( config );
+        for ( int i = 1; i <= numSlaves; i++ )
         {
-            createDeadDbs( numSlaves );
-            haDbs = new ArrayList<GraphDatabaseService>();
-            startUpMaster( config );
-            for ( int i = 1; i <= numSlaves; i++ )
-            {
-                File slavePath = dbPath( i );
-                Broker broker = makeSlaveBroker( master, 0, i, slavePath.getAbsolutePath() );
-                Map<String,String> cfg = new HashMap<String, String>(config);
-                cfg.put( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, Integer.toString(i) );
-                cfg.put( Config.KEEP_LOGICAL_LOGS, "true" );
-                HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase(
-                        slavePath.getAbsolutePath(), cfg, AbstractBroker.wrapSingleBroker( broker ) );
-                haDbs.add( db );
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
+            File slavePath = dbPath( i );
+            Broker broker = makeSlaveBroker( master, 0, i, slavePath.getAbsolutePath() );
+            Map<String,String> cfg = new HashMap<String, String>(config);
+            cfg.put( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, Integer.toString(i) );
+            cfg.put( Config.KEEP_LOGICAL_LOGS, "true" );
+            HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase(
+                    slavePath.getAbsolutePath(), cfg, AbstractBroker.wrapSingleBroker( broker ) );
+            haDbs.add( db );
         }
     }
 
     @Override
-    protected void startUpMaster( Map<String, String> extraConfig )
+    protected void startUpMaster( Map<String, String> extraConfig ) throws Exception
     {
         int masterId = 0;
         Map<String, String> config = MapUtil.stringMap( extraConfig,
@@ -93,6 +84,7 @@ public class SingleJvmTest extends AbstractHaTest
                 config, AbstractBroker.wrapSingleBroker( broker ) );
         // db.newMaster( null, new Exception() );
         master = new MasterImpl( db );
+        Thread.sleep( 1000 );
     }
 
     protected Broker makeMasterBroker( MasterImpl master, int masterId, String path )
