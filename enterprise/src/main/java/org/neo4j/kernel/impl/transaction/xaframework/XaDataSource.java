@@ -20,6 +20,7 @@
 
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Map;
@@ -383,6 +384,11 @@ public abstract class XaDataSource
     }
 
     public int getMasterForCommittedTx( long txId ) throws IOException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    public Iterable<File> listStoreFiles()
     {
         throw new UnsupportedOperationException();
     }
