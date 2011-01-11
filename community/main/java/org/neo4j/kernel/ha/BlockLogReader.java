@@ -77,7 +77,7 @@ public class BlockLogReader implements ReadableByteChannel
             bytesRead += bytesReadThisTime;
             bytesWanted -= bytesReadThisTime;
         }
-        return bytesRead;
+        return bytesRead == 0 && !moreBlocks ? -1 : bytesRead;
     }
 
     private int readAsMuchAsPossible( ByteBuffer dst, int maxBytesWanted )

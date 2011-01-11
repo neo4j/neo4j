@@ -405,7 +405,7 @@ public class MasterImpl implements Master
         int i = 0;
         for ( XaDataSource ds : sources )
         {
-            appliedTransactions[i] = Pair.of( ds.getName(), ds.getLastCommittedTxId() );
+            appliedTransactions[i++] = Pair.of( ds.getName(), ds.getLastCommittedTxId() );
             try
             {
                 ds.rotateLogicalLog();
@@ -430,7 +430,8 @@ public class MasterImpl implements Master
                     FileInputStream stream = new FileInputStream( storefile );
                     try
                     {
-                        writer.write( relativePath( baseDir, storefile ), stream.getChannel() );
+                        writer.write( relativePath( baseDir, storefile ), stream.getChannel(),
+                                storefile.length() > 0 );
                     }
                     finally
                     {
@@ -443,8 +444,8 @@ public class MasterImpl implements Master
                     return new FailedResponse<Void>();
                 }
             }
-            writer.done();
         }
+        writer.done();
         return packResponse( context, null, ALL );
     }
 
