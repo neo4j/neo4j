@@ -274,12 +274,9 @@ public class XaLogicalLog
         else
         {
             logVersion = xaTf.getCurrentVersion();
-            buffer.clear();
-            buffer.putLong( logVersion );
             long lastTxId = xaTf.getLastCommittedTx();
-            buffer.putLong( lastTxId );
+            LogIoUtils.writeLogHeader( buffer, logVersion, lastTxId );
             previousLogLastCommittedTx = lastTxId;
-            buffer.flip();
             fileChannel.write( buffer );
             scanIsComplete = true;
             msgLog.logMessage( "Opened [" + fileToOpen + "] clean empty log, version=" + logVersion, true );
@@ -316,7 +313,7 @@ public class XaLogicalLog
         {
             long position = writeBuffer.getFileChannelPosition();
             LogEntry.Start start = new LogEntry.Start( xid, xidIdent, position );
-            LogIoUtils.writeStart( writeBuffer, xidIdent, start.getVersion(), xid );
+            LogIoUtils.writeStart( writeBuffer, xidIdent, xid );
             xidIdentMap.put( xidIdent, start );
         }
         catch ( IOException e )
@@ -722,27 +719,10 @@ public class XaLogicalLog
         msgLog.logMessage( "Closed log " + fileName, true );
     }
 
-    private long[] readLogHeader( ByteBuffer buffer,
-            ReadableByteChannel channel, boolean strict ) throws IOException
-    {
-        buffer.clear();
-        buffer.limit( 16 );
-        if ( channel.read( buffer ) != 16 )
-        {
-            if ( strict )
-            {
-                throw new IOException( "Unable to read log version and last committed tx" );
-            }
-            return null;
-        }
-        buffer.flip();
-        return new long[] { buffer.getLong(), buffer.getLong() };
-    }
-
     private long[] readAndAssertLogHeader( ByteBuffer buffer,
             ReadableByteChannel channel, long expectedVersion ) throws IOException
     {
-        long[] header = readLogHeader( buffer, channel, true );
+        long[] header = LogIoUtils.readLogHeader( buffer, channel, true );
         if ( header[0] != expectedVersion )
         {
             throw new IOException( "Wrong version in log. Expected " + expectedVersion +
@@ -763,7 +743,7 @@ public class XaLogicalLog
         msgLog.logMessage( "Non clean shutdown detected on log [" + logFileName +
             "]. Recovery started ...", true );
         // get log creation time
-        long[] header = readLogHeader( buffer, fileChannel, false );
+        long[] header = LogIoUtils.readLogHeader( buffer, fileChannel, false );
         if ( header == null )
         {
             log.info( "Unable to read header information, "
@@ -967,7 +947,7 @@ public class XaLogicalLog
                 }
             }
         }
-        
+
         if ( commitEntry == null )
         {
             msgLog.logMessage( "txId=" + txId + " not found in log=" + expectedVersion, true  );
@@ -975,7 +955,7 @@ public class XaLogicalLog
                     "] not found in log (" + expectedVersion/* + ", " + prevTxId*/ + ") " +
                     "current version is (" + this.logVersion + ")" );
         }
-        
+
         if ( targetBuffer != null )
         {
             LogIoUtils.writeLogEntry( new LogEntry.Done( collector.getIdentifier() ), targetBuffer );
@@ -1229,7 +1209,7 @@ public class XaLogicalLog
         {
             throw new IllegalStateException( "There are active transactions" );
         }
-        long[] header = readLogHeader( buffer, byteChannel, true );
+        long[] header = LogIoUtils.readLogHeader( buffer, byteChannel, true );
         logVersion = header[0];
         long previousCommittedTx = header[1];
         if ( logVersion != xaTf.getCurrentVersion() )
@@ -1384,10 +1364,8 @@ public class XaLogicalLog
         writeBuffer.force();
         FileChannel newLog = new RandomAccessFile(
             newLogFile, "rw" ).getChannel();
-        buffer.clear();
-        buffer.putLong( currentVersion + 1 );
         long lastTx = xaTf.getLastCommittedTx();
-        buffer.putLong( lastTx ).flip();
+        LogIoUtils.writeLogHeader( buffer, (currentVersion + 1), lastTx );
         previousLogLastCommittedTx = lastTx;
         if ( newLog.write( buffer ) != 16 )
         {
@@ -1548,14 +1526,14 @@ public class XaLogicalLog
     {
         return nonCleanShutdown;
     }
-    
+
     private static class TxPosition
     {
         final long version;
         final int masterId;
         final int identifier;
         final long position;
-        
+
         private TxPosition( long version, int masterId, int identifier, long position )
         {
             this.version = version;
@@ -1564,14 +1542,14 @@ public class XaLogicalLog
             this.position = position;
         }
     }
-    
+
     private static interface LogEntryCollector
     {
         boolean collect( LogEntry entry ) throws IOException;
-        
+
         int getIdentifier();
     }
-    
+
     private static class KnownIdentifierCollector implements LogEntryCollector
     {
         private final int identifier;
@@ -1582,12 +1560,12 @@ public class XaLogicalLog
             this.identifier = identifier;
             this.target = target;
         }
-        
+
         public int getIdentifier()
         {
             return identifier;
         }
-        
+
         public boolean collect( LogEntry entry ) throws IOException
         {
             if ( entry.getIdentifier() == identifier )
@@ -1601,25 +1579,25 @@ public class XaLogicalLog
             return false;
         }
     }
-    
+
     private static class KnownTxIdCollector implements LogEntryCollector
     {
         private final Map<Integer,List<LogEntry>> transactions = new HashMap<Integer,List<LogEntry>>();
         private final long txId;
         private final LogBuffer target;
         private int identifier;
-        
+
         KnownTxIdCollector( long txId, LogBuffer target )
         {
             this.txId = txId;
             this.target = target;
         }
-        
+
         public int getIdentifier()
         {
             return identifier;
         }
-        
+
         public boolean collect( LogEntry entry ) throws IOException
         {
             boolean interesting = false;
