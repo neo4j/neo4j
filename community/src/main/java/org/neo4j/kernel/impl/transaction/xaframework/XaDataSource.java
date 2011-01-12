@@ -131,12 +131,12 @@ public abstract class XaDataSource
      */
     public long getCreationTime()
     {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException( getClass().getName() );
     }
 
     public String getFileName( long version )
     {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException( getClass().getName() );
     }
 
     /**
@@ -152,7 +152,7 @@ public abstract class XaDataSource
      */
     public long getRandomIdentifier()
     {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException( getClass().getName() );
     }
 
     /**
@@ -164,7 +164,7 @@ public abstract class XaDataSource
      */
     public long getCurrentLogVersion()
     {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException( getClass().getName() );
     }
 
     /**
@@ -178,7 +178,7 @@ public abstract class XaDataSource
      */
     public void applyLog( ReadableByteChannel byteChannel ) throws IOException
     {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException( getClass().getName() );
     }
 
     /**
@@ -191,7 +191,7 @@ public abstract class XaDataSource
      */
     public void rotateLogicalLog() throws IOException
     {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException( getClass().getName() );
     }
 
     /**
@@ -203,7 +203,7 @@ public abstract class XaDataSource
      */
     public ReadableByteChannel getLogicalLog( long version ) throws IOException
     {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException( getClass().getName() );
     }
 
     /**
@@ -214,13 +214,13 @@ public abstract class XaDataSource
      */
     public boolean hasLogicalLog( long version )
     {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException( getClass().getName() );
     }
 
 
     public long getLogicalLogLength( long version )
     {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException( getClass().getName() );
     }
 
     /**
@@ -232,7 +232,7 @@ public abstract class XaDataSource
      */
     public boolean deleteLogicalLog( long version )
     {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException( getClass().getName() );
     }
 
     /**
@@ -244,12 +244,12 @@ public abstract class XaDataSource
      */
     public void keepLogicalLogs( boolean keepLogs )
     {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException( getClass().getName() );
     }
 
     public boolean isLogicalLogKept()
     {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException( getClass().getName() );
     }
 
     /**
@@ -282,7 +282,7 @@ public abstract class XaDataSource
      */
     public void makeBackupSlave()
     {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException( getClass().getName() );
     }
 
     /**
@@ -292,7 +292,7 @@ public abstract class XaDataSource
      */
     public void setAutoRotate( boolean rotate )
     {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException( getClass().getName() );
     }
 
     /**
@@ -303,7 +303,7 @@ public abstract class XaDataSource
      */
     public void setLogicalLogTargetSize( long size )
     {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException( getClass().getName() );
     }
 
     /**
@@ -346,22 +346,22 @@ public abstract class XaDataSource
 
     public ReadableByteChannel getCommittedTransaction( long txId ) throws IOException
     {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException( getClass().getName() );
     }
 
     public void getCommittedTransaction( long tx, LogBuffer buffer ) throws IOException
     {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException( getClass().getName() );
     }
 
     public ReadableByteChannel getPreparedTransaction( int identifier ) throws IOException
     {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException( getClass().getName() );
     }
 
     public void getPreparedTransaction( int identifier, LogBuffer targetBuffer ) throws IOException
     {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException( getClass().getName() );
     }
 
     public void applyCommittedTransaction( long txId, ReadableByteChannel transaction ) throws IOException
@@ -376,21 +376,21 @@ public abstract class XaDataSource
 
     public long getLastCommittedTxId()
     {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException( getClass().getName() );
     }
 
     public XaContainer getXaContainer()
     {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException( getClass().getName() );
     }
 
     public int getMasterForCommittedTx( long txId ) throws IOException
     {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException( getClass().getName() );
     }
 
     public ClosableIterable<File> listStoreFiles() throws IOException
     {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException( getClass().getName() );
     }
 }
