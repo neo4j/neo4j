@@ -75,4 +75,11 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
             }
         };
     }
+    
+    @Override
+    public void makeSureSlaveCanCopyLargeInitialDatabase() throws Exception
+    {
+        // TODO Auto-generated method stub
+        super.makeSureSlaveCanCopyLargeInitialDatabase();
+    }
 }

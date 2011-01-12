@@ -79,9 +79,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     public static final String CONFIG_KEY_HA_SERVER = "ha.server";
     public static final String CONFIG_KEY_HA_PULL_INTERVAL = "ha.pull_interval";
 
-    // Temporary name
-    public static final String CONFIG_KEY_HA_SKELETON_DB_PATH = "ha.skeleton_db_path";
-
     private final String storeDir;
     private final Map<String, String> config;
     private final BrokerFactory brokerFactory;
@@ -145,7 +142,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         if ( !new File( storeDir, "neostore" ).exists() )
         {
             Pair<Master, Machine> master = broker.getMaster();
-            master = master != null ? master : broker.getMasterReally();
+            master = master.first() != null ? master : broker.getMasterReally();
             if ( master != null && master.first() != null )
             {
                 master.first().copyStore( new SlaveContext( machineId, 0, new Pair[0] ),
@@ -157,7 +154,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 // Assuming this is the master
             }
         }
-        
         newMaster( null, new Exception() );
         localGraph();
     }
@@ -298,19 +294,25 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             {
                 ((SlaveIdGeneratorFactory) getConfig().getIdGeneratorFactory()).forgetIdAllocationsFromMaster();
             }
+            
             tryToEnsureIAmNotABrokenMachine( broker.getMaster() );
         }
         if ( restarted )
         {
-            broker.setConnectionInformation( this.localGraph.getKernelData() );
-            for ( TransactionEventHandler<?> handler : transactionEventHandlers )
-            {
-                localGraph().registerTransactionEventHandler( handler );
-            }
-            for ( KernelEventHandler handler : kernelEventHandlers )
-            {
-                localGraph().registerKernelEventHandler( handler );
-            }
+            doAfterLocalGraphStarted();
+        }
+    }
+
+    private void doAfterLocalGraphStarted()
+    {
+        broker.setConnectionInformation( this.localGraph.getKernelData() );
+        for ( TransactionEventHandler<?> handler : transactionEventHandlers )
+        {
+            localGraph().registerTransactionEventHandler( handler );
+        }
+        for ( KernelEventHandler handler : kernelEventHandlers )
+        {
+            localGraph().registerKernelEventHandler( handler );
         }
     }
 
@@ -344,68 +346,50 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 
     private void tryToEnsureIAmNotABrokenMachine( Pair<Master, Machine> master )
     {
+        if ( master.other().getMachineId() == machineId )
+        {
+            return;
+        }
+
+        XaDataSource nioneoDataSource = getConfig().getTxModule()
+                .getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
+        long myLastCommittedTx = nioneoDataSource.getLastCommittedTxId();
+        long highestCommonTxId = Math.min( myLastCommittedTx, master.other().getLastCommittedTxId() );
+        int masterForMyHighestCommonTxId = -1;
         try
         {
-            if ( master.other().getMachineId() == machineId )
-            {
-                return;
-            }
-
-            XaDataSource nioneoDataSource = getConfig().getTxModule()
-                    .getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
-            long myLastCommittedTx = nioneoDataSource.getLastCommittedTxId();
-            long highestCommonTxId = Math.min( myLastCommittedTx, master.other().getLastCommittedTxId() );
-            int masterForMyHighestCommonTxId = nioneoDataSource.getMasterForCommittedTx( highestCommonTxId );
-            int masterForMastersHighestCommonTxId = master.first().getMasterIdForCommittedTx( highestCommonTxId );
-
-            // Compare those two, if equal -> good
-            if ( masterForMyHighestCommonTxId == masterForMastersHighestCommonTxId )
-            {
-                msgLog.logMessage( "Master id for last committed tx ok with highestCommonTxId=" +
-                        highestCommonTxId + " with masterId=" + masterForMyHighestCommonTxId, true );
-                return;
-            }
-            else
-            {
-                String msg = "Broken store, my last committed tx,machineId[" +
-                    myLastCommittedTx + "," + masterForMyHighestCommonTxId +
-                    "] but master says machine id for that txId is " + masterForMastersHighestCommonTxId;
-                msgLog.logMessage( msg, true );
-                RuntimeException exception = new BranchedDataException( msg );
-                shutdown( exception );
-                throw exception;
-            }
+            masterForMyHighestCommonTxId = nioneoDataSource.getMasterForCommittedTx( highestCommonTxId );;
         }
         catch ( IOException e )
         {
-            shutdown( new RuntimeException( e ) );
-            throw new RuntimeException( e );
+            // This is quite dangerous to just catch here... but the special case is
+            // where this db was just now copied from the master where there's data,
+            // but no logical logs were transfered and hence no masterId info is here
+            msgLog.logMessage( "Couldn't get master ID for txId " + highestCommonTxId +
+                    ". It may be that a log file is missing due to the db being copied from master?", e );
+            return;
+        }
+        
+        int masterForMastersHighestCommonTxId = master.first().getMasterIdForCommittedTx( highestCommonTxId );
+
+        // Compare those two, if equal -> good
+        if ( masterForMyHighestCommonTxId == masterForMastersHighestCommonTxId )
+        {
+            msgLog.logMessage( "Master id for last committed tx ok with highestCommonTxId=" +
+                    highestCommonTxId + " with masterId=" + masterForMyHighestCommonTxId, true );
+            return;
+        }
+        else
+        {
+            String msg = "Broken store, my last committed tx,machineId[" +
+                myLastCommittedTx + "," + masterForMyHighestCommonTxId +
+                "] but master says machine id for that txId is " + masterForMastersHighestCommonTxId;
+            msgLog.logMessage( msg, true );
+            RuntimeException exception = new BranchedDataException( msg );
+            shutdown( exception );
+            throw exception;
         }
     }
-
-//    private boolean recreateDbSomehow()
-//    {
-        // This is temporary and shouldn't be used in production, but the
-        // functionality is the same: I come to the conclusion that this db
-        // is void and should be recreated from some source.
-//        String recreateFrom = this.config.get( CONFIG_KEY_HA_SKELETON_DB_PATH );
-//        if ( recreateFrom != null )
-//        {
-//            try
-//            {
-//                FileUtils.cleanDirectory( new File( storeDir ) );
-//                FileUtils.copyDirectory( new File( recreateFrom ), new File( storeDir ) );
-//            }
-//            catch ( IOException e )
-//            {
-//                throw new RuntimeException( e );
-//            }
-//            msgLog.logMessage( "=== RECREATED DB from " + recreateFrom + " ===" );
-//            return true;
-//        }
-//        return false;
-//        throw new UnsupportedOperationException();
-//    }
 
     private void instantiateAutoUpdatePullerIfConfigSaysSo()
     {

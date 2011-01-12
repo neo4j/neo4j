@@ -31,7 +31,6 @@ import java.util.Map;
 
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.AbstractBroker;
 import org.neo4j.kernel.ha.CommunicationProtocol;
@@ -75,7 +74,6 @@ public class StandaloneDb extends UnicastRemoteObject implements StandaloneDbCom
             System.out.println( args.asMap().toString() );
             if ( args.has( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID ) )
             {
-                new EmbeddedGraphDatabase( storeDir ).shutdown();
                 tempMachineId = args.getNumber(
                         HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, null ).intValue();
                 Map<String, String> config = MapUtil.stringMap(

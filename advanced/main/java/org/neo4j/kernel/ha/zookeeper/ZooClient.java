@@ -53,7 +53,8 @@ public class ZooClient extends AbstractZooKeeperManager
 
     private volatile KeeperState keeperState = KeeperState.Disconnected;
     private volatile boolean shutdown = false;
-    private final String rootPath;
+    private final RootPathGetter rootPathGetter;
+    private String rootPath;
     private final String haServer;
 
     private final StringLogger msgLog;
@@ -61,15 +62,14 @@ public class ZooClient extends AbstractZooKeeperManager
     private long sessionId = -1;
     private final ResponseReceiver receiver;
 
-    public ZooClient( String servers, int machineId, long storeCreationTime,
-        long storeId, long committedTx, ResponseReceiver receiver, String haServer, String storeDir )
+    public ZooClient( String servers, int machineId, RootPathGetter rootPathGetter,
+            ResponseReceiver receiver, String haServer, String storeDir )
     {
         super( servers, storeDir );
         this.receiver = receiver;
-        this.rootPath = "/" + storeCreationTime + "_" + storeId;
+        this.rootPathGetter = rootPathGetter;
         this.haServer = haServer;
         this.machineId = machineId;
-        this.committedTx = committedTx;
         this.sequenceNr = "not initialized yet";
         this.msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
         this.zooKeeper = instantiateZooKeeper();
@@ -282,6 +282,8 @@ public class ZooClient extends AbstractZooKeeperManager
     @Override
     public String getRoot()
     {
+        makeSureRootPathIsFound();
+        
         // Make sure it exists
         byte[] rootData = null;
         do
@@ -325,6 +327,16 @@ public class ZooClient extends AbstractZooKeeperManager
             }
         } while ( rootData == null );
         throw new IllegalStateException();
+    }
+
+    private void makeSureRootPathIsFound()
+    {
+        if ( rootPath == null )
+        {
+            Pair<String, Long> info = rootPathGetter.getRootPath( zooKeeper );
+            rootPath = info.first();
+            committedTx = info.other();
+        }
     }
 
     private void cleanupChildren()
