@@ -39,6 +39,7 @@ import org.neo4j.helpers.collection.ClosableIterable;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.PropertyIndex;
+import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.Store;
@@ -467,12 +468,13 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     @Override
     public ClosableIterable<File> listStoreFiles()
     {
-        // TODO Filter in a more reliable manner
         final Collection<File> files = new ArrayList<File>();
         for ( File neostoreFile : new File( storeDir ).listFiles() )
         {
             String name = neostoreFile.getName();
-            if ( neostoreFile.isFile() && !name.contains( "log" ) )
+            // To filter for "neostore" is quite future proof, but the "index.db" file
+            // maybe should be 
+            if ( neostoreFile.isFile() && (name.startsWith( "neostore" ) || name.equals( IndexStore.INDEX_DB_FILE_NAME )) )
             {
                 files.add( neostoreFile );
             }
