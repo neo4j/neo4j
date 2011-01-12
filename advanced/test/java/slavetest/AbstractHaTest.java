@@ -194,15 +194,13 @@ public abstract class AbstractHaTest
 //        // return db.indexService.getSingleNode( key, node.getProperty( key ) ) != null;
 //    }
 
+    /**
+     * This method is bogus... it really needs to ask all indexes, not the "users" index :)
+     */
     private static int verifyIndexProvider( Node node, Node otherNode, GraphDatabaseService refDb,
             GraphDatabaseService otherDb )
     {
         int count = 0;
-//        if ( refDb.indexProvider == null || otherDb.indexProvider == null )
-//        {
-//            return count;
-//        }
-        
         Set<String> otherKeys = new HashSet<String>();
         for ( String key : otherNode.getPropertyKeys() )
         {
@@ -556,11 +554,24 @@ public abstract class AbstractHaTest
     public void makeSureSlaveCanCopyLargeInitialDatabase() throws Exception
     {
         startUpMaster( MapUtil.stringMap() );
-        // Create stuff on master
         executeJobOnMaster( new CommonJobs.LargeTransactionJob( 1, 60 ) );
         setMaxTimeToWaitForDbStart( 120 );
         addDb( MapUtil.stringMap() );
-        // Do some minor job on slave
         executeJob( new CommonJobs.CreateSubRefNodeJob( "whatever", "my_key", "my_value" ), 0 );
+    }
+    
+    @Test
+    public void canCopyInitialDbWithLuceneIndexes() throws Exception
+    {
+        int additionalNodeCount = 50;
+        setExpectedResults( 1+additionalNodeCount, 0, additionalNodeCount*2, 0, 0, additionalNodeCount*2 );
+        startUpMaster( MapUtil.stringMap() );
+        for ( int i = 0; i < additionalNodeCount; i++ )
+        {
+            executeJobOnMaster( new CommonJobs.CreateNodeAndNewIndexJob( "users",
+                    "the key " + i, "the best value",
+                    "a key " + i, "the worst value" ) );
+        }
+        addDb( MapUtil.stringMap() );
     }
 }

@@ -46,6 +46,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Triplet;
+import org.neo4j.helpers.collection.ClosableIterable;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.DeadlockDetectedException;
@@ -423,26 +424,34 @@ public class MasterImpl implements Master
 
         for ( XaDataSource ds : sources )
         {
-            for ( File storefile : ds.listStoreFiles() )
+            try
             {
+                ClosableIterable<File> files = ds.listStoreFiles();
                 try
                 {
-                    FileInputStream stream = new FileInputStream( storefile );
-                    try
+                    for ( File storefile : files )
                     {
-                        writer.write( relativePath( baseDir, storefile ), stream.getChannel(),
-                                storefile.length() > 0 );
-                    }
-                    finally
-                    {
-                        stream.close();
+                        FileInputStream stream = new FileInputStream( storefile );
+                        try
+                        {
+                            writer.write( relativePath( baseDir, storefile ), stream.getChannel(),
+                                    storefile.length() > 0 );
+                        }
+                        finally
+                        {
+                            stream.close();
+                        }
                     }
                 }
-                catch ( IOException e )
+                finally
                 {
-                    // TODO: what about error message?
-                    return new FailedResponse<Void>();
+                    files.close();
                 }
+            }
+            catch ( IOException e )
+            {
+                // TODO: what about error message?
+                return new FailedResponse<Void>();
             }
         }
         writer.done();
