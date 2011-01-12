@@ -24,7 +24,7 @@ import javax.transaction.xa.Xid;
 
 public abstract class LogEntry
 {
-    private static final byte CURRENT_LOG_VERSION = 0;
+    static final byte CURRENT_VERSION = (byte) 0;
     // empty record due to memory mapped file
     public static final byte EMPTY = (byte) 0;
     public static final byte TX_START = (byte) 1;
@@ -36,17 +36,9 @@ public abstract class LogEntry
 
     private int identifier;
 
-    // private final byte version;
-
     LogEntry( int identifier )
     {
-        this( identifier, CURRENT_LOG_VERSION );
-    }
-
-    LogEntry( int identifier, byte version )
-    {
         this.identifier = identifier;
-        // this.version = version;
     }
 
     public int getIdentifier()
@@ -54,22 +46,10 @@ public abstract class LogEntry
         return identifier;
     }
 
-    public byte getVersion()
-    {
-        return CURRENT_LOG_VERSION;// version;
-    }
-
     public static class Start extends LogEntry
     {
         private final Xid xid;
         private long startPosition;
-
-        Start( Xid xid, int identifier, byte version, long startPosition )
-        {
-            super( identifier, version );
-            this.xid = xid;
-            this.startPosition = startPosition;
-        }
 
         Start( Xid xid, int identifier, long startPosition )
         {
