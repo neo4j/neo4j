@@ -21,7 +21,6 @@
 package slavetest;
 
 import java.io.File;
-import java.io.IOException;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,27 +38,23 @@ public class MultiJvmTest extends AbstractHaTest
 {
     private static final int MASTER_PORT = 8990;
     
-    private List<StandaloneDbCom> jvms;
+    private List<StandaloneDbCom> jvms = new ArrayList<StandaloneDbCom>();
+    private int maxSecondsToWaitToJvmStart = 10;
     
-    protected void initializeDbs( int numSlaves, Map<String,String> config ) throws Exception
+    @Override
+    protected void addDb( Map<String, String> config ) throws Exception
     {
-        jvms = new ArrayList<StandaloneDbCom>();
-        try
-        {
-            startUpMaster( config );
-            for ( int i = 1; i <= numSlaves; i++ )
-            {
-                File slavePath = dbPath( i );
-                StandaloneDbCom slaveJvm = spawnJvm( slavePath, MASTER_PORT + i, i,
-                        buildExtraArgs( config ) );
-                jvms.add( slaveJvm );
-            }
-            Thread.sleep( 1000 );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        int machineId = jvms.size();
+        File slavePath = dbPath( machineId );
+        StandaloneDbCom slaveJvm = spawnJvm( slavePath, MASTER_PORT + machineId, machineId,
+                buildExtraArgs( config ) );
+        jvms.add( slaveJvm );
+    }
+    
+    @Override
+    protected void setMaxTimeToWaitForDbStart( int seconds )
+    {
+        this.maxSecondsToWaitToJvmStart = seconds;
     }
     
     protected static String[] buildExtraArgs( Map<String, String> config )
@@ -121,7 +116,7 @@ public class MultiJvmTest extends AbstractHaTest
         }
     }
 
-    protected StandaloneDbCom spawnJvm( File path, int port, int machineId, 
+    protected StandaloneDbCom spawnJvm( File path, int port, int machineId,
             String... extraArgs ) throws Exception
     {
         Collection<String> list = new ArrayList<String>( Arrays.asList(
@@ -142,7 +137,7 @@ public class MultiJvmTest extends AbstractHaTest
         RmiLocation location = RmiLocation.location( "localhost", port, "interface" );
         RemoteException latestException = null;
         StandaloneDbCom result = null;
-        while ( result == null && (System.currentTimeMillis() - startTime) < 1000*10 )
+        while ( result == null && (System.currentTimeMillis() - startTime) < 1000*maxSecondsToWaitToJvmStart )
         {
             try
             {

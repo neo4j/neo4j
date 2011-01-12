@@ -66,8 +66,9 @@ public abstract class AbstractHaTest
     }
     
     @Before
-    public void clearExpectedResults()
+    public void clearExpectedResults() throws Exception
     {
+        clearDbs();
         expectsResults = false;
     }
 
@@ -290,13 +291,21 @@ public abstract class AbstractHaTest
         FileUtils.deleteDirectory( PARENT_PATH );
     }
     
-    protected final void initializeDbs( int numSlaves ) throws Exception
+    protected void initializeDbs( int numSlaves ) throws Exception
     {
-        clearDbs();
-        initializeDbs( numSlaves, MapUtil.stringMap( ) );
+        initializeDbs( numSlaves, MapUtil.stringMap() );
     }
 
-    protected abstract void initializeDbs( int numSlaves, Map<String, String> config ) throws Exception;
+    protected void initializeDbs( int numSlaves, Map<String, String> config ) throws Exception
+    {
+        startUpMaster( config );
+        for ( int i = 0; i < numSlaves; i++ )
+        {
+            addDb( config );
+        }
+    }
+    
+    protected abstract void addDb( Map<String, String> config ) throws Exception;
     
     protected abstract void pullUpdates( int... slaves ) throws Exception;
     
@@ -311,6 +320,10 @@ public abstract class AbstractHaTest
     protected abstract void shutdownDbs() throws Exception;
     
     protected abstract Fetcher<DoubleLatch> getDoubleLatch() throws Exception;
+    
+    protected void setMaxTimeToWaitForDbStart( int seconds )
+    {
+    }
     
     private class Worker extends Thread
     {
@@ -537,5 +550,17 @@ public abstract class AbstractHaTest
         initializeDbs( 1 );
         executeJobOnMaster( new CommonJobs.LargeTransactionJob( 1, 20 ) );
         pullUpdates();
+    }
+    
+    @Test
+    public void makeSureSlaveCanCopyLargeInitialDatabase() throws Exception
+    {
+        startUpMaster( MapUtil.stringMap() );
+        // Create stuff on master
+        executeJobOnMaster( new CommonJobs.LargeTransactionJob( 1, 60 ) );
+        setMaxTimeToWaitForDbStart( 120 );
+        addDb( MapUtil.stringMap() );
+        // Do some minor job on slave
+        executeJob( new CommonJobs.CreateSubRefNodeJob( "whatever", "my_key", "my_value" ), 0 );
     }
 }
