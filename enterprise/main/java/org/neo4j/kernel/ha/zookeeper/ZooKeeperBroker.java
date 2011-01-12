@@ -47,9 +47,21 @@ public class ZooKeeperBroker extends AbstractBroker
         super( machineId, storeDir );
         this.machineId = machineId;
         this.haServer = haServer;
-        NeoStoreUtil store = new NeoStoreUtil( storeDir );
-        this.zooClient = new ZooClient( zooKeeperServers, machineId, store.getCreationTime(),
-                store.getStoreId(), store.getLastCommittedTx(), receiver, haServer, storeDir );
+        this.zooClient = new ZooClient( zooKeeperServers, machineId, getRootPathGetter( storeDir ),
+                receiver, haServer, storeDir );
+    }
+
+    private RootPathGetter getRootPathGetter( String storeDir )
+    {
+        try
+        {
+            new NeoStoreUtil( storeDir );
+            return RootPathGetter.forKnownStore( storeDir );
+        }
+        catch ( RuntimeException e )
+        {
+            return RootPathGetter.forUnknownStore( storeDir );
+        }
     }
 
     @Override

@@ -92,9 +92,19 @@ public class ClusterManager extends AbstractZooKeeperManager
     private String readRootPath()
     {
         waitForSyncConnected();
+        String result = getSingleRootPath( getZooKeeper() );
+        if ( result == null )
+        {
+            throw new RuntimeException( "No root child found in zoo keeper" );
+        }
+        return result;
+    }
+
+    public static String getSingleRootPath( ZooKeeper keeper )
+    {
         try
         {
-            List<String> children = getZooKeeper().getChildren( "/", false );
+            List<String> children = keeper.getChildren( "/", false );
             String foundChild = null;
             for ( String child : children )
             {
@@ -108,13 +118,12 @@ public class ClusterManager extends AbstractZooKeeperManager
                     foundChild = child;
                 }
             }
-            
+        
             if ( foundChild != null )
             {
-                System.out.println( "Read root path " + foundChild + " from zoo keeper" );
                 return "/" + foundChild;
             }
-            throw new RuntimeException( "No root child found in zoo keeper" );
+            return null;
         }
         catch ( KeeperException e )
         {

@@ -20,14 +20,6 @@
 
 package slavetest;
 
-import org.apache.commons.io.FileUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.neo4j.kernel.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.ha.zookeeper.ClusterManager;
-import org.neo4j.kernel.ha.zookeeper.LocalZooKeeperCluster;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,7 +27,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Ignore
+import org.apache.commons.io.FileUtils;
+import org.junit.After;
+import org.junit.Before;
+import org.neo4j.kernel.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.ha.zookeeper.ClusterManager;
+import org.neo4j.kernel.ha.zookeeper.LocalZooKeeperCluster;
+
 public class MultiJvmWithZooKeeperTest extends MultiJvmTest
 {
     private static final File BASE_ZOO_KEEPER_DATA_DIR =
@@ -46,7 +44,7 @@ public class MultiJvmWithZooKeeperTest extends MultiJvmTest
     private static LocalZooKeeperCluster zooKeeperCluster;
     
     private ClusterManager zooKeeperMasterFetcher;
-    private Map<Integer, StandaloneDbCom> jvmByMachineId;
+    private Map<Integer, StandaloneDbCom> jvmByMachineId = new HashMap<Integer, StandaloneDbCom>();
     
     @Before
     public void startZooKeeperCluster() throws Exception
@@ -58,7 +56,6 @@ public class MultiJvmWithZooKeeperTest extends MultiJvmTest
     @Override
     protected void initializeDbs( int numSlaves, Map<String,String> config ) throws Exception
     {
-        this.jvmByMachineId = new HashMap<Integer, StandaloneDbCom>();
         super.initializeDbs( numSlaves, config );
         zooKeeperMasterFetcher = new ClusterManager(
                 buildZooKeeperServersConfigValue( ZOO_KEEPER_CLUSTER_SIZE ) );
