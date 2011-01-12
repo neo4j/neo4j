@@ -35,8 +35,7 @@ public class ToFileStoreWriter implements StoreWriter
     {
         this.basePath = new File( graphDbStoreDir );
     }
-    
-    @Override
+
     public void write( String path, ReadableByteChannel data, boolean hasData ) throws IOException
     {
         try
@@ -74,7 +73,6 @@ public class ToFileStoreWriter implements StoreWriter
         }
     }
 
-    @Override
     public void done()
     {
         // Do nothing
