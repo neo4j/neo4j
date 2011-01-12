@@ -20,34 +20,40 @@
 
 package org.neo4j.index.impl.lucene;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.index.Index;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.apache.lucene.index.IndexCommit;
+import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
+import org.apache.lucene.index.SnapshotDeletionPolicy;
 
-/**
- * This class is used by {@link TestRecovery} so that a graph database can
- * be shut down in a non-clean way after index add, then index delete.
- */
-public class AddDeleteQuit
+class MultipleBackupDeletionPolicy extends SnapshotDeletionPolicy
 {
-    public static void main( String[] args )
+    private IndexCommit snapshot;
+    private int snapshotUsers;
+
+    MultipleBackupDeletionPolicy()
     {
-        GraphDatabaseService db = new EmbeddedGraphDatabase( args[0] );
-        Index<Node> index = db.index().forNodes( "index" );
-        Transaction tx = db.beginTx();
-        try
+        super( new KeepOnlyLastCommitDeletionPolicy() );
+    }
+
+    @Override
+    public synchronized IndexCommit snapshot()
+    {
+        if ( (snapshotUsers++) == 0 )
         {
-            Node node = db.createNode();
-            index.add( node, "key", "value" );
-            index.delete();
-            tx.success();
+            snapshot = super.snapshot();
         }
-        finally
+        return snapshot;
+    }
+
+    @Override
+    public synchronized void release()
+    {
+        if ( (--snapshotUsers) > 0 ) return;
+        super.release();
+        snapshot = null;
+        if ( snapshotUsers < 0 )
         {
-            tx.finish();
+            snapshotUsers = 0;
+            throw new IllegalStateException( "Cannot release snapshot, no snapshot held" );
         }
-        System.exit( 0 );
     }
 }
