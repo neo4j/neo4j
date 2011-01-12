@@ -25,8 +25,10 @@ import java.io.IOException;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -44,6 +46,7 @@ import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.index.SnapshotDeletionPolicy;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Similarity;
@@ -56,6 +59,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Triplet;
+import org.neo4j.helpers.collection.ClosableIterable;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.index.IndexProviderStore;
@@ -115,8 +120,8 @@ public class LuceneDataSource extends LogBackedXaDataSource
     
     public static final Analyzer KEYWORD_ANALYZER = new KeywordAnalyzer();
     
-    private final Map<IndexIdentifier,Pair<IndexWriter, AtomicBoolean>> indexWriters = 
-        new HashMap<IndexIdentifier,Pair<IndexWriter, AtomicBoolean>>();
+    private final Map<IndexIdentifier,Triplet<IndexWriter, AtomicBoolean, SnapshotDeletionPolicy>> indexWriters = 
+        new HashMap<IndexIdentifier,Triplet<IndexWriter, AtomicBoolean, SnapshotDeletionPolicy>>();
     private final Map<IndexIdentifier,IndexSearcherRef> indexSearchers = 
         new HashMap<IndexIdentifier,IndexSearcherRef>();
 
@@ -291,7 +296,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
         }
         indexSearchers.clear();
         
-        for ( Map.Entry<IndexIdentifier, Pair<IndexWriter, AtomicBoolean>> entry : indexWriters.entrySet() )
+        for ( Map.Entry<IndexIdentifier, Triplet<IndexWriter, AtomicBoolean, SnapshotDeletionPolicy>> entry : indexWriters.entrySet() )
         {
             try
             {
@@ -345,7 +350,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
         @Override
         public void flushAll()
         {
-            for ( Map.Entry<IndexIdentifier, Pair<IndexWriter, AtomicBoolean>> entry : indexWriters.entrySet() )
+            for ( Map.Entry<IndexIdentifier, Triplet<IndexWriter, AtomicBoolean, SnapshotDeletionPolicy>> entry : indexWriters.entrySet() )
             {
                 try
                 {
@@ -429,23 +434,29 @@ public class LuceneDataSource extends LogBackedXaDataSource
         }
     }
     
-    static File getFileDirectory( String storeDir, IndexIdentifier identifier )
+    static File getFileDirectory( String storeDir, byte entityType )
     {
         File path = new File( storeDir, "lucene" );
         String extra = null;
-        if ( identifier.entityTypeByte == LuceneCommand.NODE )
+        if ( entityType == LuceneCommand.NODE )
         {
             extra = "node";
         }
-        else if ( identifier.entityTypeByte == LuceneCommand.RELATIONSHIP )
+        else if ( entityType == LuceneCommand.RELATIONSHIP )
         {
             extra = "relationship";
         }
         else
         {
-            throw new RuntimeException( identifier.entityType.getType().getName() );
+            throw new RuntimeException( "" + entityType );
         }
-        return new File( new File( path, extra ), identifier.indexName );
+        return new File( path, extra );
+    }
+    
+    static File getFileDirectory( String storeDir, IndexIdentifier identifier )
+    {
+        return new File( getFileDirectory( storeDir, identifier.entityTypeByte ),
+                identifier.indexName );
     }
     
     static Directory getDirectory( String storeDir,
@@ -474,8 +485,8 @@ public class LuceneDataSource extends LogBackedXaDataSource
             }
             else
             {
-                Pair<IndexWriter, AtomicBoolean> writer = indexWriters.get( identifier );
-                if ( writer != null && writer.other().compareAndSet( true, false ) )
+                Triplet<IndexWriter, AtomicBoolean, SnapshotDeletionPolicy> writer = indexWriters.get( identifier );
+                if ( writer != null && writer.second().compareAndSet( true, false ) )
                 {
                     searcher = refreshSearcher( searcher );
                     if ( searcher != null )
@@ -504,10 +515,10 @@ public class LuceneDataSource extends LogBackedXaDataSource
 
     synchronized void invalidateIndexSearcher( IndexIdentifier identifier )
     {
-        Pair<IndexWriter, AtomicBoolean> writer = indexWriters.get( identifier );
+        Triplet<IndexWriter, AtomicBoolean, SnapshotDeletionPolicy> writer = indexWriters.get( identifier );
         if ( writer != null )
         {
-            writer.other().set( true );
+            writer.second().set( true );
         }
     }
 
@@ -550,7 +561,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
     
     synchronized IndexWriter getIndexWriter( IndexIdentifier identifier )
     {
-        Pair<IndexWriter, AtomicBoolean> writer = indexWriters.get( identifier );
+        Triplet<IndexWriter, AtomicBoolean, SnapshotDeletionPolicy> writer = indexWriters.get( identifier );
         if ( writer != null )
         {
             return writer.first();
@@ -561,7 +572,9 @@ public class LuceneDataSource extends LogBackedXaDataSource
             Directory dir = getDirectory( baseStorePath, identifier );
             directoryExists( dir );
             IndexType type = getType( identifier );
-            writer = Pair.of( new IndexWriter( dir, type.analyzer, MaxFieldLength.UNLIMITED ), new AtomicBoolean() );
+            SnapshotDeletionPolicy deletionPolicy = new MultipleBackupDeletionPolicy();
+            IndexWriter indexWriter = new IndexWriter( dir, type.analyzer, deletionPolicy, MaxFieldLength.UNLIMITED );
+            writer = Triplet.of( indexWriter, new AtomicBoolean(), deletionPolicy );
             Similarity similarity = type.getSimilarity();
             if ( similarity != null )
             {
@@ -643,7 +656,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
         try
         {
             IndexSearcherRef searcher = indexSearchers.remove( identifier );
-            Pair<IndexWriter, AtomicBoolean> writer = indexWriters.remove( identifier );
+            Triplet<IndexWriter, AtomicBoolean, SnapshotDeletionPolicy> writer = indexWriters.remove( identifier );
             if ( searcher != null )
             {
                 searcher.dispose();
@@ -722,5 +735,37 @@ public class LuceneDataSource extends LogBackedXaDataSource
     public XaContainer getXaContainer()
     {
         return this.xaContainer;
+    }
+    
+    @Override
+    public ClosableIterable<File> listStoreFiles() throws IOException
+    {
+        final Collection<File> files = new ArrayList<File>();
+        final Collection<SnapshotDeletionPolicy> snapshots = new ArrayList<SnapshotDeletionPolicy>();
+        for ( Map.Entry<IndexIdentifier, Triplet<IndexWriter, AtomicBoolean, SnapshotDeletionPolicy>> writer : indexWriters.entrySet() )
+        {
+            SnapshotDeletionPolicy deletionPolicy = writer.getValue().third();
+            File indexDirectory = getFileDirectory( baseStorePath, writer.getKey() );
+            for ( String fileName : deletionPolicy.snapshot().getFileNames() )
+            {
+                files.add( new File( indexDirectory, fileName ) );
+            }
+            snapshots.add( deletionPolicy );
+        }
+        return new ClosableIterable<File>()
+        {
+            public Iterator<File> iterator()
+            {
+                return files.iterator();
+            }
+
+            public void close()
+            {
+                for ( SnapshotDeletionPolicy deletionPolicy : snapshots )
+                {
+                    deletionPolicy.release();
+                }
+            }
+        };
     }
 }
