@@ -56,21 +56,18 @@ public class SingleJvmTest extends AbstractHaTest
     }
 
     @Override
-    protected void initializeDbs( int numSlaves, Map<String,String> config ) throws Exception
+    protected void addDb( Map<String, String> config )
     {
-        haDbs = new ArrayList<GraphDatabaseService>();
-        startUpMaster( config );
-        for ( int i = 1; i <= numSlaves; i++ )
-        {
-            File slavePath = dbPath( i );
-            Broker broker = makeSlaveBroker( master, 0, i, slavePath.getAbsolutePath() );
-            Map<String,String> cfg = new HashMap<String, String>(config);
-            cfg.put( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, Integer.toString(i) );
-            cfg.put( Config.KEEP_LOGICAL_LOGS, "true" );
-            HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase(
-                    slavePath.getAbsolutePath(), cfg, AbstractBroker.wrapSingleBroker( broker ) );
-            haDbs.add( db );
-        }
+        haDbs = haDbs != null ? haDbs : new ArrayList<GraphDatabaseService>();
+        int machineId = haDbs.size()+1;
+        File slavePath = dbPath( machineId );
+        Broker broker = makeSlaveBroker( master, 0, machineId, slavePath.getAbsolutePath() );
+        Map<String,String> cfg = new HashMap<String, String>(config);
+        cfg.put( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, Integer.toString(machineId) );
+        cfg.put( Config.KEEP_LOGICAL_LOGS, "true" );
+        HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase(
+                slavePath.getAbsolutePath(), cfg, AbstractBroker.wrapSingleBroker( broker ) );
+        haDbs.add( db );
     }
 
     @Override
