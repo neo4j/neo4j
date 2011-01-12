@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 
 public class IndexStore
 {
+    public static final String INDEX_DB_FILE_NAME = "index.db";
     private static final byte[] MAGICK = new byte[] { 'n', 'e', 'o', '4', 'j', '-', 'i', 'n', 'd', 'e', 'x' };
     private static final int VERSION = 1;
     
@@ -49,7 +50,7 @@ public class IndexStore
     
     public IndexStore( String graphDbStoreDir )
     {
-        this.file = new File( new File( graphDbStoreDir ), "index.db" );
+        this.file = new File( new File( graphDbStoreDir ), INDEX_DB_FILE_NAME );
         this.oldFile = new File( file.getParentFile(), file.getName() + ".old" );
         read();
     }
