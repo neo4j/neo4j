@@ -26,13 +26,16 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.logging.Logger;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.helpers.collection.ClosableIterable;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.PropertyIndex;
@@ -462,10 +465,10 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     }
     
     @Override
-    public Iterable<File> listStoreFiles()
+    public ClosableIterable<File> listStoreFiles()
     {
         // TODO Filter in a more reliable manner
-        Collection<File> files = new ArrayList<File>();
+        final Collection<File> files = new ArrayList<File>();
         for ( File neostoreFile : new File( storeDir ).listFiles() )
         {
             String name = neostoreFile.getName();
@@ -474,6 +477,18 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
                 files.add( neostoreFile );
             }
         }
-        return files;
+        
+        return new ClosableIterable<File>()
+        {
+
+            public Iterator<File> iterator()
+            {
+                return files.iterator();
+            }
+
+            public void close()
+            {
+            }
+        };
     }
 }
