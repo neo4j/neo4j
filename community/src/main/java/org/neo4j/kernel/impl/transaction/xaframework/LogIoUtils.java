@@ -30,6 +30,45 @@ import org.neo4j.kernel.impl.transaction.XidImpl;
 
 public class LogIoUtils
 {
+    private static final short CURRENT_FORMAT_VERSION = ( (short) LogEntry.CURRENT_VERSION ) & 0xFF;
+
+    public static long[] readLogHeader( ByteBuffer buffer, ReadableByteChannel channel,
+            boolean strict ) throws IOException
+    {
+        buffer.clear();
+        buffer.limit( 16 );
+        if ( channel.read( buffer ) != 16 )
+        {
+            if ( strict )
+            {
+                throw new IOException( "Unable to read log version and last committed tx" );
+            }
+            return null;
+        }
+        buffer.flip();
+        long version = buffer.getLong();
+        long previousCommittedTx = buffer.getLong();
+        long logFormatVersion = ( version >> 56 ) & 0xFF;
+        if ( CURRENT_FORMAT_VERSION != logFormatVersion )
+        {
+            throw new IOException( String.format(
+                    "Unsupported log format version 0x%x (expected 0x%x)", logFormatVersion,
+                    CURRENT_FORMAT_VERSION ) );
+        }
+        version = version & 0x00FFFFFFFFFFFFFFL;
+        return new long[] { version, previousCommittedTx };
+    }
+
+    public static ByteBuffer writeLogHeader( ByteBuffer buffer, long logVersion,
+            long previousCommittedTxId )
+    {
+        buffer.clear();
+        buffer.putLong( logVersion | ( ( (long) CURRENT_FORMAT_VERSION ) << 56 ) );
+        buffer.putLong( previousCommittedTxId );
+        buffer.flip();
+        return buffer;
+    }
+
     public static LogEntry readEntry( ByteBuffer buffer, ReadableByteChannel channel,
             XaCommandFactory cf ) throws IOException
     {
@@ -65,7 +104,6 @@ public class LogIoUtils
     private static LogEntry.Start readTxStartEntry( ByteBuffer buf,
             ReadableByteChannel channel ) throws IOException, ReadPastEndException
     {
-        // byte version = readNextByte( buf, channel );
         byte globalIdLength = readNextByte( buf, channel );
         byte branchIdLength = readNextByte( buf, channel );
         byte globalId[] = new byte[globalIdLength];
@@ -77,7 +115,7 @@ public class LogIoUtils
 
         // re-create the transaction
         Xid xid = new XidImpl( globalId, branchId, formatId );
-        return new LogEntry.Start( xid, identifier, /*version,*/-1 );
+        return new LogEntry.Start( xid, identifier, -1 );
     }
 
     private static LogEntry.Prepare readTxPrepareEntry( ByteBuffer buf,
@@ -128,8 +166,7 @@ public class LogIoUtils
         }
         else if ( entry instanceof LogEntry.Start )
         {
-            writeStart( buffer, entry.getIdentifier(), entry.getVersion(),
-                    ( (LogEntry.Start) entry ).getXid() );
+            writeStart( buffer, entry.getIdentifier(), ( (LogEntry.Start) entry ).getXid() );
         }
         else if ( entry instanceof LogEntry.Done )
         {
@@ -175,13 +212,13 @@ public class LogIoUtils
         buffer.put( LogEntry.DONE ).putInt( identifier );
     }
 
-    public static void writeStart( LogBuffer buffer, int identifier, byte version, Xid xid )
+    public static void writeStart( LogBuffer buffer, int identifier, Xid xid )
             throws IOException
     {
         byte globalId[] = xid.getGlobalTransactionId();
         byte branchId[] = xid.getBranchQualifier();
         int formatId = xid.getFormatId();
-        buffer.put( LogEntry.TX_START )/*.put( version )*/.put( (byte) globalId.length ).put(
+        buffer.put( LogEntry.TX_START ).put( (byte) globalId.length ).put(
                 (byte) branchId.length ).put( globalId ).put( branchId ).putInt( identifier ).putInt(
                 formatId );
     }

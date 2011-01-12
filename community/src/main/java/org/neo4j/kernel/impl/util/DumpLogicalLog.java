@@ -60,18 +60,21 @@ public class DumpLogicalLog
                 FileChannel fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
                 ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
                         + Xid.MAXBQUALSIZE * 10 );
-                buffer.clear();
-                buffer.limit( 16 );
-                if ( fileChannel.read( buffer ) != 16 )
+                long logVersion, prevLastCommittedTx;
+                try
+                {
+                    long[] header = LogIoUtils.readLogHeader( buffer, fileChannel, true );
+                    logVersion = header[0];
+                    prevLastCommittedTx = header[1];
+                }
+                catch ( IOException ex )
                 {
                     System.out.println( "Unable to read timestamp information, "
                         + "no records in logical log." );
+                    System.out.println( ex.getMessage() );
                     fileChannel.close();
                     return;
                 }
-                buffer.flip();
-                long logVersion = buffer.getLong();
-                long prevLastCommittedTx = buffer.getLong();
                 System.out.println( "Logical log version: " + logVersion + " with prev committed tx[" +
                     prevLastCommittedTx + "]" );
                 long logEntriesFound = 0;
@@ -110,7 +113,7 @@ public class DumpLogicalLog
         }
     }
 
-    private static boolean readEntry( FileChannel channel, ByteBuffer buf, 
+    private static boolean readEntry( FileChannel channel, ByteBuffer buf,
             XaCommandFactory cf ) throws IOException
     {
         LogEntry entry = LogIoUtils.readEntry( buf, channel, cf );
@@ -121,7 +124,7 @@ public class DumpLogicalLog
         }
         return false;
     }
-    
+
     private static class CommandFactory extends XaCommandFactory
     {
         @Override
@@ -183,17 +186,17 @@ public class DumpLogicalLog
         return record;
     }
 
-    // means the first byte of the command record was only written but second 
+    // means the first byte of the command record was only written but second
     // (saying what type) did not get written but the file still got expanded
     private static final byte NONE = (byte) 0;
-    
+
     private static final byte NODE_COMMAND = (byte) 1;
     private static final byte PROP_COMMAND = (byte) 2;
     private static final byte REL_COMMAND = (byte) 3;
     private static final byte REL_TYPE_COMMAND = (byte) 4;
     private static final byte PROP_INDEX_COMMAND = (byte) 5;
 
-    static XaCommand readNodeCommand( ReadableByteChannel byteChannel, ByteBuffer buffer ) 
+    static XaCommand readNodeCommand( ReadableByteChannel byteChannel, ByteBuffer buffer )
         throws IOException
     {
         buffer.clear();
@@ -230,8 +233,8 @@ public class DumpLogicalLog
         }
         return new Command( record );
     }
-    
-    static XaCommand readRelationshipCommand( ReadableByteChannel byteChannel, ByteBuffer buffer ) 
+
+    static XaCommand readRelationshipCommand( ReadableByteChannel byteChannel, ByteBuffer buffer )
         throws IOException
     {
         buffer.clear();
@@ -320,8 +323,8 @@ public class DumpLogicalLog
         }
         return new Command( record );
     }
-    
-    static XaCommand readPropertyCommand( ReadableByteChannel byteChannel, ByteBuffer buffer ) 
+
+    static XaCommand readPropertyCommand( ReadableByteChannel byteChannel, ByteBuffer buffer )
         throws IOException
     {
         // id+in_use(byte)+type(int)+key_indexId(int)+prop_blockId(long)+
@@ -342,7 +345,7 @@ public class DumpLogicalLog
             inUse = true;
         }
         boolean nodeProperty = true;
-        if ( (inUseFlag & Record.REL_PROPERTY.byteValue() ) == 
+        if ( (inUseFlag & Record.REL_PROPERTY.byteValue() ) ==
             Record.REL_PROPERTY.byteValue() )
         {
             nodeProperty = false;
@@ -416,8 +419,8 @@ public class DumpLogicalLog
         }
         throw new InvalidRecordException( "Unknown property type:" + type );
     }
-    
-    static XaCommand readRelationshipTypeCommand( ReadableByteChannel byteChannel, ByteBuffer buffer ) 
+
+    static XaCommand readRelationshipTypeCommand( ReadableByteChannel byteChannel, ByteBuffer buffer )
         throws IOException
     {
         // id+in_use(byte)+type_blockId(int)+nr_type_records(int)
@@ -431,7 +434,7 @@ public class DumpLogicalLog
         int id = buffer.getInt();
         byte inUseFlag = buffer.get();
         boolean inUse = false;
-        if ( (inUseFlag & Record.IN_USE.byteValue()) == 
+        if ( (inUseFlag & Record.IN_USE.byteValue()) ==
             Record.IN_USE.byteValue() )
         {
             inUse = true;
@@ -485,11 +488,11 @@ public class DumpLogicalLog
                     + "]" );
         }
     }
-    
+
     private static class Command extends XaCommand
     {
         private final AbstractRecord record;
-        
+
         Command( AbstractRecord record )
         {
             this.record = record;
@@ -505,7 +508,8 @@ public class DumpLogicalLog
         {
             throw new RuntimeException();
         }
-        
+
+        @Override
         public String toString()
         {
             return record.toString();
