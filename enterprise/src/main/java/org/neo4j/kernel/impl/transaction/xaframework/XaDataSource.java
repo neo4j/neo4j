@@ -26,6 +26,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.Map;
 import java.util.StringTokenizer;
 
+import org.neo4j.helpers.collection.ClosableIterable;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -388,7 +389,7 @@ public abstract class XaDataSource
         throw new UnsupportedOperationException();
     }
 
-    public Iterable<File> listStoreFiles()
+    public ClosableIterable<File> listStoreFiles() throws IOException
     {
         throw new UnsupportedOperationException();
     }
