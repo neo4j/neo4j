@@ -1261,4 +1261,21 @@ public class TestLuceneIndex
         restartTx();
         assertContains( index.get( "key", "value" ), node );
     }
+    
+    @Test
+    public void testCombinedHitsSizeProblem()
+    {
+        Index<Node> index = nodeIndex( "size-npe", LuceneIndexProvider.EXACT_CONFIG );
+        Node node1 = graphDb.createNode();
+        Node node2 = graphDb.createNode();
+        Node node3 = graphDb.createNode();
+        String key = "key";
+        String value = "value";
+        index.add( node1, key, value );
+        index.add( node2, key, value );
+        restartTx();
+        index.add( node3, key, value );
+        IndexHits<Node> hits = index.get( key, value );
+        assertEquals( 3, hits.size() );
+    }
 }
