@@ -30,11 +30,23 @@ import org.neo4j.helpers.collection.IteratorUtil;
 public class CombinedIndexHits<T> extends CombiningIterator<T> implements IndexHits<T>
 {
     private final Collection<IndexHits<T>> allIndexHits;
+    private final int size;
     
     public CombinedIndexHits( Collection<IndexHits<T>> iterators )
     {
         super( iterators );
         this.allIndexHits = iterators;
+        size = accumulatedSize( iterators );
+    }
+
+    private int accumulatedSize( Collection<IndexHits<T>> iterators )
+    {
+        int result = 0;
+        for ( IndexHits<T> hits : iterators )
+        {
+            result += hits.size();
+        }
+        return result;
     }
 
     public Iterator<T> iterator()
@@ -50,7 +62,7 @@ public class CombinedIndexHits<T> extends CombiningIterator<T> implements IndexH
 
     public int size()
     {
-        return currentIterator().size();
+        return size;
     }
 
     public void close()
