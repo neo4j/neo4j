@@ -21,7 +21,7 @@ public MyCoolService(@Context Database database)
 }
 --------
 
-Remember, the unmanaged API is a very sharp tool. It's all to easy to compromise the server by deploying code this way, so think first and see if you can't use the managed extensions in preference.
+Remember, the unmanaged API is a very sharp tool. It's all to easy to compromise the server by deploying code this way, so think first and see if you can't use the managed extensions in preference. However, a number of context parameters can be automatically provided for you, like the reference to the database.
 
 In order to specify the mount point of your extension, a full class looks like
 
@@ -30,28 +30,50 @@ In order to specify the mount point of your extension, a full class looks like
 @Path( "/helloworld" )
 public class HelloWorldResource
 {
-    public HelloWorldResource(@Context GraphDatabaseService graphDb, @Context UriInfo uriInfo )
+
+    private final Database database;
+
+    public HelloWorldResource( @Context Database database,
+            @Context HttpServletRequest req, @Context OutputFormat output )
     {
-        // Do stuff in the constructor
+        this( new SessionFactoryImpl( req.getSession( true ) ), database,
+                output );
+    }
+
+    public HelloWorldResource( SessionFactoryImpl sessionFactoryImpl,
+            Database database, OutputFormat output )
+    {
+        this.database = database;
     }
 
     @GET
     @Produces( MediaType.TEXT_PLAIN )
     @Path( "/{nodeId}" )
-    public Response addGreeting( @PathParam( "nodeId" ) long nodeId )
+    public Response hello( @PathParam( "nodeId" ) long nodeId )
     {
         // Do stuff with the database
-        return null;
+        return Response.status( Status.OK ).entity(
+                ( "Hello World, nodeId=" + nodeId).getBytes() ).build();
     }
 }
 ------
 
-Now, include your class in neo4j-server.properties with something like
+  Now, include your class in neo4j-server.properties with something like
 
 [source]
 ------
-#Comma separated list of JAXRS classes, one class for each extension to be loaded.
-org.neo4j.server.thirdparty_jaxrs_classes=com.example.HelloWorldResource
+#Comma separated list of JAXRS packages containing JAXRS Resoruce, one package name for each mountpoint.
+#org.neo4j.server.thirdparty_jaxrs_classes=org.neo4j.examples.server.unmanaged=/examples/unmanaged
 ------
 
-Which mounts the addGreeting method as a GET under the URI http://{neo4j_server}:{neo4j_port}/helloworld/{nodeId}
+  Which mounts the addGreeting method as a GET under the URI   http://{neo4j_server}:{neo4j_port}//examples/unmanaged/helloworld/{nodeId}
+
+-----
+curl http://localhost:7474/examples/unmanaged/helloworld/123
+-----
+
+  which results in
+  
+----
+Hello World, nodeId=123
+----

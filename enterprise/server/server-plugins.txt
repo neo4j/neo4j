@@ -87,9 +87,10 @@ plugin registered with the server, so only its extension functionality is availa
 {
 "extensions-info" : "http://localhost:7474/db/data/ext",
 "node" : "http://localhost:7474/db/data/node",
-"node-index" : "http://localhost:7474/db/data/index/node",
-"relationship-index" : "http://localhost:7474/db/data/index/relationship",
+"node_index" : "http://localhost:7474/db/data/index/node",
+"relationship_index" : "http://localhost:7474/db/data/index/relationship",
 "reference_node" : "http://localhost:7474/db/data/node/0",
+"extensions_info" : "http://localhost:7474/db/data/ext",
 "extensions" : {
   "GetAll" : {
     "get_all_nodes" : "http://localhost:7474/db/data/ext/GetAll/graphdb/get_all_nodes",
