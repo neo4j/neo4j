@@ -32,6 +32,8 @@
       <item name="Graph algorithms" href="graphalgo.html" />
       <item name="Management features" href="management.html" />
       <item name="Neo4j Server REST" href="server-rest-api.html" />
+      <item name="Neo4j Server Plugins" href="server-plugins.html" />
+      <item name="Neo4j Server Unmanaged Extensions" href="server-unmanaged-extensions.html" />
     </menu>
     <menu name="Test examples">
       <item name="Base test" href="base-test.html" />
