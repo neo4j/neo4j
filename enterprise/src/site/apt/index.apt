@@ -4,6 +4,8 @@ Neo4j Server
 
     * {{{./server-plugins.html}Extending the Neo4j Server REST API with custom functionality}}
 
+    * {{{./server-unmanaged-extensions.html}Deploying arbitrary code and URL endpoints into Neo4j Server}}
+
 
 Neo4j Embedded
 
