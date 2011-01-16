@@ -33,17 +33,9 @@ public class HelloWorldResource
 
     private final Database database;
 
-    public HelloWorldResource( @Context Database database,
-            @Context HttpServletRequest req, @Context OutputFormat output )
+    public HelloWorldResource( @Context Database database) 
     {
-        this( new SessionFactoryImpl( req.getSession( true ) ), database,
-                output );
-    }
-
-    public HelloWorldResource( SessionFactoryImpl sessionFactoryImpl,
-            Database database, OutputFormat output )
-    {
-        this.database = database;
+      this.database = database;
     }
 
     @GET
@@ -58,7 +50,7 @@ public class HelloWorldResource
 }
 ------
 
-  Now, include your class in neo4j-server.properties with something like
+Now, include your class in neo4j-server.properties with something like
 
 [source]
 ------
@@ -66,13 +58,13 @@ public class HelloWorldResource
 #org.neo4j.server.thirdparty_jaxrs_classes=org.neo4j.examples.server.unmanaged=/examples/unmanaged
 ------
 
-  Which mounts the addGreeting method as a GET under the URI   http://{neo4j_server}:{neo4j_port}//examples/unmanaged/helloworld/{nodeId}
+Which mounts the addGreeting method as a GET under the URI   http://{neo4j_server}:{neo4j_port}//examples/unmanaged/helloworld/{nodeId}
 
 -----
 curl http://localhost:7474/examples/unmanaged/helloworld/123
 -----
 
-  which results in
+which results in
   
 ----
 Hello World, nodeId=123
