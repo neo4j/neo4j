@@ -54,7 +54,7 @@ Now, include your class in neo4j-server.properties with something like
 
 [source]
 ------
-#Comma separated list of JAXRS packages containing JAXRS Resoruce, one package name for each mountpoint.
+#Comma separated list of JAXRS packages containing JAXRS Resource, one package name for each mountpoint.
 #org.neo4j.server.thirdparty_jaxrs_classes=org.neo4j.examples.server.unmanaged=/examples/unmanaged
 ------
 
