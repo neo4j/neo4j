@@ -20,10 +20,12 @@
 
 package org.neo4j.index.impl.lucene;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.lang.Thread.State;
+import java.util.Map;
 import java.util.Random;
 
 import org.junit.Test;
@@ -33,8 +35,10 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.impl.index.IndexStore;
 
 /**
  * Don't extend Neo4jTestCase since these tests restarts the db in the tests. 
@@ -179,11 +183,30 @@ public class TestRecovery
         db.index().forNodes( "index" );
         db.shutdown();
         
-        Runtime.getRuntime().exec( new String[] { "java", "-cp", System.getProperty( "java.class.path" ),
-                AddDeleteQuit.class.getName(), getDbPath()
-        } ).waitFor();
+        assertEquals( 0, Runtime.getRuntime().exec( new String[] { "java", "-cp", System.getProperty( "java.class.path" ),
+                AddDeleteQuit.class.getName(), getDbPath() } ).waitFor() );
         
         new EmbeddedGraphDatabase( getDbPath() ).shutdown();
         db.shutdown();
+    }
+
+    @Test
+    public void recoveryForRelationshipCommandsOnly() throws Exception
+    {
+        String path = getDbPath();
+        Neo4jTestCase.deleteFileOrDirectory( new File( path ) );
+        assertEquals( 0, Runtime.getRuntime().exec( new String[] { "java", "-cp", System.getProperty( "java.class.path" ),
+                AddRelToIndex.class.getName(), getDbPath() } ).waitFor() );
+        
+        // I would like to do this, but there's no exception propagated out from the constructor
+        // if the recovery fails.
+        // new EmbeddedGraphDatabase( getDbPath() ).shutdown();
+        
+        // Instead I have to do this
+        Map<Object, Object> params = MapUtil.genericMap(
+                "store_dir", getDbPath(),
+                IndexStore.class, new IndexStore( getDbPath() ) );
+        LuceneDataSource ds = new LuceneDataSource( params );
+        ds.close();
     }
 }
