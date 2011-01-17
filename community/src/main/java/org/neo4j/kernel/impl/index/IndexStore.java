@@ -26,6 +26,7 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -144,6 +145,10 @@ public class IndexStore
     private Integer tryToReadVersion( ReadableByteChannel channel ) throws IOException
     {
         byte[] array = IoPrimitiveUtils.readBytes( channel, new byte[MAGICK.length] );
+        if ( !Arrays.equals( MAGICK, array ) )
+        {
+            return null;
+        }
         return array != null ? readNextInt( channel ) : null;
     }
 
