@@ -166,6 +166,8 @@ abstract class LuceneCommand extends XaCommand
         }
     }
     
+    public abstract boolean isConsideredNormalWriteCommand();
+    
     private static void writeLengthAndString( LogBuffer buffer, String string ) throws IOException
     {
         char[] chars = string.toCharArray();
@@ -186,6 +188,12 @@ abstract class LuceneCommand extends XaCommand
             context.ensureWriterInstantiated();
             context.indexType.addToDocument( context.getDocument( entityId ).document, key, value );
             context.dataSource.invalidateCache( context.identifier, key, value );
+        }
+        
+        @Override
+        public boolean isConsideredNormalWriteCommand()
+        {
+            return true;
         }
     }
     
@@ -212,6 +220,12 @@ abstract class LuceneCommand extends XaCommand
             context.indexType.addToDocument( context.getDocument( entityId ).document, key, value );
             context.dataSource.invalidateCache( context.identifier, key, value );
         }
+        
+        @Override
+        public boolean isConsideredNormalWriteCommand()
+        {
+            return true;
+        }
     }
     
     static class RemoveCommand extends LuceneCommand
@@ -228,6 +242,12 @@ abstract class LuceneCommand extends XaCommand
             context.indexType.removeFromDocument( context.getDocument( entityId ).document, key, value );
             context.dataSource.invalidateCache( context.identifier, key, value );
         }
+        
+        @Override
+        public boolean isConsideredNormalWriteCommand()
+        {
+            return true;
+        }
     }
 
     static class DeleteCommand extends LuceneCommand
@@ -242,6 +262,12 @@ abstract class LuceneCommand extends XaCommand
         {
             context.documents.clear();
             context.dataSource.deleteIndex( context.identifier, context.recovery );
+        }
+        
+        @Override
+        public boolean isConsideredNormalWriteCommand()
+        {
+            return false;
         }
     }
     
@@ -287,6 +313,12 @@ abstract class LuceneCommand extends XaCommand
         void perform( CommitContext context )
         {
             context.dataSource.indexStore.setIfNecessary( getEntityType(), name, config );
+        }
+        
+        @Override
+        public boolean isConsideredNormalWriteCommand()
+        {
+            return false;
         }
     }
     

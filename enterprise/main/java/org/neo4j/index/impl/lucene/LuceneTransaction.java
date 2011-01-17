@@ -34,7 +34,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.index.impl.lucene.CommitContext.DocumentContext;
-import org.neo4j.index.impl.lucene.LuceneCommand.AddCommand;
 import org.neo4j.index.impl.lucene.LuceneCommand.CreateIndexCommand;
 import org.neo4j.index.impl.lucene.LuceneCommand.DeleteCommand;
 import org.neo4j.index.impl.lucene.LuceneCommand.RemoveCommand;
@@ -64,7 +63,7 @@ class LuceneTransaction extends XaTransaction
         value = value instanceof ValueContext ? ((ValueContext) value).getCorrectValue() : value.toString();
         TxDataBoth data = getTxData( index, true );
         insert( index, entity, key, value, data.added( true ), data.removed( false ) );
-        queueCommand( index.newAddCommand( entity, key, value ) ).addCount++;
+        queueCommand( index.newAddCommand( entity, key, value ) );
     }
     
     private Object getEntityId( PropertyContainer entity )
@@ -92,7 +91,7 @@ class LuceneTransaction extends XaTransaction
         value = value instanceof ValueContext ? ((ValueContext) value).getCorrectValue() : value.toString();
         TxDataBoth data = getTxData( index, true );
         insert( index, entity, key, value, data.removed( true ), data.added( false ) );
-        queueCommand( index.newRemoveCommand( entity, key, value ) ).removeCount++;
+        queueCommand( index.newRemoveCommand( entity, key, value ) );
     }
     
     <T extends PropertyContainer> void delete( LuceneIndex<T> index )
@@ -115,6 +114,7 @@ class LuceneTransaction extends XaTransaction
             commands.clear();
         }
         commands.add( command );
+        commands.incCounter( command );
         return commands;
     }
     
@@ -403,8 +403,7 @@ class LuceneTransaction extends XaTransaction
     static class CommandList
     {
         private final List<LuceneCommand> commands = new ArrayList<LuceneCommand>();
-        int addCount;
-        int removeCount;
+        private boolean containsWrites;
         
         void add( LuceneCommand command )
         {
@@ -413,25 +412,20 @@ class LuceneTransaction extends XaTransaction
         
         boolean containsWrites()
         {
-            return addCount+removeCount > 0;
+            return containsWrites;
         }
         
         void clear()
         {
             commands.clear();
-            addCount = 0;
-            removeCount = 0;
+            containsWrites = false;
         }
 
         void incCounter( LuceneCommand command )
         {
-            if ( command instanceof AddCommand )
+            if ( command.isConsideredNormalWriteCommand() )
             {
-                this.addCount++;
-            }
-            else if ( command instanceof RemoveCommand )
-            {
-                this.removeCount++;
+                containsWrites = true;
             }
         }
         
