@@ -51,7 +51,6 @@ import org.neo4j.kernel.ha.HaCommunicationException;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterIdGeneratorFactory;
 import org.neo4j.kernel.ha.MasterServer;
-import org.neo4j.kernel.ha.ToFileStoreWriter;
 import org.neo4j.kernel.ha.MasterTxIdGenerator.MasterTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.Response;
 import org.neo4j.kernel.ha.ResponseReceiver;
@@ -62,6 +61,7 @@ import org.neo4j.kernel.ha.SlaveRelationshipTypeCreator;
 import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.SlaveTxRollbackHook;
 import org.neo4j.kernel.ha.TimeUtil;
+import org.neo4j.kernel.ha.ToFileStoreWriter;
 import org.neo4j.kernel.ha.TxExtractor;
 import org.neo4j.kernel.ha.ZooKeeperLastCommittedTxIdSetter;
 import org.neo4j.kernel.ha.zookeeper.Machine;
@@ -425,12 +425,18 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         return localGraph().createNode();
     }
 
+    /**
+     * @deprecated See {@link GraphDatabaseService#enableRemoteShell()}
+     */
     @Override
     public boolean enableRemoteShell()
     {
         return localGraph().enableRemoteShell();
     }
 
+    /**
+     * @deprecated See {@link GraphDatabaseService#enableRemoteShell(Map)}
+     */
     @Override
     public boolean enableRemoteShell( Map<String, Serializable> initialProperties )
     {
