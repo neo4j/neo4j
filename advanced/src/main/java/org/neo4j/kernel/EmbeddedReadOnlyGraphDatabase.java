@@ -124,11 +124,17 @@ public final class EmbeddedReadOnlyGraphDatabase extends AbstractGraphDatabase
         graphDbImpl.shutdown();
     }
 
+    /**
+     * @deprecated See {@link GraphDatabaseService#enableRemoteShell()}
+     */
     public boolean enableRemoteShell()
     {
         return graphDbImpl.enableRemoteShell();
     }
 
+    /**
+     * @deprecated See {@link GraphDatabaseService#enableRemoteShell(Map)}
+     */
     public boolean enableRemoteShell(
             final Map<String, Serializable> initialProperties )
     {
