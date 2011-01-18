@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2010 "Neo Technology,"
+ * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 /**
  * An indexing implementation using
  * <a href="http://lucene.apache.org/java/docs/index.html">Apache Lucene</a>
