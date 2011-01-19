@@ -80,47 +80,37 @@ class IndexManagerImpl implements IndexManager
     private Pair<Map<String, String>, Boolean> findIndexConfig( Class<? extends PropertyContainer> cls,
             String indexName, Map<String, String> suppliedConfig, Map<?, ?> dbConfig )
     {
-        // 1. Check stored config (has this index been created previously?)
+        // Check stored config (has this index been created previously?)
         Map<String, String> storedConfig = indexStore.get( cls, indexName );
         if ( storedConfig != null && suppliedConfig == null )
         {
-            return Pair.of( storedConfig, Boolean.FALSE );
+            // Fill in "provider" if not already filled in, backwards compatibility issue
+            Map<String, String> newConfig = injectDefaultProviderIfMissing( cls, indexName, dbConfig, storedConfig );
+            if ( newConfig != storedConfig )
+            {
+                indexStore.set( cls, indexName, newConfig );
+            }
+            return Pair.of( newConfig, Boolean.FALSE );
         }
 
-        Map<String, String> configToUse = null;
+        Map<String, String> configToUse = suppliedConfig;
 
-        // 2. Check config supplied by the user for this method call
-        if ( configToUse == null )
-        {
-            configToUse = suppliedConfig;
-        }
-
-        // 3. Check db config properties for provider
+        // Check db config properties for provider
+        String provider = null;
         IndexProvider indexProvider = null;
         if ( configToUse == null )
         {
-            String provider = null;
-            if ( dbConfig != null )
-            {
-                provider = (String) dbConfig.get( "index." + indexName );
-                if ( provider == null )
-                {
-                    provider = (String) dbConfig.get( "index" );
-                }
-            }
-
-            // 4. Default to lucene
-            if ( provider == null )
-            {
-                provider = "lucene";
-            }
+            provider = getDefaultProvider( indexName, dbConfig );
             indexProvider = getIndexProvider( provider );
             configToUse = indexProvider.fillInDefaults( MapUtil.stringMap( KEY_INDEX_PROVIDER, provider ) );
         }
         else
         {
-            indexProvider = getIndexProvider( configToUse.get( KEY_INDEX_PROVIDER ) );
+            provider = configToUse.get( KEY_INDEX_PROVIDER );
+            provider = provider == null ? getDefaultProvider( indexName, dbConfig ) : provider;
+            indexProvider = getIndexProvider( provider );
         }
+        configToUse = injectDefaultProviderIfMissing( cls, indexName, dbConfig, configToUse );
 
         // Do they match (stored vs. supplied)?
         if ( storedConfig != null )
@@ -131,11 +121,50 @@ class IndexManagerImpl implements IndexManager
                         suppliedConfig + "\ndoesn't match stored config in a valid way:\n" + storedConfig +
                         "\nfor '" + indexName + "'" );
             }
-            configToUse = storedConfig;
+            // Fill in "provider" if not already filled in, backwards compatibility issue
+            Map<String, String> newConfig = injectDefaultProviderIfMissing( cls, indexName, dbConfig, storedConfig );
+            if ( newConfig != storedConfig )
+            {
+                indexStore.set( cls, indexName, newConfig );
+            }
+            configToUse = newConfig;
         }
 
         boolean created = indexStore.setIfNecessary( cls, indexName, configToUse );
         return Pair.of( Collections.unmodifiableMap( configToUse ), created );
+    }
+
+    private Map<String, String> injectDefaultProviderIfMissing(
+            Class<? extends PropertyContainer> cls, String indexName, Map<?, ?> dbConfig,
+            Map<String, String> config )
+    {
+        String provider = config.get( KEY_INDEX_PROVIDER );
+        if ( provider == null )
+        {
+            config = new HashMap<String, String>( config );
+            config.put( KEY_INDEX_PROVIDER, getDefaultProvider( indexName, dbConfig ) );
+        }
+        return config;
+    }
+
+    private String getDefaultProvider( String indexName, Map<?, ?> dbConfig )
+    {
+        String provider = null;
+        if ( dbConfig != null )
+        {
+            provider = (String) dbConfig.get( "index." + indexName );
+            if ( provider == null )
+            {
+                provider = (String) dbConfig.get( "index" );
+            }
+        }
+
+        // 4. Default to lucene
+        if ( provider == null )
+        {
+            provider = "lucene";
+        }
+        return provider;
     }
 
     private Map<String, String> getOrCreateIndexConfig( Class<? extends PropertyContainer> cls,
