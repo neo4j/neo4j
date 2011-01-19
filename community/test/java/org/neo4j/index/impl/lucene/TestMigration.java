@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Test;
@@ -34,8 +35,10 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.impl.index.IndexStore;
 
 public class TestMigration
 {
@@ -77,5 +80,57 @@ public class TestMigration
             out.write( bytes, 0, bytesRead );
         }
         out.close();
+    }
+    
+    @Test
+    public void providerGetsFilledInAutomatically()
+    {
+        Map<String, String> correctConfig = MapUtil.stringMap( "type", "exact", "provider", "lucene" );
+        File storeDir = new File( "target/var/index" );
+        GraphDatabaseService graphDb = new EmbeddedGraphDatabase( storeDir.getPath() );
+        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "default" ) ) );
+        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "wo-provider", MapUtil.stringMap( "type", "exact" ) ) ) );
+        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "w-provider", MapUtil.stringMap( "type", "exact", "provider", "lucene" ) ) ) );
+        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "default" ) ) );
+        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "wo-provider", MapUtil.stringMap( "type", "exact" ) ) ) );
+        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "w-provider", MapUtil.stringMap( "type", "exact", "provider", "lucene" ) ) ) );
+        graphDb.shutdown();
+        
+        removeProvidersFromIndexDbFile( storeDir );
+        graphDb = new EmbeddedGraphDatabase( storeDir.getPath() );
+        // Getting the index w/o exception means that the provider has been reinstated
+        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "default" ) ) );
+        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "wo-provider", MapUtil.stringMap( "type", "exact" ) ) ) );
+        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "w-provider", MapUtil.stringMap( "type", "exact", "provider", "lucene" ) ) ) );
+        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "default" ) ) );
+        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "wo-provider", MapUtil.stringMap( "type", "exact" ) ) ) );
+        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "w-provider", MapUtil.stringMap( "type", "exact", "provider", "lucene" ) ) ) );
+        graphDb.shutdown();
+        
+        removeProvidersFromIndexDbFile( storeDir );
+        graphDb = new EmbeddedGraphDatabase( storeDir.getPath() );
+        // Getting the index w/o exception means that the provider has been reinstated
+        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "default" ) ) );
+        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "wo-provider" ) ) );
+        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "w-provider" ) ) );
+        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "default" ) ) );
+        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "wo-provider" ) ) );
+        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "w-provider" ) ) );
+        graphDb.shutdown();
+    }
+
+    private void removeProvidersFromIndexDbFile( File storeDir )
+    {
+        IndexStore indexStore = new IndexStore( storeDir.getPath() );
+        for ( Class<? extends PropertyContainer> cls : new Class[] {Node.class, Relationship.class} )
+        {
+            for ( String name : indexStore.getNames( cls ) )
+            {
+                Map<String, String> config = indexStore.get( cls, name );
+                config = new HashMap<String, String>( config );
+                config.remove( "provider" );
+                indexStore.set( Node.class, name, config );
+            }
+        }
     }
 }
