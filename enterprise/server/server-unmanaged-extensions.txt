@@ -58,7 +58,7 @@ Now, include your class in neo4j-server.properties with something like
 #org.neo4j.server.thirdparty_jaxrs_classes=org.neo4j.examples.server.unmanaged=/examples/unmanaged
 ------
 
-Which mounts the addGreeting method as a GET under the URI   http://{neo4j_server}:{neo4j_port}//examples/unmanaged/helloworld/{nodeId}
+Which binds the addGreeting method to respond to GET requests at the URI:  http://{neo4j_server}:{neo4j_port}/examples/unmanaged/helloworld/{nodeId}
 
 -----
 curl http://localhost:7474/examples/unmanaged/helloworld/123
