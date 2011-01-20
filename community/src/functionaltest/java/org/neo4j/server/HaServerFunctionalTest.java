@@ -68,6 +68,19 @@ public class HaServerFunctionalTest
         assertEquals( "hello world", get( property( node( base, 0 ), "message" ) ) );
     }
 
+    @Test
+    public void canWriteToOneServerInTheClusterThenReadFromAnotherAfterShuttingDownTheWriteServer()
+            throws Exception
+    {
+        cluster = new ServerCluster( dir, zk, SERVER_PORTS );
+        URI base = cluster.getRandomServerUri();
+        put( property( node( base, 0 ), "message" ), "hello world" );
+        cluster.updateAll();
+        cluster.kill( base );
+        base = cluster.getRandomServerUri();
+        assertEquals( "hello world", get( property( node( base, 0 ), "message" ) ) );
+    }
+
     private static URI node( URI base, int id )
     {
         return URI.create( base + "node/" + id );
