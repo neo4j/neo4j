@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser.Operator;
@@ -998,69 +999,89 @@ public class TestLuceneIndex
     
     @Ignore
     @Test
-    public void makeSureFilesAreClosedProperly()
+    public void makeSureFilesAreClosedProperly() throws Exception
     {
         commitTx();
-        Index<Node> index = nodeIndex( "open-files", LuceneIndexProvider.EXACT_CONFIG );
-        long time = System.currentTimeMillis();
-        for ( int i = 0; System.currentTimeMillis() - time < 100*1000; i++ )
+        final Index<Node> index = nodeIndex( "open-files", LuceneIndexProvider.EXACT_CONFIG );
+        final long time = System.currentTimeMillis();
+        final CountDownLatch latch = new CountDownLatch( 30 );
+        for ( int t = 0; t < latch.getCount(); t++ ) 
         {
-            if ( i%10 == 0 )
+            new Thread()
             {
-                if ( i%100 == 0 )
+                public void run()
                 {
-                    IndexHits<Node> itr = index.get( "key", "value5" );
-                    
-                    int size = 0;
-                    if ( System.currentTimeMillis()%2 == 0 )
+                    for ( int i = 0; System.currentTimeMillis() - time < 100*1000; i++ )
                     {
-                        try
+                        if ( i%10 == 0 )
                         {
-                            itr.getSingle();
-                        }
-                        catch ( NoSuchElementException e )
-                        {
-
-                        }
-                        size = 99;
-                    }
-                    else
-                    {
-                        for ( ;itr.hasNext() && size < 5; size++ )
-                        {
-                            itr.next();
-                        }
-                        itr.close();
-                    }
-                    
-                    System.out.println( "C iterated " + size + " only" );
-                }
-                else
-                {
-                    int size = IteratorUtil.count( (Iterator) index.get( "key", "value5" ) );
-                    System.out.println( "hit size:" + size );
-                }
-            }
-            else
-            {
-                Transaction tx = graphDb.beginTx();
-                try
-                {
-                    for ( int ii = 0; ii < 20; ii++ )
-                    {
-                        Node node = graphDb.createNode();
-                        index.add( node, "key", "value" + ii );
-                    }
-                    tx.success();
-                }
-                finally
-                {
-                    tx.finish();
-                }
-            }
+                            if ( i%100 == 0 )
+                            {
+                                int size = 0;
+                                int type = (int)(System.currentTimeMillis()%3);
+                                if ( type == 0 )
+                                {
+                                    IndexHits<Node> itr = index.get( "key", "value5" );
+                                    try
+                                    {
+                                        itr.getSingle();
+                                    }
+                                    catch ( NoSuchElementException e )
+                                    {
             
-            if ( i%1000 == 0 ) System.out.println( i );
+                                    }
+                                    size = 99;
+                                }
+                                else if ( type == 1 )
+                                {
+                                    IndexHits<Node> itr = index.get( "key", "value5" );
+                                    for ( ;itr.hasNext() && size < 5; size++ )
+                                    {
+                                        itr.next();
+                                    }
+                                    itr.close();
+                                }
+                                else
+                                {
+                                    IndexHits<Node> itr = index.get( "key", "crap value" ); /* Will return 0 hits */
+                                    // Iterate over the hits sometimes (it's always gonna be 0 sized)
+                                    if ( System.currentTimeMillis()%10 > 5 )
+                                    {
+                                        IteratorUtil.count( (Iterator<Node>) itr );
+                                    }
+                                }
+                                
+                                System.out.println( "C iterated " + size + " only" );
+                            }
+                            else
+                            {
+                                int size = IteratorUtil.count( (Iterator<Node>) index.get( "key", "value5" ) );
+                                System.out.println( "hit size:" + size );
+                            }
+                        }
+                        else
+                        {
+                            Transaction tx = graphDb.beginTx();
+                            try
+                            {
+                                for ( int ii = 0; ii < 20; ii++ )
+                                {
+                                    Node node = graphDb.createNode();
+                                    index.add( node, "key", "value" + ii );
+                                }
+                                tx.success();
+                            }
+                            finally
+                            {
+                                tx.finish();
+                            }
+                        }
+                    }
+                    latch.countDown();
+                }
+            }.start();
         }
+        latch.await();
     }
     
     @Test
