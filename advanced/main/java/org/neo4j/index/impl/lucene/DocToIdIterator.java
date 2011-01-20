@@ -35,6 +35,10 @@ class DocToIdIterator extends AbstractIndexHits<Long>
         this.source = source;
         this.exclude = exclude;
         this.searcherOrNull = searcherOrNull;
+        if ( source.size() == 0 )
+        {
+            close();
+        }
     }
 
     @Override
