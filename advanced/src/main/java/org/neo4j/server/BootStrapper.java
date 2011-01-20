@@ -20,14 +20,14 @@
 
 package org.neo4j.server;
 
+import java.io.File;
+
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.startup.healthcheck.ConfigFileMustBePresentRule;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.web.Jetty6WebServer;
-
-import java.io.File;
 
 public class BootStrapper
 {
@@ -53,11 +53,11 @@ public class BootStrapper
         try {
             StartupHealthCheck startupHealthCheck = new StartupHealthCheck(new ConfigFileMustBePresentRule());
             Jetty6WebServer webServer = new Jetty6WebServer();
-            server = new NeoServer(new AddressResolver(), startupHealthCheck, 
+            server = new NeoServer(new AddressResolver(), startupHealthCheck,
                     getConfigFile(),
                     webServer);
             server.start();
-            
+
             Runtime.getRuntime().addShutdownHook(new Thread() {
                 @Override
                 public void run() {
@@ -67,7 +67,7 @@ public class BootStrapper
                     }
                 }
             });
-            
+
             return OK;
         } catch (TransactionFailureException tfe) {
             log.error(String.format("Failed to start Neo Server on port [%d], because ", server.restApiUri().getPort()) + tfe
@@ -97,10 +97,15 @@ public class BootStrapper
         }
     }
 
+    public NeoServer getServer()
+    {
+        return server;
+    }
+
     protected static File getConfigFile() {
         return new File(System.getProperty(Configurator.NEO_SERVER_CONFIG_FILE_KEY, Configurator.DEFAULT_CONFIG_DIR));
     }
-    
+
     public static void main(String[] args) {
         BootStrapper bootstrapper = new BootStrapper();
         bootstrapper.start(args);
