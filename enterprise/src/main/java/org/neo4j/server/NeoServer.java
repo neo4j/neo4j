@@ -38,9 +38,10 @@ import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
 import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
 import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.plugins.PluginManager;
+import org.neo4j.server.database.DatabaseMode;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.osgi.OSGiContainer;
+import org.neo4j.server.plugins.PluginManager;
 import org.neo4j.server.rrd.RrdFactory;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
@@ -105,11 +106,13 @@ public class NeoServer {
 
     private void startDatabase() {
         String dbLocation = new File(configurator.configuration().getString(Configurator.DATABASE_LOCATION_PROPERTY_KEY)).getAbsolutePath();
+        DatabaseMode mode = DatabaseMode.valueOf( configurator.configuration().getString(
+                Configurator.DB_MODE_KEY, "embedded" ).toUpperCase() );
         Map<String, String> databaseTuningProperties = configurator.getDatabaseTuningProperties();
         if (databaseTuningProperties != null) {
-            this.database = new Database(dbLocation, databaseTuningProperties);
+            this.database = new Database( mode, dbLocation, databaseTuningProperties );
         } else {
-            this.database = new Database(dbLocation);
+            this.database = new Database( mode, dbLocation );
         }
     }
 
