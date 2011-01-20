@@ -100,6 +100,7 @@ Once having access to this information, it can be used to for instance expose th
 |CacheType  |The type of cache used by Neo4j|String
 |NodeCacheSize  |The number of Nodes currently in cache|Integer
 |RelationshipCacheSize  |The number of Relationships currently in cache|Integer
+|clear()  |clear all caches|function, void
 |========================================================
 
 .MBean Configuration
