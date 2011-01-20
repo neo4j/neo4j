@@ -50,6 +50,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseBlockedException;
+import org.neo4j.server.database.DatabaseMode;
 import org.neo4j.server.rest.domain.EndNodeNotFoundException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.StartNodeNotFoundException;
@@ -71,7 +72,7 @@ public class DatabaseActionsTest
     @Before
     public void clearDb() throws IOException
     {
-        database = new Database( ServerTestUtils.createTempDir().getAbsolutePath() );
+        database = new Database( DatabaseMode.EMBEDDED, ServerTestUtils.createTempDir().getAbsolutePath() );
 
         graphdbHelper = new GraphDbHelper( database );
         this.actions = new DatabaseActions( database );

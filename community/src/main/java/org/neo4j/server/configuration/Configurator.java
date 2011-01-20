@@ -42,6 +42,7 @@ public class Configurator {
     public static final String DEFAULT_CONFIG_DIR = File.separator + "etc" + File.separator + "neo";
     public static final String DATABASE_LOCATION_PROPERTY_KEY = "org.neo4j.server.database.location";
     public static final String NEO_SERVER_CONFIG_FILE_KEY = "org.neo4j.server.properties";
+    public static final String DB_MODE_KEY = "org.neo4j.server.database.mode";
 
     public static final int DEFAULT_WEBSERVER_PORT = 7474;
     public static final String WEBSERVER_PORT_PROPERTY_KEY = "org.neo4j.server.webserver.port";
