@@ -68,7 +68,7 @@ public final class LocalhostZooKeeperCluster
     private String config( TargetDirectory target, int id, int port )
     {
         File config = target.file( "zookeeper" + id + ".cfg" );
-        File dataDir = target.directory( "zk" + id + "data" );
+        File dataDir = target.directory( "zk" + id + "data", true );
         try
         {
             PrintWriter conf = new PrintWriter( config );
