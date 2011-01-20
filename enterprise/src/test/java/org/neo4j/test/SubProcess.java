@@ -138,6 +138,11 @@ public abstract class SubProcess<T, P> implements Serializable
         ( (Handler) Proxy.getInvocationHandler( subprocess ) ).stop();
     }
 
+    public static void kill( Object subprocess )
+    {
+        ( (Handler) Proxy.getInvocationHandler( subprocess ) ).kill();
+    }
+
     @Override
     public String toString()
     {
@@ -405,6 +410,12 @@ public abstract class SubProcess<T, P> implements Serializable
             this.process = process;
         }
 
+        void kill()
+        {
+            process.destroy();
+            await( process );
+        }
+
         int stop()
         {
             try
@@ -415,6 +426,11 @@ public abstract class SubProcess<T, P> implements Serializable
             {
                 process.destroy();
             }
+            return await( process );
+        }
+
+        private static int await( Process process )
+        {
             try
             {
                 return process.waitFor();
