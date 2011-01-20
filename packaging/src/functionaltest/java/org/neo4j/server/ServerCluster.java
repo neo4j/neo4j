@@ -96,10 +96,25 @@ public final class ServerCluster
         List<URI> candidates = new ArrayList<URI>();
         for ( Triplet<ServerManager, URI, File> server : servers )
         {
-            if ( !excluded.contains( server.second() ) ) candidates.add( server.second() );
+            if ( server != null && !excluded.contains( server.second() ) )
+                candidates.add( server.second() );
         }
         if ( candidates.isEmpty() ) throw new IllegalStateException( "No servers available" );
         return candidates.get( random.nextInt( candidates.size() ) );
+    }
+
+    public void kill( URI server )
+    {
+        for ( int i = 0; i < servers.length; i++ )
+        {
+            if ( server.equals( servers[i].second() ) )
+            {
+                SubProcess.kill( servers[i].first() );
+                servers[i] = null;
+                return;
+            }
+        }
+        throw new IllegalArgumentException( "No such server: " + server );
     }
 
     public void updateAll()
