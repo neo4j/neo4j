@@ -76,7 +76,7 @@ public class TargetDirectory
         this.base = base.getAbsoluteFile();
     }
 
-    private void recursiveDelete( File file )
+    public static void recursiveDelete( File file )
     {
         File[] files = file.listFiles();
         if ( files != null ) for ( File each : files )
@@ -89,7 +89,7 @@ public class TargetDirectory
         return directory( name, false );
     }
 
-    private File directory( String name, boolean clean )
+    public File directory( String name, boolean clean )
     {
         File dir = new File( base(), name );
         if ( clean && dir.exists() ) recursiveDelete( dir );
