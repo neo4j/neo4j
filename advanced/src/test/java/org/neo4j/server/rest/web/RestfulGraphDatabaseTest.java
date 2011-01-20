@@ -76,7 +76,7 @@ public class RestfulGraphDatabaseTest
     @Before
     public void doBefore() throws IOException
     {
-        database = new Database( DatabaseMode.EMBEDDED, ServerTestUtils.createTempDir().getAbsolutePath() );
+        database = new Database( DatabaseMode.STANDALONE, ServerTestUtils.createTempDir().getAbsolutePath() );
         helper = new GraphDbHelper( database );
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
         service = new RestfulGraphDatabase( uriInfo(), database, new JsonFormat(), output );

@@ -8,7 +8,7 @@ import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 
 public enum DatabaseMode
 {
-    EMBEDDED
+    STANDALONE
     {
         @Override
         AbstractGraphDatabase createDatabase( String databaseStoreDirectory,

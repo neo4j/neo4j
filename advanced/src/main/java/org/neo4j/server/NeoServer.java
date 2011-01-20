@@ -107,7 +107,7 @@ public class NeoServer {
     private void startDatabase() {
         String dbLocation = new File(configurator.configuration().getString(Configurator.DATABASE_LOCATION_PROPERTY_KEY)).getAbsolutePath();
         DatabaseMode mode = DatabaseMode.valueOf( configurator.configuration().getString(
-                Configurator.DB_MODE_KEY, "embedded" ).toUpperCase() );
+                Configurator.DB_MODE_KEY, DatabaseMode.STANDALONE.name() ).toUpperCase() );
         Map<String, String> databaseTuningProperties = configurator.getDatabaseTuningProperties();
         if (databaseTuningProperties != null) {
             this.database = new Database( mode, dbLocation, databaseTuningProperties );

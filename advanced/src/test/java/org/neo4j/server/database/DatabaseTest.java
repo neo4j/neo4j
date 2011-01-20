@@ -43,7 +43,7 @@ public class DatabaseTest {
     @Before
     public void setup() throws Exception {
         databaseDirectory = ServerTestUtils.createTempDir();
-        theDatabase = new Database( DatabaseMode.EMBEDDED, databaseDirectory.getAbsolutePath() );
+        theDatabase = new Database( DatabaseMode.STANDALONE, databaseDirectory.getAbsolutePath() );
     }
 
     @After
@@ -74,7 +74,7 @@ public class DatabaseTest {
 
     @Test(expected = TransactionFailureException.class)
     public void shouldComplainIfDatabaseLocationIsAlreadyInUse() {
-        new Database( DatabaseMode.EMBEDDED, theDatabase.getLocation() );
+        new Database( DatabaseMode.STANDALONE, theDatabase.getLocation() );
     }
 
     @Test
