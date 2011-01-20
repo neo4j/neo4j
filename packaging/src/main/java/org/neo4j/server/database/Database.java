@@ -44,7 +44,7 @@ public class Database
 
     public AbstractGraphDatabase graph;
 
-    private String databaseStoreDirectory;
+    private final String databaseStoreDirectory;
     private RrdDb rrdDb;
 
     public Database( AbstractGraphDatabase db )
@@ -53,23 +53,20 @@ public class Database
         graph = db;
     }
 
-    public Database( String databaseStoreDirectory )
+    public Database( DatabaseMode mode, String databaseStoreDirectory )
     {
-        this( createDatabase( databaseStoreDirectory ) );
+        this( createDatabase( mode, databaseStoreDirectory, null ) );
         log.warn( "No database tuning properties set in the property file, using defaults. Please specify the performance properties file with org.neo4j.server.db.tuning.properties in the server properties file [%s].", System.getProperty( "org.neo4j.server.properties" ) );
     }
 
-    public Database( String databaseStoreDirectory, Map<String, String> databaseTuningProperties )
+    public Database( DatabaseMode mode, String databaseStoreDirectory,
+            Map<String, String> databaseTuningProperties )
     {
-        this( createDatabase( databaseStoreDirectory, databaseTuningProperties ) );
+        this( createDatabase( mode, databaseStoreDirectory, databaseTuningProperties ) );
     }
 
-    private static EmbeddedGraphDatabase createDatabase( String databaseStoreDirectory )
-    {
-        return createDatabase( databaseStoreDirectory, null );
-    }
-
-    private static EmbeddedGraphDatabase createDatabase( String databaseStoreDirectory, Map<String, String> databaseTuningProperties )
+    private static AbstractGraphDatabase createDatabase( DatabaseMode mode,
+            String databaseStoreDirectory, Map<String, String> databaseTuningProperties )
     {
         log.info( "Creating database at " + databaseStoreDirectory );
 
@@ -80,7 +77,8 @@ public class Database
 
         databaseTuningProperties.put( org.neo4j.kernel.Config.ENABLE_REMOTE_SHELL, "true" );
         databaseTuningProperties.put( org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS, "true" );
-        return new EmbeddedGraphDatabase( databaseStoreDirectory, databaseTuningProperties );
+
+        return mode.createDatabase( databaseStoreDirectory, databaseTuningProperties );
     }
 
 

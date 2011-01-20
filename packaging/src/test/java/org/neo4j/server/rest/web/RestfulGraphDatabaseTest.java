@@ -54,6 +54,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseBlockedException;
+import org.neo4j.server.database.DatabaseMode;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
@@ -75,7 +76,7 @@ public class RestfulGraphDatabaseTest
     @Before
     public void doBefore() throws IOException
     {
-        database = new Database( ServerTestUtils.createTempDir().getAbsolutePath() );
+        database = new Database( DatabaseMode.EMBEDDED, ServerTestUtils.createTempDir().getAbsolutePath() );
         helper = new GraphDbHelper( database );
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
         service = new RestfulGraphDatabase( uriInfo(), database, new JsonFormat(), output );
