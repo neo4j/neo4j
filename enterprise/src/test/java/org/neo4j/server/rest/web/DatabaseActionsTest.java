@@ -72,7 +72,8 @@ public class DatabaseActionsTest
     @Before
     public void clearDb() throws IOException
     {
-        database = new Database( DatabaseMode.EMBEDDED, ServerTestUtils.createTempDir().getAbsolutePath() );
+        database = new Database( DatabaseMode.STANDALONE,
+                ServerTestUtils.createTempDir().getAbsolutePath() );
 
         graphdbHelper = new GraphDbHelper( database );
         this.actions = new DatabaseActions( database );
