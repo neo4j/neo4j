@@ -13,4 +13,3 @@ include::security.txt[]
 
 include::monitoring.txt[]
 
-include::webadmin.txt[]
