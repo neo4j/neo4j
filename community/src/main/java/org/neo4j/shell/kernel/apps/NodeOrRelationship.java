@@ -72,6 +72,11 @@ public abstract class NodeOrRelationship
     {
         return (Relationship) nodeOrRelationship;
     }
+    
+    public PropertyContainer asPropertyContainer()
+    {
+        return (PropertyContainer) nodeOrRelationship;
+    }
 
     public TypedId getTypedId()
     {

@@ -18,3 +18,4 @@ org.neo4j.shell.kernel.apps.Gsh
 org.neo4j.shell.kernel.apps.Jsh
 org.neo4j.shell.kernel.apps.Dbinfo
 org.neo4j.shell.kernel.apps.IndexProviderShellApp
+org.neo4j.shell.kernel.apps.Eval

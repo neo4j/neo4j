@@ -77,7 +77,6 @@ public abstract class AbstractClient implements ShellClient
         {
             try
             {
-//                this.console.format( tryGetProperPromptString() );
                 String line = this.readLine( tryGetProperPromptString() );
                 if ( EXIT_COMMANDS.contains( line ) )
                 {
@@ -240,7 +239,23 @@ public abstract class AbstractClient implements ShellClient
 
     public String readLine( String prompt )
     {
-        return this.console.readLine( prompt );
+        String line = this.console.readLine( prompt );
+        if ( line != null && line.equals( "eval" ) )
+        {
+            String resultingLine = line + " ";
+            while ( true )
+            {
+                line = this.console.readLine( "' " );
+                if ( line == null || line.length() == 0 )
+                {
+                    break;
+                }
+                resultingLine += line;
+            }
+            System.out.println( "= " + resultingLine.replaceAll( "\n", " " ) );
+            return resultingLine;
+        }
+        return line;
     }
 
     static String[] getExitCommands()
