@@ -168,7 +168,7 @@ public class Trav extends ReadOnlyGraphDatabaseApp
             }
             if ( hit )
             {
-                printAndInterpretTemplateLines( commandsToRun, false, true, traversedNode,
+                printAndInterpretTemplateLines( commandsToRun, false, true, NodeOrRelationship.wrap( traversedNode ),
                         getServer(), session, out );
             }
         }

@@ -30,10 +30,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.OptionDefinition;
@@ -130,11 +129,11 @@ public class IndexProviderShellApp extends GraphDatabaseApp
                 specialCommand = true;
                 if ( doCd )
                 {
-                    commandsToRun.add( "cd -a $n" );
+                    commandsToRun.add( "cd -a $i" );
                 }
                 else if ( doLs )
                 {
-                    commandsToRun.add( "ls $n" );
+                    commandsToRun.add( "ls $i" );
                 }
             }
             else if ( commandToRun != null )
@@ -142,21 +141,28 @@ public class IndexProviderShellApp extends GraphDatabaseApp
                 commandsToRun.addAll( Arrays.asList( commandToRun.split( Pattern.quote( "&&" ) ) ) );
             }
             
-            if ( getIndex( parser.arguments().get( 0 ), Node.class, out ) == null )
+            if ( getIndex( parser.arguments().get( 0 ), getEntityType( parser ), out ) == null )
             {
                 return null;
             }
             
-            Iterable<Node> result = query ? query( parser ) : get( parser );
-            for ( Node node : result )
+            IndexHits<PropertyContainer> result = query ? query( parser, out ) : get( parser, out );
+            try
             {
-                printAndInterpretTemplateLines( commandsToRun, false, !specialCommand, node,
-                        getServer(), session, out );
+                for ( PropertyContainer hit : result )
+                {
+                    printAndInterpretTemplateLines( commandsToRun, false, !specialCommand, NodeOrRelationship.wrap( hit ),
+                            getServer(), session, out );
+                }
+            }
+            finally
+            {
+                result.close();
             }
         }
         else if ( index )
         {
-            index( parser, session );
+            index( parser, session, out );
         }
         else if ( remove )
         {
@@ -164,7 +170,7 @@ public class IndexProviderShellApp extends GraphDatabaseApp
             {
                 return null;
             }
-            remove( parser, session );
+            remove( parser, session, out );
         }
         else if ( getConfig )
         {
@@ -241,24 +247,33 @@ public class IndexProviderShellApp extends GraphDatabaseApp
     private void createIndex( AppCommandParser parser, Output out ) throws RemoteException, ShellException
     {
         String indexName = parser.arguments().get( 0 );
+        Class<? extends PropertyContainer> entityType = getEntityType( parser );
+        if ( getIndex( indexName, entityType, null ) != null )
+        {
+            out.println( entityType.getClass().getSimpleName() + " index '" + indexName + "' already exists" ); 
+            return;
+        }
+        
         Map config;
         try
         {
-            config = parseJSONMap( parser.arguments().get( 1 ) );
+            config = parser.arguments().size() >= 2 ? parseJSONMap( parser.arguments().get( 1 ) ) : null;
         }
         catch ( JSONException e )
         {
             throw ShellException.wrapCause( e );
         }
-        IndexStore indexStore = (IndexStore) ((AbstractGraphDatabase) getServer().getDb())
-                .getConfig().getParams().get( IndexStore.class );
-        Class<? extends PropertyContainer> entityType = getEntityType( parser );
-        if ( indexStore.has( entityType, indexName ) )
+        
+        if ( entityType.equals( Node.class ) )
         {
-            out.println( entityType.getSimpleName() + " index '" + indexName + "' already exists" );
-            return;
+            Index<Node> index = config != null ? getServer().getDb().index().forNodes( indexName, config ) :
+                    getServer().getDb().index().forNodes( indexName );
         }
-        indexStore.set( entityType, indexName, config );
+        else
+        {
+            Index<Relationship> index = config != null ? getServer().getDb().index().forRelationships( indexName, config ) :
+                getServer().getDb().index().forRelationships( indexName );
+        }
     }
 
     private <T extends PropertyContainer> Index<T> getIndex( String indexName, Class<T> type, Output out )
@@ -269,7 +284,10 @@ public class IndexProviderShellApp extends GraphDatabaseApp
                 (type.equals( Relationship.class ) && index.existsForRelationships( indexName ));
         if ( !exists )
         {
-            out.println( "No such " + type.getSimpleName().toLowerCase() + " index '" + indexName + "'" );
+            if ( out != null )
+            {
+                out.println( "No such " + type.getSimpleName().toLowerCase() + " index '" + indexName + "'" );
+            }
             return null;
         }
         return (Index<T>) (type.equals( Node.class ) ? index.forNodes( indexName ) : index.forRelationships( indexName ));
@@ -322,48 +340,53 @@ public class IndexProviderShellApp extends GraphDatabaseApp
         return count;
     }
 
-    private Iterable<Node> get( AppCommandParser parser )
+    private IndexHits<PropertyContainer> get( AppCommandParser parser, Output out ) throws ShellException, RemoteException
     {
         String index = parser.arguments().get( 0 );
         String key = parser.arguments().get( 1 );
         String value = parser.arguments().get( 2 );
-        return getServer().getDb().index().forNodes( index ).get( key, value );
+        Index theIndex = getIndex( index, getEntityType( parser ), out );
+        return theIndex.get( key, value );
     }
 
-    private Iterable<Node> query( AppCommandParser parser )
+    private IndexHits<PropertyContainer> query( AppCommandParser parser, Output out ) throws RemoteException, ShellException
     {
         String index = parser.arguments().get( 0 );
         String query1 = parser.arguments().get( 1 );
         String query2 = parser.arguments().size() > 2 ? parser.arguments().get( 2 ) : null;
-        Index<Node> theIndex = getServer().getDb().index().forNodes( index );
+        Index theIndex = getIndex( index, getEntityType( parser ), out );
         return query2 != null ? theIndex.query( query1, query2 ) : theIndex.query( query1 );
     }
 
-    private void index( AppCommandParser parser, Session session ) throws ShellException
+    private void index( AppCommandParser parser, Session session, Output out ) throws ShellException, RemoteException
     {
-        Node node = getCurrent( session ).asNode();
+        NodeOrRelationship current = getCurrent( session );
         String index = parser.arguments().get( 0 );
         String key = parser.arguments().get( 1 );
-        Object value = parser.arguments().size() > 2 ? parser.arguments().get( 2 )
-                : node.getProperty( key, null );
+        Object value = parser.arguments().size() > 2 ? parser.arguments().get( 2 ) : current.getProperty( key, null );
         if ( value == null )
         {
             throw new ShellException( "No value to index" );
         }
-        getServer().getDb().index().forNodes( index ).add( node, key, value );
+        Index theIndex = current.isNode() ? getServer().getDb().index().forNodes( index ) :
+                getServer().getDb().index().forRelationships( index );
+        theIndex.add( current.asPropertyContainer(), key, value );
     }
 
-    private void remove( AppCommandParser parser, Session session ) throws ShellException
+    private void remove( AppCommandParser parser, Session session, Output out ) throws ShellException, RemoteException
     {
-        Node node = getCurrent( session ).asNode();
+        NodeOrRelationship current = getCurrent( session );
         String index = parser.arguments().get( 0 );
         String key = parser.arguments().get( 1 );
-        Object value = parser.arguments().size() > 2 ? parser.arguments().get( 2 )
-                : node.getProperty( key, null );
+        Object value = parser.arguments().size() > 2 ? parser.arguments().get( 2 ) : current.getProperty( key, null );
         if ( value == null )
         {
             throw new ShellException( "No value to remove" );
         }
-        getServer().getDb().index().forNodes( index ).remove( node, key, value );
+        Index theIndex = getIndex( index, current.isNode() ? Node.class : Relationship.class, out );
+        if ( theIndex != null )
+        {
+            theIndex.remove( current.asPropertyContainer(), key, value );
+        }
     }
 }

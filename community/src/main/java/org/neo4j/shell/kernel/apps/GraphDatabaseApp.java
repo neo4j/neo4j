@@ -58,8 +58,8 @@ public abstract class GraphDatabaseApp extends AbstractApp
     private static final String CURRENT_KEY = "CURRENT_DIR";
     protected static final OptionDefinition OPTION_DEF_FOR_C = new OptionDefinition(
             OptionValueType.MUST,
-            "Command to run for each returned node. Use $n for node-id, example:\n" +
-            "-c \"ls -f name $n\". Multiple commands can be supplied with && in between" );
+            "Command to run for each returned node. Use $i for node/relationship id, example:\n" +
+            "-c \"ls -f name $i\". Multiple commands can be supplied with && in between" );
 
     /**
      * @param server the {@link GraphDatabaseShellServer} to get the current
@@ -442,19 +442,19 @@ public abstract class GraphDatabaseApp extends AbstractApp
     }
 
     protected static void printAndInterpretTemplateLines( Collection<String> templateLines,
-            boolean forcePrintHitHeader, boolean newLineBetweenHits, Node node,
+            boolean forcePrintHitHeader, boolean newLineBetweenHits, NodeOrRelationship entity,
             GraphDatabaseShellServer server, Session session, Output out )
             throws ShellException, RemoteException
     {
         if ( templateLines.isEmpty() || forcePrintHitHeader )
         {
-            out.println( getDisplayName( server, session, node, true ) );
+            out.println( getDisplayName( server, session, entity, true ) );
         }
 
         if ( !templateLines.isEmpty() )
         {
             Map<String, Object> data = new HashMap<String, Object>();
-            data.put( "n", node.getId() );
+            data.put( "i", entity.getId() );
             for ( String command : templateLines )
             {
                 String line = TextUtil.templateString( command, data );
