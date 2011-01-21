@@ -90,16 +90,6 @@
       <name>Scala-tools Maven2 Repository</name>
       <url>http://scala-tools.org/repo-releases</url>
     </repository>
-    <repository>
-      <id>sonatype.staging.a</id>
-      <name>Sonatype Staging Repository</name>
-      <url>https://oss.sonatype.org/content/repositories/orgneo4j-378/</url>
-    </repository>
-    <repository>
-      <id>sonatype.staging.b</id>
-      <name>Sonatype Staging Repository</name>
-      <url>https://oss.sonatype.org/content/repositories/orgneo4j-379/</url>
-    </repository>
   </repositories>
 
   <pluginRepositories>
