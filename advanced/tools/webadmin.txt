@@ -1,4 +1,4 @@
-[[operations-webadmin]]
+[[tools-webadmin]]
 Web Administration
 ==================
 
@@ -15,39 +15,39 @@ With it, you can:
 The Dashboard tab provides an overview of a running Neo4j instance.
 
 .Web Administration Dashboard
-image::../images/operations/webadmin-overview.png[scaledwidth="100%", alt="Dashboard tab"]
+image::operations/webadmin-overview.png[scaledwidth="100%", alt="Dashboard tab"]
 
 === Entity chart ===
 
 The charts show entity counts over time: node, relationship and properties. 
 
 .Entity charting
-image::../images/operations/webadmin-charts.png[scaledwidth="100%", alt="Entity charts"]
+image::operations/webadmin-charts.png[scaledwidth="100%", alt="Entity charts"]
 
 === Status monitoring ===
 
 Below the entity chart is a collection of status panels, displaying current resource usage.
 
 .Status indicator panels
-image::../images/operations/webadmin-stats.png[scaledwidth="100%", alt="Status indicator panels"]
+image::operations/webadmin-stats.png[scaledwidth="100%", alt="Status indicator panels"]
 
 == Data tab ==
 
 Use the Data tab to browse, add or modify nodes, relationships and their properties.
 
 .Browsing and manipulating data
-image::../images/operations/webadmin-data.png[scaledwidth="100%", alt="Data tab"]
+image::operations/webadmin-data.png[scaledwidth="100%", alt="Data tab"]
 
 == Console tab ==
 
 The Console tab gives scripting access to the database via the http://gremlin.tinkerpop.com[Gremlin] scripting engine.
 
 .Manipulating data with Gremlin
-image::../images/operations/webadmin-console.png[scaledwidth="100%", alt="Data manipulation with Gremlin"]
+image::operations/webadmin-console.png[scaledwidth="100%", alt="Data manipulation with Gremlin"]
 
 == The JMX tab ==
 
 The JMX tab provides raw access to all available management objects.
 
 .JMX Attributes
-image::../images/operations/webadmin-jmx.png[scaledwidth="100%", alt="JMX"]
+image::operations/webadmin-jmx.png[scaledwidth="100%", alt="JMX"]
