@@ -33,13 +33,15 @@
   </modules>
 
   <properties>
-    <neo4j-release.version>1.2.M02</neo4j-release.version>
+    <neo4j-release.version>1.3-SNAPSHOT</neo4j-release.version>
+    <!--
     <neo4j-kernel.version>1.2-${neo4j-release.version}</neo4j-kernel.version>
     <neo4j-index.version>1.2-${neo4j-release.version}</neo4j-index.version>
     <neo4j-shell.version>1.2-${neo4j-release.version}</neo4j-shell.version>
     <neo4j-remote-graphdb.version>0.8-${neo4j-release.version}</neo4j-remote-graphdb.version>
     <neo4j-online-backup.version>0.7-${neo4j-release.version}</neo4j-online-backup.version>
     <neo4j-udc.version>0.1-${neo4j-release.version}</neo4j-udc.version>
+    -->
   </properties>
 
   <!-- Staging repository URLs change... -->
