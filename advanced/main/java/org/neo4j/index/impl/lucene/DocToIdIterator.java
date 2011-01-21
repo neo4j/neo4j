@@ -86,4 +86,11 @@ class DocToIdIterator extends AbstractIndexHits<Long>
     {
         return source.currentScore();
     }
+    
+    @Override
+    protected void finalize() throws Throwable
+    {
+        close();
+        super.finalize();
+    }
 }
