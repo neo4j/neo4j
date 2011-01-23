@@ -22,8 +22,6 @@ Included components
 *----+------+------+
 | {{{../neo4j-management/}neo4j-management}} | monitoring and management | management support using JMX |
 *----+------+------+
-| {{{../neo4j-rest/}neo4j-rest}} | rest api | exposes the database as a REST resource |
-*----+------+------+
 | {{{../neo4j-remote-graphdb/}neo4j-remote-graphdb}} | introspection tool | enables you to connect to a running Neo4j instance from another JVM |
 *----+------+------+
 
