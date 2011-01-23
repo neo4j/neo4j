@@ -191,8 +191,6 @@
       </plugin>
       <plugin>
         <artifactId>maven-jxr-plugin</artifactId>
-        <configuration>
-        </configuration>
         <executions>
           <execution>
             <id>create-source-html</id>
