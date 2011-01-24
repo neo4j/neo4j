@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-central</artifactId>
-    <version>9</version>
+    <version>10</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -140,23 +140,6 @@
           </includes>
         </configuration>
       </plugin>
-      <plugin>
-        <artifactId>maven-release-plugin</artifactId>
-        <configuration>
-          <tagBase>https://svn.neo4j.org/components/${short-name}/tags</tagBase>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>com.mycila.maven-license-plugin</groupId>
-        <artifactId>maven-license-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>check</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
     </plugins>
   </build>
 
@@ -206,13 +189,11 @@
           <groups>
             <group>
               <title>Graph database</title>
-              <packages>org.neo4j.kernel:org.neo4j.graphdb:org.neo4j.kernel.*:org.neo4j.graphdb.*:org.apache.*
-                  </packages>
+              <packages>org.neo4j.kernel:org.neo4j.graphdb:org.neo4j.kernel.*:org.neo4j.graphdb.*:org.apache.*</packages>
             </group>
             <group>
               <title>Helpers</title>
-              <packages>org.neo4j.helpers:org.neo4j.helpers.*
-                  </packages>
+              <packages>org.neo4j.helpers:org.neo4j.helpers.*</packages>
             </group>
           </groups>
         </configuration>
@@ -228,4 +209,3 @@
   </distributionManagement>
 
 </project>
-
