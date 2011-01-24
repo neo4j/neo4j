@@ -46,18 +46,27 @@
 		{#param name=depth value=$P.depth-1}
 	{#else}
 		<tr>
-			<td class="mor_jmx_table_name" style="padding-left:{$P.depth * 8}px;">
-				<h3>{#if $T.name}{$T.name}{#elseif $T.type}{$T.type}{#/if}</h3>
-				<p class="description">{$T.description}</p>
-			</td>
-			<td style="padding-left:{$P.depth * 4}px;">
-				{#if $T.value === null}
-				<span class="mor_null-value">NULL</span>
-				{#/if}
-				{#if typeof($T.value) !== "object" }
-					{$T.value}
-				{#/if}
-			</td>
+		    {#if typeof($T) === "object" }
+				<td class="mor_jmx_table_name" style="padding-left:{$P.depth * 8}px;">
+					<h3>{#if $T.name}{$T.name}{#elseif $T.type}{$T.type}{#/if}</h3>
+					<p class="description">{$T.description}</p>
+				</td>
+				<td style="padding-left:{$P.depth * 4}px;">
+					{#if $T.value === null}
+					<span class="mor_null-value">NULL</span>
+					{#/if}
+					{#if typeof($T.value) !== "object" }
+						{$T.value}
+					{#/if}
+				</td>
+			{#else}
+				<td class="mor_jmx_table_name" style="padding-left:{$P.depth * 8}px;">
+					
+				</td>
+				<td style="padding-left:{$P.depth * 4}px;">
+					{$T}
+				</td>
+			{#/if}
 		</tr>
 		{#if typeof($T.value) === "object" }
 			{#param name=depth value=$P.depth+1}
