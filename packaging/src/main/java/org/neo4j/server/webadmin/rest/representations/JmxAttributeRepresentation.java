@@ -20,7 +20,6 @@
 
 package org.neo4j.server.webadmin.rest.representations;
 
-import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.ObjectRepresentation;
 import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.ValueRepresentation;
@@ -33,9 +32,8 @@ import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 import javax.management.RuntimeMBeanException;
-import javax.management.openmbean.CompositeData;
+
 import java.lang.management.ManagementFactory;
-import java.util.ArrayList;
 
 public class JmxAttributeRepresentation extends ObjectRepresentation
 {
@@ -43,9 +41,9 @@ public class JmxAttributeRepresentation extends ObjectRepresentation
     protected ObjectName objectName;
     protected MBeanAttributeInfo attrInfo;
     protected MBeanServer jmxServer = ManagementFactory.getPlatformMBeanServer();
-
+    
     public JmxAttributeRepresentation( ObjectName objectName,
-                                       MBeanAttributeInfo attrInfo )
+            MBeanAttributeInfo attrInfo )
     {
         super( "jmxAttribute" );
         this.objectName = objectName;
@@ -93,61 +91,45 @@ public class JmxAttributeRepresentation extends ObjectRepresentation
         return ValueRepresentation.string( value ? "true" : "false " );
     }
 
-
     @Mapping( "value" )
     public Representation getValue()
     {
         try
         {
-            Object value = jmxServer.getAttribute( objectName, attrInfo.getName() );
-
-            if ( value == null )
-            {
-                return null;
-            } else if ( value.getClass().isArray() )
-            {
-                ArrayList<Representation> values = new ArrayList<Representation>();
-
-                for ( Object subValue : values )
-                {
-                    if ( subValue instanceof CompositeData )
-                    {
-                        values.add( new JmxCompositeDataRepresentation( (CompositeData)subValue ) );
-                    } else
-                    {
-                        values.add( ValueRepresentation.string( subValue.toString() ) );
-                    }
-                }
-
-                return new ListRepresentation( "", values );
-            } else
-            {
-                return ValueRepresentation.string( value.toString() );
-            }
-
-        } catch ( AttributeNotFoundException e )
+            JmxAttributeRepresentationDispatcher representationDispatcher = new JmxAttributeRepresentationDispatcher();
+            Object value = jmxServer.getAttribute( objectName,
+                    attrInfo.getName() );
+            return representationDispatcher.dispatch( value, "" );
+        }
+        catch ( AttributeNotFoundException e )
         {
             e.printStackTrace();
             return ValueRepresentation.string( "N/A" );
-        } catch ( InstanceNotFoundException e )
+        }
+        catch ( InstanceNotFoundException e )
         {
             e.printStackTrace();
             return ValueRepresentation.string( "N/A" );
-        } catch ( MBeanException e )
+        }
+        catch ( MBeanException e )
         {
             e.printStackTrace();
             return ValueRepresentation.string( "N/A" );
-        } catch ( ReflectionException e )
+        }
+        catch ( ReflectionException e )
         {
             e.printStackTrace();
             return ValueRepresentation.string( "N/A" );
-        } catch ( RuntimeMBeanException e )
+        }
+        catch ( RuntimeMBeanException e )
         {
             return ValueRepresentation.string( "N/A" );
-        } catch ( ClassCastException e )
+        }
+        catch ( ClassCastException e )
         {
             e.printStackTrace();
             return ValueRepresentation.string( "N/A" );
         }
     }
+
 }

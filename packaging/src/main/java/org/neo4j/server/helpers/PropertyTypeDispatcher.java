@@ -73,7 +73,10 @@ public abstract class PropertyTypeDispatcher<K, T>
     @SuppressWarnings( "boxing" )
     public final T dispatch( Object property, K param )
     {
-        if ( property instanceof String )
+        if( property == null) 
+        {
+            return dispatchNullProperty( param );
+        } else if ( property instanceof String ) 
         {
             return dispatchStringProperty( (String) property, param );
         }
@@ -106,7 +109,7 @@ public abstract class PropertyTypeDispatcher<K, T>
             }
             else
             {
-                throw new IllegalArgumentException( "Unsupported property: " + property );
+                return dispatchOtherProperty( property, param );
             }
         }
     }
@@ -151,7 +154,7 @@ public abstract class PropertyTypeDispatcher<K, T>
         }
     }
 
-    private T dispatchOtherArray( Object[] property, K param )
+    protected T dispatchOtherArray( Object[] property, K param )
     {
         if ( property instanceof Byte[] )
         {
@@ -225,6 +228,10 @@ public abstract class PropertyTypeDispatcher<K, T>
         }
     }
 
+    protected T dispatchNullProperty( K param ) {
+        return null;
+    }
+    
     @SuppressWarnings( "boxing" )
     protected abstract T dispatchByteProperty( byte property, K param );
 
@@ -248,6 +255,11 @@ public abstract class PropertyTypeDispatcher<K, T>
 
     @SuppressWarnings( "boxing" )
     protected abstract T dispatchBooleanProperty( boolean property, K param );
+    
+    protected T dispatchOtherProperty( Object property, K param) {
+        throw new IllegalArgumentException( "Unsupported property array type: "
+                + property.getClass() );
+    }
 
     protected T dispatchByteArrayProperty( final byte[] property, K param )
     {
