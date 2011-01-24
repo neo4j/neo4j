@@ -21,8 +21,6 @@
 package org.neo4j.server.webadmin.rest.representations;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 
 import javax.management.openmbean.CompositeData;
 
@@ -57,32 +55,20 @@ public class JmxCompositeDataRepresentation extends ObjectRepresentation
     @Mapping( "value" )
     public ListRepresentation getValue()
     {
-        Map<String, Object> serialData = new HashMap<String, Object>();
 
-        serialData.put( "type", data.getCompositeType().getTypeName() );
-        serialData.put( "description", data.getCompositeType().getDescription() );
-
+        JmxAttributeRepresentationDispatcher representationDispatcher = new JmxAttributeRepresentationDispatcher();
         ArrayList<Representation> values = new ArrayList<Representation>();
         for ( Object key : data.getCompositeType().keySet() )
         {
             String name = key.toString();
             String description = data.getCompositeType().getDescription( name );
-            Representation value = representationify( data.get( name ) );
+            
+            
+            Representation value = representationDispatcher.dispatch( data.get( name ) , "");
 
             values.add( new NameDescriptionValueRepresentation( name, description, value ) );
         }
 
         return new ListRepresentation( "value", values );
-    }
-
-    private Representation representationify( Object rawValue )
-    {
-        if ( rawValue instanceof CompositeData )
-        {
-            return new JmxCompositeDataRepresentation( (CompositeData)rawValue );
-        } else
-        {
-            return ValueRepresentation.string( rawValue.toString() );
-        }
     }
 }
