@@ -53,7 +53,6 @@ public class GraphCloner extends ServerPlugin {
             HashMap<Node, Node> clonedNodes = cloneNodes(graphDb, nodes);
 
             for (Node oldNode : clonedNodes.keySet()) {
-                System.out.println("Old node: " + oldNode.getProperty("name"));
                 // give me the matching new node
                 Node newStartNode = clonedNodes.get(oldNode);
 
