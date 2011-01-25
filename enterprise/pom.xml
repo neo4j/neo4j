@@ -24,7 +24,7 @@
     <bundle.namespace>org.neo4j.remote</bundle.namespace>
     <short-name>remote-graphdb</short-name>
     <agent-main>org.neo4j.remote.Agent</agent-main>
-    <generated-sources-dir>target/generated-sources/protobuf</generated-sources-dir>
+    <generated-sources-dir>${project.build.directory}/generated-sources/protobuf</generated-sources-dir>
   </properties>
 
   <packaging>bundle</packaging>
