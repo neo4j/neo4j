@@ -40,5 +40,3 @@ Neo4j is Java-based.
 Java:: 1.6+
 Operating Systems:: Linux, Windows XP, Mac OS X
 
-TIP: Some of the Neo4j components can be used with Java 1.5, but this is _not recommended_.
-
