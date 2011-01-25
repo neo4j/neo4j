@@ -34,4 +34,24 @@ The following procedure should work on most popular Linux distributions:
    * should indicate that the server is not running
 4. `service neo4j-server start`
    * will start the server
+   
+   
+== Multiple Server instances on one machine ==
 
+Neo4j can be set up to run as several instances on one machine, providing for instance several databases for development. To configure, install two instances of the Neo4j Server in two different directories. Before running the Windows install or startup, change in conf/neo4j-wrapper.conf
+
+[source, shell]
+----
+# Name of the service for the first instance
+wrapper.name=neo4j_1
+----
+
+and for the second instance
+
+[source, shell]
+----
+# Name of the service for the second instance
+wrapper.name=neo4j_2
+----
+
+in order not to get name clashes installing and starting the instances as services. You might even need to adjust your unnix and linux startup scripts to properly start both instances.
