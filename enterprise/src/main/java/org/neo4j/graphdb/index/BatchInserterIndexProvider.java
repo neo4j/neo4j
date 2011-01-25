@@ -22,6 +22,7 @@ package org.neo4j.graphdb.index;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.impl.batchinsert.BatchInserter;
 
