@@ -39,7 +39,10 @@ public class StringLogger
         try
         {
             File file = new File( filename );
-            file.getParentFile().mkdirs();
+            if ( file.getParentFile() != null )
+            {
+                file.getParentFile().mkdirs();
+            }
             out = new PrintWriter( new FileWriter( file, true ) );
         }
         catch ( IOException e )
