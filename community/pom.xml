@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>14</version>
+    <version>15</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -264,13 +264,6 @@
 
 
     <plugins>
-      <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>1.6</source>
-          <target>1.6</target>
-        </configuration>
-      </plugin>
 
       <!-- Development execution -->
       <plugin>
@@ -475,11 +468,6 @@
         <artifactId>maven-license-plugin</artifactId>
         <executions>
           <execution>
-            <goals>
-              <goal>check</goal>
-            </goals>
-          </execution>
-          <execution>
             <id>inject-license-in-generated-file</id>
             <phase>prepare-package</phase>
             <configuration>
@@ -494,17 +482,6 @@
             </goals>
           </execution>
         </executions>
-        <configuration>
-          <strictCheck>true</strictCheck>
-          <header>${license-text.header}</header>
-          <includes>
-            <include>**/*.java</include>
-            <include>**/*.js</include>
-          </includes>
-          <excludes>
-            <exclude>**/lib/*</exclude>
-          </excludes>
-        </configuration>
       </plugin>
       
       <plugin>
@@ -587,7 +564,6 @@
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>build-helper-maven-plugin</artifactId>
-            <version>1.5</version>
             <executions>
               <execution>
                 <id>add-test-source</id>
@@ -627,7 +603,6 @@
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>build-helper-maven-plugin</artifactId>
-            <version>1.5</version>
             <executions>
               <execution>
                 <id>add-test-source</id>
@@ -648,7 +623,6 @@
           <plugin>
 	        <groupId>org.apache.maven.plugins</groupId>
 	        <artifactId>maven-surefire-plugin</artifactId>
-	        <version>2.6</version>
 	        <configuration>
 	          <includes>
 	            <include>**/*WebTest.java</include>
