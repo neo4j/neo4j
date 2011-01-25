@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-central</artifactId>
-    <version>9</version>
+    <version>10</version>
   </parent>
 
   <groupId>org.neo4j</groupId>
@@ -69,6 +69,15 @@
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-ha</artifactId>
       <version>0.6-SNAPSHOT</version>
+    </dependency>
+    <!-- Needed for the javadoc generation! -->
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>osgi_R4_core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>osgi_R4_compendium</artifactId>
     </dependency>
   </dependencies>
 
@@ -155,19 +164,19 @@
               <includeGroupIds>org.neo4j</includeGroupIds>
             </configuration>
           </execution>
-          <!-- 
-          <execution>
+          <!--
+            <execution>
             <id>get-test-sources</id>
             <goals>
-              <goal>unpack-dependencies</goal>
+            <goal>unpack-dependencies</goal>
             </goals>
             <configuration>
-              <classifier>test-sources</classifier>
-              <outputDirectory>${project.build.directory}/test-sources</outputDirectory>
-              <includeGroupIds>org.neo4j</includeGroupIds>
+            <classifier>test-sources</classifier>
+            <outputDirectory>${project.build.directory}/test-sources</outputDirectory>
+            <includeGroupIds>org.neo4j</includeGroupIds>
             </configuration>
-          </execution>
-           -->
+            </execution>
+          -->
         </executions>
       </plugin>
       <plugin>
@@ -183,7 +192,7 @@
               <doctitle>Neo4j ${project.version} API</doctitle>
               <outputDirectory>${project.build.directory}/site/apidocs</outputDirectory>
               <sourcepath>${project.build.directory}/javadoc-sources</sourcepath>
-               <excludePackageNames>*.impl.*:org.neo4j.shell:org.neo4j.remote.inspect:org.neo4j.onlinebackup.ha:org.neo4j.onlinebackup.net:org.neo4j.ext.udc:org.neo4j.kernel.ha:org.neo4j.kernel.ha.*
+              <excludePackageNames>*.impl.*:org.neo4j.shell:org.neo4j.remote.inspect:org.neo4j.onlinebackup.ha:org.neo4j.onlinebackup.net:org.neo4j.ext.udc:org.neo4j.kernel.ha:org.neo4j.kernel.ha.*
           </excludePackageNames>
             </configuration>
           </execution>
@@ -245,4 +254,3 @@
   </distributionManagement>
 
 </project>
-
