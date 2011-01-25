@@ -99,12 +99,15 @@ public interface TransactionData
      * @return all relationships that were deleted during the transaction.
      */
     Iterable<Relationship> deletedRelationships();
-    
+
     /**
-     * Returns whether or not {@code relationship} is deleted in this transaction.
-     * @param node the {@link Relationship} to check whether or not it is deleted
-     * in this transaction.
-     * @return whether or not {@code relationship} is deleted in this transaction.
+     * Returns whether or not {@code relationship} is deleted in this
+     * transaction.
+     * 
+     * @param relationship the {@link Relationship} to check whether or not it
+     *            is deleted in this transaction.
+     * @return whether or not {@code relationship} is deleted in this
+     *         transaction.
      */
     boolean isDeleted( Relationship relationship );
 

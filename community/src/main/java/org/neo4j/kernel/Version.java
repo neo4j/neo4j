@@ -46,8 +46,8 @@ public enum Version
 
     /**
      * Gets the version of the running neo4j kernel.
-     *
-     * @return
+     * 
+     * @return the version of the neo4j kernel
      */
     public String getVersion()
     {
