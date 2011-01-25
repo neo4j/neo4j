@@ -50,7 +50,7 @@ public class Pwd extends ReadOnlyGraphDatabaseApp
         out.println( "Current is " +
             getDisplayName( getServer(), session, current, false ) );
 
-        String path = stringifyPath( Cd.readPaths( session ), session );
+        String path = stringifyPath( Cd.readCurrentWorkingDir( session ), session );
         if ( path.length() > 0 )
         {
             out.println( path );

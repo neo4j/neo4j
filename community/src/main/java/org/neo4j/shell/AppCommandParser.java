@@ -105,13 +105,12 @@ public class AppCommandParser
 		for ( int i = 0; i < parsed.length; i++ )
 		{
 			String string = parsed[ i ];
-			if ( string.startsWith( "--" ) )
+			if ( isMultiCharOption( string ) )
 			{
-				// It is one long name
 				String name = string.substring( 2 );
 				i = fetchArguments( parsed, i, name );
 			}
-			else if ( this.isOption( string ) )
+			else if ( this.isSingleCharOption( string ) )
 			{
 				String options = string.substring( 1 );
 				for ( int o = 0; o < options.length(); o++ )
@@ -128,6 +127,16 @@ public class AppCommandParser
 	}
 	
 	private boolean isOption( String string )
+	{
+	    return isSingleCharOption( string ) || isMultiCharOption( string );
+	}
+	
+	private boolean isMultiCharOption( String string )
+	{
+	    return string.startsWith( "--" );
+	}
+	
+	private boolean isSingleCharOption( String string )
 	{
 		return string.startsWith( "-" ) && !isANegativeNumber( string );
 	}

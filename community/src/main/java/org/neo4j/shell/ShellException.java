@@ -19,30 +19,66 @@
  */
 package org.neo4j.shell;
 
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
 /**
- * A general shell exception when an error occurs.
+ * A general shell exception when an error occurs. Standard Java exceptions (java.*)
+ * gets wrapped normally in a ShellException. For other unknown exceptions the
+ * actual stacktrace is taken out and injected as a string. This is done because
+ * we don't know how the clients classpath looks compared to the server and
+ * we guard from ClassNotFoundExceptions on the client this way.
  */
 public class ShellException extends Exception
 {
-	/**
-	 * @param message the description of the exception.
-	 */
+    private static final long serialVersionUID = 1L;
+    
+	private final String stackTraceAsString;
+
 	public ShellException( String message )
 	{
-		super( message );
+	    this( message, (String) null );
 	}
+	
+	private ShellException( String message, Throwable cause )
+    {
+        super( message, cause );
+        this.stackTraceAsString = null;
+    }
 
-	/**
-	 * @param cause the cause of the exception.
-	 */
-	public ShellException( Throwable cause )
+    private ShellException( String message, String stackTraceAsString )
 	{
-		super( cause );
+	    super( message );
+        this.stackTraceAsString = stackTraceAsString;
 	}
 
+    @Override
+    public void printStackTrace( PrintStream s )
+    {
+        if ( stackTraceAsString != null )
+        {
+            s.print( stackTraceAsString );
+        }
+        else
+        {
+            getCause().printStackTrace( s );
+        }
+    }
+
+    @Override
+    public void printStackTrace( PrintWriter s )
+    {
+        if ( stackTraceAsString != null )
+        {
+            s.print( stackTraceAsString );
+        }
+        else
+        {
+            getCause().printStackTrace( s );
+        }
+    }
+    
 	/**
 	 * Serializes a {@link Throwable} to a String and uses that as a message
 	 * in a {@link ShellException}. This is because we can't rely on the
@@ -52,14 +88,9 @@ public class ShellException extends Exception
 	 */
 	public static ShellException wrapCause( Throwable cause )
 	{
-        if ( cause instanceof ShellException )
+        if ( isCompletelyRecognizedException( cause ) )
         {
-            return isCompletelyRecognizedException( cause ) ? (ShellException) cause :
-                    softWrap( cause );
-        }
-        else if ( isCompletelyRecognizedException( cause ) )
-        {
-            return new ShellException( cause );
+            return cause instanceof ShellException ? (ShellException) cause : new ShellException( getFirstMessage( cause ), cause );
         }
         else
         {
@@ -69,14 +100,34 @@ public class ShellException extends Exception
 	
 	private static ShellException softWrap( Throwable cause )
 	{
-	    return new ShellException( stackTraceAsString( cause ) );
+	    String stackTraceAsString = stackTraceAsString( cause );
+	    String message = getFirstMessage( cause );
+	    if ( !( cause instanceof ShellException ) )
+	    {
+	        message = cause.getClass().getName() + ": " + message;
+	    }
+        return new ShellException( message, stackTraceAsString );
 	}
+
+    private static String getFirstMessage( Throwable cause )
+    {
+        while ( cause != null )
+        {
+            String message = cause.getMessage();
+            if ( message != null && message.length() > 0 )
+            {
+                return message;
+            }
+            cause = cause.getCause();
+        }
+        return null;
+    }
 
     private static boolean isCompletelyRecognizedException( Throwable e )
     {
         String packageName = e.getClass().getPackage().getName();
         if ( !( e instanceof ShellException ) &&
-                !packageName.startsWith( "java" ) )
+                !packageName.startsWith( "java." ) )
         {
             return false;
         }

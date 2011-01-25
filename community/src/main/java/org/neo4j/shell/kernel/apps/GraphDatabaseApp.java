@@ -21,8 +21,10 @@ package org.neo4j.shell.kernel.apps;
 
 import java.lang.reflect.Array;
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -60,6 +62,11 @@ public abstract class GraphDatabaseApp extends AbstractApp
             OptionValueType.MUST,
             "Command to run for each returned node. Use $i for node/relationship id, example:\n" +
             "-c \"ls -f name $i\". Multiple commands can be supplied with && in between" );
+    /**
+     * The {@link Session} key to use to store the current node and working
+     * directory (i.e. the path which the client got to it).
+     */
+    public static final String WORKING_DIR_KEY = "WORKING_DIR";
 
     /**
      * @param server the {@link GraphDatabaseShellServer} to get the current
@@ -467,6 +474,46 @@ public abstract class GraphDatabaseApp extends AbstractApp
         }
     }
 
+    /**
+     * Reads the session variable specified in {@link #WORKING_DIR_KEY} and
+     * returns it as a list of typed ids.
+     * @param session the session to read from.
+     * @return the working directory as a list.
+     * @throws RemoteException if an RMI error occurs.
+     */
+    public static List<TypedId> readCurrentWorkingDir( Session session ) throws RemoteException
+    {
+        List<TypedId> list = new ArrayList<TypedId>();
+        String path = (String) session.get( WORKING_DIR_KEY );
+        if ( path != null && path.trim().length() > 0 )
+        {
+            for ( String typedId : path.split( "," ) )
+            {
+                list.add( new TypedId( typedId ) );
+            }
+        }
+        return list;
+    }
+    
+    public static void writeCurrentWorkingDir( List<TypedId> paths, Session session ) throws RemoteException
+    {
+        session.set( WORKING_DIR_KEY, makePath( paths ) );
+    }
+
+    private static String makePath( List<TypedId> paths )
+    {
+        StringBuffer buffer = new StringBuffer();
+        for ( TypedId typedId : paths )
+        {
+            if ( buffer.length() > 0 )
+            {
+                buffer.append( "," );
+            }
+            buffer.append( typedId.toString() );
+        }
+        return buffer.length() > 0 ? buffer.toString() : null;
+    }
+    
     protected static RelationshipExpander toExpander( GraphDatabaseService db, Direction defaultDirection,
             Map<String, Object> filterMap, boolean caseInsensitiveFilters, boolean looseFilters ) throws ShellException
     {

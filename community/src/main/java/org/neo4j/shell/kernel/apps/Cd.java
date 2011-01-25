@@ -48,12 +48,6 @@ public class Cd extends ReadOnlyGraphDatabaseApp
     private static final String END_ALIAS = "end";
 
     /**
-     * The {@link Session} key to use to store the current node and working
-     * directory (i.e. the path which the client got to it).
-     */
-    public static final String WORKING_DIR_KEY = "WORKING_DIR";
-
-    /**
      * Constructs a new cd application.
      */
     public Cd()
@@ -133,7 +127,7 @@ public class Cd extends ReadOnlyGraphDatabaseApp
     protected String exec( AppCommandParser parser, Session session,
         Output out ) throws ShellException, RemoteException
     {
-        List<TypedId> paths = readPaths( session );
+        List<TypedId> paths = readCurrentWorkingDir( session );
 
         NodeOrRelationship current = getCurrent( session );
         NodeOrRelationship newThing = null;
@@ -199,7 +193,7 @@ public class Cd extends ReadOnlyGraphDatabaseApp
         }
 
         setCurrent( session, newThing );
-        session.set( WORKING_DIR_KEY, this.makePath( paths ) );
+        writeCurrentWorkingDir( paths, session );
         return null;
     }
 
@@ -303,41 +297,5 @@ public class Cd extends ReadOnlyGraphDatabaseApp
             }
         }
         return false;
-    }
-
-    /**
-     * Reads the session variable specified in {@link #WORKING_DIR_KEY} and
-     * returns it as a list of typed ids.
-     * @param session the session to read from.
-     * @return the working directory as a list.
-     * @throws RemoteException if an RMI error occurs.
-     */
-    public static List<TypedId> readPaths( Session session )
-        throws RemoteException
-    {
-        List<TypedId> list = new ArrayList<TypedId>();
-        String path = (String) session.get( WORKING_DIR_KEY );
-        if ( path != null && path.trim().length() > 0 )
-        {
-            for ( String typedId : path.split( "," ) )
-            {
-                list.add( new TypedId( typedId ) );
-            }
-        }
-        return list;
-    }
-
-    private String makePath( List<TypedId> paths )
-    {
-        StringBuffer buffer = new StringBuffer();
-        for ( TypedId typedId : paths )
-        {
-            if ( buffer.length() > 0 )
-            {
-                buffer.append( "," );
-            }
-            buffer.append( typedId.toString() );
-        }
-        return buffer.length() > 0 ? buffer.toString() : null;
     }
 }

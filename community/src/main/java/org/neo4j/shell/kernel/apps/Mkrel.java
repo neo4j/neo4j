@@ -20,6 +20,7 @@
 package org.neo4j.shell.kernel.apps;
 
 import java.rmi.RemoteException;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.Direction;
@@ -65,6 +66,8 @@ public class Mkrel extends GraphDatabaseApp
             "Properties (a json map) to set for the new node (if one is created)" ) );
         this.addOptionDefinition( "rp", new OptionDefinition( OptionValueType.MUST,
             "Properties (a json map) to set for the new relationship" ) );
+        this.addOptionDefinition( "cd", new OptionDefinition( OptionValueType.NONE,
+            "Go to the created node, like doing 'cd'" ) );
     }
 
     @Override
@@ -105,10 +108,10 @@ public class Mkrel extends GraphDatabaseApp
             throw new ShellException( "Must supply relationship type "
                 + "(-t <relationship-type-name>)" );
         }
-        RelationshipType type = this.getRelationshipType( parser.options().get(
-            "t" ) );
-        Direction direction = this.getDirection( parser.options().get( "d" ) );
-        Node currentNode = getCurrent( session ).asNode();
+        RelationshipType type = getRelationshipType( parser.options().get( "t" ) );
+        Direction direction = getDirection( parser.options().get( "d" ) );
+        NodeOrRelationship current = getCurrent( session );
+        Node currentNode = current.asNode();
         Node startNode = direction == Direction.OUTGOING ? currentNode : node;
         Node endNode = direction == Direction.OUTGOING ? node : currentNode;
         Relationship relationship =
@@ -126,6 +129,14 @@ public class Mkrel extends GraphDatabaseApp
             out.println( "Relationship " + getDisplayName(
                 getServer(), session, relationship, true, false ) +
                 " created" );
+        }
+        
+        if ( parser.options().containsKey( "cd" ) )
+        {
+            List<TypedId> wd = readCurrentWorkingDir( session );
+            wd.add( current.getTypedId() );
+            writeCurrentWorkingDir( wd, session );
+            setCurrent( session, NodeOrRelationship.wrap( node ) );
         }
         return null;
     }

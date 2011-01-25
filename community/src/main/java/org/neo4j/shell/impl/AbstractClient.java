@@ -100,7 +100,10 @@ public abstract class AbstractClient implements ShellClient
                 {
                     e.printStackTrace();
                 }
-                this.console.format( getShortExceptionMessage( e ) + "\n" );
+                else
+                {
+                    this.console.format( getShortExceptionMessage( e ) + "\n" );
+                }
             }
         }
         this.shutdown();
@@ -114,16 +117,7 @@ public abstract class AbstractClient implements ShellClient
 
     protected static String getShortExceptionMessage( Exception e )
     {
-        String result = e instanceof ShellException ?
-            firstLine( e.getMessage() ) : e.getClass().getName() + ": " + e.getMessage();
-        result += e.getMessage();
-        return result;
-    }
-
-    private static String firstLine( String message )
-    {
-        int index = message.indexOf( '\n' );
-        return index == -1 ? message : message.substring( index );
+        return e.getMessage();
     }
 
     protected String tryGetProperPromptString() throws ShellException
