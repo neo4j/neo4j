@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-central</artifactId>
-    <version>9</version>
+    <version>10</version>
   </parent>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-online-backup</artifactId>
@@ -68,22 +68,6 @@
     </dependency>
   </dependencies>
 
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>com.mycila.maven-license-plugin</groupId>
-        <artifactId>maven-license-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>check</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
-
   <distributionManagement>
     <site>
       <id>neo4j-site</id>
@@ -92,4 +76,3 @@
   </distributionManagement>
 
 </project>
-
