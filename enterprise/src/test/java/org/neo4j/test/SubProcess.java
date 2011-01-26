@@ -40,7 +40,10 @@ import java.rmi.RemoteException;
 import java.rmi.server.RemoteObject;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public abstract class SubProcess<T, P> implements Serializable
@@ -119,11 +122,11 @@ public abstract class SubProcess<T, P> implements Serializable
         }
         String pid = getPid( process );
         pipe( "[" + toString() + ":" + pid + "] ", process.getErrorStream(), System.err );
-        pipe( "[" + toString() + ":" + pid + "] ", process.getInputStream(),
-                System.out );
+        pipe( "[" + toString() + ":" + pid + "] ", process.getInputStream(), System.out );
         Dispatcher dispatcher = callback.get( process );
+        if ( dispatcher == null ) throw new IllegalStateException( "failed to start sub process" );
         return t.cast( Proxy.newProxyInstance( t.getClassLoader(), new Class[] { t },//
-                new Handler( t, dispatcher, process ) ) );
+                live( new Handler( t, dispatcher, process, "<" + toString() + ":" + pid + ">" ) ) ) );
     }
 
     protected abstract void startup( P parameter );
@@ -140,7 +143,7 @@ public abstract class SubProcess<T, P> implements Serializable
 
     public static void kill( Object subprocess )
     {
-        ( (Handler) Proxy.getInvocationHandler( subprocess ) ).kill();
+        ( (Handler) Proxy.getInvocationHandler( subprocess ) ).kill( true );
     }
 
     @Override
@@ -336,9 +339,17 @@ public abstract class SubProcess<T, P> implements Serializable
                 }
                 catch ( InterruptedException e )
                 {
-                    Thread.interrupted();
-                    return null;
+                    Thread.currentThread().interrupt();
                 }
+                try
+                {
+                    process.exitValue();
+                }
+                catch ( IllegalThreadStateException e )
+                {
+                    continue;
+                }
+                return null;
             }
             return dispatcher;
         }
@@ -397,23 +408,102 @@ public abstract class SubProcess<T, P> implements Serializable
                 Throwable;
     }
 
+    private static InvocationHandler live( Handler handler )
+    {
+        try
+        {
+            synchronized ( Handler.class )
+            {
+                if ( live == null )
+                {
+                    final Set<Handler> handlers = live = new HashSet<Handler>();
+                    Runtime.getRuntime().addShutdownHook( new Thread()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            killAll( handlers );
+                        }
+                    } );
+                }
+                live.add( handler );
+            }
+        }
+        catch ( UnsupportedOperationException e )
+        {
+            handler.kill( false );
+            throw new IllegalStateException( "JVM is shutting down!" );
+        }
+        return handler;
+    }
+
+    private static void dead( Handler handler )
+    {
+        synchronized ( Handler.class )
+        {
+            try
+            {
+                if ( live != null ) live.remove( handler );
+            }
+            catch ( UnsupportedOperationException ok )
+            {
+            }
+        }
+    }
+
+    private static void killAll( Set<Handler> handlers )
+    {
+        synchronized ( Handler.class )
+        {
+            if ( !handlers.isEmpty() )
+            {
+                for ( Handler handler : handlers )
+                {
+                    try
+                    {
+                        handler.process.exitValue();
+                    }
+                    catch ( IllegalThreadStateException e )
+                    {
+                        handler.kill( false );
+                    }
+                }
+            }
+            live = Collections.emptySet();
+        }
+    }
+
+    private static Set<Handler> live;
+
     private static class Handler implements InvocationHandler
     {
         private final Dispatcher dispatcher;
         private final Process process;
         private final Class<?> type;
+        private final String repr;
 
-        Handler( Class<?> type, Dispatcher dispatcher, Process process )
+        Handler( Class<?> type, Dispatcher dispatcher, Process process, String repr )
         {
             this.type = type;
             this.dispatcher = dispatcher;
             this.process = process;
+            this.repr = repr;
         }
 
-        void kill()
+        @Override
+        public String toString()
+        {
+            return repr;
+        }
+
+        void kill( boolean wait )
         {
             process.destroy();
-            await( process );
+            if ( wait )
+            {
+                dead( this );
+                await( process );
+            }
         }
 
         int stop()
@@ -426,6 +516,7 @@ public abstract class SubProcess<T, P> implements Serializable
             {
                 process.destroy();
             }
+            dead( this );
             return await( process );
         }
 
@@ -452,10 +543,6 @@ public abstract class SubProcess<T, P> implements Serializable
                 }
                 else if ( method.getDeclaringClass() == Object.class )
                 {
-                    if ( method.getName().equals( "toString" ) )
-                    {
-                        return dispatch( method, args );
-                    }
                     return method.invoke( this, args );
                 }
                 else
