@@ -18,6 +18,8 @@ Neo4j Embedded
 
     * {{{./traversal.html}Traversal}}
     
+    * {{{./ordered-path.html}Ordered Path Traversals}}
+
     * {{{./entities.html}Domain entities}}
 
     * {{{./social-network.html}Social network}}
