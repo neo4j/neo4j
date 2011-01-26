@@ -205,9 +205,9 @@
 
     <dependency>
       <!-- Provides Autoprocessor.
-      This dependency makes the plugin loader Felix-specific
-      rather than generic. Consider refactoring out this dependency, 
-      or don't worry about it and always uses Felix. -->
+        This dependency makes the plugin loader Felix-specific
+        rather than generic. Consider refactoring out this dependency,
+        or don't worry about it and always uses Felix. -->
       <groupId>org.apache.felix</groupId>
       <artifactId>org.apache.felix.main</artifactId>
       <version>3.0.2</version>
@@ -287,7 +287,6 @@
         </configuration>
       </plugin>
 
-
       <plugin>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
@@ -359,7 +358,7 @@
                 <include>wa/Servers.js</include>
                 <include>wa/ServerSelector.js</include>
                 <include>wa/FormValidator.js</include>
-                
+
                 <include>wa/connectionmonitor.js</include>
 
                 <include>wa/ui/__init__.js</include>
@@ -446,7 +445,7 @@
               </descriptors>
             </configuration>
           </execution>
-           <execution>
+          <execution>
             <id>site</id>
             <phase>package</phase>
             <configuration>
@@ -483,18 +482,32 @@
           </execution>
         </executions>
       </plugin>
-      
+
       <plugin>
         <artifactId>maven-jar-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifest>
-              <mainClass>${neo4j-server.mainClass}</mainClass>
-            </manifest>
-          </archive>
-        </configuration>
+        <executions>
+          <execution>
+            <id>default-jar</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+            <configuration>
+              <archive>
+                <manifest>
+                  <mainClass>${neo4j-server.mainClass}</mainClass>
+                </manifest>
+              </archive>
+              <excludes>
+                <exclude>webadmin-html/**</exclude>
+                <exclude>wa/**</exclude>
+                <exclude>lib/**</exclude>
+                <exclude>boot.js</exclude>
+              </excludes>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
-      
+
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>appassembler-maven-plugin</artifactId>
@@ -542,11 +555,16 @@
         </configuration>
       </plugin>
 
-      <!-- experiment with copying artifacts into expected startup directories... <plugin> <groupId>org.apache.maven.plugins</groupId> <artifactId>maven-dependency-plugin</artifactId> <executions> <execution> <id>copy-dependencies</id> <phase>package</phase> <goals> <goal>copy-dependencies</goal> </goals> 
-        <configuration> <outputDirectory>${project.build.directory}/lib</outputDirectory> <overWriteReleases>false</overWriteReleases> <overWriteSnapshots>true</overWriteSnapshots> <includeScope>runtime</includeScope> <excludeScope>test</excludeScope> </configuration> </execution> <execution> <id>copy-extensions</id> 
-        <phase>package</phase> <goals> <goal>copy</goal> </goals> <configuration> <artifactItems> <artifactItem> <groupId>org.neo4j.ext</groupId> <artifactId>hello-ext</artifactId> <version>0.1-SNAPSHOT</version> <classifier>next</classifier> </artifactItem> </artifactItems> <outputDirectory>${project.build.directory}/ext</outputDirectory> 
-        </configuration> </execution> <execution> <id>copy-installed</id> <phase>install</phase> <goals> <goal>copy</goal> </goals> <configuration> <artifactItems> <artifactItem> <groupId>${project.groupId}</groupId> <artifactId>${project.artifactId}</artifactId> <version>${project.version}</version> <type>${project.packaging}</type> 
-        </artifactItem> </artifactItems> <outputDirectory>${project.build.directory}/lib</outputDirectory> </configuration> </execution> </executions> </plugin> -->
+      <!-- experiment with copying artifacts into expected startup directories... <plugin> <groupId>org.apache.maven.plugins</groupId> <artifactId>maven-dependency-plugin</artifactId>
+        <executions> <execution> <id>copy-dependencies</id> <phase>package</phase> <goals> <goal>copy-dependencies</goal> </goals>
+        <configuration> <outputDirectory>${project.build.directory}/lib</outputDirectory> <overWriteReleases>false</overWriteReleases> <overWriteSnapshots>true</overWriteSnapshots>
+        <includeScope>runtime</includeScope> <excludeScope>test</excludeScope> </configuration> </execution> <execution> <id>copy-extensions</id>
+        <phase>package</phase> <goals> <goal>copy</goal> </goals> <configuration> <artifactItems> <artifactItem> <groupId>org.neo4j.ext</groupId> <artifactId>hello-ext</artifactId>
+        <version>0.1-SNAPSHOT</version> <classifier>next</classifier> </artifactItem> </artifactItems> <outputDirectory>${project.build.directory}/ext</outputDirectory>
+        </configuration> </execution> <execution> <id>copy-installed</id> <phase>install</phase> <goals> <goal>copy</goal> </goals> <configuration> <artifactItems>
+        <artifactItem> <groupId>${project.groupId}</groupId> <artifactId>${project.artifactId}</artifactId> <version>${project.version}</version> <type>${project.packaging}</type>
+        </artifactItem> </artifactItems> <outputDirectory>${project.build.directory}/lib</outputDirectory> </configuration> </execution> </executions>
+        </plugin> -->
     </plugins>
   </build>
 
@@ -589,7 +607,7 @@
         </plugins>
       </build>
     </profile>
-    
+
     <profile>
       <id>web-tests</id>
       <activation>
@@ -621,14 +639,14 @@
             </executions>
           </plugin>
           <plugin>
-	        <groupId>org.apache.maven.plugins</groupId>
-	        <artifactId>maven-surefire-plugin</artifactId>
-	        <configuration>
-	          <includes>
-	            <include>**/*WebTest.java</include>
-	          </includes>
-	        </configuration>
-	      </plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <includes>
+                <include>**/*WebTest.java</include>
+              </includes>
+            </configuration>
+          </plugin>
         </plugins>
       </build>
     </profile>
@@ -669,23 +687,23 @@
         </configuration>
       </plugin>
       <!-- This plugin does nothing useful at the moment.
-      <plugin>
+        <plugin>
         <groupId>nl.windgazer</groupId>
         <artifactId>jsdoctk-plugin</artifactId>
         <version>2.3.0-RC1</version>
         <configuration>
-          <template>jsdoc</template>
-          <directory>${project.build.directory}/site/jsdoc</directory>
-          <recurse>10</recurse>
-          <ext>js</ext>
-          <allfunctions>true</allfunctions>
-          <Allfunctions>true</Allfunctions>
-          <privateOption>true</privateOption>
-          <srcDir>src/main/javascript/wa</srcDir>
-          <private>true</private>
+        <template>jsdoc</template>
+        <directory>${project.build.directory}/site/jsdoc</directory>
+        <recurse>10</recurse>
+        <ext>js</ext>
+        <allfunctions>true</allfunctions>
+        <Allfunctions>true</Allfunctions>
+        <privateOption>true</privateOption>
+        <srcDir>src/main/javascript/wa</srcDir>
+        <private>true</private>
         </configuration>
-      </plugin>
-       -->
+        </plugin>
+      -->
     </plugins>
   </reporting>
 
