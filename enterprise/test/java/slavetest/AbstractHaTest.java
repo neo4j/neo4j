@@ -22,6 +22,7 @@ package slavetest;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,7 +34,9 @@ import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -50,7 +53,7 @@ public abstract class AbstractHaTest
     static final File PARENT_PATH = new File( "target/havar" );
     static final File DBS_PATH = new File( PARENT_PATH, "dbs" );
     static final File SKELETON_DB_PATH = new File( DBS_PATH, "skeleton" );
-    
+
     private boolean expectsResults;
     private int nodeCount;
     private int relCount;
@@ -58,12 +61,22 @@ public abstract class AbstractHaTest
     private int relPropCount;
     private int nodeIndexServicePropCount;
     private int nodeIndexProviderPropCount;
-    
+
+    public @Rule
+    TestName testName = new TestName()
+    {
+        @Override
+        public String getMethodName()
+        {
+            return AbstractHaTest.this.getClass().getName() + "." + super.getMethodName();
+        }
+    };
+
     protected static File dbPath( int num )
     {
         return new File( DBS_PATH, "" + num );
     }
-    
+
     @Before
     public void clearExpectedResults() throws Exception
     {
@@ -81,7 +94,7 @@ public abstract class AbstractHaTest
             int vRelPropCount = 0;
             int vNodeIndexServicePropCount = 0;
             int vNodeIndexProviderPropCount = 0;
-            
+
             Set<Node> otherNodes = IteratorUtil.addToCollection( otherDb.getAllNodes().iterator(),
                     new HashSet<Node>() );
             for ( Node node : refDb.getAllNodes() )
@@ -97,7 +110,7 @@ public abstract class AbstractHaTest
                 vNodeCount++;
             }
             assertTrue( otherNodes.isEmpty() );
-            
+
             if ( expectsResults )
             {
                 assertEquals( nodeCount, vNodeCount );
@@ -109,7 +122,7 @@ public abstract class AbstractHaTest
             }
         }
     }
-    
+
     private static int[] verifyNode( Node node, Node otherNode,
             GraphDatabaseService refDb, GraphDatabaseService otherDb )
     {
@@ -121,7 +134,7 @@ public abstract class AbstractHaTest
         {
             otherRelIds.add( otherRel.getId() );
         }
-        
+
         int vRelCount = 0;
         int vRelPropCount = 0;
         for ( Relationship rel : node.getRelationships( Direction.OUTGOING ) )
@@ -143,11 +156,10 @@ public abstract class AbstractHaTest
             otherRelIds.remove( rel.getId() );
             vRelCount++;
         }
-        
+
         if ( !otherRelIds.isEmpty() )
         {
-            throw new RuntimeException( "Other node " + otherNode + " has more relationships " +
-                    otherRelIds );
+            fail( "Other node " + otherNode + " has more relationships " + otherRelIds );
         }
         return new int[] { vRelCount, vNodePropCount, vRelPropCount, -1, vNodeIndexProviderProCount };
     }
@@ -161,7 +173,7 @@ public abstract class AbstractHaTest
         {
             return count;
         }
-        
+
         Set<String> otherKeys = new HashSet<String>();
         for ( String key : otherNode.getPropertyKeys() )
         {
@@ -171,7 +183,7 @@ public abstract class AbstractHaTest
             }
         }
         count = otherKeys.size();
-        
+
         for ( String key : node.getPropertyKeys() )
         {
             if ( otherKeys.remove( key ) != isIndexedWithIndexService( node, refDb, key ) )
@@ -209,7 +221,7 @@ public abstract class AbstractHaTest
             }
         }
         count = otherKeys.size();
-        
+
         for ( String key : node.getPropertyKeys() )
         {
             if ( otherKeys.remove( key ) != isIndexedWithIndexProvider( node, refDb, key ) )
@@ -224,12 +236,12 @@ public abstract class AbstractHaTest
         }
         return count;
     }
-    
+
     private static boolean isIndexedWithIndexProvider( Node node, GraphDatabaseService db, String key )
     {
         return db.index().forNodes( "users" ).get( key, node.getProperty( key ) ).getSingle() != null;
     }
-    
+
     private static int verifyProperties( PropertyContainer entity, PropertyContainer otherEntity )
     {
         int count = 0;
@@ -287,7 +299,7 @@ public abstract class AbstractHaTest
     {
         FileUtils.deleteDirectory( PARENT_PATH );
     }
-    
+
     protected void initializeDbs( int numSlaves ) throws Exception
     {
         initializeDbs( numSlaves, MapUtil.stringMap() );
@@ -301,40 +313,42 @@ public abstract class AbstractHaTest
             addDb( config );
         }
     }
-    
+
+    protected abstract void awaitAllStarted() throws Exception;
+
     protected abstract void addDb( Map<String, String> config ) throws Exception;
-    
+
     protected abstract void pullUpdates( int... slaves ) throws Exception;
-    
+
     protected abstract <T> T executeJob( Job<T> job, int onSlave ) throws Exception;
 
     protected abstract <T> T executeJobOnMaster( Job<T> job ) throws Exception;
-    
+
     protected abstract void startUpMaster( Map<String, String> config ) throws Exception;
 
-    protected abstract Job<Void> getMasterShutdownDispatcher();
-    
+    protected abstract CommonJobs.ShutdownDispatcher getMasterShutdownDispatcher();
+
     protected abstract void shutdownDbs() throws Exception;
-    
+
     protected abstract Fetcher<DoubleLatch> getDoubleLatch() throws Exception;
-    
+
     protected void setMaxTimeToWaitForDbStart( int seconds )
     {
     }
-    
+
     private class Worker extends Thread
     {
         private boolean successfull;
         private boolean deadlocked;
         private final int slave;
         private final Job<Boolean[]> job;
-        
+
         Worker( int slave, Job<Boolean[]> job )
         {
             this.slave = slave;
             this.job = job;
         }
-        
+
         @Override
         public void run()
         {
@@ -350,7 +364,7 @@ public abstract class AbstractHaTest
             }
         }
     }
-    
+
     protected void setExpectedResults( int nodeCount, int relCount,
             int nodePropCount, int relPropCount, int nodeIndexServicePropCount, int nodeIndexProviderPropCount )
     {
@@ -362,7 +376,7 @@ public abstract class AbstractHaTest
         this.nodeIndexServicePropCount = nodeIndexServicePropCount;
         this.nodeIndexProviderPropCount = nodeIndexProviderPropCount;
     }
-    
+
     @Test
     public void slaveCreateNode() throws Exception
     {
@@ -370,7 +384,7 @@ public abstract class AbstractHaTest
         initializeDbs( 1 );
         executeJob( new CommonJobs.CreateSomeEntitiesJob(), 0 );
     }
-    
+
     @Test
     public void testMultipleSlaves() throws Exception
     {
@@ -395,26 +409,26 @@ public abstract class AbstractHaTest
         Boolean existed = executeJob( new CommonJobs.GetNodeByIdJob( nodeId ), 0 );
         assertFalse( existed.booleanValue() );
     }
-    
+
     @Test
     public void testSlaveConstraintViolation() throws Exception
     {
         setExpectedResults( 2, 1, 0, 1, 0, 0 );
         initializeDbs( 1 );
-        
+
         Long nodeId = executeJob( new CommonJobs.CreateSubRefNodeJob(
                 CommonJobs.REL_TYPE.name(), null, null ), 0 );
         Boolean successful = executeJob( new CommonJobs.DeleteNodeJob( nodeId.longValue(),
                 false ), 0 );
         assertFalse( successful.booleanValue() );
     }
-    
+
     @Test
     public void testMasterConstrainViolation() throws Exception
     {
         setExpectedResults( 2, 1, 1, 1, 0, 0 );
         initializeDbs( 1 );
-        
+
         Long nodeId = executeJob( new CommonJobs.CreateSubRefNodeJob( CommonJobs.REL_TYPE.name(),
                 "name", "Mattias" ), 0 );
         Boolean successful = executeJobOnMaster(
@@ -428,7 +442,7 @@ public abstract class AbstractHaTest
     {
         setExpectedResults( 3, 2, 0, 0, 0, 0 );
         initializeDbs( 1 );
-        
+
         assertEquals( (Integer) 1, executeJob( new CommonJobs.CreateSubRefNodeWithRelCountJob(
                 CommonJobs.REL_TYPE.name(), CommonJobs.REL_TYPE.name(), CommonJobs.KNOWS.name() ), 0 ) );
         assertEquals( (Integer) 2, executeJob( new CommonJobs.CreateSubRefNodeWithRelCountJob(
@@ -444,7 +458,7 @@ public abstract class AbstractHaTest
     {
         setExpectedResults( 2, 1, 0, 1, 0, 0 );
         initializeDbs( 1 );
-        
+
         executeJobOnMaster( new CommonJobs.CreateSubRefNodeJob(
                 CommonJobs.REL_TYPE.name(), null, null ) );
         assertFalse( executeJob( new CommonJobs.CreateNodeOutsideOfTxJob(), 0 ).booleanValue() );
@@ -456,7 +470,7 @@ public abstract class AbstractHaTest
     {
         setExpectedResults( 1, 0, 0, 0, 0, 0 );
         initializeDbs( 1 );
-        
+
         Long nodeId = executeJobOnMaster( new CommonJobs.CreateNodeJob() );
         pullUpdates();
         assertTrue( executeJobOnMaster( new CommonJobs.DeleteNodeJob(
@@ -469,26 +483,24 @@ public abstract class AbstractHaTest
     public void testDeadlock() throws Exception
     {
         initializeDbs( 2 );
-        
+
         Long[] nodes = executeJobOnMaster( new CommonJobs.CreateNodesJob( 2 ) );
         pullUpdates();
-        
+
         Fetcher<DoubleLatch> fetcher = getDoubleLatch();
         Worker w1 = new Worker( 0, new CommonJobs.Worker1Job( nodes[0], nodes[1], fetcher ) );
         Worker w2 = new Worker( 1, new CommonJobs.Worker2Job( nodes[0], nodes[1], fetcher ) );
         w1.start();
         w2.start();
-        while ( w1.isAlive() || w2.isAlive() )
-        {
-            Thread.sleep( 500 );
-        }
+        w1.join();
+        w2.join();
         boolean case1 = w2.successfull && !w2.deadlocked && !w1.successfull && w1.deadlocked;
         boolean case2 = !w2.successfull && w2.deadlocked && w1.successfull && !w1.deadlocked;
         assertTrue( case1 != case2 );
         assertTrue( case1 || case2  );
         pullUpdates();
     }
-    
+
     @Test
     public void createNodeAndIndex() throws Exception
     {
@@ -496,7 +508,7 @@ public abstract class AbstractHaTest
         initializeDbs( 1 );
         executeJob( new CommonJobs.CreateNodeAndIndexJob( "name", "Neo" ), 0 );
     }
-    
+
     @Test
     public void indexingAndTwoSlaves() throws Exception
     {
@@ -508,7 +520,7 @@ public abstract class AbstractHaTest
                 new String[] { "value1", "value2" }, "key 2", 105.43f ) ), 1 );
         pullUpdates();
     }
-    
+
     @Test
     public void testNewIndexFramework() throws Exception
     {
@@ -518,14 +530,14 @@ public abstract class AbstractHaTest
                 "name", "Morpheus", "rank", "Captain" ) );
         pullUpdates();
     }
-    
+
     @Test
     public void testLargeTransaction() throws Exception
     {
         initializeDbs( 1 );
         executeJob( new CommonJobs.LargeTransactionJob( 20, 1 ), 0 );
     }
-    
+
     @Test
     public void testPullLargeTransaction() throws Exception
     {
@@ -533,7 +545,7 @@ public abstract class AbstractHaTest
         executeJobOnMaster( new CommonJobs.LargeTransactionJob( 20, 1 ) );
         pullUpdates();
     }
-    
+
     @Test
     public void testLargeTransactionData() throws Exception
     {
@@ -548,7 +560,7 @@ public abstract class AbstractHaTest
         executeJobOnMaster( new CommonJobs.LargeTransactionJob( 1, 20 ) );
         pullUpdates();
     }
-    
+
     @Test
     public void makeSureSlaveCanCopyLargeInitialDatabase() throws Exception
     {
@@ -556,9 +568,10 @@ public abstract class AbstractHaTest
         executeJobOnMaster( new CommonJobs.LargeTransactionJob( 1, 60 ) );
         setMaxTimeToWaitForDbStart( 120 );
         addDb( MapUtil.stringMap() );
+        awaitAllStarted();
         executeJob( new CommonJobs.CreateSubRefNodeJob( "whatever", "my_key", "my_value" ), 0 );
     }
-    
+
     @Test
     public void canCopyInitialDbWithLuceneIndexes() throws Exception
     {
@@ -572,5 +585,6 @@ public abstract class AbstractHaTest
                     "a key " + i, "the worst value" ) );
         }
         addDb( MapUtil.stringMap() );
+        awaitAllStarted();
     }
 }

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha.zookeeper;
+package slavetest.manual;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,7 +26,8 @@ import java.util.Collection;
 import java.util.Collections;
 
 
-public class LocalZooKeeperCluster
+
+class LocalZooKeeperCluster
 {
     private final int size;
     private final DataDirectoryPolicy dataDirectoryPolicy;
@@ -36,7 +37,7 @@ public class LocalZooKeeperCluster
     private final Collection<ZooKeeperServerWrapper> wrappers =
             new ArrayList<ZooKeeperServerWrapper>();
     private Collection<String> serversConfig;
-    
+
     public LocalZooKeeperCluster( int size, File baseDir ) throws IOException
     {
         this( size, defaultDataDirectoryPolicy( baseDir ),
@@ -54,7 +55,7 @@ public class LocalZooKeeperCluster
         this.serverSecondPortPolicy = serverSecondPortPolicy;
         startCluster();
     }
-    
+
     private void startCluster() throws IOException
     {
         Collection<String> servers = new ArrayList<String>();
@@ -65,7 +66,7 @@ public class LocalZooKeeperCluster
                     serverSecondPortPolicy.getPort( id ) );
         }
         this.serversConfig = servers;
-        
+
         for ( int i = 0; i < size; i++ )
         {
             int id = i+1;
@@ -76,12 +77,12 @@ public class LocalZooKeeperCluster
         }
         waitForClusterToBeFullyStarted();
     }
-    
+
     public Collection<String> getZooKeeperServersConfig()
     {
         return serversConfig;
     }
-    
+
     public String getZooKeeperServersForHaInstance()
     {
         StringBuilder builder = new StringBuilder();
@@ -91,7 +92,7 @@ public class LocalZooKeeperCluster
         }
         return builder.toString();
     }
-    
+
     private void waitForClusterToBeFullyStarted()
     {
         try
@@ -103,7 +104,7 @@ public class LocalZooKeeperCluster
             Thread.interrupted();
         }
     }
-    
+
     public void shutdown()
     {
         for ( ZooKeeperServerWrapper wrapper : wrappers )
@@ -116,12 +117,12 @@ public class LocalZooKeeperCluster
     {
         File getDataDirectory( int id );
     }
-    
+
     public static interface PortPolicy
     {
         int getPort( int id );
     }
-    
+
     public static DataDirectoryPolicy defaultDataDirectoryPolicy( final File baseDirectory )
     {
         return new DataDirectoryPolicy()
@@ -142,7 +143,7 @@ public class LocalZooKeeperCluster
             }
         };
     }
-    
+
     public static PortPolicy defaultPortPolicy( final int startPort )
     {
         return new PortPolicy()

@@ -40,6 +40,7 @@ import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelException;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelPipeline;
@@ -86,17 +87,43 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
                 executor, executor, MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS );
         bootstrap = new ServerBootstrap( channelFactory );
         bootstrap.setPipelineFactory( this );
-        channelGroup = new DefaultChannelGroup();
+        /*
         executor.execute( new Runnable()
         {
             public void run()
             {
-                Channel channel = bootstrap.bind( new InetSocketAddress( port ) );
+                Channel channel;
+                try
+                {
+                    channel = bootstrap.bind( new InetSocketAddress( port ) );
+                }
+                catch ( ChannelException e )
+                {
+                    msgLog.logMessage( "Failed to bind master server to port " + port, e );
+                    return;
+                }
                 // Add the "server" channel
                 channelGroup.add( channel );
                 msgLog.logMessage( "Master server bound to " + port, true );
             }
         } );
+        //*/
+        Channel channel;
+        try
+        {
+            channel = bootstrap.bind( new InetSocketAddress( port ) );
+        }
+        catch ( ChannelException e )
+        {
+            msgLog.logMessage( "Failed to bind master server to port " + port, e );
+            executor.shutdown();
+            throw e;
+        }
+        channelGroup = new DefaultChannelGroup();
+        // Add the "server" channel
+        channelGroup.add( channel );
+        msgLog.logMessage( "Master server bound to " + port, true );
+
         deadConnectionsPoller = new ScheduledThreadPoolExecutor( 1 );
         deadConnectionsPoller.scheduleWithFixedDelay( new Runnable()
         {

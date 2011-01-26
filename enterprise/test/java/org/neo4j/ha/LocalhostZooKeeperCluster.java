@@ -43,7 +43,7 @@ public final class LocalhostZooKeeperCluster
     public LocalhostZooKeeperCluster( TargetDirectory target, int... ports )
     {
         keeper = new Object[ports.length];
-        ZooKeeperProcess subprocess = new ZooKeeperProcess();
+        ZooKeeperProcess subprocess = new ZooKeeperProcess( null );
         StringBuilder connection = new StringBuilder();
         for ( int i = 0; i < keeper.length; i++ )
         {
@@ -118,11 +118,31 @@ public final class LocalhostZooKeeperCluster
 
     private static class ZooKeeperProcess extends SubProcess<Object, String[]>
     {
+        private final String name;
+
+        ZooKeeperProcess( String name )
+        {
+            this.name = name;
+        }
+
         @Override
         protected void startup( String[] parameters )
         {
             System.out.println( "parameters=" + Arrays.toString( parameters ) );
             QuorumPeerMain.main( parameters );
+        }
+
+        @Override
+        public String toString()
+        {
+            if ( name != null )
+            {
+                return super.toString() + ":" + name;
+            }
+            else
+            {
+                return super.toString();
+            }
         }
     }
 }
