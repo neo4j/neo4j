@@ -55,3 +55,28 @@ wrapper.name=neo4j_2
 ----
 
 in order not to get name clashes installing and starting the instances as services. You might even need to adjust your unnix and linux startup scripts to properly start both instances.
+
+Also, the port numbers for the web administration and the servers should be changed to non-clashing values in conf/neo4j-server.properties:
+
+Server 1 (port 7474):
+
+[source, shell]
+----
+org.neo4j.server.webserver.port=7474
+
+org.neo4j.server.webadmin.data.uri=http://localhost:7474/db/data/
+
+org.neo4j.server.webadmin.management.uri=http://localhost:7474/db/manage/
+---
+
+Server 2 (port 7475):
+
+[source, shell]
+----
+org.neo4j.server.webserver.port=7475
+
+org.neo4j.server.webadmin.data.uri=http://localhost:7475/db/data/
+
+org.neo4j.server.webadmin.management.uri=http://localhost:7475/db/manage/
+---
+
