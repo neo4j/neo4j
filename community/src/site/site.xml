@@ -27,6 +27,7 @@
       <item name="Basic index usage" href="basic-index.html" />
       <item name="Integrated indexing" href="integrated-index.html" />
       <item name="Traversal" href="traversal.html" />
+      <item name="Ordered path traversal" href="ordered-path.html" />
       <item name="Domain entities" href="entities.html" />
       <item name="Social network" href="social-network.html" />
       <item name="Graph algorithms" href="graphalgo.html" />
