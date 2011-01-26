@@ -9,7 +9,7 @@
   <parent>
     <groupId>org.neo4j.examples</groupId>
     <artifactId>examples-pom</artifactId>
-    <version>7</version>
+    <version>8</version>
   </parent>
 
   <properties>
@@ -268,17 +268,6 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>com.mycila.maven-license-plugin</groupId>
-        <artifactId>maven-license-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>check</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <artifactId>maven-source-plugin</artifactId>
         <executions>
           <execution>
@@ -321,12 +310,14 @@
       </plugin>
     </plugins>
   </build>
+
   <repositories>
     <repository>
       <id>java.net</id>
       <url>http://download.java.net/maven/2/</url>
     </repository>
   </repositories>
+
   <reporting>
     <plugins>
       <plugin>
@@ -348,13 +339,14 @@
       </plugin>
       <plugin>
         <artifactId>maven-jxr-plugin</artifactId>
+        <!-- remove version after upgrade to parent-central:11 -->
+        <version>2.2</version>
         <configuration>
           <linkJavadoc>false</linkJavadoc>
         </configuration>
       </plugin>
     </plugins>
   </reporting>
-
 
   <distributionManagement>
     <site>
@@ -364,4 +356,3 @@
   </distributionManagement>
 
 </project>
-
