@@ -67,7 +67,7 @@ org.neo4j.server.webserver.port=7474
 org.neo4j.server.webadmin.data.uri=http://localhost:7474/db/data/
 
 org.neo4j.server.webadmin.management.uri=http://localhost:7474/db/manage/
----
+----
 
 Server 2 (port 7475):
 
@@ -78,5 +78,5 @@ org.neo4j.server.webserver.port=7475
 org.neo4j.server.webadmin.data.uri=http://localhost:7475/db/data/
 
 org.neo4j.server.webadmin.management.uri=http://localhost:7475/db/manage/
----
+----
 
