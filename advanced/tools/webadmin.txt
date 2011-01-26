@@ -10,6 +10,7 @@ With it, you can:
 - interact with the database via a scripting environment
 - view raw data management objects (JMX MBeans)
 
+[[webadmin-dashboard]]
 == Dashboard tab ==
 
 The Dashboard tab provides an overview of a running Neo4j instance.
@@ -31,6 +32,7 @@ Below the entity chart is a collection of status panels, displaying current reso
 .Status indicator panels
 image::operations/webadmin-stats.png[scaledwidth="100%", alt="Status indicator panels"]
 
+[[webadmin-data]]
 == Data tab ==
 
 Use the Data tab to browse, add or modify nodes, relationships and their properties.
@@ -38,6 +40,7 @@ Use the Data tab to browse, add or modify nodes, relationships and their propert
 .Browsing and manipulating data
 image::operations/webadmin-data.png[scaledwidth="100%", alt="Data tab"]
 
+[[webadmin-console]]
 == Console tab ==
 
 The Console tab gives scripting access to the database via the http://gremlin.tinkerpop.com[Gremlin] scripting engine.
@@ -45,6 +48,7 @@ The Console tab gives scripting access to the database via the http://gremlin.ti
 .Manipulating data with Gremlin
 image::operations/webadmin-console.png[scaledwidth="100%", alt="Data manipulation with Gremlin"]
 
+[[webadmin-serverinfo]]
 == The JMX tab ==
 
 The JMX tab provides raw access to all available management objects.
