@@ -20,7 +20,9 @@
 package slavetest;
 
 import java.io.Serializable;
+import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.Map;
 
 import org.neo4j.graphdb.Direction;
@@ -32,6 +34,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.ha.StandaloneDatabase;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.IdType;
@@ -45,7 +48,7 @@ public abstract class CommonJobs
 {
     public static final RelationshipType REL_TYPE = DynamicRelationshipType.withName( "HA_TEST" );
     public static final RelationshipType KNOWS = DynamicRelationshipType.withName( "KNOWS" );
-    
+
     public static abstract class AbstractJob<T> implements Job<T>
     {
         protected Config getConfig( GraphDatabaseService db )
@@ -62,7 +65,7 @@ public abstract class CommonJobs
             }
         }
     }
-    
+
     public static abstract class TransactionalJob<T> extends AbstractJob<T>
     {
         public final T execute( GraphDatabaseService db ) throws RemoteException
@@ -90,7 +93,7 @@ public abstract class CommonJobs
 
         protected abstract T executeInTransaction( GraphDatabaseService db, Transaction tx );
     }
-    
+
     public static class CreateSubRefNodeJob extends TransactionalJob<Long>
     {
         private final String type;
@@ -103,7 +106,7 @@ public abstract class CommonJobs
             this.key = key;
             this.value = value;
         }
-        
+
         @Override
         protected Long executeInTransaction( GraphDatabaseService db, Transaction tx )
         {
@@ -119,7 +122,7 @@ public abstract class CommonJobs
             return node.getId();
         }
     }
-    
+
     public static class CreateSubRefNodeWithRelCountJob extends TransactionalJob<Integer>
     {
         private final String type;
@@ -131,7 +134,7 @@ public abstract class CommonJobs
             this.type = type;
             this.typesToAsk = typesToAsk;
         }
-        
+
         @Override
         protected Integer executeInTransaction( GraphDatabaseService db, Transaction tx )
         {
@@ -148,12 +151,12 @@ public abstract class CommonJobs
             return counter;
         }
     }
-    
+
     public static class CreateSubRefNodeMasterFailJob implements Job<Serializable[]>
     {
-        private final Job<Void> shutdownDispatcher;
+        private final CommonJobs.ShutdownDispatcher shutdownDispatcher;
 
-        public CreateSubRefNodeMasterFailJob( Job<Void> shutdownDispatcher )
+        public CreateSubRefNodeMasterFailJob( CommonJobs.ShutdownDispatcher shutdownDispatcher )
         {
             this.shutdownDispatcher = shutdownDispatcher;
         }
@@ -172,7 +175,7 @@ public abstract class CommonJobs
             }
             finally
             {
-                this.shutdownDispatcher.execute( db );
+                this.shutdownDispatcher.doShutdown();
                 try
                 {
                     tx.finish();
@@ -185,7 +188,7 @@ public abstract class CommonJobs
             return new Serializable[] { successful, nodeId };
         }
     }
-    
+
     public static class SetSubRefPropertyJob extends TransactionalJob<Object>
     {
         private final String key;
@@ -196,7 +199,7 @@ public abstract class CommonJobs
             this.key = key;
             this.value = value;
         }
-        
+
         @Override
         protected Object executeInTransaction( GraphDatabaseService db, Transaction tx )
         {
@@ -211,7 +214,7 @@ public abstract class CommonJobs
             return oldValue;
         }
     }
-    
+
     public static class CreateSomeEntitiesJob extends TransactionalJob<Void>
     {
         @Override
@@ -221,7 +224,7 @@ public abstract class CommonJobs
             Relationship rel1 = db.getReferenceNode().createRelationshipTo( node1, REL_TYPE );
             node1.setProperty( "name", "Mattias" );
             rel1.setProperty( "something else", "Somewhat different" );
-            
+
             Node node2 = db.createNode();
             Relationship rel2 = node1.createRelationshipTo( node2, REL_TYPE );
             node2.setProperty( "why o why", "Stuff" );
@@ -230,7 +233,7 @@ public abstract class CommonJobs
             return null;
         }
     }
-    
+
     public static class GetNodeByIdJob implements Job<Boolean>
     {
         private final long id;
@@ -239,7 +242,7 @@ public abstract class CommonJobs
         {
             this.id = id;
         }
-        
+
         public Boolean execute( GraphDatabaseService db )
         {
             try
@@ -253,32 +256,28 @@ public abstract class CommonJobs
             }
         }
     }
-    
-    public static class ShutdownJvm implements Job<Void>
-    {
-        private final StandaloneDbCom jvm;
 
-        public ShutdownJvm( StandaloneDbCom jvm )
+    public interface ShutdownDispatcher extends Remote
+    {
+        void doShutdown() throws RemoteException;
+    }
+
+    public static class ShutdownJvm extends UnicastRemoteObject implements ShutdownDispatcher
+    {
+        private final StandaloneDatabase jvm;
+
+        public ShutdownJvm( StandaloneDatabase jvm ) throws RemoteException
         {
+            super();
             this.jvm = jvm;
         }
-        
-        public Void execute( GraphDatabaseService db ) throws RemoteException
+
+        public void doShutdown()
         {
-            this.jvm.initiateShutdown();
-            try
-            {
-                Thread.sleep( 1000 );
-            }
-            catch ( InterruptedException e )
-            {
-                Thread.interrupted();
-                // OK
-            }
-            return null;
+            this.jvm.shutdown();
         }
     }
-    
+
     public static class DeleteNodeJob implements Job<Boolean>
     {
         private final long id;
@@ -289,7 +288,7 @@ public abstract class CommonJobs
             this.id = id;
             this.deleteIndexing = deleteIndexing;
         }
-        
+
         public Boolean execute( GraphDatabaseService db ) throws RemoteException
         {
             Transaction tx = db.beginTx();
@@ -322,7 +321,7 @@ public abstract class CommonJobs
             return successful;
         }
     }
-    
+
     public static class GetRelationshipCountJob implements Job<Integer>
     {
         private final String[] types;
@@ -331,7 +330,7 @@ public abstract class CommonJobs
         {
             this.types = types;
         }
-        
+
         public Integer execute( GraphDatabaseService db )
         {
             int counter = 0;
@@ -353,7 +352,7 @@ public abstract class CommonJobs
         }
         return types;
     }
-    
+
     public static class CreateNodeOutsideOfTxJob implements Job<Boolean>
     {
         public Boolean execute( GraphDatabaseService db ) throws RemoteException
@@ -369,7 +368,7 @@ public abstract class CommonJobs
             }
         }
     }
-    
+
     public static class CreateNodeJob extends TransactionalJob<Long>
     {
         @Override
@@ -380,7 +379,7 @@ public abstract class CommonJobs
             return node.getId();
         }
     }
-    
+
     public static class SetNodePropertyJob extends TransactionalJob<Boolean>
     {
         private final long id;
@@ -393,7 +392,7 @@ public abstract class CommonJobs
             this.key = key;
             this.value = value;
         }
-        
+
         @Override
         protected Boolean executeInTransaction( GraphDatabaseService db, Transaction tx )
         {
@@ -409,7 +408,7 @@ public abstract class CommonJobs
             }
         }
     }
-    
+
     public static class CreateNodesJob extends TransactionalJob<Long[]>
     {
         private final int count;
@@ -418,7 +417,7 @@ public abstract class CommonJobs
         {
             this.count = count;
         }
-        
+
         @Override
         protected Long[] executeInTransaction( GraphDatabaseService db, Transaction tx )
         {
@@ -431,7 +430,7 @@ public abstract class CommonJobs
             return result;
         }
     }
-    
+
     public static class Worker1Job extends TransactionalJob<Boolean[]>
     {
         private final long node1;
@@ -444,7 +443,7 @@ public abstract class CommonJobs
             this.node2 = node2;
             this.fetcher = fetcher;
         }
-        
+
         @Override
         protected Boolean[] executeInTransaction( GraphDatabaseService db, Transaction tx )
         {
@@ -485,7 +484,7 @@ public abstract class CommonJobs
             this.node2 = node2;
             this.fetcher = fetcher;
         }
-        
+
         @Override
         protected Boolean[] executeInTransaction( GraphDatabaseService db, Transaction tx )
         {
@@ -512,7 +511,7 @@ public abstract class CommonJobs
             return new Boolean[] { success, deadlock };
         }
     }
-    
+
     public static class PerformanceAcquireWriteLocksJob extends TransactionalJob<Void>
     {
         private final int amount;
@@ -521,7 +520,7 @@ public abstract class CommonJobs
         {
             this.amount = amount;
         }
-        
+
         @Override
         protected Void executeInTransaction( GraphDatabaseService db, Transaction tx )
         {
@@ -537,7 +536,7 @@ public abstract class CommonJobs
             return null;
         }
     }
-    
+
     public static class PerformanceIdAllocationJob extends AbstractJob<Void>
     {
         private final int count;
@@ -546,7 +545,7 @@ public abstract class CommonJobs
         {
             this.count = count;
         }
-        
+
         public Void execute( GraphDatabaseService db )
         {
             Config config = getConfig( db );
@@ -558,7 +557,7 @@ public abstract class CommonJobs
             return null;
         }
     }
-    
+
     public static class PerformanceCreateNodesJob extends AbstractJob<Void>
     {
         private final int numTx;
@@ -569,7 +568,7 @@ public abstract class CommonJobs
             this.numTx = numTx;
             this.numNodesInEach = numNodesInEach;
         }
-        
+
         public Void execute( GraphDatabaseService db ) throws RemoteException
         {
             for ( int i = 0; i < numTx; i++ )
@@ -591,7 +590,7 @@ public abstract class CommonJobs
             return null;
         }
     }
-    
+
     public static class CreateNodeAndIndexJob extends TransactionalJob<Long>
     {
         private final String key;
@@ -602,7 +601,7 @@ public abstract class CommonJobs
             this.key = key;
             this.value = value;
         }
-        
+
         @Override
         protected Long executeInTransaction( GraphDatabaseService db, Transaction tx )
         {
@@ -616,7 +615,7 @@ public abstract class CommonJobs
             return node.getId();
         }
     }
-    
+
     public static class CreateNodeAndNewIndexJob extends TransactionalJob<Long>
     {
         private final String key;
@@ -634,7 +633,7 @@ public abstract class CommonJobs
             this.key2 = key2;
             this.value2 = value2;
         }
-        
+
         @Override
         protected Long executeInTransaction( GraphDatabaseService db, Transaction tx )
         {
@@ -648,7 +647,7 @@ public abstract class CommonJobs
             return node.getId();
         }
     }
-    
+
     public static class AddIndex extends TransactionalJob<Void>
     {
         private final Map<String, Object> properties;
@@ -684,7 +683,7 @@ public abstract class CommonJobs
             this.txSizeMb = txSizeMb;
             this.numTxs = numTxs;
         }
-        
+
         public Void execute( GraphDatabaseService db ) throws RemoteException
         {
             byte[] largeArray = new byte[1*1024*1021]; /* 1021 So that it doesn't align with block size in BlockLogBuffer and all that :) */
