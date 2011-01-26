@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha.zookeeper;
+package slavetest.manual;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.TreeSet;
 
-public class ZooKeeperServerWrapper
+class ZooKeeperServerWrapper
 {
     private final int myId;
     private final File dataDirectory;
@@ -70,36 +70,36 @@ public class ZooKeeperServerWrapper
             writer.write( key + " = " + props.get( key ) + "\n" );
         }
         writer.close();
-        
+
         writer = new FileWriter( new File( dataDirectory, "myid" ) );
         writer.write( "" + myId );
         writer.close();
         return configFile;
     }
-    
+
     private void populateZooConfig( Properties props )
     {
         props.setProperty( "clientPort", "" + clientPort );
         props.setProperty( "dataDir", dataDirectory.getPath() );
-        
+
         fillPropsOrDefault( props, "tickTime", "2000" );
         fillPropsOrDefault( props, "initLimit", "10" );
         fillPropsOrDefault( props, "syncLimit", "5" );
-        
+
         int counter = 1;
         for ( String server : allZooKeeperServers )
         {
             props.setProperty( "server." + counter++, server );
         }
     }
-    
+
     private void fillPropsOrDefault( Properties props, String key, String defaultValue )
     {
         String value = (additionalConfig != null && additionalConfig.containsKey( key )) ?
                 additionalConfig.get( key ) : defaultValue;
         props.setProperty( key, value );
     }
-    
+
     public void shutdown()
     {
         this.process.destroy();

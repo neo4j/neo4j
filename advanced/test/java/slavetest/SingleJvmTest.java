@@ -70,6 +70,11 @@ public class SingleJvmTest extends AbstractHaTest
     }
 
     @Override
+    protected void awaitAllStarted() throws Exception
+    {
+    }
+
+    @Override
     protected void startUpMaster( Map<String, String> extraConfig ) throws Exception
     {
         int masterId = 0;
@@ -80,7 +85,6 @@ public class SingleJvmTest extends AbstractHaTest
                 config, AbstractBroker.wrapSingleBroker( broker ) );
         // db.newMaster( null, new Exception() );
         master = new MasterImpl( db );
-        Thread.sleep( 1000 );
     }
 
     protected Broker makeMasterBroker( MasterImpl master, int masterId, String path )
@@ -111,8 +115,14 @@ public class SingleJvmTest extends AbstractHaTest
     @After
     public void verifyAndShutdownDbs()
     {
-        verify( master.getGraphDb(), haDbs.toArray( new GraphDatabaseService[haDbs.size()] ) );
-        shutdownDbs();
+        try
+        {
+            verify( master.getGraphDb(), haDbs.toArray( new GraphDatabaseService[haDbs.size()] ) );
+        }
+        finally
+        {
+            shutdownDbs();
+        }
 
         GraphDatabaseService masterOfflineDb =
                 new EmbeddedGraphDatabase( dbPath( 0 ).getAbsolutePath() );
@@ -121,11 +131,17 @@ public class SingleJvmTest extends AbstractHaTest
         {
             slaveOfflineDbs[i-1] = new EmbeddedGraphDatabase( dbPath( i ).getAbsolutePath() );
         }
-        verify( masterOfflineDb, slaveOfflineDbs );
-        masterOfflineDb.shutdown();
-        for ( GraphDatabaseService db : slaveOfflineDbs )
+        try
         {
-            db.shutdown();
+            verify( masterOfflineDb, slaveOfflineDbs );
+        }
+        finally
+        {
+            masterOfflineDb.shutdown();
+            for ( GraphDatabaseService db : slaveOfflineDbs )
+            {
+                db.shutdown();
+            }
         }
     }
 
@@ -199,14 +215,13 @@ public class SingleJvmTest extends AbstractHaTest
     }
 
     @Override
-    protected Job<Void> getMasterShutdownDispatcher()
+    protected CommonJobs.ShutdownDispatcher getMasterShutdownDispatcher()
     {
-        return new Job<Void>()
+        return new CommonJobs.ShutdownDispatcher()
         {
-            public Void execute( GraphDatabaseService db )
+            public void doShutdown()
             {
                 master.getGraphDb().shutdown();
-                return null;
             }
         };
     }

@@ -50,19 +50,19 @@ import org.neo4j.kernel.ha.HaCommunicationException;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterIdGeneratorFactory;
 import org.neo4j.kernel.ha.MasterServer;
-import org.neo4j.kernel.ha.MasterTxIdGenerator.MasterTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.Response;
 import org.neo4j.kernel.ha.ResponseReceiver;
 import org.neo4j.kernel.ha.SlaveContext;
-import org.neo4j.kernel.ha.SlaveIdGenerator.SlaveIdGeneratorFactory;
-import org.neo4j.kernel.ha.SlaveLockManager.SlaveLockManagerFactory;
 import org.neo4j.kernel.ha.SlaveRelationshipTypeCreator;
-import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.SlaveTxRollbackHook;
 import org.neo4j.kernel.ha.TimeUtil;
 import org.neo4j.kernel.ha.ToFileStoreWriter;
 import org.neo4j.kernel.ha.TxExtractor;
 import org.neo4j.kernel.ha.ZooKeeperLastCommittedTxIdSetter;
+import org.neo4j.kernel.ha.MasterTxIdGenerator.MasterTxIdGeneratorFactory;
+import org.neo4j.kernel.ha.SlaveIdGenerator.SlaveIdGeneratorFactory;
+import org.neo4j.kernel.ha.SlaveLockManager.SlaveLockManagerFactory;
+import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
@@ -101,6 +101,15 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
      */
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> config )
     {
+        this( storeDir, config, null );
+    }
+
+    /**
+     * Only for testing (and {@link org.neo4j.kernel.ha.BackupFromHaCluster})
+     */
+    public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> config,
+            BrokerFactory brokerFactory )
+    {
         if ( config == null )
         {
             throw new IllegalArgumentException( "null config, proper configuration required" );
@@ -108,25 +117,10 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         this.storeDir = storeDir;
         this.config = config;
         config.put( Config.KEEP_LOGICAL_LOGS, "true" );
-        this.brokerFactory = defaultBrokerFactory( storeDir, config );
+        this.brokerFactory = brokerFactory != null ? brokerFactory : defaultBrokerFactory(
+                storeDir, config );
         this.machineId = getMachineIdFromConfig( config );
-        this.broker = brokerFactory.create( storeDir, config );
-        this.msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
-        startUp();
-    }
-
-    /**
-     * Only for testing
-     */
-    public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> config,
-            BrokerFactory brokerFactory )
-    {
-        this.storeDir = storeDir;
-        this.config = config;
-        config.put( Config.KEEP_LOGICAL_LOGS, "true" );
-        this.brokerFactory = brokerFactory;
-        this.machineId = getMachineIdFromConfig( config );
-        this.broker = brokerFactory.create( storeDir, config );
+        this.broker = this.brokerFactory.create( storeDir, config );
         this.msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
         startUp();
     }
@@ -293,7 +287,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             {
                 ((SlaveIdGeneratorFactory) getConfig().getIdGeneratorFactory()).forgetIdAllocationsFromMaster();
             }
-            
+
             tryToEnsureIAmNotABrokenMachine( broker.getMaster() );
         }
         if ( restarted )
@@ -368,7 +362,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                     ". It may be that a log file is missing due to the db being copied from master?", e );
             return;
         }
-        
+
         int masterForMastersHighestCommonTxId = master.first().getMasterIdForCommittedTx( highestCommonTxId );
 
         // Compare those two, if equal -> good
@@ -574,7 +568,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             throw new RuntimeException( e );
         }
     }
-    
+
     public void applyTransaction( String datasourceName, long txId, ReadableByteChannel stream )
     {
         try
