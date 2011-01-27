@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>14</version>
+    <version>15</version>
   </parent>
   <groupId>org.neo4j.doc</groupId>
   <artifactId>neo4j-manual</artifactId>
@@ -153,6 +153,16 @@
         </executions>
       </plugin>
       <plugin>
+        <groupId>com.mycila.maven-license-plugin</groupId>
+        <artifactId>maven-license-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <exclude>js/**</exclude>
+            <exclude>css/**</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+      <plugin>
         <artifactId>maven-release-plugin</artifactId>
         <configuration>
           <tag>${releaseVersion}</tag>
@@ -163,12 +173,6 @@
   </build>
 
   <distributionManagement>
-    <snapshotRepository>
-      <id>snapshots@repo.neo4j.org</id>
-      <name>snapshots@repo.neo4j.org</name>
-      <uniqueVersion>false</uniqueVersion>
-      <url>https://repo.neo4j.org/content/repositories/snapshots</url>
-    </snapshotRepository>
     <site>
       <id>neo4j-site</id>
       <url>scpexe://components.neo4j.org/home/neo/components/${project.artifactId}/${project.version}</url>
