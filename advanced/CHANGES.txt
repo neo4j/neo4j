@@ -1,3 +1,11 @@
+0.5-1.3.M01 (2011-01-27)
+------------------------
+
+o Can participate in online backups, where the full index files are requested.
+o Fix for a NPE that could occur in IndexHits#size() if that was the first method called on the instance.
+o Fix for a recovery issue which occured when there had only been modifications to relationship indexes.
+o IndexHits#close() is run in the finalizer as a safety net, although best practice is to call it your self.
+
 0.2-1.2 (2010-12-29)
 --------------------
 
