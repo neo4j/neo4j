@@ -1,3 +1,18 @@
+1.3-1.3.M01 (2011-01-27)
+------------------------
+
+o Full online backup (no need to copy store files before hand) in HA and general support for requests with unlimited size.
+o A couple of bugs fixed in lucene index.
+o More memory efficient handling of transaction streams (extracting and applying).
+o New 'eval' shell command which lets you execute JavaScript on the database.
+
+- Server
+o Ability to start the server in HA mode.
+o Excludes the neo4j-index component (not used anyhow) to enable HA mode.
+
+- Examples
+o Added an example of an ordered traversal.
+
 1.2-1.2.M06 (2010-12-21)
 ------------------------
 
