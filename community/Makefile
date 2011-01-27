@@ -39,8 +39,14 @@ else
     VERS = --attribute revnumber=-neo4j-version
 endif
 
+ifdef IMPORTDIR
+    IMPDIR = --attribute importdir=$(IMPORTDIR)
+else
+    IMPDIR = --attribute importdir=$(SRCDIR)
+    IMPORTDIR = $(SRCDIR)
+endif
 
-GENERAL_FLAGS = $(V) $(K) $(VERS)
+GENERAL_FLAGS = $(V) $(K) $(VERS) $(IMPDIR)
 
 .PHONY: all dist docbook help clean pdf latexpdf html offline-html singlehtml text cleanup annotated manpages
 
@@ -76,12 +82,12 @@ endif
 
 docbook:  manpages
 	mkdir -p $(BUILDDIR)
-	asciidoc $(V) $(VERS) --backend docbook --attribute docinfo --doctype book --conf-file=$(CONFDIR)/asciidoc.conf --conf-file=$(CONFDIR)/docbook45.conf --out-file $(DOCBOOKFILE) $(SRCFILE)
+	asciidoc $(V) $(VERS) $(IMPDIR) --backend docbook --attribute docinfo --doctype book --conf-file=$(CONFDIR)/asciidoc.conf --conf-file=$(CONFDIR)/docbook45.conf --out-file $(DOCBOOKFILE) $(SRCFILE)
 	xmllint --nonet --noout --xinclude --postvalid $(DOCBOOKFILE)
 
 docbook-shortinfo:  manpages
 	mkdir -p $(BUILDDIR)
-	asciidoc $(V) $(VERS) --backend docbook --attribute docinfo1 --doctype book --conf-file=$(CONFDIR)/asciidoc.conf --conf-file=$(CONFDIR)/docbook45.conf --out-file $(DOCBOOKSHORTINFOFILE) $(SRCFILE)
+	asciidoc $(V) $(VERS) $(IMPDIR) --backend docbook --attribute docinfo1 --doctype book --conf-file=$(CONFDIR)/asciidoc.conf --conf-file=$(CONFDIR)/docbook45.conf --out-file $(DOCBOOKSHORTINFOFILE) $(SRCFILE)
 	xmllint --nonet --noout --xinclude --postvalid $(DOCBOOKSHORTINFOFILE)
 
 pdf:  docbook
@@ -142,7 +148,7 @@ endif
 
 manpages:
 	mkdir -p $(MANPAGES)
-	a2x -k -f manpage -d  manpage -D $(MANPAGES) $(SRCDIR)/tools/neo4j-shell.1.txt
+	a2x -k -f manpage -d  manpage -D $(MANPAGES) $(IMPORTDIR)/neo4j-shell-docs-jar/ops/neo4j-shell.1.txt
 	mv $(MANPAGES)/*.xml $(BUILDDIR)
 	gzip $(MANPAGES)/*
 
