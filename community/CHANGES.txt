@@ -1,3 +1,10 @@
+1.3-1.3.M01 (2011-01-27)
+------------------------
+
+o Added an 'eval' app which lets you supply arbitrary JavaScript code to be executed directly on the graph database.
+o Fixed some issues in the 'index' app where the entity type (node/relationship) was ignored.
+o Better exception messages/stack traces.
+
 1.2-1.2 (2010-12-29)
 --------------------
 
