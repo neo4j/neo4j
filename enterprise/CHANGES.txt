@@ -1,3 +1,11 @@
+1.3-1.3 (2011-01-27)
+--------------------
+
+o Fix for a traverser issue where the first relationship could sometimes be skipped when choosing to traverse over relationships.
+o Added SubProcess concept to ease development of tests which spawns other JVMs.
+o More memory efficient extraction of transaction streams from logs.
+o Better and safer upgrades from older index store formats.
+
 1.2-1.2 (2010-12-29)
 --------------------
 o Made it possible to detect if recovery was performed as part of startup of the current instance.
