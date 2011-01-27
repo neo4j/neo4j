@@ -8,7 +8,7 @@
   </parent>
   <groupId>org.neo4j.doc</groupId>
   <artifactId>neo4j-manual</artifactId>
-  <version>1.3.M01</version>
+  <version>1.3-SNAPSHOT</version>
   <name>Neo4j - Reference Manual</name>
   <description>Neo4j Reference Manual.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -19,9 +19,9 @@
   </properties>
 
   <scm>
-    <connection>scm:svn:https://svn.neo4j.org/documentation/manual/tags/1.3.M01</connection>
-    <developerConnection>scm:svn:https://svn.neo4j.org/documentation/manual/tags/1.3.M01</developerConnection>
-    <url>scm:svn:https://svn.neo4j.org/documentation/manual/tags/1.3.M01</url>
+    <connection>scm:svn:https://svn.neo4j.org/documentation/manual/trunk/</connection>
+    <developerConnection>scm:svn:https://svn.neo4j.org/documentation/manual/trunk/</developerConnection>
+    <url>https://trac.neo4j.org/browser/documentation/manual</url>
   </scm>
 
   <licenses>
