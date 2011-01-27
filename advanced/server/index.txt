@@ -8,6 +8,8 @@ include::server-installation.txt[]
 
 include::server-configuration.txt[]
 
+include::high-availability.txt[]
+
 include::server-plugins.txt[]
 
 include::server-performance.txt[]
