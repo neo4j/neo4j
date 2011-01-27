@@ -19,12 +19,21 @@
  */
 package org.neo4j.ha;
 
+import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Arrays;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
+import javax.management.MBeanServerInvocationHandler;
+import javax.management.ObjectName;
+
+import org.apache.zookeeper.server.quorum.QuorumMXBean;
 import org.apache.zookeeper.server.quorum.QuorumPeerMain;
+import org.jboss.netty.handler.timeout.TimeoutException;
 import org.junit.Ignore;
 import org.neo4j.test.SubProcess;
 import org.neo4j.test.TargetDirectory;
@@ -32,7 +41,7 @@ import org.neo4j.test.TargetDirectory;
 @Ignore
 public final class LocalhostZooKeeperCluster
 {
-    private final Object[] keeper;
+    private final ZooKeeper[] keeper;
     private final String connection;
 
     public LocalhostZooKeeperCluster( Class<?> owningTest, int... ports )
@@ -42,16 +51,51 @@ public final class LocalhostZooKeeperCluster
 
     public LocalhostZooKeeperCluster( TargetDirectory target, int... ports )
     {
-        keeper = new Object[ports.length];
-        ZooKeeperProcess subprocess = new ZooKeeperProcess( null );
-        StringBuilder connection = new StringBuilder();
-        for ( int i = 0; i < keeper.length; i++ )
+        keeper = new ZooKeeper[ports.length];
+        boolean success = false;
+        try
         {
-            keeper[i] = subprocess.start( new String[] { config( target, i + 1, ports[i] ) } );
-            if ( connection.length() > 0 ) connection.append( "," );
-            connection.append( "localhost:" + ports[i] );
+            ZooKeeperProcess subprocess = new ZooKeeperProcess( null );
+            StringBuilder connection = new StringBuilder();
+            for ( int i = 0; i < keeper.length; i++ )
+            {
+                keeper[i] = subprocess.start( new String[] { config( target, i + 1, ports[i] ) } );
+                if ( connection.length() > 0 ) connection.append( "," );
+                connection.append( "localhost:" + ports[i] );
+            }
+            this.connection = connection.toString();
+            await( keeper, 10, TimeUnit.SECONDS );
+            success = true;
         }
-        this.connection = connection.toString();
+        finally
+        {
+            if ( !success ) shutdown();
+        }
+    }
+
+    private static void await( ZooKeeper[] keepers, long timeout, TimeUnit unit )
+    {
+        timeout = System.currentTimeMillis() + unit.toMillis( timeout );
+        boolean done;
+        do
+        {
+            done = true;
+            for ( ZooKeeper keeper : keepers )
+            {
+                if ( keeper.getQuorumSize() != keepers.length ) done = false;
+            }
+            if ( System.currentTimeMillis() > timeout )
+                throw new TimeoutException( "waiting for ZooKeeper cluster to start" );
+            try
+            {
+                Thread.sleep( 10 );
+            }
+            catch ( InterruptedException e )
+            {
+                throw new TimeoutException( "waiting for ZooKeeper cluster to start", e );
+            }
+        }
+        while ( !done );
     }
 
     @Override
@@ -109,14 +153,35 @@ public final class LocalhostZooKeeperCluster
     public synchronized void shutdown()
     {
         if ( keeper.length > 0 && keeper[0] == null ) return;
-        for ( Object zk : keeper )
+        for ( ZooKeeper zk : keeper )
         {
-            SubProcess.stop( zk );
+            if ( zk != null ) SubProcess.stop( zk );
         }
         Arrays.fill( keeper, null );
     }
 
-    private static class ZooKeeperProcess extends SubProcess<Object, String[]>
+    public static void main( String[] args ) throws Exception
+    {
+        LocalhostZooKeeperCluster cluster = new LocalhostZooKeeperCluster( ZooKeeperProcess.class,
+                2181, 2182, 2183 );
+        try
+        {
+            System.out.println( "press return to exit" );
+            System.in.read();
+        }
+        finally
+        {
+            cluster.shutdown();
+        }
+    }
+
+    public interface ZooKeeper
+    {
+        int getQuorumSize();
+    }
+
+    private static class ZooKeeperProcess extends SubProcess<ZooKeeper, String[]> implements
+            ZooKeeper
     {
         private final String name;
 
@@ -142,6 +207,24 @@ public final class LocalhostZooKeeperCluster
             else
             {
                 return super.toString();
+            }
+        }
+
+        public int getQuorumSize()
+        {
+            try
+            {
+                Set<ObjectName> names = getPlatformMBeanServer().queryNames(
+                        new ObjectName( "org.apache.ZooKeeperService:name0=ReplicatedServer_id*" ),
+                        null );
+                if ( names.isEmpty() ) return 0;
+                QuorumMXBean quorum = MBeanServerInvocationHandler.newProxyInstance(
+                        getPlatformMBeanServer(), names.iterator().next(), QuorumMXBean.class, false );
+                return quorum.getQuorumSize();
+            }
+            catch ( Exception e )
+            {
+                return 0;
             }
         }
     }

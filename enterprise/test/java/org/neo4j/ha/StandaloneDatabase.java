@@ -217,7 +217,7 @@ public class StandaloneDatabase
         }
 
         @Override
-        protected void startup( Bootstrap bootstrap )
+        protected synchronized void startup( Bootstrap bootstrap )
         {
             System.setOut( new TimestampStream( System.out ) );
             System.setErr( new TimestampStream( System.err ) );
@@ -240,13 +240,25 @@ public class StandaloneDatabase
         }
 
         @Override
-        protected void shutdown()
+        protected synchronized void shutdown()
         {
-            System.out.println( "Shutdown started" );
             DatabaseReference ref = db;
+            if ( ref == null )
+            {
+                System.out.println( "Shutdown attempted before completion of startup" );
+                throw new IllegalStateException( "database has not been started" );
+            }
+            System.out.println( "Shutdown started" );
             try
             {
-                if ( ref.graph != null ) ref.graph.shutdown();
+                if ( ref.graph != null )
+                {
+                    ref.graph.shutdown();
+                }
+                else
+                {
+                    System.out.println( "database has already been shutdown" );
+                }
             }
             finally
             {
