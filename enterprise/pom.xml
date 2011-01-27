@@ -48,7 +48,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j</artifactId>
-      <version>1.3.M01</version>
+      <version>1.3-SNAPSHOT</version>
       <type>pom</type>
       <exclusions>
         <exclusion>
@@ -61,7 +61,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.3-1.3.M01</version>
+      <version>1.3-SNAPSHOT</version>
       <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
@@ -69,7 +69,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-ha</artifactId>
-      <version>0.6-1.3.M01</version>
+      <version>0.6-SNAPSHOT</version>
       <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
@@ -166,7 +166,7 @@
       <groupId>org.neo4j.doc</groupId>
       <artifactId>neo4j-manual</artifactId>
       <classifier>html</classifier>
-      <version>1.3.M01</version>
+      <version>1.3-SNAPSHOT</version>
       <optional>true</optional>
     </dependency>
 
