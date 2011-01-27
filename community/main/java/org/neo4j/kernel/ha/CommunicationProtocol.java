@@ -322,7 +322,7 @@ public abstract class CommunicationProtocol
         buffer.markReaderIndex();
         try
         {
-            if ( buffer.readByte() > 0 /* datasource id */ )
+            if ( buffer.readUnsignedByte() > 0 /* datasource id */ )
             {
                 buffer.skipBytes( 8 ); // tx id
                 int blockSize = 0;
