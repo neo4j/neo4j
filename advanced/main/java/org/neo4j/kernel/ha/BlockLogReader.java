@@ -56,6 +56,9 @@ public class BlockLogReader implements ReadableByteChannel
 
     public void close() throws IOException
     {
+        // This is to make sure that reader index in the ChannelBuffer is left
+        // in the right place even if this reader wasn't completely read through.
+        readToTheEnd();
     }
 
     public int read( ByteBuffer dst ) throws IOException
@@ -86,5 +89,13 @@ public class BlockLogReader implements ReadableByteChannel
         dst.put( byteArray, byteBuffer.position(), bytesToRead );
         byteBuffer.position( byteBuffer.position()+bytesToRead );
         return bytesToRead;
+    }
+    
+    private void readToTheEnd()
+    {
+        while ( moreBlocks )
+        {
+            readNextBlock();
+        }
     }
 }
