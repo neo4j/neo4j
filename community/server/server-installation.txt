@@ -54,7 +54,7 @@ and for the second instance
 wrapper.name=neo4j_2
 ----
 
-in order not to get name clashes installing and starting the instances as services. You might even need to adjust your unnix and linux startup scripts to properly start both instances.
+in order not to get name clashes installing and starting the instances as services.
 
 Also, the port numbers for the web administration and the servers should be changed to non-clashing values in conf/neo4j-server.properties:
 
