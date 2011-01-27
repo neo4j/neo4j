@@ -9,15 +9,15 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-remote-graphdb</artifactId>
-  <version>0.9-SNAPSHOT</version>
+  <version>0.9-1.3.M01</version>
   <name>Neo4j - Remote Graph Database</name>
   <description>Remote Graph Database is a tool for introspecting a running Neo4j Graph Database instance from a different process.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
-    <connection>scm:svn:https://svn.neo4j.org/components/remote-graphdb/trunk</connection>
-    <developerConnection>scm:svn:https://svn.neo4j.org/components/remote-graphdb/trunk</developerConnection>
-    <url>https://trac.neo4j.org/browser/components/remote-graphdb</url>
+    <connection>scm:svn:https://svn.neo4j.org/components/remote-graphdb/tags/0.9-1.3.M01</connection>
+    <developerConnection>scm:svn:https://svn.neo4j.org/components/remote-graphdb/tags/0.9-1.3.M01</developerConnection>
+    <url>scm:svn:https://svn.neo4j.org/components/remote-graphdb/tags/0.9-1.3.M01</url>
   </scm>
 
   <properties>
