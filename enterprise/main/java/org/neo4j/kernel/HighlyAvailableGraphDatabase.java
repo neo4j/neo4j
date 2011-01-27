@@ -557,7 +557,15 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             {
                 String resourceName = tx.first();
                 XaDataSource dataSource = localDataSourceManager.getXaDataSource( resourceName );
-                dataSource.applyCommittedTransaction( tx.second(), tx.third().extract() );
+                ReadableByteChannel txStream = tx.third().extract();
+                try
+                {
+                    dataSource.applyCommittedTransaction( tx.second(), txStream );
+                }
+                finally
+                {
+                    txStream.close();
+                }
             }
             updateTime();
             return response.response();
