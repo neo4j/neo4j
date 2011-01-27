@@ -230,6 +230,7 @@ public class StandaloneDatabase
             }
             finally
             {
+                System.out.println( graph != null ? "startup completed successfully" : "startup failed" );
                 if ( !db( graph ) && graph != null )
                 {
                     graph.shutdown();
