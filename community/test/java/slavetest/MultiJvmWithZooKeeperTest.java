@@ -26,11 +26,9 @@ import java.util.Map;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.neo4j.ha.LocalhostZooKeeperCluster;
 import org.neo4j.ha.StandaloneDatabase;
 
-@Ignore
 public class MultiJvmWithZooKeeperTest extends MultiJvmTest
 {
     private static final File BASE_ZOO_KEEPER_DATA_DIR =
@@ -62,7 +60,7 @@ public class MultiJvmWithZooKeeperTest extends MultiJvmTest
     protected StandaloneDatabase spawnJvm( File path, int machineId, String... extraArgs ) throws Exception
     {
         StandaloneDatabase db = StandaloneDatabase.withDefaultBroker( testName.getMethodName(),
-                path.getAbsoluteFile(), machineId, zooKeeperCluster.getConnectionString(),
+                path.getAbsoluteFile(), machineId, zooKeeperCluster,
                 buildHaServerConfigValue( machineId ), extraArgs );
         jvmByMachineId.put( machineId + 1, db );
         return db;

@@ -32,6 +32,7 @@ import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterImpl;
 import org.neo4j.kernel.ha.MasterServer;
 import org.neo4j.kernel.ha.ResponseReceiver;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.management.Neo4jManager;
 
 public class ZooKeeperBroker extends AbstractBroker
@@ -39,15 +40,23 @@ public class ZooKeeperBroker extends AbstractBroker
     private final ZooClient zooClient;
     private final String haServer;
     private final int machineId;
+    private final String clusterName;
 
-    public ZooKeeperBroker( String storeDir, int machineId, String zooKeeperServers,
-            String haServer, ResponseReceiver receiver )
+    public ZooKeeperBroker( String storeDir, String clusterName, int machineId,
+            String zooKeeperServers, String haServer, ResponseReceiver receiver )
     {
         super( machineId, storeDir );
+        this.clusterName = clusterName;
         this.machineId = machineId;
         this.haServer = haServer;
         this.zooClient = new ZooClient( zooKeeperServers, machineId, getRootPathGetter( storeDir ),
                 receiver, haServer, storeDir );
+    }
+
+    @Override
+    public StoreId createCluster( StoreId storeIdSuggestion )
+    {
+        return zooClient.createCluster( clusterName, storeIdSuggestion );
     }
 
     private RootPathGetter getRootPathGetter( String storeDir )

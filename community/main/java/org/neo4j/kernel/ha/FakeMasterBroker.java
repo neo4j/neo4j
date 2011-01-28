@@ -22,12 +22,19 @@ package org.neo4j.kernel.ha;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.ha.zookeeper.Machine;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 
 public class FakeMasterBroker extends AbstractBroker
 {
     public FakeMasterBroker( int myMachineId, String storeDir )
     {
         super( myMachineId, storeDir );
+    }
+
+    @Override
+    public StoreId createCluster( StoreId storeIdSuggestion )
+    {
+        return storeIdSuggestion; // Master will always win
     }
 
     public Machine getMasterMachine()

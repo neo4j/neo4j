@@ -22,6 +22,8 @@ package org.neo4j.kernel;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Collection;
 import java.util.List;
@@ -66,6 +68,7 @@ import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -76,7 +79,11 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     public static final String CONFIG_KEY_HA_MACHINE_ID = "ha.machine_id";
     public static final String CONFIG_KEY_HA_ZOO_KEEPER_SERVERS = "ha.zoo_keeper_servers";
     public static final String CONFIG_KEY_HA_SERVER = "ha.server";
+    public static final String CONFIG_KEY_HA_CLUSTER_NAME = "ha.cluster_name";
+    private static final String CONFIG_DEFAULT_HA_CLUSTER_NAME = "neo4j.ha";
+    private static final int CONFIG_DEFAULT_PORT = 6361;
     public static final String CONFIG_KEY_HA_PULL_INTERVAL = "ha.pull_interval";
+    public static final String CONFIG_KEY_ALLOW_INIT_CLUSTER = "ha.allow_init_cluster";
 
     private final String storeDir;
     private final Map<String, String> config;
@@ -122,7 +129,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         this.machineId = getMachineIdFromConfig( config );
         this.broker = this.brokerFactory.create( storeDir, config );
         this.msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
-        startUp();
+        startUp( getAllowInitFromConfig( config ) );
     }
 
     public static Map<String,String> loadConfigurations( String file )
@@ -130,24 +137,44 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         return EmbeddedGraphDatabase.loadConfigurations( file );
     }
 
-    private void startUp()
+    private void startUp( boolean allowInit )
     {
+        StoreId storeId = null;
         if ( !new File( storeDir, "neostore" ).exists() )
         {
-            Pair<Master, Machine> master = broker.getMaster();
-            master = master.first() != null ? master : broker.getMasterReally();
-            if ( master != null && master.first() != null )
+            MASTER_ARBITRATION: while ( true )
             {
-                master.first().copyStore( new SlaveContext( machineId, 0, new Pair[0] ),
-                        new ToFileStoreWriter( storeDir ) );
-            }
-            else
-            {
-                // The database files will be created when it starts up
-                // Assuming this is the master
+                // Check if the cluster is up
+                Pair<Master, Machine> master = broker.getMaster();
+                master = master.first() != null ? master : broker.getMasterReally();
+                if ( master != null && master.first() != null )
+                { // Join the existing cluster
+                    master.first().copyStore( new SlaveContext( machineId, 0, new Pair[0] ),
+                            new ToFileStoreWriter( storeDir ) );
+                    break MASTER_ARBITRATION;
+                }
+                else if ( allowInit )
+                { // Try to initialize the cluster and become master
+                    StoreId myStoreId = new StoreId();
+                    storeId = broker.createCluster( myStoreId );
+                    if ( storeId.equals( myStoreId ) )
+                    { // I am master
+                        break MASTER_ARBITRATION;
+                    }
+                }
+                // I am not master, and could not connect to the master:
+                // wait for other machine(s) to join.
+                try
+                {
+                    Thread.sleep( 100 );
+                }
+                catch ( InterruptedException e )
+                {
+                    throw new RuntimeException( "Startup interrupted", e );
+                }
             }
         }
-        newMaster( null, new Exception() );
+        newMaster( null, storeId, new Exception() );
         localGraph();
     }
 
@@ -175,6 +202,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             public Broker create( String storeDir, Map<String, String> config )
             {
                 return new ZooKeeperBroker( storeDir,
+                        getClusterNameFromConfig( config ),
                         getMachineIdFromConfig( config ),
                         getZooKeeperServersFromConfig( config ),
                         getHaServerFromConfig( config ), HighlyAvailableGraphDatabase.this );
@@ -182,9 +210,41 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         };
     }
 
+    private static String getClusterNameFromConfig( Map<?, ?> config )
+    {
+        String clusterName = (String) config.get( CONFIG_KEY_HA_CLUSTER_NAME );
+        if ( clusterName == null ) clusterName = CONFIG_DEFAULT_HA_CLUSTER_NAME;
+        return clusterName;
+    }
+
     private static String getHaServerFromConfig( Map<?, ?> config )
     {
-        return (String) config.get( CONFIG_KEY_HA_SERVER );
+        String haServer = (String) config.get( CONFIG_KEY_HA_SERVER );
+        if ( haServer == null )
+        {
+            InetAddress host = null;
+            try
+            {
+                host = InetAddress.getLocalHost();
+            }
+            catch ( UnknownHostException hostBecomesNull )
+            {
+            }
+            if ( host == null )
+            {
+                throw new IllegalStateException(
+                        "Could not auto configure host name, please supply " + CONFIG_KEY_HA_SERVER );
+            }
+            haServer = host + ":" + CONFIG_DEFAULT_PORT;
+        }
+        return haServer;
+    }
+
+    private static boolean getAllowInitFromConfig( Map<?, ?> config )
+    {
+        String allowInit = (String) config.get( CONFIG_KEY_ALLOW_INIT_CLUSTER );
+        if ( allowInit == null ) return true;
+        return Boolean.parseBoolean( allowInit );
     }
 
     private static String getZooKeeperServersFromConfig( Map<String, String> config )
@@ -252,7 +312,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         return localGraph().getManagementBean( type );
     }
 
-    protected synchronized void reevaluateMyself( Pair<Master, Machine> master )
+    protected synchronized void reevaluateMyself( Pair<Master, Machine> master, StoreId storeId )
     {
         if ( master == null )
         {
@@ -269,7 +329,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             if ( this.localGraph == null || !iAmCurrentlyMaster )
             {
                 internalShutdown();
-                startAsMaster();
+                startAsMaster( storeId );
                 restarted = true;
             }
             // fire rebound event
@@ -280,7 +340,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             if ( this.localGraph == null || iAmCurrentlyMaster )
             {
                 internalShutdown();
-                startAsSlave();
+                startAsSlave( storeId );
                 restarted = true;
             }
             else
@@ -309,10 +369,10 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         }
     }
 
-    private void startAsSlave()
+    private void startAsSlave( StoreId storeId )
     {
         msgLog.logMessage( "Starting[" + machineId + "] as slave", true );
-        this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
+        this.localGraph = new EmbeddedGraphDbImpl( storeDir, storeId, config, this,
                 new SlaveLockManagerFactory( broker, this ),
                 new SlaveIdGeneratorFactory( broker, this ),
                 new SlaveRelationshipTypeCreator( broker, this ),
@@ -323,10 +383,10 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         msgLog.logMessage( "Started as slave", true );
     }
 
-    private void startAsMaster()
+    private void startAsMaster( StoreId storeId )
     {
         msgLog.logMessage( "Starting[" + machineId + "] as master", true );
-        this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
+        this.localGraph = new EmbeddedGraphDbImpl( storeDir, storeId, config, this,
                 CommonFactories.defaultLockManagerFactory(),
                 new MasterIdGeneratorFactory(),
                 CommonFactories.defaultRelationshipTypeCreator(),
@@ -595,10 +655,15 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 
     public void newMaster( Pair<Master, Machine> master, Exception e )
     {
+        newMaster( master, null, e );
+    }
+
+    private void newMaster( Pair<Master, Machine> master, StoreId storeId, Exception e )
+    {
         try
         {
             msgLog.logMessage( "newMaster(" + master + ") called", e, true );
-            reevaluateMyself( master );
+            reevaluateMyself( master, storeId );
         }
         catch ( ZooKeeperException ee )
         {
