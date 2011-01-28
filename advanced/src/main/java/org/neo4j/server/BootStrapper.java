@@ -22,6 +22,7 @@ package org.neo4j.server;
 import java.io.File;
 
 import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.xml.DOMConfigurator;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.logging.Logger;
@@ -37,6 +38,7 @@ public class BootStrapper
     public static final Integer OK = 0;
     public static final Integer WEB_SERVER_STARTUP_ERROR_CODE = 1;
     public static final Integer GRAPH_DATABASE_STARTUP_ERROR_CODE = 2;
+    public static final String KEY_LOG4J_CONFIG_XML_PATH = "log4j.config.xml.path";
 
     private NeoServer server;
 
@@ -107,8 +109,23 @@ public class BootStrapper
     }
 
     public static void main(String[] args) {
-        BasicConfigurator.configure();
+        configureLogging();
         BootStrapper bootstrapper = new BootStrapper();
         bootstrapper.start(args);
+    }
+
+    private static void configureLogging()
+    {
+        String log4jConfigPath = System.getProperty( KEY_LOG4J_CONFIG_XML_PATH );
+        if ( log4jConfigPath != null )
+        {
+            DOMConfigurator.configure( log4jConfigPath );
+            System.out.println( "Configured logging from file: " + log4jConfigPath );
+        }
+        else
+        {
+            BasicConfigurator.configure();
+            System.out.println( "Configured default logging." );
+        }
     }
 }
