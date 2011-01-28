@@ -1,8 +1,5 @@
 
 include::webadmin.txt[]
 
-include::shell.txt[]
-
-// doesn't work:
-// include::{importdir}/neo4j-shell-docs-jar/dev/shell.txt
+include::{importdir}/neo4j-shell-docs-jar/dev/shell.txt[]
 
