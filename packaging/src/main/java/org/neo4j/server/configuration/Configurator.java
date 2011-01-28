@@ -157,12 +157,14 @@ public class Configurator {
             return;
         }
 
-        if (!new File(databaseTuningPropertyFileLocation).exists()) {
+        File databaseTuningPropertyFile = new File(databaseTuningPropertyFileLocation);
+        
+        if (!databaseTuningPropertyFile.exists()) {
             log.warn("The specified file for database performance tuning properties [%s] does not exist.", databaseTuningPropertyFileLocation);
             return;
         }
 
-        databaseTuningProperties = EmbeddedGraphDatabase.loadConfigurations(databaseTuningPropertyFileLocation);
+        databaseTuningProperties = EmbeddedGraphDatabase.loadConfigurations(databaseTuningPropertyFile.getAbsolutePath());
     }
 
     public Map<String, String> getDatabaseTuningProperties() {
