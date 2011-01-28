@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
@@ -55,7 +54,7 @@ public class NeoStore extends AbstractStore
     private final IdGeneratorFactory idGeneratorFactory;
     private boolean isStarted;
     private long lastCommittedTx = -1;
-    
+
     private final int REL_GRAB_SIZE;
 
     public NeoStore( Map<?,?> config )
@@ -67,7 +66,7 @@ public class NeoStore extends AbstractStore
             String grabSize = (String) getConfig().get( "relationship_grab_size" );
             if ( grabSize != null )
             {
-                relGrabSize = Integer.parseInt( grabSize ); 
+                relGrabSize = Integer.parseInt( grabSize );
             }
         }
         REL_GRAB_SIZE = relGrabSize;
@@ -97,7 +96,7 @@ public class NeoStore extends AbstractStore
         nodeStore = new NodeStore( getStorageFileName() + ".nodestore.db",
             getConfig() );
     }
-    
+
     /**
      * Closes the node,relationship,property and relationship type stores.
      */
@@ -126,9 +125,10 @@ public class NeoStore extends AbstractStore
         }
     }
 
+    @Override
     public void flushAll()
     {
-        if ( relTypeStore == null || propStore == null || relStore == null || 
+        if ( relTypeStore == null || propStore == null || relStore == null ||
                 nodeStore == null )
         {
             return;
@@ -139,26 +139,26 @@ public class NeoStore extends AbstractStore
         nodeStore.flushAll();
     }
 
+    @Override
     public String getTypeAndVersionDescriptor()
     {
         return VERSION;
     }
-    
+
     public IdGeneratorFactory getIdGeneratorFactory()
     {
         return idGeneratorFactory;
     }
 
+    @Override
     public int getRecordSize()
     {
         return RECORD_SIZE;
     }
 
-    private static final Random r = new Random( System.currentTimeMillis() );
-    
     /**
      * Creates the neo,node,relationship,property and relationship type stores.
-     * 
+     *
      * @param fileName
      *            The name of store
      * @throws IOException
@@ -168,7 +168,9 @@ public class NeoStore extends AbstractStore
     {
         IdGeneratorFactory idGeneratorFactory = (IdGeneratorFactory) config.get(
                 IdGeneratorFactory.class );
-                
+        StoreId storeId = (StoreId) config.get( StoreId.class );
+        if ( storeId == null ) storeId = new StoreId();
+
         createEmptyStore( fileName, VERSION, idGeneratorFactory );
         NodeStore.createStore( fileName + ".nodestore.db", config );
         RelationshipStore.createStore( fileName + ".relationshipstore.db", idGeneratorFactory );
@@ -185,34 +187,38 @@ public class NeoStore extends AbstractStore
         NeoStore neoStore = new NeoStore( config );
         // created time | random long | backup version | tx id
         neoStore.nextId(); neoStore.nextId(); neoStore.nextId(); neoStore.nextId();
-        long time = System.currentTimeMillis();
-        neoStore.setCreationTime( time );
-        neoStore.setRandomNumber( r.nextLong() );
+        neoStore.setCreationTime( storeId.getCreationTime() );
+        neoStore.setRandomNumber( storeId.getRandomId() );
         neoStore.setVersion( 0 );
         neoStore.setLastCommittedTx( 1 );
         neoStore.close();
     }
-    
+
+    public StoreId getStoreId()
+    {
+        return new StoreId( getCreationTime(), getRandomNumber() );
+    }
+
     public long getCreationTime()
     {
         return getRecord( 0 );
     }
-    
+
     public void setCreationTime( long time )
     {
         setRecord( 0, time );
     }
-    
+
     public long getRandomNumber()
     {
         return getRecord( 1 );
     }
-    
+
     public void setRandomNumber( long nr )
     {
         setRecord( 1, nr );
     }
-    
+
     public void setRecoveredStatus( boolean status )
     {
         if ( status )
@@ -224,29 +230,29 @@ public class NeoStore extends AbstractStore
             unsetRecovered();
         }
     }
-    
+
     public long getVersion()
     {
         return getRecord( 2 );
     }
-    
+
     public void setVersion( long version )
     {
         setRecord( 2, version );
     }
-    
+
     public synchronized void setLastCommittedTx( long txId )
     {
         long current = getRecord( 3 );
         if ( (current + 1) != txId && !isInRecoveryMode() )
         {
-            throw new InvalidRecordException( "Could not set tx commit id[" +  
+            throw new InvalidRecordException( "Could not set tx commit id[" +
                 txId + "] since the current one is[" + current + "]" );
         }
         setRecord( 3, txId );
         // TODO Why check null here? because I have no time to fix the tests
-        // And the update to zookeeper or whatever should probably be moved from 
-        // here and be async since if it fails tx will get exception in committing 
+        // And the update to zookeeper or whatever should probably be moved from
+        // here and be async since if it fails tx will get exception in committing
         // state and shutdown... that is wrong since the tx did not fail
         // - zookeeper is only used for master election, tx state there is not critical
         if ( isStarted && lastCommittedTxIdSetter != null && txId != lastCommittedTx )
@@ -262,12 +268,12 @@ public class NeoStore extends AbstractStore
         }
         lastCommittedTx = txId;
     }
-    
+
     public long getNextCommitId()
     {
         return getRecord( 3 ) + 1;
     }
-    
+
     public synchronized long getLastCommittedTx()
     {
         if ( lastCommittedTx == -1 )
@@ -276,14 +282,14 @@ public class NeoStore extends AbstractStore
         }
         return lastCommittedTx;
     }
-    
+
     public long incrementVersion()
     {
         long current = getVersion();
         setVersion( current + 1 );
         return current;
     }
-    
+
     private long getRecord( int id )
     {
         PersistenceWindow window = acquireWindow( id, OperationType.READ );
@@ -298,7 +304,7 @@ public class NeoStore extends AbstractStore
             releaseWindow( window );
         }
     }
-    
+
     private void setRecord( int id, long value )
     {
         PersistenceWindow window = acquireWindow( id, OperationType.WRITE );
@@ -315,7 +321,7 @@ public class NeoStore extends AbstractStore
 
     /**
      * Returns the node store.
-     * 
+     *
      * @return The node store
      */
     public NodeStore getNodeStore()
@@ -325,7 +331,7 @@ public class NeoStore extends AbstractStore
 
     /**
      * The relationship store.
-     * 
+     *
      * @return The relationship store
      */
     public RelationshipStore getRelationshipStore()
@@ -335,7 +341,7 @@ public class NeoStore extends AbstractStore
 
     /**
      * Returns the relationship type store.
-     * 
+     *
      * @return The relationship type store
      */
     public RelationshipTypeStore getRelationshipTypeStore()
@@ -345,7 +351,7 @@ public class NeoStore extends AbstractStore
 
     /**
      * Returns the property store.
-     * 
+     *
      * @return The property store
      */
     public PropertyStore getPropertyStore()
@@ -363,7 +369,8 @@ public class NeoStore extends AbstractStore
         super.makeStoreOk();
         isStarted = true;
     }
-    
+
+    @Override
     public void rebuildIdGenerators()
     {
         relTypeStore.rebuildIdGenerators();
@@ -381,7 +388,7 @@ public class NeoStore extends AbstractStore
         relStore.updateHighId();
         nodeStore.updateHighId();
     }
-    
+
     @Override
     protected boolean versionFound( String version )
     {
@@ -407,9 +414,9 @@ public class NeoStore extends AbstractStore
             closeIdGenerator();
             return false;
         }
-        throw new IllegalStoreVersionException( "Store version [" + version  + 
-            "]. Please make sure you are not running old Neo4j kernel " + 
-            " towards a store that has been created by newer version " + 
+        throw new IllegalStoreVersionException( "Store version [" + version  +
+            "]. Please make sure you are not running old Neo4j kernel " +
+            " towards a store that has been created by newer version " +
             " of Neo4j." );
     }
 
@@ -417,7 +424,8 @@ public class NeoStore extends AbstractStore
     {
         return REL_GRAB_SIZE;
     }
-    
+
+    @Override
     public List<WindowPoolStats> getAllWindowPoolStats()
     {
         List<WindowPoolStats> list = new ArrayList<WindowPoolStats>();
@@ -427,7 +435,7 @@ public class NeoStore extends AbstractStore
         list.addAll( relTypeStore.getAllWindowPoolStats() );
         return list;
     }
-    
+
     public boolean isStoreOk()
     {
         return getStoreOk() && relTypeStore.getStoreOk() &&
