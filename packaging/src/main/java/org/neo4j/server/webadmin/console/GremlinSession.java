@@ -19,73 +19,74 @@
  */
 package org.neo4j.server.webadmin.console;
 
-import com.tinkerpop.blueprints.pgm.TransactionalGraph;
-import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
-import com.tinkerpop.gremlin.GremlinScriptEngine;
+import groovy.lang.Binding;
+
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.StringWriter;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.script.ScriptException;
+
+import org.codehaus.groovy.tools.shell.IO;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseBlockedException;
 
-import javax.script.ScriptContext;
-import javax.script.ScriptEngine;
-import javax.script.ScriptException;
-import java.io.StringWriter;
-import java.util.List;
+import com.tinkerpop.blueprints.pgm.TransactionalGraph;
+import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
+import com.tinkerpop.gremlin.console.ResultHookClosure;
 
 public class GremlinSession implements ScriptSession
 {
-    protected ScriptEngine scriptEngine;
+    protected GremlinWebConsole scriptEngine;
     protected StringWriter outputWriter;
     private Database database;
+    private IO io;
+    private ByteArrayOutputStream baos;
 
     public GremlinSession( Database database )
     {
         this.database = database;
-        scriptEngine = createGremlinScriptEngine();
+        baos = new ByteArrayOutputStream();
+        BufferedOutputStream out = new BufferedOutputStream( baos );
+        io = new IO( System.in, out, out );
+        Map bindings = new HashMap();
+        bindings.put( "g", getGremlinWrappedGraph() );
+        scriptEngine = new GremlinWebConsole(new Binding( bindings ), io );
     }
 
     /**
      * Take some gremlin script, evaluate it in the context of this gremlin
      * session, and return the result.
-     *
+     * 
      * @param script
      * @return
      */
     @Override
     public String evaluate( String script )
     {
-        try
-        {
-            List<Object> resultLines = runScript( script );
+        scriptEngine.groovy.execute( script );
+        String result = baos.toString();
+        resetIO();
+        return result;
 
-            StringBuilder result = new StringBuilder();
-            result.append( outputWriter.toString() );
-
-            if ( resultLines.size() > 0 )
-            {
-                for ( Object resultLine : resultLines )
-                {
-                    result.append( resultLine.toString() );
-                }
-            }
-
-            return result.toString();
-        } catch ( ScriptException e )
-        {
-            return e.getMessage();
-        } catch ( RuntimeException e )
-        {
-            e.printStackTrace();
-            return e.getMessage();
-        }
     }
 
-    private List<Object> runScript( String script )
-            throws ScriptException
+    private void resetIO()
+    {
+        baos = new ByteArrayOutputStream();
+        BufferedOutputStream out = new BufferedOutputStream( baos );
+        IO io = new IO( System.in, out, out );
+        scriptEngine.groovy.setResultHook( new ResultHookClosure( scriptEngine.groovy, io ) );
+    }
+
+    private Object runScript( String script ) throws ScriptException
     {
         resetOutputWriter();
         Transaction tx = database.graph.beginTx();
-        List<Object> resultLines = (List<Object>)scriptEngine.eval( script );
+        Object resultLines = evaluate( script );
         tx.success();
         tx.finish();
         return resultLines;
@@ -94,8 +95,7 @@ public class GremlinSession implements ScriptSession
     private void resetOutputWriter()
     {
         outputWriter = new StringWriter();
-        scriptEngine.getContext().setWriter( outputWriter );
-        scriptEngine.getContext().setErrorWriter( outputWriter );
+
     }
 
     private TransactionalGraph getGremlinWrappedGraph()
@@ -103,34 +103,4 @@ public class GremlinSession implements ScriptSession
     {
         return new Neo4jGraph( database.graph );
     }
-
-    private ScriptEngine createGremlinScriptEngine()
-    {
-        try
-        {
-            ScriptEngine engine = new GremlinScriptEngine();
-
-            // Inject the local database
-            TransactionalGraph graph = getGremlinWrappedGraph();
-
-            engine.getBindings( ScriptContext.ENGINE_SCOPE ).put( "$_g", graph );
-
-            try
-            {
-                engine.getBindings( ScriptContext.ENGINE_SCOPE ).put( "$_",
-                        graph.getVertex( 0l ) );
-            } catch ( Exception e )
-            {
-                // Om-nom-nom
-            }
-
-            return engine;
-        } catch ( Throwable e )
-        {
-            // Pokemon catch b/c fails here get hidden until the server exits.
-            e.printStackTrace();
-            return null;
-        }
-    }
-
 }
