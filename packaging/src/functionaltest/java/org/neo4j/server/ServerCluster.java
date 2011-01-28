@@ -48,18 +48,18 @@ public final class ServerCluster
     private static final Random random = new Random();
     private final Triplet<ServerManager, URI, File>[] servers;
 
-    public ServerCluster( TargetDirectory targetDir, LocalhostZooKeeperCluster keeperCluster,
-            Pair<Integer, Integer>... ports )
+    public ServerCluster( String testName, TargetDirectory targetDir,
+            LocalhostZooKeeperCluster keeperCluster, Pair<Integer, Integer>... ports )
     {
         // @SuppressWarnings( { "unchecked", "hiding" } )
         // Pair<ServerManager, File>[] servers = new Pair[ports.length];
         this.servers = new Triplet[ports.length];
-        SubProcess<ServerManager, String> process = new ServerProcess();
+        SubProcess<ServerManager, String> process = new ServerProcess( testName );
         try
         {
             for ( int i = 0; i < ports.length; i++ )
             {
-                Pair<String, File> config = config( targetDir, keeperCluster, i, ports[i] );
+                Pair<String, File> config = config( testName, targetDir, keeperCluster, i, ports[i] );
                 servers[i] = awaitStartup( Pair.of( process.start( config.first() ), config.other() ) )[0];
             }
         }
@@ -93,7 +93,8 @@ public final class ServerCluster
             }
             else
             {
-                result.append( prefix ).append( server.second() );
+                result.append( prefix ).append( server.first() ).append( ": " ).append(
+                        server.second() );
                 if ( server.first().isMaster() ) result.append( " is master" );
             }
             prefix = ", ";
@@ -150,7 +151,7 @@ public final class ServerCluster
     }
 
     @SuppressWarnings( "unchecked" )
-    private static Pair<String, File> config( TargetDirectory targetDir,
+    private static Pair<String, File> config( String name, TargetDirectory targetDir,
             LocalhostZooKeeperCluster keeperCluster, int id, Pair<Integer, Integer> ports )
     {
         File serverDir = targetDir.directory( "server-" + ports.other(), true );
@@ -167,6 +168,7 @@ public final class ServerCluster
 
         // Kernel (and HA) configuration
         config( dbConfig, //
+                Pair.of( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_CLUSTER_NAME, name ),//
                 Pair.of( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVER, "localhost:"
                                                                             + ports.first() ),//
                 Pair.of( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID,
@@ -260,6 +262,18 @@ public final class ServerCluster
     {
         private transient BootStrapper bootstrap = null;
         private transient volatile Integer startupStatus = null;
+        private final String name;
+
+        ServerProcess( String name )
+        {
+            this.name = name;
+        }
+
+        @Override
+        public String toString()
+        {
+            return name;
+        }
 
         @Override
         protected void startup( String configFilePath )
