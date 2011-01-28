@@ -30,10 +30,11 @@ import org.neo4j.kernel.impl.core.GraphDbModule;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
 import org.neo4j.kernel.impl.core.LockReleaser;
-import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.RelationshipTypeHolder;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
+import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.persistence.IdGenerator;
 import org.neo4j.kernel.impl.persistence.IdGeneratorModule;
 import org.neo4j.kernel.impl.persistence.PersistenceModule;
@@ -74,17 +75,17 @@ public class Config
     public static final String CACHE_TYPE = "cache_type";
     public static final String TXMANAGER_IMPLEMENTATION = "tx_manager_impl";
 
-    private AdaptiveCacheManager cacheManager;
-    private TxModule txModule;
-    private LockManager lockManager;
-    private LockReleaser lockReleaser;
-    private PersistenceModule persistenceModule;
+    private final AdaptiveCacheManager cacheManager;
+    private final TxModule txModule;
+    private final LockManager lockManager;
+    private final LockReleaser lockReleaser;
+    private final PersistenceModule persistenceModule;
     private boolean create = false;
     private String persistenceSourceName;
     private final IdGeneratorModule idGeneratorModule;
     private final GraphDbModule graphDbModule;
     private final String storeDir;
-    private IndexStore indexStore;
+    private final IndexStore indexStore;
     private final Map<Object, Object> params;
     private final Map inputParams;
     private final TxEventSyncHookFactory syncHookFactory;
@@ -95,7 +96,7 @@ public class Config
     private final IdGeneratorFactory idGeneratorFactory;
     private final TxIdGenerator txIdGenerator;
 
-    Config( GraphDatabaseService graphDb, String storeDir,
+    Config( GraphDatabaseService graphDb, String storeDir, StoreId storeId,
             Map<String, String> inputParams, KernelPanicEventGenerator kpe,
             TxModule txModule, LockManager lockManager,
             LockReleaser lockReleaser, IdGeneratorFactory idGeneratorFactory,
@@ -124,6 +125,7 @@ public class Config
         indexStore = new IndexStore( storeDir );
         params.put( IndexStore.class, indexStore );
 
+        if ( storeId != null ) params.put( StoreId.class, storeId );
         params.put( IdGeneratorFactory.class, idGeneratorFactory );
         params.put( TxIdGenerator.class, txIdGenerator );
         params.put( TransactionManager.class, txModule.getTxManager() );
@@ -190,7 +192,7 @@ public class Config
     {
         return lockManager;
     }
-    
+
     public IndexStore getIndexStore()
     {
         return indexStore;
@@ -225,17 +227,17 @@ public class Config
     {
         return syncHookFactory;
     }
-    
+
     public RelationshipTypeCreator getRelationshipTypeCreator()
     {
         return relTypeCreator;
     }
-    
+
     public IdGeneratorFactory getIdGeneratorFactory()
     {
         return idGeneratorFactory;
     }
-    
+
     public RelationshipTypeHolder getRelationshipTypeHolder()
     {
         return graphDbModule.getNodeManager().getRelationshipTypeHolder();
