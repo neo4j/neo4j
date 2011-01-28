@@ -49,7 +49,7 @@ public class ConsoleWebTest extends WebDriverTest
     public void consoleShouldWork() {
     	consoleMenu.getElement().click();
     	
-    	consoleInput.sendKeys("$_g", Keys.ENTER);
+    	consoleInput.sendKeys("g", Keys.ENTER);
     }
     
     private ElementReference consoleInput = new ElementReference(webDriver, By.id("mor_console_input"));
