@@ -19,40 +19,54 @@
  */
 package org.neo4j.server.webadmin.console;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.kernel.ImpermanentGraphDatabase;
 import org.neo4j.server.database.Database;
 
 public class GremlinSessionTest
 {
+    private static final String TARGET_TEMPDB = "target/tempdb";
     private ScriptSession session;
     private Database database;
 
     @Test
     public void retrievesTheReferenceNode()
     {
-        String result = session.evaluate( "$_" );
+        String result = session.evaluate( "g" );
 
-        assertThat( result, is( "v[0]" ) );
+        assertEquals( String.format( "==>neo4jgraph[%s]\n",database.graph.toString()), result  );
     }
+    
+    @Test
+    public void multiLineTest()
+    {
+        String result = session.evaluate( "for (i in 0..2) {" );
+        result = session.evaluate( "println 'hi'" );
+        result = session.evaluate( "}" );
+        result = session.evaluate( "i = 2" );
 
+        assertEquals( "==>2\n", result  );
+    }
     @Test
     public void canCreateNodesInGremlinLand()
     {
-        String result = session.evaluate( "g:add-v()" );
+        String result = session.evaluate( "g.addVertex(null)" );
 
-        assertThat( result, is( "v[1]" ) );
+        assertEquals( "==>v[1]\n", result );
+        result = session.evaluate( "g.V >> 2" );
+
+        assertEquals( "==>v[0]\n==>v[1]\n", result );
     }
 
     @Before
     public void setUp() throws Exception
     {
-        this.database = new Database( new ImpermanentGraphDatabase( "target/tempdb" ) );
+        this.database = new Database( new ImpermanentGraphDatabase( TARGET_TEMPDB ) );
         session = new GremlinSession( database );
     }
 

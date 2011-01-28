@@ -26,7 +26,7 @@ Neo4j jmx bean should be at the top
 
 Only jmx name should be shown in JMX console
 
-Better name for JMX tab
+Ad support for Composite JMX beans
 
 Add understanding for MXBeans
 

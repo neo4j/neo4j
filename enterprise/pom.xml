@@ -118,7 +118,7 @@
     <dependency>
       <groupId>com.tinkerpop</groupId>
       <artifactId>gremlin</artifactId>
-      <version>0.6</version>
+      <version>0.7</version>
       <exclusions>
         <exclusion>
           <groupId>jline</groupId>
