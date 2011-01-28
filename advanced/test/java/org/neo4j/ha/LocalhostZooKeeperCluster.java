@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import javax.management.MBeanServerInvocationHandler;
+import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
 import org.apache.zookeeper.server.quorum.QuorumMXBean;
@@ -109,6 +110,18 @@ public final class LocalhostZooKeeperCluster
         return connection;
     }
 
+    String getStatus()
+    {
+        StringBuilder result = new StringBuilder();
+        String prefix = "";
+        for ( ZooKeeper zk : keeper )
+        {
+            result.append( prefix ).append( zk ).append( ": " ).append( zk.getStatus() );
+            prefix = ", ";
+        }
+        return result.toString();
+    }
+
     private String config( TargetDirectory target, int id, int port )
     {
         File config = target.file( "zookeeper" + id + ".cfg" );
@@ -178,6 +191,8 @@ public final class LocalhostZooKeeperCluster
     public interface ZooKeeper
     {
         int getQuorumSize();
+
+        String getStatus();
     }
 
     private static class ZooKeeperProcess extends SubProcess<ZooKeeper, String[]> implements
@@ -214,18 +229,41 @@ public final class LocalhostZooKeeperCluster
         {
             try
             {
-                Set<ObjectName> names = getPlatformMBeanServer().queryNames(
-                        new ObjectName( "org.apache.ZooKeeperService:name0=ReplicatedServer_id*" ),
-                        null );
-                if ( names.isEmpty() ) return 0;
-                QuorumMXBean quorum = MBeanServerInvocationHandler.newProxyInstance(
-                        getPlatformMBeanServer(), names.iterator().next(), QuorumMXBean.class, false );
-                return quorum.getQuorumSize();
+                return quorumBean().getQuorumSize();
             }
             catch ( Exception e )
             {
                 return 0;
             }
+        }
+
+        public String getStatus()
+        {
+            try
+            {
+                return status( quorumBean() );
+            }
+            catch ( Exception e )
+            {
+                return "-down-";
+            }
+        }
+
+        private QuorumMXBean quorumBean() throws MalformedObjectNameException
+        {
+            Set<ObjectName> names = getPlatformMBeanServer().queryNames(
+                    new ObjectName( "org.apache.ZooKeeperService:name0=ReplicatedServer_id*" ),
+                    null );
+            QuorumMXBean quorum = MBeanServerInvocationHandler.newProxyInstance(
+                    getPlatformMBeanServer(), names.iterator().next(), QuorumMXBean.class, false );
+            return quorum;
+        }
+
+        @SuppressWarnings( "boxing" )
+        private String status( QuorumMXBean quorumBean )
+        {
+            return String.format( "name=%s, size=%s", quorumBean.getName(),
+                    quorumBean.getQuorumSize() );
         }
     }
 }

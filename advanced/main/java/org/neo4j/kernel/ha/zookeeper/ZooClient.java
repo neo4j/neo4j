@@ -37,6 +37,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.ha.ConnectionInformation;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.ResponseReceiver;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public class ZooClient extends AbstractZooKeeperManager
@@ -282,7 +283,7 @@ public class ZooClient extends AbstractZooKeeperManager
     public String getRoot()
     {
         makeSureRootPathIsFound();
-        
+
         // Make sure it exists
         byte[] rootData = null;
         do
@@ -595,5 +596,41 @@ public class ZooClient extends AbstractZooKeeperManager
     protected String getHaServer( int machineId, boolean wait )
     {
         return machineId == this.machineId ? haServer : super.getHaServer( machineId, wait );
+    }
+
+    public synchronized StoreId createCluster( String clusterName, StoreId storeIdSuggestion )
+    {
+        String path = "/" + clusterName;
+        try
+        {
+            try
+            {
+                zooKeeper.create( path, storeIdSuggestion.serialize(), ZooDefs.Ids.OPEN_ACL_UNSAFE,
+                        CreateMode.PERSISTENT );
+                return storeIdSuggestion; // if successfully written
+            }
+            catch ( KeeperException e )
+            {
+                if ( e.code() == KeeperException.Code.NODEEXISTS )
+                { // another instance wrote before me
+                    try
+                    { // read what that instance wrote
+                        return StoreId.deserialize( zooKeeper.getData( path, false, null ) );
+                    }
+                    catch ( KeeperException ex )
+                    {
+                        throw new ZooKeeperException( "Unable to read cluster store id", ex );
+                    }
+                }
+                else
+                {
+                    throw new ZooKeeperException( "Unable to write cluster store id", e );
+                }
+            }
+        }
+        catch ( InterruptedException e )
+        {
+            throw new ZooKeeperException( "createCluster interrupted", e );
+        }
     }
 }

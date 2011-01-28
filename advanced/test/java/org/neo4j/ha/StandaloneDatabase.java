@@ -36,6 +36,7 @@ import org.neo4j.kernel.ha.CommunicationProtocol;
 import org.neo4j.kernel.ha.FakeMasterBroker;
 import org.neo4j.kernel.ha.FakeSlaveBroker;
 import org.neo4j.kernel.ha.MasterClient;
+import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.management.HighAvailability;
 import org.neo4j.test.SubProcess;
 
@@ -47,11 +48,13 @@ public class StandaloneDatabase
     private final Controller process;
 
     public static StandaloneDatabase withDefaultBroker( String testMethodName, File path,
-            int machineId, String zooKeeperConnection, String haServer, String[] extraArgs )
+            int machineId, final LocalhostZooKeeperCluster zooKeeper, String haServer,
+            String[] extraArgs )
     {
         return new StandaloneDatabase( testMethodName, new Bootstrap( path, machineId,//
                 HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVER, haServer,//
-                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS, zooKeeperConnection )
+                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS,
+                zooKeeper.getConnectionString() )
         {
             @Override
             HighlyAvailableGraphDatabase start( String storeDir, Map<String, String> config )
@@ -61,7 +64,14 @@ public class StandaloneDatabase
                 System.out.println( "Started HA db (w/ zoo keeper)" );
                 return db;
             }
-        } );
+        } )
+        {
+            @Override
+            IllegalStateException format( StartupFailureException e )
+            {
+                return e.format( zooKeeper );
+            }
+        };
     }
 
     public static StandaloneDatabase withFakeBroker( String testMethodName, File path,
@@ -106,22 +116,55 @@ public class StandaloneDatabase
 
     public void awaitStarted()
     {
-        process.awaitStarted();
+        try
+        {
+            process.awaitStarted();
+        }
+        catch ( StartupFailureException e )
+        {
+            throw format( e );
+        }
     }
 
     public <T> T executeJob( Job<T> job ) throws Exception
     {
-        return process.executeJob( job );
+        try
+        {
+            return process.executeJob( job );
+        }
+        catch ( StartupFailureException e )
+        {
+            throw format( e );
+        }
     }
 
     public int getMachineId()
     {
-        return process.getMachineId();
+        try
+        {
+            return process.getMachineId();
+        }
+        catch ( StartupFailureException e )
+        {
+            throw format( e );
+        }
     }
 
     public void pullUpdates()
     {
-        process.pullUpdates();
+        try
+        {
+            process.pullUpdates();
+        }
+        catch ( StartupFailureException e )
+        {
+            throw format( e );
+        }
+    }
+
+    IllegalStateException format( StartupFailureException e )
+    {
+        throw new IllegalStateException( "database failed to start", e.getCause() );
     }
 
     public void shutdown()
@@ -133,13 +176,32 @@ public class StandaloneDatabase
 
     public interface Controller
     {
-        void pullUpdates();
+        void pullUpdates() throws StartupFailureException;
 
-        void awaitStarted();
+        void awaitStarted() throws StartupFailureException;
 
-        int getMachineId();
+        int getMachineId() throws StartupFailureException;
 
         <T> T executeJob( Job<T> job ) throws Exception;
+    }
+
+    private static class StartupFailureException extends Exception
+    {
+        StartupFailureException( Throwable cause )
+        {
+            super( cause );
+        }
+
+        IllegalStateException format( LocalhostZooKeeperCluster zooKeeper )
+        {
+            Throwable cause = getCause();
+            String message = "failed to start database";
+            if ( cause instanceof ZooKeeperException )
+            {
+                message += ", ZooKeeper status: " + zooKeeper.getStatus();
+            }
+            return new IllegalStateException( message, cause );
+        }
     }
 
     public static abstract class Bootstrap implements Serializable
@@ -170,19 +232,18 @@ public class StandaloneDatabase
         abstract HighlyAvailableGraphDatabase start( String storeDir, Map<String, String> config );
     }
 
+    private static abstract class DatabaseReference
+    {
+        abstract HighlyAvailableGraphDatabase graph() throws StartupFailureException;
+
+        void shutdown()
+        {
+        }
+    }
+
     private static class HaDbProcess extends SubProcess<Controller, Bootstrap> implements
             Controller
     {
-        private static class DatabaseReference
-        {
-            final HighlyAvailableGraphDatabase graph;
-
-            DatabaseReference( HighlyAvailableGraphDatabase graph )
-            {
-                this.graph = graph;
-            }
-        }
-
         private transient volatile DatabaseReference db = null;
         private final String testMethodName;
 
@@ -191,23 +252,56 @@ public class StandaloneDatabase
             this.testMethodName = testMethodName;
         }
 
-        private HighlyAvailableGraphDatabase db()
+        private HighlyAvailableGraphDatabase db() throws StartupFailureException
         {
             DatabaseReference ref = db;
             if ( ref == null ) throw new IllegalStateException( "database has not been started" );
-            if ( ref.graph == null )
-                throw new IllegalStateException( "database has been shut down" );
-            return ref.graph;
+            return ref.graph();
         }
 
-        private synchronized boolean db( HighlyAvailableGraphDatabase graph )
+        private synchronized void db( final HighlyAvailableGraphDatabase graph )
         {
             if ( db != null && graph != null )
             {
-                return false;
+                graph.shutdown();
+                throw new IllegalStateException( "database has already been started" );
             }
-            db = new DatabaseReference( graph );
-            return true;
+            db = new DatabaseReference()
+            {
+                @Override
+                HighlyAvailableGraphDatabase graph()
+                {
+                    if ( graph == null )
+                        throw new IllegalStateException( "database has been shut down" );
+                    return graph;
+                }
+
+                @Override
+                void shutdown()
+                {
+                    if ( graph == null )
+                    {
+                        System.out.println( "database has already been shut down" );
+                    }
+                    else
+                    {
+                        graph.shutdown();
+                    }
+                }
+            };
+        }
+
+        private synchronized Throwable db( final Throwable cause )
+        {
+            db = new DatabaseReference()
+            {
+                @Override
+                HighlyAvailableGraphDatabase graph() throws StartupFailureException
+                {
+                    throw new StartupFailureException( cause );
+                }
+            };
+            return cause;
         }
 
         @Override
@@ -217,25 +311,20 @@ public class StandaloneDatabase
         }
 
         @Override
-        protected synchronized void startup( Bootstrap bootstrap )
+        protected synchronized void startup( Bootstrap bootstrap ) throws Throwable
         {
             System.setOut( new TimestampStream( System.out ) );
             System.setErr( new TimestampStream( System.err ) );
             if ( db != null ) throw new IllegalStateException( "already started" );
             System.out.println( "About to start" );
-            HighlyAvailableGraphDatabase graph = null;
             try
             {
-                graph = bootstrap.start();
+                db( bootstrap.start() );
             }
-            finally
+            catch ( Throwable exception )
             {
-                System.out.println( graph != null ? "startup completed successfully" : "startup failed" );
-                if ( !db( graph ) && graph != null )
-                {
-                    graph.shutdown();
-                    throw new IllegalStateException( "already started" );
-                }
+                System.out.println( "Startup failed: " + exception );
+                throw db( exception );
             }
         }
 
@@ -251,24 +340,17 @@ public class StandaloneDatabase
             System.out.println( "Shutdown started" );
             try
             {
-                if ( ref.graph != null )
-                {
-                    ref.graph.shutdown();
-                }
-                else
-                {
-                    System.out.println( "database has already been shutdown" );
-                }
+                ref.shutdown();
             }
             finally
             {
-                db( null );
+                db( (HighlyAvailableGraphDatabase) null );
             }
             System.out.println( "Shutdown completed" );
             super.shutdown();
         }
 
-        public void awaitStarted()
+        public void awaitStarted() throws StartupFailureException
         {
             boolean interrupted = false;
             while ( this.db == null )
@@ -284,6 +366,7 @@ public class StandaloneDatabase
                 }
             }
             if ( interrupted ) Thread.currentThread().interrupt();
+            db();
         }
 
         public <T> T executeJob( Job<T> job ) throws Exception
@@ -295,12 +378,12 @@ public class StandaloneDatabase
             return result;
         }
 
-        public int getMachineId()
+        public int getMachineId() throws StartupFailureException
         {
             return Integer.parseInt( db().getManagementBean( HighAvailability.class ).getMachineId() );
         }
 
-        public void pullUpdates()
+        public void pullUpdates() throws StartupFailureException
         {
             HighlyAvailableGraphDatabase database = db();
             System.out.println( "pullUpdates" );

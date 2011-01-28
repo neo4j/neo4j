@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.neo4j.kernel.KernelExtension.KernelData;
 import org.neo4j.kernel.ha.zookeeper.Machine;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 
 public abstract class AbstractBroker implements Broker
 {
@@ -90,5 +91,10 @@ public abstract class AbstractBroker implements Broker
     {
         throw new UnsupportedOperationException( getClass().getName()
                                                  + " does not support ConnectionInformation" );
+    }
+
+    public StoreId createCluster( StoreId storeIdSuggestion )
+    {
+        throw new UnsupportedOperationException( getClass().getName() );
     }
 }

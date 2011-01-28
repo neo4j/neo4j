@@ -424,7 +424,7 @@ public abstract class AbstractHaTest
     }
 
     @Test
-    public void testMasterConstrainViolation() throws Exception
+    public void testMasterConstraintViolation() throws Exception
     {
         setExpectedResults( 2, 1, 1, 1, 0, 0 );
         initializeDbs( 1 );
