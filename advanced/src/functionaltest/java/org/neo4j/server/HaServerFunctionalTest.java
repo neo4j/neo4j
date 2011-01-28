@@ -29,7 +29,9 @@ import javax.ws.rs.core.MediaType;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 import org.neo4j.ha.LocalhostZooKeeperCluster;
 import org.neo4j.helpers.Pair;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -46,6 +48,15 @@ public class HaServerFunctionalTest
             Pair.of( 6001, 7474 ), Pair.of( 6002, 7475 ) };
     private static final TargetDirectory dir = TargetDirectory.forTest( HaServerFunctionalTest.class );
     private static LocalhostZooKeeperCluster zk;
+    public @Rule
+    TestName testName = new TestName()
+    {
+        @Override
+        public String getMethodName()
+        {
+            return HaServerFunctionalTest.class.getSimpleName() + "." + super.getMethodName();
+        }
+    };
 
     @BeforeClass
     public static void startZooKeeper()
@@ -73,13 +84,13 @@ public class HaServerFunctionalTest
     @Test
     public void canStartUpServerCluster() throws Exception
     {
-        cluster = new ServerCluster( dir, zk, SERVER_PORTS );
+        cluster = new ServerCluster( testName.getMethodName(), dir, zk, SERVER_PORTS );
     }
 
     @Test
     public void canWriteToOneServerInTheClusterAndReadFromAnother() throws Exception
     {
-        cluster = new ServerCluster( dir, zk, SERVER_PORTS );
+        cluster = new ServerCluster( testName.getMethodName(), dir, zk, SERVER_PORTS );
         URI base = cluster.getRandomServerUri();
         put( property( node( base, 0 ), "message" ), "hello world" );
         cluster.updateAll();
@@ -91,7 +102,7 @@ public class HaServerFunctionalTest
     public void canWriteToOneServerInTheClusterThenReadFromAnotherAfterShuttingDownTheWriteServer()
             throws Exception
     {
-        cluster = new ServerCluster( dir, zk, SERVER_PORTS );
+        cluster = new ServerCluster( testName.getMethodName(), dir, zk, SERVER_PORTS );
         URI base = cluster.getRandomServerUri();
         put( property( node( base, 0 ), "message" ), "hello world" );
         cluster.updateAll();
