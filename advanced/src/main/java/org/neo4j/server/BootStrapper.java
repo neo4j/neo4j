@@ -21,6 +21,7 @@ package org.neo4j.server;
 
 import java.io.File;
 
+import org.apache.log4j.BasicConfigurator;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.logging.Logger;
@@ -69,9 +70,9 @@ public class BootStrapper
 
             return OK;
         } catch (TransactionFailureException tfe) {
-            log.error(String.format("Failed to start Neo Server on port [%d], because ", server.restApiUri().getPort()) + tfe
-                    + ". Another process may be using database location " + server.getDatabase().getLocation());
             tfe.printStackTrace();
+            log.error( String.format( "Failed to start Neo Server on port [%d], because ", server.restApiUri().getPort() ) + tfe
+                + ". Another process may be using database location " + server.getDatabase().getLocation() );
             return GRAPH_DATABASE_STARTUP_ERROR_CODE;
         } catch (Exception e) {
             e.printStackTrace();
@@ -106,6 +107,7 @@ public class BootStrapper
     }
 
     public static void main(String[] args) {
+        BasicConfigurator.configure();
         BootStrapper bootstrapper = new BootStrapper();
         bootstrapper.start(args);
     }
