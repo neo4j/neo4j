@@ -77,7 +77,7 @@ public final class EmbeddedGraphDatabase extends AbstractGraphDatabase implement
      */
     public EmbeddedGraphDatabase( String storeDir, Map<String,String> params )
     {
-        this.graphDbImpl = new EmbeddedGraphDbImpl( storeDir, params, this,
+        this.graphDbImpl = new EmbeddedGraphDbImpl( storeDir, null, params, this,
                 CommonFactories.defaultLockManagerFactory(),
                 CommonFactories.defaultIdGeneratorFactory(),
                 CommonFactories.defaultRelationshipTypeCreator(),
@@ -128,6 +128,7 @@ public final class EmbeddedGraphDatabase extends AbstractGraphDatabase implement
     /**
      * @deprecated See {@link GraphDatabaseService#enableRemoteShell()}
      */
+    @Override
     public boolean enableRemoteShell()
     {
         return graphDbImpl.enableRemoteShell();
@@ -136,6 +137,7 @@ public final class EmbeddedGraphDatabase extends AbstractGraphDatabase implement
     /**
      * @deprecated See {@link GraphDatabaseService#enableRemoteShell(Map)}
      */
+    @Override
     public boolean enableRemoteShell(
         final Map<String,Serializable> initialProperties )
     {
@@ -161,11 +163,13 @@ public final class EmbeddedGraphDatabase extends AbstractGraphDatabase implement
      *
      * @return a configuration object
      */
+    @Override
     public Config getConfig()
     {
         return graphDbImpl.getConfig();
     }
 
+    @Override
     public <T> T getManagementBean( Class<T> type )
     {
         return graphDbImpl.getManagementBean( type );
@@ -176,8 +180,9 @@ public final class EmbeddedGraphDatabase extends AbstractGraphDatabase implement
     {
         return false;
     }
-    
 
+
+    @Override
     public String getStoreDir()
     {
         return graphDbImpl.getStoreDir();
@@ -211,7 +216,7 @@ public final class EmbeddedGraphDatabase extends AbstractGraphDatabase implement
     {
         return this.graphDbImpl.unregisterTransactionEventHandler( handler );
     }
-    
+
     public IndexManager index()
     {
         return this.graphDbImpl.index();

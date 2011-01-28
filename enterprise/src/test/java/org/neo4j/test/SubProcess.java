@@ -129,7 +129,7 @@ public abstract class SubProcess<T, P> implements Serializable
                 live( new Handler( t, dispatcher, process, "<" + toString() + ":" + pid + ">" ) ) ) );
     }
 
-    protected abstract void startup( P parameter );
+    protected abstract void startup( P parameter ) throws Throwable;
 
     protected void shutdown()
     {
@@ -152,7 +152,7 @@ public abstract class SubProcess<T, P> implements Serializable
         return getClass().getSimpleName();
     }
 
-    public static void main( String[] args ) throws Exception
+    public static void main( String[] args ) throws Throwable
     {
         if ( args.length != 1 )
         {

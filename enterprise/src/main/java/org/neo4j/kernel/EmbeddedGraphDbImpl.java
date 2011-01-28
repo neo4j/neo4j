@@ -58,6 +58,7 @@ import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TxFinishHook;
 import org.neo4j.kernel.impl.transaction.TxModule;
@@ -96,7 +97,7 @@ class EmbeddedGraphDbImpl
      * @param storeDir the store directory for the db files
      * @param config configuration parameters
      */
-    public EmbeddedGraphDbImpl( String storeDir, Map<String, String> inputParams,
+    public EmbeddedGraphDbImpl( String storeDir, StoreId storeId, Map<String, String> inputParams,
             GraphDatabaseService graphDbService, LockManagerFactory lockManagerFactory,
             IdGeneratorFactory idGeneratorFactory, RelationshipTypeCreator relTypeCreator,
             TxIdGeneratorFactory txIdFactory, TxFinishHook finishHook,
@@ -106,7 +107,7 @@ class EmbeddedGraphDbImpl
         TxModule txModule = newTxModule( inputParams, finishHook );
         LockManager lockManager = lockManagerFactory.create( txModule );
         LockReleaser lockReleaser = new LockReleaser( lockManager, txModule.getTxManager() );
-        final Config config = new Config( graphDbService, storeDir, inputParams,
+        final Config config = new Config( graphDbService, storeDir, storeId, inputParams,
                 kernelPanicEventGenerator, txModule, lockManager, lockReleaser, idGeneratorFactory,
                 new SyncHookFactory(), relTypeCreator, txIdFactory.create( txModule.getTxManager() ),
                 lastCommittedTxIdSetter );
