@@ -33,7 +33,7 @@ public class PropertyFileBuilder {
     private String rrdbDir = "/tmp/neo.rr.db";
     private String webAdminUri = "http://localhost:7474/db/manage/";
     private String webAdminDataUri = "http://localhost:7474/db/data/";
-    private String dbTuningPropertyRule = null;
+    private String dbTuningPropertyFile = null;
     private ArrayList<Tuple> nameValuePairs = new ArrayList<Tuple>();
 
     private static class Tuple {
@@ -60,8 +60,8 @@ public class PropertyFileBuilder {
         writePropertyToFile(Configurator.WEBADMIN_NAMESPACE_PROPERTY_KEY + ".rrdb.location", rrdbDir, temporaryConfigFile);
         writePropertyToFile(Configurator.WEB_ADMIN_PATH_PROPERTY_KEY, webAdminUri, temporaryConfigFile);
         writePropertyToFile(Configurator.REST_API_PATH_PROPERTY_KEY, webAdminDataUri, temporaryConfigFile);
-        if(dbTuningPropertyRule != null) {
-            writePropertyToFile(Configurator.DB_TUNING_PROPERTY_FILE_KEY, dbTuningPropertyRule, temporaryConfigFile);
+        if(dbTuningPropertyFile != null) {
+            writePropertyToFile(Configurator.DB_TUNING_PROPERTY_FILE_KEY, dbTuningPropertyFile, temporaryConfigFile);
         }
         
         for(Tuple t: nameValuePairs) {
@@ -73,12 +73,17 @@ public class PropertyFileBuilder {
     }
 
     public PropertyFileBuilder withDbTuningPropertyFile(File f) {
-        dbTuningPropertyRule = f.getAbsolutePath();
+        dbTuningPropertyFile = f.getAbsolutePath();
         return this;
     }
 
     public PropertyFileBuilder withNameValue(String name, String value) {
         nameValuePairs.add(new Tuple(name, value));
+        return this;
+    }
+
+    public PropertyFileBuilder withDbTuningPropertyFile(String propertyFileLocation) {
+        dbTuningPropertyFile = propertyFileLocation;
         return this;
     }
 }
