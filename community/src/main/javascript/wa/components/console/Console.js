@@ -162,7 +162,7 @@ wa.components.console.Console = (function($) {
      * the ui console.
      */
     me.evalCallback = function(originalStatement, data) {
-        me.writeConsoleLine(data, '==&gt; ');
+        me.writeConsoleLine(data, '');
     };
     
     me.writeConsoleLine = function(line, prepend, clazz) {

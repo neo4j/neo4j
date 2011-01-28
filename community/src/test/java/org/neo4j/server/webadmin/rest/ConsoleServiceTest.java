@@ -49,7 +49,7 @@ public class ConsoleServiceTest implements SessionFactory
     public void retrievesTheReferenceNode() throws UnsupportedEncodingException
     {
         Response evaluatedGremlinResponse = consoleService.exec( new JsonFormat(),
-                "{ \"command\" : \"$_\" }" );
+                "{ \"command\" : \"g.v(0)\" }" );
 
         assertEquals( 200, evaluatedGremlinResponse.getStatus() );
         String response = decode( evaluatedGremlinResponse );
@@ -66,13 +66,13 @@ public class ConsoleServiceTest implements SessionFactory
     public void canCreateNodesInGremlinLand() throws UnsupportedEncodingException
     {
         Response evaluatedGremlinResponse = consoleService.exec( new JsonFormat(),
-                "{ \"command\" : \"g:add-v()\" }" );
+                "{ \"command\" : \"g.addVertex(null)\" }" );
 
         assertEquals( 200, evaluatedGremlinResponse.getStatus() );
         String response = decode( evaluatedGremlinResponse );
         assertThat( response, containsString( "v[1]" ) );
 
-        evaluatedGremlinResponse = consoleService.exec( new JsonFormat(), "{ \"command\" : \"g:add-v()\" }" );
+        evaluatedGremlinResponse = consoleService.exec( new JsonFormat(), "{ \"command\" : \"g.addVertex(null)\" }" );
         response = decode( evaluatedGremlinResponse );
         assertEquals( 200, evaluatedGremlinResponse.getStatus() );
         assertThat( response, containsString( "v[2]" ) );

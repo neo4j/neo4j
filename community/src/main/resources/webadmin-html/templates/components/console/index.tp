@@ -11,48 +11,48 @@
 					<ul class="mor_info_list">
 		                <li>
 		                    <h3>Local graph</h3>
-		                    <p class="mor_info_list_info">&gt; $_g</p>
+		                    <p class="mor_info_list_info">&gt; g</p>
 		                </li>
 		                <li>
-		                    <h3>Root list</h3>
-		                    <p class="mor_info_list_info">&gt; $_ (same as ".", but "." can't be set)</p>
+		                    <h3>List current position</h3>
+		                    <p class="mor_info_list_info">&gt; _ >> -1</p>
 		                </li>
 		                <li>
 		                    <h3>Set variable</h3>
-		                    <p class="mor_info_list_info">&gt; $myVar := "My Value"</p>
+		                    <p class="mor_info_list_info">&gt; myVar = "My Value"</p>
 		                </li>
 		                <li>
 		                    <h3>Get node by id</h3>
-		                    <p class="mor_info_list_info">&gt; $myNode := g:id-v(0)</p>
+		                    <p class="mor_info_list_info">&gt; myNode = g.v(0)</p>
 		                </li>
 		                <li>
 		                    <h3>Create node</h3>
-		                    <p class="mor_info_list_info">&gt; $myNode := g:add-v()</p>
+		                    <p class="mor_info_list_info">&gt; myNode = g.addVertx(null)</p>
 		                </li>
 		                <li>
 		                    <h3>Create relation</h3>
-		                    <p class="mor_info_list_info">&gt; $myRelation := g:add-e($myFirstNode, "relation type", $myOtherNode)</p>
+		                    <p class="mor_info_list_info">&gt; myRelation = g.addEdge(myFirstNode, "relation type", myOtherNode)</p>
 		                </li>
 		                <li>
 		                    <h3>Remove node or relation</h3>
-		                    <p class="mor_info_list_info">&gt; g:remove-ve($myNodeOrRelation)</p>
+		                    <p class="mor_info_list_info">&gt; g.removeVertex/Edge(myNodeOrRelation)</p>
 		                </li>
 		                <li>
 		                    <h3>Set attribute</h3>
-		                    <p class="mor_info_list_info">&gt; $myNodeOrRelation/@attributeName := "My Value"</p>
+		                    <p class="mor_info_list_info">&gt; myNodeOrRelation.['attributeName'] = "My Value"</p>
 		                </li>
 		                <li>
 		                    <h3>Get attribute</h3>
-		                    <p class="mor_info_list_info">&gt; $myNodeOrRelation/@attributeName</p>
+		                    <p class="mor_info_list_info">&gt; myNodeOrRelation.attributeName</p>
 		                </li>
 		                <li>
 		                    <h3>List relations of node</h3>
 		                    <p class="mor_info_list_info">
 		                            <ul>
-		                                <li>&gt; $myNode/bothE</li>
-		                                <li>&gt; $myNode/inE</li>
-		                                <li>&gt; $myNode/outE</li>
-		                                <li>&gt; $myNode/bothE[@label="relation type"]</li>
+		                                <li>&gt; myNode.bothE</li>
+		                                <li>&gt; myNode.inE</li>
+		                                <li>&gt; myNode.outE</li>
+		                                <li>&gt; myNode.bothE{it.label="relation type"}</li>
 		                            </ul>
 		                        </p>
 		                </li>
@@ -60,19 +60,20 @@
 		                    <h3>List nodes of relation</h3>
 		                    <p class="mor_info_list_info">
 		                            <ul>
-		                                <li>&gt; $myRelation/bothV</li>
-		                                <li>&gt; $myRelation/inV</li>
-		                                <li>&gt; $myRelation/outV</li>
+		                                <li>&gt; myRelation.bothV</li>
+		                                <li>&gt; myRelation.inV</li>
+		                                <li>&gt; myRelation.outV</li>
 		                            </ul>
 		                        </p>
 		                </li>
 		                <li>
 		                    <h3>Looping and branching</h3>
-		                    &gt; $_ := ./bothE/inV<br/>
-		                    &gt; foreach $v in $_<br/>
-		                    <div style="width:20px;float:left;">&gt; </div>g:print('vertex ', $v)<br/>
-		                    &gt; end
-		                                    </p>
+		                    &gt; result = []<br/>
+                            &gt; g.v(0).bothE.inV >> result<br/>
+		                    &gt; result.each {<br/>
+		                    <div style="width:20px;float:left;">&gt; </div>print it.name<br/>
+		                    &gt; }
+		                    </p>
 		                </li>
 		            </ul>
 				</div>
