@@ -2,7 +2,7 @@ The Neo4j Manual v{revnumber}
 =============================
 
 :neo4j-version: {revnumber}
-:neo4j-index-version: 1.2-1.2
+:neo4j-index-version: snapshot
 :neo4j-shell-version: snapshot
 
 
