@@ -21,6 +21,7 @@ package org.neo4j.index.impl.lucene;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.index.Neo4jTestCase.assertContains;
 
 import java.io.File;
@@ -233,6 +234,23 @@ public class TestLuceneBatchInsert
                 edgesIndex.query( "EDGE_TYPE", EdgeType.KNOWS.name() ).getSingle() );
 
         indexProvider.shutdown();
+        inserter.shutdown();
+    }
+    
+    @Test
+    public void triggerNPEAfterFlush()
+    {
+        BatchInserter inserter = new BatchInserterImpl( PATH );
+        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );
+        BatchInserterIndex index = provider.nodeIndex( "Neo4j::Node-exact", LuceneIndexProvider.EXACT_CONFIG );
+        
+        Map<String, Object> map = map( "name", "Something" );
+        long node = inserter.createNode( map );
+        index.add( node, map );
+        index.flush();
+        assertContains( index.get( "name", "Something" ), node );
+        
+        provider.shutdown();
         inserter.shutdown();
     }
 
