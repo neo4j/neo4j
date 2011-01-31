@@ -1,0 +1,4 @@
+Neo4j
+
+    Neo4j is a graph database. It is an embedded, disk-based, fully transactional 
+    Java persistence engine that stores data structured in graphs rather than in tables.
