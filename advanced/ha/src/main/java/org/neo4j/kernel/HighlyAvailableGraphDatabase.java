@@ -687,7 +687,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         }
     }
 
-    protected MasterServer getMasterServerIfMaster()
+    public MasterServer getMasterServerIfMaster()
     {
         return masterServer;
     }
