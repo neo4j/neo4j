@@ -1,0 +1,21 @@
+#!/bin/sh
+
+COMPILER=`which protoc`
+if [ -z "$COMPILER" ]; then
+    BINDIR=`dirname $0`
+    case `uname` in
+        Darwin)
+            export DYLD_LIBRARY_PATH=$BINDIR
+            COMPILER=$BINDIR/protoc-mac
+            ;;
+        Linux)
+            export LD_LIBRARY_PATH=$BINDIR
+            COMPILER=$BINDIR/protoc-linux
+            ;;
+        *)
+            echo Cound not find applicable ProtoBuffers Compiler! 1>&2
+            exit 1
+    esac
+fi
+
+$COMPILER "$@"
