@@ -1,0 +1,42 @@
+0.8-1.3.M01 (2011-01-27)
+------------------------
+
+o No changes
+
+0.7-1.2 (2010-12-29)
+--------------------
+
+o No changes made for 1.2.
+
+0.7-1.2.M06 (2010-12-21)
+------------------------
+
+o No changes made for M06.
+
+0.7-1.2.M05 (2010-12-02)
+------------------------
+
+o Changed online backup to depend on AbstractGraphDatabase
+  instead of EmbeddedGraphDatabase.
+
+0.7-1.2.M04 (2010-11-18)
+------------------------
+
+No changes.
+
+0.7-1.2.M03 (2010-11-04)
+------------------------
+
+No changes.
+
+0.7-1.2.M01 (2010-10-08)
+------------------------
+
+0.6 (2010-07-29)
+----------------
+
+o Fixed a file renaming issue where partition boundaries were crossed.
+o Better support for index backup.
+o Added ability to do a manual backup after copying the logical logs yourself.
+o Fixed several issues with writing and closing of logical logs.
+o Easier to do backups of all data sources.
