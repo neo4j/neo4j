@@ -65,21 +65,8 @@ abstract class IndexType
         {
             document.add( instantiateField( key, value, Index.NOT_ANALYZED ) );
         }
-        
-        @Override
-        public void removeFromDocument( Document document, String key, Object value )
-        {
-            if ( key == null && value == null )
-            {
-                clearDocument( document );
-            }
-            else
-            {
-                removeFieldsFromDocument( document, key, value );
-            }
-        }
 
-        private void removeFieldsFromDocument( Document document, String key, Object value )
+        void removeFieldsFromDocument( Document document, String key, Object value )
         {
             String stringValue = value.toString();
             Set<String> values = new HashSet<String>( Arrays.asList(
@@ -95,19 +82,6 @@ abstract class IndexType
             }
         }
 
-        private void clearDocument( Document document )
-        {
-            Set<String> names = new HashSet<String>();
-            for ( Fieldable field : document.getFields() )
-            {
-                names.add( field.name() );
-            }
-            for ( String name : names )
-            {
-                document.removeFields( name );
-            }
-        }
-        
         @Override
         public String toString()
         {
@@ -159,7 +133,7 @@ abstract class IndexType
         }
         
         @Override
-        public void removeFromDocument( Document document, String key, Object value )
+        void removeFieldsFromDocument( Document document, String key, Object value )
         {
             String stringValue = value.toString();
             String exactKey = exactKey( key );
@@ -332,7 +306,32 @@ abstract class IndexType
         return field;
     }
     
-    abstract void removeFromDocument( Document document, String key, Object value );
+    final void removeFromDocument( Document document, String key, Object value )
+    {
+        if ( key == null && value == null )
+        {
+            clearDocument( document );
+        }
+        else
+        {
+            removeFieldsFromDocument( document, key, value );
+        }
+    }
+    
+    abstract void removeFieldsFromDocument( Document document, String key, Object value );
+
+    private void clearDocument( Document document )
+    {
+        Set<String> names = new HashSet<String>();
+        for ( Fieldable field : document.getFields() )
+        {
+            names.add( field.name() );
+        }
+        for ( String name : names )
+        {
+            document.removeFields( name );
+        }
+    }
     
     static Document newBaseDocument( long entityId )
     {

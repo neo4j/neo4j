@@ -1147,9 +1147,21 @@ public class TestLuceneIndex
     }
     
     @Test
+    public void testAbandonedNodeIdsFulltext()
+    {
+        testAbandonedIds( NODE_CREATOR, nodeIndex( "abandonedf", LuceneIndexProvider.FULLTEXT_CONFIG ) );
+    }
+    
+    @Test
     public void testAbandonedRelIds()
     {
         testAbandonedIds( RELATIONSHIP_CREATOR, relationshipIndex( "abandoned", LuceneIndexProvider.EXACT_CONFIG ) );
+    }
+    
+    @Test
+    public void testAbandonedRelIdsFulltext()
+    {
+        testAbandonedIds( RELATIONSHIP_CREATOR, relationshipIndex( "abandonedf", LuceneIndexProvider.FULLTEXT_CONFIG ) );
     }
     
     @Test
