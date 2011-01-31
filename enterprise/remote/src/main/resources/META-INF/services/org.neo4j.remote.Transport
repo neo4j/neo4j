@@ -1,0 +1,5 @@
+org.neo4j.remote.transports.LocalTransport
+org.neo4j.remote.transports.RmiTransport
+org.neo4j.remote.transports.TcpTransport
+org.neo4j.remote.transports.ProtobufTransport
+org.neo4j.remote.transports.CorbaTransport
