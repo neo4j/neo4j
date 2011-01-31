@@ -1,0 +1,30 @@
+0.6-1.3.M01 (2011-01-27)
+------------------------
+
+o Support for sending requests of unlimited size between master and slave.
+o Reduced memory usage of communication between master and slave.
+o Database store files can be copied from master on the fly over the wire when a new slave starts for the first time to avoid having to do a copy before-hand.
+o Much better traceability in multi-jvm tests.
+o Fix for an issue with the HA management bean which could prevent it from loading.
+
+0.5-1.2 (2010-12-29)
+--------------------
+
+o HighAvailability management bean loaded properly.
+
+0.5-1.2.M06 (2010-12-21)
+------------------------
+
+o When a new master is chosen, slaves throws away the id allocations they got from the previous master. This fixes a problem where occupied ids where reused.
+o Enabled (and fixed problem with) thread on master which checks for dead slave connections and rolls back those transactions, so that their locks are released.
+  This fixes a problem where an HA cluster would seem to freeze up and become unresponsive to write requests.
+o Adding Log4j and Netty license information.
+o Also closes the executor containing the connections.
+o Changed dependency scopes.
+o Shuts down databases after verifying them.
+
+0.5-1.2.M05 (2010-12-02)
+------------------------
+
+o initial release
+

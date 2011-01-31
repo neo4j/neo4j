@@ -1,0 +1,1 @@
+Export-Package: ${bundle.namespace}.ha.*;version="${pom.version}",org.neo4j.kernel,org.neo4j.management.*;version="${pom.version}"
