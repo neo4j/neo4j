@@ -1,0 +1,62 @@
+0.5-1.3.M01 (2011-01-27)
+------------------------
+
+o Can participate in online backups, where the full index files are requested.
+o Fix for a NPE that could occur in IndexHits#size() if that was the first method called on the instance.
+o Fix for a recovery issue which occured when there had only been modifications to relationship indexes.
+o IndexHits#close() is run in the finalizer as a safety net, although best practice is to call it your self.
+
+0.2-1.2 (2010-12-29)
+--------------------
+
+o No changes.
+
+0.2-1.2.M06 (2010-12-21)
+------------------------
+
+o More flexible caching (can instantiate an arbitrary Cache object).
+
+o Merged the fast-writes branch. Basically it makes committing changes to lucene indexes
+  faster and more throughput-friendly for multiple threads. The performance improvement
+  for committing lucene transactions shows best for small transactions, but will improve
+  all modifying operations to lucene indexes.
+
+o Fixed bug which could close an IndexSearcher before it was supposed to when
+  there was exactly one item in the result set, two or more threads did this at
+  the same time as there was another thread doing an update... AND the reading
+  threads all called IndexHits#getSingle() on the result.
+
+
+0.2-1.2.M05 (2010-12-02)
+------------------------
+
+o Added IndexHits#currentScore which exposes the most recently fetched
+  IndexHits item's score from the search, if any.
+
+0.2-1.2.M04 (2010-11-18)
+------------------------
+o Index configuration handling moved to IndexManager (graphDb.index()) and added
+setConfiguration/removeConfiguration which can modify index configuration, but
+could render existing index data invalid if wrong settings are modified, so
+consider those advanced.
+
+o Made config recognition more flexible for forNodes(indexName,config) and
+forRelationships(indexName,config) so that the config can contain differences,
+just as long as they yield the same storage format.
+
+0.2-1.2.M03 (2010-11-04)
+------------------------
+
+o Added support for modifying index configurations as well as listing
+  and deleting indexes and index configurations.
+
+-API
+o Added Index#getName() and Index#getConfiguration()
+o Added IndexManager#nodeIndexNames() and #relationshipIndexNames()
+
+0.2-1.2.M02 (2010-10-21)
+------------------------
+
+o Moved to be an official and supported neo4j component.
+o The Index API moved to kernel, this component merely provides an
+  implementation.
