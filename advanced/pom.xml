@@ -11,13 +11,25 @@
   <artifactId>neo4j</artifactId>
   <version>1.3-SNAPSHOT</version>
   <name>Neo4j</name>
-  <packaging>jar</packaging>
+  <packaging>pom</packaging>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
   <description>A meta package containing the most used Neo4j libraries. Intended use: as a Maven dependency.</description>
 
   <properties>
     <short-name>neo4j</short-name>
   </properties>
+
+  <modules>
+    <module>kernel</module>
+    <module>lucene-index</module>
+    <module>ha</module>
+    <module>graph-algo</module>
+    <module>management</module>
+    <module>online-backup</module>
+    <module>udc</module>
+    <module>remote</module>
+    <module>integration-test</module>
+  </modules>
 
   <dependencies>
     <dependency>
