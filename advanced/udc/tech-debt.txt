@@ -1,0 +1,13 @@
+[2010-02-09] Make IndexService "stateless"
+    The actual state of the IndexService is not managed by the implementing
+    classes, it's handled by the XA-resources. It should thus be possible
+    to have the IndexService implementations simply lookup the XA-resource
+    and use it, instantiating it (with proper locking) if necessary.
+    This adds a problem: how should we deal with shutdown() if there are
+    multiple implementations - the solution is to use the event framework
+    and have the XA-resource subscribe to the pre-shutdown event from kernel,
+    and do it's shutdown procedures then.
+[2010-03-18] Check why BND thinks there are split packages over several jars
+	It gives warnings in OSGi bundle phase right now
+[2010-03-19] Move some long-running tests to a new QA project
+	f.ex: TestLuceneIndexManyThreads, TestLuceneIndexLazyness, TestBatchInsert#testHmm (great name huh?)
