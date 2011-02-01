@@ -36,6 +36,16 @@
     <url>https://trac.neo4j.org/query?status=assigned&amp;status=new&amp;status=reopened&amp;component=${short-name}</url>
   </issueManagement>
 
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <!-- fix issue with appassembler -->
+        <version>2.4</version>
+      </plugin>
+    </plugins>
+  </build>
+
   <distributionManagement>
     <site>
       <id>neo4j-site</id>
@@ -44,4 +54,3 @@
   </distributionManagement>
 
 </project>
-
