@@ -18,6 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 wa.components.console.Console = (function($) {
     
     var me = {};
@@ -162,7 +163,7 @@ wa.components.console.Console = (function($) {
      * the ui console.
      */
     me.evalCallback = function(originalStatement, data) {
-        me.writeConsoleLine(data, '');
+        me.writeConsoleLine(data, '==&gt; ');
     };
     
     me.writeConsoleLine = function(line, prepend, clazz) {

@@ -5,9 +5,9 @@
 		<th>To id</th>
 	</tr>
 	<tr>
-		<td><input class="short" id="mor_data_relationship_dialog_from" value="{#if $T.fromNode !== null}{ $T.fromNode.self }{#/if}" type="number" /></td>
+		<td><input class="short" id="mor_data_relationship_dialog_from" value="{#if $T.fromNode !== null}{ $T.fromNode.getSelf() }{#/if}" type="number" /></td>
 		<td><input id="mor_data_relationship_dialog_type" type="text" /></td>
-		<td><input class="short" id="mor_data_relationship_dialog_to" value="{#if $T.toNode !== null}{ $T.toNode.self }{#/if}" type="number" /></td>
+		<td><input class="short" id="mor_data_relationship_dialog_to" value="{#if $T.toNode !== null}{ $T.toNode.getSelf() }{#/if}" type="number" /></td>
 	</tr>
 	<tr>
 		<th></th>

@@ -358,7 +358,7 @@
                 <include>wa/Servers.js</include>
                 <include>wa/ServerSelector.js</include>
                 <include>wa/FormValidator.js</include>
-
+                
                 <include>wa/connectionmonitor.js</include>
 
                 <include>wa/ui/__init__.js</include>

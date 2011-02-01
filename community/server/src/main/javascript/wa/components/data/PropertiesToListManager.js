@@ -27,23 +27,11 @@ wa.components.data.PropertiesToListManager = (function($) {
 	var me = {};
 	
 	me.listFields = ['name'];
+	me.availableFields = [];
 	
 	//
 	// INTERNALS
 	//
-	
-	/**
-	 * Set the display fields with a comma separated string.
-	 */
-	me.setFieldString = function(fieldString) {
-		me.listFields = [];
-		var fields = fieldString.split(",");
-		for(var i=0,l=fields.length; i<l; i++) {
-			me.listFields.push($.trim(fields[i]));
-		}
-		
-		wa.trigger("data.listnames.changed");
-	};
 	
 	// 
 	// CONSTRUCT
@@ -51,15 +39,16 @@ wa.components.data.PropertiesToListManager = (function($) {
 	
 	$("#mor_data_listfields_button").live("click", function(ev) {
 		ev.preventDefault();
-		
+        me.listFields = [];
+        
 		var fieldString = $("#mor_data_listfields").val();
-		
-		me.setFieldString(fieldString);
-		
-		// Persist the new setting
-		wa.Servers.getCurrentServer().manage.config.setProperty(
-				'general.data.listfields', 
-				fieldString );
+        var fields = fieldString.split(",");
+        
+        for(var i=0,l=fields.length; i<l; i++) {
+            me.listFields.push($.trim(fields[i]));
+        }
+        
+        wa.trigger("data.listnames.changed");
 	});
 	
 	return {
@@ -67,15 +56,30 @@ wa.components.data.PropertiesToListManager = (function($) {
             return me.listFields;
         },
         
-        serverChanged : function(ev) {
-        	wa.Servers.getCurrentServer().manage.config.getProperty(
-        		"general.data.listfields", function(data) {
-                me.setFieldString(data.value);
-            }); 
+        /**
+         * Given a list of nodes, pick some common field names to list.
+         */
+        setFromNodeList : function(nodes) {
+            var foundFields = {};
+            _.each(nodes, function(node){
+               _.each(_.keys(node.getProperties()), function(key) {
+                   if(!foundFields[key]) {
+                       foundFields[key] = 0;
+                   }
+                   
+                   foundFields[key];
+               });
+            });
+            
+            // Pick the 4 most common
+            me.availableFields = _.keys(foundFields).sort(function(a,b){
+                return foundFields[a] - foundFields[b];
+            });
+            
+            me.listFields = me.availableFields.slice(0,4);
+            
+            $("#mor_data_listfields").val(me.listFields.join(","));
         }
     };
 	
 })(jQuery);
-
-
-wa.bind("servers.current.changed", wa.components.data.PropertiesToListManager.serverChanged);
