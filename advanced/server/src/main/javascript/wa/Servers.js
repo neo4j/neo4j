@@ -37,6 +37,7 @@ wa.Servers = (function() {
     var isLoaded = false;
     
     var triedLocal = false;
+    var web = new neo4j.Web();
     
     
     function onHashChange() {
@@ -68,7 +69,7 @@ wa.Servers = (function() {
             
             triedLocal = true;
             
-            neo4j.Web.get( DEFAULT_MANAGEMENT_URL,
+            web.get( DEFAULT_MANAGEMENT_URL,
                 function() {
                     // There is a local server running, start chatting
                     var localServer = new neo4j.GraphDatabase(DEFAULT_DATA_URL, DEFAULT_MANAGEMENT_URL);

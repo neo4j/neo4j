@@ -21,6 +21,7 @@ package org.neo4j.server.webadmin.webtest;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.server.webadmin.webtest.IsVisible.isVisible;
@@ -128,8 +129,8 @@ public class DashboardWebTest extends WebDriverTest {
 	public void shouldShowCacheInformation() {
 		dashboardMenu.click();
 		
-		assertThat(cachedNodes.getText(), equalTo("0"));
-		assertThat(cachedRelationships.getText(), equalTo("0"));
+		assertThat(Integer.parseInt( cachedNodes.getText() ), greaterThanOrEqualTo(0));
+		assertThat(Integer.parseInt( cachedRelationships.getText() ), greaterThanOrEqualTo(0));
 		assertThat(cacheType.getText().length(), greaterThan(0));
 	}
 	

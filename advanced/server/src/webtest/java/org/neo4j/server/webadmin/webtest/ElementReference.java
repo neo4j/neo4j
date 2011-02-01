@@ -172,8 +172,10 @@ public class ElementReference {
 
 	public void waitForAttributeToBe(String attributeName, String expectedValue) {
         long end = System.currentTimeMillis() + 10000;
+        String attr;
         while (System.currentTimeMillis() < end) {
-            if (this.getAttribute(attributeName).equals(expectedValue)) {
+            attr = this.getAttribute(attributeName);
+            if ( (attr == null && expectedValue == null) || (attr != null && attr.equals(expectedValue))) {
                 return;
             }
             try{
@@ -188,8 +190,10 @@ public class ElementReference {
 
 	public void waitForAttributeToChangeFrom(String attributeName, String currentValue) {
         long end = System.currentTimeMillis() + 10000;
+        String attr;
         while (System.currentTimeMillis() < end) {
-            if ( ! this.getAttribute(attributeName).equals(currentValue)) {
+            attr = this.getAttribute(attributeName);
+            if ( (attr == null && currentValue != null) || ( attr != null && !attr.equals(currentValue))) {
                 return;
             }
             try{

@@ -36,6 +36,7 @@ wa.components.data.DataBrowser = (function($) {
     
     me.dataUrl = null;
     me.currentItem = null;
+    me.nodeCache = {};
     
     /**
      * Pagination counter for the related nodes table.
@@ -47,6 +48,17 @@ wa.components.data.DataBrowser = (function($) {
      */
     me.relatedNodesPerPage = 10;
 
+    /**
+     * A promise for a reloading round to complete.
+     * Used to stack reloading calls.
+     */
+    me.reloadPromise = neo4j.Promise.fulfilled();
+    
+    /**
+     * A promise for a rendering round to complete.
+     * Used to stack rendering calls.
+     */
+    me.processTemplatePromise = neo4j.Promise.fulfilled();
     
     //
     // PUBLIC
@@ -88,13 +100,12 @@ wa.components.data.DataBrowser = (function($) {
             
             init : function() {
                 wa.bind('data.listnames.changed',me.listNamesChanged);
-
                 $( window ).bind( "hashchange", me.hashchange );
                 me.hashchange();
             },
             
             setDataUrl : function(url) {
-            	$.bbq.pushState({ dataurl: me.stripUrlBase(url) });
+            	$.bbq.pushState({ dataurl: url });
             },
             
             /**
@@ -111,59 +122,36 @@ wa.components.data.DataBrowser = (function($) {
             	return me.currentItem;
             },
             
+            showReferenceNode : function() {
+                me.api.getServer().getReferenceNodeUrl().then(function(url){
+                    me.api.setDataUrl(url);
+                }, me.renderNotFound);
+            },
+            
             reload : function() {
                 
-                var server = wa.Servers.getCurrentServer();
-                
-                if( server ) {
-                	
-                	if( typeof(me.dataUrl) !== "undefined" && me.dataUrl !== null ) {
-                		server.get(me.dataUrl, function(data) {
-                    		me.currentRelatedNodePage = 0;
+                // Wait for any reloads currently running
+                me.reloadPromise = me.reloadPromise.then(function(ignore, fulfill){
+                    var server = me.api.getServer();
+                    
+                    if( server ) {
+                        if( typeof(me.dataUrl) !== "undefined" && me.dataUrl !== null ) {
                             
-                        	if( data !== null ) {
-                        		
-                        		me.currentItem = data;
-        	                	me.currentItem.fields = me.extractFields([me.currentItem]);
-        	            		
-        	                	me.currentItem.isNode = me.dataUrl.indexOf("node") == 0 ? true : false;
-        	                	me.currentItem.isRelationship = me.dataUrl.indexOf("relationship") == 0 ? true : false;
-        	                    
-        	                	me.notFound = false;
-        	                	
-        	                	if( me.currentItem.isNode ) {
-        	                		me.currentItem.relationships = {
-        	                			fields : me.propertiesToListManager.getListFields(),
-        	                			data : []
-        	                		};
-        	                	}
-        	                	
-        	                    me.render();
-        	                    
-        	                    if( me.currentItem.isNode ) {
-        	                    	me.reloadRelations();
-        	                    } else if (me.currentItem.isRelationship) {
-        	                    	me.reloadRelationshipNodes();
-        	                    }
-                        	} else {
-                        		me.currentItem = false;
-                            	me.notFound = true;
-                            	me.render();
-                        	}
-                        }, function(request) {
-                        	
-                        	me.currentItem = false;
-                        	me.notFound = true;
-                        	me.render();
-                        	
-                        });
+                            var promise = server.getNodeOrRelationship(me.dataUrl);
+                            promise.then(function(item) {
+                                me.currentRelatedNodePage = 0;
+                                me.currentItem = item;
+                                me.render();
+                                fulfill();
+                            }, me.renderNotFound);
+                        } else {
+                            fulfill();
+                        }
                     } else {
-                    	me.api.setDataUrl("node/0");
+                        me.render();
+                        fulfill();
                     }
-                } else {
-                	me.render();
-                }
-                
+                });
             }
             
     };
@@ -174,123 +162,126 @@ wa.components.data.DataBrowser = (function($) {
     
     me.reload = me.api.reload;
     
-    /**
-	 * Triggered when showing a node. This will load all relations for the
-	 * current node, and re-draw the UI.
-	 */
-    me.reloadRelations = function() {
-    	var relationshipUrl = me.dataUrl + "/relationships/all";
-    	
-    	var server = wa.Servers.getCurrentServer();
-    	
-    	server.get(relationshipUrl, function(data) {
-
-    		// For each relation, find out which node is the "other" node, in
-			// relation to the current node we're showing.
-    		for( var i = 0, l = data.length; i < l; i ++) {
-    			if( me.currentItem.self === data[i].start) {
-    				data[i].otherNode = data[i].end;
-    				data[i].direction = "FROM";
-    			} else {
-    				data[i].otherNode = data[i].start;
-    				data[i].direction = "TO";
-    			}
-    		}
-    		
-    		me.currentItem.relationships.data = data;
-    		me.currentItem.relationships.nodes = {};
-    		
-    		me.render();
-    		
-    		// Alright. Now we fetch all nodes on the other side of the
-			// relationships.
-    		me.reloadRelatedNodes();
-    		
-    	});
-    	
+    me.renderNode = function(node, force) {
+        
+        if(force || me.nodeCache.node !== node ) {
+            me.nodeCache.node = node;
+            me.nodeCache.relPromise = node.getRelationships();
+            me.nodeCache.relNodesPromise = me.reloadRelatedNodes(node);
+            me.nodeCache.fieldsPromise = me.nodeCache.relNodesPromise.then(function(nodes, fulfill){
+                fulfill(me.propertiesToListManager.setFromNodeList(nodes));
+            });
+            
+            me.nodeCache.allPromise = neo4j.Promise.join(me.nodeCache.relPromise, me.nodeCache.relNodesPromise, me.nodeCache.fieldsPromise); 
+        }
+        
+        me.nodeCache.allPromise.then(function(args) {
+            me.processTemplate({
+                server : me.server,
+                dataUrl : me.dataUrl,
+                node : node,
+                relationships : args[0],
+                relatedNodes : args[1],
+                pagination : me.getRelatedNodePagination(args[0]),
+                isNode : true,
+                relatedFields : me.propertiesToListManager.getListFields()
+            });
+        });
+    };
+    
+    me.renderRelationship = function(rel) {
+        neo4j.Promise.join(rel.getStartNode(), rel.getEndNode()).then(function(nodes){
+            me.processTemplate({
+                server : me.server,
+                dataUrl : me.dataUrl,
+                relationship : rel,
+                startNode : nodes[0],
+                endNode : nodes[1],
+                isRelationship : true
+            });
+        });
+    };
+    
+    me.renderNotFound = function() {
+        me.processTemplate({
+            server : me.server,
+            dataUrl : me.dataUrl,
+            item : false,
+            notFound : true
+        });
+    };
+    
+    me.render = function(force) {
+        if( me.currentItem instanceof neo4j.models.Node ) {
+            me.renderNode(me.currentItem, force);
+        } else if( me.currentItem instanceof neo4j.models.Relationship ) {
+            me.renderRelationship(me.currentItem, force);
+        } else {
+            me.renderNotFound();
+        }
+    };
+    
+    me.processTemplate = function(ctx) {
+        me.processTemplatePromise = me.processTemplatePromise.then(function(ignore, fulfill){
+            me.basePage.processTemplate(ctx);
+            fulfill();
+        });
     };
     
     /**
-	 * This is triggered by me.reloadRelations, it will fetch all related nodes
-	 * to the current node.
+	 * Fetches all the related nodes for a given node. This is 
+	 * used so that we don't have to send one request per node.
+	 * 
+	 * This will be bad, if there are tons of data. That is, however,
+	 * a symptom of the fact that the server does not yet support paging
+	 * nodes.
+	 * 
+	 * @return A promise for a lookup table for nodes.
 	 */
-    me.reloadRelatedNodes = function() {
-    	
-    	var traversalUrl = me.dataUrl + "/traverse/node";
+    me.reloadRelatedNodes = function(node) {
+    	var traversalUrl = node.getSelf() + "/traverse/node";
     	var traversal = {
     		"max depth": 1
     	};
     	
-    	var server = wa.Servers.getCurrentServer();
+    	var web = wa.Servers.getCurrentServer().web;
         
-        server.post(traversalUrl, traversal, function(data) {
-    		// Create a lookup table for related nodes, to make it easy for the
-			// template to render it.
-    		me.currentItem.relationships.nodes = nodes = {};
-    		for( var i = 0, l = data.length; i < l; i ++) {
-    			nodes[data[i].self] = data[i];
-    		}
-    		
-    		me.render();
-    	});
-    	
-    };
-    
-    /**
-	 * Triggered when showing a relationship. This will load the start and end
-	 * nodes for the current relationship.
-	 */
-    me.reloadRelationshipNodes = function() {
-    	var startUrl = me.stripUrlBase(me.currentItem.start);
-    	var endUrl = me.stripUrlBase(me.currentItem.end);
-    	
-    	var server = wa.Servers.getCurrentServer();
-        
-        server.get(startUrl, function(data) {
-    		me.currentItem.startNode = data;
-    		me.currentItem.startNode.fields = me.extractFields([data]);
-    		me.render();
-    	});
-    	
-    	server.get(endUrl, function(data) {
-    		me.currentItem.endNode = data;
-    		me.currentItem.endNode.fields = me.extractFields([data]);
-    		me.render();
+    	return new neo4j.Promise(function(fulfill, fail){
+        	web.post(traversalUrl, traversal, function(data) {
+        		// Create a lookup table for related nodes, to make it easy for the
+    			// template to render it.
+        		var nodes = {};
+        		for( var i = 0, l = data.length; i < l; i ++) {
+        			nodes[data[i].self] = new neo4j.models.Node(data[i]);
+        		}
+        		
+        		fulfill(nodes);
+        	}, fail);
     	});
     };
     
-    
-    me.render = function() {
-    	
-    	var item = me.currentItem ? me.currentItem : {isNode:false,isRelationship:false};
-    	
-    	me.addPaginationMetaData(item);
-    	
-    	me.basePage.processTemplate({
-            server : me.server,
-            dataUrl : me.dataUrl,
-            item : item,
-            notFound : me.notFound === true ? true : false
-        });
-    };
-    
-    me.addPaginationMetaData = function(item) {
+    me.getRelatedNodePagination = function(relationships) {
     	
     	// Pagination pre-calculations
-    	var relatedNodeCount = item.isNode ? item.relationships.data.length : 0;
+    	var relatedNodeCount = relationships.length,
+    	    nodePageCount = Math.ceil(relatedNodeCount / me.relatedNodesPerPage);
+    	
+    	if(me.currentRelatedNodePage < 0) {
+    	    me.currentRelatedNodePage = 0;
+    	}
+    	
+    	if(me.currentRelatedNodePage >= nodePageCount ) {
+    	    me.currentRelatedNodePage = nodePageCount - 1;
+    	}
     	
     	var relatedNodeStartIndex = me.currentRelatedNodePage * me.relatedNodesPerPage;
     	var relatedNodeStopIndex = relatedNodeStartIndex + me.relatedNodesPerPage - 1;
-    	var nodePageCount = Math.ceil(relatedNodeCount / me.relatedNodesPerPage);
+    	
     	if( relatedNodeStopIndex >= relatedNodeCount ) {
     		relatedNodeStopIndex = relatedNodeCount - 1;
     	}
     	
-    	if( ! item.relationships ) {
-    		item.relationships = {};
-    	}
-    	
-    	item.relationships.pagination = {
+    	return {
 			relatedNodeStartIndex : relatedNodeStartIndex,
             relatedNodeStopIndex : relatedNodeStopIndex,
             relatedNodePage : me.currentRelatedNodePage,
@@ -304,48 +295,23 @@ wa.components.data.DataBrowser = (function($) {
 	 * changes.
 	 */
     me.listNamesChanged = function(ev) {
-    	if( me.currentItem && me.currentItem.relationships) {
-			me.currentItem.relationships.fields = me.propertiesToListManager.getListFields();
-			me.render();
-    	}
+    	me.render();
     };
     
     /**
 	 * Triggered when the URL hash state changes.
 	 */
     me.hashchange = function(ev) {
-    	
         var url = $.bbq.getState( "dataurl" );
         
-        if( url !== me.dataUrl) {
+        if( !url ) {
+            me.api.showReferenceNode();
+        } else if( url !== me.dataUrl) {
         	me.dataUrl = url;
-        	me.reload();
+        	if( me.uiLoaded && !( me.currentItem && me.currentItem.getSelf() === url )) {
+        	    me.reload();
+        	}
     	}
-    };
-    
-    /**
-	 * Get a list of field names from a set of data.
-	 */
-    me.extractFields = function(data) {
-    	
-    	var nameMap = {};
-    	for(var i=0,l=data.length; i < l; i++) {
-    		for (var key in data[i].data ) {
-    			nameMap[key] = true;
-    		}
-    	}
-    	
-    	var names = [];
-    	for( var name in nameMap ) {
-    		names.push(name);
-    	}
-    	
-    	return names;
-    };
-    
-    me.stripUrlBase = function(url) {
-        var server = wa.Servers.getCurrentServer();
-        return server.stripUrlBase(url);
     };
     
     //
@@ -353,54 +319,35 @@ wa.components.data.DataBrowser = (function($) {
     //
     
     $("a.mor_data_url_button").live("click", function(ev) {
-    	ev.preventDefault();
-    	
-    	me.api.setDataUrl($(ev.target).attr('href'));
+        ev.preventDefault();
+        me.api.setDataUrl($(ev.target).attr("href"));
     });
     
     $("button.mor_data_refresh_button").live("click", function(ev){
     	ev.preventDefault();
-    	
-    	me.reload();
+    	me.render(true);
     });
     
-    $("input.mor_data_get_node_button").live("click", function(ev) {
+    $("input.mor_data_get_url_button").live("click", function(ev) {
     	ev.preventDefault();
-    	
-    	me.api.setDataUrl("node/" + $("#mor_data_get_id_input").val() );
-    });
-    
-    $("input.mor_data_get_relationship_button").live("click", function(ev) {
-    	ev.preventDefault();
-    	
-    	me.api.setDataUrl("relationship/" + $("#mor_data_get_id_input").val() );
+    	me.api.setDataUrl($("#mor_data_get_id_input").val());
     });
     
     $("button.mor_data_reference_node_button").live("click", function(ev) {
     	ev.preventDefault();
-    	
-    	me.api.setDataUrl("node/0" );
+    	me.api.showReferenceNode();
     });
     
     $("a.mor_data_paginate_next").live("click", function(ev){
     	ev.preventDefault();
-    	if(me.currentItem && me.currentItem.isNode) {
-    		var count = me.currentItem.relationships.data.length;
-    		if(me.currentRelatedNodePage * me.relatedNodesPerPage + me.relatedNodesPerPage < count) {
-    			me.currentRelatedNodePage++;
-    			me.render();
-    		}
-    	}
+    	me.currentRelatedNodePage++;
+    	me.render();
     });
     
     $("a.mor_data_paginate_previous").live("click", function(ev){
     	ev.preventDefault();
-    	if(me.currentItem && me.currentItem.isNode) {
-    		if(me.currentRelatedNodePage > 0) {
-    			me.currentRelatedNodePage--;
-    			me.render();
-    		}
-    	}
+		me.currentRelatedNodePage--;
+		me.render();
     });
     
     return me.api;

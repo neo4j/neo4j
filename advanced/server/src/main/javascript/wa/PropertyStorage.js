@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 /**
  * Persisted key/value store for webadmin. Used to store stuff like lists of
  * configured servers etc.
@@ -31,6 +32,8 @@ wa.PropertyStorage = function(storageUrl) {
      * Url to property storage service.
      */
     this.storageUrl = storageUrl;
+    
+    this.web = new neo4j.Web();
 
 };
 
@@ -47,7 +50,7 @@ wa.PropertyStorage.prototype.get = function(key, cb)
     if (typeof (this.cache[key]) === "undefined")
     {
         var cache = this.cache;
-        neo4j.Web.get(this.storageUrl + key, (function(key, cb) {
+        this.web.get(this.storageUrl + key, (function(key, cb) {
             return function(data) {
                 var value = data === "undefined" ? undefined
                         : typeof (data) === "string" ? JSON.parse(data) : data;
@@ -77,7 +80,7 @@ wa.PropertyStorage.prototype.set = function(key, value, cb)
     
 
     var cache = this.cache;
-    neo4j.Web.post(this.storageUrl + key, value, (function(cb, key, value) {
+    this.web.post(this.storageUrl + key, value, (function(cb, key, value) {
         return function() {
             cache[key] = value;
 

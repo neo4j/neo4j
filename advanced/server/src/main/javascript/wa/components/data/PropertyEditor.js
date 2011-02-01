@@ -30,7 +30,7 @@ wa.components.data.PropertyEditor = (function($) {
 	 */
 	me.currentEditKey = null;
 	
-	me.dataCore = wa.components.data.DataBrowser;
+	me.item = wa.components.data.DataBrowser.getItem;
 	
 	//
 	// INTERNALS
@@ -43,7 +43,7 @@ wa.components.data.PropertyEditor = (function($) {
 	
 	me.addProperty = function(ev) {
 		ev.preventDefault();
-
+		
 		var template = $(ev.target).parent().parent().find(".mor_data_property_template");
 		var propertyElement = template.clone();
 
@@ -59,7 +59,8 @@ wa.components.data.PropertyEditor = (function($) {
 			var key = me.getKey(ev.target);
 			if( key !== null ) {
 				me.showSavingSaveButton();
-				neo4j.Web.del(me.propertyUrl(key), me.showSavedSaveButton);
+				me.item().removeProperty(key);
+				me.item().save().then(me.showSavedSaveButton);
 			} else {
 				me.showSavedSaveButton();
 			}
@@ -69,19 +70,18 @@ wa.components.data.PropertyEditor = (function($) {
 	
 	me.propertyValueChanged = function(ev) {
 		var key = me.getKey(ev.target);
-		var value = $(ev.target).val();
-		if( key !== null ) {
+		var value = me.getValue($(ev.target));
+		if( key !== null && value !== null ) {
 			me.showSavingSaveButton();
-		    neo4j.Web.put(me.propertyUrl(key), value, me.showSavedSaveButton);
-		} else {
-			me.showSavedSaveButton();
+			me.item().setProperty(key, value);
+			me.item().save().then(me.showSavedSaveButton);
 		}
 	};
 	
 	me.propertyKeyChanged = function(ev) {
 		var oldKey = me.currentEditKey;
 		var key = $(ev.target).val();
-		var value = me.getValue(ev.target);
+		var value = me.getValue($(ev.target).closest("ul").find("input.mor_data_value_input"));
 		
 		if( key != oldKey && value !== null) {
 			
@@ -90,10 +90,11 @@ wa.components.data.PropertyEditor = (function($) {
 			// Key has changed
 			if( oldKey !== null && oldKey.length > 0 ) {
 				// Delete old property
-			    neo4j.Web.del(me.propertyUrl(oldKey), me.showSavedSaveButton);
+			    me.item().removeProperty(oldKey);
 			}
 			
-			neo4j.Web.put(me.propertyUrl(key), value, me.showSavedSaveButton);
+			me.item().setProperty(key, value);
+            me.item().save().then(me.showSavedSaveButton);
 		}
 	};
 	
@@ -129,12 +130,19 @@ wa.components.data.PropertyEditor = (function($) {
 	/**
 	 * Get the string value for a given key field. Returns null if value is not set.
 	 */
-	me.getValue = function(valueField) {
-		var val = $(valueField).closest("ul").find("input.mor_data_value_input").val();
-		if(val.length > 0) {
-			return val;
-		} else {
-			return null;
+	me.getValue = function(el) {
+		try {
+		    val = JSON.parse(el.val());
+		    if(_.isString(val) && val.length == 0) {
+		        el.addClass("error");
+		        return null;
+		    } else {
+		        el.removeClass("error");
+		        return val;
+		    }
+		} catch(ex) {
+		    el.addClass("error");
+		    return null;
 		}
 	};
 	
