@@ -27,7 +27,7 @@
 		                </li>
 		                <li>
 		                    <h3>Create node</h3>
-		                    <p class="mor_info_list_info">&gt; myNode = g.addVertx(null)</p>
+		                    <p class="mor_info_list_info">&gt; myNode = g.addVertex()</p>
 		                </li>
 		                <li>
 		                    <h3>Create relation</h3>
@@ -65,15 +65,6 @@
 		                                <li>&gt; myRelation.outV</li>
 		                            </ul>
 		                        </p>
-		                </li>
-		                <li>
-		                    <h3>Looping and branching</h3>
-		                    &gt; result = []<br/>
-                            &gt; g.v(0).bothE.inV >> result<br/>
-		                    &gt; result.each {<br/>
-		                    <div style="width:20px;float:left;">&gt; </div>print it.name<br/>
-		                    &gt; }
-		                    </p>
 		                </li>
 		            </ul>
 				</div>
