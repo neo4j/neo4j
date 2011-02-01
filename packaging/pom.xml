@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.neo4j</groupId>
+    <artifactId>parent-pom</artifactId>
+    <version>15</version>
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.neo4j</groupId>
+  <artifactId>server-build</artifactId>
+  <version>0.1-SNAPSHOT</version>
+  <name>Neo4j Server Build</name>
+  <packaging>pom</packaging>
+  <description>Project that builds the Neo4j Server and standlone ditsribution.</description>
+  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+
+  <properties>
+    <short-name>server-build</short-name>
+  </properties>
+
+  <modules>
+    <module>server</module>
+    <module>standalone</module>
+  </modules>
+
+  <licenses>
+    <license>
+      <name>GNU Affero General Public License, Version 3</name>
+      <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
+    </license>
+  </licenses>
+
+  <issueManagement>
+    <system>Trac</system>
+    <url>https://trac.neo4j.org/query?status=assigned&amp;status=new&amp;status=reopened&amp;component=${short-name}</url>
+  </issueManagement>
+
+  <distributionManagement>
+    <site>
+      <id>neo4j-site</id>
+      <url>scpexe://components.neo4j.org/home/neo/components/${project.artifactId}/${project.version}</url>
+    </site>
+  </distributionManagement>
+
+</project>
+
