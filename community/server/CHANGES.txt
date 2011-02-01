@@ -1,0 +1,55 @@
+0.6-1.3.M01 (2010-01-27)
+------------------------
+
+o Ability to start the server in HA mode.
+o Excludes the neo4j-index component (not used anyhow) to enable HA mode.
+
+0.5-1.2 (2010-12-29)
+--------------------
+
+o Minor bug fixes and some code cleanup.
+o Changed REST representations to use only underscores for keys instead of hyphens.
+
+0.5-1.2.M06 (2010-12-21)
+------------------------
+
+o Added support for server plugins that extend the functionality of the graph database, a node, or a relationship.
+o Bridge OSGi LogService to server Logger. Bundle log messages and stdout pipe through correctly.
+o Refactoring of functional tests to remove static dependencies. Introduced a server builder to deal with it instead.
+o Can now add performance-tweaking properties to the database hosted by the server. It uses the same neo4j.properties file as the embedded version, but you need to add a property: 
+  org.neo4j.server.db.tuning.properties into the neo4j-server.properties file.
+o Webadmin: Removed component titles, added save button to data browser, minor change to data browser layout.
+o Webadmin: Minor UI updates, added error message that shows up when server connection is lost.
+o Webadmin: Moved charts into tabbed box, minor UI updates.
+o Fixed an issue with initialization order of things in the server to make sure that RRD is initialized when it is needed.
+o Webadmin: Added proper tab-like styling to chart tabs and scale selectors.
+o Fixed bug in RRD memory usage sampler, making rounding happen at end of calculations, instead of in the midst of.
+o Webadmin: Made 30minutes the default view in charts.
+o Webadmin: Added kernel version to dashboard, fixed bug in chart drawing (was drawing when the charts are not visible under certain conditions).
+o Webadmin: Disallow self relationships in UI, and show error message explaining this.
+o Can now load 3rd party JAX-RS jars from the classpath.
+o Updated static assembly to properly include both webadmin statics and documentation. Documentation now tested and ships properly down to neo4j-standalone.
+o Webadmin: Made the current node show up by default when adding new relations in webadmin.
+o Webadmin: Dashboard shows charts with tabs, and allows switching between charts.
+o Added a basic readme with instructions for building, running, and functional testing.
+o Updating the way to create temporary files to solve the functional test problem where lots of files stick around.
+o re-implemented REST to expose indexing of nodes and relationships (new index API)
+o single path algo works in RestfulGraphDatabase now
+o fixed duplicate paths for delete node or relationship from index
+o Http DELETE requires the proper mediatype to accept
+o All indexes must be created to use them.
+o Added the ability extend the REST API with server plugins.
+o Added back links to the first page in the HTML format.
+o updating to Gremlin 0.6
+o Updated the component site documentation with the new index API.
+
+0.1-1.2.M05 (2010-12-02)
+------------------------
+
+o Updated to Jersey 1.4,
+o Fixed bug with duplicate Content-Length header (ticket 283)
+
+0.1-1.2.M04 (2010-11-18)
+------------------------
+
+Initial release.
