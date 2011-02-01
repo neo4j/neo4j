@@ -185,7 +185,7 @@ public class StandaloneDatabase
         <T> T executeJob( Job<T> job ) throws Exception;
     }
 
-    private static class StartupFailureException extends Exception
+    public static class StartupFailureException extends Exception
     {
         StartupFailureException( Throwable cause )
         {
