@@ -266,28 +266,39 @@ wa.components.data.DataBrowser = (function($) {
     	var relatedNodeCount = relationships.length,
     	    nodePageCount = Math.ceil(relatedNodeCount / me.relatedNodesPerPage);
     	
-    	if(me.currentRelatedNodePage < 0) {
-    	    me.currentRelatedNodePage = 0;
+    	if(relatedNodeCount > 0) {
+    	
+        	if(me.currentRelatedNodePage < 0) {
+        	    me.currentRelatedNodePage = 0;
+        	}
+        	
+        	if(me.currentRelatedNodePage >= nodePageCount ) {
+        	    me.currentRelatedNodePage = nodePageCount - 1;
+        	}
+        	
+        	var relatedNodeStartIndex = me.currentRelatedNodePage * me.relatedNodesPerPage;
+        	var relatedNodeStopIndex = relatedNodeStartIndex + me.relatedNodesPerPage - 1;
+        	
+        	if( relatedNodeStopIndex >= relatedNodeCount ) {
+        		relatedNodeStopIndex = relatedNodeCount - 1;
+        	}
+        	
+        	return {
+    			relatedNodeStartIndex : relatedNodeStartIndex,
+                relatedNodeStopIndex : relatedNodeStopIndex,
+                relatedNodePage : me.currentRelatedNodePage,
+                relatedNodePageCount : nodePageCount > 0 ? nodePageCount : 1,
+                relatedNodesPerPage : me.relatedNodesPerPage
+        	};
+    	} else {
+    	    return {
+                relatedNodeStartIndex : 0,
+                relatedNodeStopIndex : 0,
+                relatedNodePage : 0,
+                relatedNodePageCount : 1,
+                relatedNodesPerPage : me.relatedNodesPerPage
+            };
     	}
-    	
-    	if(me.currentRelatedNodePage >= nodePageCount ) {
-    	    me.currentRelatedNodePage = nodePageCount - 1;
-    	}
-    	
-    	var relatedNodeStartIndex = me.currentRelatedNodePage * me.relatedNodesPerPage;
-    	var relatedNodeStopIndex = relatedNodeStartIndex + me.relatedNodesPerPage - 1;
-    	
-    	if( relatedNodeStopIndex >= relatedNodeCount ) {
-    		relatedNodeStopIndex = relatedNodeCount - 1;
-    	}
-    	
-    	return {
-			relatedNodeStartIndex : relatedNodeStartIndex,
-            relatedNodeStopIndex : relatedNodeStopIndex,
-            relatedNodePage : me.currentRelatedNodePage,
-            relatedNodePageCount : nodePageCount > 0 ? nodePageCount : 1,
-            relatedNodesPerPage : me.relatedNodesPerPage
-    	};
     };
     
     /**
