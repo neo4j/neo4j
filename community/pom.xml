@@ -48,11 +48,6 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-shell</artifactId>
-      <version>1.3-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-remote-graphdb</artifactId>
       <version>0.9-SNAPSHOT</version>
     </dependency>
@@ -170,7 +165,7 @@
               <includeGroupIds>org.neo4j</includeGroupIds>
             </configuration>
           </execution>
-          <!--
+          <!-- needed if test-jxr is enabled
           <execution>
             <id>get-test-sources</id>
             <goals>
