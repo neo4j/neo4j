@@ -27,6 +27,8 @@ wa.components.data.RelationshipManager = (function($) {
 	
 	me.dataCore = wa.components.data.DataBrowser;
 	
+	me.web = new neo4j.Web();
+	
 	//
 	// INTERNALS
 	//
@@ -86,7 +88,7 @@ wa.components.data.RelationshipManager = (function($) {
 	me.deleteItem = function(ev) {
 		ev.preventDefault();
 		if( confirm("Are you sure?")) {
-			neo4j.Web.del(me.dataCore.getItem().self, function(data) {
+		    me.web.del(me.dataCore.getItem().self, function(data) {
 				// Go to root node
 				$.bbq.pushState({ dataurl: "node/0" });
 			});

@@ -25,33 +25,26 @@ wa.components.data.NodeManager = (function($) {
 	
 	var me = {};
 	
-	me.dataCore = wa.components.data.DataBrowser;
+	me.item = wa.components.data.DataBrowser.getItem;
+	me.showReferenceNode = wa.components.data.DataBrowser.showReferenceNode;
+    me.server = wa.components.data.DataBrowser.getServer;
 	
 	//
 	// INTERNALS
 	//
 	
-	me.server = function() {
-		return me.dataCore.getServer();
-	};
-	
 	me.addNode = function(ev) {
 		ev.preventDefault();
-		me.server().post("node", {}, function(data) {
-			var url = data.self;
-			// Strip the server's URL
-			url = url.substring(me.server().url.length );
-			// Show the node
-			$.bbq.pushState({ dataurl: url });
+		me.server().node({}).then(function(node) {
+			$.bbq.pushState({ dataurl: node.getSelf() });
 		});
 	};
 	
 	me.deleteItem = function(ev) {
 		ev.preventDefault();
 		if( confirm("Are you sure?")) {
-			neo4j.Web.del(me.dataCore.getItem().self, function(data) {
-				// Go to root node
-				$.bbq.pushState({ dataurl: "node/0" });
+		    me.item().remove().then(function(data) {
+		        me.showReferenceNode();
 			});
 		}
 	};
