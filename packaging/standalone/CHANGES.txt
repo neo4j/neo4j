@@ -1,0 +1,24 @@
+1.3.M01 (2011-01-27)
+--------------------
+
+o Better placement of some directories, f.ex. zoo keeper and log4j.
+
+1.2.M06 (2010-12-21)
+------------------------
+
+o Switched to dependencySet for including neo4j-manual.
+o Avoid downloading sources.
+o Excluding manual from the server classpath.
+o Added the key for the database tuning properties file.
+
+1.2.M05 (2010-12-02)
+--------------------
+
+o Better handling of different architectures in
+  batch scripts for *nix.
+o Fixed a property bug (ticket 285).
+
+1.2.M04 (2010-11-18)
+--------------------
+
+Initial version.
