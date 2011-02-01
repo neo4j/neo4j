@@ -1,0 +1,20 @@
+Windows 64-bit Support
+======================
+
+To run the server on Windows with 64-bit Java, you'll need to install a trial
+version of the Java Service Wrapper.
+
+Follow these steps:
+
+1. Download the trial version from Tanuki Software
+   * [Java Service Wrapper](http://wrapper.tanukisoftware.com/doc/english/download.jsp)
+   * Download the latest Professional or Standard version
+2. Extract the contents of the download
+   * We'll refer to the extracted directory as $WRAPPER_HOME
+   * Similarly, let's refer to the Neo4j Server directory as $NEO4J_HOME
+3. Remove `$NEO4J_HOME\bin\wrapper-windows-x86-32.exe`
+4. Remove `$NEO4J_HOME\bin\lib\wrapper-windows-x86-32.dll`
+4. Copy `$WRAPPER_HOME\bin\wrapper.exe` to `$NEO4J_HOME\bin\`
+5. Copy `$WRAPPER_HOME\lib\wrapper.dll` to `$NEO4J_HOME\bin\lib\`
+
+That's it. 
