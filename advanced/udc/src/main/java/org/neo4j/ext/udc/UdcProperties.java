@@ -49,4 +49,8 @@ public interface UdcProperties {
      */
     public static final String UDC_HOST_ADDRESS_KEY = "neo4j.ext.udc.host";
 
+    /**
+     * Configuration key for overriding the source parameter in UDC
+     */
+    public static final String UDC_SOURCE_KEY = "neo4j.ext.udc.source";
 }
