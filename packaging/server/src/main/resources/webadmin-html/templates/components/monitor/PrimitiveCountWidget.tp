@@ -1,0 +1,21 @@
+<h2>Primitives</h2>
+<table class="mor_fancy">
+	<tbody>
+		<tr>
+			<th>Nodes</th>
+			<td>{$T.data.NumberOfNodeIdsInUse.value}</td>
+		</tr>
+		<tr>
+			<th>Properties</th>
+			<td>{$T.data.NumberOfPropertyIdsInUse.value}</td>
+		</tr>
+		<tr>
+			<th>Relationships</th>
+			<td>{$T.data.NumberOfRelationshipIdsInUse.value}</td>
+		</tr>
+		<tr>
+			<th>Relationship types</th>
+			<td>{$T.data.NumberOfRelationshipTypeIdsInUse.value}</td>
+		</tr>
+	</tbody>
+</table>

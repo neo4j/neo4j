@@ -1,0 +1,67 @@
+{#template MAIN}
+	<div class="mor_page_leftcol">
+		<div class="mor_module">
+			<p class="mor_info">Perform backups on your Neo4j database.</p>
+			<div class="mor_module_foldout">
+				<h2><a href="#" class="mor_module_foldout_trigger">More about backup foundations</a></h2>
+				<div class="mor_module_foldout_content">
+					<h2>Backup foundations</h2>
+					<p>Neo4j is able to perform online backups, but it needs to create a backup foundation before it is able to do this.</p> 
+					<p>The backup foundation requires the original database to be shut down for a short period, while files are copied to the backup directory.</p>
+					<p>The time it takes to create the foundation is dependent on how much data is in your database, and how fast the transfer between the database directory and the backup directory is.</p>
+					<p>Please do not do anything with the database while it is creating its backup foundation.</p>
+					<p>After the backup foundation has been created, logical logs will be enabled on your database, and it will be started again.</p>
+				</div>
+			</div>
+			
+			<div class="mor_module_foldout">
+				<h2><a href="#" class="mor_module_foldout_trigger">More about backups</a></h2>
+				<div class="mor_module_foldout_content">	
+					<h2>Online backups</h2>
+					<p>Once you have a backup foundation in place, you can trigger online backups at any time. If you want, you can do backup foundations to several directories, and trigger online backups against each of them as you please.</p>
+					<p>The backup will not interrupt other systems currently working with the database. The time it takes to perform the backup will be proportional to the amount of changes made to the database since the last backup.</p>
+					<p>Configuring schedules for automatic online backups, as well as backup status reports, are both highly prioritized features that are being worked on. Hopefully they will be included in the next stable release of this tool.</p>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="mor_page_rightcol">
+		<div class="mor_span-4">
+			<div class="mor_backup_configbox mor_module">
+				<h2>Manual backup</h2>
+				<table class="mor_fancy">
+					<tbody>
+						<tr>
+							<th>Backup path</th>
+							<td><input type="text" class="mor_backup_path" /> <button class="mor_backup_setpathbutton" disabled="disabled">Set</button></td>
+						</tr>
+						<tr>
+							<th></th>
+							<td><button class="mor_backup_triggerbutton" disabled="disabled">Perform manual backup</button></td>
+						</tr>
+					</tbody>
+				</table>
+				<p class="mor_backup_status info mor_info" style="display:none;"></p>
+			</div>
+			<div class="mor_backup_foundationbox info mor_module" style="display:none;">
+				<h2>No foundation</h2>
+				<p class="mor_info">Your server has not yet been configured to use online backups. I can do this for you, but it requires me to turn off your neo4j database for a while while I copy files to your backup location.</p>
+				<p class="mor_info">Proceeed?</p>
+				<p class="warning mor_info"><b>Warning:</b> Any content in the backup folder you specified above will be <i>destroyed</i>. Please make sure to specify a non-existant or empty folder.</p>
+				<p class="mor_info"><button class="mor_backup_foundation_triggerbutton">Yes, configure my server for online backups</button></p>
+			</div>
+		</div>
+		
+		<div class="mor_span-4">
+			<div class="mor_module">
+				<h2>Backup schedule</h2>
+				<button class="mor_backup_add_job mor_list_button">Schedule new backup job</button>
+				<p class="info mor_backup_job_info" style="display:none;"></p>
+				<ul class="mor_backup_job_list">
+					
+				</ul>
+				<div class="break"></div>
+			</div>
+		</div>
+	</div>
+{#/template MAIN}

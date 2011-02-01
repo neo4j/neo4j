@@ -1,0 +1,93 @@
+{#template MAIN}
+	<div class="mor_page_leftcol">
+		<div class="mor_module">
+			<p class="mor_info">Changing settings will always require a restart of the neo4j server, some settings, like changing JVM memory, also requires a JVM restart.</p>
+			
+			<div class="mor_module_foldout">
+				<h2><a href="#" class="mor_module_foldout_trigger">More about database settings</a></h2>
+				<div class="mor_module_foldout_content">	
+					<h2>Database settings</h2>
+					<p>The database settings configure various attributes of the underlying neo4j database instance.</p>
+					<p>Refer to <a href="http://wiki.neo4j.org/content/Configuration_Settings" target="_BLANK">the wiki</a> for info on various settings.</p>
+					<p>It is possible to manually alter the configuration file, if there is some setting you wish to change that is not yet available here.</p>
+					<p>Locate the neo4j-rest-db folder, and edit (create if necessary) the file neo4j.properties to your liking.</p>
+				</div>
+			</div>
+			
+			<div class="mor_module_foldout">
+				<h2><a href="#" class="mor_module_foldout_trigger">More about JVM arguments</a></h2>
+				<div class="mor_module_foldout_content">	
+					<h2>JVM arguments</h2>
+					<p>Modifying underlying JVM settings, such as memory usage or garbage collector configuration, is an excellent way to fine-tune the database for your server environment.</p>
+					<p>When you change and save a JVM setting, the server will turn off both the administration and REST web servers.</p>
+					<p>It will then start a new JVM with the new settings, and exit the initial JVM. This will usually take around 30 seconds or so. Wait for a while and refresh this page until the server starts responding again.</p>
+					<p>If several minutes pass, and the server does not start responding, it is possible the changes made made the JVM unable to start.</p>
+					<p>To fix this, you have to manually revert the erreneous changes in the [SERVICE_DIR]/conf/wrapper.conf file.</p>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="mor_page_rightcol">
+		{#if $T.config.length > 0 }
+		<div class="mor_module">
+			<h2>Database settings</h2>
+			<table class="mor_fancy">
+				<tbody>
+					{#foreach $T.config as item}
+					<tr>
+						<th>{$T.item.display_name}</th>
+						<td>{#include config_widget root=$T.item}</td>
+					</tr>
+					{#/for} 
+				</tbody>
+			</table>
+		</div>
+		{#/if}
+		{#if $T.jvm_config.length > 0 }
+			<div class="mor_module">
+				<h2>JVM arguments</h2>
+				<table class="mor_fancy">
+					<tbody>
+						{#foreach $T.jvm_config as item}
+						<tr>
+							<th>{$T.item.display_name}</th>
+							<td>{#include config_widget root=$T.item}</td>
+						</tr>
+						{#/for} 
+					</tbody>
+				</table>
+			</div>
+		{#/if}
+		<input type="button" id="mor_setting_save" disabled="disabled" value="Save changes" />
+		<!--h2>Advanced settings</h2>
+		<p class="warning small">These settings are defined at the time the database is created. Changing these means the server has to create a new database, and then copy all nodes and relations from the old one, one by one. That may take a very long time, and error-proof results are NOT guaranteed.</p>
+		<p class="info small">Fortunately, changing advanced settings is not currently supported. Phew.</p>
+		<table>
+			<tbody>
+				{#foreach $T.advanced_config as item}
+				<tr>
+					<td>{$T.item.display_name}</td>
+					<td><input type="text" name="{$T.item.key}" disabled="true" id="mor_setting_{$T.item.key}" value="{$T.item.value}" /></td>
+				</tr>
+				{#/for} 
+			</tbody>
+		</table>
+		<input type="button" id="mor_setting_advanced_save" disabled="true" value="Save changes" /-->
+	</div>
+{#/template MAIN}
+
+{#template config_widget}
+	{#if $T.definition.widget === "DROPDOWN"}
+		<select class="mor_config_value" name="{$T.key}" id="mor_setting_{$T.key}">
+			{#foreach $T.definition.values as item}
+				<option value="{$T.item.value}" {#if $T.item.value === $T.value}selected="selected"{#/if}>{$T.item.name}</option>
+			{#/for}
+		</select>
+	{#elseif $T.definition.widget === "TOGGLE" && $T.definition.values[0].value === $T.value }
+		<input type="checkbox" class="mor_config_value" name="{$T.key}" checked="checked" id="mor_setting_{$T.key}" value="{$T.value}" />
+	{#elseif $T.definition.widget === "TOGGLE"}
+		<input type="checkbox" class="mor_config_value" name="{$T.key}" id="mor_setting_{$T.key}" value="{$T.value}" />
+	{#else} 
+		<input type="text" class="mor_config_value" name="{$T.key}" id="mor_setting_{$T.key}" value="{$T.value}" />
+	{#/if}
+{#/template config_widget}

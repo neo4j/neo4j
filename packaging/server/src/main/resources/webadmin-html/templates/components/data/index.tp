@@ -1,0 +1,217 @@
+{#template MAIN}
+    <div class="mor_page_leftcol">
+        <div class="mor_module">
+            <p class="mor_info">Browse the data in your neo4j server.</p>
+
+            <ul class="mor_horizontal_menu">
+                <li><button class="mor_data_add_node_button">New node</button></li>
+                <li><button class="mor_data_add_relationship">New relationship</button></li>
+                <li><button class="mor_data_refresh_button">Refresh</button></li>
+                <li><button class="mor_data_reference_node_button">Go to reference node</button></li>
+            </ul>
+            <div class="break"></div>
+            <div class="mor_module_foldout">
+                <h2><a href="#" class="mor_module_foldout_trigger">More about the data browser</a></h2>
+                <div class="mor_module_foldout_content">
+                    <h2>Finding data</h2>
+                    <p>You can enter the id of a node or a relationship below, to show it and its related nodes.</p>
+                    <h2>Listing data</h2>
+                    <p>Because each node can have any properties you want it to, the data browser allows you to select what properties it should list when listing related nodes.</p>
+                    <p>Simply enter the properties you are interested in, separated by commas, in the "properties to list" box below.</p>
+                </div>
+            </div>
+            <div class="mor_module_foldout">
+                <h2><a href="#" class="mor_module_foldout_trigger">More about relationships</a></h2>
+                <div class="mor_module_foldout_content">
+                    <h2>Getting the details</h2>
+                    <p>When you are looking at a node, the "related nodes" table will only show direction and type of the various relationships connected to the node.</p>
+                    <p>To view the properties of a relationship, click on the relationship type.</p>
+                    <h2>Direction</h2>
+                    <p>The arrows shown when listing related nodes show what direction the relationship goes.</p>
+                    <p>If the arrow points to the <b>right</b>, this means it goes from the node you are focusing on, to the node that is shown in the table row.</p>
+                    <p>If the arrow points to the <b>left</b>, this means it goes from the node that is shown in the table row , to the node you are focusing on.</p>
+                </div>
+            </div>
+        </div>
+        <div class="mor_module">
+            <h2>Get by id</h2>
+            <p class="mor_info"><input type="text" class="short" id="mor_data_get_id_input" /></p>
+            <p class="mor_info"><input type="button" class="mor_data_get_node_button" value="Get node" /><input type="button" class="mor_data_get_relationship_button" value="Get relationship" /></p>
+        </div>
+        {#if $T.notFound }
+
+        {#else }
+            {#if $T.item && $T.item.relationships }
+            <div class="mor_module">
+                <h2>Properties to list</h2>
+                <p class="mor_info">Comma-separated list of properties to show when listing related nodes.</p>
+
+                <form action="#">
+                    <p class="mor_info">
+                        <input type="text" value="{$T.item.relationships.fields.join(",")}" id="mor_data_listfields" />
+                    </p>
+                    <p class="mor_info">
+                        <input type="submit" value="Set" id="mor_data_listfields_button" />
+                    </p>
+                </form>
+            </div>
+            {#/if}
+        {#/if}
+    </div>
+
+    <div class="mor_page_rightcol">
+    {#if $T.notFound }
+        <div class="mor_module mor_span-3">
+            <h2>Not found</h2>
+            <p class="mor_info">The item you requested cannot be found, or an error occurred while trying to retrieve it.</p>
+        </div>
+    {#else}
+        {#if $T.item.isNode }
+            <div class="mor_module mor_span-4">
+                <h2>Node
+                    <button class="mor_data_delete_node_button">Remove</button>
+                    <button class="mor_data_save" disabled="disabled">Saved</button>
+                </h2>
+                {#include propertyTable root=$T.item}
+            </div>
+            {#include nodeTable root=$T.item.relationships}
+        {#elseif $T.item.isRelationship}
+            <div class="mor_module mor_span-8">
+                <h2>Relationship
+                    <button href="#" class="mor_data_delete_relationship_button">Remove</button>
+                    <button class="mor_data_save" disabled="disabled">Saved</button>
+                </h2>
+                {#param name=propertyEditable value=true}
+                {#include propertyTable root=$T.item}
+            </div>
+            <div class="mor_span-4">
+                <div class="mor_module">
+                    <h2>Start node</h2>
+                    {#if $T.item.startNode}
+                        {#param name=propertyEditable value=false}
+                        {#include propertyTable root=$T.item.startNode}
+                    {#/if}
+                </div>
+            </div>
+            <div class="mor_span-4">
+                <div class="mor_module">
+                    <h2>End node</h2>
+                    {#if $T.item.endNode}
+                        {#param name=propertyEditable value=false}
+                        {#include propertyTable root=$T.item.endNode}
+                    {#/if}
+                </div>
+            </div>
+        {#/if}
+    {#/if}
+    </div>
+{#/template MAIN}
+
+{#template propertyTable}
+    <table class="mor_fancy" cell-spacing="0">
+        <tbody>
+            <tr>
+                <th><span class="mor_data_uneditable_key">Id</span></th>
+                <td class="mor_data_item_id"><span class="mor_data_uneditable_value"><a href="{ $T.self }" class="mor_data_url_button">{ $T.self }</a></span></td>
+                {#if $P.propertyEditable !== false }
+                    <td></td>
+                {#/if }
+            </tr>
+            {#if $T.type }
+                <tr>
+                    <th><span class="mor_data_uneditable_key">Type</span></th>
+                    <td><span class="mor_data_uneditable_value">{$T.type}</span></td>
+                    {#if $P.propertyEditable !== false }
+                        <td></td>
+                    {#/if }
+                </tr>
+            {#/if}
+            {#if $P.propertyEditable === false }
+	            {#foreach $T.fields as field}
+		            <tr>
+	                    <th><span class="mor_data_uneditable_key">{$T.field}</span></th>
+	                    <td><span class="mor_data_uneditable_value">{$T.data[$T.field]}</span></td>
+	                </tr>
+	            {#/for}
+	        {#/if}
+        </tbody>
+    </table>
+    
+    {#if $P.propertyEditable != false }
+	    <ul class="mor_data_property_list">
+	        {#foreach $T.fields as field}
+	            <li>
+	                    {#if $T.field !== "type" }
+	                        <ul class="mor_data_property_detail">
+	                            <li class="mor_data_key">
+	                                <a href="#" class="mor_data_remove_property button bad-button" title="Remove property from node" >Remove</a>
+	                                <span class="mor_data_key_headline">Key</span>
+	                                <input type="text" class="mor_data_key_input" value="{$T.field}" />
+	                            </li>
+	                            <li class="mor_data_value"><span class="mor_data_value_headline">Value</span> <input type="text" class="mor_data_value_input" value="{$T.data[$T.field]}" /></li>
+	                        </ul>
+	                    {#/if}
+	            </li>
+	        {#/for}
+	        <li class="mor_data_property_template" style="display:none;">
+	            <ul class="mor_data_property_detail">
+	                <li class="mor_data_key">
+	                    {#if $P.propertyEditable !== false }
+	                        <a href="#" class="mor_data_remove_property button bad-button" title="Remove property from node" >Remove</a>
+	                    {#/if }
+	                    <span class="mor_data_key_headline">Key</span>
+	                    <input type="text" class="mor_data_key_input" />
+	                </li>
+	                <li class="mor_data_value"><span class="mor_data_value_headline">Value</span> <input type="text" class="mor_data_value_input" /></li>
+	            </ul>
+	        </li>
+	    </ul>
+        <p class="mor_info"><button class="mor_data_add_property">New property</button></p>
+    {#/if}
+{#/template propertyTable}
+
+{#template nodeTable}
+    <div class="data-table-container mor_span-6 mor_last">
+        <div class="actions">
+            Related nodes
+        </div>
+        <div class="data-table-body">
+            <table class="mor_fancy data-table" cell-spacing="0">
+                <thead>
+                    <tr>
+                        <th>Dir</th>
+                        <th>Relationship</th>
+                        <th>Node id</th>
+                        {#foreach $T.fields as field}
+                            <th>{$T.field}</th>
+                        {#/for }
+                    </tr>
+                </thead>
+                <tbody>
+                    {#for index = $T.pagination.relatedNodeStartIndex to $T.pagination.relatedNodeStopIndex}
+                        {#param name=relatedNode value=$T.nodes[$T.data[$T.index].otherNode]}
+                        <tr class="odd">
+                            <td class="mor_data_relationship_direction">{#if $T.data[$T.index].direction === "FROM"}<img src="img/icons/22x22/from.png" />{#else }<img src="img/icons/22x22/to.png" />{#/if}</td>
+                            <td><a href="{ $T.data[$T.index].self }" class="mor_data_url_button">{ $T.data[$T.index].type }</a></td>
+                            <td><a href="{ $T.data[$T.index].otherNode }" class="mor_data_url_button">{ $T.data[$T.index].otherNode }</a></td>
+                            {#if $P.relatedNode}
+                                {#foreach $T.fields as field}
+                                    <td><a href="{$T.data[$T.index].otherNode}" class="mor_data_url_button">{$P.relatedNode.data[$T.field]}</a></td>
+                                {#/for }
+                            {#else }
+                                {#foreach $T.fields as field}
+                                    <td></td>
+                                {#/for }
+                            {#/if}
+                        </tr>
+                    {#/for }
+                </tbody>
+            </table>
+        </div>
+        <div class="mor_paginator">
+            <a href="#" class="mor_data_paginate_previous {#if $T.pagination.relatedNodePage == 0}inactive{#/if}">Previous</a>
+            <span class="mor_paginator_label">Page {$T.pagination.relatedNodePage + 1} of {$T.pagination.relatedNodePageCount}</span>
+            <a href="#" class="mor_data_paginate_next {#if $T.pagination.relatedNodePage == $T.pagination.relatedNodePageCount - 1}inactive{#/if}">Next</a>
+        </div>
+    </div>
+{#/template nodeTable}
