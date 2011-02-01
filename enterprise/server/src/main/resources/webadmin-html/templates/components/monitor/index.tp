@@ -1,0 +1,74 @@
+<div class="mor_page_leftcol">
+	<div id="mor_monitor_lifecycle"></div>
+	<div class="mor_module">
+		<h1>Welcome to the Neo4j Web Admin</h1>
+		<ul class="mor_info_list">
+			<li>
+				<h3>Data url</h3>
+				<p><a href="{ $T.server.url }">{ $T.server.url }</a></p>
+			</li>
+			<li>
+				<h3>Kernel version</h3>
+				<p>{ $T.kernelInfo.getAttribute("KernelVersion").value }</p>
+			</li>
+		</ul>
+		<!--div class="mor_module_foldout">
+			<h2><a href="#" class="mor_module_foldout_trigger">More about lifecycle</a></h2>
+			<div class="mor_module_foldout_content">
+				<h2>Lifecycle</h2>
+				<p>With the controls above, you can stop, start, and restart the REST server.</p>
+				<p>Stopping the server will mean that the REST server will be turned off. The administration server will still be running, so that it can be used to turn the REST server back on.</p>
+				<p>Stopping the server does not turn off the underlying neo4j database, since the administration server still uses it.</p>
+				<p>If you want to ensure that the neo4j database is turned off, use the console on your server to stop the neo4j service.</p>
+			</div>
+		</div-->
+		<div class="mor_module_foldout">
+            <h2><a href="#" class="mor_module_foldout_trigger">More about Neo4j</a></h2>
+            <div class="mor_module_foldout_content">
+                <h2>The Neo4j project</h2>
+                <p>For more information, help and examples, please visit <a href="http://neo4j.org">the Neo4j community site</a>.</p>
+            </div>
+        </div>
+        <div class="mor_module_foldout">
+			<h2><a href="#" class="mor_module_foldout_trigger">More about Charts</a></h2>
+			<div class="mor_module_foldout_content">
+				<h2>Charts</h2>
+				<p>To the right are charts that show the total number of primitive entities in the database over time, as well as the heap memory usage in percent.</p>
+				<p>You can select the granularity of the charts with the links in the top right corner of each chart.</p>
+				<p>To get specific info of some point in any chart, simply hover the mouse over the chart line.</p>
+				<p>The charts are automatically updated every three seconds.</p>
+			</div>
+		</div>
+		<div class="mor_module_foldout">
+			<h2><a href="#" class="mor_module_foldout_trigger">More about KPIs</a></h2>
+			<div class="mor_module_foldout_content">
+				<h2>Key points of interest</h2>
+				<p>Below the charts are three boxes showing different sets of KPIs. These are updated every three seconds.</p>
+				<h2>A note on disk size</h2>
+				<p>Because of the way neo4j stores data, the different storage files (nodestore, relationshipstore etc.) will sometimes be very small before the server has recieved any requests.</p>
+				<p>It may be surprising to see the storage files grow rapidly when server first recieves requests, but the measurements will actually be correctly reflecting the disk size of the storage files.</p>
+				<p>This is only occurs if you are working on a relatively small graph.</p>
+				<h2>The note on primitive counts</h2>
+				<p>The number of nodes, properties and relations are estimates based on file sizes. Actually counting the nodes is not done for performance reasons. These are usually very accurate, but in certain cases if you have experienced a database crash and subsequent recovery, they may be very wrong.</p>
+				<p>How wrong the numbers are is entirely based on the operations you were doing right before the crash. There is currently no automated way to remedy this problem.</p>
+				
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="mor_page_rightcol">
+	<div id="mor_monitor_valuetrackers">
+	
+	</div>
+	<div class="mor_module mor_tabbedmodule mor_span-10 mor_last">
+		<ul class="mor_tabbedmodule_tabs">
+			<li class="current tab"><a href="#" id="mor_monitor_primitives_chart_tab">Primitives</a></li>
+			<li class="tab"><a href="#" id="mor_monitor_memory_chart_tab">Memory</a></li>
+		</ul>
+		<ul class="mor_tabbedmodule_views">
+			<li id="mor_monitor_primitives_chart"></li>
+			<li id="mor_monitor_memory_chart" style="display:none;"></li>
+		</ul>
+	</div>
+</div>

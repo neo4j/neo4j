@@ -1,0 +1,17 @@
+<h2>Disk usage</h2>
+<table class="mor_fancy">
+	<tbody>
+		<tr>
+			<th>Total usage</th>
+			<td>{ Math.round($T.data.TotalStoreSize.value / 1024) } kB</td>
+		</tr>
+		<tr> 
+			<th>Database size</th>
+			<td>{ Math.round(($T.data.TotalStoreSize.value - $T.data.LogicalLogSize.value) / 1024) } kB ({ Math.round( (($T.data.TotalStoreSize.value - $T.data.LogicalLogSize.value) / $T.data.TotalStoreSize.value) * 100) }%)</td>
+		</tr>
+		<tr>
+			<th>Logical log size</th>
+			<td>{ Math.round($T.data.LogicalLogSize.value / 1024) } kB ({ Math.round( ($T.data.LogicalLogSize.value / $T.data.TotalStoreSize.value) * 100) }%)</td>
+		</tr>
+	</tbody>
+</table>

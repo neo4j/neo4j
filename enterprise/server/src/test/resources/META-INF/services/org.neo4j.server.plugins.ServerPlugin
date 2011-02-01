@@ -1,0 +1,3 @@
+org.neo4j.server.plugins.Plugin
+org.neo4j.server.plugins.ReferenceNode
+org.neo4j.server.plugins.GraphCloner
