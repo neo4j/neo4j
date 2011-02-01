@@ -447,7 +447,7 @@ td.mor_data_relationship_direction { padding: 0 4px !important; text-align:cente
 .mor_console_wrap { border-left: 10px solid black;  background: #333; height:400px; overflow:auto;  }
 .mor_console { width: 90%; background: #333; height: 400px; float:left; }
 .mor_console p { font-size: 12px; font-family: monospace; color:#fafafa; margin:0; padding:0; font-weight:normal; }
-.mor_console p input { padding:0; display:block; width: 95%; float:left; background:transparent; border:none; color:inherit; font-size: inherit; line-height:inherit; font-family: inherit;  }
+.mor_console p input { padding:0; display:block; width: 100%; padding-left:62px; float:left; background:transparent; border:none; color:inherit; font-size: inherit; line-height:inherit; font-family: inherit;  }
 
 /* JMX */
 

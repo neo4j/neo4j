@@ -2,8 +2,8 @@
     <div class="mor_page_leftcol">
         <div class="mor_module">
 
-            <p>The Neo4j console allows you to use the Gremlin programming language for working with your graph. Gremlin uses XPath expressions as a base for a full Turing-complete language.</p>
-            <p>Using Gremlin, you can perform powerful data manipulations.</p>
+            <p>The Neo4j console allows you to use the <a href="http://gremlin.tinkerpop.com">Gremlin graph traversal language</a> for working with your graph. Gremlin is an expressive data flow language that can be used for graph query and manipulation.</p>
+            <p>Using Gremlin, you can perform powerful data manipulations. <a href="http://gremlin.tinkerpop.com" target="_BLANK">More information.</a></p>
 
 			<div class="mor_module_foldout">
 				<h2><a href="#" class="mor_module_foldout_trigger">Console cheat sheet</a></h2>
@@ -12,10 +12,6 @@
 		                <li>
 		                    <h3>Local graph</h3>
 		                    <p class="mor_info_list_info">&gt; g</p>
-		                </li>
-		                <li>
-		                    <h3>List current position</h3>
-		                    <p class="mor_info_list_info">&gt; _ >> -1</p>
 		                </li>
 		                <li>
 		                    <h3>Set variable</h3>
@@ -69,13 +65,6 @@
 		            </ul>
 				</div>
 			</div>
-			<div class="mor_module_foldout">
-				<h2><a href="#" class="mor_module_foldout_trigger">More information</a></h2>
-				<div class="mor_module_foldout_content">
-					<h2>More information</h2>
-					<p>You can find more information about gremlin <a href="http://wiki.github.com/tinkerpop/gremlin/" target="_BLANK">here</a>.</p>
-				</div>
-			</div>
         </div>
     </div>
     <div class="mor_page_rightcol">
@@ -83,7 +72,7 @@
             <h2>Console</h2>
             <div class="mor_console_wrap">
                 <div id="mor_console" class="mor_console">
-                    <p id="mor_console_input_wrap"><span style="float:left;width:13px;"> &gt; </span> <input type="text" id="mor_console_input" value="" /></p>
+                    <p id="mor_console_input_wrap"><span style="float:left;width:0px;"> gremlin&gt; </span> <input type="text" id="mor_console_input" value="" /></p>
                     <p></p>
                 </div>
                 <div class="break"></div>
