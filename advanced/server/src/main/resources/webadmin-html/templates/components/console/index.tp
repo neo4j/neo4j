@@ -1,0 +1,102 @@
+{#template MAIN}
+    <div class="mor_page_leftcol">
+        <div class="mor_module">
+
+            <p>The Neo4j console allows you to use the Gremlin programming language for working with your graph. Gremlin uses XPath expressions as a base for a full Turing-complete language.</p>
+            <p>Using Gremlin, you can perform powerful data manipulations.</p>
+
+			<div class="mor_module_foldout">
+				<h2><a href="#" class="mor_module_foldout_trigger">Console cheat sheet</a></h2>
+				<div class="mor_module_foldout_content">
+					<ul class="mor_info_list">
+		                <li>
+		                    <h3>Local graph</h3>
+		                    <p class="mor_info_list_info">&gt; g</p>
+		                </li>
+		                <li>
+		                    <h3>List current position</h3>
+		                    <p class="mor_info_list_info">&gt; _ >> -1</p>
+		                </li>
+		                <li>
+		                    <h3>Set variable</h3>
+		                    <p class="mor_info_list_info">&gt; myVar = "My Value"</p>
+		                </li>
+		                <li>
+		                    <h3>Get node by id</h3>
+		                    <p class="mor_info_list_info">&gt; myNode = g.v(0)</p>
+		                </li>
+		                <li>
+		                    <h3>Create node</h3>
+		                    <p class="mor_info_list_info">&gt; myNode = g.addVertx(null)</p>
+		                </li>
+		                <li>
+		                    <h3>Create relation</h3>
+		                    <p class="mor_info_list_info">&gt; myRelation = g.addEdge(myFirstNode, "relation type", myOtherNode)</p>
+		                </li>
+		                <li>
+		                    <h3>Remove node or relation</h3>
+		                    <p class="mor_info_list_info">&gt; g.removeVertex/Edge(myNodeOrRelation)</p>
+		                </li>
+		                <li>
+		                    <h3>Set attribute</h3>
+		                    <p class="mor_info_list_info">&gt; myNodeOrRelation.['attributeName'] = "My Value"</p>
+		                </li>
+		                <li>
+		                    <h3>Get attribute</h3>
+		                    <p class="mor_info_list_info">&gt; myNodeOrRelation.attributeName</p>
+		                </li>
+		                <li>
+		                    <h3>List relations of node</h3>
+		                    <p class="mor_info_list_info">
+		                            <ul>
+		                                <li>&gt; myNode.bothE</li>
+		                                <li>&gt; myNode.inE</li>
+		                                <li>&gt; myNode.outE</li>
+		                                <li>&gt; myNode.bothE{it.label="relation type"}</li>
+		                            </ul>
+		                        </p>
+		                </li>
+		                <li>
+		                    <h3>List nodes of relation</h3>
+		                    <p class="mor_info_list_info">
+		                            <ul>
+		                                <li>&gt; myRelation.bothV</li>
+		                                <li>&gt; myRelation.inV</li>
+		                                <li>&gt; myRelation.outV</li>
+		                            </ul>
+		                        </p>
+		                </li>
+		                <li>
+		                    <h3>Looping and branching</h3>
+		                    &gt; result = []<br/>
+                            &gt; g.v(0).bothE.inV >> result<br/>
+		                    &gt; result.each {<br/>
+		                    <div style="width:20px;float:left;">&gt; </div>print it.name<br/>
+		                    &gt; }
+		                    </p>
+		                </li>
+		            </ul>
+				</div>
+			</div>
+			<div class="mor_module_foldout">
+				<h2><a href="#" class="mor_module_foldout_trigger">More information</a></h2>
+				<div class="mor_module_foldout_content">
+					<h2>More information</h2>
+					<p>You can find more information about gremlin <a href="http://wiki.github.com/tinkerpop/gremlin/" target="_BLANK">here</a>.</p>
+				</div>
+			</div>
+        </div>
+    </div>
+    <div class="mor_page_rightcol">
+        <div class="mor_module">
+            <h2>Console</h2>
+            <div class="mor_console_wrap">
+                <div id="mor_console" class="mor_console">
+                    <p id="mor_console_input_wrap"><span style="float:left;width:13px;"> &gt; </span> <input type="text" id="mor_console_input" value="" /></p>
+                    <p></p>
+                </div>
+                <div class="break"></div>
+            </div>
+        </div>
+    </div>
+{#/template MAIN}
