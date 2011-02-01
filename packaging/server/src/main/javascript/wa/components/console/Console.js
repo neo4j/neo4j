@@ -91,7 +91,8 @@ wa.components.console.Console = (function($) {
                 
                 getConsole().exec(statement, "awesome", (function(statement, cb) {
                     return function(data) {
-                        cb(statement, data);
+                        var lines = _.isString(data) ? data.split("\n") : [""];
+                        cb(statement, lines);
                         me.showInput();
                     };
                 })(statement, cb));
@@ -147,14 +148,15 @@ wa.components.console.Console = (function($) {
     };
     
     me.hideInput = function() {
-    	$("#mor_console_input").hide();
+    	$("#mor_console_input_wrap").hide();
     };
     
     me.showInput = function() {
-    	$("#mor_console_input").show();
+    	$("#mor_console_input_wrap").show();
     };
     
     me.focusOnInputElement = function() {
+        me.showInput();
     	$("#mor_console_input").focus();
     };
     
@@ -162,13 +164,16 @@ wa.components.console.Console = (function($) {
      * Default callback for evaluated console statements. Prints the result to
      * the ui console.
      */
-    me.evalCallback = function(originalStatement, data) {
-        me.writeConsoleLine(data, '==&gt; ');
+    me.evalCallback = function(originalStatement, lines) {
+        _.each(lines, function(line) {
+            me.writeConsoleLine(line, ' ');
+        });
     };
     
     me.writeConsoleLine = function(line, prepend, clazz) {
-        var prepend = prepend || "&gt; ";
+        var prepend = prepend || "gremlin&gt; ";
         var clazz = clazz || "";
+        var line = _.isString(line) ? line : "";
         me.consoleInputWrap.before($("<p> " + prepend + wa.htmlEscape(line) + "</p>").addClass(clazz));
         me.consoleWrap[0].scrollTop = me.consoleWrap[0].scrollHeight;
     };
