@@ -1,4 +1,4 @@
-package org.neo4j.index.impl.lucene;
+package org.neo4j.index.timeline;
 
 import static java.lang.Long.MAX_VALUE;
 import static org.apache.lucene.search.NumericRangeQuery.newLongRange;
@@ -12,6 +12,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
+import org.neo4j.index.impl.lucene.QueryContext;
 
 public class LuceneTimeline<T extends PropertyContainer> implements TimelineIndex<T>
 {
