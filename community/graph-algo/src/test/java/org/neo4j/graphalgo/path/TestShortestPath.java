@@ -26,6 +26,7 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipExpander;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.Traversal;
 
 import common.Neo4jAlgoTestCase;
@@ -197,5 +198,27 @@ public class TestShortestPath extends Neo4jAlgoTestCase
                 Traversal.expanderForTypes( MyRelTypes.R1 ), 4 ).findAllPaths( a, e ), "a,b,d,c,e" );
         assertPaths( GraphAlgoFactory.pathsWithLength(
                 Traversal.expanderForTypes( MyRelTypes.R1 ), 6 ).findAllPaths( a, e ) );
+    }
+
+    @Test
+    public void withFilters() throws Exception
+    {
+        graph.makeEdgeChain( "a,b,c,d" );
+        graph.makeEdgeChain( "a,g,h,d" );
+        Node a = graph.getNode( "a" );
+        Node d = graph.getNode( "d" );
+        Node b = graph.getNode( "b" );
+        b.setProperty( "skip", true );
+        Predicate<Node> filter = new Predicate<Node>()
+        {
+            @Override
+            public boolean accept( Node item )
+            {
+                boolean skip = (Boolean) item.getProperty( "skip", false );
+                return !skip;
+            }
+        };
+        assertPaths( GraphAlgoFactory.shortestPath(
+                Traversal.expanderForAllTypes().addNodeFilter( filter ), 10 ).findAllPaths( a, d ), "a,g,h,d" );
     }
 }
