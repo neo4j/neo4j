@@ -83,12 +83,12 @@ public class LuceneTimeline<T extends PropertyContainer> implements TimelineInde
     @Override
     public IndexHits<T> getBetween( Long startTimestampOrNull, Long endTimestampOrNull )
     {
-        return index.query( sort( rangeQuery( startTimestampOrNull, endTimestampOrNull ), false ) );
+        return getBetween( startTimestampOrNull, endTimestampOrNull, false );
     }
-
+    
     @Override
-    public IndexHits<T> getBetweenReversed( Long startTimestampOrNull, Long endTimestampOrNull )
+    public IndexHits<T> getBetween( Long startTimestampOrNull, Long endTimestampOrNull, boolean reversed )
     {
-        return index.query( sort( rangeQuery( startTimestampOrNull, endTimestampOrNull ), true ) );
+        return index.query( sort( rangeQuery( startTimestampOrNull, endTimestampOrNull ), reversed ) );
     }
 }

@@ -5,7 +5,6 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
@@ -100,7 +99,7 @@ public class TestTimeline
         return Pair.of( entity, timestamp );
     }
     
-    private Collection<PropertyContainer> sortedEntities( LinkedList<Pair<PropertyContainer, Long>> timestamps, final boolean reversed )
+    private List<PropertyContainer> sortedEntities( LinkedList<Pair<PropertyContainer, Long>> timestamps, final boolean reversed )
     {
         List<Pair<PropertyContainer, Long>> sorted = new ArrayList<Pair<PropertyContainer,Long>>( timestamps );
         sort( sorted, new Comparator<Pair<PropertyContainer, Long>>()
@@ -112,7 +111,7 @@ public class TestTimeline
             }
         } );
         
-        Collection<PropertyContainer> result = new ArrayList<PropertyContainer>();
+        List<PropertyContainer> result = new ArrayList<PropertyContainer>();
         for ( Pair<PropertyContainer, Long> timestamp : sorted )
         {
             result.add( timestamp.first() );
@@ -144,7 +143,22 @@ public class TestTimeline
     {
         LinkedList<Pair<PropertyContainer, Long>> timestamps = createTimestamps( creator, timeline,
                 300000, 200000, 199999, 400000, 100000, 500000, 600000, 900000, 800000 );
-        assertEquals( sortedEntities( timestamps, true ), asCollection( timeline.getBetweenReversed( null, null ) ) );
+        assertEquals( sortedEntities( timestamps, true ), asCollection( timeline.getBetween( null, null, true ) ) );
+    }
+    
+    private void makeSureUncommittedChangesAreSortedCorrectly( EntityCreator<PropertyContainer> creator,
+            TimelineIndex<PropertyContainer> timeline ) throws Exception
+    {
+        LinkedList<Pair<PropertyContainer, Long>> timestamps = createTimestamps( creator, timeline,
+                300000, 100000, 500000, 900000, 800000 );
+        
+        beginTx();
+        timestamps.addAll( createTimestamps( creator, timeline, 40000, 70000, 20000 ) );
+        assertEquals( sortedEntities( timestamps, false ),
+                asCollection( timeline.getBetween( null, null ) ) );
+        commitTx();
+        assertEquals( sortedEntities( timestamps, false ),
+                asCollection( timeline.getBetween( null, null ) ) );
     }
     
     // ======== The tests
@@ -183,5 +197,17 @@ public class TestTimeline
     public void makeSureRangesAreReturnedInCorrectReversedOrderRelationship() throws Exception
     {
         makeSureRangesAreReturnedInCorrectReversedOrder( relationshipCreator, relationshipTimeline() );
+    }
+    
+    @Test
+    public void makeSureUncommittedChangesAreSortedCorrectlyNode() throws Exception
+    {
+        makeSureUncommittedChangesAreSortedCorrectly( nodeCreator, nodeTimeline() );
+    }
+
+    @Test
+    public void makeSureUncommittedChangesAreSortedCorrectlyRelationship() throws Exception
+    {
+        makeSureUncommittedChangesAreSortedCorrectly( relationshipCreator, relationshipTimeline() );
     }
 }
