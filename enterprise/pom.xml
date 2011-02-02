@@ -38,11 +38,6 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-index</artifactId>
-      <version>1.3-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-lucene-index</artifactId>
       <version>0.5-SNAPSHOT</version>
     </dependency>
@@ -149,6 +144,7 @@
               <goal>unpack-dependencies</goal>
             </goals>
             <configuration>
+              <excludeTransitive>true</excludeTransitive>
               <classifier>sources</classifier>
               <outputDirectory>${project.build.directory}/sources</outputDirectory>
               <includeGroupIds>org.neo4j</includeGroupIds>
