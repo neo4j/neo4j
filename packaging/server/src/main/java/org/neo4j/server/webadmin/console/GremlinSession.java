@@ -20,40 +20,41 @@
 package org.neo4j.server.webadmin.console;
 
 import groovy.lang.Binding;
+import groovy.lang.GroovyRuntimeException;
 
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.script.ScriptException;
-
 import org.codehaus.groovy.tools.shell.IO;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseBlockedException;
 
 import com.tinkerpop.blueprints.pgm.TransactionalGraph;
 import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
-import com.tinkerpop.gremlin.console.ResultHookClosure;
 
 public class GremlinSession implements ScriptSession
 {
+    
     protected GremlinWebConsole scriptEngine;
     protected StringWriter outputWriter;
     private Database database;
     private IO io;
-    private ByteArrayOutputStream baos;
+    private ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
     public GremlinSession( Database database )
     {
         this.database = database;
-        baos = new ByteArrayOutputStream();
-        BufferedOutputStream out = new BufferedOutputStream( baos );
+        
+        PrintStream out = new PrintStream(new BufferedOutputStream( baos ));
+       
         io = new IO( System.in, out, out );
-        Map bindings = new HashMap();
+        Map<String, Object> bindings = new HashMap<String, Object>();
         bindings.put( "g", getGremlinWrappedGraph() );
+        bindings.put( "out", out );
         scriptEngine = new GremlinWebConsole(new Binding( bindings ), io );
     }
 
@@ -67,35 +68,22 @@ public class GremlinSession implements ScriptSession
     @Override
     public String evaluate( String script )
     {
-        scriptEngine.groovy.execute( script );
-        String result = baos.toString();
-        resetIO();
-        return result;
+        try {
+            scriptEngine.groovy.execute( script );            
+            String result = baos.toString();
+            resetIO();
+            return result;
+        } catch(GroovyRuntimeException ex) {
+            // Exception messages do not have gremlin prompts.
+            // Add them for output consistency.
+            return ex.getMessage();
+        }
 
     }
 
     private void resetIO()
     {
-        baos = new ByteArrayOutputStream();
-        BufferedOutputStream out = new BufferedOutputStream( baos );
-        IO io = new IO( System.in, out, out );
-        scriptEngine.groovy.setResultHook( new ResultHookClosure( scriptEngine.groovy, io ) );
-    }
-
-    private Object runScript( String script ) throws ScriptException
-    {
-        resetOutputWriter();
-        Transaction tx = database.graph.beginTx();
-        Object resultLines = evaluate( script );
-        tx.success();
-        tx.finish();
-        return resultLines;
-    }
-
-    private void resetOutputWriter()
-    {
-        outputWriter = new StringWriter();
-
+        baos.reset();
     }
 
     private TransactionalGraph getGremlinWrappedGraph()

@@ -42,7 +42,7 @@ public class GremlinWebConsole
         {
             groovy.execute( "import " + imps );
         }
-        groovy.setResultHook( new ResultHookClosure( groovy, io ) );
+        groovy.setResultHook( new GremlinResultHook( groovy, io ) );
         Gremlin.load();
     }
     

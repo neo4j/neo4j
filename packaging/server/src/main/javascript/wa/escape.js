@@ -27,6 +27,7 @@ wa.htmlEscape = function( text ) {
 	    [/</g,"&lt;"],
 	    [/>/g,"&gt;"],
 	    [/"/g,"&quot;"],
+        [/ /g,"&nbsp;"],
 	    [/'/g,"&#x27;"],
 	    [/\//g,"&#x2F;"]]);
 	
