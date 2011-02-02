@@ -132,9 +132,9 @@ public interface TimelineIndex<T extends PropertyContainer>
      *         given with the {@code startTimestampOrNull} and/or {@code
      *         endTimestampOrNull} (where {@code null} means no restriction).
      */
+    Iterable<T> getBetween( Long startTimestampOrNull, Long endTimestampOrNull, boolean reversed );
+    
     Iterable<T> getBetween( Long startTimestampOrNull, Long endTimestampOrNull );
-
-    Iterable<T> getBetweenReversed( Long startTimestampOrNull, Long endTimestampOrNull );
     
     /**
      * Will return the timestamp for {@code node} if it has been added to this
