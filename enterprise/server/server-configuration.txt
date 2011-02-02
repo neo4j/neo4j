@@ -37,13 +37,13 @@ server instance.
 org.neo4j.server.webadmin.rrdb.location=data/graph.db/../rrd
 ----
 
-Set the URI path for the REST data API through which the database is accessed.
+Set the URI path for the REST data API through which the database is accessed. For non-local access, consider to put in the external hostname of your server instead of localhost, e.g. http://my.host:7474/db/data .
 [source,shell]
 ----
 org.neo4j.server.webadmin.data.uri=http://localhost:7474/db/data/
 ----
 
-The management URI for the administration API that the  Webadmin tool uses.
+The management URI for the administration API that the  Webadmin tool uses. If you plan to connect to the Webadmin from other than localhost, put in the external hostname of your server instead of localhost, e.g. http://my.host:7474/db/manage .
 [source,shell]
 ----
 org.neo4j.server.webadmin.management.uri=http://localhost:7474/db/manage
