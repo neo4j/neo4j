@@ -22,6 +22,7 @@ package org.neo4j.index.impl.lucene;
 import java.util.Collection;
 
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Searcher;
 import org.neo4j.helpers.Pair;
 
 abstract class TxData
@@ -42,4 +43,6 @@ abstract class TxData
     abstract Pair<Collection<Long>, TxData> get( String key, Object value );
     
     abstract void close();
+
+    abstract Pair<Searcher, TxData> asSearcher( QueryContext context );
 }
