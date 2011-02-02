@@ -24,6 +24,7 @@ use the artifacts available from Maven Central Repository footnote:[http://repo1
    	<groupId>org.neo4j</groupId>
    	<artifactId>neo4j</artifactId>
    	<version>{neo4j-version}</version>
+    <packaging>pom</packaging>
 	</dependency>
 	...
  </dependencies>
