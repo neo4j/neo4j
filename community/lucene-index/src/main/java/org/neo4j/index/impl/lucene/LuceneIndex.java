@@ -30,7 +30,9 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.MultiSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
 import org.neo4j.graphdb.Node;
@@ -198,14 +200,18 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         List<Long> ids = new ArrayList<Long>();
         LuceneXaConnection con = getReadOnlyConnection();
         LuceneTransaction luceneTx = con != null ? con.getLuceneTx() : null;
-        Collection<Long> addedIds = Collections.emptySet();
         Collection<Long> removedIds = Collections.emptySet();
+        Searcher additionsSearcher = null;
         if ( luceneTx != null )
         {
-            addedIds = keyForDirectLookup != null ?
-                    luceneTx.getAddedIds( this, keyForDirectLookup, valueForDirectLookup ) :
-                    luceneTx.getAddedIds( this, query, additionalParametersOrNull );
-            ids.addAll( addedIds );
+            if ( keyForDirectLookup != null )
+            {
+                ids.addAll( luceneTx.getAddedIds( this, keyForDirectLookup, valueForDirectLookup ) );
+            }
+            else
+            {
+                additionsSearcher = luceneTx.getAdditionsAsSearcher( this, additionalParametersOrNull );
+            }
             removedIds = keyForDirectLookup != null ?
                     luceneTx.getRemovedIds( this, keyForDirectLookup, valueForDirectLookup ) :
                     luceneTx.getRemovedIds( this, query );
@@ -231,7 +237,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
                 if ( !foundInCache )
                 {
                     DocToIdIterator searchedIds = new DocToIdIterator( search( searcher,
-                            query, additionalParametersOrNull ), removedIds, searcher );
+                            query, additionalParametersOrNull, additionsSearcher ), removedIds, searcher );
                     if ( ids.isEmpty() )
                     {
                         idIterator = searchedIds;
@@ -294,11 +300,13 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         return found;
     }
     
-    private IndexHits<Document> search( IndexSearcherRef searcher, Query query,
-            QueryContext additionalParametersOrNull )
+    private IndexHits<Document> search( IndexSearcherRef searcherRef, Query query,
+            QueryContext additionalParametersOrNull, Searcher additionsSearcher )
     {
         try
         {
+            Searcher searcher = additionsSearcher == null ? searcherRef.getSearcher() :
+                    new MultiSearcher( searcherRef.getSearcher(), additionsSearcher );
             IndexHits<Document> result = null;
             if ( additionalParametersOrNull != null && additionalParametersOrNull.topHits > 0 )
             {
@@ -310,7 +318,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
                         additionalParametersOrNull.sorting : null;
                 boolean forceScore = additionalParametersOrNull == null ||
                         !additionalParametersOrNull.tradeCorrectnessForSpeed;
-                Hits hits = new Hits( searcher.getSearcher(), query, null, sorting, forceScore );
+                Hits hits = new Hits( searcher, query, null, sorting, forceScore );
                 result = new HitsIterator( hits );
             }
             return result;

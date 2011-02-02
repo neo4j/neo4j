@@ -23,9 +23,9 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldCollector;
@@ -34,23 +34,19 @@ import org.neo4j.helpers.collection.ArrayIterator;
 class TopDocsIterator extends AbstractIndexHits<Document>
 {
     private final Iterator<ScoreDoc> iterator;
-    private final IndexSearcherRef searcher;
     private ScoreDoc currentDoc;
     private final int size;
+    private final Searcher searcher;
     
-    TopDocsIterator( Query query, QueryContext context, IndexSearcherRef searcher ) throws IOException
+    TopDocsIterator( Query query, QueryContext context, Searcher searcher ) throws IOException
     {
-        this( toTopDocs( query, context, searcher.getSearcher() ), searcher );
-    }
-    
-    TopDocsIterator( TopDocs docs, IndexSearcherRef searcher )
-    {
+        TopDocs docs = toTopDocs( query, context, searcher );
         this.size = docs.scoreDocs.length;
         this.iterator = new ArrayIterator<ScoreDoc>( docs.scoreDocs );
         this.searcher = searcher;
     }
 
-    static TopDocs toTopDocs( Query query, QueryContext context, IndexSearcher searcher ) throws IOException
+    private TopDocs toTopDocs( Query query, QueryContext context, Searcher searcher ) throws IOException
     {
         Sort sorting = context != null ? context.sorting : null;
         TopDocs topDocs = null;
@@ -85,7 +81,7 @@ class TopDocsIterator extends AbstractIndexHits<Document>
         currentDoc = iterator.next();
         try
         {
-            return searcher.getSearcher().doc( currentDoc.doc );
+            return searcher.doc( currentDoc.doc );
         }
         catch ( IOException e )
         {
