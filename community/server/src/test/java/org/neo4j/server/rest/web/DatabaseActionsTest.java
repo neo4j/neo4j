@@ -30,11 +30,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.serialize;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.junit.After;
 import org.junit.Before;
@@ -805,6 +801,34 @@ public class DatabaseActionsTest
         for ( Object hit : hits )
         {
             Map<String, Object> map = (Map<String, Object>)hit;
+            assertThat( map, hasKey( "start" ) );
+            assertThat( map, hasKey( "end" ) );
+            assertThat( map, hasKey( "length" ) );
+        }
+    }
+    @Test
+    public void shouldBeAbleToGetFullPathsIfSpecified() throws
+            DatabaseBlockedException
+    {
+        long startNode = createBasicTraversableGraph();
+        List<Object> hits = serialize( actions.traverse( startNode, new HashMap<String, Object>(),
+                TraverserReturnType.fullpath ) );
+
+        for ( Object hit : hits )
+        {
+            Map<String, Object> map = (Map<String, Object>)hit;
+            Collection<Object> relationships= (Collection<Object>) map.get("relationships");
+            for (Object relationship : relationships)
+            {
+                RelationshipRepresentationTest.verifySerialisation(
+                        (Map<String, Object>)relationship );
+            }
+            Collection<Object> nodes = (Collection<Object>) map.get("nodes");
+            for (Object node : nodes)
+            {
+                NodeRepresentationTest.verifySerialisation(
+                        (Map<String, Object>)node );
+            }
             assertThat( map, hasKey( "start" ) );
             assertThat( map, hasKey( "end" ) );
             assertThat( map, hasKey( "length" ) );
