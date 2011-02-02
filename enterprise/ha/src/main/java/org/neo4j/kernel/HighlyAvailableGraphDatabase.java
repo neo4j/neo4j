@@ -25,11 +25,13 @@ import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.channels.ReadableByteChannel;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -52,19 +54,19 @@ import org.neo4j.kernel.ha.HaCommunicationException;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterIdGeneratorFactory;
 import org.neo4j.kernel.ha.MasterServer;
+import org.neo4j.kernel.ha.MasterTxIdGenerator.MasterTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.Response;
 import org.neo4j.kernel.ha.ResponseReceiver;
 import org.neo4j.kernel.ha.SlaveContext;
+import org.neo4j.kernel.ha.SlaveIdGenerator.SlaveIdGeneratorFactory;
+import org.neo4j.kernel.ha.SlaveLockManager.SlaveLockManagerFactory;
 import org.neo4j.kernel.ha.SlaveRelationshipTypeCreator;
+import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.SlaveTxRollbackHook;
 import org.neo4j.kernel.ha.TimeUtil;
 import org.neo4j.kernel.ha.ToFileStoreWriter;
 import org.neo4j.kernel.ha.TxExtractor;
 import org.neo4j.kernel.ha.ZooKeeperLastCommittedTxIdSetter;
-import org.neo4j.kernel.ha.MasterTxIdGenerator.MasterTxIdGeneratorFactory;
-import org.neo4j.kernel.ha.SlaveIdGenerator.SlaveIdGeneratorFactory;
-import org.neo4j.kernel.ha.SlaveLockManager.SlaveLockManagerFactory;
-import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
@@ -95,6 +97,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     private ScheduledExecutorService updatePuller;
     private volatile long updateTime = 0;
     private volatile RuntimeException causeOfShutdown;
+    private volatile CountDownLatch startupLatch;
 
     private final List<KernelEventHandler> kernelEventHandlers =
             new CopyOnWriteArrayList<KernelEventHandler>();
@@ -129,7 +132,41 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         this.machineId = getMachineIdFromConfig( config );
         this.broker = this.brokerFactory.create( storeDir, config );
         this.msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
-        startUp( getAllowInitFromConfig( config ) );
+        
+        boolean allowInitFromConfig = getAllowInitFromConfig( config );
+        startUp( allowInitFromConfig );
+    }
+
+    private void cleanDatabase()
+    {
+        // Assume it's shut down at this point
+        
+        // TODO This could be solved by moving the db directory to <dbPath>-broken-<date>
+        // maybe <dbPath>/broken-<date> since we it may be the case that the current user
+        // only has got permissions on the dbPath, not the parent.
+        this.msgLog.logMessage( "Cleaning database " + storeDir + " to make way for new db from master" );
+        deleteFileOrDirectory( new File( storeDir ), Arrays.asList( "messages.log", "output" ) );
+    }
+    
+    private static void deleteFileOrDirectory( File file, Collection<String> except )
+    {
+        if ( !file.exists() )
+        {
+            return;
+        }
+        
+        if ( file.isDirectory() )
+        {
+            for ( File child : file.listFiles() )
+            {
+                deleteFileOrDirectory( child, except );
+            }
+        }
+        
+        if ( !except.contains( file.getName() ) )
+        {
+            file.delete();
+        }
     }
 
     public static Map<String,String> loadConfigurations( String file )
@@ -142,40 +179,78 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         StoreId storeId = null;
         if ( !new File( storeDir, "neostore" ).exists() )
         {
-            MASTER_ARBITRATION: while ( true )
+            // Instantiate the startup latch here so that if a ZK thread comes in during
+            // this time make it wait for this stage to finish first.
+            startupLatch = new CountDownLatch( 1 );
+            try
             {
-                // Check if the cluster is up
-                Pair<Master, Machine> master = broker.getMaster();
-                master = master.first() != null ? master : broker.getMasterReally();
-                if ( master != null && master.first() != null )
-                { // Join the existing cluster
-                    master.first().copyStore( new SlaveContext( machineId, 0, new Pair[0] ),
-                            new ToFileStoreWriter( storeDir ) );
-                    break MASTER_ARBITRATION;
-                }
-                else if ( allowInit )
-                { // Try to initialize the cluster and become master
-                    StoreId myStoreId = new StoreId();
-                    storeId = broker.createCluster( myStoreId );
-                    if ( storeId.equals( myStoreId ) )
-                    { // I am master
-                        break MASTER_ARBITRATION;
+                long endTime = System.currentTimeMillis()+10000;
+                MASTER_ARBITRATION: while ( System.currentTimeMillis()<endTime )
+                {
+                    // Check if the cluster is up
+                    Pair<Master, Machine> master = broker.getMaster();
+                    master = master.first() != null ? master : broker.getMasterReally();
+                    if ( master != null && master.first() != null )
+                    { // Join the existing cluster
+                        if ( copyStoreFromMaster( master ) )
+                        {
+                            break MASTER_ARBITRATION;
+                        }
                     }
+                    else if ( allowInit )
+                    { // Try to initialize the cluster and become master
+                        StoreId myStoreId = new StoreId();
+                        storeId = broker.createCluster( myStoreId );
+                        if ( storeId.equals( myStoreId ) )
+                        { // I am master
+                            break MASTER_ARBITRATION;
+                        }
+                    }
+                    // I am not master, and could not connect to the master:
+                    // wait for other machine(s) to join.
+                    sleepWithoutInterruption( 100, "Startup interrupted" );
                 }
-                // I am not master, and could not connect to the master:
-                // wait for other machine(s) to join.
-                try
-                {
-                    Thread.sleep( 100 );
-                }
-                catch ( InterruptedException e )
-                {
-                    throw new RuntimeException( "Startup interrupted", e );
-                }
+            }
+            finally
+            {
+                // Now we're done, after this it's ok for other (ZK) threads to come
+                // in and do stuff
+                startupLatch.countDown();
+                startupLatch = null;
             }
         }
         newMaster( null, storeId, new Exception() );
         localGraph();
+    }
+
+    private void sleepWithoutInterruption( long time, String errorMessage )
+    {
+        try
+        {
+            Thread.sleep( time );
+        }
+        catch ( InterruptedException e )
+        {
+            throw new RuntimeException( errorMessage, e );
+        }
+    }
+
+    private boolean copyStoreFromMaster( Pair<Master, Machine> master )
+    {
+        try
+        {
+            msgLog.logMessage( "Copying store from master" );
+            master.first().copyStore( new SlaveContext( machineId, 0, new Pair[0] ),
+                    new ToFileStoreWriter( storeDir ) );
+            msgLog.logMessage( "Done copying store from master" );
+            return true;
+        }
+        catch ( Exception e )
+        {
+            msgLog.logMessage( "Problems copying store from master, retrying", e );
+            broker.getMasterReally(); // Makes it invalidate the master
+            return false;
+        }
     }
 
     private EmbeddedGraphDbImpl localGraph()
@@ -188,7 +263,8 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             }
             else
             {
-                throw new RuntimeException( "Failed to find a master" );
+                throw new RuntimeException( "Graph database not assigned and no cause of shutdown, " +
+                		"maybe not started yet or in the middle of master/slave swap?" );
             }
         }
         return localGraph;
@@ -314,18 +390,20 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 
     protected synchronized void reevaluateMyself( Pair<Master, Machine> master, StoreId storeId )
     {
+        boolean foundOutRightNow = false;
         if ( master == null )
         {
             master = broker.getMasterReally();
+            foundOutRightNow = true;
         }
-
+        System.out.println( machineId + " came to the conclusion " + (foundOutRightNow?"RIGHT NOW":"") + " that " + master + " is master" );
         boolean restarted = false;
         boolean iAmCurrentlyMaster = masterServer != null;
         msgLog.logMessage( "ReevaluateMyself: machineId=" + machineId + " with master[" + master +
                 "] (I am master=" + iAmCurrentlyMaster + ")" );
         if ( master.other().getMachineId() == machineId )
         {
-            // I am master
+            // I am not currently master
             if ( this.localGraph == null || !iAmCurrentlyMaster )
             {
                 internalShutdown();
@@ -536,7 +614,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 
     public synchronized void internalShutdown()
     {
-        msgLog.logMessage( "Internal shutdown of HA db[" + machineId + "] reference=" + this, true );
+        msgLog.logMessage( "Internal shutdown of HA db[" + machineId + "] reference=" + this + ", masterServer=" + masterServer, true );
         if ( this.updatePuller != null )
         {
             msgLog.logMessage( "Internal shutdown updatePuller", true );
@@ -662,17 +740,34 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     {
         try
         {
+            doNewMaster( master, storeId, e );
+        }
+        catch ( BranchedDataException bde )
+        {
+            System.out.println( "Branched data occured, retrying" );
+            cleanDatabase();
+            doNewMaster( master, storeId, bde );
+        }
+    }
+
+    private void doNewMaster( Pair<Master, Machine> master, StoreId storeId, Exception e )
+    {
+        waitForStartupLatch();
+        try
+        {
             msgLog.logMessage( "newMaster(" + master + ") called", e, true );
             reevaluateMyself( master, storeId );
         }
         catch ( ZooKeeperException ee )
         {
-            ee.printStackTrace();
+            msgLog.logMessage( "ZooKeeper exception in newMaster", ee );
         }
         catch ( HaCommunicationException ee )
         {
-            ee.printStackTrace();
+            msgLog.logMessage( "HaComminucationException in newMaster", ee );
         }
+        // BranchedDataException will escape from this method since the catch clause below
+        // sees to that.
         catch ( Throwable t )
         {
             t.printStackTrace();
@@ -684,6 +779,22 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 throw (RuntimeException) t;
             }
             throw new RuntimeException( t );
+        }
+    }
+
+    private void waitForStartupLatch()
+    {
+        // 
+        if ( startupLatch != null )
+        {
+            try
+            {
+                startupLatch.await();
+            }
+            catch ( InterruptedException ee )
+            {
+                Thread.interrupted();
+            }
         }
     }
 
