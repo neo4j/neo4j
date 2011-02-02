@@ -81,8 +81,8 @@ public class MasterImpl implements Master
     private final GraphDatabaseService graphDb;
     private final Config graphDbConfig;
 
-    private final Map<SlaveContext, Transaction> transactions =
-            Collections.synchronizedMap( new HashMap<SlaveContext, Transaction>() );
+    private final Map<SlaveContext, Transaction> transactions = Collections
+            .synchronizedMap( new HashMap<SlaveContext, Transaction>() );
 
     public MasterImpl( GraphDatabaseService db )
     {
@@ -227,19 +227,19 @@ public class MasterImpl implements Master
 
     public Response<LockResult> acquireNodeWriteLock( SlaveContext context, long... nodes )
     {
-        return acquireLock( context, WRITE_LOCK_GRABBER, nodesById(nodes) );
+        return acquireLock( context, WRITE_LOCK_GRABBER, nodesById( nodes ) );
     }
 
     public Response<LockResult> acquireRelationshipReadLock( SlaveContext context,
             long... relationships )
     {
-        return acquireLock( context, READ_LOCK_GRABBER, relationshipsById(relationships) );
+        return acquireLock( context, READ_LOCK_GRABBER, relationshipsById( relationships ) );
     }
 
     public Response<LockResult> acquireRelationshipWriteLock( SlaveContext context,
             long... relationships )
     {
-        return acquireLock( context, WRITE_LOCK_GRABBER, relationshipsById(relationships) );
+        return acquireLock( context, WRITE_LOCK_GRABBER, relationshipsById( relationships ) );
     }
 
     private Node[] nodesById( long[] ids )
@@ -265,18 +265,18 @@ public class MasterImpl implements Master
     public IdAllocation allocateIds( IdType idType )
     {
         IdGenerator generator = graphDbConfig.getIdGeneratorFactory().get( idType );
-        return new IdAllocation( generator.nextIdBatch( ID_GRAB_SIZE ),
-                generator.getHighId(), generator.getDefragCount() );
+        return new IdAllocation( generator.nextIdBatch( ID_GRAB_SIZE ), generator.getHighId(),
+                generator.getDefragCount() );
     }
 
-    public Response<Long> commitSingleResourceTransaction( SlaveContext context,
-            String resource, TxExtractor txGetter )
+    public Response<Long> commitSingleResourceTransaction( SlaveContext context, String resource,
+            TxExtractor txGetter )
     {
         Transaction otherTx = suspendOtherAndResumeThis( context );
         try
         {
-            XaDataSource dataSource = graphDbConfig.getTxModule()
-                    .getXaDataSourceManager().getXaDataSource( resource );
+            XaDataSource dataSource = graphDbConfig.getTxModule().getXaDataSourceManager()
+                    .getXaDataSource( resource );
             final long txId = dataSource.applyPreparedTransaction( txGetter.extract() );
             Predicate<Long> notThisTx = new Predicate<Long>()
             {
@@ -331,8 +331,8 @@ public class MasterImpl implements Master
         for ( Pair<String, Long> txEntry : context.lastAppliedTransactions() )
         {
             String resourceName = txEntry.first();
-            final XaDataSource dataSource = graphDbConfig.getTxModule().getXaDataSourceManager().getXaDataSource(
-                    resourceName );
+            final XaDataSource dataSource = graphDbConfig.getTxModule().getXaDataSourceManager()
+                    .getXaDataSource( resourceName );
             if ( dataSource == null )
             {
                 throw new RuntimeException( "No data source '" + resourceName + "' found" );
@@ -388,8 +388,8 @@ public class MasterImpl implements Master
     {
         try
         {
-            XaDataSource nioneoDataSource = graphDbConfig.getTxModule()
-                    .getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
+            XaDataSource nioneoDataSource = graphDbConfig.getTxModule().getXaDataSourceManager()
+                    .getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
             return nioneoDataSource.getMasterForCommittedTx( txId );
         }
         catch ( IOException e )
@@ -400,7 +400,8 @@ public class MasterImpl implements Master
 
     public Response<Void> copyStore( SlaveContext context, StoreWriter writer )
     {
-        Collection<XaDataSource> sources = graphDbConfig.getTxModule().getXaDataSourceManager().getAllRegisteredDataSources();
+        Collection<XaDataSource> sources = graphDbConfig.getTxModule().getXaDataSourceManager()
+                .getAllRegisteredDataSources();
         Pair<String, Long>[] appliedTransactions = new Pair[sources.size()];
         int i = 0;
         for ( XaDataSource ds : sources )
@@ -417,7 +418,8 @@ public class MasterImpl implements Master
             }
         }
 
-        context = new SlaveContext( context.machineId(), context.getEventIdentifier(), appliedTransactions );
+        context = new SlaveContext( context.machineId(), context.getEventIdentifier(),
+                appliedTransactions );
 
         File baseDir = getBaseDir();
 
@@ -454,7 +456,43 @@ public class MasterImpl implements Master
             }
         }
         writer.done();
+
+        // If no transactions have been applied during the time this store was copied
+        // then pack the last transaction anyways so that the receiver gets at least
+        // one transaction (the only way to get masterId for txId).
+        context = makeSureThereIsAtLeastOneKernelTx( context );
+
         return packResponse( context, null, ALL );
+    }
+
+    private SlaveContext makeSureThereIsAtLeastOneKernelTx( SlaveContext context )
+    {
+        Collection<Pair<String, Long>> txs = new ArrayList<Pair<String, Long>>();
+        for ( Pair<String, Long> txEntry : context.lastAppliedTransactions() )
+        {
+            String resourceName = txEntry.first();
+            XaDataSource dataSource = graphDbConfig.getTxModule().getXaDataSourceManager()
+                    .getXaDataSource( resourceName );
+            if ( dataSource instanceof NeoStoreXaDataSource )
+            {
+                if ( txEntry.other() == 1 || txEntry.other() < dataSource.getLastCommittedTxId() )
+                {
+                    // No transactions and nothing has happened during the
+                    // copying
+                    return context;
+                }
+                // Put back slave one tx so that it gets one transaction
+                txs.add( Pair.of( resourceName, dataSource.getLastCommittedTxId() - 1 ) );
+                System.out.println( "Pushed in one extra tx " + dataSource.getLastCommittedTxId() );
+            }
+            else
+            {
+                txs.add( Pair.of( resourceName, dataSource.getLastCommittedTxId() ) );
+            }
+        }
+        return new SlaveContext( context.machineId(), context.getEventIdentifier(),
+                txs.toArray( new Pair[0] ) );
+
     }
 
     private File getBaseDir()
@@ -475,9 +513,11 @@ public class MasterImpl implements Master
     {
         String prefix = baseDir.getAbsolutePath();
         String path = storeFile.getAbsolutePath();
-        if ( !path.startsWith( prefix ) ) throw new FileNotFoundException();
+        if ( !path.startsWith( prefix ) )
+            throw new FileNotFoundException();
         path = path.substring( prefix.length() );
-        if ( path.startsWith( "/" ) ) return path.substring( 1 );
+        if ( path.startsWith( "/" ) )
+            return path.substring( 1 );
         return path;
     }
 
