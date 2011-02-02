@@ -219,14 +219,14 @@ public class TestLuceneIndex
         T entity1 = entityCreator.create();
         T entity2 = entityCreator.create();
         index.add( entity1, key, value );
-        assertThat( index.get( key, value ), contains( entity1 ) );
-        assertThat( index.query( key, "*" ), contains( entity1 ) );
-        assertThat( index.get( key, value ), contains( entity1 ) );
+        for ( int i = 0; i < 2; i++ )
+        {
+            assertThat( index.get( key, value ), contains( entity1 ) );
+            assertThat( index.query( key, "*" ), contains( entity1 ) );
+            assertThat( index.get( key, value ), contains( entity1 ) );
 
-        restartTx();
-        assertThat( index.get( key, value ), contains( entity1 ) );
-        assertThat( index.query( key, "*" ), contains( entity1 ) );
-        assertThat( index.get( key, value ), contains( entity1 ) );
+            restartTx();
+        }
 
         index.add( entity2, key, value );
         assertThat( index.get( key, value ), contains( entity1, entity2 ) );
@@ -235,20 +235,6 @@ public class TestLuceneIndex
         assertThat( index.get( key, value ), contains( entity1, entity2 ) );
         index.delete();
     }
-
-//    private <T extends PropertyContainer> void assertQueryNotPossible(
-//            Index<T> index )
-//    {
-//        try
-//        {
-//            index.query( "somekey:somevalue" );
-//            fail( "Querying shouldn't be possible" );
-//        }
-//        catch ( QueryNotPossibleException e )
-//        {
-//            // Good
-//        }
-//    }
 
     @Test
     public void makeSureYouGetLatestTxModificationsInQueryByDefault()
@@ -412,15 +398,14 @@ public class TestLuceneIndex
             restartTx();
         }
         index.add( node, key, value3 );
-        assertThat( index.get( key, value1 ), contains( node ) );
-        assertThat( index.get( key, value2 ), contains( node ) );
-        assertThat( index.get( key, value3 ), contains( node ) );
-        assertThat( index.get( key, "whatever" ), isEmpty() );
-        restartTx();
-        assertThat( index.get( key, value1 ), contains( node ) );
-        assertThat( index.get( key, value2 ), contains( node ) );
-        assertThat( index.get( key, value3 ), contains( node ) );
-        assertThat( index.get( key, "whatever" ), isEmpty() );
+        for ( int i = 0; i < 2; i++ )
+        {
+            assertThat( index.get( key, value1 ), contains( node ) );
+            assertThat( index.get( key, value2 ), contains( node ) );
+            assertThat( index.get( key, value3 ), contains( node ) );
+            assertThat( index.get( key, "whatever" ), isEmpty() );
+            restartTx();
+        }
         index.delete();
     }
 
@@ -446,24 +431,24 @@ public class TestLuceneIndex
         assertThat( index.query( key, "*" ), isEmpty() );
         Node node = graphDb.createNode();
         index.add( node, key, new String[]{value1, value2, value3} );
-        assertThat( index.get( key, value1 ), contains( node ) );
-        assertThat( index.get( key, value2 ), contains( node ) );
-        assertThat( index.get( key, value3 ), contains( node ) );
-        assertThat( index.get( key, "whatever" ), isEmpty() );
-        restartTx();
-        assertThat( index.get( key, value1 ), contains( node ) );
-        assertThat( index.get( key, value2 ), contains( node ) );
-        assertThat( index.get( key, value3 ), contains( node ) );
-        assertThat( index.get( key, "whatever" ), isEmpty() );
+        for ( int i = 0; i < 2; i++ )
+        {
+            assertThat( index.get( key, value1 ), contains( node ) );
+            assertThat( index.get( key, value2 ), contains( node ) );
+            assertThat( index.get( key, value3 ), contains( node ) );
+            assertThat( index.get( key, "whatever" ), isEmpty() );
+            restartTx();
+        }
 
         index.remove( node, key, new String[]{value2, value3} );
-        assertThat( index.get( key, value1 ), contains( node ) );
-        assertThat( index.get( key, value2 ), isEmpty() );
-        assertThat( index.get( key, value3 ), isEmpty() );
-        restartTx();
-        assertThat( index.get( key, value1 ), contains( node ) );
-        assertThat( index.get( key, value2 ), isEmpty() );
-        assertThat( index.get( key, value3 ), isEmpty() );
+        
+        for ( int i = 0; i < 2; i++ )
+        {
+            assertThat( index.get( key, value1 ), contains( node ) );
+            assertThat( index.get( key, value2 ), isEmpty() );
+            assertThat( index.get( key, value3 ), isEmpty() );
+            restartTx();
+        }
         index.delete();
     }
 
@@ -478,24 +463,19 @@ public class TestLuceneIndex
         Node node2 = graphDb.createNode();
         index.add( node1, key, value1 );
         index.add( node2, key, value2 );
-
-        assertThat( index.query( key, "neo*" ), contains( node1 ) );
-        assertThat( index.query( key, "n?o4j" ), contains( node1 ) );
-        assertThat( index.query( key, "ne*" ), contains( node1, node2 ) );
-        assertThat( index.query( key + ":neo4j" ), contains( node1 ) );
-        assertThat( index.query( key + ":neo*" ), contains( node1 ) );
-        assertThat( index.query( key + ":n?o4j" ), contains( node1 ) );
-        assertThat( index.query( key + ":ne*" ), contains( node1, node2 ) );
-
-        restartTx();
         
-        assertThat( index.query( key, "neo*" ), contains( node1 ) );
-        assertThat( index.query( key, "n?o4j" ), contains( node1 ) );
-        assertThat( index.query( key, "ne*" ), contains( node1, node2 ) );
-        assertThat( index.query( key + ":neo4j" ), contains( node1 ) );
-        assertThat( index.query( key + ":neo*" ), contains( node1 ) );
-        assertThat( index.query( key + ":n?o4j" ), contains( node1 ) );
-        assertThat( index.query( key + ":ne*" ), contains( node1, node2 ) );
+        for ( int i = 0; i < 2; i++ )
+        {
+            assertThat( index.query( key, "neo*" ), contains( node1 ) );
+            assertThat( index.query( key, "n?o4j" ), contains( node1 ) );
+            assertThat( index.query( key, "ne*" ), contains( node1, node2 ) );
+            assertThat( index.query( key + ":neo4j" ), contains( node1 ) );
+            assertThat( index.query( key + ":neo*" ), contains( node1 ) );
+            assertThat( index.query( key + ":n?o4j" ), contains( node1 ) );
+            assertThat( index.query( key + ":ne*" ), contains( node1, node2 ) );
+
+            restartTx();
+        }
         index.delete();
     }
 
@@ -509,18 +489,16 @@ public class TestLuceneIndex
         index.add( neo, "sex", "male" );
         index.add( trinity, "username", "trinity@matrix" );
         index.add( trinity, "sex", "female" );
-
-        assertThat( index.query( "username:*@matrix AND sex:male" ), contains( neo ) );
-        assertThat( index.query( new QueryContext( "username:*@matrix sex:male" ).defaultOperator( Operator.AND ) ), contains( neo ) );
-        assertThat( index.query( "username:*@matrix OR sex:male" ), contains( neo, trinity ) );
-        assertThat( index.query( new QueryContext( "username:*@matrix sex:male" ).defaultOperator( Operator.OR ) ), contains( neo, trinity ) );
-
-        restartTx();
         
-        assertThat( index.query( "username:*@matrix AND sex:male" ), contains( neo ) );
-        assertThat( index.query( new QueryContext( "username:*@matrix sex:male" ).defaultOperator( Operator.AND ) ), contains( neo ) );
-        assertThat( index.query( "username:*@matrix OR sex:male" ), contains( neo, trinity ) );
-        assertThat( index.query( new QueryContext( "username:*@matrix sex:male" ).defaultOperator( Operator.OR ) ), contains( neo, trinity ) );
+        for ( int i = 0; i < 2; i++ )
+        {
+            assertThat( index.query( "username:*@matrix AND sex:male" ), contains( neo ) );
+            assertThat( index.query( new QueryContext( "username:*@matrix sex:male" ).defaultOperator( Operator.AND ) ), contains( neo ) );
+            assertThat( index.query( "username:*@matrix OR sex:male" ), contains( neo, trinity ) );
+            assertThat( index.query( new QueryContext( "username:*@matrix sex:male" ).defaultOperator( Operator.OR ) ), contains( neo, trinity ) );
+
+            restartTx();
+        }
         index.delete();
     }
 
@@ -617,22 +595,18 @@ public class TestLuceneIndex
         index.add( entity1, key, "The quick brown fox" );
         index.add( entity2, key, "brown fox jumped over" );
 
-        assertThat( index.get( key, "The quick brown fox" ), contains( entity1 ) );
-        assertThat( index.get( key, "brown fox jumped over" ), contains( entity2 ) );
-        assertContains( index.query( key, "quick" ), entity1 );
-        assertContains( index.query( key, "brown" ), entity1, entity2 );
-        assertContains( index.query( key, "quick OR jumped" ), entity1, entity2 );
-        assertContains( index.query( key, "brown AND fox" ), entity1, entity2 );
+        for ( int i = 0; i < 2; i++ )
+        {
+            assertThat( index.get( key, "The quick brown fox" ), contains( entity1 ) );
+            assertThat( index.get( key, "brown fox jumped over" ), contains( entity2 ) );
+            assertThat( index.query( key, "quick" ), contains( entity1 ) );
+            assertThat( index.query( key, "brown" ), contains( entity1, entity2 ) );
+            assertThat( index.query( key, "quick OR jumped" ), contains( entity1, entity2 ) );
+            assertThat( index.query( key, "brown AND fox" ), contains( entity1, entity2 ) );
 
-        restartTx();
+            restartTx();
+        }
         
-        assertThat( index.get( key, "The quick brown fox" ), contains( entity1 ) );
-        assertThat( index.get( key, "brown fox jumped over" ), contains( entity2 ) );
-        assertThat( index.query( key, "quick" ), contains( entity1 ) );
-        assertThat( index.query( key, "brown" ), contains( entity1, entity2 ) );
-        assertThat( index.query( key, "quick OR jumped" ), contains( entity1, entity2 ) );
-        assertThat( index.query( key, "brown AND fox" ), contains( entity1, entity2 ) );
-
         index.delete();
     }
 
@@ -664,14 +638,20 @@ public class TestLuceneIndex
         Relationship rel2 = startNode.createRelationshipTo( endNode2, type );
         index.add( rel1, "name", "something" );
         index.add( rel2, "name", "something" );
-        restartTx();
-        assertThat( index.query( "name:something" ), contains( rel1, rel2 ) );
-        assertThat( index.query( "name:something", null, endNode1 ), contains( rel1 ) );
-        assertThat( index.query( "name:something", startNode, endNode2 ), contains( rel2 ) );
-        assertThat( index.query( null, startNode, endNode1 ), contains( rel1 ) );
-        assertThat( index.get( "name", "something", null, endNode1 ), contains( rel1 ) );
-        assertThat( index.get( "name", "something", startNode, endNode2 ), contains( rel2 ) );
-        assertThat( index.get( null, null, startNode, endNode1 ), contains( rel1 ) );
+        
+        for ( int i = 0; i < 2; i++ )
+        {
+            assertThat( index.query( "name:something" ), contains( rel1, rel2 ) );
+            assertThat( index.query( "name:something", null, endNode1 ), contains( rel1 ) );
+            assertThat( index.query( "name:something", startNode, endNode2 ), contains( rel2 ) );
+            assertThat( index.query( null, startNode, endNode1 ), contains( rel1 ) );
+            assertThat( index.get( "name", "something", null, endNode1 ), contains( rel1 ) );
+            assertThat( index.get( "name", "something", startNode, endNode2 ), contains( rel2 ) );
+            assertThat( index.get( null, null, startNode, endNode1 ), contains( rel1 ) );
+            
+            restartTx();
+        }
+        
         rel2.delete();
         rel1.delete();
         startNode.delete();
@@ -680,7 +660,6 @@ public class TestLuceneIndex
         index.delete();
     }
 
-    @Ignore( "This breaks on automated build system - but nohwere else" )
     @Test
     public void testSortByRelevance()
     {
@@ -697,15 +676,7 @@ public class TestLuceneIndex
         index.add( node3, "bar", "yes" );
         restartTx();
 
-        // This section fails in hudson - does INDEXORDER *really* mean "insertion order"?
         IndexHits<Node> hits = index.query(
-                new QueryContext( "+name:something foo:yes bar:yes" ).sort( Sort.INDEXORDER ) );
-        assertEquals( node1, hits.next() );
-        assertEquals( node2, hits.next() );
-        assertEquals( node3, hits.next() );
-        assertFalse( hits.hasNext() );
-
-        hits = index.query(
                 new QueryContext( "+name:something foo:yes bar:yes" ).sort( Sort.RELEVANCE ) );
         assertEquals( node3, hits.next() );
         assertEquals( node2, hits.next() );
@@ -746,19 +717,17 @@ public class TestLuceneIndex
         index.add( eva, title, "Secretary" );
         index.add( eva, sex, "female" );
         index.add( eva, other, "ddd" );
+        
+        for ( int i = 0; i < 2; i++ )
+        {
+            assertContainsInOrder( index.query( new QueryContext( "name:*" ).sort( name, title ) ), adam2, adam, eva, jack );
+            assertContainsInOrder( index.query( new QueryContext( "name:*" ).sort( name, other ) ), adam, adam2, eva, jack );
+            assertContainsInOrder( index.query( new QueryContext( "name:*" ).sort( sex, title ) ), eva, jack, adam2, adam );
+            assertContainsInOrder( index.query( name, new QueryContext( "*" ).sort( sex, title ) ), eva, jack, adam2, adam );
+            assertContainsInOrder( index.query( new QueryContext( "name:*" ).sort( name, title ).topDocs( 2 ) ), adam2, adam );
 
-        assertContainsInOrder( index.query( new QueryContext( "name:*" ).sort( name, title ) ), adam2, adam, eva, jack );
-        assertContainsInOrder( index.query( new QueryContext( "name:*" ).sort( name, other ) ), adam, adam2, eva, jack );
-        assertContainsInOrder( index.query( new QueryContext( "name:*" ).sort( sex, title ) ), eva, jack, adam2, adam );
-        assertContainsInOrder( index.query( name, new QueryContext( "*" ).sort( sex, title ) ), eva, jack, adam2, adam );
-
-        restartTx();
-
-        assertContainsInOrder( index.query( new QueryContext( "name:*" ).sort( name, title ) ), adam2, adam, eva, jack );
-        assertContainsInOrder( index.query( new QueryContext( "name:*" ).sort( name, other ) ), adam, adam2, eva, jack );
-        assertContainsInOrder( index.query( new QueryContext( "name:*" ).sort( sex, title ) ), eva, jack, adam2, adam );
-        assertContainsInOrder( index.query( name, new QueryContext( "*" ).sort( sex, title ) ), eva, jack, adam2, adam );
-        assertContainsInOrder( index.query( new QueryContext( "name:*" ).sort( name, title ).topDocs( 2 ) ), adam2, adam );
+            restartTx();
+        }
     }
 
     @Test
@@ -774,16 +743,14 @@ public class TestLuceneIndex
         index.add( node10, key, numeric( 10 ) );
         index.add( node6, key, numeric( 6 ) );
         index.add( node31, key, numeric( 31 ) );
-
-        assertThat( index.query( NumericRangeQuery.newIntRange( key, 4, 40, true, true ) ), contains( node10, node6, node31 ) );
-        assertThat( index.query( NumericRangeQuery.newIntRange( key, 6, 15, true, true ) ), contains( node10, node6 ) );
-        assertThat( index.query( NumericRangeQuery.newIntRange( key, 6, 15, false, true ) ), contains( node10 ) );
-
-        restartTx();
         
-        assertThat( index.query( NumericRangeQuery.newIntRange( key, 4, 40, true, true ) ), contains( node10, node6, node31 ) );
-        assertThat( index.query( NumericRangeQuery.newIntRange( key, 6, 15, true, true ) ), contains( node10, node6 ) );
-        assertThat( index.query( NumericRangeQuery.newIntRange( key, 6, 15, false, true ) ), contains( node10 ) );
+        for ( int i = 0; i < 2; i++ )
+        {
+            assertThat( index.query( NumericRangeQuery.newIntRange( key, 4, 40, true, true ) ), contains( node10, node6, node31 ) );
+            assertThat( index.query( NumericRangeQuery.newIntRange( key, 6, 15, true, true ) ), contains( node10, node6 ) );
+            assertThat( index.query( NumericRangeQuery.newIntRange( key, 6, 15, false, true ) ), contains( node10 ) );
+            restartTx();
+        }
     }
 
     @Test
@@ -824,16 +791,15 @@ public class TestLuceneIndex
         Index<Node> index = nodeIndex( "nums", LuceneIndexProvider.EXACT_CONFIG );
         Node node1 = graphDb.createNode();
         index.add( node1, "key", 10 );
-        assertEquals( node1, index.get( "key", 10 ).getSingle() );
-        assertEquals( node1, index.get( "key", "10" ).getSingle() );
-        assertEquals( node1, index.query( "key", 10 ).getSingle() );
-        assertEquals( node1, index.query( "key", "10" ).getSingle() );
-
-        restartTx();
-        assertEquals( node1, index.get( "key", 10 ).getSingle() );
-        assertEquals( node1, index.get( "key", "10" ).getSingle() );
-        assertEquals( node1, index.query( "key", 10 ).getSingle() );
-        assertEquals( node1, index.query( "key", "10" ).getSingle() );
+        
+        for ( int i = 0; i < 2; i++ )
+        {
+            assertEquals( node1, index.get( "key", 10 ).getSingle() );
+            assertEquals( node1, index.get( "key", "10" ).getSingle() );
+            assertEquals( node1, index.query( "key", 10 ).getSingle() );
+            assertEquals( node1, index.query( "key", "10" ).getSingle() );
+            restartTx();
+        }
     }
 
     private <T extends PropertyContainer> void testInsertionSpeed(
@@ -1104,10 +1070,13 @@ public class TestLuceneIndex
         Index<Node> index = nodeIndex( "query-diff", LuceneIndexProvider.FULLTEXT_CONFIG );
         Node node = graphDb.createNode();
         index.add( node, "name", "Mattias Persson" );
-        restartTx();
-        assertContains( index.query( "name:Mattias AND name:Per*" ), node );
-        assertContains( index.query( "name:mattias" ), node );
-        assertContains( index.query( new TermQuery( new Term( "name", "mattias" ) ) ), node );
+        for ( int i = 0; i < 2; i++ )
+        {
+            assertContains( index.query( "name:Mattias AND name:Per*" ), node );
+            assertContains( index.query( "name:mattias" ), node );
+            assertContains( index.query( new TermQuery( new Term( "name", "mattias" ) ) ), node );
+            restartTx();
+        }
         assertNull( index.query( new TermQuery( new Term( "name", "Mattias" ) ) ).getSingle() );
     }
     
@@ -1174,11 +1143,12 @@ public class TestLuceneIndex
         String key = "bar";
         index.remove( r, key, "value" );
         index.add( r, key, "otherValue" );
-        assertThat( index.get( key, "value" ), isEmpty() );
-        assertThat( index.get( key, "otherValue" ), contains( r ) );
-        restartTx();
-        assertThat( index.get( key, "value" ), isEmpty() );
-        assertThat( index.get( key, "otherValue" ), contains( r ) );
+        for ( int i = 0; i < 2; i++ )
+        {
+            assertThat( index.get( key, "value" ), isEmpty() );
+            assertThat( index.get( key, "otherValue" ), contains( r ) );
+            restartTx();
+        }
     }
     
     @Test
@@ -1276,11 +1246,14 @@ public class TestLuceneIndex
         index.add( rel5, key, rel5.getProperty( key ) );
         index.add( rel4, key, rel4.getProperty( key ) );
         index.add( rel6, key, rel6.getProperty( key ) );
-        restartTx();
-        
         String query = "one two three four five six seven";
-        assertContainsInOrder( index.query( key, new QueryContext( query ).topDocs( 3 ).sort(
-                Sort.RELEVANCE ) ), rel1, rel2, rel3 );
+        
+        for ( int i = 0; i < 2; i++ )
+        {
+            assertContainsInOrder( index.query( key, new QueryContext( query ).topDocs( 3 ).sort(
+                    Sort.RELEVANCE ) ), rel1, rel2, rel3 );
+            restartTx();
+        }
     }
     
     @Test
@@ -1309,5 +1282,25 @@ public class TestLuceneIndex
         index.add( node3, key, value );
         IndexHits<Node> hits = index.get( key, value );
         assertEquals( 3, hits.size() );
+    }
+    
+    @Test
+    public void testSortingWithTopHitsInPartCommittedPartLocal()
+    {
+        Index<Node> index = nodeIndex( "mix", LuceneIndexProvider.FULLTEXT_CONFIG );
+        Node first = graphDb.createNode();
+        Node second = graphDb.createNode();
+        Node third = graphDb.createNode();
+        Node fourth = graphDb.createNode();
+        String key = "key";
+        
+        index.add( third, key, "ccc" );
+        index.add( second, key, "bbb" );
+        restartTx();
+        index.add( fourth, key, "ddd" );
+        index.add( first, key, "aaa" );
+        
+        assertContainsInOrder( index.query( key, new QueryContext( "*" ).sort( key ) ), first, second, third, fourth );
+        assertContainsInOrder( index.query( key, new QueryContext( "*" ).sort( key ).topDocs( 2 ) ), first, second );
     }
 }
