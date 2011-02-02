@@ -46,7 +46,6 @@ public class NeoServerStartupLoggingFunctionalTest {
     @Before
     public void setupServer() throws IOException {
         tempDir = new File(ServerTestUtils.createTempDir().getAbsolutePath() + File.separator + "html");
-        FileUtils.moveDirectory(new File("target/classes/webadmin-html"), tempDir);
 
         appender = new InMemoryAppender(Jetty6WebServer.log);
         server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
@@ -57,7 +56,6 @@ public class NeoServerStartupLoggingFunctionalTest {
     @After
     public void stopServer() throws IOException {
         server.stop();
-        FileUtils.moveDirectory(tempDir, new File("target/classes/webadmin-html"));
     }
 
     @Test
