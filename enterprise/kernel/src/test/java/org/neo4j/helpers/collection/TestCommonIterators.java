@@ -314,4 +314,13 @@ public class TestCommonIterators
         }
         catch ( Exception e ) { /* Good */ }
     }
+
+    @Test
+    public void getItemFromEnd()
+    {
+        Iterable<Integer> ints = Arrays.asList( 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 );
+        assertEquals( (Integer) 9, IteratorUtil.fromEnd( ints, 0 ) );
+        assertEquals( (Integer) 8, IteratorUtil.fromEnd( ints, 1 ) );
+        assertEquals( (Integer) 7, IteratorUtil.fromEnd( ints, 2 ) );
+    }
 }
