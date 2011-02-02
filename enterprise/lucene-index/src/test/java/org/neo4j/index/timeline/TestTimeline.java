@@ -1,4 +1,4 @@
-package org.neo4j.index.impl.lucene;
+package org.neo4j.index.timeline;
 
 import static java.util.Collections.sort;
 import static org.junit.Assert.assertEquals;
@@ -19,6 +19,8 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Pair;
+import org.neo4j.index.timeline.LuceneTimeline;
+import org.neo4j.index.timeline.TimelineIndex;
 import org.neo4j.kernel.ImpermanentGraphDatabase;
 
 public class TestTimeline
