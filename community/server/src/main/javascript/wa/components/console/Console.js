@@ -91,8 +91,14 @@ wa.components.console.Console = (function($) {
                 
                 getConsole().exec(statement, "awesome", (function(statement, cb) {
                     return function(data) {
-                        var lines = _.isString(data) ? data.split("\n") : [""];
+                        var lines;
+                        if(_.isString(data) && data.length > 0) {
+                            lines =  me.stripTrailingNewline(data).split("\n");
+                        } else {
+                            lines = [];
+                        }
                         cb(statement, lines);
+                        
                         me.showInput();
                     };
                 })(statement, cb));
@@ -166,16 +172,24 @@ wa.components.console.Console = (function($) {
      */
     me.evalCallback = function(originalStatement, lines) {
         _.each(lines, function(line) {
-            me.writeConsoleLine(line, ' ');
+            me.writeConsoleLine(line, '==>');
         });
     };
     
     me.writeConsoleLine = function(line, prepend, clazz) {
-        var prepend = prepend || "gremlin&gt; ";
+        var prepend = prepend || "gremlin> ";
         var clazz = clazz || "";
         var line = _.isString(line) ? line : "";
-        me.consoleInputWrap.before($("<p> " + prepend + wa.htmlEscape(line) + "</p>").addClass(clazz));
+        me.consoleInputWrap.before($("<p> " + wa.htmlEscape(prepend + line) + "</p>").addClass(clazz));
         me.consoleWrap[0].scrollTop = me.consoleWrap[0].scrollHeight;
+    };
+    
+    me.stripTrailingNewline = function(str) {
+        if(str.substr(-1) === "\n") {
+            return str.substr(0, str.length - 1);
+        } else {
+            return str;
+        }
     };
     
     //
