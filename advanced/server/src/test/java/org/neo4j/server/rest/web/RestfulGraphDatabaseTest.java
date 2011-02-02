@@ -1137,6 +1137,18 @@ public class RestfulGraphDatabaseTest
         assertTrue( entity.contains( "nodes" ) );
         assertTrue( entity.contains( "relationships" ) );
         assertTrue( entity.contains( "length" ) );
+
+        response = service.traverse( startNode, TraverserReturnType.fullpath, "" );
+        assertEquals( Status.OK.getStatusCode(), response.getStatus() );
+        entity = entityAsString( response );
+        assertTrue( entity.contains( "nodes" ) );
+        assertTrue( entity.contains( "data" ) );
+        assertTrue( entity.contains( "type" ) );
+        assertTrue( entity.contains( "self" ) );
+        assertTrue( entity.contains( "outgoing_relationships" ) );
+        assertTrue( entity.contains( "incoming_relationships" ) );
+        assertTrue( entity.contains( "relationships" ) );
+        assertTrue( entity.contains( "length" ) );
     }
 
     private static String markWithUnicodeMarker( String string )

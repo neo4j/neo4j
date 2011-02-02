@@ -20,6 +20,7 @@
 package org.neo4j.server.rest.domain;
 
 import org.neo4j.graphdb.Path;
+import org.neo4j.server.rest.repr.FullPathRepresentation;
 import org.neo4j.server.rest.repr.MappingRepresentation;
 import org.neo4j.server.rest.repr.RepresentationType;
 
@@ -48,6 +49,14 @@ public enum TraverserReturnType
         public MappingRepresentation toRepresentation( Path position )
         {
             return new org.neo4j.server.rest.repr.PathRepresentation( position );
+        }
+    },
+    fullpath( RepresentationType.FULL_PATH )
+    {
+        @Override
+        public MappingRepresentation toRepresentation( Path position )
+        {
+            return new FullPathRepresentation( position );
         }
     };
     public final RepresentationType repType;
