@@ -50,6 +50,7 @@ public final class RepresentationType
             NODE = new RepresentationType( "node", "nodes", Node.class ),//
             RELATIONSHIP = new RepresentationType( "relationship", "relationships", Relationship.class ),//
             PATH = new RepresentationType( "path", "paths", Path.class ),//
+            FULL_PATH = new RepresentationType( "full-path", "full-paths", FullPath.class), //
             RELATIONSHIP_TYPE = new RepresentationType( "relationship-type", "relationship-types", RelationshipType.class ),//
             PROPERTIES = new RepresentationType( "properties" ),//
             INDEX = new RepresentationType( "index" ),//
