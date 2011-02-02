@@ -30,6 +30,12 @@ wa.components.data.PropertyEditor = (function($) {
 	 */
 	me.currentEditKey = null;
 	
+	/**
+	 * List of html elements that are erreneous due to
+	 * duplicate keys.
+	 */
+	me.duplicateKeyFields = [];
+	
 	me.item = wa.components.data.DataBrowser.getItem;
 	
 	//
@@ -57,20 +63,20 @@ wa.components.data.PropertyEditor = (function($) {
 		ev.preventDefault();
 		if( confirm("Are you sure?")) {
 			var key = me.getKey(ev.target);
-			if( key !== null ) {
-				me.showSavingSaveButton();
-				me.item().removeProperty(key);
-				me.item().save().then(me.showSavedSaveButton);
-			} else {
-				me.showSavedSaveButton();
-			}
-			$(ev.target).closest("ul").remove();
+			
+            me.showSavingSaveButton();
+            if( key !== null ) {
+                me.item().removeProperty(key);
+            }
+            me.item().save().then(me.showSavedSaveButton);
+            $(ev.target).closest("ul").remove();
 		}
 	};
 	
 	me.propertyValueChanged = function(ev) {
 		var key = me.getKey(ev.target);
 		var value = me.getValue($(ev.target));
+		
 		if( key !== null && value !== null ) {
 			me.showSavingSaveButton();
 			me.item().setProperty(key, value);
@@ -83,19 +89,54 @@ wa.components.data.PropertyEditor = (function($) {
 		var key = $(ev.target).val();
 		var value = me.getValue($(ev.target).closest("ul").find("input.mor_data_value_input"));
 		
-		if( key != oldKey && value !== null) {
-			
-			me.showSavingSaveButton();
-			
-			// Key has changed
-			if( oldKey !== null && oldKey.length > 0 ) {
-				// Delete old property
-			    me.item().removeProperty(oldKey);
-			}
-			
-			me.item().setProperty(key, value);
-            me.item().save().then(me.showSavedSaveButton);
+		if( key != oldKey ) {
+
+            // Did the previous key exist?
+            if( oldKey !== null && oldKey.length > 0 && ! $(ev.target).hasClass("error") ) {
+                // Delete old property
+                me.item().removeProperty(oldKey);
+            }
+		    
+		    if( me.item().hasProperty(key)) {
+		        // Key already exists, verboten!
+		        me.markKeyFieldAsDuplicate(ev.target);
+		    } else {
+                me.unmarkKeyFieldAsDuplicate(ev.target);
+                
+                // Do a run to see if this "unlocks" any fields marked
+                // as duplicates.
+                me.currentEditKey = null;
+                _.each(me.duplicateKeyFields, function(field) {
+                    me.propertyKeyChanged({target:field});
+                });
+                
+                // Save
+                if ( value !== null ) {
+        			me.showSavingSaveButton();
+        			
+        			me.item().setProperty(key, value);
+                    me.item().save().then(me.showSavedSaveButton);
+                }
+                
+		    }
 		}
+	};
+	
+	me.markKeyFieldAsDuplicate = function(el) {
+	    if( ! me.keyFieldIsMarkedAsDuplicate(el)) {
+	        me.duplicateKeyFields.push(el);
+	    }
+	    $(el).addClass("error");
+	};
+	
+	me.unmarkKeyFieldAsDuplicate = function(el) {
+	    me.duplicateKeyFields = _.without(me.duplicateKeyFields, el);
+	    neo4j.log(el);
+	    $(el).removeClass("error");
+	};
+	
+	me.keyFieldIsMarkedAsDuplicate = function(el) {
+	    return _.indexOf(me.duplicateKeyField, el) != -1
 	};
 	
 	me.propertyFieldFocused = function(ev) {
@@ -119,8 +160,10 @@ wa.components.data.PropertyEditor = (function($) {
 	 * Get the string key for a given value field. Returns null if key is not set.
 	 */
 	me.getKey = function(valueField) {
-		var val = $(valueField).closest("ul").find("input.mor_data_key_input").val();
-		if(val.length > 0) {
+		var keyEl = $(valueField).closest("ul").find("input.mor_data_key_input"),
+		    val = keyEl.val();
+		
+		if(!me.keyFieldIsMarkedAsDuplicate(keyEl)) {
 			return val;
 		} else {
 			return null;
