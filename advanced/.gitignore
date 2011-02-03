@@ -11,3 +11,4 @@
 *.iml
 .idea/
 .DS_Store
+src/main/resources/webadmin-html/webadmin.js
