@@ -32,7 +32,7 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
-public class SiteExamples
+public class LuceneIndexSiteExamples
 {
     private static GraphDatabaseService graphDb;
     private Transaction tx;
