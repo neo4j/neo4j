@@ -38,7 +38,7 @@ public class GremlinSessionTest
     {
         String result = session.evaluate( "g" );
 
-        assertEquals( String.format( "==>neo4jgraph[%s]\n",database.graph.toString()), result  );
+        assertEquals( String.format( "neo4jgraph[%s]\n",database.graph.toString()), result  );
     }
     
     @Test
@@ -49,17 +49,17 @@ public class GremlinSessionTest
         result = session.evaluate( "}" );
         result = session.evaluate( "i = 2" );
 
-        assertEquals( "==>2\n", result  );
+        assertEquals( "2\n", result  );
     }
     @Test
     public void canCreateNodesInGremlinLand()
     {
         String result = session.evaluate( "g.addVertex(null)" );
 
-        assertEquals( "==>v[1]\n", result );
+        assertEquals( "v[1]\n", result );
         result = session.evaluate( "g.V >> 2" );
 
-        assertEquals( "==>v[0]\n==>v[1]\n", result );
+        assertEquals( "v[0]\nv[1]\n", result );
     }
 
     @Before
