@@ -59,6 +59,7 @@ wa.components.console.Console = (function($) {
                         me.uiLoaded = true;
                         me.basePage.setTemplateURL("templates/components/console/index.tp");
                         me.render();
+                        me.consoleInit();
                     }
                     
                     me.focusOnInputElement();
@@ -78,13 +79,16 @@ wa.components.console.Console = (function($) {
              *            object. If this is not specified, the result will be
              *            printed to the console.
              */
-            evaluate : function(statement, cb) {
-                var cb = cb || me.evalCallback;
+            evaluate : function(statement, cb, showStatement) {
+                var cb = cb || me.evalCallback,
+                    showStatement = showStatement === false ? false : true;
                 
-                me.writeConsoleLine(statement, null, "console-input");
-                
-                if( statement.length > 0) {
-                    me.api.pushHistory(me.consoleInput.val());
+                if(showStatement){
+                    me.writeConsoleLine(statement, null, "console-input");
+                    
+                    if( statement.length > 0) {
+                        me.api.pushHistory(statement);
+                    }
                 }
                 
                 me.hideInput();
@@ -105,8 +109,8 @@ wa.components.console.Console = (function($) {
                 
             },
             
-            init : function() {
-
+            serverChanged : function(server) {
+                me.consoleInit();
             },
             
             pushHistory : function(cmd) {
@@ -153,12 +157,34 @@ wa.components.console.Console = (function($) {
         
     };
     
+    /**
+     * Clear console and send init command to server.
+     * Checks that the console is visible and a server
+     * is available.
+     */
+    me.consoleInit = function() {
+        if(me.visible && wa.Servers.getCurrentServer()) {
+            
+            if( me.server != wa.Servers.getCurrentServer()) {
+                me.server = wa.Servers.getCurrentServer();
+                me.clear();
+                me.api.evaluate("init()", null, false);
+            }
+        }
+    };
+    
+    me.clear = function() {
+        $("#mor_console .console-input").remove();
+        $("#mor_console_input").val("");
+    };
+    
     me.hideInput = function() {
     	$("#mor_console_input_wrap").hide();
     };
     
     me.showInput = function() {
     	$("#mor_console_input_wrap").show();
+    	me.scrollToBottomOfConsole();
     };
     
     me.focusOnInputElement = function() {
@@ -172,7 +198,7 @@ wa.components.console.Console = (function($) {
      */
     me.evalCallback = function(originalStatement, lines) {
         _.each(lines, function(line) {
-            me.writeConsoleLine(line, '==>');
+            me.writeConsoleLine(line, '==> ');
         });
     };
     
@@ -181,6 +207,10 @@ wa.components.console.Console = (function($) {
         var clazz = clazz || "";
         var line = _.isString(line) ? line : "";
         me.consoleInputWrap.before($("<p> " + wa.htmlEscape(prepend + line) + "</p>").addClass(clazz));
+        me.scrollToBottomOfConsole();
+    };
+    
+    me.scrollToBottomOfConsole = function() {
         me.consoleWrap[0].scrollTop = me.consoleWrap[0].scrollHeight;
     };
     
@@ -228,3 +258,4 @@ wa.ui.Pages.add("console",wa.components.console.Console);
 wa.ui.MainMenu.add({ label : "Console", pageKey:"console", index:2, requiredServices:['console'], perspectives:['server']});
 
 wa.bind("ui.page.changed", wa.components.console.Console.pageChanged);
+wa.bind("servers.current.changed",  wa.components.console.Console.serverChanged);
