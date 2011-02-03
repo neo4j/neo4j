@@ -31,8 +31,6 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.onlinebackup.Backup;
-import org.neo4j.onlinebackup.Neo4jBackup;
 import org.neo4j.server.logging.Logger;
 import org.rrd4j.core.RrdDb;
 
@@ -146,22 +144,7 @@ public class Database
         this.rrdDb = rrdDb;
     }
 
-    public void initializeBackup( String backupDirectory ) throws IOException
-    {
-        shutdown();
-        FileUtils.copyDirectory( new File( databaseStoreDirectory ), new File( backupDirectory ) );
-        startup();
-        performBackup( backupDirectory );
-    }
 
-    public void performBackup( String backupDirectory ) throws IOException
-    {
-        EmbeddedGraphDatabase backupGraph = new EmbeddedGraphDatabase( backupDirectory );
-        Backup backupComp = Neo4jBackup.neo4jDataSource( graph, backupDirectory );
-        backupComp.enableFileLogger();
-        backupComp.doBackup();
-        backupGraph.shutdown();
-    }
 
     public IndexManager getIndexManager()
     {
