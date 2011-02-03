@@ -24,10 +24,8 @@
     <module>management</module>
     <module>udc</module>
     <module>lucene-index</module>
-    <module>online-backup</module>
     <module>graph-algo</module>
     <module>ha</module>
-    <module>remote</module>
   </modules>
 
   <dependencies>
@@ -43,17 +41,7 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-remote-graphdb</artifactId>
-      <version>0.9-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-graph-algo</artifactId>
-      <version>0.8-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-online-backup</artifactId>
       <version>0.8-SNAPSHOT</version>
     </dependency>
     <dependency>
