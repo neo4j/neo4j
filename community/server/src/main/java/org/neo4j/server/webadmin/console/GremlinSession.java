@@ -26,7 +26,9 @@ import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.codehaus.groovy.tools.shell.IO;
@@ -38,23 +40,29 @@ import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
 
 public class GremlinSession implements ScriptSession
 {
+
+    private static final String INIT_FUNCTION = "init()";
     
     protected GremlinWebConsole scriptEngine;
     protected StringWriter outputWriter;
     private Database database;
     private IO io;
     private ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    private List<String> initialBindings;
 
     public GremlinSession( Database database )
     {
         this.database = database;
-        
         PrintStream out = new PrintStream(new BufferedOutputStream( baos ));
-       
-        io = new IO( System.in, out, out );
+        
+        io = new IO( System.in, out, out);
+        
         Map<String, Object> bindings = new HashMap<String, Object>();
         bindings.put( "g", getGremlinWrappedGraph() );
         bindings.put( "out", out );
+        
+        initialBindings = new ArrayList<String>(bindings.keySet());
+        
         scriptEngine = new GremlinWebConsole(new Binding( bindings ), io );
     }
 
@@ -69,6 +77,11 @@ public class GremlinSession implements ScriptSession
     public String evaluate( String script )
     {
         try {
+            
+            if( script.equals( INIT_FUNCTION )) {
+                return init();
+            }
+            
             scriptEngine.groovy.execute( script );            
             String result = baos.toString();
             resetIO();
@@ -79,6 +92,24 @@ public class GremlinSession implements ScriptSession
             return ex.getMessage();
         }
 
+    }
+    
+    private String init() {
+        StringBuffer out = new StringBuffer();
+        out.append("\n");
+        out.append("         \\,,,/\n");
+        out.append("         (o o)\n");
+        out.append("-----oOOo-(_)-oOOo-----\n");
+        out.append("\n");
+        
+        out.append("Available variables:\n");
+        for(String variable : initialBindings) {
+            out.append("  " + variable + "\t= ");
+            out.append(evaluate(variable));
+        }
+        out.append("\n");
+        
+        return out.toString();
     }
 
     private void resetIO()
