@@ -11,17 +11,17 @@ Adding to an index
 
 	Indexing are available for both nodes and relationships.
 
-%{source-code|snippet=add|file=src/test/java/examples/SiteExamples.java}
+%{source-code|snippet=add|file=src/test/java/examples/LuceneIndexSiteExamples.java}
 
 Querying an index
 
 	Querying can be made using <<<get>>> which performs an exact match of key/value.
 
-%{source-code|snippet=get|file=src/test/java/examples/SiteExamples.java}
+%{source-code|snippet=get|file=src/test/java/examples/LuceneIndexSiteExamples.java}
 
 	Or full-blown querying (the full lucene query syntax exposed if your index is backed by lucene).
 
-%{source-code|snippet=query|file=src/test/java/examples/SiteExamples.java}
+%{source-code|snippet=query|file=src/test/java/examples/LuceneIndexSiteExamples.java}
 
 See more
 
