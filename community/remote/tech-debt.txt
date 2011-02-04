@@ -1,3 +1,0 @@
-[2010-02-09] Lacking tests
-   This component was created as an experiment, and graduated from laboratory
-   before proper tests were written.

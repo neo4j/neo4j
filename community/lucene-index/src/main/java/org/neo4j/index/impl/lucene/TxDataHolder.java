@@ -22,6 +22,7 @@ package org.neo4j.index.impl.lucene;
 import java.util.Collection;
 
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Searcher;
 import org.neo4j.helpers.Pair;
 
 class TxDataHolder
@@ -62,5 +63,12 @@ class TxDataHolder
     void close()
     {
         this.data.close();
+    }
+
+    Searcher asSearcher( QueryContext context )
+    {
+        Pair<Searcher, TxData> entry = this.data.asSearcher( context );
+        this.data = entry.other();
+        return entry.first();
     }
 }
