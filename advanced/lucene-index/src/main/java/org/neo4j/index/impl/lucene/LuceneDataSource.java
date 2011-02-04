@@ -271,7 +271,8 @@ public class LuceneDataSource extends LogBackedXaDataSource
     
     static IndexProviderStore newIndexStore( String dbStoreDir )
     {
-        return new IndexProviderStore( getStoreDir( dbStoreDir ).first() + "/lucene-store.db" );
+        File file = new File( getStoreDir( dbStoreDir ).first() + "/lucene-store.db" );
+        return new IndexProviderStore( file );
     }
 
     @Override
@@ -751,6 +752,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
             }
             snapshots.add( deletionPolicy );
         }
+        files.add( providerStore.getFile() );
         return new ClosableIterable<File>()
         {
             public Iterator<File> iterator()
