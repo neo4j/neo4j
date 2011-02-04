@@ -78,6 +78,11 @@ public class ClusterManager extends AbstractZooKeeperManager
         }
     }
     
+    public Machine getMaster()
+    {
+        return getMasterBasedOn( getAllMachines( true ).values() );
+    }
+    
     @Override
     public String getRoot()
     {

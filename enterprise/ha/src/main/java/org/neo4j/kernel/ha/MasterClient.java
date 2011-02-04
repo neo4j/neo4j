@@ -184,6 +184,10 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
         {
             throw new HaCommunicationException( e );
         }
+        finally
+        {
+            releaseChannel();
+        }
     }
 
     private Triplet<Channel, ChannelBuffer, ByteBuffer> getChannel() throws Exception
@@ -281,19 +285,12 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
 
     public Response<Void> finishTransaction( SlaveContext context )
     {
-        try
+        return sendRequest( RequestType.FINISH, context, new Serializer()
         {
-            return sendRequest( RequestType.FINISH, context, new Serializer()
+            public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
             {
-                public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
-                {
-                }
-            }, VOID_DESERIALIZER );
-        }
-        finally
-        {
-            releaseChannel();
-        }
+            }
+        }, VOID_DESERIALIZER );
     }
 
     public void rollbackOngoingTransactions( SlaveContext context )
