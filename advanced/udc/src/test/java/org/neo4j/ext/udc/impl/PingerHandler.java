@@ -41,9 +41,10 @@ public class PingerHandler implements HttpRequestHandler {
         System.out.println("got the ping, as: " + httpRequest.getRequestLine().getUri());
 
         final String requestUri = httpRequest.getRequestLine().getUri();
-        final String[] query = requestUri.split("\\?");
-        if (query.length > 1) {
-            String[] params = query[1].split("\\+");
+        final int offset = requestUri.indexOf("?");
+        if (offset > -1) {
+            String query = requestUri.substring(offset+1);
+            String[] params = query.split("\\+");
             if (params.length > 0) {
                 for (String param : params) {
                     String[] pair = param.split("=");
