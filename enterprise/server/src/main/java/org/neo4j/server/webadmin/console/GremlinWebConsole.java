@@ -27,7 +27,6 @@ import org.codehaus.groovy.tools.shell.IO;
 import com.tinkerpop.gremlin.Gremlin;
 import com.tinkerpop.gremlin.Imports;
 import com.tinkerpop.gremlin.console.NullResultHookClosure;
-import com.tinkerpop.gremlin.console.ResultHookClosure;
 
 public class GremlinWebConsole
 {
