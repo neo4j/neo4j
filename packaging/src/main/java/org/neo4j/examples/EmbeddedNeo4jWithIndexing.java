@@ -24,8 +24,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.index.IndexService;
-import org.neo4j.index.lucene.LuceneIndexService;
+import org.neo4j.graphdb.index.Index;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 public class EmbeddedNeo4jWithIndexing
@@ -33,7 +32,7 @@ public class EmbeddedNeo4jWithIndexing
     private static final String DB_PATH = "neo4j-store";
     private static final String USERNAME_KEY = "username";
     private static GraphDatabaseService graphDb;
-    private static IndexService indexService;
+    private static Index<Node> indexService;
 
     // START SNIPPET: createRelTypes
     private static enum RelTypes implements RelationshipType
@@ -47,7 +46,7 @@ public class EmbeddedNeo4jWithIndexing
     {
         // START SNIPPET: startDb
         graphDb = new EmbeddedGraphDatabase( DB_PATH );
-        indexService = new LuceneIndexService( graphDb );
+        indexService = graphDb.index().forNodes( "nodes" );
         registerShutdownHook();
         // END SNIPPET: startDb
 
@@ -73,8 +72,8 @@ public class EmbeddedNeo4jWithIndexing
             // Find a user through the search index
             // START SNIPPET: findUser
             int idToFind = 45;
-            Node foundUser = indexService.getSingleNode( USERNAME_KEY,
-                idToUserName( idToFind ) );
+            Node foundUser = indexService.get( USERNAME_KEY,
+                idToUserName( idToFind ) ).getSingle();
             System.out.println( "The username of user " + idToFind + " is "
                 + foundUser.getProperty( USERNAME_KEY ) );
             // END SNIPPET: findUser
@@ -84,7 +83,7 @@ public class EmbeddedNeo4jWithIndexing
                     RelTypes.USER, Direction.OUTGOING ) )
             {
                 Node user = relationship.getEndNode();
-                indexService.removeIndex( user, USERNAME_KEY,
+                indexService.remove(  user, USERNAME_KEY,
                         user.getProperty( USERNAME_KEY ) );
                 user.delete();
                 relationship.delete();
@@ -104,7 +103,6 @@ public class EmbeddedNeo4jWithIndexing
 
     private static void shutdown()
     {
-        indexService.shutdown();
         graphDb.shutdown();
     }
 
@@ -118,7 +116,7 @@ public class EmbeddedNeo4jWithIndexing
     {
         Node node = graphDb.createNode();
         node.setProperty( USERNAME_KEY, username );
-        indexService.index( node, USERNAME_KEY, username );
+        indexService.add( node, USERNAME_KEY, username );
         return node;
     }
     // END SNIPPET: helperMethods

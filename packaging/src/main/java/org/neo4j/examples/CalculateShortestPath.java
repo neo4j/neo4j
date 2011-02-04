@@ -18,6 +18,8 @@
  */
 package org.neo4j.examples;
 
+import java.io.File;
+
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphdb.Direction;
@@ -27,12 +29,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.index.IndexService;
-import org.neo4j.index.lucene.LuceneIndexService;
+import org.neo4j.graphdb.index.Index;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.Traversal;
-
-import java.io.File;
 
 public class CalculateShortestPath
 {
@@ -41,13 +40,13 @@ public class CalculateShortestPath
     private static RelationshipType KNOWS = DynamicRelationshipType.withName( "KNOWS" );
 
     private static GraphDatabaseService graphDb;
-    private static IndexService indexService;
+    private static Index<Node> indexService;
 
     public static void main( final String[] args )
     {
         deleteFileOrDirectory( new File( DB_PATH ) );
         graphDb = new EmbeddedGraphDatabase( DB_PATH );
-        indexService = new LuceneIndexService( graphDb );
+        indexService = graphDb.index().forNodes( "nodes" );
         registerShutdownHook();
         Transaction tx = graphDb.beginTx();
         try
@@ -84,7 +83,6 @@ public class CalculateShortestPath
         // END SNIPPET: shortestPathUsage
 
         System.out.println( "Shutting down database ..." );
-        indexService.shutdown();
         graphDb.shutdown();
     }
 
@@ -100,12 +98,12 @@ public class CalculateShortestPath
 
     private static Node getOrCreateNode( String name )
     {
-        Node node = indexService.getSingleNode( NAME_KEY, name );
+        Node node = indexService.get( NAME_KEY, name ).getSingle();
         if ( node == null )
         {
             node = graphDb.createNode();
             node.setProperty( NAME_KEY, name );
-            indexService.index( node, NAME_KEY, name );
+            indexService.add( node, NAME_KEY, name );
         }
         return node;
     }
@@ -120,7 +118,6 @@ public class CalculateShortestPath
             @Override
             public void run()
             {
-                indexService.shutdown();
                 graphDb.shutdown();
             }
         } );
