@@ -56,6 +56,7 @@ public class ToFileStoreWriter implements StoreWriter
                         intermediateBuffer.clear();
                     }
                 }
+                System.out.println( "Copied " + file );
             }
             finally
             {
