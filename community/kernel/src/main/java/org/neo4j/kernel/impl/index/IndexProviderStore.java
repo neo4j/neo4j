@@ -37,16 +37,18 @@ public class IndexProviderStore
     private final FileChannel fileChannel;
     private final ByteBuffer buf = ByteBuffer.allocate( FILE_LENGTH );
     private long lastCommittedTx;
+    private final File file;
     
-    public IndexProviderStore( String store )
+    public IndexProviderStore( File file )
     {
-        if ( !new File( store ).exists() )
+        this.file = file;
+        if ( !file.exists() )
         {
-            create( store );
+            create( file );
         }
         try
         {
-            fileChannel = new RandomAccessFile( store, "rw" ).getChannel();
+            fileChannel = new RandomAccessFile( file, "rw" ).getChannel();
             int bytesRead = fileChannel.read( buf );
             if ( bytesRead != FILE_LENGTH && bytesRead != FILE_LENGTH-8 )
             {
@@ -65,16 +67,15 @@ public class IndexProviderStore
         }
     }
     
-    static void create( String store )
+    static void create( File file )
     {
-        if ( new File( store ).exists() )
+        if ( file.exists() )
         {
-            throw new IllegalArgumentException( store + " already exist" );
+            throw new IllegalArgumentException( file + " already exist" );
         }
         try
         {
-            FileChannel fileChannel = 
-                new RandomAccessFile( store, "rw" ).getChannel();
+            FileChannel fileChannel = new RandomAccessFile( file, "rw" ).getChannel();
             ByteBuffer buf = ByteBuffer.allocate( FILE_LENGTH );
             long time = System.currentTimeMillis();
             long identifier = new Random( time ).nextLong();
@@ -95,6 +96,11 @@ public class IndexProviderStore
         {
             throw new RuntimeException( "Expected to write " + FILE_LENGTH + " bytes" );
         }
+    }
+    
+    public File getFile()
+    {
+        return file;
     }
 
     public long getCreationTime()

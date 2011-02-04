@@ -20,6 +20,8 @@
 package slavetest;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.Comparator;
 
 import org.neo4j.kernel.impl.util.DumpLogicalLog;
 
@@ -27,7 +29,7 @@ public class DumpLogs
 {
     public static void main( String[] args ) throws Exception
     {
-        for ( File file : new File( "var/hadb" ).listFiles() )
+        for ( File file : sorted( new File( "/home/mattias/dev/svn.neo4j.org/qa/ha-robustness/data/db/1" ).listFiles() ) )
         {
 //            if ( !file.getName().contains( ".1" ) ) continue;
             
@@ -44,5 +46,18 @@ public class DumpLogs
                 e.printStackTrace();
             }
         }
+    }
+
+    private static File[] sorted( File[] listFiles )
+    {
+        Arrays.sort( listFiles, new Comparator<File>()
+        {
+            @Override
+            public int compare( File o1, File o2 )
+            {
+                return o1.getName().compareTo( o2.getName() );
+            }
+        } );
+        return listFiles;
     }
 }

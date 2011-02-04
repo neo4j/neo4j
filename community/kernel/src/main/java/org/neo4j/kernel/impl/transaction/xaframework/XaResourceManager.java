@@ -702,4 +702,9 @@ public class XaResourceManager
         log.applyTransactionWithoutTxId( transaction, txId, masterId );
         return txId;
     }
+    
+    public synchronized void rotateLogicalLog() throws IOException
+    {
+        log.rotate();
+    }
 }
