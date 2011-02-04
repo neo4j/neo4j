@@ -32,6 +32,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
@@ -237,5 +238,12 @@ class FullTxData extends ExactTxData
         {
             // Ok
         }
+    }
+    
+    @Override
+    Pair<Searcher, TxData> asSearcher( QueryContext context )
+    {
+        boolean refresh = context == null || !context.tradeCorrectnessForSpeed;
+        return Pair.of( (Searcher) searcher( refresh ), (TxData) this );
     }
 }

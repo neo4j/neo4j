@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Searcher;
 import org.neo4j.helpers.Pair;
 
 public class ExactTxData extends TxData
@@ -165,5 +166,15 @@ public class ExactTxData extends TxData
             }
             return longs;
         }
+    }
+    
+    @Override
+    Pair<Searcher, TxData> asSearcher( QueryContext context )
+    {
+        if ( context != null && context.tradeCorrectnessForSpeed )
+        {
+            return Pair.<Searcher, TxData>of( null, this );
+        }
+        return toFullTxData().asSearcher( context );
     }
 }
