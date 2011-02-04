@@ -59,25 +59,19 @@ wa.components.jmx.Jmx = (function($) {
              */
             findBean : function(name, cb) {
 
-                var beanInfo = me.api.parseBeanName(name);
+                var beanInfo = me.api.parseBeanName(name),
+                    server = wa.Servers.getCurrentServer(); 
                 
-                // The requested bean is not available locally, check if there
-                // is a server connection
-                
-                var server = wa.Servers.getCurrentServer(); 
-                
-                if( ! server ) { // Nope
+                if( ! server ) {
                     cb([]);
-                    return;
+                } else {
+                    // Server available
+                    server.manage.jmx.getBean(beanInfo.domain, beanInfo.name, (function(cb) {
+                        return function(data) {
+                            cb(data);
+                        };
+                    })(cb));
                 }
-                    
-                
-                // Server available
-                server.manage.jmx.getBean(beanInfo.domain, beanInfo.name, (function(cb) {
-                    return function(data) {
-                        cb(data);
-                    };
-                })(cb));
                 
             },
             
@@ -170,7 +164,6 @@ wa.components.jmx.Jmx = (function($) {
                     me.currentBean = bean;
                     me.render();
                 }
-                
             });
             
         }
@@ -182,14 +175,7 @@ wa.components.jmx.Jmx = (function($) {
         	// Re-order jmx data to show neo4j domain first
         	if(me.jmxData !== null) {
         		
-        		jmxData = me.jmxData.sort(function(a,b) {
-        			if( a.name === NEO4J_DOMAIN ) {
-        				return -1;
-        			} else if( b.name === NEO4J_DOMAIN ) {
-        				return 1;
-        			}
-        			return 0;
-        		});
+        		jmxData = me.sortJmxData(me.jmxData);
         		
         	} else {
         		jmxData = [];
@@ -202,6 +188,25 @@ wa.components.jmx.Jmx = (function($) {
             });
         }
         
+    };
+    
+    me.sortJmxData = function(jmxData) {
+        jmxData = jmxData.sort(function(a,b) {
+            if( a.name === NEO4J_DOMAIN ) {
+                return -1;
+            } else if( b.name === NEO4J_DOMAIN ) {
+                return 1;
+            }
+            return a.name.toLowerCase() > b.name.toLowerCase();
+        });
+        
+        _.each(jmxData, function(domain){
+            domain.beans = domain.beans.sort(function(a,b) {
+                return a.getName().toLowerCase() > b.getName().toLowerCase();
+            });
+        });
+        
+        return jmxData;
     };
     
     //
