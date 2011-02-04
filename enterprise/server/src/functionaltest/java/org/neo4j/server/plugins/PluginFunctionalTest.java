@@ -19,25 +19,13 @@
  */
 package org.neo4j.server.plugins;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import org.hamcrest.Description;
-import org.hamcrest.Factory;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.server.NeoServer;
-import org.neo4j.server.ServerBuilder;
-import org.neo4j.server.rest.FunctionalTestHelper;
-import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.domain.JsonParseException;
-import org.neo4j.server.rest.repr.NodeRepresentationTest;
-import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.core.IsNull.nullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
-import javax.ws.rs.core.MediaType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -45,32 +33,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.hamcrest.Matchers.*;
-import static org.hamcrest.core.IsNull.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import javax.ws.rs.core.MediaType;
 
-public class PluginFunctionalTest
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.server.NeoServer;
+import org.neo4j.server.ServerBuilder;
+import org.neo4j.server.rest.FunctionalTestHelper;
+import org.neo4j.server.rest.domain.JsonParseException;
+import org.neo4j.server.rest.repr.NodeRepresentationTest;
+import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
+
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
+
+public class PluginFunctionalTest extends PluginFunctionalAbstractBase
 {
-    private NeoServer server;
-    private FunctionalTestHelper functionalTestHelper;
 
-    @Before
-    public void setupServer() throws Exception
-    {
-        server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
-        server.start();
-        functionalTestHelper = new FunctionalTestHelper( server );
-    }
-
-    @After
-    public void stopServer()
-    {
-        if ( server != null )
-        {
-            server.stop();
-        }
-    }
 
     @Test
     public void canGetGraphDatabaseExtensionList() throws Exception
@@ -388,146 +369,4 @@ public class PluginFunctionalTest
     }
 
 
-    private Map<String, Object> makeGet( String url ) throws JsonParseException
-    {
-        ClientResponse response = Client.create().resource( url ).accept(
-                MediaType.APPLICATION_JSON_TYPE ).get( ClientResponse.class );
-
-        String body = getResponseText( response );
-
-        return deserializeMap( body );
-    }
-
-    private Map<String, Object> deserializeMap( final String body )
-            throws JsonParseException
-    {
-        Map<String, Object> result = JsonHelper.jsonToMap( body );
-        assertThat( result, is( not( nullValue() ) ) );
-        return result;
-    }
-
-    private List<Map<String, Object>> deserializeList( final String body )
-            throws JsonParseException
-    {
-        List<Map<String, Object>> result = JsonHelper.jsonToList( body );
-        assertThat( result, is( not( nullValue() ) ) );
-        return result;
-    }
-
-    private String getResponseText( final ClientResponse response )
-    {
-        String body = response.getEntity( String.class );
-
-        assertEquals( body, 200, response.getStatus() );
-        return body;
-    }
-
-    private Map<String, Object> makePostMap( String url ) throws JsonParseException
-    {
-        ClientResponse response = Client.create().resource( url ).accept(
-                MediaType.APPLICATION_JSON_TYPE ).post( ClientResponse.class );
-
-        String body = getResponseText( response );
-
-        return deserializeMap( body );
-    }
-
-    private Map<String, Object> makePostMap( String url, Map<String, Object> params ) throws JsonParseException
-    {
-        String json = JsonHelper.createJsonFrom( params );
-        ClientResponse response = Client.create().resource( url ).accept(
-                MediaType.APPLICATION_JSON_TYPE ).entity( json, MediaType.APPLICATION_JSON_TYPE ).post( ClientResponse.class );
-
-        String body = getResponseText( response );
-
-        return deserializeMap( body );
-    }
-
-    private List<Map<String, Object>> makePostList( String url ) throws JsonParseException
-    {
-        ClientResponse response = Client.create().resource( url ).accept(
-                MediaType.APPLICATION_JSON_TYPE ).post( ClientResponse.class );
-
-        String body = getResponseText( response );
-
-        return deserializeList( body );
-    }
-
-    private List<Map<String, Object>> makePostList( String url, Map<String, Object> params ) throws JsonParseException
-    {
-        String json = JsonHelper.createJsonFrom( params );
-        ClientResponse response = Client.create().resource( url ).accept(
-                MediaType.APPLICATION_JSON_TYPE ).entity( json, MediaType.APPLICATION_JSON_TYPE ).post( ClientResponse.class );
-
-        String body = getResponseText( response );
-
-        return deserializeList( body );
-    }
-
-    private static class RegExp extends TypeSafeMatcher<String>
-    {
-        enum MatchType
-        {
-            end( "ends with" )
-                    {
-                        @Override
-                        boolean match( String pattern, String string )
-                        {
-                            return string.endsWith( pattern );
-                        }
-                    },
-            matches()
-                    {
-                        @Override
-                        boolean match( String pattern, String string )
-                        {
-                            return string.matches( pattern );
-                        }
-                    },;
-            private final String description;
-
-            abstract boolean match( String pattern, String string );
-
-            private MatchType()
-            {
-                this.description = name();
-            }
-
-            private MatchType( String description )
-            {
-                this.description = description;
-            }
-        }
-
-        private final String pattern;
-        private String string;
-        private final MatchType type;
-
-        RegExp( String regexp, MatchType type )
-        {
-            this.pattern = regexp;
-            this.type = type;
-        }
-
-        @Factory
-        public static Matcher<String> endsWith( String pattern )
-        {
-            return new RegExp( pattern, MatchType.end );
-        }
-
-        @Override
-        public boolean matchesSafely( String string )
-        {
-            this.string = string;
-            return type.match( pattern, string );
-        }
-
-        @Override
-        public void describeTo( Description descr )
-        {
-            descr.appendText( "expected something that " ).appendText( type.description ).appendText(
-                    " [" ).appendText( pattern ).appendText( "] but got [" ).appendText( string ).appendText(
-                    "]" );
-        }
-    }
 }
