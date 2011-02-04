@@ -30,10 +30,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.index.IndexService;
-import org.neo4j.index.lucene.LuceneIndexService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.Traversal;
 
@@ -52,14 +51,14 @@ public class RolesTest
 
     private static final String ROLES_DB = "target/roles-db";
     private static GraphDatabaseService graphDb;
-    private static IndexService index;
+    private static Index<Node> index;
 
     @BeforeClass
     public static void setUp()
     {
         deleteFileOrDirectory( new File( ROLES_DB ) );
         graphDb = new EmbeddedGraphDatabase( ROLES_DB );
-        index = new LuceneIndexService( graphDb );
+        index = graphDb.index().forNodes( "nodes" );
         registerShutdownHook();
         createNodespace();
     }
@@ -67,7 +66,6 @@ public class RolesTest
     @AfterClass
     public static void tearDown()
     {
-        index.shutdown();
         graphDb.shutdown();
     }
 
@@ -143,7 +141,7 @@ public class RolesTest
     {
         Node node = graphDb.createNode();
         node.setProperty( NAME, name );
-        index.index( node, category, name );
+        index.add( node, category, name );
         for ( Node parent : containedIn )
         {
             node.createRelationshipTo( parent, relType );
@@ -163,7 +161,7 @@ public class RolesTest
 
     private static Node getNodeByName( final String category, final String name )
     {
-        return index.getSingleNode( category, name );
+        return index.get( category, name ).getSingle();
     }
 
     @Test
@@ -298,7 +296,6 @@ public class RolesTest
             @Override
             public void run()
             {
-                index.shutdown();
                 graphDb.shutdown();
             }
         } );

@@ -18,30 +18,30 @@
  */
 package org.neo4j.examples.socnet;
 
-import org.hamcrest.CoreMatchers;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.index.IndexService;
-import org.neo4j.index.lucene.LuceneIndexService;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.collection.IsCollectionContaining.hasItems;
+import static org.junit.Assert.assertThat;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Random;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.collection.IsCollectionContaining.hasItems;
-import static org.junit.Assert.assertThat;
+import org.hamcrest.CoreMatchers;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.index.Index;
+import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 public class SocnetTest
 {
     private static final Random r = new Random( System.currentTimeMillis() );
     private GraphDatabaseService graphDb;
-    private IndexService index;
+    private Index<Node> index;
     private PersonRepository personRepository;
     private int nrOfPersons;
 
@@ -49,7 +49,7 @@ public class SocnetTest
     public void setup() throws Exception
     {
         graphDb = new EmbeddedGraphDatabase( "target/socnetdb" );
-        index = new LuceneIndexService( graphDb );
+        index = graphDb.index().forNodes( "nodes" );
         personRepository = new PersonRepository( graphDb, index );
         deleteSocialGraph();
 
@@ -67,7 +67,6 @@ public class SocnetTest
         }
         finally
         {
-            index.shutdown();
             graphDb.shutdown();
         }
     }

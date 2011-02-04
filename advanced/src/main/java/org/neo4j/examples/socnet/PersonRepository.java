@@ -18,20 +18,24 @@
  */
 package org.neo4j.examples.socnet;
 
-import org.neo4j.graphdb.*;
-import org.neo4j.helpers.collection.IterableWrapper;
-import org.neo4j.index.IndexService;
-
 import static org.neo4j.examples.socnet.RelTypes.A_PERSON;
 import static org.neo4j.examples.socnet.RelTypes.REF_PERSONS;
+
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.index.Index;
+import org.neo4j.helpers.collection.IterableWrapper;
 
 public class PersonRepository
 {
     private final GraphDatabaseService graphDb;
-    private final IndexService index;
+    private final Index<Node> index;
     private final Node personRefNode;
 
-    public PersonRepository( GraphDatabaseService graphDb, IndexService index )
+    public PersonRepository( GraphDatabaseService graphDb, Index<Node> index )
     {
         this.graphDb = graphDb;
         this.index = index;
@@ -75,14 +79,14 @@ public class PersonRepository
             Node newPersonNode = graphDb.createNode();
             personRefNode.createRelationshipTo( newPersonNode, A_PERSON );
             // lock now taken, we can check if  already exist in index
-            Node alreadyExist = index.getSingleNode( Person.NAME, name );
+            Node alreadyExist = index.get( Person.NAME, name ).getSingle();
             if ( alreadyExist != null )
             {
                 tx.failure();
                 throw new Exception( "Person with this name already exists " );
             }
             newPersonNode.setProperty( Person.NAME, name );
-            index.index( newPersonNode, Person.NAME, name );
+            index.add( newPersonNode, Person.NAME, name );
             tx.success();
             return new Person( newPersonNode );
         }
@@ -94,7 +98,7 @@ public class PersonRepository
 
     public Person getPersonByName( String name )
     {
-        Node personNode = index.getSingleNode( Person.NAME, name );
+        Node personNode = index.get( Person.NAME, name ).getSingle();
         if ( personNode == null )
         {
             throw new IllegalArgumentException( "Person[" + name
@@ -109,7 +113,7 @@ public class PersonRepository
         try
         {
             Node personNode = person.getUnderlyingNode();
-            index.removeIndex( personNode, Person.NAME, person.getName() );
+            index.remove( personNode, Person.NAME, person.getName() );
             for ( Person friend : person.getFriends() )
             {
                 person.removeFriend( friend );
