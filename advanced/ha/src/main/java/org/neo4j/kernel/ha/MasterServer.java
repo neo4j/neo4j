@@ -250,6 +250,11 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
                         e.printStackTrace();
                         throw new RuntimeException( e );
                     }
+                    catch ( RuntimeException e )
+                    {
+                        e.printStackTrace();
+                        throw e;
+                    }
                 }
             } );
         }

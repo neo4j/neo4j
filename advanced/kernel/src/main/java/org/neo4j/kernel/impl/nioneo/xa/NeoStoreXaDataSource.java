@@ -417,7 +417,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     }
 
     // used for testing, do not use.
-    public void setCommittedTxId( long txId )
+    public void setLastCommittedTxId( long txId )
     {
         neoStore.setRecoveredStatus( true );
         try
@@ -473,7 +473,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
             String name = neostoreFile.getName();
             // To filter for "neostore" is quite future proof, but the "index.db" file
             // maybe should be 
-            if ( neostoreFile.isFile() && (name.startsWith( "neostore" ) || name.equals( IndexStore.INDEX_DB_FILE_NAME )) )
+            if ( neostoreFile.isFile() && (name.startsWith( "neostore" ) || name.equals( IndexStore.INDEX_DB_FILE_NAME )) && !name.endsWith( ".id" ) )
             {
                 files.add( neostoreFile );
             }

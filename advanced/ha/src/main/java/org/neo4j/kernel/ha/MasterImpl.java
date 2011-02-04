@@ -409,7 +409,7 @@ public class MasterImpl implements Master
             appliedTransactions[i++] = Pair.of( ds.getName(), ds.getLastCommittedTxId() );
             try
             {
-                ds.rotateLogicalLog();
+                ds.getXaContainer().getResourceManager().rotateLogicalLog();
             }
             catch ( IOException e )
             {
