@@ -25,13 +25,13 @@ import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.channels.ReadableByteChannel;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -97,7 +97,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     private ScheduledExecutorService updatePuller;
     private volatile long updateTime = 0;
     private volatile RuntimeException causeOfShutdown;
-    private volatile CountDownLatch startupLatch;
 
     private final List<KernelEventHandler> kernelEventHandlers =
             new CopyOnWriteArrayList<KernelEventHandler>();
@@ -137,86 +136,103 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         startUp( allowInitFromConfig );
     }
 
-    private void cleanDatabase()
+    private void getFreshDatabaseFromMaster( Pair<Master, Machine> master )
     {
+        master = master != null ? master : broker.getMasterReally();
         // Assume it's shut down at this point
         
+        moveAwayCurrentDatabase();
+
+        Exception exception = null;
+        for ( int i = 0; i < 10; i++ )
+        {
+            try
+            {
+                copyStoreFromMaster( master );
+                return;
+            }
+            catch ( Exception e )
+            {
+                msgLog.logMessage( "Problems copying store from master", e );
+                sleepWithoutInterruption( 1000, "" );
+                exception = e;
+            }
+        }
+        throw new RuntimeException( "Gave up trying to copy store from master", exception );
+    }
+
+    private void moveAwayCurrentDatabase()
+    {
         // TODO This could be solved by moving the db directory to <dbPath>-broken-<date>
         // maybe <dbPath>/broken-<date> since we it may be the case that the current user
         // only has got permissions on the dbPath, not the parent.
         this.msgLog.logMessage( "Cleaning database " + storeDir + " to make way for new db from master" );
-        deleteFileOrDirectory( new File( storeDir ), Arrays.asList( "messages.log", "output" ) );
-    }
-    
-    private static void deleteFileOrDirectory( File file, Collection<String> except )
-    {
-        if ( !file.exists() )
-        {
-            return;
-        }
         
-        if ( file.isDirectory() )
+        File oldDir = new File( storeDir, "broken-" + System.currentTimeMillis() );
+        oldDir.mkdirs();
+        for ( File file : new File( storeDir ).listFiles() )
         {
-            for ( File child : file.listFiles() )
+            if ( !file.equals( oldDir ) && !file.getName().equals( "messages.log" ) )
             {
-                deleteFileOrDirectory( child, except );
+                File dest = new File( oldDir, file.getName() );
+                if ( !file.renameTo( dest ) )
+                {
+                    System.out.println( "Couldn't move " + file.getPath() );
+                }
             }
         }
-        
-        if ( !except.contains( file.getName() ) )
-        {
-            file.delete();
-        }
     }
-
+    
     public static Map<String,String> loadConfigurations( String file )
     {
         return EmbeddedGraphDatabase.loadConfigurations( file );
     }
 
-    private void startUp( boolean allowInit )
+    private synchronized void startUp( boolean allowInit )
     {
         StoreId storeId = null;
         if ( !new File( storeDir, "neostore" ).exists() )
         {
-            // Instantiate the startup latch here so that if a ZK thread comes in during
-            // this time make it wait for this stage to finish first.
-            startupLatch = new CountDownLatch( 1 );
-            try
-            {
-                long endTime = System.currentTimeMillis()+10000;
-                MASTER_ARBITRATION: while ( System.currentTimeMillis()<endTime )
-                {
-                    // Check if the cluster is up
-                    Pair<Master, Machine> master = broker.getMaster();
-                    master = master.first() != null ? master : broker.getMasterReally();
-                    if ( master != null && master.first() != null )
-                    { // Join the existing cluster
-                        if ( copyStoreFromMaster( master ) )
-                        {
-                            break MASTER_ARBITRATION;
-                        }
+            long endTime = System.currentTimeMillis()+10000;
+            Exception exception = null;
+            while ( System.currentTimeMillis() < endTime )
+            {                
+                // Check if the cluster is up
+                Pair<Master, Machine> master = broker.getMaster();
+                master = master.first() != null ? master : broker.getMasterReally();
+                if ( master != null && master.first() != null )
+                { // Join the existing cluster
+                    try
+                    {
+                        copyStoreFromMaster( master );
+                        exception = null;
+                        break;
                     }
-                    else if ( allowInit )
-                    { // Try to initialize the cluster and become master
-                        StoreId myStoreId = new StoreId();
-                        storeId = broker.createCluster( myStoreId );
-                        if ( storeId.equals( myStoreId ) )
-                        { // I am master
-                            break MASTER_ARBITRATION;
-                        }
+                    catch ( Exception e )
+                    {
+                        exception = e;
+                        broker.getMasterReally();
+                        msgLog.logMessage( "Problems copying store from master", e );
                     }
-                    // I am not master, and could not connect to the master:
-                    // wait for other machine(s) to join.
-                    sleepWithoutInterruption( 100, "Startup interrupted" );
                 }
+                else if ( allowInit )
+                { // Try to initialize the cluster and become master
+                    exception = null;
+                    StoreId myStoreId = new StoreId();
+                    storeId = broker.createCluster( myStoreId );
+                    if ( storeId.equals( myStoreId ) )
+                    { // I am master
+                        break;
+                    }
+                }
+                // I am not master, and could not connect to the master:
+                // wait for other machine(s) to join.
+                sleepWithoutInterruption( 300, "Startup interrupted" );
             }
-            finally
+            
+            if ( exception != null )
             {
-                // Now we're done, after this it's ok for other (ZK) threads to come
-                // in and do stuff
-                startupLatch.countDown();
-                startupLatch = null;
+                throw new RuntimeException( "Tried to join the cluster, but was unable to", exception );
             }
         }
         newMaster( null, storeId, new Exception() );
@@ -235,22 +251,33 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         }
     }
 
-    private boolean copyStoreFromMaster( Pair<Master, Machine> master )
+    private void copyStoreFromMaster( Pair<Master, Machine> master ) throws Exception
     {
+        msgLog.logMessage( "Copying store from master" );
+        Response<Void> response = master.first().copyStore( new SlaveContext( machineId, 0, new Pair[0] ),
+                new ToFileStoreWriter( storeDir ) );
+        EmbeddedGraphDatabase tempDb = new EmbeddedGraphDatabase( storeDir );
         try
         {
-            msgLog.logMessage( "Copying store from master" );
-            master.first().copyStore( new SlaveContext( machineId, 0, new Pair[0] ),
-                    new ToFileStoreWriter( storeDir ) );
-            msgLog.logMessage( "Done copying store from master" );
-            return true;
+            applyReceivedTransactions( response, tempDb.getConfig().getTxModule().getXaDataSourceManager(), new TxHandler()
+            {
+                private final Set<String> visitedDataSources = new HashSet<String>();
+                
+                @Override
+                public void accept( Triplet<String, Long, TxExtractor> tx, XaDataSource dataSource )
+                {
+                    if ( visitedDataSources.add( tx.first() ) )
+                    {
+                        dataSource.setLastCommittedTxId( tx.second()-1 );
+                    }
+                }
+            });
         }
-        catch ( Exception e )
+        finally
         {
-            msgLog.logMessage( "Problems copying store from master, retrying", e );
-            broker.getMasterReally(); // Makes it invalidate the master
-            return false;
+            tempDb.shutdown();
         }
+        msgLog.logMessage( "Done copying store from master" );
     }
 
     private EmbeddedGraphDbImpl localGraph()
@@ -390,13 +417,10 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 
     protected synchronized void reevaluateMyself( Pair<Master, Machine> master, StoreId storeId )
     {
-        boolean foundOutRightNow = false;
         if ( master == null )
         {
             master = broker.getMasterReally();
-            foundOutRightNow = true;
         }
-        System.out.println( machineId + " came to the conclusion " + (foundOutRightNow?"RIGHT NOW":"") + " that " + master + " is master" );
         boolean restarted = false;
         boolean iAmCurrentlyMaster = masterServer != null;
         msgLog.logMessage( "ReevaluateMyself: machineId=" + machineId + " with master[" + master +
@@ -481,6 +505,13 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         {
             return;
         }
+        else if ( master.first() == null )
+        {
+            // Temporarily disconnected from ZK
+            RuntimeException cause = new RuntimeException( "Unable to get master from ZK" );
+            shutdown( cause, false );
+            throw cause;
+        }
 
         XaDataSource nioneoDataSource = getConfig().getTxModule()
                 .getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
@@ -517,7 +548,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 "] but master says machine id for that txId is " + masterForMastersHighestCommonTxId;
             msgLog.logMessage( msg, true );
             RuntimeException exception = new BranchedDataException( msg );
-            shutdown( exception );
+            shutdown( exception, false );
             throw exception;
         }
     }
@@ -638,16 +669,16 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         }
     }
 
-    public synchronized void shutdown( RuntimeException cause )
+    private synchronized void shutdown( RuntimeException cause, boolean shutdownBroker )
     {
-        if ( causeOfShutdown != null )
-        {
-            return;
-        }
+//        if ( causeOfShutdown != null )
+//        {
+//            return;
+//        }
 
         causeOfShutdown = cause;
         msgLog.logMessage( "Shutdown[" + machineId + "], " + this, true );
-        if ( this.broker != null )
+        if ( shutdownBroker && this.broker != null )
         {
             this.broker.shutdown();
         }
@@ -656,7 +687,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 
     public synchronized void shutdown()
     {
-        shutdown( new IllegalStateException() );
+        shutdown( new IllegalStateException(), true );
     }
 
     public KernelEventHandler unregisterKernelEventHandler( KernelEventHandler handler )
@@ -689,22 +720,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     {
         try
         {
-            XaDataSourceManager localDataSourceManager =
-                getConfig().getTxModule().getXaDataSourceManager();
-            for ( Triplet<String, Long, TxExtractor> tx : IteratorUtil.asIterable( response.transactions() ) )
-            {
-                String resourceName = tx.first();
-                XaDataSource dataSource = localDataSourceManager.getXaDataSource( resourceName );
-                ReadableByteChannel txStream = tx.third().extract();
-                try
-                {
-                    dataSource.applyCommittedTransaction( tx.second(), txStream );
-                }
-                finally
-                {
-                    txStream.close();
-                }
-            }
+            applyReceivedTransactions( response, getConfig().getTxModule().getXaDataSourceManager(), NO_ACTION );
             updateTime();
             return response.response();
         }
@@ -715,19 +731,22 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         }
     }
 
-    public void applyTransaction( String datasourceName, long txId, ReadableByteChannel stream )
+    private <T> void applyReceivedTransactions( Response<T> response, XaDataSourceManager dataSourceManager, TxHandler txHandler ) throws IOException
     {
-        try
+        for ( Triplet<String, Long, TxExtractor> tx : IteratorUtil.asIterable( response.transactions() ) )
         {
-            XaDataSourceManager localDataSourceManager =
-                getConfig().getTxModule().getXaDataSourceManager();
-            XaDataSource dataSource = localDataSourceManager.getXaDataSource( datasourceName );
-            dataSource.applyCommittedTransaction( txId, stream );
-        }
-        catch ( IOException e )
-        {
-            newMaster( broker.getMaster(), e );
-            throw new RuntimeException( e );
+            String resourceName = tx.first();
+            XaDataSource dataSource = dataSourceManager.getXaDataSource( resourceName );
+            txHandler.accept( tx, dataSource );
+            ReadableByteChannel txStream = tx.third().extract();
+            try
+            {
+                dataSource.applyCommittedTransaction( tx.second(), txStream );
+            }
+            finally
+            {
+                txStream.close();
+            }
         }
     }
 
@@ -736,7 +755,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         newMaster( master, null, e );
     }
 
-    private void newMaster( Pair<Master, Machine> master, StoreId storeId, Exception e )
+    private synchronized void newMaster( Pair<Master, Machine> master, StoreId storeId, Exception e )
     {
         try
         {
@@ -745,14 +764,13 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         catch ( BranchedDataException bde )
         {
             System.out.println( "Branched data occured, retrying" );
-            cleanDatabase();
+            getFreshDatabaseFromMaster( master );
             doNewMaster( master, storeId, bde );
         }
     }
 
     private void doNewMaster( Pair<Master, Machine> master, StoreId storeId, Exception e )
     {
-        waitForStartupLatch();
         try
         {
             msgLog.logMessage( "newMaster(" + master + ") called", e, true );
@@ -773,28 +791,12 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             t.printStackTrace();
             msgLog.logMessage( "Reevaluation ended in unknown exception " + t
                     + " so shutting down", true );
-            shutdown( t instanceof RuntimeException ? (RuntimeException) t : new RuntimeException( t ) );
+            shutdown( t instanceof RuntimeException ? (RuntimeException) t : new RuntimeException( t ), false );
             if ( t instanceof RuntimeException )
             {
                 throw (RuntimeException) t;
             }
             throw new RuntimeException( t );
-        }
-    }
-
-    private void waitForStartupLatch()
-    {
-        // 
-        if ( startupLatch != null )
-        {
-            try
-            {
-                startupLatch.await();
-            }
-            catch ( InterruptedException ee )
-            {
-                Thread.interrupted();
-            }
         }
     }
 
@@ -823,4 +825,18 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     {
         return localGraph().index();
     }
+    
+    private interface TxHandler
+    {
+        void accept( Triplet<String, Long, TxExtractor> tx, XaDataSource dataSource );
+    }
+    
+    private static final TxHandler NO_ACTION = new TxHandler()
+    {
+        @Override
+        public void accept( Triplet<String, Long, TxExtractor> tx, XaDataSource dataSource )
+        {
+            // Do nothing
+        }
+    };
 }

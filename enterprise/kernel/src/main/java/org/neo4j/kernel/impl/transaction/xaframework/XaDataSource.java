@@ -377,6 +377,11 @@ public abstract class XaDataSource
     {
         throw new UnsupportedOperationException( getClass().getName() );
     }
+    
+    public void setLastCommittedTxId( long txId )
+    {
+        throw new UnsupportedOperationException( getClass().getName() );
+    }
 
     public XaContainer getXaContainer()
     {

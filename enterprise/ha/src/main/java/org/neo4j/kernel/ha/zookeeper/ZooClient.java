@@ -118,7 +118,9 @@ public class ZooClient extends AbstractZooKeeperManager
                     Pair<Master, Machine> masterAfterIWrote = getMasterFromZooKeeper( false );
                     msgLog.logMessage( "Get master after write:" + masterAfterIWrote );
                     int masterId = masterAfterIWrote.other().getMachineId();
+                    msgLog.logMessage( "Setting '" + MASTER_NOTIFY_CHILD + "' to " + masterId );
                     setDataChangeWatcher( MASTER_NOTIFY_CHILD, masterId );
+                    msgLog.logMessage( "Did set '" + MASTER_NOTIFY_CHILD + "' to " + masterId );
                     if ( sessionId != -1 )
                     {
                         receiver.newMaster( masterAfterIWrote, new Exception() );
@@ -229,12 +231,12 @@ public class ZooClient extends AbstractZooKeeperManager
             {
                 data = zooKeeper.getData( path, true, null );
                 exists = true;
-                int id = ByteBuffer.wrap( data ).getInt();
-                if ( currentMasterId == -1 || id == currentMasterId )
-                {
-                    //System.out.println( child + " not set, is already " + currentMasterId );
-                    return;
-                }
+//                int id = ByteBuffer.wrap( data ).getInt();
+//                if ( currentMasterId == -1 || id == currentMasterId )
+//                {
+//                    msgLog.logMessage( child + " not set, is already " + currentMasterId );
+//                    return;
+//                }
             }
             catch ( KeeperException e )
             {
