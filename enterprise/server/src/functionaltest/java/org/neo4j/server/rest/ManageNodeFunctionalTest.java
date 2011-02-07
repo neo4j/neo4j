@@ -19,12 +19,15 @@
  */
 package org.neo4j.server.rest;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
 
@@ -43,7 +46,7 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
-public class CreateNodeFunctionalTest
+public class ManageNodeFunctionalTest
 {
     private static final long NON_EXISTENT_NODE_ID = 999999;
     private static String NODE_URI_PATTERN = "^.*/node/[0-9]+$";
@@ -188,6 +191,15 @@ public class CreateNodeFunctionalTest
         helper.createRelationship( "LOVES", id, helper.createNode() );
         ClientResponse response = sendDeleteRequestToServer( id );
         assertEquals( 409, response.getStatus() );
+    }
+    
+    @Test
+    public void shouldRespondWith400IfInvalidJsonSentAsNodeProperties() throws URISyntaxException {
+        String mangledJsonArray = "{\"myprop\":[1,2,\"three\"]}";
+        ClientResponse response = sendCreateRequestToServer( mangledJsonArray);
+        assertEquals(400, response.getStatus());
+        assertEquals("text/plain", response.getType().toString());
+        assertThat(response.getEntity(String.class), containsString(mangledJsonArray));
     }
 
     private ClientResponse sendDeleteRequestToServer( long id ) throws Exception
