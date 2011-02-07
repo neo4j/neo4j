@@ -44,6 +44,7 @@ import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
+@SuppressWarnings("unchecked")
 public class PluginFunctionalTest extends PluginFunctionalAbstractBase
 {
 
