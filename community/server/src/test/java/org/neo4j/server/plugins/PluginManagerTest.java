@@ -30,12 +30,14 @@ import javax.ws.rs.core.MediaType;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.ImpermanentGraphDatabase;
 import org.neo4j.server.rest.repr.formats.NullFormat;
 
+@Ignore
 public class PluginManagerTest
 {
     private static PluginManager manager;
