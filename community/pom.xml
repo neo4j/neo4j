@@ -71,9 +71,9 @@
   </dependencies>
 
   <scm>
-    <connection>scm:svn:https://svn.neo4j.org/components/neo4j/trunk/</connection>
-    <developerConnection>scm:svn:https://svn.neo4j.org/components/neo4j/trunk/</developerConnection>
-    <url>https://trac.neo4j.org/browser/components/neo4j</url>
+    <connection>scm:git:git://github.com/neo4j/graphdb.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/graphdb.git</developerConnection>
+    <url>https://github.com/neo4j/graphdb</url>
   </scm>
 
   <licenses>
