@@ -72,7 +72,7 @@ public class Jetty6WebServer implements WebServer
         MovedContextHandler redirector = new MovedContextHandler();
 
         jetty.addHandler( redirector );
-        loadRootRedirect();
+        
         loadStaticContent();
         loadJAXRSPackages();
 
@@ -81,37 +81,6 @@ public class Jetty6WebServer implements WebServer
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-
-    private void loadRootRedirect()
-    {
-        Servlet redirector = new HttpServlet()
-        {
-
-            private static final long serialVersionUID = 1L;
-
-            @Override
-            protected void doGet( HttpServletRequest req,
-                    HttpServletResponse resp ) throws ServletException,
-                    IOException
-            {
-                if( req.getPathInfo().equals( "/" ) )
-                {
-                    resp.sendRedirect( Configurator.DEFAULT_WEB_ADMIN_PATH );
-                }
-                else
-                {
-                    resp.sendError( 404 );
-                }
-            }
-
-        };
-        ServletHolder servletHolder = new ServletHolder( redirector );
-        log.info( "Adding Redirector at [%s]", "/" );
-        // starting it together with the rest
-        jaxRSPackages.put( "/", servletHolder );
-
     }
 
     public void stop()
@@ -149,6 +118,10 @@ public class Jetty6WebServer implements WebServer
     }
 
     private String trimTrailingSlash(String mountPoint) {
+        if(mountPoint.equals("/")) {
+            return mountPoint;
+        }
+        
         if(mountPoint.endsWith("/")) {
             mountPoint = mountPoint.substring(0, mountPoint.length() -1);
         }
