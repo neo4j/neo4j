@@ -28,8 +28,9 @@ wa.Servers = (function() {
     // PRIVATE
     //
 
-    var DEFAULT_DATA_URL = "http://" + document.domain + ":9999/";
+    var DEFAULT_DATA_URL = window.location.protocol + "//" + window.location.host;
     var DEFAULT_MANAGEMENT_URL = "db/manage/";
+//    var DEFAULT_MANAGEMENT_URL = ${DB_MANAGEMENT_URI};
     
     var servers = {};
     var currentServerKey = null;
