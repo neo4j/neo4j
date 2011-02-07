@@ -59,19 +59,19 @@ public class Database
     }
 
     private static AbstractGraphDatabase createDatabase( DatabaseMode mode,
-            String databaseStoreDirectory, Map<String, String> databaseTuningProperties )
+            String databaseStoreDirectory, Map<String, String> databaseProperties )
     {
         log.info( "Creating database at " + databaseStoreDirectory );
 
-        if ( databaseTuningProperties == null )
+        if ( databaseProperties == null )
         {
-            databaseTuningProperties = new HashMap<String, String>();
+            databaseProperties = new HashMap<String, String>();
         }
 
-        databaseTuningProperties.put( org.neo4j.kernel.Config.ENABLE_REMOTE_SHELL, "true" );
-        databaseTuningProperties.put( org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS, "true" );
+        databaseProperties.put( org.neo4j.kernel.Config.ENABLE_REMOTE_SHELL, "true" );
+        databaseProperties.put( org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS, "true" );
 
-        return mode.createDatabase( databaseStoreDirectory, databaseTuningProperties );
+        return mode.createDatabase( databaseStoreDirectory, databaseProperties );
     }
 
 
