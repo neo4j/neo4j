@@ -35,13 +35,8 @@ import java.util.Set;
 
 import javax.ws.rs.core.MediaType;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.server.NeoServer;
-import org.neo4j.server.ServerBuilder;
-import org.neo4j.server.rest.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.NodeRepresentationTest;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
@@ -49,6 +44,7 @@ import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
+@SuppressWarnings("unchecked")
 public class PluginFunctionalTest extends PluginFunctionalAbstractBase
 {
 

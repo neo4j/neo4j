@@ -42,6 +42,7 @@ public class DatabaseTest {
     @Before
     public void setup() throws Exception {
         databaseDirectory = ServerTestUtils.createTempDir();
+        System.out.println(databaseDirectory.getAbsolutePath());
         theDatabase = new Database( DatabaseMode.STANDALONE, databaseDirectory.getAbsolutePath() );
     }
 
@@ -77,7 +78,7 @@ public class DatabaseTest {
     }
 
     @Test
-    public void shouldEnabledRemoteShellByDefault() throws IOException
+    public void shouldEnableRemoteShellByDefault() throws IOException
     {
         int wellKnownSocket = 1337;
         Socket rmiSocketToServer = new Socket("localhost", wellKnownSocket );

@@ -19,8 +19,12 @@
  */
 package org.neo4j.server.web;
 
-import com.sun.jersey.api.core.ResourceConfig;
-import com.sun.jersey.spi.container.servlet.ServletContainer;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.List;
+
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.SessionManager;
 import org.mortbay.jetty.handler.MovedContextHandler;
@@ -32,21 +36,11 @@ import org.mortbay.jetty.webapp.WebAppContext;
 import org.mortbay.resource.Resource;
 import org.mortbay.thread.QueuedThreadPool;
 import org.neo4j.server.NeoServer;
-import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rest.web.AllowAjaxFilter;
 
-import javax.servlet.Servlet;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.HashMap;
-import java.util.List;
+import com.sun.jersey.api.core.ResourceConfig;
+import com.sun.jersey.spi.container.servlet.ServletContainer;
 
 public class Jetty6WebServer implements WebServer
 {
@@ -72,7 +66,7 @@ public class Jetty6WebServer implements WebServer
         MovedContextHandler redirector = new MovedContextHandler();
 
         jetty.addHandler( redirector );
-        loadRootRedirect();
+        
         loadStaticContent();
         loadJAXRSPackages();
 
@@ -81,37 +75,6 @@ public class Jetty6WebServer implements WebServer
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-
-    private void loadRootRedirect()
-    {
-        Servlet redirector = new HttpServlet()
-        {
-
-            private static final long serialVersionUID = 1L;
-
-            @Override
-            protected void doGet( HttpServletRequest req,
-                    HttpServletResponse resp ) throws ServletException,
-                    IOException
-            {
-                if( req.getPathInfo().equals( "/" ) )
-                {
-                    resp.sendRedirect( Configurator.DEFAULT_WEB_ADMIN_PATH );
-                }
-                else
-                {
-                    resp.sendError( 404 );
-                }
-            }
-
-        };
-        ServletHolder servletHolder = new ServletHolder( redirector );
-        log.info( "Adding Redirector at [%s]", "/" );
-        // starting it together with the rest
-        jaxRSPackages.put( "/", servletHolder );
-
     }
 
     public void stop()
@@ -149,6 +112,10 @@ public class Jetty6WebServer implements WebServer
     }
 
     private String trimTrailingSlash(String mountPoint) {
+        if(mountPoint.equals("/")) {
+            return mountPoint;
+        }
+        
         if(mountPoint.endsWith("/")) {
             mountPoint = mountPoint.substring(0, mountPoint.length() -1);
         }
