@@ -32,6 +32,7 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.core.util.StringKeyObjectValueIgnoreCaseMultivaluedMap;
 import com.sun.net.httpserver.Headers;
 
+@SuppressWarnings("restriction")
 public class JaxRsResponse extends Response
 {
 
