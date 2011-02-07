@@ -145,7 +145,22 @@ public class DatabaseActionsTest
             tx.finish();
         }
     }
-
+    
+    
+    @Test(expected = PropertyValueException.class)
+    public void shouldFailOnTryingToStoreMixedArraysAsAProperty() throws Exception
+    {
+        long nodeId = graphdbHelper.createNode();
+        Map<String, Object> properties = new HashMap<String, Object>();
+        Object[] dodgyArray = new Object[3];
+        dodgyArray[0] = 0;
+        dodgyArray[1] = 1;
+        dodgyArray[2] = "two";
+        properties.put( "foo", dodgyArray);
+        
+        actions.setAllNodeProperties( nodeId, properties );
+    }
+    
     @Test
     public void shouldOverwriteExistingProperties() throws DatabaseBlockedException,
             PropertyValueException, NodeNotFoundException
