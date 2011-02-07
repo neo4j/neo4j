@@ -47,7 +47,7 @@ public class ServerConfigTest {
 
     @Test
     public void shouldPickUpPortFromConfig() throws Exception {
-        final int NON_DEFAULT_PORT = 54321;
+        final int NON_DEFAULT_PORT = 4321;
         
         server = server().withRandomDatabaseDir().withPassingStartupHealthcheck().onPort(
                 NON_DEFAULT_PORT ).build();
