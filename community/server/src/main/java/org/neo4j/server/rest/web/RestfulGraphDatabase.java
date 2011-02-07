@@ -122,10 +122,14 @@ public class RestfulGraphDatabase {
         try {
             return output.created(server.createNode(input.readMap(body)));
         } catch (ArrayStoreException ase) {
-            return Response.status(400).type(MediaType.TEXT_PLAIN).entity("Invalid JSON array in POST body: " + body).build();
+            return generateBadRequestDueToMangledJsonResponse(body);
         } catch (BadInputException e) {
             return output.badRequest(e);
         }
+    }
+
+    private Response generateBadRequestDueToMangledJsonResponse(String body) {
+        return Response.status(400).type(MediaType.TEXT_PLAIN).entity("Invalid JSON array in POST body: " + body).build();
     }
 
     @GET
@@ -160,6 +164,8 @@ public class RestfulGraphDatabase {
             server.setAllNodeProperties(nodeId, input.readMap(body));
         } catch (BadInputException e) {
             return output.badRequest(e);
+        } catch (ArrayStoreException ase) {
+            return generateBadRequestDueToMangledJsonResponse(body);
         } catch (NodeNotFoundException e) {
             return output.notFound(e);
         }
@@ -190,6 +196,8 @@ public class RestfulGraphDatabase {
             server.setNodeProperty(nodeId, key, input.readValue(body));
         } catch (BadInputException e) {
             return output.badRequest(e);
+        } catch (ArrayStoreException ase) {
+            return generateBadRequestDueToMangledJsonResponse(body);
         } catch (NodeNotFoundException e) {
             return output.notFound(e);
         }
