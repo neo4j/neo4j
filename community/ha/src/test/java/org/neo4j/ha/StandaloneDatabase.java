@@ -164,7 +164,7 @@ public class StandaloneDatabase
 
     IllegalStateException format( StartupFailureException e )
     {
-        throw new IllegalStateException( "database failed to start", e.getCause() );
+    	return e.format();
     }
 
     public void shutdown()
@@ -187,18 +187,31 @@ public class StandaloneDatabase
 
     public static class StartupFailureException extends Exception
     {
-        StartupFailureException( Throwable cause )
+        private final long timestamp;
+
+		StartupFailureException( Throwable cause )
         {
             super( cause );
+            timestamp = new Date().getTime();
         }
 
-        IllegalStateException format( LocalhostZooKeeperCluster zooKeeper )
+        public IllegalStateException format()
+        {
+			return new IllegalStateException( message() , getCause() );
+		}
+
+		private String message()
+		{
+			return "database failed to start @ " + TimestampStream.format( new Date( timestamp ) );
+		}
+
+		IllegalStateException format( LocalhostZooKeeperCluster zooKeeper )
         {
             Throwable cause = getCause();
-            String message = "failed to start database";
+            String message = message();
             if ( cause instanceof ZooKeeperException )
             {
-                message += ", ZooKeeper status: " + zooKeeper.getStatus();
+                message += ". ZooKeeper status: " + zooKeeper.getStatus();
             }
             return new IllegalStateException( message, cause );
         }
@@ -393,7 +406,7 @@ public class StandaloneDatabase
 
     private static class TimestampStream extends PrintStream
     {
-        ThreadLocal<DateFormat> timestamp = new ThreadLocal<DateFormat>()
+        static ThreadLocal<DateFormat> timestamp = new ThreadLocal<DateFormat>()
         {
             @Override
             protected DateFormat initialValue()
@@ -401,6 +414,11 @@ public class StandaloneDatabase
                 return new SimpleDateFormat( "[HH:mm:ss:SS] " );
             }
         };
+
+        static String format( Date date )
+        {
+            return timestamp.get().format( date );
+        }
 
         TimestampStream( PrintStream out )
         {
@@ -410,7 +428,7 @@ public class StandaloneDatabase
         @Override
         public void println( String string )
         {
-            super.println( timestamp.get().format( new Date() ) + string );
+            super.println( format( new Date() ) + string );
         }
     }
 }
