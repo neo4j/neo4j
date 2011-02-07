@@ -250,6 +250,12 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+    	<groupId>org.neo4j</groupId>
+    	<artifactId>neo4j-shell</artifactId>
+    	<version>1.3-SNAPSHOT</version>
+    	<scope>runtime</scope>
+    </dependency>
   </dependencies>
 
   <build>
