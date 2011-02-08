@@ -6,33 +6,3 @@ Neo4j Server
 
     * {{{./server-unmanaged-extensions.html}Deploying arbitrary code and URL endpoints into Neo4j Server}}
 
-
-Neo4j Embedded
-
-    Neo4j examples contains code examples using the different components
-    included in the Neo4j package.
-
-    * {{{./basic.html}Basic usage}}
-    
-    * {{{./basic-index.html}Basic index usage}}
-
-    * {{{./traversal.html}Traversal}}
-    
-    * {{{./ordered-path.html}Ordered Path Traversals}}
-
-    * {{{./entities.html}Domain entities}}
-
-    * {{{./social-network.html}Social network}}
-
-    * {{{./graphalgo.html}Graph algorithms}}
-    
-    * {{{./management.html}Management features}}    
-
-    * {{{./integrated-index.html}Integrated indexing}} - managed through the GraphDatabaseService
-
-Neo4j Tests
-
-    For your reference, there are unit tests included which illustrate
-    approaches for testing graph-based applications.
-
-    * {{{./base-test.html}Base test}} - simplest possible unit test of a graph, with setup and teardown
