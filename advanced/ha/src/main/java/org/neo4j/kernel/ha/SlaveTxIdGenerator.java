@@ -24,6 +24,8 @@ import java.nio.channels.ReadableByteChannel;
 
 import javax.transaction.TransactionManager;
 
+import org.neo4j.com.Response;
+import org.neo4j.com.TxExtractor;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;

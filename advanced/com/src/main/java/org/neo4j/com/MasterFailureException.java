@@ -17,33 +17,31 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha;
+package org.neo4j.com;
 
-import java.nio.channels.ReadableByteChannel;
-
-import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
-
-public abstract class TxExtractor
+public class MasterFailureException extends RuntimeException
 {
-    public abstract void extract( LogBuffer buffer );
-
-    public abstract ReadableByteChannel extract();
-
-    public static TxExtractor create( final ReadableByteChannel data )
+    public MasterFailureException()
     {
-        return new TxExtractor()
-        {
-            @Override
-            public ReadableByteChannel extract()
-            {
-                return data;
-            }
+        super();
+        // TODO Auto-generated constructor stub
+    }
 
-            @Override
-            public void extract( LogBuffer buffer )
-            {
-                throw new UnsupportedOperationException( "Not meant to be extracted to LogBuffer" );
-            }
-        };
+    public MasterFailureException( String message, Throwable cause )
+    {
+        super( message, cause );
+        // TODO Auto-generated constructor stub
+    }
+
+    public MasterFailureException( String message )
+    {
+        super( message );
+        // TODO Auto-generated constructor stub
+    }
+
+    public MasterFailureException( Throwable cause )
+    {
+        super( cause );
+        // TODO Auto-generated constructor stub
     }
 }
