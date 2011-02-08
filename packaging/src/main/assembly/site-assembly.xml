@@ -28,13 +28,6 @@
     <fileSet>
       <directory>target/site</directory>
       <outputDirectory>/</outputDirectory>
-      <excludes>
-        <exclude>apidocs/**</exclude>
-      </excludes>
-    </fileSet>
-    <fileSet>
-      <directory>target/neo4j-apidocs</directory>
-      <outputDirectory>apidocs</outputDirectory>
     </fileSet>
   </fileSets>
 </assembly>
