@@ -43,8 +43,8 @@ import java.util.Map;
 
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.core.UriInfo;
 
 import org.junit.After;
 import org.junit.Before;
@@ -1238,5 +1238,11 @@ public class RestfulGraphDatabaseTest
 
         assertEquals( Status.OK.getStatusCode(), service.traverse( node, TraverserReturnType.node,
                 markWithUnicodeMarker( "{\"max depth\":2}" ) ).getStatus() );
+    }
+    
+    @Test
+    public void shouldAdvertiseUriForQueringAllRelationsInTheDatabase() {
+        Response response = service.getRoot();
+        assertThat(new String((byte[])response.getEntity()), containsString("\"relationship_types\" : \"http://neo4j.org/relationship/types\""));
     }
 }

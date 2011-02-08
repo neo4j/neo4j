@@ -4,8 +4,6 @@
  * Some widgets borrowed from Grappelli django skin.
  */ 
 
-@import url(jquery.jqplot.css);
-
 body, #morpheus { width:100%; height:100%; color: #333; background:#f7f7f7; padding:0;margin:0; font-family:arial, sans-serif; }
 
 p { margin: 0.7em 0; font-size:0.9em; }

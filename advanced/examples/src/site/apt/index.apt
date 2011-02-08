@@ -1,0 +1,8 @@
+Neo4j Server
+
+    * {{{./server-rest-api.html}Programming in Java against the Neo4j Server REST API}}
+
+    * {{{./server-plugins.html}Extending the Neo4j Server REST API with custom functionality}}
+
+    * {{{./server-unmanaged-extensions.html}Deploying arbitrary code and URL endpoints into Neo4j Server}}
+

@@ -48,5 +48,6 @@ public class DatabaseRepresentation extends MappingRepresentation implements
         serializer.putUri( "node_index", "index/node" );
         serializer.putUri( "relationship_index", "index/relationship" );
         serializer.putUri( "extensions_info", "ext" );
+        serializer.putUri( "relationship_types", "relationship/types" );
     }
 }
