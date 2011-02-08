@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>15</version>
+    <version>17</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -12,7 +12,7 @@
   <version>0.1-SNAPSHOT</version>
   <name>Neo4j Server Build</name>
   <packaging>pom</packaging>
-  <description>Project that builds the Neo4j Server and standlone ditsribution.</description>
+  <description>Project that builds the Neo4j Server and standalone distribution.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
@@ -21,6 +21,7 @@
 
   <modules>
     <module>server</module>
+    <module>examples</module>
     <module>standalone</module>
   </modules>
 
