@@ -39,10 +39,10 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
  * graphDb.{@link #shutdown() shutdown()};</code>
  * </pre>
  * 
- * GraphDatabaseService provides operations to {@link #enableRemoteShell enable
- * the shell}, {@link #createNode() create nodes}, {@link #getNodeById(long) get
- * nodes given an id}, get the {@link #getReferenceNode() reference node} and
- * ultimately {@link #shutdown() shutdown Neo4j}.
+ * GraphDatabaseService provides operations to {@link #createNode() create
+ * nodes}, {@link #getNodeById(long) get nodes given an id}, get the
+ * {@link #getReferenceNode() reference node} and ultimately {@link #shutdown()
+ * shutdown Neo4j}.
  * <p>
  * Please note that all operations that write to the graph must be invoked in a
  * {@link Transaction transactional context}. Failure to do so will result in a
@@ -149,8 +149,8 @@ public interface GraphDatabaseService
      * available on the classpath. This will publish a shell access interface on
      * an RMI registry on localhost (with configurable port and RMI binding
      * name). It can be accessed by a client that implements
-     * {@link org.neo4j.shell.ShellClient} from the Neo4j Shell project.
-     * Typically, the <code>neo4j-shell</code> binary package is used (see <a
+     * org.neo4j.shell.ShellClient from the Neo4j Shell project. Typically, the
+     * <code>neo4j-shell</code> binary package is used (see <a
      * href="http://neo4j.org/download">neo4j.org/download</a>).
      * <p>
      * The shell is parameterized by a map of properties passed in to this
@@ -175,13 +175,17 @@ public interface GraphDatabaseService
      * @throws IllegalStateException if the shell library is available, but the
      *             remote shell can't be enabled anyway
      * @deprecated in favor of a configuration parameter 'enable_remote_shell'
-     * Put:
-     * <pre>
+     *             Put:
+     * 
+     *             <pre>
      * enable_remote_shell = port=1337,name=shell
      * </pre>
-     * In your configuration and it will be started with the supplied port and
-     * RMI name. If you instead would like to use default parameters, put:
-     * <pre>
+     * 
+     *             In your configuration and it will be started with the
+     *             supplied port and RMI name. If you instead would like to use
+     *             default parameters, put:
+     * 
+     *             <pre>
      * enable_remote_shell = true
      * </pre>
      */

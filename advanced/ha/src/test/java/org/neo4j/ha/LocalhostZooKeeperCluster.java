@@ -24,7 +24,9 @@ import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -117,7 +119,7 @@ public final class LocalhostZooKeeperCluster
         for ( ZooKeeper zk : keeper )
         {
             result.append( prefix ).append( zk ).append( ": " ).append( zk.getStatus() );
-            prefix = ", ";
+            prefix = "; ";
         }
         return result.toString();
     }
@@ -262,8 +264,16 @@ public final class LocalhostZooKeeperCluster
         @SuppressWarnings( "boxing" )
         private String status( QuorumMXBean quorumBean )
         {
-            return String.format( "name=%s, size=%s", quorumBean.getName(),
-                    quorumBean.getQuorumSize() );
+            long time = System.currentTimeMillis();
+            String name = quorumBean.getName();
+            int size = quorumBean.getQuorumSize();
+            return String.format( "name=%s, size=%s, time=%s (+%sms)", name, size, format( time ),
+                    System.currentTimeMillis() - time );
+        }
+
+        private String format( long time )
+        {
+            return new SimpleDateFormat( "[HH:mm:ss:SS] " ).format( new Date( time ) );
         }
     }
 }
