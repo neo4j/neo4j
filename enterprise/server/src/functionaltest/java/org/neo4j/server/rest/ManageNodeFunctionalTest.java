@@ -194,7 +194,7 @@ public class ManageNodeFunctionalTest
     }
     
     @Test
-    public void shouldRespondWith400IfInvalidJsonSentAsNodeProperties() throws URISyntaxException {
+    public void shouldRespondWith400IfInvalidJsonSentAsNodePropertiesDuringNodeCreation() throws URISyntaxException {
         String mangledJsonArray = "{\"myprop\":[1,2,\"three\"]}";
         ClientResponse response = sendCreateRequestToServer( mangledJsonArray);
         assertEquals(400, response.getStatus());
@@ -202,6 +202,29 @@ public class ManageNodeFunctionalTest
         assertThat(response.getEntity(String.class), containsString(mangledJsonArray));
     }
 
+    @Test
+    public void shouldRespondWith400IfInvalidJsonSentAsNodeProperty() throws URISyntaxException {
+        URI nodeLocation = sendCreateRequestToServer().getLocation();
+        
+        String mangledJsonArray = "[1,2,\"three\"]";
+        ClientResponse response = Client.create().resource(new URI(nodeLocation.toString() + "/properties/myprop")).type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(mangledJsonArray).put(ClientResponse.class);
+        assertEquals(400, response.getStatus());
+        assertEquals("text/plain", response.getType().toString());
+        assertThat(response.getEntity(String.class), containsString(mangledJsonArray));
+    }
+    
+    @Test
+    public void shouldRespondWith400IfInvalidJsonSentAsNodeProperties() throws URISyntaxException {
+        URI nodeLocation = sendCreateRequestToServer().getLocation();
+        
+        String mangledJsonProperties = "{\"a\":\"b\", \"c\":[1,2,\"three\"]}";
+        ClientResponse response = Client.create().resource(new URI(nodeLocation.toString() + "/properties")).type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(mangledJsonProperties).put(ClientResponse.class);
+        assertEquals(400, response.getStatus());
+        assertEquals("text/plain", response.getType().toString());
+        assertThat(response.getEntity(String.class), containsString(mangledJsonProperties));
+    }
+
+    
     private ClientResponse sendDeleteRequestToServer( long id ) throws Exception
     {
         return Client.
