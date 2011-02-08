@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-central</artifactId>
-    <version>10</version>
+    <version>17</version>
   </parent>
 
   <groupId>org.neo4j</groupId>
@@ -13,12 +13,6 @@
   <name>Neo4j - Graph Database Monitoring and Management tools</name>
   <description>Management support using JMX.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
-
-  <scm>
-    <connection>scm:svn:https://svn.neo4j.org/components/management/trunk/</connection>
-    <developerConnection>scm:svn:https://svn.neo4j.org/components/management/trunk/</developerConnection>
-    <url>https://trac.neo4j.org/browser/components/management</url>
-  </scm>
 
   <properties>
     <bundle.namespace>org.neo4j.management</bundle.namespace>

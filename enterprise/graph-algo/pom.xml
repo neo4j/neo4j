@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-central</artifactId>
-    <version>10</version>
+    <version>17</version>
   </parent>
 
   <properties>
@@ -14,17 +14,11 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>neo4j-graph-algo</artifactId>
   <groupId>org.neo4j</groupId>
-  <version>0.8-SNAPSHOT</version>
+  <version>1.3-SNAPSHOT</version>
   <packaging>bundle</packaging>
   <name>Neo4j - Graph Algorithms</name>
   <description>Graph algorithms for Neo4j.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
-
-  <scm>
-    <connection>scm:svn:https://svn.neo4j.org/components/graph-algo/trunk/</connection>
-    <developerConnection>scm:svn:https://svn.neo4j.org/components/graph-algo/trunk/</developerConnection>
-    <url>https://trac.neo4j.org/browser/components/graph-algo</url>
-  </scm>
 
   <developers>
     <developer>
