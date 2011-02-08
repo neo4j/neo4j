@@ -22,10 +22,9 @@ package org.neo4j.shell.apps.ha;
 import java.util.Collection;
 import java.util.Map;
 
+import org.neo4j.com.SlaveContext;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.MasterServer;
-import org.neo4j.kernel.ha.SlaveContext;
-import org.neo4j.management.HighAvailability;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
