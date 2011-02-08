@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha;
+package org.neo4j.com;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,10 +41,12 @@ public class DechunkingChannelBuffer implements ChannelBuffer
     private ChannelBuffer buffer;
     private boolean more;
     private boolean hasMarkedReaderIndex;
+    private final int timeoutSeconds;
 
-    DechunkingChannelBuffer( BlockingReadHandler<ChannelBuffer> reader )
+    DechunkingChannelBuffer( BlockingReadHandler<ChannelBuffer> reader, int timeoutSeconds )
     {
         this.reader = reader;
+        this.timeoutSeconds = timeoutSeconds;
         readNextChunk();
     }
     
@@ -52,15 +54,15 @@ public class DechunkingChannelBuffer implements ChannelBuffer
     {
         try
         {
-            return reader.read( MasterClient.READ_RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS );
+            return reader.read( timeoutSeconds, TimeUnit.SECONDS );
         }
         catch ( IOException e )
         {
-            throw new HaCommunicationException( e );
+            throw new ComException( e );
         }
         catch ( InterruptedException e )
         {
-            throw new HaCommunicationException( e );
+            throw new ComException( e );
         }
     }
 

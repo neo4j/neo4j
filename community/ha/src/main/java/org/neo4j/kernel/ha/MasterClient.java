@@ -19,32 +19,38 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
+import static org.neo4j.com.Protocol.INTEGER_DESERIALIZER;
+import static org.neo4j.com.Protocol.INTEGER_SERIALIZER;
+import static org.neo4j.com.Protocol.LONG_SERIALIZER;
+import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
+import static org.neo4j.com.Protocol.VOID_SERIALIZER;
+import static org.neo4j.com.Protocol.readString;
+import static org.neo4j.com.Protocol.writeString;
 
-import org.jboss.netty.bootstrap.ClientBootstrap;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
+
 import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelEvent;
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelPipeline;
-import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.Channels;
-import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
-import org.jboss.netty.handler.queue.BlockingReadHandler;
+import org.neo4j.com.BlockLogBuffer;
+import org.neo4j.com.BlockLogReader;
+import org.neo4j.com.Client;
+import org.neo4j.com.Deserializer;
+import org.neo4j.com.MasterCaller;
+import org.neo4j.com.ObjectSerializer;
+import org.neo4j.com.Protocol;
+import org.neo4j.com.RequestType;
+import org.neo4j.com.Response;
+import org.neo4j.com.Serializer;
+import org.neo4j.com.SlaveContext;
+import org.neo4j.com.StoreWriter;
+import org.neo4j.com.ToNetworkStoreWriter;
+import org.neo4j.com.TxExtractor;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.zookeeper.Machine;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.impl.nioneo.store.IdRange;
 
 /**
  * The {@link Master} a slave should use to communicate with its master. It
@@ -52,157 +58,42 @@ import org.neo4j.kernel.impl.util.StringLogger;
  * {@link MasterServer} (which delegates to {@link MasterImpl}
  * on the master side.
  */
-public class MasterClient extends CommunicationProtocol implements Master, ChannelPipelineFactory
+public class MasterClient extends Client<Master> implements Master
 {
-    public static final int MAX_NUMBER_OF_CONCURRENT_REQUESTS_PER_CLIENT = 20;
-    public static final int READ_RESPONSE_TIMEOUT_SECONDS = 20;
-    private static final int MAX_NUMBER_OF_UNUSED_CHANNELS = 5;
-
-    private final ClientBootstrap bootstrap;
-    private final SocketAddress address;
-    private final StringLogger msgLog;
-    private final ExecutorService executor;
-    private final ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>> channelPool =
-        new ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>>(
-            MAX_NUMBER_OF_CONCURRENT_REQUESTS_PER_CLIENT, MAX_NUMBER_OF_UNUSED_CHANNELS )
+    static final ObjectSerializer<LockResult> LOCK_SERIALIZER = new ObjectSerializer<LockResult>()
     {
-        @Override
-        protected Triplet<Channel, ChannelBuffer, ByteBuffer> create()
+        public void write( LockResult responseObject, ChannelBuffer result ) throws IOException
         {
-            ChannelFuture channelFuture = bootstrap.connect( address );
-            channelFuture.awaitUninterruptibly( 5, TimeUnit.SECONDS );
-            Triplet<Channel, ChannelBuffer, ByteBuffer> channel = null;
-            if ( channelFuture.isSuccess() )
+            result.writeByte( responseObject.getStatus().ordinal() );
+            if ( responseObject.getStatus().hasMessage() )
             {
-                channel = Triplet.of( channelFuture.getChannel(),
-                                      ChannelBuffers.dynamicBuffer(),
-                                      ByteBuffer.allocateDirect( 1024 * 1024 ) );
-                msgLog.logMessage( "Opened a new channel to " + address, true );
-                return channel;
+                writeString( result, responseObject.getDeadlockMessage() );
             }
-
-            // TODO Here it would be neat if we could ask the db to find us a new master
-            // and if this still will be a slave then retry to connect.
-
-            String msg = "MasterClient could not connect to " + address;
-            msgLog.logMessage( msg, true );
-            throw new HaCommunicationException( msg );
         }
-
-        @Override
-        protected boolean isAlive( Triplet<Channel, ChannelBuffer, ByteBuffer> resource )
+    };
+    protected static final Deserializer<LockResult> LOCK_RESULT_DESERIALIZER = new Deserializer<LockResult>()
+    {
+        public LockResult read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
         {
-            return resource.first().isConnected();
-        }
-
-        @Override
-        protected void dispose( Triplet<Channel, ChannelBuffer, ByteBuffer> resource )
-        {
-            Channel channel = resource.first();
-            if ( channel.isConnected() ) channel.close();
+            LockStatus status = LockStatus.values()[buffer.readByte()];
+            return status.hasMessage() ? new LockResult( readString( buffer ) ) : new LockResult(
+                    status );
         }
     };
 
     public MasterClient( String hostNameOrIp, int port, String storeDir )
     {
-        this.address = new InetSocketAddress( hostNameOrIp, port );
-        executor = Executors.newCachedThreadPool();
-        bootstrap = new ClientBootstrap( new NioClientSocketChannelFactory(
-                executor, executor ) );
-        bootstrap.setPipelineFactory( this );
-        msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
-        msgLog.logMessage( "Client connected to " + hostNameOrIp + ":" + port, true );
+        super( hostNameOrIp, port, storeDir );
     }
 
     public MasterClient( Machine machine, String storeDir )
     {
         this( machine.getServer().first(), machine.getServer().other(), storeDir );
     }
-
-    private <T> Response<T> sendRequest( RequestType type,
-            SlaveContext slaveContext, Serializer serializer, Deserializer<T> deserializer )
-    {
-        // TODO Refactor, break into smaller methods
-        Triplet<Channel, ChannelBuffer, ByteBuffer> channelContext = null;
-        try
-        {
-            // Send 'em over the wire
-            channelContext = getChannel();
-            Channel channel = channelContext.first();
-            ChannelBuffer buffer = channelContext.second();
-            buffer.clear();
-            buffer = new ChunkingChannelBuffer( buffer, channel, MAX_FRAME_LENGTH );
-            buffer.writeByte( type.ordinal() );
-            if ( type.includesSlaveContext() )
-            {
-                writeSlaveContext( buffer, slaveContext );
-            }
-            serializer.write( buffer, channelContext.third() );
-            if ( buffer.writerIndex() > 0 )
-            {
-                channel.write( buffer );
-            }
-
-            // Read the response
-            @SuppressWarnings( "unchecked" )
-            BlockingReadHandler<ChannelBuffer> reader = (BlockingReadHandler<ChannelBuffer>)
-                    channel.getPipeline().get( "blockingHandler" );
-            final Triplet<Channel, ChannelBuffer, ByteBuffer> finalChannelContext = channelContext;
-            DechunkingChannelBuffer dechunkingBuffer = new DechunkingChannelBuffer( reader )
-            {
-                @Override
-                protected ChannelBuffer readNext()
-                {
-                    ChannelBuffer result = super.readNext();
-                    if ( result == null )
-                    {
-                        channelPool.dispose( finalChannelContext );
-                        throw new HaCommunicationException( "Channel has been closed" );
-                    }
-                    return result;
-                }
-            };
-            T response = deserializer.read( dechunkingBuffer );
-            TransactionStream txStreams = type.includesSlaveContext() ?
-                    readTransactionStreams( dechunkingBuffer ) : TransactionStream.EMPTY;
-            return new Response<T>( response, txStreams );
-        }
-        catch ( ClosedChannelException e )
-        {
-            channelPool.dispose( channelContext );
-            throw new HaCommunicationException( e );
-        }
-        catch ( IOException e )
-        {
-            throw new HaCommunicationException( e );
-        }
-        catch ( InterruptedException e )
-        {
-            throw new HaCommunicationException( e );
-        }
-        catch ( Exception e )
-        {
-            throw new HaCommunicationException( e );
-        }
-        finally
-        {
-            releaseChannel();
-        }
-    }
-
-    private Triplet<Channel, ChannelBuffer, ByteBuffer> getChannel() throws Exception
-    {
-        return channelPool.acquire();
-    }
-
-    private void releaseChannel()
-    {
-        channelPool.release();
-    }
-
+    
     public IdAllocation allocateIds( final IdType idType )
     {
-        return sendRequest( RequestType.ALLOCATE_IDS, null, new Serializer()
+        return sendRequest( HaRequestType.ALLOCATE_IDS, SlaveContext.EMPTY, new Serializer()
         {
             public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
             {
@@ -210,7 +101,7 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
             }
         }, new Deserializer<IdAllocation>()
         {
-            public IdAllocation read( ChannelBuffer buffer ) throws IOException
+            public IdAllocation read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
             {
                 return readIdAllocation( buffer );
             }
@@ -219,7 +110,7 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
 
     public Response<Integer> createRelationshipType( SlaveContext context, final String name )
     {
-        return sendRequest( RequestType.CREATE_RELATIONSHIP_TYPE, context, new Serializer()
+        return sendRequest( HaRequestType.CREATE_RELATIONSHIP_TYPE, context, new Serializer()
         {
             public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
             {
@@ -228,7 +119,7 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
         }, new Deserializer<Integer>()
         {
             @SuppressWarnings( "boxing" )
-            public Integer read( ChannelBuffer buffer ) throws IOException
+            public Integer read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
             {
                 return buffer.readInt();
             }
@@ -237,34 +128,34 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
 
     public Response<LockResult> acquireNodeWriteLock( SlaveContext context, long... nodes )
     {
-        return sendRequest( RequestType.ACQUIRE_NODE_WRITE_LOCK, context,
+        return sendRequest( HaRequestType.ACQUIRE_NODE_WRITE_LOCK, context,
                 new AcquireLockSerializer( nodes ), LOCK_RESULT_DESERIALIZER );
     }
 
     public Response<LockResult> acquireNodeReadLock( SlaveContext context, long... nodes )
     {
-        return sendRequest( RequestType.ACQUIRE_NODE_READ_LOCK, context,
+        return sendRequest( HaRequestType.ACQUIRE_NODE_READ_LOCK, context,
                 new AcquireLockSerializer( nodes ), LOCK_RESULT_DESERIALIZER );
     }
 
     public Response<LockResult> acquireRelationshipWriteLock( SlaveContext context,
             long... relationships )
     {
-        return sendRequest( RequestType.ACQUIRE_RELATIONSHIP_WRITE_LOCK, context,
+        return sendRequest( HaRequestType.ACQUIRE_RELATIONSHIP_WRITE_LOCK, context,
                 new AcquireLockSerializer( relationships ), LOCK_RESULT_DESERIALIZER );
     }
 
     public Response<LockResult> acquireRelationshipReadLock( SlaveContext context,
             long... relationships )
     {
-        return sendRequest( RequestType.ACQUIRE_RELATIONSHIP_READ_LOCK, context,
+        return sendRequest( HaRequestType.ACQUIRE_RELATIONSHIP_READ_LOCK, context,
                 new AcquireLockSerializer( relationships ), LOCK_RESULT_DESERIALIZER );
     }
 
     public Response<Long> commitSingleResourceTransaction( SlaveContext context,
             final String resource, final TxExtractor txGetter )
     {
-        return sendRequest( RequestType.COMMIT, context, new Serializer()
+        return sendRequest( HaRequestType.COMMIT, context, new Serializer()
         {
             public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
             {
@@ -276,7 +167,7 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
         }, new Deserializer<Long>()
         {
             @SuppressWarnings( "boxing" )
-            public Long read( ChannelBuffer buffer ) throws IOException
+            public Long read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
             {
                 return buffer.readLong();
             }
@@ -285,7 +176,7 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
 
     public Response<Void> finishTransaction( SlaveContext context )
     {
-        return sendRequest( RequestType.FINISH, context, new Serializer()
+        return sendRequest( HaRequestType.FINISH, context, new Serializer()
         {
             public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
             {
@@ -300,12 +191,12 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
 
     public Response<Void> pullUpdates( SlaveContext context )
     {
-        return sendRequest( RequestType.PULL_UPDATES, context, EMPTY_SERIALIZER, VOID_DESERIALIZER );
+        return sendRequest( HaRequestType.PULL_UPDATES, context, EMPTY_SERIALIZER, VOID_DESERIALIZER );
     }
 
     public int getMasterIdForCommittedTx( final long txId )
     {
-        return sendRequest( RequestType.GET_MASTER_ID_FOR_TX, null, new Serializer()
+        return sendRequest( HaRequestType.GET_MASTER_ID_FOR_TX, SlaveContext.EMPTY, new Serializer()
         {
             public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
             {
@@ -319,38 +210,213 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
     {
         context = new SlaveContext( context.machineId(), context.getEventIdentifier(), new Pair[0] );
 
-        return sendRequest( RequestType.COPY_STORE, context, EMPTY_SERIALIZER, new Deserializer<Void>()
+        return sendRequest( HaRequestType.COPY_STORE, context, EMPTY_SERIALIZER, new Protocol.FileStreamsDeserializer( writer ) );
+    }
+
+    public static enum HaRequestType implements RequestType<Master>
+    {
+        ALLOCATE_IDS( new MasterCaller<Master, IdAllocation>()
         {
-            // NOTICE: this assumes a "smart" ChannelBuffer that continues to next chunk
-            public Void read( ChannelBuffer buffer ) throws IOException
+            public Response<IdAllocation> callMaster( Master master, SlaveContext context,
+                    ChannelBuffer input, ChannelBuffer target )
             {
-                int pathLength;
-                while ( 0 != ( pathLength = buffer.readUnsignedShort() ) )
-                {
-                    String path = readString( buffer, pathLength );
-                    boolean hasData = buffer.readByte() == 1;
-                    writer.write( path, hasData ? new BlockLogReader( buffer ) : null, hasData );
-                }
-                writer.done();
-                return null;
+                IdType idType = IdType.values()[input.readByte()];
+                return Response.wrapResponseObjectOnly( master.allocateIds( idType ) );
             }
-        } );
+        }, new ObjectSerializer<IdAllocation>()
+        {
+            public void write( IdAllocation idAllocation, ChannelBuffer result ) throws IOException
+            {
+                IdRange idRange = idAllocation.getIdRange();
+                result.writeInt( idRange.getDefragIds().length );
+                for ( long id : idRange.getDefragIds() )
+                {
+                    result.writeLong( id );
+                }
+                result.writeLong( idRange.getRangeStart() );
+                result.writeInt( idRange.getRangeLength() );
+                result.writeLong( idAllocation.getHighestIdInUse() );
+                result.writeLong( idAllocation.getDefragCount() );
+            }
+        }, false ),
+        CREATE_RELATIONSHIP_TYPE( new MasterCaller<Master, Integer>()
+        {
+            public Response<Integer> callMaster( Master master, SlaveContext context,
+                    ChannelBuffer input, ChannelBuffer target )
+            {
+                return master.createRelationshipType( context, readString( input ) );
+            }
+        }, INTEGER_SERIALIZER ),
+        ACQUIRE_NODE_WRITE_LOCK( new AquireLockCall()
+        {
+            @Override
+            Response<LockResult> lock( Master master, SlaveContext context, long... ids )
+            {
+                return master.acquireNodeWriteLock( context, ids );
+            }
+        }, LOCK_SERIALIZER ),
+        ACQUIRE_NODE_READ_LOCK( new AquireLockCall()
+        {
+            @Override
+            Response<LockResult> lock( Master master, SlaveContext context, long... ids )
+            {
+                return master.acquireNodeReadLock( context, ids );
+            }
+        }, LOCK_SERIALIZER ),
+        ACQUIRE_RELATIONSHIP_WRITE_LOCK( new AquireLockCall()
+        {
+            @Override
+            Response<LockResult> lock( Master master, SlaveContext context, long... ids )
+            {
+                return master.acquireRelationshipWriteLock( context, ids );
+            }
+        }, LOCK_SERIALIZER ),
+        ACQUIRE_RELATIONSHIP_READ_LOCK( new AquireLockCall()
+        {
+            @Override
+            Response<LockResult> lock( Master master, SlaveContext context, long... ids )
+            {
+                return master.acquireRelationshipReadLock( context, ids );
+            }
+        }, LOCK_SERIALIZER ),
+        COMMIT( new MasterCaller<Master, Long>()
+        {
+            public Response<Long> callMaster( Master master, SlaveContext context,
+                    ChannelBuffer input, ChannelBuffer target )
+            {
+                String resource = readString( input );
+                final ReadableByteChannel reader = new BlockLogReader( input );
+                return master.commitSingleResourceTransaction( context, resource,
+                        TxExtractor.create( reader ) );
+            }
+        }, LONG_SERIALIZER ),
+        PULL_UPDATES( new MasterCaller<Master, Void>()
+        {
+            public Response<Void> callMaster( Master master, SlaveContext context,
+                    ChannelBuffer input, ChannelBuffer target )
+            {
+                return master.pullUpdates( context );
+            }
+        }, VOID_SERIALIZER ),
+        FINISH( new MasterCaller<Master, Void>()
+        {
+            public Response<Void> callMaster( Master master, SlaveContext context,
+                    ChannelBuffer input, ChannelBuffer target )
+            {
+                return master.finishTransaction( context );
+            }
+        }, VOID_SERIALIZER ),
+        GET_MASTER_ID_FOR_TX( new MasterCaller<Master, Integer>()
+        {
+            public Response<Integer> callMaster( Master master, SlaveContext context,
+                    ChannelBuffer input, ChannelBuffer target )
+            {
+                int masterId = master.getMasterIdForCommittedTx( input.readLong() );
+                return Response.wrapResponseObjectOnly( masterId );
+            }
+        }, INTEGER_SERIALIZER, false ),
+        COPY_STORE( new MasterCaller<Master, Void>()
+        {
+            public Response<Void> callMaster( Master master, SlaveContext context,
+                    ChannelBuffer input, final ChannelBuffer target )
+            {
+                return master.copyStore( context, new ToNetworkStoreWriter( target ) );
+            }
+            
+            byte id()
+            {
+                return (byte) 255;
+            }
+        }, VOID_SERIALIZER );
+
+        @SuppressWarnings( "rawtypes" )
+        final MasterCaller caller;
+        @SuppressWarnings( "rawtypes" )
+        final ObjectSerializer serializer;
+        private final boolean includesSlaveContext;
+
+        private <T> HaRequestType( MasterCaller caller, ObjectSerializer<T> serializer,
+                boolean includesSlaveContext )
+        {
+            this.caller = caller;
+            this.serializer = serializer;
+            this.includesSlaveContext = includesSlaveContext;
+        }
+
+        private <T> HaRequestType( MasterCaller caller, ObjectSerializer<T> serializer )
+        {
+            this( caller, serializer, true );
+        }
+        
+        public ObjectSerializer getObjectSerializer()
+        {
+            return serializer;
+        }
+        
+        public MasterCaller getMasterCaller()
+        {
+            return caller;
+        }
+        
+        public byte id()
+        {
+            return (byte) ordinal();
+        }
+
+        public boolean includesSlaveContext()
+        {
+            return this.includesSlaveContext;
+        }
     }
 
-    public ChannelPipeline getPipeline() throws Exception
+    protected static IdAllocation readIdAllocation( ChannelBuffer buffer )
     {
-        ChannelPipeline pipeline = Channels.pipeline();
-        addLengthFieldPipes( pipeline );
-        BlockingReadHandler<ChannelBuffer> reader = new BlockingReadHandler<ChannelBuffer>(
-                new ArrayBlockingQueue<ChannelEvent>( 3, false ) );
-        pipeline.addLast( "blockingHandler", reader );
-        return pipeline;
+        int numberOfDefragIds = buffer.readInt();
+        long[] defragIds = new long[numberOfDefragIds];
+        for ( int i = 0; i < numberOfDefragIds; i++ )
+        {
+            defragIds[i] = buffer.readLong();
+        }
+        long rangeStart = buffer.readLong();
+        int rangeLength = buffer.readInt();
+        long highId = buffer.readLong();
+        long defragCount = buffer.readLong();
+        return new IdAllocation( new IdRange( defragIds, rangeStart, rangeLength ),
+                highId, defragCount );
     }
 
-    public void shutdown()
+    protected static class AcquireLockSerializer implements Serializer
     {
-        msgLog.logMessage( "MasterClient shutdown", true );
-        channelPool.close( true );
-        executor.shutdownNow();
+        private final long[] entities;
+
+        AcquireLockSerializer( long... entities )
+        {
+            this.entities = entities;
+        }
+
+        public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
+        {
+            buffer.writeInt( entities.length );
+            for ( long entity : entities )
+            {
+                buffer.writeLong( entity );
+            }
+        }
+    }
+
+    static abstract class AquireLockCall implements MasterCaller<Master, LockResult>
+    {
+        public Response<LockResult> callMaster( Master master, SlaveContext context,
+                ChannelBuffer input, ChannelBuffer target )
+        {
+            long[] ids = new long[input.readInt()];
+            for ( int i = 0; i < ids.length; i++ )
+            {
+                ids[i] = input.readLong();
+            }
+            return lock( master, context, ids );
+        }
+
+        abstract Response<LockResult> lock( Master master, SlaveContext context, long... ids );
     }
 }

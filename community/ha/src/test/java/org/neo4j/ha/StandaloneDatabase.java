@@ -29,10 +29,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Ignore;
+import org.neo4j.com.Protocol;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.AbstractBroker;
 import org.neo4j.kernel.ha.Broker;
-import org.neo4j.kernel.ha.CommunicationProtocol;
 import org.neo4j.kernel.ha.FakeMasterBroker;
 import org.neo4j.kernel.ha.FakeSlaveBroker;
 import org.neo4j.kernel.ha.MasterClient;
@@ -91,7 +91,7 @@ public class StandaloneDatabase
                 else
                 {
                     broker = new FakeSlaveBroker( new MasterClient( "localhost",
-                            CommunicationProtocol.PORT, storeDir ), masterId, machineId, storeDir );
+                            Protocol.PORT, storeDir ), masterId, machineId, storeDir );
                 }
                 HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase( storeDir,
                         config, AbstractBroker.wrapSingleBroker( broker ) );
