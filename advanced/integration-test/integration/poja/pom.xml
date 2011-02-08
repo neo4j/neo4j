@@ -5,7 +5,7 @@
     <relativePath>../../build/</relativePath>
     <groupId>org.neo4j.release.build</groupId>
     <artifactId>build-settings</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.3-SNAPSHOT</version>
   </parent>
 
   <properties>
@@ -17,7 +17,7 @@
 
   <groupId>org.neo4j.release.integration</groupId>
   <artifactId>poja</artifactId>
-  <version>0.1-SNAPSHOT</version>
+  <version>1.3-SNAPSHOT</version>
 
   <name>Neo4j Poja</name>
   <description>A Plain Old Java Application</description>

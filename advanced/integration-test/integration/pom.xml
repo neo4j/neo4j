@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.neo4j.release</groupId>
     <artifactId>release-project</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.3-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
