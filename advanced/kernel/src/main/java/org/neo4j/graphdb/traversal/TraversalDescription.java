@@ -34,14 +34,14 @@ import org.neo4j.kernel.Uniqueness;
  * method which adds or modifies the behavior returns a new instances that
  * includes the new modification, leaving the instance which returns the new
  * instance intact. For instance,
- * 
+ *
  * <pre>
  * TraversalDescription td = new TraversalDescriptionImpl();
  * td.depthFirst();
  * </pre>
- * 
+ *
  * is not going to modify td. you will need to reassign td, like
- * 
+ *
  * <pre>
  * td = td.depthFirst();
  * </pre>
@@ -113,14 +113,14 @@ public interface TraversalDescription
     /**
      * NOTE: Replaces {@link #filter(Predicate)} and
      * {@link #prune(PruneEvaluator)}.
-     * 
+     *
      * Adds {@code evaluator} to the list of evaluators which will control the
      * behaviour of the traversal. Each {@link Evaluator} can decide whether or
      * not to include a position in the traverser result, i.e. return it from
      * the {@link Traverser} iterator and also whether to continue down that
      * path or to prune, so that the traverser won't continue further down that
      * path.
-     * 
+     *
      * Multiple {@link Evaluator}s can be added. For a path to be included in
      * the result, all evaluators must agree to include it, i.e. returning
      * either {@link Evaluation#INCLUDE_AND_CONTINUE} or
@@ -128,7 +128,7 @@ public interface TraversalDescription
      * down that path all evaluators must agree to continue from that path, i.e.
      * returning either {@link Evaluation#INCLUDE_AND_CONTINUE} or
      * {@link Evaluation#EXCLUDE_AND_CONTINUE}.
-     * 
+     *
      * @param evaluator
      * @return a new traversal description with the new modifications.
      */
@@ -201,9 +201,10 @@ public interface TraversalDescription
     TraversalDescription expand( RelationshipExpander expander );
 
     /**
-     * Starts traversing from {@code startNode} based on all the rules and
-     * behavior in this description. A {@link Traverser} is returned which is
-     * used to step through the graph and getting results back.
+     * Traverse from {@code startNode} based on all the rules and behavior
+     * in this description. A {@link Traverser} is returned which is
+     * used to step through the graph and getting results back. The traversal
+     * is not guaranteed to start before the Traverser is used.
      *
      * @param startNode the {@link Node} to start the traversal from.
      * @return a {@link Traverser} used to step through the graph and to get
