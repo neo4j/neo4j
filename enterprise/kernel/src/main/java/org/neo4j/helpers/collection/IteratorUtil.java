@@ -19,8 +19,10 @@
  */
 package org.neo4j.helpers.collection;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -131,6 +133,46 @@ public abstract class IteratorUtil
     {
         return assertNotNull( iterator, singleOrNull( iterator ) );
     }
+    
+    /**
+     * Returns the iterator's n:th item from the end of the iteration.
+     * If the iterator has got less than n-1 items in it
+     * {@link NoSuchElementException} is thrown.
+     * 
+     * @param <T> the type of elements in {@code iterator}.
+     * @param iterator the {@link Iterator} to get elements from.
+     * @param n the n:th item from the end to get.
+     * @return the iterator's n:th item from the end of the iteration.
+     * @throws NoSuchElementException if the iterator contains less than n-1 items.
+     */
+    public static <T> T fromEnd( Iterator<T> iterator, int n )
+    {
+        return assertNotNull( iterator, fromEndOrNull( iterator, n ) );
+    }
+
+    /**
+     * Returns the iterator's n:th item from the end of the iteration.
+     * If the iterator has got less than n-1 items in it {@code null} is returned.
+     * 
+     * @param <T> the type of elements in {@code iterator}.
+     * @param iterator the {@link Iterator} to get elements from.
+     * @param n the n:th item from the end to get.
+     * @return the iterator's n:th item from the end of the iteration,
+     * or {@code null} if the iterator doesn't contain that many items.
+     */
+    public static <T> T fromEndOrNull( Iterator<T> iterator, int n )
+    {
+        Deque<T> trail = new ArrayDeque<T>( n );
+        while ( iterator.hasNext() )
+        {
+            if ( trail.size() > n )
+            {
+                trail.removeLast();
+            }
+            trail.addFirst( iterator.next() );
+        }
+        return trail.size() == n + 1 ? trail.getLast() : null;
+    }
 
     private static <T> T assertNotNull( Iterator<T> iterator, T result )
     {
@@ -228,6 +270,37 @@ public abstract class IteratorUtil
     public static <T> T single( Iterable<T> iterable )
     {
         return single( iterable.iterator() );
+    }
+    
+    /**
+     * Returns the iterator's n:th item from the end of the iteration.
+     * If the iterator has got less than n-1 items in it {@code null} is returned.
+     * 
+     * @param <T> the type of elements in {@code iterator}.
+     * @param iterable the {@link Iterable} to get elements from.
+     * @param n the n:th item from the end to get.
+     * @return the iterator's n:th item from the end of the iteration,
+     * or {@code null} if the iterator doesn't contain that many items.
+     */
+    public static <T> T fromEndOrNull( Iterable<T> iterable, int countFromEnd )
+    {
+        return fromEndOrNull( iterable.iterator(), countFromEnd );
+    }
+    
+    /**
+     * Returns the iterator's n:th item from the end of the iteration.
+     * If the iterator has got less than n-1 items in it
+     * {@link NoSuchElementException} is thrown.
+     * 
+     * @param <T> the type of elements in {@code iterator}.
+     * @param iterable the {@link Iterable} to get elements from.
+     * @param n the n:th item from the end to get.
+     * @return the iterator's n:th item from the end of the iteration.
+     * @throws NoSuchElementException if the iterator contains less than n-1 items.
+     */
+    public static <T> T fromEnd( Iterable<T> iterable, int n )
+    {
+        return fromEnd( iterable.iterator(), n );
     }
     
     /**

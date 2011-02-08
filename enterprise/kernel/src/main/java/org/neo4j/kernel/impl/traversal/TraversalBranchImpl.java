@@ -55,6 +55,12 @@ class TraversalBranchImpl implements TraversalBranch//, Path
         this.depth = depth;
     }
 
+    @Override
+    public String toString()
+    {
+        return "TraversalBranch[source=" + source + ",howIGotHere=" + howIGotHere + ",depth=" + depth + "]";
+    }
+
     /*
      * For the start node expansion source
      */
@@ -81,7 +87,7 @@ class TraversalBranchImpl implements TraversalBranch//, Path
     {
         return relationships != null;
     }
-    
+
     public void initialize()
     {
         evaluation = traverser.description.evaluator.evaluate( position() );
@@ -148,7 +154,7 @@ class TraversalBranchImpl implements TraversalBranch//, Path
     {
         return expandedCount;
     }
-    
+
     public Evaluation evaluation()
     {
         return evaluation;
