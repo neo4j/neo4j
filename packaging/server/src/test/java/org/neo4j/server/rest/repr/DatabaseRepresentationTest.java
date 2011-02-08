@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -17,3 +17,29 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+package org.neo4j.server.rest.repr;
+
+import java.util.Map;
+
+import org.junit.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+
+
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
+
+public class DatabaseRepresentationTest {
+    @Test
+    public void shouldProvideUriForTheAvailableRelationshipTypes() {
+        Node mockNode = mock(Node.class);
+        GraphDatabaseService mockDb = mock(GraphDatabaseService.class);
+        when(mockDb.getReferenceNode()).thenReturn(mockNode);
+        DatabaseRepresentation representation = new DatabaseRepresentation(mockDb);
+        
+        Map<String, Object> map = RepresentationTestBase.serialize(representation);
+        
+        assertTrue(map.containsKey("relationship_types"));
+
+    }
+}

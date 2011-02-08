@@ -43,7 +43,7 @@ wa.ui.MainMenu = ( function( $ )
         
         $( window ).bind( "hashchange", me.hashchange );
     };
-
+    
     /**
      * Re-render the main menu
      */
@@ -51,7 +51,7 @@ wa.ui.MainMenu = ( function( $ )
     {
         
         if( me.container !== null ) {
-            
+        	
             var currentServices = [];
             if( wa.Servers.getCurrentServer() ) {
                 if(!wa.Servers.getCurrentServer().manage.servicesLoaded()) {
@@ -62,6 +62,7 @@ wa.ui.MainMenu = ( function( $ )
             }
                 
             var item, items = [];
+            
             for( var key in me.menuItems ) {
                 item = me.menuItems[key];
                 
@@ -83,22 +84,14 @@ wa.ui.MainMenu = ( function( $ )
      * shown.
      */
     me.itemRequirementsFulfilled = function(item, currentServices) {
-        // Ensure perspective is correct for this item
-        if( $.inArray("all", item.perspectives) !== -1 || $.inArray(me.perspective, item.perspectives) !== -1 ) {
-            
-            // Ensure required services are available
-            if(item.requiredServices.length > 0) {
-                for(var index in item.requiredServices) {
-                    if( $.inArray( item.requiredServices[index], currentServices ) === -1 ) {
-                        return false;
-                    }
+        if(item.requiredServices.length > 0) {
+            for(var index in item.requiredServices) {
+                if( $.inArray( item.requiredServices[index], currentServices ) === -1 ) {
+                    return false;
                 }
             }
-            
-            return true;
         }
-        
-        return false;
+        return true;
     };
 
     /**
@@ -145,9 +138,7 @@ wa.ui.MainMenu = ( function( $ )
     };
     
     me.hashchange = function(ev) {
-      
         me.render();
-        
     };
     
     /**
@@ -163,10 +154,8 @@ wa.ui.MainMenu = ( function( $ )
         
     };
     
-    wa.bind("servers.current.changed", function(ev) {
-        if(ev.data.current) {
-            wa.ui.MainMenu.setPerspective("server");
-        }
+    wa.bind("init", function(ev) {
+        me.render();
     });
     
     //
