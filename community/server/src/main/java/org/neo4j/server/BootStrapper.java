@@ -27,6 +27,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.startup.healthcheck.ConfigFileMustBePresentRule;
+import org.neo4j.server.startup.healthcheck.Neo4jPropertiesMustExistRule;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.web.Jetty6WebServer;
 
@@ -53,7 +54,7 @@ public class BootStrapper
 
     public Integer start(String[] args) {
         try {
-            StartupHealthCheck startupHealthCheck = new StartupHealthCheck(new ConfigFileMustBePresentRule());
+            StartupHealthCheck startupHealthCheck = new StartupHealthCheck(new ConfigFileMustBePresentRule(), new Neo4jPropertiesMustExistRule());
             Jetty6WebServer webServer = new Jetty6WebServer();
             server = new NeoServer(new AddressResolver(), startupHealthCheck,
                     getConfigFile(),
