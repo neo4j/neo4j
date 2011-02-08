@@ -19,11 +19,6 @@
  */
 package org.neo4j.server.rest.repr;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-
-import javax.ws.rs.core.MediaType;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
@@ -31,6 +26,10 @@ import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.plugins.ParameterList;
 import org.neo4j.server.rest.web.NodeNotFoundException;
 import org.neo4j.server.rest.web.RelationshipNotFoundException;
+
+import javax.ws.rs.core.MediaType;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 /**
  * Implementations of this class must be stateless. Implementations of this

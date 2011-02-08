@@ -19,24 +19,26 @@
  */
 package org.neo4j.server.plugins;
 
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.helpers.collection.NestingIterable;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.helpers.collection.NestingIterable;
-
 public final class ServerExtender
 {
     @SuppressWarnings( "unchecked" )
     private final Map<Class<?>, Map<String, PluginPoint>> targetToPluginMap = new HashMap();
+    private PluginPointFactory pluginPointFactory;
 
-    ServerExtender()
+    ServerExtender( PluginPointFactory pluginPointFactory )
     {
+        this.pluginPointFactory = pluginPointFactory;
         targetToPluginMap.put( Node.class, new ConcurrentHashMap<String, PluginPoint>() );
         targetToPluginMap.put( Relationship.class, new ConcurrentHashMap<String, PluginPoint>() );
         targetToPluginMap.put( GraphDatabaseService.class, new ConcurrentHashMap<String, PluginPoint>() );
@@ -110,5 +112,10 @@ public final class ServerExtender
                             + plugin.name() + "\"" );
         }
         extensions.put( plugin.name(), plugin );
+    }
+
+    public PluginPointFactory getPluginPointFactory()
+    {
+        return pluginPointFactory;
     }
 }
