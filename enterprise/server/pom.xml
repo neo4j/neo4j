@@ -362,7 +362,6 @@
                 <include>wa/PropertyStorage.js</include>
                 <include>wa/prop.js</include>
                 <include>wa/Servers.js</include>
-                <include>wa/ServerSelector.js</include>
                 <include>wa/FormValidator.js</include>
                 
                 <include>wa/connectionmonitor.js</include>
