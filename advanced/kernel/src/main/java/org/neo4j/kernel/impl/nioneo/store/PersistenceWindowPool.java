@@ -352,7 +352,7 @@ class PersistenceWindowPool
             double ratio = (availableMem + 0.0d) / fileSize;
             if ( ratio >= 1 )
             {
-                brickSize = (int) (availableMem / 1000 );
+                brickSize = (int) (availableMem / 1000);
                 if ( brickSize < 0 )
                 {
                     brickSize = Integer.MAX_VALUE;
@@ -409,6 +409,43 @@ class PersistenceWindowPool
         }
     }
 
+    private synchronized void freeWindows( int nr )
+    {
+        if ( brickSize <= 0 )
+        {
+            // memory mapped turned off
+            return;
+        }
+        ArrayList<BrickElement> mappedBricks = new ArrayList<BrickElement>();
+        for ( int i = 0; i < brickCount; i++ )
+        {
+            BrickElement be = brickArray[i];
+            if ( be.getWindow() != null )
+            {
+                mappedBricks.add( be );
+            }
+        }
+        Collections.sort( mappedBricks, new BrickSorter() );
+        for ( int i = 0; i < nr && i < mappedBricks.size(); i++ )
+        {
+            BrickElement mappedBrick = mappedBricks.get( i );
+            LockableWindow window = mappedBrick.getWindow();
+            if ( window.getWaitingThreadsCount() == 0 && !window.isMarked() )
+            {
+                if ( window instanceof MappedPersistenceWindow )
+                {
+                    ((MappedPersistenceWindow) window).unmap();
+                }
+                else if ( window instanceof PlainPersistenceWindow )
+                {
+                    ((PlainPersistenceWindow) window).writeOut();
+                }
+                mappedBrick.setWindow( null );
+                memUsed -= brickSize;
+            }
+        }
+    }
+    
     private synchronized void refreshBricks()
     {
         if ( brickMiss < REFRESH_BRICK_COUNT )
@@ -519,6 +556,10 @@ class PersistenceWindowPool
         {
             BrickElement tmpArray[] = new BrickElement[newBrickCount];
             System.arraycopy( brickArray, 0, tmpArray, 0, brickArray.length );
+            if ( memUsed + brickSize >= availableMem )
+            {
+                freeWindows( 1 );
+            }
             for ( int i = brickArray.length; i < tmpArray.length; i++ )
             {
                 BrickElement be = new BrickElement( i );
