@@ -17,31 +17,31 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha;
+package org.neo4j.com;
 
-public class MasterFailureException extends RuntimeException
+public class Response<T>
 {
-    public MasterFailureException()
+    private final T response;
+    private final TransactionStream transactions;
+
+    public Response( T response, TransactionStream transactions )
     {
-        super();
-        // TODO Auto-generated constructor stub
+        this.response = response;
+        this.transactions = transactions;
     }
 
-    public MasterFailureException( String message, Throwable cause )
+    public T response() throws MasterFailureException
     {
-        super( message, cause );
-        // TODO Auto-generated constructor stub
+        return response;
     }
 
-    public MasterFailureException( String message )
+    public TransactionStream transactions()
     {
-        super( message );
-        // TODO Auto-generated constructor stub
+        return transactions;
     }
 
-    public MasterFailureException( Throwable cause )
+    public static <R> Response<R> wrapResponseObjectOnly( R response )
     {
-        super( cause );
-        // TODO Auto-generated constructor stub
+        return new Response<R>( response, TransactionStream.EMPTY );
     }
 }

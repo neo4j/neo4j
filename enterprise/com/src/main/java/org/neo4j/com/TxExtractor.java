@@ -17,31 +17,33 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha;
+package org.neo4j.com;
 
-public class Response<T>
+import java.nio.channels.ReadableByteChannel;
+
+import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
+
+public abstract class TxExtractor
 {
-    private final T response;
-    private final TransactionStream transactions;
+    public abstract void extract( LogBuffer buffer );
 
-    public Response( T response, TransactionStream transactions )
-    {
-        this.response = response;
-        this.transactions = transactions;
-    }
+    public abstract ReadableByteChannel extract();
 
-    public T response() throws MasterFailureException
+    public static TxExtractor create( final ReadableByteChannel data )
     {
-        return response;
-    }
+        return new TxExtractor()
+        {
+            @Override
+            public ReadableByteChannel extract()
+            {
+                return data;
+            }
 
-    public TransactionStream transactions()
-    {
-        return transactions;
-    }
-
-    public static <R> Response<R> wrapResponseObjectOnly( R response )
-    {
-        return new Response<R>( response, TransactionStream.EMPTY );
+            @Override
+            public void extract( LogBuffer buffer )
+            {
+                throw new UnsupportedOperationException( "Not meant to be extracted to LogBuffer" );
+            }
+        };
     }
 }

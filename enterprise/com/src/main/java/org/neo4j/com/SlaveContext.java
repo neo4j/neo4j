@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha;
+package org.neo4j.com;
 
 import java.util.Arrays;
 
@@ -77,4 +77,7 @@ public final class SlaveContext
     {
         return this.hashCode;
     }
+    
+    @SuppressWarnings( "unchecked" )
+    public static SlaveContext EMPTY = new SlaveContext( -1, -1, new Pair[0] );
 }
