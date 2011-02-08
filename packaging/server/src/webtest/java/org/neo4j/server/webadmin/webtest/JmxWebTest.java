@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.webadmin.webtest;
 
+import java.io.IOException;
+
 import org.junit.Test;
 import org.openqa.selenium.By;
 
@@ -30,7 +32,7 @@ import static org.hamcrest.Matchers.greaterThan;
 public class JmxWebTest extends WebDriverTest {
  
 	@Test
-	public void shouldHaveJmxWindow() {
+	public void shouldHaveJmxWindow() throws IOException {
 		jmxMenu.click();
 		assertThat(jmxList.getElement(), isVisible());
 	}
