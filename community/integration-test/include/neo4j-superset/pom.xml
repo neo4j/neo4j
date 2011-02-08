@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.neo4j.release</groupId>
     <artifactId>include</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.3-SNAPSHOT</version>
   </parent>
 
   <groupId>org.neo4j</groupId>
