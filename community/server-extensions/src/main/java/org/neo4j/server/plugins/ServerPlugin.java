@@ -19,6 +19,9 @@
  */
 package org.neo4j.server.plugins;
 
+import org.apache.commons.configuration.Configuration;
+import org.neo4j.helpers.Service;
+
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
 import java.net.URLEncoder;
@@ -26,12 +29,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.apache.commons.configuration.Configuration;
-import org.neo4j.helpers.Service;
-
 /**
  * API for creating extensions for the Neo4j server.
- *
+ * <p/>
  * Extensions are created by creating a subclass of this class. The subclass
  * should have a public no-argument constructor. Then place this class in a
  * jar-file that contains a file called
@@ -43,7 +43,7 @@ import org.neo4j.helpers.Service;
  * extension classes, each class name on its own line in the file. When the jar
  * file is placed on the class path of the server, it will be loaded
  * automatically when the server starts.
- *
+ * <p/>
  * The easiest way to implement Neo4j server extensions is by defining public
  * methods on the extension class annotated with
  * <code>@{@link PluginTarget}</code>. The parameter for the
@@ -76,15 +76,14 @@ import org.neo4j.helpers.Service;
  * <li>{@link java.util.List lists}, {@link java.util.Set sets} or arrays of any
  * of the above types.</li>
  * </ul>
- *
+ * <p/>
  * All exceptions thrown by an {@link PluginTarget} method are treated as
  * server errors, unless the method has declared the ability to throw such an
  * exception, in that case the exception is treated as a bad request and
  * propagated to the invoking client.
  *
- * @see java.util.ServiceLoader
- *
  * @author Tobias Ivarsson <tobias.ivarsson@neotechnology.com>
+ * @see java.util.ServiceLoader
  */
 public abstract class ServerPlugin
 {
@@ -121,8 +120,7 @@ public abstract class ServerPlugin
             {
                 throw new IllegalArgumentException( "Name contains illegal characters" );
             }
-        }
-        catch ( UnsupportedEncodingException e )
+        } catch ( UnsupportedEncodingException e )
         {
             throw new Error( "UTF-8 should be supported", e );
         }
@@ -146,13 +144,13 @@ public abstract class ServerPlugin
      * implementation loads {@link PluginPoint} based on methods with the
      * {@link PluginTarget} annotation.
      *
-     * @param extender the collection of {@link PluginPoint}s for this
-     *            {@link ServerPlugin}.
+     * @param extender     the collection of {@link PluginPoint}s for this
+     *                     {@link ServerPlugin}.
      * @param serverConfig the configuration parameters for the server.
      */
     protected void loadServerExtender( ServerExtender extender, Configuration serverConfig )
     {
-        for ( PluginPoint plugin : getDefaultExtensionPoints( serverConfig ) )
+        for ( PluginPoint plugin : getDefaultExtensionPoints( serverConfig, extender.getPluginPointFactory() ) )
         {
             extender.addExtension( plugin.forType(), plugin );
         }
@@ -163,12 +161,13 @@ public abstract class ServerPlugin
      * to provide your own, custom way of loading extension points. The default
      * implementation loads {@link PluginPoint} based on methods with the
      * {@link PluginTarget} annotation.
-     * 
+     *
      * @param serverConfig the configuration parameters for the server.
      * @return the collection of {@link PluginPoint}s for this
      *         {@link ServerPlugin}.
      */
-    protected Collection<PluginPoint> getDefaultExtensionPoints( Configuration serverConfig )
+    protected Collection<PluginPoint> getDefaultExtensionPoints( Configuration serverConfig,
+                                                                 PluginPointFactory pluginPointFactory )
     {
         List<PluginPoint> result = new ArrayList<PluginPoint>();
         for ( Method method : getClass().getMethods() )
@@ -176,7 +175,7 @@ public abstract class ServerPlugin
             PluginTarget target = method.getAnnotation( PluginTarget.class );
             if ( target != null )
             {
-                result.add( PluginMethod.createFrom( this, method, target.value() ) );
+                result.add( pluginPointFactory.createFrom( this, method, target.value() ) );
             }
         }
         return result;
