@@ -147,7 +147,6 @@ public abstract class KernelExtension extends Service
         {
             for ( KernelExtension extension : Service.load( KernelExtension.class ) )
             {
-                System.out.println( "extension:" + extension );
                 try
                 {
                     extension.init( this );
