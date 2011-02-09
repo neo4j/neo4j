@@ -21,7 +21,6 @@ package org.neo4j.server.plugins;
 
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.rest.repr.BadInputException;
-import org.neo4j.server.rest.repr.ExtensionPointRepresentation;
 import org.neo4j.server.rest.repr.Representation;
 
 public abstract class PluginPoint
@@ -52,17 +51,15 @@ public abstract class PluginPoint
         return extendsType;
     }
 
+    public String getDescription()
+    {
+        return description;
+    }
+
     public abstract Representation invoke( AbstractGraphDatabase graphDb, Object context,
             ParameterList params ) throws BadInputException, BadPluginInvocationException,
             PluginInvocationFailureException;
 
-    final ExtensionPointRepresentation descibe()
-    {
-        ExtensionPointRepresentation representation = new ExtensionPointRepresentation( name,
-                extendsType, description );
-        describeParameters( representation );
-        return representation;
-    }
 
     protected void describeParameters( ParameterDescriptionConsumer consumer )
     {
