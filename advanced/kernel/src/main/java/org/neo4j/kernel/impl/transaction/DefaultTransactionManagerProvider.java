@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import org.neo4j.helpers.Service;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 
+@Service.Implementation( TransactionManagerProvider.class )
 public final class DefaultTransactionManagerProvider extends TransactionManagerProvider
 {
     public DefaultTransactionManagerProvider()

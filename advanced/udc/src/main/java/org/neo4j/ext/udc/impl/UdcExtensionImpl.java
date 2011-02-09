@@ -19,15 +19,15 @@
  */
 package org.neo4j.ext.udc.impl;
 
+import java.util.Properties;
+import java.util.Timer;
+
 import org.neo4j.ext.udc.UdcProperties;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.KernelExtension;
 import org.neo4j.kernel.Version;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-
-import java.util.Properties;
-import java.util.Timer;
 
 /**
  * Kernel extension for UDC, the Usage Data Collector. The UDC runs as a background
@@ -106,7 +106,7 @@ public class UdcExtensionImpl extends KernelExtension implements UdcProperties
             NeoStoreXaDataSource ds = (NeoStoreXaDataSource)kernel.getConfig().getTxModule().getXaDataSourceManager().getXaDataSource( "nioneodb" );
             boolean crashPing = ds.getXaContainer().getLogicalLog().wasNonClean();
             String storeId = Long.toHexString( ds.getRandomIdentifier() );
-            UdcTimerTask task = new UdcTimerTask( hostAddress, Version.VERSION.getRevision(), storeId, source, crashPing );
+            UdcTimerTask task = new UdcTimerTask( hostAddress, Version.getKernelRevision(), storeId, source, crashPing );
             timer.scheduleAtFixedRate( task, firstDelay, interval );
         }
     }
