@@ -98,7 +98,7 @@ public class RrdFactory
     private static RrdDef createRrdDb( String inDirectory, int stepSize )
     {
         RrdDef rrdDef = new RrdDef( inDirectory, stepSize );
-        rrdDef.setVersion( 2 );
+        //rrdDef.setVersion( 2 );
         return rrdDef;
     }
 }
