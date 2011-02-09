@@ -105,7 +105,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         channelGroup = new DefaultChannelGroup();
         // Add the "server" channel
         channelGroup.add( channel );
-        msgLog.logMessage( "Master server bound to " + port, true );
+        msgLog.logMessage( getClass().getSimpleName() + " communication server started and bound to " + port, true );
 
         deadConnectionsPoller = new ScheduledThreadPoolExecutor( 1 );
         deadConnectionsPoller.scheduleWithFixedDelay( new Runnable()
