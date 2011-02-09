@@ -103,29 +103,6 @@
         </configuration>
       </plugin>
       <plugin>
-        <groupId>com.google.code.maven-svn-revision-number-plugin</groupId>
-        <artifactId>maven-svn-revision-number-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>revision</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <entries>
-            <entry>
-              <path>${project.basedir}</path>
-              <prefix>vcs</prefix>
-              <depth>infinity</depth>
-              <reportUnversioned>true</reportUnversioned>
-              <reportIgnored>false</reportIgnored>
-              <reportOutOfDate>false</reportOutOfDate>
-            </entry>
-          </entries>
-        </configuration>
-      </plugin>
-      <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>clirr-maven-plugin</artifactId>
         <configuration>
@@ -134,10 +111,72 @@
           </includes>
         </configuration>
       </plugin>
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>generate-sources</phase>
+            <configuration>
+              <target>
+                <mkdir dir="target/generated-sources/version/org/neo4j/kernel/impl/"/>
+                <exec executable="git" outputproperty="git.describe"
+                      errorproperty="git.describe.error"
+                      failifexecutionfails="false" failonerror="false">
+                  <arg value="describe"/>
+                </exec>
+                <property name="git.describe" value=""/>
+                <echo file="target/generated-sources/version/org/neo4j/${short-name}/impl/ComponentVersion.java">package org.neo4j.${short-name}.impl;
+
+import org.neo4j.kernel.Version;
+import org.neo4j.helpers.Service;
+
+@Service.Implementation(Version.class)
+public class ComponentVersion extends Version
+{
+    public ComponentVersion()
+    {
+        super("${project.artifactId}", "${project.version}");
+    }
+
+    @Override
+    public String getRevision()
+    {
+        return "${git.describe}";
+    }
+}
+</echo>
+              </target>
+            </configuration>
+            <goals><goal>run</goal></goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>generate-sources</phase>
+            <goals><goal>add-source</goal></goals>
+            <configuration>
+              <sources>
+                <source>target/generated-sources/version</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 
   <dependencies>
+    <!-- Create META-INF/services/*-files automatically -->
+    <!-- dependency>
+      <groupId>org.neo4j.build</groupId>
+      <artifactId>services-annotation</artifactId>
+      <version>1-SNAPSHOT</version>
+      <scope>provided</scope>
+    </dependency -->
     <dependency>
       <groupId>org.apache.geronimo.specs</groupId>
       <artifactId>geronimo-jta_1.1_spec</artifactId>

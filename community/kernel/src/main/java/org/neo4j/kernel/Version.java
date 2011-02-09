@@ -19,20 +19,31 @@
  */
 package org.neo4j.kernel;
 
-import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.jar.Attributes;
-import java.util.jar.JarFile;
-import java.util.jar.Manifest;
+import java.util.NoSuchElementException;
 
-public enum Version
+import org.neo4j.helpers.Service;
+
+public class Version extends Service
 {
-    VERSION;
+    private static final String KERNEL_ARTIFACT_ID = "neo4j-kernel";
+    private static final Version KERNEL_VERSION;
+    static
+    {
+        Version kernelVersion = null;
+        try
+        {
+            kernelVersion = Service.load( Version.class, KERNEL_ARTIFACT_ID );
+        }
+        catch ( NoSuchElementException ex )
+        {
+            // handled by null check
+        }
+        if ( kernelVersion == null ) kernelVersion = new Version( KERNEL_ARTIFACT_ID, "" );
+        KERNEL_VERSION = kernelVersion;
+    }
     private final String title;
     private final String vendor;
     private final String version;
-    private final String revision;
 
     @Override
     public String toString()
@@ -46,7 +57,7 @@ public enum Version
 
     /**
      * Gets the version of the running neo4j kernel.
-     * 
+     *
      * @return the version of the neo4j kernel
      */
     public String getVersion()
@@ -57,7 +68,7 @@ public enum Version
         }
         else if ( version.contains( "SNAPSHOT" ) )
         {
-            return version + " (revision: " + revision + ")";
+            return version + " (revision: " + defaultValue( getRevision(), "<unknown>" ) + ")";
         }
         else
         {
@@ -72,92 +83,30 @@ public enum Version
      */
     public String getRevision()
     {
-        return revision;
-    }
-
-    private Version()
-    {
-        Package pkg = getClass().getPackage();
-        this.title = pkg.getImplementationTitle();
-        this.vendor = pkg.getImplementationVendor();
-        this.version = pkg.getImplementationVersion();
-        @SuppressWarnings( "hiding" ) String revision = null;
-        Manifest manifest = getManifest();
-        if ( manifest != null )
-        {
-            Attributes attr = manifest.getAttributes( pkg.getName().replace(
-                    '.', '/' ) );
-            if ( attr == null )
-            {
-                attr = manifest.getMainAttributes();
-            }
-            if ( attr != null )
-            {
-                revision = revision(
-                        attr.getValue( "Implementation-Revision" ),
-                        attr.getValue( "Implementation-Revision-Status" ) );
-            }
-        }
-        this.revision = revision;
-    }
-
-    private static String revision( String revision, String status )
-    {
-        if ( revision != null )
-        {
-            StringBuilder result = new StringBuilder( revision );
-            if ( status != null )
-            {
-                status = mapOf( status ).get( "status" );
-                if ( status != null )
-                {
-                    result.append( status );
-                }
-            }
-            return result.toString();
-        }
         return "";
     }
 
-    private static Map<String, String> mapOf( String string )
+    protected Version( String atrifactId, String version )
     {
-        Map<String, String> result = new HashMap<String, String>();
-        for ( String part : string.split( ";" ) )
-        {
-            int start = part.indexOf( '=' );
-            if ( start == -1 )
-            {
-                result.put( part, "true" );
-            }
-            else
-            {
-                result.put( part.substring( 0, start ),
-                        part.substring( start + 1 ) );
-            }
-        }
-        return result;
+        super( atrifactId );
+        Package pkg = getClass().getPackage();
+        this.title = defaultValue( pkg.getImplementationTitle(), null );
+        this.vendor = defaultValue( pkg.getImplementationVendor(), "Neo Technology" );
+        this.version = defaultValue( pkg.getImplementationVersion(), version );
     }
 
-    private Manifest getManifest()
+    private static String defaultValue( String preferred, String fallback )
     {
-        try
-        {
-            return new JarFile( new File( getClass().getProtectionDomain()
-                    .getCodeSource().getLocation().toURI() ) ).getManifest();
-        }
-        catch ( Exception e )
-        {
-            return null;
-        }
-    }
-
-    public static void main( String[] args )
-    {
-        System.out.println( VERSION );
+        return ( preferred == null || preferred.equals( "" ) ) ? fallback : preferred;
     }
 
     static String get()
     {
-        return VERSION.toString();
+        return KERNEL_VERSION.toString();
+    }
+
+    public static String getKernelRevision()
+    {
+        return KERNEL_VERSION.getRevision();
     }
 }
