@@ -28,11 +28,14 @@ public class CleaningNeoServer extends NeoServer
 {
     private final String dir;
     private static RuntimeException lastStarted;
+    private final File configFile;
 
     public CleaningNeoServer( final AddressResolver addressResolver, final StartupHealthCheck startupHealthCheck,
                               final File configFile, final Jetty6WebServer jetty6WebServer, final String dir )
     {
         super( addressResolver, startupHealthCheck, configFile, jetty6WebServer );
+        this.configFile = configFile;
+        
         this.dir = dir;
         if ( lastStarted != null )
         {
@@ -74,6 +77,7 @@ public class CleaningNeoServer extends NeoServer
         super.stop();
         recursiveDelete( dir );
         lastStarted = null;
+        recursiveDelete(configFile);
     }
 
     private void secureDelete( File f )
