@@ -19,12 +19,19 @@
  */
 package org.neo4j.com.backup;
 
+import static java.util.regex.Pattern.quote;
+
+import java.util.HashMap;
+import java.util.Map;
+
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.KernelExtension;
 
 @Service.Implementation( KernelExtension.class )
 public class OnlineBackupExtension extends KernelExtension
 {
+    public static final String ENABLE_ONLINE_BACKUP = "enable_online_backup";
+
     public OnlineBackupExtension()
     {
         super( "online backup" );
@@ -33,17 +40,45 @@ public class OnlineBackupExtension extends KernelExtension
     @Override
     protected void load( KernelData kernel )
     {
-        String configValue = (String) kernel.getConfig().getParams().get( "enable_online_backup" );
-        configValue = configValue == null ? "true" : configValue;
-        boolean enabled = Boolean.parseBoolean( configValue );
-        if ( enabled )
+        String configValue = (String) kernel.getParam( ENABLE_ONLINE_BACKUP );
+        if ( configValue != null )
         {
+            int port = BackupServer.DEFAULT_PORT;
+            if ( configValue.contains( "=" ) )
+            {
+                Map<String, String> args = parseConfigValue( configValue );
+                if ( args.containsKey( "port" ) )
+                {
+                    port = Integer.parseInt( args.get( "port" ) );
+                }
+            }
+            else if ( !Boolean.parseBoolean( configValue ) )
+            {
+                return;
+            }
             TheBackupInterface backup = new BackupImpl( kernel.graphDatabase() );
-            BackupServer server = new BackupServer( backup, BackupServer.DEFAULT_PORT, null );
+            BackupServer server = new BackupServer( backup, port,
+                    (String) kernel.getConfig().getParams().get( "store_dir" ) );
             kernel.setState( this, server );
         }
     }
     
+    private Map<String, String> parseConfigValue( String configValue )
+    {
+        Map<String, String> result = new HashMap<String, String>();
+        for ( String part : configValue.split( quote( "," ) ) )
+        {
+            String[] tokens = part.split( quote( "=" ) );
+            if ( tokens.length != 2 )
+            {
+                throw new RuntimeException( "Invalid configuration value '" + configValue + 
+                        "' for " + ENABLE_ONLINE_BACKUP );
+            }
+            result.put( tokens[0], tokens[1] );
+        }
+        return result;
+    }
+
     @Override
     protected void unload( KernelData kernel )
     {
