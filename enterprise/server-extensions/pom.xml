@@ -1,71 +1,68 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-    <parent>
-        <groupId>org.neo4j</groupId>
-        <artifactId>parent-central</artifactId>
-        <version>10</version>
-    </parent>
-
-    <properties>
-        <short-name>server-extensions</short-name>
-        <bundle.namespace>org.neo4j.server</bundle.namespace>
-    </properties>
-
-    <modelVersion>4.0.0</modelVersion>
-    <artifactId>neo4j-server-extensions</artifactId>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
     <groupId>org.neo4j</groupId>
-    <version>0.6-SNAPSHOT</version>
-    <packaging>bundle</packaging>
-    <name>Neo4j Server - Extensions</name>
-    <description>Interfaces and baseclasses needed to create your own extensions.</description>
-    <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+    <artifactId>parent-central</artifactId>
+    <version>17</version>
+  </parent>
 
-    <!--<scm>
-      <connection>scm:svn:https://svn.neo4j.org/components/graph-algo/trunk/</connection>
-      <developerConnection>scm:svn:https://svn.neo4j.org/components/graph-algo/trunk/</developerConnection>
-      <url>https://trac.neo4j.org/browser/components/graph-algo</url>
-    </scm>-->
+  <groupId>org.neo4j</groupId>
+  <artifactId>neo4j-server-extensions</artifactId>
+  <version>1.3-SNAPSHOT</version>
+  <packaging>jar</packaging>
+  <name>Neo4j Server - Extensions</name>
+  <description>Interfaces and baseclasses needed to create your own extensions.</description>
+  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
-    <licenses>
-        <license>
-            <name>GNU Affero General Public License, Version 3</name>
-            <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
-        </license>
-    </licenses>
+  <properties>
+    <short-name>server-extensions</short-name>
+    <bundle.namespace>org.neo4j.server</bundle.namespace>
+  </properties>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-kernel</artifactId>
-            <version>1.3-SNAPSHOT</version>
-        </dependency>
+  <scm>
+    <url>https://github.com/neo4j/server/tree/master/server-extensions</url>
+  </scm>
 
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-        </dependency>
+  <licenses>
+    <license>
+      <name>GNU Affero General Public License, Version 3</name>
+      <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
+    </license>
+  </licenses>
 
-        <dependency>
-            <groupId>commons-configuration</groupId>
-            <artifactId>commons-configuration</artifactId>
-            <version>1.6</version>
-            <type>jar</type>
-            <scope>compile</scope>
-        </dependency>
+  <dependencies>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel</artifactId>
+      <version>1.3-SNAPSHOT</version>
+    </dependency>
 
-        <dependency>
-            <groupId>javax.ws.rs</groupId>
-            <artifactId>jsr311-api</artifactId>
-            <version>1.1.1</version>
-        </dependency>
-    </dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+    </dependency>
 
-    <distributionManagement>
-        <site>
-            <id>neo4j-site</id>
-            <url>scpexe://components.neo4j.org/home/neo/components/${project.artifactId}/${project.version}</url>
-        </site>
-    </distributionManagement>
+    <dependency>
+      <groupId>commons-configuration</groupId>
+      <artifactId>commons-configuration</artifactId>
+      <version>1.6</version>
+      <type>jar</type>
+      <scope>compile</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>javax.ws.rs</groupId>
+      <artifactId>jsr311-api</artifactId>
+      <version>1.1.1</version>
+    </dependency>
+  </dependencies>
+
+  <distributionManagement>
+    <site>
+      <id>neo4j-site</id>
+      <url>scpexe://components.neo4j.org/home/neo/components/${project.artifactId}/${project.version}</url>
+    </site>
+  </distributionManagement>
 
 </project>
