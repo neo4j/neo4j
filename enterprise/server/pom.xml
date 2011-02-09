@@ -141,6 +141,10 @@
       		<artifactId>aduna-commons-iteration</artifactId>
       		<groupId>info.aduna.commons</groupId>
       	</exclusion>
+      	<exclusion>
+      		<artifactId>jung-api</artifactId>
+      		<groupId>net.sf.jung</groupId>
+      	</exclusion>
       </exclusions>
     </dependency>
 
