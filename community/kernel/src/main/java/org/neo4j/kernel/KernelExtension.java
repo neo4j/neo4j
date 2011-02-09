@@ -53,7 +53,7 @@ public abstract class KernelExtension extends Service
     {
         return this.getClass().equals( obj.getClass() );
     }
-    
+
     String getKey()
     {
         return this.key;
@@ -142,7 +142,7 @@ public abstract class KernelExtension extends Service
 
         private final Collection<KernelExtension> loadedExtensions = new ArrayList<KernelExtension>();
         private final Map<KernelExtension, Object> state = new HashMap<KernelExtension, Object>();
-        
+
         void initAll( StringLogger msgLog )
         {
             for ( KernelExtension extension : Service.load( KernelExtension.class ) )
@@ -179,18 +179,24 @@ public abstract class KernelExtension extends Service
 
         synchronized void shutdown( StringLogger msgLog )
         {
-            for ( KernelExtension loaded : loadedExtensions )
+            try
             {
-                try
+                for ( KernelExtension loaded : loadedExtensions )
                 {
-                    loaded.unload( this );
-                }
-                catch ( Throwable t )
-                {
-                    msgLog.logMessage( "Error unloading " + loaded, t, true );
+                    try
+                    {
+                        loaded.unload( this );
+                    }
+                    catch ( Throwable t )
+                    {
+                        msgLog.logMessage( "Error unloading " + loaded, t, true );
+                    }
                 }
             }
-            removeInstance( instanceId );
+            finally
+            {
+                removeInstance( instanceId );
+            }
         }
 
         public final Object getState( KernelExtension extension )
@@ -221,7 +227,7 @@ public abstract class KernelExtension extends Service
                 return getConfigParams().get( key );
             }
         }
-        
+
         protected abstract void initialized( KernelExtension extension );
     }
 
@@ -239,7 +245,7 @@ public abstract class KernelExtension extends Service
     {
         // Default: do nothing
     }
-    
+
     protected void unload( KernelData kernel )
     {
         // Default: do nothing

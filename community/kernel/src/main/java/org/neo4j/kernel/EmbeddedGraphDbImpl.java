@@ -27,10 +27,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.Set;
-import java.util.Map.Entry;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.logging.Logger;
@@ -153,21 +153,30 @@ class EmbeddedGraphDbImpl
             }
         };
 
-        KernelExtensionLoader extensionLoader = new KernelExtensionLoader()
+        boolean started = false;
+        try
         {
-            public void init()
+            KernelExtensionLoader extensionLoader = new KernelExtensionLoader()
             {
-                extensions.initAll( msgLog );
-            }
+                public void init()
+                {
+                    extensions.initAll( msgLog );
+                }
 
-            public void load()
-            {
-                extensions.loadAll( msgLog );
-            }
-        };
-        graphDbInstance.start( graphDbService, extensionLoader );
-        nodeManager = config.getGraphDbModule().getNodeManager();
-        extensionLoader.load();
+                public void load()
+                {
+                    extensions.loadAll( msgLog );
+                }
+            };
+            graphDbInstance.start( graphDbService, extensionLoader );
+            nodeManager = config.getGraphDbModule().getNodeManager();
+            extensionLoader.load();
+            started = true;
+        }
+        finally
+        {
+            if ( !started ) extensions.shutdown( msgLog );
+        }
     }
 
     private TxModule newTxModule( Map<String, String> inputParams, TxFinishHook rollbackHook )
@@ -268,8 +277,14 @@ class EmbeddedGraphDbImpl
         {
             if ( graphDbInstance.started() )
             {
-                sendShutdownEvent();
-                extensions.shutdown( msgLog );
+                try
+                {
+                    sendShutdownEvent();
+                }
+                finally
+                {
+                    extensions.shutdown( msgLog );
+                }
             }
             graphDbInstance.shutdown();
         }
