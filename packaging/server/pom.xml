@@ -563,7 +563,7 @@
           <systemPropertyVariables>
             <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
           </systemPropertyVariables>
-          <argLine>-Xmx=1024m</argLine>
+          <argLine>-Xmx1024m</argLine>
         </configuration>
       </plugin>
 
