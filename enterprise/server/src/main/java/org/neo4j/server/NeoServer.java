@@ -39,14 +39,12 @@ import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseMode;
 import org.neo4j.server.logging.Logger;
-import org.neo4j.server.osgi.OSGiContainer;
 import org.neo4j.server.plugins.PluginManager;
 import org.neo4j.server.rrd.RrdFactory;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 import org.neo4j.server.web.Jetty6WebServer;
 import org.neo4j.server.web.WebServer;
-import org.osgi.framework.BundleException;
 import org.rrd4j.core.RrdDb;
 
 public class NeoServer {
@@ -66,7 +64,6 @@ public class NeoServer {
     private final RoundRobinJobScheduler jobScheduler = new RoundRobinJobScheduler();
 
     private final AddressResolver addressResolver;
-    private OSGiContainer osgiContainer;
     private PluginManager extensions;
 
     public NeoServer(AddressResolver addressResolver, StartupHealthCheck startupHealthCheck, File configFile, WebServer webServer) {
@@ -86,7 +83,6 @@ public class NeoServer {
         startDatabase();
         try {
             startRoundRobinDB();
-            startOsgiContainer();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -169,29 +165,11 @@ public class NeoServer {
         database.setRrdDb(rrdDb);
     }
 
-    private void startOsgiContainer() throws BundleException {
-        // Start embedded OSGi container, maybe
-        boolean osgiServerShouldStart = configurator.configuration().getBoolean(Configurator.ENABLE_OSGI_SERVER_PROPERTY_KEY, false);
-        if (osgiServerShouldStart) {
-            String bundleDirectory = configurator.configuration().getString(Configurator.OSGI_BUNDLE_DIR_PROPERTY_KEY, "../");
-            String cacheDirectory = configurator.configuration().getString(Configurator.OSGI_CACHE_DIR_PROPERTY_KEY, "../");
-            osgiContainer = new OSGiContainer(bundleDirectory, cacheDirectory);
-            osgiContainer.start();
-        }
-    }
-
-    private void stopOsgiContainer() throws BundleException, InterruptedException {
-        if (osgiContainer != null) {
-            osgiContainer.shutdown();
-        }
-    }
-
     public void stop() {
         try {
             stopJobs();
             stopDatabase();
             stopWebServer();
-            stopOsgiContainer();
             log.info("Successfully shutdown Neo Server on port [%d], database [%s]", getWebServerPort(), getDatabase().getLocation());
         } catch (Exception e) {
             log.warn("Failed to cleanly shutdown Neo Server on port [%d], database [%s]. Reason: %s", getWebServerPort(), getDatabase().getLocation(),

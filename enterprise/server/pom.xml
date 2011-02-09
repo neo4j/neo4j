@@ -146,17 +146,17 @@
       <scope>test</scope>
     </dependency>
 
-    <dependency>
+    <!-- dependency>
       <groupId>org.rrd4j</groupId>
       <artifactId>rrd4j</artifactId>
       <version>2.0.6</version>
-    </dependency>
+    </dependency -->
 
-    <!--dependency>
+    <dependency>
       <groupId>de.huxhorn.lilith</groupId>
       <artifactId>de.huxhorn.lilith.3rdparty.rrd4j</artifactId>
       <version>2.0.5</version>
-    </dependency-->
+    </dependency>
 
     <dependency>
       <groupId>org.neo4j.drivers</groupId>
@@ -563,6 +563,7 @@
           <systemPropertyVariables>
             <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
           </systemPropertyVariables>
+          <argLine>-Xmx=1024m</argLine>
         </configuration>
       </plugin>
 
