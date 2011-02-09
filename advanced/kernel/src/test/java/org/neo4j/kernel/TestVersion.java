@@ -17,23 +17,17 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction;
+package org.neo4j.kernel;
 
-import org.neo4j.helpers.Service;
-import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
+import static org.junit.Assert.assertFalse;
 
-@Service.Implementation( TransactionManagerProvider.class )
-public final class DefaultTransactionManagerProvider extends TransactionManagerProvider
+import org.junit.Test;
+
+public class TestVersion
 {
-    public DefaultTransactionManagerProvider()
+    @Test
+    public void canGetKernelRevision() throws Exception
     {
-        super( "native" );
-    }
-
-    @Override
-    protected AbstractTransactionManager loadTransactionManager( String txLogDir,
-            KernelPanicEventGenerator kpe, TxFinishHook rollbackHook )
-    {
-        return new TxManager( txLogDir, kpe, rollbackHook );
+        assertFalse( "Kernel revision not specified", "".equals( Version.getKernelRevision() ) );
     }
 }
