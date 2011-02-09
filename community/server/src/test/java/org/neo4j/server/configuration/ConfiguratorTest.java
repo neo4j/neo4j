@@ -41,6 +41,7 @@ public class ConfiguratorTest {
         File configFile = PropertyFileBuilder.builder().build();
         Configuration config = new Configurator(new Validator(), configFile).configuration();
         assertNotNull(config);
+        configFile.delete();
     }
 
     @Test
@@ -52,6 +53,8 @@ public class ConfiguratorTest {
 
         final String EXPECTED_VALUE = "bar";
         assertEquals(EXPECTED_VALUE, testConf.getString("foo"));
+
+        configFile.delete();
     }
 
     @Test
@@ -64,6 +67,8 @@ public class ConfiguratorTest {
         assertNotNull(testConf);
         final String EXPECTED_VALUE = "bar";
         assertEquals(EXPECTED_VALUE, testConf.getString("foo"));
+
+        configFile.delete();
     }
 
     private static final String NEOSTORE_NODESTORE_DB_MAPPED_MEMORY_KEY = "neostore.nodestore.db.mapped_memory";
@@ -85,6 +90,8 @@ public class ConfiguratorTest {
         Map<String, String> databaseTuningProperties = configurator.getDatabaseTuningProperties();
         assertNotNull(databaseTuningProperties);
         assertEquals(2, databaseTuningProperties.size());
+
+        propertyFileWithDbTuningProperty.delete();
     }
 
     @Test
@@ -107,5 +114,7 @@ public class ConfiguratorTest {
         Set<ThirdPartyJaxRsPackage> thirdpartyJaxRsClasses = configurator.getThirdpartyJaxRsClasses();
         assertNotNull(thirdpartyJaxRsClasses);
         assertEquals(3, thirdpartyJaxRsClasses.size());
+
+        file.delete();
     }
 }
