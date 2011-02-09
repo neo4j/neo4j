@@ -123,11 +123,24 @@
       <groupId>com.tinkerpop</groupId>
       <artifactId>gremlin</artifactId>
       <version>0.7</version>
+      <type>jar</type>
       <exclusions>
-        <exclusion>
-          <groupId>jline</groupId>
-          <artifactId>jline</artifactId>
-        </exclusion>
+      	<exclusion>
+      		<artifactId>sesame-sail-api</artifactId>
+      		<groupId>org.openrdf.sesame</groupId>
+      	</exclusion>
+      	<exclusion>
+      		<artifactId>gmaven-plugin</artifactId>
+      		<groupId>org.codehaus.groovy.maven</groupId>
+      	</exclusion>
+      	<exclusion>
+      		<artifactId>common</artifactId>
+      		<groupId>net.fortytwo.sesametools</groupId>
+      	</exclusion>
+      	<exclusion>
+      		<artifactId>aduna-commons-iteration</artifactId>
+      		<groupId>info.aduna.commons</groupId>
+      	</exclusion>
       </exclusions>
     </dependency>
 
