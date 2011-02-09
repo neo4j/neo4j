@@ -29,6 +29,7 @@ import java.util.Map;
 import org.junit.After;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.ha.StandaloneDatabase;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 public class MultiJvmTest extends AbstractHaTest
@@ -76,12 +77,12 @@ public class MultiJvmTest extends AbstractHaTest
     {
         shutdownDbs();
 
-        GraphDatabaseService masterDb = new EmbeddedGraphDatabase( dbPath( 0 ).getAbsolutePath() );
+        GraphDatabaseService masterDb = embeddedGraphDatabaseWithoutBackup( dbPath( 0 ).getAbsolutePath());
         try
         {
             for ( int i = 1; i < jvms.size(); i++ )
             {
-                GraphDatabaseService slaveDb = new EmbeddedGraphDatabase( dbPath( i ).getAbsolutePath() );
+                GraphDatabaseService slaveDb = embeddedGraphDatabaseWithoutBackup( dbPath( i ).getAbsolutePath() );
                 try
                 {
                     verify( masterDb, slaveDb );
@@ -96,6 +97,11 @@ public class MultiJvmTest extends AbstractHaTest
         {
             masterDb.shutdown();
         }
+    }
+
+    private GraphDatabaseService embeddedGraphDatabaseWithoutBackup( String path )
+    {
+        return new EmbeddedGraphDatabase( path, MapUtil.stringMap( "enable_online_backup", "false" ) );
     }
 
     @Override
