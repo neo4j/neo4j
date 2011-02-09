@@ -14,7 +14,7 @@
                 <h2><a href="#" class="mor_module_foldout_trigger">More about the data browser</a></h2>
                 <div class="mor_module_foldout_content">
                     <h2>Finding data</h2>
-                    <p>You can enter the id of a node or a relationship below, to show it and its related nodes.</p>
+                    <p>You can enter the url of a node or a relationship below, to show it and its related nodes.</p>
                     <h2>Listing data</h2>
                     <p>Because each node can have any properties you want it to, the data browser allows you to select what properties it should list when listing related nodes.</p>
                     <p>Simply enter the properties you are interested in, separated by commas, in the "properties to list" box below.</p>
@@ -79,7 +79,7 @@
 	    <table class="mor_fancy" cell-spacing="0">
 	        <tbody>
 	            <tr>
-	                <th><span class="mor_data_uneditable_key">Id</span></th>
+	                <th><span class="mor_data_uneditable_key">Url</span></th>
 	                <td class="mor_data_item_id"><span class="mor_data_uneditable_value"><a href="{ $T.node.getSelf() }" class="mor_data_url_button">{ $T.node.getSelf() }</a></span></td>
 	            </tr>
 	        </tbody>
@@ -98,7 +98,7 @@
 	    <table class="mor_fancy" cell-spacing="0">
 	        <tbody>
 	            <tr>
-	                <th><span class="mor_data_uneditable_key">Id</span></th>
+	                <th><span class="mor_data_uneditable_key">Url</span></th>
 	                <td class="mor_data_item_id"><span class="mor_data_uneditable_value"><a href="{ $T.relationship.getSelf() }" class="mor_data_url_button">{  wa.htmlEscape( $T.relationship.getSelf() ) }</a></span></td>
 	            </tr>
 			    <tr>
@@ -128,7 +128,7 @@
     <table class="mor_fancy" cell-spacing="0">
         <tbody>
             <tr>
-                <th><span class="mor_data_uneditable_key">Id</span></th>
+                <th><span class="mor_data_uneditable_key">Url</span></th>
                 <td class="mor_data_item_id"><span class="mor_data_uneditable_value"><a href="{ $T.getSelf() }" class="mor_data_url_button">{ wa.htmlEscape($T.getSelf()) }</a></span></td>
             </tr>
             {#foreach $P.keys as key}
@@ -181,7 +181,7 @@
                     <tr>
                         <th>Dir</th>
                         <th>Relationship</th>
-                        <th>Node id</th>
+                        <th>Node url</th>
                         {#foreach $T.relatedFields as field}
                             <th>{ wa.htmlEscape($T.field)}</th>
                         {#/for }

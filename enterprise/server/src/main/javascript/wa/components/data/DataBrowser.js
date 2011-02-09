@@ -339,11 +339,6 @@ wa.components.data.DataBrowser = (function($) {
     	me.render(true);
     });
     
-    $("input.mor_data_get_url_button").live("click", function(ev) {
-    	ev.preventDefault();
-    	me.api.setDataUrl($("#mor_data_get_id_input").val());
-    });
-    
     $("button.mor_data_reference_node_button").live("click", function(ev) {
     	ev.preventDefault();
     	me.api.showReferenceNode();
@@ -359,6 +354,18 @@ wa.components.data.DataBrowser = (function($) {
     	ev.preventDefault();
 		me.currentRelatedNodePage--;
 		me.render();
+    });
+    
+    function getItemByUrl(ev) {
+        ev.preventDefault();
+        me.api.setDataUrl($("#mor_data_get_id_input").val());
+    }
+    
+    $("input.mor_data_get_url_button").live("click", getItemByUrl);
+    $("#mor_data_get_id_input").live("keydown", function(ev) {
+        if(ev.keyCode == 13) {
+            getItemByUrl(ev);
+        }
     });
     
     return me.api;
