@@ -31,8 +31,8 @@ wa.components.dashboard.JmxValueTracker = function(server, beanDomain, beanName,
 	
 	var me = {};
 	
-	me.polling_interval = interval || 10000;
-	me.max_polling_interval = me.polling_interval * 10;
+	me.polling_interval = interval || 1000;
+	me.max_polling_interval = me.polling_interval * 5;
 
 	/**
 	 * This is the actual current polling interval beeing used.
