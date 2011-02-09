@@ -17,31 +17,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha;
+package org.neo4j.backup;
 
-public class Response<T>
+import org.neo4j.kernel.EmbeddedGraphDatabase;
+
+public class EmbeddedServer implements ServerInterface
 {
-    private final T response;
-    private final TransactionStream transactions;
+    private EmbeddedGraphDatabase db;
 
-    public Response( T response, TransactionStream transactions )
+    public EmbeddedServer( String storeDir )
     {
-        this.response = response;
-        this.transactions = transactions;
+        this.db = new EmbeddedGraphDatabase( storeDir );
+    }
+    
+    public void shutdown()
+    {
+        db.shutdown();
     }
 
-    public T response() throws MasterFailureException
+    public void awaitStarted()
     {
-        return response;
-    }
-
-    public TransactionStream transactions()
-    {
-        return transactions;
-    }
-
-    public static <R> Response<R> wrapResponseObjectOnly( R response )
-    {
-        return new Response<R>( response, TransactionStream.EMPTY );
     }
 }

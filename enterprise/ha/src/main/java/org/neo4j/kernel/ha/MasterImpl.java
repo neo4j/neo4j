@@ -20,32 +20,31 @@
 package org.neo4j.kernel.ha;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 
+import org.neo4j.com.FailedResponse;
+import org.neo4j.com.MasterUtil;
+import org.neo4j.com.Response;
+import org.neo4j.com.SlaveContext;
+import org.neo4j.com.StoreWriter;
+import org.neo4j.com.TxExtractor;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.Triplet;
-import org.neo4j.helpers.collection.ClosableIterable;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.DeadlockDetectedException;
@@ -56,8 +55,6 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 
@@ -69,14 +66,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 public class MasterImpl implements Master
 {
     private static final int ID_GRAB_SIZE = 1000;
-
-    private static final Predicate<Long> ALL = new Predicate<Long>()
-    {
-        public boolean accept( Long item )
-        {
-            return true;
-        }
-    };
 
     private final GraphDatabaseService graphDb;
     private final Config graphDbConfig;
@@ -107,20 +96,30 @@ public class MasterImpl implements Master
             {
                 lockGrabber.grab( lockManager, lockReleaser, entity );
             }
-            return packResponse( context, new LockResult( LockStatus.OK_LOCKED ), ALL );
+            return packResponse( context, new LockResult( LockStatus.OK_LOCKED ) );
         }
         catch ( DeadlockDetectedException e )
         {
-            return packResponse( context, new LockResult( e.getMessage() ), ALL );
+            return packResponse( context, new LockResult( e.getMessage() ) );
         }
         catch ( IllegalResourceException e )
         {
-            return packResponse( context, new LockResult( LockStatus.NOT_LOCKED ), ALL );
+            return packResponse( context, new LockResult( LockStatus.NOT_LOCKED ) );
         }
         finally
         {
             suspendThisAndResumeOther( otherTx, context );
         }
+    }
+    
+    private <T> Response<T> packResponse( SlaveContext context, T response )
+    {
+        return packResponse( context, response, MasterUtil.ALL );
+    }
+    
+    private <T> Response<T> packResponse( SlaveContext context, T response, Predicate<Long> filter )
+    {
+        return MasterUtil.packResponse( graphDb, context, response, filter );
     }
 
     private Transaction getTx( SlaveContext txId )
@@ -302,7 +301,7 @@ public class MasterImpl implements Master
     {
         Transaction otherTx = suspendOtherAndResumeThis( context );
         rollbackThisAndResumeOther( otherTx, context );
-        return packResponse( context, null, ALL );
+        return packResponse( context, null );
     }
 
     public Response<Integer> createRelationshipType( SlaveContext context, String name )
@@ -312,7 +311,7 @@ public class MasterImpl implements Master
         if ( id != null )
         {
             // OK, return
-            return packResponse( context, id, ALL );
+            return packResponse( context, id );
         }
 
         // No? Create it then
@@ -321,67 +320,12 @@ public class MasterImpl implements Master
                 graphDbConfig.getIdGeneratorModule().getIdGenerator(),
                 graphDbConfig.getPersistenceModule().getPersistenceManager(),
                 graphDbConfig.getRelationshipTypeHolder(), name );
-        return packResponse( context, id, ALL );
-    }
-
-    private <T> Response<T> packResponse( SlaveContext context, T response, Predicate<Long> filter )
-    {
-        List<Triplet<String, Long, TxExtractor>> stream = new ArrayList<Triplet<String, Long, TxExtractor>>();
-        Set<String> resourceNames = new HashSet<String>();
-        for ( Pair<String, Long> txEntry : context.lastAppliedTransactions() )
-        {
-            String resourceName = txEntry.first();
-            final XaDataSource dataSource = graphDbConfig.getTxModule().getXaDataSourceManager()
-                    .getXaDataSource( resourceName );
-            if ( dataSource == null )
-            {
-                throw new RuntimeException( "No data source '" + resourceName + "' found" );
-            }
-            resourceNames.add( resourceName );
-            long masterLastTx = dataSource.getLastCommittedTxId();
-            for ( long txId = txEntry.other() + 1; txId <= masterLastTx; txId++ )
-            {
-                if ( filter.accept( txId ) )
-                {
-                    final long tx = txId;
-                    TxExtractor extractor = new TxExtractor()
-                    {
-                        @Override
-                        public ReadableByteChannel extract()
-                        {
-                            try
-                            {
-                                return dataSource.getCommittedTransaction( tx );
-                            }
-                            catch ( IOException e )
-                            {
-                                throw new RuntimeException( e );
-                            }
-                        }
-
-                        @Override
-                        public void extract( LogBuffer buffer )
-                        {
-                            try
-                            {
-                                dataSource.getCommittedTransaction( tx, buffer );
-                            }
-                            catch ( IOException e )
-                            {
-                                throw new RuntimeException( e );
-                            }
-                        }
-                    };
-                    stream.add( Triplet.of( resourceName, txId, extractor ) );
-                }
-            }
-        }
-        return new Response<T>( response, TransactionStream.create( resourceNames, stream ) );
+        return packResponse( context, id );
     }
 
     public Response<Void> pullUpdates( SlaveContext context )
     {
-        return packResponse( context, null, ALL );
+        return packResponse( context, null );
     }
 
     public int getMasterIdForCommittedTx( long txId )
@@ -400,60 +344,13 @@ public class MasterImpl implements Master
 
     public Response<Void> copyStore( SlaveContext context, StoreWriter writer )
     {
-        Collection<XaDataSource> sources = graphDbConfig.getTxModule().getXaDataSourceManager()
-                .getAllRegisteredDataSources();
-        Pair<String, Long>[] appliedTransactions = new Pair[sources.size()];
-        int i = 0;
-        for ( XaDataSource ds : sources )
+        try
         {
-            appliedTransactions[i++] = Pair.of( ds.getName(), ds.getLastCommittedTxId() );
-            try
-            {
-                ds.getXaContainer().getResourceManager().rotateLogicalLog();
-            }
-            catch ( IOException e )
-            {
-                // TODO: what about error message?
-                return new FailedResponse<Void>();
-            }
+            context = MasterUtil.rotateLogsAndStreamStoreFiles( graphDb, writer );
         }
-
-        context = new SlaveContext( context.machineId(), context.getEventIdentifier(),
-                appliedTransactions );
-
-        File baseDir = getBaseDir();
-
-        for ( XaDataSource ds : sources )
+        catch ( Exception e )
         {
-            try
-            {
-                ClosableIterable<File> files = ds.listStoreFiles();
-                try
-                {
-                    for ( File storefile : files )
-                    {
-                        FileInputStream stream = new FileInputStream( storefile );
-                        try
-                        {
-                            writer.write( relativePath( baseDir, storefile ), stream.getChannel(),
-                                    storefile.length() > 0 );
-                        }
-                        finally
-                        {
-                            stream.close();
-                        }
-                    }
-                }
-                finally
-                {
-                    files.close();
-                }
-            }
-            catch ( IOException e )
-            {
-                // TODO: what about error message?
-                return new FailedResponse<Void>();
-            }
+            return new FailedResponse<Void>();
         }
         writer.done();
 
@@ -462,7 +359,7 @@ public class MasterImpl implements Master
         // one transaction (the only way to get masterId for txId).
         context = makeSureThereIsAtLeastOneKernelTx( context );
 
-        return packResponse( context, null, ALL );
+        return packResponse( context, null );
     }
 
     private SlaveContext makeSureThereIsAtLeastOneKernelTx( SlaveContext context )
@@ -497,15 +394,14 @@ public class MasterImpl implements Master
 
     private File getBaseDir()
     {
-        XaDataSourceManager mgr = graphDbConfig.getTxModule().getXaDataSourceManager();
-        NeoStoreXaDataSource nioneodb = (NeoStoreXaDataSource) mgr.getXaDataSource( "nioneodb" );
+        File file = new File( ((AbstractGraphDatabase) graphDb).getStoreDir() );
         try
         {
-            return new File( nioneodb.getStoreDir() ).getCanonicalFile().getAbsoluteFile();
+            return file.getCanonicalFile().getAbsoluteFile();
         }
         catch ( IOException e )
         {
-            return new File( nioneodb.getStoreDir() ).getAbsoluteFile();
+            return file.getAbsoluteFile();
         }
     }
 
