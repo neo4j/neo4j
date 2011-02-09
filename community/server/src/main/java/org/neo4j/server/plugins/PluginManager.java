@@ -19,13 +19,6 @@
  */
 package org.neo4j.server.plugins;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import org.apache.commons.configuration.Configuration;
 import org.apache.log4j.Logger;
 import org.neo4j.helpers.Pair;
@@ -34,6 +27,13 @@ import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.ExtensionInjector;
 import org.neo4j.server.rest.repr.ExtensionPointRepresentation;
 import org.neo4j.server.rest.repr.Representation;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public final class PluginManager implements ExtensionInjector, PluginInvocator
 {
@@ -50,17 +50,16 @@ public final class PluginManager implements ExtensionInjector, PluginInvocator
         Map<String, Pair<ServerPlugin, ServerExtender>> extensions = new HashMap<String, Pair<ServerPlugin, ServerExtender>>();
         for ( ServerPlugin plugin : plugins )
         {
-            final ServerExtender extender = new ServerExtender();
+            PluginPointFactory factory = new PluginPointFactoryImpl();
+            final ServerExtender extender = new ServerExtender( factory );
             try
             {
                 plugin.loadServerExtender( extender, serverConfig );
-            }
-            catch ( Exception ex )
+            } catch ( Exception ex )
             {
                 log.warn( "Failed to load plugin: " + plugin, ex );
                 continue;
-            }
-            catch ( LinkageError err )
+            } catch ( LinkageError err )
             {
                 log.warn( "Failed to load plugin: " + plugin, err );
                 continue;
@@ -91,7 +90,10 @@ public final class PluginManager implements ExtensionInjector, PluginInvocator
             {
                 methods.add( method.name() );
             }
-            if ( !methods.isEmpty() ) result.put( extension.getKey(), methods );
+            if ( !methods.isEmpty() )
+            {
+                result.put( extension.getKey(), methods );
+            }
         }
         return result;
     }
@@ -111,7 +113,14 @@ public final class PluginManager implements ExtensionInjector, PluginInvocator
     public ExtensionPointRepresentation describe( String name, Class<?> type, String method )
             throws PluginLookupException
     {
-        return extension( name, type, method ).descibe();
+        return describe( extension( name, type, method ) );
+    }
+
+    private ExtensionPointRepresentation describe( PluginPoint extension )
+    {
+        ExtensionPointRepresentation representation = new ExtensionPointRepresentation( extension.name(), extension.forType(), extension.getDescription() );
+        extension.describeParameters( representation );
+        return representation;
     }
 
     @Override
@@ -126,34 +135,30 @@ public final class PluginManager implements ExtensionInjector, PluginInvocator
         List<ExtensionPointRepresentation> result = new ArrayList<ExtensionPointRepresentation>();
         for ( PluginPoint plugin : extender.all() )
         {
-            result.add( plugin.descibe() );
+            result.add( describe( plugin ) );
         }
         return result;
     }
 
     @Override
     public <T> Representation invoke( AbstractGraphDatabase graphDb, String name, Class<T> type,
-            String method, T context, ParameterList params ) throws PluginLookupException,
+                                      String method, T context, ParameterList params ) throws PluginLookupException,
             BadInputException, PluginInvocationFailureException, BadPluginInvocationException
     {
         PluginPoint plugin = extension( name, type, method );
         try
         {
             return plugin.invoke( graphDb, context, params );
-        }
-        catch ( BadInputException e )
+        } catch ( BadInputException e )
         {
             throw e;
-        }
-        catch ( BadPluginInvocationException e )
+        } catch ( BadPluginInvocationException e )
         {
             throw e;
-        }
-        catch ( PluginInvocationFailureException e )
+        } catch ( PluginInvocationFailureException e )
         {
             throw e;
-        }
-        catch ( Exception e )
+        } catch ( Exception e )
         {
             throw new PluginInvocationFailureException( e );
         }
