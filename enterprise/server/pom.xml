@@ -619,6 +619,7 @@
             <configuration>
               <skip>false</skip>
               <argLine>-Xmx1024m</argLine>
+              <forkMode>perTest</forkMode>
             </configuration>
           </plugin>
         </plugins>
