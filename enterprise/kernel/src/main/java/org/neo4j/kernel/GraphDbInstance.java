@@ -35,6 +35,7 @@ import javax.transaction.TransactionManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.helpers.Service;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.nioneo.xa.NioNeoDbPersistenceSource;
 import org.neo4j.kernel.impl.transaction.LockManager;
@@ -165,6 +166,10 @@ class GraphDbInstance
         logger.logMessage( "--- CONFIGURATION START ---" );
         logger.logMessage( autoConfigurator.getNiceMemoryInformation() );
         logger.logMessage( "Kernel version: " + Version.get() );
+        for ( Version componentVersion : Service.load( Version.class ) )
+        {
+            logger.logMessage( componentVersion.toString() );
+        }
         RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
         OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
         logger.logMessage( String.format( "Operating System: %s; version: %s; arch: %s; cpus: %s",
