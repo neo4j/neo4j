@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.ha;
 
+import org.neo4j.com.Response;
+import org.neo4j.com.SlaveContext;
+import org.neo4j.com.StoreWriter;
+import org.neo4j.com.TxExtractor;
 import org.neo4j.kernel.IdType;
 
 /**

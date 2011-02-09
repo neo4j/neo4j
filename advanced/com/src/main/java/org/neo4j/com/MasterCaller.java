@@ -17,18 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha;
+package org.neo4j.com;
 
-public class FailedResponse<T> extends Response<T>
+import org.jboss.netty.buffer.ChannelBuffer;
+
+public interface MasterCaller<M, R>
 {
-    public FailedResponse()
-    {
-        super( null, null );
-    }
-    
-    @Override
-    public T response() throws MasterFailureException
-    {
-        throw new MasterFailureException();
-    }
+    Response<R> callMaster( M master, SlaveContext context, ChannelBuffer input, ChannelBuffer target );
 }

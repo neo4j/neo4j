@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha;
+package org.neo4j.com;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,7 +35,8 @@ public class ToFileStoreWriter implements StoreWriter
         this.basePath = new File( graphDbStoreDir );
     }
 
-    public void write( String path, ReadableByteChannel data, boolean hasData ) throws IOException
+    public void write( String path, ReadableByteChannel data, ByteBuffer temporaryBuffer,
+            boolean hasData ) throws IOException
     {
         try
         {
@@ -47,13 +48,13 @@ public class ToFileStoreWriter implements StoreWriter
                 randomAccessFile = new RandomAccessFile( file, "rw" );
                 if ( hasData )
                 {
-                    ByteBuffer intermediateBuffer = ByteBuffer.allocateDirect( 1024 );
+//                    ByteBuffer intermediateBuffer = ByteBuffer.allocateDirect( 1024 );
                     FileChannel channel = randomAccessFile.getChannel();
-                    while ( data.read( intermediateBuffer ) >= 0 )
+                    while ( data.read( temporaryBuffer ) >= 0 )
                     {
-                        intermediateBuffer.flip();
-                        channel.write( intermediateBuffer );
-                        intermediateBuffer.clear();
+                        temporaryBuffer.flip();
+                        channel.write( temporaryBuffer );
+                        temporaryBuffer.clear();
                     }
                 }
             }

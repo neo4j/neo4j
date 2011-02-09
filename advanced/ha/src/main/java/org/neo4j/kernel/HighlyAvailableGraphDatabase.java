@@ -24,18 +24,19 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.nio.channels.ReadableByteChannel;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.com.MasterUtil;
+import org.neo4j.com.Response;
+import org.neo4j.com.SlaveContext;
+import org.neo4j.com.ToFileStoreWriter;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -45,8 +46,6 @@ import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.Triplet;
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.ha.BranchedDataException;
 import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.BrokerFactory;
@@ -55,17 +54,13 @@ import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterIdGeneratorFactory;
 import org.neo4j.kernel.ha.MasterServer;
 import org.neo4j.kernel.ha.MasterTxIdGenerator.MasterTxIdGeneratorFactory;
-import org.neo4j.kernel.ha.Response;
 import org.neo4j.kernel.ha.ResponseReceiver;
-import org.neo4j.kernel.ha.SlaveContext;
 import org.neo4j.kernel.ha.SlaveIdGenerator.SlaveIdGeneratorFactory;
 import org.neo4j.kernel.ha.SlaveLockManager.SlaveLockManagerFactory;
 import org.neo4j.kernel.ha.SlaveRelationshipTypeCreator;
 import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.SlaveTxRollbackHook;
 import org.neo4j.kernel.ha.TimeUtil;
-import org.neo4j.kernel.ha.ToFileStoreWriter;
-import org.neo4j.kernel.ha.TxExtractor;
 import org.neo4j.kernel.ha.ZooKeeperLastCommittedTxIdSetter;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
@@ -151,6 +146,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 copyStoreFromMaster( master );
                 return;
             }
+            // TODO Maybe catch IOException and treat it more seriously?
             catch ( Exception e )
             {
                 msgLog.logMessage( "Problems copying store from master", e );
@@ -259,19 +255,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         EmbeddedGraphDatabase tempDb = new EmbeddedGraphDatabase( storeDir );
         try
         {
-            applyReceivedTransactions( response, tempDb.getConfig().getTxModule().getXaDataSourceManager(), new TxHandler()
-            {
-                private final Set<String> visitedDataSources = new HashSet<String>();
-                
-                @Override
-                public void accept( Triplet<String, Long, TxExtractor> tx, XaDataSource dataSource )
-                {
-                    if ( visitedDataSources.add( tx.first() ) )
-                    {
-                        dataSource.setLastCommittedTxId( tx.second()-1 );
-                    }
-                }
-            });
+            MasterUtil.applyReceivedTransactions( response, tempDb, MasterUtil.txHandlerForFullCopy() );
         }
         finally
         {
@@ -720,7 +704,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     {
         try
         {
-            applyReceivedTransactions( response, getConfig().getTxModule().getXaDataSourceManager(), NO_ACTION );
+            MasterUtil.applyReceivedTransactions( response, this, MasterUtil.NO_ACTION );
             updateTime();
             return response.response();
         }
@@ -728,25 +712,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         {
             newMaster( broker.getMaster(), e );
             throw new RuntimeException( e );
-        }
-    }
-
-    private <T> void applyReceivedTransactions( Response<T> response, XaDataSourceManager dataSourceManager, TxHandler txHandler ) throws IOException
-    {
-        for ( Triplet<String, Long, TxExtractor> tx : IteratorUtil.asIterable( response.transactions() ) )
-        {
-            String resourceName = tx.first();
-            XaDataSource dataSource = dataSourceManager.getXaDataSource( resourceName );
-            txHandler.accept( tx, dataSource );
-            ReadableByteChannel txStream = tx.third().extract();
-            try
-            {
-                dataSource.applyCommittedTransaction( tx.second(), txStream );
-            }
-            finally
-            {
-                txStream.close();
-            }
         }
     }
 
@@ -825,18 +790,4 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     {
         return localGraph().index();
     }
-    
-    private interface TxHandler
-    {
-        void accept( Triplet<String, Long, TxExtractor> tx, XaDataSource dataSource );
-    }
-    
-    private static final TxHandler NO_ACTION = new TxHandler()
-    {
-        @Override
-        public void accept( Triplet<String, Long, TxExtractor> tx, XaDataSource dataSource )
-        {
-            // Do nothing
-        }
-    };
 }
