@@ -22,12 +22,12 @@ package slavetest;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
+import org.neo4j.com.Protocol;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.AbstractBroker;
 import org.neo4j.kernel.ha.Broker;
-import org.neo4j.kernel.ha.CommunicationProtocol;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterClient;
 import org.neo4j.kernel.ha.MasterImpl;
@@ -48,7 +48,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
     protected Broker makeSlaveBroker( MasterImpl master, int masterId, int id, String storeDir )
     {
         final Machine masterMachine = new Machine( masterId, -1, 1,//
-                "localhost:" + CommunicationProtocol.PORT );
+                "localhost:" + Protocol.PORT );
         final Master client = new MasterClient( masterMachine, storeDir );
         return new AbstractBroker( id, storeDir )
         {
@@ -73,12 +73,5 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
                         "cannot instantiate master server on slave" );
             }
         };
-    }
-    
-    @Override
-    public void makeSureSlaveCanCopyLargeInitialDatabase() throws Exception
-    {
-        // TODO Auto-generated method stub
-        super.makeSureSlaveCanCopyLargeInitialDatabase();
     }
 }

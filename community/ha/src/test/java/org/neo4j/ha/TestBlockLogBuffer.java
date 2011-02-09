@@ -32,8 +32,8 @@ import org.hamcrest.Description;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.junit.Test;
-import org.neo4j.kernel.ha.BlockLogBuffer;
-import org.neo4j.kernel.ha.BlockLogReader;
+import org.neo4j.com.BlockLogBuffer;
+import org.neo4j.com.BlockLogReader;
 
 public class TestBlockLogBuffer
 {

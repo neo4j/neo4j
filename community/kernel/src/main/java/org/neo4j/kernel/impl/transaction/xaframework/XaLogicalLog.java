@@ -89,7 +89,7 @@ public class XaLogicalLog
     private char currentLog = CLEAN;
     private boolean keepLogs = false;
     private boolean autoRotate = true;
-    private long rotateAtSize = 10*1024*1024; // 10MB
+    private long rotateAtSize = 25*1024*1024; // 25MB
     private boolean backupSlave = false;
 //    private boolean slave = false;
     private boolean useMemoryMapped = true;
@@ -1383,6 +1383,7 @@ public class XaLogicalLog
         }
         LogEntry entry;
         // Set<Integer> startEntriesWritten = new HashSet<Integer>();
+        LogBuffer newLogBuffer = new MemoryMappedLogBuffer( newLog );
         while ((entry = LogIoUtils.readEntry( buffer, fileChannel, cf )) != null )
         {
             if ( xidIdentMap.get( entry.getIdentifier() ) != null )
@@ -1408,10 +1409,11 @@ public class XaLogicalLog
 //                    throw new IOException( "Unable to rotate log since start entry for identifier[" +
 //                            entry.getIdentifier() + "] not written" );
 //                }
-                LogBuffer newLogBuffer = new DirectLogBuffer( newLog, buffer );
                 LogIoUtils.writeLogEntry( entry, newLogBuffer );
             }
         }
+        newLogBuffer.force();
+        newLog.position( newLogBuffer.getFileChannelPosition() );
         msgLog.logMessage( "Rotate: old log scanned, newLog @ pos=" +
                 newLog.position(), true );
         newLog.force( false );

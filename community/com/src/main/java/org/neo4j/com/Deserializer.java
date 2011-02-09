@@ -17,17 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha;
+package org.neo4j.com;
 
 import java.io.IOException;
-import java.nio.channels.ReadableByteChannel;
+import java.nio.ByteBuffer;
 
-public interface StoreWriter
+import org.jboss.netty.buffer.ChannelBuffer;
+
+public interface Deserializer<T>
 {
-    // "hasData" is an effect of the block format not supporting a zero length block
-    // whereas a neostore file may actually be 0 bytes we'll have to keep track
-    // of that special case.
-    void write( String path, ReadableByteChannel data, boolean hasData ) throws IOException;
-
-    void done();
+    T read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException;
 }

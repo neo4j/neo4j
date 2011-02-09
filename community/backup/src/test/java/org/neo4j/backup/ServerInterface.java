@@ -17,31 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha;
+package org.neo4j.backup;
 
-public class MasterFailureException extends RuntimeException
+public interface ServerInterface
 {
-    public MasterFailureException()
-    {
-        super();
-        // TODO Auto-generated constructor stub
-    }
-
-    public MasterFailureException( String message, Throwable cause )
-    {
-        super( message, cause );
-        // TODO Auto-generated constructor stub
-    }
-
-    public MasterFailureException( String message )
-    {
-        super( message );
-        // TODO Auto-generated constructor stub
-    }
-
-    public MasterFailureException( Throwable cause )
-    {
-        super( cause );
-        // TODO Auto-generated constructor stub
-    }
+    void shutdown();
+    
+    void awaitStarted();
 }
