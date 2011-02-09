@@ -68,6 +68,12 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-server-extensions</artifactId>
+      <version>0.6-SNAPSHOT</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-ha</artifactId>
       <version>0.6-SNAPSHOT</version>
       <classifier>tests</classifier>
@@ -358,7 +364,6 @@
                 <include>lib/jquery.bbq.js</include>
                 <include>lib/jquery.flot.js</include>
                 <include>lib/jquery.simplemodal.js</include>
-                <include>lib/underscore.js</include>
 
                 <include>lib/neo4js.js</include>
 
