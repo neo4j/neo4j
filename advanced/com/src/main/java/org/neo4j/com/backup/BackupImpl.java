@@ -17,38 +17,32 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.backup;
+package org.neo4j.com.backup;
 
-import org.jboss.netty.channel.Channel;
-import org.neo4j.backup.BackupClient.BackupRequestType;
-import org.neo4j.com.RequestType;
-import org.neo4j.com.Server;
+import org.neo4j.com.MasterUtil;
+import org.neo4j.com.Response;
 import org.neo4j.com.SlaveContext;
+import org.neo4j.com.StoreWriter;
+import org.neo4j.graphdb.GraphDatabaseService;
 
-class BackupServer extends Server<TheBackupInterface, Object>
+class BackupImpl implements TheBackupInterface
 {
-    private final BackupRequestType[] contexts = BackupRequestType.values();
-    static int DEFAULT_PORT = 6362;
+    private final GraphDatabaseService graphDb;
+
+    public BackupImpl( GraphDatabaseService graphDb )
+    {
+        this.graphDb = graphDb;
+    }
     
-    public BackupServer( TheBackupInterface realMaster, int port, String storeDir )
+    public Response<Void> fullBackup( StoreWriter writer )
     {
-        super( realMaster, port, storeDir );
+        SlaveContext context = MasterUtil.rotateLogsAndStreamStoreFiles( graphDb, writer );
+        writer.done();
+        return MasterUtil.packResponse( graphDb, context, null, MasterUtil.ALL );
     }
-
-    @Override
-    protected void responseWritten( RequestType<TheBackupInterface> type, Channel channel,
-            SlaveContext context )
+    
+    public Response<Void> incrementalBackup( SlaveContext context )
     {
-    }
-
-    @Override
-    protected RequestType<TheBackupInterface> getRequestContext( byte id )
-    {
-        return contexts[id];
-    }
-
-    @Override
-    protected void finishOffConnection( Channel channel, SlaveContext context )
-    {
+        return MasterUtil.packResponse( graphDb, context, null, MasterUtil.ALL );
     }
 }

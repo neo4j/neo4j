@@ -27,7 +27,6 @@
     <module>lucene-index</module>
     <module>graph-algo</module>
     <module>ha</module>
-    <module>backup</module>
     <module>neo4j</module>
   </modules>
 

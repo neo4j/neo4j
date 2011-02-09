@@ -17,17 +17,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.backup;
+package org.neo4j.com.backup;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 import org.neo4j.com.MasterUtil;
+import org.neo4j.com.MasterUtil.TxHandler;
 import org.neo4j.com.Response;
 import org.neo4j.com.SlaveContext;
 import org.neo4j.com.ToFileStoreWriter;
-import org.neo4j.com.MasterUtil.TxHandler;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
@@ -39,6 +42,9 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 public class OnlineBackup
 {
     private final BackupClient client;
+    private final String hostNameOrIp;
+    private final int port;
+    private final Map<String, Long> lastCommittedTxs = new TreeMap<String, Long>();
 
     public static OnlineBackup from( String hostNameOrIp, int port )
     {
@@ -52,6 +58,8 @@ public class OnlineBackup
     
     private OnlineBackup( String hostNameOrIp, int port )
     {
+        this.hostNameOrIp = hostNameOrIp;
+        this.port = port;
         this.client = new BackupClient( hostNameOrIp, port, null );
     }
     
@@ -68,6 +76,21 @@ public class OnlineBackup
             targetDb.shutdown();
         }
         return this;
+    }
+    
+    public int getPort()
+    {
+        return port;
+    }
+    
+    public String getHostNameOrIp()
+    {
+        return hostNameOrIp;
+    }
+    
+    public Map<String, Long> getLastCommittedTxs()
+    {
+        return Collections.unmodifiableMap( lastCommittedTxs );
     }
 
     private EmbeddedGraphDatabase startTemporaryDb( String targetDirectory )
@@ -100,6 +123,7 @@ public class OnlineBackup
         try
         {
             MasterUtil.applyReceivedTransactions( response, graphDb, txHandler );
+            getLastCommittedTxs( graphDb );
         }
         catch ( IOException e )
         {
@@ -107,6 +131,14 @@ public class OnlineBackup
         }
     }
     
+    private void getLastCommittedTxs( GraphDatabaseService graphDb )
+    {
+        for ( XaDataSource ds : ((AbstractGraphDatabase) graphDb).getConfig().getTxModule().getXaDataSourceManager().getAllRegisteredDataSources() )
+        {
+            lastCommittedTxs.put( ds.getName(), ds.getLastCommittedTxId() );
+        }
+    }
+
     @SuppressWarnings( "unchecked" )
     private SlaveContext slaveContextOf( GraphDatabaseService graphDb )
     {
