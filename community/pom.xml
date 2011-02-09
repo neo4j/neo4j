@@ -20,6 +20,7 @@
   </properties>
 
   <modules>
+    <module>server-extensions</module>
     <module>server</module>
     <module>examples</module>
     <module>standalone</module>
