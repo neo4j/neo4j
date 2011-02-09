@@ -19,11 +19,17 @@
  */
 package org.neo4j.server.webadmin.webtest;
 
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.server.webadmin.webtest.IsVisible.isVisible;
+
+import java.util.List;
+
 import org.junit.Test;
 import org.openqa.selenium.By;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.RenderedWebElement;
-import static org.junit.Assert.assertThat;
-import static org.hamcrest.core.Is.is;
+import org.openqa.selenium.WebElement;
 
 /**
  * Test that the webadmin data browser behaves as expected.
@@ -51,6 +57,54 @@ public class DataBrowserWebTest extends WebDriverTest {
 		assertThat(addRelationshipDialogFromInput.getAttribute("value"), is(expectedId));
 	}
 	
+	@Test
+    public void createRelationshipShouldListAvailableRelationshipTypes() {
+
+	    String testType = "BANANA";
+	    String irrellevant = "--thiswillneverbeatype--";
+	    String [] expectedItems = new String[] {irrellevant, irrellevant, testType};
+	    
+ 	    testHelper.getGraphDbHelper().createRelationship( testType );
+	    
+	    dataMenu.getElement().click();
+        addRelationshipButton.getElement().click();
+        
+        List<WebElement> opts = addRelationshipDialogTypeDropdown.findElements( By.tagName( "option" ) );
+        
+        assertThat(opts.size(), is( expectedItems.length ));
+        
+        for(int i=0; i<expectedItems.length; i++) {
+            if( ! expectedItems[i].equals(irrellevant)) {
+                assertThat(opts.get(i).getValue(), is(expectedItems[i]));
+            }
+        }
+    }
+	
+	@Test
+    public void shouldNotBeAbleToCreateRelationshipWithoutType() {
+        
+	    String someNodeId = testHelper.nodeUri(dbHelper.createNode());
+	    
+	    int initialRelCount = dbHelper.getNumberOfRelationships();
+	    
+        dataMenu.getElement().click();
+        addRelationshipButton.getElement().click();
+        
+        addRelationshipDialogToInput.getElement().sendKeys( someNodeId );
+        
+        // Remove the initial type that is always entered 
+        int backs = 20;
+        while(backs-- >= 0) { addRelationshipDialogTypeInput.getElement().sendKeys( Keys.BACK_SPACE ); }
+        
+        addRelationshipDialogSave.click();
+        
+        errorList.waitUntilVisible();
+        
+        assertThat(dialog.getElement(), isVisible());
+        assertThat(dbHelper.getNumberOfRelationships(), is(initialRelCount));
+        
+    }
+	
 	private ElementReference nodeId = new ElementReference(webDriver, By.className("mor_data_item_id")) {
 		@Override
 		public RenderedWebElement getElement() {
@@ -59,6 +113,10 @@ public class DataBrowserWebTest extends WebDriverTest {
 	};
 	
 	private ElementReference addRelationshipDialogFromInput = new ElementReference(webDriver, By.id("mor_data_relationship_dialog_from"));
+	private ElementReference addRelationshipDialogToInput = new ElementReference(webDriver, By.id("mor_data_relationship_dialog_to"));
+	private ElementReference addRelationshipDialogTypeDropdown = new ElementReference(webDriver, By.id("mor_data_relationship_available_types"));
+	private ElementReference addRelationshipDialogTypeInput = new ElementReference(webDriver, By.id("mor_data_relationship_dialog_type"));
+	private ElementReference addRelationshipDialogSave = new ElementReference(webDriver, By.className( "mor_data_relationship_dialog_save"));
 	
 	private ElementReference addNodeButton = new ElementReference(webDriver, By.className("mor_data_add_node_button"));
 	
