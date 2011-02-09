@@ -39,10 +39,12 @@ wa.components.data.RelationshipManager = (function($) {
 	
 	me.addRelatiohship = function(ev) {
 		ev.preventDefault();
-		wa.ui.Dialog.showUsingTemplate("New relationship",
-				"templates/components/data/new_relationship.tp", 
-				{ fromNode : me.dataCore.getItem() },
-				me.dialogLoaded);
+		me.server().getAvailableRelationshipTypes().then(function(types) {
+    		wa.ui.Dialog.showUsingTemplate("New relationship",
+    				"templates/components/data/new_relationship.tp", 
+    				{ fromNode : me.dataCore.getItem(), types:types },
+    				me.dialogLoaded);
+		});
 	};
 	
 	me.saveNewRelationship = function(ev) {
@@ -51,26 +53,16 @@ wa.components.data.RelationshipManager = (function($) {
 		var type = $("#mor_data_relationship_dialog_type").val();
 		var to = $("#mor_data_relationship_dialog_to").val();
 		
-		if( from.indexOf("://") ) {
-			from = from.substring(from.lastIndexOf("/")+1);
-		}
-		
-		if( ! to.indexOf("://")) {
-			to = me.server().url + to;
-		}
-		
 		if ( to === from ) {
 			wa.ui.ErrorBox.showError("You cannot create self-relationships.");
+		} else if (type.length === 0) {
+		    wa.ui.ErrorBox.showError("You have to enter a relationship type. Any name will be fine, like 'KNOWS'.");
 		} else {
-			me.server().post("node/" + from + "/relationships", {
-					"to" : to,
-					"data" : {},
-					"type": type
-				}, function(data) {
-				    wa.components.data.DataBrowser.reload();
-					wa.ui.Dialog.close();
-				}
-			);
+			me.server().rel(from, type, to).then(function(){
+			    wa.components.data.DataBrowser.reload();
+				wa.ui.Dialog.close();
+			});
+			
 		}
 	};
 	
@@ -95,9 +87,26 @@ wa.components.data.RelationshipManager = (function($) {
 		}
 	};
 	
+	me.availableTypeDropdownChanged = function(ev) {
+	    
+	    var pickedVal = $(ev.target).val(),
+	        opts = $("#mor_data_relationship_available_types .selectable");
+
+        // Ensure the item we picked has the "selectable" class.
+	    var pickedItem = _.detect(opts, function(opt) { return $(opt).html() == pickedVal; });
+	    if(typeof(pickedItem) != "undefined") {
+	        $("#mor_data_relationship_dialog_type").val(pickedVal);
+	    }
+
+	    // Reset the dropdown
+        $(ev.target).val($($(ev.target).children()[0]).html());
+	    
+	};
+	
 	$(".mor_data_delete_relationship_button").live("click", me.deleteItem);
 	$(".mor_data_add_relationship").live("click", me.addRelatiohship);
 	$(".mor_data_relationship_dialog_save").live("click", me.saveNewRelationship);
+	$("#mor_data_relationship_available_types").live("change", me.availableTypeDropdownChanged);
 	
 	return {};
 	
