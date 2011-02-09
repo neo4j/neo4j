@@ -28,6 +28,8 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.ServerBuilder;
+import org.neo4j.server.rest.FunctionalTestHelper;
+import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.openqa.selenium.By;
 import org.openqa.selenium.RenderedWebElement;
 import org.openqa.selenium.WebDriver;
@@ -37,6 +39,8 @@ public abstract class WebDriverTest {
 
     protected WebDriver webDriver = new FirefoxDriver();
     protected NeoServer server;
+    protected FunctionalTestHelper testHelper;
+    protected GraphDbHelper dbHelper;
 
     private static final File targetHtmlDir = new File("target/classes/webadmin-html");
     private static final File srcHtmlDir = new File("src/main/resources/webadmin-html");
@@ -50,6 +54,9 @@ public abstract class WebDriverTest {
     public void setupServer() throws IOException {
         server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
         server.start();
+     
+        testHelper = new FunctionalTestHelper(server);
+        dbHelper = testHelper.getGraphDbHelper();
         
         String url = server.webadminUri().toString() + "index-no-feedback.html";
         System.out.println("testing " + url);
@@ -60,6 +67,8 @@ public abstract class WebDriverTest {
 
     @After
     public void stopServer() {
+        testHelper = null;
+        dbHelper = null;
         webDriver.close();
         server.stop();
     }
@@ -120,5 +129,8 @@ public abstract class WebDriverTest {
     protected ElementReference consoleInput = new ElementReference(webDriver, By.id("mor_console_input"));
 
     protected ElementReference dashboardValueTrackers = new ElementReference(webDriver, By.id("mor_monitor_valuetrackers"));
-
+    
+    protected ElementReference errorList = new ElementReference(webDriver, By.id("mor_errors"));
+    
+    protected ElementReference dialog = new ElementReference(webDriver, By.id("mor_dialog_content"));
 }
