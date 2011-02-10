@@ -702,12 +702,12 @@
 	
 	    <configuration>
 	      <target>
-	        <property name="classpath" refid="maven.runtime.classpath"/>
+	        <property name="classpath" refid="maven.runtime.classpath" />
 	        <exec executable="java">
-			  <arg line="-Dorg.neo4j.server.properties=${basedir}/neo4j-home/conf/neo4j-server.properties"/>
-			  <arg line="-classpath"/>
-			  <arg line="${basedir}/src/main/resources:${classpath}"/>
-			  <arg line="${neo4j-server.mainClass}"/>
+			  <arg line="-Dorg.neo4j.server.properties=${basedir}/neo4j-home/conf/neo4j-server.properties" />
+			  <arg line="-classpath" />
+			  <arg line="${basedir}/src/main/resources:${classpath}" />
+			  <arg line="${neo4j-server.mainClass}" />
 			</exec>
 	      </target>
 	    </configuration>
