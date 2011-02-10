@@ -2,11 +2,11 @@
     <div class="mor_page_leftcol">
         <div class="mor_module">
 
-            <p>The Neo4j console allows you to use the <a href="http://gremlin.tinkerpop.com">Gremlin graph traversal language</a> for working with your graph. Gremlin is an expressive data flow language that can be used for graph query and manipulation.</p>
+            <p>The Neo4j console allows you to use the <a href="http://gremlin.tinkerpop.com" target="_BLANK">Gremlin graph traversal language</a> for working with your graph. Gremlin is an expressive data flow language that can be used for graph query and manipulation, built on and adding to <a href="http://groovy.codehaus.org/Documentation" target="_BLANK">Groovy</a>.</p>
             <p>Using Gremlin, you can perform powerful data manipulations. <a href="http://gremlin.tinkerpop.com" target="_BLANK">More information.</a></p>
 
 			<div class="mor_module_foldout">
-				<h2><a href="#" class="mor_module_foldout_trigger">Console cheat sheet</a></h2>
+				<h2><a href="#" class="mor_module_foldout_trigger">Gremlin mini cheat sheet</a></h2>
 				<div class="mor_module_foldout_content">
 					<ul class="mor_info_list">
 		                <li>
