@@ -1,0 +1,8 @@
+[[glossary]]
+[glossary]
+Glossary
+========
+
+[glossary]
+SNMP::
+  Simple Network Management Protocol. A widely used protocol to monitor applications, appliances and resources.
