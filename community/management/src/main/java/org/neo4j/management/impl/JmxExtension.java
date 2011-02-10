@@ -66,7 +66,9 @@ public final class JmxExtension extends KernelExtension
     @Override
     protected void unload( KernelData kernel )
     {
-        ( (JmxData) kernel.getState( this ) ).shutdown();
+        JmxData data = (JmxData) kernel.getState( this );
+        // Can be null if startup failed
+        if ( data != null ) data.shutdown();
     }
 
     private JmxData loadBeans( KernelData kernel )
