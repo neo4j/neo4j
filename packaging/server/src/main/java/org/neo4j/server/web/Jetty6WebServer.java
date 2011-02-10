@@ -50,8 +50,8 @@ public class Jetty6WebServer implements WebServer
     private Server jetty;
     private int jettyPort = 80;
 
-    private HashMap<String, String> staticContent = new HashMap<String, String>();
-    private HashMap<String, ServletHolder> jaxRSPackages = new HashMap<String, ServletHolder>();
+    private final HashMap<String, String> staticContent = new HashMap<String, String>();
+    private final HashMap<String, ServletHolder> jaxRSPackages = new HashMap<String, ServletHolder>();
     private NeoServer server;
 
 
@@ -66,7 +66,7 @@ public class Jetty6WebServer implements WebServer
         MovedContextHandler redirector = new MovedContextHandler();
 
         jetty.addHandler( redirector );
-        
+
         loadStaticContent();
         loadJAXRSPackages();
 
@@ -83,8 +83,15 @@ public class Jetty6WebServer implements WebServer
         {
             jetty.stop();
             jetty.join();
-        } catch (Exception e) {
+        }
+        catch ( Exception e )
+        {
             throw new RuntimeException(e);
+        }
+        finally
+        {
+            // Jetty doesn't remove its shutdown hook automatically on stop()
+            jetty.setStopAtShutdown( false );
         }
     }
 
@@ -99,13 +106,13 @@ public class Jetty6WebServer implements WebServer
     public void addJAXRSPackages(List<String> packageNames, String mountPoint) {
         // We don't want absolute URIs at this point
         mountPoint = ensureRelativeUri(mountPoint);
-        
+
         // Trim any trailing slash to keep Jetty happy
         mountPoint = trimTrailingSlash(mountPoint);
-        
+
         ServletContainer container = new NeoServletContainer(server);
         ServletHolder servletHolder = new ServletHolder(container);
-        servletHolder.setInitParameter("com.sun.jersey.config.property.packages", toCommaSeparatedList(packageNames));        
+        servletHolder.setInitParameter("com.sun.jersey.config.property.packages", toCommaSeparatedList(packageNames));
         servletHolder.setInitParameter(ResourceConfig.PROPERTY_CONTAINER_RESPONSE_FILTERS, AllowAjaxFilter.class.getName());
         log.info("Adding JAXRS package %s at [%s]", packageNames, mountPoint);
         jaxRSPackages.put(mountPoint, servletHolder);
@@ -115,7 +122,7 @@ public class Jetty6WebServer implements WebServer
         if(mountPoint.equals("/")) {
             return mountPoint;
         }
-        
+
         if(mountPoint.endsWith("/")) {
             mountPoint = mountPoint.substring(0, mountPoint.length() -1);
         }
@@ -169,7 +176,7 @@ public class Jetty6WebServer implements WebServer
 
     private void loadJAXRSPackages() {
         for (String mountPoint : jaxRSPackages.keySet()) {
-            
+
             ServletHolder servletHolder = jaxRSPackages.get(mountPoint);
             log.info("Mounting servlet at [%s]", mountPoint);
             Context jerseyContext = new Context(jetty, mountPoint);
