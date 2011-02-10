@@ -57,6 +57,7 @@ public class Config
     public static final String DUMP_CONFIGURATION = "dump_configuration";
     public static final String KEEP_LOGICAL_LOGS = "keep_logical_logs";
     public static final String ENABLE_REMOTE_SHELL = "enable_remote_shell";
+    public static final String ENABLE_ONLINE_BACKUP = "enable_online_backup";
 
     public static final String BACKUP_SLAVE = "backup_slave";
 
