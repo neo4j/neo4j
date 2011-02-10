@@ -64,7 +64,6 @@ public class SingleJvmTest extends AbstractHaTest
         Map<String,String> cfg = new HashMap<String, String>(config);
         cfg.put( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, Integer.toString(machineId) );
         cfg.put( Config.KEEP_LOGICAL_LOGS, "true" );
-        cfg.put( "enable_online_backup", "false" );
         HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase(
                 slavePath.getAbsolutePath(), cfg, AbstractBroker.wrapSingleBroker( broker ) );
         haDbs.add( db );

@@ -158,6 +158,11 @@ class EmbeddedGraphDbImpl
         {
             KernelExtensionLoader extensionLoader = new KernelExtensionLoader()
             {
+                public void preInit()
+                {
+                    extensions.preInitAll( msgLog );
+                }
+                
                 public void init()
                 {
                     extensions.initAll( msgLog );
