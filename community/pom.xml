@@ -19,6 +19,12 @@
     <short-name>embedded-build</short-name>
   </properties>
 
+  <scm>
+    <connection>scm:git:git://github.com/neo4j/graphdb.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/graphdb.git</developerConnection>
+    <url>https://github.com/neo4j/graphdb</url>
+  </scm>  
+
   <modules>
     <module>kernel</module>
     <module>management</module>
