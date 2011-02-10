@@ -19,36 +19,41 @@
 		                </li>
 		                <li>
 		                    <h3>Get node by id</h3>
-		                    <p class="mor_info_list_info">&gt; myNode = g.v(0)</p>
+		                    <p class="mor_info_list_info">&gt; refNode = g.v(0)</p>
 		                </li>
 		                <li>
-		                    <h3>Create node</h3>
-		                    <p class="mor_info_list_info">&gt; myNode = g.addVertex()</p>
+                            <h3>Set property on Node</h3>
+                            <p class="mor_info_list_info">&gt; refNode.name = "bob"</p>
+                        </li>
+                        <li>
+		                    <h3>List all node properties</h3>
+		                    <p class="mor_info_list_info">&gt; refNode.map</p>
 		                </li>
+                        <li>
+                            <h3>Define a properties map</h3>
+                            <p class="mor_info_list_info">&gt; props = [:]</p>
+                        </li>
+                        <li>
+                            <h3>Create a node</h3>
+                            <p class="mor_info_list_info">&gt; secondNode = g.addVertex(props)</p>
+                        </li>
 		                <li>
 		                    <h3>Create relation</h3>
-		                    <p class="mor_info_list_info">&gt; myRelation = g.addEdge(myFirstNode, "relation type", myOtherNode)</p>
+		                    <p class="mor_info_list_info">&gt; myRelation = g.addEdge(props, refNode, secondNode, 'KNOWS')</p>
 		                </li>
 		                <li>
 		                    <h3>Remove node or relation</h3>
-		                    <p class="mor_info_list_info">&gt; g.removeVertex/Edge(myNodeOrRelation)</p>
-		                </li>
-		                <li>
-		                    <h3>Set attribute</h3>
-		                    <p class="mor_info_list_info">&gt; myNodeOrRelation.['attributeName'] = "My Value"</p>
-		                </li>
-		                <li>
-		                    <h3>Get attribute</h3>
-		                    <p class="mor_info_list_info">&gt; myNodeOrRelation.attributeName</p>
+                            <p class="mor_info_list_info">&gt; g.removeEdge(myRelation)</p>
+		                    <p class="mor_info_list_info">&gt; g.removeVertex(secondNode)</p>
 		                </li>
 		                <li>
 		                    <h3>List relations of node</h3>
 		                    <p class="mor_info_list_info">
 		                            <ul>
-		                                <li>&gt; myNode.bothE</li>
-		                                <li>&gt; myNode.inE</li>
-		                                <li>&gt; myNode.outE</li>
-		                                <li>&gt; myNode.bothE{it.label="relation type"}</li>
+		                                <li>&gt; refNode.bothE</li>
+		                                <li>&gt; refNode.inE</li>
+		                                <li>&gt; refNode.outE</li>
+		                                <li>&gt; refNode.bothE{it.label="relation type"}</li>
 		                            </ul>
 		                        </p>
 		                </li>
