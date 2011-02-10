@@ -28,7 +28,9 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.logging.Logger;
+import org.neo4j.ext.udc.UdcProperties;
 import org.rrd4j.core.RrdDb;
+
 
 public class Database
 {
@@ -70,6 +72,7 @@ public class Database
 
         databaseProperties.put( org.neo4j.kernel.Config.ENABLE_REMOTE_SHELL, "true" );
         databaseProperties.put( org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS, "true" );
+        databaseProperties.put( UdcProperties.UDC_SOURCE_KEY, "server" );
 
         return mode.createDatabase( databaseStoreDirectory, databaseProperties );
     }

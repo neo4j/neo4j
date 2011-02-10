@@ -8,7 +8,7 @@ include::server-installation.txt[]
 
 include::server-configuration.txt[]
 
-include::high-availability.txt[]
+include::{importdir}/neo4j-server-docs-jar/dev/high-availability.txt[]
 
 include::server-plugins.txt[]
 
