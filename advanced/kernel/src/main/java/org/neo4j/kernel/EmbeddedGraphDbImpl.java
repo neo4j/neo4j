@@ -176,10 +176,22 @@ class EmbeddedGraphDbImpl
             graphDbInstance.start( graphDbService, extensionLoader );
             nodeManager = config.getGraphDbModule().getNodeManager();
             extensionLoader.load();
-            started = true;
+
+            started = true; // must be last
+        }
+        catch ( Error cause )
+        {
+            msgLog.logMessage( "Startup failed", cause );
+            throw cause;
+        }
+        catch ( RuntimeException cause )
+        {
+            msgLog.logMessage( "Startup failed", cause );
+            throw cause;
         }
         finally
         {
+            // If startup failed, cleanup the extensions - or they will leak
             if ( !started ) extensions.shutdown( msgLog );
         }
     }
