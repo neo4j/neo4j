@@ -104,6 +104,9 @@ class GraphDbInstance
         byte resourceId[] = "414141".getBytes();
         params.put( LockManager.class, config.getLockManager() );
         params.put( LockReleaser.class, config.getLockReleaser() );
+        
+        kernelExtensionLoader.preInit();
+        
         config.getTxModule().registerDataSource( Config.DEFAULT_DATA_SOURCE_NAME,
                 Config.NIO_NEO_DB_CLASS, resourceId, params );
         // hack for lucene index recovery if in path

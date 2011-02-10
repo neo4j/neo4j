@@ -31,7 +31,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 
@@ -56,7 +55,7 @@ public class DbRepresentation implements Serializable
     
     public static DbRepresentation of( String storeDir )
     {
-        GraphDatabaseService db = new EmbeddedGraphDatabase( storeDir, MapUtil.stringMap( "enable_online_backup", "false" ) );
+        GraphDatabaseService db = new EmbeddedGraphDatabase( storeDir );
         try
         {
             return of( db );
