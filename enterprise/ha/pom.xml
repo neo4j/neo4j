@@ -27,6 +27,20 @@
     </license>
   </licenses>
 
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <skip>false</skip>
+          <argLine>-Xmx1024m</argLine>
+          <!-- forkMode>perTest</forkMode -->
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+
   <repositories>
     <repository>
       <id>repository.jboss.org</id>
