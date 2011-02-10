@@ -19,13 +19,12 @@
  */
 package org.neo4j.server.plugins;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.Representation;
-
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.Map;
 
 class PluginMethod extends PluginPoint
 {

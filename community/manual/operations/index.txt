@@ -1,0 +1,15 @@
+[[operations]]
+Operations
+==========
+
+This chapter describes how to maintain a Neo4j installation.
+This includes topics such as backing up the database and monitoring the health of the database as well as diagnosing issues.
+
+:leveloffset: 2
+
+include::backup.txt[]
+
+include::security.txt[]
+
+include::monitoring.txt[]
+
