@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-central</artifactId>
-    <version>10</version>
+    <version>18</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -13,13 +13,13 @@
   <name>Neo4j - Generic shell</name>
   <description>
 		A generic command shell with a client and server part.
-	</description>
+  </description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
-    <connection>scm:svn:https://svn.neo4j.org/components/shell/trunk/</connection>
-    <developerConnection>scm:svn:https://svn.neo4j.org/components/shell/trunk/</developerConnection>
-    <url>https://trac.neo4j.org/browser/components/shell</url>
+    <connection>scm:git:git://github.com/neo4j/shell.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/shell.git</developerConnection>
+    <url>https://github.com/neo4j/shell</url>
   </scm>
 
   <properties>
