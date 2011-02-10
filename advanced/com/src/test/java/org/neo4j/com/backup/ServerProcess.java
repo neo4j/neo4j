@@ -20,6 +20,7 @@
 package org.neo4j.com.backup;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
@@ -32,8 +33,7 @@ public class ServerProcess extends SubProcess<ServerInterface, String> implement
     @Override
     protected void startup( String parameter ) throws Throwable
     {
-        db = new EmbeddedGraphDatabase( parameter,
-                stringMap( OnlineBackupExtension.ENABLE_ONLINE_BACKUP, "true" ) );
+        db = new EmbeddedGraphDatabase( parameter, stringMap( ENABLE_ONLINE_BACKUP, "true" ) );
     }
     
     public void awaitStarted()

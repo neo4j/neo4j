@@ -143,14 +143,29 @@ public abstract class KernelExtension extends Service
         private final Collection<KernelExtension> loadedExtensions = new ArrayList<KernelExtension>();
         private final Map<KernelExtension, Object> state = new HashMap<KernelExtension, Object>();
 
-        void initAll( StringLogger msgLog )
+        void preInitAll( StringLogger msgLog )
         {
             for ( KernelExtension extension : Service.load( KernelExtension.class ) )
             {
                 try
                 {
-                    extension.init( this );
+                    extension.preInit( this );
                     loadedExtensions.add( extension );
+                }
+                catch ( Throwable t )
+                {
+                    msgLog.logMessage( "Failed to init extension " + extension, t, true );
+                }
+            }
+        }
+        
+        void initAll( StringLogger msgLog )
+        {
+            for ( KernelExtension extension : loadedExtensions )
+            {
+                try
+                {
+                    extension.init( this );
                     initialized( extension );
                     msgLog.logMessage( "Extension " + extension + " initialized ok", true );
                 }
@@ -235,6 +250,15 @@ public abstract class KernelExtension extends Service
      * Load this extension for a particular Neo4j Kernel.
      */
     protected abstract void load( KernelData kernel );
+
+    /**
+     * Takes place before any data sources has been registered and is there
+     * to let extensions affect the configuration of other things starting up.
+     */
+    protected void preInit( KernelData kernelData )
+    {
+        // Default: do nothing
+    }
 
     /**
      * Init this extension with an, at the moment, non-initialized graph database.

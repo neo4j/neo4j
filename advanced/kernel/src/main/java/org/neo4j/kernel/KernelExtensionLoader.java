@@ -21,6 +21,8 @@ package org.neo4j.kernel;
 
 public interface KernelExtensionLoader
 {
+    void preInit();
+    
     void init();
     
     void load();
