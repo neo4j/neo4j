@@ -637,8 +637,8 @@
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
               <skip>false</skip>
-              <argLine>-Xmx512m -XX:+HeapDumpOnOutOfMemoryError</argLine>
-              <forkMode>once</forkMode>
+              <argLine>-Xmx1024m</argLine>
+              <forkMode>perTest</forkMode>
             </configuration>
           </plugin>
         </plugins>
