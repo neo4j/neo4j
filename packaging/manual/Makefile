@@ -151,4 +151,3 @@ manpages:
 	a2x -k -f manpage -d  manpage -D $(MANPAGES) $(IMPORTDIR)/neo4j-shell-docs-jar/ops/neo4j-shell.1.txt
 	mv $(MANPAGES)/*.xml $(BUILDDIR)
 	gzip $(MANPAGES)/*
-
