@@ -9,10 +9,12 @@
   <parent>
     <groupId>org.neo4j.examples</groupId>
     <artifactId>examples-pom</artifactId>
-    <version>17</version>
+    <version>18</version>
   </parent>
   
   <scm>
+    <connection>scm:git:git://github.com/neo4j/examples.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/examples.git</developerConnection>
     <url>https://github.com/neo4j/examples</url>
   </scm>
 
