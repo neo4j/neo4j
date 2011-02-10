@@ -20,6 +20,8 @@
 package org.neo4j.com.backup;
 
 import static java.util.regex.Pattern.quote;
+import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
+import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -30,15 +32,35 @@ import org.neo4j.kernel.KernelExtension;
 @Service.Implementation( KernelExtension.class )
 public class OnlineBackupExtension extends KernelExtension
 {
-    public static final String ENABLE_ONLINE_BACKUP = "enable_online_backup";
-
     public OnlineBackupExtension()
     {
         super( "online backup" );
     }
     
     @Override
+    protected void preInit( KernelData kernel )
+    {
+        if ( parsePort( kernel ) != null )
+        {
+            // Means that online backup will be enabled
+            kernel.getConfig().getParams().put( KEEP_LOGICAL_LOGS, "true" );
+        }
+    }
+    
+    @Override
     protected void load( KernelData kernel )
+    {
+        Integer port = parsePort( kernel );
+        if ( port != null )
+        {
+            TheBackupInterface backup = new BackupImpl( kernel.graphDatabase() );
+            BackupServer server = new BackupServer( backup, port,
+                    (String) kernel.getConfig().getParams().get( "store_dir" ) );
+            kernel.setState( this, server );
+        }
+    }
+    
+    private Integer parsePort( KernelData kernel )
     {
         String configValue = (String) kernel.getParam( ENABLE_ONLINE_BACKUP );
         if ( configValue != null )
@@ -54,13 +76,11 @@ public class OnlineBackupExtension extends KernelExtension
             }
             else if ( !Boolean.parseBoolean( configValue ) )
             {
-                return;
+                return null;
             }
-            TheBackupInterface backup = new BackupImpl( kernel.graphDatabase() );
-            BackupServer server = new BackupServer( backup, port,
-                    (String) kernel.getConfig().getParams().get( "store_dir" ) );
-            kernel.setState( this, server );
+            return port;
         }
+        return null;
     }
     
     private Map<String, String> parseConfigValue( String configValue )

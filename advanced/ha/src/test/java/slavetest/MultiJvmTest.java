@@ -29,7 +29,6 @@ import java.util.Map;
 import org.junit.After;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.ha.StandaloneDatabase;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 public class MultiJvmTest extends AbstractHaTest
@@ -37,7 +36,6 @@ public class MultiJvmTest extends AbstractHaTest
     private static final int MASTER_PORT = 8990;
 
     private final List<StandaloneDatabase> jvms = new ArrayList<StandaloneDatabase>();
-    private int maxSecondsToWaitToJvmStart = 10;
 
     @Override
     protected void addDb( Map<String, String> config ) throws Exception
@@ -53,12 +51,6 @@ public class MultiJvmTest extends AbstractHaTest
     {
         for ( StandaloneDatabase jvm : jvms )
             jvm.awaitStarted();
-    }
-
-    @Override
-    protected void setMaxTimeToWaitForDbStart( int seconds )
-    {
-        this.maxSecondsToWaitToJvmStart = seconds;
     }
 
     protected static String[] buildExtraArgs( Map<String, String> config )
@@ -77,12 +69,12 @@ public class MultiJvmTest extends AbstractHaTest
     {
         shutdownDbs();
 
-        GraphDatabaseService masterDb = embeddedGraphDatabaseWithoutBackup( dbPath( 0 ).getAbsolutePath());
+        GraphDatabaseService masterDb = new EmbeddedGraphDatabase( dbPath( 0 ).getAbsolutePath() );
         try
         {
             for ( int i = 1; i < jvms.size(); i++ )
             {
-                GraphDatabaseService slaveDb = embeddedGraphDatabaseWithoutBackup( dbPath( i ).getAbsolutePath() );
+                GraphDatabaseService slaveDb = new EmbeddedGraphDatabase( dbPath( i ).getAbsolutePath() );
                 try
                 {
                     verify( masterDb, slaveDb );
@@ -97,11 +89,6 @@ public class MultiJvmTest extends AbstractHaTest
         {
             masterDb.shutdown();
         }
-    }
-
-    private GraphDatabaseService embeddedGraphDatabaseWithoutBackup( String path )
-    {
-        return new EmbeddedGraphDatabase( path, MapUtil.stringMap( "enable_online_backup", "false" ) );
     }
 
     @Override
