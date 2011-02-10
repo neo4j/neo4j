@@ -1,0 +1,40 @@
+[[modeling-properties]]
+Graph Property Types
+====================
+
+Both Nodes and Edges support property values which may be of integral, floating-point, string, or array type.
+
+== Integral Types ==
+
+[options="header"]
+|==========================================================
+| Type  | Range 
+| byte  | -128 to 127
+| short | -32768 to 32768
+| int   | -2147483648 to 2147483647
+| long  | -9223372036854775808 to 9223372036854775807
+| char  | '\u0000' to '\uffff' (0 to 65535)
+
+
+== Floating Point Types ==
+
+Floating point values are associated with IEEE 754 format values,
+offering different levels of precision.
+
+[options="header"]
+|==========================================================
+| Type   | Precision
+| float  | 32-bit single-precision 
+| double | 64-bit double-precision
+
+
+== Strings ==
+
+String values may contain unicode characters, practically limited in size by available memory, but pragmatically limited to a few thousand characters.
+
+
+== Arrays ==
+
+Arrays of integral, floating-point and even String values are supported.
+
+
