@@ -16,7 +16,7 @@ conf/neo4j-server.properties
 ----
 
 This file contains serveral important settings, and although the defaults are sensible
-adminstrators might choose to make changes (especially to the port settings).
+administrators might choose to make changes (especially to the port settings).
 
 Set the location on disk of the database directory 
 [source,shell]
