@@ -23,6 +23,7 @@
     <module>server-extensions</module>
     <module>server</module>
     <module>examples</module>
+    <module>manual</module>
     <module>standalone</module>
   </modules>
 
