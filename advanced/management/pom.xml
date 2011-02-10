@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-central</artifactId>
-    <version>17</version>
+    <version>18</version>
   </parent>
 
   <groupId>org.neo4j</groupId>
@@ -19,7 +19,7 @@
     <short-name>management</short-name>
   </properties>
 
-  <packaging>bundle</packaging>
+  <packaging>jar</packaging>
   
   <profiles>
     <profile>
