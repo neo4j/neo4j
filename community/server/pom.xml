@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>17</version>
+    <version>18</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -633,8 +633,8 @@
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
               <skip>false</skip>
-              <argLine>-Xmx1024m</argLine>
-              <forkMode>perTest</forkMode>
+              <argLine>-Xmx512m -XX:+HeapDumpOnOutOfMemoryError</argLine>
+              <forkMode>once</forkMode>
             </configuration>
           </plugin>
         </plugins>
