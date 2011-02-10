@@ -332,10 +332,6 @@ public abstract class AbstractHaTest
 
     protected abstract Fetcher<DoubleLatch> getDoubleLatch() throws Exception;
 
-    protected void setMaxTimeToWaitForDbStart( int seconds )
-    {
-    }
-
     private class Worker extends Thread
     {
         private boolean successfull;
@@ -566,7 +562,6 @@ public abstract class AbstractHaTest
     {
         startUpMaster( MapUtil.stringMap() );
         executeJobOnMaster( new CommonJobs.LargeTransactionJob( 1, 60 ) );
-        setMaxTimeToWaitForDbStart( 120 );
         addDb( MapUtil.stringMap() );
         awaitAllStarted();
         executeJob( new CommonJobs.CreateSubRefNodeJob( "whatever", "my_key", "my_value" ), 0 );

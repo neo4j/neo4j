@@ -20,8 +20,8 @@
 package org.neo4j.com.backup;
 
 import static org.junit.Assert.fail;
-import static org.neo4j.com.backup.OnlineBackupExtension.ENABLE_ONLINE_BACKUP;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
 
 import java.io.File;
 
