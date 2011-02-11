@@ -14,6 +14,7 @@
 
   <properties>
     <short-name>neo4j-server-examples</short-name>
+    <bundle.namespace>org.neo4j.examples.server</bundle.namespace>
     <license-text.header>ApacheLicense-2.0-header.txt</license-text.header>
   </properties>
 
