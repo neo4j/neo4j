@@ -20,17 +20,16 @@
 package org.neo4j.shell.impl;
 
 import java.io.Serializable;
-import java.util.Collections;
-import java.util.HashMap;
+import java.rmi.RemoteException;
 import java.util.Map;
 
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.KernelExtension;
-import org.neo4j.shell.StartClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 @Service.Implementation( KernelExtension.class )
-public final class ShellServerExtension extends KernelExtension
+public final class ShellServerExtension extends KernelExtension<GraphDatabaseShellServer>
 {
     public ShellServerExtension()
     {
@@ -38,103 +37,65 @@ public final class ShellServerExtension extends KernelExtension
     }
 
     @Override
-    protected void load( KernelData kernel )
+    protected GraphDatabaseShellServer load( KernelData kernel )
     {
-        String shellConfig = (String) kernel.getParam( "enable_remote_shell" );
-        if ( shellConfig != null )
+        return loadShell( kernel, new ShellBootstrap( kernel ) );
+    }
+
+    @Override
+    protected ShellBootstrap agentArgument( String agentArg )
+    {
+        return ShellBootstrap.deserialize( agentArg );
+    }
+
+    @Override
+    protected GraphDatabaseShellServer agentLoad( KernelData kernel, Object param )
+    {
+        return loadShell( kernel, (ShellBootstrap) param );
+    }
+
+    private GraphDatabaseShellServer loadShell( KernelData kernel, ShellBootstrap bootstrap )
+    {
+        try
         {
-            if ( shellConfig.contains( "=" ) )
-            {
-                enableRemoteShell( kernel, parseShellConfigParameter( shellConfig ) );
-            }
-            else if ( Boolean.parseBoolean( shellConfig ) )
-            {
-                enableRemoteShell( kernel, null );
-            }
+            return bootstrap.load( kernel.graphDatabase() );
+        }
+        catch ( RemoteException cause )
+        {
+            throw new RuntimeException( "Could not load remote shell", cause );
         }
     }
 
     @Override
-    protected void unload( KernelData kernel )
+    protected void agentVisit( KernelData kernel, GraphDatabaseShellServer state, Object param )
     {
-        GraphDatabaseShellServer server = getServer( kernel );
-        if ( server != null )
-        {
-            server.shutdown();
-        }
+        ( (ShellBootstrap) param ).visit( state );
     }
 
-    @SuppressWarnings( "boxing" )
+    @Override
+    protected void unload( GraphDatabaseShellServer server )
+    {
+        server.shutdown();
+    }
+
     public void enableRemoteShell( KernelData kernel, Map<String, Serializable> config )
     {
-        GraphDatabaseShellServer server = getServer( kernel );
-        if ( server != null )
-        {
-            throw new IllegalStateException( "Shell already enabled" );
-        }
-        if ( config == null ) config = Collections.<String, Serializable>emptyMap();
+        ShellBootstrap bootstrap = new ShellBootstrap( config );
+        GraphDatabaseShellServer server = getState( kernel );
         try
         {
-            server = new GraphDatabaseShellServer( kernel.graphDatabase(), (Boolean) getConfig(
-                    config, StartClient.ARG_READONLY, Boolean.FALSE ) );
-            int port = (Integer) getConfig( config, StartClient.ARG_PORT,
-                    AbstractServer.DEFAULT_PORT );
-            String name = (String) getConfig( config, StartClient.ARG_NAME,
-                    AbstractServer.DEFAULT_NAME );
-            server.makeRemotelyAvailable( port, name );
+            if ( server != null )
+            {
+                bootstrap.enable( server );
+            }
+            else
+            {
+                loadAgent( kernel, bootstrap );
+            }
         }
-        catch ( Exception ex )
+        catch ( RemoteException cause )
         {
-            if ( server != null ) server.shutdown();
-            throw new IllegalStateException( "Can't start remote Neo4j shell", ex );
+            throw new RuntimeException( "Could not load remote shell", cause );
         }
-        setServer( kernel, server );
-    }
-
-    private void setServer( KernelData kernel, final GraphDatabaseShellServer server )
-    {
-        kernel.setState( this, server );
-    }
-
-    private GraphDatabaseShellServer getServer( KernelData kernel )
-    {
-        return (GraphDatabaseShellServer) kernel.getState( this );
-    }
-
-    @SuppressWarnings( "boxing" )
-    private static Map<String, Serializable> parseShellConfigParameter( String shellConfig )
-    {
-        Map<String, Serializable> map = new HashMap<String, Serializable>();
-        for ( String keyValue : shellConfig.split( "," ) )
-        {
-            String[] splitted = keyValue.split( "=" );
-            if ( splitted.length != 2 )
-            {
-                throw new RuntimeException(
-                        "Invalid shell configuration '" + shellConfig
-                                + "' should be '<key1>=<value1>,<key2>=<value2>...' where key can"
-                                + " be any of [" + StartClient.ARG_PORT + ", " +
-                                StartClient.ARG_NAME + ", " + StartClient.ARG_READONLY + "]" );
-            }
-            String key = splitted[0].trim();
-            Serializable value = splitted[1];
-            if ( key.equals( StartClient.ARG_PORT ) )
-            {
-                value = Integer.parseInt( splitted[1] );
-            }
-            else if ( key.equals( StartClient.ARG_READONLY ) )
-            {
-                value = Boolean.parseBoolean( splitted[1] );
-            }
-            map.put( key, value );
-        }
-        return map;
-    }
-
-    private Serializable getConfig( Map<String, Serializable> config, String key,
-            Serializable defaultValue )
-    {
-        Serializable result = config.get( key );
-        return result != null ? result : defaultValue;
     }
 }

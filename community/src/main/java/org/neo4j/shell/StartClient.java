@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.shell.impl.AbstractServer;
 import org.neo4j.shell.impl.SameJvmClient;
+import org.neo4j.shell.impl.ShellBootstrap;
 import org.neo4j.shell.impl.ShellServerExtension;
 import org.neo4j.shell.impl.StandardConsole;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
@@ -115,7 +116,7 @@ public class StartClient
      */
     public static void agentmain( String agentArgs )
     {
-        new ShellServerExtension().agentLoad( agentArgs );
+        new ShellServerExtension().loadAgent( agentArgs );
     }
 
     private void start( String[] arguments )
@@ -322,7 +323,7 @@ public class StartClient
             String jarfile = new File(
                     getClass().getProtectionDomain().getCodeSource().getLocation().toURI() ).getAbsolutePath();
             Object vm = attachMethod.invoke( null, pid );
-            loadMethod.invoke( vm, jarfile, "enable_remote_shell = port=" + port + ", name=" + name );
+            loadMethod.invoke( vm, jarfile, new ShellBootstrap( port, name ).serialize() );
         }
         catch ( Exception e )
         {
