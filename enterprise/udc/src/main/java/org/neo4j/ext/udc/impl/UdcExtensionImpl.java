@@ -25,8 +25,8 @@ import java.util.Timer;
 import org.neo4j.ext.udc.UdcProperties;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.Config;
+import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.KernelExtension;
-import org.neo4j.kernel.Version;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 
 /**
@@ -39,39 +39,27 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
  * intervals. Both times are specified in milliseconds.
  */
 @Service.Implementation( KernelExtension.class )
-public class UdcExtensionImpl extends KernelExtension implements UdcProperties
+public class UdcExtensionImpl extends KernelExtension<UdcTimerTask> implements UdcProperties
 {
-
     public static final String UDC_SOURCE_DISTRIBUTION_KEY = "neo4j.ext.udc.host";
+    /**
+     * Millisecond interval for subsequent updates.
+     * <p/>
+     * Defaults to 24 hours.
+     */
+    private static final int DEFAULT_INTERVAL = 1000 * 60 * 60 * 24;
 
     /**
      * Delay, in milliseconds, before the first UDC update is sent.
      * <p/>
      * Defaults to 10 minutes.
      */
-    private int firstDelay = 10 * 1000 * 60;
-
-    /**
-     * Millisecond interval for subsequent updates.
-     * <p/>
-     * Defaults to 24 hours.
-     */
-    private int interval = 1000 * 60 * 60 * 24;
+    private static final int DEFAULT_DELAY = 10 * 1000 * 60;
 
     /**
      * Host address to which UDC updates will be sent.
      */
-    private String hostAddress = "udc.neo4j.org";
-
-    /**
-     * Disable the extension.
-     * <p/>
-     * Defaults to false.
-     */
-    private boolean disabled = false;
-
-    private Timer timer;
-    private String source;
+    private static final String DEFAULT_HOST = "udc.neo4j.org";
 
     /**
      * No-arg constructor, sets the extension key to "kernel udc".
@@ -81,102 +69,72 @@ public class UdcExtensionImpl extends KernelExtension implements UdcProperties
         super( "kernel udc" );
     }
 
-    /**
-     * Lifecycle load event, which occurs during the startup of
-     * a new GraphDbInstance.
-     * <p/>
-     * Configuration information is retrieved from the KernelData,
-     * then a daemon thread is started to periodically collect
-     * and submit usage data.
-     *
-     * @param kernel reference to the loading graph database kernel.
-     */
-    @Override
-    protected void load( KernelData kernel )
-    {
-        configure( kernel.getConfig() );
-
-        // ABK: a hack to register this extension with the kernel, which
-        // only knows about extensions that have a saved state
-        kernel.setState( this, new Object() );
-
-        if ( !disabled )
-        {
-            timer = new Timer();
-            NeoStoreXaDataSource ds = (NeoStoreXaDataSource)kernel.getConfig().getTxModule().getXaDataSourceManager().getXaDataSource( "nioneodb" );
-            boolean crashPing = ds.getXaContainer().getLogicalLog().wasNonClean();
-            String storeId = Long.toHexString( ds.getRandomIdentifier() );
-            UdcTimerTask task = new UdcTimerTask( hostAddress, Version.getKernelRevision(), storeId, source, crashPing );
-            timer.scheduleAtFixedRate( task, firstDelay, interval );
-        }
-    }
+    private static Timer timer = new Timer( /*isDeamon=*/true );
 
     @Override
-    protected void unload( KernelData kernel )
+    protected UdcTimerTask load( KernelData kernel )
     {
-        if ( timer != null )
-        {
-            timer.cancel();
-        }
-    }
-
-    /**
-     * Attempt to retrieve configuration provided by user.
-     * <p/>
-     * Configuration precedence is in this order:
-     * <p/>
-     * <ol>
-     * <li>value from config</li>
-     * <li>system property</li>
-     * <li>hard-coded default value</li>
-     * <ol>
-     *
-     * @param config user defined configuration parameters
-     */
-    private void configure( Config config )
-    {
-        Properties props = loadSystemProperties();
-
-        MyConfig configuration = new MyConfig( config, props );
+        MyConfig configuration = new MyConfig( kernel.getConfig(), loadSystemProperties() );
 
         try
         {
-            firstDelay = configuration.getInt( FIRST_DELAY_CONFIG_KEY, "600000" );
-        } catch ( Exception e )
+            // break if disabled
+            if ( configuration.getBool( UDC_DISABLE_KEY, "false" ) ) return null;
+        }
+        catch ( Exception e )
         {
-            ;
+            // default: not disabled
+        }
+        int firstDelay = DEFAULT_DELAY;
+        int interval = DEFAULT_INTERVAL;
+        String hostAddress = DEFAULT_HOST;
+        String source = null;
+        try
+        {
+            firstDelay = configuration.getInt( FIRST_DELAY_CONFIG_KEY, Integer.toString( firstDelay ) );
+        }
+        catch ( Exception e )
+        {
+            // fall back to default
         }
         try
         {
-            interval = configuration.getInt( INTERVAL_CONFIG_KEY, "86400000" );
-        } catch ( Exception e )
-        {
-            ;
+            interval = configuration.getInt( INTERVAL_CONFIG_KEY, Integer.toString( interval ) );
         }
-
+        catch ( Exception e )
+        {
+            // fall back to default
+        }
         try
         {
             hostAddress = configuration.getString( UDC_HOST_ADDRESS_KEY, hostAddress );
-        } catch ( Exception e )
-        {
-            ;
         }
-
+        catch ( Exception e )
+        {
+            // fall back to default
+        }
         try
         {
-            disabled = configuration.getBool( UDC_DISABLE_KEY, "false" );
-        } catch ( Exception e )
-        {
-            ;
+            source = configuration.getString( UDC_SOURCE_KEY, source );
         }
+        catch ( Exception e )
+        {
+            // fall back to default
+        }
+        NeoStoreXaDataSource ds = (NeoStoreXaDataSource) kernel.getConfig().getTxModule().getXaDataSourceManager().getXaDataSource( "nioneodb" );
+        boolean crashPing = ds.getXaContainer().getLogicalLog().wasNonClean();
+        String storeId = Long.toHexString( ds.getRandomIdentifier() );
+        String version = kernel.version().getRevision();
+        if ( version.equals( "" ) ) version = kernel.version().getVersion();
+        UdcTimerTask task = new UdcTimerTask( hostAddress, version, storeId, source, crashPing );
+        timer.scheduleAtFixedRate( task, firstDelay, interval );
+        return task;
+    }
 
-        try
-        {
-            source = configuration.getString( UDC_SOURCE_KEY, null );
-        } catch ( Exception e )
-        {
-            ;
-        }
+    @Override
+    protected void unload( UdcTimerTask task )
+    {
+        task.cancel();
     }
 
     private class MyConfig
@@ -222,7 +180,6 @@ public class UdcExtensionImpl extends KernelExtension implements UdcProperties
         } catch ( Exception e )
         {
             System.err.println( "failed to load udc.properties, because: " + e );
-            ; // fail silently,
         }
         return sysProps;
     }

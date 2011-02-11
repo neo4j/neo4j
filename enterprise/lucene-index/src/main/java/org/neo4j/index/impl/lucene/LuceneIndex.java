@@ -50,7 +50,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
     static final String KEY_START_NODE_ID = "_start_node_id_";
     static final String KEY_END_NODE_ID = "_end_node_id_";
     
-    final LuceneIndexProvider service;
+    final LuceneIndexImplementation service;
     private IndexIdentifier identifier;
     final IndexType type;
     private volatile boolean deleted;
@@ -60,7 +60,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
     // allow for self-healing properties.
     final Collection<Long> abandonedIds = new CopyOnWriteArraySet<Long>();
 
-    LuceneIndex( LuceneIndexProvider service, IndexIdentifier identifier )
+    LuceneIndex( LuceneIndexImplementation service, IndexIdentifier identifier )
     {
         this.service = service;
         this.identifier = identifier;
@@ -357,7 +357,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
 
     static class NodeIndex extends LuceneIndex<Node>
     {
-        NodeIndex( LuceneIndexProvider service,
+        NodeIndex( LuceneIndexImplementation service,
                 IndexIdentifier identifier )
         {
             super( service, identifier );
@@ -398,7 +398,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
     static class RelationshipIndex extends LuceneIndex<Relationship>
             implements org.neo4j.graphdb.index.RelationshipIndex
     {
-        RelationshipIndex( LuceneIndexProvider service,
+        RelationshipIndex( LuceneIndexImplementation service,
                 IndexIdentifier identifier )
         {
             super( service, identifier );
