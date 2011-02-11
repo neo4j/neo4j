@@ -22,6 +22,7 @@
     <neo-server.confdir>target/test-classes/etc/neo-server</neo-server.confdir>
     <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
     <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
+    <neo4j.version>1.3.M02</neo4j.version>
   </properties>
 
   <packaging>bundle</packaging>
@@ -46,7 +47,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j</artifactId>
-      <version>1.3-SNAPSHOT</version>
+      <version>${neo4j.version}</version>
       <type>pom</type>
       <exclusions>
         <exclusion>
@@ -59,7 +60,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.3-SNAPSHOT</version>
+      <version>${neo4j.version}</version>
       <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
@@ -73,7 +74,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-ha</artifactId>
-      <version>1.3-SNAPSHOT</version>
+      <version>${neo4j.version}</version>
       <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
@@ -284,7 +285,7 @@
     <dependency>
     	<groupId>org.neo4j</groupId>
     	<artifactId>neo4j-shell</artifactId>
-    	<version>1.3-SNAPSHOT</version>
+      <version>${neo4j.version}</version>
     	<scope>runtime</scope>
     </dependency>
   </dependencies>
