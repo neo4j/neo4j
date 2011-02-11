@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel;
 
-public interface KernelExtensionLoader
+interface KernelExtensionLoader
 {
-    void preInit();
-    
-    void init();
-    
+    void configureKernelExtensions();
+
+    void initializeIndexProviders();
+
     void load();
 }

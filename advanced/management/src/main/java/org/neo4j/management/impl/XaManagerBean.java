@@ -25,7 +25,7 @@ import java.util.List;
 import javax.management.NotCompliantMBeanException;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.KernelExtension.KernelData;
+import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.management.XaManager;

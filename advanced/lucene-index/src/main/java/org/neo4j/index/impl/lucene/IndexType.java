@@ -169,10 +169,10 @@ abstract class IndexType
     
     static IndexType getIndexType( IndexIdentifier identifier, Map<String, String> config )
     {
-        String type = config.get( LuceneIndexProvider.KEY_TYPE );
+        String type = config.get( LuceneIndexImplementation.KEY_TYPE );
         IndexType result = null;
         Similarity similarity = getCustomSimilarity( config );
-        boolean toLowerCase = parseBoolean( config.get( LuceneIndexProvider.KEY_TO_LOWER_CASE ), true );
+        boolean toLowerCase = parseBoolean( config.get( LuceneIndexImplementation.KEY_TO_LOWER_CASE ), true );
         Analyzer customAnalyzer = getCustomAnalyzer( config );
         if ( type != null )
         {
@@ -214,12 +214,12 @@ abstract class IndexType
     
     private static Similarity getCustomSimilarity( Map<String, String> config )
     {
-        return getByClassName( config, LuceneIndexProvider.KEY_SIMILARITY, Similarity.class );
+        return getByClassName( config, LuceneIndexImplementation.KEY_SIMILARITY, Similarity.class );
     }
     
     private static Analyzer getCustomAnalyzer( Map<String, String> config )
     {
-        return getByClassName( config, LuceneIndexProvider.KEY_ANALYZER, Analyzer.class );
+        return getByClassName( config, LuceneIndexImplementation.KEY_ANALYZER, Analyzer.class );
     }
 
     private static <T> T getByClassName( Map<String, String> config, String configKey, Class<T> cls )
