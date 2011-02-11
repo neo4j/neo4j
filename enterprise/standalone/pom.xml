@@ -213,7 +213,7 @@
     <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
-      <version>${neo4j.version}</version>
+      <version>1.3-SNAPSHOT</version>
       <classifier>site</classifier>
       <exclusions>
         <exclusion>
@@ -246,13 +246,14 @@
       <classifier>download</classifier>
       <type>tar.gz</type>
     </dependency>
-    <dependency>
+    <!-- Not ready for release. -->
+    <!--dependency>
       <groupId>org.neo4j.examples</groupId>
       <artifactId>neo4j-server-examples</artifactId>
       <version>1.3-SNAPSHOT</version>
       <classifier>download</classifier>
       <type>tar.gz</type>
-    </dependency>
+    </dependency -->
 
 
     <!-- OSGi Bundles -->
