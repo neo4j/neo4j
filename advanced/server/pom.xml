@@ -26,9 +26,9 @@
 
   <packaging>bundle</packaging>
 
-    <scm>
-      <url>https://github.com/neo4j/server/tree/master/server</url>
-    </scm>
+  <scm>
+    <url>https://github.com/neo4j/server/tree/master/server</url>
+  </scm>
 
   <licenses>
     <license>

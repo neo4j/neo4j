@@ -64,20 +64,6 @@
       </excludes>
       <filtered>true</filtered>
     </fileSet>
-    <!-- java examples - shell scripts -->
-    <fileSet>
-      <directory>target/appassembler/bin</directory>
-      <outputDirectory>examples/java/bin</outputDirectory>
-      <fileMode>0755</fileMode>
-      <excludes>
-        <exclude>*.bat</exclude>
-      </excludes>
-    </fileSet>
-    <!-- java examples - libs -->
-    <fileSet>
-      <directory>target/appassembler/lib</directory>
-      <outputDirectory>examples/java/lib</outputDirectory>
-    </fileSet>
   </fileSets>
 
   <dependencySets>
@@ -119,46 +105,12 @@
     </dependencySet>
     <!-- java examples -->
     <dependencySet>
-      <outputDirectory>lib</outputDirectory>
-      <unpack>false</unpack>
+      <outputDirectory>examples/java</outputDirectory>
+      <unpack>true</unpack>
       <useProjectArtifact>false</useProjectArtifact>
+      <directoryMode>0777</directoryMode>
       <includes>
         <include>org.neo4j.examples:*</include>
-      </includes>
-      <excludes>
-        <exclude>org.neo4j.examples:*:*:sources</exclude>
-        <exclude>org.neo4j.examples:*:*:test-sources</exclude>
-        <exclude>org.neo4j.examples:*:*:site</exclude>
-      </excludes>
-    </dependencySet>
-   <dependencySet>
-      <outputDirectory>examples/java/src</outputDirectory>
-      <unpack>true</unpack>
-      <useProjectArtifact>false</useProjectArtifact>
-      <fileMode>0444</fileMode>
-      <directoryMode>0777</directoryMode>
-      <includes>
-        <include>org.neo4j.examples:*:*:sources</include>
-      </includes>
-    </dependencySet>
-    <dependencySet>
-      <outputDirectory>examples/java/test</outputDirectory>
-      <unpack>true</unpack>
-      <useProjectArtifact>false</useProjectArtifact>
-      <fileMode>0444</fileMode>
-      <directoryMode>0777</directoryMode>
-      <includes>
-        <include>org.neo4j.examples:*:*:test-sources</include>
-      </includes>
-    </dependencySet>
-    <dependencySet>
-      <outputDirectory>examples/java/site</outputDirectory>
-      <unpack>true</unpack>
-      <useProjectArtifact>false</useProjectArtifact>
-      <fileMode>0444</fileMode>
-      <directoryMode>0777</directoryMode>
-      <includes>
-        <include>org.neo4j.examples:*:*:site</include>
       </includes>
     </dependencySet>
     <!-- java api docs -->

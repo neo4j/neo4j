@@ -19,10 +19,9 @@
       into a downloadable installer.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
+
   <scm>
-    <connection>scm:svn:https://svn.neo4j.org/assemblies/neo4j-standalone/trunk</connection>
-    <developerConnection>scm:svn:https://svn.neo4j.org/assemblies/neo4j-standalone/trunk</developerConnection>
-    <url>https://trac.neo4j.org/browser/assemblies/neo4j-standalone/trunk</url>
+    <url>https://github.com/neo4j/server/tree/master/standalone</url>
   </scm>
 
   <properties>
@@ -111,54 +110,6 @@
               <appendAssemblyId>true</appendAssemblyId>
               <assemblyId />
             </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>appassembler-maven-plugin</artifactId>
-        <configuration>
-          <repositoryName>lib</repositoryName>
-          <repositoryLayout>flat</repositoryLayout>
-          <generateRepository>true</generateRepository>
-          <programs>
-            <program>
-              <mainClass>org.neo4j.examples.EmbeddedNeo4j</mainClass>
-              <name>embedded-neo4j</name>
-            </program>
-            <program>
-              <mainClass>org.neo4j.examples.EmbeddedNeo4jWithIndexing</mainClass>
-              <name>embedded-neo4j-with-indexing</name>
-            </program>
-            <program>
-              <mainClass>org.neo4j.examples.Neo4jShell</mainClass>
-              <name>shell-example</name>
-            </program>
-            <program>
-              <mainClass>org.neo4j.shell.StartClient</mainClass>
-              <name>neo4j-shell</name>
-            </program>
-            <program>
-              <mainClass>org.neo4j.examples.CalculateShortestPath</mainClass>
-              <name>calculate-shortest-path</name>
-            </program>
-            <program>
-              <mainClass>org.neo4j.examples.UsingIntegratedIndex</mainClass>
-              <name>using-integrated-index</name>
-            </program>
-            <program>
-              <mainClass>org.neo4j.examples.server.CreateSimpleGraph</mainClass>
-              <name>create-graph-using-REST-from-Java</name>
-            </program>
-          </programs>
-        </configuration>
-        <executions>
-          <execution>
-            <id>examples</id>
-            <phase>compile</phase>
-            <goals>
-              <goal>assemble</goal>
-            </goals>
           </execution>
         </executions>
       </plugin>
@@ -292,31 +243,17 @@
       <groupId>org.neo4j.examples</groupId>
       <artifactId>neo4j-examples</artifactId>
       <version>1.3-SNAPSHOT</version>
-        <exclusions>
-          <exclusion>
-            <artifactId>neo4j-udc</artifactId>
-            <groupId>org.neo4j</groupId>
-          </exclusion>
-        </exclusions>
+      <classifier>download</classifier>
+      <type>tar.gz</type>
     </dependency>
     <dependency>
       <groupId>org.neo4j.examples</groupId>
-      <artifactId>neo4j-examples</artifactId>
+      <artifactId>neo4j-server-examples</artifactId>
       <version>1.3-SNAPSHOT</version>
-      <classifier>sources</classifier>
+      <classifier>download</classifier>
+      <type>tar.gz</type>
     </dependency>
-    <dependency>
-      <groupId>org.neo4j.examples</groupId>
-      <artifactId>neo4j-examples</artifactId>
-      <version>1.3-SNAPSHOT</version>
-      <classifier>test-sources</classifier>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j.examples</groupId>
-      <artifactId>neo4j-examples</artifactId>
-      <version>1.3-SNAPSHOT</version>
-      <classifier>site</classifier>
-    </dependency>
+
 
     <!-- OSGi Bundles -->
     <dependency>
