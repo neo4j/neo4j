@@ -8,7 +8,7 @@
   </parent>
   <groupId>org.neo4j.doc</groupId>
   <artifactId>neo4j-manual</artifactId>
-  <version>1.3-SNAPSHOT</version>
+  <version>1.3.M02</version>
   <name>Neo4j - Reference Manual</name>
   <description>Neo4j Reference Manual.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -43,7 +43,7 @@
     <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
-      <version>1.3-SNAPSHOT</version>
+      <version>1.3.M02</version>
       <classifier>docs</classifier>
     </dependency>
   </dependencies>
