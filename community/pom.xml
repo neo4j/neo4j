@@ -204,7 +204,7 @@
               <attach>true</attach>
               <appendAssemblyId>true</appendAssemblyId>
               <descriptors>
-                <descriptor>src/main/assembly/neo4j-assembly.xml</descriptor>
+                <descriptor>src/main/assembly/download-assembly.xml</descriptor>
               </descriptors>
             </configuration>
             <goals>
