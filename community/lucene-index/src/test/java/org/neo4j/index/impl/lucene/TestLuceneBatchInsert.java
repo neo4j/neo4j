@@ -68,7 +68,7 @@ public class TestLuceneBatchInsert
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider(
                 inserter );
         BatchInserterIndex index = provider.nodeIndex( "users",
-                LuceneIndexProvider.EXACT_CONFIG );
+                LuceneIndexImplementation.EXACT_CONFIG );
         Map<Integer, Long> ids = new HashMap<Integer, Long>();
         for ( int i = 0; i < 100; i++ )
         {
@@ -156,7 +156,7 @@ public class TestLuceneBatchInsert
     {
         BatchInserter inserter = new BatchInserterImpl( PATH );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );
-        BatchInserterIndex index = provider.nodeIndex( "yeah", LuceneIndexProvider.EXACT_CONFIG );
+        BatchInserterIndex index = provider.nodeIndex( "yeah", LuceneIndexImplementation.EXACT_CONFIG );
         index.setCacheCapacity( "key", 1000000 );
         long t = System.currentTimeMillis();
         for ( int i = 0; i < 1000000; i++ )
@@ -242,7 +242,7 @@ public class TestLuceneBatchInsert
     {
         BatchInserter inserter = new BatchInserterImpl( PATH );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );
-        BatchInserterIndex index = provider.nodeIndex( "Neo4j::Node-exact", LuceneIndexProvider.EXACT_CONFIG );
+        BatchInserterIndex index = provider.nodeIndex( "Neo4j::Node-exact", LuceneIndexImplementation.EXACT_CONFIG );
         
         Map<String, Object> map = map( "name", "Something" );
         long node = inserter.createNode( map );

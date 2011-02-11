@@ -19,78 +19,23 @@
  */
 package org.neo4j.graphdb.index;
 
-import java.util.Map;
+import org.neo4j.helpers.Service;
+import org.neo4j.kernel.KernelData;
 
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.kernel.KernelExtension;
-
-/**
- * A provider which can create and instantiate {@link Index}s.
- * An {@link IndexProvider} is typically tied to one implementation, f.ex.
- * lucene, http://lucene.apache.org/java.
- * 
- * @author Mattias Persson
- *
- */
-public abstract class IndexProvider extends KernelExtension
+public abstract class IndexProvider extends Service
 {
-    protected IndexProvider( String key )
+    private final String identifier;
+
+    public IndexProvider( String identifier )
     {
-        super( key );
+        super( identifier );
+        this.identifier = identifier;
     }
-    
-    /**
-     * Returns the name of the XA data source coupled with this index provider.
-     * @return the name of the XA data source coupled with this index provider.
-     */
-    public abstract String getDataSourceName();
 
-    /**
-     * Returns an {@link Index} for {@link Node}s for the name
-     * {@code indexName} with the given {@code config}. The {@code config}
-     * {@link Map} can contain any provider-implementation-specific data that
-     * can control how an index behaves.
-     * 
-     * @param indexName the name of the index.
-     * @param config a {@link Map} of configuration parameters to use with the
-     * index. Parameters can be anything and are implementation-specific. This
-     * map represents how the configuration looks right now, they might be modified
-     * later using {@link IndexManager#setConfiguration(Index, String, String)}
-     * or {@link IndexManager#removeConfiguration(Index, String)}.
-     * @return the {@link Index} corresponding to the {@code indexName} and
-     * {@code config}.
-     */
-    public abstract Index<Node> nodeIndex( String indexName, Map<String, String> config );
-    
-    /**
-     * Returns an {@link Index} for {@link Relationship}s for the name
-     * {@code indexName} with the given {@code config}. The {@code config}
-     * {@link Map} can contain any provider-implementation-specific data that
-     * can control how an index behaves.
-     * 
-     * @param indexName the name of the index.
-     * @param config a {@link Map} of configuration parameters to use with the
-     * index. Parameters can be anything and are implementation-specific. This
-     * map represents how the configuration looks right now, they might be modified
-     * later using {@link IndexManager#setConfiguration(Index, String, String)}
-     * or {@link IndexManager#removeConfiguration(Index, String)}.
-     * @return the {@link Index} corresponding to the {@code indexName} and
-     * {@code config}. The return index is a {@link RelationshipIndex} with
-     * additional query methods for efficiently filtering hits with respect to
-     * start/end node of the relationships.
-     */
-    public abstract RelationshipIndex relationshipIndex( String indexName,
-            Map<String, String> config );
+    public abstract IndexImplementation load( KernelData kernel ) throws Exception;
 
-    /**
-     * Fills in default configuration parameters for indexes provided from this
-     * index provider.
-     * @param config the configuration map to complete with defaults.
-     * @return a {@link Map} filled with decent defaults for an index from
-     * this index provider.
-     */
-    public abstract Map<String, String> fillInDefaults( Map<String, String> config );
-    
-    public abstract boolean configMatches( Map<String, String> storedConfig, Map<String, String> config );
+    public final String identifier()
+    {
+        return identifier;
+    }
 }
