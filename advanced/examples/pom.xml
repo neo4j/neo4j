@@ -19,7 +19,7 @@
   </properties>
 
   <scm>
-    <url>https://github.com/neo4j/server/examples</url>
+    <url>https://github.com/neo4j/server/tree/master/examples</url>
   </scm>
 
   <dependencies>
@@ -98,6 +98,27 @@
   <build>
     <plugins>
       <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>appassembler-maven-plugin</artifactId>
+        <configuration>
+          <programs>
+            <program>
+              <mainClass>org.neo4j.examples.server.CreateSimpleGraph</mainClass>
+              <name>create-graph-using-REST-from-Java</name>
+            </program>
+          </programs>
+        </configuration>
+        <executions>
+          <execution>
+            <id>examples</id>
+            <phase>package</phase>
+            <goals>
+              <goal>assemble</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
@@ -134,6 +155,20 @@
       <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
         <executions>
+          <execution>
+            <id>download-assembly</id>
+            <phase>package</phase>
+            <configuration>
+              <attach>true</attach>
+              <appendAssemblyId>true</appendAssemblyId>
+              <descriptors>
+                <descriptor>src/main/assembly/download-assembly.xml</descriptor>
+              </descriptors>
+            </configuration>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
           <execution>
             <id>site-assembly</id>
             <phase>package</phase>
