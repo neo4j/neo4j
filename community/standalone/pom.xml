@@ -30,7 +30,7 @@
 
     <!-- other filter properties -->
     <wrapper.conf>conf/neo4j-wrapper.conf</wrapper.conf>
-    <neo4j.version>${project.version}</neo4j.version>
+    <neo4j.version>1.3.M02</neo4j.version>
 
     <!-- conf/neo4j-server.properties filter properties -->
     <org.neo4j.database.location>data/graph.db</org.neo4j.database.location>
@@ -190,7 +190,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j</artifactId>
-      <version>1.3-SNAPSHOT</version>
+      <version>${neo4j.version}</version>
       <exclusions>
         <exclusion>
           <artifactId>neo4j-udc</artifactId>
@@ -201,7 +201,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j</artifactId>
-      <version>1.3-SNAPSHOT</version>
+      <version>${neo4j.version}</version>
       <classifier>javadoc</classifier>
       <exclusions>
         <exclusion>
@@ -213,7 +213,7 @@
     <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
-      <version>1.3-SNAPSHOT</version>
+      <version>${neo4j.version}</version>
       <classifier>site</classifier>
       <exclusions>
         <exclusion>
@@ -242,7 +242,7 @@
     <dependency>
       <groupId>org.neo4j.examples</groupId>
       <artifactId>neo4j-examples</artifactId>
-      <version>1.3-SNAPSHOT</version>
+      <version>${neo4j.version}</version>
       <classifier>download</classifier>
       <type>tar.gz</type>
     </dependency>
