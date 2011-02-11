@@ -108,6 +108,8 @@
         <include>org.neo4j.examples:neo4j-examples</include>
       </includes>
     </dependencySet>
+    <!-- Not ready for release. -->
+    <!--
     <dependencySet>
       <outputDirectory>examples/java/server</outputDirectory>
       <unpack>true</unpack>
@@ -117,6 +119,7 @@
         <include>org.neo4j.examples:neo4j-server-examples</include>
       </includes>
     </dependencySet>
+    -->
     <!-- java api docs -->
     <dependencySet>
       <outputDirectory>doc/java/api</outputDirectory>

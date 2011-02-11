@@ -22,7 +22,10 @@
   <modules>
     <module>server-extensions</module>
     <module>server</module>
+    <!-- Not ready for release. -->
+    <!--
     <module>examples</module>
+     -->
     <module>manual</module>
     <module>standalone</module>
   </modules>
