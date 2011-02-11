@@ -105,12 +105,21 @@
     </dependencySet>
     <!-- java examples -->
     <dependencySet>
-      <outputDirectory>examples/java</outputDirectory>
+      <outputDirectory>examples/java/embedded</outputDirectory>
       <unpack>true</unpack>
       <useProjectArtifact>false</useProjectArtifact>
       <directoryMode>0777</directoryMode>
       <includes>
-        <include>org.neo4j.examples:*</include>
+        <include>org.neo4j.examples:neo4j-examples</include>
+      </includes>
+    </dependencySet>
+    <dependencySet>
+      <outputDirectory>examples/java/server</outputDirectory>
+      <unpack>true</unpack>
+      <useProjectArtifact>false</useProjectArtifact>
+      <directoryMode>0777</directoryMode>
+      <includes>
+        <include>org.neo4j.examples:neo4j-server-examples</include>
       </includes>
     </dependencySet>
     <!-- java api docs -->
