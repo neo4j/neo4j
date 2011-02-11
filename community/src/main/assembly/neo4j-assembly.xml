@@ -23,8 +23,7 @@
   <!-- DOCS -->
   <includeSiteDirectory>true</includeSiteDirectory>
   <formats>
-    <format>tar.gz</format>
-    <format>zip</format>
+    <format>jar</format>
   </formats>
   <fileSets>
     <!-- APIDOCS -->

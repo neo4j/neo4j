@@ -197,14 +197,12 @@
       <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
         <executions>
-          <!-- skip building the download assembly -->
-          <!-- 
           <execution>
             <id>download-assembly</id>
             <phase>package</phase>
             <configuration>
-              <appendAssemblyId>false</appendAssemblyId>
-              <finalName>neo4j-${project.version}</finalName>
+              <attach>true</attach>
+              <appendAssemblyId>true</appendAssemblyId>
               <descriptors>
                 <descriptor>src/main/assembly/neo4j-assembly.xml</descriptor>
               </descriptors>
@@ -213,7 +211,6 @@
               <goal>single</goal>
             </goals>
           </execution>
-           -->
           <execution>
             <id>site-assembly</id>
             <phase>package</phase>
