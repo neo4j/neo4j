@@ -24,7 +24,7 @@
   <!-- DOCS -->
   <includeSiteDirectory>true</includeSiteDirectory>
   <formats>
-    <format>jar</format>
+    <format>tar.gz</format>
   </formats>
   <fileSets>
     <!-- APIDOCS -->
