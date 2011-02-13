@@ -26,7 +26,7 @@ import java.util.Date;
 import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
 
-import org.neo4j.kernel.KernelExtension.KernelData;
+import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.management.Kernel;
@@ -48,7 +48,7 @@ class KernelBean extends Neo4jMBean implements Kernel
     {
         super( Kernel.class, kernel );
         NeoStoreXaDataSource datasource = getNeoDataSource( kernel );
-        this.kernelVersion = kernel.version();
+        this.kernelVersion = kernel.version().toString();
         this.query = JmxExtension.getObjectName( kernel, null, null );
         storeCreationDate = datasource.getCreationTime();
         storeLogVersion = datasource.getCurrentLogVersion();

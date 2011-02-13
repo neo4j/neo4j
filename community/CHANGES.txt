@@ -1,3 +1,11 @@
+1.3.M02 (2011-02-10)
+--------------------
+o Fixed some problems in HA regarding full replication and master election.
+o Moved communication layer of HA into a new component (neo4j-com).
+o Removed dependency on shell.
+o Improved backup support to be able to take full backups and not only incremental ones.
+o Fixed a bug in lucene index (when performing recovery).
+
 1.3.M01 (2011-01-27)
 --------------------
 

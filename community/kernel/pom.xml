@@ -118,14 +118,12 @@
             <phase>generate-sources</phase>
             <configuration>
               <target>
-                <mkdir dir="target/generated-sources/version/org/neo4j/kernel/impl/"/>
-                <exec executable="git" outputproperty="git.describe"
-                      errorproperty="git.describe.error"
-                      failifexecutionfails="false" failonerror="false">
-                  <arg value="describe"/>
+                <mkdir dir="target/generated-sources/version/org/neo4j/kernel/impl/" />
+                <exec executable="git" outputproperty="git.describe" errorproperty="git.describe.error" failifexecutionfails="false" failonerror="false">
+                  <arg value="describe" />
                   <!-- REQUIRES GIT 1.7: arg value="- -dirty"/ -->
                 </exec>
-                <property name="git.describe" value=""/>
+                <property name="git.describe" value="" />
                 <echo file="target/generated-sources/version/org/neo4j/${short-name}/impl/ComponentVersion.java">package org.neo4j.${short-name}.impl;
 
 import org.neo4j.kernel.Version;

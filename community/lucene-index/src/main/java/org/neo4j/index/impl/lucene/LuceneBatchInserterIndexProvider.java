@@ -38,9 +38,9 @@ import org.neo4j.kernel.impl.batchinsert.SimpleRelationship;
 import org.neo4j.kernel.impl.index.IndexStore;
 
 /**
- * The {@link BatchInserter} version of {@link LuceneIndexProvider}. Indexes
+ * The {@link BatchInserter} version of {@link LuceneIndexImplementation}. Indexes
  * created and populated using {@link BatchInserterIndex}s from this provider
- * are compatible with {@link Index}s from {@link LuceneIndexProvider}.
+ * are compatible with {@link Index}s from {@link LuceneIndexImplementation}.
  */
 public class LuceneBatchInserterIndexProvider implements BatchInserterIndexProvider
 {
@@ -108,7 +108,7 @@ public class LuceneBatchInserterIndexProvider implements BatchInserterIndexProvi
         if ( config != null )
         {
             config = MapUtil.stringMap( new HashMap<String, String>( config ),
-                    "provider", LuceneIndexProvider.SERVICE_NAME );
+                    "provider", LuceneIndexImplementation.SERVICE_NAME );
             indexStore.setIfNecessary( cls, indexName, config );
             return config;
         }
