@@ -27,18 +27,19 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.KernelExtension;
 
 @Service.Implementation( KernelExtension.class )
-public class OnlineBackupExtension extends KernelExtension
+public class OnlineBackupExtension extends KernelExtension<BackupServer>
 {
     public OnlineBackupExtension()
     {
         super( "online backup" );
     }
-    
+
     @Override
-    protected void preInit( KernelData kernel )
+    protected void loadConfiguration( KernelData kernel )
     {
         if ( parsePort( kernel ) != null )
         {
@@ -46,20 +47,21 @@ public class OnlineBackupExtension extends KernelExtension
             kernel.getConfig().getParams().put( KEEP_LOGICAL_LOGS, "true" );
         }
     }
-    
+
     @Override
-    protected void load( KernelData kernel )
+    protected BackupServer load( KernelData kernel )
     {
         Integer port = parsePort( kernel );
         if ( port != null )
         {
             TheBackupInterface backup = new BackupImpl( kernel.graphDatabase() );
-            BackupServer server = new BackupServer( backup, port,
+            BackupServer server = new BackupServer( backup, port.intValue(),
                     (String) kernel.getConfig().getParams().get( "store_dir" ) );
-            kernel.setState( this, server );
+            return server;
         }
+        return null;
     }
-    
+
     private Integer parsePort( KernelData kernel )
     {
         String configValue = (String) kernel.getParam( ENABLE_ONLINE_BACKUP );
@@ -78,11 +80,11 @@ public class OnlineBackupExtension extends KernelExtension
             {
                 return null;
             }
-            return port;
+            return Integer.valueOf( port );
         }
         return null;
     }
-    
+
     private Map<String, String> parseConfigValue( String configValue )
     {
         Map<String, String> result = new HashMap<String, String>();
@@ -91,7 +93,7 @@ public class OnlineBackupExtension extends KernelExtension
             String[] tokens = part.split( quote( "=" ) );
             if ( tokens.length != 2 )
             {
-                throw new RuntimeException( "Invalid configuration value '" + configValue + 
+                throw new RuntimeException( "Invalid configuration value '" + configValue +
                         "' for " + ENABLE_ONLINE_BACKUP );
             }
             result.put( tokens[0], tokens[1] );
@@ -100,12 +102,8 @@ public class OnlineBackupExtension extends KernelExtension
     }
 
     @Override
-    protected void unload( KernelData kernel )
+    protected void unload( BackupServer server )
     {
-        BackupServer server = (BackupServer) kernel.getState( this );
-        if ( server != null )
-        {
-            server.shutdown();
-        }
+        server.shutdown();
     }
 }

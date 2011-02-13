@@ -24,7 +24,7 @@ import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.KernelExtension.KernelData;
+import org.neo4j.kernel.KernelData;
 
 public abstract class ManagementBeanProvider extends Service
 {

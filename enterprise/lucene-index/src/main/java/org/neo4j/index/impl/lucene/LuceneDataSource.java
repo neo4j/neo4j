@@ -75,7 +75,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransactionFactory;
 
 /**
- * An {@link XaDataSource} optimized for the {@link LuceneIndexProvider}.
+ * An {@link XaDataSource} optimized for the {@link LuceneIndexImplementation}.
  * This class is public because the XA framework requires it.
  */
 public class LuceneDataSource extends LogBackedXaDataSource

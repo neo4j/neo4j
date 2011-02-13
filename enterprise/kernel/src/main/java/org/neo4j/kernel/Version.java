@@ -68,6 +68,8 @@ public class Version extends Service
         }
         else if ( version.contains( "SNAPSHOT" ) )
         {
+            String revision = getRevision();
+            if ( revision.equals( "" ) ) return version;
             return version + " (revision: " + defaultValue( getRevision(), "<unknown>" ) + ")";
         }
         else
@@ -100,9 +102,9 @@ public class Version extends Service
         return ( preferred == null || preferred.equals( "" ) ) ? fallback : preferred;
     }
 
-    static String get()
+    static Version getKernel()
     {
-        return KERNEL_VERSION.toString();
+        return KERNEL_VERSION;
     }
 
     public static String getKernelRevision()

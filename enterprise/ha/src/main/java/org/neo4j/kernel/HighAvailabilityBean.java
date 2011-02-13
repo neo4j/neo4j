@@ -33,7 +33,6 @@ import javax.management.NotCompliantMBeanException;
 import org.neo4j.com.SlaveContext;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.KernelExtension.KernelData;
 import org.neo4j.kernel.ha.ConnectionInformation;
 import org.neo4j.kernel.ha.MasterServer;
 import org.neo4j.management.HighAvailability;

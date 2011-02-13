@@ -27,7 +27,7 @@ import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
 import javax.management.StandardMBean;
 
-import org.neo4j.kernel.KernelExtension.KernelData;
+import org.neo4j.kernel.KernelData;
 import org.neo4j.management.Kernel;
 
 public class Neo4jMBean extends StandardMBean

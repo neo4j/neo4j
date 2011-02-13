@@ -22,24 +22,22 @@ package org.neo4j.kernel;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.impl.util.StringLogger;
 
-public abstract class KernelExtension extends Service
+/**
+ * Hook for providing extended functionality to the Neo4j Graph Database kernel.
+ *
+ * @author Tobias Ivarsson
+ * @param <S> the Extension state type
+ */
+public abstract class KernelExtension<S> extends Service
 {
-    private static final String INSTANCE_ID = "instanceId";
-    private final String key;
+    static final String INSTANCE_ID = "instanceId";
 
     protected KernelExtension( String key )
     {
         super( key );
-        this.key = key;
     }
 
     @Override
@@ -54,230 +52,61 @@ public abstract class KernelExtension extends Service
         return this.getClass().equals( obj.getClass() );
     }
 
-    String getKey()
+    public final void loadAgent( String agentArgs )
     {
-        return this.key;
+        KernelData.visitAll( this, agentArgument( agentArgs ) );
     }
 
-    public final void agentLoad( String agentArgs )
+    protected final void loadAgent( KernelData kernel, Object param )
     {
-        final Map<String, String> parameters = new HashMap<String, String>();
-        for ( String arg : agentArgs.split( ";" ) )
-        {
-            String[] parts = arg.split( "=", 2 );
-            if ( parts.length == 2 )
-            {
-                arg = parts[0].trim();
-                if ( INSTANCE_ID.equalsIgnoreCase( arg ) ) arg = INSTANCE_ID;
-                parameters.put( arg, parts[1] );
-            }
-            else
-            {
-                parameters.put( arg.trim(), null );
-            }
-        }
-        final KernelData kernel = KernelData.getInstance( parameters );
-        if ( kernel == null ) throw new IllegalStateException( "could not load kernel" );
-        kernel.extraParameters.putAll( parameters );
-        this.load( kernel );
+        kernel.accept( this, param );
     }
 
-    public static abstract class KernelData
+    protected Object agentArgument( String agentArg )
     {
-        private static final Map<String, KernelData> instances = new HashMap<String, KernelData>();
-        private static int ID_COUNTER = 0;
-
-        private static synchronized String newInstance( KernelData instance )
-        {
-            final String instanceId = Integer.toString( ID_COUNTER++ );
-            instances.put( instanceId, instance );
-            return instanceId;
-        }
-
-        private static synchronized KernelData getInstance( Map<String, String> parameters )
-        {
-            String instanceId = parameters.remove( INSTANCE_ID );
-            if ( instanceId != null ) return instances.get( instanceId );
-            if ( instances.size() == 1 ) return instances.values().iterator().next();
-            return null;
-        }
-
-        private static synchronized void removeInstance( String instanceId )
-        {
-            instances.remove( instanceId );
-        }
-
-        private final Map<String, String> extraParameters = new HashMap<String, String>();
-        private final String instanceId;
-
-        KernelData()
-        {
-            instanceId = newInstance( this );
-        }
-
-        public final String instanceId()
-        {
-            return instanceId;
-        }
-
-        @Override
-        public final int hashCode()
-        {
-            return instanceId.hashCode();
-        }
-
-        @Override
-        public final boolean equals( Object obj )
-        {
-            return obj instanceof KernelData && instanceId.equals( ( (KernelData) obj ).instanceId );
-        }
-
-        public abstract String version();
-
-        public abstract Config getConfig();
-
-        public abstract GraphDatabaseService graphDatabase();
-
-        public abstract Map<Object, Object> getConfigParams();
-
-        private final Collection<KernelExtension> loadedExtensions = new ArrayList<KernelExtension>();
-        private final Map<KernelExtension, Object> state = new HashMap<KernelExtension, Object>();
-
-        void preInitAll( StringLogger msgLog )
-        {
-            for ( KernelExtension extension : Service.load( KernelExtension.class ) )
-            {
-                try
-                {
-                    extension.preInit( this );
-                    loadedExtensions.add( extension );
-                }
-                catch ( Throwable t )
-                {
-                    msgLog.logMessage( "Failed to init extension " + extension, t, true );
-                }
-            }
-        }
-        
-        void initAll( StringLogger msgLog )
-        {
-            for ( KernelExtension extension : loadedExtensions )
-            {
-                try
-                {
-                    extension.init( this );
-                    initialized( extension );
-                    msgLog.logMessage( "Extension " + extension + " initialized ok", true );
-                }
-                catch ( Throwable t )
-                {
-                    msgLog.logMessage( "Failed to init extension " + extension, t, true );
-                }
-            }
-        }
-
-        void loadAll( StringLogger msgLog )
-        {
-            for ( KernelExtension extension : loadedExtensions )
-            {
-                try
-                {
-                    extension.load( this );
-                    msgLog.logMessage( "Extension " + extension + " loaded ok", true );
-                }
-                catch ( Throwable t )
-                {
-                    msgLog.logMessage( "Failed to load extension " + extension, t, true );
-                }
-            }
-        }
-
-        synchronized void shutdown( StringLogger msgLog )
-        {
-            try
-            {
-                for ( KernelExtension loaded : loadedExtensions )
-                {
-                    try
-                    {
-                        loaded.unload( this );
-                    }
-                    catch ( Throwable t )
-                    {
-                        msgLog.logMessage( "Error unloading " + loaded, t, true );
-                    }
-                }
-            }
-            finally
-            {
-                removeInstance( instanceId );
-            }
-        }
-
-        public final Object getState( KernelExtension extension )
-        {
-            return state.get( extension );
-        }
-
-        public final Object setState( KernelExtension extension, Object value )
-        {
-            if ( value == null )
-            {
-                return state.remove( extension );
-            }
-            else
-            {
-                return state.put( extension, value );
-            }
-        }
-
-        public final Object getParam( String key )
-        {
-            if ( extraParameters.containsKey( key ) )
-            {
-                return extraParameters.get( key );
-            }
-            else
-            {
-                return getConfigParams().get( key );
-            }
-        }
-
-        protected abstract void initialized( KernelExtension extension );
+        return agentArg;
     }
 
     /**
      * Load this extension for a particular Neo4j Kernel.
      */
-    protected abstract void load( KernelData kernel );
+    protected abstract S load( KernelData kernel );
+
+    protected S agentLoad( KernelData kernel, Object param )
+    {
+        S state = load( kernel );
+        agentVisit( kernel, state, param );
+        return state;
+    }
+
+    protected void agentVisit( KernelData kernel, S state, Object param )
+    {
+        // override to to define behavior
+    }
 
     /**
      * Takes place before any data sources has been registered and is there
      * to let extensions affect the configuration of other things starting up.
      */
-    protected void preInit( KernelData kernelData )
+    protected void loadConfiguration( KernelData kernel )
     {
         // Default: do nothing
     }
 
-    /**
-     * Init this extension with an, at the moment, non-initialized graph database.
-     * Useful for loading extensions and providing the graph database service instance
-     * and configuration before the kernel is started (where a recovery takes place).
-     */
-    protected void init( KernelData kernel )
+    protected void unload( S state )
     {
         // Default: do nothing
     }
 
-    protected void unload( KernelData kernel )
+    @SuppressWarnings( "unchecked" )
+    protected final S getState( KernelData kernel )
     {
-        // Default: do nothing
+        return (S) kernel.getState( this );
     }
 
     protected boolean isLoaded( KernelData kernel )
     {
-        return kernel.getState( this ) != null;
+        return getState( kernel ) != null;
     }
 
     public class Function<T>

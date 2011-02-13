@@ -29,7 +29,7 @@ import javax.management.ObjectInstance;
 import javax.management.ObjectName;
 import javax.management.remote.JMXServiceURL;
 
-import org.neo4j.kernel.KernelExtension.KernelData;
+import org.neo4j.kernel.KernelData;
 import org.neo4j.management.Kernel;
 
 public abstract class KernelProxy

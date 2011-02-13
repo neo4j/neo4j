@@ -20,6 +20,11 @@
     <bundle.namespace>org.neo4j</bundle.namespace>
   </properties>
 
+  <scm>
+    <url>https://github.com/neo4j/graphdb</url>
+  </scm>
+
+
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
@@ -66,12 +71,6 @@
       <artifactId>osgi_R4_compendium</artifactId>
     </dependency>
   </dependencies>
-
-  <scm>
-    <connection>scm:git:git://github.com/neo4j/graphdb.git</connection>
-    <developerConnection>scm:git:git@github.com:neo4j/graphdb.git</developerConnection>
-    <url>https://github.com/neo4j/graphdb</url>
-  </scm>
 
   <licenses>
     <license>

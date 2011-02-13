@@ -21,7 +21,7 @@ package org.neo4j.kernel.ha;
 
 import java.util.Map;
 
-import org.neo4j.kernel.KernelExtension.KernelData;
+import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 

@@ -104,9 +104,9 @@ class GraphDbInstance
         byte resourceId[] = "414141".getBytes();
         params.put( LockManager.class, config.getLockManager() );
         params.put( LockReleaser.class, config.getLockReleaser() );
-        
-        kernelExtensionLoader.preInit();
-        
+
+        kernelExtensionLoader.configureKernelExtensions();
+
         config.getTxModule().registerDataSource( Config.DEFAULT_DATA_SOURCE_NAME,
                 Config.NIO_NEO_DB_CLASS, resourceId, params );
         // hack for lucene index recovery if in path
@@ -155,7 +155,7 @@ class GraphDbInstance
         config.getIdGeneratorModule().init();
         config.getGraphDbModule().init();
 
-        kernelExtensionLoader.init();
+        kernelExtensionLoader.initializeIndexProviders();
 
         config.getTxModule().start();
         config.getPersistenceModule().start( config.getTxModule().getTxManager(),
@@ -168,7 +168,7 @@ class GraphDbInstance
 
         logger.logMessage( "--- CONFIGURATION START ---" );
         logger.logMessage( autoConfigurator.getNiceMemoryInformation() );
-        logger.logMessage( "Kernel version: " + Version.get() );
+        logger.logMessage( "Kernel version: " + Version.getKernel() );
         for ( Version componentVersion : Service.load( Version.class ) )
         {
             logger.logMessage( componentVersion.toString() );

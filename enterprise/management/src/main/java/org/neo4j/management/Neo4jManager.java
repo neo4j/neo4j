@@ -44,7 +44,7 @@ import javax.management.remote.JMXServiceURL;
 import javax.management.remote.rmi.RMIConnectorServer;
 import javax.rmi.ssl.SslRMIClientSocketFactory;
 
-import org.neo4j.kernel.KernelExtension.KernelData;
+import org.neo4j.kernel.KernelData;
 import org.neo4j.management.impl.ConfigurationBean;
 import org.neo4j.management.impl.KernelProxy;
 
