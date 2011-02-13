@@ -31,7 +31,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
-import org.neo4j.graphdb.index.IndexProvider;
+import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
@@ -44,7 +44,7 @@ class IndexManagerImpl implements IndexManager
     private static final String KEY_INDEX_PROVIDER = "provider";
 
     private final IndexStore indexStore;
-    private final Map<String, IndexProvider> indexProviders = new HashMap<String, IndexProvider>();
+    private final Map<String, IndexImplementation> indexProviders = new HashMap<String, IndexImplementation>();
 
     private final EmbeddedGraphDbImpl graphDbImpl;
 
@@ -54,7 +54,7 @@ class IndexManagerImpl implements IndexManager
         this.indexStore = indexStore;
     }
 
-    private IndexProvider getIndexProvider( String provider )
+    private IndexImplementation getIndexProvider( String provider )
     {
         if ( provider == null )
         {
@@ -63,7 +63,7 @@ class IndexManagerImpl implements IndexManager
 
         synchronized ( this.indexProviders )
         {
-            IndexProvider result = this.indexProviders.get( provider );
+            IndexImplementation result = this.indexProviders.get( provider );
             if ( result != null )
             {
                 return result;
@@ -72,7 +72,7 @@ class IndexManagerImpl implements IndexManager
         }
     }
 
-    void addProvider( String name, IndexProvider provider )
+    void addProvider( String name, IndexImplementation provider )
     {
         this.indexProviders.put( name, provider );
     }
@@ -97,7 +97,7 @@ class IndexManagerImpl implements IndexManager
 
         // Check db config properties for provider
         String provider = null;
-        IndexProvider indexProvider = null;
+        IndexImplementation indexProvider = null;
         if ( configToUse == null )
         {
             provider = getDefaultProvider( indexName, dbConfig );

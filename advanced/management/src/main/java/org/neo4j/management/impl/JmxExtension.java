@@ -46,10 +46,11 @@ import javax.rmi.ssl.SslRMIClientSocketFactory;
 import javax.rmi.ssl.SslRMIServerSocketFactory;
 
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.KernelExtension;
 
 @Service.Implementation( KernelExtension.class )
-public final class JmxExtension extends KernelExtension
+public final class JmxExtension extends KernelExtension<JmxExtension.JmxData>
 {
     private static final Logger log = Logger.getLogger( JmxExtension.class.getName() );
     public JmxExtension()
@@ -58,17 +59,15 @@ public final class JmxExtension extends KernelExtension
     }
 
     @Override
-    protected void load( KernelData kernel )
+    protected JmxData load( KernelData kernel )
     {
-        kernel.setState( this, loadBeans( kernel ) );
+        return loadBeans( kernel );
     }
 
     @Override
-    protected void unload( KernelData kernel )
+    protected void unload( JmxData data )
     {
-        JmxData data = (JmxData) kernel.getState( this );
-        // Can be null if startup failed
-        if ( data != null ) data.shutdown();
+        data.shutdown();
     }
 
     private JmxData loadBeans( KernelData kernel )
@@ -104,7 +103,7 @@ public final class JmxExtension extends KernelExtension
         return new JmxData( kernel, beans.toArray( new Neo4jMBean[beans.size()] ) );
     }
 
-    private static final class JmxData
+    static final class JmxData
     {
         private final Neo4jMBean[] beans;
         private final JMXServiceURL url;
@@ -125,6 +124,7 @@ public final class JmxExtension extends KernelExtension
                 }
                 catch ( NoSuchMethodException ex )
                 {
+                    // handled by null check
                 }
                 if ( url == null )
                 {
@@ -162,6 +162,7 @@ public final class JmxExtension extends KernelExtension
                     }
                     catch ( NumberFormatException ok )
                     {
+                        // handled by 0-check
                     }
                 }
                 if ( port > 0 )
@@ -176,8 +177,8 @@ public final class JmxExtension extends KernelExtension
                     {
                         useSSL = Boolean.parseBoolean( (String) useSslObj );
                     }
-                    log.log( Level.CONFIG, "Creating new MBean server on port %s%s", new Object[] {
-                            port, useSSL ? " using ssl" : "" } );
+                    log.log( Level.CONFIG, "Creating new MBean server on port %s%s",
+                            new Object[] { Integer.valueOf( port ), useSSL ? " using ssl" : "" } );
                     JMXConnectorServer server = createServer( port, useSSL );
                     if ( server != null )
                     {
@@ -229,6 +230,7 @@ public final class JmxExtension extends KernelExtension
             }
             catch ( UnknownHostException ok )
             {
+                // handled by null check
             }
             if ( host == null )
             {
@@ -326,7 +328,7 @@ public final class JmxExtension extends KernelExtension
 
     JMXServiceURL getConnectionURL( KernelData kernel )
     {
-        return ( (JmxData) kernel.getState( this ) ).url;
+        return getState( kernel ).url;
     }
 
     public static JMXConnectorServer createServer( int port, boolean useSSL )

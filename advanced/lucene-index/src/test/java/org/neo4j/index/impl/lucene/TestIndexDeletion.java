@@ -138,7 +138,7 @@ public class TestIndexDeletion
         index.delete();
         restartTx();
 
-        Index<Node> recreatedIndex = graphDb.index().forNodes( INDEX_NAME, LuceneIndexProvider.FULLTEXT_CONFIG );
+        Index<Node> recreatedIndex = graphDb.index().forNodes( INDEX_NAME, LuceneIndexImplementation.FULLTEXT_CONFIG );
         assertNull( recreatedIndex.get( key, value ).getSingle() );
         recreatedIndex.add( node, key, value );
         restartTx();

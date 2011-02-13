@@ -47,9 +47,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.IndexManager;
-import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.KernelExtension.Function;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
 import org.neo4j.kernel.impl.core.LockReleaser;
@@ -67,8 +65,6 @@ import org.neo4j.kernel.impl.util.StringLogger;
 
 class EmbeddedGraphDbImpl
 {
-    private static final String KERNEL_VERSION = Version.get();
-
     private static Logger log =
         Logger.getLogger( EmbeddedGraphDbImpl.class.getName() );
     private Transaction placeboTransaction = null;
@@ -84,7 +80,7 @@ class EmbeddedGraphDbImpl
     private final KernelPanicEventGenerator kernelPanicEventGenerator =
             new KernelPanicEventGenerator( kernelEventHandlers );
 
-    private final KernelExtension.KernelData extensions;
+    private final KernelData extensions;
 
     private final IndexManagerImpl indexManager;
     private final StringLogger msgLog;
@@ -117,12 +113,12 @@ class EmbeddedGraphDbImpl
         IndexStore indexStore = graphDbInstance.getConfig().getIndexStore();
         this.indexManager = new IndexManagerImpl( this, indexStore );
 
-        extensions = new KernelExtension.KernelData()
+        extensions = new KernelData()
         {
             @Override
-            public String version()
+            public Version version()
             {
-                return KERNEL_VERSION;
+                return Version.getKernel();
             }
 
             @Override
@@ -142,15 +138,6 @@ class EmbeddedGraphDbImpl
             {
                 return EmbeddedGraphDbImpl.this.graphDbService;
             }
-
-            @Override
-            protected void initialized( KernelExtension extension )
-            {
-                if ( extension instanceof IndexProvider )
-                {
-                    indexManager.addProvider( extension.getKey(), (IndexProvider) extension );
-                }
-            }
         };
 
         boolean started = false;
@@ -158,19 +145,21 @@ class EmbeddedGraphDbImpl
         {
             KernelExtensionLoader extensionLoader = new KernelExtensionLoader()
             {
-                public void preInit()
+                private Collection<KernelExtension<?>> loaded;
+
+                public void configureKernelExtensions()
                 {
-                    extensions.preInitAll( msgLog );
+                    loaded = extensions.loadExtensionConfigurations( msgLog );
                 }
-                
-                public void init()
+
+                public void initializeIndexProviders()
                 {
-                    extensions.initAll( msgLog );
+                    extensions.loadIndexImplementations( indexManager, msgLog );
                 }
 
                 public void load()
                 {
-                    extensions.loadAll( msgLog );
+                    extensions.loadExtensions( loaded, msgLog );
                 }
             };
             graphDbInstance.start( graphDbService, extensionLoader );
@@ -205,8 +194,8 @@ class EmbeddedGraphDbImpl
 
     <T> T getManagementBean( Class<T> beanClass )
     {
-        KernelExtension jmx = Service.load( KernelExtension.class, "kernel jmx" );
-        KernelExtension.Function<T> getBean = null;
+        KernelExtension<?> jmx = Service.load( KernelExtension.class, "kernel jmx" );
+        KernelExtension<?>.Function<T> getBean = null;
         if ( jmx != null && jmx.isLoaded( extensions ) )
         {
             getBean = jmx.function( extensions, "getBean", beanClass, Class.class );
@@ -326,8 +315,8 @@ class EmbeddedGraphDbImpl
 
     public boolean enableRemoteShell( final Map<String, Serializable> config )
     {
-        KernelExtension shell = Service.load( KernelExtension.class, "shell" );
-        Function<Void> enable = null;
+        KernelExtension<?> shell = Service.load( KernelExtension.class, "shell" );
+        KernelExtension<?>.Function<Void> enable = null;
         if ( shell != null )
         {
             enable = shell.function( extensions, "enableRemoteShell", void.class, Map.class );
@@ -532,7 +521,7 @@ class EmbeddedGraphDbImpl
         return this.indexManager;
     }
 
-    KernelExtension.KernelData getKernelData()
+    KernelData getKernelData()
     {
         return extensions;
     }

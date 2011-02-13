@@ -37,7 +37,7 @@ import javax.management.ReflectionException;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.Config;
-import org.neo4j.kernel.KernelExtension.KernelData;
+import org.neo4j.kernel.KernelData;
 
 @Service.Implementation( ManagementBeanProvider.class )
 public final class ConfigurationBean extends ManagementBeanProvider

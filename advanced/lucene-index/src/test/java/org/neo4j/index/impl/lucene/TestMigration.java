@@ -54,13 +54,13 @@ public class TestMigration
         db = new EmbeddedGraphDatabase( path );
         assertTrue( db.index().existsForNodes( "indexOne" ) );
         Index<Node> indexOne = db.index().forNodes( "indexOne" );
-        verifyConfiguration( db, indexOne, LuceneIndexProvider.EXACT_CONFIG );
+        verifyConfiguration( db, indexOne, LuceneIndexImplementation.EXACT_CONFIG );
         assertTrue( db.index().existsForNodes( "indexTwo" ) );
         Index<Node> indexTwo = db.index().forNodes( "indexTwo" );
-        verifyConfiguration( db, indexTwo, LuceneIndexProvider.FULLTEXT_CONFIG );
+        verifyConfiguration( db, indexTwo, LuceneIndexImplementation.FULLTEXT_CONFIG );
         assertTrue( db.index().existsForRelationships( "indexThree" ) );
         Index<Relationship> indexThree = db.index().forRelationships( "indexThree" );
-        verifyConfiguration( db, indexThree, LuceneIndexProvider.EXACT_CONFIG );
+        verifyConfiguration( db, indexThree, LuceneIndexImplementation.EXACT_CONFIG );
         db.shutdown();
     }
 
