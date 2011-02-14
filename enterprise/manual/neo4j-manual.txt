@@ -30,7 +30,7 @@ include::transactions/transactions.txt[]
 
 :leveloffset: 1
 
-include::server/index.txt[]
+include::{importdir}/neo4j-server-docs-jar/dev/index.txt[]
 
 :leveloffset: 1
 
