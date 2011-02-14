@@ -27,7 +27,6 @@
     <!--
     <module>examples</module>
      -->
-    <module>manual</module>
     <module>standalone</module>
   </modules>
   
@@ -65,5 +64,18 @@
       <url>scpexe://components.neo4j.org/home/neo/components/${project.artifactId}/${project.version}</url>
     </site>
   </distributionManagement>
+
+  <profiles>
+    <profile>
+      <activation>
+        <property>
+          <name>manual</name>
+        </property>
+      </activation>
+      <modules>
+        <module>manual</module>
+      </modules>
+    </profile>
+  </profiles>
 
 </project>
