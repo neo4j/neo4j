@@ -340,9 +340,9 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
             {
                 if ( !channelIsOpen( entry.getKey() ) )
                 {
-                    System.out.println( "Found dead channel " + entry.getKey() + ", " + entry.getValue() );
+                    msgLog.logMessage( "Found dead channel " + entry.getKey() + ", " + entry.getValue() );
                     finishOffConnection( entry.getKey(), entry.getValue() );
-                    System.out.println( "Removed " + entry.getKey() + ", " + entry.getValue() );
+                    msgLog.logMessage( "Removed " + entry.getKey() + ", " + entry.getValue() );
                     channelsToRemove.add( entry.getKey() );
                 }
             }
