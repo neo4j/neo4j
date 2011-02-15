@@ -136,7 +136,7 @@ public class SlaveIdGenerator implements IdGenerator
             if ( nextId == VALUE_REPRESENTING_NULL )
             {
                 // If we dont have anymore grabbed ids from master, grab a bunch
-                IdAllocation allocation = master.first().allocateIds( idType );
+                IdAllocation allocation = master.first().allocateIds( idType ).response();
                 allocationMaster = master.other().getMachineId();
                 nextId = storeLocally( allocation );
             }

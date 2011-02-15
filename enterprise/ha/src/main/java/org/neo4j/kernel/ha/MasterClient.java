@@ -47,6 +47,7 @@ import org.neo4j.com.SlaveContext;
 import org.neo4j.com.StoreWriter;
 import org.neo4j.com.ToNetworkStoreWriter;
 import org.neo4j.com.TxExtractor;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.zookeeper.Machine;
@@ -81,17 +82,23 @@ public class MasterClient extends Client<Master> implements Master
         }
     };
 
-    public MasterClient( String hostNameOrIp, int port, String storeDir )
+    public MasterClient( String hostNameOrIp, int port, GraphDatabaseService graphDb )
     {
-        super( hostNameOrIp, port, storeDir );
+        super( hostNameOrIp, port, graphDb );
     }
 
-    public MasterClient( Machine machine, String storeDir )
+    public MasterClient( Machine machine, GraphDatabaseService graphDb )
     {
-        this( machine.getServer().first(), machine.getServer().other(), storeDir );
+        this( machine.getServer().first(), machine.getServer().other(), graphDb );
     }
     
-    public IdAllocation allocateIds( final IdType idType )
+    @Override
+    protected boolean shouldCheckStoreId( RequestType<Master> type )
+    {
+        return type != HaRequestType.COPY_STORE;
+    }
+    
+    public Response<IdAllocation> allocateIds( final IdType idType )
     {
         return sendRequest( HaRequestType.ALLOCATE_IDS, SlaveContext.EMPTY, new Serializer()
         {
@@ -105,7 +112,7 @@ public class MasterClient extends Client<Master> implements Master
             {
                 return readIdAllocation( buffer );
             }
-        } ).response();
+        } );
     }
 
     public Response<Integer> createRelationshipType( SlaveContext context, final String name )
@@ -194,7 +201,7 @@ public class MasterClient extends Client<Master> implements Master
         return sendRequest( HaRequestType.PULL_UPDATES, context, EMPTY_SERIALIZER, VOID_DESERIALIZER );
     }
 
-    public int getMasterIdForCommittedTx( final long txId )
+    public Response<Integer> getMasterIdForCommittedTx( final long txId )
     {
         return sendRequest( HaRequestType.GET_MASTER_ID_FOR_TX, SlaveContext.EMPTY, new Serializer()
         {
@@ -202,7 +209,7 @@ public class MasterClient extends Client<Master> implements Master
             {
                 buffer.writeLong( txId );
             }
-        }, INTEGER_DESERIALIZER ).response();
+        }, INTEGER_DESERIALIZER );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -212,7 +219,7 @@ public class MasterClient extends Client<Master> implements Master
 
         return sendRequest( HaRequestType.COPY_STORE, context, EMPTY_SERIALIZER, new Protocol.FileStreamsDeserializer( writer ) );
     }
-
+    
     public static enum HaRequestType implements RequestType<Master>
     {
         ALLOCATE_IDS( new MasterCaller<Master, IdAllocation>()
@@ -221,7 +228,7 @@ public class MasterClient extends Client<Master> implements Master
                     ChannelBuffer input, ChannelBuffer target )
             {
                 IdType idType = IdType.values()[input.readByte()];
-                return Response.wrapResponseObjectOnly( master.allocateIds( idType ) );
+                return master.allocateIds( idType );
             }
         }, new ObjectSerializer<IdAllocation>()
         {
@@ -311,8 +318,7 @@ public class MasterClient extends Client<Master> implements Master
             public Response<Integer> callMaster( Master master, SlaveContext context,
                     ChannelBuffer input, ChannelBuffer target )
             {
-                int masterId = master.getMasterIdForCommittedTx( input.readLong() );
-                return Response.wrapResponseObjectOnly( masterId );
+                return master.getMasterIdForCommittedTx( input.readLong() );
             }
         }, INTEGER_SERIALIZER, false ),
         COPY_STORE( new MasterCaller<Master, Void>()

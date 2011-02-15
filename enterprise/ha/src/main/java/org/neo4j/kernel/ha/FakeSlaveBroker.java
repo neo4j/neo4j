@@ -28,9 +28,9 @@ public class FakeSlaveBroker extends AbstractBroker
     private final Master master;
     private final Machine masterMachine;
 
-    public FakeSlaveBroker( Master master, int masterMachineId, int myMachineId, String storeDir )
+    public FakeSlaveBroker( Master master, int masterMachineId, int myMachineId, GraphDatabaseService graphDb )
     {
-        super( myMachineId, storeDir );
+        super( myMachineId, graphDb );
         this.master = master;
         this.masterMachine = new Machine( masterMachineId, 0, 1, null );
     }
