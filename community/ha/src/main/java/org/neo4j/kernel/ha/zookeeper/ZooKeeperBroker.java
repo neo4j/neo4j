@@ -25,6 +25,7 @@ import javax.management.remote.JMXServiceURL;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.ha.AbstractBroker;
 import org.neo4j.kernel.ha.ConnectionInformation;
@@ -42,15 +43,16 @@ public class ZooKeeperBroker extends AbstractBroker
     private final int machineId;
     private final String clusterName;
 
-    public ZooKeeperBroker( String storeDir, String clusterName, int machineId,
+    public ZooKeeperBroker( GraphDatabaseService graphDb, String clusterName, int machineId,
             String zooKeeperServers, String haServer, ResponseReceiver receiver )
     {
-        super( machineId, storeDir );
+        super( machineId, graphDb );
         this.clusterName = clusterName;
         this.machineId = machineId;
         this.haServer = haServer;
+        String storeDir = ((AbstractGraphDatabase) graphDb).getStoreDir();
         this.zooClient = new ZooClient( zooKeeperServers, machineId, getRootPathGetter( storeDir ),
-                receiver, haServer, storeDir );
+                receiver, haServer, graphDb );
     }
 
     @Override

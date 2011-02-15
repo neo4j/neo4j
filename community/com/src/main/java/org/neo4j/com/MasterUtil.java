@@ -38,6 +38,9 @@ import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.ClosableIterable;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.Config;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
@@ -182,7 +185,17 @@ public class MasterUtil
                 }
             }
         }
-        return new Response<T>( response, TransactionStream.create( resourceNames, stream ) );
+        StoreId storeId = ((NeoStoreXaDataSource) dsManager.getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME )).getStoreId();
+        return new Response<T>( response, storeId, TransactionStream.create( resourceNames, stream ) );
+    }
+    
+    public static <T> Response<T> packResponseWithoutTransactionStream( GraphDatabaseService graphDb,
+            SlaveContext context, T response )
+    {
+        XaDataSource ds = ((AbstractGraphDatabase) graphDb).getConfig().getTxModule()
+                .getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
+        StoreId storeId = ((NeoStoreXaDataSource) ds).getStoreId();
+        return new Response<T>( response, storeId, TransactionStream.EMPTY );
     }
 
     public static final Predicate<Long> ALL = new Predicate<Long>()

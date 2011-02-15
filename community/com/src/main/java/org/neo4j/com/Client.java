@@ -45,8 +45,14 @@ import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
+import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.Config;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -66,16 +72,19 @@ public abstract class Client<M> implements ChannelPipelineFactory
     private final StringLogger msgLog;
     private final ExecutorService executor;
     private final ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>> channelPool;
+    private final GraphDatabaseService graphDb;
+    private StoreId myStoreId;
 
-    public Client( String hostNameOrIp, int port, String storeDir )
+    public Client( String hostNameOrIp, int port, GraphDatabaseService graphDb )
     {
-        this( hostNameOrIp, port, storeDir, DEFAULT_MAX_NUMBER_OF_CONCURRENT_REQUESTS_PER_CLIENT,
+        this( hostNameOrIp, port, graphDb, DEFAULT_MAX_NUMBER_OF_CONCURRENT_REQUESTS_PER_CLIENT,
                 DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS, DEFAULT_MAX_NUMBER_OF_UNUSED_CHANNELS );
     }
     
-    public Client( String hostNameOrIp, int port, String storeDir, int maxConcurrentTransactions,
+    public Client( String hostNameOrIp, int port, GraphDatabaseService graphDb, int maxConcurrentTransactions,
             int readResponseTimeoutSeconds, int maxUnusedPoolSize )
     {
+        this.graphDb = graphDb;
         channelPool = new ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>>(
                 maxConcurrentTransactions, maxUnusedPoolSize )
         {
@@ -120,6 +129,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
         executor = Executors.newCachedThreadPool();
         bootstrap = new ClientBootstrap( new NioClientSocketChannelFactory( executor, executor ) );
         bootstrap.setPipelineFactory( this );
+        String storeDir = ((AbstractGraphDatabase) graphDb).getStoreDir();
         msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
         msgLog.logMessage( "Client connected to " + hostNameOrIp + ":" + port, true );
     }
@@ -162,8 +172,13 @@ public abstract class Client<M> implements ChannelPipelineFactory
                 }
             };
             R response = deserializer.read( dechunkingBuffer, channelContext.third() );
+            StoreId storeId = readStoreId( dechunkingBuffer, channelContext.third() );
+            if ( shouldCheckStoreId( type ) )
+            {
+                assertCorrectStoreId( storeId );
+            }
             TransactionStream txStreams = readTransactionStreams( dechunkingBuffer );
-            return new Response<R>( response, txStreams );
+            return new Response<R>( response, storeId, txStreams );
         }
         catch ( ClosedChannelException e )
         {
@@ -186,6 +201,40 @@ public abstract class Client<M> implements ChannelPipelineFactory
         {
             releaseChannel();
         }
+    }
+
+    protected boolean shouldCheckStoreId( RequestType<M> type )
+    {
+        return true;
+    }
+
+    private void assertCorrectStoreId( StoreId storeId )
+    {
+        StoreId myStoreId = getMyStoreId();
+        if ( !myStoreId.equals( storeId ) )
+        {
+            throw new ComException( storeId + " from response doesn't match my " + myStoreId );
+        }
+    }
+
+    private StoreId getMyStoreId()
+    {
+        if ( myStoreId == null )
+        {
+            XaDataSource ds = ((AbstractGraphDatabase) graphDb).getConfig().getTxModule()
+                    .getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
+            myStoreId = ((NeoStoreXaDataSource) ds).getStoreId();
+        }
+        return myStoreId;
+    }
+
+    private StoreId readStoreId( ChannelBuffer source, ByteBuffer byteBuffer )
+    {
+        byteBuffer.clear();
+        byteBuffer.limit( 16 );
+        source.readBytes( byteBuffer );
+        byteBuffer.flip();
+        return StoreId.deserialize( byteBuffer );
     }
 
     protected void writeContext( RequestType<M> type, SlaveContext context, ChannelBuffer targetBuffer )

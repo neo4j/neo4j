@@ -21,6 +21,8 @@ package org.neo4j.kernel.ha;
 
 import java.util.Map;
 
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
@@ -28,12 +30,12 @@ import org.neo4j.kernel.impl.nioneo.store.StoreId;
 public abstract class AbstractBroker implements Broker
 {
     private final int myMachineId;
-    private final String storeDir;
+    private final GraphDatabaseService graphDb;
 
-    public AbstractBroker( int myMachineId, String storeDir )
+    public AbstractBroker( int myMachineId, GraphDatabaseService graphDb )
     {
         this.myMachineId = myMachineId;
-        this.storeDir = storeDir;
+        this.graphDb = graphDb;
     }
 
     public void setLastCommittedTxId( long txId )
@@ -48,7 +50,7 @@ public abstract class AbstractBroker implements Broker
 
     public String getStoreDir()
     {
-        return storeDir;
+        return ((AbstractGraphDatabase) graphDb).getStoreDir();
     }
 
     public void shutdown()
@@ -70,7 +72,7 @@ public abstract class AbstractBroker implements Broker
     {
         return new BrokerFactory()
         {
-            public Broker create( String storeDir, Map<String, String> graphDbConfig )
+            public Broker create( GraphDatabaseService graphDb, Map<String, String> graphDbConfig )
             {
                 return broker;
             }

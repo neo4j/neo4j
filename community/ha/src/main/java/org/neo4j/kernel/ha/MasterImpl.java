@@ -261,11 +261,12 @@ public class MasterImpl implements Master
         return result;
     }
 
-    public IdAllocation allocateIds( IdType idType )
+    public Response<IdAllocation> allocateIds( IdType idType )
     {
         IdGenerator generator = graphDbConfig.getIdGeneratorFactory().get( idType );
-        return new IdAllocation( generator.nextIdBatch( ID_GRAB_SIZE ), generator.getHighId(),
+        IdAllocation result = new IdAllocation( generator.nextIdBatch( ID_GRAB_SIZE ), generator.getHighId(),
                 generator.getDefragCount() );
+        return MasterUtil.packResponseWithoutTransactionStream( graphDb, SlaveContext.EMPTY, result );
     }
 
     public Response<Long> commitSingleResourceTransaction( SlaveContext context, String resource,
@@ -328,17 +329,19 @@ public class MasterImpl implements Master
         return packResponse( context, null );
     }
 
-    public int getMasterIdForCommittedTx( long txId )
+    public Response<Integer> getMasterIdForCommittedTx( long txId )
     {
         try
         {
             XaDataSource nioneoDataSource = graphDbConfig.getTxModule().getXaDataSourceManager()
                     .getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
-            return nioneoDataSource.getMasterForCommittedTx( txId );
+            return MasterUtil.packResponseWithoutTransactionStream( graphDb, SlaveContext.EMPTY,
+                    nioneoDataSource.getMasterForCommittedTx( txId ) );
         }
         catch ( IOException e )
         {
-            return XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER;
+            return MasterUtil.packResponseWithoutTransactionStream( graphDb, SlaveContext.EMPTY,
+                    XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER );
         }
     }
 

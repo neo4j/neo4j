@@ -19,13 +19,17 @@
  */
 package org.neo4j.com;
 
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
+
 public class Response<T>
 {
     private final T response;
+    private final StoreId storeId;
     private final TransactionStream transactions;
 
-    public Response( T response, TransactionStream transactions )
+    public Response( T response, StoreId storeId, TransactionStream transactions )
     {
+        this.storeId = storeId;
         this.response = response;
         this.transactions = transactions;
     }
@@ -35,13 +39,13 @@ public class Response<T>
         return response;
     }
 
+    public StoreId getStoreId()
+    {
+        return storeId;
+    }
+    
     public TransactionStream transactions()
     {
         return transactions;
-    }
-
-    public static <R> Response<R> wrapResponseObjectOnly( R response )
-    {
-        return new Response<R>( response, TransactionStream.EMPTY );
     }
 }

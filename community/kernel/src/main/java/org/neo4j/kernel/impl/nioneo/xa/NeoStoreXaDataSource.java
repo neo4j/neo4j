@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.Store;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.store.WindowPoolStats;
 import org.neo4j.kernel.impl.persistence.IdGenerationFailedException;
 import org.neo4j.kernel.impl.transaction.LockManager;
@@ -255,6 +256,11 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         neoStore.close();
         logger.fine( "NeoStore closed" );
         msgLog.logMessage( "NeoStore closed", true );
+    }
+    
+    public StoreId getStoreId()
+    {
+        return neoStore.getStoreId();
     }
 
     @Override

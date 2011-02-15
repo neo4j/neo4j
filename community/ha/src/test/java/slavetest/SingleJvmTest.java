@@ -38,7 +38,6 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.ha.AbstractBroker;
 import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.FakeMasterBroker;
 import org.neo4j.kernel.ha.FakeSlaveBroker;
@@ -60,12 +59,14 @@ public class SingleJvmTest extends AbstractHaTest
         haDbs = haDbs != null ? haDbs : new ArrayList<GraphDatabaseService>();
         int machineId = haDbs.size()+1;
         File slavePath = dbPath( machineId );
-        Broker broker = makeSlaveBroker( master, 0, machineId, slavePath.getAbsolutePath() );
+        PlaceHolderGraphDatabaseService placeHolderDb = new PlaceHolderGraphDatabaseService( slavePath.getAbsolutePath() );
+        Broker broker = makeSlaveBroker( master, 0, machineId, placeHolderDb );
         Map<String,String> cfg = new HashMap<String, String>(config);
         cfg.put( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, Integer.toString(machineId) );
         cfg.put( Config.KEEP_LOGICAL_LOGS, "true" );
         HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase(
-                slavePath.getAbsolutePath(), cfg, AbstractBroker.wrapSingleBroker( broker ) );
+                slavePath.getAbsolutePath(), cfg, wrapBrokerAndSetPlaceHolderDb( placeHolderDb, broker ) );
+        placeHolderDb.setDb( db );
         haDbs.add( db );
     }
 
@@ -80,21 +81,24 @@ public class SingleJvmTest extends AbstractHaTest
         int masterId = 0;
         Map<String, String> config = MapUtil.stringMap( extraConfig,
                 HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, String.valueOf( masterId ) );
-        Broker broker = makeMasterBroker( master, masterId, dbPath( 0 ).getAbsolutePath() );
-        HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase( dbPath( 0 ).getAbsolutePath(),
-                config, AbstractBroker.wrapSingleBroker( broker ) );
+        String path = dbPath( 0 ).getAbsolutePath();
+        PlaceHolderGraphDatabaseService placeHolderDb = new PlaceHolderGraphDatabaseService( path );
+        Broker broker = makeMasterBroker( master, masterId, placeHolderDb );
+        HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase( path,
+                config, wrapBrokerAndSetPlaceHolderDb( placeHolderDb, broker ) );
+        placeHolderDb.setDb( db );
         // db.newMaster( null, new Exception() );
         master = new MasterImpl( db );
     }
 
-    protected Broker makeMasterBroker( MasterImpl master, int masterId, String path )
+    protected Broker makeMasterBroker( MasterImpl master, int masterId, GraphDatabaseService graphDb )
     {
-        return new FakeMasterBroker( masterId, path );
+        return new FakeMasterBroker( masterId, graphDb );
     }
 
-    protected Broker makeSlaveBroker( MasterImpl master, int masterId, int id, String path )
+    protected Broker makeSlaveBroker( MasterImpl master, int masterId, int id, GraphDatabaseService graphDb )
     {
-        return new FakeSlaveBroker( master, masterId, id, path );
+        return new FakeSlaveBroker( master, masterId, id, graphDb );
     }
 
     protected MasterImpl getMaster()

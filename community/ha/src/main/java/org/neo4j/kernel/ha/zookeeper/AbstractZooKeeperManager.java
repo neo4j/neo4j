@@ -31,8 +31,10 @@ import java.util.Map;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterClient;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -51,13 +53,14 @@ public abstract class AbstractZooKeeperManager implements Watcher
             new HashMap<Integer, String>() );
     private Pair<Master, Machine> cachedMaster = Pair.<Master, Machine>of( null, Machine.NO_MACHINE );
 
-    private final String storeDir;
+    private final GraphDatabaseService graphDb;
     private final StringLogger msgLog;
 
-    public AbstractZooKeeperManager( String servers, String storeDir )
+    public AbstractZooKeeperManager( String servers, GraphDatabaseService graphDb )
     {
         this.servers = servers;
-        this.storeDir = storeDir;
+        this.graphDb = graphDb;
+        String storeDir = ((AbstractGraphDatabase) graphDb).getStoreDir();
         msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
     }
     
@@ -119,7 +122,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
             invalidateMaster();
             if ( master != Machine.NO_MACHINE && master.getMachineId() != getMyMachineId() )
             {
-                masterClient = new MasterClient( master, storeDir );
+                masterClient = new MasterClient( master, graphDb );
             }
             cachedMaster = Pair.<Master, Machine>of( masterClient, master );
         }

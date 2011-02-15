@@ -33,7 +33,7 @@ public final class StoreId
         this( System.currentTimeMillis(), r.nextLong() );
     }
 
-    StoreId( long creationTime, long randomId )
+    public StoreId( long creationTime, long randomId )
     {
         this.creationTime = creationTime;
         this.randomId = randomId;
@@ -70,11 +70,22 @@ public final class StoreId
     {
         return ByteBuffer.wrap( new byte[16] ).putLong( creationTime ).putLong( randomId ).array();
     }
+    
+    @Override
+    public String toString()
+    {
+        return "StoreId[time:" + creationTime + ", id:" + randomId + "]";
+    }
 
     public static StoreId deserialize( byte[] data )
     {
         assert data.length == 16 : "unexpected data";
         ByteBuffer buffer = ByteBuffer.wrap( data );
+        return deserialize( buffer );
+    }
+
+    public static StoreId deserialize( ByteBuffer buffer )
+    {
         long creationTime = buffer.getLong();
         long randomId = buffer.getLong();
         return new StoreId( creationTime, randomId );

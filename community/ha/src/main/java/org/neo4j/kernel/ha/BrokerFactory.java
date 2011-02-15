@@ -21,7 +21,9 @@ package org.neo4j.kernel.ha;
 
 import java.util.Map;
 
+import org.neo4j.graphdb.GraphDatabaseService;
+
 public interface BrokerFactory
 {
-    Broker create( String storeDir, Map<String, String> graphDbConfig );
+    Broker create( GraphDatabaseService graphDb, Map<String, String> graphDbConfig );
 }
