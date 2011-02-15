@@ -122,9 +122,9 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         this.config = config;
         config.put( Config.KEEP_LOGICAL_LOGS, "true" );
         this.brokerFactory = brokerFactory != null ? brokerFactory : defaultBrokerFactory(
-                storeDir, config );
+                this, config );
         this.machineId = getMachineIdFromConfig( config );
-        this.broker = this.brokerFactory.create( storeDir, config );
+        this.broker = this.brokerFactory.create( this, config );
         this.msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
         
         boolean allowInitFromConfig = getAllowInitFromConfig( config );
@@ -201,6 +201,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                     try
                     {
                         copyStoreFromMaster( master );
+                        System.out.println( "copied store from master" );
                         exception = null;
                         break;
                     }
@@ -281,14 +282,14 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         return localGraph;
     }
 
-    private BrokerFactory defaultBrokerFactory( final String storeDir,
+    private BrokerFactory defaultBrokerFactory( final GraphDatabaseService graphDb,
             final Map<String, String> config )
     {
         return new BrokerFactory()
         {
-            public Broker create( String storeDir, Map<String, String> config )
+            public Broker create( GraphDatabaseService graphDb, Map<String, String> config )
             {
-                return new ZooKeeperBroker( storeDir,
+                return new ZooKeeperBroker( graphDb,
                         getClusterNameFromConfig( config ),
                         getMachineIdFromConfig( config ),
                         getZooKeeperServersFromConfig( config ),
@@ -516,7 +517,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             return;
         }
 
-        int masterForMastersHighestCommonTxId = master.first().getMasterIdForCommittedTx( highestCommonTxId );
+        int masterForMastersHighestCommonTxId = master.first().getMasterIdForCommittedTx( highestCommonTxId ).response();
 
         // Compare those two, if equal -> good
         if ( masterForMyHighestCommonTxId == masterForMastersHighestCommonTxId )

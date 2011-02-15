@@ -52,6 +52,7 @@ import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -213,6 +214,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
                 try
                 {
                     type.getObjectSerializer().write( response.response(), targetBuffer );
+                    writeStoreId( response.getStoreId(), targetBuffer );
                     writeTransactionStreams( response.transactions(), targetBuffer, targetByteBuffer );
                     targetBuffer.done();
                     responseWritten( type, channel, context );
@@ -233,6 +235,11 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
     
     protected abstract void responseWritten( RequestType<M> type, Channel channel, SlaveContext context );
 
+    private static void writeStoreId( StoreId storeId, ChannelBuffer targetBuffer )
+    {
+        targetBuffer.writeBytes( storeId.serialize() );
+    }
+    
     private static <T> void writeTransactionStreams( TransactionStream txStream,
             ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
     {

@@ -33,7 +33,9 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.ha.ConnectionInformation;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.ResponseReceiver;
@@ -63,14 +65,15 @@ public class ZooClient extends AbstractZooKeeperManager
     private final ResponseReceiver receiver;
 
     public ZooClient( String servers, int machineId, RootPathGetter rootPathGetter,
-            ResponseReceiver receiver, String haServer, String storeDir )
+            ResponseReceiver receiver, String haServer, GraphDatabaseService graphDb )
     {
-        super( servers, storeDir );
+        super( servers, graphDb );
         this.receiver = receiver;
         this.rootPathGetter = rootPathGetter;
         this.haServer = haServer;
         this.machineId = machineId;
         this.sequenceNr = "not initialized yet";
+        String storeDir = ((AbstractGraphDatabase) graphDb).getStoreDir();
         this.msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
         this.zooKeeper = instantiateZooKeeper();
     }

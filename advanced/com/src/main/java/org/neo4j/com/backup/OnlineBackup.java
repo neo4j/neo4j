@@ -40,7 +40,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
 public class OnlineBackup
 {
-    private final BackupClient client;
     private final String hostNameOrIp;
     private final int port;
     private final Map<String, Long> lastCommittedTxs = new TreeMap<String, Long>();
@@ -59,20 +58,28 @@ public class OnlineBackup
     {
         this.hostNameOrIp = hostNameOrIp;
         this.port = port;
-        this.client = new BackupClient( hostNameOrIp, port, null );
     }
     
     public OnlineBackup full( String targetDirectory )
     {
-        Response<Void> response = client.fullBackup( new ToFileStoreWriter( targetDirectory ) );
-        GraphDatabaseService targetDb = startTemporaryDb( targetDirectory );
+        //                                                          OMG this is ugly
+        BackupClient client = new BackupClient( hostNameOrIp, port, new NotYetExistingGraphDatabase( targetDirectory ) );
         try
         {
-            unpackResponse( response, targetDb, MasterUtil.txHandlerForFullCopy() );
+            Response<Void> response = client.fullBackup( new ToFileStoreWriter( targetDirectory ) );
+            GraphDatabaseService targetDb = startTemporaryDb( targetDirectory );
+            try
+            {
+                unpackResponse( response, targetDb, MasterUtil.txHandlerForFullCopy() );
+            }
+            finally
+            {
+                targetDb.shutdown();
+            }
         }
         finally
         {
-            targetDb.shutdown();
+            client.shutdown();
         }
         return this;
     }
@@ -112,7 +119,15 @@ public class OnlineBackup
 
     public OnlineBackup incremental( GraphDatabaseService targetDb )
     {
-        unpackResponse( client.incrementalBackup( slaveContextOf( targetDb ) ), targetDb, MasterUtil.NO_ACTION );
+        BackupClient client = new BackupClient( hostNameOrIp, port, targetDb );
+        try
+        {
+            unpackResponse( client.incrementalBackup( slaveContextOf( targetDb ) ), targetDb, MasterUtil.NO_ACTION );
+        }
+        finally
+        {
+            client.shutdown();
+        }
         return this;
     }
     
@@ -148,10 +163,5 @@ public class OnlineBackup
             txs.add( Pair.of( ds.getName(), ds.getLastCommittedTxId() ) ); 
         }
         return new SlaveContext( 0, 0, txs.toArray( new Pair[0] ) );
-    }
-    
-    public void close()
-    {
-        client.shutdown();
     }
 }
