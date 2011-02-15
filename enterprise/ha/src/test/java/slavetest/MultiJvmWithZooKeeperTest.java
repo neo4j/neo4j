@@ -26,9 +26,11 @@ import java.util.Map;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.neo4j.ha.LocalhostZooKeeperCluster;
 import org.neo4j.ha.StandaloneDatabase;
 
+@Ignore
 public class MultiJvmWithZooKeeperTest extends MultiJvmTest
 {
     private static final File BASE_ZOO_KEEPER_DATA_DIR =
