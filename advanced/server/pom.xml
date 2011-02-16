@@ -789,7 +789,7 @@
     </repository>
     <repository>
       <id>selenium-repository</id>
-      <url>http://selenium.googlecode.com/svn/repository/</url>
+      <url>http://selenium.googlecode.com/svn/repository</url>
     </repository>
     <repository>
       <id>neo4j-releases</id>
