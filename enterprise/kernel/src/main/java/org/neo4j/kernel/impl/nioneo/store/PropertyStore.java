@@ -372,84 +372,12 @@ public class PropertyStore extends AbstractStore implements Store
 
     private PropertyType getEnumType( int type )
     {
-        switch ( type )
-        {
-            case 1:
-                return PropertyType.INT;
-            case 2:
-                return PropertyType.STRING;
-            case 3:
-                return PropertyType.BOOL;
-            case 4:
-                return PropertyType.DOUBLE;
-            case 5:
-                return PropertyType.FLOAT;
-            case 6:
-                return PropertyType.LONG;
-            case 7:
-                return PropertyType.BYTE;
-            case 8:
-                return PropertyType.CHAR;
-            case 9:
-                return PropertyType.ARRAY;
-            case 10:
-                return PropertyType.SHORT;
-            default:
-                throw new InvalidRecordException( "Unknown enum type:" + type );
-        }
+        return PropertyType.getPropertyType( type, false );
     }
     
     public Object getValue( PropertyRecord propertyRecord )
     {
-        PropertyType type = propertyRecord.getType();
-        if ( type == PropertyType.INT )
-        {
-            return (int) propertyRecord.getPropBlock();
-        }
-        if ( type == PropertyType.STRING )
-        {
-            return getStringFor( propertyRecord );
-        }
-        if ( type == PropertyType.BOOL )
-        {
-            if ( propertyRecord.getPropBlock() == 1 )
-            {
-                return Boolean.valueOf( true );
-            }
-            return Boolean.valueOf( false );
-        }
-        if ( type == PropertyType.DOUBLE )
-        {
-            return new Double( Double.longBitsToDouble( 
-                propertyRecord.getPropBlock() ) );
-        }
-        if ( type == PropertyType.FLOAT )
-        {
-            return new Float( Float.intBitsToFloat( 
-                (int) propertyRecord.getPropBlock() ) );
-        }
-        if ( type == PropertyType.LONG )
-        {
-            return propertyRecord.getPropBlock();
-        }
-        if ( type == PropertyType.BYTE )
-        {
-            return (byte) propertyRecord.getPropBlock();
-        }
-        if ( type == PropertyType.CHAR )
-        {
-            return (char) propertyRecord.getPropBlock();
-        }
-        if ( type == PropertyType.ARRAY )
-        {
-            return getArrayFor( propertyRecord );
-        }
-        if ( type == PropertyType.SHORT )
-        {
-            return (short) propertyRecord.getPropBlock();
-        }
-        throw new InvalidRecordException( "Unknown type: " + type  + 
-            " for record " + propertyRecord );
+        return propertyRecord.getType().getValue( propertyRecord, this );
     }
 
     @Override

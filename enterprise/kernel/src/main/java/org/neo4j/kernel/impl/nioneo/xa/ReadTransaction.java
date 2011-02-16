@@ -32,7 +32,6 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
-import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipData;
@@ -181,55 +180,7 @@ class ReadTransaction
     
     public Object propertyGetValueOrNull( PropertyRecord propertyRecord )
     {
-        PropertyType type = propertyRecord.getType();
-        if ( type == PropertyType.INT )
-        {
-            return (int) propertyRecord.getPropBlock();
-        }
-        if ( type == PropertyType.STRING )
-        {
-            return null;
-        }
-        if ( type == PropertyType.BOOL )
-        {
-            if ( propertyRecord.getPropBlock() == 1 )
-            {
-                return Boolean.valueOf( true );
-            }
-            return Boolean.valueOf( false );
-        }
-        if ( type == PropertyType.DOUBLE )
-        {
-            return new Double( Double.longBitsToDouble( 
-                propertyRecord.getPropBlock() ) );
-        }
-        if ( type == PropertyType.FLOAT )
-        {
-            return new Float( Float.intBitsToFloat( 
-                (int) propertyRecord.getPropBlock() ) );
-        }
-        if ( type == PropertyType.LONG )
-        {
-            return propertyRecord.getPropBlock();
-        }
-        if ( type == PropertyType.BYTE )
-        {
-            return (byte) propertyRecord.getPropBlock();
-        }
-        if ( type == PropertyType.CHAR )
-        {
-            return (char) propertyRecord.getPropBlock();
-        }
-        if ( type == PropertyType.ARRAY )
-        {
-            return null;
-        }
-        if ( type == PropertyType.SHORT )
-        {
-            return (short) propertyRecord.getPropBlock();
-        }
-        throw new InvalidRecordException( "Unknown type: " + type + 
-            " on " + propertyRecord );
+        return propertyRecord.getType().getValue( propertyRecord, null );
     }
 
     public Object propertyGetValue( int id )
@@ -239,55 +190,7 @@ class ReadTransaction
         {
             getPropertyStore().makeHeavy( propertyRecord );
         }
-        PropertyType type = propertyRecord.getType();
-        if ( type == PropertyType.INT )
-        {
-            return (int) propertyRecord.getPropBlock();
-        }
-        if ( type == PropertyType.STRING )
-        {
-            return getPropertyStore().getStringFor( propertyRecord );
-        }
-        if ( type == PropertyType.BOOL )
-        {
-            if ( propertyRecord.getPropBlock() == 1 )
-            {
-                return Boolean.valueOf( true );
-            }
-            return Boolean.valueOf( false );
-        }
-        if ( type == PropertyType.DOUBLE )
-        {
-            return new Double( Double.longBitsToDouble( 
-                propertyRecord.getPropBlock() ) );
-        }
-        if ( type == PropertyType.FLOAT )
-        {
-            return new Float( Float.intBitsToFloat( 
-                (int) propertyRecord.getPropBlock() ) );
-        }
-        if ( type == PropertyType.LONG )
-        {
-            return propertyRecord.getPropBlock();
-        }
-        if ( type == PropertyType.BYTE )
-        {
-            return (byte) propertyRecord.getPropBlock();
-        }
-        if ( type == PropertyType.CHAR )
-        {
-            return (char) propertyRecord.getPropBlock();
-        }
-        if ( type == PropertyType.ARRAY )
-        {
-            return getPropertyStore().getArrayFor( propertyRecord );
-        }
-        if ( type == PropertyType.SHORT )
-        {
-            return (short) propertyRecord.getPropBlock();
-        }
-        throw new InvalidRecordException( "Unkown type: " + type + 
-            " on " + propertyRecord );
+        return propertyRecord.getType().getValue( propertyRecord, getPropertyStore() );
     }
 
     String getPropertyIndex( int id )
