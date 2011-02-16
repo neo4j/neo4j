@@ -37,6 +37,21 @@
         </dependency>
       </dependencies>
     </profile>
+    <profile>
+      <id>Windows-dependency-jconsole.jar</id>
+      <activation>
+        <os><family>Windows</family></os>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>com.sun</groupId>
+          <artifactId>tools</artifactId>
+          <version>1.6</version>
+          <scope>system</scope>
+          <systemPath>${env.JAVA_HOME}/lib/jconsole.jar</systemPath>
+        </dependency>
+      </dependencies>
+    </profile>
   </profiles>
 
   <licenses>
