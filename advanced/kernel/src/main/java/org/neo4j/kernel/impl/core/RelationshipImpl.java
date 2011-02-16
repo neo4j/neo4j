@@ -29,11 +29,11 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 
 class RelationshipImpl extends Primitive
 {
-    private final int startNodeId;
-    private final int endNodeId;
+    private final long startNodeId;
+    private final long endNodeId;
     private final RelationshipType type;
 
-    RelationshipImpl( int id, int startNodeId, int endNodeId, RelationshipType type, boolean newRel )
+    RelationshipImpl( long id, long startNodeId, long endNodeId, RelationshipType type, boolean newRel )
     {
         super( id, newRel );
         if ( type == null )
@@ -53,7 +53,7 @@ class RelationshipImpl extends Primitive
     @Override
     public int hashCode()
     {
-        return id;
+        return (int) id;
     }
 
     @Override
@@ -64,19 +64,19 @@ class RelationshipImpl extends Primitive
     }
 
     @Override
-    protected void changeProperty( NodeManager nodeManager, int propertyId, Object value )
+    protected void changeProperty( NodeManager nodeManager, long propertyId, Object value )
     {
         nodeManager.relChangeProperty( this, propertyId, value );
     }
 
     @Override
-    protected int addProperty( NodeManager nodeManager, PropertyIndex index, Object value )
+    protected long addProperty( NodeManager nodeManager, PropertyIndex index, Object value )
     {
         return nodeManager.relAddProperty( this, index, value );
     }
 
     @Override
-    protected void removeProperty( NodeManager nodeManager, int propertyId )
+    protected void removeProperty( NodeManager nodeManager, long propertyId )
     {
         nodeManager.relRemoveProperty( this, propertyId );
     }
@@ -112,7 +112,7 @@ class RelationshipImpl extends Primitive
         return new NodeProxy( startNodeId, nodeManager );
     }
 
-    int getStartNodeId()
+    long getStartNodeId()
     {
         return startNodeId;
     }
@@ -122,7 +122,7 @@ class RelationshipImpl extends Primitive
         return new NodeProxy( endNodeId, nodeManager );
     }
 
-    int getEndNodeId()
+    long getEndNodeId()
     {
         return endNodeId;
     }

@@ -24,9 +24,9 @@ package org.neo4j.kernel.impl.nioneo.store;
  */
 public class RelationshipData
 {
-    private final int id;
-    private final int firstNode;
-    private final int secondNode;
+    private final long id;
+    private final long firstNode;
+    private final long secondNode;
     private final int relType;
 
     /**
@@ -41,7 +41,7 @@ public class RelationshipData
      * @param relType
      *            The id of the relationship type
      */
-    public RelationshipData( int id, int firstNode, int secondNode, int relType )
+    public RelationshipData( long id, long firstNode, long secondNode, int relType )
     {
         this.id = id;
         this.firstNode = firstNode;
@@ -49,17 +49,17 @@ public class RelationshipData
         this.relType = relType;
     }
 
-    public int getId()
+    public long getId()
     {
         return id;
     }
 
-    public int firstNode()
+    public long firstNode()
     {
         return firstNode;
     }
 
-    public int secondNode()
+    public long secondNode()
     {
         return secondNode;
     }

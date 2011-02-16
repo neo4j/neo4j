@@ -38,7 +38,7 @@ public class IdGenerator implements EntityIdGenerator
      * <CODE>clazz</CODE>.
      * @return the next ID for <CODE>clazz</CODE>'s entity type
      */
-    public int nextId( Class<?> clazz )
+    public long nextId( Class<?> clazz )
     {
         return getPersistenceSource().nextId( clazz );
     }

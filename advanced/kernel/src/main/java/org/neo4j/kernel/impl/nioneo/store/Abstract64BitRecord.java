@@ -19,42 +19,45 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-public class NodeRecord extends Abstract64BitRecord
+public abstract class Abstract64BitRecord
 {
-    private long nextRel = Record.NO_NEXT_RELATIONSHIP.intValue();
-    private long nextProp = Record.NO_NEXT_PROPERTY.intValue();
+    private boolean inUse = false;
+    private final long id;
+    private boolean created = false;
 
-    public NodeRecord( long id )
+    Abstract64BitRecord( long id )
     {
-        super( id );
+        this.id = id;
     }
 
-    public long getNextRel()
+    Abstract64BitRecord( long id, boolean inUse )
     {
-        return nextRel;
+        this.id = id;
+        this.inUse = inUse;
     }
 
-    public void setNextRel( long nextRel )
+    public long getId()
     {
-        this.nextRel = nextRel;
+        return id;
     }
 
-    public long getNextProp()
+    public boolean inUse()
     {
-        return nextProp;
+        return inUse;
     }
 
-    public void setNextProp( long nextProp )
+    public void setInUse( boolean inUse )
     {
-        this.nextProp = nextProp;
+        this.inUse = inUse;
     }
 
-    public String toString()
+    public void setCreated()
     {
-        StringBuffer buf = new StringBuffer();
-        buf.append( "NodeRecord[" ).append( getId() ).append( "," ).append(
-            inUse() ).append( "," ).append( nextRel ).append( "," ).append(
-            nextProp ).append( "]" );
-        return buf.toString();
+        this.created = true;
+    }
+
+    public boolean isCreated()
+    {
+        return created;
     }
 }

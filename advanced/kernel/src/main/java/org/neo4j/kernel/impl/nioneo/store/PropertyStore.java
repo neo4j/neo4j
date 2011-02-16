@@ -217,7 +217,7 @@ public class PropertyStore extends AbstractStore implements Store
 
     public void updateRecord( PropertyRecord record )
     {
-        PersistenceWindow window = acquireWindow( record.getId(),
+        PersistenceWindow window = acquireWindow( (int) record.getId(),
             OperationType.WRITE );
         try
         {
@@ -253,14 +253,14 @@ public class PropertyStore extends AbstractStore implements Store
 
     private void updateRecord( PropertyRecord record, PersistenceWindow window )
     {
-        int id = record.getId();
+        int id = (int) record.getId();
         Buffer buffer = window.getOffsettedBuffer( id );
         if ( record.inUse() )
         {
             buffer.put( Record.IN_USE.byteValue() ).putInt(
                 record.getType().intValue() ).putInt( record.getKeyIndexId() )
-                .putLong( record.getPropBlock() ).putInt( record.getPrevProp() )
-                .putInt( record.getNextProp() );
+                .putLong( record.getPropBlock() ).putInt( (int) record.getPrevProp() )
+                .putInt( (int) record.getNextProp() );
         }
         else
         {
@@ -272,12 +272,12 @@ public class PropertyStore extends AbstractStore implements Store
         }
     }
 
-    public PropertyRecord getLightRecord( int id )
+    public PropertyRecord getLightRecord( long id )
     {
-        PersistenceWindow window = acquireWindow( id, OperationType.READ );
+        PersistenceWindow window = acquireWindow( (int) id, OperationType.READ );
         try
         {
-            PropertyRecord record = getRecord( id, window );
+            PropertyRecord record = getRecord( (int) id, window );
             record.setIsLight( true );
             return record;
         }
@@ -314,13 +314,13 @@ public class PropertyStore extends AbstractStore implements Store
         }
     }
 
-    public PropertyRecord getRecord( int id )
+    public PropertyRecord getRecord( long id )
     {
         PropertyRecord record;
-        PersistenceWindow window = acquireWindow( id, OperationType.READ );
+        PersistenceWindow window = acquireWindow( (int) id, OperationType.READ );
         try
         {
-            record = getRecord( id, window );
+            record = getRecord( (int) id, window );
         }
         finally
         {

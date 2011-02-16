@@ -47,42 +47,42 @@ public interface ResourceConnection
 
     public void destroy();
 
-    public ArrayMap<Integer,PropertyData> nodeDelete( int nodeId );
+    public ArrayMap<Integer,PropertyData> nodeDelete( long nodeId );
 
-    public int nodeAddProperty( int nodeId, PropertyIndex index, Object value );
+    public long nodeAddProperty( long nodeId, PropertyIndex index, Object value );
 
-    public void nodeChangeProperty( int nodeId, int propertyId, Object value );
+    public void nodeChangeProperty( long nodeId, long propertyId, Object value );
 
-    public void nodeRemoveProperty( int nodeId, int propertyId );
+    public void nodeRemoveProperty( long nodeId, long propertyId );
 
-    public void nodeCreate( int id );
+    public void nodeCreate( long id );
 
-    public void relationshipCreate( int id, int typeId, int startNodeId,
-        int endNodeId );
+    public void relationshipCreate( long id, int typeId, long startNodeId,
+        long endNodeId );
 
-    public ArrayMap<Integer,PropertyData> relDelete( int relId );
+    public ArrayMap<Integer,PropertyData> relDelete( long relId );
 
-    public int relAddProperty( int relId, PropertyIndex index, Object value );
+    public long relAddProperty( long relId, PropertyIndex index, Object value );
 
-    public void relChangeProperty( int relId, int propertyId, Object value );
+    public void relChangeProperty( long relId, long propertyId, Object value );
 
-    public void relRemoveProperty( int relId, int propertyId );
+    public void relRemoveProperty( long relId, long propertyId );
 
-    public boolean nodeLoadLight( int id );
+    public boolean nodeLoadLight( long id );
 
-    public Object loadPropertyValue( int id );
+    public Object loadPropertyValue( long id );
 
     public String loadIndex( int id );
 
     public PropertyIndexData[] loadPropertyIndexes( int maxCount );
 
-    public ArrayMap<Integer,PropertyData> nodeLoadProperties( int nodeId, 
+    public ArrayMap<Integer,PropertyData> nodeLoadProperties( long nodeId,
             boolean light );
 
-    public ArrayMap<Integer,PropertyData> relLoadProperties( int relId, 
+    public ArrayMap<Integer,PropertyData> relLoadProperties( long relId,
             boolean light);
 
-    public RelationshipData relLoadLight( int id );
+    public RelationshipData relLoadLight( long id );
 
     public RelationshipTypeData[] loadRelationshipTypes();
 
@@ -90,16 +90,16 @@ public interface ResourceConnection
 
     public void createRelationshipType( int id, String name );
 
-    public RelationshipChainPosition getRelationshipChainPosition( int nodeId );
+    public RelationshipChainPosition getRelationshipChainPosition( long nodeId );
 
-    public Iterable<RelationshipData> getMoreRelationships( int nodeId,  
+    public Iterable<RelationshipData> getMoreRelationships( long nodeId,
         RelationshipChainPosition position );
 
     public IntArray getCreatedNodes();
 
-    public boolean isNodeCreated( int nodeId );
+    public boolean isNodeCreated( long nodeId );
 
-    public boolean isRelationshipCreated( int relId );
+    public boolean isRelationshipCreated( long relId );
 
-    public int getKeyIdForProperty( int propertyId );
+    public int getKeyIdForProperty( long propertyId );
 }

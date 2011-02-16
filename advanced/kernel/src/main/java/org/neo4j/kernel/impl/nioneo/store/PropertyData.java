@@ -21,16 +21,16 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 public class PropertyData
 {
-    private final int id;
+    private final long id;
     private Object value = null;
 
-    public PropertyData( int id, Object value )
+    public PropertyData( long id, Object value )
     {
         this.id = id;
         this.value = value;
     }
 
-    public int getId()
+    public long getId()
     {
         return id;
     }

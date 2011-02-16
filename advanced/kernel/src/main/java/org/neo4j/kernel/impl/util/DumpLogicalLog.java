@@ -490,9 +490,9 @@ public class DumpLogicalLog
 
     private static class Command extends XaCommand
     {
-        private final AbstractRecord record;
+        private final Object record;
 
-        Command( AbstractRecord record )
+        Command( Object record )
         {
             this.record = record;
         }

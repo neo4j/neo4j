@@ -48,13 +48,13 @@ class NodeImpl extends Primitive
     // private RelationshipGrabber relationshipGrabber = null;
     private RelationshipChainPosition relChainPosition = null;
 
-    NodeImpl( int id )
+    NodeImpl( long id )
     {
         super( id );
     }
 
     // newNode will only be true for NodeManager.createNode
-    NodeImpl( int id, boolean newNode )
+    NodeImpl( long id, boolean newNode )
     {
         super( id, newNode );
         if ( newNode )
@@ -68,7 +68,7 @@ class NodeImpl extends Primitive
     @Override
     public int hashCode()
     {
-        return id;
+        return (int) id;
     }
 
     @Override
@@ -78,19 +78,19 @@ class NodeImpl extends Primitive
     }
 
     @Override
-    protected void changeProperty( NodeManager nodeManager, int propertyId, Object value )
+    protected void changeProperty( NodeManager nodeManager, long propertyId, Object value )
     {
         nodeManager.nodeChangeProperty( this, propertyId, value );
     }
 
     @Override
-    protected int addProperty( NodeManager nodeManager, PropertyIndex index, Object value )
+    protected long addProperty( NodeManager nodeManager, PropertyIndex index, Object value )
     {
         return nodeManager.nodeAddProperty( this, index, value );
     }
 
     @Override
-    protected void removeProperty( NodeManager nodeManager, int propertyId )
+    protected void removeProperty( NodeManager nodeManager, long propertyId )
     {
         nodeManager.nodeRemoveProperty( this, propertyId );
     }
@@ -268,21 +268,21 @@ class NodeImpl extends Primitive
     // caller is responsible for acquiring lock
     // this method is only called when a relationship is created or
     // a relationship delete is undone or when the full node is loaded
-    void addRelationship( NodeManager nodeManager, RelationshipType type, int relId )
+    void addRelationship( NodeManager nodeManager, RelationshipType type, long relId )
     {
         IntArray relationshipSet = nodeManager.getCowRelationshipAddMap(
             this, type.name(), true );
-        relationshipSet.add( relId );
+        relationshipSet.add( (int) relId );
     }
 
     // caller is responsible for acquiring lock
     // this method is only called when a undo create relationship or
     // a relationship delete is invoked.
-    void removeRelationship( NodeManager nodeManager, RelationshipType type, int relId )
+    void removeRelationship( NodeManager nodeManager, RelationshipType type, long relId )
     {
         IntArray relationshipSet = nodeManager.getCowRelationshipRemoveMap(
             this, type.name(), true );
-        relationshipSet.add( relId );
+        relationshipSet.add( (int) relId );
     }
 
     private void ensureRelationshipMapNotNull( NodeManager nodeManager )

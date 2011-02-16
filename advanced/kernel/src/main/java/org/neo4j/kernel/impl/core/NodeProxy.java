@@ -34,9 +34,9 @@ class NodeProxy implements Node
 {
     private final NodeManager nm;
 
-    private final int nodeId;
+    private final long nodeId;
 
-    NodeProxy( int nodeId, NodeManager nodeManager )
+    NodeProxy( long nodeId, NodeManager nodeManager )
     {
         this.nodeId = nodeId;
         this.nm = nodeManager;
@@ -171,7 +171,7 @@ class NodeProxy implements Node
     @Override
     public int hashCode()
     {
-        return nodeId;
+        return (int) nodeId;
     }
 
     @Override

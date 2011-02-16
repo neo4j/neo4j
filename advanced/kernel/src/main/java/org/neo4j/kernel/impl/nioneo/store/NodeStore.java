@@ -86,12 +86,12 @@ public class NodeStore extends AbstractStore implements Store
         store.close();
     }
 
-    public NodeRecord getRecord( int id )
+    public NodeRecord getRecord( long id )
     {
-        PersistenceWindow window = acquireWindow( id, OperationType.READ );
+        PersistenceWindow window = acquireWindow( (int) id, OperationType.READ );
         try
         {
-            NodeRecord record = getRecord( id, window, false );
+            NodeRecord record = getRecord( (int) id, window, false );
             return record;
         }
         finally
@@ -117,7 +117,7 @@ public class NodeStore extends AbstractStore implements Store
 
     public void updateRecord( NodeRecord record )
     {
-        PersistenceWindow window = acquireWindow( record.getId(),
+        PersistenceWindow window = acquireWindow( (int) record.getId(),
             OperationType.WRITE );
         try
         {
@@ -129,12 +129,12 @@ public class NodeStore extends AbstractStore implements Store
         }
     }
 
-    public boolean loadLightNode( int id )
+    public boolean loadLightNode( long id )
     {
         PersistenceWindow window = null;
         try
         {
-            window = acquireWindow( id, OperationType.READ );
+            window = acquireWindow( (int) id, OperationType.READ );
         }
         catch ( InvalidRecordException e )
         {
@@ -144,7 +144,7 @@ public class NodeStore extends AbstractStore implements Store
 
         try
         {
-            NodeRecord record = getRecord( id, window, true );
+            NodeRecord record = getRecord( (int) id, window, true );
             if ( record == null )
             {
                 return false;
@@ -179,12 +179,12 @@ public class NodeStore extends AbstractStore implements Store
 
     private void updateRecord( NodeRecord record, PersistenceWindow window )
     {
-        int id = record.getId();
+        int id = (int) record.getId();
         Buffer buffer = window.getOffsettedBuffer( id );
         if ( record.inUse() )
         {
             buffer.put( Record.IN_USE.byteValue() ).putInt( 
-                record.getNextRel() ).putInt( record.getNextProp() );
+                (int) record.getNextRel() ).putInt( (int) record.getNextProp() );
         }
         else
         {

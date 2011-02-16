@@ -19,18 +19,18 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-public class RelationshipRecord extends AbstractRecord
+public class RelationshipRecord extends Abstract64BitRecord
 {
-    private final int firstNode;
-    private final int secondNode;
+    private final long firstNode;
+    private final long secondNode;
     private final int type;
-    private int firstPrevRel = Record.NO_PREV_RELATIONSHIP.intValue();
-    private int firstNextRel = Record.NO_NEXT_RELATIONSHIP.intValue();
-    private int secondPrevRel = Record.NO_PREV_RELATIONSHIP.intValue();
-    private int secondNextRel = Record.NO_NEXT_RELATIONSHIP.intValue();
-    private int nextProp = Record.NO_NEXT_PROPERTY.intValue();
+    private long firstPrevRel = Record.NO_PREV_RELATIONSHIP.intValue();
+    private long firstNextRel = Record.NO_NEXT_RELATIONSHIP.intValue();
+    private long secondPrevRel = Record.NO_PREV_RELATIONSHIP.intValue();
+    private long secondNextRel = Record.NO_NEXT_RELATIONSHIP.intValue();
+    private long nextProp = Record.NO_NEXT_PROPERTY.intValue();
 
-    public RelationshipRecord( int id, int firstNode, int secondNode, int type )
+    public RelationshipRecord( long id, long firstNode, long secondNode, int type )
     {
         super( id );
         this.firstNode = firstNode;
@@ -38,12 +38,12 @@ public class RelationshipRecord extends AbstractRecord
         this.type = type;
     }
 
-    public int getFirstNode()
+    public long getFirstNode()
     {
         return firstNode;
     }
 
-    public int getSecondNode()
+    public long getSecondNode()
     {
         return secondNode;
     }
@@ -53,52 +53,52 @@ public class RelationshipRecord extends AbstractRecord
         return type;
     }
 
-    public int getFirstPrevRel()
+    public long getFirstPrevRel()
     {
         return firstPrevRel;
     }
 
-    public void setFirstPrevRel( int firstPrevRel )
+    public void setFirstPrevRel( long firstPrevRel )
     {
         this.firstPrevRel = firstPrevRel;
     }
 
-    public int getFirstNextRel()
+    public long getFirstNextRel()
     {
         return firstNextRel;
     }
 
-    public void setFirstNextRel( int firstNextRel )
+    public void setFirstNextRel( long firstNextRel )
     {
         this.firstNextRel = firstNextRel;
     }
 
-    public int getSecondPrevRel()
+    public long getSecondPrevRel()
     {
         return secondPrevRel;
     }
 
-    public void setSecondPrevRel( int secondPrevRel )
+    public void setSecondPrevRel( long secondPrevRel )
     {
         this.secondPrevRel = secondPrevRel;
     }
 
-    public int getSecondNextRel()
+    public long getSecondNextRel()
     {
         return secondNextRel;
     }
 
-    public void setSecondNextRel( int secondNextRel )
+    public void setSecondNextRel( long secondNextRel )
     {
         this.secondNextRel = secondNextRel;
     }
 
-    public int getNextProp()
+    public long getNextProp()
     {
         return nextProp;
     }
 
-    public void setNextProp( int nextProp )
+    public void setNextProp( long nextProp )
     {
         this.nextProp = nextProp;
     }

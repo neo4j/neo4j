@@ -46,7 +46,7 @@ public interface RelationshipEventConsumer
      * @throws IOException
      *             If unable to create the relationship
      */
-    public void createRelationship( int id, int firstNode, int secondNode,
+    public void createRelationship( long id, long firstNode, long secondNode,
         int type );
 
     /**
@@ -57,7 +57,7 @@ public interface RelationshipEventConsumer
      * @throws IOException
      *             If unable to delete the relationship
      */
-    public ArrayMap<Integer,PropertyData> deleteRelationship( int id );
+    public ArrayMap<Integer,PropertyData> deleteRelationship( long id );
 
     /**
      * Adds a property to the relationship.
@@ -73,7 +73,7 @@ public interface RelationshipEventConsumer
      * @throws IOException
      *             If unable to add property
      */
-    public void addProperty( int relId, int propertyId, PropertyIndex index,
+    public void addProperty( long relId, long propertyId, PropertyIndex index,
         Object value );
 
     /**
@@ -86,7 +86,7 @@ public interface RelationshipEventConsumer
      * @throws IOException
      *             If unable to change property
      */
-    public void changeProperty( int relId, int propertyId, Object value );
+    public void changeProperty( long relId, long propertyId, Object value );
 
     /**
      * Removed a property from a relationship.
@@ -98,7 +98,7 @@ public interface RelationshipEventConsumer
      * @throws IOException
      *             If unable to remove property
      */
-    public void removeProperty( int relId, int propertyId );
+    public void removeProperty( long relId, long propertyId );
 
     /**
      * Returns all properties connected to a relationship.
@@ -109,7 +109,7 @@ public interface RelationshipEventConsumer
      * @throws IOException
      *             If unable to get the properties
      */
-    public ArrayMap<Integer,PropertyData> getProperties( int relId, 
+    public ArrayMap<Integer,PropertyData> getProperties( long relId,
             boolean light );
 
     /**
@@ -121,12 +121,12 @@ public interface RelationshipEventConsumer
      * @throws IOException
      *             if unable to get the relationship
      */
-    public RelationshipData getRelationship( int id );
+    public RelationshipData getRelationship( long id );
 
-    public RelationshipChainPosition getRelationshipChainPosition( int nodeId );
+    public RelationshipChainPosition getRelationshipChainPosition( long nodeId );
 
-    public Iterable<RelationshipData> getMoreRelationships( int nodeId, 
+    public Iterable<RelationshipData> getMoreRelationships( long nodeId,
         RelationshipChainPosition position );
 
-    public boolean isRelationshipCreated( int relId );
+    public boolean isRelationshipCreated( long relId );
 }

@@ -26,10 +26,10 @@ import org.neo4j.graphdb.RelationshipType;
 
 class RelationshipProxy implements Relationship
 {
-    private final int relId;
+    private final long relId;
     private final NodeManager nm;
 
-    RelationshipProxy( int relId, NodeManager nodeManager )
+    RelationshipProxy( long relId, NodeManager nodeManager )
     {
         this.relId = relId;
         this.nm = nodeManager;
@@ -147,7 +147,7 @@ class RelationshipProxy implements Relationship
     @Override
     public int hashCode()
     {
-        return relId;
+        return (int) relId;
     }
 
     @Override

@@ -436,7 +436,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         int count = 0;
         for ( int keyId : props.keySet() )
         {
-            int id = props.get( keyId ).getId();
+            long id = props.get( keyId ).getId();
             PropertyRecord record = pStore.getRecord( id );
             PropertyData data = new PropertyData( id, getValue( record ) );
             if ( data.getId() == prop1 )
@@ -507,7 +507,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         int count = 0;
         for ( int keyId : props.keySet() )
         {
-            int id = props.get( keyId ).getId();
+            long id = props.get( keyId ).getId();
             PropertyRecord record = pStore.getRecord( id );
             PropertyData data = new PropertyData( id, getValue( record ) );
             if ( data.getId() == prop1 )
@@ -578,7 +578,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         int count = 0;
         for ( int keyId : props.keySet() )
         {
-            int id = props.get( keyId ).getId();
+            long id = props.get( keyId ).getId();
             PropertyRecord record = pStore.getRecord( id );
             PropertyData data = new PropertyData( id, getValue( record ) );
             if ( data.getId() == prop1 )
@@ -623,7 +623,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         int count = 0;
         for ( int keyId : props.keySet() )
         {
-            int id = props.get( keyId ).getId();
+            long id = props.get( keyId ).getId();
             PropertyRecord record = pStore.getRecord( id );
             PropertyData data = new PropertyData( id, getValue( record ) );
             if ( data.getId() == prop1 )
@@ -698,7 +698,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         int count = 0;
         for ( int keyId : props.keySet() )
         {
-            int id = props.get( keyId ).getId();
+            long id = props.get( keyId ).getId();
             PropertyRecord record = pStore.getRecord( id );
             PropertyData data = new PropertyData( id, getValue( record ) );
             if ( data.getId() == prop1 )
@@ -755,7 +755,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         int count = 0;
         for ( int keyId : props.keySet() )
         {
-            int id = props.get( keyId ).getId();
+            long id = props.get( keyId ).getId();
             PropertyRecord record = pStore.getRecord( id );
             PropertyData data = new PropertyData( id, getValue( record ) );
             if ( data.getId() == prop1 )
@@ -810,7 +810,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         int count = 0;
         for ( int keyId : props.keySet() )
         {
-            int id = props.get( keyId ).getId();
+            long id = props.get( keyId ).getId();
             PropertyRecord record = pStore.getRecord( id );
             PropertyData data = new PropertyData( id, getValue( record ) );
             if ( data.getId() == prop1 )
@@ -856,7 +856,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         int count = 0;
         for ( int keyId : props.keySet() )
         {
-            int id = props.get( keyId ).getId();
+            long id = props.get( keyId ).getId();
             PropertyRecord record = pStore.getRecord( id );
             PropertyData data = new PropertyData( id, getValue( record ) );
             if ( data.getId() == prop1 )
