@@ -100,6 +100,7 @@ class MemoryMappedLogBuffer implements LogBuffer
                 return this;
             }
         }
+        int pos = mappedBuffer.position();
         mappedBuffer.put( b );
         return this;
     }

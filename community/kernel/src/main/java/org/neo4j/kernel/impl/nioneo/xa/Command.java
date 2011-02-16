@@ -51,9 +51,9 @@ abstract class Command extends XaCommand
 {
     static Logger logger = Logger.getLogger( Command.class.getName() );
 
-    private final int key;
+    private final long key;
 
-    Command( int key )
+    Command( long key )
     {
         this.key = key;
     }
@@ -64,14 +64,14 @@ abstract class Command extends XaCommand
         super.setRecovered();
     }
 
-    int getKey()
+    long getKey()
     {
         return key;
     }
 
     public int hashCode()
     {
-        return key;
+        return (int) key;
     }
 
     static void writeDynamicRecord( LogBuffer buffer, DynamicRecord record )
@@ -204,11 +204,11 @@ abstract class Command extends XaCommand
             byte inUse = record.inUse() ? Record.IN_USE.byteValue()
                 : Record.NOT_IN_USE.byteValue();
             buffer.put( NODE_COMMAND );
-            buffer.putInt( record.getId() );
+            buffer.putLong( record.getId() );
             buffer.put( inUse );
             if ( record.inUse() )
             {
-                buffer.putInt( record.getNextRel() ).putInt(
+                buffer.putLong( record.getNextRel() ).putLong(
                     record.getNextProp() );
             }
         }
@@ -218,13 +218,13 @@ abstract class Command extends XaCommand
             throws IOException
         {
             buffer.clear();
-            buffer.limit( 5 );
+            buffer.limit( 9 );
             if ( byteChannel.read( buffer ) != buffer.limit() )
             {
                 return null;
             }
             buffer.flip();
-            int id = buffer.getInt();
+            long id = buffer.getLong();
             byte inUseFlag = buffer.get();
             boolean inUse = false;
             if ( inUseFlag == Record.IN_USE.byteValue() )
@@ -240,14 +240,14 @@ abstract class Command extends XaCommand
             if ( inUse )
             {
                 buffer.clear();
-                buffer.limit( 8 );
+                buffer.limit( 16 );
                 if ( byteChannel.read( buffer ) != buffer.limit() )
                 {
                     return null;
                 }
                 buffer.flip();
-                record.setNextRel( buffer.getInt() );
-                record.setNextProp( buffer.getInt() );
+                record.setNextRel( buffer.getLong() );
+                record.setNextProp( buffer.getLong() );
             }
             return new NodeCommand( neoStore.getNodeStore(), record );
         }
@@ -300,16 +300,16 @@ abstract class Command extends XaCommand
             byte inUse = record.inUse() ? Record.IN_USE.byteValue()
                 : Record.NOT_IN_USE.byteValue();
             buffer.put( REL_COMMAND );
-            buffer.putInt( record.getId() );
+            buffer.putLong( record.getId() );
             buffer.put( inUse );
             if ( record.inUse() )
             {
-                buffer.putInt( record.getFirstNode() ).putInt(
-                    record.getSecondNode() ).putInt( record.getType() ).putInt(
+                buffer.putLong( record.getFirstNode() ).putLong(
+                    record.getSecondNode() ).putInt( record.getType() ).putLong(
                     record.getFirstPrevRel() )
-                    .putInt( record.getFirstNextRel() ).putInt(
-                        record.getSecondPrevRel() ).putInt(
-                        record.getSecondNextRel() ).putInt(
+                    .putLong( record.getFirstNextRel() ).putLong(
+                        record.getSecondPrevRel() ).putLong(
+                        record.getSecondNextRel() ).putLong(
                         record.getNextProp() );
             }
         }
@@ -319,13 +319,13 @@ abstract class Command extends XaCommand
             throws IOException
         {
             buffer.clear();
-            buffer.limit( 5 );
+            buffer.limit( 9 );
             if ( byteChannel.read( buffer ) != buffer.limit() )
             {
                 return null;
             }
             buffer.flip();
-            int id = buffer.getInt();
+            long id = buffer.getLong();
             byte inUseFlag = buffer.get();
             boolean inUse = false;
             if ( (inUseFlag & Record.IN_USE.byteValue()) == Record.IN_USE
@@ -342,20 +342,20 @@ abstract class Command extends XaCommand
             if ( inUse )
             {
                 buffer.clear();
-                buffer.limit( 32 );
+                buffer.limit( 60 );
                 if ( byteChannel.read( buffer ) != buffer.limit() )
                 {
                     return null;
                 }
                 buffer.flip();
-                record = new RelationshipRecord( id, buffer.getInt(), buffer
-                    .getInt(), buffer.getInt() );
+                record = new RelationshipRecord( id, buffer.getLong(), buffer
+                    .getLong(), buffer.getInt() );
                 record.setInUse( inUse );
-                record.setFirstPrevRel( buffer.getInt() );
-                record.setFirstNextRel( buffer.getInt() );
-                record.setSecondPrevRel( buffer.getInt() );
-                record.setSecondNextRel( buffer.getInt() );
-                record.setNextProp( buffer.getInt() );
+                record.setFirstPrevRel( buffer.getLong() );
+                record.setFirstNextRel( buffer.getLong() );
+                record.setSecondPrevRel( buffer.getLong() );
+                record.setSecondNextRel( buffer.getLong() );
+                record.setNextProp( buffer.getLong() );
             }
             else
             {
@@ -514,12 +514,12 @@ abstract class Command extends XaCommand
             }
         }
         
-        public int getNodeId()
+        public long getNodeId()
         {
             return record.getNodeId();
         }
         
-        public int getRelId()
+        public long getRelId()
         {
             return record.getRelId();
         }
@@ -542,29 +542,29 @@ abstract class Command extends XaCommand
                 inUse += Record.REL_PROPERTY.byteValue();
             }
             buffer.put( PROP_COMMAND );
-            buffer.putInt( record.getId() );
+            buffer.putLong( record.getId() );
             buffer.put( inUse );
-            int nodeId = record.getNodeId();
-            int relId = record.getRelId();
+            long nodeId = record.getNodeId();
+            long relId = record.getRelId();
             if ( nodeId != -1 )
             {
-                buffer.putInt( nodeId );
+                buffer.putLong( nodeId );
             }
             else if ( relId != -1 )
             {
-                buffer.putInt( relId );
+                buffer.putLong( relId );
             }
             else
             {
                 // means this records value has not change, only place in 
                 // prop chain
-                buffer.putInt( -1 );
+                buffer.putLong( -1 );
             }
             if ( record.inUse() )
             {
                 buffer.putInt( record.getType().intValue() ).putInt(
                     record.getKeyIndexId() ).putLong( record.getPropBlock() )
-                    .putInt( record.getPrevProp() ).putInt(
+                    .putLong( record.getPrevProp() ).putLong(
                         record.getNextProp() );
             }
             if ( record.isLight() )
@@ -590,13 +590,13 @@ abstract class Command extends XaCommand
             // id+in_use(byte)+type(int)+key_indexId(int)+prop_blockId(long)+
             // prev_prop_id(int)+next_prop_id(int)+nr_value_records(int)
             buffer.clear();
-            buffer.limit( 9 );
+            buffer.limit( 17 );
             if ( byteChannel.read( buffer ) != buffer.limit() )
             {
                 return null;
             }
             buffer.flip();
-            int id = buffer.getInt();
+            long id = buffer.getLong();
             byte inUseFlag = buffer.get();
             boolean inUse = false;
             if ( (inUseFlag & Record.IN_USE.byteValue()) == Record.IN_USE
@@ -610,7 +610,7 @@ abstract class Command extends XaCommand
             {
                 nodeProperty = false;
             }
-            int primitiveId = buffer.getInt();
+            long primitiveId = buffer.getLong();
             PropertyRecord record = new PropertyRecord( id );
             if ( primitiveId != -1 && nodeProperty )
             {
@@ -623,7 +623,7 @@ abstract class Command extends XaCommand
             if ( inUse )
             {
                 buffer.clear();
-                buffer.limit( 24 );
+                buffer.limit( 32 );
                 if ( byteChannel.read( buffer ) != buffer.limit() )
                 {
                     return null;
@@ -638,8 +638,8 @@ abstract class Command extends XaCommand
                 record.setInUse( inUse );
                 record.setKeyIndexId( buffer.getInt() );
                 record.setPropBlock( buffer.getLong() );
-                record.setPrevProp( buffer.getInt() );
-                record.setNextProp( buffer.getInt() );
+                record.setPrevProp( buffer.getLong() );
+                record.setNextProp( buffer.getLong() );
             }
             buffer.clear();
             buffer.limit( 4 );

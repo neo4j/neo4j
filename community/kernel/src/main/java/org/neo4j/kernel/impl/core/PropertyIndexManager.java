@@ -195,7 +195,7 @@ public class PropertyIndexManager
         {
             return index;
         }
-        int id = idGenerator.nextId( PropertyIndex.class );
+        int id = (int) idGenerator.nextId( PropertyIndex.class );
         index = new PropertyIndex( key, id );
         hook.addIndex( index );
         persistenceManager.createPropertyIndex( key, id );

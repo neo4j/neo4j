@@ -38,7 +38,7 @@ public interface NodeEventConsumer
      * @throws IOException
      *             If unable to create or if node already exist
      */
-    public void createNode( int nodeId );
+    public void createNode( long nodeId );
 
     /**
      * Deletes a node. The <CODE>nodeId</CODE> is the position of the record
@@ -49,7 +49,7 @@ public interface NodeEventConsumer
      * @throws IOException
      *             If
      */
-    public ArrayMap<Integer,PropertyData> deleteNode( int nodeId );
+    public ArrayMap<Integer,PropertyData> deleteNode( long nodeId );
 
     /**
      * Checks if a node exists. If the record <CODE>nodeId</CODE> is in use
@@ -61,7 +61,7 @@ public interface NodeEventConsumer
      * @throws IOException
      *             If unable to check for node
      */
-    public boolean loadLightNode( int nodeId );
+    public boolean loadLightNode( long nodeId );
 
     /**
      * Adds a property to the node.
@@ -77,7 +77,7 @@ public interface NodeEventConsumer
      * @throws IOException
      *             If unable to add property
      */
-    public void addProperty( int nodeId, int propertyId, PropertyIndex index,
+    public void addProperty( long nodeId, long propertyId, PropertyIndex index,
         Object value );
 
     /**
@@ -90,7 +90,7 @@ public interface NodeEventConsumer
      * @throws IOException
      *             If unable to change property
      */
-    public void changeProperty( int nodeId, int propertyId, Object value );
+    public void changeProperty( long nodeId, long propertyId, Object value );
 
     /**
      * Removed a property from a node.
@@ -102,7 +102,7 @@ public interface NodeEventConsumer
      * @throws IOException
      *             If unable to remove property
      */
-    public void removeProperty( int nodeId, int propertyId );
+    public void removeProperty( long nodeId, long propertyId );
 
     /**
      * Returns all properties connected to a node.
@@ -113,10 +113,10 @@ public interface NodeEventConsumer
      * @throws IOException
      *             If unable to get the properties
      */
-    public ArrayMap<Integer,PropertyData> getProperties( int nodeId, 
+    public ArrayMap<Integer,PropertyData> getProperties( long nodeId,
             boolean light );
 
     public IntArray getCreatedNodes();
 
-    public boolean isNodeCreated( int nodeId );
+    public boolean isNodeCreated( long nodeId );
 }

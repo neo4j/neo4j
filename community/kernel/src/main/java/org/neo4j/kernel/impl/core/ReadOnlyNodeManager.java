@@ -70,19 +70,19 @@ class ReadOnlyNodeManager extends NodeManager
     }
 
     @Override
-    int nodeAddProperty( NodeImpl node, PropertyIndex index, Object value )
+    long nodeAddProperty( NodeImpl node, PropertyIndex index, Object value )
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    void nodeChangeProperty( NodeImpl node, int propertyId, Object value )
+    void nodeChangeProperty( NodeImpl node, long propertyId, Object value )
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    void nodeRemoveProperty( NodeImpl node, int propertyId )
+    void nodeRemoveProperty( NodeImpl node, long propertyId )
     {
         throw new ReadOnlyDbException();
     }
@@ -94,19 +94,19 @@ class ReadOnlyNodeManager extends NodeManager
     }
 
     @Override
-    int relAddProperty( RelationshipImpl rel, PropertyIndex index, Object value )
+    long relAddProperty( RelationshipImpl rel, PropertyIndex index, Object value )
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    void relChangeProperty( RelationshipImpl rel, int propertyId, Object value )
+    void relChangeProperty( RelationshipImpl rel, long propertyId, Object value )
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    void relRemoveProperty( RelationshipImpl rel, int propertyId )
+    void relRemoveProperty( RelationshipImpl rel, long propertyId )
     {
         throw new ReadOnlyDbException();
     }

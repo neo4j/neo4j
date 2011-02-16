@@ -27,12 +27,12 @@ import org.neo4j.graphdb.RelationshipType;
  */
 public class SimpleRelationship
 {
-    private final int id;
-    private final int startNodeId;
-    private final int endNodeId;
+    private final long id;
+    private final long startNodeId;
+    private final long endNodeId;
     private final RelationshipType type;
 
-    SimpleRelationship( int id, int startNodeId, int endNodeId,
+    SimpleRelationship( long id, long startNodeId, long endNodeId,
         RelationshipType type )
     {
         this.id = id;
@@ -43,17 +43,17 @@ public class SimpleRelationship
 
     public long getId()
     {
-        return id & 0xFFFFFFFFL;
+        return id; // & 0xFFFFFFFFL;
     }
 
     public long getStartNode()
     {
-        return startNodeId & 0xFFFFFFFFL;
+        return startNodeId; // & 0xFFFFFFFFL;
     }
 
     public long getEndNode()
     {
-        return endNodeId & 0xFFFFFFFFL;
+        return endNodeId; // & 0xFFFFFFFFL;
     }
 
     public RelationshipType getType()

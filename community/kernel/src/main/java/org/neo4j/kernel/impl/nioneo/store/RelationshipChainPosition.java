@@ -21,19 +21,19 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 public class RelationshipChainPosition
 {
-    private int nextRecord;
+    private long nextRecord;
     
-    public RelationshipChainPosition( int startRecord )
+    public RelationshipChainPosition( long startRecord )
     {
         nextRecord = startRecord;
     }
     
-    public int getNextRecord()
+    public long getNextRecord()
     {
         return nextRecord;
     }
     
-    public void setNextRecord( int record )
+    public void setNextRecord( long record )
     {
         nextRecord = record;
     }

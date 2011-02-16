@@ -88,12 +88,12 @@ public class RelationshipStore extends AbstractStore implements Store
         createEmptyStore( fileName, VERSION, idGeneratorFactory );
     }
 
-    public RelationshipRecord getRecord( int id )
+    public RelationshipRecord getRecord( long id )
     {
-        PersistenceWindow window = acquireWindow( id, OperationType.READ );
+        PersistenceWindow window = acquireWindow( (int) id, OperationType.READ );
         try
         {
-            RelationshipRecord record = getRecord( id, window, false );
+            RelationshipRecord record = getRecord( (int) id, window, false );
             return record;
         }
         finally
@@ -102,12 +102,12 @@ public class RelationshipStore extends AbstractStore implements Store
         }
     }
 
-    public RelationshipRecord getLightRel( int id )
+    public RelationshipRecord getLightRel( long id )
     {
         PersistenceWindow window = null;
         try
         {
-            window = acquireWindow( id, OperationType.READ );
+            window = acquireWindow( (int) id, OperationType.READ );
         }
         catch ( InvalidRecordException e )
         {
@@ -116,7 +116,7 @@ public class RelationshipStore extends AbstractStore implements Store
         }
         try
         {
-            RelationshipRecord record = getRecord( id, window, true );
+            RelationshipRecord record = getRecord( (int) id, window, true );
             return record;
         }
         finally
@@ -142,7 +142,7 @@ public class RelationshipStore extends AbstractStore implements Store
 
     public void updateRecord( RelationshipRecord record )
     {
-        PersistenceWindow window = acquireWindow( record.getId(),
+        PersistenceWindow window = acquireWindow( (int) record.getId(),
             OperationType.WRITE );
         try
         {
@@ -157,16 +157,16 @@ public class RelationshipStore extends AbstractStore implements Store
     private void updateRecord( RelationshipRecord record, 
         PersistenceWindow window )
     {
-        int id = record.getId();
+        int id = (int) record.getId();
         Buffer buffer = window.getOffsettedBuffer( id );
         if ( record.inUse() )
         {
             byte inUse = Record.IN_USE.byteValue();
-            buffer.put( inUse ).putInt( record.getFirstNode() ).putInt(
-                record.getSecondNode() ).putInt( record.getType() ).putInt(
-                record.getFirstPrevRel() ).putInt( record.getFirstNextRel() )
-                .putInt( record.getSecondPrevRel() ).putInt(
-                    record.getSecondNextRel() ).putInt( record.getNextProp() );
+            buffer.put( inUse ).putInt( (int) record.getFirstNode() ).putInt(
+                (int) record.getSecondNode() ).putInt( record.getType() ).putInt(
+                (int) record.getFirstPrevRel() ).putInt( (int) record.getFirstNextRel() )
+                .putInt( (int) record.getSecondPrevRel() ).putInt(
+                    (int) record.getSecondNextRel() ).putInt( (int) record.getNextProp() );
         }
         else
         {
@@ -246,12 +246,12 @@ public class RelationshipStore extends AbstractStore implements Store
             " of Neo4j." );
     }
 
-    public RelationshipRecord getChainRecord( int relId )
+    public RelationshipRecord getChainRecord( long relId )
     {
         PersistenceWindow window = null;
         try
         {
-            window = acquireWindow( relId, OperationType.READ );
+            window = acquireWindow( (int) relId, OperationType.READ );
         }
         catch ( InvalidRecordException e )
         {
@@ -260,7 +260,7 @@ public class RelationshipStore extends AbstractStore implements Store
         }
         try
         {
-            return getFullRecord( relId, window );
+            return getFullRecord( (int) relId, window );
         }
         finally
         {

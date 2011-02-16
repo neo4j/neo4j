@@ -129,14 +129,14 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
                 "this method should never be invoked" );
         }
 
-        public ArrayMap<Integer,PropertyData> nodeDelete( int nodeId )
+        public ArrayMap<Integer,PropertyData> nodeDelete( long nodeId )
         {
             throw new IllegalStateException( 
                 "This is a read only transaction, " + 
                 "this method should never be invoked" );
         }
 
-        public int nodeAddProperty( int nodeId, PropertyIndex index,
+        public long nodeAddProperty( long nodeId, PropertyIndex index,
             Object value )
         {
             throw new IllegalStateException( 
@@ -144,57 +144,57 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
                 "this method should never be invoked" );
         }
 
-        public void nodeChangeProperty( int nodeId, int propertyId, Object value )
+        public void nodeChangeProperty( long nodeId, long propertyId, Object value )
         {
             throw new IllegalStateException( 
                 "This is a read only transaction, " + 
                 "this method should never be invoked" );
         }
 
-        public void nodeRemoveProperty( int nodeId, int propertyId )
+        public void nodeRemoveProperty( long nodeId, long propertyId )
         {
             throw new IllegalStateException( 
                 "This is a read only transaction, " + 
                 "this method should never be invoked" );
         }
 
-        public void nodeCreate( int nodeId )
+        public void nodeCreate( long nodeId )
         {
             throw new IllegalStateException( 
                 "This is a read only transaction, " + 
                 "this method should never be invoked" );
         }
 
-        public void relationshipCreate( int id, int typeId, int startNodeId,
-            int endNodeId )
+        public void relationshipCreate( long id, int typeId, long startNodeId,
+            long endNodeId )
         {
             throw new IllegalStateException( 
                 "This is a read only transaction, " + 
                 "this method should never be invoked" );
         }
 
-        public ArrayMap<Integer,PropertyData> relDelete( int relId )
+        public ArrayMap<Integer,PropertyData> relDelete( long relId )
         {
             throw new IllegalStateException( 
                 "This is a read only transaction, " + 
                 "this method should never be invoked" );
         }
 
-        public int relAddProperty( int relId, PropertyIndex index, Object value )
+        public long relAddProperty( long relId, PropertyIndex index, Object value )
         {
             throw new IllegalStateException( 
                 "This is a read only transaction, " + 
                 "this method should never be invoked" );
         }
 
-        public void relChangeProperty( int relId, int propertyId, Object value )
+        public void relChangeProperty( long relId, long propertyId, Object value )
         {
             throw new IllegalStateException( 
                 "This is a read only transaction, " + 
                 "this method should never be invoked" );
         }
 
-        public void relRemoveProperty( int relId, int propertyId )
+        public void relRemoveProperty( long relId, long propertyId )
         {
             throw new IllegalStateException( 
                 "This is a read only transaction, " + 
@@ -211,7 +211,7 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
             return readTransaction.getPropertyIndexes( maxCount );
         }
 
-        public Object loadPropertyValue( int id )
+        public Object loadPropertyValue( long id )
         {
             return readTransaction.propertyGetValue( id );
         }
@@ -230,24 +230,24 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
             return rawRelTypeData;
         }
 
-        public boolean nodeLoadLight( int id )
+        public boolean nodeLoadLight( long id )
         {
             return readTransaction.nodeLoadLight( id );
         }
 
-        public ArrayMap<Integer,PropertyData> nodeLoadProperties( int nodeId, 
+        public ArrayMap<Integer,PropertyData> nodeLoadProperties( long nodeId,
                 boolean light )
         {
             // ignore light load
             return readTransaction.nodeGetProperties( nodeId );
         }
 
-        public RelationshipData relLoadLight( int id )
+        public RelationshipData relLoadLight( long id )
         {
             return readTransaction.relationshipLoad( id );
         }
 
-        public ArrayMap<Integer,PropertyData> relLoadProperties( int relId, 
+        public ArrayMap<Integer,PropertyData> relLoadProperties( long relId,
                 boolean light )
         {
             // ignore light load
@@ -269,12 +269,12 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
         }
 
         public RelationshipChainPosition getRelationshipChainPosition( 
-            int nodeId )
+            long nodeId )
         {
             return readTransaction.getRelationshipChainPosition( nodeId );
         }
 
-        public Iterable<RelationshipData> getMoreRelationships( int nodeId,  
+        public Iterable<RelationshipData> getMoreRelationships( long nodeId,
             RelationshipChainPosition position )
         {
             return readTransaction.getMoreRelationships( nodeId, position );
@@ -285,17 +285,17 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
             return new IntArray();
         }
 
-        public boolean isNodeCreated( int nodeId )
+        public boolean isNodeCreated( long nodeId )
         {
             return false;
         }
 
-        public boolean isRelationshipCreated( int relId )
+        public boolean isRelationshipCreated( long relId )
         {
             return false;
         }
 
-        public int getKeyIdForProperty( int propertyId )
+        public int getKeyIdForProperty( long propertyId )
         {
             return readTransaction.getKeyIdForProperty( propertyId );
         }
@@ -336,12 +336,12 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
             propIndexConsumer = null;
         }
 
-        public ArrayMap<Integer,PropertyData> nodeDelete( int nodeId )
+        public ArrayMap<Integer,PropertyData> nodeDelete( long nodeId )
         {
             return nodeConsumer.deleteNode( nodeId );
         }
 
-        public int nodeAddProperty( int nodeId, PropertyIndex index,
+        public long nodeAddProperty( long nodeId, PropertyIndex index,
             Object value )
         {
             int propertyId = propStore.nextId();
@@ -349,45 +349,45 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
             return propertyId;
         }
 
-        public void nodeChangeProperty( int nodeId, int propertyId, Object value )
+        public void nodeChangeProperty( long nodeId, long propertyId, Object value )
         {
             nodeConsumer.changeProperty( nodeId, propertyId, value );
         }
 
-        public void nodeRemoveProperty( int nodeId, int propertyId )
+        public void nodeRemoveProperty( long nodeId, long propertyId )
         {
             nodeConsumer.removeProperty( nodeId, propertyId );
         }
 
-        public void nodeCreate( int nodeId )
+        public void nodeCreate( long nodeId )
         {
             nodeConsumer.createNode( nodeId );
         }
 
-        public void relationshipCreate( int id, int typeId, int startNodeId,
-            int endNodeId )
+        public void relationshipCreate( long id, int typeId, long startNodeId,
+            long endNodeId )
         {
             relConsumer.createRelationship( id, startNodeId, endNodeId, typeId );
         }
 
-        public ArrayMap<Integer,PropertyData> relDelete( int relId )
+        public ArrayMap<Integer,PropertyData> relDelete( long relId )
         {
             return relConsumer.deleteRelationship( relId );
         }
 
-        public int relAddProperty( int relId, PropertyIndex index, Object value )
+        public long relAddProperty( long relId, PropertyIndex index, Object value )
         {
             int propertyId = propStore.nextId();
             relConsumer.addProperty( relId, propertyId, index, value );
             return propertyId;
         }
 
-        public void relChangeProperty( int relId, int propertyId, Object value )
+        public void relChangeProperty( long relId, long propertyId, Object value )
         {
             relConsumer.changeProperty( relId, propertyId, value );
         }
 
-        public void relRemoveProperty( int relId, int propertyId )
+        public void relRemoveProperty( long relId, long propertyId )
         {
             relConsumer.removeProperty( relId, propertyId );
         }
@@ -402,7 +402,7 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
             return propIndexConsumer.getPropertyIndexes( maxCount );
         }
 
-        public Object loadPropertyValue( int id )
+        public Object loadPropertyValue( long id )
         {
             return xaCon.getWriteTransaction().propertyGetValue( id );
         }
@@ -421,23 +421,23 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
             return rawRelTypeData;
         }
 
-        public boolean nodeLoadLight( int id )
+        public boolean nodeLoadLight( long id )
         {
             return nodeConsumer.loadLightNode( id );
         }
 
-        public ArrayMap<Integer,PropertyData> nodeLoadProperties( int nodeId, 
+        public ArrayMap<Integer,PropertyData> nodeLoadProperties( long nodeId,
                 boolean light )
         {
             return nodeConsumer.getProperties( nodeId, light );
         }
 
-        public RelationshipData relLoadLight( int id )
+        public RelationshipData relLoadLight( long id )
         {
             return relConsumer.getRelationship( id );
         }
 
-        public ArrayMap<Integer,PropertyData> relLoadProperties( int relId, 
+        public ArrayMap<Integer,PropertyData> relLoadProperties( long relId,
                 boolean light )
         {
             return relConsumer.getProperties( relId, light );
@@ -454,12 +454,12 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
         }
 
         public RelationshipChainPosition getRelationshipChainPosition( 
-            int nodeId )
+            long nodeId )
         {
             return relConsumer.getRelationshipChainPosition( nodeId );
         }
 
-        public Iterable<RelationshipData> getMoreRelationships( int nodeId, 
+        public Iterable<RelationshipData> getMoreRelationships( long nodeId,
             RelationshipChainPosition position )
         {
             return relConsumer.getMoreRelationships( nodeId, position );
@@ -470,17 +470,17 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
             return nodeConsumer.getCreatedNodes();
         }
 
-        public boolean isNodeCreated( int nodeId )
+        public boolean isNodeCreated( long nodeId )
         {
             return nodeConsumer.isNodeCreated( nodeId );
         }
 
-        public boolean isRelationshipCreated( int relId )
+        public boolean isRelationshipCreated( long relId )
         {
             return relConsumer.isRelationshipCreated( relId );
         }
 
-        public int getKeyIdForProperty( int propertyId )
+        public int getKeyIdForProperty( long propertyId )
         {
             return xaCon.getWriteTransaction().getKeyIdForProperty( propertyId );
         }
