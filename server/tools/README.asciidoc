@@ -1,0 +1,11 @@
+Neo4j Tools
+===========
+
+Command-line tools for working with Neo4j.
+
+ha-ops
+------
+
+High-Availabilty Operations has scripts, recipes and tools to help with 
+setting up and managing a Neo4j High-Availability Cluster.
+
