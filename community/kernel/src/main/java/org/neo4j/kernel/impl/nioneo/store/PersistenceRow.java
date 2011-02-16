@@ -58,9 +58,9 @@ class PersistenceRow extends LockableWindow
         return recordSize;
     }
 
-    public Buffer getOffsettedBuffer( int id )
+    public Buffer getOffsettedBuffer( long id )
     {
-        if ( (id & 0xFFFFFFFFL) != buffer.position() )
+        if ( id != buffer.position() )
         {
             throw new InvalidRecordException( "Id[" + id + 
                 "] not equal to buffer position[" + buffer.position() + "]" );

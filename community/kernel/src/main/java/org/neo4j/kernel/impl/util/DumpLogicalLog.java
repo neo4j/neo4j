@@ -31,7 +31,6 @@ import java.util.TreeSet;
 
 import javax.transaction.xa.Xid;
 
-import org.neo4j.kernel.impl.nioneo.store.AbstractRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;

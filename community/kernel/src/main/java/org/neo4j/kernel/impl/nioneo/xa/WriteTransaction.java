@@ -63,7 +63,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.IntArray;
-import org.neo4j.kernel.impl.util.LongArray;
 
 /**
  * Transaction containing {@link Command commands} reflecting the operations
