@@ -42,6 +42,7 @@ class PersistenceWindowPool
     private static final int MAX_BRICK_COUNT = 100000;
 
     private final String storeName;
+    // == recordSize
     private final int blockSize;
     private FileChannel fileChannel;
     private final Map<Integer,PersistenceRow> activeRowWindows = 
@@ -336,6 +337,8 @@ class PersistenceWindowPool
         {
             return;
         }
+        // If we can't fit even 10 blocks in available memory don't even try
+        // to use available memory.
         if ( availableMem > 0 && availableMem < blockSize * 10l )
         {
             logWarn( "Unable to use " + availableMem

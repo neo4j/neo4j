@@ -32,7 +32,7 @@ public interface PersistenceWindow
      */
     public Buffer getBuffer();
     
-    public Buffer getOffsettedBuffer( int id );
+    public Buffer getOffsettedBuffer( long id );
 
     public int getRecordSize();
     
