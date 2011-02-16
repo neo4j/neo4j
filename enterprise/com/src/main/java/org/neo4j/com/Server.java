@@ -61,6 +61,8 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public abstract class Server<M, R> extends Protocol implements ChannelPipelineFactory
 {
+    public static final int DEFAULT_BACKUP_PORT = 6362;
+    
     private final static int DEAD_CONNECTIONS_CHECK_INTERVAL = 3;
     protected final static int DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS = 200;
 

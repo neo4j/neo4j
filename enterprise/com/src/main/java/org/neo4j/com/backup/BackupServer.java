@@ -28,7 +28,7 @@ import org.neo4j.com.backup.BackupClient.BackupRequestType;
 class BackupServer extends Server<TheBackupInterface, Object>
 {
     private final BackupRequestType[] contexts = BackupRequestType.values();
-    static int DEFAULT_PORT = 6362;
+    static int DEFAULT_PORT = DEFAULT_BACKUP_PORT;
     
     public BackupServer( TheBackupInterface realMaster, int port, String storeDir )
     {

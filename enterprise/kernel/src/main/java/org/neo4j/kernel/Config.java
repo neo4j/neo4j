@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel;
 
+import static java.util.regex.Pattern.quote;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -257,6 +259,22 @@ public class Config
                 }
             }
         }
+    }
+    
+    public static Map<String, String> parseMapFromConfigValue( String name, String configValue )
+    {
+        Map<String, String> result = new HashMap<String, String>();
+        for ( String part : configValue.split( quote( "," ) ) )
+        {
+            String[] tokens = part.split( quote( "=" ) );
+            if ( tokens.length != 2 )
+            {
+                throw new RuntimeException( "Invalid configuration value '" + configValue +
+                        "' for " + name );
+            }
+            result.put( tokens[0], tokens[1] );
+        }
+        return result;
     }
 
     public static Object getFromConfig( Map<?, ?> config, Object key,
