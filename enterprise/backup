@@ -1,4 +1,0 @@
-#!/bin/bash
-
-mvn compile dependency:copy-dependencies
-java -cp "target/classes:target/dependency/*" org.neo4j.backup.BackupFromEmbeddedDb $@
