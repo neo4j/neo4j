@@ -1,0 +1,16 @@
+= DESCRIPTION:
+
+Installs a Neo4j Server, either standalone or as part of a High Availability cluster.
+
+This is an early draft recipe.
+
+= REQUIREMENTS:
+
+== Platform:
+
+Tested on Ubuntu 10.04 LTS
+
+= ATTRIBUTES: 
+
+= USAGE:
+

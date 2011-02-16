@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.neo4j.tool</groupId>
+    <artifactId>neo4j-ha-ops</artifactId>
+    <version>0.1-SNAPSHOT</version>
+  </parent>
+
+  <groupId>org.neo4j.tool</groupId>
+  <artifactId>ha-ops-with-chef</artifactId>
+  <version>0.1-SNAPSHOT</version>
+  <name>Neo4j HA Ops with Chef</name>
+  <description>Using Chef to provision Neo4j clusters.</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>cuke4duke</groupId>
+      <artifactId>cuke4duke</artifactId>
+      <version>${cuke4duke.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.picocontainer</groupId>
+      <artifactId>picocontainer</artifactId>
+      <version>2.8.3</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.7</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>cuke4duke</groupId>
+        <artifactId>cuke4duke-maven-plugin</artifactId>
+        <version>${cuke4duke.version}</version>
+        <configuration>
+          <jvmArgs>
+            <jvmArg>
+              -Dcuke4duke.objectFactory=cuke4duke.internal.jvmclass.PicoFactory
+            </jvmArg>
+          </jvmArgs>
+          <cucumberArgs>
+            <cucumberArg>--color</cucumberArg>
+            <cucumberArg>--verbose</cucumberArg>
+            <cucumberArg>--guess</cucumberArg>
+            <cucumberArg>--strict</cucumberArg>
+            <!-- cucumberArg>${project.basedir}/target/test-classes</cucumberArg -->
+          </cucumberArgs>
+
+          <gems>
+            <gem>install ffi</gem>
+            <gem>install jruby-openssl</gem>
+            <gem>install cuke4duke --version ${cuke4duke.version}</gem>
+            <gem>install vagrant --version 0.7</gem>
+          </gems>
+        </configuration>
+        <executions>
+          <execution>
+            <id>run-features</id>
+            <phase>integration-test</phase>
+            <goals>
+              <goal>cucumber</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+    
+
+  <repositories>
+    <repository>
+      <id>codehaus</id>
+      <url>http://repository.codehaus.org</url>
+    </repository>
+    <repository>
+      <id>cukes</id>
+      <url>http://cukes.info/maven</url>
+    </repository>
+  </repositories>
+  
+  <pluginRepositories>
+    <pluginRepository>
+      <id>cukes</id>
+      <url>http://cukes.info/maven</url>
+    </pluginRepository>
+  </pluginRepositories>
+ 
+</project>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>org.neo4j.tool</groupId>
+  <artifactId>neo4j-ha-ops</artifactId>
+  <version>0.1-SNAPSHOT</version>
+
+  <name>Neo4j HA-Ops (project)</name>
+
+  <description>Tooling for managing a Neo4j HA cluster.</description>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <jruby.version>1.6.0.RC1</jruby.version>
+    <cuke4duke.version>0.4.3</cuke4duke.version>
+  </properties>
+
+  <packaging>pom</packaging>
+
+  <modules>
+    <module>by-hand</module>
+    <module>with-chef</module>
+  </modules>
+</project>
