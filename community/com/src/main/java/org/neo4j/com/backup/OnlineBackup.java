@@ -19,6 +19,7 @@
  */
 package org.neo4j.com.backup;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -62,6 +63,11 @@ public class OnlineBackup
     
     public OnlineBackup full( String targetDirectory )
     {
+        if ( directoryContainsDb( targetDirectory ) )
+        {
+            throw new RuntimeException( targetDirectory + " already contains a database" );
+        }
+        
         //                                                          OMG this is ugly
         BackupClient client = new BackupClient( hostNameOrIp, port, new NotYetExistingGraphDatabase( targetDirectory ) );
         try
@@ -84,6 +90,11 @@ public class OnlineBackup
         return this;
     }
     
+    private boolean directoryContainsDb( String targetDirectory )
+    {
+        return new File( targetDirectory, "neostore" ).exists();
+    }
+
     public int getPort()
     {
         return port;
@@ -106,6 +117,11 @@ public class OnlineBackup
     
     public OnlineBackup incremental( String targetDirectory )
     {
+        if ( !directoryContainsDb( targetDirectory ) )
+        {
+            throw new RuntimeException( targetDirectory + " doesn't contain a database" );
+        }
+        
         GraphDatabaseService targetDb = startTemporaryDb( targetDirectory );
         try
         {

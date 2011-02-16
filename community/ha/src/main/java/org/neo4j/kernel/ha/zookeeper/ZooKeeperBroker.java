@@ -44,7 +44,7 @@ public class ZooKeeperBroker extends AbstractBroker
     private final String clusterName;
 
     public ZooKeeperBroker( GraphDatabaseService graphDb, String clusterName, int machineId,
-            String zooKeeperServers, String haServer, ResponseReceiver receiver )
+            String zooKeeperServers, String haServer, int backupPort, ResponseReceiver receiver )
     {
         super( machineId, graphDb );
         this.clusterName = clusterName;
@@ -52,7 +52,7 @@ public class ZooKeeperBroker extends AbstractBroker
         this.haServer = haServer;
         String storeDir = ((AbstractGraphDatabase) graphDb).getStoreDir();
         this.zooClient = new ZooClient( zooKeeperServers, machineId, getRootPathGetter( storeDir ),
-                receiver, haServer, graphDb );
+                receiver, haServer, backupPort, graphDb );
     }
 
     @Override
