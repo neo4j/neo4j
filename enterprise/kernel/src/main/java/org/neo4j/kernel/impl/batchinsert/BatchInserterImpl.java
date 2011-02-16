@@ -267,14 +267,14 @@ public class BatchInserterImpl implements BatchInserter
     public Iterable<Long> getRelationshipIds( long nodeId )
     {
         NodeRecord nodeRecord = getNodeRecord( nodeId );
-        int nextRel = nodeRecord.getNextRel();
+        long nextRel = nodeRecord.getNextRel();
         List<Long> ids = new ArrayList<Long>();
         while ( nextRel != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
             RelationshipRecord relRecord = getRelationshipRecord( nextRel );
-            ids.add( relRecord.getId() & 0xFFFFFFFFL );
-            int firstNode = relRecord.getFirstNode();
-            int secondNode = relRecord.getSecondNode();
+            ids.add( relRecord.getId() ); // & 0xFFFFFFFFL );
+            long firstNode = relRecord.getFirstNode();
+            long secondNode = relRecord.getSecondNode();
             if ( firstNode == nodeId )
             {
                 nextRel = relRecord.getFirstNextRel();
@@ -296,7 +296,7 @@ public class BatchInserterImpl implements BatchInserter
     public Iterable<SimpleRelationship> getRelationships( long nodeId )
     {
         NodeRecord nodeRecord = getNodeRecord( nodeId );
-        int nextRel = nodeRecord.getNextRel();
+        long nextRel = nodeRecord.getNextRel();
         List<SimpleRelationship> rels = new ArrayList<SimpleRelationship>();
         while ( nextRel != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
@@ -305,8 +305,8 @@ public class BatchInserterImpl implements BatchInserter
                 typeHolder.getName( relRecord.getType() ) );
             rels.add( new SimpleRelationship( relRecord.getId(), 
                 relRecord.getFirstNode(), relRecord.getSecondNode(), type ) );
-            int firstNode = relRecord.getFirstNode();
-            int secondNode = relRecord.getSecondNode();
+            long firstNode = relRecord.getFirstNode();
+            long secondNode = relRecord.getSecondNode();
             if ( firstNode == nodeId )
             {
                 nextRel = relRecord.getFirstNextRel();
@@ -384,7 +384,7 @@ public class BatchInserterImpl implements BatchInserter
         }
     }
     
-    private int createPropertyChain( Map<String,Object> properties )
+    private long createPropertyChain( Map<String,Object> properties )
     {
         if ( properties == null )
         {
@@ -426,7 +426,7 @@ public class BatchInserterImpl implements BatchInserter
         return Record.NO_NEXT_PROPERTY.intValue();
     }
     
-    private void deletePropertyChain( int propertyId )
+    private void deletePropertyChain( long propertyId )
     {
         PropertyStore propStore = getPropertyStore();
         PropertyRecord propertyRecord = propStore.getRecord( propertyId );
@@ -438,11 +438,11 @@ public class BatchInserterImpl implements BatchInserter
         propStore.updateRecord( propertyRecord );
     }
     
-    private Map<String,Object> getPropertyChain( int propertyId )
+    private Map<String,Object> getPropertyChain( long propertyId )
     {
         PropertyStore propStore = getPropertyStore();
         PropertyRecord propertyRecord = propStore.getRecord( propertyId );
-        int nextProperty = -1;
+        long nextProperty = -1;
         Map<String,Object> properties = new HashMap<String,Object>();
         do
         {

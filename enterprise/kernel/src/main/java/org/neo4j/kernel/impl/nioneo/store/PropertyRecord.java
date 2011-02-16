@@ -23,20 +23,20 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-public class PropertyRecord extends AbstractRecord
+public class PropertyRecord extends Abstract64BitRecord
 {
     private PropertyType type;
     private int keyIndexId = Record.NO_NEXT_BLOCK.intValue();
     private long propBlock = Record.NO_NEXT_BLOCK.intValue();
-    private int prevProp = Record.NO_PREVIOUS_PROPERTY.intValue();
-    private int nextProp = Record.NO_NEXT_PROPERTY.intValue();
+    private long prevProp = Record.NO_PREVIOUS_PROPERTY.intValue();
+    private long nextProp = Record.NO_NEXT_PROPERTY.intValue();
     private List<DynamicRecord> valueRecords = new ArrayList<DynamicRecord>();
     private boolean isLight = false;
-    private int nodeRelId = -1;
+    private long nodeRelId = -1;
     private boolean nodeIdSet = false;
     private boolean isChanged = false;
 
-    public PropertyRecord( int id )
+    public PropertyRecord( long id )
     {
         super( id );
     }
@@ -46,19 +46,19 @@ public class PropertyRecord extends AbstractRecord
         this.type = type;
     }
 
-    public void setNodeId( int nodeId )
+    public void setNodeId( long nodeId )
     {
         nodeIdSet = true;
         nodeRelId = nodeId;
     }
 
-    public void setRelId( int relId )
+    public void setRelId( long relId )
     {
         nodeIdSet = false;
         nodeRelId = relId;
     }
 
-    public int getNodeId()
+    public long getNodeId()
     {
         if ( nodeIdSet )
         {
@@ -67,7 +67,7 @@ public class PropertyRecord extends AbstractRecord
         return -1;
     }
 
-    public int getRelId()
+    public long getRelId()
     {
         if ( !nodeIdSet )
         {
@@ -123,22 +123,22 @@ public class PropertyRecord extends AbstractRecord
         this.propBlock = propBlock;
     }
 
-    public int getPrevProp()
+    public long getPrevProp()
     {
         return prevProp;
     }
 
-    public void setPrevProp( int prevProp )
+    public void setPrevProp( long prevProp )
     {
         this.prevProp = prevProp;
     }
 
-    public int getNextProp()
+    public long getNextProp()
     {
         return nextProp;
     }
 
-    public void setNextProp( int nextProp )
+    public void setNextProp( long nextProp )
     {
         this.nextProp = nextProp;
     }

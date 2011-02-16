@@ -188,41 +188,41 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
             this.xaCon = xaCon;
         }
 
-        public void createNode( int nodeId )
+        public void createNode( long nodeId )
         {
             xaCon.getWriteTransaction().nodeCreate( nodeId );
         }
 
-        public ArrayMap<Integer,PropertyData> deleteNode( int nodeId )
+        public ArrayMap<Integer,PropertyData> deleteNode( long nodeId )
         {
             return xaCon.getWriteTransaction().nodeDelete( nodeId );
         }
 
         // checks for created in tx else get from store
-        public boolean loadLightNode( int nodeId )
+        public boolean loadLightNode( long nodeId )
         {
             return xaCon.getWriteTransaction().nodeLoadLight( nodeId );
         }
 
-        public void addProperty( int nodeId, int propertyId,
+        public void addProperty( long nodeId, long propertyId,
             PropertyIndex index, Object value )
         {
             xaCon.getWriteTransaction().nodeAddProperty( nodeId, propertyId,
                 index, value );
         }
 
-        public void changeProperty( int nodeId, int propertyId, Object value )
+        public void changeProperty( long nodeId, long propertyId, Object value )
         {
             xaCon.getWriteTransaction().nodeChangeProperty( nodeId, propertyId,
                 value );
         }
 
-        public void removeProperty( int nodeId, int propertyId )
+        public void removeProperty( long nodeId, long propertyId )
         {
             xaCon.getWriteTransaction().nodeRemoveProperty( nodeId, propertyId );
         }
 
-        public ArrayMap<Integer,PropertyData> getProperties( int nodeId, 
+        public ArrayMap<Integer,PropertyData> getProperties( long nodeId,
                 boolean light )
         {
             return xaCon.getWriteTransaction().nodeGetProperties( nodeId, 
@@ -234,7 +234,7 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
             return xaCon.getWriteTransaction().getCreatedNodes();
         }
 
-        public boolean isNodeCreated( int nodeId )
+        public boolean isNodeCreated( long nodeId )
         {
             return xaCon.getWriteTransaction().nodeCreated( nodeId );
         }
@@ -250,62 +250,62 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
             this.xaCon = xaCon;
         }
 
-        public void createRelationship( int id, int firstNode, int secondNode,
+        public void createRelationship( long id, long firstNode, long secondNode,
             int type )
         {
             xaCon.getWriteTransaction().relationshipCreate( id, firstNode,
                 secondNode, type );
         }
 
-        public ArrayMap<Integer,PropertyData> deleteRelationship( int id )
+        public ArrayMap<Integer,PropertyData> deleteRelationship( long id )
         {
             return xaCon.getWriteTransaction().relDelete( id );
         }
 
-        public void addProperty( int relId, int propertyId,
+        public void addProperty( long relId, long propertyId,
             PropertyIndex index, Object value )
         {
             xaCon.getWriteTransaction().relAddProperty( relId, propertyId, index,
                 value );
         }
 
-        public void changeProperty( int relId, int propertyId, Object value )
+        public void changeProperty( long relId, long propertyId, Object value )
         {
             xaCon.getWriteTransaction().relChangeProperty( relId, propertyId,
                 value );
         }
 
-        public void removeProperty( int relId, int propertyId )
+        public void removeProperty( long relId, long propertyId )
         {
             xaCon.getWriteTransaction().relRemoveProperty( relId, propertyId );
         }
 
-        public ArrayMap<Integer,PropertyData> getProperties( int relId, 
+        public ArrayMap<Integer,PropertyData> getProperties( long relId,
                 boolean light )
         {
             return xaCon.getWriteTransaction().relGetProperties( relId, light );
         }
 
-        public RelationshipData getRelationship( int id )
+        public RelationshipData getRelationship( long id )
         {
             return xaCon.getWriteTransaction().relationshipLoad( id );
         }
 
         public RelationshipChainPosition getRelationshipChainPosition( 
-            int nodeId )
+            long nodeId )
         {
             return xaCon.getWriteTransaction().getRelationshipChainPosition( 
                 nodeId );
         }
 
-        public Iterable<RelationshipData> getMoreRelationships( int nodeId, 
+        public Iterable<RelationshipData> getMoreRelationships( long nodeId,
             RelationshipChainPosition position )
         {
             return xaCon.getWriteTransaction().getMoreRelationships( nodeId, 
                 position );
         }
 
-        public boolean isRelationshipCreated( int relId )
+        public boolean isRelationshipCreated( long relId )
         {
             // TODO Auto-generated method stub
             return xaCon.getWriteTransaction().relCreated( relId );

@@ -69,12 +69,12 @@ class ReadTransaction
         return neoStore.getPropertyStore();
     }
 
-    public boolean nodeLoadLight( int nodeId )
+    public boolean nodeLoadLight( long nodeId )
     {
         return getNodeStore().loadLightNode( nodeId );
     }
 
-    public RelationshipData relationshipLoad( int id )
+    public RelationshipData relationshipLoad( long id )
     {
         RelationshipRecord relRecord = getRelationshipStore().getLightRel( id );
         if ( relRecord != null )
@@ -85,17 +85,17 @@ class ReadTransaction
         return null;
     }
 
-    public RelationshipChainPosition getRelationshipChainPosition( int nodeId )
+    public RelationshipChainPosition getRelationshipChainPosition( long nodeId )
     {
         NodeRecord nodeRecord = getNodeStore().getRecord( nodeId );
-        int nextRel = nodeRecord.getNextRel();
+        long nextRel = nodeRecord.getNextRel();
         return new RelationshipChainPosition( nextRel );
     }
 
-    public Iterable<RelationshipData> getMoreRelationships( int nodeId, 
+    public Iterable<RelationshipData> getMoreRelationships( long nodeId,
         RelationshipChainPosition position )
     {
-        int nextRel = position.getNextRecord();
+        long nextRel = position.getNextRecord();
         List<RelationshipData> rels = new ArrayList<RelationshipData>();
         for ( int i = 0; i < getRelGrabSize() && 
             nextRel != Record.NO_NEXT_RELATIONSHIP.intValue(); i++ )
@@ -108,8 +108,8 @@ class ReadTransaction
                 position.setNextRecord( Record.NO_NEXT_RELATIONSHIP.intValue() );
                 return rels;
             }
-            int firstNode = relRecord.getFirstNode();
-            int secondNode = relRecord.getSecondNode();
+            long firstNode = relRecord.getFirstNode();
+            long secondNode = relRecord.getSecondNode();
             if ( relRecord.inUse() )
             {
                 rels.add( new RelationshipData( relRecord.getId(), firstNode, 
@@ -138,7 +138,7 @@ class ReadTransaction
         return rels;
     }
     
-    public ArrayMap<Integer,PropertyData> relGetProperties( int relId )
+    public ArrayMap<Integer,PropertyData> relGetProperties( long relId )
     {
         RelationshipRecord relRecord = getRelationshipStore().getRecord( relId );
         if ( !relRecord.inUse() )
@@ -146,7 +146,7 @@ class ReadTransaction
             throw new InvalidRecordException( "Relationship[" + relId + 
                 "] not in use" );
         }
-        int nextProp = relRecord.getNextProp();
+        long nextProp = relRecord.getNextProp();
         ArrayMap<Integer,PropertyData> propertyMap = 
             new ArrayMap<Integer,PropertyData>( 9, false, true );
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
@@ -161,11 +161,11 @@ class ReadTransaction
         return propertyMap;
     }
 
-    ArrayMap<Integer,PropertyData> nodeGetProperties( int nodeId )
+    ArrayMap<Integer,PropertyData> nodeGetProperties( long nodeId )
     {
         NodeRecord nodeRecord = getNodeStore().getRecord( nodeId );
             
-        int nextProp = nodeRecord.getNextProp();
+        long nextProp = nodeRecord.getNextProp();
         ArrayMap<Integer,PropertyData> propertyMap = 
             new ArrayMap<Integer,PropertyData>( 9, false, true );
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
@@ -232,7 +232,7 @@ class ReadTransaction
             " on " + propertyRecord );
     }
 
-    public Object propertyGetValue( int id )
+    public Object propertyGetValue( long id )
     {
         PropertyRecord propertyRecord = getPropertyStore().getRecord( id );
         if ( propertyRecord.isLight() )
@@ -307,7 +307,7 @@ class ReadTransaction
         return indexStore.getPropertyIndexes( count );
     }
 
-    public int getKeyIdForProperty( int propertyId )
+    public int getKeyIdForProperty( long propertyId )
     {
         PropertyRecord propRecord = 
             getPropertyStore().getLightRecord( propertyId );

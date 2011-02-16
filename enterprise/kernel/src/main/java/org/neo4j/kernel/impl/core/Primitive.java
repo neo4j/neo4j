@@ -30,25 +30,25 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 
 abstract class Primitive
 {
-    protected final int id;
+    protected final long id;
 
     private ArrayMap<Integer,PropertyData> propertyMap = null;
 
-    protected abstract void changeProperty( NodeManager nodeManager, int propertyId, Object value );
+    protected abstract void changeProperty( NodeManager nodeManager, long propertyId, Object value );
 
-    protected abstract int addProperty( NodeManager nodeManager, PropertyIndex index, Object value );
+    protected abstract long addProperty( NodeManager nodeManager, PropertyIndex index, Object value );
 
-    protected abstract void removeProperty( NodeManager nodeManager, int propertyId );
+    protected abstract void removeProperty( NodeManager nodeManager, long propertyId );
 
     protected abstract ArrayMap<Integer, PropertyData> loadProperties( NodeManager nodeManager,
             boolean light );
 
-    Primitive( int id )
+    Primitive( long id )
     {
         this.id = id;
     }
 
-    Primitive( int id, boolean newPrimitive )
+    Primitive( long id, boolean newPrimitive )
     {
         this.id = id;
         if ( newPrimitive )
@@ -403,13 +403,13 @@ abstract class Primitive
             }
             if ( property != null && !foundInSkipMap )
             {
-                int propertyId = property.getId();
+                long propertyId = property.getId();
                 changeProperty( nodeManager, propertyId, value );
                 property = new PropertyData( propertyId, value );
             }
             else
             {
-                int propertyId = addProperty( nodeManager, index, value );
+                long propertyId = addProperty( nodeManager, index, value );
                 property = new PropertyData( propertyId, value );
             }
             addMap.put( index.getKeyId(), property );

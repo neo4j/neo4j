@@ -94,7 +94,7 @@ public class DefaultRelationshipTypeCreator implements RelationshipTypeCreator
             try
             {
                 txManager.begin();
-                id = idGenerator.nextId( RelationshipType.class );
+                id = (int) idGenerator.nextId( RelationshipType.class );
                 persistence.createRelationshipType( id, name );
                 txManager.commit();
                 success = true;

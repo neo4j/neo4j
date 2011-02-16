@@ -69,12 +69,12 @@ public class PersistenceManager
         return persistenceSource;
     }
 
-    public boolean loadLightNode( int id )
+    public boolean loadLightNode( long id )
     {
         return getReadOnlyResource().nodeLoadLight( id );
     }
 
-    public Object loadPropertyValue( int id )
+    public Object loadPropertyValue( long id )
     {
         return getReadOnlyResource().loadPropertyValue( id );
     }
@@ -89,30 +89,30 @@ public class PersistenceManager
         return getReadOnlyResource().loadPropertyIndexes( maxCount );
     }
 
-    public RelationshipChainPosition getRelationshipChainPosition( int nodeId )
+    public RelationshipChainPosition getRelationshipChainPosition( long nodeId )
     {
         return getReadOnlyResource().getRelationshipChainPosition( nodeId );
     }
     
-    public Iterable<RelationshipData> getMoreRelationships( int nodeId,  
+    public Iterable<RelationshipData> getMoreRelationships( long nodeId,
         RelationshipChainPosition position )
     {
         return getReadOnlyResource().getMoreRelationships( nodeId, position );
     }
     
-    public ArrayMap<Integer,PropertyData> loadNodeProperties( int nodeId, 
+    public ArrayMap<Integer,PropertyData> loadNodeProperties( long nodeId,
             boolean light )
     {
         return getReadOnlyResource().nodeLoadProperties( nodeId, light );
     }
 
-    public ArrayMap<Integer,PropertyData> loadRelProperties( int relId, 
+    public ArrayMap<Integer,PropertyData> loadRelProperties( long relId,
             boolean light )
     {
         return getReadOnlyResource().relLoadProperties( relId, light );
     }
 
-    public RelationshipData loadLightRelationship( int id )
+    public RelationshipData loadLightRelationship( long id )
     {
         return getReadOnlyResource().relLoadLight( id );
     }
@@ -122,53 +122,53 @@ public class PersistenceManager
         return getReadOnlyResource().loadRelationshipTypes();
     }
 
-    public ArrayMap<Integer,PropertyData> nodeDelete( int nodeId )
+    public ArrayMap<Integer,PropertyData> nodeDelete( long nodeId )
     {
         return getResource().nodeDelete( nodeId );
     }
 
-    public int nodeAddProperty( int nodeId, PropertyIndex index, Object value )
+    public long nodeAddProperty( long nodeId, PropertyIndex index, Object value )
     {
         return getResource().nodeAddProperty( nodeId, index, value );
     }
 
-    public void nodeChangeProperty( int nodeId, int propertyId, Object value )
+    public void nodeChangeProperty( long nodeId, long propertyId, Object value )
     {
         getResource().nodeChangeProperty( nodeId, propertyId, value );
     }
 
-    public void nodeRemoveProperty( int nodeId, int propertyId )
+    public void nodeRemoveProperty( long nodeId, long propertyId )
     {
         getResource().nodeRemoveProperty( nodeId, propertyId );
     }
 
-    public void nodeCreate( int id )
+    public void nodeCreate( long id )
     {
         getResource().nodeCreate( id );
     }
 
-    public void relationshipCreate( int id, int typeId, int startNodeId,
-        int endNodeId )
+    public void relationshipCreate( long id, int typeId, long startNodeId,
+        long endNodeId )
     {
         getResource().relationshipCreate( id, typeId, startNodeId, endNodeId );
     }
 
-    public ArrayMap<Integer,PropertyData> relDelete( int relId )
+    public ArrayMap<Integer,PropertyData> relDelete( long relId )
     {
         return getResource().relDelete( relId );
     }
 
-    public int relAddProperty( int relId, PropertyIndex index, Object value )
+    public long relAddProperty( long relId, PropertyIndex index, Object value )
     {
         return getResource().relAddProperty( relId, index, value );
     }
 
-    public void relChangeProperty( int relId, int propertyId, Object value )
+    public void relChangeProperty( long relId, long propertyId, Object value )
     {
         getResource().relChangeProperty( relId, propertyId, value );
     }
 
-    public void relRemoveProperty( int relId, int propertyId )
+    public void relRemoveProperty( long relId, long propertyId )
     {
         getResource().relRemoveProperty( relId, propertyId );
     }
@@ -350,17 +350,17 @@ public class PersistenceManager
         return getResource().getCreatedNodes();
     }
 
-    public boolean isNodeCreated( int nodeId )
+    public boolean isNodeCreated( long nodeId )
     {
         return getResource().isNodeCreated( nodeId );
     }
 
-    public boolean isRelationshipCreated( int relId )
+    public boolean isRelationshipCreated( long relId )
     {
         return getResource().isRelationshipCreated( relId );
     }
 
-    public int getKeyIdForProperty( int propertyId )
+    public int getKeyIdForProperty( long propertyId )
     {
         return getReadOnlyResource().getKeyIdForProperty( propertyId );
     }

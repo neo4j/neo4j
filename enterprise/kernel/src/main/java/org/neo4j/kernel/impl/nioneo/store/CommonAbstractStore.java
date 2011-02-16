@@ -328,9 +328,9 @@ public abstract class CommonAbstractStore
      * @throws IOException
      *             If unable to free the id
      */
-    public void freeId( int id )
+    public void freeId( long id )
     {
-        idGenerator.freeId( makeUnsignedInt( id ) );
+        idGenerator.freeId( id ); // makeUnsignedInt( id ) );
     }
 
     private long makeUnsignedInt( int signedInteger )

@@ -65,10 +65,10 @@ public class LockReleaser
         {
         }
 
-        final ArrayMap<Integer,CowNodeElement> nodes = 
-            new ArrayMap<Integer,CowNodeElement>();
-        final ArrayMap<Integer,CowRelElement> relationships = 
-            new ArrayMap<Integer,CowRelElement>();
+        final ArrayMap<Long,CowNodeElement> nodes =
+            new ArrayMap<Long,CowNodeElement>();
+        final ArrayMap<Long,CowRelElement> relationships =
+            new ArrayMap<Long,CowRelElement>();
     }
 
     private static class CowNodeElement
@@ -200,7 +200,7 @@ public class LockReleaser
         PrimitiveElement primitiveElement = cowMap.get( getTransaction() );
         if ( primitiveElement != null )
         {
-            ArrayMap<Integer,CowNodeElement> cowElements = 
+            ArrayMap<Long,CowNodeElement> cowElements =
                 primitiveElement.nodes;
             CowNodeElement element = cowElements.get( node.id );
             if ( element != null && element.relationshipRemoveMap != null )
@@ -219,7 +219,7 @@ public class LockReleaser
             return getCowRelationshipRemoveMap( node, type );
         }
         PrimitiveElement primitiveElement = getAndSetupPrimitiveElement();
-        ArrayMap<Integer,CowNodeElement> cowElements = 
+        ArrayMap<Long,CowNodeElement> cowElements =
             primitiveElement.nodes;
         CowNodeElement element = cowElements.get( node.id );
         if ( element == null )
@@ -245,7 +245,7 @@ public class LockReleaser
         PrimitiveElement primitiveElement = cowMap.get( getTransaction() );
         if ( primitiveElement != null )
         {
-            ArrayMap<Integer,CowNodeElement> cowElements = 
+            ArrayMap<Long,CowNodeElement> cowElements =
                 primitiveElement.nodes;
             CowNodeElement element = cowElements.get( node.id );
             if ( element != null )
@@ -261,7 +261,7 @@ public class LockReleaser
         PrimitiveElement primitiveElement = cowMap.get( getTransaction() );
         if ( primitiveElement != null )
         {
-            ArrayMap<Integer,CowNodeElement> cowElements = 
+            ArrayMap<Long,CowNodeElement> cowElements =
                 primitiveElement.nodes;
             CowNodeElement element = cowElements.get( node.id );
             if ( element != null && element.relationshipAddMap != null )
@@ -280,7 +280,7 @@ public class LockReleaser
             return getCowRelationshipRemoveMap( node, type );
         }
         PrimitiveElement primitiveElement = getAndSetupPrimitiveElement();
-        ArrayMap<Integer,CowNodeElement> cowElements = 
+        ArrayMap<Long,CowNodeElement> cowElements =
             primitiveElement.nodes;
         CowNodeElement element = cowElements.get( node.id );
         if ( element == null )
@@ -361,10 +361,10 @@ public class LockReleaser
         {
             return;
         }
-        ArrayMap<Integer,CowNodeElement> cowNodeElements = element.nodes;
-        Set<Entry<Integer,CowNodeElement>> nodeEntrySet = 
+        ArrayMap<Long,CowNodeElement> cowNodeElements = element.nodes;
+        Set<Entry<Long,CowNodeElement>> nodeEntrySet =
             cowNodeElements.entrySet();
-        for ( Entry<Integer,CowNodeElement> entry : nodeEntrySet )
+        for ( Entry<Long,CowNodeElement> entry : nodeEntrySet )
         {
             NodeImpl node = nodeManager.getNodeIfCached( entry.getKey() );
             if ( node != null )
@@ -384,10 +384,10 @@ public class LockReleaser
                 }
             }
         }
-        ArrayMap<Integer,CowRelElement> cowRelElements = element.relationships;
-        Set<Entry<Integer,CowRelElement>> relEntrySet = 
+        ArrayMap<Long,CowRelElement> cowRelElements = element.relationships;
+        Set<Entry<Long,CowRelElement>> relEntrySet =
             cowRelElements.entrySet();
-        for ( Entry<Integer,CowRelElement> entry : relEntrySet )
+        for ( Entry<Long,CowRelElement> entry : relEntrySet )
         {
             RelationshipImpl rel = nodeManager.getRelIfCached( entry.getKey() );
             if ( rel != null )
@@ -435,7 +435,7 @@ public class LockReleaser
         PrimitiveElement primitiveElement = cowMap.get( getTransaction() );
         if ( primitiveElement != null && primitive instanceof NodeImpl )
         {
-            ArrayMap<Integer,CowNodeElement> cowElements = 
+            ArrayMap<Long,CowNodeElement> cowElements =
                 primitiveElement.nodes;
             CowNodeElement element = cowElements.get( primitive.id );
             if ( element != null )
@@ -451,7 +451,7 @@ public class LockReleaser
         else if ( primitiveElement != null && 
             primitive instanceof RelationshipImpl )
         {
-            ArrayMap<Integer,CowRelElement> cowElements = 
+            ArrayMap<Long,CowRelElement> cowElements =
                 primitiveElement.relationships;
             CowRelElement element = cowElements.get( primitive.id );
             if ( element != null )
@@ -473,7 +473,7 @@ public class LockReleaser
         PrimitiveElement primitiveElement = cowMap.get( getTransaction() );
         if ( primitiveElement != null && primitive instanceof NodeImpl )
         {
-            ArrayMap<Integer,CowNodeElement> cowElements = 
+            ArrayMap<Long,CowNodeElement> cowElements =
                 primitiveElement.nodes; 
             CowNodeElement element = cowElements.get( primitive.id );
             if ( element != null )
@@ -489,7 +489,7 @@ public class LockReleaser
         else if ( primitiveElement != null && 
             primitive instanceof RelationshipImpl )
         {
-            ArrayMap<Integer,CowRelElement> cowElements = 
+            ArrayMap<Long,CowRelElement> cowElements =
                 primitiveElement.relationships; 
             CowRelElement element = cowElements.get( primitive.id );
             if ( element != null )
@@ -531,7 +531,7 @@ public class LockReleaser
         PrimitiveElement primitiveElement = getAndSetupPrimitiveElement();
         if ( primitive instanceof NodeImpl )
         {
-            ArrayMap<Integer,CowNodeElement> cowElements = 
+            ArrayMap<Long,CowNodeElement> cowElements =
                 primitiveElement.nodes;
             CowNodeElement element = cowElements.get( primitive.id );
             if ( element != null && element.deleted )
@@ -552,7 +552,7 @@ public class LockReleaser
         }
         else if ( primitive instanceof RelationshipImpl )
         {
-            ArrayMap<Integer,CowRelElement> cowElements = 
+            ArrayMap<Long,CowRelElement> cowElements =
                 primitiveElement.relationships;
             CowRelElement element = cowElements.get( primitive.id );
             if ( element != null && element.deleted )
@@ -584,7 +584,7 @@ public class LockReleaser
         PrimitiveElement primitiveElement = getAndSetupPrimitiveElement();
         if ( primitive instanceof NodeImpl )
         {
-            ArrayMap<Integer,CowNodeElement> cowElements = 
+            ArrayMap<Long,CowNodeElement> cowElements =
                 primitiveElement.nodes;
             CowNodeElement element = cowElements.get( primitive.id );
             if ( element != null && element.deleted )
@@ -605,7 +605,7 @@ public class LockReleaser
         }
         else if ( primitive instanceof RelationshipImpl )
         {
-            ArrayMap<Integer,CowRelElement> cowElements = 
+            ArrayMap<Long,CowRelElement> cowElements =
                 primitiveElement.relationships;
             CowRelElement element = cowElements.get( primitive.id );
             if ( element != null && element.deleted )
@@ -632,7 +632,7 @@ public class LockReleaser
         PrimitiveElement primitiveElement = getAndSetupPrimitiveElement();
         if ( primitive instanceof NodeImpl )
         {
-            ArrayMap<Integer,CowNodeElement> cowElements = 
+            ArrayMap<Long,CowNodeElement> cowElements =
                 primitiveElement.nodes;
             CowNodeElement element = cowElements.get( primitive.id );
             if ( element != null && element.deleted )
@@ -649,7 +649,7 @@ public class LockReleaser
         }
         else if ( primitive instanceof RelationshipImpl )
         {
-            ArrayMap<Integer,CowRelElement> cowElements = 
+            ArrayMap<Long,CowRelElement> cowElements =
                 primitiveElement.relationships;
             CowRelElement element = cowElements.get( primitive.id );
             if ( element != null && element.deleted )
@@ -666,7 +666,7 @@ public class LockReleaser
         }
     }
     
-    public void removeNodeFromCache( int nodeId )
+    public void removeNodeFromCache( long nodeId )
     {
         if ( nodeManager != null )
         {
@@ -690,7 +690,7 @@ public class LockReleaser
         }
     }
     
-    public void removeRelationshipFromCache( int id )
+    public void removeRelationshipFromCache( long id )
     {
         if ( nodeManager != null )
         {
@@ -756,7 +756,7 @@ public class LockReleaser
     private void populateRelationshipPropertyEvents( PrimitiveElement element,
             TransactionDataImpl result )
     {
-        for ( int relId : element.relationships.keySet() )
+        for ( long relId : element.relationships.keySet() )
         {
             CowRelElement relElement = element.relationships.get( relId );
             RelationshipProxy rel = new RelationshipProxy( relId, nodeManager );
@@ -799,7 +799,7 @@ public class LockReleaser
     private void populateNodeRelEvent( PrimitiveElement element,
             TransactionDataImpl result )
     {
-        for ( int nodeId : element.nodes.keySet() )
+        for ( long nodeId : element.nodes.keySet() )
         {
             CowNodeElement nodeElement = element.nodes.get( nodeId );
             NodeProxy node = new NodeProxy( nodeId, nodeManager );
@@ -820,7 +820,7 @@ public class LockReleaser
                         nodeElement.relationshipAddMap.get( type );
                     for ( int i = 0; i < createdRels.length(); i++ )
                     {
-                        int relId = createdRels.get( i );
+                        long relId = createdRels.get( i );
                         CowRelElement relElement = 
                             element.relationships.get( relId );
                         if ( relElement != null && relElement.deleted )
@@ -888,7 +888,7 @@ public class LockReleaser
         IntArray createdNodes = nodeManager.getCreatedNodes();
         for ( int i = 0; i < createdNodes.length(); i++ )
         {
-            int nodeId = createdNodes.get( i );
+            long nodeId = createdNodes.get( i );
             if ( element != null && element.nodes != null )
             {
                 CowNodeElement nodeElement = element.nodes.get( nodeId );
@@ -911,7 +911,7 @@ public class LockReleaser
         PrimitiveElement primitiveElement = cowMap.get( tx );
         if ( primitiveElement != null )
         {
-            ArrayMap<Integer,CowNodeElement> cowElements = 
+            ArrayMap<Long,CowNodeElement> cowElements =
                 primitiveElement.nodes;
             CowNodeElement element = cowElements.get( node.id );
             if ( element != null && (element.relationshipAddMap != null || element.relationshipRemoveMap != null) )
