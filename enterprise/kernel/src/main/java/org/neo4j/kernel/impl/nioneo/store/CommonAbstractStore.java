@@ -477,11 +477,9 @@ public abstract class CommonAbstractStore
      * @throws IOException
      *             If unable to acquire window
      */
-    protected PersistenceWindow acquireWindow( int sPosition, OperationType type )
+    protected PersistenceWindow acquireWindow( long position, OperationType type )
     {
-        long position = makeUnsignedInt( sPosition );
-        if ( !isInRecoveryMode()
-            && ( position > getHighId() || !storeOk) )
+        if ( !isInRecoveryMode() && ( position > getHighId() || !storeOk) )
         {
             throw new InvalidRecordException( "Position[" + position
                 + "] requested for operation is high id["

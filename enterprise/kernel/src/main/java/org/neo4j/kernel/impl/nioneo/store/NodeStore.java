@@ -88,10 +88,10 @@ public class NodeStore extends AbstractStore implements Store
 
     public NodeRecord getRecord( long id )
     {
-        PersistenceWindow window = acquireWindow( (int) id, OperationType.READ );
+        PersistenceWindow window = acquireWindow( id, OperationType.READ );
         try
         {
-            NodeRecord record = getRecord( (int) id, window, false );
+            NodeRecord record = getRecord( id, window, false );
             return record;
         }
         finally
@@ -157,11 +157,17 @@ public class NodeStore extends AbstractStore implements Store
         }
     }
 
-    private NodeRecord getRecord( int id, PersistenceWindow window, 
+    private NodeRecord getRecord( long id, PersistenceWindow window, 
         boolean check )
     {
         Buffer buffer = window.getOffsettedBuffer( id );
-        boolean inUse = (buffer.get() == Record.IN_USE.byteValue());
+        
+        // mask        1 will get in use bit
+        // mask     1110 will get 3 higher bits for rel id
+        // mask 11110000 will get 4 higher bits for prop id
+        long inUseByte = buffer.get();
+        
+        boolean inUse = (inUseByte&0x1) == Record.IN_USE.intValue();
         if ( !inUse )
         {
             if ( check )
@@ -170,21 +176,41 @@ public class NodeStore extends AbstractStore implements Store
             }
             throw new InvalidRecordException( "Record[" + id + "] not in use" );
         }
+        
+        long nextRel = buffer.getInt();
+        long nextProp = buffer.getInt();
+        
+        long relModifier = nextRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (inUseByte & 0xE) << 31;
+        long propModifier = nextProp == Record.NO_NEXT_PROPERTY.intValue() ? 0 :  (inUseByte & 0xF0) << 28;
+        
+        nextRel |= relModifier;
+        nextProp |= propModifier;
+        
         NodeRecord nodeRecord = new NodeRecord( id );
         nodeRecord.setInUse( inUse );
-        nodeRecord.setNextRel( buffer.getInt() );
-        nodeRecord.setNextProp( buffer.getInt() );
+        nodeRecord.setNextRel( nextRel );
+        nodeRecord.setNextProp( nextProp );
         return nodeRecord;
     }
 
     private void updateRecord( NodeRecord record, PersistenceWindow window )
     {
-        int id = (int) record.getId();
+        long id = record.getId();
         Buffer buffer = window.getOffsettedBuffer( id );
         if ( record.inUse() )
         {
-            buffer.put( Record.IN_USE.byteValue() ).putInt( 
-                (int) record.getNextRel() ).putInt( (int) record.getNextProp() );
+            long nextRel = record.getNextRel();
+            long nextProp = record.getNextProp();
+            
+            short relModifier = nextRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (short)((nextRel&0x700000000L) >> 31);
+            short propModifier = nextProp == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (short)((nextProp&0xF00000000L) >> 28);
+
+            // [0000,0000]
+            // [    ,   x] in use bit
+            // [    ,xxx ] higher bits for rel id
+            // [xxxx,    ] higher bits for prop id
+            short inUseUnsignedByte = (short)((Record.IN_USE.byteValue()|relModifier|propModifier));
+            buffer.put( (byte)(inUseUnsignedByte&0xFF) ).putInt( (int) nextRel ).putInt( (int) nextProp );
         }
         else
         {
