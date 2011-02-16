@@ -99,8 +99,16 @@ public class TestBackup
         { // Good
         }
         shutdownServer( server );
+        
+        // Just make sure incremental backup can be received properly from
+        // server A, even after a failed attempt from server B
+        DbRepresentation furtherRepresentation = addMoreData( serverPath );
+        server = startServer( serverPath );
+        backup.incremental( backupPath );
+        assertEquals( furtherRepresentation, DbRepresentation.of( backupPath ) );
+        shutdownServer( server );
     }
-
+    
     private ServerInterface startServer( String path )
     {
         ServerInterface server = new ServerProcess().start( path );
