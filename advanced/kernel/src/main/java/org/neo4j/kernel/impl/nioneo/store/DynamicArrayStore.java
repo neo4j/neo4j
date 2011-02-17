@@ -81,7 +81,7 @@ class DynamicArrayStore extends AbstractDynamicStore
         createEmptyStore( fileName, blockSize, VERSION, idGeneratorFactory, IdType.ARRAY_BLOCK );
     }
 
-    private Collection<DynamicRecord> allocateFromInt( int startBlock,
+    private Collection<DynamicRecord> allocateFromInt( long startBlock,
         int[] array )
     {
         int size = array.length * 4 + 1;
@@ -94,7 +94,7 @@ class DynamicArrayStore extends AbstractDynamicStore
         return allocateRecords( startBlock, buf.array() );
     }
 
-    private Collection<DynamicRecord> allocateFromInt( int startBlock,
+    private Collection<DynamicRecord> allocateFromInt( long startBlock,
         Integer[] array )
     {
         int size = array.length * 4 + 1;
@@ -107,7 +107,7 @@ class DynamicArrayStore extends AbstractDynamicStore
         return allocateRecords( startBlock, buf.array() );
     }
 
-    private Collection<DynamicRecord> allocateFromShort( int startBlock,
+    private Collection<DynamicRecord> allocateFromShort( long startBlock,
         short[] array )
     {
         int size = array.length * 2 + 1;
@@ -120,7 +120,7 @@ class DynamicArrayStore extends AbstractDynamicStore
         return allocateRecords( startBlock, buf.array() );
     }
 
-    private Collection<DynamicRecord> allocateFromShort( int startBlock,
+    private Collection<DynamicRecord> allocateFromShort( long startBlock,
         Short[] array )
     {
         int size = array.length * 2 + 1;
@@ -133,7 +133,7 @@ class DynamicArrayStore extends AbstractDynamicStore
         return allocateRecords( startBlock, buf.array() );
     }
 
-    private Collection<DynamicRecord> allocateFromString( int startBlock,
+    private Collection<DynamicRecord> allocateFromString( long startBlock,
         String[] array )
     {
         int size = 5;
@@ -158,7 +158,7 @@ class DynamicArrayStore extends AbstractDynamicStore
         return allocateRecords( startBlock, buf.array() );
     }
 
-    private Collection<DynamicRecord> allocateFromBool( int startBlock,
+    private Collection<DynamicRecord> allocateFromBool( long startBlock,
         boolean[] array )
     {
         int size = 5 + array.length / 8;
@@ -192,7 +192,7 @@ class DynamicArrayStore extends AbstractDynamicStore
         return allocateRecords( startBlock, buf.array() );
     }
 
-    private Collection<DynamicRecord> allocateFromBool( int startBlock,
+    private Collection<DynamicRecord> allocateFromBool( long startBlock,
         Boolean[] array )
     {
         int size = 5 + array.length / 8;
@@ -226,7 +226,7 @@ class DynamicArrayStore extends AbstractDynamicStore
         return allocateRecords( startBlock, buf.array() );
     }
 
-    private Collection<DynamicRecord> allocateFromDouble( int startBlock,
+    private Collection<DynamicRecord> allocateFromDouble( long startBlock,
         double[] array )
     {
         int size = array.length * 8 + 1;
@@ -239,7 +239,7 @@ class DynamicArrayStore extends AbstractDynamicStore
         return allocateRecords( startBlock, buf.array() );
     }
 
-    private Collection<DynamicRecord> allocateFromDouble( int startBlock,
+    private Collection<DynamicRecord> allocateFromDouble( long startBlock,
         Double[] array )
     {
         int size = array.length * 8 + 1;
@@ -252,7 +252,7 @@ class DynamicArrayStore extends AbstractDynamicStore
         return allocateRecords( startBlock, buf.array() );
     }
 
-    private Collection<DynamicRecord> allocateFromFloat( int startBlock,
+    private Collection<DynamicRecord> allocateFromFloat( long startBlock,
         float[] array )
     {
         int size = array.length * 4 + 1;
@@ -265,7 +265,7 @@ class DynamicArrayStore extends AbstractDynamicStore
         return allocateRecords( startBlock, buf.array() );
     }
 
-    private Collection<DynamicRecord> allocateFromFloat( int startBlock,
+    private Collection<DynamicRecord> allocateFromFloat( long startBlock,
         Float[] array )
     {
         int size = array.length * 4 + 1;
@@ -278,7 +278,7 @@ class DynamicArrayStore extends AbstractDynamicStore
         return allocateRecords( startBlock, buf.array() );
     }
 
-    private Collection<DynamicRecord> allocateFromLong( int startBlock,
+    private Collection<DynamicRecord> allocateFromLong( long startBlock,
         long[] array )
     {
         int size = array.length * 8 + 1;
@@ -291,7 +291,7 @@ class DynamicArrayStore extends AbstractDynamicStore
         return allocateRecords( startBlock, buf.array() );
     }
 
-    private Collection<DynamicRecord> allocateFromLong( int startBlock,
+    private Collection<DynamicRecord> allocateFromLong( long startBlock,
         Long[] array )
     {
         int size = array.length * 8 + 1;
@@ -304,7 +304,7 @@ class DynamicArrayStore extends AbstractDynamicStore
         return allocateRecords( startBlock, buf.array() );
     }
 
-    private Collection<DynamicRecord> allocateFromByte( int startBlock,
+    private Collection<DynamicRecord> allocateFromByte( long startBlock,
         byte[] array )
     {
         int size = array.length + 1;
@@ -314,7 +314,7 @@ class DynamicArrayStore extends AbstractDynamicStore
         return allocateRecords( startBlock, buf.array() );
     }
 
-    private Collection<DynamicRecord> allocateFromByte( int startBlock,
+    private Collection<DynamicRecord> allocateFromByte( long startBlock,
         Byte[] array )
     {
         int size = array.length + 1;
@@ -327,7 +327,7 @@ class DynamicArrayStore extends AbstractDynamicStore
         return allocateRecords( startBlock, buf.array() );
     }
 
-    private Collection<DynamicRecord> allocateFromChar( int startBlock,
+    private Collection<DynamicRecord> allocateFromChar( long startBlock,
         char[] array )
     {
         int size = array.length * 2 + 1;
@@ -340,7 +340,7 @@ class DynamicArrayStore extends AbstractDynamicStore
         return allocateRecords( startBlock, buf.array() );
     }
 
-    private Collection<DynamicRecord> allocateFromChar( int startBlock,
+    private Collection<DynamicRecord> allocateFromChar( long startBlock,
         Character[] array )
     {
         int size = array.length * 2 + 1;
@@ -353,7 +353,7 @@ class DynamicArrayStore extends AbstractDynamicStore
         return allocateRecords( startBlock, buf.array() );
     }
 
-    public Collection<DynamicRecord> allocateRecords( int startBlock,
+    public Collection<DynamicRecord> allocateRecords( long startBlock,
         Object array )
     {
         if ( array instanceof int[] )

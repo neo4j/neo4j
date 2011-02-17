@@ -25,8 +25,13 @@ import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -147,7 +152,7 @@ public class TestDynamicStore
         try
         {
             ByteStore store = ByteStore.createStore( dynamicStoreFile(), 30, path() );
-            int blockId = store.nextBlockId();
+            long blockId = store.nextBlockId();
             Collection<DynamicRecord> records = store.allocateRecords( blockId,
                 new byte[10] );
             for ( DynamicRecord record : records )
@@ -190,7 +195,7 @@ public class TestDynamicStore
         {
             final String STR = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
             ByteStore store = ByteStore.createStore( dynamicStoreFile(), 30, path() );
-            int blockId = store.nextBlockId();
+            long blockId = store.nextBlockId();
             char[] chars = new char[STR.length()];
             STR.getChars( 0, STR.length(), chars, 0 );
             Collection<DynamicRecord> records = store.allocateRecords( blockId,
@@ -213,13 +218,13 @@ public class TestDynamicStore
     {
         Random random = new Random( System.currentTimeMillis() );
         ByteStore store = ByteStore.createStore( dynamicStoreFile(), 30, path() );
-        java.util.ArrayList<Integer> idsTaken = new java.util.ArrayList<Integer>();
-        java.util.Map<Integer,byte[]> byteData = new java.util.HashMap<Integer,byte[]>();
+        ArrayList<Long> idsTaken = new ArrayList<Long>();
+        Map<Long,byte[]> byteData = new HashMap<Long,byte[]>();
         float deleteIndex = 0.2f;
         float closeIndex = 0.1f;
         int currentCount = 0;
         int maxCount = 128;
-        java.util.HashSet<Integer> set = new java.util.HashSet<Integer>();
+        Set<Long> set = new HashSet<Long>();
         try
         {
             while ( currentCount < maxCount )
@@ -227,11 +232,12 @@ public class TestDynamicStore
                 float rIndex = random.nextFloat();
                 if ( rIndex < deleteIndex && currentCount > 0 )
                 {
-                    int blockId = idsTaken.remove(
-                        random.nextInt( currentCount ) ).intValue();
+                    long blockId = idsTaken.remove(
+                        random.nextInt( currentCount ) );
                     store.getLightRecords( blockId );
+                    System.out.println( "remove " + blockId );
                     validateData( store.getBytes( blockId ), byteData
-                        .remove( new Integer( blockId ) ) );
+                        .remove( blockId ) );
                     Collection<DynamicRecord> records = store
                         .getLightRecords( blockId );
                     for ( DynamicRecord record : records )
@@ -245,7 +251,7 @@ public class TestDynamicStore
                 else
                 {
                     byte bytes[] = createRandomBytes( random );
-                    int blockId = store.nextBlockId();
+                    long blockId = store.nextBlockId();
                     Collection<DynamicRecord> records = store.allocateRecords(
                         blockId, bytes );
                     for ( DynamicRecord record : records )
@@ -254,8 +260,9 @@ public class TestDynamicStore
                         store.updateRecord( record );
                         set.add( record.getId() );
                     }
-                    idsTaken.add( new Integer( blockId ) );
-                    byteData.put( new Integer( blockId ), bytes );
+                    idsTaken.add( blockId );
+                    byteData.put( blockId, bytes );
+                    System.out.println( "put " + blockId + ", " + bytes );
                     currentCount++;
                 }
                 if ( rIndex > (1.0f - closeIndex) || rIndex < closeIndex )
@@ -295,7 +302,7 @@ public class TestDynamicStore
             return new ByteStore( fileName, ID_GENERATOR_FACTORY, storeDir );
         }
 
-        public byte[] getBytes( int blockId )
+        public byte[] getBytes( long blockId )
         {
             return get( blockId );
         }

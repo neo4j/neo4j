@@ -258,7 +258,7 @@ public class PropertyIndexStore extends AbstractStore implements Store
 
     public int nextKeyBlockId()
     {
-        return keyPropertyStore.nextBlockId();
+        return (int) keyPropertyStore.nextBlockId();
     }
 
     private PropertyIndexRecord getRecord( int id, PersistenceWindow window )
@@ -335,7 +335,7 @@ public class PropertyIndexStore extends AbstractStore implements Store
                 {
                     charList.add( record.getDataAsChar() );
                 }
-                recordToFind = record.getNextBlock();
+                recordToFind = (int) record.getNextBlock();
                 // TODO: optimize here, high chance next is right one
                 records = propRecord.getKeyRecords().iterator();
             }

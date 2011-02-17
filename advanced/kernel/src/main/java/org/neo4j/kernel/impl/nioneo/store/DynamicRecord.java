@@ -19,17 +19,17 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-public class DynamicRecord extends AbstractRecord
+public class DynamicRecord extends Abstract64BitRecord
 {
     private byte[] data = null;
     private char[] charData = null;
     private int length;
-    private int prevBlock = Record.NO_PREV_BLOCK.intValue();
-    private int nextBlock = Record.NO_NEXT_BLOCK.intValue();
+    private long prevBlock = Record.NO_PREV_BLOCK.intValue();
+    private long nextBlock = Record.NO_NEXT_BLOCK.intValue();
     private boolean isLight = false;
     private int type;
 
-    public DynamicRecord( int id )
+    public DynamicRecord( long id )
     {
         super( id );
     }
@@ -112,22 +112,22 @@ public class DynamicRecord extends AbstractRecord
         return charData;
     }
 
-    public int getPrevBlock()
+    public long getPrevBlock()
     {
         return prevBlock;
     }
 
-    public void setPrevBlock( int prevBlock )
+    public void setPrevBlock( long prevBlock )
     {
         this.prevBlock = prevBlock;
     }
 
-    public int getNextBlock()
+    public long getNextBlock()
     {
         return nextBlock;
     }
 
-    public void setNextBlock( int nextBlock )
+    public void setNextBlock( long nextBlock )
     {
         this.nextBlock = nextBlock;
     }

@@ -41,7 +41,7 @@ public class RelationshipTypeRecord extends AbstractRecord
 
     public void addTypeRecord( DynamicRecord record )
     {
-        typeRecords.put( record.getId(), record );
+        typeRecords.put( (int) record.getId(), record );
     }
 
     public int getTypeBlock()

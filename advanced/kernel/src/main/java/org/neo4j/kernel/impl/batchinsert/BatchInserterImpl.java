@@ -261,7 +261,7 @@ public class BatchInserterImpl implements BatchInserter
         {
             return getPropertyChain( record.getNextProp() ); 
         }
-        return Collections.EMPTY_MAP;
+        return Collections.emptyMap();
     }
     
     public Iterable<Long> getRelationshipIds( long nodeId )
@@ -341,7 +341,7 @@ public class BatchInserterImpl implements BatchInserter
         {
             return getPropertyChain( record.getNextProp() ); 
         }
-        return Collections.EMPTY_MAP;
+        return Collections.emptyMap();
     }
     
     public void shutdown()
@@ -491,7 +491,7 @@ public class BatchInserterImpl implements BatchInserter
         RelationshipTypeRecord record = new RelationshipTypeRecord( id );
         record.setInUse( true );
         record.setCreated();
-        int typeBlockId = typeStore.nextBlockId();
+        int typeBlockId = (int) typeStore.nextBlockId();
         record.setTypeBlock( typeBlockId );
         int length = name.length();
         char[] chars = new char[length];
