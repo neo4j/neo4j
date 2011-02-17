@@ -7,7 +7,7 @@ To start both a Neo4j-HA Data cluster and a Neo4j Coordinator cluster
   Background:
     Given a bash compatible shell
     And Java 1.6
-    And a working directory at relative path "./installation"
+    And a working directory at relative path "./target"
     And environment variable "NEO4J_COORDINATOR_INSTANCE_DIR" set to "./coord-instances"
     And environment variable "NEO4J_COORDINATOR_INSTANCE_COUNT" set to "3"
     And environment variable "NEO4J_DATA_INSTANCE_DIR" set to "./neo4j-instances"
@@ -33,7 +33,10 @@ To start both a Neo4j-HA Data cluster and a Neo4j Coordinator cluster
     Given Neo4j Coordinator at address localhost:2183
     When I run these shell commands:
     """
+    # start each instance
     for (( i=1; i<=${NEO4J_DATA_INSTANCE_COUNT}; i++ )); do if [ ! -f $NEO4J_DATA_INSTANCE_DIR/neo4j-$i/data/neo4j-server.pid ]; then $NEO4J_DATA_INSTANCE_DIR/neo4j-$i/bin/neo4j start; fi ; done
+    # wait a bit to give the instances a chance to be ready for business
+    sleep 5
     """
     Then port 7474 on localhost should be open
     And port 7475 on localhost should be open
