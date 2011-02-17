@@ -37,6 +37,8 @@ subprojects {
   }
 
   compileJava.options.compilerArgs = ['-Xlint:unchecked']
+
+  ideaModule.downloadSources = true
 }
 
 
