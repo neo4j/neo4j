@@ -1,0 +1,3 @@
+dependencies {
+  compile project(":kernel"), "org.jboss.netty:netty:$nettyVersion"
+}
