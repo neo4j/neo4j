@@ -104,7 +104,7 @@
               <goal>single</goal>
             </goals>
             <configuration>
-              <attach>true</attach>
+              <attach>false</attach>
               <descriptors>
                 <descriptor>src/main/assemblies/windows-dist.xml</descriptor>
               </descriptors>
