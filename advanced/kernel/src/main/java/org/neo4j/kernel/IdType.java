@@ -21,14 +21,31 @@ package org.neo4j.kernel;
 
 public enum IdType
 {
-    NODE,
-    RELATIONSHIP,
-    PROPERTY,
-    STRING_BLOCK,
-    ARRAY_BLOCK,
+    NODE( 35 ),
+    RELATIONSHIP( 35 ),
+    PROPERTY( 36 ),
+    STRING_BLOCK( 36 ),
+    ARRAY_BLOCK( 36 ),
     PROPERTY_INDEX,
     PROPERTY_INDEX_BLOCK,
-    RELATIONSHIP_TYPE,
+    RELATIONSHIP_TYPE( 16 ),
     RELATIONSHIP_TYPE_BLOCK,
-    NEOSTORE_BLOCK
+    NEOSTORE_BLOCK;
+    
+    private final long max;
+    
+    private IdType()
+    {
+        this( 32 );
+    }
+
+    private IdType( int bits )
+    {
+        this.max = (long)Math.pow( 2, bits )-2;
+    }
+    
+    public long getMaxValue()
+    {
+        return this.max;
+    }
 }

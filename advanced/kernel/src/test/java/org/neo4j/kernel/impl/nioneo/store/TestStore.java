@@ -30,6 +30,7 @@ import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
 public class TestStore
@@ -146,7 +147,7 @@ public class TestStore
         public Store( String fileName ) throws IOException
         {
             super( fileName, MapUtil.genericMap( IdGeneratorFactory.class,
-                    ID_GENERATOR_FACTORY, "store_dir", "target/var/teststore" ), null );
+                    ID_GENERATOR_FACTORY, "store_dir", "target/var/teststore" ), IdType.NODE );
         }
 
         protected void initStorage()
