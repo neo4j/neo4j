@@ -180,8 +180,9 @@ public class NodeStore extends AbstractStore implements Store
         long nextRel = buffer.getInt();
         long nextProp = buffer.getInt();
         
-        long relModifier = nextRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (inUseByte & 0xE) << 31;
-        long propModifier = nextProp == Record.NO_NEXT_PROPERTY.intValue() ? 0 :  (inUseByte & 0xF0) << 28;
+        // The int value -1 (2^32 - 1) is the magic minus one which denotes the end of f.ex. a chain
+        long relModifier = nextRel == Record.NO_NEXT_RELATIONSHIP.intValue() && (inUseByte&0xE) == 0 ? 0 : (inUseByte&0xE) << 31;
+        long propModifier = nextProp == Record.NO_NEXT_PROPERTY.intValue() && (inUseByte&0xF0) == 0 ? 0 : (inUseByte&0xF0) << 28;
         
         nextRel |= relModifier;
         nextProp |= propModifier;
@@ -205,12 +206,11 @@ public class NodeStore extends AbstractStore implements Store
             short relModifier = nextRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (short)((nextRel&0x700000000L) >> 31);
             short propModifier = nextProp == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (short)((nextProp&0xF00000000L) >> 28);
 
-            // [0000,0000]
             // [    ,   x] in use bit
             // [    ,xxx ] higher bits for rel id
             // [xxxx,    ] higher bits for prop id
             short inUseUnsignedByte = (short)((Record.IN_USE.byteValue()|relModifier|propModifier));
-            buffer.put( (byte)(inUseUnsignedByte&0xFF) ).putInt( (int) nextRel ).putInt( (int) nextProp );
+            buffer.put( (byte)inUseUnsignedByte ).putInt( (int) nextRel ).putInt( (int) nextProp );
         }
         else
         {

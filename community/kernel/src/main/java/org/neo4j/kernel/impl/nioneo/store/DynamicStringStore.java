@@ -59,7 +59,7 @@ public class DynamicStringStore extends AbstractDynamicStore
         super.setHighId( highId );
     }
     
-    public int nextBlockId()
+    public long nextBlockId()
     {
         return super.nextBlockId();
     }
