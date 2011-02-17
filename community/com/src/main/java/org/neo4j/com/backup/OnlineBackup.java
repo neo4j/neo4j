@@ -38,6 +38,7 @@ import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 public class OnlineBackup
 {
@@ -68,7 +69,7 @@ public class OnlineBackup
             throw new RuntimeException( targetDirectory + " already contains a database" );
         }
         
-        //                                                          OMG this is ugly
+        //                                                     TODO OMG this is ugly
         BackupClient client = new BackupClient( hostNameOrIp, port, new NotYetExistingGraphDatabase( targetDirectory ) );
         try
         {
@@ -86,6 +87,8 @@ public class OnlineBackup
         finally
         {
             client.shutdown();
+            // TODO This is also ugly
+            StringLogger.close( targetDirectory + "/messages.log" );
         }
         return this;
     }
