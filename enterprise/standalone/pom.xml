@@ -90,6 +90,7 @@
               <goal>single</goal>
             </goals>
             <configuration>
+              <attach>true</attach>
               <descriptors>
                 <descriptor>src/main/assemblies/unix-dist.xml</descriptor>
               </descriptors>
@@ -103,12 +104,12 @@
               <goal>single</goal>
             </goals>
             <configuration>
+              <attach>false</attach>
               <descriptors>
                 <descriptor>src/main/assemblies/windows-dist.xml</descriptor>
               </descriptors>
               <finalName>${server.shortname}-${project.version}</finalName>
               <appendAssemblyId>true</appendAssemblyId>
-              <assemblyId />
             </configuration>
           </execution>
         </executions>
