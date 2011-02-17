@@ -333,10 +333,10 @@ public abstract class CommonAbstractStore
         idGenerator.freeId( id ); // makeUnsignedInt( id ) );
     }
 
-    private long makeUnsignedInt( int signedInteger )
-    {
-        return signedInteger & 0xFFFFFFFFL;
-    }
+//    private long makeUnsignedInt( int signedInteger )
+//    {
+//        return signedInteger & 0xFFFFFFFFL;
+//    }
 
     /**
      * Return the highest id in use.

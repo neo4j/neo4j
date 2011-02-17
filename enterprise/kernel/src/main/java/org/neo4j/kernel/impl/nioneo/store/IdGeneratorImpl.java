@@ -71,7 +71,7 @@ public class IdGeneratorImpl implements IdGenerator
     
     private static final long OVERFLOW_ID = 4294967294l;
 
-    // number of defragged ids to grab form file in batch (also used for write)
+    // number of defragged ids to grab from file in batch (also used for write)
     private int grabSize = -1;
     private AtomicLong nextFreeId = new AtomicLong( -1 );
     // total bytes read from file, used in writeIdBatch() and close()

@@ -258,7 +258,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
             new RelationshipTypeData[typeDataList.size()] );
     }
 
-    public int nextBlockId()
+    public long nextBlockId()
     {
         return typeNameStore.nextBlockId();
     }
@@ -369,7 +369,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 
     public String getStringFor( RelationshipTypeRecord relTypeRecord )
     {
-        int recordToFind = relTypeRecord.getTypeBlock();
+        long recordToFind = relTypeRecord.getTypeBlock();
         Iterator<DynamicRecord> records = 
             relTypeRecord.getTypeRecords().iterator();
         List<char[]> charList = new LinkedList<char[]>();

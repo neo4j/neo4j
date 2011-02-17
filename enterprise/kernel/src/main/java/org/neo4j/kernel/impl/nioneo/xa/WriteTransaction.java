@@ -252,7 +252,7 @@ class WriteTransaction extends XaTransaction
                         if ( dynamicRecord.isCreated() )
                         {
                             getRelationshipTypeStore().freeBlockId(
-                                dynamicRecord.getId() );
+                                (int) dynamicRecord.getId() );
                         }
                     }
                 }
@@ -284,7 +284,7 @@ class WriteTransaction extends XaTransaction
                         if ( dynamicRecord.isCreated() )
                         {
                             getPropertyStore().getIndexStore().freeBlockId(
-                                dynamicRecord.getId() );
+                                (int) dynamicRecord.getId() );
                         }
                     }
                 }
@@ -1612,7 +1612,7 @@ class WriteTransaction extends XaTransaction
         RelationshipTypeRecord record = new RelationshipTypeRecord( id );
         record.setInUse( true );
         record.setCreated();
-        int blockId = getRelationshipTypeStore().nextBlockId();
+        int blockId = (int) getRelationshipTypeStore().nextBlockId();
         record.setTypeBlock( blockId );
         int length = name.length();
         char[] chars = new char[length];

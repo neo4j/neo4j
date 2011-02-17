@@ -81,9 +81,9 @@ abstract class Command extends XaCommand
         if ( record.inUse() )
         {
             byte inUse = Record.IN_USE.byteValue();
-            buffer.putInt( record.getId() ).putInt( record.getType() ).put(
-                inUse ).putInt( record.getPrevBlock() ).putInt(
-                record.getLength() ).putInt( record.getNextBlock() );
+            buffer.putLong( record.getId() ).putInt( record.getType() ).put(
+                inUse ).putLong( record.getPrevBlock() ).putInt(
+                record.getLength() ).putLong( record.getNextBlock() );
             if ( !record.isLight() )
             {
                 if ( !record.isCharData() )
@@ -101,7 +101,7 @@ abstract class Command extends XaCommand
         else
         {
             byte inUse = Record.NOT_IN_USE.byteValue();
-            buffer.putInt( record.getId() ).putInt( record.getType() ).put(
+            buffer.putLong( record.getId() ).putInt( record.getType() ).put(
                 inUse );
         }
     }
@@ -111,13 +111,13 @@ abstract class Command extends XaCommand
     {
         // id+type+in_use(byte)+prev_block(int)+nr_of_bytes(int)+next_block(int)
         buffer.clear();
-        buffer.limit( 9 );
+        buffer.limit( 13 );
         if ( byteChannel.read( buffer ) != buffer.limit() )
         {
             return null;
         }
         buffer.flip();
-        int id = buffer.getInt();
+        long id = buffer.getLong();
         int type = buffer.getInt();
         byte inUseFlag = buffer.get();
         boolean inUse = false;
@@ -125,7 +125,7 @@ abstract class Command extends XaCommand
         {
             inUse = true;
             buffer.clear();
-            buffer.limit( 12 );
+            buffer.limit( 20 );
             if ( byteChannel.read( buffer ) != buffer.limit() )
             {
                 return null;
@@ -140,9 +140,9 @@ abstract class Command extends XaCommand
         record.setInUse( inUse, type );
         if ( inUse )
         {
-            record.setPrevBlock( buffer.getInt() );
+            record.setPrevBlock( buffer.getLong() );
             int nrOfBytes = buffer.getInt();
-            record.setNextBlock( buffer.getInt() );
+            record.setNextBlock( buffer.getLong() );
             buffer.clear();
             buffer.limit( nrOfBytes );
             if ( byteChannel.read( buffer ) != buffer.limit() )
