@@ -1,0 +1,9 @@
+dependencies {
+  compile project(":kernel"),
+          project(":com"),
+          project(":lucene-index"),
+          project(":graph-algo"),
+          project(":ha"),
+          project(":management"),
+          project(":udc")
+}
