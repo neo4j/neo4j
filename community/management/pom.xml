@@ -17,6 +17,7 @@
   <properties>
     <bundle.namespace>org.neo4j.management</bundle.namespace>
     <short-name>management</short-name>
+    <windows.java.home>C:\Program Files\Java\jdk1.6.0_23</windows.java.home>
   </properties>
 
   <packaging>jar</packaging>
@@ -48,7 +49,7 @@
           <artifactId>tools</artifactId>
           <version>1.6</version>
           <scope>system</scope>
-          <systemPath>${env.JAVA_HOME}/lib/jconsole.jar</systemPath>
+          <systemPath>${windows.java.home}/lib/jconsole.jar</systemPath>
         </dependency>
       </dependencies>
     </profile>
@@ -129,13 +130,6 @@
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
     </dependency>
-    <!-- dependency>
-      <groupId>com.sun</groupId>
-      <artifactId>jconsole</artifactId>
-      <version>1.6</version>
-      <scope>system</scope>
-      <systemPath>${java.home}/lib/jconsole.jar</systemPath>
-    </dependency -->
   </dependencies>
 
   <build>
