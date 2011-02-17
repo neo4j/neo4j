@@ -115,6 +115,14 @@ public enum PropertyType
             return Short.valueOf( (short) record.getPropBlock() );
         }
     },
+    SHORT_STRING( 11 )
+    {
+        @Override
+        public Object getValue( PropertyRecord record, PropertyStore store )
+        {
+            return ShortString.decode( record.getPropBlock() );
+        }
+    }
     ;
 
     private int type;
@@ -163,6 +171,8 @@ public enum PropertyType
             return ARRAY;
         case 10:
             return SHORT;
+        case 11:
+            return SHORT_STRING;
         }
         throw new InvalidRecordException( "Unknown property type:" + type );
     }
