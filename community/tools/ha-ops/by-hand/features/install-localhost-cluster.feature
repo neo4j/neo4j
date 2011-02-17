@@ -7,7 +7,7 @@ To install both a Neo4j-HA Data cluster and a Neo4j Coordinator cluster
   Background:
     Given a bash compatible shell
     And Java 1.6
-    And a working directory at relative path "./installation"
+    And a working directory at relative path "./target"
     And environment variable "NEO4J_VERSION" set to "1.3-SNAPSHOT"
     And environment variable "NEO4J_HOME" set to "./neo4j-1.3-SNAPSHOT"
     And environment variable "NEO4J_COORDINATOR_INSTANCE_DIR" set to "./coord-instances"
