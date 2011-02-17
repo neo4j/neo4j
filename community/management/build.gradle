@@ -1,3 +1,4 @@
 dependencies {
-  compile project(":kernel")
+  compile project(":kernel"),
+          files("${System.getenv('JAVA_HOME')}/lib/jconsole.jar")
 }
