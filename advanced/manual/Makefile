@@ -1,8 +1,8 @@
 # Makefile for the Neo4j documentation
 #
 
-SRCDIR           = $(CURDIR)
-BUILDDIR         = $(SRCDIR)/target
+BUILDDIR         = $(CURDIR)/target
+SRCDIR           = $(BUILDDIR)/classes
 SRCFILE          = $(SRCDIR)/neo4j-manual.txt
 CONFDIR          = $(SRCDIR)/conf
 DOCBOOKFILE      = $(BUILDDIR)/neo4j-manual.xml
@@ -74,58 +74,112 @@ clean:
 	-rm -rf $(BUILDDIR)/*
 
 cleanup:
+	#
+	#
+	# Cleaning up.
+	#
+	#
 ifndef KEEP
 	rm -f $(DOCBOOKFILE)
 	rm -f $(DOCBOOKSHORTINFOFILE)
 	rm -f $(BUILDDIR)/*.xml
+	rm -f $(FOPDIR)/images
 endif
 
-docbook:  manpages
+copyimages:
+	#
+	#
+	# Copying images from source projects.
+	#
+	#
+	cp -fr $(IMPORTDIR)/*/*/images/* $(SRCDIR)/images/
+
+docbook:  manpages copyimages
+	#
+	#
+	# Building docbook output.
+	#
+	#
 	mkdir -p $(BUILDDIR)
 	asciidoc $(V) $(VERS) $(IMPDIR) --backend docbook --attribute docinfo --doctype book --conf-file=$(CONFDIR)/asciidoc.conf --conf-file=$(CONFDIR)/docbook45.conf --out-file $(DOCBOOKFILE) $(SRCFILE)
 	xmllint --nonet --noout --xinclude --postvalid $(DOCBOOKFILE)
 
-docbook-shortinfo:  manpages
+docbook-shortinfo:  manpages copyimages
+	#
+	#
+	# Building docbook output with short info.
+	#
+	#
 	mkdir -p $(BUILDDIR)
 	asciidoc $(V) $(VERS) $(IMPDIR) --backend docbook --attribute docinfo1 --doctype book --conf-file=$(CONFDIR)/asciidoc.conf --conf-file=$(CONFDIR)/docbook45.conf --out-file $(DOCBOOKSHORTINFOFILE) $(SRCFILE)
 	xmllint --nonet --noout --xinclude --postvalid $(DOCBOOKSHORTINFOFILE)
 
-pdf:  docbook
+pdf:  docbook copyimages
+	#
+	#
+	# Building PDF.
+	#
+	#
 	mkdir -p $(FOPDIR)
 	cd $(FOPDIR)
 	xsltproc --xinclude --output $(FOPFILE) $(CONFDIR)/fo.xsl $(DOCBOOKFILE)
-	cd $(SRCDIR)
+	ln -s $(SRCDIR)/images $(FOPDIR)/images
 	fop -fo $(FOPFILE) -pdf $(FOPPDF)
 ifndef KEEP
 	rm -f $(FOPFILE)
 endif
 
-latexpdf:  manpages
+latexpdf:  manpages copyimages
+	#
+	#
+	# Building PDF using LaTex.
+	#
+	#
 	mkdir -p $(BUILDDIR)/dblatex
 	a2x $(GENERAL_FLAGS) -L -f pdf -D $(BUILDDIR)/dblatex --conf-file=$(CONFDIR)/dblatex.conf $(SRCFILE)
 
 # currently builds docbook format first
-html:  manpages
-	a2x $(GENERAL_FLAGS) -L -f chunked -D $(BUILDDIR) --conf-file=$(CONFDIR)/chunked.conf --xsl-file=$(CONFDIR)/chunked.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(SRCFILE)
+html: manpages copyimages
+	#
+	#
+	# Building html output.
+	#
+	#
+	a2x $(GENERAL_FLAGS) -L -f chunked -D $(BUILDDIR) --attribute docinfo1 --attribute=icons --doctype book --asciidoc-opts "--conf-file=$(CONFDIR)/asciidoc.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/docbook45.conf" --xsl-file=$(CONFDIR)/chunked.xsl --xsltproc-opts "--stringparam admon.graphics 1" --xsltproc-opts "--xinclude" $(SRCFILE)
 	mv $(CHUNKEDTARGET) $(CHUNKEDHTMLDIR)
 	cp -fr $(SRCDIR)/js $(CHUNKEDHTMLDIR)/js
 
 # currently builds docbook format first
-offline-html:  manpages
-	a2x $(GENERAL_FLAGS) -L -f chunked -D $(BUILDDIR) --conf-file=$(CONFDIR)/chunked.conf --xsl-file=$(CONFDIR)/chunked-offline.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(SRCFILE)
+offline-html:  manpages copyimages
+	#
+	#
+	# Building html output for offline use.
+	#
+	#
+	a2x $(GENERAL_FLAGS) -L -f chunked -D $(BUILDDIR) --attribute docinfo1 --attribute=icons --doctype book --asciidoc-opts "--conf-file=$(CONFDIR)/asciidoc.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/docbook45.conf" --xsl-file=$(CONFDIR)/chunked-offline.xsl --xsltproc-opts "--stringparam admon.graphics 1" --xsltproc-opts "--xinclude" $(SRCFILE)
 	mv $(CHUNKEDTARGET) $(CHUNKEDOFFLINEHTMLDIR)
 	cp -fr $(SRCDIR)/js $(CHUNKEDOFFLINEHTMLDIR)/js
 
 # currently builds docbook format first
-singlehtml:  manpages
+singlehtml:  manpages copyimages
+	#
+	#
+	# Building single html file output.
+	#
+	#
 	mkdir -p $(SINGLEHTMLDIR)
-	a2x $(GENERAL_FLAGS) -L -f xhtml -D $(SINGLEHTMLDIR) --conf-file=$(CONFDIR)/xhtml.conf --xsl-file=$(CONFDIR)/xhtml.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(SRCFILE)
+	a2x $(GENERAL_FLAGS) -L -f xhtml -D $(SINGLEHTMLDIR) --conf-file=$(CONFDIR)/xhtml.conf --asciidoc-opts "--conf-file=$(CONFDIR)/asciidoc.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/docbook45.conf" --xsl-file=$(CONFDIR)/xhtml.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(SRCFILE)
 	cp -fr $(SRCDIR)/js $(SINGLEHTMLDIR)/js
 
 # currently builds docbook format first
-annotated:  manpages
+annotated:  manpages copyimages
+	#
+	#
+	# Building annotated html output.
+	#
+	#
 	mkdir -p $(ANNOTATEDDIR)
-	a2x $(GENERAL_FLAGS) -L -a showcomments -f xhtml -D $(ANNOTATEDDIR) --conf-file=$(CONFDIR)/xhtml.conf --xsl-file=$(CONFDIR)/xhtml.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(SRCFILE)
+	a2x $(GENERAL_FLAGS) -L -a showcomments -f xhtml -D $(ANNOTATEDDIR) --conf-file=$(CONFDIR)/xhtml.conf --asciidoc-opts "--conf-file=$(CONFDIR)/asciidoc.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/docbook45.conf" --xsl-file=$(CONFDIR)/xhtml.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(SRCFILE)
 	cp -fr $(SRCDIR)/js $(ANNOTATEDDIR)/js
 
 # missing: check what files are needed and copy them
@@ -136,6 +190,11 @@ singlehtml-notworkingrightnow: docbook-shortinfo
 	cd $(SRCDIR)
 
 text: docbook-shortinfo
+	#
+	#
+	# Building text output.
+	#
+	#
 	mkdir -p $(TEXTDIR)
 	cd $(TEXTDIR)
 	xsltproc --xinclude --stringparam callout.graphics 0 --stringparam navig.graphics 0 --stringparam admon.textlabel 1 --stringparam admon.graphics 0  --output $(TEXTHTMLFILE) $(CONFDIR)/text.xsl $(DOCBOOKSHORTINFOFILE)
@@ -147,7 +206,13 @@ ifndef KEEP
 endif
 
 manpages:
+	#
+	#
+	# Building manpages.
+	#
+	#
 	mkdir -p $(MANPAGES)
-	a2x -k -f manpage -d  manpage -D $(MANPAGES) $(IMPORTDIR)/neo4j-shell-docs-jar/ops/neo4j-shell.1.txt
+	a2x -k -f manpage -d  manpage -D $(MANPAGES) $(IMPORTDIR)/neo4j-shell-docs-jar/man/neo4j-shell.1.txt
 	mv $(MANPAGES)/*.xml $(BUILDDIR)
 	gzip -q $(MANPAGES)/*
+

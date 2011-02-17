@@ -25,13 +25,13 @@ $JAVA_HOME/bin/jconsole
 And connect to the process running your Neo4j database instance:
 
 .Connecting JConsole to the Neo4j Java process
-image::../images/operations/jconsole_connect.png[scaledwidth="50%", alt="Connecting with JConsole"]
+image::operations/jconsole_connect.png[scaledwidth="50%", alt="Connecting with JConsole"]
 
 Now, beside the MBeans exposed by the JVM, you will see an org.neo section in the MBeans tab. Under that, you will have access to all the monitoring information exposed by the Neo4j Kernel.
 
 
 .Neo4j MBeans View
-image::../images/operations/jconsole_beans.png[scaledwidth="50%",alt="Neo4j MBeans view"]
+image::operations/jconsole_beans.png[scaledwidth="50%",alt="Neo4j MBeans view"]
 
 
 === How to connect to the JMX monitoring programmatically ===
