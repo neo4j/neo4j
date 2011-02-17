@@ -57,7 +57,7 @@ public class CommonFactories
         public IdGenerator open( String fileName, int grabSize, IdType idType,
                 long highestIdInUse )
         {
-            IdGenerator generator = new IdGeneratorImpl( fileName, grabSize );
+            IdGenerator generator = new IdGeneratorImpl( fileName, grabSize, idType.getMaxValue() );
             generators.put( idType, generator );
             return generator;
         }

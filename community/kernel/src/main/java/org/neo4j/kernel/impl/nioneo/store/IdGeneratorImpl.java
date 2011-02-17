@@ -69,8 +69,8 @@ public class IdGeneratorImpl implements IdGenerator
     private static final byte CLEAN_GENERATOR = (byte) 0;
     private static final byte STICKY_GENERATOR = (byte) 1;
     
-    private static final long OVERFLOW_ID = 4294967294l;
-
+    private static final long INTEGER_MINUS_ONE = 4294967295L;
+    
     // number of defragged ids to grab from file in batch (also used for write)
     private int grabSize = -1;
     private AtomicLong nextFreeId = new AtomicLong( -1 );
@@ -96,6 +96,8 @@ public class IdGeneratorImpl implements IdGenerator
     // buffer used in writeIdBatch() and close()
     private ByteBuffer writeBuffer = null;
 
+    private final long max;
+
     /**
      * Opens the id generator represented by <CODE>fileName</CODE>. The
      * <CODE>grabSize</CODE> means how many defragged ids we should keep in
@@ -117,12 +119,13 @@ public class IdGeneratorImpl implements IdGenerator
      * @throws IOException
      *             If no such file exist or if the id generator is sticky
      */
-    public IdGeneratorImpl( String fileName, int grabSize )
+    public IdGeneratorImpl( String fileName, int grabSize, long max )
     {
         if ( grabSize < 1 )
         {
             throw new IllegalArgumentException( "Illegal grabSize: " + grabSize );
         }
+        this.max = max;
         this.fileName = fileName;
         this.grabSize = grabSize;
         readBuffer = ByteBuffer.allocate( grabSize * 8 );
@@ -148,13 +151,22 @@ public class IdGeneratorImpl implements IdGenerator
         {
             return nextDefragId;
         }
-        assertIdWithinCapacity( nextFreeId.get() );
-        return nextFreeId.getAndIncrement();
+        long id = nextFreeId.get();
+        assertIdWithinCapacity( id );
+        if ( id == INTEGER_MINUS_ONE )
+        {
+            // Skip the integer -1 (0xFFFFFFFF) because it represents
+            // special values, f.ex. the end of a relationships/property chain.
+            id = nextFreeId.incrementAndGet();
+            assertIdWithinCapacity( id );
+        }
+        nextFreeId.incrementAndGet();
+        return id;
     }
 
     private void assertIdWithinCapacity( long id )
     {
-        if ( id >= OVERFLOW_ID || id < 0  )
+        if ( id >= max || id < 0  )
         {
             throw new UnderlyingStorageException( "Id capacity exceeded" );
         }
@@ -479,7 +491,10 @@ public class IdGeneratorImpl implements IdGenerator
             for ( int i = 0; i < idsRead; i++ )
             {
                 long id = readBuffer.getLong();
-                defragedIdList.add( id );
+                if ( id != INTEGER_MINUS_ONE )
+                {
+                    defragedIdList.add( id );
+                }
             }
         }
         catch ( IOException e )
@@ -499,7 +514,12 @@ public class IdGeneratorImpl implements IdGenerator
             writeBuffer.clear();
             while ( releasedIdList.size() > 0 )
             {
-                writeBuffer.putLong( releasedIdList.removeFirst() );
+                long id = releasedIdList.removeFirst();
+                if ( id == INTEGER_MINUS_ONE )
+                {
+                    continue;
+                }
+                writeBuffer.putLong( id );
                 if ( writeBuffer.position() == writeBuffer.capacity() )
                 {
                     writeBuffer.flip();
