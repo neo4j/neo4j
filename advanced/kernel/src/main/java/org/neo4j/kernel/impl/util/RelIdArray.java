@@ -125,7 +125,7 @@ public class RelIdArray
         long get( int index )
         {
             assert index >= 0 && index < length;
-            return (long)ids[index]|highBits;
+            return (((long)(ids[index]&0xFFFFFFFFL))|highBits);
         }
         
         void set( long id, int index )
@@ -143,7 +143,7 @@ public class RelIdArray
             return copy;
         }
     }
-
+    
     public class RelIdIterator
     {
         private int blockIndex = 1;
@@ -206,7 +206,7 @@ public class RelIdArray
         {
             int leftInBlock = currentBlock.length-relativePosition;
             absolutePosition += leftInBlock;
-            currentBlock = blocks.get( ++blockIndex );
+            currentBlock = blocks.get( blockIndex++ );
             relativePosition = 0;
         }
         
@@ -239,15 +239,6 @@ public class RelIdArray
             {
                 return null;
             }
-//            int newLength = 0;
-//            if ( add != null )
-//            {
-//                newLength += add.length();
-//            }
-//            if ( src != null )
-//            {
-//                newLength += src.length();
-//            }
             RelIdArray newArray = new RelIdArray();
             newArray.addAll( src );
             Set<Long> removedSet = remove.asSet();
