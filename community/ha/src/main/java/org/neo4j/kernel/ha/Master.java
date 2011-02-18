@@ -31,7 +31,7 @@ import org.neo4j.kernel.IdType;
  */
 public interface Master
 {
-    IdAllocation allocateIds( IdType idType );
+    Response<IdAllocation> allocateIds( IdType idType );
 
     Response<Integer> createRelationshipType( SlaveContext context, String name );
 
@@ -50,7 +50,7 @@ public interface Master
 
     Response<Void> pullUpdates( SlaveContext context );
 
-    int getMasterIdForCommittedTx( long txId );
+    Response<Integer> getMasterIdForCommittedTx( long txId );
 
     Response<Void> copyStore( SlaveContext context, StoreWriter writer );
 }

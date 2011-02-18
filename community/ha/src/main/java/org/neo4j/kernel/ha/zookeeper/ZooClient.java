@@ -30,10 +30,12 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
-import org.apache.zookeeper.Watcher.Event.KeeperState;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.ha.ConnectionInformation;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.ResponseReceiver;
@@ -55,22 +57,27 @@ public class ZooClient extends AbstractZooKeeperManager
     private volatile boolean shutdown = false;
     private final RootPathGetter rootPathGetter;
     private String rootPath;
+    
+    // Has the format <host-name>:<port>
     private final String haServer;
 
     private final StringLogger msgLog;
 
     private long sessionId = -1;
     private final ResponseReceiver receiver;
+    private final int backupPort;
 
     public ZooClient( String servers, int machineId, RootPathGetter rootPathGetter,
-            ResponseReceiver receiver, String haServer, String storeDir )
+            ResponseReceiver receiver, String haServer, int backupPort, GraphDatabaseService graphDb )
     {
-        super( servers, storeDir );
+        super( servers, graphDb );
         this.receiver = receiver;
         this.rootPathGetter = rootPathGetter;
         this.haServer = haServer;
         this.machineId = machineId;
+        this.backupPort = backupPort;
         this.sequenceNr = "not initialized yet";
+        String storeDir = ((AbstractGraphDatabase) graphDb).getStoreDir();
         this.msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
         this.zooKeeper = instantiateZooKeeper();
     }
@@ -463,8 +470,9 @@ public class ZooClient extends AbstractZooKeeperManager
 
     private byte[] haServerAsData()
     {
-        byte[] array = new byte[haServer.length()*2 + 20];
+        byte[] array = new byte[haServer.length()*2 + 100];
         ByteBuffer buffer = ByteBuffer.wrap( array );
+        buffer.putInt( backupPort );
         buffer.put( (byte) haServer.length() );
         buffer.asCharBuffer().put( haServer.toCharArray() ).flip();
         byte[] actualArray = new byte[buffer.limit()];

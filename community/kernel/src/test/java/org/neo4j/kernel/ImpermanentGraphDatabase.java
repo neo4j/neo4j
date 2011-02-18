@@ -96,7 +96,7 @@ public class ImpermanentGraphDatabase extends AbstractGraphDatabase
         }
         if ( !file.delete() )
         {
-            throw new RuntimeException( "Couldn't empty database." );
+            throw new RuntimeException( "Couldn't empty database. Offending file:" + file );
         }
     }
 

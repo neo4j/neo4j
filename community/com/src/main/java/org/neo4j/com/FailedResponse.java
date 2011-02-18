@@ -23,7 +23,7 @@ public class FailedResponse<T> extends Response<T>
 {
     public FailedResponse()
     {
-        super( null, null );
+        super( null, null, null );
     }
     
     @Override

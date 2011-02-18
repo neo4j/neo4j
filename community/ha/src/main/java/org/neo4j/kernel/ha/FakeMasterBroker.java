@@ -27,9 +27,9 @@ import org.neo4j.kernel.impl.nioneo.store.StoreId;
 
 public class FakeMasterBroker extends AbstractBroker
 {
-    public FakeMasterBroker( int myMachineId, String storeDir )
+    public FakeMasterBroker( int myMachineId, GraphDatabaseService graphDb )
     {
-        super( myMachineId, storeDir );
+        super( myMachineId, graphDb );
     }
 
     @Override
