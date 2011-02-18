@@ -1,4 +1,12 @@
 dependencies {
   compile project(":kernel"),
           "org.apache.servicemix.bundles:org.apache.servicemix.bundles.lucene:$luceneBundleVersion"
+
+  testCompile "commons-io:commons-io:$commonsIoVersion"
+}
+
+sourceSets {
+  test {
+    compileClasspath += project(':kernel').sourceSets.test.classes
+  }
 }
