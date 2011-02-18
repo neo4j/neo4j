@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.persistence.ResourceConnection;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.ArrayMap;
-import org.neo4j.kernel.impl.util.IntArray;
+import org.neo4j.kernel.impl.util.RelIdArray;
 
 /**
  * The NioNeo persistence source implementation. If this class is registered as
@@ -280,9 +280,9 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
             return readTransaction.getMoreRelationships( nodeId, position );
         }
 
-        public IntArray getCreatedNodes()
+        public RelIdArray getCreatedNodes()
         {
-            return new IntArray();
+            return new RelIdArray();
         }
 
         public boolean isNodeCreated( long nodeId )
@@ -465,7 +465,7 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
             return relConsumer.getMoreRelationships( nodeId, position );
         }
 
-        public IntArray getCreatedNodes()
+        public RelIdArray getCreatedNodes()
         {
             return nodeConsumer.getCreatedNodes();
         }

@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.kernel.impl.util.ArrayMap;
-import org.neo4j.kernel.impl.util.IntArray;
+import org.neo4j.kernel.impl.util.RelIdArray;
 
 /**
  * A connection to a {@link PersistenceSource}. <CODE>ResourceConnection</CODE>
@@ -95,7 +95,7 @@ public interface ResourceConnection
     public Iterable<RelationshipData> getMoreRelationships( long nodeId,
         RelationshipChainPosition position );
 
-    public IntArray getCreatedNodes();
+    public RelIdArray getCreatedNodes();
 
     public boolean isNodeCreated( long nodeId );
 

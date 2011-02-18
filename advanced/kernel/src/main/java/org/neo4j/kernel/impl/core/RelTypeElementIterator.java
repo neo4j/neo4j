@@ -19,10 +19,40 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.neo4j.kernel.impl.util.IntArray;
+import java.util.NoSuchElementException;
+
+import org.neo4j.kernel.impl.util.RelIdArray;
 
 public abstract class RelTypeElementIterator
 {
+    protected static RelTypeElementIterator EMPTY = new RelTypeElementIterator( null, null )
+    {
+        @Override
+        public RelTypeElementIterator setSrc( RelIdArray newSrc )
+        {
+            return this;
+        }
+        
+        @Override
+        public long next( NodeManager nodeManager )
+        {
+            throw new NoSuchElementException();
+        }
+        
+        @Override
+        public boolean isSrcEmpty()
+        {
+            return true;
+        }
+        
+        @Override
+        public boolean hasNext( NodeManager nodeManager )
+        {
+            // TODO Auto-generated method stub
+            return false;
+        }
+    };
+    
     private final String type;
     private final NodeImpl node;
     
@@ -44,9 +74,9 @@ public abstract class RelTypeElementIterator
 
     public abstract boolean hasNext( NodeManager nodeManager );
 
-    public abstract int next( NodeManager nodeManager );
+    public abstract long next( NodeManager nodeManager );
     
     public abstract boolean isSrcEmpty();
 
-    public abstract RelTypeElementIterator setSrc( IntArray newSrc );
+    public abstract RelTypeElementIterator setSrc( RelIdArray newSrc );
 }

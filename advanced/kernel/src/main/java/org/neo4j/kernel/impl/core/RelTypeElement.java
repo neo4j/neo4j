@@ -23,21 +23,20 @@ import java.util.HashSet;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
-import org.neo4j.kernel.impl.util.IntArray;
+import org.neo4j.kernel.impl.util.RelIdArray;
+import org.neo4j.kernel.impl.util.RelIdArray.RelIdIterator;
 
 class RelTypeElement extends RelTypeElementIterator
 {
-    private final IntArray src;
-    private final IntArray add;
-    private final Set<Integer> remove = new HashSet<Integer>();
-    
-    private boolean srcTraversed = false;
-    private boolean addTraversed = false;
-    private int position = 0;
-    private Integer nextElement = null;
+    private final RelIdArray src;
+    private final Set<Long> remove = new HashSet<Long>();
+    private final RelIdIterator srcIterator;
+    private final RelIdIterator addIterator;
+    private RelIdIterator currentIterator;
+    private Long nextElement = null;
 
     static RelTypeElementIterator create( String type, NodeImpl node,
-        IntArray src, IntArray add, IntArray remove )
+            RelIdArray src, RelIdArray add, RelIdArray remove )
     {
         if ( add == null && remove == null )
         {
@@ -46,28 +45,25 @@ class RelTypeElement extends RelTypeElementIterator
         return new RelTypeElement( type, node, src, add, remove );
     }
 
-    private RelTypeElement( String type, NodeImpl node, IntArray src,
-        IntArray add, IntArray remove )
+    private RelTypeElement( String type, NodeImpl node, RelIdArray src,
+            RelIdArray add, RelIdArray remove )
     {
         super( type, node );
         if ( src == null )
         {
-            src = IntArray.EMPTY;
-            srcTraversed = true;
+            src = RelIdArray.EMPTY;
         }
         this.src = src;
-        if ( add == null )
-        {
-            addTraversed = true;
-        }
-        this.add = add;
+        this.srcIterator = src.iterator();
+        this.addIterator = add == null ? RelIdArray.EMPTY.iterator() : add.iterator();
         if ( remove != null )
         {
-            for ( int i = 0; i < remove.length(); i++ )
+            for ( RelIdIterator iterator = remove.iterator(); iterator.hasNext(); )
             {
-                this.remove.add( remove.get( i ) );
+                this.remove.add( iterator.next() );
             }
         }
+        this.currentIterator = srcIterator;
     }
 
     public boolean hasNext( NodeManager nodeManager )
@@ -76,49 +72,29 @@ class RelTypeElement extends RelTypeElementIterator
         {
             return true;
         }
-        while ( !addTraversed && position < add.length() )
+        
+        while ( currentIterator.hasNext() || currentIterator == srcIterator )
         {
-            int value = add.get( position++ );
-            if ( position >= add.length() )
+            while ( currentIterator.hasNext() )
             {
-                addTraversed = true;
-                position = 0;
-            }
-            if ( !remove.contains( value ) )
-            {
-                nextElement = value;
-                return true;
-            }
-        }
-        while ( !srcTraversed )
-        {
-            if ( position >= src.length() )
-            {
-//                while ( getNode().getMoreRelationships( nodeManager ) &&
-//                    position >= src.length() );
-                if ( position >= src.length() )
+                long value = currentIterator.next();
+                if ( !remove.contains( value ) )
                 {
-                    srcTraversed = true;
-                    position = 0;
-                    return false;
+                    nextElement = value;
+                    return true;
                 }
             }
-            int value = src.get( position++ );
-            if ( !remove.contains( value ) )
-            {
-                nextElement = value;
-                return true;
-            }
+            currentIterator = addIterator;
         }
         return false;
     }
 
-    public int next( NodeManager nodeManager )
+    public long next( NodeManager nodeManager )
     {
         hasNext( nodeManager );
         if ( nextElement != null )
         {
-            Integer elementToReturn = nextElement;
+            Long elementToReturn = nextElement;
             nextElement = null;
             return elementToReturn;
         }
@@ -132,12 +108,12 @@ class RelTypeElement extends RelTypeElementIterator
     
     public boolean isSrcEmpty()
     {
-        return src.length() == 0;
+        return src.isEmpty();
     }
     
     @Override
-    public RelTypeElementIterator setSrc( IntArray newSrc )
+    public RelTypeElementIterator setSrc( RelIdArray newSrc )
     {
-        return new FastRelTypeElement( getType(), getNode(), newSrc, position );
+        return new FastRelTypeElement( getType(), getNode(), newSrc, srcIterator.position() );
     }
 }

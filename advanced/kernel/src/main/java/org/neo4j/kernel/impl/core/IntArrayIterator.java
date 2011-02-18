@@ -29,7 +29,7 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.impl.util.IntArray;
+import org.neo4j.kernel.impl.util.RelIdArray;
 
 class IntArrayIterator implements Iterable<Relationship>,
     Iterator<Relationship>
@@ -55,7 +55,7 @@ class IntArrayIterator implements Iterable<Relationship>,
         }
         else
         {
-            currentTypeIterator = new NullRelTypeElement();
+            currentTypeIterator = RelTypeElementIterator.EMPTY;
         }
         this.fromNode = fromNode;
         this.direction = direction;
@@ -78,7 +78,7 @@ class IntArrayIterator implements Iterable<Relationship>,
         {
             if ( currentTypeIterator.hasNext( nodeManager ) )
             {
-                int nextId = currentTypeIterator.next( nodeManager );
+                long nextId = currentTypeIterator.next( nodeManager );
                 try
                 {
                     if ( direction == Direction.BOTH )
@@ -120,7 +120,7 @@ class IntArrayIterator implements Iterable<Relationship>,
                         RelTypeElementIterator newItr = itr;
                         if ( itr.isSrcEmpty() )
                         {
-                            IntArray newSrc = fromNode.getIntArray( itr.getType() );
+                            RelIdArray newSrc = fromNode.getIntArray( itr.getType() );
                             if ( newSrc != null )
                             {
                                 newItr = itr.setSrc( newSrc );
@@ -130,7 +130,7 @@ class IntArrayIterator implements Iterable<Relationship>,
                     }
                     if ( types.length == 0 )
                     {
-                        for ( Map.Entry<String, IntArray> entry : fromNode.getIntArrayMap().entrySet() )
+                        for ( Map.Entry<String, RelIdArray> entry : fromNode.getIntArrayMap().entrySet() )
                         {
                             String type = entry.getKey();
                             RelTypeElementIterator itr = newRels.get( type );
@@ -147,7 +147,7 @@ class IntArrayIterator implements Iterable<Relationship>,
                     rels.addAll( newRels.values() );
                     
                     typeIterator = rels.iterator();
-                    currentTypeIterator = typeIterator.hasNext() ? typeIterator.next() : new NullRelTypeElement();
+                    currentTypeIterator = typeIterator.hasNext() ? typeIterator.next() : RelTypeElementIterator.EMPTY;
                 }
                 else
                 {
