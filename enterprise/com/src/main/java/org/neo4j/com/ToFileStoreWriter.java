@@ -48,7 +48,6 @@ public class ToFileStoreWriter implements StoreWriter
                 randomAccessFile = new RandomAccessFile( file, "rw" );
                 if ( hasData )
                 {
-//                    ByteBuffer intermediateBuffer = ByteBuffer.allocateDirect( 1024 );
                     FileChannel channel = randomAccessFile.getChannel();
                     while ( data.read( temporaryBuffer ) >= 0 )
                     {
