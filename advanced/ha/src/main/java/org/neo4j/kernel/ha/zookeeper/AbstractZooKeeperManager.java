@@ -31,8 +31,10 @@ import java.util.Map;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterClient;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -51,14 +53,22 @@ public abstract class AbstractZooKeeperManager implements Watcher
             new HashMap<Integer, String>() );
     private Pair<Master, Machine> cachedMaster = Pair.<Master, Machine>of( null, Machine.NO_MACHINE );
 
-    private final String storeDir;
+    private final GraphDatabaseService graphDb;
     private final StringLogger msgLog;
 
-    public AbstractZooKeeperManager( String servers, String storeDir )
+    public AbstractZooKeeperManager( String servers, GraphDatabaseService graphDb )
     {
         this.servers = servers;
-        this.storeDir = storeDir;
-        msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
+        this.graphDb = graphDb;
+        if ( graphDb != null )
+        {
+            String storeDir = ((AbstractGraphDatabase) graphDb).getStoreDir();
+            msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
+        }
+        else
+        {
+            msgLog = null;
+        }
     }
     
     protected ZooKeeper instantiateZooKeeper()
@@ -77,6 +87,11 @@ public abstract class AbstractZooKeeperManager implements Watcher
     protected abstract ZooKeeper getZooKeeper();
 
     public abstract String getRoot();
+    
+    protected GraphDatabaseService getGraphDb()
+    {
+        return graphDb;
+    }
 
     protected Pair<Integer, Integer> parseChild( String child )
     {
@@ -119,7 +134,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
             invalidateMaster();
             if ( master != Machine.NO_MACHINE && master.getMachineId() != getMyMachineId() )
             {
-                masterClient = new MasterClient( master, storeDir );
+                masterClient = new MasterClient( master, graphDb );
             }
             cachedMaster = Pair.<Master, Machine>of( masterClient, master );
         }
@@ -154,7 +169,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
                 }
             }
         }
-        msgLog.logMessage( "getMaster " + (master != null ? master.getMachineId() : "none") +
+        log( "getMaster " + (master != null ? master.getMachineId() : "none") +
                 " based on " + debugData );
         return master != null ? master : Machine.NO_MACHINE;
     }
@@ -215,13 +230,13 @@ public abstract class AbstractZooKeeperManager implements Watcher
         String result = haServersCache.get( machineId );
         if ( result == null )
         {
-            result = readHaServer( machineId, wait );
+            result = readHaServer( machineId, wait ).first();
             haServersCache.put( machineId, result );
         }
         return result;
     }
 
-    protected String readHaServer( int machineId, boolean wait )
+    protected Pair<String /*Host and port*/, Integer /*backup port*/> readHaServer( int machineId, boolean wait )
     {
         if ( wait )
         {
@@ -233,13 +248,14 @@ public abstract class AbstractZooKeeperManager implements Watcher
         {
             byte[] serverData = getZooKeeper().getData( haServerPath, false, null );
             ByteBuffer buffer = ByteBuffer.wrap( serverData );
+            int backupPort = buffer.getInt();
             byte length = buffer.get();
             char[] chars = new char[length];
             buffer.asCharBuffer().get( chars );
             String result = String.valueOf( chars );
-            msgLog.logMessage( "Read HA server:" + result + " (for machineID " + machineId +
+            log( "Read HA server:" + result + " (for machineID " + machineId +
                     ") from zoo keeper" );
-            return result;
+            return Pair.of( result, backupPort );
         }
         catch ( KeeperException e )
         {
@@ -248,6 +264,14 @@ public abstract class AbstractZooKeeperManager implements Watcher
         catch ( InterruptedException e )
         {
             throw new ZooKeeperException( "Interrupted", e );
+        }
+    }
+
+    private void log( String string )
+    {
+        if ( msgLog != null )
+        {
+            msgLog.logMessage( string );
         }
     }
 

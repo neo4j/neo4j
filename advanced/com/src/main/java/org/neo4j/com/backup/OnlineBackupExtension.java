@@ -19,11 +19,10 @@
  */
 package org.neo4j.com.backup;
 
-import static java.util.regex.Pattern.quote;
 import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
 import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
+import static org.neo4j.kernel.Config.parseMapFromConfigValue;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.helpers.Service;
@@ -41,7 +40,7 @@ public class OnlineBackupExtension extends KernelExtension<BackupServer>
     @Override
     protected void loadConfiguration( KernelData kernel )
     {
-        if ( parsePort( kernel ) != null )
+        if ( parsePort( (String) kernel.getParam( ENABLE_ONLINE_BACKUP ) ) != null )
         {
             // Means that online backup will be enabled
             kernel.getConfig().getParams().put( KEEP_LOGICAL_LOGS, "true" );
@@ -51,7 +50,7 @@ public class OnlineBackupExtension extends KernelExtension<BackupServer>
     @Override
     protected BackupServer load( KernelData kernel )
     {
-        Integer port = parsePort( kernel );
+        Integer port = parsePort( (String) kernel.getParam( ENABLE_ONLINE_BACKUP ) );
         if ( port != null )
         {
             TheBackupInterface backup = new BackupImpl( kernel.graphDatabase() );
@@ -62,43 +61,26 @@ public class OnlineBackupExtension extends KernelExtension<BackupServer>
         return null;
     }
 
-    private Integer parsePort( KernelData kernel )
+    public static Integer parsePort( String backupConfigValue )
     {
-        String configValue = (String) kernel.getParam( ENABLE_ONLINE_BACKUP );
-        if ( configValue != null )
+        if ( backupConfigValue != null )
         {
             int port = BackupServer.DEFAULT_PORT;
-            if ( configValue.contains( "=" ) )
+            if ( backupConfigValue.contains( "=" ) )
             {
-                Map<String, String> args = parseConfigValue( configValue );
+                Map<String, String> args = parseMapFromConfigValue( ENABLE_ONLINE_BACKUP, backupConfigValue );
                 if ( args.containsKey( "port" ) )
                 {
                     port = Integer.parseInt( args.get( "port" ) );
                 }
             }
-            else if ( !Boolean.parseBoolean( configValue ) )
+            else if ( !Boolean.parseBoolean( backupConfigValue ) )
             {
                 return null;
             }
             return Integer.valueOf( port );
         }
         return null;
-    }
-
-    private Map<String, String> parseConfigValue( String configValue )
-    {
-        Map<String, String> result = new HashMap<String, String>();
-        for ( String part : configValue.split( quote( "," ) ) )
-        {
-            String[] tokens = part.split( quote( "=" ) );
-            if ( tokens.length != 2 )
-            {
-                throw new RuntimeException( "Invalid configuration value '" + configValue +
-                        "' for " + ENABLE_ONLINE_BACKUP );
-            }
-            result.put( tokens[0], tokens[1] );
-        }
-        return result;
     }
 
     @Override

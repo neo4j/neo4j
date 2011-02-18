@@ -377,54 +377,14 @@ public class TestNeoStore extends AbstractNeo4jTestCase
 
     private Object getValue( PropertyRecord propertyRecord ) throws IOException
     {
-        PropertyType type = propertyRecord.getType();
-        if ( type == PropertyType.INT )
+        try
         {
-            return (int) propertyRecord.getPropBlock();
+            return propertyRecord.getType().getValue( propertyRecord, pStore );
         }
-        if ( type == PropertyType.STRING )
+        catch ( InvalidRecordException ex )
         {
-            return pStore.getStringFor( propertyRecord );
+            throw new IOException( ex );
         }
-        if ( type == PropertyType.BOOL )
-        {
-            if ( propertyRecord.getPropBlock() == 1 )
-            {
-                return Boolean.valueOf( true );
-            }
-            return Boolean.valueOf( false );
-        }
-        if ( type == PropertyType.DOUBLE )
-        {
-            return new Double( Double.longBitsToDouble( propertyRecord
-                .getPropBlock() ) );
-        }
-        if ( type == PropertyType.FLOAT )
-        {
-            return new Float( Float.intBitsToFloat( (int) propertyRecord
-                .getPropBlock() ) );
-        }
-        if ( type == PropertyType.LONG )
-        {
-            return propertyRecord.getPropBlock();
-        }
-        if ( type == PropertyType.BYTE )
-        {
-            return (byte) propertyRecord.getPropBlock();
-        }
-        if ( type == PropertyType.CHAR )
-        {
-            return (char) propertyRecord.getPropBlock();
-        }
-        if ( type == PropertyType.ARRAY )
-        {
-            return pStore.getArrayFor( propertyRecord );
-        }
-        if ( type == PropertyType.SHORT )
-        {
-            return (short) propertyRecord.getPropBlock();
-        }
-        throw new IOException( "Unknown type" );
     }
 
     private void validateNodeRel1( int node, int prop1, int prop2, int prop3,

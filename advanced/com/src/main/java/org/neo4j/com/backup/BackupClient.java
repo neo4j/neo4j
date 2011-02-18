@@ -29,12 +29,13 @@ import org.neo4j.com.Response;
 import org.neo4j.com.SlaveContext;
 import org.neo4j.com.StoreWriter;
 import org.neo4j.com.ToNetworkStoreWriter;
+import org.neo4j.graphdb.GraphDatabaseService;
 
 class BackupClient extends Client<TheBackupInterface> implements TheBackupInterface
 {
-    public BackupClient( String hostNameOrIp, int port, String storeDir )
+    public BackupClient( String hostNameOrIp, int port, GraphDatabaseService graphDb )
     {
-        super( hostNameOrIp, port, storeDir );
+        super( hostNameOrIp, port, graphDb );
     }
     
     public Response<Void> fullBackup( StoreWriter storeWriter )
@@ -47,6 +48,12 @@ class BackupClient extends Client<TheBackupInterface> implements TheBackupInterf
     {
         return sendRequest( BackupRequestType.INCREMENTAL_BACKUP, context,
                 Protocol.EMPTY_SERIALIZER, Protocol.VOID_DESERIALIZER );
+    }
+    
+    @Override
+    protected boolean shouldCheckStoreId( RequestType<TheBackupInterface> type )
+    {
+        return type != BackupRequestType.FULL_BACKUP;
     }
     
     public static enum BackupRequestType implements RequestType<TheBackupInterface>

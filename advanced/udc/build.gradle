@@ -1,0 +1,6 @@
+dependencies {
+  compile project(":kernel"),
+          "org.apache.httpcomponents:httpcore:$httpComponentsVersion",
+          "org.apache.httpcomponents:httpclient:$httpComponentsVersion",
+          "commons-io:commons-io:$commonsIoVersion"
+}

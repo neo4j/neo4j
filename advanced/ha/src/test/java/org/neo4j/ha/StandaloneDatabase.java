@@ -31,7 +31,6 @@ import java.util.Map;
 import org.junit.Ignore;
 import org.neo4j.com.Protocol;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.ha.AbstractBroker;
 import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.FakeMasterBroker;
 import org.neo4j.kernel.ha.FakeSlaveBroker;
@@ -40,7 +39,9 @@ import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.management.HighAvailability;
 import org.neo4j.test.SubProcess;
 
+import slavetest.AbstractHaTest;
 import slavetest.Job;
+import slavetest.PlaceHolderGraphDatabaseService;
 
 @Ignore
 public class StandaloneDatabase
@@ -74,7 +75,7 @@ public class StandaloneDatabase
         };
     }
 
-    public static StandaloneDatabase withFakeBroker( String testMethodName, File path,
+    public static StandaloneDatabase withFakeBroker( String testMethodName, final File path,
             int machineId, final int masterId, String[] extraArgs )
     {
         StandaloneDatabase standalone = new StandaloneDatabase( testMethodName, new Bootstrap(
@@ -83,18 +84,20 @@ public class StandaloneDatabase
             @Override
             HighlyAvailableGraphDatabase start( String storeDir, Map<String, String> config )
             {
+                final PlaceHolderGraphDatabaseService placeHolderGraphDb = new PlaceHolderGraphDatabaseService( path.getAbsolutePath() );
                 final Broker broker;
                 if ( machineId == masterId )
                 {
-                    broker = new FakeMasterBroker( machineId, storeDir );
+                    broker = new FakeMasterBroker( machineId, placeHolderGraphDb );
                 }
                 else
                 {
                     broker = new FakeSlaveBroker( new MasterClient( "localhost",
-                            Protocol.PORT, storeDir ), masterId, machineId, storeDir );
+                            Protocol.PORT, placeHolderGraphDb ), masterId, machineId, placeHolderGraphDb );
                 }
-                HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase( storeDir,
-                        config, AbstractBroker.wrapSingleBroker( broker ) );
+                HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase( storeDir, config,
+                        AbstractHaTest.wrapBrokerAndSetPlaceHolderDb( placeHolderGraphDb, broker ) );
+                placeHolderGraphDb.setDb( db );
                 System.out.println( "Started HA db (w/o zoo keeper)" );
                 return db;
             }

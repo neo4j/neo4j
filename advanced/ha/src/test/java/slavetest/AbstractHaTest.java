@@ -46,6 +46,8 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.ha.Broker;
+import org.neo4j.kernel.ha.BrokerFactory;
 
 public abstract class AbstractHaTest
 {
@@ -71,6 +73,20 @@ public abstract class AbstractHaTest
             return AbstractHaTest.this.getClass().getName() + "." + super.getMethodName();
         }
     };
+    
+    public static BrokerFactory wrapBrokerAndSetPlaceHolderDb(
+            final PlaceHolderGraphDatabaseService placeHolderDb, final Broker broker )
+    {
+        return new BrokerFactory()
+        {
+            @Override
+            public Broker create( GraphDatabaseService graphDb, Map<String, String> graphDbConfig )
+            {
+                placeHolderDb.setDb( graphDb );
+                return broker;
+            }
+        };        
+    }
 
     protected static File dbPath( int num )
     {

@@ -1083,63 +1083,7 @@ class WriteTransaction extends XaTransaction
     
     public Object propertyGetValueOrNull( PropertyRecord propertyRecord )
     {
-        PropertyType type = propertyRecord.getType();
-        if ( type == PropertyType.INT )
-        {
-            return (int) propertyRecord.getPropBlock();
-        }
-        if ( type == PropertyType.STRING )
-        {
-            if ( propertyRecord.isLight() )
-            {
-                return null;
-            }
-            return getPropertyStore().getStringFor( propertyRecord );
-        }
-        if ( type == PropertyType.BOOL )
-        {
-            if ( propertyRecord.getPropBlock() == 1 )
-            {
-                return Boolean.valueOf( true );
-            }
-            return Boolean.valueOf( false );
-        }
-        if ( type == PropertyType.DOUBLE )
-        {
-            return new Double( Double.longBitsToDouble( 
-                propertyRecord.getPropBlock() ) );
-        }
-        if ( type == PropertyType.FLOAT )
-        {
-            return new Float( Float.intBitsToFloat( 
-                (int) propertyRecord.getPropBlock() ) );
-        }
-        if ( type == PropertyType.LONG )
-        {
-            return propertyRecord.getPropBlock();
-        }
-        if ( type == PropertyType.BYTE )
-        {
-            return (byte) propertyRecord.getPropBlock();
-        }
-        if ( type == PropertyType.CHAR )
-        {
-            return (char) propertyRecord.getPropBlock();
-        }
-        if ( type == PropertyType.ARRAY )
-        {
-            if ( propertyRecord.isLight() )
-            {
-                return null;
-            }
-            return getPropertyStore().getArrayFor( propertyRecord );
-        }
-        if ( type == PropertyType.SHORT )
-        {
-            return (short) propertyRecord.getPropBlock();
-        }
-        throw new InvalidRecordException( "Unknown type: " + type + 
-            " on " + propertyRecord );
+        return propertyRecord.getType().getValue( propertyRecord, propertyRecord.isLight() ? null : getPropertyStore() );
     }
 
     public Object propertyGetValue( int id )
@@ -1149,55 +1093,7 @@ class WriteTransaction extends XaTransaction
         {
             getPropertyStore().makeHeavy( propertyRecord );
         }
-        PropertyType type = propertyRecord.getType();
-        if ( type == PropertyType.INT )
-        {
-            return (int) propertyRecord.getPropBlock();
-        }
-        if ( type == PropertyType.STRING )
-        {
-            return getPropertyStore().getStringFor( propertyRecord );
-        }
-        if ( type == PropertyType.BOOL )
-        {
-            if ( propertyRecord.getPropBlock() == 1 )
-            {
-                return Boolean.valueOf( true );
-            }
-            return Boolean.valueOf( false );
-        }
-        if ( type == PropertyType.DOUBLE )
-        {
-            return new Double( Double.longBitsToDouble( 
-                propertyRecord.getPropBlock() ) );
-        }
-        if ( type == PropertyType.FLOAT )
-        {
-            return new Float( Float.intBitsToFloat( 
-                (int) propertyRecord.getPropBlock() ) );
-        }
-        if ( type == PropertyType.LONG )
-        {
-            return propertyRecord.getPropBlock();
-        }
-        if ( type == PropertyType.BYTE )
-        {
-            return (byte) propertyRecord.getPropBlock();
-        }
-        if ( type == PropertyType.CHAR )
-        {
-            return (char) propertyRecord.getPropBlock();
-        }
-        if ( type == PropertyType.ARRAY )
-        {
-            return getPropertyStore().getArrayFor( propertyRecord );
-        }
-        if ( type == PropertyType.SHORT )
-        {
-            return (short) propertyRecord.getPropBlock();
-        }
-        throw new InvalidRecordException( "Unknown type: " + type + 
-            " on " + propertyRecord );
+        return propertyRecord.getType().getValue( propertyRecord, getPropertyStore() );
     }
 
     void nodeRemoveProperty( int nodeId, int propertyId )

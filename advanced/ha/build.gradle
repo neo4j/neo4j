@@ -1,0 +1,11 @@
+dependencies {
+  compile project(":kernel"),
+          project(":com"),
+          project(":lucene-index"),
+          project(":management")
+
+  compile("org.apache.zookeeper:zookeeper:$zookeeperVersion") {
+    exclude module: "jline"
+    exclude module: "log4j"
+  }
+}

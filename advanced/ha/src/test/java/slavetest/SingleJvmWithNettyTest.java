@@ -45,12 +45,12 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
     }
 
     @Override
-    protected Broker makeSlaveBroker( MasterImpl master, int masterId, int id, String storeDir )
+    protected Broker makeSlaveBroker( MasterImpl master, int masterId, int id, GraphDatabaseService graphDb )
     {
         final Machine masterMachine = new Machine( masterId, -1, 1,//
                 "localhost:" + Protocol.PORT );
-        final Master client = new MasterClient( masterMachine, storeDir );
-        return new AbstractBroker( id, storeDir )
+        final Master client = new MasterClient( masterMachine, graphDb );
+        return new AbstractBroker( id, graphDb )
         {
             public boolean iAmMaster()
             {
