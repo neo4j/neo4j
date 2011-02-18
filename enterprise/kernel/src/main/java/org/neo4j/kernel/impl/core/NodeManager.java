@@ -53,7 +53,7 @@ import org.neo4j.kernel.impl.transaction.LockException;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.util.ArrayMap;
-import org.neo4j.kernel.impl.util.IntArray;
+import org.neo4j.kernel.impl.util.RelIdArray;
 
 public class NodeManager
 {
@@ -579,14 +579,14 @@ public class NodeManager
             (int) node.getId() );
     }
 
-    Pair<ArrayMap<String,IntArray>,Map<Integer,RelationshipImpl>> getMoreRelationships( NodeImpl node )
+    Pair<ArrayMap<String,RelIdArray>,Map<Integer,RelationshipImpl>> getMoreRelationships( NodeImpl node )
     {
         int nodeId = (int) node.getId();
         RelationshipChainPosition position = node.getRelChainPosition();
         Iterable<RelationshipData> rels =
             persistenceManager.getMoreRelationships( nodeId, position );
-        ArrayMap<String,IntArray> newRelationshipMap =
-            new ArrayMap<String,IntArray>();
+        ArrayMap<String,RelIdArray> newRelationshipMap =
+            new ArrayMap<String,RelIdArray>();
         Map<Integer,RelationshipImpl> relsMap = new HashMap<Integer,RelationshipImpl>( 150 );
         for ( RelationshipData rel : rels )
         {
@@ -606,11 +606,11 @@ public class NodeManager
             {
                 type = relImpl.getType();
             }
-            IntArray relationshipSet = newRelationshipMap.get(
+            RelIdArray relationshipSet = newRelationshipMap.get(
                 type.name() );
             if ( relationshipSet == null )
             {
-                relationshipSet = new IntArray();
+                relationshipSet = new RelIdArray();
                 newRelationshipMap.put( type.name(), relationshipSet );
             }
             relationshipSet.add( (int) relId );
@@ -852,28 +852,28 @@ public class NodeManager
         persistenceManager.relRemoveProperty( rel.getId(), propertyId );
     }
 
-    public IntArray getCowRelationshipRemoveMap( NodeImpl node, String type )
+    public RelIdArray getCowRelationshipRemoveMap( NodeImpl node, String type )
     {
         return lockReleaser.getCowRelationshipRemoveMap( node, type );
     }
 
-    public IntArray getCowRelationshipRemoveMap( NodeImpl node, String type,
+    public RelIdArray getCowRelationshipRemoveMap( NodeImpl node, String type,
         boolean create )
     {
         return lockReleaser.getCowRelationshipRemoveMap( node, type, create );
     }
 
-    public ArrayMap<String,IntArray> getCowRelationshipAddMap( NodeImpl node )
+    public ArrayMap<String,RelIdArray> getCowRelationshipAddMap( NodeImpl node )
     {
         return lockReleaser.getCowRelationshipAddMap( node );
     }
 
-    public IntArray getCowRelationshipAddMap( NodeImpl node, String string )
+    public RelIdArray getCowRelationshipAddMap( NodeImpl node, String string )
     {
         return lockReleaser.getCowRelationshipAddMap( node, string );
     }
 
-    public IntArray getCowRelationshipAddMap( NodeImpl node, String string,
+    public RelIdArray getCowRelationshipAddMap( NodeImpl node, String string,
         boolean create )
     {
         return lockReleaser.getCowRelationshipAddMap( node, string, create );
@@ -938,7 +938,7 @@ public class NodeManager
         return lockReleaser.getTransactionData();
     }
 
-    IntArray getCreatedNodes()
+    RelIdArray getCreatedNodes()
     {
         return persistenceManager.getCreatedNodes();
     }

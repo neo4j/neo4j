@@ -408,7 +408,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     }
     
     @Test
-    public void testRelationshipCahinIterator()
+    public void testRelationshipCahingIterator()
     {
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();

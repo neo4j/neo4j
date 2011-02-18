@@ -40,7 +40,8 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.util.ArrayMap;
-import org.neo4j.kernel.impl.util.IntArray;
+import org.neo4j.kernel.impl.util.RelIdArray;
+import org.neo4j.kernel.impl.util.RelIdArray.RelIdIterator;
 
 /**
  * Manages object version diffs and locks for each transaction.
@@ -80,8 +81,8 @@ public class LockReleaser
 
         boolean deleted = false;
         
-        ArrayMap<String,IntArray> relationshipAddMap = null;
-        ArrayMap<String,IntArray> relationshipRemoveMap = null;
+        ArrayMap<String,RelIdArray> relationshipAddMap = null;
+        ArrayMap<String,RelIdArray> relationshipRemoveMap = null;
         ArrayMap<Integer,PropertyData> propertyAddMap = null;
         ArrayMap<Integer,PropertyData> propertyRemoveMap = null;
     }
@@ -195,7 +196,7 @@ public class LockReleaser
         }
     }
 
-    public IntArray getCowRelationshipRemoveMap( NodeImpl node, String type )
+    public RelIdArray getCowRelationshipRemoveMap( NodeImpl node, String type )
     {
         PrimitiveElement primitiveElement = cowMap.get( getTransaction() );
         if ( primitiveElement != null )
@@ -211,7 +212,7 @@ public class LockReleaser
         return null;
     }
 
-    public IntArray getCowRelationshipRemoveMap( NodeImpl node, String type,
+    public RelIdArray getCowRelationshipRemoveMap( NodeImpl node, String type,
         boolean create )
     {
         if ( !create )
@@ -229,18 +230,18 @@ public class LockReleaser
         }
         if ( element.relationshipRemoveMap == null )
         {
-            element.relationshipRemoveMap = new ArrayMap<String,IntArray>();
+            element.relationshipRemoveMap = new ArrayMap<String,RelIdArray>();
         }
-        IntArray set = element.relationshipRemoveMap.get( type );
+        RelIdArray set = element.relationshipRemoveMap.get( type );
         if ( set == null )
         {
-            set = new IntArray();
+            set = new RelIdArray();
             element.relationshipRemoveMap.put( type, set );
         }
         return set;
     }
 
-    public ArrayMap<String,IntArray> getCowRelationshipAddMap( NodeImpl node )
+    public ArrayMap<String,RelIdArray> getCowRelationshipAddMap( NodeImpl node )
     {
         PrimitiveElement primitiveElement = cowMap.get( getTransaction() );
         if ( primitiveElement != null )
@@ -256,7 +257,7 @@ public class LockReleaser
         return null;
     }
 
-    public IntArray getCowRelationshipAddMap( NodeImpl node, String type )
+    public RelIdArray getCowRelationshipAddMap( NodeImpl node, String type )
     {
         PrimitiveElement primitiveElement = cowMap.get( getTransaction() );
         if ( primitiveElement != null )
@@ -272,7 +273,7 @@ public class LockReleaser
         return null;
     }
 
-    public IntArray getCowRelationshipAddMap( NodeImpl node, String type,
+    public RelIdArray getCowRelationshipAddMap( NodeImpl node, String type,
         boolean create )
     {
         if ( !create )
@@ -290,12 +291,12 @@ public class LockReleaser
         }
         if ( element.relationshipAddMap == null )
         {
-            element.relationshipAddMap = new ArrayMap<String,IntArray>();
+            element.relationshipAddMap = new ArrayMap<String,RelIdArray>();
         }
-        IntArray set = element.relationshipAddMap.get( type );
+        RelIdArray set = element.relationshipAddMap.get( type );
         if ( set == null )
         {
-            set = new IntArray();
+            set = new RelIdArray();
             element.relationshipAddMap.put( type, set );
         }
         return set;
@@ -816,11 +817,11 @@ public class LockReleaser
             {
                 for ( String type : nodeElement.relationshipAddMap.keySet() )
                 {
-                    IntArray createdRels = 
+                    RelIdArray createdRels = 
                         nodeElement.relationshipAddMap.get( type );
-                    for ( int i = 0; i < createdRels.length(); i++ )
+                    for ( RelIdIterator iterator = createdRels.iterator(); iterator.hasNext(); )
                     {
-                        long relId = createdRels.get( i );
+                        long relId = iterator.next();
                         CowRelElement relElement = 
                             element.relationships.get( relId );
                         if ( relElement != null && relElement.deleted )
@@ -839,11 +840,11 @@ public class LockReleaser
             {
                 for ( String type : nodeElement.relationshipRemoveMap.keySet() )
                 {
-                    IntArray deletedRels = 
+                    RelIdArray deletedRels = 
                         nodeElement.relationshipRemoveMap.get( type );
-                    for ( int i = 0; i < deletedRels.length(); i++ )
+                    for ( RelIdIterator iterator = deletedRels.iterator(); iterator.hasNext(); )
                     {
-                        int relId = deletedRels.get( i );
+                        long relId = iterator.next();
                         if ( nodeManager.relCreated( relId ) )
                         {
                             continue;
@@ -885,10 +886,10 @@ public class LockReleaser
     private void populateCreatedNodes( PrimitiveElement element, 
             TransactionDataImpl result )
     {
-        IntArray createdNodes = nodeManager.getCreatedNodes();
-        for ( int i = 0; i < createdNodes.length(); i++ )
+        RelIdArray createdNodes = nodeManager.getCreatedNodes();
+        for ( RelIdIterator iterator = createdNodes.iterator(); iterator.hasNext(); )
         {
-            long nodeId = createdNodes.get( i );
+            long nodeId = iterator.next();
             if ( element != null && element.nodes != null )
             {
                 CowNodeElement nodeElement = element.nodes.get( nodeId );

@@ -34,11 +34,12 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeStore;
+import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnectionHelpImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResourceHelpImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResourceManager;
 import org.neo4j.kernel.impl.util.ArrayMap;
-import org.neo4j.kernel.impl.util.IntArray;
+import org.neo4j.kernel.impl.util.RelIdArray;
 
 /**
  * {@link XaConnection} implementation for the Neo4j kernel native store. Contains
@@ -229,7 +230,7 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
                     light );
         }
 
-        public IntArray getCreatedNodes()
+        public RelIdArray getCreatedNodes()
         {
             return xaCon.getWriteTransaction().getCreatedNodes();
         }
