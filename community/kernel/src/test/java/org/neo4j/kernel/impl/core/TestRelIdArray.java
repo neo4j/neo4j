@@ -54,6 +54,31 @@ public class TestRelIdArray
         assertEquals( Arrays.asList( 1L, 3L, 4L, 5L, 7L ), allIds );
     }
     
+    @Test
+    public void testDifferentBlocks() throws Exception
+    {
+        RelIdArray array = new RelIdArray();
+        long justUnderIntMax = (long) Math.pow( 2, 32 )-3;
+        array.add( justUnderIntMax );
+        array.add( justUnderIntMax+1 );
+        long justOverIntMax = (long) Math.pow( 2, 32 )+3;
+        array.add( justOverIntMax );
+        array.add( justOverIntMax+1 );
+        long aBitOverIntMax = (long) Math.pow( 2, 33 );
+        array.add( aBitOverIntMax );
+        array.add( aBitOverIntMax+1 );
+        long verySmall = 1000;
+        array.add( verySmall );
+        array.add( verySmall+1 );
+        
+        List<Long> allIds = asList( array );
+        assertEquals( Arrays.asList(
+                justUnderIntMax, justUnderIntMax+1,
+                justOverIntMax, justOverIntMax+1,
+                aBitOverIntMax, aBitOverIntMax+1,
+                verySmall, verySmall+1 ), allIds );
+    }
+    
     private List<Long> asList( RelIdArray ids )
     {
         List<Long> result = new ArrayList<Long>();
