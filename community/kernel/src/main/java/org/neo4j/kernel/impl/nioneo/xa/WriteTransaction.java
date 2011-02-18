@@ -62,7 +62,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.kernel.impl.util.ArrayMap;
-import org.neo4j.kernel.impl.util.IntArray;
+import org.neo4j.kernel.impl.util.RelIdArray;
 
 /**
  * Transaction containing {@link Command commands} reflecting the operations
@@ -1816,9 +1816,9 @@ class WriteTransaction extends XaTransaction
         }
     }
     
-    public IntArray getCreatedNodes()
+    public RelIdArray getCreatedNodes()
     {
-        IntArray createdNodes = new IntArray();
+        RelIdArray createdNodes = new RelIdArray();
         for ( NodeRecord record : nodeRecords.values() )
         {
             if ( record.isCreated() )

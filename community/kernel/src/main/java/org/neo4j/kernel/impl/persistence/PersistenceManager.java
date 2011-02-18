@@ -41,7 +41,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.kernel.impl.nioneo.xa.NioNeoDbPersistenceSource;
 import org.neo4j.kernel.impl.util.ArrayMap;
-import org.neo4j.kernel.impl.util.IntArray;
+import org.neo4j.kernel.impl.util.RelIdArray;
 
 public class PersistenceManager
 {
@@ -345,7 +345,7 @@ public class PersistenceManager
         }
     }
 
-    public IntArray getCreatedNodes()
+    public RelIdArray getCreatedNodes()
     {
         return getResource().getCreatedNodes();
     }

@@ -19,78 +19,50 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.util.NoSuchElementException;
-
-import org.neo4j.kernel.impl.util.IntArray;
+import org.neo4j.kernel.impl.util.RelIdArray;
+import org.neo4j.kernel.impl.util.RelIdArray.RelIdIterator;
 
 class FastRelTypeElement extends RelTypeElementIterator
 {
-    private final IntArray src;
+    private final RelIdArray src;
 
-    private int position = 0;
-    private Integer nextElement = null;
+    private final RelIdIterator iterator;
 
-    FastRelTypeElement( String type, NodeImpl node, IntArray src )
+    FastRelTypeElement( String type, NodeImpl node, RelIdArray src )
     {
         super( type, node );
-        if ( src == null )
-        {
-            this.src = IntArray.EMPTY;
-        }
-        else
-        {
-            this.src = src;
-        }
+        this.src = src == null ? RelIdArray.EMPTY : src;
+        this.iterator = this.src.iterator();
     }
     
-    FastRelTypeElement( String type, NodeImpl node, IntArray src, int position )
+    FastRelTypeElement( String type, NodeImpl node, RelIdArray src, int position )
     {
         this( type, node, src );
-        this.position = position;
+        this.iterator.fastForwardTo( position );
     }
 
     @Override
     public boolean hasNext( NodeManager nodeManager )
     {
-        if ( nextElement != null )
-        {
-            return true;
-        }
-//        if ( position >= src.length() )
-//        {
-//            while ( getNode().getMoreRelationships( nodeManager ) &&
-//                position >= src.length() );
-//        }
-        while ( position < src.length() )
-        {
-            nextElement = src.get(position++);
-            return true;
-        }
-        return false;
+        return this.iterator.hasNext();
     }
 
     @Override
-    public int next( NodeManager nodeManager )
+    public long next( NodeManager nodeManager )
     {
-        hasNext( nodeManager );
-        if ( nextElement != null )
-        {
-            Integer elementToReturn = nextElement;
-            nextElement = null;
-            return elementToReturn;
-        }
-        throw new NoSuchElementException();
+        return this.iterator.next();
     }
     
     @Override
     public boolean isSrcEmpty()
     {
-        return src.length() == 0;
+        return src.isEmpty();
     }
 
     @Override
-    public RelTypeElementIterator setSrc( IntArray newSrc )
+    public RelTypeElementIterator setSrc( RelIdArray newSrc )
     {
+        int position = iterator.position();
         return new FastRelTypeElement( getType(), getNode(), newSrc, position );
     }
 }
