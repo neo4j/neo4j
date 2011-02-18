@@ -8,4 +8,12 @@ dependencies {
     exclude module: "jline"
     exclude module: "log4j"
   }
+
+  testCompile "commons-io:commons-io:$commonsIoVersion"
+}
+
+sourceSets {
+  test {
+    compileClasspath += project(':kernel').sourceSets.test.classes
+  }
 }

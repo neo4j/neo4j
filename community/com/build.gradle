@@ -1,4 +1,12 @@
 dependencies {
   compile project(":kernel"), "org.jboss.netty:netty:$nettyVersion"
+
   testCompile "commons-io:commons-io:$commonsIoVersion"
+}
+
+
+sourceSets {
+  test {
+    compileClasspath += project(':kernel').sourceSets.test.classes
+  }
 }
