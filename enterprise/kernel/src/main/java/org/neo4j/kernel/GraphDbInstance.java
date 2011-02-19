@@ -89,7 +89,7 @@ class GraphDbInstance
         boolean dumpToConsole = Boolean.parseBoolean( (String) config.getInputParams().get(
                 Config.DUMP_CONFIGURATION ) );
         storeDir = FileUtils.fixSeparatorsInPath( storeDir );
-        StringLogger logger = StringLogger.getLogger( storeDir + "/messages.log" );
+        StringLogger logger = StringLogger.getLogger( storeDir );
         AutoConfigurator autoConfigurator = new AutoConfigurator( storeDir, useMemoryMapped, dumpToConsole );
         autoConfigurator.configure( subset( config.getInputParams(), Config.USE_MEMORY_MAPPED_BUFFERS ) );
         params.putAll( config.getInputParams() );

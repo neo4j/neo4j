@@ -78,7 +78,7 @@ public class BatchInserterImpl implements BatchInserter
     public BatchInserterImpl( String storeDir, 
         Map<String,String> stringParams )
     {
-        msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
+        msgLog = StringLogger.getLogger( storeDir );
         Map<Object,Object> params = getDefaultParams();
         params.put( Config.USE_MEMORY_MAPPED_BUFFERS, "false" );
         boolean dump = Boolean.parseBoolean( stringParams.get( Config.DUMP_CONFIGURATION ) );
