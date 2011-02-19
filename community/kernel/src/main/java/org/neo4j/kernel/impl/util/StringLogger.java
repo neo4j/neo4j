@@ -44,7 +44,6 @@ public class StringLogger
                 file.getParentFile().mkdirs();
             }
             out = new PrintWriter( new FileWriter( file, true ) );
-            System.out.println( "Created " + filename );
         }
         catch ( IOException e )
         {
@@ -64,7 +63,6 @@ public class StringLogger
     {
         if ( storeDir == null )
         {
-            new Exception().printStackTrace();
             return SYSTEM;
         }
         
@@ -123,7 +121,6 @@ public class StringLogger
         if ( logger != null )
         {
             logger.out.close();
-            System.out.println( "Closed " + defaultFileName( storeDir ) );
         }
     }
 }
