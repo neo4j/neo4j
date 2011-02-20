@@ -47,7 +47,7 @@ public class HaServerFunctionalTest
     private static final Pair<Integer/*ha port*/, Integer/*web port*/>[] SERVER_PORTS = new Pair[] {
             Pair.of( 6001, 7474 ), Pair.of( 6002, 7475 ) };
     private static final TargetDirectory dir = TargetDirectory.forTest( HaServerFunctionalTest.class );
-    private static LocalhostZooKeeperCluster zk;
+    private static LocalhostZooKeeperCluster zooKeeper;
     public @Rule
     TestName testName = new TestName()
     {
@@ -61,14 +61,14 @@ public class HaServerFunctionalTest
     @BeforeClass
     public static void startZooKeeper()
     {
-        zk = new LocalhostZooKeeperCluster( dir, ZOOKEEPER_PORTS );
+        zooKeeper = new LocalhostZooKeeperCluster( dir, ZOOKEEPER_PORTS );
     }
 
     @AfterClass
     public static void stopZooKeeper()
     {
-        if ( zk != null ) zk.shutdown();
-        zk = null;
+        if ( zooKeeper != null ) zooKeeper.shutdown();
+        zooKeeper = null;
         dir.cleanup();
     }
 
@@ -84,14 +84,15 @@ public class HaServerFunctionalTest
     @Test
     public void canStartUpServerCluster() throws Exception
     {
-        cluster = new ServerCluster( testName.getMethodName(), dir, zk, SERVER_PORTS );
+        cluster = new ServerCluster( testName.getMethodName(), dir, zooKeeper, SERVER_PORTS );
     }
 
     @Test
     public void canWriteToOneServerInTheClusterAndReadFromAnother() throws Exception
     {
-        cluster = new ServerCluster( testName.getMethodName(), dir, zk, SERVER_PORTS );
+        cluster = new ServerCluster( testName.getMethodName(), dir, zooKeeper, SERVER_PORTS );
         URI base = cluster.getRandomServerUri();
+        
         put( property( node( base, 0 ), "message" ), "hello world" );
         cluster.updateAll();
         base = cluster.getRandomServerUri( base );
@@ -102,8 +103,9 @@ public class HaServerFunctionalTest
     public void canWriteToOneServerInTheClusterThenReadFromAnotherAfterShuttingDownTheWriteServer()
             throws Exception
     {
-        cluster = new ServerCluster( testName.getMethodName(), dir, zk, SERVER_PORTS );
+        cluster = new ServerCluster( testName.getMethodName(), dir, zooKeeper, SERVER_PORTS );
         URI base = cluster.getRandomServerUri();
+        
         put( property( node( base, 0 ), "message" ), "hello world" );
         cluster.updateAll();
         cluster.kill( base );
@@ -113,7 +115,7 @@ public class HaServerFunctionalTest
 
     private static URI node( URI base, int id )
     {
-        return URI.create( base + "node/" + id );
+        return URI.create( base + "db/data/node/" + id );
     }
 
     private static URI property( URI entity, String key )

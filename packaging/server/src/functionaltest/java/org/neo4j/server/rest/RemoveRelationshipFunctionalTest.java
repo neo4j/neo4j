@@ -61,7 +61,7 @@ public class RemoveRelationshipFunctionalTest {
     public void shouldGet204WhenRemovingAValidRelationship() throws Exception {
         long relationshipId = helper.createRelationship("KNOWS");
 
-        ClientResponse response = sendDeleteRequest(new URI(server.restApiUri() + "relationship/" + relationshipId));
+        ClientResponse response = sendDeleteRequest(new URI(functionalTestHelper.relationshipUri(relationshipId)));
 
         assertEquals(204, response.getStatus());
     }
@@ -70,7 +70,7 @@ public class RemoveRelationshipFunctionalTest {
     public void shouldGet404WhenRemovingAnInvalidRelationship() throws Exception {
         long relationshipId = helper.createRelationship("KNOWS");
 
-        ClientResponse response = sendDeleteRequest(new URI(server.restApiUri() + "relationship/" + relationshipId + 1 * 1000));
+        ClientResponse response = sendDeleteRequest(new URI(functionalTestHelper.relationshipUri((relationshipId + 1) * 9999)));
 
         assertEquals(404, response.getStatus());
     }

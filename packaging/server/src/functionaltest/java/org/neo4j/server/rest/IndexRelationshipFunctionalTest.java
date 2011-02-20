@@ -262,7 +262,7 @@ public class IndexRelationshipFunctionalTest
 
     private ClientResponse httpPostCreateRelationship( long startNode, String jsonString )
     {
-        return Client.create().resource( server.restApiUri() + "node/" + startNode + "/relationships" )
+        return Client.create().resource( functionalTestHelper.dataUri() + "node/" + startNode + "/relationships" )
                 .type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON )
                 .entity( jsonString )
                 .post( ClientResponse.class );
@@ -270,7 +270,7 @@ public class IndexRelationshipFunctionalTest
 
     private String jsonRelationshipCreationSpecification( String relationshipName, long endNode, String key, String value )
     {
-        return "{\"to\" : \"" + server.restApiUri() + "node/" + endNode + "\"," +
+        return "{\"to\" : \"" + functionalTestHelper.dataUri() + "node/" + endNode + "\"," +
                 "\"type\" : \"" + relationshipName + "\", " +
                 "\"data\" : {\"" + key + "\" : \"" + value + "\"}}";
     }

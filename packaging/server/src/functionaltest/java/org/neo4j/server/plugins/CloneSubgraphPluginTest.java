@@ -26,6 +26,7 @@ import com.sun.jersey.api.client.UniformInterfaceException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
@@ -46,19 +47,8 @@ import static org.junit.Assert.*;
 
 public class CloneSubgraphPluginTest {
 
-    private static final RelationshipType KNOWS = new RelationshipType() {
-        @Override
-        public String name() {
-            return "knows";
-        }
-    };
-
-    private static final RelationshipType WORKED_FOR = new RelationshipType() {
-        @Override
-        public String name() {
-            return "worked_for";
-        }
-    };
+    private static final RelationshipType KNOWS = DynamicRelationshipType.withName("knows");
+    private static final RelationshipType WORKED_FOR = DynamicRelationshipType.withName("worked_for");
 
     private NeoServer server;
     private FunctionalTestHelper functionalTestHelper;
@@ -158,9 +148,10 @@ public class CloneSubgraphPluginTest {
         Map<String, Object> map = JsonHelper.jsonToMap(entity);
 
         HashMap<?, ?> extensionsMap = (HashMap<?, ?>) map.get("extensions");
-        
+
         assertNotNull(extensionsMap);
         assertFalse(extensionsMap.isEmpty());
+        
         
         final String GRAPH_CLONER_KEY = "GraphCloner";
         assertTrue(extensionsMap.keySet().contains(GRAPH_CLONER_KEY));
