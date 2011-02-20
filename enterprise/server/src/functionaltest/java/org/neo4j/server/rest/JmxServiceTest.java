@@ -56,7 +56,7 @@ public class JmxServiceTest
 
     @Test
     public void shouldRespondWithTheWebAdminClientSettings() throws Exception {
-        String url = functionalTestHelper.mangementUri() + "server/jmx";
+        String url = functionalTestHelper.mangementUri() + "/server/jmx";
         ClientResponse resp = Client.create().resource(url).accept( MediaType.APPLICATION_JSON_TYPE ).get(ClientResponse.class);
         String json = resp.getEntity(String.class);
 

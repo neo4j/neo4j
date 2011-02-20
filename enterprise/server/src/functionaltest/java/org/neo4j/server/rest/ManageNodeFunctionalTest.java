@@ -115,7 +115,7 @@ public class ManageNodeFunctionalTest
     private ClientResponse sendCreateRequestToServer( String json )
     {
         Client client = Client.create();
-        WebResource resource = client.resource( server.restApiUri() + "node/" );
+        WebResource resource = client.resource( functionalTestHelper.dataUri() + "node/" );
         ClientResponse response = resource.type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( json ).post( ClientResponse.class );
         return response;
     }
@@ -123,7 +123,7 @@ public class ManageNodeFunctionalTest
     private ClientResponse sendCreateRequestToServer()
     {
         Client client = Client.create();
-        WebResource resource = client.resource( server.restApiUri() + "node/" );
+        WebResource resource = client.resource( functionalTestHelper.dataUri() + "node/" );
         ClientResponse response = resource.type( MediaType.APPLICATION_FORM_URLENCODED ).accept( MediaType.APPLICATION_JSON ).post( ClientResponse.class );
         return response;
     }
@@ -133,7 +133,7 @@ public class ManageNodeFunctionalTest
     {
         ClientResponse response = sendCreateRequestToServer();
         assertNotNull( response.getLocation() );
-        assertTrue( response.getLocation().toString().startsWith( server.restApiUri() + "node/" ) );
+        assertTrue( response.getLocation().toString().startsWith( functionalTestHelper.dataUri() + "node/" ) );
     }
 
     @Test
@@ -229,7 +229,7 @@ public class ManageNodeFunctionalTest
     {
         return Client.
                 create().
-                resource( new URI( server.restApiUri() + "node/" + id ) ).
+                resource( new URI( functionalTestHelper.dataUri() + "node/" + id ) ).
                 accept( MediaType.APPLICATION_JSON_TYPE ).
                 delete( ClientResponse.class );
     }
