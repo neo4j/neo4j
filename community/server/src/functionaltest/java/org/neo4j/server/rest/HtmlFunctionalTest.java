@@ -92,7 +92,7 @@ public class HtmlFunctionalTest {
 
     @Test
     public void shouldGetRoot() {
-        ClientResponse response = Client.create().resource(server.restApiUri()).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
+        ClientResponse response = Client.create().resource(functionalTestHelper.dataUri()).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
         assertValidHtml(response.getEntity(String.class));
     }

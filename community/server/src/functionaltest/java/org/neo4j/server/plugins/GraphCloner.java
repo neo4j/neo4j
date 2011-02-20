@@ -36,7 +36,7 @@ import org.neo4j.kernel.Traversal;
 
 @Description("Clones a subgraph (an example taken from a community mailing list requirement)")
 public class GraphCloner extends ServerPlugin {
-
+    
     public GraphCloner() {
         super("GraphCloner");
     }
