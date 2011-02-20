@@ -20,57 +20,50 @@
 package org.neo4j.server;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import javax.management.MalformedObjectNameException;
-
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
 import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
 import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseMode;
 import org.neo4j.server.logging.Logger;
+import org.neo4j.server.modules.DiscoveryModule;
+import org.neo4j.server.modules.ManagementApiModule;
+import org.neo4j.server.modules.RESTApiModule;
+import org.neo4j.server.modules.ServerModule;
+import org.neo4j.server.modules.ThirdPartyJAXRSModule;
+import org.neo4j.server.modules.WebAdminModule;
 import org.neo4j.server.plugins.PluginManager;
-import org.neo4j.server.rrd.RrdFactory;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
-import org.neo4j.server.web.Jetty6WebServer;
 import org.neo4j.server.web.WebServer;
-import org.rrd4j.core.RrdDb;
 
 public class NeoServer {
-
-    private static final String ROOT_PATH = "/";
-    private static final String DEFAULT_WEB_ADMIN_REST_API_PATH = "/db/manage";
-    private static final String DEFAULT_REST_API_PATH = "/db/data";
-
+    
     public static final Logger log = Logger.getLogger(NeoServer.class);
 
     private final File configFile;
     private Configurator configurator;
     private Database database;
-    private WebServer webServer;
+    private final WebServer webServer;
     private final StartupHealthCheck startupHealthCheck;
 
-    private final RoundRobinJobScheduler jobScheduler = new RoundRobinJobScheduler();
-
     private final AddressResolver addressResolver;
-    private PluginManager extensions;
+
+    private List<ServerModule> serverModules = new ArrayList<ServerModule>();
 
     public NeoServer(AddressResolver addressResolver, StartupHealthCheck startupHealthCheck, File configFile, WebServer webServer) {
         this.addressResolver = addressResolver;
         this.startupHealthCheck = startupHealthCheck;
         this.configFile = configFile;
         this.webServer = webServer;
+        webServer.setNeoServer(this);
     }
 
     public NeoServer(StartupHealthCheck startupHealthCheck, File configFile, WebServer ws) {
@@ -78,16 +71,39 @@ public class NeoServer {
     }
 
     public void start() {
+        // Start at the bottom of the stack and work upwards to the Web container
         startupHealthCheck();
         validateConfiguration();
+        
         startDatabase();
-        try {
-            startRoundRobinDB();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        loadExtensions();
+
+        registerServerModules();
+        startModules();
+        
         startWebServer();
+    }
+
+    /**
+     * Override this method to wire up different server modules. The default behaviour is to register all server modules.
+     */
+    protected void registerServerModules() {
+        serverModules.add(new DiscoveryModule());
+        serverModules.add(new RESTApiModule());
+        serverModules.add(new ManagementApiModule());
+        serverModules.add(new ThirdPartyJAXRSModule());
+        serverModules.add(new WebAdminModule());
+    }
+    
+    private void startModules() {
+        for(ServerModule module : serverModules) {
+            module.start(this);
+        }
+    }
+    
+    private void stopModules() {
+        for(ServerModule module : serverModules) {
+            module.stop();
+        }
     }
 
     private void startupHealthCheck() {
@@ -119,34 +135,10 @@ public class NeoServer {
     private void startWebServer() {
 
         int webServerPort = getWebServerPort();
-        this.webServer = new Jetty6WebServer();
-        this.webServer.setNeoServer(this);
 
         log.info("Starting Neo Server on port [%s]", webServerPort);
         webServer.setPort(webServerPort);
 
-        log.info("Mounting webadmin at [%s]", Configurator.DEFAULT_WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION); // Webadmin
-                                                                                                           // is
-                                                                                                           // hardcoded
-                                                                                                           // for
-                                                                                                           // now
-        webServer.addStaticContent(Configurator.DEFAULT_WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION, Configurator.DEFAULT_WEB_ADMIN_PATH);
-        System.out.println(String.format("Neo4j server webadmin URI [%s]", webadminUri().toString()));
-
-        webServer.addJAXRSPackages(listFrom(new String[] { Configurator.ROOT_DISCOVERY_REST_API_PACKAGE }), ROOT_PATH);
-        
-        log.info("Mounting management API at [%s]", managementApiUri().toString());
-        webServer.addJAXRSPackages(listFrom(new String[] { Configurator.WEB_ADMIN_REST_API_PACKAGE }), managementApiUri().toString());
-        System.out.println(String.format("Neo4j server management URI [%s]", managementApiUri().toString()));
-
-        log.info("Mounting REST API at [%s]", restApiUri().toString());
-        webServer.addJAXRSPackages(listFrom(new String[] { Configurator.REST_API_PACKAGE }), restApiUri().toString());
-        System.out.println(String.format("Neo4j server data URI [%s]", restApiUri().toString()));
-
-        for (ThirdPartyJaxRsPackage tpp : configurator.getThirdpartyJaxRsClasses()) {
-            log.info("Mounting third-party JAX-RS package [%s] at [%s]", tpp.getPackageName(), tpp.getMountPoint());
-            webServer.addJAXRSPackages(listFrom(new String[] { tpp.getPackageName() }), tpp.getMountPoint());
-        }
 
         try {
             webServer.start();
@@ -160,14 +152,9 @@ public class NeoServer {
         return configurator.configuration().getInt(Configurator.WEBSERVER_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_PORT);
     }
 
-    private void startRoundRobinDB() throws MalformedObjectNameException, IOException {
-        RrdDb rrdDb = RrdFactory.createRrdDbAndSampler(database.graph, jobScheduler);
-        database.setRrdDb(rrdDb);
-    }
-
     public void stop() {
         try {
-            stopJobs();
+            stopModules();
             stopDatabase();
             stopWebServer();
             log.info("Successfully shutdown Neo Server on port [%d], database [%s]", getWebServerPort(), getDatabase().getLocation());
@@ -189,33 +176,12 @@ public class NeoServer {
         }
     }
 
-    private void stopJobs() {
-        jobScheduler.stopJobs();
-    }
-
-    private List<String> listFrom(String[] strings) {
-        ArrayList<String> al = new ArrayList<String>();
-
-        if (strings != null) {
-            al.addAll(Arrays.asList(strings));
-        }
-
-        return al;
-    }
-
     public Database getDatabase() {
         return database;
     }
 
-    private void loadExtensions() {
-        this.extensions = new PluginManager(getConfiguration());
-    }
 
-    public PluginManager getExtensionManager() {
-        return extensions;
-    }
-
-    public URI baseUri() throws UnknownHostException {
+    public URI baseUri() {
         StringBuilder sb = new StringBuilder();
         sb.append("http");
         int webServerPort = getWebServerPort();
@@ -239,48 +205,39 @@ public class NeoServer {
         }
     }
 
-    private URI generateUriFor(String serviceName) {
-        if (serviceName.startsWith("/")) {
-            serviceName = serviceName.substring(1);
-        }
-        StringBuilder sb = new StringBuilder();
-        try {
-            sb.append(baseUri().toString());
-            sb.append(serviceName);
-            sb.append("/");
-
-            return new URI(sb.toString());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    public WebServer getWebServer() {
+        return webServer;
+    }
+    
+    public Configurator getConfigurator() {
+        return configurator;
     }
 
-    public URI managementApiUri() {
-        if (configurator.configuration().containsKey(Configurator.WEB_ADMIN_PATH_PROPERTY_KEY)) {
-            try {
-                return new URI(configurator.configuration().getProperty(Configurator.WEB_ADMIN_PATH_PROPERTY_KEY).toString());
-            } catch (URISyntaxException e) {
-                // do nothing - fall through to the defaul return block
+    public PluginManager getExtensionManager() {
+        if(hasModule(RESTApiModule.class)) {
+            return getModule(RESTApiModule.class).getPlugins();
+        } else {
+            return null;
+        }
+    }
+    
+    private boolean hasModule(Class<? extends ServerModule> clazz) {
+        for(ServerModule sm : serverModules) {
+            if(sm.getClass() == clazz) {
+                return true;
             }
         }
-        log.warn("Could not establish the Webadmin API URI from configuration, defaulting to [%s]", generateUriFor(DEFAULT_WEB_ADMIN_REST_API_PATH));
-        return generateUriFor(DEFAULT_WEB_ADMIN_REST_API_PATH);
+        return false;
     }
 
-    public URI restApiUri() {
-        if (configurator.configuration().containsKey(Configurator.REST_API_PATH_PROPERTY_KEY)) {
-            try {
-                return new URI(configurator.configuration().getProperty(Configurator.REST_API_PATH_PROPERTY_KEY).toString());
-            } catch (URISyntaxException e) {
-                // do nothing - fall through to the defaul return block
+    @SuppressWarnings("unchecked")
+    private <T extends ServerModule> T getModule(Class<T> clazz) {
+        for(ServerModule sm : serverModules) {
+            if(sm.getClass() == clazz) {
+                return (T) sm;
             }
         }
-        log.warn("Could not establish the REST API URI from configuration, defaulting to [%s]", generateUriFor(DEFAULT_REST_API_PATH));
-        return generateUriFor(DEFAULT_REST_API_PATH);
-    }
-
-    public URI webadminUri() {
-        // Webadmin location is hardcoded for now
-        return generateUriFor(Configurator.DEFAULT_WEB_ADMIN_PATH);
+        
+        return null;
     }
 }
