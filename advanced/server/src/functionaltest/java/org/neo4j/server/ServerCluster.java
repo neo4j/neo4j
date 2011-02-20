@@ -317,7 +317,7 @@ public final class ServerCluster
                 throw new RuntimeException( "Database startup failure" );
             if ( startupStatus.equals( BootStrapper.WEB_SERVER_STARTUP_ERROR_CODE ) )
                 throw new RuntimeException( "Server startup failure" );
-            return bootstrap.getServer().restApiUri();
+            return bootstrap.getServer().baseUri();
         }
 
         @Override
