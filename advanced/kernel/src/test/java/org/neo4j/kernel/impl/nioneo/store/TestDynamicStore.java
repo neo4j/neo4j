@@ -38,14 +38,12 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
-@Ignore( "TODO" )
 public class TestDynamicStore
 {
     public static IdGeneratorFactory ID_GENERATOR_FACTORY =
@@ -275,7 +273,7 @@ public class TestDynamicStore
                     byte bytes[] = createRandomBytes( random );
                     long blockId = store.nextBlockId();
                     Collection<DynamicRecord> records = store.allocateRecords(
-                        blockId, bytes );
+                        blockId, (Object) bytes );
                     for ( DynamicRecord record : records )
                     {
                         assert !set.contains( record.getId() );
