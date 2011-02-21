@@ -90,7 +90,7 @@ public class TxManager extends AbstractTransactionManager
     TxManager( String txLogDir, KernelPanicEventGenerator kpe, TxFinishHook finishHook )
     {
         this.txLogDir = txLogDir;
-        this.msgLog = StringLogger.getLogger( txLogDir + "/messages.log" );
+        this.msgLog = StringLogger.getLogger( txLogDir );
         this.kpe = kpe;
         this.finishHook = finishHook;
     }
@@ -115,7 +115,7 @@ public class TxManager extends AbstractTransactionManager
             }
         }
         msgLog.logMessage( "TM shutting down", true );
-        StringLogger.close( txLogDir + "/messages.log" );
+        StringLogger.close( txLogDir );
     }
 
     public void init( XaDataSourceManager xaDsManagerToUse )
