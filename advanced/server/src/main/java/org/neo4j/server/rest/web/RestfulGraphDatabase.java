@@ -192,7 +192,6 @@ public class RestfulGraphDatabase {
     @Path(PATH_NODE_PROPERTY)
     public Response setNodeProperty(@PathParam("nodeId") long nodeId, @PathParam("key") String key, String body) {
         try {
-            System.out.println("--> HERERERERERE");
             server.setNodeProperty(nodeId, key, input.readValue(body));
         } catch (BadInputException e) {
             return output.badRequest(e);
