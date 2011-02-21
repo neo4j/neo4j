@@ -69,7 +69,7 @@ public class IdGeneratorImpl implements IdGenerator
     private static final byte CLEAN_GENERATOR = (byte) 0;
     private static final byte STICKY_GENERATOR = (byte) 1;
     
-    private static final long INTEGER_MINUS_ONE = 4294967295L;
+    public static final long INTEGER_MINUS_ONE = 4294967295L;
     
     // number of defragged ids to grab from file in batch (also used for write)
     private int grabSize = -1;
@@ -265,6 +265,11 @@ public class IdGeneratorImpl implements IdGenerator
      */
     public synchronized void freeId( long id )
     {
+        if ( id == INTEGER_MINUS_ONE )
+        {
+            return;
+        }
+        
         if ( id < 0 || id >= nextFreeId.get() )
         {
             throw new IllegalArgumentException( "Illegal id[" + id + "]" );

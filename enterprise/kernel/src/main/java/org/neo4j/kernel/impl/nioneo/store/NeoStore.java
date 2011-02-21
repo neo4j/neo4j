@@ -290,7 +290,7 @@ public class NeoStore extends AbstractStore
         return current;
     }
 
-    private long getRecord( int id )
+    private long getRecord( long id )
     {
         PersistenceWindow window = acquireWindow( id, OperationType.READ );
         try
@@ -305,7 +305,7 @@ public class NeoStore extends AbstractStore
         }
     }
 
-    private void setRecord( int id, long value )
+    private void setRecord( long id, long value )
     {
         PersistenceWindow window = acquireWindow( id, OperationType.WRITE );
         try

@@ -65,6 +65,9 @@ import org.neo4j.kernel.impl.util.StringLogger;
 
 class EmbeddedGraphDbImpl
 {
+    private static final long MAX_NODE_ID = (long) Math.pow( 2, 35 )-1;
+    private static final long MAX_RELATIONSHIP_ID = MAX_NODE_ID;
+    
     private static Logger log =
         Logger.getLogger( EmbeddedGraphDbImpl.class.getName() );
     private Transaction placeboTransaction = null;
@@ -253,20 +256,20 @@ class EmbeddedGraphDbImpl
 
     public Node getNodeById( long id )
     {
-        if ( id < 0 || id > Integer.MAX_VALUE * 2l )
+        if ( id < 0 || id > MAX_NODE_ID )
         {
             throw new NotFoundException( "Node[" + id + "]" );
         }
-        return nodeManager.getNodeById( (int) id );
+        return nodeManager.getNodeById( id );
     }
 
     public Relationship getRelationshipById( long id )
     {
-        if ( id < 0 || id > Integer.MAX_VALUE * 2l )
+        if ( id < 0 || id > MAX_RELATIONSHIP_ID )
         {
             throw new NotFoundException( "Relationship[" + id + "]" );
         }
-        return nodeManager.getRelationshipById( (int) id );
+        return nodeManager.getRelationshipById( id );
     }
 
     public Node getReferenceNode()
@@ -393,8 +396,7 @@ class EmbeddedGraphDbImpl
         {
             public Iterator<Node> iterator()
             {
-                long highId =
-                    (nodeManager.getHighestPossibleIdInUse( Node.class ) & 0xFFFFFFFFL);
+                long highId = nodeManager.getHighestPossibleIdInUse( Node.class );
                 return new AllNodesIterator( highId );
             }
         };

@@ -71,13 +71,14 @@ abstract class Command extends XaCommand
 
     public int hashCode()
     {
+        // TODO long
         return (int) key;
     }
 
     static void writeDynamicRecord( LogBuffer buffer, DynamicRecord record )
         throws IOException
     {
-        // id+type+in_use(byte)+prev_block(int)+nr_of_bytes(int)+next_block(int)
+        // id+type+in_use(byte)+prev_block(long)+nr_of_bytes(int)+next_block(long)
         if ( record.inUse() )
         {
             byte inUse = Record.IN_USE.byteValue();
@@ -109,7 +110,7 @@ abstract class Command extends XaCommand
     static DynamicRecord readDynamicRecord( ReadableByteChannel byteChannel,
         ByteBuffer buffer ) throws IOException
     {
-        // id+type+in_use(byte)+prev_block(int)+nr_of_bytes(int)+next_block(int)
+        // id+type+in_use(byte)+prev_block(long)+nr_of_bytes(int)+next_block(long)
         buffer.clear();
         buffer.limit( 13 );
         if ( byteChannel.read( buffer ) != buffer.limit() )
@@ -534,7 +535,7 @@ abstract class Command extends XaCommand
         public void writeToFile( LogBuffer buffer ) throws IOException
         {
             // id+in_use(byte)+type(int)+key_indexId(int)+prop_blockId(long)+
-            // prev_prop_id(int)+next_prop_id(int)+nr_value_records(int)
+            // prev_prop_id(long)+next_prop_id(long)+nr_value_records(int)
             byte inUse = record.inUse() ? Record.IN_USE.byteValue()
                 : Record.NOT_IN_USE.byteValue();
             if ( record.getRelId() != -1 )
@@ -588,7 +589,7 @@ abstract class Command extends XaCommand
             throws IOException
         {
             // id+in_use(byte)+type(int)+key_indexId(int)+prop_blockId(long)+
-            // prev_prop_id(int)+next_prop_id(int)+nr_value_records(int)
+            // prev_prop_id(long)+next_prop_id(long)+nr_value_records(int)
             buffer.clear();
             buffer.limit( 17 );
             if ( byteChannel.read( buffer ) != buffer.limit() )

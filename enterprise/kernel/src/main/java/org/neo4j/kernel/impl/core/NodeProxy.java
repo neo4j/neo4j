@@ -171,6 +171,7 @@ class NodeProxy implements Node
     @Override
     public int hashCode()
     {
+        // TODO long
         return (int) nodeId;
     }
 

@@ -66,12 +66,12 @@ public class TestNeo4j extends AbstractNeo4jTestCase
                 .getGraphDbModule();
 
             Node newReferenceNode = getGraphDb().createNode();
-            graphDbModule.setReferenceNodeId( (int) newReferenceNode.getId() );
+            graphDbModule.setReferenceNodeId( newReferenceNode.getId() );
             assertEquals( newReferenceNode, getGraphDb().getReferenceNode() );
             newReferenceNode.delete();
             if ( oldReferenceNode != null )
             {
-                graphDbModule.setReferenceNodeId( (int) oldReferenceNode.getId() );
+                graphDbModule.setReferenceNodeId( oldReferenceNode.getId() );
                 assertEquals( oldReferenceNode, getGraphDb().getReferenceNode() );
             }
         }

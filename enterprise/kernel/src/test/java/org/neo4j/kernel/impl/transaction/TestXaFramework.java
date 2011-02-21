@@ -406,7 +406,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             xaC1.delistFromTx();
             tm.commit();
             tm.begin();
-            node = getGraphDb().getNodeById( (int) node.getId() );
+            node = getGraphDb().getNodeById( node.getId() );
             xaC1.enlistWithTx();
             assertEquals( ++currentTxId, xaC1.getTransactionId() );
             xaC1.doStuff2();

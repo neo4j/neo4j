@@ -53,6 +53,7 @@ class RelationshipImpl extends Primitive
     @Override
     public int hashCode()
     {
+        // TODO long
         return (int) id;
     }
 
@@ -95,11 +96,11 @@ class RelationshipImpl extends Primitive
 
     public Node getOtherNode( NodeManager nodeManager, Node node )
     {
-        if ( startNodeId == (int) node.getId() )
+        if ( startNodeId == node.getId() )
         {
             return new NodeProxy( endNodeId, nodeManager );
         }
-        if ( endNodeId == (int) node.getId() )
+        if ( endNodeId == node.getId() )
         {
             return new NodeProxy( startNodeId, nodeManager );
         }

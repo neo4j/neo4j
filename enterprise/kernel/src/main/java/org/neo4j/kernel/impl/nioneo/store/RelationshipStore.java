@@ -90,10 +90,10 @@ public class RelationshipStore extends AbstractStore implements Store
 
     public RelationshipRecord getRecord( long id )
     {
-        PersistenceWindow window = acquireWindow( (int) id, OperationType.READ );
+        PersistenceWindow window = acquireWindow( id, OperationType.READ );
         try
         {
-            RelationshipRecord record = getRecord( (int) id, window, false );
+            RelationshipRecord record = getRecord( id, window, false );
             return record;
         }
         finally
@@ -107,7 +107,7 @@ public class RelationshipStore extends AbstractStore implements Store
         PersistenceWindow window = null;
         try
         {
-            window = acquireWindow( (int) id, OperationType.READ );
+            window = acquireWindow( id, OperationType.READ );
         }
         catch ( InvalidRecordException e )
         {
@@ -116,7 +116,7 @@ public class RelationshipStore extends AbstractStore implements Store
         }
         try
         {
-            RelationshipRecord record = getRecord( (int) id, window, true );
+            RelationshipRecord record = getRecord( id, window, true );
             return record;
         }
         finally
@@ -142,7 +142,7 @@ public class RelationshipStore extends AbstractStore implements Store
 
     public void updateRecord( RelationshipRecord record )
     {
-        PersistenceWindow window = acquireWindow( (int) record.getId(),
+        PersistenceWindow window = acquireWindow( record.getId(),
             OperationType.WRITE );
         try
         {
@@ -228,10 +228,10 @@ public class RelationshipStore extends AbstractStore implements Store
             throw new InvalidRecordException( "Record[" + id + "] not in use" );
         }
         
-        long firstNode = buffer.getInt();
+        long firstNode = buffer.getUnsignedInt();
         long firstNodeMod = (inUseByte&0xE) << 31;
             
-        long secondNode = buffer.getInt();
+        long secondNode = buffer.getUnsignedInt();
         
         // [ xxx,    ][    ,    ][    ,    ][    ,    ] second node high order bits,     0x70000000
         // [    ,xxx ][    ,    ][    ,    ][    ,    ] first prev rel high order bits,  0xE000000
@@ -244,48 +244,49 @@ public class RelationshipStore extends AbstractStore implements Store
         int type = (int)(typeInt&0xFFFF);
         
         RelationshipRecord record = new RelationshipRecord( id,
-            firstNode|firstNodeMod, secondNode|secondNodeMod, type );
+            longFromIntAndMod( firstNode, firstNodeMod ),
+            longFromIntAndMod( secondNode, secondNodeMod ), type );
         record.setInUse( inUse );
         
-        long firstPrevRel = buffer.getInt();
-        long firstPrevRelMod = firstPrevRel == Record.NO_NEXT_RELATIONSHIP.intValue() && (typeInt&0xE000000) == 0 ? 0 : (typeInt&0xE000000) << 7;
-        record.setFirstPrevRel( firstPrevRel|firstPrevRelMod );
+        long firstPrevRel = buffer.getUnsignedInt();
+        long firstPrevRelMod = firstPrevRel == IdGeneratorImpl.INTEGER_MINUS_ONE && (typeInt&0xE000000) == 0 ? 0 : (typeInt&0xE000000) << 7;
+        record.setFirstPrevRel( longFromIntAndMod( firstPrevRel, firstPrevRelMod ) );
         
-        long firstNextRel = buffer.getInt();
-        long firstNextRelMod = firstNextRel == Record.NO_NEXT_RELATIONSHIP.intValue() && (typeInt&0x1C00000) == 0 ? 0 : (typeInt&0x1C00000) << 10;
-        record.setFirstNextRel( firstNextRel|firstNextRelMod );
+        long firstNextRel = buffer.getUnsignedInt();
+        long firstNextRelMod = firstNextRel == IdGeneratorImpl.INTEGER_MINUS_ONE && (typeInt&0x1C00000) == 0 ? 0 : (typeInt&0x1C00000) << 10;
+        record.setFirstNextRel( longFromIntAndMod( firstNextRel, firstNextRelMod ) );
         
-        long secondPrevRel = buffer.getInt();
-        long secondPrevRelMod = secondPrevRel == Record.NO_NEXT_RELATIONSHIP.intValue() && (typeInt&0x380000) == 0 ? 0 : (typeInt&0x380000) << 13;
-        record.setSecondPrevRel( secondPrevRel|secondPrevRelMod );
+        long secondPrevRel = buffer.getUnsignedInt();
+        long secondPrevRelMod = secondPrevRel == IdGeneratorImpl.INTEGER_MINUS_ONE && (typeInt&0x380000) == 0 ? 0 : (typeInt&0x380000) << 13;
+        record.setSecondPrevRel( longFromIntAndMod( secondPrevRel, secondPrevRelMod ) );
         
-        long secondNextRel = buffer.getInt();
-        long secondNextRelMod = secondNextRel == Record.NO_NEXT_RELATIONSHIP.intValue() && (typeInt&0x70000) == 0 ? 0 : (typeInt&0x70000) << 16;
-        record.setSecondNextRel( secondNextRel|secondNextRelMod );
+        long secondNextRel = buffer.getUnsignedInt();
+        long secondNextRelMod = secondNextRel == IdGeneratorImpl.INTEGER_MINUS_ONE && (typeInt&0x70000) == 0 ? 0 : (typeInt&0x70000) << 16;
+        record.setSecondNextRel( longFromIntAndMod( secondNextRel, secondNextRelMod ) );
         
-        long nextProp = buffer.getInt();
-        long nextPropMod = nextProp == Record.NO_NEXT_PROPERTY.intValue() && (inUseByte&0xF0) == 0 ? 0 : (inUseByte&0xF0) << 28;
+        long nextProp = buffer.getUnsignedInt();
+        long nextPropMod = nextProp == IdGeneratorImpl.INTEGER_MINUS_ONE && (inUseByte&0xF0) == 0 ? 0 : (inUseByte&0xF0) << 28;
         
-        record.setNextProp( nextProp|nextPropMod );
+        record.setNextProp( longFromIntAndMod( nextProp, nextPropMod ) );
         return record;
     }
 
-    private RelationshipRecord getFullRecord( int id, PersistenceWindow window )
-    {
-        Buffer buffer = window.getOffsettedBuffer( id );
-        byte inUse = buffer.get();
-        boolean inUseFlag = ((inUse & Record.IN_USE.byteValue()) == 
-            Record.IN_USE.byteValue());
-        RelationshipRecord record = new RelationshipRecord( id,
-            buffer.getInt(), buffer.getInt(), buffer.getInt() );
-        record.setInUse( inUseFlag );
-        record.setFirstPrevRel( buffer.getInt() );
-        record.setFirstNextRel( buffer.getInt() );
-        record.setSecondPrevRel( buffer.getInt() );
-        record.setSecondNextRel( buffer.getInt() );
-        record.setNextProp( buffer.getInt() );
-        return record;
-    }
+//    private RelationshipRecord getFullRecord( long id, PersistenceWindow window )
+//    {
+//        Buffer buffer = window.getOffsettedBuffer( id );
+//        byte inUse = buffer.get();
+//        boolean inUseFlag = ((inUse & Record.IN_USE.byteValue()) == 
+//            Record.IN_USE.byteValue());
+//        RelationshipRecord record = new RelationshipRecord( id,
+//            buffer.getInt(), buffer.getInt(), buffer.getInt() );
+//        record.setInUse( inUseFlag );
+//        record.setFirstPrevRel( buffer.getInt() );
+//        record.setFirstNextRel( buffer.getInt() );
+//        record.setSecondPrevRel( buffer.getInt() );
+//        record.setSecondNextRel( buffer.getInt() );
+//        record.setNextProp( buffer.getInt() );
+//        return record;
+//    }
     
     public String toString()
     {
@@ -317,7 +318,7 @@ public class RelationshipStore extends AbstractStore implements Store
         PersistenceWindow window = null;
         try
         {
-            window = acquireWindow( (int) relId, OperationType.READ );
+            window = acquireWindow( relId, OperationType.READ );
         }
         catch ( InvalidRecordException e )
         {
@@ -326,7 +327,8 @@ public class RelationshipStore extends AbstractStore implements Store
         }
         try
         {
-            return getFullRecord( (int) relId, window );
+//            return getFullRecord( relId, window );
+            return getRecord( relId, window, false );
         }
         finally
         {

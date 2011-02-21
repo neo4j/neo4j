@@ -244,7 +244,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         Iterator<PropertyIndex> itr = MyPropertyIndex.index( key ).iterator();
         if ( !itr.hasNext() )
         {
-            int id = ds.nextId( PropertyIndex.class );
+            int id = (int) ds.nextId( PropertyIndex.class );
             PropertyIndex index = createDummyIndex( id, key );
             xaCon.getPropertyIndexConsumer().createPropertyIndex( id, key );
             return index;
@@ -258,47 +258,47 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         initializeStores();
         startTx();
         // setup test population
-        int node1 = ds.nextId( Node.class );
+        long node1 = ds.nextId( Node.class );
         nStore.createNode( node1 );
-        int node2 = ds.nextId( Node.class );
+        long node2 = ds.nextId( Node.class );
         nStore.createNode( node2 );
-        int n1prop1 = pStore.nextId();
-        int n1prop2 = pStore.nextId();
-        int n1prop3 = pStore.nextId();
+        long n1prop1 = pStore.nextId();
+        long n1prop2 = pStore.nextId();
+        long n1prop3 = pStore.nextId();
         nStore.addProperty( node1, n1prop1, index( "prop1" ), "string1" );
         nStore.addProperty( node1, n1prop2, index( "prop2" ), new Integer(
             1 ) );
         nStore.addProperty( node1, n1prop3, index( "prop3" ), new Boolean(
             true ) );
 
-        int n2prop1 = pStore.nextId();
-        int n2prop2 = pStore.nextId();
-        int n2prop3 = pStore.nextId();
+        long n2prop1 = pStore.nextId();
+        long n2prop2 = pStore.nextId();
+        long n2prop3 = pStore.nextId();
         nStore.addProperty( node2, n2prop1, index( "prop1" ), "string2" );
         nStore.addProperty( node2, n2prop2, index( "prop2" ), new Integer(
             2 ) );
         nStore.addProperty( node2, n2prop3, index( "prop3" ), new Boolean(
             false ) );
 
-        int relType1 = ds.nextId( RelationshipType.class );
+        int relType1 = (int) ds.nextId( RelationshipType.class );
         relTypeStore.addRelationshipType( relType1, "relationshiptype1" );
-        int relType2 = ds.nextId( RelationshipType.class );
+        int relType2 = (int) ds.nextId( RelationshipType.class );
         relTypeStore.addRelationshipType( relType2, "relationshiptype2" );
-        int rel1 = ds.nextId( Relationship.class );
+        long rel1 = ds.nextId( Relationship.class );
         rStore.createRelationship( rel1, node1, node2, relType1 );
-        int rel2 = ds.nextId( Relationship.class );
+        long rel2 = ds.nextId( Relationship.class );
         rStore.createRelationship( rel2, node2, node1, relType2 );
-        int r1prop1 = pStore.nextId();
-        int r1prop2 = pStore.nextId();
-        int r1prop3 = pStore.nextId();
+        long r1prop1 = pStore.nextId();
+        long r1prop2 = pStore.nextId();
+        long r1prop3 = pStore.nextId();
         rStore.addProperty( rel1, r1prop1, index( "prop1" ), "string1" );
         rStore.addProperty( rel1, r1prop2, index( "prop2" ),
             new Integer( 1 ) );
         rStore.addProperty( rel1, r1prop3, index( "prop3" ), new Boolean(
             true ) );
-        int r2prop1 = pStore.nextId();
-        int r2prop2 = pStore.nextId();
-        int r2prop3 = pStore.nextId();
+        long r2prop1 = pStore.nextId();
+        long r2prop2 = pStore.nextId();
+        long r2prop3 = pStore.nextId();
         rStore.addProperty( rel2, r2prop1, index( "prop1" ), "string2" );
         rStore.addProperty( rel2, r2prop2, index( "prop2" ),
             new Integer( 2 ) );
@@ -340,12 +340,12 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         startTx();
         assertEquals( false, nStore.loadLightNode( node1 ) );
         assertEquals( false, nStore.loadLightNode( node2 ) );
-        testGetRels( new int[] { rel1, rel2 } );
+        testGetRels( new long[] { rel1, rel2 } );
         // testGetProps( neoStore, new int[] {
         // n1prop1, n1prop2, n1prop3, n2prop1, n2prop2, n2prop3,
         // r1prop1, r1prop2, r1prop3, r2prop1, r2prop2, r2prop3
         // } );
-        int nodeIds[] = new int[10];
+        long nodeIds[] = new long[10];
         for ( int i = 0; i < 3; i++ )
         {
             nodeIds[i] = ds.nextId( Node.class );
@@ -355,7 +355,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         }
         for ( int i = 0; i < 2; i++ )
         {
-            int id =  ds.nextId( Relationship.class );
+            long id = ds.nextId( Relationship.class );
             rStore.createRelationship( id,
                 nodeIds[i], nodeIds[i + 1], relType1 );
             rStore.deleteRelationship( id );
@@ -427,8 +427,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         throw new IOException( "Unknown type" );
     }
 
-    private void validateNodeRel1( int node, int prop1, int prop2, int prop3,
-        int rel1, int rel2, int relType1, int relType2 ) throws IOException
+    private void validateNodeRel1( long node, long prop1, long prop2, long prop3,
+        long rel1, long rel2, int relType1, int relType2 ) throws IOException
     {
         assertTrue( nStore.loadLightNode( node ) );
         ArrayMap<Integer,PropertyData> props = nStore.getProperties( node, 
@@ -498,8 +498,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         assertEquals( 2, count );
     }
 
-    private void validateNodeRel2( int node, int prop1, int prop2, int prop3,
-        int rel1, int rel2, int relType1, int relType2 ) throws IOException
+    private void validateNodeRel2( long node, long prop1, long prop2, long prop3,
+        long rel1, long rel2, int relType1, int relType2 ) throws IOException
     {
         assertTrue( nStore.loadLightNode( node ) );
         ArrayMap<Integer,PropertyData> props = nStore.getProperties( node, 
@@ -570,8 +570,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         assertEquals( 2, count );
     }
 
-    private void validateRel1( int rel, int prop1, int prop2, int prop3,
-        int firstNode, int secondNode, int relType ) throws IOException
+    private void validateRel1( long rel, long prop1, long prop2, long prop3,
+        long firstNode, long secondNode, int relType ) throws IOException
     {
         ArrayMap<Integer,PropertyData> props = rStore.getProperties( rel, 
                 false );
@@ -615,8 +615,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         assertEquals( relType, relData.relationshipType() );
     }
 
-    private void validateRel2( int rel, int prop1, int prop2, int prop3,
-        int firstNode, int secondNode, int relType ) throws IOException
+    private void validateRel2( long rel, long prop1, long prop2, long prop3,
+        long firstNode, long secondNode, int relType ) throws IOException
     {
         ArrayMap<Integer,PropertyData> props = rStore.getProperties( rel, 
                 false );
@@ -690,8 +690,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         }
     }
 
-    private void deleteRel1( int rel, int prop1, int prop2, int prop3,
-        int firstNode, int secondNode, int relType ) throws IOException
+    private void deleteRel1( long rel, long prop1, long prop2, long prop3,
+        long firstNode, long secondNode, int relType ) throws IOException
     {
         ArrayMap<Integer,PropertyData> props = rStore.getProperties( rel, 
                 false );
@@ -747,8 +747,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         assertTrue( second.hasNext() );
     }
 
-    private void deleteRel2( int rel, int prop1, int prop2, int prop3,
-        int firstNode, int secondNode, int relType ) throws IOException
+    private void deleteRel2( long rel, long prop1, long prop2, long prop3,
+            long firstNode, long secondNode, int relType ) throws IOException
     {
         ArrayMap<Integer,PropertyData> props = rStore.getProperties( rel, 
                 false );
@@ -802,7 +802,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         assertTrue( second.hasNext() );
     }
 
-    private void deleteNode1( int node, int prop1, int prop2, int prop3 )
+    private void deleteNode1( long node, long prop1, long prop2, long prop3 )
         throws IOException
     {
         ArrayMap<Integer,PropertyData> props = nStore.getProperties( node, 
@@ -848,7 +848,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         nStore.deleteNode( node );
     }
 
-    private void deleteNode2( int node, int prop1, int prop2, int prop3 )
+    private void deleteNode2( long node, long prop1, long prop2, long prop3 )
         throws IOException
     {
         ArrayMap<Integer,PropertyData> props = nStore.getProperties( node, 
@@ -894,11 +894,11 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         nStore.deleteNode( node );
     }
 
-    private void testGetRels( int relIds[] )
+    private void testGetRels( long relIds[] )
     {
-        for ( int i = 0; i < relIds.length; i++ )
+        for ( long relId : relIds )
         {
-            assertEquals( null, rStore.getRelationship( relIds[i] ) );
+            assertEquals( null, rStore.getRelationship( relId ) );
         }
     }
 
@@ -907,9 +907,9 @@ public class TestNeoStore extends AbstractNeo4jTestCase
     {
         initializeStores();
         startTx();
-        int relType1 = ds.nextId( RelationshipType.class );
+        int relType1 = (int) ds.nextId( RelationshipType.class );
         relTypeStore.addRelationshipType( relType1, "relationshiptype1" );
-        int nodeIds[] = new int[3];
+        long nodeIds[] = new long[3];
         for ( int i = 0; i < 3; i++ )
         {
             nodeIds[i] = ds.nextId( Node.class );
@@ -943,9 +943,9 @@ public class TestNeoStore extends AbstractNeo4jTestCase
     {
         initializeStores();
         startTx();
-        int relType1 = ds.nextId( RelationshipType.class );
+        int relType1 = (int) ds.nextId( RelationshipType.class );
         relTypeStore.addRelationshipType( relType1, "relationshiptype1" );
-        int nodeIds[] = new int[3];
+        long nodeIds[] = new long[3];
         for ( int i = 0; i < 3; i++ )
         {
             nodeIds[i] = ds.nextId( Node.class );
@@ -982,9 +982,9 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         // test linked list stuff during relationship delete
         initializeStores();
         startTx();
-        int relType1 = ds.nextId( RelationshipType.class );
+        int relType1 = (int) ds.nextId( RelationshipType.class );
         relTypeStore.addRelationshipType( relType1, "relationshiptype1" );
-        int nodeIds[] = new int[8];
+        long nodeIds[] = new long[8];
         for ( int i = 0; i < nodeIds.length; i++ )
         {
             nodeIds[i] = ds.nextId( Node.class );
@@ -995,19 +995,19 @@ public class TestNeoStore extends AbstractNeo4jTestCase
             rStore.createRelationship( ds.nextId( Relationship.class ),
                 nodeIds[i], nodeIds[i * 2], relType1 );
         }
-        int rel5 = ds.nextId( Relationship.class );
+        long rel5 = ds.nextId( Relationship.class );
         rStore.createRelationship( rel5, nodeIds[0], nodeIds[5], relType1 );
-        int rel2 = ds.nextId( Relationship.class );
+        long rel2 = ds.nextId( Relationship.class );
         rStore.createRelationship( rel2, nodeIds[1], nodeIds[2], relType1 );
-        int rel3 = ds.nextId( Relationship.class );
+        long rel3 = ds.nextId( Relationship.class );
         rStore.createRelationship( rel3, nodeIds[1], nodeIds[3], relType1 );
-        int rel6 = ds.nextId( Relationship.class );
+        long rel6 = ds.nextId( Relationship.class );
         rStore.createRelationship( rel6, nodeIds[1], nodeIds[6], relType1 );
-        int rel1 = ds.nextId( Relationship.class );
+        long rel1 = ds.nextId( Relationship.class );
         rStore.createRelationship( rel1, nodeIds[0], nodeIds[1], relType1 );
-        int rel4 = ds.nextId( Relationship.class );
+        long rel4 = ds.nextId( Relationship.class );
         rStore.createRelationship( rel4, nodeIds[0], nodeIds[4], relType1 );
-        int rel7 = ds.nextId( Relationship.class );
+        long rel7 = ds.nextId( Relationship.class );
         rStore.createRelationship( rel7, nodeIds[0], nodeIds[7], relType1 );
         commitTx();
         startTx();
@@ -1031,9 +1031,9 @@ public class TestNeoStore extends AbstractNeo4jTestCase
     {
         initializeStores();
         startTx();
-        int nodeId = ds.nextId( Node.class );
+        long nodeId = ds.nextId( Node.class );
         nStore.createNode( nodeId );
-        int propertyId = pStore.nextId();
+        long propertyId = pStore.nextId();
         nStore.addProperty( nodeId, propertyId, index( "nisse" ),
             new Integer( 10 ) );
         commitTx();

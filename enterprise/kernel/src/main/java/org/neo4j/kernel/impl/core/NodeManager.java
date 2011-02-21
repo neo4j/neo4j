@@ -59,7 +59,7 @@ public class NodeManager
 {
     private static Logger log = Logger.getLogger( NodeManager.class.getName() );
 
-    private int referenceNodeId = 0;
+    private long referenceNodeId = 0;
 
     private final GraphDatabaseService graphDbService;
     private final Cache<Long,NodeImpl> nodeCache;
@@ -277,7 +277,7 @@ public class NodeManager
         {
             relTypeHolder.addValidRelationshipType( type.name(), true );
         }
-        int startNodeId = (int) startNode.getId();
+        long startNodeId = startNode.getId();
         NodeImpl firstNode = getLightNode( startNodeId );
         if ( firstNode == null )
         {
@@ -285,7 +285,7 @@ public class NodeManager
             throw new NotFoundException( "First node[" + startNode.getId()
                 + "] deleted" );
         }
-        int endNodeId = (int) endNode.getId();
+        long endNodeId = endNode.getId();
         NodeImpl secondNode = getLightNode( endNodeId );
         if ( secondNode == null )
         {
@@ -465,7 +465,7 @@ public class NodeManager
         return getNodeById( referenceNodeId );
     }
 
-    void setReferenceNodeId( int nodeId )
+    void setReferenceNodeId( long nodeId )
     {
         this.referenceNodeId = nodeId;
     }
@@ -575,19 +575,18 @@ public class NodeManager
 
     RelationshipChainPosition getRelationshipChainPosition( NodeImpl node )
     {
-        return persistenceManager.getRelationshipChainPosition(
-            (int) node.getId() );
+        return persistenceManager.getRelationshipChainPosition( node.getId() );
     }
 
-    Pair<ArrayMap<String,RelIdArray>,Map<Integer,RelationshipImpl>> getMoreRelationships( NodeImpl node )
+    Pair<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>> getMoreRelationships( NodeImpl node )
     {
-        int nodeId = (int) node.getId();
+        long nodeId = node.getId();
         RelationshipChainPosition position = node.getRelChainPosition();
         Iterable<RelationshipData> rels =
             persistenceManager.getMoreRelationships( nodeId, position );
         ArrayMap<String,RelIdArray> newRelationshipMap =
             new ArrayMap<String,RelIdArray>();
-        Map<Integer,RelationshipImpl> relsMap = new HashMap<Integer,RelationshipImpl>( 150 );
+        Map<Long,RelationshipImpl> relsMap = new HashMap<Long,RelationshipImpl>( 150 );
         for ( RelationshipData rel : rels )
         {
             long relId = rel.getId();
@@ -599,7 +598,7 @@ public class NodeManager
                 assert type != null;
                 relImpl = new RelationshipImpl( relId, rel.firstNode(), rel.secondNode(), type,
                         false );
-                relsMap.put( (int) relId, relImpl );
+                relsMap.put( relId, relImpl );
                 // relCache.put( relId, relImpl );
             }
             else
@@ -613,33 +612,27 @@ public class NodeManager
                 relationshipSet = new RelIdArray();
                 newRelationshipMap.put( type.name(), relationshipSet );
             }
-            relationshipSet.add( (int) relId );
+            relationshipSet.add( relId );
         }
         // relCache.putAll( relsMap );
         return Pair.of( newRelationshipMap, relsMap );
     }
 
-    void putAllInRelCache( Map<Integer,RelationshipImpl> map )
+    void putAllInRelCache( Map<Long,RelationshipImpl> map )
     {
-        // relCache.putAll( map );
-        for ( Integer intVal : map.keySet() )
-        {
-            relCache.put( (long) intVal, map.get( intVal ) );
-        }
+         relCache.putAll( map );
     }
 
     ArrayMap<Integer,PropertyData> loadProperties( NodeImpl node,
             boolean light )
     {
-        return persistenceManager.loadNodeProperties( (int) node.getId(),
-                light );
+        return persistenceManager.loadNodeProperties( node.getId(), light );
     }
 
     ArrayMap<Integer,PropertyData> loadProperties(
             RelationshipImpl relationship, boolean light )
     {
-        return persistenceManager.loadRelProperties(
-            (int) relationship.getId(), light );
+        return persistenceManager.loadRelProperties( relationship.getId(), light );
     }
 
     public int getNodeCacheSize()
