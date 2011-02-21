@@ -136,15 +136,15 @@ public class DumpLogicalLog
     static DynamicRecord readDynamicRecord( ReadableByteChannel byteChannel,
             ByteBuffer buffer ) throws IOException
     {
-        // id+type+in_use(byte)+prev_block(int)+nr_of_bytes(int)+next_block(int)
+        // id+type+in_use(byte)+prev_block(long)+nr_of_bytes(int)+next_block(long)
         buffer.clear();
-        buffer.limit( 9 );
+        buffer.limit( 13 );
         if ( byteChannel.read( buffer ) != buffer.limit() )
         {
             return null;
         }
         buffer.flip();
-        int id = buffer.getInt();
+        long id = buffer.getLong();
         int type = buffer.getInt();
         byte inUseFlag = buffer.get();
         boolean inUse = false;
@@ -152,7 +152,7 @@ public class DumpLogicalLog
         {
             inUse = true;
             buffer.clear();
-            buffer.limit( 12 );
+            buffer.limit( 20 );
             if ( byteChannel.read( buffer ) != buffer.limit() )
             {
                 return null;
@@ -167,9 +167,9 @@ public class DumpLogicalLog
         record.setInUse( inUse, type );
         if ( inUse )
         {
-            record.setPrevBlock( buffer.getInt() );
+            record.setPrevBlock( buffer.getLong() );
             int nrOfBytes = buffer.getInt();
-            record.setNextBlock( buffer.getInt() );
+            record.setNextBlock( buffer.getLong() );
             buffer.clear();
             buffer.limit( nrOfBytes );
             if ( byteChannel.read( buffer ) != buffer.limit() )
@@ -198,13 +198,13 @@ public class DumpLogicalLog
         throws IOException
     {
         buffer.clear();
-        buffer.limit( 5 );
+        buffer.limit( 9 );
         if ( byteChannel.read( buffer ) != buffer.limit() )
         {
             return null;
         }
         buffer.flip();
-        int id = buffer.getInt();
+        long id = buffer.getLong();
         byte inUseFlag = buffer.get();
         boolean inUse = false;
         if ( inUseFlag == Record.IN_USE.byteValue() )
@@ -220,14 +220,14 @@ public class DumpLogicalLog
         if ( inUse )
         {
             buffer.clear();
-            buffer.limit( 8 );
+            buffer.limit( 16 );
             if ( byteChannel.read( buffer ) != buffer.limit() )
             {
                 return null;
             }
             buffer.flip();
-            record.setNextRel( buffer.getInt() );
-            record.setNextProp( buffer.getInt() );
+            record.setNextRel( buffer.getLong() );
+            record.setNextProp( buffer.getLong() );
         }
         return new Command( record );
     }
@@ -236,13 +236,13 @@ public class DumpLogicalLog
         throws IOException
     {
         buffer.clear();
-        buffer.limit( 5 );
+        buffer.limit( 9 );
         if ( byteChannel.read( buffer ) != buffer.limit() )
         {
             return null;
         }
         buffer.flip();
-        int id = buffer.getInt();
+        long id = buffer.getLong();
         byte inUseFlag = buffer.get();
         boolean inUse = false;
         if ( (inUseFlag & Record.IN_USE.byteValue()) == Record.IN_USE
@@ -259,7 +259,7 @@ public class DumpLogicalLog
         if ( inUse )
         {
             buffer.clear();
-            buffer.limit( 32 );
+            buffer.limit( 52 );
             if ( byteChannel.read( buffer ) != buffer.limit() )
             {
                 return null;
@@ -268,11 +268,11 @@ public class DumpLogicalLog
             record = new RelationshipRecord( id, buffer.getInt(), buffer
                 .getInt(), buffer.getInt() );
             record.setInUse( inUse );
-            record.setFirstPrevRel( buffer.getInt() );
-            record.setFirstNextRel( buffer.getInt() );
-            record.setSecondPrevRel( buffer.getInt() );
-            record.setSecondNextRel( buffer.getInt() );
-            record.setNextProp( buffer.getInt() );
+            record.setFirstPrevRel( buffer.getLong() );
+            record.setFirstNextRel( buffer.getLong() );
+            record.setSecondPrevRel( buffer.getLong() );
+            record.setSecondNextRel( buffer.getLong() );
+            record.setNextProp( buffer.getLong() );
         }
         else
         {
@@ -326,7 +326,7 @@ public class DumpLogicalLog
         throws IOException
     {
         // id+in_use(byte)+type(int)+key_indexId(int)+prop_blockId(long)+
-        // prev_prop_id(int)+next_prop_id(int)+nr_value_records(int)
+        // prev_prop_id(long)+next_prop_id(long)+nr_value_records(int)
         buffer.clear();
         buffer.limit( 9 );
         if ( byteChannel.read( buffer ) != buffer.limit() )
@@ -361,7 +361,7 @@ public class DumpLogicalLog
         if ( inUse )
         {
             buffer.clear();
-            buffer.limit( 24 );
+            buffer.limit( 32 );
             if ( byteChannel.read( buffer ) != buffer.limit() )
             {
                 return null;
@@ -376,8 +376,8 @@ public class DumpLogicalLog
             record.setInUse( inUse );
             record.setKeyIndexId( buffer.getInt() );
             record.setPropBlock( buffer.getLong() );
-            record.setPrevProp( buffer.getInt() );
-            record.setNextProp( buffer.getInt() );
+            record.setPrevProp( buffer.getLong() );
+            record.setNextProp( buffer.getLong() );
         }
         buffer.clear();
         buffer.limit( 4 );

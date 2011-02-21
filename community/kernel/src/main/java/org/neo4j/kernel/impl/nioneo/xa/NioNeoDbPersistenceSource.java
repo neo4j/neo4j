@@ -344,7 +344,7 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
         public long nodeAddProperty( long nodeId, PropertyIndex index,
             Object value )
         {
-            int propertyId = propStore.nextId();
+            long propertyId = propStore.nextId();
             nodeConsumer.addProperty( nodeId, propertyId, index, value );
             return propertyId;
         }
@@ -377,7 +377,7 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 
         public long relAddProperty( long relId, PropertyIndex index, Object value )
         {
-            int propertyId = propStore.nextId();
+            long propertyId = propStore.nextId();
             relConsumer.addProperty( relId, propertyId, index, value );
             return propertyId;
         }
@@ -491,7 +491,7 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
         return "A persistence source to [" + dataSourceName + "]";
     }
 
-    public int nextId( Class<?> clazz )
+    public long nextId( Class<?> clazz )
     {
         return xaDs.nextId( clazz );
     }

@@ -540,12 +540,6 @@ class DynamicArrayStore extends AbstractDynamicStore
         throw new InvalidRecordException( "Unknown array type[" + type + "]" );
     }
 
-    public Object getArray( int blockId )
-    {
-        byte bArray[] = get( blockId );
-        return getRightArray( bArray );
-    }
-
     @Override
     protected boolean versionFound( String version )
     {

@@ -182,9 +182,9 @@ public class GraphDbModule
         }
     }
     
-    public void setReferenceNodeId( Integer nodeId )
+    public void setReferenceNodeId( Long nodeId )
     {
-        nodeManager.setReferenceNodeId( nodeId.intValue() );
+        nodeManager.setReferenceNodeId( nodeId.longValue() );
         try
         {
             nodeManager.getReferenceNode();
@@ -195,22 +195,22 @@ public class GraphDbModule
         }
     }
 
-    public Integer getCurrentReferenceNodeId()
+    public Long getCurrentReferenceNodeId()
     {
         try
         {
-            return (int) nodeManager.getReferenceNode().getId();
+            return nodeManager.getReferenceNode().getId();
         }
         catch ( NotFoundException e )
         {
-            return -1;
+            return -1L;
         }
     }
 
     public void createNewReferenceNode()
     {
         Node node = nodeManager.createNode();
-        nodeManager.setReferenceNodeId( (int) node.getId() );
+        nodeManager.setReferenceNodeId( node.getId() );
     }
 
     public void reload( Map<Object,Object> params )

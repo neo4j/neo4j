@@ -376,7 +376,7 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
             setTransaction( getGraphDb().beginTx() );
             try
             {
-                getGraphDb().getNodeById( (int) node1.getId() );
+                getGraphDb().getNodeById( node1.getId() );
                 fail( "Node should not exist, previous tx didn't rollback" );
             }
             catch ( NotFoundException e )
@@ -408,7 +408,7 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
             setTransaction( getGraphDb().beginTx() );
             try
             {
-                getGraphDb().getNodeById( (int) node1.getId() );
+                getGraphDb().getNodeById( node1.getId() );
                 fail( "Node should not exist, previous tx didn't rollback" );
             }
             catch ( NotFoundException e )
@@ -417,7 +417,7 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
             }
             try
             {
-                getGraphDb().getNodeById( (int) node2.getId() );
+                getGraphDb().getNodeById( node2.getId() );
                 fail( "Node should not exist, previous tx didn't rollback" );
             }
             catch ( NotFoundException e )

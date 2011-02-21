@@ -43,7 +43,7 @@ public interface PersistenceSource
      *            the data structure to get next free unique id for
      * @return the next free unique id for <CODE>clazz</CODE>
      */
-    public int nextId( Class<?> clazz );
+    public long nextId( Class<?> clazz );
 
     public long getHighestPossibleIdInUse( Class<?> clazz );
 
