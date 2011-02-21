@@ -187,7 +187,7 @@ public class ElementReference {
             return;
         }
 
-        throw new RuntimeException("Element did not become visible within a reasonable time. Element was: " + this.getElement().toString());
+        throw new RuntimeException("Element did disappear within a reasonable time. Element was: " + this.getElement().toString());
     }
 
 	public void waitForAttributeToBe(String attributeName, String expectedValue) {
