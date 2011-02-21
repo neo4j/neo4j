@@ -157,8 +157,12 @@ public class ElementReference {
 	public void waitUntilVisible() {
         long end = System.currentTimeMillis() + 10000;
         while (System.currentTimeMillis() < end) {
-            if ( ! this.getValueOfCssProperty("display").equals("none")) {
-                return;
+            try {
+                if ( ! this.getValueOfCssProperty("display").equals("none")) {
+                    return;
+                }
+            } catch(NoSuchElementException e) {
+                // Empty
             }
             try{
             	Thread.sleep(13);
@@ -167,7 +171,7 @@ public class ElementReference {
             }
         }
 
-        throw new RuntimeException("Element did not become visible within a reasonable time. Element was: " + this.getElement().toString());
+        throw new RuntimeException("Element did not become visible within a reasonable time.");
     }
     
     public void waitUntilNotVisible() {
@@ -185,36 +189,48 @@ public class ElementReference {
             }
         } catch(StaleElementReferenceException e) { 
             return;
+        }  catch(NoSuchElementException e) {
+            return;
         }
 
-        throw new RuntimeException("Element did disappear within a reasonable time. Element was: " + this.getElement().toString());
+        throw new RuntimeException("Element did disappear within a reasonable time. ");
     }
 
 	public void waitForAttributeToBe(String attributeName, String expectedValue) {
         long end = System.currentTimeMillis() + 10000;
         String attr;
         while (System.currentTimeMillis() < end) {
-            attr = this.getAttribute(attributeName);
-            if ( (attr == null && expectedValue == null) || (attr != null && attr.equals(expectedValue))) {
-                return;
+            try {
+                attr = this.getAttribute(attributeName);
+                
+                if ( (attr == null && expectedValue == null) || (attr != null && attr.equals(expectedValue))) {
+                    return;
+                }
+            } catch(NoSuchElementException e) {
+                // Empty
             }
             try{
             	Thread.sleep(13);
             } catch(Exception e) {
             	throw new RuntimeException(e);
             }
+            
         }
 
-        throw new RuntimeException("Element did not become visible within a reasonable time. Element was: " + this.getElement().toString());
+        throw new RuntimeException("Element did not become visible within a reasonable time.");
     }
 
 	public void waitForAttributeToChangeFrom(String attributeName, String currentValue) {
         long end = System.currentTimeMillis() + 10000;
         String attr;
         while (System.currentTimeMillis() < end) {
-            attr = this.getAttribute(attributeName);
-            if ( (attr == null && currentValue != null) || ( attr != null && !attr.equals(currentValue))) {
-                return;
+            try{
+                attr = this.getAttribute(attributeName);
+                if ( (attr == null && currentValue != null) || ( attr != null && !attr.equals(currentValue))) {
+                    return;
+                }
+            } catch(NoSuchElementException e) {
+                // Empty
             }
             try{
             	Thread.sleep(13);
@@ -223,7 +239,7 @@ public class ElementReference {
             }
         }
 
-        throw new RuntimeException("Element attribute did not change within a reasonable time. Element was: " + this.getElement().toString());
+        throw new RuntimeException("Element attribute did not change within a reasonable time.");
     }
 	
 	public void waitForTextToChangeFrom(String currentValue) {
@@ -239,7 +255,7 @@ public class ElementReference {
             }
         }
 
-        throw new RuntimeException("Element attribute did not change within a reasonable time. Element was: " + this.getElement().toString());
+        throw new RuntimeException("Element attribute did not change within a reasonable time.");
     }
 
 }

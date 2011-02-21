@@ -19,6 +19,11 @@
  */
 package org.neo4j.server.rest.domain;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -29,11 +34,6 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseBlockedException;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 
 public class GraphDbHelper
 {
@@ -121,6 +121,20 @@ public class GraphDbHelper
             }
             tx.success();
             return node.getId();
+        } finally
+        {
+            tx.finish();
+        }
+    }
+    
+    public void deleteNode( long id ) throws DatabaseBlockedException
+    {
+        Transaction tx = database.graph.beginTx();
+        try
+        {
+            Node node = database.graph.getNodeById( id );
+            node.delete();
+            tx.success();
         } finally
         {
             tx.finish();

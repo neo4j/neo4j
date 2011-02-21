@@ -39,10 +39,10 @@ public class DataBrowserWebTest extends WebDriverTest {
 	@Test
 	public void shouldBeAbleToCreateNewNode() throws InterruptedException {
 		
-		dataMenu.getElement().click();
+		dataMenu.click();
 		
 		String originalNodeURI = nodeId.getAttribute("href");
-		addNodeButton.getElement().click();
+		addNodeButton.click();
 		
 		nodeId.waitForAttributeToChangeFrom( "href", originalNodeURI );
 	}
@@ -54,11 +54,11 @@ public class DataBrowserWebTest extends WebDriverTest {
         
         int initialRelCount = dbHelper.getNumberOfRelationships();
         
-        dataMenu.getElement().click();
-        addRelationshipButton.getElement().click();
+        dataMenu.click();
+        addRelationshipButton.click();
         
-        addRelationshipDialogToInput.getElement().sendKeys( someNodeId );
-        saveNewRelationshipButton.getElement().click();
+        addRelationshipDialogToInput.sendKeys( someNodeId );
+        saveNewRelationshipButton.click();
         
         dialog.waitUntilNotVisible();
         
@@ -67,11 +67,61 @@ public class DataBrowserWebTest extends WebDriverTest {
     }
 	
 	@Test
+    public void shouldBeAbleToRemoveNode() {
+        
+	    long nodeId = dbHelper.createNode();
+        String nodeUri = testHelper.nodeUri(nodeId);
+        dataMenu.click();
+        
+        int nodeCount = dbHelper.getNumberOfNodes();
+        
+        getByUrlInput.sendKeys( nodeUri, Keys.RETURN );
+        
+        currentNodeId.waitForAttributeToBe( "href", nodeUri );
+        
+        clickYesOnAllConfirmDialogs();
+        
+        deleteNodeButton.click();
+        
+        // Should redirect to reference node
+        currentNodeId.waitForAttributeToBe( "href", testHelper.nodeUri(0l) );
+        
+        assertThat(dbHelper.getNumberOfNodes(), is(nodeCount - 1));
+        
+    }
+	
+	@Test
+    public void shouldBeAbleToRemoveReferenceNodeAndThenGoToSomeOtherNode() {
+        
+        String nodeUri = testHelper.nodeUri(dbHelper.createNode());
+        String referenceNodeUri = testHelper.nodeUri(0l);
+        
+        dataMenu.click();
+        
+        int nodeCount = dbHelper.getNumberOfNodes();
+        currentNodeId.waitForAttributeToBe( "href", referenceNodeUri );
+        
+        clickYesOnAllConfirmDialogs();
+        
+        // Delete root node
+        deleteNodeButton.click();
+        
+        // We should see "no node found blah blah"
+        notFoundPanel.waitUntilVisible();
+
+        getByUrlInput.sendKeys( nodeUri, Keys.RETURN );
+        currentNodeId.waitForAttributeToBe( "href", nodeUri );
+        
+        assertThat(dbHelper.getNumberOfNodes(), is(nodeCount - 1));
+        
+    }
+	
+	@Test
 	public void createRelationshipShouldHaveCurrentNodeFilledIn() {
-		dataMenu.getElement().click();
+		dataMenu.click();
 		String expectedId = nodeId.getAttribute("href");
 
-		addRelationshipButton.getElement().click();
+		addRelationshipButton.click();
 		
 		assertThat(addRelationshipDialogFromInput.getAttribute("value"), is(expectedId));
 	}
@@ -85,8 +135,8 @@ public class DataBrowserWebTest extends WebDriverTest {
 	    
  	    testHelper.getGraphDbHelper().createRelationship( testType );
 	    
-	    dataMenu.getElement().click();
-        addRelationshipButton.getElement().click();
+	    dataMenu.click();
+        addRelationshipButton.click();
         
         List<WebElement> opts = addRelationshipDialogTypeDropdown.findElements( By.tagName( "option" ) );
         
@@ -106,10 +156,10 @@ public class DataBrowserWebTest extends WebDriverTest {
 	    
 	    int initialRelCount = dbHelper.getNumberOfRelationships();
 	    
-        dataMenu.getElement().click();
-        addRelationshipButton.getElement().click();
+        dataMenu.click();
+        addRelationshipButton.click();
         
-        addRelationshipDialogToInput.getElement().sendKeys( someNodeId );
+        addRelationshipDialogToInput.sendKeys( someNodeId );
         
         // Remove the initial type that is always entered 
         int backs = 20;
@@ -131,8 +181,8 @@ public class DataBrowserWebTest extends WebDriverTest {
         
         int initialRelCount = dbHelper.getNumberOfRelationships();
         
-        dataMenu.getElement().click();
-        addRelationshipButton.getElement().click();
+        dataMenu.click();
+        addRelationshipButton.click();
         
         addRelationshipDialogToInput.getElement().sendKeys( someNodeId, Keys.RETURN );
         
@@ -157,10 +207,17 @@ public class DataBrowserWebTest extends WebDriverTest {
 	private ElementReference addRelationshipDialogSave = new ElementReference(webDriver, By.className( "mor_data_relationship_dialog_save"));
 	
 	private ElementReference addNodeButton = new ElementReference(webDriver, By.className("mor_data_add_node_button"));
+	private ElementReference deleteNodeButton = new ElementReference(webDriver, By.className("mor_data_delete_node_button"));
 	private ElementReference addRelationshipButton = new ElementReference(webDriver, By.className("mor_data_add_relationship"));
 	private ElementReference saveNewRelationshipButton = new ElementReference(webDriver, By.className("mor_data_relationship_dialog_save"));
 	
-	private ElementReference lastRelationshipInList = new ElementReference(webDriver, By.xpath( "//table[@class='mor_fancy data-table']/tbody/tr[last()]/td[2]/a/@href" ));
+	private ElementReference getByUrlInput = new ElementReference(webDriver, By.id("mor_data_get_id_input"));
+	
+	
+	private ElementReference notFoundPanel = new ElementReference(webDriver, By.className( "mor_data_item_notfound" ));
+	private ElementReference lastRelationshipInList = new ElementReference(webDriver, By.xpath( "//table[@class='mor_fancy data-table']/tbody/tr[last()]/td[2]/a" ));
+	
+	private ElementReference currentNodeId = new ElementReference(webDriver, By.className( "mor_data_current_node_id" ));
 	
 	
 }
