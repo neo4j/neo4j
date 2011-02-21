@@ -41,7 +41,7 @@ public enum IdType
 
     private IdType( int bits )
     {
-        this.max = (long)Math.pow( 2, bits )-2;
+        this.max = (long)Math.pow( 2, bits );
     }
     
     public long getMaxValue()

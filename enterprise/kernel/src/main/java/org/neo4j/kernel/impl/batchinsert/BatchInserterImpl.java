@@ -35,6 +35,7 @@ import org.neo4j.kernel.AutoConfigurator;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
@@ -59,6 +60,9 @@ import org.neo4j.kernel.impl.util.StringLogger;
 
 public class BatchInserterImpl implements BatchInserter
 {
+    private static final long MAX_NODE_ID = IdType.NODE.getMaxValue();
+    private static final long MAX_RELATIONSHIP_ID = IdType.RELATIONSHIP.getMaxValue();
+    
     private final NeoStore neoStore;
     private final IndexStore indexStore;
     private final String storeDir;
@@ -67,12 +71,13 @@ public class BatchInserterImpl implements BatchInserter
     private final RelationshipTypeHolder typeHolder; 
     
     private final BatchGraphDatabaseImpl graphDbService;
+    private final IdGeneratorFactory idGeneratorFactory;
     
     private final StringLogger msgLog;
     
     public BatchInserterImpl( String storeDir )
     {
-        this( storeDir, Collections.EMPTY_MAP );
+        this( storeDir, Collections.<String, String>emptyMap() );
     }
     
     public BatchInserterImpl( String storeDir, 
@@ -88,8 +93,9 @@ public class BatchInserterImpl implements BatchInserter
             params.put( entry.getKey(), entry.getValue() );
         }
         this.storeDir = storeDir;
+        this.idGeneratorFactory = CommonFactories.defaultIdGeneratorFactory();
         params.put( IdGeneratorFactory.class,
-                CommonFactories.defaultIdGeneratorFactory() );
+                idGeneratorFactory );
         String store = fixPath( storeDir, params ); 
         params.put( "neo_store", store );
         if ( dump )
@@ -121,7 +127,7 @@ public class BatchInserterImpl implements BatchInserter
         nodeRecord.setCreated();
         nodeRecord.setNextProp( createPropertyChain( properties ) );
         getNodeStore().updateRecord( nodeRecord );
-        return (nodeId & 0xFFFFFFFFL);
+        return nodeId;
     }
     
     public void createNode( long id, Map<String,Object> properties )
@@ -156,8 +162,6 @@ public class BatchInserterImpl implements BatchInserter
             throw new IllegalArgumentException( "Start node[" + node1 + 
                     "] equals end node[" + node2 + "]" );
         }
-        int firstNodeId = (int) (node1 & 0xFFFFFFFF );
-        int secondNodeId = (int) (node2 & 0xFFFFFFFF );
         NodeRecord firstNode = getNodeRecord( node1 );
         NodeRecord secondNode = getNodeRecord( node2 );
         int typeId = typeHolder.getTypeId( type.name() );
@@ -166,8 +170,7 @@ public class BatchInserterImpl implements BatchInserter
             typeId = createNewRelationshipType( type.name() );
         }
         long id = getRelationshipStore().nextId(); 
-        RelationshipRecord record = new RelationshipRecord( id, firstNodeId,
-            secondNodeId, typeId );
+        RelationshipRecord record = new RelationshipRecord( id, node1, node2, typeId );
         record.setInUse( true );
         record.setCreated();
         connectRelationship( firstNode, secondNode, record );
@@ -175,7 +178,7 @@ public class BatchInserterImpl implements BatchInserter
         getNodeStore().updateRecord( secondNode );
         record.setNextProp( createPropertyChain( properties ) );
         getRelationshipStore().updateRecord( record );
-        return id & 0xFFFFFFFFL;
+        return id;
     }
     
     private void connectRelationship( NodeRecord firstNode, 
@@ -250,8 +253,7 @@ public class BatchInserterImpl implements BatchInserter
     
     public boolean nodeExists( long nodeId )
     {
-        int id = (int) (nodeId & 0xFFFFFFFF );
-        return neoStore.getNodeStore().loadLightNode( id );
+        return neoStore.getNodeStore().loadLightNode( nodeId );
     }
     
     public Map<String,Object> getNodeProperties( long nodeId )
@@ -272,7 +274,7 @@ public class BatchInserterImpl implements BatchInserter
         while ( nextRel != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
             RelationshipRecord relRecord = getRelationshipRecord( nextRel );
-            ids.add( relRecord.getId() ); // & 0xFFFFFFFFL );
+            ids.add( relRecord.getId() );
             long firstNode = relRecord.getFirstNode();
             long secondNode = relRecord.getSecondNode();
             if ( firstNode == nodeId )
@@ -538,7 +540,7 @@ public class BatchInserterImpl implements BatchInserter
         {
             throw new NotFoundException( "id=" + id );
         }
-        return getNodeStore().getRecord( (int) (id & 0xFFFFFFFF) );
+        return getNodeStore().getRecord( id );
     }
 
     private RelationshipRecord getRelationshipRecord( long id )
@@ -547,7 +549,7 @@ public class BatchInserterImpl implements BatchInserter
         {
             throw new NotFoundException( "id=" + id );
         }
-        return getRelationshipStore().getRecord( (int) (id & 0xFFFFFFFF) );
+        return getRelationshipStore().getRecord( id );
     }
 
     private String fixPath( String dir, Map<?,?> config )
@@ -599,5 +601,10 @@ public class BatchInserterImpl implements BatchInserter
     public IndexStore getIndexStore()
     {
         return this.indexStore;
+    }
+    
+    public IdGeneratorFactory getIdGeneratorFactory()
+    {
+        return idGeneratorFactory;
     }
 }
