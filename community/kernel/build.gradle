@@ -1,4 +1,4 @@
-apply plugin: VersionClass
+apply plugin: GenerateVersionClass
 
 dependencies {
     compile "org.apache.geronimo.specs:geronimo-jta_1.1_spec:$jtaSpecVersion"
