@@ -547,6 +547,16 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, IndexMa
         {
             readOnly();
         }
+        
+        public void remove(T entity, String key)
+        {
+            readOnly();
+        }
+        
+        public void remove(T entity)
+        {
+            readOnly();
+        }
     }
 
     class ReadOnlyNodeIndexProxy extends ReadOnlyIndexProxy<Node, Index<Node>>
