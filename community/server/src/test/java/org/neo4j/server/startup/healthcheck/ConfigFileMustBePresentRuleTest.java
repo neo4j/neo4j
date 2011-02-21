@@ -53,6 +53,7 @@ public class ConfigFileMustBePresentRuleTest {
         
         ConfigFileMustBePresentRule rule = new ConfigFileMustBePresentRule();
         assertTrue(rule.execute(propertiesWithConfigFileLocation(propertyFile)));
+        propertyFile.delete();
     }
     
     private Properties propertiesWithoutConfigFileLocation() {

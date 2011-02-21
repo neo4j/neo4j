@@ -60,7 +60,7 @@ public class RemoveNodePropertiesFunctionalTest
     
     private String getPropertiesUri( long nodeId )
     {
-        return server.restApiUri() + "node/" + nodeId + "/properties";
+        return functionalTestHelper.nodePropertiesUri(nodeId);
     }
     
     @Test
@@ -119,7 +119,7 @@ public class RemoveNodePropertiesFunctionalTest
 
     private String getPropertyUri( long nodeId, String key )
     {
-        return server.restApiUri() + "node/" + nodeId + "/properties/" + key;
+        return functionalTestHelper.nodePropertyUri(nodeId, key);
     }
 
     private ClientResponse removeNodePropertyOnServer( long nodeId, String key )

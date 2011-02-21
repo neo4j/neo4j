@@ -52,8 +52,9 @@ public class RetrieveNodeFunctionalTest {
     public void setupServer() throws IOException, DatabaseBlockedException, URISyntaxException {
         server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
         server.start();
+        FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper(server);
 
-        nodeUri = new URI(server.restApiUri().toString() + "node/" + new GraphDbHelper(server.getDatabase()).createNode());
+        nodeUri = new URI(functionalTestHelper.nodeUri() + "/" + new GraphDbHelper(server.getDatabase()).createNode());
     }
 
     @After

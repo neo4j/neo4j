@@ -1,4 +1,12 @@
-0.6-1.3.M01 (2010-01-27)
+1.3.M02 (2011-02-10)
+------------------------
+o Gremlin updated to 0.7 and trimmed down to bare bones dependencies
+o Webadmin minor improvements in Console, Data browser and monitoring
+o better REST JSON property support in Arrays
+o server started in High Availability mode
+
+
+0.6-1.3.M01 (2011-01-27)
 ------------------------
 
 o Ability to start the server in HA mode.
