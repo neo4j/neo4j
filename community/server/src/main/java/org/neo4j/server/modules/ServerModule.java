@@ -22,7 +22,7 @@ package org.neo4j.server.modules;
 import java.net.URI;
 import java.util.Set;
 
-import org.neo4j.server.NeoServer;
+import org.neo4j.server.NeoEmbeddedJettyServer;
 
 /**
  *  An interface which the NeoServer uses to initialise server modules (e.g. JAX-RS, static content, webadmin)
@@ -35,7 +35,7 @@ public interface ServerModule {
      * @param neoServer The NeoServer that owns the module
      * @return a Set of URIs that are owned by the module, or an empty set if no URIs are claimed
      */
-    public Set<URI> start(NeoServer neoServer);
+    public Set<URI> start(NeoEmbeddedJettyServer neoServer);
     
     public void stop();
 }

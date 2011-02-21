@@ -27,7 +27,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.junit.Test;
-import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.logging.InMemoryAppender;
 
@@ -77,7 +77,7 @@ public class DatabaseTuningFunctionalTest {
     
     @Test
     public void shouldLogWarningAndContinueIfTuningFilePropertyDoesNotResolve() throws IOException {
-        InMemoryAppender appender = new InMemoryAppender(Configurator.log);
+        InMemoryAppender appender = new InMemoryAppender(PropertyFileConfigurator.log);
         
         NeoServer server = ServerBuilder.server().withPassingStartupHealthcheck().withRandomDatabaseDir().withNonResolvableTuningFile().build();
         server.start();
