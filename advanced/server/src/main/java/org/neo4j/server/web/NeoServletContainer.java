@@ -49,7 +49,9 @@ public class NeoServletContainer extends ServletContainer {
         rc.getSingletons().add(new DatabaseProvider(server.getDatabase()));
         rc.getSingletons().add(new NeoServerProvider(server));
         rc.getSingletons().add(new ConfigurationProvider(server.getConfiguration()));
-        rc.getSingletons().add(new RrdDbProvider(server.getDatabase().rrdDb()));
+        if(server.getDatabase().rrdDb() != null) {
+            rc.getSingletons().add(new RrdDbProvider(server.getDatabase().rrdDb()));
+        }
         RepresentationFormatRepository repository = new RepresentationFormatRepository(server.getExtensionManager());
         rc.getSingletons().add(new InputFormatProvider(repository));
         rc.getSingletons().add(new OutputFormatProvider(repository));
