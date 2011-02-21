@@ -143,8 +143,13 @@ wa.components.data.DataBrowser = (function($) {
                                 me.currentItem = item;
                                 me.render();
                                 fulfill();
-                            }, me.renderNotFound);
+                            }, function() {
+                                me.renderNotFound();
+                                fulfill();
+                            });
+                            
                         } else {
+                            me.renderNotFound();
                             fulfill();
                         }
                     } else {
@@ -203,6 +208,8 @@ wa.components.data.DataBrowser = (function($) {
     };
     
     me.renderNotFound = function() {
+        me.dataUrl = null;
+        me.currentItem = null;
         me.processTemplate({
             server : me.server,
             dataUrl : me.dataUrl,
@@ -317,7 +324,7 @@ wa.components.data.DataBrowser = (function($) {
         
         if( !url ) {
             me.api.showReferenceNode();
-        } else if( url !== me.dataUrl) {
+        } else {
         	me.dataUrl = url;
         	if( me.uiLoaded && !( me.currentItem && me.currentItem.getSelf() === url )) {
         	    me.reload();

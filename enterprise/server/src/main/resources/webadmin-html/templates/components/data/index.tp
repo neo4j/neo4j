@@ -58,7 +58,7 @@
 
     <div class="mor_page_rightcol">
 	    {#if $T.notFound }
-	        <div class="mor_module mor_span-3">
+	        <div class="mor_module mor_span-3 mor_data_item_notfound">
 	            <h2>Not found</h2>
 	            <p class="mor_info">The item you requested cannot be found, or an error occurred while trying to retrieve it.</p>
 	        </div>
@@ -80,7 +80,7 @@
 	        <tbody>
 	            <tr>
 	                <th><span class="mor_data_uneditable_key">Url</span></th>
-	                <td class="mor_data_item_id"><span class="mor_data_uneditable_value"><a href="{ $T.node.getSelf() }" class="mor_data_url_button">{ $T.node.getSelf() }</a></span></td>
+	                <td class="mor_data_item_id"><span class="mor_data_uneditable_value"><a href="{ $T.node.getSelf() }" class="mor_data_current_node_id mor_data_url_button">{ $T.node.getSelf() }</a></span></td>
 	            </tr>
 	        </tbody>
 	    </table>
