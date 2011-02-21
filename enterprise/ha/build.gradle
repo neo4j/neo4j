@@ -1,19 +1,19 @@
 dependencies {
-  compile project(":kernel"),
-          project(":com"),
-          project(":lucene-index"),
-          project(":management")
+    compile project(":kernel"),
+            project(":com"),
+            project(":lucene-index"),
+            project(":management")
 
-  compile("org.apache.zookeeper:zookeeper:$zookeeperVersion") {
-    exclude module: "jline"
-    exclude module: "log4j"
-  }
+    compile("org.apache.zookeeper:zookeeper:$zookeeperVersion") {
+        exclude module: "jline"
+        exclude module: "log4j"
+    }
 
-  testCompile "commons-io:commons-io:$commonsIoVersion"
+    testCompile "commons-io:commons-io:$commonsIoVersion"
 }
 
 sourceSets {
-  test {
-    compileClasspath += project(':kernel').sourceSets.test.classes
-  }
+    test {
+        classpath += project(':kernel').sourceSets.test.classes
+    }
 }
