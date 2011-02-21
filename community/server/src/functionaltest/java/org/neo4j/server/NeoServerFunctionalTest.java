@@ -45,7 +45,7 @@ import com.sun.jersey.api.client.ClientResponse;
 
 public class NeoServerFunctionalTest {
 
-    private NeoEmbeddedJettyServer server;
+    private NeoServerWithEmbeddedWebServer server;
 
     @After
     public void stopServer() {
@@ -77,7 +77,7 @@ public class NeoServerFunctionalTest {
 
     @Test
     public void shouldLogStartup() throws Exception {
-        InMemoryAppender appender = new InMemoryAppender(NeoEmbeddedJettyServer.log);
+        InMemoryAppender appender = new InMemoryAppender(NeoServerWithEmbeddedWebServer.log);
         server = ServerBuilder.server().withPassingStartupHealthcheck().withRandomDatabaseDir().build();
         server.start();
         assertThat(appender.toString(), containsString("Starting Neo Server on port [" + server.getWebServerPort() + "]"));
@@ -121,7 +121,7 @@ public class NeoServerFunctionalTest {
 
     @Test
     public void shouldLogShutdown() throws Exception {
-        InMemoryAppender appender = new InMemoryAppender(NeoEmbeddedJettyServer.log);
+        InMemoryAppender appender = new InMemoryAppender(NeoServerWithEmbeddedWebServer.log);
         server = ServerBuilder.server().withPassingStartupHealthcheck().withRandomDatabaseDir().build();
         server.start();
         server.stop();
@@ -134,7 +134,7 @@ public class NeoServerFunctionalTest {
         int contestedPort = 9999;
         ServerSocket socket = new ServerSocket(contestedPort);
 
-        InMemoryAppender appender = new InMemoryAppender(NeoEmbeddedJettyServer.log);
+        InMemoryAppender appender = new InMemoryAppender(NeoServerWithEmbeddedWebServer.log);
         server = ServerBuilder.server().withPassingStartupHealthcheck().onPort(contestedPort).withRandomDatabaseDir().build();
         server.start();
 

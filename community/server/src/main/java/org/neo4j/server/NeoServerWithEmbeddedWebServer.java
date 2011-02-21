@@ -45,9 +45,9 @@ import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 import org.neo4j.server.web.WebServer;
 
-public class NeoEmbeddedJettyServer implements NeoServer {
+public class NeoServerWithEmbeddedWebServer implements NeoServer {
     
-    public static final Logger log = Logger.getLogger(NeoEmbeddedJettyServer.class);
+    public static final Logger log = Logger.getLogger(NeoServerWithEmbeddedWebServer.class);
 
     private final File configFile;
     private Configurator configurator;
@@ -59,7 +59,7 @@ public class NeoEmbeddedJettyServer implements NeoServer {
 
     private List<ServerModule> serverModules = new ArrayList<ServerModule>();
 
-    public NeoEmbeddedJettyServer(AddressResolver addressResolver, StartupHealthCheck startupHealthCheck, File configFile, WebServer webServer) {
+    public NeoServerWithEmbeddedWebServer(AddressResolver addressResolver, StartupHealthCheck startupHealthCheck, File configFile, WebServer webServer) {
         this.addressResolver = addressResolver;
         this.startupHealthCheck = startupHealthCheck;
         this.configFile = configFile;
@@ -67,7 +67,7 @@ public class NeoEmbeddedJettyServer implements NeoServer {
         webServer.setNeoServer(this);
     }
 
-    public NeoEmbeddedJettyServer(StartupHealthCheck startupHealthCheck, File configFile, WebServer ws) {
+    public NeoServerWithEmbeddedWebServer(StartupHealthCheck startupHealthCheck, File configFile, WebServer ws) {
         this(new AddressResolver(), startupHealthCheck, configFile, ws);
     }
 
