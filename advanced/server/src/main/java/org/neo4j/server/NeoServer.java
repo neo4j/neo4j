@@ -85,13 +85,26 @@ public class NeoServer {
 
     /**
      * Override this method to wire up different server modules. The default behaviour is to register all server modules.
+     * This method is called by start
      */
     protected void registerServerModules() {
-        serverModules.add(new DiscoveryModule());
-        serverModules.add(new RESTApiModule());
-        serverModules.add(new ManagementApiModule());
-        serverModules.add(new ThirdPartyJAXRSModule());
-        serverModules.add(new WebAdminModule());
+        registerModule(DiscoveryModule.class);
+        registerModule(RESTApiModule.class);
+        registerModule(ManagementApiModule.class);
+        registerModule(ThirdPartyJAXRSModule.class);
+        registerModule(WebAdminModule.class);
+    }
+    
+    /**
+     * Use this method to register server modules from subclasses
+     * @param clazz
+     */
+    protected final void registerModule(Class<? extends ServerModule> clazz) {
+        try {
+            serverModules.add(clazz.newInstance());
+        } catch (Exception e) {
+            log.warn("Failed to instantiate server module [%s], reason: %s", clazz.getName(), e.getMessage());
+        }
     }
     
     private void startModules() {

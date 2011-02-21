@@ -30,12 +30,17 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Properties;
 
 import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
 import org.neo4j.server.web.Jetty6WebServer;
@@ -57,6 +62,7 @@ public class ServerBuilder {
     };
 
     private WhatToDo action;
+    private List<Class<? extends ServerModule>> serverModules = new ArrayList<Class<? extends ServerModule>>();
 
     public static ServerBuilder server() {
         return new ServerBuilder();
@@ -67,12 +73,22 @@ public class ServerBuilder {
         {
             throw new IllegalStateException( "database directory must be configured." );
         }
-        File f = createPropertyFile();
-        return new CleaningNeoServer(addressResolver, startupHealthCheck, f, new Jetty6WebServer(), dbDir);
+        File f = createPropertiesFiles();
+        
+        return new CleaningNeoServer(addressResolver, startupHealthCheck, f, new Jetty6WebServer(), dbDir, (Class<? extends ServerModule>[]) serverModules.toArray(new Class[0]));
+    }
+    
+
+    public File createPropertiesFiles() throws IOException {
+        File temporaryConfigFile = createTempPropertyFile();
+        
+        createPropertiesFile(temporaryConfigFile);
+        createTuningFile(temporaryConfigFile);
+        
+        return temporaryConfigFile;
     }
 
-    public File createPropertyFile() throws IOException {
-        File temporaryConfigFile = createTempPropertyFile();
+    private void createPropertiesFile(File temporaryConfigFile) {
         writePropertyToFile(Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir, temporaryConfigFile);
         if (portNo != null) {
             writePropertyToFile(Configurator.WEBSERVER_PORT_PROPERTY_KEY, portNo, temporaryConfigFile);
@@ -80,7 +96,13 @@ public class ServerBuilder {
         writePropertyToFile(Configurator.WEBADMIN_NAMESPACE_PROPERTY_KEY + ".rrdb.location", rrdbDir, temporaryConfigFile);
         writePropertyToFile(Configurator.WEB_ADMIN_PATH_PROPERTY_KEY, webAdminUri, temporaryConfigFile);
         writePropertyToFile(Configurator.REST_API_PATH_PROPERTY_KEY, webAdminDataUri, temporaryConfigFile);
+        
+        if (thirdPartyPackages.keySet().size() > 0) {
+            writePropertiesToFile(Configurator.THIRD_PARTY_PACKAGES_KEY, thirdPartyPackages, temporaryConfigFile);
+        }
+    }
 
+    private void createTuningFile(File temporaryConfigFile) throws IOException {
         if (action == WhatToDo.CREATE_GOOD_TUNING_FILE) {
             File databaseTuningPropertyFile = createTempPropertyFile();
             writePropertyToFile("neostore.nodestore.db.mapped_memory", "25M", databaseTuningPropertyFile);
@@ -95,12 +117,6 @@ public class ServerBuilder {
             File corruptTuningFile = trashFile();
             writePropertyToFile(Configurator.DB_TUNING_PROPERTY_FILE_KEY, corruptTuningFile.getAbsolutePath(), temporaryConfigFile);
         }
-
-        if (thirdPartyPackages.keySet().size() > 0) {
-            writePropertiesToFile(Configurator.THIRD_PARTY_PACKAGES_KEY, thirdPartyPackages, temporaryConfigFile);
-        }
-        
-        return temporaryConfigFile;
     }
 
     private File trashFile() throws IOException {
@@ -217,6 +233,11 @@ public class ServerBuilder {
 
     public ServerBuilder withThirdPartyJaxRsPackage(String packageName, String mountPoint) {
         thirdPartyPackages.put(packageName, mountPoint);
+        return this;
+    }
+    
+    public ServerBuilder withSpecificServerModules(Class<? extends ServerModule> ... modules) {
+        serverModules = Arrays.asList(modules);
         return this;
     }
 }
