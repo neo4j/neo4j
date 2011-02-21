@@ -105,6 +105,24 @@ public class DataBrowserWebTest extends WebDriverTest {
         
     }
 	
+	@Test
+    public void hittingReturnShouldFinishCreateRelationshipDialog() {
+        
+        String someNodeId = testHelper.nodeUri(dbHelper.createNode());
+        
+        int initialRelCount = dbHelper.getNumberOfRelationships();
+        
+        dataMenu.getElement().click();
+        addRelationshipButton.getElement().click();
+        
+        addRelationshipDialogToInput.getElement().sendKeys( someNodeId, Keys.RETURN );
+        
+        dialog.waitUntilNotVisible();
+        
+        assertThat(dbHelper.getNumberOfRelationships(), is(initialRelCount + 1));
+        
+    }
+	
 	private ElementReference nodeId = new ElementReference(webDriver, By.className("mor_data_item_id")) {
 		@Override
 		public RenderedWebElement getElement() {
@@ -112,15 +130,16 @@ public class DataBrowserWebTest extends WebDriverTest {
 		}
 	};
 	
+	
 	private ElementReference addRelationshipDialogFromInput = new ElementReference(webDriver, By.id("mor_data_relationship_dialog_from"));
 	private ElementReference addRelationshipDialogToInput = new ElementReference(webDriver, By.id("mor_data_relationship_dialog_to"));
 	private ElementReference addRelationshipDialogTypeDropdown = new ElementReference(webDriver, By.id("mor_data_relationship_available_types"));
 	private ElementReference addRelationshipDialogTypeInput = new ElementReference(webDriver, By.id("mor_data_relationship_dialog_type"));
 	private ElementReference addRelationshipDialogSave = new ElementReference(webDriver, By.className( "mor_data_relationship_dialog_save"));
-	
 	private ElementReference addNodeButton = new ElementReference(webDriver, By.className("mor_data_add_node_button"));
-	
 	private ElementReference addRelationshipButton = new ElementReference(webDriver, By.className("mor_data_add_relationship"));
+	
+	private ElementReference lastRelationshipInList = new ElementReference(webDriver, By.xpath( "//table[@class='mor_fancy data-table']/tbody/tr[last()]/td[2]/a/@href" ));
 	
 	
 }
