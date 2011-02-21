@@ -48,6 +48,25 @@ public class DataBrowserWebTest extends WebDriverTest {
 	}
 	
 	@Test
+    public void shouldBeAbleToCreateRelationship() {
+        
+        String someNodeId = testHelper.nodeUri(dbHelper.createNode());
+        
+        int initialRelCount = dbHelper.getNumberOfRelationships();
+        
+        dataMenu.getElement().click();
+        addRelationshipButton.getElement().click();
+        
+        addRelationshipDialogToInput.getElement().sendKeys( someNodeId );
+        saveNewRelationshipButton.getElement().click();
+        
+        dialog.waitUntilNotVisible();
+        
+        assertThat(dbHelper.getNumberOfRelationships(), is(initialRelCount + 1));
+        
+    }
+	
+	@Test
 	public void createRelationshipShouldHaveCurrentNodeFilledIn() {
 		dataMenu.getElement().click();
 		String expectedId = nodeId.getAttribute("href");
@@ -136,8 +155,10 @@ public class DataBrowserWebTest extends WebDriverTest {
 	private ElementReference addRelationshipDialogTypeDropdown = new ElementReference(webDriver, By.id("mor_data_relationship_available_types"));
 	private ElementReference addRelationshipDialogTypeInput = new ElementReference(webDriver, By.id("mor_data_relationship_dialog_type"));
 	private ElementReference addRelationshipDialogSave = new ElementReference(webDriver, By.className( "mor_data_relationship_dialog_save"));
+	
 	private ElementReference addNodeButton = new ElementReference(webDriver, By.className("mor_data_add_node_button"));
 	private ElementReference addRelationshipButton = new ElementReference(webDriver, By.className("mor_data_add_relationship"));
+	private ElementReference saveNewRelationshipButton = new ElementReference(webDriver, By.className("mor_data_relationship_dialog_save"));
 	
 	private ElementReference lastRelationshipInList = new ElementReference(webDriver, By.xpath( "//table[@class='mor_fancy data-table']/tbody/tr[last()]/td[2]/a/@href" ));
 	
