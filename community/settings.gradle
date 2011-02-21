@@ -1,1 +1,1 @@
-include "kernel", "graph-algo", "lucene-index", "udc", "ha", "management", "integration-test", "com", "neo4j"
+include "kernel", "graph-algo", "lucene-index", "udc", "ha", "management", "integration-test", "com"
