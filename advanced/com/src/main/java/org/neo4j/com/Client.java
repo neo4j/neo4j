@@ -130,7 +130,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
         bootstrap = new ClientBootstrap( new NioClientSocketChannelFactory( executor, executor ) );
         bootstrap.setPipelineFactory( this );
         String storeDir = ((AbstractGraphDatabase) graphDb).getStoreDir();
-        msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
+        msgLog = StringLogger.getLogger( storeDir );
         msgLog.logMessage( "Client connected to " + hostNameOrIp + ":" + port, true );
     }
 

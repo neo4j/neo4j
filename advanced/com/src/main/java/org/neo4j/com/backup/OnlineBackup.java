@@ -88,7 +88,7 @@ public class OnlineBackup
         {
             client.shutdown();
             // TODO This is also ugly
-            StringLogger.close( targetDirectory + "/messages.log" );
+            StringLogger.close( targetDirectory );
         }
         return this;
     }
