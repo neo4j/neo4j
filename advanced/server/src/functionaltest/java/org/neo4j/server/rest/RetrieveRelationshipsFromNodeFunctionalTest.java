@@ -76,7 +76,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     }
 
     private ClientResponse sendRetrieveRequestToServer(long nodeId, String path) {
-        WebResource resource = Client.create().resource(server.restApiUri() + "node/" + nodeId + "/relationships" + path);
+        WebResource resource = Client.create().resource(functionalTestHelper.nodeUri() + "/" + nodeId + "/relationships" + path);
         return resource.accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
     }
 
@@ -192,7 +192,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     public void shouldGet200WhenRetrievingValidRelationship() throws DatabaseBlockedException {
         long relationshipId = helper.createRelationship("LIKES");
 
-        ClientResponse response = Client.create().resource( server.restApiUri() + "relationship/" + relationshipId ).accept( MediaType.APPLICATION_JSON_TYPE ).get(ClientResponse.class);
+        ClientResponse response = Client.create().resource( functionalTestHelper.relationshipUri(relationshipId) ).accept( MediaType.APPLICATION_JSON_TYPE ).get(ClientResponse.class);
 
         assertEquals(200, response.getStatus());
     }
@@ -201,7 +201,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     public void shouldGetARelationshipRepresentationInJsonWhenRetrievingValidRelationship() throws Exception {
         long relationshipId = helper.createRelationship("LIKES");
 
-        ClientResponse response = Client.create().resource(server.restApiUri() + "relationship/" + relationshipId).accept(MediaType.APPLICATION_JSON_TYPE).get(
+        ClientResponse response = Client.create().resource(functionalTestHelper.relationshipUri(relationshipId)).accept(MediaType.APPLICATION_JSON_TYPE).get(
                 ClientResponse.class);
 
         String entity = response.getEntity(String.class);

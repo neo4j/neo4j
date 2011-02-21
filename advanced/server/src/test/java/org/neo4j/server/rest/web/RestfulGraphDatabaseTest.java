@@ -31,6 +31,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
@@ -71,20 +72,23 @@ public class RestfulGraphDatabaseTest
     private Database database;
     private GraphDbHelper helper;
     private EntityOutputFormat output;
+    private String databasePath;
 
     @Before
     public void doBefore() throws IOException
     {
-        database = new Database( DatabaseMode.STANDALONE, ServerTestUtils.createTempDir().getAbsolutePath() );
+        databasePath = ServerTestUtils.createTempDir().getAbsolutePath();
+        database = new Database( DatabaseMode.STANDALONE, databasePath );
         helper = new GraphDbHelper( database );
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
         service = new RestfulGraphDatabase( uriInfo(), database, new JsonFormat(), output );
     }
 
     @After
-    public void shutdownDatabase()
+    public void shutdownDatabase() throws IOException
     {
         this.database.shutdown();
+        org.apache.commons.io.FileUtils.forceDelete( new File(databasePath) );
     }
 
     private UriInfo uriInfo()

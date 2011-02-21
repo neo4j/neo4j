@@ -29,9 +29,17 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.serialize;
 
+import java.io.File;
 import java.io.IOException;
-import java.util.*;
 
+import java.util.Map;
+import java.util.List;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Arrays;
+
+import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -63,21 +71,24 @@ public class DatabaseActionsTest
     private DatabaseActions actions;
     private GraphDbHelper graphdbHelper;
     private Database database;
+    private String databasePath;
 
     @Before
     public void clearDb() throws IOException
     {
+        databasePath = ServerTestUtils.createTempDir().getAbsolutePath();
         database = new Database( DatabaseMode.STANDALONE,
-                ServerTestUtils.createTempDir().getAbsolutePath() );
+                databasePath );
 
         graphdbHelper = new GraphDbHelper( database );
         this.actions = new DatabaseActions( database );
     }
 
     @After
-    public void shutdownDatabase()
+    public void shutdownDatabase() throws IOException
     {
         this.database.shutdown();
+        FileUtils.forceDelete( new File( databasePath ) );
     }
 
     private long createNode( Map<String, Object> properties ) throws DatabaseBlockedException

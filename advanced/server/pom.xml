@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>17</version>
+    <version>18</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -22,13 +22,14 @@
     <neo-server.confdir>target/test-classes/etc/neo-server</neo-server.confdir>
     <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
     <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
+    <neo4j.version>1.3.M02</neo4j.version>
   </properties>
 
   <packaging>bundle</packaging>
 
-    <scm>
-      <url>https://github.com/neo4j/server/tree/master/server</url>
-    </scm>
+  <scm>
+    <url>https://github.com/neo4j/server/tree/master/server</url>
+  </scm>
 
   <licenses>
     <license>
@@ -46,7 +47,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j</artifactId>
-      <version>1.3-SNAPSHOT</version>
+      <version>${neo4j.version}</version>
       <type>pom</type>
       <exclusions>
         <exclusion>
@@ -59,7 +60,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.3-SNAPSHOT</version>
+      <version>${neo4j.version}</version>
       <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
@@ -73,7 +74,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-ha</artifactId>
-      <version>1.3-SNAPSHOT</version>
+      <version>${neo4j.version}</version>
       <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
@@ -123,11 +124,28 @@
       <groupId>com.tinkerpop</groupId>
       <artifactId>gremlin</artifactId>
       <version>0.7</version>
+      <type>jar</type>
       <exclusions>
-        <exclusion>
-          <groupId>jline</groupId>
-          <artifactId>jline</artifactId>
-        </exclusion>
+      	<exclusion>
+      		<artifactId>sesame-sail-api</artifactId>
+      		<groupId>org.openrdf.sesame</groupId>
+      	</exclusion>
+      	<exclusion>
+      		<artifactId>gmaven-plugin</artifactId>
+      		<groupId>org.codehaus.groovy.maven</groupId>
+      	</exclusion>
+      	<exclusion>
+      		<artifactId>common</artifactId>
+      		<groupId>net.fortytwo.sesametools</groupId>
+      	</exclusion>
+      	<exclusion>
+      		<artifactId>aduna-commons-iteration</artifactId>
+      		<groupId>info.aduna.commons</groupId>
+      	</exclusion>
+      	<exclusion>
+      		<artifactId>jung-api</artifactId>
+      		<groupId>net.sf.jung</groupId>
+      	</exclusion>
       </exclusions>
     </dependency>
 
@@ -165,13 +183,16 @@
     <dependency>
       <groupId>org.neo4j.drivers</groupId>
       <artifactId>neo4js</artifactId>
-      <version>0.3-SNAPSHOT</version>
+      <version>0.3</version>
       <type>jar</type>
       <scope>provided</scope>
       <optional>true</optional>
     </dependency>
 
-    <!-- Neo4j manual to be exposed via the web. -->
+    <!-- Neo4j manual to be exposed via the web.
+         NOTE: no more. now points to online doc site
+         otherwise, users can look for local docs on
+         the filesystem.
     <dependency>
       <groupId>org.neo4j.doc</groupId>
       <artifactId>neo4j-manual</artifactId>
@@ -179,6 +200,7 @@
       <version>1.3-SNAPSHOT</version>
       <optional>true</optional>
     </dependency>
+    -->
 
     <!-- File uploads -->
     <dependency>
@@ -263,7 +285,7 @@
     <dependency>
     	<groupId>org.neo4j</groupId>
     	<artifactId>neo4j-shell</artifactId>
-    	<version>1.3-SNAPSHOT</version>
+      <version>${neo4j.version}</version>
     	<scope>runtime</scope>
     </dependency>
   </dependencies>
@@ -617,6 +639,7 @@
             <configuration>
               <skip>false</skip>
               <argLine>-Xmx1024m</argLine>
+              <forkMode>perTest</forkMode>
             </configuration>
           </plugin>
         </plugins>
@@ -680,12 +703,12 @@
 	
 	    <configuration>
 	      <target>
-	        <property name="classpath" refid="maven.runtime.classpath"/>
+	        <property name="classpath" refid="maven.runtime.classpath" />
 	        <exec executable="java">
-			  <arg line="-Dorg.neo4j.server.properties=${basedir}/neo4j-home/conf/neo4j-server.properties"/>
-			  <arg line="-classpath"/>
-			  <arg line="${basedir}/src/main/resources:${classpath}"/>
-			  <arg line="${neo4j-server.mainClass}"/>
+			  <arg line="-Dorg.neo4j.server.properties=${basedir}/neo4j-home/conf/neo4j-server.properties" />
+			  <arg line="-classpath" />
+			  <arg line="${basedir}/src/main/resources:${classpath}" />
+			  <arg line="${neo4j-server.mainClass}" />
 			</exec>
 	      </target>
 	    </configuration>
@@ -766,7 +789,7 @@
     </repository>
     <repository>
       <id>selenium-repository</id>
-      <url>http://selenium.googlecode.com/svn/repository/</url>
+      <url>http://selenium.googlecode.com/svn/repository</url>
     </repository>
     <repository>
       <id>neo4j-releases</id>

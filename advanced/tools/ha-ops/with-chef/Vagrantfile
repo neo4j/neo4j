@@ -1,0 +1,125 @@
+Vagrant::Config.run do |config|
+
+  ### <Likely edits>.............................................................
+  
+  # number of coordinator virtual machines
+  coordinator_instance_count = 1
+
+  # number of Neo4j virtual machines
+  neo4j_instance_count = 1
+
+  ### </Likely edits>............................................................
+
+ 
+  ### <Possible edits>........................................................... 
+
+  # Version of Neo4j to deploy. Should be 1.3 series for HA
+  neo4j_version = "1.3-SNAPSHOT"
+
+  # path to the chef cookbooks. By default, using the included
+  cookbooks_path = "#{File.dirname(__FILE__)}/chef/cookbooks"
+
+  ### </Possible edits>.......................................................... 
+ 
+
+  ### <Unlikely edits>........................................................... 
+  coordinator_client_port = 2181
+  coordinator_sync_limit = 5
+  coordinator_init_limit = 10
+  coordinator_tick_time = 2000
+  coordinator_data_dir = "/srv/neo4j/coordinator"
+
+  neo4j_enable_ha = true
+  neo4j_database_location = "/srv/neo4j/data"
+  neo4j_webserver_port = 7474
+  neo4j_ha_port = 6001
+
+  subnetwork = "33.33.33"
+  # the VM host uses address 1
+  base_host = 2
+
+  ### </Unlikely edits>.......................................................... 
+
+
+  ### <Turn the crank>...........................................................
+
+  raise "Missing cookbooks at '#{cookbooks_path}'" if !FileTest.exists?(cookbooks_path)
+
+  def gen_addrs(subnetwork, from_host, host_count)
+    (1..host_count).map{ |host|
+      "#{subnetwork}.#{from_host + host -1}"
+    }
+  end
+
+  coordinator_addresses = gen_addrs(subnetwork, base_host, coordinator_instance_count)
+  neo4j_addresses = gen_addrs(subnetwork, base_host + coordinator_instance_count, neo4j_instance_count)
+
+  # 
+  # Neo4j HA Coordinator cluster
+  #
+  (1..coordinator_instance_count).each {|instance_number|
+    config.vm.define :"coord_#{instance_number}" do |coord_config|
+      coord_config.vm.box = "lucid32"
+
+      coord_config.vm.network(coordinator_addresses[instance_number-1])
+
+      coord_config.vm.provision :chef_solo do |chef|
+        chef.cookbooks_path = cookbooks_path
+        chef.add_recipe "neo4j"
+        chef.json.merge!({
+          :neo4j => {
+            :version => neo4j_version,
+            :coordinator => {
+              :enable => true,
+              :client_port => coordinator_client_port,
+              :machine_id => instance_number,
+              :sync_limit => coordinator_sync_limit,
+              :init_limit => coordinator_init_limit,
+              :tick_time => coordinator_tick_time,
+              :data_dir => coordinator_data_dir,
+              :cluster => coordinator_addresses
+            }
+          }
+        })
+      end
+    end
+  }
+
+  #
+  # Neo4j HA Data cluster
+  # 
+  (1..neo4j_instance_count).each {|instance_number|
+    config.vm.define :"neo4j_#{instance_number}" do |neo4j_config|
+      neo4j_config.vm.box = "lucid32"
+  
+      neo4j_config.vm.network(neo4j_addresses[instance_number-1])
+      neo4j_config.vm.forward_port("neo4j", 7474, (7474+instance_number-1))
+
+      neo4j_config.vm.provision :chef_solo do |chef|
+        chef.cookbooks_path = cookbooks_path
+        chef.add_recipe "neo4j"
+        chef.json.merge!({
+          :neo4j => {
+            :version => neo4j_version,
+            :database_location => neo4j_database_location,
+            :public_address => neo4j_addresses[instance_number-1],
+            :webserver_port => neo4j_webserver_port,
+            :ha => {
+              :enable => neo4j_enable_ha,
+              :bind_address => neo4j_addresses[instance_number-1],
+              :port => neo4j_ha_port,
+              :machine_id => instance_number,
+            },
+            :coordinator => {
+              :client_port => coordinator_client_port,
+              :cluster => coordinator_addresses
+            }
+          }
+        })
+      end
+    end
+  }
+
+  # </Turn the crank>..........................................................
+
+end

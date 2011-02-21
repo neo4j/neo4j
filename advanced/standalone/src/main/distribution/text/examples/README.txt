@@ -1,12 +1,8 @@
 ${server.fullname} Code Examples
 =======================================
 
-This code examples here are oriented around working with Neo4j in various
-languages, both remotely and in embedded mode (when possible).
-
-Languages include:
-
-* Java - embedded and remote programming
+This section contains examples for working with the Neo4j libraries
+embedded in your applications.
 
 References
 ----------
