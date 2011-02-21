@@ -34,6 +34,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
+import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
@@ -48,10 +49,10 @@ public class CreateRelationshipFunctionalTest
     private NeoServer server;
     private FunctionalTestHelper functionalTestHelper;
     private GraphDbHelper helper;
-
+    
     @Before
     public void setupServer() throws IOException {
-        server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
+        server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().withSpecificServerModules(RESTApiModule.class).build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper(server);
         helper = functionalTestHelper.getGraphDbHelper();
