@@ -24,7 +24,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.server.JAXRSHelper;
-import org.neo4j.server.NeoServer;
+import org.neo4j.server.NeoEmbeddedJettyServer;
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
 import org.neo4j.server.logging.Logger;
 
@@ -34,7 +34,7 @@ public class ThirdPartyJAXRSModule implements ServerModule {
 
     private final Logger log = Logger.getLogger(ThirdPartyJAXRSModule.class);
     
-    public Set<URI> start(NeoServer neoServer) {
+    public Set<URI> start(NeoEmbeddedJettyServer neoServer) {
         HashSet<URI> ownedUris = new HashSet<URI>();
         
         for (ThirdPartyJaxRsPackage tpp : neoServer.getConfigurator().getThirdpartyJaxRsClasses()) {

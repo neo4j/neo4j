@@ -28,8 +28,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.junit.Test;
-import org.neo4j.server.NeoServer;
+import org.neo4j.server.NeoEmbeddedJettyServer;
 import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
 import org.neo4j.server.web.WebServer;
 
@@ -39,11 +40,11 @@ public class ThirdPartyJAXRSModuleTest {
     public void shouldReportThirdPartyPackagesAtSpecifiedMount() throws Exception {
         WebServer webServer = mock(WebServer.class);
 
-        NeoServer neoServer = mock(NeoServer.class);
+        NeoEmbeddedJettyServer neoServer = mock(NeoEmbeddedJettyServer.class);
         when(neoServer.baseUri()).thenReturn(new URI("http://localhost:7575"));
         when(neoServer.getWebServer()).thenReturn(webServer);
         
-        Configurator configurator = mock(Configurator.class);
+        Configurator configurator = mock(PropertyFileConfigurator.class);
         HashSet<ThirdPartyJaxRsPackage> jaxRsPackages = new HashSet<ThirdPartyJaxRsPackage>();
         String path = "/third/party/package";
         jaxRsPackages.add(new ThirdPartyJaxRsPackage("org.example.neo4j", path));        

@@ -27,6 +27,7 @@ import java.util.Set;
 import javax.management.MalformedObjectNameException;
 
 import org.neo4j.server.JAXRSHelper;
+import org.neo4j.server.NeoEmbeddedJettyServer;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.RoundRobinJobScheduler;
 import org.neo4j.server.database.Database;
@@ -44,7 +45,7 @@ public class WebAdminModule implements ServerModule {
     private NeoServer neoServer;
     private final RoundRobinJobScheduler jobScheduler = new RoundRobinJobScheduler();
     
-    public Set<URI> start(NeoServer neoServer) {
+    public Set<URI> start(NeoEmbeddedJettyServer neoServer) {
         this.neoServer = neoServer;
         try {
             startRoundRobinDB();

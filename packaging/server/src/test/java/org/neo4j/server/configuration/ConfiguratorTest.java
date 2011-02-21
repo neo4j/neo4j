@@ -39,7 +39,7 @@ public class ConfiguratorTest {
     @Test
     public void shouldProvideAConfiguration() throws IOException {
         File configFile = PropertyFileBuilder.builder().build();
-        Configuration config = new Configurator(new Validator(), configFile).configuration();
+        Configuration config = new PropertyFileConfigurator(new Validator(), configFile).configuration();
         assertNotNull(config);
         configFile.delete();
     }
@@ -49,7 +49,7 @@ public class ConfiguratorTest {
 
         File configFile = PropertyFileBuilder.builder().withNameValue("foo", "bar").build();
 
-        Configuration testConf = new Configurator(new Validator(), configFile).configuration();
+        Configuration testConf = new PropertyFileConfigurator(new Validator(), configFile).configuration();
 
         final String EXPECTED_VALUE = "bar";
         assertEquals(EXPECTED_VALUE, testConf.getString("foo"));
@@ -61,7 +61,7 @@ public class ConfiguratorTest {
     public void shouldAcceptDuplicateKeysWithSameValue() throws IOException {
         File configFile = PropertyFileBuilder.builder().withNameValue("foo", "bar").withNameValue("foo", "bar").build();
 
-        Configurator configurator = new Configurator(configFile);
+        Configurator configurator = new PropertyFileConfigurator(configFile);
         Configuration testConf = configurator.configuration();
 
         assertNotNull(testConf);
@@ -85,7 +85,7 @@ public class ConfiguratorTest {
 
         File propertyFileWithDbTuningProperty = PropertyFileBuilder.builder().withDbTuningPropertyFile(databaseTuningPropertyFile).build();
 
-        Configurator configurator = new Configurator(propertyFileWithDbTuningProperty);
+        Configurator configurator = new PropertyFileConfigurator(propertyFileWithDbTuningProperty);
 
         Map<String, String> databaseTuningProperties = configurator.getDatabaseTuningProperties();
         assertNotNull(databaseTuningProperties);
@@ -109,7 +109,7 @@ public class ConfiguratorTest {
         out.write(System.getProperty("line.separator"));
         out.close();
 
-        Configurator configurator = new Configurator(file);
+        Configurator configurator = new PropertyFileConfigurator(file);
 
         Set<ThirdPartyJaxRsPackage> thirdpartyJaxRsClasses = configurator.getThirdpartyJaxRsClasses();
         assertNotNull(thirdpartyJaxRsClasses);
