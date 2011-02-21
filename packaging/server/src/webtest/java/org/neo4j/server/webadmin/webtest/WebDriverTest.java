@@ -24,6 +24,7 @@ import java.io.IOException;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.neo4j.server.NeoServer;
@@ -37,7 +38,7 @@ import org.openqa.selenium.firefox.FirefoxDriver;
 
 public abstract class WebDriverTest {
 
-    protected WebDriver webDriver = new FirefoxDriver();
+    protected static WebDriver webDriver = new FirefoxDriver();
     protected NeoServer server;
     protected FunctionalTestHelper testHelper;
     protected GraphDbHelper dbHelper;
@@ -58,8 +59,7 @@ public abstract class WebDriverTest {
         testHelper = new FunctionalTestHelper(server);
         dbHelper = testHelper.getGraphDbHelper();
         
-        String url = server.webadminUri().toString() + "index-no-feedback.html";
-        System.out.println("testing " + url);
+        String url = server.webadminUri().toString() + "index.html";
         webDriver.get(url);
 
         dashboardMenu.waitUntilVisible();
@@ -69,8 +69,12 @@ public abstract class WebDriverTest {
     public void stopServer() {
         testHelper = null;
         dbHelper = null;
-        webDriver.close();
         server.stop();
+    }
+    
+    @AfterClass
+    public static void afterClass() {
+        webDriver.close();
     }
 
     protected ElementReference dashboardMenu = new ElementReference(webDriver, By.id("mainmenu-dashboard")) {
