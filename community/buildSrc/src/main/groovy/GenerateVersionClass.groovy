@@ -12,10 +12,14 @@ class GenerateVersionClass implements Plugin<Project> {
         def makeVersionClassTask = project.task('makeVersionClass') << {
 
 
-            Process git = "git describe".execute([], project.projectDir)
-            git.waitFor()
-            if (git.exitValue() != 0) throw new RuntimeException("unable fetch 'git describe' " + git.err.text);
-            def gitVersion = git.text.readLines()[0];
+            Process git1 = "git fetch --tags".execute([], project.projectDir)
+            git1.waitFor()
+            if (git1.exitValue() != 0) throw new RuntimeException("unable update tags 'git fetch --tags' " + git1.err.text);
+
+            Process git2 = "git describe".execute([], project.projectDir)
+            git2.waitFor()
+            if (git2.exitValue() != 0) throw new RuntimeException("unable fetch 'git2 describe' " + git2.err.text);
+            def gitVersion = git2.text.readLines()[0];
 
             println "Version: ${project.name}, ${project.version}, $gitVersion"
 
