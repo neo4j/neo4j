@@ -27,7 +27,7 @@ import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.server.NeoServer;
+import org.neo4j.server.NeoEmbeddedJettyServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.logging.Logger;
 
@@ -36,9 +36,9 @@ public class ManagementApiModule implements ServerModule {
     private static final String DEFAULT_WEB_ADMIN_REST_API_PATH = "/db/manage";
 
     private final Logger log = Logger.getLogger(ManagementApiModule.class);
-    private NeoServer neoServer;
+    private NeoEmbeddedJettyServer neoServer;
 
-    public Set<URI> start(NeoServer neoServer) {
+    public Set<URI> start(NeoEmbeddedJettyServer neoServer) {
         this.neoServer = neoServer;
         try {
             neoServer.getWebServer().addJAXRSPackages(listFrom(new String[] { Configurator.WEB_ADMIN_REST_API_PACKAGE }), managementApiUri().toString());
