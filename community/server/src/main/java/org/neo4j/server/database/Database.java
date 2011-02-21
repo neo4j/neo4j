@@ -133,7 +133,7 @@ public class Database
 
     public RrdDb rrdDb()
     {
-        assert rrdDb != null : "RrdDb is null";
+        //assert rrdDb != null : "RrdDb is null";
 
         return rrdDb;
     }
