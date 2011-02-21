@@ -32,7 +32,7 @@ import javax.ws.rs.core.MediaType;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.server.NeoServer;
+import org.neo4j.server.NeoEmbeddedJettyServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -46,7 +46,7 @@ public class SetNodePropertiesFunctionalTest {
     private URI propertiesUri;
     private URI badUri;
 
-    private NeoServer server;
+    private NeoEmbeddedJettyServer server;
     private FunctionalTestHelper functionalTestHelper;
     private GraphDbHelper helper;
 
