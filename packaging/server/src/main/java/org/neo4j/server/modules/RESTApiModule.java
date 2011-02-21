@@ -28,7 +28,7 @@ import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.server.NeoEmbeddedJettyServer;
+import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.plugins.PluginManager;
@@ -39,10 +39,10 @@ public class RESTApiModule implements ServerModule {
 
     private static final Logger log = Logger.getLogger(RESTApiModule.class);
     private PluginManager plugins;
-    private NeoEmbeddedJettyServer neoServer;
+    private NeoServerWithEmbeddedWebServer neoServer;
 
 
-    public Set<URI> start(NeoEmbeddedJettyServer neoServer) {
+    public Set<URI> start(NeoServerWithEmbeddedWebServer neoServer) {
         this.neoServer = neoServer;
         
         HashSet<URI> ownedUris = new HashSet<URI>();
