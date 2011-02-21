@@ -32,6 +32,7 @@ import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.rest.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.RenderedWebElement;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
@@ -46,6 +47,8 @@ public abstract class WebDriverTest {
     private static final File targetHtmlDir = new File("target/classes/webadmin-html");
     private static final File srcHtmlDir = new File("src/main/resources/webadmin-html");
     
+    private static final String webadminUri = "webadmin/index.html";
+    
     @BeforeClass
     public static void copyHtmlToTargetDirectory() throws IOException {
         FileUtils.copyDirectory(srcHtmlDir, targetHtmlDir);
@@ -59,8 +62,7 @@ public abstract class WebDriverTest {
         testHelper = new FunctionalTestHelper(server);
         dbHelper = testHelper.getGraphDbHelper();
         
-        String url = server.webadminUri().toString() + "index.html";
-        webDriver.get(url);
+        webDriver.get(server.baseUri().toString() + webadminUri);
 
         dashboardMenu.waitUntilVisible();
     }
@@ -76,7 +78,15 @@ public abstract class WebDriverTest {
     public static void afterClass() {
         webDriver.close();
     }
-
+    
+    protected void clickYesOnAllConfirmDialogs() {
+        ((JavascriptExecutor)webDriver).executeScript("window.confirm = function(msg){return true;};");
+    }
+    
+    protected void clickNoOnAllConfirmDialogs() {
+        ((JavascriptExecutor)webDriver).executeScript("window.confirm = function(msg){return false;};");
+    }
+    
     protected ElementReference dashboardMenu = new ElementReference(webDriver, By.id("mainmenu-dashboard")) {
         @Override
         public RenderedWebElement getElement() {
