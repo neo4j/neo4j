@@ -183,7 +183,7 @@
     <dependency>
       <groupId>org.neo4j.drivers</groupId>
       <artifactId>neo4js</artifactId>
-      <version>0.3</version>
+      <version>0.4-SNAPSHOT</version>
       <type>jar</type>
       <scope>provided</scope>
       <optional>true</optional>
