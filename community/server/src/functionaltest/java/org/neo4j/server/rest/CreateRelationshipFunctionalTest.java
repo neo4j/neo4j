@@ -52,7 +52,7 @@ public class CreateRelationshipFunctionalTest
     
     @Before
     public void setupServer() throws IOException {
-        server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().withSpecificServerModules(RESTApiModule.class).build();
+        server = ServerBuilder.server().withRandomDatabaseDir().withSpecificServerModules(RESTApiModule.class).withPassingStartupHealthcheck().build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper(server);
         helper = functionalTestHelper.getGraphDbHelper();
