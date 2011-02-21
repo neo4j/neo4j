@@ -42,6 +42,8 @@ abstract class TxData
 
     abstract Pair<Collection<Long>, TxData> get( String key, Object value );
     
+    abstract Collection<Long> getOrphans( String key );
+    
     abstract void close();
 
     abstract Pair<Searcher, TxData> asSearcher( QueryContext context );
