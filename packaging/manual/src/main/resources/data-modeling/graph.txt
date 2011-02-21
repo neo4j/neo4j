@@ -1,0 +1,30 @@
+[[modeling-graphdesign]]
+Graph Design
+============
+The syntax of a graph can express anything; the structure of a particular graph should make it easy to express the semantics of a domain.
+
+
+== Nodes & Relationships ==
+
+Nodes are simple entities which form compound structures through Relationships. 
+Both Nodes and Relationships are property containers.
+
+== Single Node ==
+
+The simplest graph possible has a single Node.
+
+== Node Collection ==
+
+A graph may contain an arbitrary number of Nodes.
+
+== Ordered Structure ==
+
+The nodes within a graph may be connected with Relationships to form compound structures.
+
+== Compound Structure ==
+
+== External Index ==
+
+== Graph Index ==
+
+

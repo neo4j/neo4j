@@ -1,0 +1,17 @@
+# The number of milliseconds of each tick
+tickTime=<%= @tick_time %>
+# The number of ticks that the initial 
+# synchronization phase can take
+initLimit=<%= @init_limit %>
+# The number of ticks that can pass between 
+# sending a request and getting an acknowledgement
+syncLimit=<%= @sync_limit %>
+# the directory where the snapshot is stored.
+dataDir=<%= @data_dir %>
+# the port at which the clients will connect
+clientPort=<%= @client_port %>
+
+<% (1..@cluster_addresses.size).each { |instance_number| %>
+server.<%= instance_number %> = <%= @cluster_addresses[instance_number-1] %>:2888:3888
+<% } %>
+

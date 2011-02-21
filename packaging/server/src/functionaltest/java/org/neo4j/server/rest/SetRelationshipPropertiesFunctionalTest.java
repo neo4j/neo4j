@@ -52,10 +52,11 @@ public class SetRelationshipPropertiesFunctionalTest {
     public void setupServer() throws IOException, URISyntaxException {
         server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
         server.start();
+        FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper(server);
         
         long relationshipId = new GraphDbHelper(server.getDatabase()).createRelationship("KNOWS");
-        propertiesUri = new URI(server.restApiUri() + "relationship/" + relationshipId + "/properties");
-        badUri = new URI(server.restApiUri() + "relationship/" + (relationshipId + 1 * 99999) + "/properties");
+        propertiesUri = new URI(functionalTestHelper.relationshipPropertiesUri(relationshipId));
+        badUri = new URI(functionalTestHelper.relationshipPropertiesUri(relationshipId + 1 * 99999));
     }
     
     @After
