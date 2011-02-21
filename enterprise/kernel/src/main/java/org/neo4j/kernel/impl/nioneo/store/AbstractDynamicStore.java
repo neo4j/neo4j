@@ -310,7 +310,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         }
     }
 
-    public Collection<DynamicRecord> allocateRecords( long startBlock,
+    protected Collection<DynamicRecord> allocateRecords( long startBlock,
         byte src[] )
     {
         assert getFileChannel() != null : "Store closed, null file channel";
