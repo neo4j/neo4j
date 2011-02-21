@@ -113,7 +113,7 @@ public class XaLogicalLog
         buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
             + Xid.MAXBQUALSIZE * 10 );
         storeDir = (String) config.get( "store_dir" );
-        msgLog = StringLogger.getLogger( new File( storeDir, "messages.log" ).getPath() );
+        msgLog = StringLogger.getLogger( storeDir);
     }
 
     private boolean getMemoryMapped( Map<Object,Object> config )
