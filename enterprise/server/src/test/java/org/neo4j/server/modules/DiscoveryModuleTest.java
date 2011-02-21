@@ -27,7 +27,7 @@ import java.net.URI;
 import java.util.Set;
 
 import org.junit.Test;
-import org.neo4j.server.NeoServer;
+import org.neo4j.server.NeoEmbeddedJettyServer;
 import org.neo4j.server.web.WebServer;
 
 public class DiscoveryModuleTest {
@@ -35,7 +35,7 @@ public class DiscoveryModuleTest {
     public void shouldRegisterAtRootByDefault() throws Exception {
         WebServer webServer = mock(WebServer.class);
 
-        NeoServer neoServer = mock(NeoServer.class);
+        NeoEmbeddedJettyServer neoServer = mock(NeoEmbeddedJettyServer.class);
         when(neoServer.baseUri()).thenReturn(new URI("http://localhost:7575"));
         when(neoServer.getWebServer()).thenReturn(webServer);
         

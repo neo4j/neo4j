@@ -36,7 +36,7 @@ import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.After;
 import org.junit.Before;
-import org.neo4j.server.NeoServer;
+import org.neo4j.server.NeoEmbeddedJettyServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.rest.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -47,7 +47,7 @@ import com.sun.jersey.api.client.ClientResponse;
 
 public class PluginFunctionalAbstractBase
 {
-    protected NeoServer server;
+    protected NeoEmbeddedJettyServer server;
     protected FunctionalTestHelper functionalTestHelper;
 
     @Before
