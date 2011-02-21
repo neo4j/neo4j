@@ -27,7 +27,7 @@ import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.web.Jetty6WebServer;
 
-public class CleaningNeoServer extends NeoEmbeddedJettyServer {
+public class CleaningNeoServer extends NeoServerWithEmbeddedWebServer {
     private final String dir;
     private static RuntimeException lastStarted;
     private final File configFile;

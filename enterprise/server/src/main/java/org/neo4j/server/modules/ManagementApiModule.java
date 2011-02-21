@@ -19,7 +19,8 @@
  */
 package org.neo4j.server.modules;
 
-import static org.neo4j.server.JAXRSHelper.*;
+import static org.neo4j.server.JAXRSHelper.generateUriFor;
+import static org.neo4j.server.JAXRSHelper.listFrom;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -27,7 +28,7 @@ import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.server.NeoEmbeddedJettyServer;
+import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.logging.Logger;
 
@@ -36,9 +37,9 @@ public class ManagementApiModule implements ServerModule {
     private static final String DEFAULT_WEB_ADMIN_REST_API_PATH = "/db/manage";
 
     private final Logger log = Logger.getLogger(ManagementApiModule.class);
-    private NeoEmbeddedJettyServer neoServer;
+    private NeoServerWithEmbeddedWebServer neoServer;
 
-    public Set<URI> start(NeoEmbeddedJettyServer neoServer) {
+    public Set<URI> start(NeoServerWithEmbeddedWebServer neoServer) {
         this.neoServer = neoServer;
         try {
             neoServer.getWebServer().addJAXRSPackages(listFrom(new String[] { Configurator.WEB_ADMIN_REST_API_PACKAGE }), managementApiUri().toString());

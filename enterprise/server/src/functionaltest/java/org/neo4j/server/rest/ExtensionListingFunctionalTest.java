@@ -24,7 +24,7 @@ import com.sun.jersey.api.client.ClientResponse;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.server.NeoEmbeddedJettyServer;
+import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.plugins.Plugin;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -40,7 +40,7 @@ import static org.junit.Assert.*;
 
 public class ExtensionListingFunctionalTest
 {
-    private NeoEmbeddedJettyServer server;
+    private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
 
     @Before
