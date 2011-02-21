@@ -1,0 +1,9 @@
+# apt-cacher startup configuration file
+
+# IMPORTANT: check the apt-cacher.conf file before using apt-cacher as daemon.
+
+# set to 1 to start the daemon at boot time
+AUTOSTART=1
+
+# extra settings to override the ones in apt-cacher.conf
+# EXTRAOPT=" daemon_port=3142 limit=30 "

@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
 
+import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -47,9 +48,10 @@ public class DatabaseTest {
     }
 
     @After
-    public void shutdownDatabase()
+    public void shutdownDatabase() throws IOException
     {
         this.theDatabase.shutdown();
+        FileUtils.forceDelete( databaseDirectory );
     }
 
     @Test

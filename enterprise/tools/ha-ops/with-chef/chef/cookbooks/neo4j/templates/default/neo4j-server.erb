@@ -1,0 +1,36 @@
+################################################################
+## Neo4j configuration
+##
+#################################################################
+#
+##***************************************************************
+## Server configuration
+##***************************************************************
+#
+## location of the database directory 
+org.neo4j.server.database.location=<%= @database_location %>
+#
+## http port (for all data, administrative, and UI access)
+org.neo4j.server.webserver.port=<%= @webserver_port %>
+#
+#
+##*****************************************************************
+## Administration client configuration
+##*****************************************************************
+#
+## location of the servers round-robin database directory
+#org.neo4j.server.webadmin.rrdb.location=data/graph.db/../rrd
+#
+## REST endpoint for the data API
+## Note the / in the end is mandatory
+org.neo4j.server.webadmin.data.uri=http://<%= @public_address %>:<%= @webserver_port %>/db/data/
+#
+## REST endpoint of the administration API (used by Webadmin)
+org.neo4j.server.webadmin.management.uri=http://<%= @public_address %>:<%= @webserver_port %>/db/manage/
+#
+## Low-level graph engine tuning file
+org.neo4j.server.db.tuning.properties=<%= @conf_dir %>/neo4j.properties
+
+<% if @enable_ha %>
+org.neo4j.server.database.mode=ha
+<% end %>

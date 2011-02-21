@@ -1,0 +1,38 @@
+{
+  "providing": {
+  },
+  "maintainer": "Opscode, Inc.",
+  "replacing": {
+  },
+  "description": "Configures apt and apt services",
+  "maintainer_email": "cookbooks@opscode.com",
+  "groupings": {
+  },
+  "attributes": {
+  },
+  "recommendations": {
+  },
+  "dependencies": {
+  },
+  "suggestions": {
+  },
+  "long_description": "",
+  "platforms": {
+    "debian": [
+
+    ],
+    "ubuntu": [
+
+    ]
+  },
+  "name": "apt",
+  "version": "0.9.2",
+  "conflicting": {
+  },
+  "license": "Apache 2.0",
+  "recipes": {
+    "apt::proxy": "Set up an APT proxy",
+    "apt": "Runs apt-get update during compile phase and sets up preseed directories",
+    "apt::cacher": "Set up an APT cache"
+  }
+}
