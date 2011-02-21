@@ -169,6 +169,26 @@ public class ElementReference {
 
         throw new RuntimeException("Element did not become visible within a reasonable time. Element was: " + this.getElement().toString());
     }
+    
+    public void waitUntilNotVisible() {
+        long end = System.currentTimeMillis() + 10000;
+        try{
+            while (System.currentTimeMillis() < end) {
+                if ( this.getElement().getValueOfCssProperty("display").equals("none")) {
+                    return;
+                }
+                try{
+                    Thread.sleep(13);
+                } catch(Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        } catch(StaleElementReferenceException e) { 
+            return;
+        }
+
+        throw new RuntimeException("Element did not become visible within a reasonable time. Element was: " + this.getElement().toString());
+    }
 
 	public void waitForAttributeToBe(String attributeName, String expectedValue) {
         long end = System.currentTimeMillis() + 10000;
