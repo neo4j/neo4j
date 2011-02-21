@@ -116,15 +116,15 @@ public class QueryContext
     
     /**
      * Makes use of {@link IndexSearcher#search(org.apache.lucene.search.Query, int)},
-     * alt {@link IndexSearcher#search(org.apache.lucene.search.Query, org.apache.lucene.search.Filter, int, Sort)}
+     * alt. {@link IndexSearcher#search(org.apache.lucene.search.Query, org.apache.lucene.search.Filter, int, Sort)}
      * where only the top {@code numberOfTopHits} hits are returned. Default
-     * behaviour is to return all hits, although lazily retrieved from lucene all
+     * behavior is to return all hits, although lazily retrieved from lucene all
      * the way up to the {@link IndexHits} iterator.
      * 
      * @param numberOfTopHits the maximum number of top hits to return.
      * @return A {@link QueryContext} with the number of top hits set.
      */
-    public QueryContext topDocs( int numberOfTopHits )
+    public QueryContext top( int numberOfTopHits )
     {
         this.topHits = numberOfTopHits;
         return this;
