@@ -34,6 +34,7 @@ import java.util.HashSet;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -41,6 +42,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdType;
 
+@Ignore( "Causes OOM, and won't run very nicely on Windows" )
 public class TestBigBatchStore implements RelationshipType
 {
     private static final String PATH = "target/var/bigb";
