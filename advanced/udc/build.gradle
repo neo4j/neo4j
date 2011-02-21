@@ -1,18 +1,18 @@
 dependencies {
-  compile project(":kernel"),
-          "org.apache.httpcomponents:httpcore:$httpComponentsVersion",
-          "commons-io:commons-io:$commonsIoVersion"
+    compile project(":kernel"),
+            "org.apache.httpcomponents:httpcore:$httpComponentsVersion",
+            "commons-io:commons-io:$commonsIoVersion"
 
-  testCompile(group: "org.apache.httpcomponents", name: "httpclient", version: "$httpComponentsVersion", force: true)
-  testCompile(group: "org.apache.httpcomponents", name: "httpclient", version: "$httpComponentsVersion", classifier: "tests", force: true)
-
-  // testCompile "org.apache.httpcomponents:httpclient:$httpComponentsVersion",
-  // testCompile "org.apache.httpcomponents:httpclient:$httpComponentsVersion:tests"
+    testCompile("org.apache.httpcomponents:httpclient:$httpComponentsVersion") {
+        artifact {
+            name = 'httpclient'
+            type = 'jar'
+            classifier = 'tests'
+        }
+        artifact {
+            name = 'httpclient'
+            type = 'jar'
+            classifier = ''
+        }
+    }
 }
-
-/*
-sourceSets {
-  test {
-    compileClasspath += project(':kernel').sourceSets.test.classes
-  }
-}                   */
