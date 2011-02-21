@@ -31,7 +31,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.server.NeoServer;
+import org.neo4j.server.NeoEmbeddedJettyServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.rest.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -50,7 +50,7 @@ public class CloneSubgraphPluginTest {
     private static final RelationshipType KNOWS = DynamicRelationshipType.withName("knows");
     private static final RelationshipType WORKED_FOR = DynamicRelationshipType.withName("worked_for");
 
-    private NeoServer server;
+    private NeoEmbeddedJettyServer server;
     private FunctionalTestHelper functionalTestHelper;
 
     private Node jw;
