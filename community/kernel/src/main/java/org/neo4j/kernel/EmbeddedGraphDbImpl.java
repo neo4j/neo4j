@@ -65,8 +65,8 @@ import org.neo4j.kernel.impl.util.StringLogger;
 
 class EmbeddedGraphDbImpl
 {
-    private static final long MAX_NODE_ID = (long) Math.pow( 2, 35 )-1;
-    private static final long MAX_RELATIONSHIP_ID = MAX_NODE_ID;
+    private static final long MAX_NODE_ID = IdType.NODE.getMaxValue();
+    private static final long MAX_RELATIONSHIP_ID = IdType.RELATIONSHIP.getMaxValue();
     
     private static Logger log =
         Logger.getLogger( EmbeddedGraphDbImpl.class.getName() );
@@ -256,7 +256,7 @@ class EmbeddedGraphDbImpl
 
     public Node getNodeById( long id )
     {
-        if ( id < 0 || id > MAX_NODE_ID )
+        if ( id < 0 || id >= MAX_NODE_ID )
         {
             throw new NotFoundException( "Node[" + id + "]" );
         }
@@ -265,7 +265,7 @@ class EmbeddedGraphDbImpl
 
     public Relationship getRelationshipById( long id )
     {
-        if ( id < 0 || id > MAX_RELATIONSHIP_ID )
+        if ( id < 0 || id >= MAX_RELATIONSHIP_ID )
         {
             throw new NotFoundException( "Relationship[" + id + "]" );
         }
