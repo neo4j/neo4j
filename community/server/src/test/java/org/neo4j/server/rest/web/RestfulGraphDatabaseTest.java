@@ -871,6 +871,26 @@ public class RestfulGraphDatabaseTest
         assertNotNull( map.get( "relationship_index" ) );
         assertEquals( response.getMetadata().getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
     }
+    
+    @Test
+    public void shouldBeAbleToGetRootWhenNoReferenceNodePresent() throws JsonParseException
+    {
+        helper.deleteNode( 0l );
+        
+        Response response = service.getRoot();
+        assertEquals( 200, response.getStatus() );
+        String entity = entityAsString( response );
+        Map<String, Object> map = JsonHelper.jsonToMap( entity );
+        assertNotNull( map.get( "node" ) );
+        
+        assertNotNull( map.get( "node_index" ) );
+        assertNotNull( map.get( "extensions_info" ) );
+        assertNotNull( map.get( "relationship_index" ) );
+        
+        assertNull( map.get( "reference_node" ) );
+        
+        assertEquals( response.getMetadata().getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+    }
 
     @Test
     public void shouldBeAbleToIndexNode() throws DatabaseBlockedException, JsonParseException
