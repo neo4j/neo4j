@@ -39,7 +39,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.neo4j.server.NeoServer;
+import org.neo4j.server.NeoEmbeddedJettyServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
@@ -54,7 +54,7 @@ import com.sun.jersey.api.client.ClientResponse;
 
 public class IndexNodeFunctionalTest
 {
-    private NeoServer server;
+    private NeoEmbeddedJettyServer server;
     private FunctionalTestHelper functionalTestHelper;
     private GraphDbHelper helper;
 

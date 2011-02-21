@@ -31,7 +31,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.server.NeoServer;
+import org.neo4j.server.NeoEmbeddedJettyServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.modules.RESTApiModule;
@@ -46,7 +46,7 @@ public class CreateRelationshipFunctionalTest
 {
     private String RELATIONSHIP_URI_PATTERN;
 
-    private NeoServer server;
+    private NeoEmbeddedJettyServer server;
     private FunctionalTestHelper functionalTestHelper;
     private GraphDbHelper helper;
     
