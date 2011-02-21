@@ -160,13 +160,15 @@ public class IdGeneratorImpl implements IdGenerator
             id = nextFreeId.incrementAndGet();
             assertIdWithinCapacity( id );
         }
+        // TODO This can make highId be the special -1 value, allright?
+        // it will however not be returned from nextId ever.
         nextFreeId.incrementAndGet();
         return id;
     }
 
     private void assertIdWithinCapacity( long id )
     {
-        if ( id >= max || id < 0  )
+        if ( id > max || id < 0  )
         {
             throw new UnderlyingStorageException( "Id capacity exceeded" );
         }

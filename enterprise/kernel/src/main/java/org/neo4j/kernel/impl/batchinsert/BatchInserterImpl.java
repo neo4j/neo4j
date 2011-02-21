@@ -132,11 +132,11 @@ public class BatchInserterImpl implements BatchInserter
     
     public void createNode( long id, Map<String,Object> properties )
     {
-        if ( id < 0 || id > 0xFFFFFFFFL )
+        if ( id < 0 || id > MAX_NODE_ID )
         {
             throw new IllegalArgumentException( "id=" + id );
         }
-        int nodeId = (int) (id & 0xFFFFFFFF);
+        long nodeId = id;
         NodeStore nodeStore = neoStore.getNodeStore();
         if ( neoStore.getNodeStore().loadLightNode( nodeId ) )
         {

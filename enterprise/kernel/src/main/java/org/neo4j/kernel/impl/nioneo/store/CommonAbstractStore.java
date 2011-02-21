@@ -365,7 +365,7 @@ public abstract class CommonAbstractStore
      * @param highId
      *            The high id to set.
      */
-    protected void setHighId( long highId )
+    public void setHighId( long highId )
     {
         if ( idGenerator != null )
         {

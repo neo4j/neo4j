@@ -464,10 +464,9 @@ public class TestIdGenerator
             IdGeneratorImpl.createGenerator( idGeneratorFile() );
             IdGenerator idGenerator = new IdGeneratorImpl( idGeneratorFile(), 1,
                     IdType.PROPERTY_INDEX.getMaxValue() );
-            //                       2^32-2
-            idGenerator.setHighId( 4294967293l );
+            idGenerator.setHighId( IdType.PROPERTY_INDEX.getMaxValue()-1 );
             long id = idGenerator.nextId();
-            assertEquals( 4294967293l, id );
+            assertEquals( IdType.PROPERTY_INDEX.getMaxValue()-1, id );
             idGenerator.freeId( id );
             try
             {
@@ -479,9 +478,9 @@ public class TestIdGenerator
             }
             idGenerator.close();
             idGenerator = new IdGeneratorImpl( idGeneratorFile(), 1, IdType.PROPERTY_INDEX.getMaxValue() );
-            assertEquals( 4294967294l, idGenerator.getHighId() );
+            assertEquals( IdType.PROPERTY_INDEX.getMaxValue()+1, idGenerator.getHighId() );
             id = idGenerator.nextId();
-            assertEquals( 4294967293l, id );
+            assertEquals( IdType.PROPERTY_INDEX.getMaxValue()-1, id );
             try
             {
                 idGenerator.nextId();
@@ -514,16 +513,21 @@ public class TestIdGenerator
     {
         deleteIdGeneratorFile();
         IdGeneratorImpl.createGenerator( idGeneratorFile() );
-        IdGenerator idGenerator = new IdGeneratorImpl( idGeneratorFile(), 1, type.getMaxValue() );
-        long id = type.getMaxValue()-3;
+        long maxValue = type.getMaxValue();
+        IdGenerator idGenerator = new IdGeneratorImpl( idGeneratorFile(), 1, maxValue );
+        long id = maxValue-2;
         idGenerator.setHighId( id );
         assertEquals( id, idGenerator.nextId() );
         assertEquals( id+1, idGenerator.nextId() );
-        assertEquals( id+2, idGenerator.nextId() );
+        if ( maxValue != (long) Math.pow( 2, 32 )-1 )
+        {
+            // This is for the special -1 value
+            assertEquals( id+2, idGenerator.nextId() );
+        }
         try
         {
             idGenerator.nextId();
-            fail( "Id capacity shouldn't be able to be exceeded" );
+            fail( "Id capacity shouldn't be able to be exceeded for " + type );
         }
         catch ( StoreFailureException e )
         { // Good
