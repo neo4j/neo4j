@@ -256,7 +256,7 @@ class EmbeddedGraphDbImpl
 
     public Node getNodeById( long id )
     {
-        if ( id < 0 || id >= MAX_NODE_ID )
+        if ( id < 0 || id > MAX_NODE_ID )
         {
             throw new NotFoundException( "Node[" + id + "]" );
         }
@@ -265,7 +265,7 @@ class EmbeddedGraphDbImpl
 
     public Relationship getRelationshipById( long id )
     {
-        if ( id < 0 || id >= MAX_RELATIONSHIP_ID )
+        if ( id < 0 || id > MAX_RELATIONSHIP_ID )
         {
             throw new NotFoundException( "Relationship[" + id + "]" );
         }
