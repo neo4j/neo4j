@@ -19,22 +19,22 @@
  */
 package org.neo4j.server.modules;
 
+import static org.neo4j.server.JAXRSHelper.listFrom;
+
 import java.net.URI;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.server.JAXRSHelper;
-import org.neo4j.server.NeoEmbeddedJettyServer;
+import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
 import org.neo4j.server.logging.Logger;
-
-import static org.neo4j.server.JAXRSHelper.listFrom;
 
 public class ThirdPartyJAXRSModule implements ServerModule {
 
     private final Logger log = Logger.getLogger(ThirdPartyJAXRSModule.class);
     
-    public Set<URI> start(NeoEmbeddedJettyServer neoServer) {
+    public Set<URI> start(NeoServerWithEmbeddedWebServer neoServer) {
         HashSet<URI> ownedUris = new HashSet<URI>();
         
         for (ThirdPartyJaxRsPackage tpp : neoServer.getConfigurator().getThirdpartyJaxRsClasses()) {

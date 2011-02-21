@@ -67,7 +67,7 @@ public class ServerBuilder {
         return new ServerBuilder();
     }
 
-    public NeoEmbeddedJettyServer build() throws IOException {
+    public NeoServerWithEmbeddedWebServer build() throws IOException {
         if ( dbDir == null )
         {
             throw new IllegalStateException( "database directory must be configured." );

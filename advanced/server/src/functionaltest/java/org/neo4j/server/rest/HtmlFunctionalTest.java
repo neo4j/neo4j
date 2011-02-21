@@ -32,7 +32,7 @@ import javax.ws.rs.core.Response.Status;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.server.NeoEmbeddedJettyServer;
+import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
@@ -46,7 +46,7 @@ public class HtmlFunctionalTest {
     private long trinity;
     private long thomasAndersonLovesTrinity;
 
-    private NeoEmbeddedJettyServer server;
+    private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
     private GraphDbHelper helper;
 
