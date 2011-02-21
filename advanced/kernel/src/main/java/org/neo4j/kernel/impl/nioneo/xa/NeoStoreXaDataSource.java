@@ -355,7 +355,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         }
     }
 
-    public int nextId( Class<?> clazz )
+    public long nextId( Class<?> clazz )
     {
         Store store = idGenerators.get( clazz );
 

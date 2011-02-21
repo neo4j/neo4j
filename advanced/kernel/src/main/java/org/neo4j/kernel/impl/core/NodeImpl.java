@@ -68,6 +68,7 @@ class NodeImpl extends Primitive
     @Override
     public int hashCode()
     {
+        // TODO long
         return (int) id;
     }
 
@@ -271,7 +272,7 @@ class NodeImpl extends Primitive
     {
         RelIdArray relationshipSet = nodeManager.getCowRelationshipAddMap(
             this, type.name(), true );
-        relationshipSet.add( (int) relId );
+        relationshipSet.add( relId );
     }
 
     // caller is responsible for acquiring lock
@@ -281,7 +282,7 @@ class NodeImpl extends Primitive
     {
         RelIdArray relationshipSet = nodeManager.getCowRelationshipRemoveMap(
             this, type.name(), true );
-        relationshipSet.add( (int) relId );
+        relationshipSet.add( relId );
     }
 
     private void ensureRelationshipMapNotNull( NodeManager nodeManager )
@@ -294,7 +295,7 @@ class NodeImpl extends Primitive
 
     private void loadInitialRelationships( NodeManager nodeManager )
     {
-        Map<Integer,RelationshipImpl> map = null;
+        Map<Long,RelationshipImpl> map = null;
         synchronized ( this )
         {
             if ( relationshipMap == null )
@@ -312,14 +313,14 @@ class NodeImpl extends Primitive
         }
     }
 
-    private Map<Integer,RelationshipImpl> getMoreRelationships( NodeManager nodeManager, 
+    private Map<Long,RelationshipImpl> getMoreRelationships( NodeManager nodeManager, 
             ArrayMap<String,RelIdArray> tmpRelMap )
     {
         if ( !relChainPosition.hasMore() )
         {
             return null;
         }
-        Pair<ArrayMap<String,RelIdArray>,Map<Integer,RelationshipImpl>> pair = 
+        Pair<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>> pair = 
             nodeManager.getMoreRelationships( this );
         ArrayMap<String,RelIdArray> addMap = pair.first();
         if ( addMap.size() == 0 )
@@ -346,7 +347,7 @@ class NodeImpl extends Primitive
     boolean getMoreRelationships( NodeManager nodeManager )
     {
         // ArrayMap<String, IntArray> tmpRelMap = relationshipMap;
-        Pair<ArrayMap<String,RelIdArray>,Map<Integer,RelationshipImpl>> pair;
+        Pair<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>> pair;
         synchronized ( this )
         {
             if ( !relChainPosition.hasMore() )

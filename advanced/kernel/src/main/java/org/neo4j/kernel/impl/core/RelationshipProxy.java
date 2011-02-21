@@ -118,7 +118,7 @@ class RelationshipProxy implements Relationship
     public int compareTo( Object rel )
     {
         Relationship r = (Relationship) rel;
-        int ourId = (int) this.getId(), theirId = (int) r.getId();
+        long ourId = this.getId(), theirId = r.getId();
 
         if ( ourId < theirId )
         {
@@ -147,6 +147,7 @@ class RelationshipProxy implements Relationship
     @Override
     public int hashCode()
     {
+        // TODO long
         return (int) relId;
     }
 

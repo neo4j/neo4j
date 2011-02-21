@@ -108,6 +108,7 @@ class ReadTransaction
                 position.setNextRecord( Record.NO_NEXT_RELATIONSHIP.intValue() );
                 return rels;
             }
+            System.out.println( "loaded " + relRecord );
             long firstNode = relRecord.getFirstNode();
             long secondNode = relRecord.getSecondNode();
             if ( relRecord.inUse() )
@@ -179,6 +180,7 @@ class ReadTransaction
         return propertyMap;
     }
     
+    // Duplicated code
     public Object propertyGetValueOrNull( PropertyRecord propertyRecord )
     {
         PropertyType type = propertyRecord.getType();

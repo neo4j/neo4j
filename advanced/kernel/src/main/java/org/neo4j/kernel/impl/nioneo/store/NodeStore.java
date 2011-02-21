@@ -117,7 +117,7 @@ public class NodeStore extends AbstractStore implements Store
 
     public void updateRecord( NodeRecord record )
     {
-        PersistenceWindow window = acquireWindow( (int) record.getId(),
+        PersistenceWindow window = acquireWindow( record.getId(),
             OperationType.WRITE );
         try
         {
@@ -134,7 +134,7 @@ public class NodeStore extends AbstractStore implements Store
         PersistenceWindow window = null;
         try
         {
-            window = acquireWindow( (int) id, OperationType.READ );
+            window = acquireWindow( id, OperationType.READ );
         }
         catch ( InvalidRecordException e )
         {
@@ -144,7 +144,7 @@ public class NodeStore extends AbstractStore implements Store
 
         try
         {
-            NodeRecord record = getRecord( (int) id, window, true );
+            NodeRecord record = getRecord( id, window, true );
             if ( record == null )
             {
                 return false;
@@ -177,23 +177,20 @@ public class NodeStore extends AbstractStore implements Store
             throw new InvalidRecordException( "Record[" + id + "] not in use" );
         }
         
-        long nextRel = buffer.getInt();
-        long nextProp = buffer.getInt();
+        long nextRel = buffer.getUnsignedInt();
+        long nextProp = buffer.getUnsignedInt();
         
         // The int value -1 (2^32 - 1) is the magic minus one which denotes the end of f.ex. a chain
-        long relModifier = nextRel == Record.NO_NEXT_RELATIONSHIP.intValue() && (inUseByte&0xE) == 0 ? 0 : (inUseByte&0xE) << 31;
-        long propModifier = nextProp == Record.NO_NEXT_PROPERTY.intValue() && (inUseByte&0xF0) == 0 ? 0 : (inUseByte&0xF0) << 28;
-        
-        nextRel |= relModifier;
-        nextProp |= propModifier;
+        long relModifier = nextRel == IdGeneratorImpl.INTEGER_MINUS_ONE && (inUseByte&0xE) == 0 ? 0 : (inUseByte&0xE) << 31;
+        long propModifier = nextProp == IdGeneratorImpl.INTEGER_MINUS_ONE && (inUseByte&0xF0) == 0 ? 0 : (inUseByte&0xF0) << 28;
         
         NodeRecord nodeRecord = new NodeRecord( id );
         nodeRecord.setInUse( inUse );
-        nodeRecord.setNextRel( nextRel );
-        nodeRecord.setNextProp( nextProp );
+        nodeRecord.setNextRel( longFromIntAndMod( nextRel, relModifier ) );
+        nodeRecord.setNextProp( longFromIntAndMod( nextProp, propModifier ) );
         return nodeRecord;
     }
-
+    
     private void updateRecord( NodeRecord record, PersistenceWindow window )
     {
         long id = record.getId();

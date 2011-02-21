@@ -44,9 +44,9 @@ public class TestNode extends AbstractNeo4jTestCase
     @Test
     public void testNodeCreateAndDelete()
     {
-        int nodeId = -1;
+        long nodeId = -1;
         Node node = getGraphDb().createNode();
-        nodeId = (int) node.getId();
+        nodeId = node.getId();
         getGraphDb().getNodeById( nodeId );
         node.delete();
         Transaction tx = getTransaction();

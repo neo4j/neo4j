@@ -225,8 +225,9 @@ public abstract class AbstractStore extends CommonAbstractStore
 //        }
 //    }
 
-    private int findHighIdBackwards() throws IOException
+    private long findHighIdBackwards() throws IOException
     {
+        // Duplicated method
         FileChannel fileChannel = getFileChannel();
         int recordSize = getRecordSize();
         long fileSize = fileChannel.size();
@@ -242,7 +243,7 @@ public abstract class AbstractStore extends CommonAbstractStore
                 byteBuffer.clear();
                 if ( inUse != 0 )
                 {
-                    return (int) i;
+                    return i;
                 }
             }
         }
@@ -295,7 +296,8 @@ public abstract class AbstractStore extends CommonAbstractStore
                 }
             }
             ByteBuffer byteBuffer = ByteBuffer.wrap( new byte[1] );
-            LinkedList<Integer> freeIdList = new LinkedList<Integer>();
+            // Duplicated code block
+            LinkedList<Long> freeIdList = new LinkedList<Long>();
             if ( fullRebuild )
             {
                 for ( long i = 0; i * recordSize < fileSize && recordSize > 0; 
@@ -309,7 +311,7 @@ public abstract class AbstractStore extends CommonAbstractStore
                     nextId();
                     if ( inUse == RECORD_NOT_IN_USE )
                     {
-                        freeIdList.add( (int) i );
+                        freeIdList.add( i );
                     }
                     else
                     {

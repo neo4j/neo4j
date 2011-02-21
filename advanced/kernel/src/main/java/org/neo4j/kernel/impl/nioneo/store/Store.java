@@ -32,7 +32,7 @@ public interface Store
      * @throws IOException
      *             If unable to
      */
-    public int nextId();
+    public long nextId();
     
     public long getHighestPossibleIdInUse();
 

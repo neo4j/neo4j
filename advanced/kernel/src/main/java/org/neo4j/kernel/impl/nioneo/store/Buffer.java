@@ -164,6 +164,11 @@ public class Buffer
     {
         return buf.getInt();
     }
+    
+    public long getUnsignedInt()
+    {
+        return buf.getInt()&0xFFFFFFFFL;
+    }
 
     /**
      * Reads and returns a <CODE>long</CODE> from the underlying buffer.

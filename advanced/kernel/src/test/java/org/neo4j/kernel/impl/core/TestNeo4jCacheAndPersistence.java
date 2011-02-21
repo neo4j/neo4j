@@ -45,8 +45,8 @@ import org.neo4j.kernel.impl.MyRelTypes;
 
 public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
 {
-    private int node1Id = -1;
-    private int node2Id = -1;
+    private long node1Id = -1;
+    private long node2Id = -1;
     private String key1 = "key1";
     private String key2 = "key2";
     private String arrayKey = "arrayKey";
@@ -62,8 +62,8 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
         Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
-        node1Id = (int) node1.getId();
-        node2Id = (int) node2.getId();
+        node1Id = node1.getId();
+        node2Id = node2.getId();
         node1.setProperty( key1, int1 );
         node1.setProperty( key2, string1 );
         node2.setProperty( key1, int2 );

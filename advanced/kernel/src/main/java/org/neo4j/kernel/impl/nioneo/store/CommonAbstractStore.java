@@ -43,6 +43,11 @@ public abstract class CommonAbstractStore
     protected static final Logger logger = Logger
         .getLogger( CommonAbstractStore.class.getName() );
     
+    protected static long longFromIntAndMod( long base, long modifier )
+    {
+        return modifier == 0 && base == IdGeneratorImpl.INTEGER_MINUS_ONE ? -1 : base|modifier;
+    }
+
     private long highestUpdateRecordId = -1;
 
     /**
@@ -296,7 +301,7 @@ public abstract class CommonAbstractStore
      * Sets the {@link PersistenceWindowPool} for this store to use. Normally
      * this is set in the {@link #loadStorage()} method. This method must be
      * invoked with a valid "pool" before any of the
-     * {@link #acquireWindow(int, OperationType)}
+     * {@link #acquireWindow(long, OperationType)}
      * {@link #releaseWindow(PersistenceWindow)} {@link #flush(int)}
      * {@link #forget(int)} {@link #close()} methods are invoked.
      *
@@ -315,9 +320,9 @@ public abstract class CommonAbstractStore
      * @throws IOException
      *             If unable to get next free id
      */
-    public int nextId()
+    public long nextId()
     {
-        return (int) idGenerator.nextId();
+        return idGenerator.nextId();
     }
 
     /**

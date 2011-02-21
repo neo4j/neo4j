@@ -1807,6 +1807,7 @@ class WriteTransaction extends XaTransaction
 
         public int hashCode()
         {
+            // TODO long
             return (int) id;
         }
 
@@ -1823,7 +1824,7 @@ class WriteTransaction extends XaTransaction
         {
             if ( record.isCreated() )
             {
-                createdNodes.add( (int) record.getId() );
+                createdNodes.add( record.getId() );
             }
         }
         return createdNodes;

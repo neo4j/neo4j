@@ -654,7 +654,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         Node n1 = getGraphDb().createNode();
         newTransaction();
         clearCache();
-        n1 = getGraphDb().getNodeById( (int) n1.getId() );
+        n1 = getGraphDb().getNodeById( n1.getId() );
         Node n2 = getGraphDb().createNode();
         n1.createRelationshipTo( n2, MyRelTypes.TEST );
         newTransaction();

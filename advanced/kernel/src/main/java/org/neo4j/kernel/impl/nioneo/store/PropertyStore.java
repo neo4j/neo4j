@@ -217,7 +217,7 @@ public class PropertyStore extends AbstractStore implements Store
 
     public void updateRecord( PropertyRecord record )
     {
-        PersistenceWindow window = acquireWindow( (int) record.getId(),
+        PersistenceWindow window = acquireWindow( record.getId(),
             OperationType.WRITE );
         try
         {
@@ -288,10 +288,10 @@ public class PropertyStore extends AbstractStore implements Store
 
     public PropertyRecord getLightRecord( long id )
     {
-        PersistenceWindow window = acquireWindow( (int) id, OperationType.READ );
+        PersistenceWindow window = acquireWindow( id, OperationType.READ );
         try
         {
-            PropertyRecord record = getRecord( (int) id, window );
+            PropertyRecord record = getRecord( id, window );
             record.setIsLight( true );
             return record;
         }
@@ -308,7 +308,7 @@ public class PropertyStore extends AbstractStore implements Store
         {
             Collection<DynamicRecord> stringRecords = 
                 stringPropertyStore.getLightRecords( 
-                    (int) record.getPropBlock() );
+                    record.getPropBlock() );
             for ( DynamicRecord stringRecord : stringRecords )
             {
                 stringRecord.setType( PropertyType.STRING.intValue() );
@@ -319,7 +319,7 @@ public class PropertyStore extends AbstractStore implements Store
         {
             Collection<DynamicRecord> arrayRecords = 
                 arrayPropertyStore.getLightRecords( 
-                    (int) record.getPropBlock() );
+                    record.getPropBlock() );
             for ( DynamicRecord arrayRecord : arrayRecords )
             {
                 arrayRecord.setType( PropertyType.ARRAY.intValue() );
@@ -344,7 +344,7 @@ public class PropertyStore extends AbstractStore implements Store
         {
             Collection<DynamicRecord> stringRecords = 
                 stringPropertyStore.getLightRecords( 
-                    (int) record.getPropBlock() );
+                    record.getPropBlock() );
             record.setIsLight( false );
             for ( DynamicRecord stringRecord : stringRecords )
             {
@@ -356,7 +356,7 @@ public class PropertyStore extends AbstractStore implements Store
         {
             Collection<DynamicRecord> arrayRecords = 
                 arrayPropertyStore.getLightRecords( 
-                    (int) record.getPropBlock() );
+                    record.getPropBlock() );
             record.setIsLight( false );
             for ( DynamicRecord arrayRecord : arrayRecords )
             {
@@ -391,13 +391,13 @@ public class PropertyStore extends AbstractStore implements Store
         record.setKeyIndexId( buffer.getInt() );
         record.setPropBlock( buffer.getLong() );
         
-        long prevProp = buffer.getInt();
-        long prevModifier = prevProp == Record.NO_NEXT_PROPERTY.intValue() && (inUseByte&0xF0) == 0 ? 0 : (inUseByte&0xF0) << 28;
-        long nextProp = buffer.getInt();
-        long nextModifier = nextProp == Record.NO_NEXT_PROPERTY.intValue() && (typeInt&0xF0000) == 0 ? 0 : (typeInt&0xF0000) << 16;
+        long prevProp = buffer.getUnsignedInt();
+        long prevModifier = prevProp == IdGeneratorImpl.INTEGER_MINUS_ONE && (inUseByte&0xF0) == 0 ? 0 : (inUseByte&0xF0) << 28;
+        long nextProp = buffer.getUnsignedInt();
+        long nextModifier = nextProp == IdGeneratorImpl.INTEGER_MINUS_ONE && (typeInt&0xF0000) == 0 ? 0 : (typeInt&0xF0000) << 16;
         
-        record.setPrevProp( prevProp|prevModifier );
-        record.setNextProp( nextProp|nextModifier );
+        record.setPrevProp( longFromIntAndMod( prevProp, prevModifier ) );
+        record.setNextProp( longFromIntAndMod( nextProp, nextModifier ) );
         return record;
     }
 
@@ -643,9 +643,15 @@ public class PropertyStore extends AbstractStore implements Store
 
     public Object getArrayFor( PropertyRecord propertyRecord )
     {
-        long recordToFind = propertyRecord.getPropBlock();
+        return getArrayFor( propertyRecord.getPropBlock(), propertyRecord.getValueRecords(), arrayPropertyStore );
+    }
+    
+    public static Object getArrayFor( long startRecord, Iterable<DynamicRecord> records,
+            DynamicArrayStore arrayPropertyStore )
+    {
+        long recordToFind = startRecord;
         Map<Long,DynamicRecord> recordsMap = new HashMap<Long,DynamicRecord>();
-        for ( DynamicRecord record : propertyRecord.getValueRecords() )
+        for ( DynamicRecord record : records )
         {
             recordsMap.put( record.getId(), record );
         }

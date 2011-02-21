@@ -115,7 +115,7 @@ public class BatchInserterImpl implements BatchInserter
     
     public long createNode( Map<String,Object> properties )
     {
-        int nodeId = getNodeStore().nextId();
+        long nodeId = getNodeStore().nextId();
         NodeRecord nodeRecord = new NodeRecord( nodeId );
         nodeRecord.setInUse( true );
         nodeRecord.setCreated();
@@ -165,7 +165,7 @@ public class BatchInserterImpl implements BatchInserter
         {
             typeId = createNewRelationshipType( type.name() );
         }
-        int id = getRelationshipStore().nextId(); 
+        long id = getRelationshipStore().nextId(); 
         RelationshipRecord record = new RelationshipRecord( id, firstNodeId,
             secondNodeId, typeId );
         record.setInUse( true );
@@ -400,7 +400,7 @@ public class BatchInserterImpl implements BatchInserter
             {
                 keyId = createNewPropertyIndex( entry.getKey() );
             }
-            int propertyId = propStore.nextId();
+            long propertyId = propStore.nextId();
             PropertyRecord propertyRecord = new PropertyRecord( propertyId );
             propertyRecord.setInUse( true );
             propertyRecord.setCreated();
@@ -464,7 +464,7 @@ public class BatchInserterImpl implements BatchInserter
     private int createNewPropertyIndex( String stringKey )
     {
         PropertyIndexStore idxStore = getPropertyIndexStore();
-        int keyId = idxStore.nextId();
+        int keyId = (int) idxStore.nextId();
         PropertyIndexRecord record = new PropertyIndexRecord( keyId );
         record.setInUse( true );
         record.setCreated();
@@ -487,7 +487,7 @@ public class BatchInserterImpl implements BatchInserter
     private int createNewRelationshipType( String name )
     {
         RelationshipTypeStore typeStore = getRelationshipTypeStore();
-        int id = typeStore.nextId();
+        int id = (int) typeStore.nextId();
         RelationshipTypeRecord record = new RelationshipTypeRecord( id );
         record.setInUse( true );
         record.setCreated();

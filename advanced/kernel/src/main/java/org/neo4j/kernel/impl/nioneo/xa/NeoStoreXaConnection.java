@@ -24,6 +24,7 @@ import javax.transaction.xa.XAResource;
 
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.impl.core.PropertyIndex;
+import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
@@ -119,7 +120,7 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
         return neoStore.getPropertyStore();
     }
 
-    NodeStore getNodeStore()
+    CommonAbstractStore getNodeStore()
     {
         return neoStore.getNodeStore();
     }
