@@ -30,6 +30,7 @@ dependencies {
     testCompile "org.hamcrest:hamcrest-all:$hamcrestVersion",
             "org.mockito:mockito-all:$mockitoVersion",
             "com.sun.jersey:jersey-client:$jerseyVersion",
+            "jline:jline:$jlineVersion",
             "commons-io:commons-io:$commonsIoVersion"
 
 
