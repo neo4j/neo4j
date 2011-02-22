@@ -27,6 +27,12 @@ dependencies {
         }
     }
 
+    testCompile "org.hamcrest:hamcrest-all:$hamcrestVersion",
+            "org.mockito:mockito-all:$mockitoVersion",
+            "com.sun.jersey:jersey-client:$jerseyVersion",
+            "commons-io:commons-io:$commonsIoVersion"
+
+
     testCompile("$group:neo4j-kernel:$version") {
         artifact {
             name = 'neo4j-kernel'
@@ -38,5 +44,25 @@ dependencies {
             type = 'jar'
             classifier = ''
         }
+    }
+    testCompile("$group:neo4j-ha:$version") {
+        artifact {
+            name = 'neo4j-ha'
+            type = 'jar'
+            classifier = 'tests'
+        }
+        artifact {
+            name = 'neo4j-ha'
+            type = 'jar'
+            classifier = ''
+        }
+    }
+}
+
+
+sourceSets {
+    functionalTest {
+        compileClasspath += project.sourceSets.main.classes
+        compileClasspath += project.sourceSets.test.classes
     }
 }
