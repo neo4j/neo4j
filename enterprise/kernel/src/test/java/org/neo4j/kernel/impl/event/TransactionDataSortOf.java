@@ -84,56 +84,48 @@ class TransactionDataSortOf
     {
         for ( Node node : data.createdNodes() )
         {
-//            System.out.println( "Created node:" + node );
             assertTrue( expectedCreatedNodes.remove( node ) );
         }
         assertTrue( expectedCreatedNodes.isEmpty() );
         
         for ( Relationship rel : data.createdRelationships() )
         {
-//            System.out.println( "Created rel:" + rel );
             assertTrue( expectedCreatedRelationships.remove( rel ) );
         }
         assertTrue( expectedCreatedRelationships.isEmpty() );
         
         for ( Node node : data.deletedNodes() )
         {
-//            System.out.println( "Deleted node:" + node );
             assertTrue( expectedDeletedNodes.remove( node ) );
         }
         assertTrue( expectedDeletedNodes.isEmpty() );
         
         for ( Relationship rel : data.deletedRelationships() )
         {
-//            System.out.println( "Deleted rel:" + rel );
             assertTrue( expectedDeletedRelationships.remove( rel ) );
         }
         assertTrue( expectedDeletedRelationships.isEmpty() );
         
         for ( PropertyEntry<Node> entry : data.assignedNodeProperties() )
         {
-//            System.out.println( "Assigned property:" + entry );
             checkAssigned( expectedAssignedNodeProperties, entry );
         }
         assertTrue( expectedAssignedNodeProperties.isEmpty() );
 
         for ( PropertyEntry<Relationship> entry : data.assignedRelationshipProperties() )
         {
-//            System.out.println( "Assigned property:" + entry );
             checkAssigned( expectedAssignedRelationshipProperties, entry );
         }
         assertTrue( expectedAssignedRelationshipProperties.isEmpty() );
 
         for ( PropertyEntry<Node> entry : data.removedNodeProperties() )
         {
-//            System.out.println( "Removed property:" + entry );
             checkRemoved( expectedRemovedNodeProperties, entry );
         }
         assertTrue( expectedRemovedNodeProperties.isEmpty() );
 
         for ( PropertyEntry<Relationship> entry : data.removedRelationshipProperties() )
         {
-//            System.out.println( "Removed property:" + entry );
             checkRemoved( expectedRemovedRelationshipProperties, entry );
         }
         assertTrue( expectedRemovedRelationshipProperties.isEmpty() );
