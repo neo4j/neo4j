@@ -46,6 +46,8 @@ dependencies {
             classifier = ''
         }
     }
+    testCompile "org.seleniumhq.webdriver:webdriver-firefox:0.9.7376"
+    testCompile "org.seleniumhq.webdriver:webdriver-htmlunit:0.9.7376"
     testCompile("$group:neo4j-ha:$version") {
         artifact {
             name = 'neo4j-ha'
@@ -60,10 +62,13 @@ dependencies {
     }
 }
 
-
 sourceSets {
-    functionalTest {
-        compileClasspath += project.sourceSets.main.classes
-        compileClasspath += project.sourceSets.test.classes
+    integrationTest {
+        compileClasspath += project(':server').sourceSets.test.classes
+        compileClasspath += project(':server').sourceSets.functionalTest.classes
+//TODO rename webtest into integrationTest
+        java {
+            srcDir "src/webtest/java"
+        }
     }
 }
