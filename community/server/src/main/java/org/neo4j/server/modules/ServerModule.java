@@ -17,23 +17,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server;
+package org.neo4j.server.modules;
 
-import org.apache.commons.configuration.Configuration;
-import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.database.Database;
-import org.neo4j.server.plugins.PluginManager;
+import java.net.URI;
+import java.util.Set;
 
-public interface NeoServer {
-    void start();
+import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 
-    Configuration getConfiguration();
+/**
+ *  An interface which the NeoServer uses to initialise server modules (e.g. JAX-RS, static content, webadmin)
+ */
+public interface ServerModule {
 
-    void stop();
-
-    Database getDatabase();
-
-    Configurator getConfigurator();
-
-    PluginManager getExtensionManager();
+    /**
+     * Start a module within the server
+     * 
+     * @param neoServer The NeoServer that owns the module
+     * @return a Set of URIs that are owned by the module, or an empty set if no URIs are claimed
+     */
+    public Set<URI> start(NeoServerWithEmbeddedWebServer neoServer);
+    
+    public void stop();
 }

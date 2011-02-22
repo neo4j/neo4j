@@ -36,7 +36,7 @@ import com.sun.jersey.api.client.ClientResponse;
 
 public class ServerConfigTest {
 
-    private NeoServer server;
+    private NeoServerWithEmbeddedWebServer server;
     
     @After
     public void stopServer() {

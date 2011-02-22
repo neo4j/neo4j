@@ -36,7 +36,7 @@ import javax.ws.rs.core.MediaType;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.server.NeoServer;
+import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -51,7 +51,7 @@ public class ManageNodeFunctionalTest
     private static final long NON_EXISTENT_NODE_ID = 999999;
     private static String NODE_URI_PATTERN = "^.*/node/[0-9]+$";
 
-    private NeoServer server;
+    private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
     private GraphDbHelper helper;
 
@@ -115,7 +115,7 @@ public class ManageNodeFunctionalTest
     private ClientResponse sendCreateRequestToServer( String json )
     {
         Client client = Client.create();
-        WebResource resource = client.resource( server.restApiUri() + "node/" );
+        WebResource resource = client.resource( functionalTestHelper.dataUri() + "node/" );
         ClientResponse response = resource.type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( json ).post( ClientResponse.class );
         return response;
     }
@@ -123,7 +123,7 @@ public class ManageNodeFunctionalTest
     private ClientResponse sendCreateRequestToServer()
     {
         Client client = Client.create();
-        WebResource resource = client.resource( server.restApiUri() + "node/" );
+        WebResource resource = client.resource( functionalTestHelper.dataUri() + "node/" );
         ClientResponse response = resource.type( MediaType.APPLICATION_FORM_URLENCODED ).accept( MediaType.APPLICATION_JSON ).post( ClientResponse.class );
         return response;
     }
@@ -133,7 +133,7 @@ public class ManageNodeFunctionalTest
     {
         ClientResponse response = sendCreateRequestToServer();
         assertNotNull( response.getLocation() );
-        assertTrue( response.getLocation().toString().startsWith( server.restApiUri() + "node/" ) );
+        assertTrue( response.getLocation().toString().startsWith( functionalTestHelper.dataUri() + "node/" ) );
     }
 
     @Test
@@ -229,7 +229,7 @@ public class ManageNodeFunctionalTest
     {
         return Client.
                 create().
-                resource( new URI( server.restApiUri() + "node/" + id ) ).
+                resource( new URI( functionalTestHelper.dataUri() + "node/" + id ) ).
                 accept( MediaType.APPLICATION_JSON_TYPE ).
                 delete( ClientResponse.class );
     }
