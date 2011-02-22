@@ -81,8 +81,9 @@ public class DatabaseTest {
     @Test
     public void shouldEnableRemoteShellByDefault() throws IOException
     {
-        int wellKnownSocket = 1337 * 2; // twice as elite
+        int wellKnownSocket = 1337;
         Socket rmiSocketToServer = new Socket("localhost", wellKnownSocket );
         assertTrue(rmiSocketToServer.isBound());
+        rmiSocketToServer.close();
     }
 }
