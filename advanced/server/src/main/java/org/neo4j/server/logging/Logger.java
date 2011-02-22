@@ -23,7 +23,7 @@ import java.util.HashSet;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Priority;
-import org.mortbay.log.Log;
+
 
 public class Logger {
 
@@ -76,7 +76,7 @@ public class Logger {
             if (obj != null) {
                 String s = obj.toString();
                 if (illegalParameters.contains(s.toLowerCase())) {
-                    Log.warn("Failed to log, parameters like " + s + " are not supported.");
+                    log.warn("Failed to log, parameters like " + s + " are not supported.");
                     return;
                 }
             }
