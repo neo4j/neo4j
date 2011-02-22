@@ -61,6 +61,8 @@ wa.components.data.RelationshipManager = (function($) {
 			me.server().rel(from, type, to).then(function(){
 			    wa.components.data.DataBrowser.reload();
 				wa.ui.Dialog.close();
+			}, function(err) {
+			    console.log(err);
 			});
 			
 		}
