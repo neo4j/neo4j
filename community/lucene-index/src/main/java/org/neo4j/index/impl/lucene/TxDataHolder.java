@@ -60,6 +60,11 @@ class TxDataHolder
         return entry.first();
     }
     
+    Collection<Long> getOrphans( String key )
+    {
+        return this.data.getOrphans( key );
+    }
+    
     void close()
     {
         this.data.close();

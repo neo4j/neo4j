@@ -24,28 +24,42 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Index;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.neo4j.helpers.Pair;
 
 class FullTxData extends ExactTxData
 {
+    private static final String ORPHANS_KEY = "__all__";
+    private static final String ORPHANS_VALUE = "1";
+    
     private Directory directory;
     private IndexWriter writer;
     private boolean modified;
     private IndexReader reader;
     private IndexSearcher searcher;
     private final Map<Long, Document> cachedDocuments = new HashMap<Long, Document>();
+    private Set<String> orphans;
 
     FullTxData( LuceneIndex index )
     {
@@ -61,17 +75,38 @@ class FullTxData extends ExactTxData
             ensureLuceneDataInstantiated();
             long id = entityId instanceof Long ? (Long) entityId : ((RelationshipId)entityId).id;
             Document document = findDocument( id );
-            if ( document != null )
-            {
-                index.type.addToDocument( document, key, value );
-                writer.updateDocument( index.type.idTerm( id ), document );
-            }
-            else
+            boolean add = false;
+            if ( document == null )
             {
                 document = index.getIdentifier().entityType.newDocument( entityId );
                 cachedDocuments.put( id, document );
+                add = true;
+            }
+            
+            if ( key == null && value == null )
+            {
+                // Set a special "always hit" flag
+                document.add( new Field( ORPHANS_KEY, ORPHANS_VALUE, Store.NO, Index.NOT_ANALYZED ) );
+                addOrphan( null );
+            }
+            else if ( value == null )
+            {
+                // Set a special "always hit" flag
+                document.add( new Field( ORPHANS_KEY, key, Store.NO, Index.NOT_ANALYZED ) );
+                addOrphan( key );
+            }
+            else
+            {
                 index.type.addToDocument( document, key, value );
+            }
+            
+            if ( add )
+            {
                 writer.addDocument( document );
+            }
+            else
+            {
+                writer.updateDocument( index.type.idTerm( id ), document );
             }
             invalidateSearcher();
             return this;
@@ -80,6 +115,15 @@ class FullTxData extends ExactTxData
         {
             throw new RuntimeException( e );
         }
+    }
+
+    private void addOrphan( String key )
+    {
+        if ( orphans == null )
+        {
+            orphans = new HashSet<String>();
+        }
+        orphans.add( key );
     }
 
     private Document findDocument( long id )
@@ -151,6 +195,7 @@ class FullTxData extends ExactTxData
         {
             Sort sorting = contextOrNull != null ? contextOrNull.sorting : null;
             boolean prioritizeCorrectness = contextOrNull == null || !contextOrNull.tradeCorrectnessForSpeed;
+            query = includeOrphans( query );
             Hits hits = new Hits( searcher( prioritizeCorrectness ), query, null, sorting, prioritizeCorrectness );
             Collection<Long> result = new ArrayList<Long>();
             for ( int i = 0; i < hits.length(); i++ )
@@ -163,6 +208,46 @@ class FullTxData extends ExactTxData
         catch ( IOException e )
         {
             throw new RuntimeException( e );
+        }
+    }
+
+    private Query includeOrphans( Query query )
+    {
+        if ( orphans == null )
+        {
+            return query;
+        }
+        
+        BooleanQuery result = new BooleanQuery();
+        result.add( injectOrphans( query ), Occur.SHOULD );
+        result.add( new TermQuery( new Term( ORPHANS_KEY, ORPHANS_VALUE ) ), Occur.SHOULD );
+        return result;
+    }
+    
+    private Query injectOrphans( Query query )
+    {
+        if ( query instanceof BooleanQuery )
+        {
+            BooleanQuery source = (BooleanQuery) query;
+            BooleanQuery result = new BooleanQuery();
+            for ( BooleanClause clause : source.clauses() )
+            {
+                result.add( injectOrphans( clause.getQuery() ), clause.getOccur() );
+            }
+            return result;
+        }
+        else
+        {
+            Set<Term> terms = new HashSet<Term>();
+            query.extractTerms( terms );
+            
+            // TODO Don't only use the first term
+            Term term = terms.iterator().next();
+            
+            BooleanQuery result = new BooleanQuery();
+            result.add( query, Occur.SHOULD );
+            result.add( new TermQuery( new Term( ORPHANS_KEY, term.field() ) ), Occur.SHOULD );
+            return result;
         }
     }
 
