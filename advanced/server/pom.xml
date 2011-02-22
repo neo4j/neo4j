@@ -508,9 +508,11 @@
             <configuration>
               <basedir>${project.build.directory}/classes/webadmin-html/</basedir>
               <includes>
-                <include>webadmin.js</include>
-                <include>htmlbrowse.js</include>
+                <include>**/*.js</include>
               </includes>
+              <excludes>
+              	<exclude>lib/*</exclude>
+              </excludes>
             </configuration>
             <goals>
               <goal>format</goal>
