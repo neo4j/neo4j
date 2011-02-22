@@ -21,7 +21,6 @@ package org.neo4j.server.rest;
 
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
-import org.neo4j.server.NeoServer;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;

@@ -19,13 +19,17 @@
  */
 package org.neo4j.server.webadmin.webtest;
 
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.server.webadmin.webtest.IsVisible.isVisible;
 
-import org.junit.Ignore;
+import java.util.List;
+
 import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
+import org.openqa.selenium.RenderedWebElement;
+import org.openqa.selenium.WebElement;
 
 /**
  * Test that the webadmin HTTP console works and produces output as expected.
@@ -33,24 +37,32 @@ import org.openqa.selenium.Keys;
 public class ConsoleWebTest extends WebDriverTest
 {
    
-	
     @Test
     public void shouldHaveConsoleWindow()
     {
         consoleMenu.getElement().click();
         assertThat( consoleWrap.getElement(), isVisible() );
     } 
-    
-    // Selenium borks charcodes somewhere from here to javascript-land in the browser,
-    // and so sending char codes like "enter" ends up being something completely different
-    // by the time javascript catches it. Until that is solved, we can't write tests for the console.
-    @Ignore
+
     @Test
-    public void consoleShouldWork() {
+    public void shouldOutputSysErrorWrites() throws InterruptedException {
     	consoleMenu.getElement().click();
+
+        consoleInput.waitUntilVisible();
+    	consoleInput.sendKeys("invalidoperation!¤", Keys.RETURN);
+    	consoleInput.waitUntilVisible();
     	
-    	consoleInput.sendKeys("$_g", Keys.ENTER);
+    	lastOutputLine.waitForTextToChangeFrom( "gremlin> invalidoperation!¤" );
+    	assertThat(lastOutputLine.getText(), is( "==> 1 error" ));
     }
     
     private ElementReference consoleInput = new ElementReference(webDriver, By.id("mor_console_input"));
+
+    private ElementReference lastOutputLine = new ElementReference(webDriver, By.id("mor_console")) {
+        @Override
+        public RenderedWebElement getElement() {
+            List<WebElement> el = super.getElement().findElements(By.tagName("p"));
+            return (RenderedWebElement) el.get( el.size() - 3 );
+        }
+    };
 }
