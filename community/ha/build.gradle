@@ -10,6 +10,7 @@ dependencies {
     }
 
     testCompile "commons-io:commons-io:$commonsIoVersion"
+    testCompile "log4j:log4j:$log4jVersion"
 }
 
 sourceSets {
