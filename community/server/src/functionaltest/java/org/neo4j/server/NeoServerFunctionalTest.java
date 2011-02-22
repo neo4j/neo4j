@@ -27,13 +27,11 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.net.ServerSocket;
 import java.net.URI;
 
 import javax.ws.rs.core.MediaType;
 
-import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.dummy.web.service.DummyThirdPartyWebService;
 import org.junit.After;
 import org.junit.Test;
