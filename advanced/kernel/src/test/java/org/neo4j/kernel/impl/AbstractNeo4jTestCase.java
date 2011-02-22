@@ -143,6 +143,11 @@ public abstract class AbstractNeo4jTestCase
         return ((EmbeddedGraphDatabase) graphDb).getConfig().getGraphDbModule().getNodeManager();
     }
 
+    public static void deleteFileOrDirectory( String dir )
+    {
+        deleteFileOrDirectory( new File( dir ) );
+    }
+    
     public static void deleteFileOrDirectory( File file )
     {
         if ( !file.exists() )

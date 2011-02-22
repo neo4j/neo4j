@@ -37,7 +37,7 @@ import org.neo4j.kernel.IdType;
 public class PropertyIndexStore extends AbstractStore implements Store
 {
     // store version, should end with this string (byte encoded)
-    private static final String VERSION = "PropertyIndex v0.9.5";
+    private static final String VERSION = "PropertyIndex v0.9.9";
     private static final int KEY_STORE_BLOCK_SIZE = 30;
 
     // in_use(byte)+prop_count(int)+key_block_id(int)
@@ -361,10 +361,14 @@ public class PropertyIndexStore extends AbstractStore implements Store
             // non clean shutdown, need to do recover with right neo
             return false;
         }
-        if ( version.equals( "PropertyIndex v0.9.3" ) )
+//        if ( version.equals( "PropertyIndex v0.9.3" ) )
+//        {
+//            rebuildIdGenerator();
+//            closeIdGenerator();
+//            return true;
+//        }
+        if ( version.equals( "PropertyIndex v0.9.5" ) )
         {
-            rebuildIdGenerator();
-            closeIdGenerator();
             return true;
         }
         throw new IllegalStoreVersionException( "Store version [" + version  + 
