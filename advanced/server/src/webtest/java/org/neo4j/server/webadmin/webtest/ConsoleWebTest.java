@@ -22,7 +22,6 @@ package org.neo4j.server.webadmin.webtest;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.server.webadmin.webtest.IsVisible.isVisible;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
@@ -32,8 +31,6 @@ import org.openqa.selenium.Keys;
  */
 public class ConsoleWebTest extends WebDriverTest
 {
-   
-	
     @Test
     public void shouldHaveConsoleWindow()
     {
@@ -41,15 +38,11 @@ public class ConsoleWebTest extends WebDriverTest
         assertThat( consoleWrap.getElement(), isVisible() );
     } 
     
-    // Selenium borks charcodes somewhere from here to javascript-land in the browser,
-    // and so sending char codes like "enter" ends up being something completely different
-    // by the time javascript catches it. Until that is solved, we can't write tests for the console.
-    @Ignore
     @Test
-    public void consoleShouldWork() {
+    public void consoleShouldPrintStuffDirectedToSysError() {
     	consoleMenu.getElement().click();
     	
-    	consoleInput.sendKeys("$_g", Keys.ENTER);
+    	consoleInput.sendKeys("$_g", Keys.RETURN);
     }
     
     private ElementReference consoleInput = new ElementReference(webDriver, By.id("mor_console_input"));
