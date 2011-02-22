@@ -6,6 +6,7 @@ luceneBundleVersion = "3.0.1_2"
 nettyVersion = "3.2.1.Final"
 zookeeperVersion = "3.3.2"
 junitVersion = "4.8.2"
+log4jVersion = "1.2.16"
 
 sourceCompatibility = 1.6
 
