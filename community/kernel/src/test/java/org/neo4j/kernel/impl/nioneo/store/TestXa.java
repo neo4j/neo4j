@@ -40,6 +40,7 @@ import javax.transaction.xa.Xid;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -127,6 +128,12 @@ public class TestXa extends AbstractNeo4jTestCase
     private String file( String name )
     {
         return path() + File.separator + name;
+    }
+    
+    @BeforeClass
+    public static void deleteFiles()
+    {
+        deleteFileOrDirectory( getStorePath( "xatest" ) );
     }
     
     @Before
@@ -581,7 +588,7 @@ public class TestXa extends AbstractNeo4jTestCase
         xaCon.getNodeConsumer().createNode( node2 );
         long n1prop1 = ds.nextId( PropertyStore.class );
         xaCon.getNodeConsumer().addProperty( node1, n1prop1,
-            index( "prop1" ), "string1" );
+            index( "prop1" ), "string value 1" );
         xaRes.end( xid, XAResource.TMSUCCESS );
         xaRes.prepare( xid );
         Pair<Pair<File, File>, Pair<File, File>> copy = copyLogicalLog( path() );
@@ -589,7 +596,7 @@ public class TestXa extends AbstractNeo4jTestCase
         ds.close();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog( copy );
-        truncateLogicalLog( 188 );
+        truncateLogicalLog( 188 ); // master (w/ shortstring) says 155
         ds = newNeoStore();
 //        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
 //            lockManager, lockReleaser );
@@ -611,7 +618,7 @@ public class TestXa extends AbstractNeo4jTestCase
         xaCon.getNodeConsumer().createNode( node2 );
         long n1prop1 = ds.nextId( PropertyStore.class );
         xaCon.getNodeConsumer().addProperty( node1, n1prop1,
-            index( "prop1" ), "string1" );
+            index( "prop1" ), "string value 1" );
         xaRes.end( xid, XAResource.TMSUCCESS );
         xaRes.prepare( xid );
         xaRes.commit( xid, false );
@@ -619,7 +626,7 @@ public class TestXa extends AbstractNeo4jTestCase
         ds.close();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog( copy );
-        truncateLogicalLog( 211 );
+        truncateLogicalLog( 224 ); // master (w/ shortstring) says 171
         ds = newNeoStore();
 //        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
 //             lockManager, lockReleaser );

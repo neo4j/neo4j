@@ -53,6 +53,41 @@ public class TestBackup
     // TODO MP: What happens if the server database keeps growing, virtually making the files endless?
     
     @Test
+    public void makeSureFullFailsWhenDbExists() throws Exception
+    {
+        createInitialDataSet( serverPath );
+        ServerInterface server = startServer( serverPath );
+        OnlineBackup backup = OnlineBackup.from( "localhost" );
+        createInitialDataSet( backupPath );
+        try
+        {
+            backup.full( backupPath );
+            fail( "Shouldn't be able to do full backup into existing db" );
+        }
+        catch ( Exception e )
+        { // Good
+        }
+        shutdownServer( server );
+    }
+    
+    @Test
+    public void makeSureIncrementalFailsWhenNoDb() throws Exception
+    {
+        createInitialDataSet( serverPath );
+        ServerInterface server = startServer( serverPath );
+        OnlineBackup backup = OnlineBackup.from( "localhost" );
+        try
+        {
+            backup.incremental( backupPath );
+            fail( "Shouldn't be able to do incremental backup into non-existing db" );
+        }
+        catch ( Exception e )
+        { // Good
+        }
+        shutdownServer( server );
+    }
+    
+    @Test
     public void fullThenIncremental() throws Exception
     {
         DbRepresentation initialDataSetRepresentation = createInitialDataSet( serverPath );

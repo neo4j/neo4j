@@ -78,7 +78,7 @@ public abstract class XaDataSource
     public XaDataSource( Map<?,?> params ) throws InstantiationException
     {
         String storeDir = (String) params.get( "store_dir" );
-        msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
+        msgLog = StringLogger.getLogger( storeDir );
     }
 
     /**

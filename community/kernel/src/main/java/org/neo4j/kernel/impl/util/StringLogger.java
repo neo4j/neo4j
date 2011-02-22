@@ -59,22 +59,26 @@ public class StringLogger
     private static final Map<String,StringLogger> loggers = 
         new HashMap<String, StringLogger>();
     
-    public static StringLogger getLogger( String filename )
+    public static StringLogger getLogger( String storeDir )
     {
+        if ( storeDir == null )
+        {
+            return SYSTEM;
+        }
+        
+        String filename = defaultFileName( storeDir );
         StringLogger logger = loggers.get( filename );
         if ( logger == null )
         {
-            if ( filename == null || filename.startsWith( "null" ) )
-            {
-                logger = new StringLogger( new PrintWriter( System.out ) );
-            }
-            else
-            {
-                logger = new StringLogger( filename );
-            }
+            logger = new StringLogger( filename );
             loggers.put( filename, logger );
         }
         return logger;
+    }
+    
+    private static String defaultFileName( String storeDir )
+    {
+        return new File( storeDir, "messages.log" ).getAbsolutePath();
     }
     
     public void logMessage( String msg )
@@ -111,9 +115,9 @@ public class StringLogger
         out.flush();
     }
     
-    public synchronized static void close( String filename )
+    public synchronized static void close( String storeDir )
     {
-        StringLogger logger = loggers.remove( filename );
+        StringLogger logger = loggers.remove( defaultFileName( storeDir ) );
         if ( logger != null )
         {
             logger.out.close();
