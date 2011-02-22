@@ -1,4 +1,4 @@
-<% if @enable_ha %>
+<% if @mode == "ha" %>
 ha.server=<%= @ha_server %>
 ha.machine_id=<%= @ha_machine_id %>
 

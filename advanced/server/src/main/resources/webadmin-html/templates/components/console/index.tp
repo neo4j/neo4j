@@ -77,7 +77,7 @@
             <h2>Console</h2>
             <div class="mor_console_wrap">
                 <div id="mor_console" class="mor_console">
-                    <p id="mor_console_input_wrap"><span style="float:left;width:0px;"> gremlin&gt; </span> <input type="text" id="mor_console_input" value="" /></p>
+                    <p id="mor_console_input_wrap" style="display:none;"><span style="float:left;width:0px;"> gremlin&gt; </span> <input type="text" id="mor_console_input" value="" /></p>
                     <p></p>
                 </div>
                 <div class="break"></div>
