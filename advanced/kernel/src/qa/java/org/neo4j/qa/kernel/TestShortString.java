@@ -119,6 +119,66 @@ public class TestShortString
         makeSureAShortStringWillGrowStringStore( "¡@$#abcd" );
     }
     
+    @Test
+    public void makeSureRemoveShortStringWontGrowStringStoreFromShortStringDb() throws Exception
+    {
+        createNode( map( "key1", "one", "key2", "two" ) );
+        
+        long node = createNode( map( "name", "Neo" ) );
+        long sizeBefore = getSizeOfStringStore();
+        removeProperty( node, "name" );
+        assertEquals( sizeBefore, getSizeOfStringStore() );
+    }
+    
+    @Test
+    public void makeSureRemoveShortStringWontGrowStringStoreFromMixedDb() throws Exception
+    {
+        createNode( map( "key1", "one", "key2", "A string not fit for shortstring" ) );
+        
+        long node = createNode( map( "name", "Neo" ) );
+        long sizeBefore = getSizeOfStringStore();
+        removeProperty( node, "name" );
+        assertEquals( sizeBefore, getSizeOfStringStore() );
+    }
+    
+    @Test
+    public void makeSureUpdateShortStringWontGrowStringStoreFromShortStringDb() throws Exception
+    {
+        createNode( map( "key1", "one", "key2", "two" ) );
+        
+        long node = createNode( map( "name", "Neo" ) );
+        long sizeBefore = getSizeOfStringStore();
+        setProperty( node, "name", "new value" );
+        assertEquals( sizeBefore, getSizeOfStringStore() );
+    }
+    
+    @Test
+    public void makeSureUpdateShortStringWontGrowStringStoreFromMixedDb() throws Exception
+    {
+        createNode( map( "key1", "one", "key2", "A string not fit for shortstring" ) );
+        
+        long node = createNode( map( "name", "Neo" ) );
+        long sizeBefore = getSizeOfStringStore();
+        setProperty( node, "name", "new value" );
+        assertEquals( sizeBefore, getSizeOfStringStore() );
+    }
+    
+    private void removeProperty( long node, String key )
+    {
+        Transaction tx = db.beginTx();
+        db.getNodeById( node ).removeProperty( key );
+        tx.success();
+        tx.finish();
+    }
+
+    private void setProperty( long node, String key, Object value )
+    {
+        Transaction tx = db.beginTx();
+        db.getNodeById( node ).setProperty( key, value );
+        tx.success();
+        tx.finish();
+    }
+    
     private void makeSureAShortStringWontGrowStringStore( String shortString )
     {
         assertEquals( 0, stringStoreDiff( shortString ) );
