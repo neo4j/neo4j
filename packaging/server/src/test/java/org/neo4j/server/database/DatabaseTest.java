@@ -43,7 +43,6 @@ public class DatabaseTest {
     @Before
     public void setup() throws Exception {
         databaseDirectory = ServerTestUtils.createTempDir();
-        System.out.println(databaseDirectory.getAbsolutePath());
         theDatabase = new Database( DatabaseMode.STANDALONE, databaseDirectory.getAbsolutePath() );
     }
 
