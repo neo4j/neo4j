@@ -40,7 +40,7 @@ import org.neo4j.kernel.IdType;
 public class RelationshipTypeStore extends AbstractStore implements Store
 {
     // store version, each store ends with this string (byte encoded)
-    private static final String VERSION = "RelationshipTypeStore v0.9.5";
+    private static final String VERSION = "RelationshipTypeStore v0.9.9";
 
     // record header size
     // in_use(byte)+type_blockId(int)
@@ -437,10 +437,14 @@ public class RelationshipTypeStore extends AbstractStore implements Store
             // non clean shutdown, need to do recover with right neo
             return false;
         }
-        if ( version.equals( "RelationshipTypeStore v0.9.3" ) )
+//        if ( version.equals( "RelationshipTypeStore v0.9.3" ) )
+//        {
+//            rebuildIdGenerator();
+//            closeIdGenerator();
+//            return true;
+//        }
+        if ( version.equals( "RelationshipTypeStore v0.9.5" ) )
         {
-            rebuildIdGenerator();
-            closeIdGenerator();
             return true;
         }
         throw new IllegalStoreVersionException( "Store version [" + version  + 

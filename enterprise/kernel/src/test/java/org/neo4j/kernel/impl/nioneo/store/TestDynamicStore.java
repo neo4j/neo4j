@@ -111,7 +111,7 @@ public class TestDynamicStore
     private void createEmptyStore( String fileName, int blockSize )
     {
         DynamicArrayStore.createEmptyStore( fileName, blockSize,
-                "ArrayPropertyStore v0.9.5", ID_GENERATOR_FACTORY, IdType.ARRAY_BLOCK );
+                "ArrayPropertyStore v0.9.9", ID_GENERATOR_FACTORY, IdType.ARRAY_BLOCK );
     }
     
     private DynamicArrayStore newStore()

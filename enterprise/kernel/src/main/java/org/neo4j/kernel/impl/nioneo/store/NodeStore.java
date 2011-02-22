@@ -33,7 +33,7 @@ public class NodeStore extends AbstractStore implements Store
 {
     // node store version, each node store should end with this string
     // (byte encoded)
-    private static final String VERSION = "NodeStore v0.9.5";
+    private static final String VERSION = "NodeStore v0.9.9";
 
     // in_use(byte)+next_rel_id(int)+next_prop_id(int)
     private static final int RECORD_SIZE = 9;
@@ -232,10 +232,14 @@ public class NodeStore extends AbstractStore implements Store
             // non clean shutdown, need to do recover with right neo
             return false;
         }
-        if ( version.equals( "NodeStore v0.9.3" ) )
+//        if ( version.equals( "NodeStore v0.9.3" ) )
+//        {
+//            rebuildIdGenerator();
+//            closeIdGenerator();
+//            return true;
+//        }
+        if ( version.equals( "NodeStore v0.9.5" ) )
         {
-            rebuildIdGenerator();
-            closeIdGenerator();
             return true;
         }
         throw new IllegalStoreVersionException( "Store version [" + version  + 

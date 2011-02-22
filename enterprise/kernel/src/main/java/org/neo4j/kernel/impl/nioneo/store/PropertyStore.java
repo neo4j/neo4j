@@ -38,7 +38,7 @@ import org.neo4j.kernel.IdType;
 public class PropertyStore extends AbstractStore implements Store
 {
     // store version, each store ends with this string (byte encoded)
-    private static final String VERSION = "PropertyStore v0.9.5";
+    private static final String VERSION = "PropertyStore v0.9.9";
 
     // record header size
     // in_use(byte)+type(int)+key_indexId(int)+prop_blockId(long)+
@@ -698,10 +698,14 @@ public class PropertyStore extends AbstractStore implements Store
             // non clean shutdown, need to do recover with right neo
             return false;
         }
-        if ( version.equals( "PropertyStore v0.9.3" ) )
+//        if ( version.equals( "PropertyStore v0.9.3" ) )
+//        {
+//            rebuildIdGenerator();
+//            closeIdGenerator();
+//            return true;
+//        }
+        if ( version.equals( "PropertyStore v0.9.5" ) )
         {
-            rebuildIdGenerator();
-            closeIdGenerator();
             return true;
         }
         throw new IllegalStoreVersionException( "Store version [" + version  + 

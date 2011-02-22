@@ -75,6 +75,7 @@ public class Config
     public static final String NEO_STORE = "neo_store";
     public static final String CACHE_TYPE = "cache_type";
     public static final String TXMANAGER_IMPLEMENTATION = "tx_manager_impl";
+    public static final String ALLOW_STORE_UPGRADE = "allow_store_upgrade";
 
     private final AdaptiveCacheManager cacheManager;
     private final TxModule txModule;

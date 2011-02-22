@@ -20,12 +20,12 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
@@ -40,7 +40,7 @@ public class NeoStore extends AbstractStore
 {
     // neo store version, store should end with this string
     // (byte encoded)
-    private static final String VERSION = "NeoStore v0.9.6";
+    private static final String VERSION = "NeoStore v0.9.9";
 
     // 4 longs in header (long + in use), time | random | version | txid
     private static final int RECORD_SIZE = 9;
@@ -397,27 +397,42 @@ public class NeoStore extends AbstractStore
             // non clean shutdown, need to do recover with right neo
             return false;
         }
-        if ( version.equals( "NeoStore v0.9.5" ) )
+//        if ( version.equals( "NeoStore v0.9.5" ) )
+//        {
+//            ByteBuffer buffer = ByteBuffer.wrap( new byte[ RECORD_SIZE ] );
+//            buffer.put( Record.IN_USE.byteValue() ).putLong( 1 );
+//            buffer.flip();
+//            try
+//            {
+//                getFileChannel().write( buffer, 3*RECORD_SIZE );
+//            }
+//            catch ( IOException e )
+//            {
+//                throw new UnderlyingStorageException( e );
+//            }
+//            rebuildIdGenerator();
+//            closeIdGenerator();
+//            return false;
+//        }
+        if ( version.equals( "NeoStore v0.9.6" ) )
         {
-            ByteBuffer buffer = ByteBuffer.wrap( new byte[ RECORD_SIZE ] );
-            buffer.put( Record.IN_USE.byteValue() ).putLong( 1 );
-            buffer.flip();
-            try
+            if ( !configSaysOkToUpgrade() )
             {
-                getFileChannel().write( buffer, 3*RECORD_SIZE );
+                throw new IllegalStoreVersionException( "Store version [" + version + "] is older " +
+                    "than expected, but could be upgraded automatically if '" +
+                    Config.ALLOW_STORE_UPGRADE + "' configuration " + "parameter was set to 'true'." );
             }
-            catch ( IOException e )
-            {
-                throw new UnderlyingStorageException( e );
-            }
-            rebuildIdGenerator();
-            closeIdGenerator();
-            return false;
+            return true;
         }
         throw new IllegalStoreVersionException( "Store version [" + version  +
             "]. Please make sure you are not running old Neo4j kernel " +
-            " towards a store that has been created by newer version " +
-            " of Neo4j." );
+            "on a store that has been created by newer version of Neo4j." );
+    }
+
+    private boolean configSaysOkToUpgrade()
+    {
+        String allowUpgrade = (String) getConfig().get( Config.ALLOW_STORE_UPGRADE );
+        return Boolean.parseBoolean( allowUpgrade );
     }
 
     public int getRelationshipGrabSize()
