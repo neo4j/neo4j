@@ -50,12 +50,12 @@ public class HelloWorldResource
 }
 ------
 
-Now, include your class in neo4j-server.properties with something like
+Build this code, and place the resulting jar file (and any custom dependencies) into the $NEO4J_SERVER_HOME/plugins directory, and include this class in neo4j-server.propertie, like so:
 
 [source]
 ------
 #Comma separated list of JAXRS packages containing JAXRS Resource, one package name for each mountpoint.
-#org.neo4j.server.thirdparty_jaxrs_classes=org.neo4j.examples.server.unmanaged=/examples/unmanaged
+org.neo4j.server.thirdparty_jaxrs_classes=org.neo4j.examples.server.unmanaged=/examples/unmanaged
 ------
 
 Which binds the addGreeting method to respond to GET requests at the URI:  http://{neo4j_server}:{neo4j_port}/examples/unmanaged/helloworld/{nodeId}
@@ -69,3 +69,4 @@ which results in
 ----
 Hello World, nodeId=123
 ----
+

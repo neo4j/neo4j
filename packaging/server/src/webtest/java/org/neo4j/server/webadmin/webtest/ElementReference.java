@@ -257,5 +257,21 @@ public class ElementReference {
 
         throw new RuntimeException("Element attribute did not change within a reasonable time.");
     }
+    
+    public void waitForTextToChangeTo(String newValue) {
+        long end = System.currentTimeMillis() + 10000;
+        while (System.currentTimeMillis() < end) {
+            if ( this.getText().equals(newValue)) {
+                return;
+            }
+            try{
+                Thread.sleep(13);
+            } catch(Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        throw new RuntimeException("Element attribute did not change within a reasonable time.");
+    }
 
 }

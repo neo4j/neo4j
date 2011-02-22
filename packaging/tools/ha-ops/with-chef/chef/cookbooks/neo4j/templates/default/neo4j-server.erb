@@ -31,6 +31,6 @@ org.neo4j.server.webadmin.management.uri=http://<%= @public_address %>:<%= @webs
 ## Low-level graph engine tuning file
 org.neo4j.server.db.tuning.properties=<%= @conf_dir %>/neo4j.properties
 
-<% if @enable_ha %>
+<% if @mode == "ha" %>
 org.neo4j.server.database.mode=ha
 <% end %>
