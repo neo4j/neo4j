@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.ha.zookeeper;
 
+import static org.neo4j.com.Server.DEFAULT_BACKUP_PORT;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -66,6 +68,12 @@ public class ClusterManager extends AbstractZooKeeperManager
                 Thread.interrupted();
             }
         }
+    }
+    
+    public int getBackupPort( int machineId )
+    {
+        int port = readHaServer( machineId, true ).other();
+        return port != 0 ? port : DEFAULT_BACKUP_PORT;
     }
 
     public void process( WatchedEvent event )

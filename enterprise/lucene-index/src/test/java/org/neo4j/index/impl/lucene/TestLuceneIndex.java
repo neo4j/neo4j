@@ -206,6 +206,7 @@ public class TestLuceneIndex
         return graphDb.index().forRelationships( name, config );
     }
     
+    @SuppressWarnings( "unchecked" )
     private <T extends PropertyContainer> void makeSureAdditionsCanBeRead(
             Index<T> index, EntityCreator<T> entityCreator )
     {
@@ -502,6 +503,7 @@ public class TestLuceneIndex
         index.delete();
     }
 
+    @SuppressWarnings( "unchecked" )
     private <T extends PropertyContainer> void doSomeRandomUseCaseTestingWithExactIndex(
             Index<T> index, EntityCreator<T> creator )
     {
@@ -584,6 +586,7 @@ public class TestLuceneIndex
                 LuceneIndexImplementation.EXACT_CONFIG ), RELATIONSHIP_CREATOR );
     }
 
+    @SuppressWarnings( "unchecked" )
     private <T extends PropertyContainer> void doSomeRandomTestingWithFulltextIndex(
             Index<T> index,
             EntityCreator<T> creator )
@@ -724,7 +727,7 @@ public class TestLuceneIndex
             assertContainsInOrder( index.query( new QueryContext( "name:*" ).sort( name, other ) ), adam, adam2, eva, jack );
             assertContainsInOrder( index.query( new QueryContext( "name:*" ).sort( sex, title ) ), eva, jack, adam2, adam );
             assertContainsInOrder( index.query( name, new QueryContext( "*" ).sort( sex, title ) ), eva, jack, adam2, adam );
-            assertContainsInOrder( index.query( new QueryContext( "name:*" ).sort( name, title ).topDocs( 2 ) ), adam2, adam );
+            assertContainsInOrder( index.query( new QueryContext( "name:*" ).sort( name, title ).top( 2 ) ), adam2, adam );
 
             restartTx();
         }
@@ -1080,6 +1083,7 @@ public class TestLuceneIndex
         assertNull( index.query( new TermQuery( new Term( "name", "Mattias" ) ) ).getSingle() );
     }
     
+    @SuppressWarnings( "unchecked" )
     private <T extends PropertyContainer> void testAbandonedIds( EntityCreator<T> creator,
             Index<T> index )
     {
@@ -1250,7 +1254,7 @@ public class TestLuceneIndex
         
         for ( int i = 0; i < 2; i++ )
         {
-            assertContainsInOrder( index.query( key, new QueryContext( query ).topDocs( 3 ).sort(
+            assertContainsInOrder( index.query( key, new QueryContext( query ).top( 3 ).sort(
                     Sort.RELEVANCE ) ), rel1, rel2, rel3 );
             restartTx();
         }
@@ -1284,6 +1288,190 @@ public class TestLuceneIndex
         assertEquals( 3, hits.size() );
     }
     
+    @SuppressWarnings( "unchecked" )
+    private <T extends PropertyContainer> void testRemoveWithoutKey(
+            EntityCreator<T> creator, Index<T> index ) throws Exception
+    {
+        String key1 = "key1";
+        String key2 = "key2";
+        String value = "value";
+        
+        T entity1 = creator.create();
+        index.add( entity1, key1, value );
+        index.add( entity1, key2, value );
+        T entity2 = creator.create();
+        index.add( entity2, key1, value );
+        index.add( entity2, key2, value );
+        restartTx();
+        
+        assertContains( index.get( key1, value ), entity1, entity2 );
+        assertContains( index.get( key2, value ), entity1, entity2 );
+        index.remove( entity1, key2 );
+        assertContains( index.get( key1, value ), entity1, entity2 );
+        assertContains( index.get( key2, value ), entity2 );
+        index.add( entity1, key2, value );
+        for ( int i = 0; i < 2; i++ )
+        {
+            assertContains( index.get( key1, value ), entity1, entity2 );
+            assertContains( index.get( key2, value ), entity1, entity2 );
+            restartTx();
+        }
+    }
+    
+    @Test
+    public void testRemoveWithoutKeyNodes() throws Exception
+    {
+        testRemoveWithoutKey( NODE_CREATOR, nodeIndex( "remove-wo-k", 
+                LuceneIndexImplementation.EXACT_CONFIG ) );
+    }
+    
+    @Test
+    public void testRemoveWithoutKeyRelationships() throws Exception
+    {
+        testRemoveWithoutKey( RELATIONSHIP_CREATOR, relationshipIndex( "remove-wo-k",
+                LuceneIndexImplementation.EXACT_CONFIG ) );
+    }
+    
+    @SuppressWarnings( "unchecked" )
+    private <T extends PropertyContainer> void testRemoveWithoutKeyValue(
+            EntityCreator<T> creator, Index<T> index ) throws Exception
+    {
+        String key1 = "key1";
+        String value1 = "value1";
+        String key2 = "key2";
+        String value2 = "value2";
+        
+        T entity1 = creator.create();
+        index.add( entity1, key1, value1 );
+        index.add( entity1, key2, value2 );
+        T entity2 = creator.create();
+        index.add( entity2, key1, value1 );
+        index.add( entity2, key2, value2 );
+        restartTx();
+        
+        assertContains( index.get( key1, value1 ), entity1, entity2 );
+        assertContains( index.get( key2, value2 ), entity1, entity2 );
+        index.remove( entity1 );
+        assertContains( index.get( key1, value1 ), entity2 );
+        assertContains( index.get( key2, value2 ), entity2 );
+        index.add( entity1, key1, value1 );
+        
+        for ( int i = 0; i < 2; i++ )
+        {
+            assertContains( index.get( key1, value1 ), entity1, entity2 );
+            assertContains( index.get( key2, value2 ), entity2 );
+            restartTx();
+        }
+    }
+    
+    @Test
+    public void testRemoveWithoutKeyValueNodes() throws Exception
+    {
+        testRemoveWithoutKeyValue( NODE_CREATOR, nodeIndex( "remove-wo-kv", 
+                LuceneIndexImplementation.EXACT_CONFIG ) );
+    }
+    
+    @Test
+    public void testRemoveWithoutKeyValueRelationships() throws Exception
+    {
+        testRemoveWithoutKeyValue( RELATIONSHIP_CREATOR, relationshipIndex( "remove-wo-kv",
+                LuceneIndexImplementation.EXACT_CONFIG ) );
+    }
+    
+    @SuppressWarnings( "unchecked" )
+    private <T extends PropertyContainer> void testRemoveWithoutKeyFulltext(
+            EntityCreator<T> creator, Index<T> index ) throws Exception
+    {
+        String key1 = "key1";
+        String key2 = "key2";
+        String value1 = "value one";
+        String value2 = "other value";
+        String value = "value";
+        
+        T entity1 = creator.create();
+        index.add( entity1, key1, value1 );
+        index.add( entity1, key2, value1 );
+        index.add( entity1, key2, value2 );
+        T entity2 = creator.create();
+        index.add( entity2, key1, value1 );
+        index.add( entity2, key2, value1 );
+        index.add( entity2, key2, value2 );
+        restartTx();
+        
+        assertContains( index.query( key1, value ), entity1, entity2 );
+        assertContains( index.query( key2, value ), entity1, entity2 );
+        index.remove( entity1, key2 );
+        assertContains( index.query( key1, value ), entity1, entity2 );
+        assertContains( index.query( key2, value ), entity2 );
+        index.add( entity1, key2, value1 );
+        for ( int i = 0; i < 2; i++ )
+        {
+            assertContains( index.query( key1, value ), entity1, entity2 );
+            assertContains( index.query( key2, value ), entity1, entity2 );
+            restartTx();
+        }
+    }
+    
+    @Test
+    public void testRemoveWithoutKeyFulltextNode() throws Exception
+    {
+        testRemoveWithoutKeyFulltext( NODE_CREATOR,
+                nodeIndex( "remove-wo-k-f", LuceneIndexImplementation.FULLTEXT_CONFIG ) );
+    }
+        
+    @Test
+    public void testRemoveWithoutKeyFulltextRelationship() throws Exception
+    {
+        testRemoveWithoutKeyFulltext( RELATIONSHIP_CREATOR,
+                relationshipIndex( "remove-wo-k-f", LuceneIndexImplementation.FULLTEXT_CONFIG ) );
+    }
+    
+    @SuppressWarnings( "unchecked" )
+    private <T extends PropertyContainer> void testRemoveWithoutKeyValueFulltext(
+            EntityCreator<T> creator, Index<T> index ) throws Exception
+    {
+        String value = "value";
+        String key1 = "key1";
+        String value1 = value + " one";
+        String key2 = "key2";
+        String value2 = value + " two";
+        
+        T entity1 = creator.create();
+        index.add( entity1, key1, value1 );
+        index.add( entity1, key2, value2 );
+        T entity2 = creator.create();
+        index.add( entity2, key1, value1 );
+        index.add( entity2, key2, value2 );
+        restartTx();
+        
+        assertContains( index.query( key1, value ), entity1, entity2 );
+        assertContains( index.query( key2, value ), entity1, entity2 );
+        index.remove( entity1 );
+        assertContains( index.query( key1, value ), entity2 );
+        assertContains( index.query( key2, value ), entity2 );
+        index.add( entity1, key1, value1 );
+        for ( int i = 0; i < 2; i++ )
+        {
+            assertContains( index.query( key1, value ), entity1, entity2 );
+            assertContains( index.query( key2, value ), entity2 );
+            restartTx();
+        }
+    }
+    
+    @Test
+    public void testRemoveWithoutKeyValueFulltextNode() throws Exception
+    {
+        testRemoveWithoutKeyValueFulltext( NODE_CREATOR,
+                nodeIndex( "remove-wo-kv-f", LuceneIndexImplementation.FULLTEXT_CONFIG ) );
+    }
+        
+    @Test
+    public void testRemoveWithoutKeyValueFulltextRelationship() throws Exception
+    {
+        testRemoveWithoutKeyValueFulltext( RELATIONSHIP_CREATOR,
+                relationshipIndex( "remove-wo-kv-f", LuceneIndexImplementation.FULLTEXT_CONFIG ) );
+    }
+    
     @Test
     public void testSortingWithTopHitsInPartCommittedPartLocal()
     {
@@ -1301,6 +1489,6 @@ public class TestLuceneIndex
         index.add( first, key, "aaa" );
         
         assertContainsInOrder( index.query( key, new QueryContext( "*" ).sort( key ) ), first, second, third, fourth );
-        assertContainsInOrder( index.query( key, new QueryContext( "*" ).sort( key ).topDocs( 2 ) ), first, second );
+        assertContainsInOrder( index.query( key, new QueryContext( "*" ).sort( key ).top( 2 ) ), first, second );
     }
 }

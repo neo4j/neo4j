@@ -60,8 +60,15 @@ public abstract class AbstractZooKeeperManager implements Watcher
     {
         this.servers = servers;
         this.graphDb = graphDb;
-        String storeDir = ((AbstractGraphDatabase) graphDb).getStoreDir();
-        msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
+        if ( graphDb != null )
+        {
+            String storeDir = ((AbstractGraphDatabase) graphDb).getStoreDir();
+            msgLog = StringLogger.getLogger( storeDir );
+        }
+        else
+        {
+            msgLog = null;
+        }
     }
     
     protected ZooKeeper instantiateZooKeeper()
@@ -80,6 +87,11 @@ public abstract class AbstractZooKeeperManager implements Watcher
     protected abstract ZooKeeper getZooKeeper();
 
     public abstract String getRoot();
+    
+    protected GraphDatabaseService getGraphDb()
+    {
+        return graphDb;
+    }
 
     protected Pair<Integer, Integer> parseChild( String child )
     {
@@ -157,7 +169,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
                 }
             }
         }
-        msgLog.logMessage( "getMaster " + (master != null ? master.getMachineId() : "none") +
+        log( "getMaster " + (master != null ? master.getMachineId() : "none") +
                 " based on " + debugData );
         return master != null ? master : Machine.NO_MACHINE;
     }
@@ -218,13 +230,13 @@ public abstract class AbstractZooKeeperManager implements Watcher
         String result = haServersCache.get( machineId );
         if ( result == null )
         {
-            result = readHaServer( machineId, wait );
+            result = readHaServer( machineId, wait ).first();
             haServersCache.put( machineId, result );
         }
         return result;
     }
 
-    protected String readHaServer( int machineId, boolean wait )
+    protected Pair<String /*Host and port*/, Integer /*backup port*/> readHaServer( int machineId, boolean wait )
     {
         if ( wait )
         {
@@ -236,13 +248,14 @@ public abstract class AbstractZooKeeperManager implements Watcher
         {
             byte[] serverData = getZooKeeper().getData( haServerPath, false, null );
             ByteBuffer buffer = ByteBuffer.wrap( serverData );
+            int backupPort = buffer.getInt();
             byte length = buffer.get();
             char[] chars = new char[length];
             buffer.asCharBuffer().get( chars );
             String result = String.valueOf( chars );
-            msgLog.logMessage( "Read HA server:" + result + " (for machineID " + machineId +
+            log( "Read HA server:" + result + " (for machineID " + machineId +
                     ") from zoo keeper" );
-            return result;
+            return Pair.of( result, backupPort );
         }
         catch ( KeeperException e )
         {
@@ -251,6 +264,14 @@ public abstract class AbstractZooKeeperManager implements Watcher
         catch ( InterruptedException e )
         {
             throw new ZooKeeperException( "Interrupted", e );
+        }
+    }
+
+    private void log( String string )
+    {
+        if ( msgLog != null )
+        {
+            msgLog.logMessage( string );
         }
     }
 
