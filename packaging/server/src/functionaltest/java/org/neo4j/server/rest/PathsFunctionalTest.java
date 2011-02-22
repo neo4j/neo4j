@@ -26,7 +26,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.neo4j.server.NeoServer;
+import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
@@ -46,7 +46,7 @@ public class PathsFunctionalTest
 {
     private long[] nodes;
     
-    private NeoServer server;
+    private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
     private GraphDbHelper helper;
 
@@ -103,7 +103,7 @@ public class PathsFunctionalTest
 
         // Get all shortest paths
 
-        WebResource resource = client.resource( server.restApiUri() + "node/" + nodes[ 0 ] + "/paths" );
+        WebResource resource = client.resource( functionalTestHelper.nodeUri(nodes[ 0 ]) + "/paths" );
         ClientResponse response = resource.type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( getAllShortestPathPayLoad() ).post( ClientResponse.class );
         assertEquals( 200, response.getStatus() );
         assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
@@ -121,7 +121,7 @@ public class PathsFunctionalTest
 
     private String getAllShortestPathPayLoad()
     {
-        return "{\"to\":\"" + server.restApiUri() + "node/" + nodes[ 1 ]
+        return "{\"to\":\"" + functionalTestHelper.nodeUri(nodes[ 1 ])
                     + "\", \"max depth\":3, \"relationships\":{\"type\":\"to\", \"direction\":\"out\"}, \"algorithm\":\"shortestPath\"}";
     }
 
@@ -131,7 +131,7 @@ public class PathsFunctionalTest
         Client client = Client.create();
 
         // Get single shortest path
-        WebResource resource = client.resource( server.restApiUri() + "node/" + nodes[ 0 ] + "/path" );
+        WebResource resource = client.resource( functionalTestHelper.nodeUri(nodes[ 0 ]) + "/path" );
         ClientResponse response = resource.type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( getAllShortestPathPayLoad() ).post( ClientResponse.class );
         assertEquals( 200, response.getStatus() );
         Map<?, ?> path = (Map<?, ?>)JsonHelper.jsonToMap( response.getEntity( String.class ) );
@@ -147,9 +147,9 @@ public class PathsFunctionalTest
 
 
         // Get single shortest path and expect no answer (404)
-        String noHitsJson = "{\"to\":\"" + server.restApiUri() + "node/" + nodes[ 1 ]
+        String noHitsJson = "{\"to\":\"" + functionalTestHelper.nodeUri(nodes[ 1 ])
                 + "\", \"max depth\":3, \"relationships\":{\"type\":\"to\", \"direction\":\"in\"}, \"algorithm\":\"shortestPath\"}";
-        WebResource resource = client.resource( server.restApiUri() + "node/" + nodes[ 0 ] + "/path" );
+        WebResource resource = client.resource( functionalTestHelper.nodeUri(nodes[ 0 ]) + "/path" );
         ClientResponse response = resource.type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( noHitsJson ).post( ClientResponse.class );
         assertEquals( 404, response.getStatus() );
     }
@@ -162,9 +162,9 @@ public class PathsFunctionalTest
 
         // Get single shortest paths and expect no content (since using /paths
         // {single:true} instead of /path)
-        String noHitsSingleJson = "{\"to\":\"" + server.restApiUri() + "node/" + nodes[ 1 ]
+        String noHitsSingleJson = "{\"to\":\"" + functionalTestHelper.nodeUri( nodes[ 1 ] )
                 + "\", \"max depth\":3, \"relationships\":{\"type\":\"to\", \"direction\":\"in\"}, \"algorithm\":\"shortestPath\", \"single\":true}";
-        WebResource resource = client.resource( server.restApiUri() + "node/" + nodes[ 0 ] + "/paths" );
+        WebResource resource = client.resource( functionalTestHelper.nodeUri(nodes[ 0 ]) + "/paths" );
         ClientResponse response = resource.type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( noHitsSingleJson ).post( ClientResponse.class );
         assertEquals( 204, response.getStatus() );
     }

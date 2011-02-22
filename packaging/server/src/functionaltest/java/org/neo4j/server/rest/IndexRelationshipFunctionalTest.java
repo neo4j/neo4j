@@ -37,7 +37,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.neo4j.server.NeoServer;
+import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
@@ -51,7 +51,7 @@ import com.sun.jersey.api.client.ClientResponse;
 
 public class IndexRelationshipFunctionalTest
 {
-    private NeoServer server;
+    private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
     private GraphDbHelper helper;
 
@@ -262,7 +262,7 @@ public class IndexRelationshipFunctionalTest
 
     private ClientResponse httpPostCreateRelationship( long startNode, String jsonString )
     {
-        return Client.create().resource( server.restApiUri() + "node/" + startNode + "/relationships" )
+        return Client.create().resource( functionalTestHelper.dataUri() + "node/" + startNode + "/relationships" )
                 .type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON )
                 .entity( jsonString )
                 .post( ClientResponse.class );
@@ -270,7 +270,7 @@ public class IndexRelationshipFunctionalTest
 
     private String jsonRelationshipCreationSpecification( String relationshipName, long endNode, String key, String value )
     {
-        return "{\"to\" : \"" + server.restApiUri() + "node/" + endNode + "\"," +
+        return "{\"to\" : \"" + functionalTestHelper.dataUri() + "node/" + endNode + "\"," +
                 "\"type\" : \"" + relationshipName + "\", " +
                 "\"data\" : {\"" + key + "\" : \"" + value + "\"}}";
     }

@@ -20,51 +20,68 @@
 package org.neo4j.server;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.List;
 
+import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.web.Jetty6WebServer;
 
-public class CleaningNeoServer extends NeoServer
-{
+public class CleaningNeoServer extends NeoServerWithEmbeddedWebServer {
     private final String dir;
     private static RuntimeException lastStarted;
     private final File configFile;
+    private List<Class<? extends ServerModule>> serverModules;
 
-    public CleaningNeoServer( final AddressResolver addressResolver, final StartupHealthCheck startupHealthCheck,
-                              final File configFile, final Jetty6WebServer jetty6WebServer, final String dir )
-    {
-        super( addressResolver, startupHealthCheck, configFile, jetty6WebServer );
+    public CleaningNeoServer(final AddressResolver addressResolver, final StartupHealthCheck startupHealthCheck, final File configFile,
+            final Jetty6WebServer jetty6WebServer, final String dir, Class<? extends ServerModule>... serverModules) {
+        super(addressResolver, startupHealthCheck, configFile, jetty6WebServer);
         this.configFile = configFile;
-        
+
         this.dir = dir;
-        if ( lastStarted != null )
-        {
-            try
-            {
+
+        if (noServerModulesSuppied(serverModules)) {
+            super.registerServerModules();
+        } else {
+            this.serverModules = Arrays.asList(serverModules);
+        }
+
+        if (lastStarted != null) {
+            try {
                 throw lastStarted;
-            }
-            finally
-            {
+            } finally {
                 lastStarted = null; // only report this once
             }
         }
     }
 
-    @Override
-    public void start()
-    {
-        super.start();
-        lastStarted = new RuntimeException( originatingTestClass()
-                                            + " didn't shut down the server correctly!" );
+    private boolean noServerModulesSuppied(Class<? extends ServerModule>... serverModules) {
+        return serverModules == null || serverModules.length == 0;
     }
 
-    private String originatingTestClass()
-    {
-        for ( StackTraceElement el : Thread.currentThread().getStackTrace() )
-        {
+    @Override
+    protected void registerServerModules() {
+        if (haveChangedServerModuleDefaults()) {
+            for (Class<? extends ServerModule> sm : serverModules) {
+                registerModule(sm);
+            }
+        }
+    }
+
+    private boolean haveChangedServerModuleDefaults() {
+        return serverModules != null && serverModules.size() > 0;
+    }
+
+    @Override
+    public void start() {
+        super.start();
+        lastStarted = new RuntimeException(originatingTestClass() + " didn't shut down the server correctly!");
+    }
+
+    private String originatingTestClass() {
+        for (StackTraceElement el : Thread.currentThread().getStackTrace()) {
             String className = el.getClassName();
-            if ( className.contains( "Test" ) )
-            {
+            if (className.contains("Test")) {
                 return className;
             }
         }
@@ -72,38 +89,31 @@ public class CleaningNeoServer extends NeoServer
     }
 
     @Override
-    public void stop()
-    {
+    public void stop() {
         super.stop();
-        recursiveDelete( dir );
+        recursiveDelete(dir);
         lastStarted = null;
         recursiveDelete(configFile);
     }
 
-    private void secureDelete( File f )
-    {
+    private void secureDelete(File f) {
         boolean success = f.delete();
-        if ( !success )
-        {
-            throw new RuntimeException( "Failed to delete the temporary database" );
+        if (!success) {
+            throw new RuntimeException("Failed to delete the temporary database");
         }
     }
 
-    public void recursiveDelete( String dirOrFile )
-    {
-        recursiveDelete( new File( dirOrFile ) );
+    public void recursiveDelete(String dirOrFile) {
+        recursiveDelete(new File(dirOrFile));
     }
 
-    public void recursiveDelete( File dirOrFile )
-    {
-        if ( dirOrFile.isDirectory() )
-        {
-            for ( File sub : dirOrFile.listFiles() )
-            {
-                recursiveDelete( sub );
+    public void recursiveDelete(File dirOrFile) {
+        if (dirOrFile.isDirectory()) {
+            for (File sub : dirOrFile.listFiles()) {
+                recursiveDelete(sub);
             }
         }
 
-        secureDelete( dirOrFile );
+        secureDelete(dirOrFile);
     }
 }
