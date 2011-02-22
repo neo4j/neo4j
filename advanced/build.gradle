@@ -13,6 +13,7 @@ sourceCompatibility = 1.6
 apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'eclipse'
+apply plugin: 'maven'
 
 subprojects {
     group = 'org.neo4j'
@@ -23,8 +24,10 @@ subprojects {
     apply plugin: 'java'
     apply plugin: 'idea'
     apply plugin: 'eclipse'
+    apply plugin: 'maven'
 
     repositories {
+        mavenLocal()
         mavenCentral()
         mavenRepo urls: "http://repository.jboss.org/nexus/content/groups/public/"
     }
@@ -40,7 +43,10 @@ subprojects {
 
     // compileJava.options.compilerArgs = ['-Xlint:unchecked']
 
+    ideaModule.downloadJavadoc = true
     ideaModule.downloadSources = true
+    ideaModule.outputDir = project.sourceSets.main.classesDir
+    ideaModule.testOutputDir = project.sourceSets.test.classesDir
 
     task sourcesJar(type: Jar, dependsOn: classes) {
         classifier = 'sources'
@@ -63,6 +69,11 @@ subprojects {
         archives testsJar
     }
 }
+
+ideaModule.downloadJavadoc = true
+ideaModule.downloadSources = true
+ideaModule.outputDir = project.sourceSets.main.classesDir
+ideaModule.testOutputDir = project.sourceSets.test.classesDir
 
 ideaProject {
     withXml { provider ->
