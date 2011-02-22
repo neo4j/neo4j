@@ -1,0 +1,42 @@
+dependencies {
+
+    compile project(":server-extensions"),
+            "$group:neo4j:$version",
+            "log4j:log4j:$log4jVersion",
+            "commons-configuration:commons-configuration:$commonsConfigurationVersion",
+            "org.mortbay.jetty:jetty:$jettyVersion",
+            "com.sun.jersey:jersey-server:$jerseyVersion",
+            "de.huxhorn.lilith:de.huxhorn.lilith.3rdparty.rrd4j:$rrdVersion",
+            "org.codehaus.jackson:jackson-jaxrs:$jacksonVersion",
+            "org.codehaus.jackson:jackson-mapper-asl:$jacksonVersion"
+
+    compile("com.tinkerpop:gremlin:$gremlinVersion") {
+        exclude module: "sesame-sail-api"
+        exclude module: "gmaven-plugin"
+        exclude module: "common"
+        exclude module: "aduna-commons-iteration"
+        exclude module: "jung-api"
+    }
+
+    //TODO remove this when  org.neo4j:neo4j is fixed
+    compile("$group:neo4j-kernel:$version") {
+        artifact {
+            name = 'neo4j-kernel'
+            type = 'jar'
+            classifier = ''
+        }
+    }
+
+    testCompile("$group:neo4j-kernel:$version") {
+        artifact {
+            name = 'neo4j-kernel'
+            type = 'jar'
+            classifier = 'tests'
+        }
+        artifact {
+            name = 'neo4j-kernel'
+            type = 'jar'
+            classifier = ''
+        }
+    }
+}
