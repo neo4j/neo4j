@@ -50,9 +50,7 @@ public class LogIoUtils
         long logFormatVersion = ( version >> 56 ) & 0xFF;
         if ( CURRENT_FORMAT_VERSION != logFormatVersion )
         {
-            throw new IOException( String.format(
-                    "Unsupported log format version 0x%x (expected 0x%x)", logFormatVersion,
-                    CURRENT_FORMAT_VERSION ) );
+            throw new IllegalLogFormatException( CURRENT_FORMAT_VERSION, logFormatVersion );
         }
         version = version & 0x00FFFFFFFFFFFFFFL;
         return new long[] { version, previousCommittedTx };

@@ -742,7 +742,7 @@ public class XaLogicalLog
         msgLog.logMessage( "Non clean shutdown detected on log [" + logFileName +
             "]. Recovery started ...", true );
         // get log creation time
-        long[] header = LogIoUtils.readLogHeader( buffer, fileChannel, false );
+        long[] header = readLogHeader( fileChannel, "Tried to do recovery on log with illegal format version" );
         if ( header == null )
         {
             log.info( "Unable to read header information, "
@@ -1196,6 +1196,19 @@ public class XaLogicalLog
         }
 
     }
+    
+    private long[] readLogHeader( ReadableByteChannel source, String message ) throws IOException
+    {
+        try
+        {
+            return LogIoUtils.readLogHeader( buffer, source, true );
+        }
+        catch ( IllegalLogFormatException e )
+        {
+            msgLog.logMessage( message, e );
+            throw e;
+        }
+    }
 
     public synchronized void applyLog( ReadableByteChannel byteChannel )
         throws IOException
@@ -1208,7 +1221,7 @@ public class XaLogicalLog
         {
             throw new IllegalStateException( "There are active transactions" );
         }
-        long[] header = LogIoUtils.readLogHeader( buffer, byteChannel, true );
+        long[] header = readLogHeader( byteChannel, "Tried to apply log with illegal log format" );
         logVersion = header[0];
         long previousCommittedTx = header[1];
         if ( logVersion != xaTf.getCurrentVersion() )

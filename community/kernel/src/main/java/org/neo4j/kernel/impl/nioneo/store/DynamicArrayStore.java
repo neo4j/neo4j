@@ -32,7 +32,7 @@ import org.neo4j.kernel.IdType;
 class DynamicArrayStore extends AbstractDynamicStore
 {
     // store version, each store ends with this string (byte encoded)
-    private static final String VERSION = "ArrayPropertyStore v0.9.5";
+    private static final String VERSION = "ArrayPropertyStore v0.9.9";
 
     private static enum ArrayType
     {
@@ -548,10 +548,14 @@ class DynamicArrayStore extends AbstractDynamicStore
             // non clean shutdown, need to do recover with right neo
             return false;
         }
-        if ( version.equals( "ArrayPropertyStore v0.9.3" ) )
+//        if ( version.equals( "ArrayPropertyStore v0.9.3" ) )
+//        {
+//            rebuildIdGenerator();
+//            closeIdGenerator();
+//            return true;
+//        }
+        if ( version.equals( "ArrayPropertyStore v0.9.5" ) )
         {
-            rebuildIdGenerator();
-            closeIdGenerator();
             return true;
         }
         throw new IllegalStoreVersionException( "Store version [" + version  + 
