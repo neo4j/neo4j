@@ -185,8 +185,7 @@ public abstract class AbstractStore extends CommonAbstractStore
                 if ( getConfig() != null )
                 {
                     String storeDir = (String) getConfig().get( "store_dir" );
-                    StringLogger msgLog = StringLogger.getLogger( 
-                            storeDir + "/messages.log" );
+                    StringLogger msgLog = StringLogger.getLogger( storeDir );
                     msgLog.logMessage( getStorageFileName() + " non clean shutdown detected", true );
                 }
             }
@@ -334,8 +333,7 @@ public abstract class AbstractStore extends CommonAbstractStore
         if ( getConfig() != null )
         {
             String storeDir = (String) getConfig().get( "store_dir" );
-            StringLogger msgLog = StringLogger.getLogger( 
-                    storeDir + "/messages.log" );
+            StringLogger msgLog = StringLogger.getLogger( storeDir );
             msgLog.logMessage( getStorageFileName() + " rebuild id generator, highId=" + getHighId() + 
                     " defragged count=" + defraggedCount, true );
         }

@@ -32,7 +32,6 @@ import java.util.TreeSet;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
@@ -401,21 +400,7 @@ public class DumpLogicalLog
 
     private static PropertyType getType( int type )
     {
-        switch ( type )
-        {
-            case 1: return PropertyType.INT;
-            case 2: return PropertyType.STRING;
-            case 3: return PropertyType.BOOL;
-            case 4: return PropertyType.DOUBLE;
-            case 5: return PropertyType.FLOAT;
-            case 6: return PropertyType.LONG;
-            case 7: return PropertyType.BYTE;
-            case 8: return PropertyType.CHAR;
-            case 9: return PropertyType.ARRAY;
-            case 10: return PropertyType.SHORT;
-            case 0: return null;
-        }
-        throw new InvalidRecordException( "Unknown property type:" + type );
+        return PropertyType.getPropertyType( type, true );
     }
 
     static XaCommand readRelationshipTypeCommand( ReadableByteChannel byteChannel, ByteBuffer buffer )

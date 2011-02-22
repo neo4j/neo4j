@@ -85,7 +85,6 @@ class ExpectedTransactionData
     {
         for ( Node node : data.createdNodes() )
         {
-//            System.out.println( "Created node:" + node );
             assertTrue( expectedCreatedNodes.remove( node ) );
             assertFalse( data.isDeleted( node ) );
         }
@@ -93,7 +92,6 @@ class ExpectedTransactionData
         
         for ( Relationship rel : data.createdRelationships() )
         {
-//            System.out.println( "Created rel:" + rel );
             assertTrue( expectedCreatedRelationships.remove( rel ) );
             assertFalse( data.isDeleted( rel ) );
         }
@@ -101,7 +99,6 @@ class ExpectedTransactionData
         
         for ( Node node : data.deletedNodes() )
         {
-//            System.out.println( "Deleted node:" + node );
             assertTrue( expectedDeletedNodes.remove( node ) );
             assertTrue( data.isDeleted( node ) );
         }
@@ -109,7 +106,6 @@ class ExpectedTransactionData
         
         for ( Relationship rel : data.deletedRelationships() )
         {
-//            System.out.println( "Deleted rel:" + rel );
             assertTrue( expectedDeletedRelationships.remove( rel ) );
             assertTrue( data.isDeleted( rel ) );
         }
@@ -117,7 +113,6 @@ class ExpectedTransactionData
         
         for ( PropertyEntry<Node> entry : data.assignedNodeProperties() )
         {
-//            System.out.println( "Assigned property:" + entry );
             checkAssigned( expectedAssignedNodeProperties, entry );
             assertFalse( data.isDeleted( entry.entity() ) );
         }
@@ -125,7 +120,6 @@ class ExpectedTransactionData
 
         for ( PropertyEntry<Relationship> entry : data.assignedRelationshipProperties() )
         {
-//            System.out.println( "Assigned property:" + entry );
             checkAssigned( expectedAssignedRelationshipProperties, entry );
             assertFalse( data.isDeleted( entry.entity() ) );
         }
@@ -133,14 +127,12 @@ class ExpectedTransactionData
 
         for ( PropertyEntry<Node> entry : data.removedNodeProperties() )
         {
-//            System.out.println( "Removed property:" + entry );
             checkRemoved( expectedRemovedNodeProperties, entry );
         }
         assertTrue( expectedRemovedNodeProperties.isEmpty() );
 
         for ( PropertyEntry<Relationship> entry : data.removedRelationshipProperties() )
         {
-//            System.out.println( "Removed property:" + entry );
             checkRemoved( expectedRemovedRelationshipProperties, entry );
         }
         assertTrue( expectedRemovedRelationshipProperties.isEmpty() );

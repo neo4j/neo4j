@@ -116,7 +116,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         this.lockManager = (LockManager) config.get( LockManager.class );
         this.lockReleaser = (LockReleaser) config.get( LockReleaser.class );
         storeDir = (String) config.get( "store_dir" );
-        msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
+        msgLog = StringLogger.getLogger( storeDir );
         String store = (String) config.get( "neo_store" );
         if ( !config.containsKey( REBUILD_IDGENERATORS_FAST ) )
         {

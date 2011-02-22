@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel;
 
+import static org.neo4j.com.backup.OnlineBackupExtension.parsePort;
+import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
@@ -125,7 +128,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 this, config );
         this.machineId = getMachineIdFromConfig( config );
         this.broker = this.brokerFactory.create( this, config );
-        this.msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
+        this.msgLog = StringLogger.getLogger( storeDir );
         
         boolean allowInitFromConfig = getAllowInitFromConfig( config );
         startUp( allowInitFromConfig );
@@ -293,9 +296,21 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                         getClusterNameFromConfig( config ),
                         getMachineIdFromConfig( config ),
                         getZooKeeperServersFromConfig( config ),
-                        getHaServerFromConfig( config ), HighlyAvailableGraphDatabase.this );
+                        getHaServerFromConfig( config ),
+                        getBackupPortFromConfig( config ),
+                        HighlyAvailableGraphDatabase.this );
             }
         };
+    }
+
+    /**
+     * @return the port for the backup server if that is enabled, or 0 if disabled.
+     */
+    private static int getBackupPortFromConfig( Map<?, ?> config )
+    {
+        String backupConfig = (String) config.get( ENABLE_ONLINE_BACKUP );
+        Integer port = parsePort( backupConfig );
+        return port != null ? port : 0;
     }
 
     private static String getClusterNameFromConfig( Map<?, ?> config )

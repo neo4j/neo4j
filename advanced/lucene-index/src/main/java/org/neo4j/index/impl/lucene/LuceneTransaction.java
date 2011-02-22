@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -94,6 +95,20 @@ class LuceneTransaction extends XaTransaction
         queueCommand( index.newRemoveCommand( entity, key, value ) );
     }
     
+    <T extends PropertyContainer> void remove( LuceneIndex<T> index, T entity, String key )
+    {
+        TxDataBoth data = getTxData( index, true );
+        insert( index, entity, key, null, data.removed( true ), data.added( false ) );
+        queueCommand( index.newRemoveCommand( entity, key, null ) );
+    }
+    
+    <T extends PropertyContainer> void remove( LuceneIndex<T> index, T entity )
+    {
+        TxDataBoth data = getTxData( index, true );
+        insert( index, entity, null, null, data.removed( true ), data.added( false ) );
+        queueCommand( index.newRemoveCommand( entity, null, null ) );
+    }
+    
     <T extends PropertyContainer> void delete( LuceneIndex<T> index )
     {
         txData.put( index.getIdentifier(), new DeletedTxDataBoth( index ) );
@@ -149,9 +164,28 @@ class LuceneTransaction extends XaTransaction
             return Collections.emptySet();
         }
         Collection<Long> ids = removed.get( key, value );
-        return ids != null ? ids : Collections.<Long>emptySet();
+        Collection<Long> orphanIds = removed.getOrphans( key );
+        return merge( ids, orphanIds );
     }
     
+    static Collection<Long> merge( Collection<Long> c1, Collection<Long> c2 )
+    {
+        if ( c1 == null && c2 == null )
+        {
+            return Collections.<Long>emptySet();
+        }
+        else if ( c1 != null && c2 != null )
+        {
+            Collection<Long> result = new HashSet<Long>( c1 );
+            result.addAll( c2 );
+            return result;
+        }
+        else
+        {
+            return c1 != null ? c1 : c2;
+        }
+    }
+
     <T extends PropertyContainer> Collection<Long> getAddedIds( LuceneIndex<T> index,
             Query query, QueryContext contextOrNull )
     {
@@ -179,21 +213,13 @@ class LuceneTransaction extends XaTransaction
     private <T extends PropertyContainer> TxDataHolder addedTxDataOrNull( LuceneIndex<T> index )
     {
         TxDataBoth data = getTxData( index, false );
-        if ( data == null )
-        {
-            return null;
-        }
-        return data.added( false );
+        return data != null ? data.added( false ) : null;
     }
     
     private <T extends PropertyContainer> TxDataHolder removedTxDataOrNull( LuceneIndex<T> index )
     {
         TxDataBoth data = getTxData( index, false );
-        if ( data == null )
-        {
-            return null;
-        }
-        return data.removed( false );
+        return data != null ? data.removed( false ) : null;
     }
     
     @Override

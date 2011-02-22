@@ -111,7 +111,7 @@ class EmbeddedGraphDbImpl
                 new SyncHookFactory(), relTypeCreator, txIdFactory.create( txModule.getTxManager() ),
                 lastCommittedTxIdSetter );
         graphDbInstance = new GraphDbInstance( storeDir, true, config );
-        this.msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
+        this.msgLog = StringLogger.getLogger( storeDir );
         this.graphDbService = graphDbService;
         IndexStore indexStore = graphDbInstance.getConfig().getIndexStore();
         this.indexManager = new IndexManagerImpl( this, indexStore );

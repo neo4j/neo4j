@@ -28,7 +28,7 @@ import javax.transaction.TransactionManager;
 import javax.transaction.UserTransaction;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.AbstractGraphDatabase;
 
 public class UserTransactionImpl implements UserTransaction
 {
@@ -40,7 +40,7 @@ public class UserTransactionImpl implements UserTransaction
     
     public UserTransactionImpl( GraphDatabaseService neo4j )
     {
-        this.tm = ((EmbeddedGraphDatabase) neo4j).getConfig().getTxModule().getTxManager();
+        this.tm = ((AbstractGraphDatabase) neo4j).getConfig().getTxModule().getTxManager();
     }
     
     public void begin() throws NotSupportedException, SystemException

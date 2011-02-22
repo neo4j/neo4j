@@ -63,7 +63,6 @@ public class TestMultiPruneEvaluators extends AbstractTestBase
                 {
                     calledForStartPosition[0] = true;
                 }
-                System.out.println( position );
                 return false;
             }
         };

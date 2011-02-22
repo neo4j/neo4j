@@ -68,17 +68,24 @@ abstract class IndexType
 
         void removeFieldsFromDocument( Document document, String key, Object value )
         {
-            String stringValue = value.toString();
-            Set<String> values = new HashSet<String>( Arrays.asList(
-                    document.getValues( key ) ) );
-            if ( !values.remove( stringValue ) )
+            Set<String> values = null;
+            if ( value != null )
             {
-                return;
+                String stringValue = value.toString();
+                values = new HashSet<String>( Arrays.asList(
+                        document.getValues( key ) ) );
+                if ( !values.remove( stringValue ) )
+                {
+                    return;
+                }
             }
             document.removeFields( key );
-            for ( String existingValue : values )
+            if ( value != null )
             {
-                addToDocument( document, key, existingValue );
+                for ( String existingValue : values )
+                {
+                    addToDocument( document, key, existingValue );
+                }
             }
         }
 
@@ -135,19 +142,25 @@ abstract class IndexType
         @Override
         void removeFieldsFromDocument( Document document, String key, Object value )
         {
-            String stringValue = value.toString();
             String exactKey = exactKey( key );
-            Set<String> values = new HashSet<String>(
-                    Arrays.asList( document.getValues( exactKey ) ) );
-            if ( !values.remove( stringValue ) )
+            Set<String> values = null;
+            if ( value != null )
             {
-                return;
+                String stringValue = value.toString();
+                values = new HashSet<String>( Arrays.asList( document.getValues( exactKey ) ) );
+                if ( !values.remove( stringValue ) )
+                {
+                    return;
+                }
             }
             document.removeFields( exactKey );
             document.removeFields( key );
-            for ( String existingValue : values )
+            if ( value != null )
             {
-                addToDocument( document, key, existingValue );
+                for ( String existingValue : values )
+                {
+                    addToDocument( document, key, existingValue );
+                }
             }
         }
 
@@ -327,6 +340,7 @@ abstract class IndexType
         {
             names.add( field.name() );
         }
+        names.remove( LuceneIndex.KEY_DOC_ID );
         for ( String name : names )
         {
             document.removeFields( name );
