@@ -1,8 +1,8 @@
 <table>
 	<tr>
-		<th>From id</th>
+		<th>From url</th>
 		<th>Relationship type</th>
-		<th>To id</th>
+		<th>To url</th>
 	</tr>
 	<tr>
 		<td><input class="short" id="mor_data_relationship_dialog_from" value="{#if $T.fromNode !== null}{ $T.fromNode.getSelf() }{#/if}" type="number" /></td>

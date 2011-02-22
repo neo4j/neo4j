@@ -24,30 +24,35 @@ import java.io.IOException;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.neo4j.server.NeoServer;
+import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.rest.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.RenderedWebElement;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
 
 public abstract class WebDriverTest {
 
-    protected WebDriver webDriver = new FirefoxDriver();
-    protected NeoServer server;
+    protected static WebDriver webDriver;
+    protected NeoServerWithEmbeddedWebServer server;
     protected FunctionalTestHelper testHelper;
     protected GraphDbHelper dbHelper;
 
     private static final File targetHtmlDir = new File("target/classes/webadmin-html");
     private static final File srcHtmlDir = new File("src/main/resources/webadmin-html");
     
+    private static final String webadminUri = "webadmin/index.html";
+    
     @BeforeClass
     public static void copyHtmlToTargetDirectory() throws IOException {
         FileUtils.copyDirectory(srcHtmlDir, targetHtmlDir);
+        webDriver = new FirefoxDriver();
     }
     
     @Before
@@ -58,9 +63,7 @@ public abstract class WebDriverTest {
         testHelper = new FunctionalTestHelper(server);
         dbHelper = testHelper.getGraphDbHelper();
         
-        String url = server.webadminUri().toString() + "index-no-feedback.html";
-        System.out.println("testing " + url);
-        webDriver.get(url);
+        webDriver.get(server.baseUri().toString() + webadminUri);
 
         dashboardMenu.waitUntilVisible();
     }
@@ -69,10 +72,22 @@ public abstract class WebDriverTest {
     public void stopServer() {
         testHelper = null;
         dbHelper = null;
-        webDriver.close();
         server.stop();
     }
-
+    
+    @AfterClass
+    public static void afterClass() {
+        webDriver.close();
+    }
+    
+    protected void clickYesOnAllConfirmDialogs() {
+        ((JavascriptExecutor)webDriver).executeScript("window.confirm = function(msg){return true;};");
+    }
+    
+    protected void clickNoOnAllConfirmDialogs() {
+        ((JavascriptExecutor)webDriver).executeScript("window.confirm = function(msg){return false;};");
+    }
+    
     protected ElementReference dashboardMenu = new ElementReference(webDriver, By.id("mainmenu-dashboard")) {
         @Override
         public RenderedWebElement getElement() {

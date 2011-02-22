@@ -19,31 +19,35 @@
  */
 package org.neo4j.server;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import org.apache.commons.io.output.ByteArrayOutputStream;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.URI;
+
+import javax.ws.rs.core.MediaType;
+
 import org.dummy.web.service.DummyThirdPartyWebService;
 import org.junit.After;
 import org.junit.Test;
 import org.neo4j.server.logging.InMemoryAppender;
+import org.neo4j.server.rest.FunctionalTestHelper;
 
-import javax.ws.rs.core.MediaType;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.net.ServerSocket;
-import java.net.URI;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
 
 public class NeoServerFunctionalTest {
 
-    private NeoServer server;
-    
+    private NeoServerWithEmbeddedWebServer server;
+
     @After
     public void stopServer() {
-        if(server != null) {
+        if (server != null) {
             server.stop();
         }
     }
@@ -52,9 +56,12 @@ public class NeoServerFunctionalTest {
     public void shouldDefaultToSensiblePortIfNoneSpecifiedInConfig() throws Exception {
         server = ServerBuilder.server().withPassingStartupHealthcheck().withoutWebServerPort().withRandomDatabaseDir().build();
         server.start();
+        FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper(server);
 
         Client client = Client.create();
-        ClientResponse response = client.resource(server.webadminUri()).get(ClientResponse.class);
+        // ClientResponse response =
+        // client.resource(server.webadminUri()).get(ClientResponse.class);
+        ClientResponse response = client.resource(functionalTestHelper.getWebadminUri()).get(ClientResponse.class);
 
         assertThat(response.getStatus(), is(200));
     }
@@ -68,10 +75,10 @@ public class NeoServerFunctionalTest {
 
     @Test
     public void shouldLogStartup() throws Exception {
-        InMemoryAppender appender = new InMemoryAppender(NeoServer.log);
+        InMemoryAppender appender = new InMemoryAppender(NeoServerWithEmbeddedWebServer.log);
         server = ServerBuilder.server().withPassingStartupHealthcheck().withRandomDatabaseDir().build();
         server.start();
-        assertThat(appender.toString(), containsString("Starting Neo Server on port [" + server.restApiUri().getPort() + "]"));
+        assertThat(appender.toString(), containsString("Starting Neo Server on port [" + server.getWebServerPort() + "]"));
     }
 
     @Test
@@ -90,8 +97,10 @@ public class NeoServerFunctionalTest {
     public void serverShouldProvideAWelcomePage() throws Exception {
         server = ServerBuilder.server().withPassingStartupHealthcheck().withRandomDatabaseDir().build();
         server.start();
+        FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper(server);
+
         Client client = Client.create();
-        ClientResponse response = client.resource(server.webadminUri()).get(ClientResponse.class);
+        ClientResponse response = client.resource(functionalTestHelper.getWebadminUri()).get(ClientResponse.class);
 
         assertThat(response.getStatus(), is(200));
         assertThat(response.getHeaders().getFirst("Content-Type"), containsString("html"));
@@ -101,18 +110,20 @@ public class NeoServerFunctionalTest {
     public void shouldMakeJAXRSClassesAvailableViaHTTP() throws Exception {
         server = ServerBuilder.server().withPassingStartupHealthcheck().withRandomDatabaseDir().build();
         server.start();
-        ClientResponse response = Client.create().resource(server.restApiUri()).accept( MediaType.APPLICATION_JSON_TYPE ).get(ClientResponse.class);
+        FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper(server);
+
+        ClientResponse response = Client.create().resource(functionalTestHelper.getWebadminUri()).accept(MediaType.APPLICATION_JSON_TYPE)
+                .get(ClientResponse.class);
         assertEquals(200, response.getStatus());
-        
     }
 
     @Test
     public void shouldLogShutdown() throws Exception {
-        InMemoryAppender appender = new InMemoryAppender(NeoServer.log);
+        InMemoryAppender appender = new InMemoryAppender(NeoServerWithEmbeddedWebServer.log);
         server = ServerBuilder.server().withPassingStartupHealthcheck().withRandomDatabaseDir().build();
         server.start();
         server.stop();
-        server = null; // Need this to prevent the server being stopped twice 
+        server = null; // Need this to prevent the server being stopped twice
         assertThat(appender.toString(), containsString("INFO - Successfully shutdown Neo Server on port [7474], database ["));
     }
 
@@ -121,39 +132,18 @@ public class NeoServerFunctionalTest {
         int contestedPort = 9999;
         ServerSocket socket = new ServerSocket(contestedPort);
 
-        InMemoryAppender appender = new InMemoryAppender(NeoServer.log);
+        InMemoryAppender appender = new InMemoryAppender(NeoServerWithEmbeddedWebServer.log);
         server = ServerBuilder.server().withPassingStartupHealthcheck().onPort(contestedPort).withRandomDatabaseDir().build();
         server.start();
-        
-        assertThat(appender.toString(), containsString(String.format("ERROR - Failed to start Neo Server on port [%s]", server.restApiUri().getPort())));
+
+        assertThat(appender.toString(), containsString(String.format("ERROR - Failed to start Neo Server on port [%s]", server.getWebServerPort())));
         socket.close();
     }
-    
-    @Test
-    public void shouldEmitManagementAndDataAndWebadminUrisToConsoleAtStartup() throws IOException {
-        PrintStream oldOut = System.out;
 
-        ByteArrayOutputStream consoleOutput = new ByteArrayOutputStream();
-        PrintStream printStream = new PrintStream(consoleOutput);
-        System.setOut(printStream);
-        
-        server = ServerBuilder.server().withPassingStartupHealthcheck().withDefaultDatabaseTuning().withRandomDatabaseDir().build();
-        server.start();
-        server.stop();
-        server = null;
-        
-        printStream.flush();
-        System.setOut(oldOut);
-        
-        String consoleString = consoleOutput.toString();
-        assertThat(consoleString, containsString("Neo4j server management URI [http://localhost:7474/db/manage/]"));
-        assertThat(consoleString, containsString("Neo4j server data URI [http://localhost:7474/db/data/]"));
-        assertThat(consoleString, containsString("Neo4j server webadmin URI [http://localhost:7474/webadmin/]"));
-    }
-    
     @Test
     public void shouldLoadThirdPartyJaxRsClasses() throws Exception {
-        server = ServerBuilder.server().withThirdPartyJaxRsPackage("org.dummy.web.service", DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT).withPassingStartupHealthcheck().withRandomDatabaseDir().build();
+        server = ServerBuilder.server().withThirdPartyJaxRsPackage("org.dummy.web.service", DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT)
+                .withPassingStartupHealthcheck().withRandomDatabaseDir().build();
         server.start();
 
         URI thirdPartyServiceUri = new URI(server.baseUri().toString() + DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT).normalize();

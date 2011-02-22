@@ -33,7 +33,7 @@ import javax.ws.rs.core.MediaType;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.server.NeoServer;
+import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
@@ -46,14 +46,15 @@ import com.sun.jersey.api.client.WebResource;
 public class RetrieveNodeFunctionalTest {
     private URI nodeUri;
 
-    private NeoServer server;
+    private NeoServerWithEmbeddedWebServer server;
 
     @Before
     public void setupServer() throws IOException, DatabaseBlockedException, URISyntaxException {
         server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
         server.start();
+        FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper(server);
 
-        nodeUri = new URI(server.restApiUri().toString() + "node/" + new GraphDbHelper(server.getDatabase()).createNode());
+        nodeUri = new URI(functionalTestHelper.nodeUri() + "/" + new GraphDbHelper(server.getDatabase()).createNode());
     }
 
     @After

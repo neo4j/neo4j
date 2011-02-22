@@ -30,7 +30,7 @@ import javax.ws.rs.core.MediaType;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.server.NeoServer;
+import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 
 import com.sun.jersey.api.client.Client;
@@ -38,7 +38,7 @@ import com.sun.jersey.api.client.ClientResponse;
 
 public class JmxServiceTest
 {
-    private NeoServer server;
+    private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
 
     @Before
@@ -56,7 +56,7 @@ public class JmxServiceTest
 
     @Test
     public void shouldRespondWithTheWebAdminClientSettings() throws Exception {
-        String url = functionalTestHelper.mangementUri() + "server/jmx";
+        String url = functionalTestHelper.mangementUri() + "/server/jmx";
         ClientResponse resp = Client.create().resource(url).accept( MediaType.APPLICATION_JSON_TYPE ).get(ClientResponse.class);
         String json = resp.getEntity(String.class);
 

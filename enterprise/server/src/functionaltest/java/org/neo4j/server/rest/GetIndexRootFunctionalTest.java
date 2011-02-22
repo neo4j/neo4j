@@ -26,7 +26,7 @@ import java.io.IOException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.server.NeoServer;
+import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 
 import com.sun.jersey.api.client.Client;
@@ -35,7 +35,7 @@ import com.sun.jersey.api.client.ClientResponse;
 public class GetIndexRootFunctionalTest
 {
     
-    private NeoServer server;
+    private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
     
     
