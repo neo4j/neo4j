@@ -55,7 +55,7 @@ public class LuceneTimeline<T extends PropertyContainer> implements TimelineInde
 
     private T getSingle( boolean reversed )
     {
-        IndexHits<T> hits = index.query( sort( everythingQuery().topDocs( 1 ), reversed ) );
+        IndexHits<T> hits = index.query( sort( everythingQuery().top( 1 ), reversed ) );
         return hits.getSingle();
     }
     

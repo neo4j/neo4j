@@ -103,6 +103,18 @@ class LuceneXaConnection extends IndexXaConnection
         getLuceneTx().remove( index, entity, key, value );
     }
     
+    <T extends PropertyContainer> void remove( LuceneIndex<T> index,
+            T entity, String key )
+    {
+        getLuceneTx().remove( index, entity, key );
+    }
+    
+    <T extends PropertyContainer> void remove( LuceneIndex<T> index,
+            T entity )
+    {
+        getLuceneTx().remove( index, entity );
+    }
+    
     <T extends PropertyContainer> void deleteIndex( LuceneIndex<T> index )
     {
         getLuceneTx().delete( index );

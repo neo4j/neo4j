@@ -81,6 +81,31 @@ public interface Index<T extends PropertyContainer>
     void remove( T entity, String key, Object value );
     
     /**
+     * Removes key/value pairs for {@code entity} where key is {@code key}
+     * from the index.
+     * 
+     * Implementations can choose to not implement this method and should
+     * in that case throw {@link UnsupportedOperationException}.
+     * 
+     * @param entity the entity ({@link Node} or {@link Relationship}) to
+     * remove the this index.
+     */
+    void remove( T entity, String key );
+    
+    /**
+     * Removes an entity from the index and all its key/value pairs which
+     * has been previously associated using
+     * {@link #add(PropertyContainer, String, Object)}.
+     * 
+     * Implementations can choose to not implement this method and should
+     * in that case throw {@link UnsupportedOperationException}.
+     * 
+     * @param entity the entity ({@link Node} or {@link Relationship}) to
+     * remove the this index.
+     */
+    void remove( T entity );
+    
+    /**
      * Clears the index and deletes the configuration associated with it. After
      * this it's invalid to call any other method on this index. However if the
      * transaction which the delete operation was called in gets rolled back

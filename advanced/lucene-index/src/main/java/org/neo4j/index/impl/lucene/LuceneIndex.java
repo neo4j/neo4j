@@ -153,6 +153,18 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         }
     }
     
+    public void remove( T entity, String key )
+    {
+        LuceneXaConnection connection = getConnection();
+        connection.remove( this, entity, key );
+    }
+    
+    public void remove( T entity )
+    {
+        LuceneXaConnection connection = getConnection();
+        connection.remove( this, entity );
+    }
+    
     public void delete()
     {
         getConnection().deleteIndex( this );
@@ -237,7 +249,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
                 if ( !foundInCache )
                 {
                     DocToIdIterator searchedIds = new DocToIdIterator( search( searcher,
-                            query, additionalParametersOrNull, additionsSearcher ), removedIds, searcher );
+                            query, additionalParametersOrNull, additionsSearcher, removedIds ), removedIds, searcher );
                     if ( ids.isEmpty() )
                     {
                         idIterator = searchedIds;
@@ -301,10 +313,15 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
     }
     
     private IndexHits<Document> search( IndexSearcherRef searcherRef, Query query,
-            QueryContext additionalParametersOrNull, Searcher additionsSearcher )
+            QueryContext additionalParametersOrNull, Searcher additionsSearcher, Collection<Long> removed )
     {
         try
         {
+            if ( additionsSearcher != null && !removed.isEmpty() )
+            {
+                letThroughAdditions( additionsSearcher, query, removed );
+            }
+            
             Searcher searcher = additionsSearcher == null ? searcherRef.getSearcher() :
                     new MultiSearcher( searcherRef.getSearcher(), additionsSearcher );
             IndexHits<Document> result = null;
@@ -330,6 +347,18 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         }
     }
     
+    private void letThroughAdditions( Searcher additionsSearcher, Query query, Collection<Long> removed )
+            throws IOException
+    {
+        Hits hits = new Hits( additionsSearcher, query, null );
+        HitsIterator iterator = new HitsIterator( hits );
+        while ( iterator.hasNext() )
+        {
+            String idString = iterator.next().getField( KEY_DOC_ID ).stringValue();
+            removed.remove( Long.parseLong( idString ) );
+        }
+    }
+
     public void setCacheCapacity( String key, int capacity )
     {
         service.dataSource().setCacheCapacity( identifier, key, capacity );
