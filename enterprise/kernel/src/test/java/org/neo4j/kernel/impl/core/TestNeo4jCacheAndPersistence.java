@@ -39,6 +39,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
@@ -427,15 +428,14 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         newTransaction();
         getNodeManager().clearCache();
         Iterable<Relationship> relIterable = node1.getRelationships();
+        Set<Relationship> relSet = new HashSet<Relationship>();
         for ( Relationship rel : rels )
         {
             rel.delete();
+            relSet.add( rel );
         }
         newTransaction();
-        for ( Relationship rel : relIterable )
-        {
-            System.out.println( rel );
-        }
+        assertEquals( relSet, new HashSet<Relationship>( IteratorUtil.asCollection( relIterable ) ) );
         node1.delete();
         node2.delete();
     }
