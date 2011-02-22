@@ -1,0 +1,82 @@
+/*osgiVersion = "1.0"
+jtaSpecVersion = "1.1.1"
+httpComponentsVersion = "4.0.1"
+commonsIoVersion = "1.4"
+luceneBundleVersion = "3.0.1_2"
+nettyVersion = "3.2.1.Final"
+zookeeperVersion = "3.3.2"
+*/
+
+commonsConfigurationVersion = "1.6"
+log4jVersion = "1.2.16"
+jettyVersion = "6.1.25"
+jerseyVersion = "1.3"
+rrdVersion = "2.0.5"
+javaxWsVersion = "1.1.1"
+jacksonVersion = "1.6.1"
+gremlinVersion = "0.7"
+junitVersion = "4.8.2"
+
+
+sourceCompatibility = 1.6
+
+apply plugin: 'java'
+apply plugin: 'idea'
+apply plugin: 'eclipse'
+
+subprojects {
+    group = 'org.neo4j'
+    version = '1.3-SNAPSHOT'
+
+    sourceCompatibility = 1.6
+
+    apply plugin: 'java'
+    apply plugin: 'idea'
+    apply plugin: 'eclipse'
+
+    repositories {
+        mavenCentral()
+        mavenRepo urls: "http://repository.jboss.org/nexus/content/groups/public/"
+        mavenRepo urls: "https://repo.neo4j.org/content/groups/dev/"
+    }
+
+    dependencies {
+        testCompile "junit:junit:$junitVersion"
+        //   javadoc "junit:junit:$junitVersion"
+    }
+
+    [compileJava, compileTestJava, javadoc]*.options.collect { options ->
+        options.encoding = 'UTF-8'
+    }
+
+    // compileJava.options.compilerArgs = ['-Xlint:unchecked']
+
+    ideaModule.downloadSources = true
+
+    task sourcesJar(type: Jar, dependsOn: classes) {
+        classifier = 'sources'
+        from sourceSets.main.allSource
+    }
+
+    task javadocJar(type: Jar, dependsOn: javadoc) {
+        classifier = 'javadoc'
+        from javadoc.destinationDir
+    }
+
+    task testsJar(type: Jar, dependsOn: javadoc) {
+        classifier = 'tests'
+        from sourceSets.test.allSource
+    }
+
+    artifacts {
+        archives sourcesJar
+        archives javadocJar
+        archives testsJar
+    }
+}
+
+ideaProject {
+    withXml { provider ->
+        provider.node.component.find { it.@name == 'VcsDirectoryMappings' }.mapping.@vcs = 'Git'
+    }
+}
