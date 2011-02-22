@@ -108,6 +108,12 @@ wa.components.data.RelationshipManager = (function($) {
 	$(".mor_data_relationship_dialog_save").live("click", me.saveNewRelationship);
 	$("#mor_data_relationship_available_types").live("change", me.availableTypeDropdownChanged);
 	
+	$("#mor_data_relationship_dialog_to").live("keydown", function(e) {
+	    if(e.keyCode == 13) {
+	        me.saveNewRelationship(e);
+	    }
+	});
+	
 	return {};
 	
 })(jQuery);

@@ -32,7 +32,7 @@ import javax.ws.rs.core.MediaType;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.server.NeoServer;
+import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -46,7 +46,7 @@ public class SetNodePropertiesFunctionalTest {
     private URI propertiesUri;
     private URI badUri;
 
-    private NeoServer server;
+    private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
     private GraphDbHelper helper;
 
@@ -58,8 +58,8 @@ public class SetNodePropertiesFunctionalTest {
         helper = functionalTestHelper.getGraphDbHelper();
 
         long nodeId = helper.createNode();
-        propertiesUri = new URI(server.restApiUri() + "node/" + nodeId + "/properties");
-        badUri = new URI(server.restApiUri() + "node/" + (nodeId * 999) + "/properties");
+        propertiesUri = new URI(functionalTestHelper.nodeUri(nodeId) + "/properties");
+        badUri = new URI(functionalTestHelper.nodeUri(nodeId * 999) + "/properties");
     }
 
     @After

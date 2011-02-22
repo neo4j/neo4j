@@ -32,7 +32,7 @@ import javax.ws.rs.core.MediaType;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.server.NeoServer;
+import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -46,16 +46,17 @@ public class SetRelationshipPropertiesFunctionalTest {
     private URI propertiesUri;
     private URI badUri;
 
-    private NeoServer server;
+    private NeoServerWithEmbeddedWebServer server;
     
     @Before
     public void setupServer() throws IOException, URISyntaxException {
         server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
         server.start();
+        FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper(server);
         
         long relationshipId = new GraphDbHelper(server.getDatabase()).createRelationship("KNOWS");
-        propertiesUri = new URI(server.restApiUri() + "relationship/" + relationshipId + "/properties");
-        badUri = new URI(server.restApiUri() + "relationship/" + (relationshipId + 1 * 99999) + "/properties");
+        propertiesUri = new URI(functionalTestHelper.relationshipPropertiesUri(relationshipId));
+        badUri = new URI(functionalTestHelper.relationshipPropertiesUri(relationshipId + 1 * 99999));
     }
     
     @After

@@ -31,9 +31,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.server.NeoServer;
+import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
+import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
@@ -45,18 +46,18 @@ public class CreateRelationshipFunctionalTest
 {
     private String RELATIONSHIP_URI_PATTERN;
 
-    private NeoServer server;
+    private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
     private GraphDbHelper helper;
-
+    
     @Before
     public void setupServer() throws IOException {
-        server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
+        server = ServerBuilder.server().withRandomDatabaseDir().withSpecificServerModules(RESTApiModule.class).withPassingStartupHealthcheck().build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper(server);
         helper = functionalTestHelper.getGraphDbHelper();
 
-        RELATIONSHIP_URI_PATTERN = server.restApiUri() + "relationship/[0-9]+";
+        RELATIONSHIP_URI_PATTERN = functionalTestHelper.dataUri() + "relationship/[0-9]+";
     }
 
     @After
@@ -70,9 +71,9 @@ public class CreateRelationshipFunctionalTest
     {
         long startNode = helper.createNode();
         long endNode = helper.createNode();
-        String jsonString = "{\"to\" : \"" + server.restApiUri() + "node/" + endNode
+        String jsonString = "{\"to\" : \"" + functionalTestHelper.dataUri() + "node/" + endNode
                 + "\", \"type\" : \"LOVES\", \"data\" : {\"foo\" : \"bar\"}}";
-        ClientResponse response = Client.create().resource( server.restApiUri() + "node/" + startNode + "/relationships" ).type(
+        ClientResponse response = Client.create().resource( functionalTestHelper.dataUri() + "node/" + startNode + "/relationships" ).type(
                 MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( jsonString ).post( ClientResponse.class );
         assertEquals( 201, response.getStatus() );
         assertTrue( response.getLocation().toString().matches( RELATIONSHIP_URI_PATTERN ) );
@@ -89,8 +90,8 @@ public class CreateRelationshipFunctionalTest
     {
         long startNode = helper.createNode();
         long endNode = helper.createNode();
-        String jsonString = "{\"to\" : \"" + server.restApiUri() + "node/" + endNode + "\", \"type\" : \"LOVES\"}";
-        ClientResponse response = Client.create().resource( server.restApiUri() + "node/" + startNode + "/relationships" ).type(
+        String jsonString = "{\"to\" : \"" + functionalTestHelper.dataUri() + "node/" + endNode + "\", \"type\" : \"LOVES\"}";
+        ClientResponse response = Client.create().resource( functionalTestHelper.dataUri() + "node/" + startNode + "/relationships" ).type(
                 MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( jsonString ).post( ClientResponse.class );
         assertEquals( 201, response.getStatus() );
         assertTrue( response.getLocation().toString().matches( RELATIONSHIP_URI_PATTERN ) );
@@ -102,9 +103,9 @@ public class CreateRelationshipFunctionalTest
     public void shouldRespondWith404WhenStartNodeDoesNotExist() throws DatabaseBlockedException
     {
         long endNode = helper.createNode();
-        String jsonString = "{\"to\" : \"" + server.restApiUri() + "node/" + endNode
+        String jsonString = "{\"to\" : \"" + functionalTestHelper.dataUri() + "node/" + endNode
                 + "\", \"type\" : \"LOVES\", \"data\" : {\"foo\" : \"bar\"}}";
-        ClientResponse response = Client.create().resource( server.restApiUri() + "node/999999/relationships" ).type(
+        ClientResponse response = Client.create().resource( functionalTestHelper.dataUri() + "node/999999/relationships" ).type(
                 MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( jsonString ).post( ClientResponse.class );
         assertEquals( 404, response.getStatus() );
     }
@@ -113,9 +114,9 @@ public class CreateRelationshipFunctionalTest
     public void shouldRespondWith400WhenEndNodeDoesNotExist() throws DatabaseBlockedException
     {
         long startNode = helper.createNode();
-        String jsonString = "{\"to\" : \"" + server.restApiUri() + "node/"
+        String jsonString = "{\"to\" : \"" + functionalTestHelper.dataUri() + "node/"
                 + "999999\", \"type\" : \"LOVES\", \"data\" : {\"foo\" : \"bar\"}}";
-        ClientResponse response = Client.create().resource( server.restApiUri() + "node/" + startNode + "/relationships" ).type(
+        ClientResponse response = Client.create().resource( functionalTestHelper.dataUri() + "node/" + startNode + "/relationships" ).type(
                 MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( jsonString ).post( ClientResponse.class );
         assertEquals( 400, response.getStatus() );
     }
@@ -125,9 +126,9 @@ public class CreateRelationshipFunctionalTest
     {
         long startNode = helper.createNode();
         long endNode = helper.createNode();
-        String jsonString = "{\"to\" : \"" + server.restApiUri() + "node/" + endNode
+        String jsonString = "{\"to\" : \"" + functionalTestHelper.dataUri() + "node/" + endNode
                 + "\", \"type\" : \"LOVES\", \"data\" : {\"foo\" : **BAD JSON HERE*** \"bar\"}}";
-        ClientResponse response = Client.create().resource( server.restApiUri() + "node/" + startNode + "/relationships" ).type(
+        ClientResponse response = Client.create().resource( functionalTestHelper.dataUri() + "node/" + startNode + "/relationships" ).type(
                 MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( jsonString ).post( ClientResponse.class );
 
         assertEquals( 400, response.getStatus() );

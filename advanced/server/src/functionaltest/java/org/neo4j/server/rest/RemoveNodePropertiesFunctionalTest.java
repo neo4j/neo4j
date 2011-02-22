@@ -25,7 +25,7 @@ import com.sun.jersey.api.client.ClientResponse;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.server.NeoServer;
+import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
@@ -40,7 +40,7 @@ import static org.junit.Assert.assertEquals;
 
 public class RemoveNodePropertiesFunctionalTest
 {
-    private NeoServer server;
+    private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
     private GraphDbHelper helper;
 
@@ -60,7 +60,7 @@ public class RemoveNodePropertiesFunctionalTest
     
     private String getPropertiesUri( long nodeId )
     {
-        return server.restApiUri() + "node/" + nodeId + "/properties";
+        return functionalTestHelper.nodePropertiesUri(nodeId);
     }
     
     @Test
@@ -119,7 +119,7 @@ public class RemoveNodePropertiesFunctionalTest
 
     private String getPropertyUri( long nodeId, String key )
     {
-        return server.restApiUri() + "node/" + nodeId + "/properties/" + key;
+        return functionalTestHelper.nodePropertyUri(nodeId, key);
     }
 
     private ClientResponse removeNodePropertyOnServer( long nodeId, String key )
