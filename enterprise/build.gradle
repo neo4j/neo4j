@@ -1,13 +1,13 @@
 /*osgiVersion = "1.0"
 jtaSpecVersion = "1.1.1"
 httpComponentsVersion = "4.0.1"
-commonsIoVersion = "1.4"
 luceneBundleVersion = "3.0.1_2"
 nettyVersion = "3.2.1.Final"
 zookeeperVersion = "3.3.2"
 */
 
 commonsConfigurationVersion = "1.6"
+commonsIoVersion = "1.4"
 log4jVersion = "1.2.16"
 jettyVersion = "6.1.25"
 jerseyVersion = "1.3"
@@ -15,6 +15,8 @@ rrdVersion = "2.0.5"
 javaxWsVersion = "1.1.1"
 jacksonVersion = "1.6.1"
 gremlinVersion = "0.7"
+hamcrestVersion = "1.1"
+mockitoVersion = "1.8.5"
 junitVersion = "4.8.2"
 
 
@@ -23,6 +25,7 @@ sourceCompatibility = 1.6
 apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'eclipse'
+apply plugin: 'maven'
 
 subprojects {
     group = 'org.neo4j'
@@ -33,8 +36,10 @@ subprojects {
     apply plugin: 'java'
     apply plugin: 'idea'
     apply plugin: 'eclipse'
+    apply plugin: 'maven'
 
     repositories {
+        mavenLocal()
         mavenCentral()
         mavenRepo urls: "http://repository.jboss.org/nexus/content/groups/public/"
         mavenRepo urls: "https://repo.neo4j.org/content/groups/dev/"
@@ -51,7 +56,10 @@ subprojects {
 
     // compileJava.options.compilerArgs = ['-Xlint:unchecked']
 
+    ideaModule.downloadJavadoc = true
     ideaModule.downloadSources = true
+    ideaModule.outputDir = project.sourceSets.main.classesDir
+    ideaModule.testOutputDir = project.sourceSets.test.classesDir
 
     task sourcesJar(type: Jar, dependsOn: classes) {
         classifier = 'sources'
@@ -73,7 +81,44 @@ subprojects {
         archives javadocJar
         archives testsJar
     }
+
+    configurations {
+        functionalTest
+        integrationTest
+    }
+
+    sourceSets {
+        functionalTest {
+            compileClasspath = sourceSets.main.classes + configurations.testRuntime
+            runtimeClasspath = classes + sourceSets.main.classes + configurations.testRuntime
+            java {
+                srcDir "src/functionaltest/java"
+            }
+        }
+        integrationTest {
+            compileClasspath = sourceSets.main.classes + configurations.testRuntime
+            runtimeClasspath = classes + sourceSets.main.classes + configurations.testRuntime
+            java {
+                srcDir "src/integrationtest/java"
+            }
+        }
+    }
+
+    task functionalTest(type: Test) {
+        testClassesDir = sourceSets.functionalTest.classesDir
+        classpath += sourceSets.functionalTest.runtimeClasspath
+    }
+
+    task integrationTest(type: Test) {
+        testClassesDir = sourceSets.integrationTest.classesDir
+        classpath += sourceSets.integrationTest.runtimeClasspath
+    }
 }
+
+ideaModule.downloadJavadoc = true
+ideaModule.downloadSources = true
+ideaModule.outputDir = project.sourceSets.main.classesDir
+ideaModule.testOutputDir = project.sourceSets.test.classesDir
 
 ideaProject {
     withXml { provider ->
