@@ -90,14 +90,14 @@ subprojects {
 
     sourceSets {
         functionalTest {
-            compileClasspath = sourceSets.main.classes + configurations.testRuntime
+            compileClasspath = sourceSets.main.classes + configurations.testRuntime + sourceSets.test.classes
             runtimeClasspath = classes + sourceSets.main.classes + configurations.testRuntime
             java {
                 srcDir "src/functionaltest/java"
             }
         }
         integrationTest {
-            compileClasspath = sourceSets.main.classes + configurations.testRuntime
+            compileClasspath = sourceSets.main.classes + configurations.testRuntime + sourceSets.test.classes
             runtimeClasspath = classes + sourceSets.main.classes + configurations.testRuntime
             java {
                 srcDir "src/integrationtest/java"
