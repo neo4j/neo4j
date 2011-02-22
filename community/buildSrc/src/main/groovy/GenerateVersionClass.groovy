@@ -6,8 +6,7 @@ class GenerateVersionClass implements Plugin<Project> {
 
     def void apply(Project project) {
         project.plugins.apply(JavaPlugin.class)
-        def genSrc = 'generated-src/version'
-        def generatedSrcDir = new File(project.buildDir, genSrc)
+        def generatedSrcDir = new File(project.buildDir, 'generated-src/version/java')
 
         def makeVersionClassTask = project.task('makeVersionClass') << {
 
@@ -23,7 +22,7 @@ class GenerateVersionClass implements Plugin<Project> {
 
             println "Version: ${project.name}, ${project.version}, $gitVersion"
 
-            def outFilename = "java/" + project.group.replace('.', '/') + "/" + project.name + "/impl/ComponentVersion.java"
+            def outFilename = project.group.replace('.', '/') + "/" + project.name + "/impl/ComponentVersion.java"
             def outFile = new File(generatedSrcDir, outFilename)
             outFile.parentFile.mkdirs()
             def f = new FileWriter(outFile)
@@ -32,15 +31,14 @@ import org.neo4j.kernel.Version;
 import org.neo4j.helpers.Service;
 
 @Service.Implementation(Version.class) public class ComponentVersion extends Version {
-    public ComponentVersion() { super("${project.name}", "${project.version}"); }
+    public ComponentVersion() { super(KERNEL_ARTIFACT_ID, "${project.version}"); }
     public String getRevision() { return "$gitVersion"; }
 }
 """)
             f.close()
         }
 
-        project.sourceSets.main.java.srcDir project.buildDir.name + '/' + genSrc + '/java'
-
+        project.sourceSets.main.java.srcDir generatedSrcDir
 
         makeVersionClassTask.inputs.files(project.sourceSets.main.allSource)
         makeVersionClassTask.outputs.files(generatedSrcDir)
