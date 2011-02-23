@@ -46,7 +46,7 @@ public class RESTApiModule implements ServerModule {
         try {
             URI restApiUri = restApiUri();
             
-            neoServer.getWebServer().addJAXRSPackages(listFrom(new String[] { Configurator.REST_API_PACKAGE }), restApiUri.toString());
+            neoServer.getWebServer().addJAXRSPackages(listFrom(new String[] { Configurator.DATA_API_PACKAGE }), restApiUri.toString());
             loadPlugins();
             
             log.info("Mounted REST API at [%s]", restApiUri.toString());
@@ -65,7 +65,7 @@ public class RESTApiModule implements ServerModule {
     
     private URI restApiUri() throws UnknownHostException {
         try {
-            return new URI(neoServer.getConfiguration().getString( Configurator.REST_API_PATH_PROPERTY_KEY, Configurator.DEFAULT_REST_API_PATH));
+            return new URI(neoServer.getConfiguration().getString( Configurator.DATA_API_PATH_PROPERTY_KEY, Configurator.DEFAULT_DATA_API_PATH));
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
