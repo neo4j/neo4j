@@ -21,6 +21,7 @@ package org.neo4j.server.webadmin.webtest;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
@@ -32,8 +33,10 @@ import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.RenderedWebElement;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.firefox.FirefoxDriver;
 
 public abstract class WebDriverTest {
@@ -145,6 +148,17 @@ public abstract class WebDriverTest {
     protected ElementReference dashboardValueTrackers = new ElementReference(webDriver, By.id("mor_monitor_valuetrackers"));
     
     protected ElementReference errorList = new ElementReference(webDriver, By.id("mor_errors"));
+    protected ElementReference lastError = new ElementReference(webDriver, By.id("mor_errors")) {
+        @Override
+        public RenderedWebElement getElement() {
+            try {
+                List<WebElement> el = super.getElement().findElements(By.tagName("li"));
+                return (RenderedWebElement) el.get( el.size() - 1 );
+            } catch(ArrayIndexOutOfBoundsException e) {
+                throw new NoSuchElementException("There are no errors shown.");
+            }
+        }
+    };
     
     protected ElementReference dialog = new ElementReference(webDriver, By.id("mor_dialog_content"));
 }
