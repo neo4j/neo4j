@@ -56,6 +56,12 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-backup</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>docs</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-shell</artifactId>
       <version>${neo4j.version}</version>
       <classifier>docs</classifier>
