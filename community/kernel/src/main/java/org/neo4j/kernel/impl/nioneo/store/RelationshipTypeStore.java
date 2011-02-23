@@ -401,7 +401,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
                 records = relTypeRecord.getTypeRecords().iterator();
             }
         }
-        StringBuffer buf = new StringBuffer();
+        StringBuilder buf = new StringBuilder();
         for ( char[] str : charList )
         {
             buf.append( str );
