@@ -3,5 +3,3 @@ include::webadmin.txt[]
 
 include::{importdir}/neo4j-shell-docs-jar/dev/shell.txt[]
 
-include::{importdir}/neo4j-backup-docs-jar/ops/backup.txt[]
-
