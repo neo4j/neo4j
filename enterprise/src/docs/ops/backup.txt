@@ -1,6 +1,6 @@
 [[operations-backup]]
-Neo4j Backup
-============
+Backup
+======
 
 Backups are performed over the network live from a running graph database onto a local copy.
 There are two types of backup: full and incremental.
