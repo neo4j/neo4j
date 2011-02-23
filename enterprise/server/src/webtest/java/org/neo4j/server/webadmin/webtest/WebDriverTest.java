@@ -29,7 +29,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
-import org.neo4j.server.rest.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
@@ -41,7 +40,7 @@ public abstract class WebDriverTest {
 
     protected static WebDriver webDriver;
     protected NeoServerWithEmbeddedWebServer server;
-    protected FunctionalTestHelper testHelper;
+    protected IntegrationTestHelper testHelper;
     protected GraphDbHelper dbHelper;
 
     private static final File targetHtmlDir = new File("target/classes/webadmin-html");
@@ -60,7 +59,7 @@ public abstract class WebDriverTest {
         server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
         server.start();
      
-        testHelper = new FunctionalTestHelper(server);
+        testHelper = new IntegrationTestHelper(server);
         dbHelper = testHelper.getGraphDbHelper();
         
         webDriver.get(server.baseUri().toString() + webadminUri);
