@@ -1002,8 +1002,6 @@ public class XaLogicalLog
 
     private LogEntry.Commit extractLogEntryList( long txId, LogBuffer targetBuffer ) throws IOException
     {
-        // TODO: could we refactor this to take a LogBuffer as argument to avoid
-        //       creating the in-memory representation?
         long version = 0;
         ReadableByteChannel log = null;
         TxPosition txPosition = txStartPositionCache.get( txId );

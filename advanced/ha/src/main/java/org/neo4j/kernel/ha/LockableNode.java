@@ -31,9 +31,9 @@ import org.neo4j.graphdb.Traverser.Order;
 
 public class LockableNode implements Node
 {
-    private final int id;
+    private final long id;
 
-    public LockableNode( int id )
+    public LockableNode( long id )
     {
         this.id = id;
     }
@@ -99,7 +99,7 @@ public class LockableNode implements Node
 
     public int hashCode()
     {
-        return id;
+        return (int) (( id >>> 32 ) ^ id );
     }
 
     public String toString()

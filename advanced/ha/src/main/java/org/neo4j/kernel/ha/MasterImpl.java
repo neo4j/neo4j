@@ -246,7 +246,7 @@ public class MasterImpl implements Master
         Node[] result = new Node[ids.length];
         for ( int i = 0; i < ids.length; i++ )
         {
-            result[i] = new LockableNode( (int) ids[i] );
+            result[i] = new LockableNode( ids[i] );
         }
         return result;
     }
@@ -256,7 +256,7 @@ public class MasterImpl implements Master
         Relationship[] result = new Relationship[ids.length];
         for ( int i = 0; i < ids.length; i++ )
         {
-            result[i] = new LockableRelationship( (int) ids[i] );
+            result[i] = new LockableRelationship( ids[i] );
         }
         return result;
     }

@@ -147,8 +147,7 @@ class RelationshipProxy implements Relationship
     @Override
     public int hashCode()
     {
-        // TODO long
-        return (int) relId;
+        return (int) (( relId >>> 32 ) ^ relId );
     }
 
     @Override

@@ -68,8 +68,7 @@ class NodeImpl extends Primitive
     @Override
     public int hashCode()
     {
-        // TODO long
-        return (int) id;
+        return (int) (( id >>> 32 ) ^ id );
     }
 
     @Override

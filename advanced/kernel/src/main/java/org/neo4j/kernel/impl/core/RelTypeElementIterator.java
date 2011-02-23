@@ -48,7 +48,6 @@ public abstract class RelTypeElementIterator
         @Override
         public boolean hasNext( NodeManager nodeManager )
         {
-            // TODO Auto-generated method stub
             return false;
         }
     };
