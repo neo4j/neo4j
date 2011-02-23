@@ -1,6 +1,6 @@
 dependencies {
 
-    compile project(":server-extensions"),
+    compile project(":neo4j-server-extensions"),
             "$group:neo4j:$version",
             "log4j:log4j:$log4jVersion",
             "commons-configuration:commons-configuration:$commonsConfigurationVersion",
@@ -8,7 +8,8 @@ dependencies {
             "com.sun.jersey:jersey-server:$jerseyVersion",
             "de.huxhorn.lilith:de.huxhorn.lilith.3rdparty.rrd4j:$rrdVersion",
             "org.codehaus.jackson:jackson-jaxrs:$jacksonVersion",
-            "org.codehaus.jackson:jackson-mapper-asl:$jacksonVersion"
+            "org.codehaus.jackson:jackson-mapper-asl:$jacksonVersion",
+            "org.neo4j:neo4j-shell:$version"
 
     compile("com.tinkerpop:gremlin:$gremlinVersion") {
         exclude module: "sesame-sail-api"
@@ -60,12 +61,16 @@ dependencies {
             classifier = ''
         }
     }
+//    test {
+//        maxParallelForks = 4
+//        forkEvery = 4
+//    }
 }
 
 sourceSets {
     integrationTest {
-        compileClasspath += project(':server').sourceSets.test.classes
-        compileClasspath += project(':server').sourceSets.functionalTest.classes
+        compileClasspath += project(':neo4j-server').sourceSets.test.classes
+        compileClasspath += project(':neo4j-server').sourceSets.functionalTest.classes
 //TODO rename webtest into integrationTest
         java {
             srcDir "src/webtest/java"
