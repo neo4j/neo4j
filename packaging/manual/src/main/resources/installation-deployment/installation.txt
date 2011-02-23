@@ -11,8 +11,7 @@ For information on installing Neo4j as a server, see <<server-installation>>.
 
 The latest release is always available from from http://neo4j.org/download, packaged as part of the Neo4j server.
 After selecting the appropriate version for your platform, embed Neo4j in your Java application, by including the 
-Neo4j library jars in your build. Either take the jar files from the +lib+ directory of the download, or directly 
-use the artifacts available from Maven Central Repository footnote:[http://repo1.maven.org/maven2/org/neo4j/].
+Neo4j library jars in your build. Either take the jar files from the +lib+ directory of the download, or directly use the artifacts available from Maven Central Repository footnote:[http://repo1.maven.org/maven2/org/neo4j/].
 
 .Maven dependency
 [source,xml] 

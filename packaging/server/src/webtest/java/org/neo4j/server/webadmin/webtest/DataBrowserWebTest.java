@@ -175,6 +175,21 @@ public class DataBrowserWebTest extends WebDriverTest {
     }
 	
 	@Test
+    public void creatingRelationshipToInvalidNodeShouldShowError() {
+        
+        dataMenu.click();
+        addRelationshipButton.click();
+        
+        addRelationshipDialogToInput.sendKeys( "jibberish" );
+        
+        addRelationshipDialogSave.click();
+        lastError.waitUntilVisible();
+        
+        assertThat(dialog.getElement(), isVisible());
+        
+    }
+	
+	@Test
     public void hittingReturnShouldFinishCreateRelationshipDialog() {
         
         String someNodeId = testHelper.nodeUri(dbHelper.createNode());
@@ -215,7 +230,6 @@ public class DataBrowserWebTest extends WebDriverTest {
 	
 	
 	private ElementReference notFoundPanel = new ElementReference(webDriver, By.className( "mor_data_item_notfound" ));
-	private ElementReference lastRelationshipInList = new ElementReference(webDriver, By.xpath( "//table[@class='mor_fancy data-table']/tbody/tr[last()]/td[2]/a" ));
 	
 	private ElementReference currentNodeId = new ElementReference(webDriver, By.className( "mor_data_current_node_id" ));
 	
