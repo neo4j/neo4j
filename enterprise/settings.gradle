@@ -1,1 +1,4 @@
-include "kernel", "graph-algo", "lucene-index", "udc", "ha", "management", "integration-test", "com"
+["kernel", "graph-algo", "lucene-index", "udc", "ha", "management", "integration-test", "com"].each { p ->
+    include "neo4j-$p"
+    project(":neo4j-$p").projectDir = new File(rootDir, p)
+}

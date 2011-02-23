@@ -1,9 +1,9 @@
 dependencies {
-    compile project(":kernel"),
-            project(":com"),
-            project(":lucene-index"),
-            project(":graph-algo"),
-            project(":ha"),
-            project(":management"),
-            project(":udc")
+    compile project(":neo4j-kernel"),
+            project(":neo4j-com"),
+            project(":neo4j-lucene-index"),
+            project(":neo4j-graph-algo"),
+            project(":neo4j-ha"),
+            project(":neo4j-management"),
+            project(":neo4j-udc")
 }

@@ -1,5 +1,5 @@
 dependencies {
-    compile project(":kernel"),
+    compile project(":neo4j-kernel"),
             "org.apache.servicemix.bundles:org.apache.servicemix.bundles.lucene:$luceneBundleVersion"
 
     testCompile "commons-io:commons-io:$commonsIoVersion"
@@ -7,6 +7,6 @@ dependencies {
 
 sourceSets {
     test {
-        classpath += project(':kernel').sourceSets.test.classes
+        classpath += project(':neo4j-kernel').sourceSets.test.classes
     }
 }

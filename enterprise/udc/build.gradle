@@ -1,5 +1,5 @@
 dependencies {
-    compile project(":kernel"),
+    compile project(":neo4j-kernel"),
             "org.apache.httpcomponents:httpcore:$httpComponentsVersion",
             "commons-io:commons-io:$commonsIoVersion"
 
