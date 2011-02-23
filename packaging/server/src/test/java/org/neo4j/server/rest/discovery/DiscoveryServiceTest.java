@@ -35,7 +35,6 @@ import javax.ws.rs.core.Response;
 import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.rest.discovery.DiscoveryService;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.rest.web.EntityOutputFormat;
 
@@ -45,13 +44,13 @@ public class DiscoveryServiceTest {
     @Test
     public void shouldReturnValidJSONWithDataAndManagementUris() throws Exception {
         Configuration mockConfig = mock(Configuration.class);
-        String managementUri = "http://localhost:9999/management";
+        String managementUri = "/management";
         when(mockConfig.getString(Configurator.WEB_ADMIN_PATH_PROPERTY_KEY)).thenReturn(managementUri);
-        String dataUri = "http://localhost:8888/data";
+        String dataUri = "/data";
         when(mockConfig.getString(Configurator.REST_API_PATH_PROPERTY_KEY)).thenReturn(dataUri);
         
-        
-        DiscoveryService ds = new DiscoveryService(mockConfig, new EntityOutputFormat( new JsonFormat(), new URI("http://localhost:5555"), null ));
+        String baseUri = "http://www.example.com";
+        DiscoveryService ds = new DiscoveryService(mockConfig, new EntityOutputFormat( new JsonFormat(), new URI(baseUri), null ));
         Response response = ds.getDiscoveryDocument();
         
         String json = new String((byte[]) response.getEntity());
@@ -61,7 +60,8 @@ public class DiscoveryServiceTest {
         assertThat(json, is(not("\"\"")));
         assertThat(json, is(not("null")));
         
-        assertThat(json, containsString("\"management\" : \"" + managementUri + "\""));
-        assertThat(json, containsString("\"data\" : \"" + dataUri + "\""));
+        assertThat(json, containsString("\"management\" : \"" + baseUri + managementUri + "\""));
+        assertThat(json, containsString("\"data\" : \"" + baseUri + dataUri + "\""));
+   
     }
 }

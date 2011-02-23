@@ -260,8 +260,4 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
         
         return null;
     }
-
-    public String webadminUri() {
-        return baseUri().toString();
-    }
 }

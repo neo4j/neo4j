@@ -35,7 +35,7 @@ public class WebadminConfigurationRule implements ValidationRule {
         URI managementUri =  validateAndNormalizeUri(managementApi, Configurator.WEB_ADMIN_PATH_PROPERTY_KEY);
         URI restUri = validateAndNormalizeUri(restApi, Configurator.REST_API_PATH_PROPERTY_KEY);
                     
-        // Overwrite the properties with the new normalised, absolute URIs
+        // Overwrite the properties with the new normalised URIs
         configuration.clearProperty(Configurator.WEB_ADMIN_PATH_PROPERTY_KEY);
         configuration.addProperty(Configurator.WEB_ADMIN_PATH_PROPERTY_KEY, managementUri.toString());
         
