@@ -38,7 +38,7 @@ public class ManagementApiModule implements ServerModule {
     public Set<URI> start(NeoServerWithEmbeddedWebServer neoServer) {
         try {
             neoServer.getWebServer().addJAXRSPackages(
-                    listFrom(new String[] { Configurator.WEB_ADMIN_REST_API_PACKAGE }), managementApiUri(neoServer).toString());
+                    listFrom(new String[] { Configurator.MANAGEMENT_API_PACKAGE }), managementApiUri(neoServer).toString());
             log.info("Mounted management API at [%s]", managementApiUri(neoServer).toString());
             
             HashSet<URI> ownedUris = new HashSet<URI>();
@@ -56,7 +56,7 @@ public class ManagementApiModule implements ServerModule {
 
     private URI managementApiUri(NeoServerWithEmbeddedWebServer neoServer) throws UnknownHostException {
         try {
-            return new URI(neoServer.getConfiguration().getString(Configurator.WEB_ADMIN_PATH_PROPERTY_KEY, Configurator.DEFAULT_WEB_ADMIN_REST_API_PATH));
+            return new URI(neoServer.getConfiguration().getString(Configurator.MANAGEMENT_PATH_PROPERTY_KEY, Configurator.DEFAULT_MANAGEMENT_API_PATH));
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
