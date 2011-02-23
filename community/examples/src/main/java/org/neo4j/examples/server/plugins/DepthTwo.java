@@ -18,9 +18,9 @@
  */
 package org.neo4j.examples.server.plugins;
 
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.traversal.PruneEvaluator;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.Predicate;
@@ -32,11 +32,13 @@ import org.neo4j.server.plugins.ServerPlugin;
 import org.neo4j.server.plugins.Source;
 
 
+
 /**
 * An extension performaing a predefined graph traversal
 */
 @Description( "Performs a depth two traversal along all relationship types." )
-public class DepthTwo extends ServerPlugin
+public class
+        DepthTwo extends ServerPlugin
 {
     @Description( "Traverse depth two and return the end nodes" )
     @PluginTarget( Node.class )

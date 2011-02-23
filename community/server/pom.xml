@@ -398,6 +398,7 @@
                 <include>wa/connectionmonitor.js</include>
 
                 <include>wa/ui/__init__.js</include>
+                <include>wa/ui/Tooltip.js</include>
                 <include>wa/ui/Dialog.js</include>
                 <include>wa/ui/Loading.js</include>
                 <include>wa/ui/Pages.js</include>
