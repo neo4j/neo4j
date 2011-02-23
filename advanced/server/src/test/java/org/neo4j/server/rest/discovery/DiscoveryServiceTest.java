@@ -45,9 +45,9 @@ public class DiscoveryServiceTest {
     public void shouldReturnValidJSONWithDataAndManagementUris() throws Exception {
         Configuration mockConfig = mock(Configuration.class);
         String managementUri = "/management";
-        when(mockConfig.getString(Configurator.WEB_ADMIN_PATH_PROPERTY_KEY)).thenReturn(managementUri);
+        when(mockConfig.getString(Configurator.MANAGEMENT_PATH_PROPERTY_KEY)).thenReturn(managementUri);
         String dataUri = "/data";
-        when(mockConfig.getString(Configurator.REST_API_PATH_PROPERTY_KEY)).thenReturn(dataUri);
+        when(mockConfig.getString(Configurator.DATA_API_PATH_PROPERTY_KEY)).thenReturn(dataUri);
         
         String baseUri = "http://www.example.com";
         DiscoveryService ds = new DiscoveryService(mockConfig, new EntityOutputFormat( new JsonFormat(), new URI(baseUri), null ));
