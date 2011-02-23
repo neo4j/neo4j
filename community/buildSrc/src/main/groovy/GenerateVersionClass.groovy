@@ -17,16 +17,17 @@ class GenerateVersionClass implements Plugin<Project> {
 
             Process git2 = "git describe".execute([], project.projectDir)
             git2.waitFor()
-            if (git2.exitValue() != 0) throw new RuntimeException("unable fetch 'git2 describe' " + git2.err.text);
+            if (git2.exitValue() != 0) throw new RuntimeException("unable fetch 'git describe' " + git2.err.text);
             def gitVersion = git2.text.readLines()[0];
 
             println "Version: ${project.name}, ${project.version}, $gitVersion"
 
-            def outFilename = project.group.replace('.', '/') + "/" + project.name + "/impl/ComponentVersion.java"
+            def packageName = "org.neo4j.kernel.impl"
+            def outFilename = packageName.replace('.', '/') + "/ComponentVersion.java"
             def outFile = new File(generatedSrcDir, outFilename)
             outFile.parentFile.mkdirs()
             def f = new FileWriter(outFile)
-            f.write("""package  ${project.group}.${project.name}.impl;
+            f.write("""package  $packageName;
 import org.neo4j.kernel.Version;
 import org.neo4j.helpers.Service;
 
