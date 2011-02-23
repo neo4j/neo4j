@@ -38,13 +38,31 @@
     <!-- Dependencies outside of the server repo. -->
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-shell</artifactId>
+      <artifactId>neo4j</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>docs</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel</artifactId>
       <version>${neo4j.version}</version>
       <classifier>docs</classifier>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-ha</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>docs</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-backup</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>docs</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-shell</artifactId>
       <version>${neo4j.version}</version>
       <classifier>docs</classifier>
     </dependency>

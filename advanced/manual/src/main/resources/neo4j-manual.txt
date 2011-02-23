@@ -26,7 +26,7 @@ include::configuration-performance/index.txt[]
 
 :leveloffset: 1
 
-include::transactions/transactions.txt[]
+include::{importdir}/neo4j-kernel-docs-jar/dev/transactions.txt[]
 
 :leveloffset: 1
 
