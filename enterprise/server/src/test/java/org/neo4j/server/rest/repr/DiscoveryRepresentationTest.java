@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.rest.repr;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
-import java.net.URI;
 import java.util.Map;
 
 import org.junit.Test;
@@ -30,8 +30,8 @@ import org.junit.Test;
 public class DiscoveryRepresentationTest {
     @Test
     public void shouldCreateAMapContainingDataAndManagementURIs() throws Exception {
-        URI managementUri = new URI("http://localhost:9999/management");
-        URI dataUri = new URI("http://localhost:8888/data");
+        String managementUri = "/management";
+        String dataUri = "/data";
         DiscoveryRepresentation dr = new DiscoveryRepresentation(managementUri, dataUri);
         
         Map<String, Object> mapOfUris = RepresentationTestBase.serialize(dr);
@@ -42,7 +42,7 @@ public class DiscoveryRepresentationTest {
         assertNotNull(mappedManagementUri);
         assertNotNull(mappedDataUri);
         
-        assertEquals(managementUri.toString(), mappedManagementUri);
-        assertEquals(dataUri.toString(), mappedDataUri);
+        assertEquals(managementUri, mappedManagementUri);
+        assertEquals(dataUri, mappedDataUri);
     }
 }
