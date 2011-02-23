@@ -152,16 +152,13 @@ public class IdGeneratorImpl implements IdGenerator
             return nextDefragId;
         }
         long id = nextFreeId.get();
-        assertIdWithinCapacity( id );
         if ( id == INTEGER_MINUS_ONE )
         {
             // Skip the integer -1 (0xFFFFFFFF) because it represents
             // special values, f.ex. the end of a relationships/property chain.
             id = nextFreeId.incrementAndGet();
-            assertIdWithinCapacity( id );
         }
-        // TODO This can make highId be the special -1 value, allright?
-        // it will however not be returned from nextId ever.
+        assertIdWithinCapacity( id );
         nextFreeId.incrementAndGet();
         return id;
     }

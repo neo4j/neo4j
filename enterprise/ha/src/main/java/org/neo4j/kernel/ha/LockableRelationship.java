@@ -26,9 +26,9 @@ import org.neo4j.graphdb.RelationshipType;
 
 public class LockableRelationship implements Relationship
 {
-    private final int id;
+    private final long id;
 
-    LockableRelationship( int id )
+    LockableRelationship( long id )
     {
         this.id = id;
     }
@@ -124,7 +124,7 @@ public class LockableRelationship implements Relationship
 
     public int hashCode()
     {
-        return id;
+        return (int) (( id >>> 32 ) ^ id );
     }
 
     public String toString()

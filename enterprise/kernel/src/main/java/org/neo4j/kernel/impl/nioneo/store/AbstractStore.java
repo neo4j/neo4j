@@ -262,8 +262,6 @@ public abstract class AbstractStore extends CommonAbstractStore
         {
             throw new ReadOnlyDbException();
         }
-        // TODO: fix this hardcoding
-        final byte RECORD_NOT_IN_USE = 0;
 
         logger.fine( "Rebuilding id generator for[" + getStorageFileName()
             + "] ..." );
@@ -308,7 +306,7 @@ public abstract class AbstractStore extends CommonAbstractStore
                     byte inUse = byteBuffer.get();
                     byteBuffer.flip();
                     nextId();
-                    if ( inUse == RECORD_NOT_IN_USE )
+                    if ( (inUse & 0x1) == Record.NOT_IN_USE.byteValue() )
                     {
                         freeIdList.add( i );
                     }

@@ -340,7 +340,7 @@ public class PropertyIndexStore extends AbstractStore implements Store
                 records = propRecord.getKeyRecords().iterator();
             }
         }
-        StringBuffer buf = new StringBuffer();
+        StringBuilder buf = new StringBuilder();
         for ( char[] str : charList )
         {
             buf.append( str );
@@ -348,6 +348,7 @@ public class PropertyIndexStore extends AbstractStore implements Store
         return buf.toString();
     }
 
+    @Override
     public String toString()
     {
         return "PropertyIndexStore";

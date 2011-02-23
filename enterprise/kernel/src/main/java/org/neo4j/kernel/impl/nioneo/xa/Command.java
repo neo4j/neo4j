@@ -68,10 +68,10 @@ abstract class Command extends XaCommand
         return key;
     }
 
+    @Override
     public int hashCode()
     {
-        // TODO long
-        return (int) key;
+        return (int) (( key >>> 32 ) ^ key );
     }
 
     static void writeDynamicRecord( LogBuffer buffer, DynamicRecord record )

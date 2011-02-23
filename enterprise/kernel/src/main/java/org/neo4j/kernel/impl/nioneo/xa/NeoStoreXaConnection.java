@@ -309,7 +309,6 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
 
         public boolean isRelationshipCreated( long relId )
         {
-            // TODO Auto-generated method stub
             return xaCon.getWriteTransaction().relCreated( relId );
         }
     };

@@ -1701,12 +1701,13 @@ class WriteTransaction extends XaTransaction
             return this.getId() == ((Relationship) o).getId();
         }
 
+        @Override
         public int hashCode()
         {
-            // TODO long
-            return (int) id;
+            return (int) (( id >>> 32 ) ^ id );
         }
 
+        @Override
         public String toString()
         {
             return "Lockable relationship #" + this.getId();
