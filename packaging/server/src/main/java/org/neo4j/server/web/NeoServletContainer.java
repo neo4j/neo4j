@@ -19,20 +19,20 @@
  */
 package org.neo4j.server.web;
 
+import com.sun.jersey.api.core.ResourceConfig;
+import com.sun.jersey.spi.container.WebApplication;
+import com.sun.jersey.spi.container.servlet.ServletContainer;
+import com.sun.jersey.spi.container.servlet.WebConfig;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.NeoServerProvider;
 import org.neo4j.server.configuration.ConfigurationProvider;
 import org.neo4j.server.database.DatabaseProvider;
+import org.neo4j.server.database.GraphDatabaseServiceProvider;
 import org.neo4j.server.plugins.PluginInvocatorProvider;
 import org.neo4j.server.rest.repr.InputFormatProvider;
 import org.neo4j.server.rest.repr.OutputFormatProvider;
 import org.neo4j.server.rest.repr.RepresentationFormatRepository;
 import org.neo4j.server.rrd.RrdDbProvider;
-
-import com.sun.jersey.api.core.ResourceConfig;
-import com.sun.jersey.spi.container.WebApplication;
-import com.sun.jersey.spi.container.servlet.ServletContainer;
-import com.sun.jersey.spi.container.servlet.WebConfig;
 
 @SuppressWarnings("serial")
 public class NeoServletContainer extends ServletContainer {
@@ -47,6 +47,7 @@ public class NeoServletContainer extends ServletContainer {
         super.configure(wc, rc, wa);
 
         rc.getSingletons().add(new DatabaseProvider(server.getDatabase()));
+        rc.getSingletons().add(new GraphDatabaseServiceProvider(server.getDatabase().graph));
         rc.getSingletons().add(new NeoServerProvider(server));
         rc.getSingletons().add(new ConfigurationProvider(server.getConfiguration()));
         if(server.getDatabase().rrdDb() != null) {
