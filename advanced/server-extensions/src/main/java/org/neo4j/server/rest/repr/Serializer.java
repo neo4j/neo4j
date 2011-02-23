@@ -60,7 +60,7 @@ abstract class Serializer
                         path.append( "/" ).append( value.type.valueName );
                         if ( entityIdentity != null ) path.append( "/" ).append( entityIdentity );
                         path.append( "/" ).append( method );
-                        extension.writeValue( RepresentationType.URI, method, relative( baseUri,
+                        extension.writeValue( RepresentationType.URI, method, joinBaseWithRelativePath( baseUri,
                                 path.toString() ) );
                     }
                 }
@@ -76,15 +76,24 @@ abstract class Serializer
 
     final URI relativeUri( String path )
     {
-        return URI.create( relative( baseUri, path ) );
+        URI pathUri = URI.create( path );
+        if(pathUri.isAbsolute()) {
+            return pathUri;
+        } else {
+            return URI.create( joinBaseWithRelativePath( baseUri, path ) );
+        }
     }
 
     final String relativeTemplate( String path )
     {
-        return relative( baseUri, path );
+        if(URI.create(path).isAbsolute()) {
+            return path;
+        } else {
+            return joinBaseWithRelativePath( baseUri, path );
+        }
     }
 
-    static String relative( URI baseUri, String path )
+    static String joinBaseWithRelativePath( URI baseUri, String path )
     {
         String base = baseUri.toString();
         if ( base.endsWith( "/" ) )
