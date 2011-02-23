@@ -1,4 +1,6 @@
 *~
+*.zip
+*.tgz
 \#*
 */target/
 /target/
