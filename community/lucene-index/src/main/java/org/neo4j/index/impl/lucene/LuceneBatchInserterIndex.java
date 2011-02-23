@@ -73,15 +73,17 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
             for ( Map.Entry<String, Object> entry : properties.entrySet() )
             {
                 String key = entry.getKey();
-                for ( Object value : IoPrimitiveUtils.asArray( entry.getValue() ) )
+                Object value = entry.getValue();
+                value = value instanceof ValueContext ? ((ValueContext) value).getCorrectValue() : value;
+                for ( Object oneValue : IoPrimitiveUtils.asArray( value ) )
                 {
-                    type.addToDocument( document, key, value );
+                    type.addToDocument( document, key, oneValue );
                     if ( createdNow )
                     {
                         // If we know that the index was created this session
                         // then we can go ahead and add stuff to the cache directly
                         // when adding to the index.
-                        addToCache( entityId, key, value );
+                        addToCache( entityId, key, oneValue );
                     }
                 }
             }
