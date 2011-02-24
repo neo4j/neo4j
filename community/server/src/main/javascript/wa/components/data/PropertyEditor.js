@@ -191,9 +191,12 @@ wa.components.data.PropertyEditor = (function($) {
 		        return val;
 		    }
 		} catch(ex) {
-		    if(me.isAlphaNumeric(el.val())) {
+		    if(me.shouldBeConvertedToString(el.val())) {
+		        var value = el.val();
 		        el.val("\""+ el.val() +"\"");
-		        return me.getValue(el);
+		        me.showTooltip(el, "Your input has been automatically converted to a string.", 3000);
+                el.removeClass("error");
+                return value;
 		    } else {
     		    el.addClass("error");
                 me.showTooltip(el, "This does not appear to be a valid JSON value.");
@@ -206,8 +209,8 @@ wa.components.data.PropertyEditor = (function($) {
 	    return JSON.stringify(val).indexOf("{") === 0;
 	};
 	
-	me.isAlphaNumeric = function(val) {
-        return /^[a-z0-9-_\/]+$/i.test(val);
+	me.shouldBeConvertedToString = function(val) {
+        return /^[a-z0-9-_\/\\\(\)#%\&!$]+$/i.test(val);
     };
 	
 	me.isValidArray = function(val) {
@@ -231,8 +234,8 @@ wa.components.data.PropertyEditor = (function($) {
 	    return true;
 	};
 	
-	me.showTooltip = function(el, message) {
-	    me.getTooltipFor(el).show(message, el);  
+	me.showTooltip = function(el, message, timeout) {
+	    me.getTooltipFor(el).show(message, el, timeout);  
 	};
 	
 	me.hideTooltip = function(el) {
