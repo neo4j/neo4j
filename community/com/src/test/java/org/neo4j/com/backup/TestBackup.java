@@ -36,6 +36,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
 import org.neo4j.test.DbRepresentation;
 
 public class TestBackup
@@ -142,6 +143,21 @@ public class TestBackup
         backup.incremental( backupPath );
         assertEquals( furtherRepresentation, DbRepresentation.of( backupPath ) );
         shutdownServer( server );
+    }
+    
+    @Test
+    public void testBackupToRunningReadOnlyDatabase() throws Exception
+    {
+        createInitialDataSet( serverPath );
+        ServerInterface server = startServer( serverPath );
+        OnlineBackup.from( "localhost" ).full( backupPath );
+        shutdownServer( server );
+        DbRepresentation serverRepresentation = addMoreData( serverPath );
+        server = startServer( serverPath );
+        GraphDatabaseService target = new EmbeddedReadOnlyGraphDatabase( backupPath );
+        OnlineBackup.from( "localhost" ).incremental( target );
+        shutdownServer( server );
+        assertEquals( serverRepresentation, DbRepresentation.of( target ) );
     }
     
     private ServerInterface startServer( String path )
