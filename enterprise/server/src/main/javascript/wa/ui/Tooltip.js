@@ -58,7 +58,7 @@ wa.ui.Tooltip = function(settings) {
 
 _.extend(wa.ui.Tooltip.prototype, {
     
-    show : function(content, pos) {
+    show : function(content, pos, timeout) {
         this._currentPos = pos;
         this._currentContent = content;
         
@@ -66,6 +66,10 @@ _.extend(wa.ui.Tooltip.prototype, {
         pos = this._getTooltipPositionFor(this._getPosition(pos));
         this._tooltip.css({left: pos[0], top: pos[1] }).show();
         this._visible = true;
+        
+        if(timeout) {
+            setTimeout(this.hide,timeout);
+        }
     },
     
     hide : function() {
