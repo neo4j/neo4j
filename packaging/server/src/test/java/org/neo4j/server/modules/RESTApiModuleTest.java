@@ -44,7 +44,7 @@ public class RESTApiModuleTest {
 
         Configuration config = new PropertiesConfiguration();
         String path = "/db/data";
-        config.addProperty(Configurator.REST_API_PATH_PROPERTY_KEY, path);
+        config.addProperty(Configurator.DATA_API_PATH_PROPERTY_KEY, path);
 
         when(neoServer.getConfiguration()).thenReturn(config);
 

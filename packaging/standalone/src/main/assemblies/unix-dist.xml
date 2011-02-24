@@ -82,6 +82,8 @@
       </includes>
       <excludes>
         <exclude>*:javadoc:*</exclude>
+        <exclude>*:manpages:*</exclude>
+        <exclude>*:docs:*</exclude>
         <exclude>*:pom:*</exclude>
         <exclude>org.neo4j:neo4j:jar</exclude>
       </excludes>
@@ -92,6 +94,7 @@
       <useProjectArtifact>false</useProjectArtifact>
       <excludes>
         <exclude>*:site:*</exclude>
+        <exclude>*:docs:*</exclude>
         <exclude>org.neo4j:*</exclude>
         <exclude>org.neo4j.examples:*</exclude>
         <exclude>org.neo4j.doc:*</exclude>
@@ -114,7 +117,6 @@
       </includes>
     </dependencySet>
     <!-- Not ready for release. -->
-    <!--
     <dependencySet>
       <outputDirectory>examples/java/server</outputDirectory>
       <unpack>true</unpack>
@@ -124,7 +126,6 @@
         <include>org.neo4j.examples:neo4j-server-examples</include>
       </includes>
     </dependencySet>
-    -->
     <!-- java api docs -->
     <dependencySet>
       <outputDirectory>doc/java/api</outputDirectory>
@@ -154,6 +155,19 @@
       <directoryMode>0777</directoryMode>
       <includes>
         <include>org.neo4j.doc:neo4j-manual</include>
+      </includes>
+      <excludes>
+        <exclude>org.neo4j.doc:neo4j-manual:*:manpages</exclude>
+      </excludes>
+    </dependencySet>
+    <!-- die manpages -->
+    <dependencySet>
+      <outputDirectory>doc/</outputDirectory>
+      <unpack>true</unpack>
+      <fileMode>0444</fileMode>
+      <directoryMode>0777</directoryMode>
+      <includes>
+        <include>org.neo4j.doc:neo4j-manual:*:manpages</include>
       </includes>
     </dependencySet>
 

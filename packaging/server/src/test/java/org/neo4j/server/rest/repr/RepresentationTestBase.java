@@ -34,7 +34,7 @@ import org.neo4j.server.rest.repr.formats.MapWrappingWriter;
 
 public abstract class RepresentationTestBase
 {
-    private static final URI BASE_URI = URI.create( "http://neo4j.org/" );
+    public static final URI BASE_URI = URI.create( "http://neo4j.org/" );
     static final String NODE_URI_PATTERN = "http://.*/node/[0-9]+";
     static final String RELATIONSHIP_URI_PATTERN = "http://.*/relationship/[0-9]+";
 

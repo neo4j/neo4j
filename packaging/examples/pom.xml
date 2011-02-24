@@ -26,7 +26,7 @@
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-server-extensions</artifactId>
+      <artifactId>server-api</artifactId>
       <version>${neo4j.version}</version>
     </dependency>
     <dependency>
