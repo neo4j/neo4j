@@ -1,0 +1,11 @@
+[[ha-ops]]
+Neo4j High Availability Ops
+===========================
+
+:leveloffset: 2
+
+include::install-with-chef-unix.txt[]
+
+include::install-with-chef-windows.txt[]
+
+
