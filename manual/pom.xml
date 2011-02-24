@@ -167,21 +167,6 @@
             </configuration>
           </execution>
           <execution>
-            <id>html</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <descriptors>
-                <descriptor>src/main/assemblies/html.xml</descriptor>
-              </descriptors>
-              <finalName>${project.artifactId}-${project.version}</finalName>
-              <appendAssemblyId>true</appendAssemblyId>
-              <attach>true</attach>
-            </configuration>
-          </execution>
-          <execution>
             <id>manpages</id>
             <phase>package</phase>
             <goals>

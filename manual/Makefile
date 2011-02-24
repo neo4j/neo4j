@@ -66,7 +66,7 @@ help:
 	@echo "To keep temporary files, use 'KEEP=1'".
 	@echo "To set the version, use 'VERSION=[the version]'".
 
-dist: pdf html offline-html annotated text manpages cleanup
+dist: pdf html annotated text manpages cleanup
 
 all: pdf latexpdf html offline-html singlehtml text annotated manpages cleanup
 
@@ -145,7 +145,7 @@ html: manpages copyimages
 	# Building html output.
 	#
 	#
-	a2x $(GENERAL_FLAGS) -L -f chunked -D $(BUILDDIR) --attribute docinfo1 --attribute=icons --doctype book --asciidoc-opts "--conf-file=$(CONFDIR)/asciidoc.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/docbook45.conf" --xsl-file=$(CONFDIR)/chunked.xsl --xsltproc-opts "--stringparam admon.graphics 1" --xsltproc-opts "--xinclude" $(SRCFILE)
+	a2x $(GENERAL_FLAGS) -L -f chunked -D $(BUILDDIR) --attribute docinfo1 --attribute=icons --doctype book --asciidoc-opts "--conf-file=$(CONFDIR)/asciidoc.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/docbook45.conf" --xsl-file=$(CONFDIR)/chunked.xsl --xsltproc-opts "--stringparam admon.graphics 1" --xsltproc-opts "--xinclude" --xsltproc-opts "--stringparam chunk.section.depth 1" $(SRCFILE)
 	mv $(CHUNKEDTARGET) $(CHUNKEDHTMLDIR)
 	cp -fr $(SRCDIR)/js $(CHUNKEDHTMLDIR)/js
 
