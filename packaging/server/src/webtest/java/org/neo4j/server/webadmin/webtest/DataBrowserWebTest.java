@@ -203,6 +203,8 @@ public class DataBrowserWebTest extends WebDriverTest {
         
         assertThat(firstPropertyValueInput.getValue(), is("\"alpha123_-\""));
        
+        lastTooltip.waitForTextToChangeTo( "Your input has been automatically converted to a string." );
+        
         savePropertiesButton.waitForTextToChangeTo( "Saved" );
         
         Node n = testHelper.getDatabase().getReferenceNode();
