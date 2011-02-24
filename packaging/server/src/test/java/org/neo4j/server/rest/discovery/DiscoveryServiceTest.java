@@ -33,6 +33,7 @@ import java.net.URI;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.configuration.Configuration;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
@@ -65,6 +66,7 @@ public class DiscoveryServiceTest {
    
     }
     
+    @Ignore
     @Test
     public void shouldReturnConfiguredUrlIfConfigIsAbsolute() throws Exception {
         Configuration mockConfig = mock(Configuration.class);
