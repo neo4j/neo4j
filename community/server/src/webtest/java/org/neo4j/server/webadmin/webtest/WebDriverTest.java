@@ -160,5 +160,7 @@ public abstract class WebDriverTest {
         }
     };
     
+    protected ElementReference lastTooltip = new ElementReference(webDriver, By.className("tooltip-wrap"), true);
+    
     protected ElementReference dialog = new ElementReference(webDriver, By.id("mor_dialog_content"));
 }

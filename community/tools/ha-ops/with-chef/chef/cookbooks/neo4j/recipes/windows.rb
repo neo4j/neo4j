@@ -27,17 +27,24 @@ execute "java -version" do
 end
 
 neo4j_version=node[:neo4j][:version]||"1.3-SNAPSHOT"
-tarball = "neo4j-#{neo4j_version}-windows.zip"
+tarball="neo4j-#{neo4j_version}-windows.zip"
 neo4j_home = ENV['ProgramFiles'] + "\\" + "Neo4j"
 downloaded_tarball = ENV['TMP'] + "\\" + tarball
 exploded_tarball = ENV['TMP'] + "\\" + "neo4j-#{neo4j_version}"
 public_address = node[:neo4j][:public_address]||node[:ipaddress]
 bind_address = node[:neo4j][:ha][:bind_address]||node[:ipaddress]
+is_coordinator_node = (node[:neo4j][:mode] == "coordinator") 
 
 # install gem needed for unarchiving
-gem_package("archive-zip") do
-  action :install
+g = gem_package "archive-zip" do
+  action :nothing
 end
+
+g.run_action(:install)
+   
+require 'rubygems'
+Gem.clear_paths
+require 'archive/zip'
 
 # download remote file
 remote_file "#{downloaded_tarball}" do
@@ -49,7 +56,7 @@ end
 ruby_block "unzip_neo4j_archive" do
   block do
     begin
-      ZipLibrary.unzip(downloaded_tarball, ENV['TMP'])
+      Archive::Zip.extract(downloaded_tarball, ENV['TMP'])
     end
   end
   action :create
@@ -93,7 +100,7 @@ end
 execute "InstallNeo4j.bat" do
   cwd neo4j_home + "\\bin"
 
-  not_if { node[:neo4j][:mode] == "coordinator" }
+  not_if { is_coordinator_node }
 end
 
 

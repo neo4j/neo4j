@@ -24,16 +24,13 @@
 
   <properties>
     <short-name>server-build</short-name>
-    <neo4j.version>1.3.M02</neo4j.version>
+    <neo4j.version>1.3-SNAPSHOT</neo4j.version>
   </properties>
 
   <modules>
-    <module>server-extensions</module>
+    <module>server-api</module>
     <module>server</module>
-    <!-- Not ready for release. -->
-    <!--
     <module>examples</module>
-     -->
     <module>standalone</module>
   </modules>
   

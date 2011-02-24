@@ -41,10 +41,16 @@ public class ElementReference {
 
 	protected By selector;
 	protected WebDriver webDriver;
+	protected boolean matchLast;
 	
 	public ElementReference(WebDriver webDriver, By selector) {
+        this(webDriver, selector, false);
+    }
+	
+	public ElementReference(WebDriver webDriver, By selector, boolean matchLast) {
 		this.webDriver = webDriver;
 		this.selector = selector;
+		this.matchLast = matchLast;
 	}
 	
 	/**
@@ -69,7 +75,14 @@ public class ElementReference {
 		long end = System.currentTimeMillis() + 10000;
         while (System.currentTimeMillis() < end) {
             try {
-                return (RenderedWebElement) webDriver.findElement(selector);
+                if(matchLast) {
+                    List<WebElement> els = webDriver.findElements(selector);
+                    if(els.size() > 0) {
+                        return (RenderedWebElement) els.get(els.size()-1);
+                    }
+                } else {
+                    return (RenderedWebElement) webDriver.findElement(selector);
+                }
             } catch (NoSuchElementException ex) {
                 try {
 					Thread.sleep(13);

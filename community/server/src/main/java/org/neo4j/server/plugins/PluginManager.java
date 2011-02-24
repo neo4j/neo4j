@@ -54,7 +54,7 @@ public final class PluginManager implements ExtensionInjector, PluginInvocator
             final ServerExtender extender = new ServerExtender( factory );
             try
             {
-                plugin.loadServerExtender( extender, serverConfig );
+                plugin.loadServerExtender( extender );
             } catch ( Exception ex )
             {
                 log.warn( "Failed to load plugin: " + plugin, ex );
