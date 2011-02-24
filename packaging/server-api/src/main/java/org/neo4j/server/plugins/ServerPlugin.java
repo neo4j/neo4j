@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.plugins;
 
-import org.apache.commons.configuration.Configuration;
 import org.neo4j.helpers.Service;
 
 import java.io.UnsupportedEncodingException;
@@ -144,13 +143,13 @@ public abstract class ServerPlugin
      * implementation loads {@link PluginPoint} based on methods with the
      * {@link PluginTarget} annotation.
      *
-     * @param extender     the collection of {@link PluginPoint}s for this
-     *                     {@link ServerPlugin}.
-     * @param serverConfig the configuration parameters for the server.
+     * @param extender     the collection of {@link org.neo4j.server.plugins.PluginPoint}s for this
+     *                     {@link org.neo4j.server.plugins.ServerPlugin}.
+     *
      */
-    protected void loadServerExtender( ServerExtender extender, Configuration serverConfig )
+    protected void loadServerExtender( ServerExtender extender )
     {
-        for ( PluginPoint plugin : getDefaultExtensionPoints( serverConfig, extender.getPluginPointFactory() ) )
+        for ( PluginPoint plugin : getDefaultExtensionPoints( extender.getPluginPointFactory() ) )
         {
             extender.addExtension( plugin.forType(), plugin );
         }
@@ -162,12 +161,10 @@ public abstract class ServerPlugin
      * implementation loads {@link PluginPoint} based on methods with the
      * {@link PluginTarget} annotation.
      *
-     * @param serverConfig the configuration parameters for the server.
      * @return the collection of {@link PluginPoint}s for this
      *         {@link ServerPlugin}.
      */
-    protected Collection<PluginPoint> getDefaultExtensionPoints( Configuration serverConfig,
-                                                                 PluginPointFactory pluginPointFactory )
+    protected Collection<PluginPoint> getDefaultExtensionPoints( PluginPointFactory pluginPointFactory )
     {
         List<PluginPoint> result = new ArrayList<PluginPoint>();
         for ( Method method : getClass().getMethods() )
