@@ -191,15 +191,24 @@ wa.components.data.PropertyEditor = (function($) {
 		        return val;
 		    }
 		} catch(ex) {
-		    el.addClass("error");
-            me.showTooltip(el, "This does not appear to be a valid JSON value.");
-		    return null;
+		    if(me.isAlphaNumeric(el.val())) {
+		        el.val("\""+ el.val() +"\"");
+		        return me.getValue(el);
+		    } else {
+    		    el.addClass("error");
+                me.showTooltip(el, "This does not appear to be a valid JSON value.");
+    		    return null;
+		    }
 		}
 	};
 	
 	me.isMap = function(val) {
 	    return JSON.stringify(val).indexOf("{") === 0;
 	};
+	
+	me.isAlphaNumeric = function(val) {
+        return /^[a-z0-9-_\/]+$/i.test(val);
+    };
 	
 	me.isValidArray = function(val) {
 	    if(val.length == 0) {
