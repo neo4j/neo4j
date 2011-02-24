@@ -1,5 +1,13 @@
+1.3.M03 (2011-02-24)
+--------------------
+o Numerous updates to the Webadmin tool to make it more usable and to fix some visual bugs
+o Removal of the properties service, replaced with a discovery service to allow third-party apps to bind to the server at runtime and discover what services are offered and where
+o Changed the configuration file format to make it simpler and less error prone (but it is *not*) backwards compatible with earlier versions
+o Separated out the server plugin API for easier development, making only the only development dependency for server a very thin layer and small jar
+
+
 1.3.M02 (2011-02-10)
-------------------------
+--------------------
 o Gremlin updated to 0.7 and trimmed down to bare bones dependencies
 o Webadmin minor improvements in Console, Data browser and monitoring
 o better REST JSON property support in Arrays

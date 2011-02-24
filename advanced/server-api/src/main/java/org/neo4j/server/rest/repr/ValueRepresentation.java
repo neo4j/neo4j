@@ -93,7 +93,7 @@ public class ValueRepresentation extends Representation
             @Override
             String serialize( RepresentationFormat format, URI baseUri, ExtensionInjector extensions )
             {
-                return Serializer.relative( baseUri, path );
+                return Serializer.joinBaseWithRelativePath( baseUri, path );
             }
 
             @Override
@@ -117,7 +117,7 @@ public class ValueRepresentation extends Representation
             @Override
             String serialize( RepresentationFormat format, URI baseUri, ExtensionInjector extensions )
             {
-                return Serializer.relative( baseUri, path );
+                return Serializer.joinBaseWithRelativePath( baseUri, path );
             }
 
             @Override
