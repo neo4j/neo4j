@@ -279,6 +279,27 @@ public class TestLuceneBatchInsert
         assertContains( idx.query( "number", newIntRange( "number", 21, 45, false, true ) ), n1 );
         db.shutdown();
     }
+    
+    @Test
+    public void indexNumbers() throws Exception
+    {
+        BatchInserter inserter = new BatchInserterImpl( PATH );
+        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider(
+                inserter );
+        BatchInserterIndex index = provider.nodeIndex( "mine", EXACT_CONFIG );
+        
+        long id = inserter.createNode( null );
+        Map<String, Object> props = new HashMap<String, Object>();
+        props.put( "key", 123L );
+        index.add( id, props );
+        index.flush();
+        
+        assertEquals( 1, index.get( "key", 123L ).size() );
+        assertEquals( 1, index.get( "key", "123" ).size() );
+        
+        provider.shutdown();
+        inserter.shutdown();
+    }
 
     private enum EdgeType implements RelationshipType
     {
