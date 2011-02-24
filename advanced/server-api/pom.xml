@@ -9,10 +9,10 @@
     </parent>
 
     <groupId>org.neo4j</groupId>
-    <artifactId>neo4j-server-extensions</artifactId>
+    <artifactId>server-api</artifactId>
     <version>1.3-SNAPSHOT</version>
     <packaging>jar</packaging>
-    <name>Neo4j Server - Extensions</name>
+    <name>Neo4j Server API</name>
     <description>Interfaces and baseclasses needed to create your own extensions.</description>
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
@@ -43,14 +43,6 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-configuration</groupId>
-            <artifactId>commons-configuration</artifactId>
-            <version>1.6</version>
-            <type>jar</type>
-            <scope>compile</scope>
         </dependency>
 
         <dependency>
