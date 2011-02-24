@@ -1,3 +1,8 @@
+1.3.M03 (2011-02-24)
+-------------------
+o Fixed a bug where the use of ValueContext was ignored during batch insertion.
+o Added some more convinient Index#remove methods.
+
 1.3.M02 (2011-02-10)
 ------------------------
 o Broke neo4j-shell dependency.
