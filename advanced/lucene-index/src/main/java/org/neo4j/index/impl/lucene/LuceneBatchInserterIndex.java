@@ -74,9 +74,11 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
             {
                 String key = entry.getKey();
                 Object value = entry.getValue();
-                value = value instanceof ValueContext ? ((ValueContext) value).getCorrectValue() : value;
+                boolean isValueContext = value instanceof ValueContext;
+                value = isValueContext ? ((ValueContext) value).getCorrectValue() : value;
                 for ( Object oneValue : IoPrimitiveUtils.asArray( value ) )
                 {
+                    oneValue = isValueContext ? oneValue : oneValue.toString();
                     type.addToDocument( document, key, oneValue );
                     if ( createdNow )
                     {
