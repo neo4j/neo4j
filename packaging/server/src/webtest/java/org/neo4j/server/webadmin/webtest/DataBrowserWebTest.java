@@ -223,6 +223,27 @@ public class DataBrowserWebTest extends WebDriverTest {
        
         lastTooltip.waitForTextToChangeTo( "This does not appear to be a valid JSON value." );
     }
+    
+    @Test
+    public void shouldNotBeAbleToCreateDuplicatePropertyKeys() {
+
+        String propertyKey = "mykey";
+        
+        dataMenu.click();
+        addPropertyButton.click();
+        firstPropertyKeyInput.sendKeys( propertyKey, Keys.RETURN );
+        firstPropertyValueInput.sendKeys( "\"whoah\"", Keys.RETURN );
+
+        addPropertyButton.click();
+        lastPropertyKeyInput.sendKeys( propertyKey, Keys.RETURN );
+        lastPropertyValueInput.sendKeys( "\"asdasdas\"", Keys.RETURN );
+        
+        lastTooltip.waitForTextToChangeTo( "This is key already exist, please pick a different one." );
+        
+        Node n = testHelper.getDatabase().getReferenceNode();
+        String value = (String) n.getProperty( propertyKey );
+        assertThat(value,is("whoah"));
+    }
 	
 	@Test
     public void shouldBeAbleToRemoveNode() {
@@ -389,12 +410,12 @@ public class DataBrowserWebTest extends WebDriverTest {
 	private ElementReference firstPropertyKeyInput = new ElementReference(webDriver, By.className("mor_data_key_input"));
 	private ElementReference firstPropertyValueInput = new ElementReference(webDriver, By.className("mor_data_value_input"));
 	
-	private ElementReference lastPropertyKeyInput = new ElementReference(webDriver, By.className("mor_data_key_input")){
+	private ElementReference lastPropertyKeyInput = new ElementReference(webDriver, By.className("mor_data_key_input"), true){
 	    @Override
 	    public RenderedWebElement getElement() {
 	        List<WebElement> elements = webDriver.findElements( selector );
-	        if(elements.size() > 0) {
-	            return (RenderedWebElement) elements.get( elements.size() - 1 );
+	        if(elements.size() > 1) {
+	            return (RenderedWebElement) elements.get( elements.size() - 2 );
 	        } else {
 	            throw new NoSuchElementException("Cannot find last property key");
 	        }
@@ -404,8 +425,8 @@ public class DataBrowserWebTest extends WebDriverTest {
         @Override
         public RenderedWebElement getElement() {
             List<WebElement> elements = webDriver.findElements( selector );
-            if(elements.size() > 0) {
-                return (RenderedWebElement) elements.get( elements.size() - 1 );
+            if(elements.size() > 1) {
+                return (RenderedWebElement) elements.get( elements.size() - 2 );
             } else {
                 throw new NoSuchElementException("Cannot find last property key");
             }
