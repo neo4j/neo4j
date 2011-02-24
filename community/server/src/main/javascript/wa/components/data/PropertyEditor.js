@@ -66,6 +66,12 @@ wa.components.data.PropertyEditor = (function($) {
                 me.item().removeProperty(key);
             }
             me.item().save().then(me.showSavedSaveButton);
+            
+            me.hideTooltip(me.getKeyElement(ev.target));
+            me.hideTooltip(me.getValueElement(ev.target));
+            
+            me.checkDuplicateKeys();
+            
             $(ev.target).closest("ul").remove();
 		}
 	};
@@ -100,12 +106,7 @@ wa.components.data.PropertyEditor = (function($) {
 		    } else {
                 me.unmarkKeyFieldAsDuplicate(ev.target);
                 
-                // Do a run to see if this "unlocks" any fields marked
-                // as duplicates.
-                me.currentEditKey = null;
-                _.each(me.duplicateKeyFields, function(field) {
-                    me.propertyKeyChanged({target:field});
-                });
+                me.checkDuplicateKeys();
                 
                 // Save
                 if ( value !== null ) {
@@ -119,16 +120,26 @@ wa.components.data.PropertyEditor = (function($) {
 		}
 	};
 	
+	me.checkDuplicateKeys = function() {
+	    // Do a run to see if this "unlocks" any fields marked
+        // as duplicates.
+        me.currentEditKey = null;
+        _.each(me.duplicateKeyFields, function(field) {
+            me.propertyKeyChanged({target:field});
+        });
+	};
+	
 	me.markKeyFieldAsDuplicate = function(el) {
 	    if( ! me.keyFieldIsMarkedAsDuplicate(el)) {
 	        me.duplicateKeyFields.push(el);
 	    }
+	    me.showTooltip(el, "This is key already exist, please pick a different one.");
 	    $(el).addClass("error");
 	};
 	
 	me.unmarkKeyFieldAsDuplicate = function(el) {
 	    me.duplicateKeyFields = _.without(me.duplicateKeyFields, el);
-	    neo4j.log(el);
+	    me.hideTooltip(el);
 	    $(el).removeClass("error");
 	};
 	
@@ -153,11 +164,19 @@ wa.components.data.PropertyEditor = (function($) {
 		$("input.mor_data_value_input, input.mor_data_key_input").removeClass("focused");
 	};
 	
+	me.getKeyElement = function(element) {
+	    return $(element).closest("ul").find("input.mor_data_key_input");
+	};
+	
+	me.getValueElement = function(element) {
+        return $(element).closest("ul").find("input.mor_data_value_input");
+    };
+	
 	/**
 	 * Get the string key for a given value field. Returns null if key is not set.
 	 */
 	me.getKey = function(valueField) {
-		var keyEl = $(valueField).closest("ul").find("input.mor_data_key_input"),
+		var keyEl = me.getKeyElement(valueField),
 		    val = keyEl.val();
 		
 		if(!me.keyFieldIsMarkedAsDuplicate(keyEl)) {
