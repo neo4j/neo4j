@@ -13,3 +13,4 @@
 *.iml
 .idea/
 .DS_Store
+.vagrant
