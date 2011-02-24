@@ -28,12 +28,9 @@
   </properties>
 
   <modules>
-    <module>server-extensions</module>
+    <module>server-api</module>
     <module>server</module>
-    <!-- Not ready for release. -->
-    <!--
     <module>examples</module>
-     -->
     <module>standalone</module>
   </modules>
   
