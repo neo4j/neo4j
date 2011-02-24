@@ -189,6 +189,26 @@ public class DataBrowserWebTest extends WebDriverTest {
         lastTooltip.waitForTextToChangeTo( "Maps are not supported property values." );
     }
     
+
+    
+    @Test
+    public void alphanumericPropertyValueShouldBeConvertedToString() {
+
+        String propertyKey = "mykey";
+        
+        dataMenu.click();
+        addPropertyButton.click();
+        firstPropertyKeyInput.sendKeys( propertyKey, Keys.RETURN );
+        firstPropertyValueInput.sendKeys( "alpha123_-", Keys.RETURN );
+        
+        assertThat(firstPropertyValueInput.getValue(), is("\"alpha123_-\""));
+       
+        savePropertiesButton.waitForTextToChangeTo( "Saved" );
+        
+        Node n = testHelper.getDatabase().getReferenceNode();
+        assertThat( (String)n.getProperty( propertyKey ), is("alpha123_-"));
+    }
+    
     @Test
     public void shouldNotBeAbleToSaveInvalidJSONProperty() {
 
