@@ -76,21 +76,12 @@ abstract class Serializer
 
     final URI relativeUri( String path )
     {
-        URI pathUri = URI.create( path );
-        if(pathUri.isAbsolute()) {
-            return pathUri;
-        } else {
-            return URI.create( joinBaseWithRelativePath( baseUri, path ) );
-        }
+        return URI.create( joinBaseWithRelativePath( baseUri, path ) );
     }
 
     final String relativeTemplate( String path )
     {
-        if(URI.create(path).isAbsolute()) {
-            return path;
-        } else {
-            return joinBaseWithRelativePath( baseUri, path );
-        }
+        return joinBaseWithRelativePath( baseUri, path );
     }
 
     static String joinBaseWithRelativePath( URI baseUri, String path )

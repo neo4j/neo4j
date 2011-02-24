@@ -29,16 +29,6 @@ import org.junit.Test;
 
 public class SerializerTest
 {
-
-    @Test 
-    public void shouldNotModifyAbsoluteUrls() {
-        Serializer serializer = new Serializer(URI.create( "http://baseurl/" ), null){};
-        
-        String anAbsoluteUrl = "http://omnom/path/path/path";
-        assertThat(serializer.relativeUri( anAbsoluteUrl ), is(URI.create( anAbsoluteUrl )));
-        
-        assertThat(serializer.relativeTemplate( anAbsoluteUrl ), is(anAbsoluteUrl ));
-    }
     
     @Test 
     public void shouldPrependBaseUriToRelativePaths() {
