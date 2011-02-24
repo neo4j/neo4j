@@ -1,0 +1,52 @@
+version = "1.3-SNAPSHOT"
+neo4j_chef_zip = "neo4j-chef-${version}.zip"
+neo4j_chef_tgz = "neo4j-chef-${version}.tgz"
+
+task packageChef << {
+  ant.zip(destfile: neo4j_chef_zip) {
+    zipfileset(dir: 'chef', prefix:'neo4j-chef') 
+  }
+  ant.tar(
+    destfile: neo4j_chef_tgz,
+    compression: "gzip",
+  ) {
+    tarfileset(dir: 'chef', prefix:'neo4j-chef') 
+  }
+}
+
+// define a new configuration with the name 'sshAntTask'.
+configurations {
+    sshAntTask
+}
+
+// Define the Maven central repository to look for the dependencies.
+repositories {
+    mavenCentral()
+}
+
+// Assign dependencies to the sshAntTask configuration.
+dependencies {
+    sshAntTask 'org.apache.ant:ant-jsch:1.7.1', 'jsch:jsch:0.1.29'
+}
+
+// % scp -P 18765 neo4j-chef-1.3-SNAPSHOT.zip neo4j@neo4j.org:/home/neo4j/public_html/dist/neo4j-chef-1.3-SNAPSHOT.zip
+task publish << {
+  assert project.hasProperty("passphrase"), "For scp, please define private key passphrase using \"-Ppassphrase=your-private-passphrase\""
+
+  ant.taskdef(name: 'scp', classname: 'org.apache.tools.ant.taskdefs.optional.ssh.Scp',
+    classpath: configurations.sshAntTask.asPath)
+
+  for (archive in [neo4j_chef_zip, neo4j_chef_tgz]) {
+    ant.scp(
+      file: archive,
+      toDir: "neo4j@neo4j.org:/home/neo4j/public_html/dist/",
+      port: 18765,
+      sftp: true,
+      keyfile: '${user.home}/.ssh/id_rsa',
+      trust: true,
+      passphrase: passphrase as String,
+      verbose: true 
+   )
+  }
+}
+

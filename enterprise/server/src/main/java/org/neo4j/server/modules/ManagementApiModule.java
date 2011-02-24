@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.modules;
 
-import static org.neo4j.server.JAXRSHelper.generateUriFor;
 import static org.neo4j.server.JAXRSHelper.listFrom;
 
 import java.net.URI;
@@ -34,19 +33,16 @@ import org.neo4j.server.logging.Logger;
 
 public class ManagementApiModule implements ServerModule {
 
-    private static final String DEFAULT_WEB_ADMIN_REST_API_PATH = "/db/manage";
-
     private final Logger log = Logger.getLogger(ManagementApiModule.class);
-    private NeoServerWithEmbeddedWebServer neoServer;
 
     public Set<URI> start(NeoServerWithEmbeddedWebServer neoServer) {
-        this.neoServer = neoServer;
         try {
-            neoServer.getWebServer().addJAXRSPackages(listFrom(new String[] { Configurator.WEB_ADMIN_REST_API_PACKAGE }), managementApiUri().toString());
-            log.info("Mounted management API at [%s]", managementApiUri().toString());
+            neoServer.getWebServer().addJAXRSPackages(
+                    listFrom(new String[] { Configurator.MANAGEMENT_API_PACKAGE }), managementApiUri(neoServer).toString());
+            log.info("Mounted management API at [%s]", managementApiUri(neoServer).toString());
             
             HashSet<URI> ownedUris = new HashSet<URI>();
-            ownedUris.add(managementApiUri());
+            ownedUris.add(managementApiUri(neoServer));
             return ownedUris;
         } catch (UnknownHostException e) {
             log.warn(e);
@@ -58,16 +54,11 @@ public class ManagementApiModule implements ServerModule {
         // Do nothing.
     }
 
-    private URI managementApiUri() throws UnknownHostException {
-        if (neoServer.getConfiguration().containsKey(Configurator.WEB_ADMIN_PATH_PROPERTY_KEY)) {
-            try {
-                return new URI(neoServer.getConfiguration().getProperty(Configurator.WEB_ADMIN_PATH_PROPERTY_KEY).toString());
-            } catch (URISyntaxException e) {
-                throw new RuntimeException(e);
-            }
+    private URI managementApiUri(NeoServerWithEmbeddedWebServer neoServer) throws UnknownHostException {
+        try {
+            return new URI(neoServer.getConfiguration().getString(Configurator.MANAGEMENT_PATH_PROPERTY_KEY, Configurator.DEFAULT_MANAGEMENT_API_PATH));
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
         }
-        log.warn("Could not establish the Webadmin API URI from configuration, defaulting to [%s]",
-                generateUriFor(neoServer.baseUri(), DEFAULT_WEB_ADMIN_REST_API_PATH));
-        return generateUriFor(neoServer.baseUri(), DEFAULT_WEB_ADMIN_REST_API_PATH);
     }
 }

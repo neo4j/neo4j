@@ -22,7 +22,7 @@
     <neo-server.confdir>target/test-classes/etc/neo-server</neo-server.confdir>
     <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
     <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
-    <neo4j.version>1.3.M02</neo4j.version>
+    <neo4j.version>1.3-SNAPSHOT</neo4j.version>
   </properties>
 
   <packaging>bundle</packaging>
@@ -67,7 +67,7 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-server-extensions</artifactId>
+      <artifactId>server-api</artifactId>
       <version>1.3-SNAPSHOT</version>
     </dependency>
 

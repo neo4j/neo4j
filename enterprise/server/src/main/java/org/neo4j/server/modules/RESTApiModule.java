@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.modules;
 
-import static org.neo4j.server.JAXRSHelper.generateUriFor;
 import static org.neo4j.server.JAXRSHelper.listFrom;
 
 import java.net.URI;
@@ -34,8 +33,6 @@ import org.neo4j.server.logging.Logger;
 import org.neo4j.server.plugins.PluginManager;
 
 public class RESTApiModule implements ServerModule {
-    
-    private static final String DEFAULT_REST_API_PATH = "/db/data";
 
     private static final Logger log = Logger.getLogger(RESTApiModule.class);
     private PluginManager plugins;
@@ -49,7 +46,7 @@ public class RESTApiModule implements ServerModule {
         try {
             URI restApiUri = restApiUri();
             
-            neoServer.getWebServer().addJAXRSPackages(listFrom(new String[] { Configurator.REST_API_PACKAGE }), restApiUri.toString());
+            neoServer.getWebServer().addJAXRSPackages(listFrom(new String[] { Configurator.DATA_API_PACKAGE }), restApiUri.toString());
             loadPlugins();
             
             log.info("Mounted REST API at [%s]", restApiUri.toString());
@@ -67,15 +64,11 @@ public class RESTApiModule implements ServerModule {
     }
     
     private URI restApiUri() throws UnknownHostException {
-        if (neoServer.getConfiguration().containsKey(Configurator.REST_API_PATH_PROPERTY_KEY)) {
-            try {
-                return new URI(neoServer.getConfiguration().getProperty(Configurator.REST_API_PATH_PROPERTY_KEY).toString());
-            } catch (URISyntaxException e) {
-                throw new RuntimeException(e);
-            }
+        try {
+            return new URI(neoServer.getConfiguration().getString( Configurator.DATA_API_PATH_PROPERTY_KEY, Configurator.DEFAULT_DATA_API_PATH));
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
         }
-        log.warn("Could not establish the REST API URI from configuration, defaulting to [%s]", generateUriFor(neoServer.baseUri(), DEFAULT_REST_API_PATH));
-        return generateUriFor(neoServer.baseUri(), DEFAULT_REST_API_PATH);
     }
 
     private void loadPlugins() {
