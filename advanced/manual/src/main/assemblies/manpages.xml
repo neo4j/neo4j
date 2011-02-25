@@ -33,7 +33,7 @@
       <directory>target/manpages</directory>
       <outputDirectory>/</outputDirectory>
       <includes>
-        <include>**</include>
+        <include>*.txt</include>
       </includes>
     </fileSet>
   </fileSets>

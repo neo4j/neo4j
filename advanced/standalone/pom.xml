@@ -30,7 +30,7 @@
 
     <!-- other filter properties -->
     <wrapper.conf>conf/neo4j-wrapper.conf</wrapper.conf>
-    <neo4j.version>1.3.M02</neo4j.version>
+    <neo4j.version>1.3-SNAPSHOT</neo4j.version>
 
     <!-- conf/neo4j-server.properties filter properties -->
     <org.neo4j.database.location>data/graph.db</org.neo4j.database.location>
@@ -132,34 +132,6 @@
           </execution>
         </executions>
       </plugin>
-      <plugin>
-         <groupId>org.codehaus.mojo</groupId>
-         <artifactId>build-helper-maven-plugin</artifactId>
-         <version>1.3</version>
-         <executions>
-           <execution>
-             <id>attach-distribution</id>
-             <phase>package</phase>
-             <goals>
-               <goal>attach-artifact</goal>
-             </goals>
-             <configuration>
-               <artifacts>
-                 <artifact>
-                   <file>target/${server.shortname}-${pom.version}-unix.tar.gz</file>
-                   <type>tar.gz</type>
-                   <classifier>unix</classifier>
-                 </artifact>
-                 <artifact>
-                   <file>target/${server.shortname}-${pom.version}-windows.zip</file>
-                   <type>zip</type>
-                   <classifier>windows</classifier>
-                 </artifact>
-               </artifacts>
-             </configuration>
-           </execution>
-         </executions>
-       </plugin>
 	     <plugin>
 	       <artifactId>maven-deploy-plugin</artifactId>
 	       <!-- fix issue with appassembler -->
@@ -248,14 +220,19 @@
       <type>tar.gz</type>
     </dependency>
     <!-- Not ready for release. -->
-    <!--dependency>
+    <dependency>
       <groupId>org.neo4j.examples</groupId>
       <artifactId>neo4j-server-examples</artifactId>
       <version>1.3-SNAPSHOT</version>
       <classifier>download</classifier>
       <type>tar.gz</type>
-    </dependency -->
+    </dependency>
 
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-backup</artifactId>
+      <version>${neo4j.version}</version>
+    </dependency>
 
     <!-- OSGi Bundles -->
     <dependency>
@@ -279,6 +256,13 @@
       <groupId>org.neo4j.doc</groupId>
       <artifactId>neo4j-manual</artifactId>
       <version>1.3-SNAPSHOT</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-manual</artifactId>
+      <version>1.3-SNAPSHOT</version>
+      <classifier>manpages</classifier>
     </dependency>
   </dependencies>
 

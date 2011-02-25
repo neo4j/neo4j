@@ -235,6 +235,55 @@ td.data_relationship_direction { padding: 0 4px !important; text-align:center;}
 .paginator .inactive { text-decoration:none; color: #777; }
 .paginator_label { padding: 0 4px; }
 
+/**
+ * TOOLTIP
+ */
+ 
+.tooltip-wrap {
+    display:none;
+    position: absolute;
+    width: 160px;
+    padding-bottom:9px;
+    z-index:101;
+    background: url(../img/tooltip-tail-down.png) bottom center no-repeat;
+}
+.tooltip-wrap.tooltip-pos-below {
+    padding-bottom :0;
+    padding-top:9px;
+    background: url(../img/tooltip-tail-up.png) top center no-repeat;
+}
+.tooltip-wrap.tooltip-pos-right {
+    padding-bottom :0;
+    padding-left:9px;
+    background: url(../img/tooltip-tail-left.png) center left no-repeat;
+}
+.tooltip-wrap.tooltip-pos-left {
+    padding-bottom :0;
+    padding-right:9px;
+    background: url(../img/tooltip-tail-right.png) center right no-repeat;
+}
+
+.tooltip-close {
+    background: url(../img/tooltip-close.png) no-repeat #333;
+    height: 10px;
+    position: absolute;
+    right: 6px;
+    top: 6px;
+    width: 10px;
+    cursor:pointer;
+}
+
+.tooltip {
+background: none repeat scroll 0 0 #DDDDDD;
+    border: 3px solid #EEEEEE;
+    color: #666666;
+    font-size: 12px;
+    padding: 8px 12px;
+    text-align: center;
+	-webkit-border-radius:4px; 
+	-moz-border-radius:4px; 
+}
+
 /* Charts */
 .chart_container { padding: 5px 20px 5px 10px; }
 

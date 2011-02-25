@@ -38,7 +38,7 @@ import com.sun.jersey.api.client.ClientResponse;
 public class NeoServerStartupLoggingFunctionalTest {
     private File tempDir;
 
-    private NeoEmbeddedJettyServer server;
+    private NeoServerWithEmbeddedWebServer server;
 
     private InMemoryAppender appender;
 

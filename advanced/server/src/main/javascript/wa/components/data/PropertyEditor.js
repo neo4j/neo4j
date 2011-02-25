@@ -36,16 +36,13 @@ wa.components.data.PropertyEditor = (function($) {
 	 */
 	me.duplicateKeyFields = [];
 	
+	me.tooltips = {};
+	
 	me.item = wa.components.data.DataBrowser.getItem;
 	
 	//
 	// INTERNALS
 	//
-	
-	me.propertyUrl = function(key) {
-		var it = me.dataCore.getItem();
-		return it.property.replace("{key}",key);
-	};
 	
 	me.addProperty = function(ev) {
 		ev.preventDefault();
@@ -176,17 +173,83 @@ wa.components.data.PropertyEditor = (function($) {
 	me.getValue = function(el) {
 		try {
 		    val = JSON.parse(el.val());
-		    if(_.isString(val) && val.length == 0) {
+		    if( val === null) {
 		        el.addClass("error");
+		        me.showTooltip(el, "Null values are not allowed.");
 		        return null;
+		    } else if (me.isMap(val)) {
+		        el.addClass("error");
+		        me.showTooltip(el, "Maps are not supported property values.");
+                return null;
+		    } else if ( _(val).isArray() && ! me.isValidArray(val) ) {
+                el.addClass("error");
+                me.showTooltip(el, "Only arrays with one type of values, and only primitive types, is allowed.");
+                return null;
 		    } else {
 		        el.removeClass("error");
+		        me.hideTooltip(el);
 		        return val;
 		    }
 		} catch(ex) {
-		    el.addClass("error");
-		    return null;
+		    if(me.shouldBeConvertedToString(el.val())) {
+		        var value = el.val();
+		        el.val("\""+ el.val() +"\"");
+		        me.showTooltip(el, "Your input has been automatically converted to a string.", 3000);
+                el.removeClass("error");
+                return value;
+		    } else {
+    		    el.addClass("error");
+                me.showTooltip(el, "This does not appear to be a valid JSON value.");
+    		    return null;
+		    }
 		}
+	};
+	
+	me.isMap = function(val) {
+	    return JSON.stringify(val).indexOf("{") === 0;
+	};
+	
+	me.shouldBeConvertedToString = function(val) {
+        return /^[a-z0-9-_\/\\\(\)#%\&!$]+$/i.test(val);
+    };
+	
+	me.isValidArray = function(val) {
+	    if(val.length == 0) {
+	        return true;
+	    }
+	    
+	    var validType = _.isString(val[0]) ? _.isString : 
+	                        _.isNumber(val[0]) ? _.isNumber :
+	                            _.isBoolean(val[0]) ? _.isBoolean : false;
+	    if(validType === false) {
+	        return false;
+	    }
+	    
+	    for(var i=1,l=val.length;i<l;i++) {
+	        if(!validType(val[i])) {
+	            return false;
+	        }
+	    }
+	    
+	    return true;
+	};
+	
+	me.showTooltip = function(el, message, timeout) {
+	    me.getTooltipFor(el).show(message, el, timeout);  
+	};
+	
+	me.hideTooltip = function(el) {
+	    me.getTooltipFor(el).hide();
+	};
+	
+	me.getTooltipFor = function(el) {
+	    if( !me.tooltips[el] ) {
+	        me.tooltips[el] = new wa.ui.Tooltip({
+	            position : "right",
+	            hideOnMouseOut : false
+	        });
+	    }
+	    return me.tooltips[el];
 	};
 	
 	me.showUnsavedSaveButton = function() {
