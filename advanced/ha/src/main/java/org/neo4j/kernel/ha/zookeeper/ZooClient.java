@@ -78,7 +78,7 @@ public class ZooClient extends AbstractZooKeeperManager
         this.backupPort = backupPort;
         this.sequenceNr = "not initialized yet";
         String storeDir = ((AbstractGraphDatabase) graphDb).getStoreDir();
-        this.msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
+        this.msgLog = StringLogger.getLogger( storeDir );
         this.zooKeeper = instantiateZooKeeper();
     }
 

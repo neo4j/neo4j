@@ -34,6 +34,7 @@ import org.neo4j.helpers.Pair;
 public class ExactTxData extends TxData
 {
     private Map<String, Map<Object, Set<Object>>> data;
+    private boolean hasOrphans;
 
     ExactTxData( LuceneIndex index )
     {
@@ -60,6 +61,10 @@ public class ExactTxData extends TxData
         {
             ids = new HashSet<Object>();
             keyMap.put( value, ids );
+            if ( value == null )
+            {
+                hasOrphans = true;
+            }
         }
         return ids;
     }
@@ -83,6 +88,10 @@ public class ExactTxData extends TxData
         {
             inner = new HashMap<Object, Set<Object>>();
             data.put( key, inner );
+            if ( key == null )
+            {
+                hasOrphans = true;
+            }
         }
         return inner;
     }
@@ -149,6 +158,21 @@ public class ExactTxData extends TxData
             return Pair.<Collection<Long>, TxData>of( Collections.<Long>emptySet(), this );
         }
         return Pair.<Collection<Long>, TxData>of( toLongs( ids ), this );
+    }
+    
+    @Override
+    Collection<Long> getOrphans( String key )
+    {
+        if ( !hasOrphans )
+        {
+            return null;
+        }
+        
+        Set<Object> orphans = idCollection( null, null, false );
+        Set<Object> keyOrphans = idCollection( key, null, false );
+        Collection<Long> orphanLongs = orphans != null ? toLongs( orphans ) : null;
+        Collection<Long> keyOrphanLongs = keyOrphans != null ? toLongs( keyOrphans ) : null;
+        return LuceneTransaction.merge( orphanLongs, keyOrphanLongs );
     }
 
     private Collection<Long> toLongs( Set<Object> ids )

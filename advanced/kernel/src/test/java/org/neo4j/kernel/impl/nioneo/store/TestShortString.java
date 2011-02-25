@@ -60,6 +60,10 @@ public class TestShortString
         assertCanEncode( "+, 0123456789.-" );
         assertCanEncode( "+,0123456789' -" );
         assertCanEncode( "+0123456789,'. " );
+        // IP(v4) numbers
+        assertCanEncode( "192.168.0.1" );
+        assertCanEncode( "127.0.0.1" );
+        assertCanEncode( "255.255.255.255" );
     }
 
     @Test
