@@ -90,8 +90,8 @@ allprojects {
             }
         }
         integrationTest {
-            compileClasspath = sourceSets.main.classes + configurations.testRuntime + sourceSets.test.classes
-            runtimeClasspath = classes + sourceSets.main.classes + configurations.testRuntime
+            compileClasspath = sourceSets.main.classes + configurations.testRuntime + sourceSets.test.classes + sourceSets.functionalTest.classes
+            runtimeClasspath = classes + sourceSets.main.classes + configurations.testRuntime + sourceSets.test.classes + sourceSets.functionalTest.classes
             java {
                 srcDir "src/integrationtest/java"
             }
@@ -100,12 +100,12 @@ allprojects {
 
     task functionalTest(type: Test) {
         testClassesDir = sourceSets.functionalTest.classesDir
-        classpath += sourceSets.functionalTest.runtimeClasspath
+        classpath = sourceSets.functionalTest.runtimeClasspath
     }
 
     task integrationTest(type: Test) {
         testClassesDir = sourceSets.integrationTest.classesDir
-        classpath += sourceSets.integrationTest.runtimeClasspath
+        classpath = sourceSets.integrationTest.runtimeClasspath
     }
 
     install.dependsOn ':build'

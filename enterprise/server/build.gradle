@@ -69,8 +69,6 @@ dependencies {
 
 sourceSets {
     integrationTest {
-        compileClasspath += project(':neo4j-server').sourceSets.test.classes
-        compileClasspath += project(':neo4j-server').sourceSets.functionalTest.classes
 //TODO rename webtest into integrationTest
         java {
             srcDir "src/webtest/java"
