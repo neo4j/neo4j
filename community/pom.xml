@@ -19,7 +19,7 @@
   </scm>
 
   <properties>
-    <neo4j.version>1.3-SNAPSHOT</neo4j.version>
+    <neo4j.version>1.3.M03</neo4j.version>
     <short-name>neo4j-examples</short-name>
     <bundle.namespace>org.neo4j.examples</bundle.namespace>
     <apidocs-unpack>${project.build.directory}/neo4j-apidocs</apidocs-unpack>
