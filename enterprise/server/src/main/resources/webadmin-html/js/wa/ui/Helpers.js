@@ -17,16 +17,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-(function() {
-  require(['neo4j/webadmin/DashboardController', 'neo4j/webadmin/views/BaseView', 'lib/jquery', 'lib/underscore', 'lib/backbone'], function(DashboardController, BaseView) {
-    return $(document).ready(function() {
-      var baseview;
-      baseview = new BaseView({
-        el: $("body")
-      });
-      baseview.render();
-      new DashboardController;
-      return Backbone.history.start();
-    });
-  });
-})();
+/**
+ * Handles foldout help available throughout webadmin.
+ */
+wa.ui.Helpers = function() {
+    return {
+        init : function() {
+            $("a.mor_module_foldout_trigger").live(
+                    "click",
+                    function(ev) {
+                        ev.preventDefault();
+                        $(".mor_module_foldout_content",
+                                $(ev.target).closest(".mor_module_foldout"))
+                                .toggleClass("visible");
+                    });
+        }
+    };
+}();

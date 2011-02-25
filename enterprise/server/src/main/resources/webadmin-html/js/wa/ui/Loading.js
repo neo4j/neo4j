@@ -17,16 +17,36 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-(function() {
-  require(['neo4j/webadmin/DashboardController', 'neo4j/webadmin/views/BaseView', 'lib/jquery', 'lib/underscore', 'lib/backbone'], function(DashboardController, BaseView) {
-    return $(document).ready(function() {
-      var baseview;
-      baseview = new BaseView({
-        el: $("body")
-      });
-      baseview.render();
-      new DashboardController;
-      return Backbone.history.start();
-    });
-  });
-})();
+/**
+ * Shows a loading message that blocks the UI.
+ */
+wa.ui.Loading = (function($){
+    var me = {};
+    
+    me.container = null;
+    
+    me.showImpl = function() {
+        $("#mor_loading_content").modal({
+            overlayId: 'mor_loading_overlay',
+            containerId: 'mor_loading_container',
+            closeHTML: null,
+            minHeight: 80,
+            opacity: 65, 
+            position: ['100',],
+            overlayClose: false
+        });
+    };
+    
+    return {
+        show : function(title, message, cb) {
+            me.cb = cb;
+            $("#mor_loading_title").html(title);
+            $("#mor_loading_message").html(message);
+            me.showImpl();
+        },
+        
+        hide : function() {
+            $.modal.close();
+        }
+    };
+})(jQuery);

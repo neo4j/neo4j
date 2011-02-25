@@ -17,16 +17,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-(function() {
-  require(['neo4j/webadmin/DashboardController', 'neo4j/webadmin/views/BaseView', 'lib/jquery', 'lib/underscore', 'lib/backbone'], function(DashboardController, BaseView) {
-    return $(document).ready(function() {
-      var baseview;
-      baseview = new BaseView({
-        el: $("body")
-      });
-      baseview.render();
-      new DashboardController;
-      return Backbone.history.start();
-    });
-  });
+(function() { 
+	// Keep track of server connection
+	var isShowingConnectionLostDialog = false;
+	
+	neo4j.events.bind("web.connection.failed", function(ev, args){
+		if (! isShowingConnectionLostDialog ){
+			if( wa.Servers.getCurrentServer() !== null) {
+				isShowingConnectionLostDialog = true;
+				wa.ui.Loading.show("Server connection lost","Attempting to re-establish connection..");
+				
+				wa.Servers.getCurrentServer().heartbeat.waitForPulse(function() {
+					wa.ui.Loading.hide();
+					isShowingConnectionLostDialog = false;
+				});
+				
+			} else {
+				wa.ui.ErrorBox.showError("Unknown connection problem.");
+			}
+		}
+	});
 })();
