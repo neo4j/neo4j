@@ -14,6 +14,7 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
   
   <properties>
+    <neo4j.version>1.3.M03</neo4j.version>
     <bundle.namespace>org.neo4j.backup</bundle.namespace>
     <short-name>backup</short-name>
   </properties>
@@ -35,7 +36,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j</artifactId>
-      <version>1.3-SNAPSHOT</version>
+      <version>${neo4j.version}</version>
       <type>pom</type>
     </dependency>
     <dependency>
@@ -51,14 +52,14 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.3-SNAPSHOT</version>
+      <version>${neo4j.version}</version>
       <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-ha</artifactId>
-      <version>1.3-SNAPSHOT</version>
+      <version>${neo4j.version}</version>
       <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
