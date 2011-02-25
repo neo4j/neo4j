@@ -1,12 +1,16 @@
 
-define ['./views/BaseView', 'lib/backbone'], (BaseView) ->
+define ['./views/DashboardView', 'lib/backbone'], (DashboardView) ->
   
   class ApplicationController extends Backbone.Controller
     routes : 
       "" : "dashboard"
-      "/someshit" : "someshit"
-      
-    dashboard : ->
-      
-    someshit : ->
-      alert "WOOT"
+
+    initialize : (appState) =>
+      @appState = appState
+
+    dashboard : =>
+      @appState.set( mainView : @getDashboardView() )
+
+    getDashboardView : =>
+      @dashboardView ?= new DashboardView(@appState)
+
