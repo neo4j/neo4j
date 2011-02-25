@@ -63,7 +63,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
         if ( graphDb != null )
         {
             String storeDir = ((AbstractGraphDatabase) graphDb).getStoreDir();
-            msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
+            msgLog = StringLogger.getLogger( storeDir );
         }
         else
         {

@@ -128,7 +128,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 this, config );
         this.machineId = getMachineIdFromConfig( config );
         this.broker = this.brokerFactory.create( this, config );
-        this.msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
+        this.msgLog = StringLogger.getLogger( storeDir );
         
         boolean allowInitFromConfig = getAllowInitFromConfig( config );
         startUp( allowInitFromConfig );

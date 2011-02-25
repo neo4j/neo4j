@@ -10,6 +10,6 @@ This leads to improvements in performance and lower storage overhead.
 For a string to be classified as a short string, one of the following must hold:
 
 * It is encodable in UTF-8 or Latin-1, 7 bytes or less.
-* It is alphanumerical, and less than 10 characters (9 if using accented european characters).
+* It is alphanumerical, and 10 characters or less (9 if using accented european characters).
 * It consists of only upper case, or only lower case characters, including the punctuation characters space, underscore, period, dash, colon, or slash. Then it is allowed to be up to 12 characters.
 * It consists of only numerical characters, inlcuding the punctuation characters plus, comma, single quote, space, period, or dash. Then it is allowed to be up to 15 characters.
