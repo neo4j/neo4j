@@ -16,7 +16,12 @@
       __extends(DashboardView, Backbone.View);
       DashboardView.prototype.template = template;
       DashboardView.prototype.render = function() {
-        $(this.el).html(this.template());
+        $(this.el).html(this.template({
+          server: {
+            url: "someurl",
+            version: "someversion"
+          }
+        }));
         return this;
       };
       return DashboardView;
