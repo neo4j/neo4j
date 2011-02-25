@@ -14,14 +14,14 @@ SYNOPSIS
 
 *neo4j-shell* ['LOCAL OPTIONS']
 
-
+[[shell-manpage-description]]
 DESCRIPTION
 -----------
 Neo4j shell is a command-line shell for browsing the graph, much like how the Unix shell along with commands like +cd+, +ls+ and +pwd+ can be used to browse your local file system.
 The shell can connect directly to a graph database on the file system.
 To access local a local database used by other processes, use the readonly mode.
 
-
+[[shell-manpage-remote-options]]
 REMOTE OPTIONS
 --------------
 *-port* 'PORT'::
@@ -36,7 +36,8 @@ REMOTE OPTIONS
 *-readonly*::
   Access the database in read-only mode.
   The read-only mode enables browsing a database that is used by other processes.
-    
+
+[[shell-manpage-local-options]]    
 LOCAL OPTIONS
 --------------
 *-path* 'PATH'::
@@ -56,6 +57,7 @@ LOCAL OPTIONS
 *-config* 'CONFIG'::
   The path to the Neo4j configuration file to be used.
 
+[[shell-manpage-examples]]
 EXAMPLES
 --------
 
