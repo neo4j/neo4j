@@ -1,3 +1,9 @@
+1.3.M01(2011-02-25)
+-------------------
+o Updated to work with the latest changes in Neo4j:
+  o Adapted to the refactored KernelExtension API.
+  o Updated for changes in the Index API.
+
 1.3-1.3.M01 (2011-01-27)
 ------------------------
 
