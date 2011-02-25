@@ -52,10 +52,10 @@ public class DiscoveryService {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Response getDiscoveryDocument() throws URISyntaxException {
-        String webAdminManagementUri = configuration.getString(Configurator.WEB_ADMIN_PATH_PROPERTY_KEY);
-        String dataUri = configuration.getString(Configurator.REST_API_PATH_PROPERTY_KEY);
+        String webAdminManagementUri = configuration.getString(Configurator.MANAGEMENT_PATH_PROPERTY_KEY, Configurator.DEFAULT_MANAGEMENT_API_PATH);
+        String dataUri = configuration.getString( Configurator.DATA_API_PATH_PROPERTY_KEY, Configurator.DEFAULT_DATA_API_PATH);
 
-        DiscoveryRepresentation dr = new DiscoveryRepresentation(new URI(webAdminManagementUri), new URI(dataUri));
+        DiscoveryRepresentation dr = new DiscoveryRepresentation(webAdminManagementUri, dataUri);
         return outputFormat.ok(dr);
     }
     

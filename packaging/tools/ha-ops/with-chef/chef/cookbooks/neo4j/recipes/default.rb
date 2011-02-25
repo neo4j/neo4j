@@ -2,7 +2,7 @@
 # Cookbook Name:: neo4j
 # Recipe:: default
 #
-# Copyright 2011, Example Com
+# Copyright 2011, Neo Technology
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@
 # TODO: hack up a check for java. ohai doe not handle this well
 # require_recipe "java"
 
+# Neo4j "solo" server - normal standalone
+
 require_recipe "apt"
 
 package "default-jre-headless" do
@@ -35,7 +37,7 @@ exploded_tarball = "#{installation_dir}/neo4j-#{neo4j_version}"
 installed_app_dir = "#{installation_dir}/neo4j"
 public_address = node[:neo4j][:public_address]||node[:ipaddress]
 bind_address = node[:neo4j][:ha][:bind_address]||node[:ipaddress]
-is_coordinator_node = node[:neo4j][:coordinator][:enable]||false
+is_coordinator_node = (node[:neo4j][:mode] == "coordinator") 
 
 # download remote file
 remote_file "#{downloaded_tarball}" do
@@ -81,7 +83,6 @@ template "#{installed_app_dir}/conf/neo4j-server.properties" do
     :webserver_port => node[:neo4j][:webserver_port],
     :conf_dir => "#{installed_app_dir}/conf",
     :public_address => public_address,
-    :enable_ha => node[:neo4j][:ha][:enable]
   )
 end
 

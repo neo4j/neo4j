@@ -61,6 +61,12 @@ wa.components.data.RelationshipManager = (function($) {
 			me.server().rel(from, type, to).then(function(){
 			    wa.components.data.DataBrowser.reload();
 				wa.ui.Dialog.close();
+			}, function(err) {
+			    if(err instanceof neo4j.exceptions.NotFoundException) {
+			        wa.ui.ErrorBox.showError("'" + err.url + "' could not be found, unable to create relationship.");
+			    } else {
+			        wa.ui.ErrorBox.showError("An unknown error occurred, unable to create relationship.");
+			    }
 			});
 			
 		}

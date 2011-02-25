@@ -35,7 +35,7 @@ public class DatabaseTuningFunctionalTest {
 
     @Test
     public void shouldLoadAKnownGoodPropertyFile() throws IOException {
-        NeoEmbeddedJettyServer server = ServerBuilder.server().withPassingStartupHealthcheck().withRandomDatabaseDir().withDefaultDatabaseTuning().build();
+        NeoServerWithEmbeddedWebServer server = ServerBuilder.server().withPassingStartupHealthcheck().withRandomDatabaseDir().withDefaultDatabaseTuning().build();
         server.start();
         Map<Object, Object> params = server.getDatabase().graph.getConfig().getParams();
         

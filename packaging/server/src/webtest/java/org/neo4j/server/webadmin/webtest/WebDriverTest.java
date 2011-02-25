@@ -21,26 +21,29 @@ package org.neo4j.server.webadmin.webtest;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.neo4j.server.NeoEmbeddedJettyServer;
+import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.rest.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.RenderedWebElement;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.firefox.FirefoxDriver;
 
 public abstract class WebDriverTest {
 
-    protected static WebDriver webDriver = new FirefoxDriver();
-    protected NeoEmbeddedJettyServer server;
+    protected static WebDriver webDriver;
+    protected NeoServerWithEmbeddedWebServer server;
     protected FunctionalTestHelper testHelper;
     protected GraphDbHelper dbHelper;
 
@@ -52,6 +55,7 @@ public abstract class WebDriverTest {
     @BeforeClass
     public static void copyHtmlToTargetDirectory() throws IOException {
         FileUtils.copyDirectory(srcHtmlDir, targetHtmlDir);
+        webDriver = new FirefoxDriver();
     }
     
     @Before
@@ -145,6 +149,19 @@ public abstract class WebDriverTest {
     protected ElementReference dashboardValueTrackers = new ElementReference(webDriver, By.id("mor_monitor_valuetrackers"));
     
     protected ElementReference errorList = new ElementReference(webDriver, By.id("mor_errors"));
+    protected ElementReference lastError = new ElementReference(webDriver, By.id("mor_errors")) {
+        @Override
+        public RenderedWebElement getElement() {
+            try {
+                List<WebElement> el = super.getElement().findElements(By.tagName("li"));
+                return (RenderedWebElement) el.get( el.size() - 1 );
+            } catch(ArrayIndexOutOfBoundsException e) {
+                throw new NoSuchElementException("There are no errors shown.");
+            }
+        }
+    };
+    
+    protected ElementReference lastTooltip = new ElementReference(webDriver, By.className("tooltip-wrap"), true);
     
     protected ElementReference dialog = new ElementReference(webDriver, By.id("mor_dialog_content"));
 }

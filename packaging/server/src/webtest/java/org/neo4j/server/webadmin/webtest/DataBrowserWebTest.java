@@ -26,8 +26,10 @@ import static org.neo4j.server.webadmin.webtest.IsVisible.isVisible;
 import java.util.List;
 
 import org.junit.Test;
+import org.neo4j.graphdb.Node;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.RenderedWebElement;
 import org.openqa.selenium.WebElement;
 
@@ -64,6 +66,162 @@ public class DataBrowserWebTest extends WebDriverTest {
         
         assertThat(dbHelper.getNumberOfRelationships(), is(initialRelCount + 1));
         
+    }
+    
+    @Test
+    public void shouldBeAbleToSaveStringProperty() {
+
+        String propertyKey = "mykey";
+        
+        dataMenu.click();
+        addPropertyButton.click();
+        firstPropertyKeyInput.sendKeys( propertyKey, Keys.RETURN );
+        firstPropertyValueInput.sendKeys( "\"myvalue\"", Keys.RETURN );
+        
+        savePropertiesButton.waitForTextToChangeTo( "Saved" );
+        
+        Node n = testHelper.getDatabase().getReferenceNode();
+        assertThat( (String)n.getProperty( propertyKey ), is( "myvalue" ));
+        
+    }
+    
+    @Test
+    public void shouldBeAbleToSaveIntegerProperty() {
+
+        String propertyKey = "mykey";
+        
+        dataMenu.click();
+        addPropertyButton.click();
+        firstPropertyKeyInput.sendKeys( propertyKey, Keys.RETURN );
+        firstPropertyValueInput.sendKeys( "666", Keys.RETURN );
+        
+        savePropertiesButton.waitForTextToChangeTo( "Saved" );
+        
+        Node n = testHelper.getDatabase().getReferenceNode();
+        assertThat( (Integer)n.getProperty( propertyKey ), is( 666));
+        
+    }
+    
+    @Test
+    public void shouldBeAbleToSaveFloatProperty() {
+
+        String propertyKey = "mykey";
+        
+        dataMenu.click();
+        addPropertyButton.click();
+        firstPropertyKeyInput.sendKeys( propertyKey, Keys.RETURN );
+        firstPropertyValueInput.sendKeys( "66.6", Keys.RETURN );
+        
+        savePropertiesButton.waitForTextToChangeTo( "Saved" );
+        
+        Node n = testHelper.getDatabase().getReferenceNode();
+        assertThat( (Double)n.getProperty( propertyKey ), is( 66.6));
+        
+    }
+    
+    @Test
+    public void shouldBeAbleToSaveArrayOfStringsProperty() {
+
+        String propertyKey = "mykey";
+        
+        dataMenu.click();
+        addPropertyButton.click();
+        firstPropertyKeyInput.sendKeys( propertyKey, Keys.RETURN );
+        firstPropertyValueInput.sendKeys( "[\"one\",\"two\"]", Keys.RETURN );
+        
+        savePropertiesButton.waitForTextToChangeTo( "Saved" );
+        
+        Node n = testHelper.getDatabase().getReferenceNode();
+        String[] value = (String[]) n.getProperty( propertyKey );
+        assertThat(value.length,is(2));
+        assertThat(value[0], is("one"));
+        assertThat(value[1], is("two"));
+    }
+
+    @Test
+    public void shouldBeAbleToSaveArrayOfIntegersProperty() {
+
+        String propertyKey = "mykey";
+        
+        dataMenu.click();
+        addPropertyButton.click();
+        firstPropertyKeyInput.sendKeys( propertyKey, Keys.RETURN );
+        firstPropertyValueInput.sendKeys( "[1,2]", Keys.RETURN );
+        
+        savePropertiesButton.waitForTextToChangeTo( "Saved" );
+        
+        Node n = testHelper.getDatabase().getReferenceNode();
+        Integer[] value = (Integer[]) n.getProperty( propertyKey );
+        assertThat(value.length,is(2));
+        assertThat(value[0], is(1));
+        assertThat(value[1], is(2));
+    }
+    
+    @Test
+    public void shouldBeAbleToSaveArrayOfDoublesProperty() {
+
+        String propertyKey = "mykey";
+        
+        dataMenu.click();
+        addPropertyButton.click();
+        firstPropertyKeyInput.sendKeys( propertyKey, Keys.RETURN );
+        firstPropertyValueInput.sendKeys( "[1.1,2.2]", Keys.RETURN );
+        
+        savePropertiesButton.waitForTextToChangeTo( "Saved" );
+        
+        Node n = testHelper.getDatabase().getReferenceNode();
+        Double[] value = (Double[]) n.getProperty( propertyKey );
+        assertThat(value.length,is(2));
+        assertThat(value[0], is(1.1));
+        assertThat(value[1], is(2.2));
+    }
+    
+    @Test
+    public void shouldNotBeAbleToSaveJSONMapsAsProperty() {
+
+        String propertyKey = "mykey";
+        
+        dataMenu.click();
+        addPropertyButton.click();
+        firstPropertyKeyInput.sendKeys( propertyKey, Keys.RETURN );
+        firstPropertyValueInput.sendKeys( "{\"a\":1}", Keys.RETURN );
+       
+        lastTooltip.waitForTextToChangeTo( "Maps are not supported property values." );
+    }
+    
+
+    
+    @Test
+    public void alphanumericPropertyValueShouldBeConvertedToString() {
+
+        String propertyKey = "mykey";
+        
+        dataMenu.click();
+        addPropertyButton.click();
+        firstPropertyKeyInput.sendKeys( propertyKey, Keys.RETURN );
+        firstPropertyValueInput.sendKeys( "alpha123_-", Keys.RETURN );
+        
+        assertThat(firstPropertyValueInput.getValue(), is("\"alpha123_-\""));
+       
+        lastTooltip.waitForTextToChangeTo( "Your input has been automatically converted to a string." );
+        
+        savePropertiesButton.waitForTextToChangeTo( "Saved" );
+        
+        Node n = testHelper.getDatabase().getReferenceNode();
+        assertThat( (String)n.getProperty( propertyKey ), is("alpha123_-"));
+    }
+    
+    @Test
+    public void shouldNotBeAbleToSaveInvalidJSONProperty() {
+
+        String propertyKey = "mykey";
+        
+        dataMenu.click();
+        addPropertyButton.click();
+        firstPropertyKeyInput.sendKeys( propertyKey, Keys.RETURN );
+        firstPropertyValueInput.sendKeys( "\"a\":!!1}", Keys.RETURN );
+       
+        lastTooltip.waitForTextToChangeTo( "This does not appear to be a valid JSON value." );
     }
 	
 	@Test
@@ -175,6 +333,21 @@ public class DataBrowserWebTest extends WebDriverTest {
     }
 	
 	@Test
+    public void creatingRelationshipToInvalidNodeShouldShowError() {
+        
+        dataMenu.click();
+        addRelationshipButton.click();
+        
+        addRelationshipDialogToInput.sendKeys( "jibberish" );
+        
+        addRelationshipDialogSave.click();
+        lastError.waitUntilVisible();
+        
+        assertThat(dialog.getElement(), isVisible());
+        
+    }
+	
+	@Test
     public void hittingReturnShouldFinishCreateRelationshipDialog() {
         
         String someNodeId = testHelper.nodeUri(dbHelper.createNode());
@@ -211,11 +384,38 @@ public class DataBrowserWebTest extends WebDriverTest {
 	private ElementReference addRelationshipButton = new ElementReference(webDriver, By.className("mor_data_add_relationship"));
 	private ElementReference saveNewRelationshipButton = new ElementReference(webDriver, By.className("mor_data_relationship_dialog_save"));
 	
+	private ElementReference addPropertyButton = new ElementReference(webDriver, By.className("mor_data_add_property"));
+	private ElementReference savePropertiesButton = new ElementReference(webDriver, By.className("mor_data_save"));
+	private ElementReference firstPropertyKeyInput = new ElementReference(webDriver, By.className("mor_data_key_input"));
+	private ElementReference firstPropertyValueInput = new ElementReference(webDriver, By.className("mor_data_value_input"));
+	
+	private ElementReference lastPropertyKeyInput = new ElementReference(webDriver, By.className("mor_data_key_input")){
+	    @Override
+	    public RenderedWebElement getElement() {
+	        List<WebElement> elements = webDriver.findElements( selector );
+	        if(elements.size() > 0) {
+	            return (RenderedWebElement) elements.get( elements.size() - 1 );
+	        } else {
+	            throw new NoSuchElementException("Cannot find last property key");
+	        }
+	    }
+	};
+	private ElementReference lastPropertyValueInput = new ElementReference(webDriver, By.className("mor_data_value_input")){
+        @Override
+        public RenderedWebElement getElement() {
+            List<WebElement> elements = webDriver.findElements( selector );
+            if(elements.size() > 0) {
+                return (RenderedWebElement) elements.get( elements.size() - 1 );
+            } else {
+                throw new NoSuchElementException("Cannot find last property key");
+            }
+        }
+    };
+	
 	private ElementReference getByUrlInput = new ElementReference(webDriver, By.id("mor_data_get_id_input"));
 	
 	
 	private ElementReference notFoundPanel = new ElementReference(webDriver, By.className( "mor_data_item_notfound" ));
-	private ElementReference lastRelationshipInList = new ElementReference(webDriver, By.xpath( "//table[@class='mor_fancy data-table']/tbody/tr[last()]/td[2]/a" ));
 	
 	private ElementReference currentNodeId = new ElementReference(webDriver, By.className( "mor_data_current_node_id" ));
 	

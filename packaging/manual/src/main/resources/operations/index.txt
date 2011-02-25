@@ -7,7 +7,7 @@ This includes topics such as backing up the database and monitoring the health o
 
 :leveloffset: 2
 
-include::backup.txt[]
+include::{importdir}/neo4j-backup-docs-jar/ops/backup.txt[]
 
 include::security.txt[]
 

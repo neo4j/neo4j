@@ -20,8 +20,7 @@
 package org.neo4j.server.rest;
 
 import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.server.NeoEmbeddedJettyServer;
-import org.neo4j.server.NeoServer;
+import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
@@ -29,10 +28,10 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import java.io.IOException;
 
 public final class FunctionalTestHelper {
-    private final NeoEmbeddedJettyServer server;
+    private final NeoServerWithEmbeddedWebServer server;
     private final GraphDbHelper helper;
 
-    public FunctionalTestHelper(NeoEmbeddedJettyServer server) {
+    public FunctionalTestHelper(NeoServerWithEmbeddedWebServer server) {
         if (server.getDatabase() == null) {
             throw new RuntimeException("Server must be started before using " + getClass().getName());
         }

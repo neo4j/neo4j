@@ -31,7 +31,6 @@ import org.neo4j.server.rest.repr.Representation;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -55,7 +54,7 @@ public final class PluginManager implements ExtensionInjector, PluginInvocator
             final ServerExtender extender = new ServerExtender( factory );
             try
             {
-                plugin.loadServerExtender( extender, serverConfig );
+                plugin.loadServerExtender( extender );
             } catch ( Exception ex )
             {
                 log.warn( "Failed to load plugin: " + plugin, ex );
