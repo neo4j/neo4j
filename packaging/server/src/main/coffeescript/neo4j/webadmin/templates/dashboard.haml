@@ -1,1 +1,40 @@
-%h1 Hello, World!
+.module.span-2
+  %h1 Welcome to the Neo4j Web Admin
+  %ul.info_list
+    %li
+      %h3 Data url
+      %p= server.url
+    %li
+      %h3 Kernel version
+      %p= server.version
+
+  .foldout
+    %h2
+      %a.foldout_trigger(href="#") More about Neo4j
+    .foldout_content
+        %h2 The Neo4j project
+        %p For more information, help and examples, please visit <a href="http://neo4j.org">the Neo4j community site</a>.
+
+  .foldout
+    %h2
+      %a.foldout_trigger(href="#") More about Charts
+    .foldout_content
+      %h2 Charts
+      %p To the right are charts that show the total number of primitive entities in the database over time, as well as the heap memory usage in percent.
+      %p You can select the granularity of the charts with the links in the top right corner of each chart.
+      %p To get specific info of some point in any chart, simply hover the mouse over the chart line.
+      %p The charts are automatically updated every three seconds.
+
+  .foldout
+    %h2
+      %a.foldout_trigger(href="#") More about KPIs
+    .foldout_content
+      %h2 Key points of interest
+      %p Below the charts are three boxes showing different sets of KPIs. These are updated every three seconds.
+      %h2 A note on disk size
+      %p Because of the way neo4j stores data, the different storage files (nodestore, relationshipstore etc.) will sometimes be very small before the server has recieved any requests.
+      %p It may be surprising to see the storage files grow rapidly when server first recieves requests, but the measurements will actually be correctly reflecting the disk size of the storage files.
+      %p This is only occurs if you are working on a relatively small graph.
+      %h2 The note on primitive counts
+      %p he number of nodes, properties and relations are estimates based on file sizes. Actually counting the nodes is not done for performance reasons. These are usually very accurate, but in certain cases if you have experienced a database crash and subsequent recovery, they may be very wrong.
+      %p How wrong the numbers are is entirely based on the operations you were doing right before the crash. There is currently no automated way to remedy this problem.

@@ -1,0 +1,34 @@
+.module.span-2
+  %p.info Browse the data in your neo4j server.
+
+  %ul.mor_horizontal_menu
+    %li
+      %button.mor_data_add_node_button New node
+    %li
+      %button.mor_data_add_relationship New relationship
+    %li
+      %button.mor_data_refresh_button Refresh
+    %li
+      %button.data_reference_node_button Go to reference node
+  
+  .break
+  .foldout
+    %h2
+      %a.foldout_trigger More about the data browser
+    .foldout_content
+      %h2 Finding data
+      %p You can enter the url of a node or a relationship below, to show it and its related nodes.
+      %h2 Listing data
+      %p Because each node can have any properties you want it to, the data browser allows you to select what properties it should list when listing related nodes.
+      %p Simply enter the properties you are interested in, separated by commas, in the "properties to list" box below.
+  .foldout
+    %h2
+      %a.foldout_trigger More about relationships
+    .foldout_content
+      %h2 Getting the details
+      %p When you are looking at a node, the "related nodes" table will only show direction and type of the various relationships connected to the node.
+      %p To view the properties of a relationship, click on the relationship type.
+      %h2 Direction
+      %p The arrows shown when listing related nodes show what direction the relationship goes.
+      %p If the arrow points to the <b>right</b>, this means it goes from the node you are focusing on, to the node that is shown in the table row.
+      %p If the arrow points to the <b>left</b>, this means it goes from the node that is shown in the table row , to the node you are focusing on.

@@ -1,1 +1,1 @@
-define(function(){return function(vars){ with(vars||{}) { return ;}}; });
+define(function(){return function(vars){ with(vars||{}) { return "<div class=\"module span-2\"><h2>Available information (JMX Beans)</h2></div>";}}; });
