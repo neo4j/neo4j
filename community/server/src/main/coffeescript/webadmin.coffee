@@ -6,19 +6,22 @@ require(
    "neo4j/webadmin/ServerInfoController"
    "neo4j/webadmin/models/ApplicationState"
    "neo4j/webadmin/views/BaseView"
-   "lib/jquery", "lib/underscore", "lib/backbone"]
-  (DashboardController, DataBrowserController, ConsoleController, ServerInfoController, ApplicationState, BaseView) ->
-    $(document).ready ->
-
-    appState = new ApplicationState
+   "neo4j/webadmin/ui/FoldoutWatcher"
+   "lib/neo4js", "lib/jquery", "lib/underscore", "lib/backbone"]
+  (DashboardController, DataBrowserController, ConsoleController, ServerInfoController, ApplicationState, BaseView, FoldoutWatcher) ->
     
-    baseview = new BaseView(el:$("body"),appState:appState)
-    baseview.render()
+    appState = new ApplicationState
+    appState.set server : new neo4j.GraphDatabase(location.protocol + "//" + location.host)
 
-    new DashboardController(appState)
-    new DataBrowserController(appState)
-    new ConsoleController(appState)
-    new ServerInfoController(appState)
+    new BaseView(el:$("body"),appState:appState)
+
+    new DashboardController appState
+    new DataBrowserController appState
+    new ConsoleController appState
+    new ServerInfoController appState
+
+    foldoutWatcher = new FoldoutWatcher
+    foldoutWatcher.init()
 
     Backbone.history.start()
 )
