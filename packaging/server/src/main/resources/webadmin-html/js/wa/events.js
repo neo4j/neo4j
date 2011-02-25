@@ -17,16 +17,17 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-(function() {
-  require(['neo4j/webadmin/DashboardController', 'neo4j/webadmin/views/BaseView', 'lib/jquery', 'lib/underscore', 'lib/backbone'], function(DashboardController, BaseView) {
-    return $(document).ready(function() {
-      var baseview;
-      baseview = new BaseView({
-        el: $("body")
-      });
-      baseview.render();
-      new DashboardController;
-      return Backbone.history.start();
-    });
-  });
-})();
+/**
+ * Event handler for webadmin.
+ */
+wa.events = new neo4j.Events();
+
+/**
+ * Quick access to {@link wa.events#trigger}
+ */
+wa.trigger = neo4j.proxy(wa.events.trigger, wa.events);
+
+/**
+ * Quick access to {@link wa.events#bind}
+ */
+wa.bind = neo4j.proxy(wa.events.bind, wa.events);
