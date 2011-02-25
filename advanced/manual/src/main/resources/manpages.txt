@@ -9,13 +9,52 @@ The Neo4j Unix manual pages are included on the following pages.
 
 [subs="none"]
 ++++++++++++++++++++++++++++++++++++++
+<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="neo4j.1.xml">
+  <xi:fallback>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="../neo4j.1.xml">
+      <xi:fallback>
+		<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="target/neo4j.1.xml">
+		  <xi:fallback>
+		    <para><emphasis>Neo4j manpage could not be included.</emphasis></para>
+		  </xi:fallback>
+		</xi:include>
+      </xi:fallback>
+    </xi:include>
+  </xi:fallback>
+</xi:include> 
 <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="neo4j-shell.1.xml">
   <xi:fallback>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="../neo4j-shell.1.xml">
       <xi:fallback>
 		<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="target/neo4j-shell.1.xml">
 		  <xi:fallback>
-		    <para><emphasis>Manpages could not be included.</emphasis></para>
+		    <para><emphasis>Shell manpage could not be included.</emphasis></para>
+		  </xi:fallback>
+		</xi:include>
+      </xi:fallback>
+    </xi:include>
+  </xi:fallback>
+</xi:include> 
+<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="neo4j-coordinator.1.xml">
+  <xi:fallback>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="../neo4j-coordinator.1.xml">
+      <xi:fallback>
+		<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="target/neo4j-coordinator.1.xml">
+		  <xi:fallback>
+		    <para><emphasis>Neo4j-coordinator manpage could not be included.</emphasis></para>
+		  </xi:fallback>
+		</xi:include>
+      </xi:fallback>
+    </xi:include>
+  </xi:fallback>
+</xi:include> 
+<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="neo4j-coordinator-shell.1.xml">
+  <xi:fallback>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="../neo4j-coordinator-shell.1.xml">
+      <xi:fallback>
+		<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="target/neo4j-coordinator-shell.1.xml">
+		  <xi:fallback>
+		    <para><emphasis>Neo4j-coordinator-shell manpage could not be included.</emphasis></para>
 		  </xi:fallback>
 		</xi:include>
       </xi:fallback>
