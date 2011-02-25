@@ -177,7 +177,20 @@ public class ShellBootstrap implements Serializable
 
     public GraphDatabaseShellServer enable( GraphDatabaseShellServer server ) throws RemoteException
     {
-        int port = (Integer) getConfig( StartClient.ARG_PORT, AbstractServer.DEFAULT_PORT );
+        Object portConfig = getConfig( StartClient.ARG_PORT, AbstractServer.DEFAULT_PORT );
+        int port;
+        if ( portConfig instanceof Integer )
+        {
+            port = (Integer) portConfig;
+        }
+        else if ( portConfig instanceof String )
+        {
+            port = Integer.parseInt( (String) portConfig );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Invalid port configuration: " + portConfig );
+        }
         String name = (String) getConfig( StartClient.ARG_NAME, AbstractServer.DEFAULT_NAME );
         server.makeRemotelyAvailable( port, name );
         return server;
