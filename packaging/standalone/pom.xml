@@ -13,7 +13,7 @@
 
   <name>Neo4j - Server Assembler</name>
 
-  <version>1.3-SNAPSHOT</version>
+  <version>1.3.M03</version>
   <description>This project assembles the Neo4j stand-alone distribution,
     pulling together all the deliverable artifacts and packaging them 
       into a downloadable installer.</description>
@@ -191,7 +191,7 @@
     <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
-      <version>1.3-SNAPSHOT</version>
+      <version>1.3.M03</version>
       <classifier>site</classifier>
       <exclusions>
         <exclusion>
@@ -203,7 +203,7 @@
     <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
-      <version>1.3-SNAPSHOT</version>
+      <version>1.3.M03</version>
       <exclusions>
         <exclusion>
           <artifactId>neo4j-udc</artifactId>
@@ -214,7 +214,7 @@
     <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
-      <version>1.3-SNAPSHOT</version>
+      <version>1.3.M03</version>
       <classifier>static-web</classifier> 
     </dependency>
     <dependency>
@@ -228,7 +228,7 @@
     <dependency>
       <groupId>org.neo4j.examples</groupId>
       <artifactId>neo4j-server-examples</artifactId>
-      <version>1.3-SNAPSHOT</version>
+      <version>1.3.M03</version>
       <classifier>download</classifier>
       <type>tar.gz</type>
     </dependency>
@@ -260,13 +260,13 @@
     <dependency>
       <groupId>org.neo4j.doc</groupId>
       <artifactId>neo4j-manual</artifactId>
-      <version>1.3-SNAPSHOT</version>
+      <version>1.3.M03</version>
     </dependency>
 
     <dependency>
       <groupId>org.neo4j.doc</groupId>
       <artifactId>neo4j-manual</artifactId>
-      <version>1.3-SNAPSHOT</version>
+      <version>1.3.M03</version>
       <classifier>manpages</classifier>
     </dependency>
   </dependencies>
