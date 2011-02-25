@@ -87,7 +87,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
     public Server( M realMaster, final int port, String storeDir, int maxNumberOfConcurrentTransactions )
     {
         this.realMaster = realMaster;
-        this.msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
+        this.msgLog = StringLogger.getLogger( storeDir );
         executor = Executors.newCachedThreadPool();
         channelFactory = new NioServerSocketChannelFactory(
                 executor, executor, maxNumberOfConcurrentTransactions );
