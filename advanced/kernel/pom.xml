@@ -117,7 +117,7 @@
           <execution>
             <phase>generate-sources</phase>
             <configuration>
-              <property environment="env"/>
+              <property environment="env" />
               <target>
                 <mkdir dir="target/generated-sources/version/org/neo4j/kernel/impl/" />
                 <exec executable="git" osfamily="unix" outputproperty="git.describe" errorproperty="git.describe.error" failifexecutionfails="false" failonerror="false">
