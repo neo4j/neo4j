@@ -1,0 +1,1 @@
+define(function(){return function(vars){ with(vars||{}) { return ;}}; });

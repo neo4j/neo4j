@@ -4,6 +4,14 @@
       %li
         %a(href="http://docs.neo4j.org/") Documentation
   %img#logo(src="img/neo_icon.png")
+  %ul#mainmenu
+    :each item in mainmenu
+      %li
+        :if item.current
+          %a.current(href="#{item.url}")= item.label
+        :if !item.current
+          %a(href="#{item.url}")= item.label
+
 #contents
   
 
@@ -15,4 +23,4 @@
   %p.copyright This is free software, available under the 
     \ 
     %a(href="http://www.gnu.org/licenses/agpl.html") GNU Affero General Public License
-     version 3 or greater.
+    \ version 3 or greater.
