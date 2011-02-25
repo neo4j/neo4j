@@ -94,9 +94,9 @@ public class PropertyFileConfigurator implements Configurator {
 
     private void normalizeUris() {
         try {
-            for (String key : new String[] { WEB_ADMIN_PATH_PROPERTY_KEY, REST_API_PATH_PROPERTY_KEY }) {
+            for (String key : new String[] { MANAGEMENT_PATH_PROPERTY_KEY, DATA_API_PATH_PROPERTY_KEY }) {
                 if (configuration().containsKey(key)) {
-                    URI normalizedUri = makeAbsoluteAndNormalized(new URI((String) configuration().getProperty(key)));
+                    URI normalizedUri = new URI((String) configuration().getProperty(key)).normalize();
                     configuration().clearProperty(key);
                     configuration().addProperty(key, normalizedUri.toString());
                 }
@@ -106,29 +106,6 @@ public class PropertyFileConfigurator implements Configurator {
             throw new RuntimeException(e);
         }
 
-    }
-
-    private URI makeAbsoluteAndNormalized(URI uri) {
-        if (uri.isAbsolute())
-            return uri.normalize();
-
-        String portNo = (String) configuration().getProperty(WEBSERVER_PORT_PROPERTY_KEY);
-        if (portNo == null)
-            portNo = "80";
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("http://localhost");
-        if (portNo != "80") {
-            sb.append(":");
-            sb.append(portNo);
-        }
-        sb.append("/");
-        sb.append(uri.toString());
-        try {
-            return new URI(sb.toString()).normalize();
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private void loadDatabaseTuningProperties() {

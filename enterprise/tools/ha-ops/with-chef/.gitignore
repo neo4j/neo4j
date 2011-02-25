@@ -1,4 +1,6 @@
 *~
+*.zip
+*.tgz
 \#*
 */target/
 /target/
@@ -11,3 +13,5 @@
 *.iml
 .idea/
 .DS_Store
+.vagrant
+.gradle

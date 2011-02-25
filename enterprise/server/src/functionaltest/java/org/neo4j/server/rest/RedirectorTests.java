@@ -24,7 +24,7 @@ import com.sun.jersey.api.client.ClientResponse;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.server.NeoEmbeddedJettyServer;
+import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 
 import javax.ws.rs.core.MediaType;
@@ -36,7 +36,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class RedirectorTests
 {
-    private NeoEmbeddedJettyServer server;
+    private NeoServerWithEmbeddedWebServer server;
 
     @Before
     public void setupServer() throws IOException

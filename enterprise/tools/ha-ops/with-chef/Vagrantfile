@@ -65,12 +65,11 @@ Vagrant::Config.run do |config|
 
       coord_config.vm.provision :chef_solo do |chef|
         chef.cookbooks_path = cookbooks_path
-        chef.add_recipe "neo4j"
+        chef.add_recipe "neo4j::ha-coordinator"
         chef.json.merge!({
           :neo4j => {
             :version => neo4j_version,
             :coordinator => {
-              :enable => true,
               :client_port => coordinator_client_port,
               :machine_id => instance_number,
               :sync_limit => coordinator_sync_limit,
@@ -97,7 +96,7 @@ Vagrant::Config.run do |config|
 
       neo4j_config.vm.provision :chef_solo do |chef|
         chef.cookbooks_path = cookbooks_path
-        chef.add_recipe "neo4j"
+        chef.add_recipe "neo4j::ha-data"
         chef.json.merge!({
           :neo4j => {
             :version => neo4j_version,
