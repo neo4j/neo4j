@@ -17,16 +17,39 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-(function() {
-  require(['neo4j/webadmin/DashboardController', 'neo4j/webadmin/views/BaseView', 'lib/jquery', 'lib/underscore', 'lib/backbone'], function(DashboardController, BaseView) {
-    return $(document).ready(function() {
-      var baseview;
-      baseview = new BaseView({
-        el: $("body")
-      });
-      baseview.render();
-      new DashboardController;
-      return Backbone.history.start();
-    });
-  });
-})();
+/**
+ * Naive implementation for escaping html strings. Should not be relied on for security.
+ */
+wa.htmlEscape = function( text ) {
+	
+	return wa.replaceAll(text, [
+	    [/&/g,"&amp;"],
+	    [/</g,"&lt;"],
+	    [/>/g,"&gt;"],
+	    [/"/g,"&quot;"],
+        [/ /g,"&nbsp;"],
+	    [/'/g,"&#x27;"],
+	    [/\//g,"&#x2F;"]]);
+	
+};
+
+/**
+ * Replace all occurrences of a list of items.
+ * @param string to be escaped
+ * @param array of two-item arrays that defines replacements. For example:
+ * [
+ *   ['a','b'],
+ *   ['c','a']
+ * ]
+ * 
+ * The first character signifies what to replace, the second what to put there instead.
+ */
+wa.replaceAll = function( text, replacements ) {
+	
+	for(var i=0,l=replacements.length; i<l; i++) {
+		text = text.replace(replacements[i][0], replacements[i][1]);
+	}
+	
+	return text;
+	 
+};
