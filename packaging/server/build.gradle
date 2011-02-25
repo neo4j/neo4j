@@ -1,6 +1,6 @@
 dependencies {
 
-    compile project(":neo4j-server-extensions"),
+    compile project(":neo4j-server-api"),
             "$group:neo4j:$version",
             "log4j:log4j:$log4jVersion",
             "commons-configuration:commons-configuration:$commonsConfigurationVersion",
