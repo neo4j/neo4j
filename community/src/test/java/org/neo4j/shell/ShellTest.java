@@ -31,6 +31,8 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.shell.impl.AbstractServer;
+import org.neo4j.shell.impl.ShellBootstrap;
+import org.neo4j.shell.impl.ShellServerExtension;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 public class ShellTest
@@ -66,7 +68,7 @@ public class ShellTest
 
         assertException( "set -tsd" );
     }
-    
+
     @Test
     public void testEnableRemoteShell() throws Exception
     {
@@ -78,6 +80,23 @@ public class ShellTest
         graphDb.enableRemoteShell( map );
         ShellLobby.newClient( port, AbstractServer.DEFAULT_NAME );
         graphDb.shutdown();
+    }
+
+    @Test
+    public void canConnectAsAgent() throws Exception
+    {
+        Integer port = 1234;
+        String name = "test-shell";
+        GraphDatabaseService graphDb = new EmbeddedGraphDatabase( "target/shell-neo" );
+        try
+        {
+            new ShellServerExtension().loadAgent( new ShellBootstrap( port.toString(), name ).serialize() );
+        }
+        finally
+        {
+            graphDb.shutdown();
+        }
+        ShellLobby.newClient( port.intValue(), name );
     }
 
     private void assertException( String command )
