@@ -29,6 +29,8 @@ import java.util.Map;
 
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.shell.impl.AbstractServer;
 import org.neo4j.shell.impl.ShellBootstrap;
@@ -82,6 +84,20 @@ public class ShellTest
         graphDb.shutdown();
     }
 
+    @Test
+    public void testEnableServerOnDefaultPort() throws Exception
+    {
+        GraphDatabaseService graphDb = new EmbeddedGraphDatabase( "target/shell-neo", MapUtil.stringMap( Config.ENABLE_REMOTE_SHELL, "true" ) );
+        try
+        {
+            ShellLobby.newClient( AbstractServer.DEFAULT_PORT, AbstractServer.DEFAULT_NAME );
+        }
+        finally
+        {
+            graphDb.shutdown();
+        }
+    }
+    
     @Test
     public void canConnectAsAgent() throws Exception
     {

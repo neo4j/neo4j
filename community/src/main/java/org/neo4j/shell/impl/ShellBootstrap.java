@@ -172,7 +172,7 @@ public class ShellBootstrap implements Serializable
 
     private Serializable getConfig( String key, Serializable defaultValue )
     {
-        Serializable result = config.get( key );
+        Serializable result = config != null ? config.get( key ) : null;
         return result != null ? result : defaultValue;
     }
 
