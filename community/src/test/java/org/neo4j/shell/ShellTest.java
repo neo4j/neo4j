@@ -85,7 +85,7 @@ public class ShellTest
     @Test
     public void canConnectAsAgent() throws Exception
     {
-        Integer port = 1234;
+        Integer port = Integer.valueOf( 1234 );
         String name = "test-shell";
         GraphDatabaseService graphDb = new EmbeddedGraphDatabase( "target/shell-neo" );
         try

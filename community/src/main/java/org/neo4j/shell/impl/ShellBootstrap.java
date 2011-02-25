@@ -160,6 +160,7 @@ public class ShellBootstrap implements Serializable
     @SuppressWarnings( "boxing" )
     GraphDatabaseShellServer load( GraphDatabaseService graphDb ) throws RemoteException
     {
+        if ( !enable ) return null;
         return enable( new GraphDatabaseShellServer( graphDb, (Boolean) getConfig( StartClient.ARG_READONLY,
                 Boolean.FALSE ) ) );
     }
