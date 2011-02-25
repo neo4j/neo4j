@@ -86,6 +86,7 @@
         <exclude>*:docs:*</exclude>
         <exclude>*:pom:*</exclude>
         <exclude>org.neo4j:neo4j:jar</exclude>
+        <exclude>org.neo4j:neo4j-udc:jar:neo4j</exclude>
       </excludes>
     </dependencySet>
     <dependencySet>
