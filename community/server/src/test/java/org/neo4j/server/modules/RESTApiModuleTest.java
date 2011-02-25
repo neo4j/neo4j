@@ -29,7 +29,7 @@ import java.util.Set;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.junit.Test;
-import org.neo4j.server.NeoEmbeddedJettyServer;
+import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.web.WebServer;
 
@@ -38,13 +38,13 @@ public class RESTApiModuleTest {
     public void shouldRegisterASingleUri() throws Exception {
         WebServer webServer = mock(WebServer.class);
 
-        NeoEmbeddedJettyServer neoServer = mock(NeoEmbeddedJettyServer.class);
+        NeoServerWithEmbeddedWebServer neoServer = mock(NeoServerWithEmbeddedWebServer.class);
         when(neoServer.baseUri()).thenReturn(new URI("http://localhost:7575"));
         when(neoServer.getWebServer()).thenReturn(webServer);
 
         Configuration config = new PropertiesConfiguration();
         String path = "/db/data";
-        config.addProperty(Configurator.REST_API_PATH_PROPERTY_KEY, path);
+        config.addProperty(Configurator.DATA_API_PATH_PROPERTY_KEY, path);
 
         when(neoServer.getConfiguration()).thenReturn(config);
 

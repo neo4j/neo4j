@@ -19,11 +19,11 @@
  */
 package org.neo4j.server.configuration;
 
-import org.apache.commons.configuration.Configuration;
-
 import java.io.File;
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.commons.configuration.Configuration;
 
 public interface Configurator {
     String DB_TUNING_PROPERTY_FILE_KEY = "org.neo4j.server.db.tuning.properties";
@@ -31,19 +31,29 @@ public interface Configurator {
     String DATABASE_LOCATION_PROPERTY_KEY = "org.neo4j.server.database.location";
     String NEO_SERVER_CONFIG_FILE_KEY = "org.neo4j.server.properties";
     String DB_MODE_KEY = "org.neo4j.server.database.mode";
+    
     int DEFAULT_WEBSERVER_PORT = 7474;
     String WEBSERVER_PORT_PROPERTY_KEY = "org.neo4j.server.webserver.port";
-    String DEFAULT_WEB_ADMIN_PATH = "/webadmin";
-    String DEFAULT_WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION = "webadmin-html";
-    String REST_API_PACKAGE = "org.neo4j.server.rest.web";
+    
+    String DATA_API_PATH_PROPERTY_KEY = "org.neo4j.server.webadmin.data.uri";
+    String DATA_API_PACKAGE = "org.neo4j.server.rest.web";
+    String DEFAULT_DATA_API_PATH = "/db/data";
+    
     String ENABLE_OSGI_SERVER_PROPERTY_KEY = "org.neo4j.server.osgi.enable";
     String OSGI_BUNDLE_DIR_PROPERTY_KEY = "org.neo4j.server.osgi.bundledir";
     String OSGI_CACHE_DIR_PROPERTY_KEY = "org.neo4j.server.osgi.cachedir";
+    
     String ROOT_DISCOVERY_REST_API_PACKAGE = "org.neo4j.server.rest.discovery";
-    String WEB_ADMIN_REST_API_PACKAGE = "org.neo4j.server.webadmin.rest";
-    String WEBADMIN_NAMESPACE_PROPERTY_KEY = "org.neo4j.server.webadmin";
-    String WEB_ADMIN_PATH_PROPERTY_KEY = "org.neo4j.server.webadmin.management.uri";
-    String REST_API_PATH_PROPERTY_KEY = "org.neo4j.server.webadmin.data.uri";
+
+    String MANAGEMENT_API_PACKAGE = "org.neo4j.server.webadmin.rest";
+    String MANAGEMENT_PATH_PROPERTY_KEY = "org.neo4j.server.webadmin.management.uri";
+    String DEFAULT_MANAGEMENT_API_PATH = "/db/manage";
+    
+    String DEFAULT_WEB_ADMIN_PATH = "/webadmin";
+    String DEFAULT_WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION = "webadmin-html";
+    
+    String RRDB_LOCATION_PROPERTY_KEY = "org.neo4j.server.webadmin.rrdb.location";
+    
     String THIRD_PARTY_PACKAGES_KEY = "org.neo4j.server.thirdparty_jaxrs_classes";
 
     Configuration configuration();

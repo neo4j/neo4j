@@ -30,7 +30,7 @@ import javax.ws.rs.core.MediaType;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.server.NeoEmbeddedJettyServer;
+import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 
 import com.sun.jersey.api.client.Client;
@@ -38,7 +38,7 @@ import com.sun.jersey.api.client.ClientResponse;
 
 public class JmxServiceTest
 {
-    private NeoEmbeddedJettyServer server;
+    private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
 
     @Before

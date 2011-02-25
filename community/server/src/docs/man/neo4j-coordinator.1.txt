@@ -1,0 +1,67 @@
+NEO4J-COORDINATOR(1)
+====================
+:author: The Neo4j Team
+
+NAME
+----
+neo4j-coordinator - Neo4j Coordinator for High-Availability clusters
+
+
+[[neo4j-coordinator-manpage]]
+SYNOPSIS
+--------
+
+*neo4j-coordinator* <command>
+
+[[neo4j-coordinator-manpage-description]]
+DESCRIPTION
+-----------
+Neo4j Coordinator is a server which provides coordination for a Neo4j High Availability Data cluster.
+A "coordination cluster" must be started and available before the "data cluster" can be started. 
+This server is a member of the cluster.
+
+[[neo4j-coordinator-manpage-commands]]
+COMMANDS
+--------
+
+*console*::
+  Start the server as an application, running as a foreground proces. Stop the server using `CTRL-C`.
+
+*start*::
+  Start server as daemon, running as a background process.
+
+*stop*::
+  Stops a running daemonized server.
+
+*restart*::
+  Restarts a running server.
+
+*condrestart*::
+  Restarts a server, but only if it was already running.
+
+*status*::
+  Current running state of the server
+
+*install*::
+  Installs the server as a platform-appropriate system service.
+
+*remove*::
+  Uninstalls the system service
+
+*dump*::
+  Displays thread dump, also saved to the wrapper.log
+
+[[neo4j-coordinator-manpage-files]]
+FILES
+-----
+
+*conf/coord.cfg*::
+  Coordination server configuration.
+
+*conf/coord-wrapper.cfg*::
+  Configuration for service wrapper.
+
+*data/coordinator/myid*::
+  Unique identifier for coordinator instance.
+  
+

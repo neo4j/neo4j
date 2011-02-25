@@ -19,21 +19,22 @@
  */
 package org.neo4j.server.database;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import org.apache.commons.io.FileUtils;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.server.ServerTestUtils;
+import org.neo4j.server.logging.InMemoryAppender;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
 
-import org.apache.commons.io.FileUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.server.ServerTestUtils;
-import org.neo4j.server.logging.InMemoryAppender;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class DatabaseTest {
 
@@ -43,7 +44,6 @@ public class DatabaseTest {
     @Before
     public void setup() throws Exception {
         databaseDirectory = ServerTestUtils.createTempDir();
-        System.out.println(databaseDirectory.getAbsolutePath());
         theDatabase = new Database( DatabaseMode.STANDALONE, databaseDirectory.getAbsolutePath() );
     }
 
@@ -80,10 +80,12 @@ public class DatabaseTest {
     }
 
     @Test
+    @Ignore
     public void shouldEnableRemoteShellByDefault() throws IOException
     {
         int wellKnownSocket = 1337;
         Socket rmiSocketToServer = new Socket("localhost", wellKnownSocket );
         assertTrue(rmiSocketToServer.isBound());
+        rmiSocketToServer.close();
     }
 }

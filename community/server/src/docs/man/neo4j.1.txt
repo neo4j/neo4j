@@ -1,0 +1,86 @@
+NEO4J(1)
+========
+:author: The Neo4j Team
+
+NAME
+----
+neo4j - Neo4j Server control and management
+
+[[neo4j-manpage]]
+SYNOPSIS
+--------
+
+*neo4j* <command>
+
+[[neo4j-manpage-description]]
+DESCRIPTION
+-----------
+
+Neo4j is a graph database, perfect for working with highly connected data.
+
+[[neo4j-manpage-commands]]
+COMMANDS
+--------
+
+*console*::
+  Start the server as an application, running as a foreground proces. Stop the server using `CTRL-C`.
+
+*start*::
+  Start server as daemon, running as a background process.
+
+*stop*::
+  Stops a running daemonized server.
+
+*restart*::
+  Restarts a running server.
+
+*condrestart*::
+  Restarts a server, but only if it was already running.
+
+*status*::
+  Current running state of the server
+
+*install*::
+  Installs the server as a platform-appropriate system service.
+
+*remove*::
+  Uninstalls the system service
+
+*dump*::
+  Displays thread dump, also saved to the wrapper.log
+
+[[neo4j-manpage-usage-windows]]
+Usage - Windows
+---------------
+
+*Neo4j.bat*
+
+Double-clicking on the Neo4j.bat script will start the server in a console.
+To quit, just press `control-C` in the console window.
+
+*InstallNeo4j/UninstallNeo4j*
+
+Neo4j can be installed as a Windows Service, running without a console
+window. You'll need to run the scripts with Administrator priveleges.
+Just use either of these bat scripts:
+
+* InstallNeo4j - install as a Windows service
+** will install and automatically start the service 
+** use the normal windows administrative controls for start/stop
+* UninstallNeo4j - remove the Neo4j service
+
+
+[[neo4j-manpage-files]]
+FILES
+-----
+
+*conf/neo4j-server.properties*::
+  Server configuration.
+
+*conf/neo4j-wrapper.conf*::
+  Configuration for service wrapper.
+
+*conf/neo4j.properties*::
+  Tuning configuration for the database.
+
+
