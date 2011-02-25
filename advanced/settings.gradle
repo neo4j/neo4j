@@ -1,4 +1,4 @@
-["server", "server-extensions", "standalone" /*, "examples", "ha-ops"*/].each { p ->
+["server", "server-api", "standalone" /*, "examples", "ha-ops"*/].each { p ->
     include "neo4j-$p"
     project(":neo4j-$p").projectDir = new File(rootDir, p)
 }
