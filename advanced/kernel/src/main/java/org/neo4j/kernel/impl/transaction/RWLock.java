@@ -173,15 +173,18 @@ class RWLock
         }
     }
 
-    /**
-     * Releases the read lock held by current transaction. If there are waiting
-     * transactions in the queue they will be interrupted if they can acquire
-     * the lock.
-     */
-    synchronized void releaseReadLock() throws LockNotFoundException
+	/**
+	 * Releases the read lock held by the provided transaction. If it is null then
+	 * an attempt to acquire the current transaction will be made. This is to
+	 * make safe calling the method from the context of an
+	 * <code>afterCompletion()</code> hook where the tx is locally stored and
+	 * not necessarily available through the tm. If there are waiting
+	 * transactions in the queue they will be interrupted if they can acquire
+	 * the lock.
+	 */
+    synchronized void releaseReadLock(Transaction tx) throws LockNotFoundException
     {
-        Transaction tx = ragManager.getCurrentTransaction();
-        if ( tx == null )
+        if ( tx == null && (tx = ragManager.getCurrentTransaction()) == null )
         {
             tx = new PlaceboTransaction();
         }
@@ -327,15 +330,18 @@ class RWLock
         }
     }
 
-    /**
-     * Releases the write lock held by current tx. If write count is zero and
-     * there are waiting transactions in the queue they will be interrupted if
-     * they can acquire the lock.
-     */
-    synchronized void releaseWriteLock() throws LockNotFoundException
+	/**
+	 * Releases the write lock held by the provided tx. If it is null then an
+	 * attempt to acquire the current transaction from the transaction manager
+	 * will be made. This is to make safe calling this method as an
+	 * <code>afterCompletion()</code> hook where the transaction context is not
+	 * necessarily available. If write count is zero and there are waiting
+	 * transactions in the queue they will be interrupted if they can acquire
+	 * the lock.
+	 */
+    synchronized void releaseWriteLock(Transaction tx) throws LockNotFoundException
     {
-        Transaction tx = ragManager.getCurrentTransaction();
-        if ( tx == null )
+        if ( tx == null && (tx = ragManager.getCurrentTransaction()) == null )
         {
             tx = new PlaceboTransaction();
         }
