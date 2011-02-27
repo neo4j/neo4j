@@ -31,19 +31,23 @@ public class SubProcessTest
 {
     private static final String MESSAGE = "message";
 
-    private static class TestingProcess extends SubProcess<Callable<String>, String> implements
-            Callable<String>
+    private static class TestingProcess extends SubProcess<Callable<String>, String> implements Callable<String>
     {
         private String message;
+        private transient volatile boolean started = false;
 
         @Override
         protected void startup( String parameter )
         {
             message = parameter;
+            started = true;
         }
 
         public String call() throws Exception
         {
+            while ( !started )
+                // because all calls are asynchronous
+                Thread.sleep( 1 );
             return message;
         }
     }
