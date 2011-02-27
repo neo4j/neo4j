@@ -156,7 +156,7 @@ public class RelIdArray
         IdBlock copy()
         {
             IdBlock copy = new IdBlock( highBits );
-            copy.ids = new int[length];
+            copy.ids = new int[ids.length];
             System.arraycopy( ids, 0, copy.ids, 0, length );
             copy.length = length;
             return copy;
