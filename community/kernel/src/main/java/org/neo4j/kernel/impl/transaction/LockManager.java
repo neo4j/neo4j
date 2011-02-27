@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 
 import org.neo4j.kernel.DeadlockDetectedException;
@@ -139,7 +140,7 @@ public class LockManager
      * @throws IllegalResourceException
      * @throws LockNotFoundException
      */
-    public void releaseReadLock( Object resource )
+    public void releaseReadLock( Object resource, Transaction tx )
         throws LockNotFoundException, IllegalResourceException
     {
         if ( resource == null )
@@ -162,7 +163,7 @@ public class LockManager
             {
                 resourceLockMap.remove( resource );
             }
-            lock.releaseReadLock();
+            lock.releaseReadLock(tx);
         }
     }
 
@@ -176,7 +177,7 @@ public class LockManager
      * @throws IllegalResourceException
      * @throws LockNotFoundException
      */
-    public void releaseWriteLock( Object resource )
+    public void releaseWriteLock( Object resource, Transaction tx )
         throws LockNotFoundException, IllegalResourceException
     {
         if ( resource == null )
@@ -199,7 +200,7 @@ public class LockManager
             {
                 resourceLockMap.remove( resource );
             }
-            lock.releaseWriteLock();
+            lock.releaseWriteLock(tx);
         }
 
     }
