@@ -258,10 +258,10 @@ public class PropertyStore extends AbstractStore implements Store
         if ( record.inUse() )
         {
             long prevProp = record.getPrevProp();
-            short prevModifier = prevProp == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (short)((prevProp&0xF00000000L) >> 28);
+            long prevModifier = prevProp == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (prevProp&0xF00000000L) >> 28;
             
             long nextProp = record.getNextProp();
-            short nextModifier = nextProp == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (short)((nextProp&0xF00000000L) >> 16);
+            long nextModifier = nextProp == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (nextProp&0xF00000000L) >> 16;
             
             // [    ,   x] in use
             // [xxxx,    ] high prev prop bits
@@ -384,9 +384,9 @@ public class PropertyStore extends AbstractStore implements Store
         
         // [    ,    ][    ,    ][xxxx,xxxx][xxxx,xxxx] type
         // [    ,    ][    ,xxxx][    ,    ][    ,    ] high next prop bits
-        int typeInt = buffer.getInt();
+        long typeInt = buffer.getInt();
         
-        record.setType( getEnumType( typeInt&0xFFFF ) );
+        record.setType( getEnumType( (int)typeInt&0xFFFF ) );
         record.setInUse( true );
         record.setKeyIndexId( buffer.getInt() );
         record.setPropBlock( buffer.getLong() );
