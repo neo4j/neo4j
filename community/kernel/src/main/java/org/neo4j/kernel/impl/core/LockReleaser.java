@@ -154,11 +154,11 @@ public class LockReleaser
                 // no transaction we release lock right away
                 if ( type == LockType.WRITE )
                 {
-                    lockManager.releaseWriteLock( resource );
+                    lockManager.releaseWriteLock( resource, null );
                 }
                 else if ( type == LockType.READ )
                 {
-                    lockManager.releaseReadLock( resource );
+                    lockManager.releaseReadLock( resource, null );
                 }
                 return;
             }
@@ -181,7 +181,7 @@ public class LockReleaser
             }
         }
     }
-    
+
     private Transaction getTransaction()
     {
         try
@@ -336,11 +336,11 @@ public class LockReleaser
                 {
                     if ( lockElement.lockType == LockType.READ )
                     {
-                        lockManager.releaseReadLock( lockElement.resource );
+                        lockManager.releaseReadLock( lockElement.resource, null );
                     }
                     else if ( lockElement.lockType == LockType.WRITE )
                     {
-                        lockManager.releaseWriteLock( lockElement.resource );
+                        lockManager.releaseWriteLock( lockElement.resource, tx );
                     }
                 }
                 catch ( Exception e )
