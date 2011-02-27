@@ -19,10 +19,16 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import static java.lang.System.currentTimeMillis;
+import static org.apache.lucene.search.NumericRangeQuery.newIntRange;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.index.Neo4jTestCase.assertContains;
+import static org.neo4j.index.impl.lucene.LuceneIndexImplementation.EXACT_CONFIG;
+import static org.neo4j.index.impl.lucene.ValueContext.numeric;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -44,8 +50,6 @@ import org.neo4j.graphdb.index.BatchInserterIndex;
 import org.neo4j.graphdb.index.BatchInserterIndexProvider;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
-import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.batchinsert.BatchInserter;
@@ -67,13 +71,12 @@ public class TestLuceneBatchInsert
         BatchInserter inserter = new BatchInserterImpl( PATH );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider(
                 inserter );
-        BatchInserterIndex index = provider.nodeIndex( "users",
-                LuceneIndexImplementation.EXACT_CONFIG );
+        BatchInserterIndex index = provider.nodeIndex( "users", EXACT_CONFIG );
         Map<Integer, Long> ids = new HashMap<Integer, Long>();
         for ( int i = 0; i < 100; i++ )
         {
             long id = inserter.createNode( null );
-            index.add( id, MapUtil.map( "name", "Joe" + i, "other", "Schmoe" ) );
+            index.add( id, map( "name", "Joe" + i, "other", "Schmoe" ) );
             ids.put( i, id );
         }
 
@@ -118,13 +121,13 @@ public class TestLuceneBatchInsert
                 inserter );
         String name = "users";
         BatchInserterIndex index = provider.nodeIndex( name,
-                MapUtil.stringMap( "type", "fulltext" ) );
+                stringMap( "type", "fulltext" ) );
 
         long id1 = inserter.createNode( null );
-        index.add( id1, MapUtil.map( "name", "Mattias Persson", "email",
+        index.add( id1, map( "name", "Mattias Persson", "email",
                 "something@somewhere", "something", "bad" ) );
         long id2 = inserter.createNode( null );
-        index.add( id2, MapUtil.map( "name", "Lars PerssoN" ) );
+        index.add( id2, map( "name", "Lars PerssoN" ) );
         index.flush();
         assertContains( index.get( "name", "Mattias Persson" ), id1 );
         assertContains( index.query( "name", "mattias" ), id1 );
@@ -133,8 +136,7 @@ public class TestLuceneBatchInsert
         assertContains( index.query( "email", "*@*" ), id1 );
         assertContains( index.get( "something", "bad" ), id1 );
         long id3 = inserter.createNode( null );
-        index.add( id3,
-                MapUtil.map( "name", new String[] { "What Ever", "Anything" } ) );
+        index.add( id3, map( "name", new String[] { "What Ever", "Anything" } ) );
         index.flush();
         assertContains( index.get( "name", "What Ever" ), id3 );
         assertContains( index.get( "name", "Anything" ), id3 );
@@ -156,24 +158,24 @@ public class TestLuceneBatchInsert
     {
         BatchInserter inserter = new BatchInserterImpl( PATH );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );
-        BatchInserterIndex index = provider.nodeIndex( "yeah", LuceneIndexImplementation.EXACT_CONFIG );
+        BatchInserterIndex index = provider.nodeIndex( "yeah", EXACT_CONFIG );
         index.setCacheCapacity( "key", 1000000 );
-        long t = System.currentTimeMillis();
+        long t = currentTimeMillis();
         for ( int i = 0; i < 1000000; i++ )
         {
-            Map<String, Object> properties = MapUtil.map( "key", "value" + i );
+            Map<String, Object> properties = map( "key", "value" + i );
             long id = inserter.createNode( properties );
             index.add( id, properties );
         }
-        System.out.println( "insert:" + ( System.currentTimeMillis() - t ) );
+        System.out.println( "insert:" + ( currentTimeMillis() - t ) );
         index.flush();
 
-        t = System.currentTimeMillis();
+        t = currentTimeMillis();
         for ( int i = 0; i < 1000000; i++ )
         {
-            IteratorUtil.count( (Iterator<Long>) index.get( "key", "value" + i ) );
+            count( (Iterator<Long>) index.get( "key", "value" + i ) );
         }
-        System.out.println( "get:" + ( System.currentTimeMillis() - t ) );
+        System.out.println( "get:" + ( currentTimeMillis() - t ) );
     }
 
     @Test
@@ -184,8 +186,8 @@ public class TestLuceneBatchInsert
         LuceneBatchInserterIndexProvider indexProvider = new LuceneBatchInserterIndexProvider(
                 inserter );
         BatchInserterIndex persons = indexProvider.nodeIndex( "persons",
-                MapUtil.stringMap( "type", "exact" ) );
-        Map<String, Object> properties = MapUtil.map( "name", "test" );
+                stringMap( "type", "exact" ) );
+        Map<String, Object> properties = map( "name", "test" );
         long node = inserter.createNode( properties );
         persons.add( node, properties );
         indexProvider.shutdown();
@@ -216,16 +218,14 @@ public class TestLuceneBatchInsert
         BatchInserterIndexProvider indexProvider = new LuceneBatchInserterIndexProvider(
                 inserter );
         BatchInserterIndex edgesIndex = indexProvider.relationshipIndex(
-                "edgeIndex",
-                MapUtil.stringMap( "provider", "lucene", "type", "exact" ) );
+                "edgeIndex", stringMap( "provider", "lucene", "type", "exact" ) );
 
-        long nodeId1 = inserter.createNode( MapUtil.map( "ID", "1" ) );
-        long nodeId2 = inserter.createNode( MapUtil.map( "ID", "2" ) );
+        long nodeId1 = inserter.createNode( map( "ID", "1" ) );
+        long nodeId2 = inserter.createNode( map( "ID", "2" ) );
         long relationshipId = inserter.createRelationship( nodeId1, nodeId2,
                 EdgeType.KNOWS, null );
 
-        edgesIndex.add( relationshipId,
-                MapUtil.map( "EDGE_TYPE", EdgeType.KNOWS.name() ) );
+        edgesIndex.add( relationshipId, map( "EDGE_TYPE", EdgeType.KNOWS.name() ) );
         edgesIndex.flush();
 
         assertEquals(
@@ -242,13 +242,60 @@ public class TestLuceneBatchInsert
     {
         BatchInserter inserter = new BatchInserterImpl( PATH );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );
-        BatchInserterIndex index = provider.nodeIndex( "Neo4j::Node-exact", LuceneIndexImplementation.EXACT_CONFIG );
+        BatchInserterIndex index = provider.nodeIndex( "Neo4j::Node-exact", EXACT_CONFIG );
         
         Map<String, Object> map = map( "name", "Something" );
         long node = inserter.createNode( map );
         index.add( node, map );
         index.flush();
         assertContains( index.get( "name", "Something" ), node );
+        
+        provider.shutdown();
+        inserter.shutdown();
+    }
+    
+    @Test
+    public void testNumericValues()
+    {
+        BatchInserter inserter = new BatchInserterImpl( PATH );
+        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider(
+                inserter );
+        BatchInserterIndex index = provider.nodeIndex( "mine", EXACT_CONFIG );
+        
+        long node1 = inserter.createNode( null );
+        index.add( node1, map( "number", numeric( 45 ) ) );
+        long node2 = inserter.createNode( null );
+        index.add( node2, map( "number", numeric( 21 ) ) );
+        assertContains( index.query( "number",
+                newIntRange( "number", 21, 50, true, true ) ), node1, node2 );
+        
+        provider.shutdown();
+        inserter.shutdown();
+        
+        GraphDatabaseService db = new EmbeddedGraphDatabase( PATH );
+        Node n1 = db.getNodeById( node1 );
+        Node n2 = db.getNodeById( node2 );
+        Index<Node> idx = db.index().forNodes( "mine" );
+        assertContains( idx.query( "number", newIntRange( "number", 21, 45, false, true ) ), n1 );
+        db.shutdown();
+    }
+    
+    @Test
+    public void indexNumbers() throws Exception
+    {
+        BatchInserter inserter = new BatchInserterImpl( PATH );
+        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider(
+                inserter );
+        BatchInserterIndex index = provider.nodeIndex( "mine", EXACT_CONFIG );
+        
+        long id = inserter.createNode( null );
+        Map<String, Object> props = new HashMap<String, Object>();
+        props.put( "key", 123L );
+        index.add( id, props );
+        index.flush();
+        
+        assertEquals( 1, index.get( "key", 123L ).size() );
+        assertEquals( 1, index.get( "key", "123" ).size() );
         
         provider.shutdown();
         inserter.shutdown();

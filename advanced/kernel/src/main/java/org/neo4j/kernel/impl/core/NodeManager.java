@@ -718,7 +718,7 @@ public class NodeManager
         }
         if ( lockType == LockType.READ )
         {
-            lockManager.releaseReadLock( container );
+            lockManager.releaseReadLock( container, null );
         }
         else if ( lockType == LockType.WRITE )
         {
