@@ -137,6 +137,7 @@ public class ElementReference {
 	
 	public void sendKeys(CharSequence ... keysToSend) {
 		try {
+            this.waitUntilVisible();
     		this.getElement().sendKeys(keysToSend);
     	} catch (StaleElementReferenceException e) {
     		this.sendKeys(keysToSend);
@@ -153,6 +154,7 @@ public class ElementReference {
 	
 	public String getText() {
 		try {
+            this.waitUntilVisible();
     		return this.getElement().getText();
     	} catch (StaleElementReferenceException e) {
     		return this.getText();
