@@ -2,15 +2,19 @@
   #header_submenu
     %ul.horizontal_menu
       %li
-        %a(href="http://docs.neo4j.org/") Documentation
-  %img#logo(src="img/neo_icon.png")
+        %a.micro-button(href="http://docs.neo4j.org/") Documentation
+  %img#logo(src="img/logo.png")
   %ul#mainmenu
     :each item in mainmenu
-      %li
+      %li.title-button
         :if item.current
-          %a.current(href="#{item.url}")= item.label
+          %a.current(href="#{item.url}")
+            %span.subtitle= item.subtitle
+            %span= item.label
         :if !item.current
-          %a(href="#{item.url}")= item.label
+          %a(href="#{item.url}")
+            %span.subtitle= item.subtitle
+            %span= item.label
 
 #contents
   
@@ -20,7 +24,7 @@
     \ 
     %a(href="http://neotechnology.com") Neo Technology
     \.
-  %p.copyright This is free software, available under the 
+    \ This is free software, available under the 
     \ 
     %a(href="http://www.gnu.org/licenses/agpl.html") GNU Affero General Public License
     \ version 3 or greater.

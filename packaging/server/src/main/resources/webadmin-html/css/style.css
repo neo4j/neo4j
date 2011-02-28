@@ -1,69 +1,150 @@
 
 @import url(modules.css);
+@import url(buttons.css);
+@import url(typography.css);
 
-body { width:100%; height:100%; color: #333; background:#f7f7f7; padding:0;margin:0; font-family:arial, sans-serif; }
-
-p { margin: 0.7em 0; font-size:0.9em; }
-
-h1 { font-size:1.2em; }
-h2 { font-size:1.1em; }
-h3 { font-size:1.0em; }
-h4 { font-size:0.9em; }
-h5 { font-size:0.8em; }
-h6 { font-size:0.7em; }
+body { width:100%; height:100%; color: #333; background:#fff; padding:0;margin:0; font-family:arial, sans-serif; }
 
 /* CONTENTS */
 
-#contents { padding: 10px 5px; }
+#contents { 
+  bottom: 20px;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 50px;
+}
+.sidebar { 
+  background: none repeat scroll 0 0 #FFFFFF;
+  border-right: 2px solid #AAAAAA;
+  bottom: 0;
+  left: 0;
+  padding: 10px;
+  position: absolute;
+  top: 0;
+  width: 240px;
+}
+
+.workarea {
+  position:absolute;
+  top:0;
+  bottom:0;
+  right:0;
+  left:0;
+  padding:10px;
+  background:#eee;
+}
+
+.workarea.with-sidebar {
+  left:262px;
+}
 
 /* HEADER */
 
-#header { width:100%; height:50px; background:url(../img/header_bg.png) repeat-x;  }
-#logo { float:left; margin: 4px 30px 0 30px; }
+#header { width:100%; height:50px; background:url("../img/tab_shade.png") repeat-x scroll center bottom #333333;  }
+#logo { float:left; margin: 4px 99px 0 10px; }
 
-  #mainmenu { margin:0; list-style:none; padding: 24px 0 0 0; height:20px; }
+  #mainmenu {
+    height: 50px;
+    list-style: none outside none;
+    margin: 0;
+  }
   #mainmenu li a { 
-    display:block; 
-    background:#7a9ea9 url(../img/tab_shade.png) bottom repeat-x; 
-    height:22px; 
-    float:left; 
-    margin:0 4px; 
-    padding: 4px 8px 0;  
-    -moz-border-radius-topright: 3px; 
-    -webkit-border-top-right-radius: 3px; 
-    -moz-border-radius-topleft: 3px; 
-    -webkit-border-top-left-radius: 3px; 
-    color:#353535; 
-    text-decoration:none; }
-  #mainmenu li a:hover { background:#F7F7F7 url(../img/tab_shade.png) bottom repeat-x; }
-  #mainmenu li a.current { background:#F7F7F7; }
+    background: url("../img/tab_shade.png") repeat-x scroll center bottom #333333;
+    
+    border-right: 1px solid #222222;
+    color: #EEEEEE;
+    display: block;
+    float: left;
+    height: 40px;
+    padding: 10px 20px 0;
+    text-decoration: none;
+    text-shadow: 1px 1px 0 #222222;
+  }
+  #mainmenu li a:hover,#mainmenu li a.current { 
+    background:#555 url(../img/tab_shade.png) bottom repeat-x;
+    border-right: 1px solid #444;
+  }
 
   #header_submenu {
 	  float:right;
-	  padding: 0 30px 0 0;	
+	  padding: 0 10px 0 0;	
   }
-
-  #header_submenu a {
-	  color: #ddd;
-	  font-size:12px;
-	  text-decoration:none;	
-  }
-
-  #header_submenu a:hover {
-	  text-decoration:underline;	
+  #header_submenu ul {
+    margin: 14px 0 0;
   }
 
 /* FOOTER */
 
 #footer {
-	clear:both;
-	padding: 30px;
+  background: none repeat scroll 0 0 #fff;
+  border-top: 1px solid #CCC;
+  bottom: 0;
+  clear: both;
+  left: 0;
+  position: absolute;
+  right: 0;
 }
 .copyright {
-	font-size:10px !important;
-	text-align:center;
-	padding: 0.7em 0 0.3em;
-	margin: 0;
+  color: #555 !important;
+  font-size: 10px !important;
+  margin: 0;
+  padding: 5px;
+  text-align: center;
+}
+.copyright a {
+  color: #555 !important;
+}
+
+/**
+ * DATA BROWSER
+ */
+
+#data-console {
+  color: #444444;
+  font-size: 14px;
+  padding: 5px;
+  width: 50%;
+  float:left;
+}
+
+.data-toolbar {
+  float:right;
+}
+
+#data-refresh {
+  background:url("../img/icons/glyphish/01-refresh.png") no-repeat scroll center center #ccc;
+}
+#data-home {
+  background:url("../img/icons/glyphish/53-house.png") no-repeat scroll center center #ccc;
+}
+#data-create-node {
+  background:url("../img/icons/glyphish/add.png") no-repeat scroll 5px center #ccc;
+}
+#data-refresh:hover {
+  background:url("../img/icons/glyphish/01-refresh.png") no-repeat scroll center center #fff;
+}
+#data-home:hover {
+  background:url("../img/icons/glyphish/53-house.png") no-repeat scroll center center #fff;
+}
+#data-create-node:hover {
+  background:url("../img/icons/glyphish/add.png") no-repeat scroll 5px center #fff;
+}
+
+#data-execute-console {
+  background:url("../img/icons/glyphish/06-magnify.png") no-repeat scroll center center #ccc;
+}
+#data-execute-console:hover {
+  background:url("../img/icons/glyphish/06-magnify.png") no-repeat scroll center center #fff;
+}
+
+.simple-data-area {
+  background: none repeat scroll 0 0 #FFFFFF;
+  margin: 10px 0;
+  padding: 10px;
+	-moz-border-radius: 4px;
+	-webkit-border-radius: 4px;
+	border-radius: 4px;
 }
 
 /* FOLDOUT CONTENT */
@@ -80,6 +161,22 @@ h6 { font-size:0.7em; }
 .info_list li { }
 .info_list li h3 { margin: 0; padding: 4px 0 0 0; }
 .info_list li p { margin: 0; padding: 2px 0; }
+
+/** 
+ * Button titles
+ */
+
+.title-button {
+  color: #EEEEEE;
+  text-decoration: none;
+  text-shadow: 1px 1px 0 #222222;
+}
+.title-button .subtitle {
+  clear: right;
+  color: #AAAAAA;
+  display: block;
+  font-size: 10px;
+}
 
 /**
  * UTILS

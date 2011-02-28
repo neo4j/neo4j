@@ -32,22 +32,15 @@
         return this.interval = setInterval(this.fetch, ms);
       };
       JmxBackedModel.prototype.fetch = function() {
-        var def, key, parseBean, x, _ref, _results;
+        var def, key, parseBean, _ref, _results;
         parseBean = this.parseBean;
         _ref = this.beans;
         _results = [];
         for (key in _ref) {
           def = _ref[key];
-          _results.push((function() {
-            var _results;
-            _results = [];
-            for (x = 0; x <= 1000; x++) {
-              _results.push(this.jmx.getBean(def.domain, def.name, function(bean) {
-                return parseBean(key, bean);
-              }));
-            }
-            return _results;
-          }).call(this));
+          _results.push(this.jmx.getBean(def.domain, def.name, function(bean) {
+            return parseBean(key, bean);
+          }));
         }
         return _results;
       };
