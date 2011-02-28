@@ -35,8 +35,9 @@ import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -49,13 +50,22 @@ import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdType;
 
-@Ignore( "Causes OOM, and won't run very nicely on Windows" )
+//@Ignore( "Causes OOM, and won't run very nicely on Windows" )
 public class TestBigStore implements RelationshipType
 {
     private static final RelationshipType OTHER_TYPE = DynamicRelationshipType.withName( "OTHER" );
     
     private static final String PATH = "target/var/big";
     private GraphDatabaseService db;
+    public @Rule
+    TestName testName = new TestName()
+    {
+        @Override
+        public String getMethodName()
+        {
+            return TestBigStore.this.getClass().getSimpleName() + "#" + super.getMethodName();
+        }
+    };
     
     @Before
     public void doBefore()
@@ -82,35 +92,40 @@ public class TestBigStore implements RelationshipType
     @Test
     public void create4BPlusStuff() throws Exception
     {
-        testHighIds( (long) pow( 2, 32 ), 2 );
+        testHighIds( (long) pow( 2, 32 ), 2, 400 );
     }
     
     @Test
     public void create8BPlusStuff() throws Exception
     {
-        testHighIds( (long) pow( 2, 33 ), 1 );
+        testHighIds( (long) pow( 2, 33 ), 1, 1000 );
     }
     
     @Test
     public void createAndVerify32BitGraph() throws Exception
     {
-        createAndVerifyGraphStartingWithId( (long) pow( 2, 32 ) );
+        createAndVerifyGraphStartingWithId( (long) pow( 2, 32 ), 400 );
     }
     
     @Test
     public void createAndVerify33BitGraph() throws Exception
     {
-        createAndVerifyGraphStartingWithId( (long) pow( 2, 33 ) );
+        createAndVerifyGraphStartingWithId( (long) pow( 2, 33 ), 1000 );
     }
     
     @Test
     public void createAndVerify34BitGraph() throws Exception
     {
-        createAndVerifyGraphStartingWithId( (long) pow( 2, 34 ) );
+        createAndVerifyGraphStartingWithId( (long) pow( 2, 34 ), 1600 );
     }
     
-    private void createAndVerifyGraphStartingWithId( long startId ) throws Exception
+    private void createAndVerifyGraphStartingWithId( long startId, int requiredHeapMb ) throws Exception
     {
+        if ( !machineIsOkToRunThisTest( testName.getMethodName(), requiredHeapMb ) )
+        {
+            return;
+        }
+        
         /*
          * Will create a layout like this:
          * 
@@ -165,23 +180,24 @@ public class TestBigStore implements RelationshipType
         assertEquals( count, verified );
     }
     
-//    public static boolean machineIsOkToRunThisOn( long requiredHeapMb )
-//    {
-//        String nameOs = System.getProperty( "os.name" );
-//        if ( nameOs.startsWith( "Windows" ) )
-//        {
-//            System.out.println( "This test cannot be run on Windows because it can't handle files of this size in a timely manner" );
-//            return false;
-//        }
-//        
-//        long heapMb = Runtime.getRuntime().maxMemory() / (1000*1000); // Not 1024, matches better wanted result with -Xmx
-//        if ( heapMb < requiredHeapMb )
-//        {
-//            System.out.println( "This test requires a heap of size " + requiredHeapMb + ", this heap has only " + heapMb );
-//            return false;
-//        }
-//        return true;
-//    }
+    public static boolean machineIsOkToRunThisTest( String testName, int requiredHeapMb )
+    {
+        String nameOs = System.getProperty( "os.name" );
+        if ( nameOs.startsWith( "Windows" ) )
+        {
+            System.out.println( testName + ": This test cannot be run on Windows because it can't handle files of this size in a timely manner" );
+            return false;
+        }
+        
+        long heapMb = Runtime.getRuntime().maxMemory() / (1000*1000); // Not 1024, matches better wanted result with -Xmx
+        System.out.println( "heap " + heapMb );
+        if ( heapMb < requiredHeapMb )
+        {
+            System.out.println( testName + ": This test requires a heap of size " + requiredHeapMb + ", this heap has only " + heapMb );
+            return false;
+        }
+        return true;
+    }
 
     private void assertProperties( Map<String, Object> properties, PropertyContainer entity )
     {
@@ -211,8 +227,13 @@ public class TestBigStore implements RelationshipType
         }
     }
 
-    private void testHighIds( long highMark, int minus )
+    private void testHighIds( long highMark, int minus, int requiredHeapMb )
     {
+        if ( !machineIsOkToRunThisTest( testName.getMethodName(), requiredHeapMb ) )
+        {
+            return;
+        }
+        
         long idBelow = highMark-minus;
         setHighIds( idBelow );
         String propertyKey = "name";
