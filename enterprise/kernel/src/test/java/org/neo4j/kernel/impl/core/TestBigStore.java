@@ -24,20 +24,24 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
 
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
@@ -48,6 +52,8 @@ import org.neo4j.kernel.IdType;
 @Ignore( "Causes OOM, and won't run very nicely on Windows" )
 public class TestBigStore implements RelationshipType
 {
+    private static final RelationshipType OTHER_TYPE = DynamicRelationshipType.withName( "OTHER" );
+    
     private static final String PATH = "target/var/big";
     private GraphDatabaseService db;
     
@@ -85,14 +91,113 @@ public class TestBigStore implements RelationshipType
         testHighIds( (long) pow( 2, 33 ), 1 );
     }
     
+    @Test
+    public void createAndVerify32BitGraph() throws Exception
+    {
+        createAndVerifyGraphStartingWithId( (long) pow( 2, 32 ) );
+    }
+    
+    @Test
+    public void createAndVerify33BitGraph() throws Exception
+    {
+        createAndVerifyGraphStartingWithId( (long) pow( 2, 33 ) );
+    }
+    
+    @Test
+    public void createAndVerify34BitGraph() throws Exception
+    {
+        createAndVerifyGraphStartingWithId( (long) pow( 2, 34 ) );
+    }
+    
+    private void createAndVerifyGraphStartingWithId( long startId ) throws Exception
+    {
+        /*
+         * Will create a layout like this:
+         * 
+         * (refNode) --> (node) --> (highNode)
+         *           ...
+         *           ...
+         *           
+         * Each node/relationship will have a bunch of different properties on them.
+         */
+        setHighIds( startId-1000 );
+        
+        byte[] bytes = new byte[45];
+        bytes[2] = 5;
+        bytes[10] = 42;
+        Map<String, Object> properties = map( "number", 11, "short string", "test",
+                "long string", "This is a long value, long enough", "array", bytes );
+        Transaction tx = db.beginTx();
+        int count = 10000;
+        for ( int i = 0; i < count; i++ )
+        {
+            Node node = db.createNode();
+            setProperties( node, properties );
+            Relationship rel = db.getReferenceNode().createRelationshipTo( node, this );
+            setProperties( rel, properties );
+            Node highNode = db.createNode();
+            node.createRelationshipTo( highNode, OTHER_TYPE );
+            setProperties( highNode, properties );
+            if ( i % 100 == 0 && i > 0 )
+            {
+                tx.success();
+                tx.finish();
+                tx = db.beginTx();
+                System.out.println( "committed " + i );
+            }
+        }
+        tx.success();
+        tx.finish();
+        
+        db.shutdown();
+        db = new EmbeddedGraphDatabase( PATH );
+        
+        // Verify the data
+        int verified = 0;
+        for ( Relationship rel : db.getReferenceNode().getRelationships( Direction.OUTGOING ) )
+        {
+            Node node = rel.getEndNode();
+            assertProperties( properties, node );
+            assertProperties( properties, rel );
+            Node highNode = node.getSingleRelationship( OTHER_TYPE, Direction.OUTGOING ).getEndNode();
+            assertProperties( properties, highNode );
+            verified++;
+        }
+        assertEquals( count, verified );
+    }
+    
+    private void assertProperties( Map<String, Object> properties, PropertyContainer entity )
+    {
+        int count = 0;
+        for ( String key : entity.getPropertyKeys() )
+        {
+            Object expectedValue = properties.get( key );
+            Object entityValue = entity.getProperty( key );
+            if ( expectedValue.getClass().isArray() )
+            {
+                assertTrue( Arrays.equals( (byte[]) expectedValue, (byte[]) entityValue ) );
+            }
+            else
+            {
+                assertEquals( expectedValue, entityValue );
+            }
+            count++;
+        }
+        assertEquals( properties.size(), count );
+    }
+
+    private void setProperties( PropertyContainer entity, Map<String, Object> properties )
+    {
+        for ( Map.Entry<String, Object> property : properties.entrySet() )
+        {
+            entity.setProperty( property.getKey(), property.getValue() );
+        }
+    }
+
     private void testHighIds( long highMark, int minus )
     {
         long idBelow = highMark-minus;
-        setHighId( IdType.NODE, idBelow );
-        setHighId( IdType.RELATIONSHIP, idBelow );
-        setHighId( IdType.PROPERTY, idBelow );
-        setHighId( IdType.ARRAY_BLOCK, idBelow );
-        setHighId( IdType.STRING_BLOCK, idBelow );
+        setHighIds( idBelow );
         String propertyKey = "name";
         int intPropertyValue = 123;
         String stringPropertyValue = "Long string, longer than would fit in shortstring";
@@ -137,6 +242,15 @@ public class TestBigStore implements RelationshipType
                 db = new EmbeddedGraphDatabase( PATH );
             }
         }
+    }
+
+    private void setHighIds( long id )
+    {
+        setHighId( IdType.NODE, id );
+        setHighId( IdType.RELATIONSHIP, id );
+        setHighId( IdType.PROPERTY, id );
+        setHighId( IdType.ARRAY_BLOCK, id );
+        setHighId( IdType.STRING_BLOCK, id );
     }
     
     private static <T> Collection<T> asSet( Collection<T> collection )
