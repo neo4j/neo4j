@@ -20,9 +20,8 @@ define ['lib/backbone'], () ->
     fetch : =>
       parseBean = @parseBean
       for key, def of @beans
-        for x in [0..1000]
-          @jmx.getBean def.domain, def.name, (bean) ->
-            parseBean(key, bean)
+        @jmx.getBean def.domain, def.name, (bean) ->
+          parseBean(key, bean)
 
     parseBean : (key, bean) =>
       if bean?

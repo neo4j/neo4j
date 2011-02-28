@@ -12,10 +12,10 @@ define ['neo4j/webadmin/templates/base','lib/backbone'], (template) ->
 
     render : ->
       $(@el).html @template( mainmenu : [ 
-        { label : "Dashboard",   url : "#",           current: location.hash is "" }
-        { label : "Data",        url : "#/data/" ,    current: location.hash is "#/data/" }
-        { label : "Console",     url : "#/console/" , current: location.hash is "#/console/" }
-        { label : "Server info", url : "#/info/" ,    current: location.hash is "#/info/" } ] )
+        { label : "Dashboard",   subtitle:"Get a grip",url : "#",           current: location.hash is "" }
+        { label : "Data browser",subtitle:"Explore and edit",url : "#/data/" ,    current: location.hash is "#/data/" }
+        { label : "Console",     subtitle:"Power tool",url : "#/console/" , current: location.hash is "#/console/" }
+        { label : "Server info", subtitle:"Detailed information",url : "#/info/" ,    current: location.hash is "#/info/" } ] )
 
       if @mainView?
         $("#contents").append @mainView.render().el
