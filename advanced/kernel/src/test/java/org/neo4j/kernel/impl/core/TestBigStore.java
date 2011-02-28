@@ -143,7 +143,6 @@ public class TestBigStore implements RelationshipType
                 tx.success();
                 tx.finish();
                 tx = db.beginTx();
-                System.out.println( "committed " + i );
             }
         }
         tx.success();
@@ -166,6 +165,24 @@ public class TestBigStore implements RelationshipType
         assertEquals( count, verified );
     }
     
+//    public static boolean machineIsOkToRunThisOn( long requiredHeapMb )
+//    {
+//        String nameOs = System.getProperty( "os.name" );
+//        if ( nameOs.startsWith( "Windows" ) )
+//        {
+//            System.out.println( "This test cannot be run on Windows because it can't handle files of this size in a timely manner" );
+//            return false;
+//        }
+//        
+//        long heapMb = Runtime.getRuntime().maxMemory() / (1000*1000); // Not 1024, matches better wanted result with -Xmx
+//        if ( heapMb < requiredHeapMb )
+//        {
+//            System.out.println( "This test requires a heap of size " + requiredHeapMb + ", this heap has only " + heapMb );
+//            return false;
+//        }
+//        return true;
+//    }
+
     private void assertProperties( Map<String, Object> properties, PropertyContainer entity )
     {
         int count = 0;
@@ -237,7 +254,6 @@ public class TestBigStore implements RelationshipType
             
             if ( i == 0 )
             {
-                System.out.println( "restarting" );
                 db.shutdown();
                 db = new EmbeddedGraphDatabase( PATH );
             }
