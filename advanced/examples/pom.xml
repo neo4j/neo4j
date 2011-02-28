@@ -226,6 +226,13 @@
       <id>java.net</id>
       <url>http://download.java.net/maven/2/</url>
     </repository>
+    <repository>
+      <id>neo4j-releases</id>
+      <url>http://m2.neo4j.org/releases</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
   </repositories>
 
   <reporting>
