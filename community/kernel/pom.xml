@@ -21,6 +21,7 @@
   <properties>
     <bundle.namespace>org.neo4j</bundle.namespace>
     <short-name>kernel</short-name>
+    <git.executable>git</git.executable>
   </properties>
 
   <packaging>jar</packaging>
@@ -36,6 +37,18 @@
     <system>Trac</system>
     <url>https://trac.neo4j.org/query?status=assigned&amp;status=new&amp;status=reopened&amp;component=${short-name}</url>
   </issueManagement>
+
+  <profiles>
+    <profile>
+      <id>git-windows</id>
+      <activation>
+        <os><family>Windows</family></os>
+      </activation>
+      <properties>
+        <git.executable>git.cmd</git.executable>
+      </properties>
+    </profile>
+  </profiles>
 
   <developers>
     <developer>
@@ -120,13 +133,13 @@
               <property environment="env" />
               <target>
                 <mkdir dir="target/generated-sources/version/org/neo4j/kernel/impl/" />
-                <exec executable="git" osfamily="unix" outputproperty="git.describe" errorproperty="git.describe.error" failifexecutionfails="false" failonerror="false">
+                <exec executable="${git.executable}" failifexecutionfails="true" failonerror="true">
+                  <arg value="fetch" />
+                  <arg value="--tags" />
+                </exec>
+                <exec executable="${git.executable}" outputproperty="git.describe" errorproperty="git.describe.error" failifexecutionfails="true" failonerror="true">
                   <arg value="describe" />
                   <!-- REQUIRES GIT 1.7: arg value="- -dirty"/ -->
-                </exec>
-                <exec executable="git.cmd" osfamily="winnt" outputproperty="git.describe" errorproperty="git.describe.error" failifexecutionfails="false" failonerror="false">
-                  <arg value="describe" />
-                  <!-- REQUIRES GIT 1.7 on Windows, e.g. http://code.google.com/p/msysgit/ on the PATH/ -->
                 </exec>
                 <property name="git.describe" value="" />
                 <echo file="target/generated-sources/version/org/neo4j/${short-name}/impl/ComponentVersion.java">package org.neo4j.${short-name}.impl;
