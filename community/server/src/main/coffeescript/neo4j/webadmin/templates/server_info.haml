@@ -1,5 +1,9 @@
 .sidebar
-  %h2 Available information (JMX Beans)
+  %ol
+    :each domain in domains
+      %lh= domain.name
+      :each bean in domain.beans
+        %li
+          %a(href="#/info/#{bean.domain}/#{bean.getName()}/")= bean.getName()
 
-.workarea.with-sidebar
-  %h2 JMX
+#info-bean.workarea.with-sidebar
