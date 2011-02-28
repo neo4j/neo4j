@@ -100,12 +100,12 @@ allprojects {
 
     task functionalTest(type: Test) {
         testClassesDir = sourceSets.functionalTest.classesDir
-        classpath = sourceSets.functionalTest.runtimeClasspath
+        classpath += sourceSets.functionalTest.runtimeClasspath
     }
 
     task integrationTest(type: Test) {
         testClassesDir = sourceSets.integrationTest.classesDir
-        classpath = sourceSets.integrationTest.runtimeClasspath
+        classpath += sourceSets.integrationTest.runtimeClasspath
     }
 
     install.dependsOn ':build'
