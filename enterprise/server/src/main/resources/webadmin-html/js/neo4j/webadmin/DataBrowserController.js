@@ -7,7 +7,7 @@
     child.__super__ = parent.prototype;
     return child;
   };
-  define(['./views/DataBrowserView', './models/DataBrowserModel', './models/DataItemModel', 'lib/backbone'], function(DataBrowserView, DataBrowserModel, DataItemModel) {
+  define(['./views/DataBrowserView', './models/DataBrowserState', './models/DataItem', 'lib/backbone'], function(DataBrowserView, DataBrowserState, DataItem) {
     var DataBrowserController;
     return DataBrowserController = (function() {
       function DataBrowserController() {
@@ -29,7 +29,7 @@
       DataBrowserController.prototype.initialize = function(appState) {
         this.appState = appState;
         this.server = appState.get("server");
-        return this.dataModel = new DataBrowserModel({
+        return this.dataModel = new DataBrowserState({
           server: this.server
         });
       };
@@ -47,9 +47,8 @@
         return this.server.rel(this.relationshipUri(id)).then(this.showRelationship, this.showNotFound);
       };
       DataBrowserController.prototype.showNode = function(node) {
-        console.log(node);
         return this.dataModel.set({
-          "item": new DataItemModel({
+          "item": new DataItem({
             item: node,
             type: "node"
           })
@@ -57,7 +56,7 @@
       };
       DataBrowserController.prototype.showRelationship = function(relationship) {
         return this.dataModel.set({
-          "item": new DataItemModel({
+          "item": new DataItem({
             item: relationship,
             type: "relationship"
           })
@@ -65,7 +64,7 @@
       };
       DataBrowserController.prototype.showNotFound = function() {
         return this.dataModel.set({
-          "item": new DataItemModel({
+          "item": new DataItem({
             item: null,
             type: "not-found"
           })
