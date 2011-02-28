@@ -130,6 +130,9 @@ wa.components.data.PropertyEditor = (function($) {
 	};
 	
 	me.markKeyFieldAsDuplicate = function(el) {
+        if(el[0]) {
+            el = el[0];
+        }
 	    if( ! me.keyFieldIsMarkedAsDuplicate(el)) {
 	        me.duplicateKeyFields.push(el);
 	    }
@@ -138,13 +141,19 @@ wa.components.data.PropertyEditor = (function($) {
 	};
 	
 	me.unmarkKeyFieldAsDuplicate = function(el) {
+	    if(el[0]) {
+	        el = el[0];
+	    }
 	    me.duplicateKeyFields = _.without(me.duplicateKeyFields, el);
 	    me.hideTooltip(el);
 	    $(el).removeClass("error");
 	};
 	
 	me.keyFieldIsMarkedAsDuplicate = function(el) {
-	    return _.indexOf(me.duplicateKeyField, el) != -1
+        if(el[0]) {
+            el = el[0];
+        }
+	    return _.indexOf(me.duplicateKeyFields, el) != -1
 	};
 	
 	me.propertyFieldFocused = function(ev) {
