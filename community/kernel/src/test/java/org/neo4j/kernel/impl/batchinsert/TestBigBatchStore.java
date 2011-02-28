@@ -26,6 +26,7 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
+import static org.neo4j.kernel.impl.core.TestBigStore.machineIsOkToRunThisTest;
 
 import java.io.File;
 import java.util.Arrays;
@@ -34,19 +35,29 @@ import java.util.HashSet;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdType;
 
-@Ignore( "Causes OOM, and won't run very nicely on Windows" )
+//@Ignore( "Causes OOM, and won't run very nicely on Windows" )
 public class TestBigBatchStore implements RelationshipType
 {
     private static final String PATH = "target/var/bigb";
     private BatchInserter db;
+    public @Rule
+    TestName testName = new TestName()
+    {
+        @Override
+        public String getMethodName()
+        {
+            return TestBigBatchStore.this.getClass().getSimpleName() + "#" + super.getMethodName();
+        }
+    };
     
     @Before
     public void doBefore()
@@ -73,17 +84,22 @@ public class TestBigBatchStore implements RelationshipType
     @Test
     public void create4BPlusStuff() throws Exception
     {
-        testHighIds( (long) pow( 2, 32 ), 2 );
+        testHighIds( (long) pow( 2, 32 ), 2, 1000 );
     }
     
     @Test
     public void create8BPlusStuff() throws Exception
     {
-        testHighIds( (long) pow( 2, 33 ), 1 );
+        testHighIds( (long) pow( 2, 33 ), 1, 1600 );
     }
     
-    private void testHighIds( long highMark, int minus )
+    private void testHighIds( long highMark, int minus, int requiredHeapMb )
     {
+        if ( !machineIsOkToRunThisTest( testName.getMethodName(), requiredHeapMb ) )
+        {
+            return;
+        }
+        
         long idBelow = highMark-minus;
         setHighId( IdType.NODE, idBelow );
         setHighId( IdType.RELATIONSHIP, idBelow );
