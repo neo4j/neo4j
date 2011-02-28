@@ -42,7 +42,7 @@
     <profile>
       <id>git-windows</id>
       <activation>
-        <os><name>Windows</name></os>
+        <os><family>Windows</family></os>
       </activation>
       <properties>
         <git.executable>git.cmd</git.executable>
