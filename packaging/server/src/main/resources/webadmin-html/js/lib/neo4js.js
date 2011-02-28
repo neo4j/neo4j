@@ -571,23 +571,23 @@ var e=d.before?d.before:function(i,h){i.apply(this,h)
 };
 var b=d.errorHandler?d.errorHandler:function(i,h){i({message:"An error occurred, please see attached error object.",error:h})
 };
-var a=function(){g=neo4j.proxy(g,this);
-b=neo4j.proxy(b,this);
-if(c>0){var k={};
-for(var j=0;
-j<c;
-j++){k[f[j]]=arguments[j]
-}var h=this.db.web.replace(this.resources[d.resource],k)
-}else{var h=this.resources[d.resource]
-}var l=null;
-var m=function(){};
-if(arguments.length>c){if(typeof(arguments[arguments.length-1])==="function"){m=arguments[arguments.length-1]
-}if((arguments.length-1)>c){l=arguments[arguments.length-2]
-}}if(l!==null){this.db.web.ajax(d.method,h,l,function(i){g(i,m)
-},function(i){b(m,i)
+var a=function(){var h=neo4j.proxy(g,this);
+var m=neo4j.proxy(b,this);
+if(c>0){var l={};
+for(var k=0;
+k<c;
+k++){l[f[k]]=arguments[k]
+}var j=this.db.web.replace(this.resources[d.resource],l)
+}else{var j=this.resources[d.resource]
+}var n=null;
+var o=function(){};
+if(arguments.length>c){if(typeof(arguments[arguments.length-1])==="function"){o=arguments[arguments.length-1]
+}if((arguments.length-1)>c){n=arguments[arguments.length-2]
+}}if(n!==null){this.db.web.ajax(d.method,j,n,function(i){h(i,o)
+},function(i){m(o,i)
 })
-}else{this.db.web.ajax(d.method,h,function(i){g(i,m)
-},function(i){b(m,i)
+}else{this.db.web.ajax(d.method,j,function(i){h(i,o)
+},function(i){m(o,i)
 })
 }};
 return function(){this.serviceMethodPreflight(function(){e.call(this,neo4j.proxy(a,this),arguments)
@@ -916,8 +916,7 @@ neo4j.services.ConsoleService=function(a){neo4j.Service.call(this,a)
 _.extend(neo4j.services.ConsoleService.prototype,neo4j.Service.prototype);
 neo4j.services.ConsoleService.prototype.exec=neo4j.Service.resourceFactory({resource:"exec",method:"POST",before:function(b,a){b({command:a[0],engine:a[1]},a[2])
 }});
-neo4j.services.JmxService=function(a){neo4j.Service.call(this,a);
-this.kernelInstance=neo4j.cachedFunction(this.kernelInstance,0,2000)
+neo4j.services.JmxService=function(a){neo4j.Service.call(this,a)
 };
 _.extend(neo4j.services.JmxService.prototype,neo4j.Service.prototype);
 neo4j.services.JmxService.prototype.getDomains=neo4j.Service.resourceFactory({resource:"domains",method:"GET"});

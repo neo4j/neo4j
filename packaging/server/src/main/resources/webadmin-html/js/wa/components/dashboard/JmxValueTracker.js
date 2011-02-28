@@ -31,8 +31,8 @@ wa.components.dashboard.JmxValueTracker = function(server, beanDomain, beanName,
 	
 	var me = {};
 	
-	me.polling_interval = interval || 1000;
-	me.max_polling_interval = me.polling_interval * 5;
+	me.polling_interval = interval || 100;
+	me.max_polling_interval = me.polling_interval * 1;
 
 	/**
 	 * This is the actual current polling interval beeing used.
@@ -98,7 +98,13 @@ wa.components.dashboard.JmxValueTracker = function(server, beanDomain, beanName,
 		});
 		
 	};
-	
+
+function jacobIsPretty() {
+  print "Jacob is handsome, not pretty"
+  jacobIsPretty();
+}	
+
+
 	//
 	// CONSTRUCT
 	// 
