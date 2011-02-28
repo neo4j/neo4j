@@ -1,9 +1,9 @@
 
 define(
   ['./views/DataBrowserView', 
-   './models/DataBrowserModel', 
-   './models/DataItemModel', 'lib/backbone'], 
-  (DataBrowserView, DataBrowserModel, DataItemModel) ->
+   './models/DataBrowserState', 
+   './models/DataItem', 'lib/backbone'], 
+  (DataBrowserView, DataBrowserState, DataItem) ->
   
     class DataBrowserController extends Backbone.Controller
       routes : 
@@ -14,7 +14,7 @@ define(
       initialize : (appState) =>
         @appState = appState
         @server = appState.get "server"
-        @dataModel = new DataBrowserModel( server : @server )
+        @dataModel = new DataBrowserState( server : @server )
 
       base : =>
         @appState.set( mainView : @getDataBrowserView() )
@@ -29,14 +29,13 @@ define(
 
 
       showNode : (node) =>
-        console.log node
-        @dataModel.set({"item":new DataItemModel({item:node, type:"node"})})
+        @dataModel.set({"item":new DataItem({item:node, type:"node"})})
 
       showRelationship : (relationship) =>
-        @dataModel.set({"item":new DataItemModel({item:relationship, type:"relationship"})})
+        @dataModel.set({"item":new DataItem({item:relationship, type:"relationship"})})
      
       showNotFound : =>
-        @dataModel.set({"item":new DataItemModel({item:null, type:"not-found"})})
+        @dataModel.set({"item":new DataItem({item:null, type:"not-found"})})
 
 
       nodeUri : (id) ->
