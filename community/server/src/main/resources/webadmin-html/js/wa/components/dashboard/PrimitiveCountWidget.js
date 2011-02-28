@@ -103,7 +103,7 @@ wa.components.dashboard.PrimitiveCountWidget = function(server,
 
 	me.tracker = wa.components.dashboard.JmxValueTracker(me.server,
 			"neo4j","Primitive count", me.extractor, me.valueChanged,
-			interval || 10000);
+			interval || 100);
 
 	return me.api;
 };

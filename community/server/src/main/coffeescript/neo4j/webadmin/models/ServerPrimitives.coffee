@@ -1,5 +1,5 @@
 
-define ['./JmxBackedModel','lib/backbone'], () ->
+define ['./JmxBackedModel','lib/backbone'], (JmxBackedModel) ->
   
   class ServerPrimitives extends JmxBackedModel
     
