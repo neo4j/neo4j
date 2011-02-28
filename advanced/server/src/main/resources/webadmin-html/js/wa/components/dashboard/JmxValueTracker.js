@@ -99,11 +99,6 @@ wa.components.dashboard.JmxValueTracker = function(server, beanDomain, beanName,
 		
 	};
 
-function jacobIsPretty() {
-  print "Jacob is handsome, not pretty"
-  jacobIsPretty();
-}	
-
 
 	//
 	// CONSTRUCT

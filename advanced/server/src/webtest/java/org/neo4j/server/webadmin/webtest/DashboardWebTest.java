@@ -29,6 +29,7 @@ import static org.neo4j.server.webadmin.webtest.IsVisible.isVisible;
 import java.io.IOException;
 
 import org.junit.Test;
+import org.neo4j.management.Kernel;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.openqa.selenium.By;
 
@@ -133,6 +134,19 @@ public class DashboardWebTest extends WebDriverTest {
 		assertThat(Integer.parseInt( cachedRelationships.getText() ), greaterThanOrEqualTo(0));
 		assertThat(cacheType.getText().length(), greaterThan(0));
 	}
+	
+	@Test
+    public void shouldShowCorrectServerUrl() {
+        dashboardMenu.click();
+        
+        String version = testHelper.getDatabase().getManagementBean( Kernel.class ).getKernelVersion();
+        
+        serverKernelInfo.waitForTextToChangeTo( version );
+        
+    }
+	
+	private ElementReference serverUrlInfo = new ElementReference(webDriver, By.id("mor_monitor_serverurl"));
+	private ElementReference serverKernelInfo = new ElementReference(webDriver, By.id("mor_monitor_kernelversion"));
 	
 	private ElementReference primitivesChartTab = new ElementReference(webDriver, By.id("mor_monitor_primitives_chart_tab"));
 	private ElementReference primitivesChart = new ElementReference(webDriver, By.id("mor_monitor_primitives_chart"));
