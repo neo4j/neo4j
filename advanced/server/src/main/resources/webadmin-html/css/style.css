@@ -2,6 +2,7 @@
 @import url(modules.css);
 @import url(buttons.css);
 @import url(typography.css);
+@import url(tables.css);
 
 body { width:100%; height:100%; color: #333; background:#fff; padding:0;margin:0; font-family:arial, sans-serif; }
 
@@ -19,10 +20,11 @@ body { width:100%; height:100%; color: #333; background:#fff; padding:0;margin:0
   border-right: 2px solid #AAAAAA;
   bottom: 0;
   left: 0;
-  padding: 10px;
+  padding: 0;
   position: absolute;
   top: 0;
-  width: 240px;
+  width: 260px;
+  overflow:auto;
 }
 
 .workarea {
@@ -31,8 +33,9 @@ body { width:100%; height:100%; color: #333; background:#fff; padding:0;margin:0
   bottom:0;
   right:0;
   left:0;
-  padding:10px;
+  padding:0;
   background:#eee;
+  overflow:auto;
 }
 
 .workarea.with-sidebar {
@@ -147,6 +150,14 @@ body { width:100%; height:100%; color: #333; background:#fff; padding:0;margin:0
 	border-radius: 4px;
 }
 
+/**
+ * SERVER INFO
+ */
+
+#info-bean {
+  background: #70A14E;
+}
+
 /* FOLDOUT CONTENT */
 
 .foldout { border-top:1px solid #eee; }
@@ -162,20 +173,42 @@ body { width:100%; height:100%; color: #333; background:#fff; padding:0;margin:0
 .info_list li h3 { margin: 0; padding: 4px 0 0 0; }
 .info_list li p { margin: 0; padding: 2px 0; }
 
-/** 
- * Button titles
+/**
+ * PLAIN HTML
  */
 
-.title-button {
-  color: #EEEEEE;
-  text-decoration: none;
-  text-shadow: 1px 1px 0 #222222;
+ol {
+  list-style:none;
+  padding:0;
+  margin:0;
 }
-.title-button .subtitle {
-  clear: right;
-  color: #AAAAAA;
+
+ol li {
+  margin:0;
+  padding: 0;
+}
+
+ol li a {
+  background: none repeat scroll 0 0 #FFFFFF;
+  border-top: 1px solid #EEEEEE;
+  color: #333333;
   display: block;
-  font-size: 10px;
+  font-size: 12px;
+  padding: 5px;
+  text-decoration: none;
+}
+ol li a:hover {
+  background: #eee;
+}
+
+ol lh {
+  background: none repeat scroll 0 0 #FFFFFF;
+  border-top: 1px solid #EEEEEE;
+  display: block;
+  font-size: 14px;
+  font-weight: bold;
+  padding: 5px;
+  text-decoration: none;
 }
 
 /**
@@ -185,8 +218,7 @@ body { width:100%; height:100%; color: #333; background:#fff; padding:0;margin:0
 .break { clear:both; }
 .right { float:right; }
 .left { float:left; }
-
-.small { font-size:12px; }
+.pad { padding:10px; }
 
 .span-1  { width: 6.958%; float:left;  margin-right:1.5%; }
 .span-2  { width: 15.416%; float:left; margin-right:1.5%; }

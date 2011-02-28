@@ -1,0 +1,60 @@
+/** 
+ * Button titles
+ */
+
+.title-button {
+  color: #EEEEEE;
+  text-decoration: none;
+  text-shadow: 1px 1px 0 #222222;
+}
+.title-button .subtitle {
+  clear: right;
+  color: #AAAAAA;
+  display: block;
+  font-size: 10px;
+}
+
+/**
+ * Micro button 
+ */
+.micro-button {
+  -moz-border-radius:8px;
+  -webkit-border-radius:8px;
+  border-radius:8px;
+  padding: 3px 6px;
+  background: #555;
+  border: 1px solid #444;
+  font-size:10px;
+  color:#eee;
+  text-decoration:none;
+}
+
+.micro-button:hover {
+  color:#eee;
+  background: #666;
+  text-decoration:none;
+}
+
+/**
+ * Icon buttons
+ */
+
+.text-icon-button, .icon-button {
+  border: 0 none;
+  height: 32px;
+  padding: 0;
+  width: 32px;
+  margin:0 4px;
+  cursor:pointer;
+  -moz-border-radius:4px;
+  -webkit-border-radius:4px;
+  border-radius:4px;
+  float:left;
+}
+
+.text-icon-button {
+  padding: 0 5px 0 32px;
+  width:auto;
+  font-size:13px;
+  font-weight:bold;
+}
