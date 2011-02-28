@@ -11,19 +11,57 @@
     var JmxBackedModel;
     return JmxBackedModel = (function() {
       function JmxBackedModel() {
+        this.parseBean = __bind(this.parseBean, this);;
+        this.fetch = __bind(this.fetch, this);;
+        this.setPollingInterval = __bind(this.setPollingInterval, this);;
         this.initialize = __bind(this.initialize, this);;        JmxBackedModel.__super__.constructor.apply(this, arguments);
       }
       __extends(JmxBackedModel, Backbone.Model);
       JmxBackedModel.prototype.initialize = function(options) {
-        var definition, key, _ref, _results;
         this.server = options.server;
+        this.jmx = this.server.manage.jmx;
+        if ((options.pollingInterval != null) && options.pollingInterval > 0) {
+          this.fetch();
+          return this.setPollingInterval(options.pollingInterval);
+        }
+      };
+      JmxBackedModel.prototype.setPollingInterval = function(ms) {
+        if (this.interval != null) {
+          clearInterval(this.interval);
+        }
+        return this.interval = setInterval(this.fetch, ms);
+      };
+      JmxBackedModel.prototype.fetch = function() {
+        var def, key, parseBean, x, _ref, _results;
+        parseBean = this.parseBean;
         _ref = this.beans;
         _results = [];
         for (key in _ref) {
-          definition = _ref[key];
-          _results.push(console.log(key, definition));
+          def = _ref[key];
+          _results.push((function() {
+            var _results;
+            _results = [];
+            for (x = 0; x <= 1000; x++) {
+              _results.push(this.jmx.getBean(def.domain, def.name, function(bean) {
+                return parseBean(key, bean);
+              }));
+            }
+            return _results;
+          }).call(this));
         }
         return _results;
+      };
+      JmxBackedModel.prototype.parseBean = function(key, bean) {
+        var attribute, values, _i, _len, _ref;
+        if (bean != null) {
+          values = {};
+          _ref = bean.attributes;
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            attribute = _ref[_i];
+            values[attribute.name] = attribute.value;
+          }
+          return this.set(values);
+        }
       };
       return JmxBackedModel;
     })();

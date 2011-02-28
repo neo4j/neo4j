@@ -27,19 +27,19 @@
     return child;
   };
   define(['./JmxBackedModel', 'lib/backbone'], function(JmxBackedModel) {
-    var ServerPrimitives;
-    return ServerPrimitives = (function() {
-      function ServerPrimitives() {
-        ServerPrimitives.__super__.constructor.apply(this, arguments);
+    var CacheUsage;
+    return CacheUsage = (function() {
+      function CacheUsage() {
+        CacheUsage.__super__.constructor.apply(this, arguments);
       }
-      __extends(ServerPrimitives, JmxBackedModel);
-      ServerPrimitives.prototype.beans = {
-        primitives: {
+      __extends(CacheUsage, JmxBackedModel);
+      CacheUsage.prototype.beans = {
+        cache: {
           domain: 'neo4j',
-          name: 'Primitive count'
+          name: 'Cache'
         }
       };
-      return ServerPrimitives;
+      return CacheUsage;
     })();
   });
 }).call(this);

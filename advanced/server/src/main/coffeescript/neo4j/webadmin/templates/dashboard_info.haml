@@ -1,0 +1,47 @@
+.span-third
+  .module
+    %h2 Primitives
+    %table.fancy
+      %tbody
+        %tr
+          %th Cached nodes
+          %td= primitives.get("NumberOfNodeIdsInUse")
+        %tr
+          %th Properties
+          %td= primitives.get("NumberOfPropertyIdsInUse")
+        %tr 
+          %th Relationships
+          %td= primitives.get("NumberOfRelationshipIdsInUse")
+        %tr 
+          %th Relationship types
+          %td= primitives.get("NumberOfRelationshipTypeIdsInUse")
+
+.span-third
+  .module
+    %h2 Disk usage
+    %table.fancy
+      %tbody
+        %tr
+          %th Total size
+          %td= Math.round(diskUsage.get("TotalStoreSize") / 1024) + " kB "
+        %tr
+          %th Database size
+          %td= Math.round( diskUsage.getDatabaseSize() / 1024) + " kB " + "(" + diskUsage.getDatabasePercentage() + "%)"
+        %tr 
+          %th Logical log size
+          %td= Math.round( diskUsage.getLogicalLogSize() / 1024) + " kB " + "(" + diskUsage.getLogicalLogPercentage() + "%)"
+
+.span-third.last
+  .module
+    %h2 Cache
+    %table.fancy
+      %tbody
+        %tr
+          %th Cached nodes
+          %td= cacheUsage.get("NodeCacheSize")
+        %tr
+          %th Cached relationships
+          %td= cacheUsage.get("RelationshipCacheSize")
+        %tr 
+          %th Cache type
+          %td= cacheUsage.get("CacheType")

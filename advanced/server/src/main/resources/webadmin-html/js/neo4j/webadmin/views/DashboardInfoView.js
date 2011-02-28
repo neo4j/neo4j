@@ -26,30 +26,33 @@
     child.__super__ = parent.prototype;
     return child;
   };
-  define(['neo4j/webadmin/templates/dashboard', './DashboardInfoView', 'lib/backbone'], function(template, DashboardInfoView) {
-    var DashboardView;
-    return DashboardView = (function() {
-      function DashboardView() {
+  define(['neo4j/webadmin/templates/dashboard_info', 'lib/backbone'], function(template) {
+    var DashboardInfoView;
+    return DashboardInfoView = (function() {
+      function DashboardInfoView() {
         this.render = __bind(this.render, this);;
-        this.initialize = __bind(this.initialize, this);;        DashboardView.__super__.constructor.apply(this, arguments);
+        this.initialize = __bind(this.initialize, this);;        DashboardInfoView.__super__.constructor.apply(this, arguments);
       }
-      __extends(DashboardView, Backbone.View);
-      DashboardView.prototype.template = template;
-      DashboardView.prototype.initialize = function(opts) {
-        this.appState = opts.state;
-        return this.infoView = new DashboardInfoView(opts);
+      __extends(DashboardInfoView, Backbone.View);
+      DashboardInfoView.prototype.template = template;
+      DashboardInfoView.prototype.initialize = function(opts) {
+        console.log(opts);
+        this.primitives = opts.primitives;
+        this.diskUsage = opts.diskUsage;
+        this.cacheUsage = opts.cacheUsage;
+        this.primitives.bind("change", this.render);
+        this.diskUsage.bind("change", this.render);
+        return this.cacheUsage.bind("change", this.render);
       };
-      DashboardView.prototype.render = function() {
+      DashboardInfoView.prototype.render = function() {
         $(this.el).html(this.template({
-          server: {
-            url: "someurl",
-            version: "someversion"
-          }
+          primitives: this.primitives,
+          diskUsage: this.diskUsage,
+          cacheUsage: this.cacheUsage
         }));
-        $("#dashboard-info", this.el).append(this.infoView.render().el);
         return this;
       };
-      return DashboardView;
+      return DashboardInfoView;
     })();
   });
 }).call(this);

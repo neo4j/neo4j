@@ -5,6 +5,29 @@ define ['lib/backbone'], () ->
     
     initialize : (options) =>
       @server = options.server
-      for key, definition of @beans
-        console.log key, definition
+      @jmx = @server.manage.jmx
 
+      if options.pollingInterval? and options.pollingInterval > 0
+        @fetch()
+        @setPollingInterval options.pollingInterval
+
+    setPollingInterval : (ms) =>
+      if @interval?
+        clearInterval(@interval)
+      
+      @interval = setInterval(@fetch, ms)
+
+    fetch : =>
+      parseBean = @parseBean
+      for key, def of @beans
+        for x in [0..1000]
+          @jmx.getBean def.domain, def.name, (bean) ->
+            parseBean(key, bean)
+
+    parseBean : (key, bean) =>
+      if bean?
+        values = {}
+        for attribute in bean.attributes
+          values[attribute.name] = attribute.value
+
+        @set(values)
