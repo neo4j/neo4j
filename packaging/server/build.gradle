@@ -73,6 +73,8 @@ dependencies {
 //    }
 }
 
+javadoc.classpath += project.sourceSets.test.compileClasspath
+
 sourceSets {
     integrationTest {
 //TODO rename webtest into integrationTest
