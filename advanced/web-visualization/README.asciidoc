@@ -1,0 +1,19 @@
+Neo4j Graph Visualization
+=========================
+
+This Neo4j Graph Visualization is designed to create a Vaadin
+component for visualizing a Neo4j graph database.
+
+Build & Test
+------------
+
+`mvn -Dcucumber.installGems=true cuke4duke:cucumber`
+
+
+Reference
+---------
+
+* http://vaadin.com/book[Book of Vaadin]
+* http://cukes.info[Cucumber BDD]
+* http://wiki.github.com/aslakhellesoy/cuke4duke[Cuke4Duke - Mavenized Cucumbers]
+
