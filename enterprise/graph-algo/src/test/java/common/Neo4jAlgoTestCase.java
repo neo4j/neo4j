@@ -23,6 +23,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -59,7 +60,9 @@ public abstract class Neo4jAlgoTestCase
     @BeforeClass
     public static void setUpGraphDb() throws Exception
     {
-        graphDb = new EmbeddedGraphDatabase( "target/var/algotest" );
+        String storeDir = "target/var/algotest";
+        deleteFileOrDirectory( new File( storeDir ) );
+        graphDb = new EmbeddedGraphDatabase( storeDir );
         graph = new SimpleGraphBuilder( graphDb, MyRelTypes.R1 );
     }
     
@@ -90,6 +93,26 @@ public abstract class Neo4jAlgoTestCase
         tx = graphDb.beginTx();
     }
 
+    public static void deleteFileOrDirectory( File file )
+    {
+        if ( !file.exists() )
+        {
+            return;
+        }
+
+        if ( file.isDirectory() )
+        {
+            for ( File child : file.listFiles() )
+            {
+                deleteFileOrDirectory( child );
+            }
+        }
+        else
+        {
+            file.delete();
+        }
+    }
+    
     protected void assertPathDef( Path path, String... names )
     {
         int i = 0;
