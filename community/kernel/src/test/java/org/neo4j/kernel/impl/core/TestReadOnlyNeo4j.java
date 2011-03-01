@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.fail;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.getStorePath;
 
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
@@ -30,40 +32,23 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
-import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.test.DbRepresentation;
 
-public class TestReadOnlyNeo4j extends AbstractNeo4jTestCase
+public class TestReadOnlyNeo4j
 {
+    private static final String PATH = getStorePath( "read-only" );
+
     @Test
     public void testSimple()
     {
-        GraphDatabaseService readGraphDb = new EmbeddedReadOnlyGraphDatabase( 
-            getStorePath( "neo-test" ) );
+        DbRepresentation someData = createSomeData();
+        GraphDatabaseService readGraphDb = new EmbeddedReadOnlyGraphDatabase( PATH );
+        assertEquals( someData, DbRepresentation.of( readGraphDb ) );
+
         Transaction tx = readGraphDb.beginTx();
-        int count = 0;
-        for ( Node node : readGraphDb.getAllNodes() )
-        {
-            for ( Relationship rel : node.getRelationships() )
-            {
-                rel.getOtherNode( node );
-                for ( String key : rel.getPropertyKeys() )
-                {
-                    rel.getProperty( key );
-                }
-            }
-            for ( String key : node.getPropertyKeys() )
-            {
-                node.getProperty( key );
-            }
-            if ( count++ >= 10 )
-            {
-                break;
-            }
-        }
-        tx.success();
-        tx.finish();
-        tx = readGraphDb.beginTx();
         try
         {
             readGraphDb.createNode();
@@ -76,21 +61,44 @@ public class TestReadOnlyNeo4j extends AbstractNeo4jTestCase
         readGraphDb.shutdown();
     }
     
+    private DbRepresentation createSomeData()
+    {
+        DynamicRelationshipType type = withName( "KNOWS" );
+        GraphDatabaseService db = new EmbeddedGraphDatabase( PATH );
+        Transaction tx = db.beginTx();
+        Node prevNode = db.getReferenceNode();
+        for ( int i = 0; i < 100; i++ )
+        {
+            Node node = db.createNode();
+            Relationship rel = prevNode.createRelationshipTo( node, type );
+            node.setProperty( "someKey" + i%10, i%15 );
+            rel.setProperty( "since", System.currentTimeMillis() );
+        }
+        tx.success();
+        tx.finish();
+        DbRepresentation result = DbRepresentation.of( db );
+        db.shutdown();
+        return result;
+    }
+
     @Test
     public void testReadOnlyOperationsAndNoTransaction()
     {
-        Node node1 = getGraphDb().createNode();
-        Node node2 = getGraphDb().createNode();
-        Relationship rel = node1.createRelationshipTo( node2, 
-                DynamicRelationshipType.withName( "TEST" ) );
+        GraphDatabaseService db = new EmbeddedGraphDatabase( PATH );
+
+        Transaction tx = db.beginTx();
+        Node node1 = db.createNode();
+        Node node2 = db.createNode();
+        Relationship rel = node1.createRelationshipTo( node2, withName( "TEST" ) );
         node1.setProperty( "key1", "value1" );
         rel.setProperty( "key1", "value1" );
-        commit();
+        tx.success();
+        tx.finish();
         
         // make sure write operations still throw exception
         try
         {
-            getGraphDb().createNode();
+            db.createNode();
             fail( "Write operation and no transaction should throw exception" );
         }
         catch ( NotInTransactionException e )
@@ -98,8 +106,7 @@ public class TestReadOnlyNeo4j extends AbstractNeo4jTestCase
         }
         try
         {
-            node1.createRelationshipTo( node2, 
-                    DynamicRelationshipType.withName( "TEST2" ) );
+            node1.createRelationshipTo( node2, withName( "TEST2" ) );
             fail( "Write operation and no transaction should throw exception" );
         }
         catch ( NotInTransactionException e )
@@ -124,13 +131,13 @@ public class TestReadOnlyNeo4j extends AbstractNeo4jTestCase
         }
         
         // clear caches and try reads
-        getEmbeddedGraphDb().getConfig().getGraphDbModule().
+        ((AbstractGraphDatabase)db).getConfig().getGraphDbModule().
             getNodeManager().clearCache();
         
-        assertEquals( node1, getGraphDb().getNodeById( node1.getId() ) );
-        assertEquals( node2, getGraphDb().getNodeById( node2.getId() ) );
-        assertEquals( rel, getGraphDb().getRelationshipById( rel.getId() ) );
-        getEmbeddedGraphDb().getConfig().getGraphDbModule().
+        assertEquals( node1, db.getNodeById( node1.getId() ) );
+        assertEquals( node2, db.getNodeById( node2.getId() ) );
+        assertEquals( rel, db.getRelationshipById( rel.getId() ) );
+        ((AbstractGraphDatabase)db).getConfig().getGraphDbModule().
             getNodeManager().clearCache();
         
         assertEquals( "value1", node1.getProperty( "key1" ) );

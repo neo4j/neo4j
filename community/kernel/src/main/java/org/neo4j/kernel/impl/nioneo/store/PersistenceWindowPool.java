@@ -63,6 +63,8 @@ class PersistenceWindowPool
     private int switches = 0;
     private int ooe = 0;
     private boolean useMemoryMapped = true;
+
+    private final boolean readOnly;
     
     /**
      * Create new pool for a store.
@@ -87,6 +89,7 @@ class PersistenceWindowPool
         this.fileChannel = fileChannel;
         this.availableMem = mappedMem;
         this.useMemoryMapped = useMemoryMappedBuffers;
+        this.readOnly = readOnly;
         if ( readOnly )
         {
             mapMode = FileChannel.MapMode.READ_ONLY;
@@ -240,7 +243,9 @@ class PersistenceWindowPool
 
     void flushAll()
     {
-//        synchronized ( activeRowWindows )
+        if ( readOnly ) return;
+
+        //        synchronized ( activeRowWindows )
 //        {
             for ( BrickElement element : brickArray )
             {
