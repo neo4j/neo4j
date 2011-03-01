@@ -29,7 +29,6 @@ define(
 
       flattenAttributes: (attributes, flattened=[], indent=1) =>
         for attr in attributes
-          console.log attr
           name = if attr.name? then attr.name else if attr.type? then attr.type else ""
           
           pushedAttr =
