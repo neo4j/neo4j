@@ -5,7 +5,6 @@ define ['neo4j/webadmin/templates/dashboard_info','lib/backbone'], (template) ->
     template : template
    
     initialize : (opts) =>
-      console.log(opts)
       @primitives = opts.primitives
       @diskUsage = opts.diskUsage
       @cacheUsage = opts.cacheUsage
