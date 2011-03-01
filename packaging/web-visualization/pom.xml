@@ -20,6 +20,8 @@
     <!-- for cucumber "feature" tests -->
     <cuke4duke.version>0.4.3</cuke4duke.version>
     <webdriver.version>0.9.7376</webdriver.version>
+    <pico.version>2.11.2</pico.version>
+
   </properties>
 
   <build>
@@ -162,7 +164,6 @@
           <jvmArgs>
             <jvmArg>-Xmx384m</jvmArg>
             <jvmArg>-Dlog4j.configuration=file:///${project.basedir}/target/test-classes/log4j.properties</jvmArg>
-            <jvmArg>-Dcuke4duke.objectFactory=cuke4duke.internal.jvmclass.SpringFactory</jvmArg>
             <jvmArg>-Dwebdriver.impl=${webdriver.impl.class}</jvmArg>
           </jvmArgs>
           <cucumberArgs>
@@ -285,6 +286,12 @@
       <groupId>cuke4duke</groupId>
       <artifactId>cuke4duke</artifactId>
       <version>${cuke4duke.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.picocontainer</groupId>
+      <artifactId>picocontainer</artifactId>
+      <version>${pico.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
