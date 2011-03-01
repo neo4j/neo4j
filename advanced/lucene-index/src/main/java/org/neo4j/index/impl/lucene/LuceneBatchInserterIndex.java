@@ -344,8 +344,8 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
 
     public void shutdown()
     {
-        closeWriter();
         closeSearcher();
+        closeWriter();
     }
     
     public void flush()
