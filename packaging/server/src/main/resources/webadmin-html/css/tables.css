@@ -37,7 +37,7 @@ table.data-table tr:nth-child(odd) td, table.data-table tr:nth-child(odd) th {
 table.data-table tr h3 {
   font-size: 16px;
   margin: 3px 0;
-  color: #eee;
+  color: #fff;
   text-shadow: 1px -1px 0 #73a650;
 }
 
