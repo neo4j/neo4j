@@ -1,1 +1,1 @@
-This is the base folder for the neo4j web-visualization project.
+This is the base folder for the neo4j git bweb-visualization project.

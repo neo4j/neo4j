@@ -1,0 +1,8 @@
+%ul
+  :each line in lines
+    %li = line
+
+  %li 
+    :if showPrompt
+      gremlin> 
+      %input#console-input(type="text" value="#{prompt}")
