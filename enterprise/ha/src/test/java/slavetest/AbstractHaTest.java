@@ -46,6 +46,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.BrokerFactory;
 
@@ -392,6 +393,7 @@ public abstract class AbstractHaTest
     @Test
     public void slaveCreateNode() throws Exception
     {
+        if ( Config.osIsWindows() ) return;
         setExpectedResults( 3, 2, 2, 2, 0, 0 );
         initializeDbs( 1 );
         executeJob( new CommonJobs.CreateSomeEntitiesJob(), 0 );
@@ -400,6 +402,7 @@ public abstract class AbstractHaTest
     @Test
     public void testMultipleSlaves() throws Exception
     {
+        if ( Config.osIsWindows() ) return;
         setExpectedResults( 2, 1, 1, 1, 0, 0 );
         initializeDbs( 3 );
         executeJob( new CommonJobs.CreateSubRefNodeJob( CommonJobs.REL_TYPE.name(), null, null ), 0 );
@@ -412,6 +415,7 @@ public abstract class AbstractHaTest
     @Test
     public void testMasterFailure() throws Exception
     {
+        if ( Config.osIsWindows() ) return;
         initializeDbs( 1 );
         Serializable[] result = executeJob( new CommonJobs.CreateSubRefNodeMasterFailJob(
                 getMasterShutdownDispatcher() ), 0 );
@@ -425,6 +429,7 @@ public abstract class AbstractHaTest
     @Test
     public void testSlaveConstraintViolation() throws Exception
     {
+        if ( Config.osIsWindows() ) return;
         setExpectedResults( 2, 1, 0, 1, 0, 0 );
         initializeDbs( 1 );
 
@@ -438,6 +443,7 @@ public abstract class AbstractHaTest
     @Test
     public void testMasterConstraintViolation() throws Exception
     {
+        if ( Config.osIsWindows() ) return;
         setExpectedResults( 2, 1, 1, 1, 0, 0 );
         initializeDbs( 1 );
 
@@ -452,6 +458,7 @@ public abstract class AbstractHaTest
     @Test
     public void testGetRelationships() throws Exception
     {
+        if ( Config.osIsWindows() ) return;
         setExpectedResults( 3, 2, 0, 0, 0, 0 );
         initializeDbs( 1 );
 
@@ -468,6 +475,7 @@ public abstract class AbstractHaTest
     @Test
     public void testNoTransaction() throws Exception
     {
+        if ( Config.osIsWindows() ) return;
         setExpectedResults( 2, 1, 0, 1, 0, 0 );
         initializeDbs( 1 );
 
@@ -480,6 +488,7 @@ public abstract class AbstractHaTest
     @Test
     public void testNodeDeleted() throws Exception
     {
+        if ( Config.osIsWindows() ) return;
         setExpectedResults( 1, 0, 0, 0, 0, 0 );
         initializeDbs( 1 );
 
@@ -494,6 +503,7 @@ public abstract class AbstractHaTest
     @Test
     public void testDeadlock() throws Exception
     {
+        if ( Config.osIsWindows() ) return;
         initializeDbs( 2 );
 
         Long[] nodes = executeJobOnMaster( new CommonJobs.CreateNodesJob( 2 ) );
@@ -516,6 +526,7 @@ public abstract class AbstractHaTest
     @Test
     public void createNodeAndIndex() throws Exception
     {
+        if ( Config.osIsWindows() ) return;
         setExpectedResults( 2, 0, 1, 0, 1, 0 );
         initializeDbs( 1 );
         executeJob( new CommonJobs.CreateNodeAndIndexJob( "name", "Neo" ), 0 );
@@ -524,6 +535,7 @@ public abstract class AbstractHaTest
     @Test
     public void indexingAndTwoSlaves() throws Exception
     {
+        if ( Config.osIsWindows() ) return;
         initializeDbs( 2 );
         long id = executeJobOnMaster( new CommonJobs.CreateNodeAndIndexJob( "name", "Morpheus" ) );
         pullUpdates();
@@ -536,6 +548,7 @@ public abstract class AbstractHaTest
     @Test
     public void testNewIndexFramework() throws Exception
     {
+        if ( Config.osIsWindows() ) return;
         setExpectedResults( 2, 0, 2, 0, 0, 2 );
         initializeDbs( 2 );
         long id = executeJobOnMaster( new CommonJobs.CreateNodeAndNewIndexJob( "users",
@@ -546,6 +559,7 @@ public abstract class AbstractHaTest
     @Test
     public void testLargeTransaction() throws Exception
     {
+        if ( Config.osIsWindows() ) return;
         initializeDbs( 1 );
         executeJob( new CommonJobs.LargeTransactionJob( 20, 1 ), 0 );
     }
@@ -553,6 +567,7 @@ public abstract class AbstractHaTest
     @Test
     public void testPullLargeTransaction() throws Exception
     {
+        if ( Config.osIsWindows() ) return;
         initializeDbs( 1 );
         executeJobOnMaster( new CommonJobs.LargeTransactionJob( 20, 1 ) );
         pullUpdates();
@@ -561,6 +576,7 @@ public abstract class AbstractHaTest
     @Test
     public void testLargeTransactionData() throws Exception
     {
+        if ( Config.osIsWindows() ) return;
         initializeDbs( 1 );
         executeJob( new CommonJobs.LargeTransactionJob( 1, 20 ), 0 );
     }
@@ -568,6 +584,7 @@ public abstract class AbstractHaTest
     @Test
     public void testPullLargeTransactionData() throws Exception
     {
+        if ( Config.osIsWindows() ) return;
         initializeDbs( 1 );
         executeJobOnMaster( new CommonJobs.LargeTransactionJob( 1, 20 ) );
         pullUpdates();
@@ -576,6 +593,7 @@ public abstract class AbstractHaTest
     @Test
     public void makeSureSlaveCanCopyLargeInitialDatabase() throws Exception
     {
+        if ( Config.osIsWindows() ) return;
         startUpMaster( MapUtil.stringMap() );
         executeJobOnMaster( new CommonJobs.LargeTransactionJob( 1, 60 ) );
         addDb( MapUtil.stringMap() );
@@ -586,6 +604,7 @@ public abstract class AbstractHaTest
     @Test
     public void canCopyInitialDbWithLuceneIndexes() throws Exception
     {
+        if ( Config.osIsWindows() ) return;
         int additionalNodeCount = 50;
         setExpectedResults( 1+additionalNodeCount, 0, additionalNodeCount*2, 0, 0, additionalNodeCount*2 );
         startUpMaster( MapUtil.stringMap() );

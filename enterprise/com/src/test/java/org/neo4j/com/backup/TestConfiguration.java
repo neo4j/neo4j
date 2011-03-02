@@ -29,21 +29,24 @@ import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 public class TestConfiguration
 {
+    private static final String SOURCE_DIR = "target/db";
     private static final String BACKUP_DIR = "target/full-backup";
     
     @Before
     public void before() throws Exception
     {
+        FileUtils.deleteDirectory( new File( SOURCE_DIR ) );
         FileUtils.deleteDirectory( new File( BACKUP_DIR ) );
     }
     
     private GraphDatabaseService newDb( String onlineBackupConfig )
     {
-        String path = "target/db";
+        String path = SOURCE_DIR;
         return onlineBackupConfig == null ?
                 new EmbeddedGraphDatabase( path ) :
                 new EmbeddedGraphDatabase( path, stringMap( ENABLE_ONLINE_BACKUP, onlineBackupConfig ) );
@@ -82,6 +85,7 @@ public class TestConfiguration
     @Test
     public void testEnableDefaultsInConfig() throws Exception
     {
+        if ( Config.osIsWindows() ) return;
         GraphDatabaseService db = newDb( "true" );
         OnlineBackup.from( "localhost" ).full( BACKUP_DIR );
         db.shutdown();
@@ -90,6 +94,7 @@ public class TestConfiguration
     @Test
     public void testEnableCustomPortInConfig() throws Exception
     {
+        if ( Config.osIsWindows() ) return;
         int customPort = 12345;
         GraphDatabaseService db = newDb( "port=" + customPort );
         try
