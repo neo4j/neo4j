@@ -146,6 +146,7 @@ html: manpages copyimages
 	#
 	#
 	a2x $(GENERAL_FLAGS) -L -f chunked -D $(BUILDDIR) --attribute docinfo1 --attribute=icons --doctype book --asciidoc-opts "--conf-file=$(CONFDIR)/asciidoc.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/docbook45.conf" --xsl-file=$(CONFDIR)/chunked.xsl --xsltproc-opts "--stringparam admon.graphics 1" --xsltproc-opts "--xinclude" --xsltproc-opts "--stringparam chunk.section.depth 1" $(SRCFILE)
+	[ -e $(CHUNKEDHTMLDIR) ] && rm -rf $(CHUNKEDHTMLDIR)
 	mv $(CHUNKEDTARGET) $(CHUNKEDHTMLDIR)
 	cp -fr $(SRCDIR)/js $(CHUNKEDHTMLDIR)/js
 
@@ -157,6 +158,7 @@ offline-html:  manpages copyimages
 	#
 	#
 	a2x $(GENERAL_FLAGS) -L -f chunked -D $(BUILDDIR) --attribute docinfo1 --attribute=icons --doctype book --asciidoc-opts "--conf-file=$(CONFDIR)/asciidoc.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/docbook45.conf" --xsl-file=$(CONFDIR)/chunked-offline.xsl --xsltproc-opts "--stringparam admon.graphics 1" --xsltproc-opts "--xinclude" --xsltproc-opts "--stringparam chunk.section.depth 1" $(SRCFILE)
+	[ -e $(CHUNKEDOFFLINEHTMLDIR) ] && rm -rf $(CHUNKEDOFFLINEHTMLDIR)
 	mv $(CHUNKEDTARGET) $(CHUNKEDOFFLINEHTMLDIR)
 	cp -fr $(SRCDIR)/js $(CHUNKEDOFFLINEHTMLDIR)/js
 
