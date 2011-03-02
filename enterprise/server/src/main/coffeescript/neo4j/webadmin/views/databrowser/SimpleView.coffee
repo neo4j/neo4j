@@ -1,31 +1,35 @@
 define(
-  ['neo4j/webadmin/templates/data/node',
-   'neo4j/webadmin/templates/data/relationship',
-   'neo4j/webadmin/templates/data/set',
-   'neo4j/webadmin/templates/data/notfound','lib/backbone'], 
-  (nodeTemplate, relationshipTemplate, setTemplate, notFoundTemplate) ->
+  ['./NodeView',
+   './RelationshipView',
+   './ListView',
+   'neo4j/webadmin/templates/databrowser/notfound',
+   'lib/backbone'], 
+  (NodeView, RelationshipView, ListView, notFoundTemplate) ->
   
     class SimpleView extends Backbone.View
 
       initialize : (options)->
+        
+        @nodeView = new NodeView
+        @relationshipView = new RelationshipView
+        @listView = new ListView
+
         @dataModel = options.dataModel
-        @dataModel.bind("change:item", @itemChanged)
+        @dataModel.bind("change", @render)
 
       render : =>
-        type = @dataModel.get("item").get("type")
+        type = @dataModel.get("type")
         switch type
           when "node"
-            template = nodeTemplate
+            view = @nodeView
           when "relationship"
-            template = relationshipTemplate
+            view = @relationshipView
           when "set"
-            template = setTemplate
+            view = @listView
           else
-            template = notFoundTemplate
+            $(@el).html(notFoundTemplate())
+            return this
+        view.setDataModel(@dataModel)
+        $(@el).html(view.render().el)
 
-        $(@el).html(template({ item : @dataModel.get("item").get("item") }))
-        return this
-
-      itemChanged : (ev) =>
-        @render()
 )

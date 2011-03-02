@@ -26,7 +26,7 @@
     child.__super__ = parent.prototype;
     return child;
   };
-  define(['neo4j/webadmin/data/Search', './databrowser/SimpleView', 'neo4j/webadmin/templates/databrowser', 'lib/backbone'], function(Search, SimpleView, template) {
+  define(['neo4j/webadmin/data/Search', './databrowser/SimpleView', 'neo4j/webadmin/templates/data/base', 'lib/backbone'], function(Search, SimpleView, template) {
     var DataBrowserView;
     return DataBrowserView = (function() {
       function DataBrowserView() {

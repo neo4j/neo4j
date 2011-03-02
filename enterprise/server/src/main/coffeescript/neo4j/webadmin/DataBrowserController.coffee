@@ -29,13 +29,13 @@ define(
 
 
       showNode : (node) =>
-        @dataModel.set({"item":new DataItem({item:node, type:"node"})})
+        @dataModel.set({"data":node, type:"node"})
 
       showRelationship : (relationship) =>
-        @dataModel.set({"item":new DataItem({item:relationship, type:"relationship"})})
+        @dataModel.set({"data":relationship, type:"relationship"})
      
       showNotFound : =>
-        @dataModel.set({"item":new DataItem({item:null, type:"not-found"})})
+        @dataModel.set({"data":null, type:"not-found"})
 
 
       nodeUri : (id) ->
