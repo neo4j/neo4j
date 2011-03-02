@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -46,6 +47,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.CommonFactories;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.LockReleaser;
@@ -139,6 +141,7 @@ public class TestXa extends AbstractNeo4jTestCase
         log = Logger
             .getLogger( "org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource" );
         log.setLevel( Level.OFF );
+        deleteFileOrDirectory( new File( path() ) );
         NeoStore.createStore( file( "neo" ), MapUtil.map(
                 IdGeneratorFactory.class, ID_GENERATOR_FACTORY ) );
         lockManager = getEmbeddedGraphDb().getConfig().getLockManager();
@@ -266,7 +269,7 @@ public class TestXa extends AbstractNeo4jTestCase
         {
             if ( nioFile.getName().startsWith( "nioneo_logical.log" ) )
             {
-                assertTrue( nioFile.delete() );
+                assertTrue( "Couldn't delete '" + nioFile.getPath() + "'", nioFile.delete() );
             }
         }
     }
@@ -289,18 +292,15 @@ public class TestXa extends AbstractNeo4jTestCase
 
     private void renameCopiedLogicalLog()
     {
-        File file = new File( file( "nioneo_logical.log.bak.1" ) );
-        if ( file.exists() )
+        for ( File file : new File( path() ).listFiles() )
         {
-            assertTrue( file.renameTo( new File( file( "nioneo_logical.log.1" ) ) ) );
+            if ( file.getName().contains( ".bak." ) )
+            {
+                String nameWithoutBak =
+                        file.getName().replaceAll( "\\.bak", "" );
+                assertTrue( file.renameTo( new File( file( nameWithoutBak ) ) ) );
+            }
         }
-        else
-        {
-            file = new File( file( "nioneo_logical.log.bak.2" ) );
-            assertTrue( file.renameTo( new File( file( "nioneo_logical.log.2" ) ) ) );
-        }
-        file = new File( file( "nioneo_logical.log.bak.active" ) );
-        assertTrue( file.renameTo( new File( file( "nioneo_logical.log.active" ) ) ) );
     }
 
     private void truncateLogicalLog( int size ) throws IOException
@@ -427,14 +427,17 @@ public class TestXa extends AbstractNeo4jTestCase
     private NeoStoreXaDataSource newNeoStore() throws InstantiationException,
             IOException
     {
-        return new NeoStoreXaDataSource( MapUtil.genericMap(
-                LockManager.class, lockManager,
-                LockReleaser.class, lockReleaser,
-                IdGeneratorFactory.class, ID_GENERATOR_FACTORY,
-                TxIdGenerator.class, TxIdGenerator.DEFAULT,
-                "store_dir", path(),
-                "neo_store", file( "neo" ),
-                "logical_log", file( "nioneo_logical.log" ) ) );
+        Map<Object, Object> config = new HashMap<Object, Object>();
+        config.putAll( Config.getDefaultParams() );
+        MapUtil.genericMap( config,
+            LockManager.class, lockManager,
+            LockReleaser.class, lockReleaser,
+            IdGeneratorFactory.class, ID_GENERATOR_FACTORY,
+            TxIdGenerator.class, TxIdGenerator.DEFAULT,
+            "store_dir", path(),
+            "neo_store", file( "neo" ),
+            "logical_log", file( "nioneo_logical.log" ) );
+        return new NeoStoreXaDataSource( config );
     }
 
     @Test
@@ -464,6 +467,7 @@ public class TestXa extends AbstractNeo4jTestCase
             "string2" );
         xaRes.end( xid, XAResource.TMSUCCESS );
         xaRes.prepare( xid );
+        ds.rotateLogicalLog();
         copyLogicalLog();
         xaCon.clearAllTransactions();
         ds.close();
@@ -680,12 +684,24 @@ public class TestXa extends AbstractNeo4jTestCase
         xaRes.commit( xid, true );
         long currentVersion = ds.getCurrentLogVersion();
         ds.rotateLogicalLog();
-        assertTrue( ds.getLogicalLog( currentVersion ) != null );
+        assertTrue( logicalLogExists( currentVersion ) );
         ds.rotateLogicalLog();
-        assertTrue( ds.getLogicalLog( currentVersion ) != null );
-        assertTrue( ds.getLogicalLog( currentVersion + 1 ) != null );
+        assertTrue( logicalLogExists( currentVersion ) );
+        assertTrue( logicalLogExists( currentVersion + 1 ) );
     }
 
+	private boolean logicalLogExists( long version ) throws IOException
+	{
+		ReadableByteChannel log = ds.getLogicalLog( version );
+		try
+		{
+			return log != null;
+		}
+		finally
+		{
+			log.close();
+		}
+	}
 
     @Test
     public void testApplyLogicalLog() throws Exception
