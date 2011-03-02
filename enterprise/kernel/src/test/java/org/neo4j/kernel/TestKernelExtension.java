@@ -19,32 +19,36 @@
  */
 package org.neo4j.kernel;
 
-interface KernelExtensionLoader
+import static org.junit.Assert.assertFalse;
+
+import org.junit.Test;
+import org.neo4j.kernel.DummyExtension.State;
+
+public final class TestKernelExtension extends KernelExtensionContractTest<DummyExtension.State, DummyExtension>
 {
-    void configureKernelExtensions();
-
-    void initializeIndexProviders();
-
-    void load();
-
-    KernelExtensionLoader DONT_LOAD = new KernelExtensionLoader()
+    public TestKernelExtension()
     {
-        @Override
-        public void load()
-        {
-            // do nothing
-        }
+        super( DummyExtension.EXTENSION_ID, DummyExtension.class );
+    }
 
-        @Override
-        public void initializeIndexProviders()
+    @Test
+    public void canDisableLoadingKernelExtensions() throws Exception
+    {
+        EmbeddedGraphDatabase graphdb = graphdb( "graphdb", /*loadExtensions=*/false );
+        try
         {
-            // do nothing
+            assertFalse( "Extensions were loaded despite configured not to",
+                    new DummyExtension().isLoaded( getExtensions( graphdb ) ) );
         }
+        finally
+        {
+            graphdb.shutdown();
+        }
+    }
 
-        @Override
-        public void configureKernelExtensions()
-        {
-            // do nothing
-        }
-    };
+    @Override
+    protected boolean isUnloaded( State state )
+    {
+        return state.unloaded;
+    }
 }

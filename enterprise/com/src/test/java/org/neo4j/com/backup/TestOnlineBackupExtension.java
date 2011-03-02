@@ -17,34 +17,28 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.com.backup;
 
-interface KernelExtensionLoader
+import java.util.Map;
+
+import org.neo4j.kernel.Config;
+import org.neo4j.kernel.KernelExtensionContractTest;
+
+public class TestOnlineBackupExtension extends KernelExtensionContractTest<BackupServer, OnlineBackupExtension>
 {
-    void configureKernelExtensions();
-
-    void initializeIndexProviders();
-
-    void load();
-
-    KernelExtensionLoader DONT_LOAD = new KernelExtensionLoader()
+    public TestOnlineBackupExtension()
     {
-        @Override
-        public void load()
-        {
-            // do nothing
-        }
+        super( OnlineBackupExtension.KEY, OnlineBackupExtension.class );
+    }
 
-        @Override
-        public void initializeIndexProviders()
+    @Override
+    protected Map<String, String> configuration( boolean shouldLoad )
+    {
+        Map<String, String> configuration = super.configuration( shouldLoad );
+        if ( shouldLoad )
         {
-            // do nothing
+            configuration.put( Config.ENABLE_ONLINE_BACKUP, "true" );
         }
-
-        @Override
-        public void configureKernelExtensions()
-        {
-            // do nothing
-        }
-    };
+        return configuration;
+    }
 }

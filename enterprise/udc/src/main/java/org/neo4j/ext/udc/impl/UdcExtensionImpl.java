@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 @Service.Implementation( KernelExtension.class )
 public class UdcExtensionImpl extends KernelExtension<UdcTimerTask> implements UdcProperties
 {
+    static final String KEY = "kernel udc";
     public static final String UDC_SOURCE_DISTRIBUTION_KEY = "neo4j.ext.udc.host";
     /**
      * Millisecond interval for subsequent updates.
@@ -66,7 +67,7 @@ public class UdcExtensionImpl extends KernelExtension<UdcTimerTask> implements U
      */
     public UdcExtensionImpl()
     {
-        super( "kernel udc" );
+        super( KEY );
     }
 
     private static Timer timer = new Timer( /*isDeamon=*/true );
