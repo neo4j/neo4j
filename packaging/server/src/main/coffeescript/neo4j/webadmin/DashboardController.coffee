@@ -25,12 +25,12 @@ define(
           cacheUsage : @getCacheUsage()
 
       getServerPrimitives : =>
-        @serverPrimitives ?= new ServerPrimitives( server : @appState.getServer(), pollingInterval : 2000 )
+        @serverPrimitives ?= new ServerPrimitives( server : @appState.getServer(), pollingInterval : 5000 )
 
       getDiskUsage : =>
-        @diskUsage ?= new DiskUsage( server : @appState.getServer(), pollingInterval : 2000 )
+        @diskUsage ?= new DiskUsage( server : @appState.getServer(), pollingInterval : 5000 )
 
       getCacheUsage : =>
-        @cacheUsage ?= new CacheUsage( server : @appState.getServer(), pollingInterval : 2000 )
+        @cacheUsage ?= new CacheUsage( server : @appState.getServer(), pollingInterval : 5000 )
 
 )
