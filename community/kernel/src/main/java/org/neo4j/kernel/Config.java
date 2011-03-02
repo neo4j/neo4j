@@ -77,6 +77,7 @@ public class Config
     public static final String NEO_STORE = "neo_store";
     public static final String CACHE_TYPE = "cache_type";
     public static final String TXMANAGER_IMPLEMENTATION = "tx_manager_impl";
+    static final String LOAD_EXTENSIONS = "load_kernel_extensions";
 
     private final AdaptiveCacheManager cacheManager;
     private final TxModule txModule;
@@ -265,7 +266,7 @@ public class Config
             }
         }
     }
-    
+
     public static Map<String, String> parseMapFromConfigValue( String name, String configValue )
     {
         Map<String, String> result = new HashMap<String, String>();
