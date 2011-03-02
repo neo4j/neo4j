@@ -43,7 +43,7 @@ import java.util.LinkedList;
  * records and size (you can calculate the position of a record by knowing the
  * id without using indexes or a translation table).
  * <p>
- * The int value returned by the {@link #nextId} may not be the lowest you
+ * The id returned from {@link #nextId} may not be the lowest
  * available id but will be one of the defragged ids if such exist or the next
  * new free id that has never been used.
  * <p>
@@ -54,8 +54,7 @@ import java.util.LinkedList;
  * The {@link #close()} method must always be invoked when done using an
  * generator (for this time). Failure to do will render the generator as
  * "sticky" and unusable next time you try to initialize a generator using the
- * same file. Also you can only have one <CODE>IdGenerator</CODE> instance per
- * id generator file at the same time.
+ * same file. There can only be one id generator instance per id generator file.
  * <p>
  * In case of disk/file I/O failure an <CODE>IOException</CODE> is thrown.
  */
@@ -69,7 +68,7 @@ public class IdGeneratorImpl implements IdGenerator
     private static final byte CLEAN_GENERATOR = (byte) 0;
     private static final byte STICKY_GENERATOR = (byte) 1;
     
-    public static final long INTEGER_MINUS_ONE = 4294967295L;
+    public static final long INTEGER_MINUS_ONE = 0xFFFFFFFFL;  // 4294967295L;
     
     // number of defragged ids to grab from file in batch (also used for write)
     private int grabSize = -1;
@@ -116,7 +115,9 @@ public class IdGeneratorImpl implements IdGenerator
      *            opened
      * @param grabSize
      *            The number of defragged ids to keep in memory
-     * @throws IOException
+     * @param max is the highest possible id to be returned by this id generator from
+     * {@link #nextId()}.
+     * @throws UnderlyingStorageException
      *             If no such file exist or if the id generator is sticky
      */
     public IdGeneratorImpl( String fileName, int grabSize, long max )
@@ -136,12 +137,13 @@ public class IdGeneratorImpl implements IdGenerator
     /**
      * Returns the next "free" id. If a defragged id exist it will be returned
      * else the next free id that hasn't been used yet is returned. If no id
-     * exist the capacity is exceeded (all int values >= 0 are taken) and a
-     * <CODE>IOException</CODE> will be thrown.
+     * exist the capacity is exceeded (all values <= max are taken) and a
+     * {@link UnderlyingStorageException} will be thrown.
      * 
      * @return The next free id
-     * @throws IOException
-     *             If the capacity is exceeded or closed generator
+     * @throws UnderlyingStorageException
+     *             If the capacity is exceeded
+     * @throws IllegalStateException if this id generator has been closed
      */
     public synchronized long nextId()
     {
@@ -226,13 +228,14 @@ public class IdGeneratorImpl implements IdGenerator
 
     /**
      * Sets the next free "high" id. This method should be called when an id
-     * generator has been rebuilt.
+     * generator has been rebuilt. {@code id} must not be higher than {@code max}.
      * 
      * @param id
      *            The next free id
      */
     public void setHighId( long id )
     {
+        assertIdWithinCapacity( id );
         nextFreeId.set( id );
     }
 

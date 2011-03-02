@@ -258,14 +258,14 @@ public class PropertyStore extends AbstractStore implements Store
         if ( record.inUse() )
         {
             long prevProp = record.getPrevProp();
-            long prevModifier = prevProp == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (prevProp&0xF00000000L) >> 28;
+            long prevModifier = prevProp == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (prevProp & 0xF00000000L) >> 28;
             
             long nextProp = record.getNextProp();
-            long nextModifier = nextProp == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (nextProp&0xF00000000L) >> 16;
+            long nextModifier = nextProp == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (nextProp & 0xF00000000L) >> 16;
             
             // [    ,   x] in use
             // [xxxx,    ] high prev prop bits
-            short inUseUnsignedByte = (short)((Record.IN_USE.byteValue()|prevModifier));
+            short inUseUnsignedByte = (short)((Record.IN_USE.byteValue() | prevModifier));
             
             // [    ,    ][    ,    ][xxxx,xxxx][xxxx,xxxx] type
             // [    ,    ][    ,xxxx][    ,    ][    ,    ] high next prop bits
@@ -373,9 +373,9 @@ public class PropertyStore extends AbstractStore implements Store
         
         // [    ,   x] in use
         // [xxxx,    ] high prev prop bits
-        byte inUseByte = buffer.get();
+        long inUseByte = buffer.get();
         
-        boolean inUse = (inUseByte&0x1) == Record.IN_USE.intValue();
+        boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
         if ( !inUse )
         {
             throw new InvalidRecordException( "Record[" + id + "] not in use" );
@@ -386,15 +386,15 @@ public class PropertyStore extends AbstractStore implements Store
         // [    ,    ][    ,xxxx][    ,    ][    ,    ] high next prop bits
         long typeInt = buffer.getInt();
         
-        record.setType( getEnumType( (int)typeInt&0xFFFF ) );
+        record.setType( getEnumType( (int)typeInt & 0xFFFF ) );
         record.setInUse( true );
         record.setKeyIndexId( buffer.getInt() );
         record.setPropBlock( buffer.getLong() );
         
         long prevProp = buffer.getUnsignedInt();
-        long prevModifier = prevProp == IdGeneratorImpl.INTEGER_MINUS_ONE && (inUseByte&0xF0) == 0 ? 0 : (inUseByte&0xF0) << 28;
+        long prevModifier = (inUseByte & 0xF0L) << 28;
         long nextProp = buffer.getUnsignedInt();
-        long nextModifier = nextProp == IdGeneratorImpl.INTEGER_MINUS_ONE && (typeInt&0xF0000) == 0 ? 0 : (typeInt&0xF0000) << 16;
+        long nextModifier = (typeInt & 0xF0000L) << 16;
         
         record.setPrevProp( longFromIntAndMod( prevProp, prevModifier ) );
         record.setNextProp( longFromIntAndMod( nextProp, nextModifier ) );
