@@ -37,6 +37,13 @@ public class VisualizationServlet extends AbstractApplicationServlet
         }
     }
 
+    @Override
+    public void destroy()
+    {
+        super.destroy();
+        graphDb.shutdown();
+    }
+
     public VisualizationServlet( GraphDatabaseService graphDb )
     {
         this.graphDb = graphDb;
