@@ -26,41 +26,21 @@
     child.__super__ = parent.prototype;
     return child;
   };
-  define(['./NodeView', './RelationshipView', './ListView', 'neo4j/webadmin/templates/databrowser/notfound', 'lib/backbone'], function(NodeView, RelationshipView, ListView, notFoundTemplate) {
-    var SimpleView;
-    return SimpleView = (function() {
-      function SimpleView() {
-        this.render = __bind(this.render, this);;        SimpleView.__super__.constructor.apply(this, arguments);
+  define(['neo4j/webadmin/templates/data/relationship', './PropertyContainerView', 'lib/backbone'], function(template, PropertyContainerView) {
+    var RelationshipView;
+    return RelationshipView = (function() {
+      function RelationshipView() {
+        this.initialize = __bind(this.initialize, this);;        RelationshipView.__super__.constructor.apply(this, arguments);
       }
-      __extends(SimpleView, Backbone.View);
-      SimpleView.prototype.initialize = function(options) {
-        this.nodeView = new NodeView;
-        this.relationshipView = new RelationshipView;
-        this.listView = new ListView;
-        this.dataModel = options.dataModel;
-        return this.dataModel.bind("change", this.render);
-      };
-      SimpleView.prototype.render = function() {
-        var type, view;
-        type = this.dataModel.get("type");
-        switch (type) {
-          case "node":
-            view = this.nodeView;
-            break;
-          case "relationship":
-            view = this.relationshipView;
-            break;
-          case "set":
-            view = this.listView;
-            break;
-          default:
-            $(this.el).html(notFoundTemplate());
-            return this;
+      __extends(RelationshipView, PropertyContainerView);
+      RelationshipView.prototype.initialize = function(opts) {
+        if (opts == null) {
+          opts = {};
         }
-        view.setDataModel(this.dataModel);
-        return $(this.el).html(view.render().el);
+        opts.template = template;
+        return RelationshipView.__super__.initialize.call(this, opts);
       };
-      return SimpleView;
+      return RelationshipView;
     })();
   });
 }).call(this);

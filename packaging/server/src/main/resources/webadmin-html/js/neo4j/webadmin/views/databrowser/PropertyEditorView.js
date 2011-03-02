@@ -26,21 +26,24 @@
     child.__super__ = parent.prototype;
     return child;
   };
-  define(['lib/backbone'], function() {
-    var DataBrowserState;
-    return DataBrowserState = (function() {
-      function DataBrowserState() {
-        this.initialize = __bind(this.initialize, this);;        DataBrowserState.__super__.constructor.apply(this, arguments);
+  define(['neo4j/webadmin/templates/data/propertyEditor', 'lib/backbone'], function(template) {
+    var PropertyEditorView;
+    return PropertyEditorView = (function() {
+      function PropertyEditorView() {
+        this.render = __bind(this.render, this);;
+        this.setDataModel = __bind(this.setDataModel, this);;        PropertyEditorView.__super__.constructor.apply(this, arguments);
       }
-      __extends(DataBrowserState, Backbone.Model);
-      DataBrowserState.prototype.defaults = {
-        type: null,
-        data: null
+      __extends(PropertyEditorView, Backbone.View);
+      PropertyEditorView.prototype.setDataModel = function(dataModel) {
+        return this.dataModel = dataModel;
       };
-      DataBrowserState.prototype.initialize = function(options) {
-        return this.server = options.server;
+      PropertyEditorView.prototype.render = function() {
+        $(this.el).html(template({
+          properties: []
+        }));
+        return this;
       };
-      return DataBrowserState;
+      return PropertyEditorView;
     })();
   });
 }).call(this);
