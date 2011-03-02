@@ -33,12 +33,12 @@
     <module>examples</module>
     <module>standalone</module>
   </modules>
-  
+
   <scm>
     <connection>scm:git:git://github.com/neo4j/server.git</connection>
     <developerConnection>scm:git:git@github.com:neo4j/server.git</developerConnection>
     <url>https://github.com/neo4j/server</url>
-  </scm>  
+  </scm>
 
   <licenses>
     <license>
@@ -71,6 +71,7 @@
 
   <profiles>
     <profile>
+      <id>manual</id>
       <activation>
         <property>
           <name>manual</name>
@@ -81,5 +82,15 @@
       </modules>
     </profile>
   </profiles>
+
+  <repositories>
+    <repository>
+      <id>neo4j-releases</id>
+      <url>http://m2.neo4j.org/releases</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
 
 </project>
