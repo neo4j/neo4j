@@ -29,11 +29,12 @@
       </activation>
       <dependencies>
         <dependency>
-          <groupId>com.sun</groupId>
-          <artifactId>tools</artifactId>
+          <groupId>com.sun.tools</groupId>
+          <artifactId>jconsole</artifactId>
           <version>1.6</version>
           <scope>system</scope>
           <systemPath>${java.home}/../lib/jconsole.jar</systemPath>
+          <optional>true</optional>
         </dependency>
       </dependencies>
     </profile>
@@ -44,11 +45,12 @@
       </activation>
       <dependencies>
         <dependency>
-          <groupId>com.sun</groupId>
-          <artifactId>tools</artifactId>
+          <groupId>com.sun.tools</groupId>
+          <artifactId>jconsole</artifactId>
           <version>1.6</version>
           <scope>system</scope>
           <systemPath>${java.home}\\..\\lib\\jconsole.jar</systemPath>
+          <optional>true</optional>
         </dependency>
       </dependencies>
     </profile>
