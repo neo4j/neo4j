@@ -31,9 +31,11 @@ import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 @Service.Implementation( KernelExtension.class )
 public final class ShellServerExtension extends KernelExtension<GraphDatabaseShellServer>
 {
+    static final String KEY = "shell";
+
     public ShellServerExtension()
     {
-        super( "shell" );
+        super( KEY );
     }
 
     @Override
