@@ -1,0 +1,355 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.neo4j.server.ext</groupId>
+  <artifactId>neo4j-visualization</artifactId>
+  <packaging>jar</packaging>
+  <version>0.1</version>
+  <name>Vaadin Widget</name>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+    <neo4j.version>1.3.M03</neo4j.version>
+    <vaadin.version>6.5.1</vaadin.version>
+
+    <junit.version>4.8.2</junit.version>
+    <hamcrest.version>1.1</hamcrest.version>
+
+    <!-- for cucumber "feature" tests -->
+    <cuke4duke.version>0.4.3</cuke4duke.version>
+    <webdriver.version>0.9.7376</webdriver.version>
+    <pico.version>2.11.2</pico.version>
+
+  </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>1.5</source>
+          <target>1.5</target>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>2.3.1</version>
+        <configuration>
+          <archive>
+            <index>true</index>
+            <manifest>
+              <addClasspath>true</addClasspath>
+              <!-- Implementation-Title and Implementation-Version come from the POM by default -->
+              <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+            </manifest>
+            <manifestEntries>
+              <!-- Package format version - do not change -->
+              <Vaadin-Package-Version>1</Vaadin-Package-Version>
+
+              <!-- Add-on specific fields to update -->
+
+              <!-- Implementation-Title and Implementation-Version come from the POM by default -->
+              <!--
+                <Implementation-Title>${pom.name}</Implementation-Title>
+                <Implementation-Version>${pom.version}</Implementation-Version>
+              -->
+
+              <!-- Comma-separated list of widgetsets in the package -->
+              <Vaadin-Widgetsets>org.neo4j.server.ext.visualization.gwt.MyWidgetSet</Vaadin-Widgetsets>
+            </manifestEntries>
+          </archive>
+        </configuration>
+      </plugin>
+
+      <!-- Compiles your custom GWT components with the GWT compiler -->
+      <!-- A hosted mode browser for client-side widget debugging can be run with the goal gwt:run after uncommenting the 
+        correct line below. A remote debugger can then be connected to port 8998. Note that e.g. a Jetty server should be running 
+        with the server side parts - use the goal jetty:run . -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>gwt-maven-plugin</artifactId>
+        <version>2.1.0-1</version>
+        <configuration>
+          <!-- if you don't specify any modules, the plugin will find them -->
+          <!-- <modules> <module>org.neo4j.server.ext.visualization.gwt.MyWidgetSet</module> </modules> -->
+          <webappDirectory>${project.build.directory}/${project.build.finalName}/VAADIN/widgetsets</webappDirectory>
+          <!-- On Mac running Snow Leopard, add "-d32" -->
+          <!-- This causes error messages (but build works) in phase "package": two processes would use the same debug 
+            port -->
+          <!--extraJvmArgs>-Xmx512M -Xss1024k -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=8998</extraJvmArgs -->
+          <extraJvmArgs>-Xmx512M -Xss1024k</extraJvmArgs>
+          <runTarget>neo4j-visualization</runTarget>
+          <hostedWebapp>${project.build.directory}/${project.build.finalName}</hostedWebapp>
+          <noServer>true</noServer>
+          <port>8080</port>
+          <soyc>false</soyc>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>resources</goal>
+              <goal>compile</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>com.vaadin</groupId>
+        <artifactId>vaadin-maven-plugin</artifactId>
+        <version>1.0.1</version>
+        <executions>
+          <execution>
+            <configuration>
+              <!-- if you don't specify any modules, the plugin will find them -->
+              <!-- <modules> <module>org.neo4j.server.ext.visualization.gwt.MyWidgetSet</module> </modules> -->
+            </configuration>
+            <goals>
+              <goal>update-widgetset</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- A simple Jetty test server at http://localhost:8080/neo4j-visualization can be launched with the Maven goal jetty:run 
+        and stopped with jetty:stop -->
+      <plugin>
+        <groupId>org.mortbay.jetty</groupId>
+        <artifactId>maven-jetty-plugin</artifactId>
+        <version>6.1.24</version>
+        <configuration>
+          <stopPort>9966</stopPort>
+          <stopKey>neo4j-visualization</stopKey>
+          <!-- Redeploy every x seconds if changes are detected, 0 for no automatic redeployment -->
+          <scanIntervalSeconds>0</scanIntervalSeconds>
+          <!-- make sure Jetty also finds the widgetset -->
+          <webAppConfig>
+            <contextPath>/neo4j-visualization</contextPath>
+            <baseResource implementation="org.mortbay.resource.ResourceCollection">
+              <!-- Workaround for Maven/Jetty issue http://jira.codehaus.org/browse/JETTY-680 -->
+              <!-- <resources>src/main/webapp,${project.build.directory}/${project.build.finalName}</resources> -->
+              <resourcesAsCSV>src/main/webapp,${project.build.directory}/${project.build.finalName}</resourcesAsCSV>
+            </baseResource>
+          </webAppConfig>
+        </configuration>
+        <executions>
+          <execution>
+            <id>start-jetty</id>
+            <phase>pre-integration-test</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <scanIntervalSeconds>0</scanIntervalSeconds>
+              <daemon>true</daemon>
+            </configuration>
+          </execution>
+          <execution>
+            <id>stop-jetty</id>
+            <phase>post-integration-test</phase>
+            <goals>
+              <goal>stop</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>cuke4duke</groupId>
+        <artifactId>cuke4duke-maven-plugin</artifactId>
+        <configuration>
+          <jvmArgs>
+            <jvmArg>-Xmx384m</jvmArg>
+            <jvmArg>-Dlog4j.configuration=file:///${project.basedir}/target/test-classes/log4j.properties</jvmArg>
+            <jvmArg>-Dwebdriver.impl=${webdriver.impl.class}</jvmArg>
+          </jvmArgs>
+          <cucumberArgs>
+            <cucumberArg>--verbose</cucumberArg>
+            <cucumberArg>--strict</cucumberArg>
+            <cucumberArg>--color</cucumberArg>
+            <cucumberArg>--require</cucumberArg>
+            <cucumberArg>${basedir}/target/test-classes</cucumberArg>
+          </cucumberArgs>
+          <gems>
+            <gem>install cuke4duke --version ${cuke4duke.version}</gem>
+          </gems>
+        </configuration>
+        <executions>
+          <execution>
+            <id>run-features</id>
+            <phase>integration-test</phase>
+            <goals>
+              <goal>cucumber</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+
+    <!-- This is needed for the sources required by the GWT compiler to be included in the produced JARs -->
+    <resources>
+      <resource>
+        <directory>src/main/java</directory>
+      </resource>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+    </resources>
+  </build>
+
+  <repositories>
+    <repository>
+      <id>vaadin-snapshots</id>
+      <url>http://oss.sonatype.org/content/repositories/vaadin-snapshots/</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+    <repository>
+      <id>vaadin-addons</id>
+      <url>http://maven.vaadin.com/vaadin-addons</url>
+    </repository>
+    <repository>
+      <id>codehaus</id>
+      <url>http://repository.codehaus.org</url>
+    </repository>
+    <repository>
+      <id>cukes</id>
+      <url>http://cukes.info/maven</url>
+    </repository>
+  </repositories>
+
+  <pluginRepositories>
+    <pluginRepository>
+      <id>codehaus-snapshots</id>
+      <url>http://nexus.codehaus.org/snapshots</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+    </pluginRepository>
+    <pluginRepository>
+      <id>vaadin-snapshots</id>
+      <url>http://oss.sonatype.org/content/repositories/vaadin-snapshots/</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+    </pluginRepository>
+    <pluginRepository>
+      <id>cukes</id>
+      <url>http://cukes.info/maven</url>
+    </pluginRepository>
+  </pluginRepositories>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>vaadin</artifactId>
+      <version>${vaadin.version}</version>
+    </dependency>
+    <!-- This is also used by gwt-maven-plugin to deduce GWT version number. -->
+    <dependency>
+      <groupId>com.google.gwt</groupId>
+      <artifactId>gwt-user</artifactId>
+      <version>2.1.1</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j</artifactId>
+      <version>${neo4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit-dep</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-all</artifactId>
+      <version>${hamcrest.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>cuke4duke</groupId>
+      <artifactId>cuke4duke</artifactId>
+      <version>${cuke4duke.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.picocontainer</groupId>
+      <artifactId>picocontainer</artifactId>
+      <version>${pico.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.seleniumhq.webdriver</groupId>
+      <artifactId>webdriver-htmlunit</artifactId>
+      <version>${webdriver.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.seleniumhq.webdriver</groupId>
+      <artifactId>webdriver-firefox</artifactId>
+      <version>${webdriver.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.seleniumhq.webdriver</groupId>
+      <artifactId>webdriver-ie</artifactId>
+      <version>${webdriver.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.seleniumhq.webdriver</groupId>
+      <artifactId>webdriver-support</artifactId>
+      <version>${webdriver.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+
+  </dependencies>
+
+  <profiles>
+    <profile>
+      <id>firefox</id>
+      <properties>
+        <webdriver.impl.class>org.openqa.selenium.firefox.FirefoxDriver</webdriver.impl.class>
+      </properties>
+    </profile>
+    <profile>
+      <id>htmlunit</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <webdriver.impl.class>org.openqa.selenium.htmlunit.HtmlUnitDriver</webdriver.impl.class>
+      </properties>
+    </profile>
+    <profile>
+      <id>chrome</id>
+      <properties>
+        <webdriver.impl.class>org.openqa.selenium.chrome.ChromeDriver</webdriver.impl.class>
+      </properties>
+    </profile>
+    <profile>
+      <id>ie</id>
+      <properties>
+        <webdriver.impl.class>org.openqa.selenium.ie.InternetExplorerDriver</webdriver.impl.class>
+      </properties>
+    </profile>
+  </profiles>
+
+</project>
