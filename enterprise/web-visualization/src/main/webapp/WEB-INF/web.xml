@@ -1,27 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://java.sun.com/xml/ns/javaee" xmlns:web="http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" id="WebApp_ID" version="2.5">
-    <display-name>Vaadin Widget Test Application</display-name>
-    <context-param>
-        <description>Vaadin production mode</description>
-        <param-name>productionMode</param-name>
-        <param-value>false</param-value>
-    </context-param>
-    <servlet>
-        <servlet-name>Vaadin Application Servlet</servlet-name>
-        <servlet-class>com.vaadin.terminal.gwt.server.ApplicationServlet</servlet-class>
-        <init-param>
-            <description>Vaadin application class to start</description>
-            <param-name>application</param-name>
-            <param-value>org.neo4j.server.ext.visualization.WidgetTestApplication</param-value>
-        </init-param>
-        <init-param>
-            <description>Application widgetset</description>
-            <param-name>widgetset</param-name>
-            <param-value>org.neo4j.server.ext.visualization.gwt.MyWidgetSet</param-value>
-        </init-param>
-    </servlet>
-    <servlet-mapping>
-        <servlet-name>Vaadin Application Servlet</servlet-name>
-        <url-pattern>/*</url-pattern>
-    </servlet-mapping>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://java.sun.com/xml/ns/javaee"
+         xmlns:web="http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+         id="WebApp_ID" version="2.5">
+  <display-name>Vaadin Widget Test Application</display-name>
+  <context-param>
+    <description>Vaadin production mode</description>
+    <param-name>productionMode</param-name>
+    <param-value>false</param-value>
+  </context-param>
+  <servlet>
+    <servlet-name>Vaadin Application Servlet</servlet-name>
+    <servlet-class>org.neo4j.server.ext.visualization.VisualizationServlet</servlet-class>
+    <init-param>
+      <description>Location of Neo4j database to visualize</description>
+      <param-name>org.neo4j.server.database.location</param-name>
+      <param-value>/tmp/neo4j/vaadingraphdb</param-value>
+    </init-param>
+    <init-param>
+      <description>Application widgetset</description>
+      <param-name>widgetset</param-name>
+      <param-value>org.neo4j.server.ext.visualization.gwt.MyWidgetSet</param-value>
+    </init-param>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>Vaadin Application Servlet</servlet-name>
+    <url-pattern>/*</url-pattern>
+  </servlet-mapping>
 </web-app>
