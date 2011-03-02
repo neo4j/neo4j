@@ -32,12 +32,12 @@ public class TestOnlineBackupExtension extends KernelExtensionContractTest<Backu
     }
 
     @Override
-    protected Map<String, String> configuration( boolean shouldLoad )
+    protected Map<String, String> configuration( boolean shouldLoad, int instance )
     {
-        Map<String, String> configuration = super.configuration( shouldLoad );
+        Map<String, String> configuration = super.configuration( shouldLoad, instance );
         if ( shouldLoad )
         {
-            configuration.put( Config.ENABLE_ONLINE_BACKUP, "true" );
+            configuration.put( Config.ENABLE_ONLINE_BACKUP, "port=" + ( BackupServer.DEFAULT_PORT + instance ) );
         }
         return configuration;
     }
