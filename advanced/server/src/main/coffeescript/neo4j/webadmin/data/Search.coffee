@@ -21,5 +21,4 @@ define ["./NodeSearcher", "./RelationshipSearcher"], (NodeSearcher, Relationship
       for searcher in @searchers
         if searcher.match statement
           return searcher
-      
 
