@@ -99,7 +99,7 @@ public class CleaningNeoServer extends NeoServerWithEmbeddedWebServer {
     private void secureDelete(File f) {
         boolean success = f.delete();
         if (!success) {
-            throw new RuntimeException("Failed to delete the temporary database");
+            throw new RuntimeException("Failed to delete the temporary database (file " + f.getAbsolutePath() + ")" );
         }
     }
 

@@ -19,19 +19,21 @@
  */
 package org.neo4j.server;
 
-import java.io.BufferedWriter;
+import java.io.Closeable;
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Random;
 
 public class ServerTestUtils
 {
-
     public static File createTempDir() throws IOException
     {
-
         File d = File.createTempFile( "neo4j-test", "dir" );
         if ( !d.delete() )
         {
@@ -49,47 +51,83 @@ public class ServerTestUtils
         return createTempPropertyFile( createTempDir() );
     }
 
-    public static void writePropertiesToFile( String outerPropertyName, Map<String, String> properties, File propertyFile ) {
+    public static void writePropertiesToFile( String outerPropertyName, Map<String, String> properties, File propertyFile )
+    {
+        writePropertyToFile( outerPropertyName, asOneLine( properties ), propertyFile );
+    }
+    
+    private static String asOneLine( Map<String, String> properties )
+    {
+        StringBuilder builder = new StringBuilder();
+        for ( Map.Entry<String, String> property : properties.entrySet() )
+        {
+            builder.append( (builder.length() > 0 ? "," : "") );
+            builder.append( property.getKey() + "=" + property.getValue() );
+        }
+        return builder.toString();
+    }
+
+    public static void writePropertyToFile( String name, String value, File propertyFile )
+    {
+        Properties properties = loadProperties( propertyFile );
+        properties.setProperty( name, value );
+        storeProperties( propertyFile, properties );
+    }
+
+    private static void storeProperties( File propertyFile,
+        Properties properties )
+    {
+        OutputStream out = null;
         try
         {
-            FileWriter fstream = new FileWriter( propertyFile, true );
-            BufferedWriter out = new BufferedWriter( fstream );
-            out.write( outerPropertyName );
-            out.write( "=" );
-            
-            int count = 0;
-            for(String key : properties.keySet()) {
-                out.write(key);
-                out.write("=");
-                out.write(properties.get(key));
-                if(count != properties.size() -1) {
-                    out.write(",");
-                }
-                count ++;
-            }
-            
-            out.write( System.getProperty( "line.separator" ) );
-            out.close();
-        } catch ( IOException e )
+            out = new FileOutputStream( propertyFile );
+            properties.store( out, "" );
+        }
+        catch ( IOException e )
         {
             throw new RuntimeException( e );
         }
+        finally
+        {
+            safeClose( out );
+        }
     }
-    
-    public static void writePropertyToFile( String name, String value, File propertyFile )
+
+    private static Properties loadProperties( File propertyFile )
     {
-        try
+        Properties properties = new Properties();
+        if ( propertyFile.exists() )
         {
-            FileWriter fstream = new FileWriter( propertyFile, true );
-            BufferedWriter out = new BufferedWriter( fstream );
-            out.write( name );
-            out.write( "=" );
-            out.write( value );
-            out.write( System.getProperty( "line.separator" ) );
-            out.close();
-        } catch ( IOException e )
+            InputStream in = null;
+            try
+            {
+                in = new FileInputStream( propertyFile );
+                properties.load( in );
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+            finally
+            {
+                safeClose( in );
+            }
+        }
+        return properties;
+    }
+
+    private static void safeClose( Closeable closeable )
+    {
+        if ( closeable != null )
         {
-            throw new RuntimeException( e );
+            try
+            {
+                closeable.close();
+            }
+            catch ( IOException e )
+            {
+                e.printStackTrace();
+            }
         }
     }
 
