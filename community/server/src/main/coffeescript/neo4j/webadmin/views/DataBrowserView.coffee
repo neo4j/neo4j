@@ -1,6 +1,6 @@
 define(
   ['neo4j/webadmin/data/Search',
-   'neo4j/webadmin/data/SimpleView',
+   './databrowser/SimpleView',
    'neo4j/webadmin/templates/databrowser','lib/backbone'], 
   (Search, SimpleView, template) ->
 
