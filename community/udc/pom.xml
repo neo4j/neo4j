@@ -148,7 +148,7 @@
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
       <version>1.3-SNAPSHOT</version>
-      <classifier>test</classifier>
+      <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
  </dependencies>
