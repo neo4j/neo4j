@@ -41,13 +41,29 @@ public class Neo4jPropertiesMustExistRule implements StartupHealthCheckRule
         String configFilename = properties.getProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY);
 
         Properties configProperties = new Properties();
+        FileInputStream inputStream = null;
         try
         {
-            configProperties.load( new FileInputStream( configFilename ) );
-        } catch ( IOException e )
+            inputStream = new FileInputStream( configFilename );
+            configProperties.load( inputStream );
+        }
+        catch ( IOException e )
         {
             failureMessage = String.format("Failed to load configuration properties from [%s]", configFilename);
             return false;
+        }
+        finally
+        {
+            if ( inputStream != null )
+            {
+                try
+                {
+                    inputStream.close();
+                }
+                catch ( IOException e )
+                {   // Couldn't close it
+                }
+            }
         }
 
         String configuredDatabaseMode = configProperties.getProperty( Configurator.DB_MODE_KEY, "unspecified");
