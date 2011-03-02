@@ -162,6 +162,11 @@
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-udc</artifactId>
+      <version>${neo4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
       <artifactId>neo4j</artifactId>
       <version>${neo4j.version}</version>
       <exclusions>
