@@ -1,5 +1,7 @@
 package org.neo4j.server.ext.visualization;
 
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.server.ext.visualization.graph.VisualGraphDatabase;
 import org.neo4j.server.ext.visualization.gwt.client.VGraphComponent;
 
 import com.vaadin.terminal.PaintException;
@@ -12,6 +14,13 @@ import com.vaadin.ui.ClientWidget;
  */
 @ClientWidget(VGraphComponent.class)
 public class GraphComponent extends AbstractComponent {
+
+    private VisualGraphDatabase visualGraph;
+
+    public GraphComponent( GraphDatabaseService graphDb )
+    {
+        this.visualGraph = new VisualGraphDatabase( graphDb );
+    }
 
     @Override
     public void paintContent(PaintTarget target) throws PaintException {
