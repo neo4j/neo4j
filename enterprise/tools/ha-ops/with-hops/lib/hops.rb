@@ -1,0 +1,3 @@
+module Hops
+  # Your code goes here...
+end
