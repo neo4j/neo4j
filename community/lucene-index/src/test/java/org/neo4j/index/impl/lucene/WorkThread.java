@@ -68,11 +68,6 @@ public class WorkThread extends BaseWorker
         queueCommand( new RollbackCommand() );
     }
 
-    public boolean hasException()
-    {
-        return exception != null;
-    }
-
     public void die()
     {
         queueCommand( new DieCommand() );
