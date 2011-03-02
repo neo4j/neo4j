@@ -23,7 +23,7 @@
     <connection>scm:git:git://github.com/neo4j/graphdb.git</connection>
     <developerConnection>scm:git:git@github.com:neo4j/graphdb.git</developerConnection>
     <url>https://github.com/neo4j/graphdb</url>
-  </scm>  
+  </scm>
 
   <modules>
     <module>kernel</module>
@@ -36,6 +36,15 @@
     <module>neo4j</module>
   </modules>
 
+  <build>
+    <extensions>
+      <extension>
+        <groupId>org.apache.maven.wagon</groupId>
+         <artifactId>wagon-ssh-external</artifactId>
+         <version>1.0-beta-6</version>
+      </extension>
+    </extensions>
+  </build>
 
   <licenses>
     <license>
