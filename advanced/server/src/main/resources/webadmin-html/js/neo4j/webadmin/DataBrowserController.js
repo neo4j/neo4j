@@ -67,26 +67,20 @@
       };
       DataBrowserController.prototype.showNode = function(node) {
         return this.dataModel.set({
-          "item": new DataItem({
-            item: node,
-            type: "node"
-          })
+          "data": node,
+          type: "node"
         });
       };
       DataBrowserController.prototype.showRelationship = function(relationship) {
         return this.dataModel.set({
-          "item": new DataItem({
-            item: relationship,
-            type: "relationship"
-          })
+          "data": relationship,
+          type: "relationship"
         });
       };
       DataBrowserController.prototype.showNotFound = function() {
         return this.dataModel.set({
-          "item": new DataItem({
-            item: null,
-            type: "not-found"
-          })
+          "data": null,
+          type: "not-found"
         });
       };
       DataBrowserController.prototype.nodeUri = function(id) {
