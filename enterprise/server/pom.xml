@@ -69,7 +69,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>server-api</artifactId>
-      <version>1.3-SNAPSHOT</version>
+      <version>${neo4j.version}</version>
     </dependency>
 
     <dependency>
@@ -78,6 +78,12 @@
       <version>${neo4j.version}</version>
       <classifier>tests</classifier>
       <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j.server.ext</groupId>
+      <artifactId>neo4j-visualization</artifactId>
+      <version>${neo4j.version}</version>
     </dependency>
 
     <dependency>
