@@ -52,7 +52,7 @@ public class VGraphComponent extends Widget implements Paintable {
 
         // TODO replace dummy code with actual component logic
         getElement().setInnerHTML("Look! A pretty graph!");
-        
+
     }
 
 }
