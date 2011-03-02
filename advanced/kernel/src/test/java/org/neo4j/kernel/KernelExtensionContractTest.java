@@ -56,9 +56,9 @@ public abstract class KernelExtensionContractTest<S, X extends KernelExtension<S
         this.key = key;
     }
 
-    EmbeddedGraphDatabase graphdb( String name, boolean loadExtensions )
+    EmbeddedGraphDatabase graphdb( String name, boolean loadExtensions, int instance )
     {
-        Map<String, String> config = configuration( true );
+        Map<String, String> config = configuration( true, instance );
         config.put( Config.LOAD_EXTENSIONS, Boolean.toString( loadExtensions ) );
         return new EmbeddedGraphDatabase( target.directory( name, true ).getAbsolutePath(), config );
     }
@@ -71,9 +71,11 @@ public abstract class KernelExtensionContractTest<S, X extends KernelExtension<S
      *            extension load should be created, <code>false</code> if
      *            configuration that makes the extension not load should be
      *            created.
+     * @param instance used for differentiating multiple instances that will run
+     *            simultaneously.
      * @return configuration for an {@link EmbeddedGraphDatabase} that
      */
-    protected Map<String, String> configuration( boolean shouldLoad )
+    protected Map<String, String> configuration( boolean shouldLoad, int instance )
     {
         return MapUtil.stringMap();
     }
@@ -212,7 +214,7 @@ public abstract class KernelExtensionContractTest<S, X extends KernelExtension<S
     @Test
     public void canLoadKernelExtension() throws Exception
     {
-        EmbeddedGraphDatabase graphdb = graphdb( "graphdb", /*loadExtensions=*/true );
+        EmbeddedGraphDatabase graphdb = graphdb( "graphdb", /*loadExtensions=*/true, 0 );
         try
         {
             assertTrue( "Failed to load extension", isLoadedOk( getExtensions( graphdb ) ) );
@@ -226,10 +228,10 @@ public abstract class KernelExtensionContractTest<S, X extends KernelExtension<S
     @Test
     public void sameInstanceCanLoadWithMultipleKernels() throws Exception
     {
-        EmbeddedGraphDatabase graphdb1 = graphdb( "graphdb1", /*loadExtensions=*/false );
+        EmbeddedGraphDatabase graphdb1 = graphdb( "graphdb1", /*loadExtensions=*/false, 1 );
         try
         {
-            EmbeddedGraphDatabase graphdb2 = graphdb( "graphdb2", /*loadExtensions=*/false );
+            EmbeddedGraphDatabase graphdb2 = graphdb( "graphdb2", /*loadExtensions=*/false, 2 );
             try
             {
                 KernelData extensions1 = getExtensions( graphdb1 ), extensions2 = getExtensions( graphdb2 );

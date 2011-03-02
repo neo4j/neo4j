@@ -34,7 +34,7 @@ public final class TestKernelExtension extends KernelExtensionContractTest<Dummy
     @Test
     public void canDisableLoadingKernelExtensions() throws Exception
     {
-        EmbeddedGraphDatabase graphdb = graphdb( "graphdb", /*loadExtensions=*/false );
+        EmbeddedGraphDatabase graphdb = graphdb( "graphdb", /*loadExtensions=*/false, 0 );
         try
         {
             assertFalse( "Extensions were loaded despite configured not to",
