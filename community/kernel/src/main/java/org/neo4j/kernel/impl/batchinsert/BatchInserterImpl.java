@@ -39,6 +39,7 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -135,6 +136,10 @@ public class BatchInserterImpl implements BatchInserter
         if ( id < 0 || id > MAX_NODE_ID )
         {
             throw new IllegalArgumentException( "id=" + id );
+        }
+        if ( id == IdGeneratorImpl.INTEGER_MINUS_ONE )
+        {
+            throw new IllegalArgumentException( "id " + id + " is reserved for internal use" );
         }
         long nodeId = id;
         NodeStore nodeStore = neoStore.getNodeStore();

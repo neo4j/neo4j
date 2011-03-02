@@ -162,12 +162,12 @@ public class NodeStore extends AbstractStore implements Store
     {
         Buffer buffer = window.getOffsettedBuffer( id );
         
-        // mask        1 will get in use bit
-        // mask     1110 will get 3 higher bits for rel id
-        // mask 11110000 will get 4 higher bits for prop id
+        // [    ,   x] in use bit
+        // [    ,xxx ] higher bits for rel id
+        // [xxxx,    ] higher bits for prop id
         long inUseByte = buffer.get();
         
-        boolean inUse = (inUseByte&0x1) == Record.IN_USE.intValue();
+        boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
         if ( !inUse )
         {
             if ( check )
@@ -180,9 +180,8 @@ public class NodeStore extends AbstractStore implements Store
         long nextRel = buffer.getUnsignedInt();
         long nextProp = buffer.getUnsignedInt();
         
-        // The int value -1 (2^32 - 1) is the magic minus one which denotes the end of f.ex. a chain
-        long relModifier = nextRel == IdGeneratorImpl.INTEGER_MINUS_ONE && (inUseByte&0xE) == 0 ? 0 : (inUseByte&0xE) << 31;
-        long propModifier = nextProp == IdGeneratorImpl.INTEGER_MINUS_ONE && (inUseByte&0xF0) == 0 ? 0 : (inUseByte&0xF0) << 28;
+        long relModifier = (inUseByte & 0xEL) << 31;
+        long propModifier = (inUseByte & 0xF0L) << 28;
         
         NodeRecord nodeRecord = new NodeRecord( id );
         nodeRecord.setInUse( inUse );
@@ -200,13 +199,13 @@ public class NodeStore extends AbstractStore implements Store
             long nextRel = record.getNextRel();
             long nextProp = record.getNextProp();
             
-            short relModifier = nextRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (short)((nextRel&0x700000000L) >> 31);
-            short propModifier = nextProp == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (short)((nextProp&0xF00000000L) >> 28);
+            short relModifier = nextRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (short)((nextRel & 0x700000000L) >> 31);
+            short propModifier = nextProp == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (short)((nextProp & 0xF00000000L) >> 28);
 
             // [    ,   x] in use bit
             // [    ,xxx ] higher bits for rel id
             // [xxxx,    ] higher bits for prop id
-            short inUseUnsignedByte = (short)((Record.IN_USE.byteValue()|relModifier|propModifier));
+            short inUseUnsignedByte = (short)((Record.IN_USE.byteValue() | relModifier | propModifier));
             buffer.put( (byte)inUseUnsignedByte ).putInt( (int) nextRel ).putInt( (int) nextProp );
         }
         else
