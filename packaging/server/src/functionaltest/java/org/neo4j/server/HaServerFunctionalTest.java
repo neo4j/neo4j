@@ -34,6 +34,7 @@ import org.junit.Test;
 import org.junit.rules.TestName;
 import org.neo4j.ha.LocalhostZooKeeperCluster;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.Config;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.test.TargetDirectory;
 
@@ -61,6 +62,7 @@ public class HaServerFunctionalTest
     @BeforeClass
     public static void startZooKeeper()
     {
+        if ( Config.osIsWindows() ) return;
         zooKeeper = new LocalhostZooKeeperCluster( dir, ZOOKEEPER_PORTS );
     }
 
@@ -84,12 +86,14 @@ public class HaServerFunctionalTest
     @Test
     public void canStartUpServerCluster() throws Exception
     {
+        if ( Config.osIsWindows() ) return;
         cluster = new ServerCluster( testName.getMethodName(), dir, zooKeeper, SERVER_PORTS );
     }
 
     @Test
     public void canWriteToOneServerInTheClusterAndReadFromAnother() throws Exception
     {
+        if ( Config.osIsWindows() ) return;
         cluster = new ServerCluster( testName.getMethodName(), dir, zooKeeper, SERVER_PORTS );
         URI base = cluster.getRandomServerUri();
         
@@ -103,6 +107,7 @@ public class HaServerFunctionalTest
     public void canWriteToOneServerInTheClusterThenReadFromAnotherAfterShuttingDownTheWriteServer()
             throws Exception
     {
+        if ( Config.osIsWindows() ) return;
         cluster = new ServerCluster( testName.getMethodName(), dir, zooKeeper, SERVER_PORTS );
         URI base = cluster.getRandomServerUri();
         
