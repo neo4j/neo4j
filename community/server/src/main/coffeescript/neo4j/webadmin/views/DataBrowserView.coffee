@@ -1,7 +1,7 @@
 define(
   ['neo4j/webadmin/data/Search',
    './databrowser/SimpleView',
-   'neo4j/webadmin/templates/databrowser','lib/backbone'], 
+   'neo4j/webadmin/templates/data/base','lib/backbone'], 
   (Search, SimpleView, template) ->
 
     class DataBrowserView extends Backbone.View
