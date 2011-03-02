@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.KernelExtensionContractTest;
+import org.neo4j.shell.StartClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 public class TestShellServerExtension extends
@@ -34,12 +35,12 @@ public class TestShellServerExtension extends
     }
 
     @Override
-    protected Map<String, String> configuration( boolean shouldLoad )
+    protected Map<String, String> configuration( boolean shouldLoad, int instance )
     {
-        Map<String, String> configuration = super.configuration( shouldLoad );
+        Map<String, String> configuration = super.configuration( shouldLoad, instance );
         if ( shouldLoad )
         {
-            configuration.put( Config.ENABLE_REMOTE_SHELL, "true" );
+            configuration.put( Config.ENABLE_REMOTE_SHELL, StartClient.ARG_NAME + "=neo4j-shell-" + instance );
         }
         return configuration;
     }
