@@ -223,14 +223,13 @@ public class XaLogicalLog
 
     private void instantiateCorrectWriteBuffer() throws IOException
     {
-        if ( !useMemoryMapped )
-        {
-            writeBuffer = new DirectMappedLogBuffer( fileChannel );
-        }
-        else
-        {
-            writeBuffer = new MemoryMappedLogBuffer( fileChannel );
-        }
+        writeBuffer = instantiateCorrectWriteBuffer( fileChannel );
+    }
+
+	private LogBuffer instantiateCorrectWriteBuffer( FileChannel channel ) throws IOException
+    {
+        return useMemoryMapped ? new MemoryMappedLogBuffer( channel ) :
+                new DirectMappedLogBuffer( channel );
     }
 
     private void safeDeleteFile( File file )
@@ -267,7 +266,7 @@ public class XaLogicalLog
         fileChannel = new RandomAccessFile( fileToOpen, "rw" ).getChannel();
         if ( fileChannel.size() != 0 )
         {
-            nonCleanShutdown  = true;
+            nonCleanShutdown = true;
             doInternalRecovery( fileToOpen );
         }
         else
@@ -1383,7 +1382,7 @@ public class XaLogicalLog
         }
         LogEntry entry;
         // Set<Integer> startEntriesWritten = new HashSet<Integer>();
-        LogBuffer newLogBuffer = new MemoryMappedLogBuffer( newLog );
+        LogBuffer newLogBuffer = instantiateCorrectWriteBuffer( newLog );
         while ((entry = LogIoUtils.readEntry( buffer, fileChannel, cf )) != null )
         {
             if ( xidIdentMap.get( entry.getIdentifier() ) != null )

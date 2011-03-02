@@ -54,7 +54,7 @@ public class TestRWLock
         }
         try
         {
-            lm.releaseReadLock( null );
+            lm.releaseReadLock( null, null );
             fail( "Null parameter should throw exception" );
         }
         catch ( Exception e )
@@ -63,7 +63,7 @@ public class TestRWLock
         }
         try
         {
-            lm.releaseWriteLock( null );
+            lm.releaseWriteLock( null , null);
             fail( "Null parameter should throw exception" );
         }
         catch ( Exception e )
@@ -74,7 +74,7 @@ public class TestRWLock
         Object entity = new Object();
         try
         {
-            lm.releaseWriteLock( entity );
+            lm.releaseWriteLock( entity , null);
             fail( "Invalid release should throw exception" );
         }
         catch ( Exception e )
@@ -83,7 +83,7 @@ public class TestRWLock
         }
         try
         {
-            lm.releaseReadLock( entity );
+            lm.releaseReadLock( entity, null );
             fail( "Invalid release should throw exception" );
         }
         catch ( Exception e )
@@ -94,35 +94,35 @@ public class TestRWLock
         lm.getReadLock( entity );
         try
         {
-            lm.releaseWriteLock( entity );
+            lm.releaseWriteLock( entity , null );
             fail( "Invalid release should throw exception" );
         }
         catch ( Exception e )
         {
             // good
         }
-        lm.releaseReadLock( entity );
+        lm.releaseReadLock( entity, null );
         lm.getWriteLock( entity );
         try
         {
-            lm.releaseReadLock( entity );
+            lm.releaseReadLock( entity, null );
             fail( "Invalid release should throw exception" );
         }
         catch ( Exception e )
         {
             // good
         }
-        lm.releaseWriteLock( entity );
+        lm.releaseWriteLock( entity , null );
 
         lm.getReadLock( entity );
         lm.getWriteLock( entity );
-        lm.releaseWriteLock( entity );
-        lm.releaseReadLock( entity );
+        lm.releaseWriteLock( entity , null );
+        lm.releaseReadLock( entity, null );
 
         lm.getWriteLock( entity );
         lm.getReadLock( entity );
-        lm.releaseReadLock( entity );
-        lm.releaseWriteLock( entity );
+        lm.releaseReadLock( entity, null );
+        lm.releaseWriteLock( entity , null );
 
         for ( int i = 0; i < 10; i++ )
         {
@@ -139,11 +139,11 @@ public class TestRWLock
         {
             if ( (i % 2) == 0 )
             {
-                lm.releaseWriteLock( entity );
+                lm.releaseWriteLock( entity , null);
             }
             else
             {
-                lm.releaseReadLock( entity );
+                lm.releaseReadLock( entity, null );
             }
         }
     }
@@ -190,7 +190,7 @@ public class TestRWLock
                             nextTask = DO_NOTHING_TASK;
                             break;
                         case RELEASE_READLOCK_TASK:
-                            lm.releaseReadLock( resource );
+                            lm.releaseReadLock( resource, null );
                             taskCompleted = true;
                             nextTask = DO_NOTHING_TASK;
                             break;
@@ -200,7 +200,7 @@ public class TestRWLock
                             nextTask = DO_NOTHING_TASK;
                             break;
                         case RELEASE_WRITELOCK_TASK:
-                            lm.releaseWriteLock( resource );
+                            lm.releaseWriteLock( resource , null);
                             taskCompleted = true;
                             nextTask = DO_NOTHING_TASK;
                             break;
@@ -497,11 +497,11 @@ public class TestRWLock
                         {
                             if ( lockStack.pop() == READ )
                             {
-                                lm.releaseReadLock( resource );
+                                lm.releaseReadLock( resource, null );
                             }
                             else
                             {
-                                lm.releaseWriteLock( resource );
+                                lm.releaseWriteLock( resource , null );
                             }
                         }
                     }
@@ -516,11 +516,11 @@ public class TestRWLock
                     {
                         if ( lockStack.pop() == READ )
                         {
-                            lm.releaseReadLock( resource );
+                            lm.releaseReadLock( resource, null );
                         }
                         else
                         {
-                            lm.releaseWriteLock( resource );
+                            lm.releaseWriteLock( resource , null );
                         }
                     }
                 }

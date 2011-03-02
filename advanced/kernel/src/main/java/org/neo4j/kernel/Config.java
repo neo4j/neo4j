@@ -136,7 +136,7 @@ public class Config
         params.put( GraphDbModule.class, graphDbModule );
     }
 
-    private static Map<Object, Object> getDefaultParams()
+    public static Map<Object, Object> getDefaultParams()
     {
         Map<Object, Object> params = new HashMap<Object, Object>();
         params.put( "neostore.nodestore.db.mapped_memory", "20M" );
@@ -147,12 +147,17 @@ public class Config
         params.put( "neostore.propertystore.db.arrays.mapped_memory", "130M" );
         params.put( "neostore.relationshipstore.db.mapped_memory", "100M" );
         // if on windows, default no memory mapping
-        String nameOs = System.getProperty( "os.name" );
-        if ( nameOs.startsWith( "Windows" ) )
+        if ( osIsWindows() )
         {
             params.put( Config.USE_MEMORY_MAPPED_BUFFERS, "false" );
         }
         return params;
+    }
+
+    public static boolean osIsWindows()
+    {
+        String nameOs = System.getProperty( "os.name" );
+        return nameOs.startsWith( "Windows" );
     }
 
     void setPersistenceSource( String name, boolean create )

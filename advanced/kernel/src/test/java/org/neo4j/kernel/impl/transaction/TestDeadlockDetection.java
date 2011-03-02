@@ -89,12 +89,12 @@ public class TestDeadlockDetection
                             nextTask = DO_NOTHING_TASK;
                             break;
                         case RELEASE_WRITELOCK_TASK:
-                            lm.releaseWriteLock( this.resource );
+                            lm.releaseWriteLock( this.resource, null );
                             taskCompleted = true;
                             nextTask = DO_NOTHING_TASK;
                             break;
                         case RELEASE_READLOCK_TASK:
-                            lm.releaseReadLock( this.resource );
+                            lm.releaseReadLock( this.resource, null );
                             taskCompleted = true;
                             nextTask = DO_NOTHING_TASK;
                             break;
@@ -433,11 +433,11 @@ public class TestDeadlockDetection
                         {
                             if ( lockStack.pop() == READ )
                             {
-                                lm.releaseReadLock( resourceStack.pop() );
+                                lm.releaseReadLock( resourceStack.pop(), null );
                             }
                             else
                             {
-                                lm.releaseWriteLock( resourceStack.pop() );
+                                lm.releaseWriteLock( resourceStack.pop() , null);
                             }
                         }
                     }
@@ -452,11 +452,11 @@ public class TestDeadlockDetection
                     {
                         if ( lockStack.pop() == READ )
                         {
-                            lm.releaseReadLock( resourceStack.pop() );
+                            lm.releaseReadLock( resourceStack.pop(), null );
                         }
                         else
                         {
-                            lm.releaseWriteLock( resourceStack.pop() );
+                            lm.releaseWriteLock( resourceStack.pop(), null);
                         }
                     }
                 }
