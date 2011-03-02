@@ -30,16 +30,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class BaseWorker extends Thread
 {
-    protected Index<Node> index;
-    protected GraphDatabaseService graphDb;
-    protected Exception exception;
-    protected CountDownLatch latch = new CountDownLatch( 1 );
-    protected AtomicInteger threadState = new AtomicInteger( STARTING );
     private static final int WAITING = 1;
     private static final int RUNNING = 2;
     private static final int DONE = 3;
     private static final int STARTING = 4;
-    private Queue<Command> commands = new ConcurrentLinkedQueue<Command>();
+    
+    protected final Index<Node> index;
+    protected final GraphDatabaseService graphDb;
+    private volatile Exception exception;
+    private volatile CountDownLatch latch = new CountDownLatch( 1 );
+    private final AtomicInteger threadState = new AtomicInteger( STARTING );
+    private final Queue<Command> commands = new ConcurrentLinkedQueue<Command>();
 
     public BaseWorker( Index<Node> index, GraphDatabaseService graphDb )
     {
@@ -67,10 +68,12 @@ public class BaseWorker extends Thread
                 command.doWork( state );
                 threadState.set( DONE );
 
-            } catch ( InterruptedException e )
+            }
+            catch ( InterruptedException e )
             {
                 throw new RuntimeException( e );
-            } catch ( Exception exception )
+            }
+            catch ( Exception exception )
             {
                 this.exception = exception;
                 threadState.set( DONE );
@@ -111,7 +114,8 @@ public class BaseWorker extends Thread
             try
             {
                 Thread.sleep( 10 );
-            } catch ( InterruptedException e )
+            }
+            catch ( InterruptedException e )
             {
                 throw new RuntimeException( e );
             }
@@ -122,6 +126,9 @@ public class BaseWorker extends Thread
             throw new IllegalStateException( "Something didn't finish in a timely manner. Aborting..." );
         }
     }
-
-
+    
+    public boolean hasException()
+    {
+        return exception != null;
+    }
 }
