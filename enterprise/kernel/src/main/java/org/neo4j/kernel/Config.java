@@ -78,6 +78,9 @@ public class Config
     public static final String CACHE_TYPE = "cache_type";
     public static final String TXMANAGER_IMPLEMENTATION = "tx_manager_impl";
     public static final String ALLOW_STORE_UPGRADE = "allow_store_upgrade";
+    public static final String STRING_BLOCK_SIZE = "string_block_size";
+    public static final String ARRAY_BLOCK_SIZE = "array_block_size";
+    
     static final String LOAD_EXTENSIONS = "load_kernel_extensions";
 
     private final AdaptiveCacheManager cacheManager;

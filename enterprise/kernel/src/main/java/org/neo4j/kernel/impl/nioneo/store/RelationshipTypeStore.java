@@ -450,11 +450,11 @@ public class RelationshipTypeStore extends AbstractStore implements Store
                 long fileSize = getFileChannel().size();
                 long recordCount = fileSize / getRecordSize();
                 // 0xFFFF magic -1
-                if ( recordCount >= 65535 )
+                if ( recordCount > 0xFFFF )
                 {
                     throw new IllegalStoreVersionException( "Store version[" + version +
                             "] has " + recordCount + " different relationship types " +
-                            "(limit is 65534) and can not be upgraded to a newer version." );
+                            "(limit is " + 0xFFFF + ") and can not be upgraded to a newer version." );
                 }
             }
             catch ( IOException e )
