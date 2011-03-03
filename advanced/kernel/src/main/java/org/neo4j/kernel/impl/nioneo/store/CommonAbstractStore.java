@@ -486,6 +486,14 @@ public abstract class CommonAbstractStore
     {
         return config;
     }
+    
+    /**
+     * @return the store directory from config.
+     */
+    protected String getStoreDir()
+    {
+        return (String) config.get( "store_dir" );
+    }
 
     /**
      * Acquires a {@link PersistenceWindow} for <CODE>position</CODE> and
