@@ -18,7 +18,6 @@ define(
         @propertyContainer = new PropertyContainer()
         @propertyContainer.bind "change", @renderProperties
 
-
       keyChanged : (ev) =>
         id = @getPropertyIdForElement(ev.target)
         @propertyContainer.setKey(id, $(ev.target).val())

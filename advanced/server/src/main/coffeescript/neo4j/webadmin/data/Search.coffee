@@ -15,6 +15,8 @@ define ["./NodeSearcher", "./RelationshipSearcher"], (NodeSearcher, Relationship
       searcher = @pickSearcher statement
       if searcher? 
         searcher.exec statement
+      else
+        return neo4j.Promise.fulfilled(null)
 
     pickSearcher : (statement) =>
       

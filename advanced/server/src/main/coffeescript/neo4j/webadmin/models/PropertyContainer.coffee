@@ -15,8 +15,7 @@ define ['lib/backbone'], () ->
       @dataModel = dataModel
       @properties = {}
       for key, value of @getItem().getProperties()
-        id = @generatePropertyId()
-        @properties[id] = {key:key, value:value, id:id, isDuplicate:false}
+        @addProperty(key, value, false, false)
 
       @set {saveState : "saved"}, {silent:true}
       @updatePropertyList()
@@ -49,8 +48,11 @@ define ['lib/backbone'], () ->
     deleteProperty : (id) =>
       console.log id
 
-    addProperty : () =>
-      console.log "Add"
+    addProperty : (key="", value="", isDuplicate=false, updatePropertyList=true) =>
+      id = @generatePropertyId()
+      @properties[id] = {key:key, value:value, id:id, isDuplicate:isDuplicate}
+      if updatePropertyList
+        @updatePropertyList()
 
     getProperty : (id) =>
       @properties[id]
@@ -75,7 +77,7 @@ define ['lib/backbone'], () ->
 
     save : () =>
       @set { saveState : "saving" }
-      @getItem().save() @saveSucceeded, @saveFailed
+      @getItem().save().then @saveSucceeded, @saveFailed
 
     saveSucceeded : () =>
       @set { saveState : "saved" }

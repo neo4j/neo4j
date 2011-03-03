@@ -28,6 +28,7 @@
 	<cuke4duke.version>0.4.3</cuke4duke.version>
     <webdriver.version>0.9.7376</webdriver.version>
     <pico.version>2.11.2</pico.version>
+    <cukeArgs></cukeArgs>
   </properties>
 
   <packaging>bundle</packaging>
@@ -213,7 +214,6 @@
       <artifactId>jersey-multipart</artifactId>
       <version>1.3</version>
     </dependency>
-
 
     <!-- Test dependencies -->
     <dependency>
@@ -677,6 +677,7 @@
 	            <jvmArg>-Dwebdriver.impl=${webdriver.impl.class}</jvmArg>
 	          </jvmArgs>
 	          <cucumberArgs>
+	            <cucumberArg>${cukeArgs}</cucumberArg>
 	            <cucumberArg>--verbose</cucumberArg>
 	            <cucumberArg>--strict</cucumberArg>
 	            <cucumberArg>--color</cucumberArg>
@@ -810,6 +811,10 @@
       <releases>
         <enabled>false</enabled>
       </releases>
+    </repository>
+    <repository>
+      <id>cukes</id>
+      <url>http://cukes.info/maven</url>
     </repository>
   </repositories>
 
