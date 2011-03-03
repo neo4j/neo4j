@@ -28,6 +28,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.kernel.AbstractGraphDatabase;
@@ -200,31 +201,43 @@ public class TestIndexDeletion
         firstTx.commit();
     }
 
-    @Test
-    public void deleteAndCommitShouldBePublishedToOtherTransaction2() throws InterruptedException
-    {
-        WorkThread firstTx = createWorker();
-        WorkThread secondTx = createWorker();
+	@Test
+	public void deleteAndCommitShouldBePublishedToOtherTransaction2()
+			throws InterruptedException {
+		WorkThread firstTx = createWorker();
+		WorkThread secondTx = createWorker();
 
-        firstTx.beginTransaction();
-        secondTx.beginTransaction();
+		firstTx.beginTransaction();
+		firstTx.waitForCommandToComplete();
 
-        firstTx.createNodeAndIndexBy( key, "some value" );
-        secondTx.createNodeAndIndexBy( key, "some other value" );
+		secondTx.beginTransaction();
+		secondTx.waitForCommandToComplete();
 
-        firstTx.deleteIndex();
-        firstTx.commit();
+		firstTx.createNodeAndIndexBy(key, "some value");
+		firstTx.waitForCommandToComplete();
 
-        secondTx.queryIndex( key, "some other value" );
+		secondTx.createNodeAndIndexBy(key, "some other value");
+		secondTx.waitForCommandToComplete();
 
-        assertThat( secondTx, hasThrownException() );
+		firstTx.deleteIndex();
+		firstTx.waitForCommandToComplete();
 
-        secondTx.rollback();
-        
-        // Since $Before will start a tx, add a value and keep tx open and workers will
-        // delete the index so this test will fail in @After if we don't rollback this tx
-        rollbackTx();
-    }
+		firstTx.commit();
+		firstTx.waitForCommandToComplete();
+
+		secondTx.queryIndex(key, "some other value");
+		secondTx.waitForCommandToComplete();
+
+		assertThat(secondTx, hasThrownException());
+
+		secondTx.rollback();
+		secondTx.waitForCommandToComplete();
+
+		// Since $Before will start a tx, add a value and keep tx open and
+		// workers will delete the index so this test will fail in @After
+		// if we don't rollback this tx
+		rollbackTx();
+	}
 
     @Test
     public void indexDeletesShouldNotByVisibleUntilCommit()
@@ -235,13 +248,17 @@ public class TestIndexDeletion
         WorkThread secondTx = createWorker();
 
         firstTx.beginTransaction();
+        firstTx.waitForCommandToComplete();
         firstTx.removeFromIndex( key, value );
+        firstTx.waitForCommandToComplete();
 
-        assertThat( secondTx.queryIndex( key, value ), contains( node ) );
+        IndexHits<Node> indexHits = secondTx.queryIndex( key, value );
+        secondTx.waitForCommandToComplete();
+        assertThat( indexHits, contains( node ) );
 
         firstTx.rollback();
     }
-    
+
     @Test
     public void indexDeleteShouldDeleteDirectory()
     {
@@ -254,18 +271,18 @@ public class TestIndexDeletion
         assertFalse( pathToLuceneIndex.exists() );
         assertFalse( pathToOtherLuceneIndex.exists() );
         restartTx();
-        
+
         // Here "index" and "other-index" indexes should exist
-        
+
         assertTrue( pathToLuceneIndex.exists() );
         assertTrue( pathToOtherLuceneIndex.exists() );
         index.delete();
         assertTrue( pathToLuceneIndex.exists() );
         assertTrue( pathToOtherLuceneIndex.exists() );
         restartTx();
-        
+
         // Here only "other-index" should exist
-        
+
         assertFalse( pathToLuceneIndex.exists() );
         assertTrue( pathToOtherLuceneIndex.exists() );
     }
@@ -274,6 +291,8 @@ public class TestIndexDeletion
     {
         WorkThread workThread = new WorkThread( index, graphDb );
         workers.add( workThread );
+        workThread.start();
+        workThread.waitForWorkerToStart();
         return workThread;
     }
 }
