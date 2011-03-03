@@ -29,25 +29,25 @@ import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.com.ComException;
-import org.neo4j.com.backup.OnlineBackup;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
 import org.neo4j.test.DbRepresentation;
 
 public class TestBackup
 {
     private String serverPath = "target/var/serverdb";
+    private String otherServerPath = serverPath + "2";
     private String backupPath = "target/var/backuedup-serverdb";
     
     @Before
     public void before() throws Exception
     {
         FileUtils.deleteDirectory( new File( serverPath ) );
+        FileUtils.deleteDirectory( new File( otherServerPath ) );
         FileUtils.deleteDirectory( new File( backupPath ) );
     }
     
@@ -91,6 +91,7 @@ public class TestBackup
     @Test
     public void fullThenIncremental() throws Exception
     {
+        if ( Config.osIsWindows() ) return;
         DbRepresentation initialDataSetRepresentation = createInitialDataSet( serverPath );
         ServerInterface server = startServer( serverPath );
         OnlineBackup backup = OnlineBackup.from( "localhost" );
@@ -108,6 +109,7 @@ public class TestBackup
     @Test
     public void makeSureStoreIdIsEnforced() throws Exception
     {
+        if ( Config.osIsWindows() ) return;
         // Create data set X on server A
         DbRepresentation initialDataSetRepresentation = createInitialDataSet( serverPath );
         ServerInterface server = startServer( serverPath );
@@ -119,10 +121,9 @@ public class TestBackup
         shutdownServer( server );
         
         // Create data set X+Y on server B 
-        String serverPath2 = serverPath + "2";
-        createInitialDataSet( serverPath2 );
-        addMoreData( serverPath2 );
-        server = startServer( serverPath2 );
+        createInitialDataSet( otherServerPath );
+        addMoreData( otherServerPath );
+        server = startServer( otherServerPath );
         
         // Try to grab incremental backup from server B.
         // Data should be OK, but store id check should prevent that.
@@ -143,21 +144,6 @@ public class TestBackup
         backup.incremental( backupPath );
         assertEquals( furtherRepresentation, DbRepresentation.of( backupPath ) );
         shutdownServer( server );
-    }
-    
-    @Test
-    public void testBackupToRunningReadOnlyDatabase() throws Exception
-    {
-        createInitialDataSet( serverPath );
-        ServerInterface server = startServer( serverPath );
-        OnlineBackup.from( "localhost" ).full( backupPath );
-        shutdownServer( server );
-        DbRepresentation serverRepresentation = addMoreData( serverPath );
-        server = startServer( serverPath );
-        GraphDatabaseService target = new EmbeddedReadOnlyGraphDatabase( backupPath );
-        OnlineBackup.from( "localhost" ).incremental( target );
-        shutdownServer( server );
-        assertEquals( serverRepresentation, DbRepresentation.of( target ) );
     }
     
     private ServerInterface startServer( String path )

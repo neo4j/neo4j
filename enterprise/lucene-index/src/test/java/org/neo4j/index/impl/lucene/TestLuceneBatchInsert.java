@@ -68,7 +68,10 @@ public class TestLuceneBatchInsert
     @Test
     public void testSome() throws Exception
     {
-        BatchInserter inserter = new BatchInserterImpl( PATH );
+        // Different paths for each tests because there's a bug (on Windows)
+        // causing _0.cfs file to stay open 
+        String path = new File( PATH, "1" ).getAbsolutePath();
+        BatchInserter inserter = new BatchInserterImpl( path );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider(
                 inserter );
         BatchInserterIndex index = provider.nodeIndex( "users", EXACT_CONFIG );
@@ -92,7 +95,7 @@ public class TestLuceneBatchInsert
         provider.shutdown();
         inserter.shutdown();
 
-        GraphDatabaseService db = new EmbeddedGraphDatabase( PATH );
+        GraphDatabaseService db = new EmbeddedGraphDatabase( path );
         assertTrue( db.index().existsForNodes( "users" ) );
         Index<Node> dbIndex = db.index().forNodes( "users" );
         for ( int i = 0; i < 100; i++ )
@@ -116,7 +119,8 @@ public class TestLuceneBatchInsert
     @Test
     public void testFulltext()
     {
-        BatchInserter inserter = new BatchInserterImpl( PATH );
+        String path = new File( PATH, "2" ).getAbsolutePath();
+        BatchInserter inserter = new BatchInserterImpl( path );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider(
                 inserter );
         String name = "users";
@@ -144,7 +148,7 @@ public class TestLuceneBatchInsert
         provider.shutdown();
         inserter.shutdown();
 
-        GraphDatabaseService db = new EmbeddedGraphDatabase( PATH );
+        GraphDatabaseService db = new EmbeddedGraphDatabase( path );
         Index<Node> dbIndex = db.index().forNodes( name );
         Node node1 = db.getNodeById( id1 );
         Node node2 = db.getNodeById( id2 );
@@ -156,7 +160,7 @@ public class TestLuceneBatchInsert
     @Test
     public void testInsertionSpeed()
     {
-        BatchInserter inserter = new BatchInserterImpl( PATH );
+        BatchInserter inserter = new BatchInserterImpl( new File( PATH, "3" ).getAbsolutePath() );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );
         BatchInserterIndex index = provider.nodeIndex( "yeah", EXACT_CONFIG );
         index.setCacheCapacity( "key", 1000000 );
@@ -182,7 +186,8 @@ public class TestLuceneBatchInsert
     public void testFindCreatedIndex()
     {
         String indexName = "persons";
-        BatchInserter inserter = new BatchInserterImpl( PATH );
+        String path = new File( PATH, "4" ).getAbsolutePath();
+        BatchInserter inserter = new BatchInserterImpl( path );
         LuceneBatchInserterIndexProvider indexProvider = new LuceneBatchInserterIndexProvider(
                 inserter );
         BatchInserterIndex persons = indexProvider.nodeIndex( "persons",
@@ -192,7 +197,7 @@ public class TestLuceneBatchInsert
         persons.add( node, properties );
         indexProvider.shutdown();
         inserter.shutdown();
-        GraphDatabaseService graphDb = new EmbeddedGraphDatabase( PATH );
+        GraphDatabaseService graphDb = new EmbeddedGraphDatabase( path );
         Transaction tx = graphDb.beginTx();
         try
         {
@@ -214,7 +219,7 @@ public class TestLuceneBatchInsert
     @Test
     public void testCanIndexRelationships()
     {
-        BatchInserter inserter = new BatchInserterImpl( PATH );
+        BatchInserter inserter = new BatchInserterImpl( new File( PATH, "5" ).getAbsolutePath() );
         BatchInserterIndexProvider indexProvider = new LuceneBatchInserterIndexProvider(
                 inserter );
         BatchInserterIndex edgesIndex = indexProvider.relationshipIndex(
@@ -240,9 +245,9 @@ public class TestLuceneBatchInsert
     @Test
     public void triggerNPEAfterFlush()
     {
-        BatchInserter inserter = new BatchInserterImpl( PATH );
+        BatchInserter inserter = new BatchInserterImpl( new File( PATH, "6" ).getAbsolutePath() );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );
-        BatchInserterIndex index = provider.nodeIndex( "Neo4j::Node-exact", EXACT_CONFIG );
+        BatchInserterIndex index = provider.nodeIndex( "Node-exact", EXACT_CONFIG );
         
         Map<String, Object> map = map( "name", "Something" );
         long node = inserter.createNode( map );
@@ -257,7 +262,8 @@ public class TestLuceneBatchInsert
     @Test
     public void testNumericValues()
     {
-        BatchInserter inserter = new BatchInserterImpl( PATH );
+        String path = new File( PATH, "7" ).getAbsolutePath();
+        BatchInserter inserter = new BatchInserterImpl( path );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider(
                 inserter );
         BatchInserterIndex index = provider.nodeIndex( "mine", EXACT_CONFIG );
@@ -272,7 +278,7 @@ public class TestLuceneBatchInsert
         provider.shutdown();
         inserter.shutdown();
         
-        GraphDatabaseService db = new EmbeddedGraphDatabase( PATH );
+        GraphDatabaseService db = new EmbeddedGraphDatabase( path );
         Node n1 = db.getNodeById( node1 );
         Node n2 = db.getNodeById( node2 );
         Index<Node> idx = db.index().forNodes( "mine" );
@@ -283,7 +289,7 @@ public class TestLuceneBatchInsert
     @Test
     public void indexNumbers() throws Exception
     {
-        BatchInserter inserter = new BatchInserterImpl( PATH );
+        BatchInserter inserter = new BatchInserterImpl( new File( PATH, "8" ).getAbsolutePath() );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider(
                 inserter );
         BatchInserterIndex index = provider.nodeIndex( "mine", EXACT_CONFIG );

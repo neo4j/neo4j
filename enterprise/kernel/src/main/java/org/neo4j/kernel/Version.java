@@ -25,7 +25,7 @@ import org.neo4j.helpers.Service;
 
 public class Version extends Service
 {
-    private static final String KERNEL_ARTIFACT_ID = "neo4j-kernel";
+    protected static final String KERNEL_ARTIFACT_ID = "neo4j-kernel";
     private static final Version KERNEL_VERSION;
     static
     {
@@ -62,7 +62,7 @@ public class Version extends Service
      */
     public String getVersion()
     {
-        if ( version == null )
+        if ( version == null || version.equals( "" ) )
         {
             return "<unknown>";
         }
