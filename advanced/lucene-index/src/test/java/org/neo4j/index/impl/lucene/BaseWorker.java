@@ -46,14 +46,13 @@ public class BaseWorker extends Thread
     {
         this.index = index;
         this.graphDb = graphDb;
-        start();
         waitForWorkerToStart();
     }
 
     @Override
     public void run()
     {
-        CommandState state = new CommandState( index, graphDb );
+        final CommandState state = new CommandState( index, graphDb );
         threadState.set( STARTING );
         while ( state.alive )
         {
@@ -96,12 +95,12 @@ public class BaseWorker extends Thread
         threadState.set( WAITING );
     }
 
-    private void waitForCommandToComplete()
+    public void waitForCommandToComplete()
     {
         waitFor( DONE, WAITING );
     }
 
-    private void waitForWorkerToStart()
+    public void waitForWorkerToStart()
     {
         waitFor( STARTING, WAITING );
     }
