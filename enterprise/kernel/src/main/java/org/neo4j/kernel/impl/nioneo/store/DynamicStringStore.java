@@ -80,6 +80,14 @@ public class DynamicStringStore extends AbstractDynamicStore
 //        }
         if ( version.equals( "StringPropertyStore v0.9.5" ) )
         {
+            long blockSize = getBlockSize();
+            // 0xFFFF + 13 for inUse,length,prev,next
+            if ( blockSize > 65548 )
+            {
+                throw new IllegalStoreVersionException( "Store version[" + version +
+                        "] has " + (blockSize - 13) + " block size " +
+                        "(limit is 65535) and can not be upgraded to a newer version." );
+            }
             return true;
         }
         throw new IllegalStoreVersionException( "Store version [" + version  + 
