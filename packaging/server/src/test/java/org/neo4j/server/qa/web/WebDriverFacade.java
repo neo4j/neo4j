@@ -17,7 +17,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.qa;
+
+package org.neo4j.server.qa.web;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -35,7 +36,6 @@ public class WebDriverFacade {
         try {
             return (Constructor<WebDriver>) Thread.currentThread().getContextClassLoader().loadClass(driverName).getConstructor();
         } catch (Throwable problem) {
-            problem.printStackTrace();
             throw new RuntimeException("Couldn't load " + driverName, problem);
         }
     }
@@ -43,9 +43,9 @@ public class WebDriverFacade {
     private WebDriver browser;
 
     public WebDriver getWebDriver() throws InvocationTargetException, IllegalAccessException, InstantiationException {
-//        if (browser == null) {
-//            browser = driverConstructor.newInstance();
-//        }
+        if (browser == null) {
+            browser = driverConstructor.newInstance();
+        }
         return browser;
     }
 
