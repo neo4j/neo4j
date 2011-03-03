@@ -52,7 +52,7 @@ public class TestChangingOfLogFormat
         Pair<Pair<File, File>, Pair<File, File>> copy = copyLogicalLog( storeDir );
         decrementLogFormat( copy.other().other() );
         db.shutdown();
-        renameCopiedLogicalLog( copy );
+        renameCopiedLogicalLog( storeDir );
         
         try
         {

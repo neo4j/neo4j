@@ -81,7 +81,6 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     private final LockReleaser lockReleaser;
     private final String storeDir;
     private final boolean readOnly;
-    private boolean backupSlave = false;
 
     private boolean logApplied = false;
     
@@ -112,7 +111,6 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     {
         super( config );
         readOnly = Boolean.parseBoolean( (String) config.get( Config.READ_ONLY ) );
-        backupSlave = Boolean.parseBoolean( (String) config.get( Config.BACKUP_SLAVE ) );
         this.lockManager = (LockManager) config.get( LockManager.class );
         this.lockReleaser = (LockReleaser) config.get( LockReleaser.class );
         storeDir = (String) config.get( "store_dir" );
