@@ -20,13 +20,15 @@
 
 package org.neo4j.server.qa;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.lang.reflect.InvocationTargetException;
 
+import org.neo4j.server.qa.web.WebDriverFacade;
+import org.neo4j.server.qa.web.WebadminWebdriverLibrary;
+import org.openqa.selenium.By;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
 
+import cuke4duke.annotation.I18n.EN.Given;
 import cuke4duke.annotation.I18n.EN.Then;
 import cuke4duke.annotation.I18n.EN.When;
 import cuke4duke.spring.StepDefinitions;
@@ -35,28 +37,66 @@ import cuke4duke.spring.StepDefinitions;
 public class WebadminSteps
 { 
     private final WebDriver d;
-
+    private final WebadminWebdriverLibrary wl;
+    
     public WebadminSteps( WebDriverFacade facade ) throws InvocationTargetException, InstantiationException, IllegalAccessException
     {
         d = facade.getWebDriver();
+        wl = new WebadminWebdriverLibrary(d);
     }
     
-    @When("^I look at the root page with a web browser$")
+    @Given("^I have a neo4j server running at (.+)$")
+    public void iHaveANeo4jServerRunningAt(String url) {
+        WebadminWebdriverLibrary.setServerUrl( url );
+    }
+    
+    @When("^I type (.+) into the element found by the xpath (.+)$")
+    public void iTypeIntoElementByXpath(String toType, String xPath) {
+        d.findElement( By.xpath( xPath ) ).sendKeys( toType );
+    }
+    
+    @When("^I look at the root server page with a web browser$")
     public void iLookAtTheRootPageWithAWebBrowser()
     {
-        d.get( "http://localhost:8080/" );
+        wl.goToServerRoot();
     }
     
-    @When("^I look at the data browser page$")
-    public void iLookAtTheNeo4jVisualizationPage()
+    @When("^I look at webadmin in a web browser$")
+    public void iLookAtWebadminWithAWebBrowser() throws Exception
     {
-        d.get( "http://localhost:8080/webadmin/#/data" );
+        wl.goToWebadminStartPage();
     }
     
-    @Then("^I should be re-directed to the web administration page$")
-    public void iShouldBeRedirectedToWebadmin() 
+    @When("^I click on the (.+) tab in webadmin$")
+    public void iClickOnTheXTab(String tabName) throws Exception {
+        wl.clickOnTab( tabName );
+    }
+    
+    @When("^I click on the (.+) button in webadmin$")
+    public void iClickOnXButton(String text) throws Exception {
+        wl.clickOnButton( text );
+    }
+    
+    @When("^I look at ([^ ]+) with a web browser$")
+    public void iLookAtUrlWithAWebBrowser(String url)
     {
-        assertThat( d.getCurrentUrl(), is( "http://localhost:8080/webadmin/" ));
+        d.get( url );
     }
     
+    @When("^I hit return in the element found by the xpath (.+)$")
+    public void iHitEnterInTheElementFoundByXpath(String xpath) {
+        d.findElement( By.xpath( xpath ) ).sendKeys( Keys.RETURN );
+    }
+    
+    @Then("^The browser should be re-directed to (.+)$")
+    public void iShouldBeRedirectedTo(String redirectUrl) throws Exception
+    {
+        wl.waitForUrlToBe( redirectUrl );
+    }
+    
+    @Then("^An element should appear that can be found by the xpath (.+)$")
+    public void anElementShouldAppearByXpath(String xpath) throws Exception
+    {
+        wl.waitForElementToAppear( By.xpath( xpath ) );
+    }
 }

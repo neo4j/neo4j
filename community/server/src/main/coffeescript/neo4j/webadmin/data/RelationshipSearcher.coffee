@@ -1,17 +1,19 @@
 
-define [], () ->
+define ["./ItemUrlResolver","lib/backbone"], (ItemUrlResolver) ->
 
   class RelationshipSearcher
 
-    constructor : ->
+    constructor : (server) ->
+      @server = server
+      @urlResolver = new ItemUrlResolver(server)
       @pattern = /^((rel)|(relationship)):([0-9]+)$/i
 
     match : (statement) =>
       @pattern.test(statement)
       
     exec : (statement) =>
-      location.hash = "#/data/relationship/" + @getRelationshipId(statement)
+      @server.rel( @urlResolver.getRelationshipUrl( @extractRelId(statement) ))
 
-    getRelationshipId : (statement) ->
-      @pattern.exec(statement)[4]
-
+    extractRelId : (statement) =>
+      match = @pattern.exec(statement)
+      return match[4]
