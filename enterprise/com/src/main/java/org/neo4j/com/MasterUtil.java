@@ -67,7 +67,7 @@ public class MasterUtil
         if ( !path.startsWith( prefix ) )
             throw new FileNotFoundException();
         path = path.substring( prefix.length() );
-        if ( path.startsWith( "/" ) )
+        if ( path.startsWith( File.separator ) )
             return path.substring( 1 );
         return path;
     }

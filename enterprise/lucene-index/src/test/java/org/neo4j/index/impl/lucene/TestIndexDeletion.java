@@ -263,9 +263,17 @@ public class TestIndexDeletion
     public void indexDeleteShouldDeleteDirectory()
     {
         String otherIndexName = "other-index";
-        File pathToLuceneIndex = new File( ((AbstractGraphDatabase)graphDb).getStoreDir() + "/index/lucene/node/" + INDEX_NAME );
-        File pathToOtherLuceneIndex = new File( ((AbstractGraphDatabase)graphDb).getStoreDir() + "/index/lucene/node/" + otherIndexName );
-        Index<Node> otherIndex = graphDb.index().forNodes( otherIndexName );
+
+        StringBuffer tempPath = new StringBuffer(
+				((AbstractGraphDatabase) graphDb).getStoreDir())
+				.append(File.separator).append("index").append(File.separator)
+				.append("lucene").append(File.separator).append("node")
+				.append(File.separator);
+
+		File pathToLuceneIndex = new File(tempPath.toString() + INDEX_NAME);
+		File pathToOtherLuceneIndex = new File(tempPath.toString() + otherIndexName);
+
+		Index<Node> otherIndex = graphDb.index().forNodes(otherIndexName);
         Node node = graphDb.createNode();
         otherIndex.add( node, "someKey", "someValue" );
         assertFalse( pathToLuceneIndex.exists() );

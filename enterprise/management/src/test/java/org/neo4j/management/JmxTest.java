@@ -22,6 +22,7 @@ package org.neo4j.management;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
 import java.util.Map;
 
 import org.junit.AfterClass;
@@ -37,7 +38,8 @@ public class JmxTest
     @BeforeClass
     public static synchronized void startGraphDb()
     {
-        graphDb = new EmbeddedGraphDatabase( "target/var/" + JmxTest.class.getSimpleName() );
+		graphDb = new EmbeddedGraphDatabase("target" + File.separator + "var"
+				+ File.separator + JmxTest.class.getSimpleName());
     }
 
     @AfterClass

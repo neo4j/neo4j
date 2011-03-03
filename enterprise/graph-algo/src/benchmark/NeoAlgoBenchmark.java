@@ -158,10 +158,10 @@ abstract public class NeoAlgoBenchmark
      */
     protected boolean saveStatistic( long milliSeconds, boolean print )
     {
-        String fileName = "target/benchmarkstatistics/" + getTestId();
+        String fileName = "target" + File.separator + "benchmarkstatistics" + File.separator + getTestId();
         String data = "";
         // Make directory
-        new File( "target/benchmarkstatistics/" ).mkdirs();
+        new File( "target" + File.separator + "benchmarkstatistics" + File.separator ).mkdirs();
         // Read
         try
         {

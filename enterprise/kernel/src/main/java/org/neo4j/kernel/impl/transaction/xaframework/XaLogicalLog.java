@@ -109,7 +109,7 @@ public class XaLogicalLog
         this.cf = cf;
         this.xaTf = xaTf;
         this.useMemoryMapped = getMemoryMapped( config );
-        log = Logger.getLogger( this.getClass().getName() + "/" + fileName );
+        log = Logger.getLogger( this.getClass().getName() + File.separator + fileName );
         buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
             + Xid.MAXBQUALSIZE * 10 );
         storeDir = (String) config.get( "store_dir" );
