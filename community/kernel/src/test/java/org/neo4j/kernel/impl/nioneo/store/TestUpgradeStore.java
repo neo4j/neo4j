@@ -19,9 +19,13 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.Config.ALLOW_STORE_UPGRADE;
 import static org.neo4j.kernel.Config.ARRAY_BLOCK_SIZE;
+import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
 import static org.neo4j.kernel.Config.STRING_BLOCK_SIZE;
 import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
 
@@ -163,6 +167,38 @@ public class TestUpgradeStore
         new EmbeddedGraphDatabase( PATH ).shutdown();
     }
     
+    @Test
+    public void makeSureLogsAreMovedWhenUpgrading() throws Exception
+    {
+        // Generate some logical logs
+        for ( int i = 0; i < 3; i++ )
+        {
+            new EmbeddedGraphDatabase( PATH, stringMap( KEEP_LOGICAL_LOGS, "true" ) ).shutdown();
+        }
+        
+        setOlderNeoStoreVersion();
+        new EmbeddedGraphDatabase( PATH, stringMap( ALLOW_STORE_UPGRADE, "true" ) ).shutdown();
+        
+        File oldLogDir = new File( PATH, "1.2-logs" );
+        assertTrue( oldLogDir.exists() );
+        assertTrue( new File( oldLogDir, "nioneo_logical.log.v0" ).exists() );
+        assertTrue( new File( oldLogDir, "nioneo_logical.log.v1" ).exists() );
+        assertTrue( new File( oldLogDir, "nioneo_logical.log.v2" ).exists() );
+        assertFalse( new File( PATH, "nioneo_logical.log.v0" ).exists() );
+        assertFalse( new File( PATH, "nioneo_logical.log.v1" ).exists() );
+        assertFalse( new File( PATH, "nioneo_logical.log.v2" ).exists() );
+    }
+    
+    private void setOlderNeoStoreVersion() throws IOException
+    {
+        String oldVersion = "NeoStore v0.9.6";
+        FileChannel channel = new RandomAccessFile( new File( PATH, "neostore" ), "rw" ).getChannel();
+        channel.position( channel.size()-oldVersion.getBytes().length );
+        ByteBuffer buffer = ByteBuffer.wrap( oldVersion.getBytes() );
+        channel.write( buffer );
+        channel.close();
+    }
+
     private void setBlockSize( File file, int blockSize, String oldVersionToSet ) throws IOException
     {
         FileChannel channel = new RandomAccessFile( file, "rw" ).getChannel();
