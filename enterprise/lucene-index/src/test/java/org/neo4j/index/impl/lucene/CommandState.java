@@ -26,15 +26,14 @@ import org.neo4j.graphdb.index.Index;
 
 public class CommandState
 {
-    Index<Node> index;
-    GraphDatabaseService graphDb;
-    public Transaction tx;
-    public boolean alive = true;
-    public Node node;
+    final Index<Node> index;
+    final GraphDatabaseService graphDb;
+    public volatile Transaction tx;
+    public volatile boolean alive = true;
+    public volatile Node node;
 
     public CommandState( Index<Node> index, GraphDatabaseService graphDb )
     {
-
         this.index = index;
         this.graphDb = graphDb;
     }
