@@ -31,6 +31,8 @@
         searcher = this.pickSearcher(statement);
         if (searcher != null) {
           return searcher.exec(statement);
+        } else {
+          return neo4j.Promise.fulfilled(null);
         }
       };
       Search.prototype.pickSearcher = function(statement) {

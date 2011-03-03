@@ -31,5 +31,6 @@ define(
             return this
         view.setDataModel(@dataModel)
         $(@el).html(view.render().el)
+        view.delegateEvents()
 
 )

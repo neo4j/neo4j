@@ -1,22 +1,3 @@
-/*
- * Copyright (c) 2002-2011 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
 (function() {
   var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
     for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
@@ -56,19 +37,13 @@
         return this.properties = {};
       };
       PropertyContainer.prototype.setDataModel = function(dataModel) {
-        var id, key, value, _ref;
+        var key, value, _ref;
         this.dataModel = dataModel;
         this.properties = {};
         _ref = this.getItem().getProperties();
         for (key in _ref) {
           value = _ref[key];
-          id = this.generatePropertyId();
-          this.properties[id] = {
-            key: key,
-            value: value,
-            id: id,
-            isDuplicate: false
-          };
+          this.addProperty(key, value, false, false);
         }
         this.set({
           saveState: "saved"
@@ -105,8 +80,30 @@
       PropertyContainer.prototype.deleteProperty = function(id) {
         return console.log(id);
       };
-      PropertyContainer.prototype.addProperty = function() {
-        return console.log("Add");
+      PropertyContainer.prototype.addProperty = function(key, value, isDuplicate, updatePropertyList) {
+        var id;
+        if (key == null) {
+          key = "";
+        }
+        if (value == null) {
+          value = "";
+        }
+        if (isDuplicate == null) {
+          isDuplicate = false;
+        }
+        if (updatePropertyList == null) {
+          updatePropertyList = true;
+        }
+        id = this.generatePropertyId();
+        this.properties[id] = {
+          key: key,
+          value: value,
+          id: id,
+          isDuplicate: isDuplicate
+        };
+        if (updatePropertyList) {
+          return this.updatePropertyList();
+        }
       };
       PropertyContainer.prototype.getProperty = function(id) {
         return this.properties[id];
@@ -147,7 +144,7 @@
         this.set({
           saveState: "saving"
         });
-        return this.getItem().save()(this.saveSucceeded, this.saveFailed);
+        return this.getItem().save().then(this.saveSucceeded, this.saveFailed);
       };
       PropertyContainer.prototype.saveSucceeded = function() {
         return this.set({
