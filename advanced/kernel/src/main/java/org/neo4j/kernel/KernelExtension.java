@@ -28,14 +28,37 @@ import org.neo4j.helpers.Service;
 /**
  * Hook for providing extended functionality to the Neo4j Graph Database kernel.
  *
- * @author Tobias Ivarsson
+ * Implementations of {@link KernelExtension} must fulfill the following
+ * contract:
+ * <ul>
+ * <li>Must have a public no-arg constructor.</li>
+ * <li>The same instance must be able to load with multiple GraphDatabase
+ * kernels.</li>
+ * <li>Different instances should be able to access the same state from the same
+ * kernel. <br/>
+ * To achieve this, different instances of the same class should have the same
+ * {@link #hashCode()} and be {@link #equals(Object)}. This is enforced by this
+ * base class by delegating {@link #hashCode()} and {@link #equals(Object)} to
+ * the same methods on the {@link #getClass() class object}.</li>
+ * </ul>
+ * The simplest way to implement an {@link KernelExtension extension} that
+ * fulfills this contract is if the {@link KernelExtension extension}
+ * implementation is stateless, and all state is kept in the state object
+ * returned by {@link #load(KernelData) the load method}.
+ *
+ * Note that for an {@link KernelExtension extension} to be considered loaded by
+ * the kernel, {@link #load(KernelData) the load method} may not return
+ * <code>null</code>. {@link #unload(Object) The unload method} will only be
+ * invoked if the kernel considers the {@link KernelExtension extension} loaded.
+ *
+ * @author Tobias Ivarsson <tobias.ivarsson@neotechnology.com>
  * @param <S> the Extension state type
  */
 public abstract class KernelExtension<S> extends Service
 {
     static final String INSTANCE_ID = "instanceId";
 
-    protected KernelExtension( String key )
+    public KernelExtension( String key )
     {
         super( key );
     }
@@ -85,8 +108,8 @@ public abstract class KernelExtension<S> extends Service
     }
 
     /**
-     * Takes place before any data sources has been registered and is there
-     * to let extensions affect the configuration of other things starting up.
+     * Takes place before any data sources has been registered and is there to
+     * let extensions affect the configuration of other things starting up.
      */
     protected void loadConfiguration( KernelData kernel )
     {
@@ -98,10 +121,9 @@ public abstract class KernelExtension<S> extends Service
         // Default: do nothing
     }
 
-    @SuppressWarnings( "unchecked" )
     protected final S getState( KernelData kernel )
     {
-        return (S) kernel.getState( this );
+        return kernel.getState( this );
     }
 
     protected boolean isLoaded( KernelData kernel )
@@ -151,15 +173,13 @@ public abstract class KernelExtension<S> extends Service
                 }
                 else
                 {
-                    throw new RuntimeException( "Unexpected exception: " + exception.getClass(),
-                            exception );
+                    throw new RuntimeException( "Unexpected exception: " + exception.getClass(), exception );
                 }
             }
         }
     }
 
-    protected <T> Function<T> function( KernelData kernel, String name, Class<T> result,
-            Class<?>... params )
+    protected <T> Function<T> function( KernelData kernel, String name, Class<T> result, Class<?>... params )
     {
         Class<?>[] parameters = new Class[params == null ? 1 : ( params.length + 1 )];
         parameters[0] = KernelData.class;
