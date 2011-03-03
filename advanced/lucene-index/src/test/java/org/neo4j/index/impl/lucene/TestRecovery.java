@@ -130,7 +130,7 @@ public class TestRecovery
     	} );
     	
     	// Let it run for a while and then kill it, and wait for it to die
-    	Thread.sleep( 4000 );
+    	Thread.sleep( 6000 );
     	process.destroy();
     	process.waitFor();
     	
