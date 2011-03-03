@@ -15,4 +15,5 @@ Feature: Download and unpack Neo4j Server
   Scenario: Unpack downloaded archive
     When I unpack the archive into "neo4j_home"
     Then "neo4j_home" should contain a Neo4j Server installation
+    And the Neo4j version of the installation should be correct
 
