@@ -1,3 +1,5 @@
+package org.neo4j.qa
+
 import cuke4duke.{EN, ScalaDsl}
 import dispatch._
 import java.io.{FileOutputStream, File}
@@ -11,22 +13,10 @@ import org.scalatest.matchers.ShouldMatchers
 class Neo4jOpsSteps(neo4j: Neo4jEnvironment) extends ScalaDsl with EN with ShouldMatchers
 {
 
-  val WindowsPlatformRE = """.*([Ww]in).*""".r
-  val MacPlatformRE = """.*([mM]ac).*""".r
-  val UnixPlatformRE = """.*(n[iu]x).*""".r
-
   Given("""^a platform supported by Neo4j$""")
   {
-    neo4j.hostPlatform =
-        {
-          System.getProperty("os.name") match
-          {
-            case WindowsPlatformRE(_) => Platform.Windows
-            case MacPlatformRE(_) => Platform.Unix
-            case UnixPlatformRE(_) => Platform.Unix
-            case unsupportedPlatform => fail("Unsupported platform " + unsupportedPlatform)
-          }
-        }
+    () =>
+    neo4j.hostPlatform should not be (Platform.Unknown)
   }
 
   Given("""^Neo4j version based on system property "([^"]*)"$""")
@@ -56,6 +46,26 @@ class Neo4jOpsSteps(neo4j: Neo4jEnvironment) extends ScalaDsl with EN with Shoul
       neo4j.downloadHost = hostAddress
   }
 
+  Given("""^that Neo4j Server is not running$""")
+  {
+    () =>
+      val http = new Http
+      val req = :/("localhost", 7474)
+      var thrownException:Option[Exception] = None
+      try
+      {
+        http x (req as_str)
+        {
+          case _ => "neo4j is running"
+        }
+        None
+      } catch {
+        case e => thrownException = Some(e)
+      }
+      thrownException should be(None, "neo4j is running")
+
+  }
+
   When("""^I download Neo4j.*$""")
   {
     () =>
@@ -78,17 +88,29 @@ class Neo4jOpsSteps(neo4j: Neo4jEnvironment) extends ScalaDsl with EN with Shoul
   When("""^I unpack the archive into "([^"]*)"$""")
   {
     (destination: String) =>
-        neo4j.archiveName match
-        {
-          case Some(validArchive) => ArchiveHelper.unarchive(validArchive, destination)
-          case None => fail("Could not determine archive to download.")
-        }
+      neo4j.archiveName match
+      {
+        case Some(validArchive) => ArchiveHelper.unarchive(validArchive, destination)
+        case None => fail("Could not determine archive to download.")
+      }
+  }
+
+  When("""I start the server""")
+  {
+    () =>
+    neo4j.hostPlatform match
+    {
+      case Platform.Windows => fail("not yet implemented") /* launch windows */
+      case Platform.Unix => Runtime.getRuntime().exec("sh " + neo4j.neo4jHome.getAbsolutePath + "/bin/neo4j start")
+    }
   }
 
   Then("""^the current directory should contain a Neo4j archive$""")
   {
-    neo4j.archiveName match {
-      case Some(expectedArchive) => {
+    neo4j.archiveName match
+    {
+      case Some(expectedArchive) =>
+      {
         new File(expectedArchive) should be a ('file)
       }
       case None => fail("Could not determine what archive to expect.")
@@ -104,35 +126,3 @@ object Platform extends Enumeration
   val Unknown = Value("unknown")
 }
 
-class Neo4jEnvironment
-{
-  val UNSPECIFIED = "unspecified"
-
-  var version = UNSPECIFIED
-  var downloadHost = UNSPECIFIED
-  var hostPlatform = Platform.Unknown
-
-  def archiveName =
-  {
-    hostPlatform match
-    {
-      case Platform.Windows => Some("neo4j-" + version + "-windows.zip")
-      case Platform.Unix => Some("neo4j-" + version + "-unix.tar.gz")
-      case unsupportedPlatform => None
-    }
-  }
-
-
-  override def toString: String =
-  {
-    return "{" +
-        "version: " + version +
-        ", " +
-        "downloadHost: " + downloadHost +
-        ", " +
-        "hostPlatform: " + hostPlatform +
-        ", " +
-        "archiveName: " + archiveName +
-        "}"
-  }
-}
