@@ -19,24 +19,30 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static java.lang.Math.pow;
 import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.Config.ARRAY_BLOCK_SIZE;
+import static org.neo4j.kernel.Config.STRING_BLOCK_SIZE;
 import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 
-@Ignore( "Until Johan have added those checks in RelationshipTypeStore" )
+//@Ignore( "Until Johan have added those checks in RelationshipTypeStore" )
 public class TestUpgradeStore
 {
     private static final String PATH = "target/var/upgrade";
@@ -51,30 +57,134 @@ public class TestUpgradeStore
     public void makeSureStoreWithTooManyRelationshipTypesCannotBeUpgraded() throws Exception
     {
         new EmbeddedGraphDatabase( PATH ).shutdown();
-        createManyRelationshipTypes();
-        decrementRelationshipTypeStoreVersion();
+        createManyRelationshipTypes( 0xFFFF+10 );
         try
         {
-            new EmbeddedGraphDatabase( PATH );
+            new EmbeddedGraphDatabase( PATH ).shutdown();
             fail( "Shouldn't be able to upgrade with that many types set" );
         }
-        catch ( IllegalStoreVersionException e )
-        {   // Good
+        catch ( TransactionFailureException e )
+        {
+            if ( !( e.getCause() instanceof IllegalStoreVersionException ) )
+            {
+                throw e;
+            }
+            // Good
         }
     }
     
-    private void decrementRelationshipTypeStoreVersion()
+    @Test
+    public void makeSureStoreWithDecentAmountOfRelationshipTypesCanBeUpgraded() throws Exception
     {
-        // TODO Auto-generated method stub
+        new EmbeddedGraphDatabase( PATH ).shutdown();
+        createManyRelationshipTypes( 0xFFFF-10 );
+        new EmbeddedGraphDatabase( PATH );
+    }
+    
+    @Test( expected=TransactionFailureException.class )
+    public void makeSureStoreWithTooBigStringBlockSizeCannotBeCreated() throws Exception
+    {
+        new EmbeddedGraphDatabase( PATH, stringMap( STRING_BLOCK_SIZE, "" + (0x10000) ) );
+    }
+    
+    @Test
+    public void makeSureStoreWithDecentStringBlockSizeCanBeCreated() throws Exception
+    {
+        new EmbeddedGraphDatabase( PATH, stringMap( STRING_BLOCK_SIZE, "" + (0xFFFF) ) );
+    }
+    
+    @Test( expected=TransactionFailureException.class )
+    public void makeSureStoreWithTooBigArrayBlockSizeCannotBeCreated() throws Exception
+    {
+        new EmbeddedGraphDatabase( PATH, stringMap( ARRAY_BLOCK_SIZE, "" + (0x10000) ) );
+    }
+    
+    @Test
+    public void makeSureStoreWithDecentArrayBlockSizeCanBeCreated() throws Exception
+    {
+        new EmbeddedGraphDatabase( PATH, stringMap( ARRAY_BLOCK_SIZE, "" + (0xFFFF) ) );
+    }
+    
+    @Test
+    public void makeSureStoreWithTooBigStringBlockSizeCannotBeUpgraded() throws Exception
+    {
+        new EmbeddedGraphDatabase( PATH ).shutdown();
+        setBlockSize( new File( PATH, "neostore.propertystore.db.strings" ), 0x10000, "StringPropertyStore v0.9.5" );
         
+        try
+        {
+            new EmbeddedGraphDatabase( PATH ).shutdown();
+            fail( "Shouldn't be able to upgrade with block size that big" );
+        }
+        catch ( TransactionFailureException e )
+        {
+            if ( !( e.getCause() instanceof IllegalStoreVersionException ) )
+            {
+                throw e;
+            }
+            // Good
+        }
+    }
+    
+    @Test
+    public void makeSureStoreWithDecentStringBlockSizeCanBeUpgraded() throws Exception
+    {
+        new EmbeddedGraphDatabase( PATH ).shutdown();
+        setBlockSize( new File( PATH, "neostore.propertystore.db.strings" ), 0xFFFF, "StringPropertyStore v0.9.5" );
+        new EmbeddedGraphDatabase( PATH ).shutdown();
+    }
+    
+    @Test
+    public void makeSureStoreWithTooBigArrayBlockSizeCannotBeUpgraded() throws Exception
+    {
+        new EmbeddedGraphDatabase( PATH ).shutdown();
+        setBlockSize( new File( PATH, "neostore.propertystore.db.arrays" ), 0x10000, "ArrayPropertyStore v0.9.5" );
+        
+        try
+        {
+            new EmbeddedGraphDatabase( PATH ).shutdown();
+            fail( "Shouldn't be able to upgrade with block size that big" );
+        }
+        catch ( TransactionFailureException e )
+        {
+            if ( !( e.getCause() instanceof IllegalStoreVersionException ) )
+            {
+                throw e;
+            }
+            // Good
+        }
+    }
+    
+    @Test
+    public void makeSureStoreWithDecentArrayBlockSizeCanBeUpgraded() throws Exception
+    {
+        new EmbeddedGraphDatabase( PATH ).shutdown();
+        setBlockSize( new File( PATH, "neostore.propertystore.db.arrays" ), 0xFFFF, "ArrayPropertyStore v0.9.5" );
+        new EmbeddedGraphDatabase( PATH ).shutdown();
+    }
+    
+    private void setBlockSize( File file, int blockSize, String oldVersionToSet ) throws IOException
+    {
+        FileChannel channel = new RandomAccessFile( file, "rw" ).getChannel();
+        ByteBuffer buffer = ByteBuffer.wrap( new byte[4] );
+        // This +13 thing is done internally when creating the store
+        // since a block has an overhead of 13 bytes
+        buffer.putInt( blockSize+13 );
+        buffer.flip();
+        channel.write( buffer );
+        
+        // It's the same length as the current version v0.9.9
+        channel.position( channel.size()-oldVersionToSet.getBytes().length );
+        buffer = ByteBuffer.wrap( oldVersionToSet.getBytes() );
+        channel.write( buffer );
+        channel.close();
     }
 
-    private void createManyRelationshipTypes()
+    private void createManyRelationshipTypes( int numberOfTypes )
     {
         String fileName = new File( PATH, "neostore.relationshiptypestore.db" ).getAbsolutePath();
         Map<Object, Object> config = MapUtil.<Object, Object>genericMap( IdGeneratorFactory.class, new NoLimitidGeneratorFactory() );
         RelationshipTypeStore store = new RelationshipTypeStoreWithOneOlderVersion( fileName, config, IdType.RELATIONSHIP_TYPE );
-        int numberOfTypes = (int)pow( 2, 16 );
         for ( int i = 0; i < numberOfTypes; i++ )
         {
             String name = "type" + i;

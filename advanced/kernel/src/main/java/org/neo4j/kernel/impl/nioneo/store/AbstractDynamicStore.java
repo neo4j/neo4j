@@ -95,7 +95,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
             throw new IllegalArgumentException( "Illegal block size["
                 + blockSize + "]" );
         }
-        if ( blockSize > 65535 )
+        if ( blockSize > 0xFFFF )
         {
             throw new IllegalArgumentException( "Illegal block size[" + blockSize + "], limit is 65535" );
         }
@@ -253,7 +253,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
     }
 
     // in_use(byte)+prev_block(int)+nr_of_bytes(int)+next_block(int)
-    private static final int BLOCK_HEADER_SIZE = 1 + 4 + 4 + 4;
+    protected static final int BLOCK_HEADER_SIZE = 1 + 4 + 4 + 4;
 
     public void updateRecord( DynamicRecord record )
     {
