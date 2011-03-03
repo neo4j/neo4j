@@ -95,6 +95,10 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
             throw new IllegalArgumentException( "Illegal block size["
                 + blockSize + "]" );
         }
+        if ( blockSize > 65535 )
+        {
+            throw new IllegalArgumentException( "Illegal block size[" + blockSize + "], limit is 65535" );
+        }
         blockSize += 13; // in_use(1)+length(4)+prev_block(4)+next_block(4)
 
         // write the header

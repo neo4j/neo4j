@@ -445,6 +445,24 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 //        }
         if ( version.equals( "RelationshipTypeStore v0.9.5" ) )
         {
+            try
+            {
+                long fileSize = getFileChannel().size();
+                long recordCount = fileSize / getRecordSize();
+                // 0xFFFF magic -1
+                if ( recordCount >= 65535 )
+                {
+                    throw new IllegalStoreVersionException( "Store version[" + version +
+                            "] has " + recordCount + " different relationship types " +
+                            "(limit is 65534) and can not be upgraded to a newer version." );
+                }
+            }
+            catch ( IOException e )
+            {
+                throw new IllegalStoreVersionException(
+                        "Unable to verify relationship type count, can not upgrade " +
+                        "store from version[" + version + "]" );
+            }
             return true;
         }
         throw new IllegalStoreVersionException( "Store version [" + version  + 
