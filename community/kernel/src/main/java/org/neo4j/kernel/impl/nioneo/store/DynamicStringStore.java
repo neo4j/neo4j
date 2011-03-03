@@ -82,11 +82,11 @@ public class DynamicStringStore extends AbstractDynamicStore
         {
             long blockSize = getBlockSize();
             // 0xFFFF + 13 for inUse,length,prev,next
-            if ( blockSize > 65548 )
+            if ( blockSize > 0xFFFF+BLOCK_HEADER_SIZE )
             {
                 throw new IllegalStoreVersionException( "Store version[" + version +
-                        "] has " + (blockSize - 13) + " block size " +
-                        "(limit is 65535) and can not be upgraded to a newer version." );
+                        "] has " + (blockSize - BLOCK_HEADER_SIZE) + " block size " +
+                        "(limit is " + 0xFFFF + ") and can not be upgraded to a newer version." );
             }
             return true;
         }

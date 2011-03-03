@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.neo4j.kernel.Config.ARRAY_BLOCK_SIZE;
+import static org.neo4j.kernel.Config.STRING_BLOCK_SIZE;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -144,8 +147,8 @@ public class PropertyStore extends AbstractStore implements Store
         int arrayStoreBlockSize = 120;
         try
         {
-            String stringBlockSize = (String) config.get( "string_block_size" );
-            String arrayBlockSize = (String) config.get( "array_block_size" );
+            String stringBlockSize = (String) config.get( STRING_BLOCK_SIZE );
+            String arrayBlockSize = (String) config.get( ARRAY_BLOCK_SIZE );
             if ( stringBlockSize != null )
             {
                 int value = Integer.parseInt( stringBlockSize );

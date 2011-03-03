@@ -152,7 +152,7 @@ public class TxModule
         {
             throw new TransactionFailureException(
                 "Could not create data source [" + name
-                + "], see nested exception for cause of error", e );
+                + "], see nested exception for cause of error", e.getCause() );
         }
     }
 
