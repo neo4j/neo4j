@@ -74,11 +74,19 @@ public class MasterUtil
     
     public static SlaveContext rotateLogsAndStreamStoreFiles( GraphDatabaseService graphDb, StoreWriter writer )
     {
+        if ( Config.osIsWindows() )
+        {
+            throw new UnsupportedOperationException(
+                "Streaming store files live (as used in HA and backup) "
+                    + "isn't supported on Windows due to limitations in OS/filesystem" );
+        }
+
         File baseDir = getBaseDir( graphDb );
         XaDataSourceManager dsManager =
                 ((AbstractGraphDatabase) graphDb).getConfig().getTxModule().getXaDataSourceManager();
         Collection<XaDataSource> sources = dsManager.getAllRegisteredDataSources();
         
+        @SuppressWarnings( "unchecked" )
         Pair<String, Long>[] appliedTransactions = new Pair[sources.size()];
         int i = 0;
         for ( XaDataSource ds : sources )

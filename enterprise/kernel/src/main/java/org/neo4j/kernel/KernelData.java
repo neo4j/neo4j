@@ -201,9 +201,10 @@ public abstract class KernelData
         extension.unload( (S) state );
     }
 
-    final Object getState( KernelExtension<?> extension )
+    @SuppressWarnings( "unchecked" )
+    final <S> S getState( KernelExtension<S> extension )
     {
-        return state.get( extension );
+        return (S) state.get( extension );
     }
 
     private Object setState( KernelExtension<?> extension, Object value )

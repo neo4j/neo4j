@@ -146,25 +146,33 @@ class EmbeddedGraphDbImpl
         boolean started = false;
         try
         {
-            KernelExtensionLoader extensionLoader = new KernelExtensionLoader()
+            final KernelExtensionLoader extensionLoader;
+            if ( "false".equalsIgnoreCase( inputParams.get( Config.LOAD_EXTENSIONS ) ) )
             {
-                private Collection<KernelExtension<?>> loaded;
-
-                public void configureKernelExtensions()
+                extensionLoader = KernelExtensionLoader.DONT_LOAD;
+            }
+            else
+            {
+                extensionLoader = new KernelExtensionLoader()
                 {
-                    loaded = extensions.loadExtensionConfigurations( msgLog );
-                }
+                    private Collection<KernelExtension<?>> loaded;
 
-                public void initializeIndexProviders()
-                {
-                    extensions.loadIndexImplementations( indexManager, msgLog );
-                }
+                    public void configureKernelExtensions()
+                    {
+                        loaded = extensions.loadExtensionConfigurations( msgLog );
+                    }
 
-                public void load()
-                {
-                    extensions.loadExtensions( loaded, msgLog );
-                }
-            };
+                    public void initializeIndexProviders()
+                    {
+                        extensions.loadIndexImplementations( indexManager, msgLog );
+                    }
+
+                    public void load()
+                    {
+                        extensions.loadExtensions( loaded, msgLog );
+                    }
+                };
+            }
             graphDbInstance.start( graphDbService, extensionLoader );
             nodeManager = config.getGraphDbModule().getNodeManager();
             extensionLoader.load();

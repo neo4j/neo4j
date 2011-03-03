@@ -52,10 +52,11 @@ import org.neo4j.kernel.KernelExtension;
 @Service.Implementation( KernelExtension.class )
 public final class JmxExtension extends KernelExtension<JmxExtension.JmxData>
 {
+    static final String KEY = "kernel jmx";
     private static final Logger log = Logger.getLogger( JmxExtension.class.getName() );
     public JmxExtension()
     {
-        super( "kernel jmx" );
+        super( KEY );
     }
 
     @Override
