@@ -1,3 +1,4 @@
+[[short-strings]]
 Compressed storage of short strings
 ===================================
 

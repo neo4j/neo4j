@@ -269,14 +269,14 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
             if ( record.inUse() )
             {
                 long prevProp = record.getPrevBlock();
-                short prevModifier = prevProp == Record.NO_NEXT_BLOCK.intValue() ? 0 : (short)((prevProp&0xF00000000L) >> 28);
+                short prevModifier = prevProp == Record.NO_NEXT_BLOCK.intValue() ? 0 : (short)((prevProp & 0xF00000000L) >> 28);
                 
                 long nextProp = record.getNextBlock();
-                int nextModifier = nextProp == Record.NO_NEXT_BLOCK.intValue() ? 0 : (int)((nextProp&0xF00000000L) >> 8);
+                int nextModifier = nextProp == Record.NO_NEXT_BLOCK.intValue() ? 0 : (int)((nextProp & 0xF00000000L) >> 8);
                 
                 // [    ,   x] in use
                 // [xxxx,    ] high prev block bits
-                short inUseUnsignedByte = (short)((Record.IN_USE.byteValue()|prevModifier));
+                short inUseUnsignedByte = (short)((Record.IN_USE.byteValue() | prevModifier));
                 
                 // [    ,    ][xxxx,xxxx][xxxx,xxxx][xxxx,xxxx] nr of bytes
                 // [    ,xxxx][    ,    ][    ,    ][    ,    ] high next block bits
@@ -453,25 +453,25 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         
         // [    ,   x] in use
         // [xxxx,    ] high bits for prev block
-        byte inUseByte = buffer.get();
-        boolean inUse = (inUseByte&0x1) == Record.IN_USE.intValue();
+        long inUseByte = buffer.get();
+        boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
         if ( !inUse )
         {
             throw new InvalidRecordException( "Not in use, blockId[" + blockId + "]" );
         }
         long prevBlock = buffer.getUnsignedInt();
-        long prevModifier = prevBlock == IdGeneratorImpl.INTEGER_MINUS_ONE && (inUseByte&0xF0) == 0 ? 0 : (inUseByte&0xF0) << 28;
+        long prevModifier = (inUseByte & 0xF0L) << 28;
         
         int dataSize = getBlockSize() - BLOCK_HEADER_SIZE;
         
         // [    ,    ][xxxx,xxxx][xxxx,xxxx][xxxx,xxxx] number of bytes
         // [    ,xxxx][    ,    ][    ,    ][    ,    ] higher bits for next block
-        int nrOfBytesInt = buffer.getInt();
+        long nrOfBytesInt = buffer.getInt();
         
-        int nrOfBytes = nrOfBytesInt&0xFFFFFF;
+        int nrOfBytes = (int)(nrOfBytesInt & 0xFFFFFF);
         
         long nextBlock = buffer.getUnsignedInt();
-        long nextModifier = nextBlock == IdGeneratorImpl.INTEGER_MINUS_ONE && (nrOfBytesInt&0xF000000) == 0 ? 0 : (nrOfBytesInt&0xF000000) << 8;
+        long nextModifier = (nrOfBytesInt & 0xF000000L) << 8;
         
         long longNextBlock = longFromIntAndMod( nextBlock, nextModifier );
         if ( longNextBlock != Record.NO_NEXT_BLOCK.intValue()

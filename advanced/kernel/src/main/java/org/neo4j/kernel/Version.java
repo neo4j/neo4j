@@ -62,7 +62,7 @@ public class Version extends Service
      */
     public String getVersion()
     {
-        if ( version == null )
+        if ( version == null || version.equals( "" ) )
         {
             return "<unknown>";
         }

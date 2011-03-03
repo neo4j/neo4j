@@ -190,7 +190,6 @@ public class TestBigStore implements RelationshipType
         }
         
         long heapMb = Runtime.getRuntime().maxMemory() / (1000*1000); // Not 1024, matches better wanted result with -Xmx
-        System.out.println( "heap " + heapMb );
         if ( heapMb < requiredHeapMb )
         {
             System.out.println( testName + ": This test requires a heap of size " + requiredHeapMb + ", this heap has only " + heapMb );

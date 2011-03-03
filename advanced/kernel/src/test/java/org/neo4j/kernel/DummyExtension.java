@@ -19,32 +19,29 @@
  */
 package org.neo4j.kernel;
 
-interface KernelExtensionLoader
+public class DummyExtension extends KernelExtension<DummyExtension.State>
 {
-    void configureKernelExtensions();
+    static final String EXTENSION_ID = "dummy";
 
-    void initializeIndexProviders();
-
-    void load();
-
-    KernelExtensionLoader DONT_LOAD = new KernelExtensionLoader()
+    static class State
     {
-        @Override
-        public void load()
-        {
-            // do nothing
-        }
+        volatile boolean unloaded = false;
+    }
 
-        @Override
-        public void initializeIndexProviders()
-        {
-            // do nothing
-        }
+    public DummyExtension()
+    {
+        super( EXTENSION_ID );
+    }
 
-        @Override
-        public void configureKernelExtensions()
-        {
-            // do nothing
-        }
-    };
+    @Override
+    protected State load( KernelData kernel )
+    {
+        return new State();
+    }
+
+    @Override
+    protected void unload( State state )
+    {
+        state.unloaded = true;
+    }
 }

@@ -17,34 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.management.impl;
 
-interface KernelExtensionLoader
+import org.neo4j.kernel.KernelExtensionContractTest;
+
+public class TestJmxExtension extends KernelExtensionContractTest<JmxExtension.JmxData, JmxExtension>
 {
-    void configureKernelExtensions();
-
-    void initializeIndexProviders();
-
-    void load();
-
-    KernelExtensionLoader DONT_LOAD = new KernelExtensionLoader()
+    public TestJmxExtension()
     {
-        @Override
-        public void load()
-        {
-            // do nothing
-        }
-
-        @Override
-        public void initializeIndexProviders()
-        {
-            // do nothing
-        }
-
-        @Override
-        public void configureKernelExtensions()
-        {
-            // do nothing
-        }
-    };
+        super( JmxExtension.KEY, JmxExtension.class );
+    }
 }
