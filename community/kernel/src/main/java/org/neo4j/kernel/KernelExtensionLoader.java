@@ -26,4 +26,25 @@ interface KernelExtensionLoader
     void initializeIndexProviders();
 
     void load();
+
+    KernelExtensionLoader DONT_LOAD = new KernelExtensionLoader()
+    {
+        @Override
+        public void load()
+        {
+            // do nothing
+        }
+
+        @Override
+        public void initializeIndexProviders()
+        {
+            // do nothing
+        }
+
+        @Override
+        public void configureKernelExtensions()
+        {
+            // do nothing
+        }
+    };
 }

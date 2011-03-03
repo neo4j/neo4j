@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.core.NodeManager.CacheType;
 
 public class TestCacheTypes extends AbstractNeo4jTestCase
 {
-    private static final String PATH = NEO4J_BASE_PATH + "cache-db";
+    private static final String PATH = getStorePath( "cache-db" );
     
     @BeforeClass
     public static void clear()
