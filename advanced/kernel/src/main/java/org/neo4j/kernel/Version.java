@@ -64,7 +64,7 @@ public class Version extends Service
     {
         if ( version == null || version.equals( "" ) )
         {
-            return "<unknown>";
+            return "unknown";
         }
         else if ( version.contains( "SNAPSHOT" ) )
         {
