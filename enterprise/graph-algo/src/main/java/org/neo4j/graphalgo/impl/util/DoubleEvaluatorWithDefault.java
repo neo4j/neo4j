@@ -17,34 +17,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.graphalgo.impl.util;
 
-interface KernelExtensionLoader
+import org.neo4j.graphalgo.CostEvaluator;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Relationship;
+
+public class DoubleEvaluatorWithDefault implements CostEvaluator<Double>
 {
-    void configureKernelExtensions();
+    private String costPropertyName;
+    private final double defaultCost;
 
-    void initializeIndexProviders();
-
-    void load();
-
-    KernelExtensionLoader DONT_LOAD = new KernelExtensionLoader()
+    public DoubleEvaluatorWithDefault( String costPropertyName, double defaultCost )
     {
-        @Override
-        public void load()
-        {
-            // do nothing
-        }
+        super();
+        this.costPropertyName = costPropertyName;
+        this.defaultCost = defaultCost;
+    }
 
-        @Override
-        public void initializeIndexProviders()
-        {
-            // do nothing
-        }
-
-        @Override
-        public void configureKernelExtensions()
-        {
-            // do nothing
-        }
-    };
+    public Double getCost( Relationship relationship, Direction direction )
+    {
+        return (Double) relationship.getProperty( costPropertyName, defaultCost );
+    }
 }

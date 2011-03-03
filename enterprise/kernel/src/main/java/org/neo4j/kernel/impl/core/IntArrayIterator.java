@@ -120,7 +120,7 @@ class IntArrayIterator implements Iterable<Relationship>,
                         RelTypeElementIterator newItr = itr;
                         if ( itr.isSrcEmpty() )
                         {
-                            RelIdArray newSrc = fromNode.getIntArray( itr.getType() );
+                            RelIdArray newSrc = fromNode.getRelationshipIds( itr.getType() );
                             if ( newSrc != null )
                             {
                                 newItr = itr.setSrc( newSrc );
@@ -130,7 +130,7 @@ class IntArrayIterator implements Iterable<Relationship>,
                     }
                     if ( types.length == 0 )
                     {
-                        for ( Map.Entry<String, RelIdArray> entry : fromNode.getIntArrayMap().entrySet() )
+                        for ( Map.Entry<String, RelIdArray> entry : fromNode.getRelationshipIds().entrySet() )
                         {
                             String type = entry.getKey();
                             RelTypeElementIterator itr = newRels.get( type );

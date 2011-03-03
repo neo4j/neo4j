@@ -32,9 +32,11 @@ import org.neo4j.kernel.KernelExtension;
 @Service.Implementation( KernelExtension.class )
 public class OnlineBackupExtension extends KernelExtension<BackupServer>
 {
+    static final String KEY = "online backup";
+
     public OnlineBackupExtension()
     {
-        super( "online backup" );
+        super( KEY );
     }
 
     @Override

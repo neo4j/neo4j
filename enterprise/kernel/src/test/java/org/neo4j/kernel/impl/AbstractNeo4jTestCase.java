@@ -27,12 +27,13 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.core.NodeManager;
 
 public abstract class AbstractNeo4jTestCase
 {
-    protected static final String NEO4J_BASE_PATH = "target/var/";
+    protected static final File NEO4J_BASE_DIR = new File( "target", "var" );
     
     private static GraphDatabaseService graphDb;
     private Transaction tx;
@@ -59,7 +60,7 @@ public abstract class AbstractNeo4jTestCase
 
     public static String getStorePath( String endPath )
     {
-        return NEO4J_BASE_PATH + endPath;
+        return new File( NEO4J_BASE_DIR, endPath ).getAbsolutePath();
     }
 
     @BeforeClass
@@ -172,5 +173,10 @@ public abstract class AbstractNeo4jTestCase
     {
         getEmbeddedGraphDb().getConfig().getGraphDbModule()
             .getNodeManager().clearCache();
+    }
+
+    public static boolean osIsWindows()
+    {
+        return Config.osIsWindows();
     }
 }

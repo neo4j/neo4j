@@ -508,12 +508,12 @@ class NodeImpl extends Primitive
         return relChainPosition;
     }
 
-    RelIdArray getIntArray( String type )
+    RelIdArray getRelationshipIds( String type )
     {
         return relationshipMap.get( type );
     }
     
-    ArrayMap<String, RelIdArray> getIntArrayMap()
+    ArrayMap<String, RelIdArray> getRelationshipIds()
     {
         return relationshipMap;
     }
