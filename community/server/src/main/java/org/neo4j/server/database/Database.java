@@ -31,10 +31,8 @@ import org.neo4j.server.logging.Logger;
 import org.neo4j.ext.udc.UdcProperties;
 import org.rrd4j.core.RrdDb;
 
-
 public class Database
 {
-
     public static Logger log = Logger.getLogger( Database.class );
 
     public AbstractGraphDatabase graph;
@@ -94,6 +92,10 @@ public class Database
     {
         try
         {
+            if ( rrdDb != null )
+            {
+                rrdDb.close();
+            }
             if ( graph != null )
             {
                 graph.shutdown();
