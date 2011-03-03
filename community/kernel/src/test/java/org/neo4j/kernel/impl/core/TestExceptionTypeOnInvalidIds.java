@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.core;
 
 import static org.junit.Assert.fail;
 
+import java.io.File;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -34,6 +36,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
+import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
 public class TestExceptionTypeOnInvalidIds
 {
@@ -41,8 +44,8 @@ public class TestExceptionTypeOnInvalidIds
     private static final long SMALL_NEGATIVE_INTEGER = -5;
     private static final long BIG_POSSITIVE_INTEGER = Integer.MAX_VALUE;
     private static final long BIG_NEGATIVE_INTEGER = Integer.MIN_VALUE;
-    private static final long SMALL_POSSITIVE_LONG = ( (long) Integer.MAX_VALUE ) + 1;
-    private static final long SMALL_NEGATIVE_LONG = -( (long) Integer.MIN_VALUE ) - 1;
+    private static final long SMALL_POSSITIVE_LONG = ((long) Integer.MAX_VALUE) + 1;
+    private static final long SMALL_NEGATIVE_LONG = -((long) Integer.MIN_VALUE) - 1;
     private static final long BIG_POSSITIVE_LONG = Long.MAX_VALUE;
     private static final long BIG_NEGATIVE_LONG = Long.MIN_VALUE;
     private static GraphDatabaseService graphdb;
@@ -52,13 +55,17 @@ public class TestExceptionTypeOnInvalidIds
     @BeforeClass
     public static void createDatabase()
     {
-        graphdb = new EmbeddedGraphDatabase( "target/var/id_test" );
-        graphDbReadOnly = new EmbeddedReadOnlyGraphDatabase( "target/var/id_test" );
+        if ( AbstractNeo4jTestCase.osIsWindows() ) return;
+        String storeDir = "target/var/id_test";
+        AbstractNeo4jTestCase.deleteFileOrDirectory( new File( storeDir ) );
+        graphdb = new EmbeddedGraphDatabase( storeDir );
+        graphDbReadOnly = new EmbeddedReadOnlyGraphDatabase( storeDir );
     }
 
     @AfterClass
     public static void destroyDatabase()
     {
+        if ( AbstractNeo4jTestCase.osIsWindows() ) return;
         graphDbReadOnly.shutdown();
         graphDbReadOnly = null;
         graphdb.shutdown();
@@ -68,12 +75,14 @@ public class TestExceptionTypeOnInvalidIds
     @Before
     public void startTransaction()
     {
+        if ( AbstractNeo4jTestCase.osIsWindows() ) return;
         tx = graphdb.beginTx();
     }
 
     @After
     public void endTransaction()
     {
+        if ( AbstractNeo4jTestCase.osIsWindows() ) return;
         tx.finish();
         tx = null;
     }
@@ -172,7 +181,7 @@ public class TestExceptionTypeOnInvalidIds
     public void getRelationshipByBigNegativeInteger() throws Exception
     {
         getRelationshipById( BIG_NEGATIVE_INTEGER );
-        getRelationshipByIdReadOnly( BIG_NEGATIVE_INTEGER );        
+        getRelationshipByIdReadOnly( BIG_NEGATIVE_INTEGER );
     }
 
     /* throws IllegalArgumentException instead of NotFoundException */
@@ -210,33 +219,49 @@ public class TestExceptionTypeOnInvalidIds
 
     private void getNodeById( long index )
     {
+        if ( AbstractNeo4jTestCase.osIsWindows() )
+        {
+            throw new NotFoundException();
+        }
+
         Node value = graphdb.getNodeById( index );
-        fail( String.format(
-                "Returned Node [0x%x] for index 0x%x (int value: 0x%x)",
+        fail( String.format( "Returned Node [0x%x] for index 0x%x (int value: 0x%x)",
                 value.getId(), index, (int) index ) );
     }
 
     private void getNodeByIdReadOnly( long index )
     {
+        if ( AbstractNeo4jTestCase.osIsWindows() )
+        {
+            throw new NotFoundException();
+        }
+
         Node value = graphDbReadOnly.getNodeById( index );
-        fail( String.format(
-                "Returned Node [0x%x] for index 0x%x (int value: 0x%x)",
+        fail( String.format( "Returned Node [0x%x] for index 0x%x (int value: 0x%x)",
                 value.getId(), index, (int) index ) );
     }
-    
+
     private void getRelationshipById( long index )
     {
+        if ( AbstractNeo4jTestCase.osIsWindows() )
+        {
+            throw new NotFoundException();
+        }
+
         Relationship value = graphdb.getRelationshipById( index );
-        fail( String.format(
-                "Returned Relationship [0x%x] for index 0x%x (int value: 0x%x)",
+        fail( String.format( "Returned Relationship [0x%x] for index 0x%x (int value: 0x%x)",
                 value.getId(), index, (int) index ) );
     }
 
     private void getRelationshipByIdReadOnly( long index )
     {
+        if ( AbstractNeo4jTestCase.osIsWindows() )
+        {
+            throw new NotFoundException();
+        }
+
         Relationship value = graphDbReadOnly.getRelationshipById( index );
-        fail( String.format(
-                "Returned Relationship [0x%x] for index 0x%x (int value: 0x%x)",
+        fail( String.format( "Returned Relationship [0x%x] for index 0x%x (int value: 0x%x)",
                 value.getId(), index, (int) index ) );
     }
 }

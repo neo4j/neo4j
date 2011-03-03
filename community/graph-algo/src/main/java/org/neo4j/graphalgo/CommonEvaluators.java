@@ -20,6 +20,7 @@
 package org.neo4j.graphalgo;
 
 import org.neo4j.graphalgo.impl.util.DoubleEvaluator;
+import org.neo4j.graphalgo.impl.util.DoubleEvaluatorWithDefault;
 import org.neo4j.graphalgo.impl.util.GeoEstimateEvaluator;
 import org.neo4j.graphalgo.impl.util.IntegerEvaluator;
 
@@ -36,6 +37,11 @@ public abstract class CommonEvaluators
         return new DoubleEvaluator( relationshipCostPropertyKey );
     }
 
+    public static CostEvaluator<Double> doubleCostEvaluator( String relationshipCostPropertyKey, double defaultCost )
+    {
+        return new DoubleEvaluatorWithDefault( relationshipCostPropertyKey, defaultCost );
+    }
+    
     public static CostEvaluator<Integer> intCostEvaluator( String relationshipCostPropertyKey )
     {
         return new IntegerEvaluator( relationshipCostPropertyKey );

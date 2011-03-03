@@ -139,6 +139,13 @@ public class TestBigBatchStore implements RelationshipType
         db = new BatchInserterImpl( PATH );
     }
     
+    @Test( expected=IllegalArgumentException.class )
+    public void makeSureCantCreateNodeWithMagicNumber()
+    {
+        long id = (long) Math.pow( 2, 32 )-1;
+        db.createNode( id, null );
+    }
+    
     private Collection<Long> asIds( Iterable<SimpleRelationship> relationships )
     {
         Collection<Long> ids = new HashSet<Long>();

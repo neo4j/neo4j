@@ -136,7 +136,11 @@ public final class LocalhostZooKeeperCluster
                 conf.println( "tickTime=2000" );
                 conf.println( "initLimit=10" );
                 conf.println( "syncLimit=5" );
-                conf.println( "dataDir=" + dataDir.getAbsolutePath() );
+
+                // On Windows the backslashes will have to be escaped for
+                // ZooKeeper to interpret them correctly.
+                conf.println( "dataDir=" + dataDir.getAbsolutePath().replaceAll( "\\\\", "\\\\\\\\" ) );
+
                 conf.println( "clientPort=" + port );
                 for ( int j = 0; j < keeper.length; j++ )
                 {

@@ -17,34 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.ext.udc.impl;
 
-interface KernelExtensionLoader
+import org.neo4j.kernel.KernelExtensionContractTest;
+
+public class TestUdcExtensionImpl extends KernelExtensionContractTest<UdcTimerTask, UdcExtensionImpl>
 {
-    void configureKernelExtensions();
-
-    void initializeIndexProviders();
-
-    void load();
-
-    KernelExtensionLoader DONT_LOAD = new KernelExtensionLoader()
+    public TestUdcExtensionImpl()
     {
-        @Override
-        public void load()
-        {
-            // do nothing
-        }
-
-        @Override
-        public void initializeIndexProviders()
-        {
-            // do nothing
-        }
-
-        @Override
-        public void configureKernelExtensions()
-        {
-            // do nothing
-        }
-    };
+        super( UdcExtensionImpl.KEY, UdcExtensionImpl.class );
+    }
 }

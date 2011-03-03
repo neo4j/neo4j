@@ -162,37 +162,38 @@ public class RelationshipStore extends AbstractStore implements Store
         if ( record.inUse() )
         {
             long firstNode = record.getFirstNode();
-            short firstNodeMod = (short)((firstNode&0x700000000L) >> 31);
+            short firstNodeMod = (short)((firstNode & 0x700000000L) >> 31);
             
+            long secondNode = record.getSecondNode();
+            long secondNodeMod = (secondNode & 0x700000000L) >> 4;
+            
+            long firstPrevRel = record.getFirstPrevRel();
+            long firstPrevRelMod = firstPrevRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (firstPrevRel & 0x700000000L) >> 7;
+            
+            long firstNextRel = record.getFirstNextRel();
+            long firstNextRelMod = firstNextRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (firstNextRel & 0x700000000L) >> 10;
+            
+            long secondPrevRel = record.getSecondPrevRel();
+            long secondPrevRelMod = secondPrevRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (secondPrevRel & 0x700000000L) >> 13;
+            
+            long secondNextRel = record.getSecondNextRel();
+            long secondNextRelMod = secondNextRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (secondNextRel & 0x700000000L) >> 16;
+             
+            long nextProp = record.getNextProp();
+            long nextPropMod = nextProp == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (nextProp & 0xF00000000L) >> 28;
+            
+            // [    ,   x] in use flag
+            // [    ,xxx ] first node high order bits
+            // [xxxx,    ] next prop high order bits
+            short inUseUnsignedByte = (short)(Record.IN_USE.byteValue() | firstNodeMod | nextPropMod);
+
             // [ xxx,    ][    ,    ][    ,    ][    ,    ] second node high order bits,     0x70000000
             // [    ,xxx ][    ,    ][    ,    ][    ,    ] first prev rel high order bits,  0xE000000
             // [    ,   x][xx  ,    ][    ,    ][    ,    ] first next rel high order bits,  0x1C00000
             // [    ,    ][  xx,x   ][    ,    ][    ,    ] second prev rel high order bits, 0x380000
             // [    ,    ][    , xxx][    ,    ][    ,    ] second next rel high order bits, 0x70000
             // [    ,    ][    ,    ][xxxx,xxxx][xxxx,xxxx] type
-            long secondNode = record.getSecondNode();
-            long secondNodeMod = (secondNode&0x700000000L) >> 4;
-            
-            long firstPrevRel = record.getFirstPrevRel();
-            long firstPrevRelMod = firstPrevRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (firstPrevRel&0xF00000000L) >> 7;
-            
-            long firstNextRel = record.getFirstNextRel();
-            long firstNextRelMod = firstNextRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (firstNextRel&0xF00000000L) >> 10;
-            
-            long secondPrevRel = record.getSecondPrevRel();
-            long secondPrevRelMod = secondPrevRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (secondPrevRel&0xF00000000L) >> 13;
-            
-            long secondNextRel = record.getSecondNextRel();
-            long secondNextRelMod = secondNextRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (secondNextRel&0xF00000000L) >> 16;
-            
-            long nextProp = record.getNextProp();
-            long nextPropMod = nextProp == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (nextProp&0xF00000000L) >> 28;
-            
-            // [    ,   x] in use flag
-            // [    ,xxx ] first node high order bits
-            // [xxxx,    ] next prop high order bits
-            short inUseUnsignedByte = (short)(Record.IN_USE.byteValue()|firstNodeMod|nextPropMod);
-            int typeInt = (int)(record.getType()|secondNodeMod|firstPrevRelMod|firstNextRelMod|secondPrevRelMod|secondNextRelMod);
+            int typeInt = (int)(record.getType() | secondNodeMod | firstPrevRelMod | firstNextRelMod | secondPrevRelMod | secondNextRelMod);
             
             buffer.put( (byte)inUseUnsignedByte ).putInt( (int) firstNode ).putInt( (int) secondNode )
                 .putInt( typeInt ).putInt( (int) firstPrevRel ).putInt( (int) firstNextRel )
@@ -218,7 +219,7 @@ public class RelationshipStore extends AbstractStore implements Store
         // [xxxx,    ] next prop high order bits
         long inUseByte = buffer.get();
         
-        boolean inUse = (inUseByte&0x1) == Record.IN_USE.intValue();
+        boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
         if ( !inUse )
         {
             if ( checkInUse )
@@ -229,8 +230,8 @@ public class RelationshipStore extends AbstractStore implements Store
         }
         
         long firstNode = buffer.getUnsignedInt();
-        long firstNodeMod = (inUseByte&0xE) << 31;
-            
+        long firstNodeMod = (inUseByte & 0xEL) << 31;
+        
         long secondNode = buffer.getUnsignedInt();
         
         // [ xxx,    ][    ,    ][    ,    ][    ,    ] second node high order bits,     0x70000000
@@ -240,8 +241,8 @@ public class RelationshipStore extends AbstractStore implements Store
         // [    ,    ][    , xxx][    ,    ][    ,    ] second next rel high order bits, 0x70000
         // [    ,    ][    ,    ][xxxx,xxxx][xxxx,xxxx] type
         long typeInt = buffer.getInt();
-        long secondNodeMod = (typeInt&0x70000000L) << 4;
-        int type = (int)(typeInt&0xFFFF);
+        long secondNodeMod = (typeInt & 0x70000000L) << 4;
+        int type = (int)(typeInt & 0xFFFF);
         
         RelationshipRecord record = new RelationshipRecord( id,
             longFromIntAndMod( firstNode, firstNodeMod ),
@@ -249,23 +250,23 @@ public class RelationshipStore extends AbstractStore implements Store
         record.setInUse( inUse );
         
         long firstPrevRel = buffer.getUnsignedInt();
-        long firstPrevRelMod = firstPrevRel == IdGeneratorImpl.INTEGER_MINUS_ONE && (typeInt&0xE000000) == 0 ? 0 : (typeInt&0xE000000) << 7;
+        long firstPrevRelMod = (typeInt & 0xE000000L) << 7;
         record.setFirstPrevRel( longFromIntAndMod( firstPrevRel, firstPrevRelMod ) );
         
         long firstNextRel = buffer.getUnsignedInt();
-        long firstNextRelMod = firstNextRel == IdGeneratorImpl.INTEGER_MINUS_ONE && (typeInt&0x1C00000) == 0 ? 0 : (typeInt&0x1C00000) << 10;
+        long firstNextRelMod = (typeInt & 0x1C00000L) << 10;
         record.setFirstNextRel( longFromIntAndMod( firstNextRel, firstNextRelMod ) );
         
         long secondPrevRel = buffer.getUnsignedInt();
-        long secondPrevRelMod = secondPrevRel == IdGeneratorImpl.INTEGER_MINUS_ONE && (typeInt&0x380000) == 0 ? 0 : (typeInt&0x380000) << 13;
+        long secondPrevRelMod = (typeInt & 0x380000L) << 13;
         record.setSecondPrevRel( longFromIntAndMod( secondPrevRel, secondPrevRelMod ) );
         
         long secondNextRel = buffer.getUnsignedInt();
-        long secondNextRelMod = secondNextRel == IdGeneratorImpl.INTEGER_MINUS_ONE && (typeInt&0x70000) == 0 ? 0 : (typeInt&0x70000) << 16;
+        long secondNextRelMod = (typeInt & 0x70000L) << 16;
         record.setSecondNextRel( longFromIntAndMod( secondNextRel, secondNextRelMod ) );
         
         long nextProp = buffer.getUnsignedInt();
-        long nextPropMod = nextProp == IdGeneratorImpl.INTEGER_MINUS_ONE && (inUseByte&0xF0) == 0 ? 0 : (inUseByte&0xF0) << 28;
+        long nextPropMod = (inUseByte & 0xF0L) << 28;
         
         record.setNextProp( longFromIntAndMod( nextProp, nextPropMod ) );
         return record;
