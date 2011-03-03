@@ -27,6 +27,7 @@ import java.lang.Thread.State;
 import java.util.Map;
 import java.util.Random;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -119,6 +120,7 @@ public class TestRecovery
         }
     }
     
+    @Ignore
     @Test
     public void testHardCoreRecovery() throws Exception
     {

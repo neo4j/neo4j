@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.ha.zookeeper;
 
+import java.io.File;
+
 import org.apache.zookeeper.ZooKeeper;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
@@ -35,7 +37,7 @@ public abstract class RootPathGetter
             public Pair<String, Long> getRootPath( ZooKeeper keeper )
             {
                 NeoStoreUtil store = new NeoStoreUtil( storeDir );
-                return Pair.of( "/" + store.getCreationTime() + "_" + store.getStoreId(), store.getLastCommittedTx() );
+                return Pair.of( File.separator + store.getCreationTime() + "_" + store.getStoreId(), store.getLastCommittedTx() );
             }
         };
     }
