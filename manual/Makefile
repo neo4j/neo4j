@@ -25,7 +25,7 @@ MANPAGES         = $(BUILDDIR)/manpages
 
 ifdef VERBOSE
 	V = -v
-    VA = VERBOSE=1
+  VA = VERBOSE=1
 endif
 
 ifdef KEEP
@@ -215,19 +215,19 @@ manpages:
 	#
 	mkdir -p $(MANPAGES)
 	# shell
-	a2x -k -f manpage -d  manpage -D $(MANPAGES) $(IMPORTDIR)/neo4j-shell-docs-jar/man/neo4j-shell.1.txt
+	a2x -k $(V) -f manpage -d  manpage -D $(MANPAGES) $(IMPORTDIR)/neo4j-shell-docs-jar/man/neo4j-shell.1.txt
 	a2x -k -f text -d  manpage -D $(MANPAGES) $(IMPORTDIR)/neo4j-shell-docs-jar/man/neo4j-shell.1.txt
 	mv $(MANPAGES)/neo4j-shell.1.text $(MANPAGES)/neo4j-shell.txt
 	# neo4j
-	a2x -k -f manpage -d  manpage -D $(MANPAGES) $(IMPORTDIR)/neo4j-server-docs-jar/man/neo4j.1.txt
+	a2x -k $(V) -f manpage -d  manpage -D $(MANPAGES) $(IMPORTDIR)/neo4j-server-docs-jar/man/neo4j.1.txt
 	a2x -k -f text -d  manpage -D $(MANPAGES) $(IMPORTDIR)/neo4j-server-docs-jar/man/neo4j.1.txt
 	mv $(MANPAGES)/neo4j.1.text $(MANPAGES)/neo4j.txt
 	# neo4j-coordinator
-	a2x -k -f manpage -d  manpage -D $(MANPAGES) $(IMPORTDIR)/neo4j-server-docs-jar/man/neo4j-coordinator.1.txt
+	a2x -k $(V) -f manpage -d  manpage -D $(MANPAGES) $(IMPORTDIR)/neo4j-server-docs-jar/man/neo4j-coordinator.1.txt
 	a2x -k -f text -d  manpage -D $(MANPAGES) $(IMPORTDIR)/neo4j-server-docs-jar/man/neo4j-coordinator.1.txt
 	mv $(MANPAGES)/neo4j-coordinator.1.text $(MANPAGES)/neo4j-coordinator.txt
 	# neo4j-coordinator-shell
-	a2x -k -f manpage -d  manpage -D $(MANPAGES) $(IMPORTDIR)/neo4j-server-docs-jar/man/neo4j-coordinator-shell.1.txt
+	a2x -k $(V) -f manpage -d  manpage -D $(MANPAGES) $(IMPORTDIR)/neo4j-server-docs-jar/man/neo4j-coordinator-shell.1.txt
 	a2x -k -f text -d  manpage -D $(MANPAGES) $(IMPORTDIR)/neo4j-server-docs-jar/man/neo4j-coordinator-shell.1.txt
 	mv $(MANPAGES)/neo4j-coordinator-shell.1.text $(MANPAGES)/neo4j-coordinator-shell.txt
 	# clean up
