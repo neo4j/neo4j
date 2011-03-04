@@ -15,9 +15,9 @@ define ['lib/backbone'], () ->
       @dataModel = dataModel
       @properties = {}
       for key, value of @getItem().getProperties()
-        @addProperty(key, value, false, false)
+        @addProperty(key, value, false, {saved:true},{silent:true})
 
-      @set {saveState : "saved"}, {silent:true}
+      @setSaved()
       @updatePropertyList()
 
     getItem : () =>
@@ -33,26 +33,41 @@ define ['lib/backbone'], () ->
       oldKey = property.key
       property.key = key
       
+      if not @isCantSave()
+        @setNotSaved()
+
+      property.saved = false
+
       if duplicate
         property.isDuplicate = true
+        @setCantSave()
       else
         property.isDuplicate = false
+
+        if not @hasDuplicates()
+          @setNotSaved()
+
         @getItem().removeProperty(oldKey)
         @getItem().setProperty(key, property.value)
-        @save()
       @updatePropertyList()
  
     setValue : (id, value) =>
-      console.log id, value
+      if not @isCantSave()
+        @setNotSaved()
 
     deleteProperty : (id) =>
-      console.log id
+      if not isCantSave()
+        @setNotSaved()
 
-    addProperty : (key="", value="", isDuplicate=false, updatePropertyList=true) =>
+    addProperty : (key="", value="", updatePropertyList=true, propertyMeta={}, opts={}) =>
       id = @generatePropertyId()
-      @properties[id] = {key:key, value:value, id:id, isDuplicate:isDuplicate}
+
+      isDuplicate = if propertyMeta.isDuplicate? then true else false
+      saved = if propertyMeta.saved? then true else false
+
+      @properties[id] = {key:key, value:value, id:id, isDuplicate:isDuplicate, saved:saved}
       if updatePropertyList
-        @updatePropertyList()
+        @updatePropertyList(opts)
 
     getProperty : (id) =>
       @properties[id]
@@ -64,8 +79,8 @@ define ['lib/backbone'], () ->
 
       return false
 
-    updatePropertyList : () =>
-      @set { propertyList : @getPropertyList() }, {silent:true}
+    updatePropertyList : (opts={silent:true}) =>
+      @set { propertyList : @getPropertyList() }, opts
       @change()
 
     getPropertyList : () =>
@@ -75,15 +90,47 @@ define ['lib/backbone'], () ->
 
       return arrayed
 
-    save : () =>
-      @set { saveState : "saving" }
-      @getItem().save().then @saveSucceeded, @saveFailed
+    hasDuplicates : =>
+      for key, property of @properties
+        if property.isDuplicate
+          return true
 
-    saveSucceeded : () =>
-      @set { saveState : "saved" }
+      return false
+
+
+    save : () =>
+      @setSaveState("saving")
+      @getItem().save().then @setSaved, @saveFailed
+
 
     saveFailed : (ev) =>
-      @set { saveState : "saveFailed" }
+      @setNotSaved()
+
+
+    setSaved : () =>
+      @setSaveState("saved")
+
+    setCantSave : () =>
+      @setSaveState("cantSave")
+
+    setNotSaved : () =>
+      @setSaveState("notSaved")
+
+    isSaved : =>
+      @getSaveState() == "saved"
+
+    isCantSave : () =>
+      @getSaveState() == "cantSave"
+
+    isNotSaved : => 
+      @getSaveState() == "notSaved" or isCantSave()
+
+    getSaveState : =>
+      @get "saveState"
+    
+    setSaveState : (state, opts={}) =>
+      @set { saveState : state }, opts
+
 
     generatePropertyId : () =>
       ID_COUNTER++
