@@ -17,7 +17,7 @@ Feature: Neo4j Server distribution includes working plugin and extension example
 
   @server-examples
   Scenario: Start server with example plugins
-    Given that Neo4j Server is not running
+    #Given that Neo4j Server is not running
     When I install the "neo4j-server-examples" jar from examples/java/server/lib into "plugins"
     And I start the server
     And I browse the REST API to the database extensions
