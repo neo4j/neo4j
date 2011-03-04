@@ -51,7 +51,7 @@ class Neo4jOpsSteps(neo4j: Neo4jEnvironment) extends ScalaDsl with EN with Shoul
     () =>
       val http = new Http
       val req = :/("localhost", 7474)
-      var thrownException:Option[Exception] = None
+      var thrownException:Option[Throwable] = None
       try
       {
         http x (req as_str)
