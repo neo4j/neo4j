@@ -90,8 +90,11 @@ public class RelationshipTypeStore extends AbstractStore implements Store
     @Override
     protected void closeStorage()
     {
-        typeNameStore.close();
-        typeNameStore = null;
+        if ( typeNameStore != null )
+        {
+            typeNameStore.close();
+            typeNameStore = null;
+        }
     }
 
     public void flushAll()
