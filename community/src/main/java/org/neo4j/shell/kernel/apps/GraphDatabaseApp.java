@@ -34,10 +34,13 @@ import org.neo4j.graphdb.Expander;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
@@ -57,6 +60,14 @@ import org.neo4j.shell.kernel.GraphDatabaseShellServer;
  */
 public abstract class GraphDatabaseApp extends AbstractApp
 {
+    protected static final String[] STANDARD_EVAL_IMPORTS = new String[] {
+        "org.neo4j.graphdb",
+        "org.neo4j.graphdb.event",
+        "org.neo4j.graphdb.index",
+        "org.neo4j.graphdb.traversal",
+        "org.neo4j.kernel"
+    };
+    
     private static final String CURRENT_KEY = "CURRENT_DIR";
     protected static final OptionDefinition OPTION_DEF_FOR_C = new OptionDefinition(
             OptionValueType.MUST,
@@ -215,6 +226,29 @@ public abstract class GraphDatabaseApp extends AbstractApp
     protected abstract String exec( AppCommandParser parser, Session session,
         Output out ) throws Exception;
 
+    protected void printPath( Path path, boolean quietPrint, Session session, Output out )
+            throws RemoteException, ShellException
+    {
+        StringBuilder builder = new StringBuilder();
+        Node currentNode = null;
+        for ( PropertyContainer entity : path )
+        {
+            String display = null;
+            if ( entity instanceof Relationship )
+            {
+                display = quietPrint ? "" : getDisplayName( getServer(), session, (Relationship) entity, false, true );
+                display = withArrows( (Relationship) entity, display, currentNode );
+            }
+            else
+            {
+                currentNode = (Node) entity;
+                display = getDisplayName( getServer(), session, currentNode, true );
+            }
+            builder.append( display );
+        }
+        out.println( builder.toString() );
+    }
+
     private static String getDisplayNameForCurrent(
             GraphDatabaseShellServer server, Session session )
             throws ShellException
@@ -354,11 +388,11 @@ public abstract class GraphDatabaseApp extends AbstractApp
     {
         if ( relationship.getStartNode().equals( leftNode ) )
         {
-            return " --" + displayName + "-> ";
+            return " -" + displayName + "-> ";
         }
         else if ( relationship.getEndNode().equals( leftNode ) )
         {
-            return " <-" + displayName + "-- ";
+            return " <-" + displayName + "- ";
         }
         throw new IllegalArgumentException( leftNode + " is neither start nor end node to " + relationship );
     }
@@ -390,8 +424,8 @@ public abstract class GraphDatabaseApp extends AbstractApp
             patternOrNull.matcher( value ).matches();
     }
 
-    protected static <T extends Enum<T>> Enum<T> parseEnum(
-        Class<T> enumClass, String name, Enum<T> defaultValue  )
+    protected static <T extends Enum<T>> T parseEnum(
+        Class<T> enumClass, String name, T defaultValue, Pair<String, T>... additionalPairs )
     {
         if ( name == null )
         {
@@ -413,8 +447,50 @@ public abstract class GraphDatabaseApp extends AbstractApp
                 return enumConstant;
             }
         }
+        
+        for ( Pair<String, T> additional : additionalPairs )
+        {
+            if ( additional.first().equalsIgnoreCase( name ) )
+            {
+                return additional.other();
+            }
+        }
+        for ( Pair<String, T> additional : additionalPairs )
+        {
+            if ( additional.first().toLowerCase().startsWith( name ) )
+            {
+                return additional.other();
+            }
+        }
+        
         throw new IllegalArgumentException( "No '" + name + "' or '" +
             name + ".*' in " + enumClass );
+    }
+    
+    protected static boolean filterMatches( Map<String, Object> filterMap, boolean caseInsensitiveFilters,
+            boolean looseFilters, String key, Object value )
+    {
+        if ( filterMap == null || filterMap.isEmpty() )
+        {
+            return true;
+        }
+        for ( Map.Entry<String, Object> filter : filterMap.entrySet() )
+        {
+            if ( matches( newPattern( filter.getKey(),
+                caseInsensitiveFilters ), key, caseInsensitiveFilters,
+                looseFilters ) )
+            {
+                String filterValue = filter.getValue() != null ?
+                    filter.getValue().toString() : null;
+                if ( matches( newPattern( filterValue,
+                    caseInsensitiveFilters ), value.toString(),
+                    caseInsensitiveFilters, looseFilters ) )
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     protected static String frame( String string, boolean frame )
@@ -515,7 +591,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
     }
     
     protected static RelationshipExpander toExpander( GraphDatabaseService db, Direction defaultDirection,
-            Map<String, Object> filterMap, boolean caseInsensitiveFilters, boolean looseFilters ) throws ShellException
+            Map<String, Object> relationshipTypes, boolean caseInsensitiveFilters, boolean looseFilters ) throws ShellException
     {
         defaultDirection = defaultDirection != null ? defaultDirection : Direction.BOTH;
         Expander expander = Traversal.emptyExpander();
@@ -523,13 +599,13 @@ public abstract class GraphDatabaseApp extends AbstractApp
         for ( RelationshipType type : db.getRelationshipTypes() )
         {
             Direction direction = null;
-            if ( filterMap == null || filterMap.isEmpty() )
+            if ( relationshipTypes == null || relationshipTypes.isEmpty() )
             {
                 direction = defaultDirection;
             }
             else
             {
-                for ( Map.Entry<String, Object> entry : filterMap.entrySet() )
+                for ( Map.Entry<String, Object> entry : relationshipTypes.entrySet() )
                 {
                     if ( matches( newPattern( entry.getKey(), caseInsensitiveFilters ),
                         type.name(), caseInsensitiveFilters, looseFilters ) )
@@ -548,7 +624,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
             }
         }
         
-        if ( !filterMap.isEmpty() && !addedSomething )
+        if ( !relationshipTypes.isEmpty() && !addedSomething )
         {
             return null;
         }

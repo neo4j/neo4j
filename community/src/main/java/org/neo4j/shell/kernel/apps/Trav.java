@@ -19,23 +19,30 @@
  */
 package org.neo4j.shell.kernel.apps;
 
+import static java.lang.Integer.parseInt;
+import static org.neo4j.kernel.Traversal.pruneAfterDepth;
+import static org.neo4j.shell.kernel.apps.ScriptEngineViaReflection.decorateWithImports;
+
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.ReturnableEvaluator;
-import org.neo4j.graphdb.StopEvaluator;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Traverser;
-import org.neo4j.graphdb.Traverser.Order;
+import org.neo4j.graphdb.traversal.BranchOrderingPolicy;
+import org.neo4j.graphdb.traversal.Evaluation;
+import org.neo4j.graphdb.traversal.Evaluator;
+import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.graphdb.traversal.UniquenessFactory;
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.CommonBranchOrdering;
+import org.neo4j.kernel.Traversal;
+import org.neo4j.kernel.Uniqueness;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.OptionDefinition;
@@ -50,12 +57,13 @@ import org.neo4j.shell.ShellException;
 @Service.Implementation( App.class )
 public class Trav extends ReadOnlyGraphDatabaseApp
 {
+    private ScriptEngineViaReflection scripting;
+    
     /**
      * Constructs a new command which can traverse the graph.
      */
     public Trav()
     {
-        super();
         this.addOptionDefinition( "o", new OptionDefinition( OptionValueType.MUST,
             "The traversal order [BREADTH_FIRST/DEPTH_FIRST/breadth/depth]" ) );
         this.addOptionDefinition( "r", new OptionDefinition( OptionValueType.MUST,
@@ -79,6 +87,10 @@ public class Trav extends ReadOnlyGraphDatabaseApp
             "just a part of a value matches the pattern, not necessarily " +
             "the whole value" ) );
         this.addOptionDefinition( "c", OPTION_DEF_FOR_C );
+        this.addOptionDefinition( "d", new OptionDefinition( OptionValueType.MUST,
+                "Depth limit" ) );
+        this.addOptionDefinition( "e", new OptionDefinition( OptionValueType.MUST,
+                "Custom javascript evaluator" ) );
     }
 
     @Override
@@ -98,30 +110,55 @@ public class Trav extends ReadOnlyGraphDatabaseApp
         Node node = this.getCurrent( session ).asNode();
         boolean caseInsensitiveFilters = parser.options().containsKey( "i" );
         boolean looseFilters = parser.options().containsKey( "l" );
-        Object[] relationshipTypes = parseRelationshipTypes( parser, out,
-            caseInsensitiveFilters, looseFilters );
-        if ( relationshipTypes.length == 0 )
+        boolean quiet = parser.options().containsKey( "q" );
+        
+        // Order
+        TraversalDescription description = Traversal.description();
+        String order = parser.options().get( "o" );
+        if ( order != null )
         {
-            out.println( "No matching relationship types" );
-            return null;
+            description = description.order( parseOrder( order ) );
+        }
+        
+        // Relationship types / expander
+        String relationshipTypes = parser.options().get( "r" );
+        if ( relationshipTypes != null )
+        {
+            Map<String, Object> types = parseFilter( relationshipTypes, out );
+            description = description.expand( toExpander( getServer().getDb(), null, types,
+                    caseInsensitiveFilters, looseFilters ) );
+        }
+        
+        // Uniqueness
+        String uniqueness = parser.options().get( "u" );
+        if ( uniqueness != null )
+        {
+            description = description.uniqueness( parseUniqueness( uniqueness ) );
+        }
+        
+        // Depth limit
+        String depthLimit = parser.options().get( "d" );
+        if ( depthLimit != null )
+        {
+            description = description.prune( pruneAfterDepth( parseInt( depthLimit ) ) );
+        }
+        
+        // Custom evaluator
+        String evaluator = parser.options().get( "e" );
+        if ( evaluator != null )
+        {
+            description = description.evaluator( parseEvaluator( evaluator ) );
         }
 
-        StopEvaluator stopEvaluator = parseStopEvaluator( parser );
-        ReturnableEvaluator returnableEvaluator =
-            parseReturnableEvaluator( parser );
-        Order order = parseOrder( parser );
-
         String filterString = parser.options().get( "f" );
-        Map<String, Object> filterMap = filterString != null ?
-            parseFilter( filterString, out ) : null;
+        Map<String, Object> filterMap = filterString != null ? parseFilter( filterString, out ) : null;
         String commandToRun = parser.options().get( "c" );
         Collection<String> commandsToRun = new ArrayList<String>();
         if ( commandToRun != null )
         {
             commandsToRun.addAll( Arrays.asList( commandToRun.split( Pattern.quote( "&&" ) ) ) );
         }
-        for ( Node traversedNode : node.traverse( order, stopEvaluator,
-            returnableEvaluator, relationshipTypes ) )
+        for ( Path path : description.traverse( node ) )
         {
             boolean hit = false;
             if ( filterMap == null )
@@ -130,9 +167,9 @@ public class Trav extends ReadOnlyGraphDatabaseApp
             }
             else
             {
-                Map<String, Boolean> matchPerFilterKey =
-                    new HashMap<String, Boolean>();
-                for ( String key : traversedNode.getPropertyKeys() )
+                Node endNode = path.endNode();
+                Map<String, Boolean> matchPerFilterKey = new HashMap<String, Boolean>();
+                for ( String key : endNode.getPropertyKeys() )
                 {
                     for ( Map.Entry<String, Object> filterEntry :
                         filterMap.entrySet() )
@@ -147,7 +184,7 @@ public class Trav extends ReadOnlyGraphDatabaseApp
                             caseInsensitiveFilters ), key,
                             caseInsensitiveFilters, looseFilters ) )
                         {
-                            Object value = traversedNode.getProperty( key );
+                            Object value = endNode.getProperty( key );
                             String filterPattern =
                                 filterEntry.getValue() != null ?
                                 filterEntry.getValue().toString() : null;
@@ -168,78 +205,122 @@ public class Trav extends ReadOnlyGraphDatabaseApp
             }
             if ( hit )
             {
-                printAndInterpretTemplateLines( commandsToRun, false, true, NodeOrRelationship.wrap( traversedNode ),
-                        getServer(), session, out );
+                printPath( path, quiet, session, out );
             }
         }
         return null;
     }
 
-    private Order parseOrder( AppCommandParser parser )
+    private Evaluator parseEvaluator( String evaluator ) throws ShellException
     {
-        return ( Order ) parseEnum( Order.class, parser.options().get( "o" ),
-            Order.DEPTH_FIRST );
-    }
-
-    private ReturnableEvaluator parseReturnableEvaluator(
-        AppCommandParser parser )
-    {
-        // TODO
-        return ReturnableEvaluator.ALL_BUT_START_NODE;
-    }
-
-    private StopEvaluator parseStopEvaluator( AppCommandParser parser )
-    {
-        // TODO
-        return StopEvaluator.END_OF_GRAPH;
-    }
-
-    private Object[] parseRelationshipTypes( AppCommandParser parser,
-        Output out, boolean caseInsensitiveFilters, boolean looseFilters )
-        throws ShellException, RemoteException
-    {
-        String option = parser.options().get( "r" );
-        List<Object> result = new ArrayList<Object>();
-        if ( option == null )
+        scripting = scripting != null ? scripting : new ScriptEngineViaReflection( getServer() );
+        try
         {
-            for ( RelationshipType type :
-                getServer().getDb().getRelationshipTypes() )
-            {
-                result.add( type );
-                result.add( Direction.BOTH );
-            }
+            evaluator = decorateWithImports( evaluator, STANDARD_EVAL_IMPORTS );
+            Object scriptEngine = scripting.getJavascriptEngine();
+            Object compiledScript = scripting.compile( scriptEngine, evaluator );
+            return new CompiledScriptEvaluator( compiledScript );
         }
-        else
+        catch ( Exception e )
         {
-            Map<String, Object> map = parseFilter( option, out );
-            List<RelationshipType> allRelationshipTypes =
-            	new ArrayList<RelationshipType>();
-            for ( RelationshipType type :
-            	getServer().getDb().getRelationshipTypes() )
-            {
-            	allRelationshipTypes.add( type );
-            }
+            throw ShellException.wrapCause( e );
+        }
+    }
 
-            for ( Map.Entry<String, Object> entry : map.entrySet() )
-            {
-                String type = entry.getKey();
-                Direction direction = getDirection( ( String ) entry.getValue(),
-                    Direction.BOTH );
+    private UniquenessFactory parseUniqueness( String uniqueness )
+    {
+        return parseEnum( Uniqueness.class, uniqueness, null );
+    }
 
-                Pattern typePattern =
-                    newPattern( type, caseInsensitiveFilters );
-                for ( RelationshipType relationshipType : allRelationshipTypes )
+    private BranchOrderingPolicy parseOrder( String order )
+    {
+        if ( order.equals( "depth first" ) || "depth first".startsWith( order.toLowerCase() ) )
+        {
+            return Traversal.preorderDepthFirst();
+        }
+        if ( order.equals( "breadth first" ) || "breadth first".startsWith( order.toLowerCase() ) )
+        {
+            return Traversal.preorderBreadthFirst();
+        }
+        
+        return (BranchOrderingPolicy) parseEnum( CommonBranchOrdering.class, order, null );
+    }
+    
+//    private class ScriptEvaluator implements Evaluator
+//    {
+//        private final Object scriptEngine;
+//        private final String code;
+//
+//        ScriptEvaluator( Object scriptEngine, String code )
+//        {
+//            this.scriptEngine = scriptEngine;
+//            this.code = code;
+//        }
+//        
+//        @Override
+//        public Evaluation evaluate( Path path )
+//        {
+//            try
+//            {
+//                System.out.println( "interpreting " + code );
+//                Object result = scripting.interpret( scriptEngine, code );
+//                if ( result instanceof Boolean )
+//                {
+//                    return Evaluation.ofIncludes( (Boolean) result );
+//                }
+//                else if ( result instanceof Evaluation )
+//                {
+//                    return (Evaluation) result;
+//                }
+//                throw new IllegalArgumentException( "Cannot return value " + result + " from an evaluator" );
+//            }
+//            catch ( Exception e )
+//            {
+//                if ( e instanceof RuntimeException )
+//                {
+//                    throw (RuntimeException) e;
+//                }
+//                throw new RuntimeException( e );
+//            }
+//        }
+//    }
+    
+    private class CompiledScriptEvaluator implements Evaluator
+    {
+        private final Object compiledScript;
+        private final Object context;
+
+        CompiledScriptEvaluator( Object compiledScript ) throws Exception
+        {
+            this.compiledScript = compiledScript;
+            this.context = scripting.newContext();
+        }
+        
+        @Override
+        public Evaluation evaluate( Path path )
+        {
+            try
+            {
+                scripting.setContextAttribute( context, "position", path );
+                Object result = scripting.executeCompiledScript( compiledScript, context );
+                if ( result instanceof Boolean )
                 {
-                    if ( relationshipType.name().equals( type ) ||
-                    	matches( typePattern, relationshipType.name(),
-                    	    caseInsensitiveFilters, looseFilters ) )
-                    {
-                        result.add( relationshipType );
-                        result.add( direction );
-                    }
+                    return Evaluation.ofIncludes( (Boolean) result );
                 }
+                else if ( result instanceof Evaluation )
+                {
+                    return (Evaluation) result;
+                }
+                throw new IllegalArgumentException( "Cannot return value " + result + " from an evaluator" );
+            }
+            catch ( Exception e )
+            {
+                if ( e instanceof RuntimeException )
+                {
+                    throw (RuntimeException) e;
+                }
+                throw new RuntimeException( e );
             }
         }
-        return result.toArray();
     }
 }

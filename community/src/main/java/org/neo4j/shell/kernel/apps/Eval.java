@@ -19,7 +19,7 @@
  */
 package org.neo4j.shell.kernel.apps;
 
-import java.lang.reflect.Method;
+import static org.neo4j.shell.kernel.apps.ScriptEngineViaReflection.decorateWithImports;
 
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Output;
@@ -31,28 +31,7 @@ import org.neo4j.shell.Session;
  */
 public class Eval extends GraphDatabaseApp
 {
-    private static final String JAVAX_SCRIPT_SCRIPT_ENGINE_MANAGER = "javax.script.ScriptEngineManager";
-    
-    private final Object scriptEngineManager;
-    private final int engineScopeValue;
-    
-    public Eval()
-    {
-        Object scriptEngineManager = null;
-        int engineScopeValue = 0;
-        try
-        {
-            Class<?> scriptEngineManagerClass = Class.forName( JAVAX_SCRIPT_SCRIPT_ENGINE_MANAGER );
-            scriptEngineManager = scriptEngineManagerClass.newInstance();
-            engineScopeValue = Class.forName( "javax.script.ScriptContext" ).getField( "ENGINE_SCOPE" ).getInt( null );
-        }
-        catch ( Exception e )
-        {
-            scriptEngineManager = null;
-        }
-        this.scriptEngineManager = scriptEngineManager;
-        this.engineScopeValue = engineScopeValue;
-    }
+    private ScriptEngineViaReflection scripting;
     
     @Override
     public String getDescription()
@@ -76,50 +55,16 @@ public class Eval extends GraphDatabaseApp
     @Override
     protected String exec( AppCommandParser parser, Session session, Output out ) throws Exception
     {
-        if ( scriptEngineManager == null )
-        {
-            out.println( "Scripting not available, make sure javax.script.* is available on " +
-            		"the classpath in the JVM the shell server runs in" );
-            return null;
-        }
-        
+        scripting = scripting != null ? scripting : new ScriptEngineViaReflection( getServer() );
         String javascriptCode = parser.getLineWithoutApp();
-        javascriptCode = includeImports( javascriptCode );
-        Object scriptEngine = scriptEngineManager.getClass().getMethod( "getEngineByName", String.class ).invoke( scriptEngineManager, "javascript" );
-        addToContext( scriptEngine,
-                "db", getServer().getDb(),
-                "out", out,
-                "current", getCurrent( session ).asPropertyContainer() );
-        Object result = scriptEngine.getClass().getMethod( "eval", String.class ).invoke( scriptEngine, javascriptCode );
+        javascriptCode = decorateWithImports( javascriptCode, STANDARD_EVAL_IMPORTS );
+        Object scriptEngine = scripting.getJavascriptEngine();
+        scripting.addDefaultContext( scriptEngine, session, out );
+        Object result = scripting.interpret( scriptEngine, javascriptCode );
         if ( result != null )
         {
             out.println( result.toString() );
         }
         return null;
-    }
-
-    private void addToContext( Object scriptEngine, Object... keyValuePairs ) throws Exception
-    {
-        Object context = scriptEngine.getClass().getMethod( "getContext" ).invoke( scriptEngine );
-        Method setAttributeMethod = context.getClass().getMethod( "setAttribute", String.class, Object.class, Integer.TYPE );
-        for ( int i = 0; i < keyValuePairs.length; i++ )
-        {
-            setAttributeMethod.invoke( context, keyValuePairs[i++], keyValuePairs[i], engineScopeValue );
-        }
-    }
-
-    private String includeImports( String javascriptCode )
-    {
-        return importStatement( "org.neo4j.graphdb" ) +
-               importStatement( "org.neo4j.graphdb.event" ) +
-               importStatement( "org.neo4j.graphdb.index" ) +
-               importStatement( "org.neo4j.graphdb.traversal" ) +
-               importStatement( "org.neo4j.kernel" ) +
-               javascriptCode;
-    }
-    
-    private String importStatement( String thePackage )
-    {
-        return "importPackage(Packages." + thePackage + ");";
     }
 }

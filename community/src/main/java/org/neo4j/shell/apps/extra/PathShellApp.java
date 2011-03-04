@@ -20,7 +20,6 @@
 package org.neo4j.shell.apps.extra;
 
 import java.lang.reflect.Method;
-import java.rmi.RemoteException;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -29,15 +28,12 @@ import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
-import org.neo4j.shell.ShellException;
 import org.neo4j.shell.kernel.apps.ReadOnlyGraphDatabaseApp;
 
 public class PathShellApp extends ReadOnlyGraphDatabaseApp
@@ -97,28 +93,6 @@ public class PathShellApp extends ReadOnlyGraphDatabaseApp
         }
         
         return null;
-    }
-
-    private void printPath( Path path, boolean quietPrint, Session session, Output out ) throws RemoteException, ShellException
-    {
-        StringBuilder builder = new StringBuilder();
-        Node currentNode = null;
-        for ( PropertyContainer entity : path )
-        {
-            String display = null;
-            if ( entity instanceof Relationship )
-            {
-                display = quietPrint ? "" : getDisplayName( getServer(), session, (Relationship) entity, false, true );
-                display = withArrows( (Relationship) entity, display, currentNode );
-            }
-            else
-            {
-                currentNode = (Node) entity;
-                display = getDisplayName( getServer(), session, currentNode, true );
-            }
-            builder.append( display );
-        }
-        out.println( builder.toString() );
     }
 
     private PathFinder<Path> getPathFinder( String algo, RelationshipExpander expander, int maxDepth, Output out ) throws Exception

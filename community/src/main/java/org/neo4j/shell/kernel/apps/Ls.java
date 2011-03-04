@@ -184,7 +184,7 @@ public class Ls extends ReadOnlyGraphDatabaseApp
         }
         return map;
     }
-
+    
     private void displayProperties( NodeOrRelationship thing, Output out,
         boolean verbose, boolean quiet, Map<String, Object> filterMap,
         boolean caseInsensitiveFilters, boolean looseFilters, boolean brief )
@@ -194,29 +194,8 @@ public class Ls extends ReadOnlyGraphDatabaseApp
         int count = 0;
         for ( String key : sortKeys( thing.getPropertyKeys() ) )
         {
-            boolean matches = filterMap == null || filterMap.isEmpty();
             Object value = thing.getProperty( key );
-            if ( !matches )
-            {
-                for ( Map.Entry<String, Object> filter : filterMap.entrySet() )
-                {
-                    if ( matches( newPattern( filter.getKey(),
-                        caseInsensitiveFilters ), key, caseInsensitiveFilters,
-                        looseFilters ) )
-                    {
-                        String filterValue = filter.getValue() != null ?
-                            filter.getValue().toString() : null;
-                        if ( matches( newPattern( filterValue,
-                            caseInsensitiveFilters ), value.toString(),
-                            caseInsensitiveFilters, looseFilters ) )
-                        {
-                            matches = true;
-                            break;
-                        }
-                    }
-                }
-            }
-            if ( !matches )
+            if ( !filterMatches( filterMap, caseInsensitiveFilters, looseFilters, key, value ) )
             {
                 continue;
             }
