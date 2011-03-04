@@ -388,11 +388,11 @@ public abstract class GraphDatabaseApp extends AbstractApp
     {
         if ( relationship.getStartNode().equals( leftNode ) )
         {
-            return " -" + displayName + "-> ";
+            return " --" + displayName + "-> ";
         }
         else if ( relationship.getEndNode().equals( leftNode ) )
         {
-            return " <-" + displayName + "- ";
+            return " <-" + displayName + "-- ";
         }
         throw new IllegalArgumentException( leftNode + " is neither start nor end node to " + relationship );
     }
