@@ -113,8 +113,11 @@ public class PropertyIndexStore extends AbstractStore implements Store
     @Override
     protected void closeStorage()
     {
-        keyPropertyStore.close();
-        keyPropertyStore = null;
+        if ( keyPropertyStore != null )
+        {
+            keyPropertyStore.close();
+            keyPropertyStore = null;
+        }
     }
 
     @Override
