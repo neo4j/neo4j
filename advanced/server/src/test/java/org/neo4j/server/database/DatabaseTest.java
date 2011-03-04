@@ -22,6 +22,7 @@ package org.neo4j.server.database;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.server.ServerTestUtils;
@@ -79,6 +80,7 @@ public class DatabaseTest {
     }
 
     @Test
+    @Ignore
     public void shouldEnableRemoteShellByDefault() throws IOException
     {
         int wellKnownSocket = 1337;
