@@ -25,6 +25,7 @@
     <junit.version>4.8.2</junit.version>
     <commons-lang.version>2.5</commons-lang.version>
     <commons-io.version>2.0.1</commons-io.version>
+    <cukeArg>${cukeArgs} </cukeArg>
   </properties>
 
 
@@ -168,6 +169,7 @@
             <cucumberArg>--out</cucumberArg>
             <cucumberArg>target/usage.txt</cucumberArg>
             <cucumberArg>${basedir}/target/test-classes</cucumberArg>
+            <cucumberArg>${cukeArg}</cucumberArg>
           </cucumberArgs>
           <gems>
             <gem>install cuke4duke --version ${cuke4duke.version}</gem>
