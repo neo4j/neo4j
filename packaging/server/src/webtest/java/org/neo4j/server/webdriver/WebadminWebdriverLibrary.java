@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.qa.web;
+package org.neo4j.server.webdriver;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
@@ -25,16 +25,18 @@ import org.openqa.selenium.WebDriver;
 public class WebadminWebdriverLibrary extends WebdriverLibrary
 {
     
-    private static String serverUrl;
+    private String serverUrl;
     private final ElementReference dataBrowserSearchField;
     
-    public static void setServerUrl(String url) {
-        serverUrl = url;
+    public WebadminWebdriverLibrary(WebDriver d, String serverUrl) {
+        super(d);
+        
+        setServerUrl( serverUrl );
+        dataBrowserSearchField = new ElementReference(d, By.id( "data-console" ));
     }
     
-    public WebadminWebdriverLibrary(WebDriver d) {
-        super(d);
-        dataBrowserSearchField = new ElementReference(d, By.id( "data-console" ));
+    public void setServerUrl(String url) {
+        serverUrl = url;
     }
     
     public void goToServerRoot() {
