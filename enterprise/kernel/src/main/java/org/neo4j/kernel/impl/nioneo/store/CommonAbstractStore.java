@@ -164,9 +164,23 @@ public abstract class CommonAbstractStore
         this.idGeneratorFactory = (IdGeneratorFactory)
                 config.get( IdGeneratorFactory.class );
         
-        checkStorage();
-        loadStorage();
-        initStorage();
+        try
+        {
+            checkStorage();
+            loadStorage();
+            initStorage();
+        }
+        catch ( RuntimeException e )
+        {
+            closeFileChannelIfOpened();
+            if ( idGenerator != null )
+            {
+                idGenerator.close();
+                idGenerator = null;
+            }
+            closeStorage();
+            throw e;
+        }
     }
 
     boolean isReadOnly()
@@ -253,7 +267,6 @@ public abstract class CommonAbstractStore
                 this.fileLock = this.fileChannel.tryLock();
                 if ( fileLock == null )
                 {
-                    fileChannel.close();
                     throw new IllegalStateException( "Unable to lock store ["
                         + storageFileName + "], this is usually a result of some "
                         + "other Neo4j kernel running using the same store." );
@@ -262,13 +275,11 @@ public abstract class CommonAbstractStore
         }
         catch ( IOException e )
         {
-            closeFileChannelIfOpened();
             throw new UnderlyingStorageException( "Unable to lock store["
                 + storageFileName + "]" );
         }
         catch ( OverlappingFileLockException e )
         {
-            closeFileChannelIfOpened();
             throw new IllegalStateException( "Unable to lock store [" + storageFileName +
                     "], this is usually caused by another Neo4j kernel already running in " +
                     "this JVM for this particular store" );

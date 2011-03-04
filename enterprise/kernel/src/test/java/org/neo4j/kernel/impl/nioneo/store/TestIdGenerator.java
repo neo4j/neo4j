@@ -532,6 +532,7 @@ public class TestIdGenerator
         catch ( StoreFailureException e )
         { // Good
         }
+        idGenerator.close();
     }
 
     @Test
@@ -555,6 +556,7 @@ public class TestIdGenerator
         assertEquals( id+3, idGenerator.nextId() );
         assertEquals( id+4, idGenerator.nextId() );
         assertEquals( id+5, idGenerator.nextId() );
+        idGenerator.close();
     }
     
     @Test

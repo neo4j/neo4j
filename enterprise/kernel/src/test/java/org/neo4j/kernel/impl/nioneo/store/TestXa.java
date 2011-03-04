@@ -305,7 +305,12 @@ public class TestXa extends AbstractNeo4jTestCase
             if ( file.getName().contains( ".bak." ) )
             {
                 String nameWithoutBak = file.getName().replaceAll( "\\.bak", "" );
-                assertTrue( file.renameTo( new File( file.getParent(), nameWithoutBak ) ) );
+                File targetFile = new File( file.getParent(), nameWithoutBak );
+                if ( targetFile.exists() )
+                {
+                    targetFile.delete();
+                }
+                assertTrue( file.renameTo( targetFile ) );
             }
         }
     }
@@ -479,6 +484,7 @@ public class TestXa extends AbstractNeo4jTestCase
             "string2" );
         xaRes.end( xid, XAResource.TMSUCCESS );
         xaRes.prepare( xid );
+        ds.rotateLogicalLog();
         copyLogicalLog( path() );
         xaCon.clearAllTransactions();
         ds.close();

@@ -100,12 +100,21 @@ public class PropertyStore extends AbstractStore implements Store
     @Override
     protected void closeStorage()
     {
-        stringPropertyStore.close();
-        stringPropertyStore = null;
-        propertyIndexStore.close();
-        propertyIndexStore = null;
-        arrayPropertyStore.close();
-        arrayPropertyStore = null;
+        if ( stringPropertyStore != null )
+        {
+            stringPropertyStore.close();
+            stringPropertyStore = null;
+        }
+        if ( propertyIndexStore != null )
+        {
+            propertyIndexStore.close();
+            propertyIndexStore = null;
+        }
+        if ( arrayPropertyStore != null )
+        {
+            arrayPropertyStore.close();
+            arrayPropertyStore = null;
+        }
     }
 
     @Override

@@ -40,13 +40,13 @@ import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 
-//@Ignore( "Until Johan have added those checks in RelationshipTypeStore" )
 public class TestUpgradeStore
 {
     private static final String PATH = "target/var/upgrade";
@@ -62,19 +62,7 @@ public class TestUpgradeStore
     {
         new EmbeddedGraphDatabase( PATH ).shutdown();
         createManyRelationshipTypes( 0xFFFF+10 );
-        try
-        {
-            new EmbeddedGraphDatabase( PATH ).shutdown();
-            fail( "Shouldn't be able to upgrade with that many types set" );
-        }
-        catch ( TransactionFailureException e )
-        {
-            if ( !( e.getCause() instanceof IllegalStoreVersionException ) )
-            {
-                throw e;
-            }
-            // Good
-        }
+        assertCannotStart( "Shouldn't be able to upgrade with that many types set" );
     }
     
     @Test
@@ -82,7 +70,7 @@ public class TestUpgradeStore
     {
         new EmbeddedGraphDatabase( PATH ).shutdown();
         createManyRelationshipTypes( 0xFFFF-10 );
-        new EmbeddedGraphDatabase( PATH );
+        assertCanStart();
     }
     
     @Test( expected=TransactionFailureException.class )
@@ -94,7 +82,7 @@ public class TestUpgradeStore
     @Test
     public void makeSureStoreWithDecentStringBlockSizeCanBeCreated() throws Exception
     {
-        new EmbeddedGraphDatabase( PATH, stringMap( STRING_BLOCK_SIZE, "" + (0xFFFF) ) );
+        new EmbeddedGraphDatabase( PATH, stringMap( STRING_BLOCK_SIZE, "" + (0xFFFF) ) ).shutdown();
     }
     
     @Test( expected=TransactionFailureException.class )
@@ -106,7 +94,7 @@ public class TestUpgradeStore
     @Test
     public void makeSureStoreWithDecentArrayBlockSizeCanBeCreated() throws Exception
     {
-        new EmbeddedGraphDatabase( PATH, stringMap( ARRAY_BLOCK_SIZE, "" + (0xFFFF) ) );
+        new EmbeddedGraphDatabase( PATH, stringMap( ARRAY_BLOCK_SIZE, "" + (0xFFFF) ) ).shutdown();
     }
     
     @Test
@@ -114,20 +102,7 @@ public class TestUpgradeStore
     {
         new EmbeddedGraphDatabase( PATH ).shutdown();
         setBlockSize( new File( PATH, "neostore.propertystore.db.strings" ), 0x10000, "StringPropertyStore v0.9.5" );
-        
-        try
-        {
-            new EmbeddedGraphDatabase( PATH ).shutdown();
-            fail( "Shouldn't be able to upgrade with block size that big" );
-        }
-        catch ( TransactionFailureException e )
-        {
-            if ( !( e.getCause() instanceof IllegalStoreVersionException ) )
-            {
-                throw e;
-            }
-            // Good
-        }
+        assertCannotStart( "Shouldn't be able to upgrade with block size that big" );
     }
     
     @Test
@@ -135,7 +110,7 @@ public class TestUpgradeStore
     {
         new EmbeddedGraphDatabase( PATH ).shutdown();
         setBlockSize( new File( PATH, "neostore.propertystore.db.strings" ), 0xFFFF, "StringPropertyStore v0.9.5" );
-        new EmbeddedGraphDatabase( PATH ).shutdown();
+        assertCanStart();
     }
     
     @Test
@@ -143,20 +118,7 @@ public class TestUpgradeStore
     {
         new EmbeddedGraphDatabase( PATH ).shutdown();
         setBlockSize( new File( PATH, "neostore.propertystore.db.arrays" ), 0x10000, "ArrayPropertyStore v0.9.5" );
-        
-        try
-        {
-            new EmbeddedGraphDatabase( PATH ).shutdown();
-            fail( "Shouldn't be able to upgrade with block size that big" );
-        }
-        catch ( TransactionFailureException e )
-        {
-            if ( !( e.getCause() instanceof IllegalStoreVersionException ) )
-            {
-                throw e;
-            }
-            // Good
-        }
+        assertCannotStart( "Shouldn't be able to upgrade with block size that big" );
     }
     
     @Test
@@ -164,7 +126,7 @@ public class TestUpgradeStore
     {
         new EmbeddedGraphDatabase( PATH ).shutdown();
         setBlockSize( new File( PATH, "neostore.propertystore.db.arrays" ), 0xFFFF, "ArrayPropertyStore v0.9.5" );
-        new EmbeddedGraphDatabase( PATH ).shutdown();
+        assertCanStart();
     }
     
     @Test
@@ -187,6 +149,47 @@ public class TestUpgradeStore
         assertFalse( new File( PATH, "nioneo_logical.log.v0" ).exists() );
         assertFalse( new File( PATH, "nioneo_logical.log.v1" ).exists() );
         assertFalse( new File( PATH, "nioneo_logical.log.v2" ).exists() );
+    }
+    
+    private void assertCannotStart( String failMessage )
+    {
+        GraphDatabaseService db = null;
+        try
+        {
+            db = new EmbeddedGraphDatabase( PATH );
+            fail( failMessage );
+        }
+        catch ( TransactionFailureException e )
+        {
+            if ( !( e.getCause() instanceof IllegalStoreVersionException ) )
+            {
+                throw e;
+            }
+            // Good
+        }
+        finally
+        {
+            if ( db != null )
+            {
+                db.shutdown();
+            }
+        }
+    }
+
+    private void assertCanStart()
+    {
+        GraphDatabaseService db = null;
+        try
+        {
+            db = new EmbeddedGraphDatabase( PATH );
+        }
+        finally
+        {
+            if ( db != null )
+            {
+                db.shutdown();
+            }
+        }
     }
     
     private void setOlderNeoStoreVersion() throws IOException
