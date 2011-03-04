@@ -13,9 +13,17 @@
     return PropertyContainer = (function() {
       function PropertyContainer() {
         this.generatePropertyId = __bind(this.generatePropertyId, this);;
+        this.setSaveState = __bind(this.setSaveState, this);;
+        this.getSaveState = __bind(this.getSaveState, this);;
+        this.isNotSaved = __bind(this.isNotSaved, this);;
+        this.isCantSave = __bind(this.isCantSave, this);;
+        this.isSaved = __bind(this.isSaved, this);;
+        this.setNotSaved = __bind(this.setNotSaved, this);;
+        this.setCantSave = __bind(this.setCantSave, this);;
+        this.setSaved = __bind(this.setSaved, this);;
         this.saveFailed = __bind(this.saveFailed, this);;
-        this.saveSucceeded = __bind(this.saveSucceeded, this);;
         this.save = __bind(this.save, this);;
+        this.hasDuplicates = __bind(this.hasDuplicates, this);;
         this.getPropertyList = __bind(this.getPropertyList, this);;
         this.updatePropertyList = __bind(this.updatePropertyList, this);;
         this.hasKey = __bind(this.hasKey, this);;
@@ -43,13 +51,13 @@
         _ref = this.getItem().getProperties();
         for (key in _ref) {
           value = _ref[key];
-          this.addProperty(key, value, false, false);
+          this.addProperty(key, value, false, {
+            saved: true
+          }, {
+            silent: true
+          });
         }
-        this.set({
-          saveState: "saved"
-        }, {
-          silent: true
-        });
+        this.setSaved();
         return this.updatePropertyList();
       };
       PropertyContainer.prototype.getItem = function() {
@@ -64,45 +72,62 @@
         property = this.getProperty(id);
         oldKey = property.key;
         property.key = key;
+        if (!this.isCantSave()) {
+          this.setNotSaved();
+        }
+        property.saved = false;
         if (duplicate) {
           property.isDuplicate = true;
+          this.setCantSave();
         } else {
           property.isDuplicate = false;
+          if (!this.hasDuplicates()) {
+            this.setNotSaved();
+          }
           this.getItem().removeProperty(oldKey);
           this.getItem().setProperty(key, property.value);
-          this.save();
         }
         return this.updatePropertyList();
       };
       PropertyContainer.prototype.setValue = function(id, value) {
-        return console.log(id, value);
+        if (!this.isCantSave()) {
+          return this.setNotSaved();
+        }
       };
       PropertyContainer.prototype.deleteProperty = function(id) {
-        return console.log(id);
+        if (!isCantSave()) {
+          return this.setNotSaved();
+        }
       };
-      PropertyContainer.prototype.addProperty = function(key, value, isDuplicate, updatePropertyList) {
-        var id;
+      PropertyContainer.prototype.addProperty = function(key, value, updatePropertyList, propertyMeta, opts) {
+        var id, isDuplicate, saved;
         if (key == null) {
           key = "";
         }
         if (value == null) {
           value = "";
         }
-        if (isDuplicate == null) {
-          isDuplicate = false;
-        }
         if (updatePropertyList == null) {
           updatePropertyList = true;
         }
+        if (propertyMeta == null) {
+          propertyMeta = {};
+        }
+        if (opts == null) {
+          opts = {};
+        }
         id = this.generatePropertyId();
+        isDuplicate = propertyMeta.isDuplicate != null ? true : false;
+        saved = propertyMeta.saved != null ? true : false;
         this.properties[id] = {
           key: key,
           value: value,
           id: id,
-          isDuplicate: isDuplicate
+          isDuplicate: isDuplicate,
+          saved: saved
         };
         if (updatePropertyList) {
-          return this.updatePropertyList();
+          return this.updatePropertyList(opts);
         }
       };
       PropertyContainer.prototype.getProperty = function(id) {
@@ -122,12 +147,15 @@
         }
         return false;
       };
-      PropertyContainer.prototype.updatePropertyList = function() {
+      PropertyContainer.prototype.updatePropertyList = function(opts) {
+        if (opts == null) {
+          opts = {
+            silent: true
+          };
+        }
         this.set({
           propertyList: this.getPropertyList()
-        }, {
-          silent: true
-        });
+        }, opts);
         return this.change();
       };
       PropertyContainer.prototype.getPropertyList = function() {
@@ -140,21 +168,52 @@
         }
         return arrayed;
       };
-      PropertyContainer.prototype.save = function() {
-        this.set({
-          saveState: "saving"
-        });
-        return this.getItem().save().then(this.saveSucceeded, this.saveFailed);
+      PropertyContainer.prototype.hasDuplicates = function() {
+        var key, property, _ref;
+        _ref = this.properties;
+        for (key in _ref) {
+          property = _ref[key];
+          if (property.isDuplicate) {
+            return true;
+          }
+        }
+        return false;
       };
-      PropertyContainer.prototype.saveSucceeded = function() {
-        return this.set({
-          saveState: "saved"
-        });
+      PropertyContainer.prototype.save = function() {
+        this.setSaveState("saving");
+        return this.getItem().save().then(this.setSaved, this.saveFailed);
       };
       PropertyContainer.prototype.saveFailed = function(ev) {
+        return this.setNotSaved();
+      };
+      PropertyContainer.prototype.setSaved = function() {
+        return this.setSaveState("saved");
+      };
+      PropertyContainer.prototype.setCantSave = function() {
+        return this.setSaveState("cantSave");
+      };
+      PropertyContainer.prototype.setNotSaved = function() {
+        return this.setSaveState("notSaved");
+      };
+      PropertyContainer.prototype.isSaved = function() {
+        return this.getSaveState() === "saved";
+      };
+      PropertyContainer.prototype.isCantSave = function() {
+        return this.getSaveState() === "cantSave";
+      };
+      PropertyContainer.prototype.isNotSaved = function() {
+        return this.getSaveState() === "notSaved" || isCantSave();
+      };
+      PropertyContainer.prototype.getSaveState = function() {
+        return this.get("saveState");
+      };
+      PropertyContainer.prototype.setSaveState = function(state, opts) {
+        if (opts == null) {
+          opts = {};
+        }
         return this.set({
-          saveState: "saveFailed"
-        });
+          saveState: state
+        }, opts);
       };
       PropertyContainer.prototype.generatePropertyId = function() {
         return ID_COUNTER++;

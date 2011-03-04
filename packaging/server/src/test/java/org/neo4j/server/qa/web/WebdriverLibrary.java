@@ -73,4 +73,8 @@ public class WebdriverLibrary
         
         fail(errorMessage);
     }
+    
+    public ElementReference getElement(By by) {
+        return new ElementReference(d, by);
+    }
 }

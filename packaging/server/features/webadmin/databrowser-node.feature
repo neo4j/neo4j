@@ -34,9 +34,7 @@ Feature: Webadmin data browser allows me to see and change details for a node
     
     When I type mykey into the element found by the xpath //li[1]/ul/li/input[@class="property-key"]
     And I type 12 into the element found by the xpath //li[1]/ul/li/input[@class="property-value"]
-    Then The databrowser save button should say Not saved
-    
-    When I hit return in the element found by the xpath //li[1]/ul/li/input[@class="property-value"]
+    And I hit return in the element found by the xpath //li[1]/ul/li/input[@class="property-value"]
     Then The databrowser save button should change to saying Saved
 
     

@@ -47,7 +47,7 @@ public class WebadminWebdriverLibrary extends WebdriverLibrary
     }
     
     public void clickOnTab(String tab) {
-        d.findElement( By.xpath( "//ul[@id='mainmenu']//a[contains(.,'"+tab+"')]") ).click();
+        getElement( By.xpath( "//ul[@id='mainmenu']//a[contains(.,'"+tab+"')]") ).click();
     }
     
     public void searchForInDataBrowser(String query) {
