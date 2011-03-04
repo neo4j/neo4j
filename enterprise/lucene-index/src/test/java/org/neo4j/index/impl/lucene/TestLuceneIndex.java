@@ -249,7 +249,7 @@ public class TestLuceneIndex
     
     @Test
     public void testStartupInExistingDirectory() {
-        File dir = new File( "target/temp/" );
+		File dir = new File("target" + File.separator + "temp" + File.separator);
         Neo4jTestCase.deleteFileOrDirectory( dir );
         dir.mkdir();
         EmbeddedGraphDatabase graphDatabase = new EmbeddedGraphDatabase( dir.getAbsolutePath() );

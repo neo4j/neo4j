@@ -202,7 +202,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
 
         XaCommandFactory cf = new LuceneCommandFactory();
         XaTransactionFactory tf = new LuceneTransactionFactory();
-        xaContainer = XaContainer.create( this, this.baseStorePath + "/lucene.log", cf, tf, params );
+        xaContainer = XaContainer.create( this, this.baseStorePath + File.separator + "lucene.log", cf, tf, params );
 
         if ( !isReadOnly )
         {
@@ -271,7 +271,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
     
     static IndexProviderStore newIndexStore( String dbStoreDir )
     {
-        File file = new File( getStoreDir( dbStoreDir ).first() + "/lucene-store.db" );
+        File file = new File( getStoreDir( dbStoreDir ).first() + File.separator + "lucene-store.db" );
         return new IndexProviderStore( file );
     }
 

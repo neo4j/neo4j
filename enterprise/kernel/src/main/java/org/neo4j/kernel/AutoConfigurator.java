@@ -160,7 +160,7 @@ public class AutoConfigurator
 
     private int getFileSizeMb( String file )
     {
-        long length = new File( dbPath + "/neostore." + file ).length();
+        long length = new File( dbPath + File.separator + "neostore." + file ).length();
         int mb = (int) ( length / 1024 / 1024 );
         if ( mb > 0 )
         {
