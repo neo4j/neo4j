@@ -22,6 +22,7 @@ package org.neo4j.backup;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
+import static org.neo4j.kernel.Config.osIsWindows;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -48,6 +49,7 @@ public class TestBackupToolEmbedded
     @Before
     public void before() throws Exception
     {
+        if ( osIsWindows() ) return;
         FileUtils.deleteDirectory( new File( PATH ) );
         FileUtils.deleteDirectory( new File( BACKUP_PATH ) );
     }
@@ -66,12 +68,14 @@ public class TestBackupToolEmbedded
     @After
     public void after()
     {
+        if ( osIsWindows() ) return;
         db.shutdown();
     }
     
     @Test
     public void makeSureBackupCannotBePerformedWithInvalidArgs() throws Exception
     {
+        if ( osIsWindows() ) return;
         startDb( "true" );
         assertEquals( 1, runBackupToolFromOtherJvmToGetExitCode() );
         assertEquals( 1, runBackupToolFromOtherJvmToGetExitCode( "-full" ) );
@@ -86,6 +90,7 @@ public class TestBackupToolEmbedded
     @Test
     public void makeSureBackupCanBePerformedWithDefaultPort() throws Exception
     {
+        if ( osIsWindows() ) return;
         startDb( "true" );
         assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( "-full", "-from", "localhost", "-to", BACKUP_PATH ) );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( BACKUP_PATH ) );
@@ -97,6 +102,7 @@ public class TestBackupToolEmbedded
     @Test
     public void makeSureBackupCanBePerformedWithCustomPort() throws Exception
     {
+        if ( osIsWindows() ) return;
         int port = 4445;
         startDb( "port=" + port );
         assertEquals( 1, runBackupToolFromOtherJvmToGetExitCode( "-full", "-from", "localhost", "-to", BACKUP_PATH ) );
