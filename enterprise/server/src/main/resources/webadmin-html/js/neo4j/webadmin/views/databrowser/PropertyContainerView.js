@@ -16,10 +16,15 @@
         this.render = __bind(this.render, this);;
         this.setDataModel = __bind(this.setDataModel, this);;
         this.getPropertyIdForElement = __bind(this.getPropertyIdForElement, this);;
+        this.setSaveState = __bind(this.setSaveState, this);;
+        this.updateSaveState = __bind(this.updateSaveState, this);;
         this.focusedOnValueField = __bind(this.focusedOnValueField, this);;
         this.focusedOnKeyField = __bind(this.focusedOnKeyField, this);;
+        this.saveChanges = __bind(this.saveChanges, this);;
         this.addProperty = __bind(this.addProperty, this);;
         this.deleteProperty = __bind(this.deleteProperty, this);;
+        this.valueChangeDone = __bind(this.valueChangeDone, this);;
+        this.keyChangeDone = __bind(this.keyChangeDone, this);;
         this.valueChanged = __bind(this.valueChanged, this);;
         this.keyChanged = __bind(this.keyChanged, this);;
         this.initialize = __bind(this.initialize, this);;        PropertyContainerView.__super__.constructor.apply(this, arguments);
@@ -28,15 +33,19 @@
       PropertyContainerView.prototype.events = {
         "focus input.property-key": "focusedOnKeyField",
         "focus input.property-value": "focusedOnValueField",
-        "change input.property-key": "keyChanged",
-        "change input.property-value": "valueChanged",
-        "click  button.delete-property": "deleteProperty",
-        "click  button.add-property": "addProperty"
+        "keyup input.property-key": "keyChanged",
+        "keyup input.property-value": "valueChanged",
+        "change input.property-key": "keyChangeDone",
+        "change input.property-value": "valueChangeDone",
+        "click button.delete-property": "deleteProperty",
+        "click button.add-property": "addProperty",
+        "click button.data-save-properties": "saveChanges"
       };
       PropertyContainerView.prototype.initialize = function(opts) {
         this.template = opts.template;
         this.propertyContainer = new PropertyContainer();
-        return this.propertyContainer.bind("change", this.renderProperties);
+        this.propertyContainer.bind("change:propertyList", this.renderProperties);
+        return this.propertyContainer.bind("change:saveState", this.updateSaveState);
       };
       PropertyContainerView.prototype.keyChanged = function(ev) {
         var id;
@@ -48,6 +57,18 @@
         id = this.getPropertyIdForElement(ev.target);
         return this.propertyContainer.setValue(id, $(ev.target).val());
       };
+      PropertyContainerView.prototype.keyChangeDone = function(ev) {
+        var id;
+        id = this.getPropertyIdForElement(ev.target);
+        this.propertyContainer.setKey(id, $(ev.target).val());
+        return this.propertyContainer.save();
+      };
+      PropertyContainerView.prototype.valueChangeDone = function(ev) {
+        var id;
+        id = this.getPropertyIdForElement(ev.target);
+        this.propertyContainer.setValue(id, $(ev.target).val());
+        return this.propertyContainer.save();
+      };
       PropertyContainerView.prototype.deleteProperty = function(ev) {
         var id;
         id = this.getPropertyIdForElement(ev.target);
@@ -55,6 +76,9 @@
       };
       PropertyContainerView.prototype.addProperty = function(ev) {
         return this.propertyContainer.addProperty();
+      };
+      PropertyContainerView.prototype.saveChanges = function(ev) {
+        return this.propertyContainer.save();
       };
       PropertyContainerView.prototype.focusedOnKeyField = function(ev) {
         var id;
@@ -71,6 +95,30 @@
           id: id,
           type: "value"
         };
+      };
+      PropertyContainerView.prototype.updateSaveState = function(ev) {
+        var state;
+        state = this.propertyContainer.getSaveState();
+        switch (state) {
+          case "saved":
+            return this.setSaveState("Saved", true);
+          case "notSaved":
+            return this.setSaveState("Not saved", false);
+          case "saving":
+            return this.setSaveState("Saving..", true);
+          case "cantSave":
+            return this.setSaveState("Can't save", true);
+        }
+      };
+      PropertyContainerView.prototype.setSaveState = function(text, disabled) {
+        var button;
+        button = $("button.data-save-properties", this.el);
+        button.html(text);
+        if (disabled) {
+          return button.attr("disabled", "disabled");
+        } else {
+          return button.removeAttr("disabled");
+        }
       };
       PropertyContainerView.prototype.getPropertyIdForElement = function(element) {
         return $(element).closest("li").find("input.property-id").val();
