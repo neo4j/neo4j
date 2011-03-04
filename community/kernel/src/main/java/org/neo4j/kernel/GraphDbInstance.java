@@ -115,10 +115,10 @@ class GraphDbInstance
             try
             {
                 Class clazz = Class.forName( Config.LUCENE_DS_CLASS );
-                cleanWriteLocksInLuceneDirectory( storeDir + "/lucene" );
+                cleanWriteLocksInLuceneDirectory( storeDir + File.separator + "lucene" );
                 byte luceneId[] = "162373".getBytes();
                 registerLuceneDataSource( "lucene", clazz.getName(),
-                        config.getTxModule(), storeDir + "/lucene",
+                        config.getTxModule(), storeDir + File.separator + "lucene",
                         config.getLockManager(), luceneId, params );
             }
             catch ( ClassNotFoundException e )
@@ -131,11 +131,11 @@ class GraphDbInstance
             try
             {
                 Class clazz = Class.forName( Config.LUCENE_FULLTEXT_DS_CLASS );
-                cleanWriteLocksInLuceneDirectory( storeDir + "/lucene-fulltext" );
+                cleanWriteLocksInLuceneDirectory( storeDir + File.separator + "lucene-fulltext" );
                 byte[] luceneId = "262374".getBytes();
                 registerLuceneDataSource( "lucene-fulltext",
                         clazz.getName(), config.getTxModule(),
-                        storeDir + "/lucene-fulltext", config.getLockManager(),
+                        storeDir + File.separator + "lucene-fulltext", config.getLockManager(),
                         luceneId, params );
             }
             catch ( ClassNotFoundException e )

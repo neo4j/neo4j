@@ -65,7 +65,7 @@ public class TxManager extends AbstractTransactionManager
     private ArrayMap<Thread,TransactionImpl> txThreadMap;
 
     private final String txLogDir;
-    private String separator = "/";
+    private static String separator = File.separator;
     private String logSwitcherFileName = "active_tx_log";
     private String txLog1FileName = "tm_tx_log.1";
     private String txLog2FileName = "tm_tx_log.2";
@@ -122,7 +122,6 @@ public class TxManager extends AbstractTransactionManager
     {
         this.xaDsManager = xaDsManagerToUse;
         txThreadMap = new ArrayMap<Thread,TransactionImpl>( 5, true, true );
-        separator = System.getProperty( "file.separator" );
         logSwitcherFileName = txLogDir + separator + "active_tx_log";
         txLog1FileName = "tm_tx_log.1";
         txLog2FileName = "tm_tx_log.2";
