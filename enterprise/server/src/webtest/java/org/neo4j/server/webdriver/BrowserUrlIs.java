@@ -17,24 +17,38 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.webadmin.webtest;
+package org.neo4j.server.webdriver;
 
-import static org.junit.Assert.assertThat;
-import static org.neo4j.server.webadmin.webtest.IsVisible.isVisible;
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
+import org.openqa.selenium.WebDriver;
 
-import org.junit.Ignore;
-import org.junit.Test;
-import org.openqa.selenium.By;
+public class BrowserUrlIs extends BaseMatcher<WebDriver>
+{
 
-@Ignore
-public class ConfigurationWebTest extends WebDriverTest {
+    private final String url;
+    
+    public static BrowserUrlIs browserUrlIs(String url) {
+        return new BrowserUrlIs( url );
+    }
+    
+    public BrowserUrlIs(String url) {
+        this.url = url;
+    }
 
-	@Test
-	public void shouldHaveConfigurationWindow() {
-		configMenu.getElement().click();
-		assertThat(dbRootConfig.getElement(), isVisible());
-	}
-	
-	private ElementReference dbRootConfig = new ElementReference(webDriver, By.id("mor_setting_db.root"));
+    @Override
+    public boolean matches( Object item )
+    {
+        if(item instanceof WebDriver) {
+            return ((WebDriver)item).getCurrentUrl().equals( url );
+        }
+        return false;
+    }
+
+    @Override
+    public void describeTo( Description description )
+    {
+        description.appendText( "Web browser url should be " + url + "." );
+    }
 
 }

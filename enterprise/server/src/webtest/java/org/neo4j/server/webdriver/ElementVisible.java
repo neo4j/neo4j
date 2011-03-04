@@ -18,40 +18,46 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-package org.neo4j.server.qa.web;
+package org.neo4j.server.webdriver;
 
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
+import org.openqa.selenium.By;
+import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.RenderedWebElement;
 import org.openqa.selenium.WebDriver;
 
-public class BrowserTitleIs extends BaseMatcher<WebDriver>
+public class ElementVisible extends BaseMatcher<WebDriver>
 {
 
-    private final String title;
+    private final By by;
     
-    public static final BrowserTitleIs browserTitleIs(String title) {
-        return new BrowserTitleIs( title );
+    public static ElementVisible elementVisible(By by) {
+        return new ElementVisible(by);
     }
     
-    public BrowserTitleIs(String title) {
-        this.title = title;
+    public ElementVisible(By by) {
+        this.by = by;
+    }
+    
+    @Override
+    public boolean matches( Object item )
+    {
+        if(item instanceof WebDriver) {
+            WebDriver d = (WebDriver)item;
+            try { 
+                return ! ((RenderedWebElement)d.findElement( by )).getValueOfCssProperty( "display" ).equals( "none" );
+            } catch(NoSuchElementException e) {
+                return false;
+            }
+        }
+        return false;
     }
 
     @Override
     public void describeTo( Description description )
     {
-        description.appendText( "Web browser title should be " + title + "." );
-    }
-
-    @Override
-    public boolean matches( Object wd )
-    {
-        if(wd instanceof WebDriver) {
-            return ((WebDriver)wd).getTitle().equals(title );
-        } else {
-            return false;
-        }
+        description.appendText( "Element should be visible." );
     }
 
 }

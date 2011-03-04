@@ -18,12 +18,12 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.server.qa;
+package org.neo4j.server.webadmin.steps;
 
 import java.lang.reflect.InvocationTargetException;
 
-import org.neo4j.server.qa.web.WebDriverFacade;
-import org.neo4j.server.qa.web.WebadminWebdriverLibrary;
+import org.neo4j.server.webdriver.WebDriverFacade;
+import org.neo4j.server.webdriver.WebadminWebdriverLibrary;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
@@ -42,12 +42,7 @@ public class WebadminSteps
     public WebadminSteps( WebDriverFacade facade ) throws InvocationTargetException, InstantiationException, IllegalAccessException
     {
         d = facade.getWebDriver();
-        wl = new WebadminWebdriverLibrary(d);
-    }
-    
-    @Given("^I have a neo4j server running at (.+)$")
-    public void iHaveANeo4jServerRunningAt(String url) {
-        WebadminWebdriverLibrary.setServerUrl( url );
+        wl = new WebadminWebdriverLibrary(d, "");
     }
     
     @When("^I type (.+) into the element found by the xpath (.+)$")
@@ -61,6 +56,7 @@ public class WebadminSteps
         wl.goToServerRoot();
     }
     
+    @Given("^I look at webadmin in a web browser$")
     @When("^I look at webadmin in a web browser$")
     public void iLookAtWebadminWithAWebBrowser() throws Exception
     {

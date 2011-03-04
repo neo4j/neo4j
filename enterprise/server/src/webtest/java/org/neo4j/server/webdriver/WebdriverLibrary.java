@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.qa.web;
+package org.neo4j.server.webdriver;
 
 import static org.junit.Assert.fail;
-import static org.neo4j.server.qa.web.BrowserTitleIs.browserTitleIs;
-import static org.neo4j.server.qa.web.BrowserUrlIs.browserUrlIs;
-import static org.neo4j.server.qa.web.ElementVisible.elementVisible;
+import static org.neo4j.server.webdriver.BrowserTitleIs.browserTitleIs;
+import static org.neo4j.server.webdriver.BrowserUrlIs.browserUrlIs;
+import static org.neo4j.server.webdriver.ElementVisible.elementVisible;
 
 import java.util.Date;
 

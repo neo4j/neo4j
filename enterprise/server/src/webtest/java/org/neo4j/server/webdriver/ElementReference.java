@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.server.qa.web;
+package org.neo4j.server.webdriver;
 
 import java.util.List;
 

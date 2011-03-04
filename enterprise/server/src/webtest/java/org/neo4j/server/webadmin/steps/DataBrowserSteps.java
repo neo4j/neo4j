@@ -18,16 +18,16 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.server.qa;
+package org.neo4j.server.webadmin.steps;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
 import java.lang.reflect.InvocationTargetException;
 
-import org.neo4j.server.qa.web.ElementReference;
-import org.neo4j.server.qa.web.WebDriverFacade;
-import org.neo4j.server.qa.web.WebadminWebdriverLibrary;
+import org.neo4j.server.webdriver.ElementReference;
+import org.neo4j.server.webdriver.WebDriverFacade;
+import org.neo4j.server.webdriver.WebadminWebdriverLibrary;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 
@@ -48,7 +48,7 @@ public class DataBrowserSteps
     public DataBrowserSteps( WebDriverFacade facade ) throws InvocationTargetException, InstantiationException, IllegalAccessException
     {
         d = facade.getWebDriver();
-        wl = new WebadminWebdriverLibrary(d);
+        wl = new WebadminWebdriverLibrary(d, "");
         
         itemHeadline = new ElementReference(d, By.xpath( "//div[@id='data-area']//h1" ));
         saveButton = new ElementReference(d, By.xpath( "//button[@class='data-save-properties']" ));

@@ -3,27 +3,27 @@ Feature: Webadmin data browser allows me to see and change details for a node
   As a Neo4j user
   I want to use the webadmin data browser to see and modify node details
 
-  Scenario: Reference node is shown as default view
-    Given I have a neo4j server running at http://localhost:7474/
+  Scenario: Reference node is shown as default view in webadmins data browser
+    Given I have a neo4j server running
     When I look at webadmin in a web browser
     And I click on the Data browser tab in webadmin
     Then The data browser item headline should be http://localhost:7474/db/data/node/0
 
-  Scenario: Find nodes by id
+  Scenario: Find nodes by id in webadmin
     Given I have a neo4j server running at http://localhost:7474/
     And I have created a node through webadmin
     When I look at the webadmin data browser in a web browser
     And I enter node:1 into the data browser search field
     Then The data browser item headline should be http://localhost:7474/db/data/node/1
 
-  Scenario: Create a node
+  Scenario: Create nodes in webadmin
     Given I have a neo4j server running at http://localhost:7474/
     When I look at the webadmin data browser in a web browser
     And I click on the Node button in webadmin
     Then The data browser item headline should change from http://localhost:7474/db/data/node/0
     And The data browser item headline should be http://localhost:7474/db/data/node/[0-9]+
 
-  Scenario: Create node properties
+  Scenario: Create, remove and edit node properties in webadmin
     Given I have a neo4j server running at http://localhost:7474/
     When I look at the webadmin data browser in a web browser
     And I click on the Node button in webadmin
