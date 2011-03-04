@@ -5,6 +5,7 @@ import dispatch._
 import java.io.{FileOutputStream, File}
 import neo4j.qa.util.ArchiveHelper
 import org.scalatest.matchers.ShouldMatchers
+import org.apache.http.conn.HttpHostConnectException
 
 /**
  * Operations steps for working with Neo4j server.
@@ -51,6 +52,7 @@ class Neo4jOpsSteps(neo4j: Neo4jEnvironment) extends ScalaDsl with EN with Shoul
     () =>
       val http = new Http
       val req = :/("localhost", 7474)
+      print(req as_str)
       var thrownException:Option[Throwable] = None
       try
       {
@@ -62,7 +64,7 @@ class Neo4jOpsSteps(neo4j: Neo4jEnvironment) extends ScalaDsl with EN with Shoul
       } catch {
         case e => thrownException = Some(e)
       }
-      thrownException should be(None, "neo4j is running")
+      if (thrownException == None) fail ("Neo4j server is running!")
 
   }
 
