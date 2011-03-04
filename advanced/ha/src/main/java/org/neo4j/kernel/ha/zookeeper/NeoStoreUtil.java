@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.ha.zookeeper;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -37,7 +38,7 @@ public class NeoStoreUtil
     {
         try
         {
-            FileChannel fileChannel = new RandomAccessFile( storeDir + "/neostore", "r" ).getChannel();
+            FileChannel fileChannel = new RandomAccessFile( storeDir + File.separator + "neostore", "r" ).getChannel();
             ByteBuffer buf = ByteBuffer.allocate( 4*9 );
             if ( fileChannel.read( buf ) != 4*9 )
             {
