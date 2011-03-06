@@ -792,7 +792,7 @@ curl -H Accept:application/json -H Content-Type:application/json -X POST http://
 }
 ---
 
-Results from "dijkstra" algorithm will also have "weight".
+	Results from "dijkstra" algorithm will also have "weight".
 
 *** 404: No path found using current algorithm and parameters
 
@@ -839,7 +839,7 @@ curl -H Accept:application/json -H Content-Type:application/json -X POST http://
 } ]
 ---
 
-Results from "dijkstra" algorithm will also have "weight".
+	Results from "dijkstra" algorithm will also have "weight".
 
 *** 204: No path found using current algorithm and parameters
 
