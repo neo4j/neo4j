@@ -769,13 +769,14 @@ curl -H Accept:application/json -H Content-Type:application/json -X POST -d '{"o
 ---
 
     The "algorithm" parameter should match the name of the corresponding method
-    in <<GraphAlgoFactory>>. Currently supported algos are: shortestPath, allPaths, allSimplePaths.
-    More will be supported later on.
+    in <<GraphAlgoFactory>>. Currently supported algos are: shortestPath, allPaths, allSimplePaths
+    and dijkstra.
 
 ** Example using curl
 
 ---
 curl -H Accept:application/json -H Content-Type:application/json -X POST http://localhost:7474/db/data/node/123/path -d '{"to":"http://localhost:7474/db/data/node/456","relationships":{"type":"KNOWS"},"algorithm":"shortestPath"}'
+curl -H Accept:application/json -H Content-Type:application/json -X POST http://localhost:7474/db/data/node/123/path -d '{"to":"http://localhost:7474/db/data/node/456","relationships":{"type":"KNOWS"},"algorithm":"dijkstra","cost property":"cost","default cost":1}'
 ---
 
 ** Response
@@ -790,6 +791,8 @@ curl -H Accept:application/json -H Content-Type:application/json -X POST http://
   "end" : "http://localhost:7474/db/data/node/456"
 }
 ---
+
+Results from "dijkstra" algorithm will also have "weight".
 
 *** 404: No path found using current algorithm and parameters
 
@@ -806,13 +809,14 @@ curl -H Accept:application/json -H Content-Type:application/json -X POST http://
 ---
 
     The "algorithm" parameter should match the name of the corresponding method
-    in <<GraphAlgoFactory>>. Currently supported algos are: shortestPath, allPaths, allSimplePaths.
-    More will be supported later on.
+    in <<GraphAlgoFactory>>. Currently supported algos are: shortestPath, allPaths, allSimplePaths
+    and dijkstra. More will be supported later on.
 
 ** Example using curl
 
 ---
 curl -H Accept:application/json -H Content-Type:application/json -X POST http://localhost:7474/db/data/node/123/paths -d '{"to":"http://localhost:7474/db/data/node/456","relationships":{"type":"KNOWS"},"algorithm":"shortestPath"}'
+curl -H Accept:application/json -H Content-Type:application/json -X POST http://localhost:7474/db/data/node/123/paths -d '{"to":"http://localhost:7474/db/data/node/456","relationships":{"type":"KNOWS"},"algorithm":"dijkstra","cost property":"cost","default cost":1}'
 ---
 
 ** Response
@@ -834,6 +838,8 @@ curl -H Accept:application/json -H Content-Type:application/json -X POST http://
   "end" : "http://localhost:7474/db/data/node/456"
 } ]
 ---
+
+Results from "dijkstra" algorithm will also have "weight".
 
 *** 204: No path found using current algorithm and parameters
 
