@@ -41,11 +41,10 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class PathsFunctionalTest
 {
-    private long[] nodes;
-    
     private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
     private GraphDbHelper helper;
@@ -56,8 +55,6 @@ public class PathsFunctionalTest
         server.start();
         functionalTestHelper = new FunctionalTestHelper(server);
         helper = functionalTestHelper.getGraphDbHelper();
-        
-        nodes = createMoreComplexGraph();
     }
 
     @After
@@ -68,13 +65,13 @@ public class PathsFunctionalTest
 
     private long[] createMoreComplexGraph() throws DatabaseBlockedException
     {
-        // (a)
-        // / \
-        // v v
-        // (b)<---(c) (d)-->(e)
-        // \ / \ / /
-        // v v v v /
-        // (f)--->(g)<----
+        //          (a)
+        //          / \
+        //         v   v
+        // (b)<---(c)  (d)-->(e)
+        //  \    /  \   /     /
+        //   v  v    v v     /
+        //    (f)--->(g)<----
 
         long a = helper.createNode();
         long b = helper.createNode();
@@ -96,15 +93,63 @@ public class PathsFunctionalTest
         return new long[]{a, g};
     }
 
+    private long[] createDijkstraGraph( boolean includeOnes ) throws DatabaseBlockedException
+    {
+        /* Layout:
+         *                       (y)    
+         *                        ^     
+         *                        [2]  _____[1]___
+         *                          \ v           |
+         * (start)--[1]->(a)--[9]-->(x)<-        (e)--[2]->(f)
+         *                |         ^ ^^  \       ^
+         *               [1]  ---[7][5][4] -[3]  [1]
+         *                v  /       | /      \  /
+         *               (b)--[1]-->(c)--[1]->(d)
+         */
+
+        Map<String, Object> costOneProperties = includeOnes ? map( "cost", (double) 1 ) : map();
+        long start = helper.createNode();
+        long a = helper.createNode();
+        long b = helper.createNode();
+        long c = helper.createNode();
+        long d = helper.createNode();
+        long e = helper.createNode();
+        long f = helper.createNode();
+        long x = helper.createNode();
+        long y = helper.createNode();
+        
+        createRelationshipWithProperties( start, a, costOneProperties );
+        createRelationshipWithProperties( a, x, map( "cost", (double) 9 ) );
+        createRelationshipWithProperties( a, b, costOneProperties );
+        createRelationshipWithProperties( b, x, map( "cost", (double) 7 ) );
+        createRelationshipWithProperties( b, c, costOneProperties );
+        createRelationshipWithProperties( c, x, map( "cost", (double) 5 ) );
+        createRelationshipWithProperties( c, x, map( "cost", (double) 4 ) );
+        createRelationshipWithProperties( c, d, costOneProperties );
+        createRelationshipWithProperties( d, x, map( "cost", (double) 3 ) );
+        createRelationshipWithProperties( d, e, costOneProperties );
+        createRelationshipWithProperties( e, x, costOneProperties );
+        createRelationshipWithProperties( e, f, map( "cost", (double) 2 ) );
+        createRelationshipWithProperties( x, y, map( "cost", (double) 2 ) );
+        return new long[] { start, x };
+    }
+    
+    private void createRelationshipWithProperties( long start, long end, Map<String, Object> properties )
+    {
+        long rel = helper.createRelationship( "to", start, end );
+        helper.setRelationshipProperties( rel, properties );
+    }
+    
     @Test
     public void shouldBeAbleToFindAllShortestPaths() throws PropertyValueException
     {
+        long[] nodes = createMoreComplexGraph();
         Client client = Client.create();
 
         // Get all shortest paths
 
         WebResource resource = client.resource( functionalTestHelper.nodeUri(nodes[ 0 ]) + "/paths" );
-        ClientResponse response = resource.type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( getAllShortestPathPayLoad() ).post( ClientResponse.class );
+        ClientResponse response = resource.type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( getAllShortestPathPayLoad( nodes[1] ) ).post( ClientResponse.class );
         assertEquals( 200, response.getStatus() );
         assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
         String entity = response.getEntity( String.class );
@@ -119,32 +164,77 @@ public class PathsFunctionalTest
         }
     }
 
-    private String getAllShortestPathPayLoad()
+    private String getAllShortestPathPayLoad( long to )
     {
-        return "{\"to\":\"" + functionalTestHelper.nodeUri(nodes[ 1 ])
+        return "{\"to\":\"" + functionalTestHelper.nodeUri( to )
                     + "\", \"max depth\":3, \"relationships\":{\"type\":\"to\", \"direction\":\"out\"}, \"algorithm\":\"shortestPath\"}";
     }
 
+    private String getAllPathsUsingDijkstraPayLoad( long to, boolean includeDefaultCost )
+    {
+        return "{\"to\":\"" + functionalTestHelper.nodeUri( to ) + "\"" +
+                ", \"cost property\":\"cost\"" +
+                (includeDefaultCost?", \"default cost\":1":"") +
+        		", \"relationships\":{\"type\":\"to\", \"direction\":\"out\"}, \"algorithm\":\"dijkstra\"}";
+    }
+    
     @Test
     public void shouldBeAbleToFetchSingleShortestPath() throws JsonParseException
     {
+        long[] nodes = createMoreComplexGraph();
         Client client = Client.create();
 
         // Get single shortest path
         WebResource resource = client.resource( functionalTestHelper.nodeUri(nodes[ 0 ]) + "/path" );
-        ClientResponse response = resource.type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( getAllShortestPathPayLoad() ).post( ClientResponse.class );
+        ClientResponse response = resource.type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( getAllShortestPathPayLoad( nodes[1] ) ).post( ClientResponse.class );
         assertEquals( 200, response.getStatus() );
         Map<?, ?> path = (Map<?, ?>)JsonHelper.jsonToMap( response.getEntity( String.class ) );
         assertTrue( path.get( "start" ).toString().endsWith( "/node/" + nodes[ 0 ] ) );
         assertTrue( path.get( "end" ).toString().endsWith( "/node/" + nodes[ 1 ] ) );
         assertEquals( 2, path.get( "length" ) );
     }
+    
+    @Test
+    public void shouldGetCorrectDijkstraPathsWithWeights() throws Exception
+    {
+        long[] nodes = createDijkstraGraph( true );
+        Client client = Client.create();
 
+        // Get cheapest paths using Dijkstra
+        WebResource resource = client.resource( functionalTestHelper.nodeUri(nodes[ 0 ]) + "/path" );
+        ClientResponse response = resource.type( MediaType.APPLICATION_JSON ).accept(
+                MediaType.APPLICATION_JSON ).entity( getAllPathsUsingDijkstraPayLoad( nodes[1], false ) ).post( ClientResponse.class );
+        assertEquals( 200, response.getStatus() );
+        Map<?, ?> path = (Map<?, ?>)JsonHelper.jsonToMap( response.getEntity( String.class ) );
+        assertTrue( path.get( "start" ).toString().endsWith( "/node/" + nodes[ 0 ] ) );
+        assertTrue( path.get( "end" ).toString().endsWith( "/node/" + nodes[ 1 ] ) );
+        assertEquals( 6, path.get( "length" ) );
+        assertEquals( 6.0, path.get( "weight" ) );
+    }
+
+    @Test
+    public void shouldGetCorrectDijkstraPathsWithWeightsWithDefaultCost() throws Exception
+    {
+        long[] nodes = createDijkstraGraph( false );
+        Client client = Client.create();
+
+        // Get cheapest paths using Dijkstra
+        WebResource resource = client.resource( functionalTestHelper.nodeUri(nodes[ 0 ]) + "/path" );
+        ClientResponse response = resource.type( MediaType.APPLICATION_JSON ).accept(
+                MediaType.APPLICATION_JSON ).entity( getAllPathsUsingDijkstraPayLoad( nodes[1], true ) ).post( ClientResponse.class );
+        assertEquals( 200, response.getStatus() );
+        Map<?, ?> path = (Map<?, ?>)JsonHelper.jsonToMap( response.getEntity( String.class ) );
+        assertTrue( path.get( "start" ).toString().endsWith( "/node/" + nodes[ 0 ] ) );
+        assertTrue( path.get( "end" ).toString().endsWith( "/node/" + nodes[ 1 ] ) );
+        assertEquals( 6, path.get( "length" ) );
+        assertEquals( 6.0, path.get( "weight" ) );
+    }
+    
     @Test
     public void shouldReturn404WhenFailingToFindASinglePath()
     {
+        long[] nodes = createMoreComplexGraph();
         Client client = Client.create();
-
 
         // Get single shortest path and expect no answer (404)
         String noHitsJson = "{\"to\":\"" + functionalTestHelper.nodeUri(nodes[ 1 ])
@@ -158,6 +248,7 @@ public class PathsFunctionalTest
     @Ignore("Should we really support this case?")
     public void shouldBeAbleToReturn204WhenNoPathsFound()
     {
+        long[] nodes = createMoreComplexGraph();
         Client client = Client.create();
 
         // Get single shortest paths and expect no content (since using /paths
