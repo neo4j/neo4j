@@ -28,12 +28,13 @@ import static org.neo4j.server.webadmin.webtest.IsVisible.isVisible;
 
 import java.io.IOException;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.management.Kernel;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.openqa.selenium.By;
 
-
+@Ignore
 public class DashboardWebTest extends WebDriverTest {
 
 	@Test

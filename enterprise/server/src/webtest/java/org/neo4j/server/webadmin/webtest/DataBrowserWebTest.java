@@ -25,6 +25,7 @@ import static org.neo4j.server.webadmin.webtest.IsVisible.isVisible;
 
 import java.util.List;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.openqa.selenium.By;
@@ -36,6 +37,7 @@ import org.openqa.selenium.WebElement;
 /**
  * Test that the webadmin data browser behaves as expected.
  */
+@Ignore
 public class DataBrowserWebTest extends WebDriverTest {
 	
 	@Test
