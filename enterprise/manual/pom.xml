@@ -52,6 +52,13 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-management</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>docs</classifier>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-ha</artifactId>
       <version>${neo4j.version}</version>
       <classifier>docs</classifier>
