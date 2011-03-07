@@ -66,6 +66,25 @@ public class TestLuceneBatchInsert
     }
 
     @Test
+    public void testStartupAndShutdown() {
+        BatchInserter inserter = new BatchInserterImpl( PATH );
+        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider(
+                inserter );
+        BatchInserterIndex index = provider.nodeIndex( "users",
+                LuceneIndexImplementation.EXACT_CONFIG );
+        long id = inserter.createNode( null );
+        index.add( id, map( "name", "Joe", "other", "Schmoe" ) );
+        provider.shutdown();
+        provider = new LuceneBatchInserterIndexProvider(
+                inserter );
+        index = provider.nodeIndex( "users",
+                LuceneIndexImplementation.EXACT_CONFIG );
+        index.add( id, map( "name", "Joe", "other", "Schmoe" ) );
+        provider.shutdown();
+        inserter.shutdown();
+    }
+    
+    @Test
     public void testSome() throws Exception
     {
         // Different paths for each tests because there's a bug (on Windows)
