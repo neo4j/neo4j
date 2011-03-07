@@ -25,5 +25,5 @@ public class WidgetTestApplication extends Application
         setMainWindow(window);
         window.addComponent(new GraphComponent(graphDb));
     }
-    
+
 }
