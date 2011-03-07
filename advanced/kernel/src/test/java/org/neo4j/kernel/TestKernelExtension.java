@@ -20,10 +20,22 @@
 package org.neo4j.kernel;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
 
 import org.junit.Test;
-import org.neo4j.kernel.DummyExtension.State;
 
+/**
+ * Test the implementation of the {@link KernelExtension} framework. Treats the
+ * framework as a black box and takes the perspective of the extension, making
+ * sure that the framework fulfills its part of the contract. The parent class (
+ * {@link KernelExtensionContractTest}) takes the opposite approach, it treats
+ * the extension implementation as a black box to assert that it fulfills the
+ * requirements stipulated by the framework.
+ *
+ * @author Tobias Ivarsson <tobias.ivarsson@neotechnology.com>
+ */
 public final class TestKernelExtension extends KernelExtensionContractTest<DummyExtension.State, DummyExtension>
 {
     public TestKernelExtension()
@@ -31,6 +43,10 @@ public final class TestKernelExtension extends KernelExtensionContractTest<Dummy
         super( DummyExtension.EXTENSION_ID, DummyExtension.class );
     }
 
+    /**
+     * This tests the facilities needed for testing kernel extensions, more than
+     * anything else.
+     */
     @Test
     public void canDisableLoadingKernelExtensions() throws Exception
     {
@@ -46,8 +62,46 @@ public final class TestKernelExtension extends KernelExtensionContractTest<Dummy
         }
     }
 
+    /**
+     * We know which instance we loaded, we are asserting that the framework
+     * will give us that same instance when we ask for the state.
+     */
+    @Test
+    public void shouldRetrieveSameLoadedStateObjectWhenRequested() throws Exception
+    {
+        EmbeddedGraphDatabase graphdb = graphdb( "graphdb", /*loadExtensions=*/true, 0 );
+        try
+        {
+            DummyExtension.State state = new DummyExtension().getState( getExtensions( graphdb ) );
+            assertNotNull( state );
+            assertSame( DummyExtension.lastState, state );
+        }
+        finally
+        {
+            graphdb.shutdown();
+        }
+    }
+
+    @Test
+    public void differentExtensionsCanHaveDifferentState() throws Exception
+    {
+        EmbeddedGraphDatabase graphdb = graphdb( "graphdb", /*loadExtensions=*/true, 0 );
+        try
+        {
+            KernelData kernel = getExtensions( graphdb );
+            DummyExtension.State state = new DummyExtension().getState( kernel ), other = new OtherExtension().getState( kernel );
+            assertNotNull( state );
+            assertNotNull( other );
+            assertNotSame( state, other );
+        }
+        finally
+        {
+            graphdb.shutdown();
+        }
+    }
+
     @Override
-    protected boolean isUnloaded( State state )
+    protected boolean isUnloaded( DummyExtension.State state )
     {
         return state.unloaded;
     }
