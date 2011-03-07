@@ -218,8 +218,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
             long relId = graphDbService.getBatchInserter().createRelationship( id,
                 otherNode.getId(), type, null );
             RelationshipBatchImpl rel = new RelationshipBatchImpl(
-                new SimpleRelationship( (int)relId, (int) id,
-                    (int) otherNode.getId(), type ), graphDbService, emptyProps() );
+                new SimpleRelationship( relId, id, otherNode.getId(), type ), graphDbService, emptyProps() );
             graphDbService.addRelationshipToCache( relId, rel );
             return rel;
         }
@@ -434,7 +433,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         @Override
         public int hashCode()
         {
-            return (int) id;
+            return (int) ( id ^ ( id >>> 32 ) );
         }
     }
 
@@ -576,7 +575,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         @Override
         public int hashCode()
         {
-            return (int) rel.getId();
+            return (int) ( rel.getId() ^ ( rel.getId() >>> 32 ) );
         }
     }
 
@@ -706,7 +705,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
     {
         throw new UnsupportedOperationException();
     }
-    
+
     public IndexManager index()
     {
         throw new UnsupportedOperationException();
