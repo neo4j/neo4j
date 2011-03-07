@@ -18,28 +18,34 @@ You should have received a copy of the GNU Affero General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 ###
 
-define ["./NodeSearcher", "./RelationshipSearcher"], (NodeSearcher, RelationshipSearcher) ->
+define(
+  ["./UrlSearcher", 
+   "./NodeSearcher", 
+   "./RelationshipSearcher"], 
+  (UrlSearcher, NodeSearcher, RelationshipSearcher) ->
 
-  class Search
+    class Search
 
-    constructor : (server) ->
+      constructor : (server) ->
+        
+        @searchers = [
+          new UrlSearcher(server),
+          new NodeSearcher(server),
+          new RelationshipSearcher(server)
+        ]
       
-      @searchers = [
-        new NodeSearcher(server),
-        new RelationshipSearcher(server)
-      ]
-    
 
-    exec : (statement) =>
-      searcher = @pickSearcher statement
-      if searcher? 
-        searcher.exec statement
-      else
-        return neo4j.Promise.fulfilled(null)
+      exec : (statement) =>
+        searcher = @pickSearcher statement
+        if searcher? 
+          searcher.exec statement
+        else
+          return neo4j.Promise.fulfilled(null)
 
-    pickSearcher : (statement) =>
-      
-      for searcher in @searchers
-        if searcher.match statement
-          return searcher
+      pickSearcher : (statement) =>
+        
+        for searcher in @searchers
+          if searcher.match statement
+            return searcher
+)
 

@@ -45,12 +45,14 @@ define(
 
       search : (query) =>
         @appState.set( mainView : @getDataBrowserView() )
-        @dataModel.setQuery query
+        @dataModel.setQuery decodeURIComponent(query)
 
       queryChanged : =>
-        url = "#/data/search/#{@dataModel.getEscapedQuery()}/"
+        encodedQuery = encodeURIComponent(@dataModel.get "query")
+        url = "#/data/search/#{encodedQuery}/"
+
         if location.hash != url
-          location.hash = url
+          location.hash = url    
 
         if @dataModel.get "queryOutOfSyncWithData"
           @searcher.exec(@dataModel.get "query").then(@showResult, @showResult)

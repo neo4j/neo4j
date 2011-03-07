@@ -37,33 +37,21 @@
   You should have received a copy of the GNU Affero General Public License
   along with this program. If not, see <http://www.gnu.org/licenses/>.
   */  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
-  define(["./UrlSearcher", "./NodeSearcher", "./RelationshipSearcher"], function(UrlSearcher, NodeSearcher, RelationshipSearcher) {
-    var Search;
-    return Search = (function() {
-      function Search(server) {
-        this.pickSearcher = __bind(this.pickSearcher, this);;
-        this.exec = __bind(this.exec, this);;        this.searchers = [new UrlSearcher(server), new NodeSearcher(server), new RelationshipSearcher(server)];
+  define(["lib/backbone"], function() {
+    var UrlSearcher;
+    return UrlSearcher = (function() {
+      function UrlSearcher(server) {
+        this.exec = __bind(this.exec, this);;
+        this.match = __bind(this.match, this);;        this.server = server;
+        this.pattern = /^https?:\/\/(.+)$/i;
       }
-      Search.prototype.exec = function(statement) {
-        var searcher;
-        searcher = this.pickSearcher(statement);
-        if (searcher != null) {
-          return searcher.exec(statement);
-        } else {
-          return neo4j.Promise.fulfilled(null);
-        }
+      UrlSearcher.prototype.match = function(statement) {
+        return this.pattern.test(statement);
       };
-      Search.prototype.pickSearcher = function(statement) {
-        var searcher, _i, _len, _ref;
-        _ref = this.searchers;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          searcher = _ref[_i];
-          if (searcher.match(statement)) {
-            return searcher;
-          }
-        }
+      UrlSearcher.prototype.exec = function(statement) {
+        return this.server.getNodeOrRelationship(statement);
       };
-      return Search;
+      return UrlSearcher;
     })();
   });
 }).call(this);

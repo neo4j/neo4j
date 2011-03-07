@@ -77,11 +77,12 @@
         this.appState.set({
           mainView: this.getDataBrowserView()
         });
-        return this.dataModel.setQuery(query);
+        return this.dataModel.setQuery(decodeURIComponent(query));
       };
       DataBrowserController.prototype.queryChanged = function() {
-        var url;
-        url = "#/data/search/" + (this.dataModel.getEscapedQuery()) + "/";
+        var encodedQuery, url;
+        encodedQuery = encodeURIComponent(this.dataModel.get("query"));
+        url = "#/data/search/" + encodedQuery + "/";
         if (location.hash !== url) {
           location.hash = url;
         }
