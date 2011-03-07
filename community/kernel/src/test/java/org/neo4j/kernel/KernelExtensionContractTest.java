@@ -226,13 +226,6 @@ public abstract class KernelExtensionContractTest<S, X extends KernelExtension<S
     }
 
     @Test
-    public void differentInstancesUseSameState() throws Exception
-    {
-        EmbeddedGraphDatabase graphdb = graphdb( "graphdb", true, 0);
-        assertEquals(loadInstance().getState( getExtensions( graphdb )), loadInstance().getState( getExtensions( graphdb ) ) );
-    }
-
-    @Test
     public void sameInstanceCanLoadWithMultipleKernels() throws Exception
     {
         EmbeddedGraphDatabase graphdb1 = graphdb( "graphdb1", /*loadExtensions=*/false, 1 );
