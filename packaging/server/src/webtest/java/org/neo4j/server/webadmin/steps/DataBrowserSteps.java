@@ -45,10 +45,10 @@ public class DataBrowserSteps
     
     private final WebadminWebdriverLibrary wl;
     
-    public DataBrowserSteps( WebDriverFacade facade ) throws InvocationTargetException, InstantiationException, IllegalAccessException
+    public DataBrowserSteps( WebDriverFacade facade, WebadminWebdriverLibrary wl ) throws InvocationTargetException, InstantiationException, IllegalAccessException
     {
         d = facade.getWebDriver();
-        wl = new WebadminWebdriverLibrary(d, "");
+        this.wl = wl;
         
         itemHeadline = new ElementReference(d, By.xpath( "//div[@id='data-area']//h1" ));
         saveButton = new ElementReference(d, By.xpath( "//button[@class='data-save-properties']" ));

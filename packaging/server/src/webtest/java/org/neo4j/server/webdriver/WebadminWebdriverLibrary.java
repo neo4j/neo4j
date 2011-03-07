@@ -19,8 +19,10 @@
  */
 package org.neo4j.server.webdriver;
 
+import java.lang.reflect.InvocationTargetException;
+
+import org.neo4j.server.steps.ServerIntegrationTestFacade;
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
 
 public class WebadminWebdriverLibrary extends WebdriverLibrary
 {
@@ -28,10 +30,10 @@ public class WebadminWebdriverLibrary extends WebdriverLibrary
     private String serverUrl;
     private final ElementReference dataBrowserSearchField;
     
-    public WebadminWebdriverLibrary(WebDriver d, String serverUrl) {
-        super(d);
+    public WebadminWebdriverLibrary(WebDriverFacade wf, ServerIntegrationTestFacade serverFacade) throws InvocationTargetException, IllegalAccessException, InstantiationException {
+        super(wf);
         
-        setServerUrl( serverUrl );
+        setServerUrl( serverFacade.getServerUrl() );
         dataBrowserSearchField = new ElementReference(d, By.id( "data-console" ));
     }
     
