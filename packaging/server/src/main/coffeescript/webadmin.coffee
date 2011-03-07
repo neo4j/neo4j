@@ -25,21 +25,25 @@ require(
    "neo4j/webadmin/models/ApplicationState"
    "neo4j/webadmin/views/BaseView"
    "neo4j/webadmin/ui/FoldoutWatcher"
+   "neo4j/webadmin/KeyboardShortcuts"
    "lib/neo4js", "lib/jquery", "lib/underscore", "lib/backbone"]
-  (DashboardController, DataBrowserController, ConsoleController, ServerInfoController, ApplicationState, BaseView, FoldoutWatcher) ->
+  (DashboardController, DataBrowserController, ConsoleController, ServerInfoController, ApplicationState, BaseView, FoldoutWatcher, KeyboardShortcuts) ->
     
     appState = new ApplicationState
     appState.set server : new neo4j.GraphDatabase(location.protocol + "//" + location.host)
 
     new BaseView(el:$("body"),appState:appState)
 
-    new DashboardController appState
-    new DataBrowserController appState
-    new ConsoleController appState
-    new ServerInfoController appState
+    dashboardController   = new DashboardController appState
+    databrowserController = new DataBrowserController appState
+    consoleController     = new ConsoleController appState
+    serverInfoController  = new ServerInfoController appState
 
     foldoutWatcher = new FoldoutWatcher
     foldoutWatcher.init()
+
+    shortcuts = new KeyboardShortcuts(dashboardController, databrowserController, consoleController, serverInfoController)
+    shortcuts.init()
 
     Backbone.history.start()
 )
