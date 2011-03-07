@@ -78,9 +78,10 @@ public class PathsFunctionalTest
         for ( Object representation : result )
         {
             Map<?, ?> path = (Map<?, ?>)representation;
-            assertTrue( path.get( "start" ).toString().endsWith( "/node/" + nodes[ 0 ] ) );
-            assertTrue( path.get( "end" ).toString().endsWith( "/node/" + nodes[ 1 ] ) );
-            assertEquals( 2, path.get( "length" ) );
+
+            assertThatPathStartsWith( path, nodes[ 0 ] );
+            assertThatPathEndsWith( path, nodes[ 1 ] );
+            assertThatPathHasLength( path, 2 );
         }
     }
 
@@ -94,10 +95,29 @@ public class PathsFunctionalTest
         assertEquals( 200, response.getStatus() );
 
         Map<?, ?> path = JsonHelper.jsonToMap( response.getEntity( String.class ) );
-        assertTrue( path.get( "start" ).toString().endsWith( "/node/" + nodes[ 0 ] ) );
-        assertTrue( path.get( "end" ).toString().endsWith( "/node/" + nodes[ 1 ] ) );
-        assertEquals( 2, path.get( "length" ) );
+
+        assertThatPathStartsWith( path, nodes[ 0 ] );
+        assertThatPathEndsWith( path, nodes[ 1 ] );
+        assertThatPathHasLength( path, 2 );
     }
+
+    private void assertThatPathStartsWith( Map<?, ?> path, long start )
+    {
+        assertTrue( "Path should start with " + start + "\nBut it was " + path, path.get( "start" ).toString().endsWith( "/node/" + start ) );
+    }
+
+    private void assertThatPathEndsWith( Map<?, ?> path, long start )
+    {
+        assertTrue( "Path should end with " + start + "\nBut it was " + path, path.get( "end" ).toString().endsWith( "/node/" + start ) );
+    }
+
+    private void assertThatPathHasLength( Map<?, ?> path, int length )
+    {
+        Object actual = path.get( "length" );
+
+        assertEquals( "Expected path to have a length of " + length + "\nBut it was " + actual, length, actual );
+    }
+
 
     @Test
     public void shouldGetCorrectDijkstraPathsWithWeights() throws Exception
@@ -111,9 +131,9 @@ public class PathsFunctionalTest
 
 
         Map<?, ?> path = JsonHelper.jsonToMap( response.getEntity( String.class ) );
-        assertTrue( path.get( "start" ).toString().endsWith( "/node/" + nodes[ 0 ] ) );
-        assertTrue( path.get( "end" ).toString().endsWith( "/node/" + nodes[ 1 ] ) );
-        assertEquals( 6, path.get( "length" ) );
+        assertThatPathStartsWith( path, nodes[ 0 ] );
+        assertThatPathEndsWith( path, nodes[ 1 ] );
+        assertThatPathHasLength( path, 6 );
         assertEquals( 6.0, path.get( "weight" ) );
     }
 
@@ -137,9 +157,9 @@ public class PathsFunctionalTest
 
 
         Map<?, ?> path = JsonHelper.jsonToMap( response.getEntity( String.class ) );
-        assertTrue( path.get( "start" ).toString().endsWith( "/node/" + nodes[ 0 ] ) );
-        assertTrue( path.get( "end" ).toString().endsWith( "/node/" + nodes[ 1 ] ) );
-        assertEquals( 6, path.get( "length" ) );
+        assertThatPathStartsWith( path, nodes[ 0 ] );
+        assertThatPathEndsWith( path, nodes[ 1 ] );
+        assertThatPathHasLength( path, 6 );
         assertEquals( 6.0, path.get( "weight" ) );
     }
 
