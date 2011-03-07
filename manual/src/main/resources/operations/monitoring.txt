@@ -22,12 +22,13 @@ Now, start JConsole with
 $JAVA_HOME/bin/jconsole
 ----
 
-And connect to the process running your Neo4j database instance:
+Connect to the process running your Neo4j database instance:
 
 .Connecting JConsole to the Neo4j Java process
 image::operations/jconsole_connect.png[scaledwidth="50%", alt="Connecting with JConsole"]
 
-Now, beside the MBeans exposed by the JVM, you will see an org.neo section in the MBeans tab. Under that, you will have access to all the monitoring information exposed by the Neo4j Kernel.
+Now, beside the MBeans exposed by the JVM, you will see an +org.neo4j+ section in the MBeans tab.
+Under that, you will have access to all the monitoring information exposed by Neo4j.
 
 
 .Neo4j MBeans View
@@ -36,7 +37,8 @@ image::operations/jconsole_beans.png[scaledwidth="50%",alt="Neo4j MBeans view"]
 
 === How to connect to the JMX monitoring programmatically ===
 
-In order to programmatically connect to the Neo4j JMX server, there are some convenience methods in the Neo4j Management component to help you find out the most commonly used monitoring attributes of the Neo4j Kernel. For instance, the number of node IDs in use can be obtained with code like:
+In order to programmatically connect to the Neo4j JMX server, there are some convenience methods in the Neo4j Management component to help you find out the most commonly used monitoring attributes of Neo4j.
+For instance, the number of node IDs in use can be obtained with code like:
 
 [source, java]
 ----
@@ -44,7 +46,7 @@ Neo4jManager manager = new Neo4jManager( graphDb.getManagementBean( Kernel.class
 long nodeIDsInUse    = manager.getPrimitivesBean.getNumberOfNodeIdsInUse();
 ----
 
-Once having access to this information, it can be used to for instance expose the values to SNMP:: or other monitoring systems.
+Once you have access to this information, you can use it to for instance expose the values to http://en.wikipedia.org/wiki/Simple_Network_Management_Protocol[SNMP] or other monitoring systems.
 
 === Reference of supported JMX MBeans ===
 
@@ -175,7 +177,7 @@ Once having access to this information, it can be used to for instance expose th
 |Attribute|Description    |Type
 |MachineId  |The cluster machine id of this instance|String
 |Master  |True, if this Neo4j instance is currently Master in the cluster|boolean
-|ConnectedSlaves  |A list of conenctede slaves in this clusert|String
+|ConnectedSlaves  |A list of conencted slaves in this cluster|String
 |InstancesInCluster  |Information about the other Neo4j instances in this HA cluster|String
 |========================================================
 
