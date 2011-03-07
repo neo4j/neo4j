@@ -434,10 +434,13 @@
         <artifactId>maven-license-plugin</artifactId>
         <executions>
           <execution>
-            <id>inject-license-in-generated-file</id>
-            <phase>prepare-package</phase>
+            <id>inject-license-in-js-files</id>
+            <!-- Done in validate phase b/c the license header
+            check is done in the intialize phase, validate is the
+            only one before it. -->
+            <phase>validate</phase>
             <configuration>
-              <basedir>${project.build.directory}/classes/webadmin-html/</basedir>
+              <basedir>src/main/resources/webadmin-html/</basedir>
               <includes>
                 <include>**/*.js</include>
               </includes>
