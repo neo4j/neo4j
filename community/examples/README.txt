@@ -2,7 +2,7 @@ Neo4j Server Examples
 =====================
  
 This example shows different ways to use the server.
-Please refer to the webpages found in the site/ directory
+Please refer to the webpages found in the site/ directory 
 for more information.
 
 Source code for the examples is found in the examples/ directory.
