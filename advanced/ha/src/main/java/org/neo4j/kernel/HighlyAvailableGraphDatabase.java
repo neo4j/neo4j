@@ -480,7 +480,8 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 new SlaveRelationshipTypeCreator( broker, this ),
                 new SlaveTxIdGeneratorFactory( broker, this ),
                 new SlaveTxRollbackHook( broker, this ),
-                new ZooKeeperLastCommittedTxIdSetter( broker ) );
+                new ZooKeeperLastCommittedTxIdSetter( broker ),
+                CommonFactories.defaultFileSystemAbstraction() );
         instantiateAutoUpdatePullerIfConfigSaysSo();
         msgLog.logMessage( "Started as slave", true );
     }
@@ -494,7 +495,8 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 CommonFactories.defaultRelationshipTypeCreator(),
                 new MasterTxIdGeneratorFactory( broker ),
                 CommonFactories.defaultTxFinishHook(),
-                new ZooKeeperLastCommittedTxIdSetter( broker ) );
+                new ZooKeeperLastCommittedTxIdSetter( broker ),
+                CommonFactories.defaultFileSystemAbstraction() );
         this.masterServer = (MasterServer) broker.instantiateMasterServer( this );
         msgLog.logMessage( "Started as master", true );
     }

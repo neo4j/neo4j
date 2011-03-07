@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TxFinishHook;
@@ -94,13 +95,14 @@ class EmbeddedGraphDbImpl
      * future releases.
      *
      * @param storeDir the store directory for the db files
+     * @param fileSystem 
      * @param config configuration parameters
      */
     public EmbeddedGraphDbImpl( String storeDir, StoreId storeId, Map<String, String> inputParams,
             GraphDatabaseService graphDbService, LockManagerFactory lockManagerFactory,
             IdGeneratorFactory idGeneratorFactory, RelationshipTypeCreator relTypeCreator,
             TxIdGeneratorFactory txIdFactory, TxFinishHook finishHook,
-            LastCommittedTxIdSetter lastCommittedTxIdSetter )
+            LastCommittedTxIdSetter lastCommittedTxIdSetter, FileSystemAbstraction fileSystem )
     {
         this.storeDir = storeDir;
         TxModule txModule = newTxModule( inputParams, finishHook );
@@ -109,7 +111,7 @@ class EmbeddedGraphDbImpl
         final Config config = new Config( graphDbService, storeDir, storeId, inputParams,
                 kernelPanicEventGenerator, txModule, lockManager, lockReleaser, idGeneratorFactory,
                 new SyncHookFactory(), relTypeCreator, txIdFactory.create( txModule.getTxManager() ),
-                lastCommittedTxIdSetter );
+                lastCommittedTxIdSetter, fileSystem );
         graphDbInstance = new GraphDbInstance( storeDir, true, config );
         this.msgLog = StringLogger.getLogger( storeDir );
         this.graphDbService = graphDbService;

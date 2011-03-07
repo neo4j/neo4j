@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
@@ -218,6 +217,11 @@ public abstract class CommonAbstractStore
 //        loadStorage();
 //        initStorage();
 //    }
+    
+    protected FileSystemAbstraction getFileSystem()
+    {
+        return (FileSystemAbstraction) config.get( FileSystemAbstraction.class );
+    }
 
     private void checkStorage()
     {
@@ -244,16 +248,7 @@ public abstract class CommonAbstractStore
         }
         try
         {
-            if ( !readOnly || backupSlave )
-            {
-                this.fileChannel = new RandomAccessFile( storageFileName, "rw" )
-                    .getChannel();
-            }
-            else
-            {
-                this.fileChannel = new RandomAccessFile( storageFileName, "r" )
-                    .getChannel();
-            }
+            this.fileChannel = getFileSystem().open( storageFileName, readOnly ? "r" : "rw" );
         }
         catch ( IOException e )
         {

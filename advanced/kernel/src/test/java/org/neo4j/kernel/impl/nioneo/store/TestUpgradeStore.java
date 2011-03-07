@@ -43,6 +43,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
@@ -222,7 +223,9 @@ public class TestUpgradeStore
     private void createManyRelationshipTypes( int numberOfTypes )
     {
         String fileName = new File( PATH, "neostore.relationshiptypestore.db" ).getAbsolutePath();
-        Map<Object, Object> config = MapUtil.<Object, Object>genericMap( IdGeneratorFactory.class, new NoLimitidGeneratorFactory() );
+        Map<Object, Object> config = MapUtil.<Object, Object>genericMap(
+                IdGeneratorFactory.class, new NoLimitidGeneratorFactory(),
+                FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction() );
         RelationshipTypeStore store = new RelationshipTypeStoreWithOneOlderVersion( fileName, config, IdType.RELATIONSHIP_TYPE );
         for ( int i = 0; i < numberOfTypes; i++ )
         {

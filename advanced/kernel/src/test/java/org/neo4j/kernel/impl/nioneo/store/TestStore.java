@@ -146,8 +146,10 @@ public class TestStore
 
         public Store( String fileName ) throws IOException
         {
-            super( fileName, MapUtil.genericMap( IdGeneratorFactory.class,
-                    ID_GENERATOR_FACTORY, "store_dir", "target/var/teststore" ), IdType.NODE );
+            super( fileName, MapUtil.genericMap(
+                    IdGeneratorFactory.class, ID_GENERATOR_FACTORY,
+                    FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction(),
+                    "store_dir", "target/var/teststore" ), IdType.NODE );
         }
 
         protected void initStorage()

@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel;
 
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,12 +31,13 @@ import javax.transaction.TransactionManager;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
 import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.LockManager;
-import org.neo4j.kernel.impl.transaction.TxModule;
 import org.neo4j.kernel.impl.transaction.TxFinishHook;
+import org.neo4j.kernel.impl.transaction.TxModule;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGeneratorFactory;
 
@@ -122,6 +126,18 @@ public class CommonFactories
             public void setLastCommittedTxId( long txId )
             {
                 // Do nothing
+            }
+        };
+    }
+    
+    public static FileSystemAbstraction defaultFileSystemAbstraction()
+    {
+        return new FileSystemAbstraction()
+        {
+            @Override
+            public FileChannel open( String fileName, String mode ) throws IOException
+            {
+                return new RandomAccessFile( fileName, mode ).getChannel();
             }
         };
     }

@@ -39,6 +39,7 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -95,8 +96,8 @@ public class BatchInserterImpl implements BatchInserter
         }
         this.storeDir = storeDir;
         this.idGeneratorFactory = CommonFactories.defaultIdGeneratorFactory();
-        params.put( IdGeneratorFactory.class,
-                idGeneratorFactory );
+        params.put( IdGeneratorFactory.class, idGeneratorFactory );
+        params.put( FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction() );
         String store = fixPath( storeDir, params ); 
         params.put( "neo_store", store );
         if ( dump )

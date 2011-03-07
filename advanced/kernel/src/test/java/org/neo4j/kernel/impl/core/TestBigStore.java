@@ -50,7 +50,6 @@ import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdType;
 
-//@Ignore( "Causes OOM, and won't run very nicely on Windows" )
 public class TestBigStore implements RelationshipType
 {
     private static final RelationshipType OTHER_TYPE = DynamicRelationshipType.withName( "OTHER" );
@@ -198,7 +197,7 @@ public class TestBigStore implements RelationshipType
         return true;
     }
 
-    private void assertProperties( Map<String, Object> properties, PropertyContainer entity )
+    public static void assertProperties( Map<String, Object> properties, PropertyContainer entity )
     {
         int count = 0;
         for ( String key : entity.getPropertyKeys() )

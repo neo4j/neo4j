@@ -22,7 +22,9 @@ package org.neo4j.kernel.impl.event;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.ErrorState;
@@ -31,13 +33,21 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 public class TestKernelEvents
 {
+    private static final String PATH = "target/var/neodb";
+    
     private static final Object RESOURCE1 = new Object();
     private static final Object RESOURCE2 = new Object();
+    
+    @BeforeClass
+    public static void doBefore()
+    {
+        deleteFileOrDirectory( PATH );
+    }
 
     @Test
     public void testRegisterUnregisterHandlers()
     {
-        GraphDatabaseService graphDb = new EmbeddedGraphDatabase( "target/var/neodb" );
+        GraphDatabaseService graphDb = new EmbeddedGraphDatabase( PATH );
         KernelEventHandler handler1 = new DummyKernelEventHandler( RESOURCE1 )
         {
             public ExecutionOrder orderComparedTo( KernelEventHandler other )

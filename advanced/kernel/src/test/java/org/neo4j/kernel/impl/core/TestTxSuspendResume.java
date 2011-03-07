@@ -34,7 +34,9 @@ public class TestTxSuspendResume extends AbstractNeo4jTestCase
     @Test
     public void testMultipleTxSameThread() throws Exception
     {
-        EmbeddedGraphDatabase neo2 = new EmbeddedGraphDatabase( getStorePath( "test-neo2" ) );
+        String storePath = getStorePath( "test-neo2" );
+        deleteFileOrDirectory( storePath );
+        EmbeddedGraphDatabase neo2 = new EmbeddedGraphDatabase( storePath );
         TransactionManager tm = neo2.getConfig().getTxModule().getTxManager();
         tm.begin();
         Node refNode = neo2.getReferenceNode();
