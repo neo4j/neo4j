@@ -78,4 +78,8 @@ public class WebdriverLibrary
     public ElementReference getElement(By by) {
         return new ElementReference(d, by);
     }
+    
+    public void refresh() {
+        d.get( d.getCurrentUrl() );
+    }
 }

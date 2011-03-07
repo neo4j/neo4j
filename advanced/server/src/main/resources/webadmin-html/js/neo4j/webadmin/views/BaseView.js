@@ -87,6 +87,7 @@
         }));
         if (this.mainView != null) {
           $("#contents").append(this.mainView.render().el);
+          this.mainView.delegateEvents();
         }
         return this;
       };

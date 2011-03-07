@@ -18,15 +18,17 @@ You should have received a copy of the GNU Affero General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 ###
 
-define(
-  ['neo4j/webadmin/templates/databrowser/relationship',
-   './PropertyContainerView','lib/backbone'], 
-  (template, PropertyContainerView) ->
-  
-    class RelationshipView extends PropertyContainerView
+define ["lib/backbone"], () ->
 
-      initialize : (opts={}) =>
-        opts.template = template
-        super(opts)
+  class UrlSearcher
 
-)
+    constructor : (server) ->
+      @server = server
+      @pattern = /^https?:\/\/(.+)$/i
+
+    match : (statement) =>
+      @pattern.test(statement)
+      
+    exec : (statement) =>
+      @server.getNodeOrRelationship( statement )
+
