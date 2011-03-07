@@ -21,6 +21,7 @@ package org.neo4j.kernel;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -218,6 +219,21 @@ public abstract class KernelExtensionContractTest<S, X extends KernelExtension<S
         try
         {
             assertTrue( "Failed to load extension", isLoadedOk( getExtensions( graphdb ) ) );
+        }
+        finally
+        {
+            graphdb.shutdown();
+        }
+    }
+
+    @Test
+    public void differentInstancesUseSameState() throws Exception
+    {
+        EmbeddedGraphDatabase graphdb = graphdb( "graphdb", true, 0 );
+        try
+        {
+            KernelData kernel = getExtensions( graphdb );
+            assertSame( newInstance().getState( kernel ), newInstance().getState( kernel ) );
         }
         finally
         {
