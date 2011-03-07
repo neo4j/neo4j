@@ -157,6 +157,7 @@ public final class ConfigurationBean extends ManagementBeanProvider
             return config.get( attribute );
         }
 
+        //TODO make sure we are not returning Strings but real Attributes
         @Override
         public AttributeList getAttributes( String[] attributes )
         {

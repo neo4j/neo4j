@@ -29,7 +29,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.traversal.BranchOrderingPolicy;
-import org.neo4j.graphdb.traversal.BranchSelector;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.PruneEvaluator;
@@ -47,38 +46,6 @@ import org.neo4j.kernel.impl.traversal.TraversalDescriptionImpl;
  */
 public class Traversal
 {
-    private static final BranchOrderingPolicy PREORDER_DEPTH_FIRST_SELECTOR =
-            new BranchOrderingPolicy()
-    {
-        public BranchSelector create( TraversalBranch startSource )
-        {
-            return new PreorderDepthFirstSelector( startSource );
-        }
-    };
-    private static final BranchOrderingPolicy POSTORDER_DEPTH_FIRST_SELECTOR =
-            new BranchOrderingPolicy()
-    {
-        public BranchSelector create( TraversalBranch startSource )
-        {
-            return new PostorderDepthFirstSelector( startSource );
-        }
-    };
-    private static final BranchOrderingPolicy PREORDER_BREADTH_FIRST_SELECTOR =
-            new BranchOrderingPolicy()
-    {
-        public BranchSelector create( TraversalBranch startSource )
-        {
-            return new PreorderBreadthFirstSelector( startSource );
-        }
-    };
-    private static final BranchOrderingPolicy POSTORDER_BREADTH_FIRST_SELECTOR =
-            new BranchOrderingPolicy()
-    {
-        public BranchSelector create( TraversalBranch startSource )
-        {
-            return new PostorderBreadthFirstSelector( startSource );
-        }
-    };
     private static final Predicate<Path> RETURN_ALL = new Predicate<Path>()
     {
         public boolean accept( Path item )
@@ -337,7 +304,7 @@ public class Traversal
      */
     public static BranchOrderingPolicy preorderDepthFirst()
     {
-        return PREORDER_DEPTH_FIRST_SELECTOR;
+        return CommonBranchOrdering.PREORDER_DEPTH_FIRST;
     }
 
     /**
@@ -351,7 +318,7 @@ public class Traversal
      */
     public static BranchOrderingPolicy postorderDepthFirst()
     {
-        return POSTORDER_DEPTH_FIRST_SELECTOR;
+        return CommonBranchOrdering.POSTORDER_DEPTH_FIRST;
     }
 
     /**
@@ -364,7 +331,7 @@ public class Traversal
      */
     public static BranchOrderingPolicy preorderBreadthFirst()
     {
-        return PREORDER_BREADTH_FIRST_SELECTOR;
+        return CommonBranchOrdering.PREORDER_BREADTH_FIRST;
     }
 
     /**
@@ -378,7 +345,7 @@ public class Traversal
      */
     public static BranchOrderingPolicy postorderBreadthFirst()
     {
-        return POSTORDER_BREADTH_FIRST_SELECTOR;
+        return CommonBranchOrdering.POSTORDER_BREADTH_FIRST;
     }
 
     /**
