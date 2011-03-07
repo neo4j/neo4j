@@ -28,7 +28,6 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
 
-import cuke4duke.annotation.I18n.EN.Given;
 import cuke4duke.annotation.I18n.EN.Then;
 import cuke4duke.annotation.I18n.EN.When;
 import cuke4duke.spring.StepDefinitions;
@@ -39,10 +38,10 @@ public class WebadminSteps
     private final WebDriver d;
     private final WebadminWebdriverLibrary wl;
     
-    public WebadminSteps( WebDriverFacade facade ) throws InvocationTargetException, InstantiationException, IllegalAccessException
+    public WebadminSteps( WebDriverFacade facade, WebadminWebdriverLibrary wl ) throws InvocationTargetException, InstantiationException, IllegalAccessException
     {
         d = facade.getWebDriver();
-        wl = new WebadminWebdriverLibrary(d, "");
+        this.wl = wl;
     }
     
     @When("^I type (.+) into the element found by the xpath (.+)$")
@@ -56,7 +55,6 @@ public class WebadminSteps
         wl.goToServerRoot();
     }
     
-    @Given("^I look at webadmin in a web browser$")
     @When("^I look at webadmin in a web browser$")
     public void iLookAtWebadminWithAWebBrowser() throws Exception
     {

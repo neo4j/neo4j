@@ -23,11 +23,9 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.server.webadmin.webtest.IsVisible.isVisible;
 
-<<<<<<< HEAD
-=======
 import java.util.List;
 
->>>>>>> 0e387346deb286261b486eab92b1067418d35ece
+import org.junit.Ignore;
 import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
@@ -37,39 +35,29 @@ import org.openqa.selenium.WebElement;
 /**
  * Test that the webadmin HTTP console works and produces output as expected.
  */
+@Ignore
 public class ConsoleWebTest extends WebDriverTest
 {
-<<<<<<< HEAD
-=======
-   
->>>>>>> 0e387346deb286261b486eab92b1067418d35ece
     @Test
     public void shouldHaveConsoleWindow()
     {
         consoleMenu.getElement().click();
         assertThat( consoleWrap.getElement(), isVisible() );
     } 
-<<<<<<< HEAD
     
     @Test
     public void consoleShouldPrintStuffDirectedToSysError() {
-=======
-
-    @Test
-    public void shouldOutputSysErrorWrites() throws InterruptedException {
->>>>>>> 0e387346deb286261b486eab92b1067418d35ece
     	consoleMenu.getElement().click();
 
         consoleInput.waitUntilVisible();
     	consoleInput.sendKeys("invalidoperation!¤", Keys.RETURN);
     	consoleInput.waitUntilVisible();
     	
-<<<<<<< HEAD
     	consoleInput.sendKeys("$_g", Keys.RETURN);
-=======
+    	
     	lastOutputLine.waitForTextToChangeFrom( "gremlin> invalidoperation!¤" );
     	assertThat(lastOutputLine.getText(), is( "==> 1 error" ));
->>>>>>> 0e387346deb286261b486eab92b1067418d35ece
+    	
     }
     
     private ElementReference consoleInput = new ElementReference(webDriver, By.id("mor_console_input"));

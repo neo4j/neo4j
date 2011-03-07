@@ -24,6 +24,7 @@ import static org.neo4j.server.webdriver.BrowserTitleIs.browserTitleIs;
 import static org.neo4j.server.webdriver.BrowserUrlIs.browserUrlIs;
 import static org.neo4j.server.webdriver.ElementVisible.elementVisible;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Date;
 
 import org.hamcrest.Matcher;
@@ -34,8 +35,8 @@ public class WebdriverLibrary
 {
     protected final WebDriver d;
     
-    public WebdriverLibrary(WebDriver d) {
-        this.d = d;
+    public WebdriverLibrary(WebDriverFacade df) throws InvocationTargetException, IllegalAccessException, InstantiationException {
+        this.d = df.getWebDriver();
     }
     
     public void clickOnButton(String text) {
