@@ -1,0 +1,39 @@
+[[security-server]]
+Securing access to the Neo4j Server
+===================================
+
+The Neo4j server currently does not enforce security on the REST access layer.
+This should be taken care of by external means.
+We strongly recommend to front a running Neo4j Server with a proxy like Apache `mod_proxy` footnote:[http://httpd.apache.org/docs/2.2/mod/mod_proxy.html].
+This provides a number of advatages:
+
+* Control access to the Neo4j server to specific IP addresses, URL patterns and IP ranges. This can be used to make for instance only the +/db/data+ namespace accessible to non-local clients, while the +/db/admin+ URLs only respond to a specific IP address.
++
+[source]
+---------------
+<Proxy *>
+  Order Deny,Allow
+  Deny from all
+  Allow from 192.168.0
+</Proxy>
+---------------
+
+* Run Neo4j Server as a non-root user on a Linux/Unix system on a port < 1000 (e.g. port 80) using 
++
+[source]
+---------------
+ProxyPass /neo4jdb/data http://localhost:7474/db/data
+ProxyPassReverse /neo4jdb/data http://localhost:7474/db/data
+---------------
+
+* Simple load balancing in a clustered environment to load-balance read load using the Apache `mod_proxy_balancer` footnote:[http://httpd.apache.org/docs/2.2/mod/mod_proxy_balancer.html] plugin
++
+[source]
+--------------
+<Proxy balancer://mycluster>
+BalancerMember http://192.168.1.50:80
+BalancerMember http://192.168.1.51:80
+</Proxy>
+ProxyPass /test balancer://mycluster
+--------------
+
