@@ -18,28 +18,30 @@
   You should have received a copy of the GNU Affero General Public License
   along with this program. If not, see <http://www.gnu.org/licenses/>.
   */  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
-  define(["./ItemUrlResolver", "lib/backbone"], function(ItemUrlResolver) {
-    var NodeSearcher;
-    return NodeSearcher = (function() {
-      function NodeSearcher(server) {
-        this.extractNodeId = __bind(this.extractNodeId, this);;
-        this.exec = __bind(this.exec, this);;
-        this.match = __bind(this.match, this);;        this.server = server;
-        this.urlResolver = new ItemUrlResolver(server);
-        this.pattern = /^(node:)?([0-9]+)$/i;
+  define(['lib/jquery', 'lib/jquery.hotkeys'], function() {
+    var KeyboardShortcuts;
+    return KeyboardShortcuts = (function() {
+      KeyboardShortcuts.prototype.shortcuts = {
+        "s": "search"
+      };
+      function KeyboardShortcuts(databrowserController) {
+        this.search = __bind(this.search, this);;
+        this.init = __bind(this.init, this);;        this.databrowserController = databrowserController;
       }
-      NodeSearcher.prototype.match = function(statement) {
-        return this.pattern.test(statement);
+      KeyboardShortcuts.prototype.init = function() {
+        var definition, method, _ref, _results;
+        _ref = this.shortcuts;
+        _results = [];
+        for (definition in _ref) {
+          method = _ref[definition];
+          _results.push($(document).bind("keydown", definition, this[method]));
+        }
+        return _results;
       };
-      NodeSearcher.prototype.exec = function(statement) {
-        return this.server.node(this.urlResolver.getNodeUrl(this.extractNodeId(statement)));
+      KeyboardShortcuts.prototype.search = function(ev) {
+        return alert("AA");
       };
-      NodeSearcher.prototype.extractNodeId = function(statement) {
-        var match;
-        match = this.pattern.exec(statement);
-        return match[2];
-      };
-      return NodeSearcher;
+      return KeyboardShortcuts;
     })();
   });
 }).call(this);
