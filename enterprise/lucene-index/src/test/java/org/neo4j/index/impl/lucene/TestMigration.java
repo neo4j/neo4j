@@ -87,6 +87,7 @@ public class TestMigration
     {
         Map<String, String> correctConfig = MapUtil.stringMap( "type", "exact", "provider", "lucene" );
         File storeDir = new File( "target/var/index" );
+        Neo4jTestCase.deleteFileOrDirectory( storeDir );
         GraphDatabaseService graphDb = new EmbeddedGraphDatabase( storeDir.getPath() );
         assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "default" ) ) );
         assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "wo-provider", MapUtil.stringMap( "type", "exact" ) ) ) );

@@ -161,7 +161,8 @@ public class TestDynamicStore
         return map(
                 "neo_store", dynamicStoreFile(),
                 IdGeneratorFactory.class, ID_GENERATOR_FACTORY,
-                "store_dir", path() );
+                "store_dir", path(),
+                FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction() );
     }
 
     @Test

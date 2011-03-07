@@ -91,7 +91,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
     public void setUpNeoStore() throws Exception
     {
         NeoStore.createStore( file( "neo" ), MapUtil.map(
-                IdGeneratorFactory.class, ID_GENERATOR_FACTORY ) );
+                IdGeneratorFactory.class, ID_GENERATOR_FACTORY,
+                FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction() ) );
     }
 
     private static class MyPropertyIndex extends
@@ -148,6 +149,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
                     LockManager.class, lockManager,
                     LockReleaser.class, lockReleaser,
                     IdGeneratorFactory.class, ID_GENERATOR_FACTORY,
+                    FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction(),
                     TxIdGenerator.class, TxIdGenerator.DEFAULT,
                     "store_dir", path(),
                     "neo_store", file( "neo" ),
@@ -1015,6 +1017,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         config.put( "string_block_size", "62" );
         config.put( "array_block_size", "302" );
         config.put( IdGeneratorFactory.class, CommonFactories.defaultIdGeneratorFactory() );
+        config.put( FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction() );
         NeoStore.createStore( file( "neo" ), config );
         initializeStores();
         assertEquals( 62 + 13, pStore.getStringBlockSize() );
