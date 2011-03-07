@@ -19,31 +19,19 @@
  */
 package org.neo4j.kernel;
 
-public class DummyExtension extends KernelExtension<DummyExtension.State>
+
+public class OtherExtension extends KernelExtension<DummyExtension.State>
 {
-    static final String EXTENSION_ID = "dummy";
+    static final String EXTENSION_ID = "other dummy";
 
-    static class State
-    {
-        volatile boolean unloaded = false;
-    }
-
-    volatile static State lastState;
-
-    public DummyExtension()
+    public OtherExtension()
     {
         super( EXTENSION_ID );
     }
 
     @Override
-    protected State load( KernelData kernel )
+    protected DummyExtension.State load( KernelData kernel )
     {
-        return lastState = new State();
-    }
-
-    @Override
-    protected void unload( State state )
-    {
-        state.unloaded = true;
+        return new DummyExtension.State();
     }
 }
