@@ -17,4 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+<<<<<<< HEAD
 define(function(){return function(vars){ with(vars||{}) { return "<div class=\"simple-data-area\"><h1>item.getSelf()</h1><div id=\"node-properties\"></div></div>";}}; });
+=======
+define(function(){return function(vars){ with(vars||{}) { return "<div class=\"simple-data-area\"><h1>" + 
+item.getSelf() + 
+"</h1></div>";}}; });
+>>>>>>> b0c29a05477c2f8d5ff7ca5b0af25560357f7595

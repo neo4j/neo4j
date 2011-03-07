@@ -22,6 +22,9 @@ package org.neo4j.server.web;
 import java.util.List;
 
 import org.neo4j.server.NeoServer;
+import org.neo4j.server.ext.visualization.VisualizationServlet;
+
+import javax.servlet.Servlet;
 
 public interface WebServer {
     public void setNeoServer(NeoServer server);
@@ -31,4 +34,6 @@ public interface WebServer {
     public void setMaxThreads(int maxThreads);
     public void addJAXRSPackages(List<String> packageNames, String serverMountPoint);
     public void addStaticContent(String contentLocation, String serverMountPoint);
+
+    void addServlet( Servlet unmanagedServlet, String serverMountPoint );
 }
