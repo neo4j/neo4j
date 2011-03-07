@@ -24,7 +24,6 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
@@ -242,21 +241,5 @@ public class PathsFunctionalTest
         WebResource resource = client.resource( functionalTestHelper.nodeUri(nodes[ 0 ]) + "/path" );
         ClientResponse response = resource.type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( noHitsJson ).post( ClientResponse.class );
         assertEquals( 404, response.getStatus() );
-    }
-
-    @Test
-    @Ignore("Should we really support this case?")
-    public void shouldBeAbleToReturn204WhenNoPathsFound()
-    {
-        long[] nodes = createMoreComplexGraph();
-        Client client = Client.create();
-
-        // Get single shortest paths and expect no content (since using /paths
-        // {single:true} instead of /path)
-        String noHitsSingleJson = "{\"to\":\"" + functionalTestHelper.nodeUri( nodes[ 1 ] )
-                + "\", \"max depth\":3, \"relationships\":{\"type\":\"to\", \"direction\":\"in\"}, \"algorithm\":\"shortestPath\", \"single\":true}";
-        WebResource resource = client.resource( functionalTestHelper.nodeUri(nodes[ 0 ]) + "/paths" );
-        ClientResponse response = resource.type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( noHitsSingleJson ).post( ClientResponse.class );
-        assertEquals( 204, response.getStatus() );
     }
 }
