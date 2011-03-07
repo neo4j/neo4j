@@ -83,7 +83,8 @@ public final class EmbeddedGraphDatabase extends AbstractGraphDatabase implement
                 CommonFactories.defaultRelationshipTypeCreator(),
                 CommonFactories.defaultTxIdGeneratorFactory(),
                 CommonFactories.defaultTxFinishHook(),
-                CommonFactories.defaultLastCommittedTxIdSetter() );
+                CommonFactories.defaultLastCommittedTxIdSetter(),
+                CommonFactories.defaultFileSystemAbstraction() );
     }
 
     /**

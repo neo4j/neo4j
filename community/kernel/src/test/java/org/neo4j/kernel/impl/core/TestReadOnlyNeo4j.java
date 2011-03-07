@@ -22,8 +22,10 @@ package org.neo4j.kernel.impl.core;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
 import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.getStorePath;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -40,6 +42,12 @@ import org.neo4j.test.DbRepresentation;
 public class TestReadOnlyNeo4j
 {
     private static final String PATH = getStorePath( "read-only" );
+    
+    @BeforeClass
+    public static void doBefore()
+    {
+        deleteFileOrDirectory( PATH );
+    }
 
     @Test
     public void testSimple()

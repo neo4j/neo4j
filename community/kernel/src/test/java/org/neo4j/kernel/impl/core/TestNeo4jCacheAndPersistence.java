@@ -445,7 +445,9 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     {
         Map<String,String> config = new HashMap<String,String>();
         config.put( "relationship_grab_size", "1" );
-        EmbeddedGraphDatabase graphDb = new EmbeddedGraphDatabase( getStorePath( "neo2" ), config );
+        String storePath = getStorePath( "neo2" );
+        deleteFileOrDirectory( storePath );
+        EmbeddedGraphDatabase graphDb = new EmbeddedGraphDatabase( storePath, config );
         Transaction tx = graphDb.beginTx();
         Node node1 = graphDb.createNode();
         Node node2 = graphDb.createNode();

@@ -151,7 +151,8 @@ public class TestXa extends AbstractNeo4jTestCase
         log.setLevel( Level.OFF );
         deleteFileOrDirectory( new File( path() ) );
         NeoStore.createStore( file( "neo" ), MapUtil.map(
-                IdGeneratorFactory.class, ID_GENERATOR_FACTORY ) );
+                IdGeneratorFactory.class, ID_GENERATOR_FACTORY,
+                FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction() ) );
         lockManager = getEmbeddedGraphDb().getConfig().getLockManager();
         lockReleaser = getEmbeddedGraphDb().getConfig().getLockReleaser();
         ds = newNeoStore();
@@ -450,6 +451,7 @@ public class TestXa extends AbstractNeo4jTestCase
             LockManager.class, lockManager,
             LockReleaser.class, lockReleaser,
             IdGeneratorFactory.class, ID_GENERATOR_FACTORY,
+            FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction(),
             TxIdGenerator.class, TxIdGenerator.DEFAULT,
             "store_dir", path(),
             "neo_store", file( "neo" ),

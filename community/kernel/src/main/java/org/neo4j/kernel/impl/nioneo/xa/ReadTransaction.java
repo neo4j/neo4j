@@ -128,6 +128,7 @@ class ReadTransaction
             }
             else
             {
+                System.out.println( relRecord );
                 throw new InvalidRecordException( "Node[" + nodeId + 
                     "] is neither firstNode[" + firstNode + 
                     "] nor secondNode[" + secondNode + "] for Relationship[" + relRecord.getId() + "]" );

@@ -275,7 +275,9 @@ public class TestNeo4j extends AbstractNeo4jTestCase
     @Test
     public void testMultipleNeos()
     {
-        GraphDatabaseService graphDb2 = new EmbeddedGraphDatabase( getStorePath( "test-neo2" ) );
+        String storePath = getStorePath( "test-neo2" );
+        deleteFileOrDirectory( storePath );
+        GraphDatabaseService graphDb2 = new EmbeddedGraphDatabase( storePath );
         Transaction tx2 = graphDb2.beginTx();
         getGraphDb().createNode();
         graphDb2.createNode();
@@ -346,8 +348,10 @@ public class TestNeo4j extends AbstractNeo4jTestCase
     {
         Map<String,String> config = new HashMap<String,String>();
         config.put( Config.KEEP_LOGICAL_LOGS, "nioneodb" );
+        String storeDir = "target/configdb";
+        deleteFileOrDirectory( storeDir );
         EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( 
-                "target/configdb", config );
+                storeDir, config );
         XaDataSourceManager xaDsMgr = 
                 db.getConfig().getTxModule().getXaDataSourceManager();
         XaDataSource xaDs = xaDsMgr.getXaDataSource( "nioneodb" );
@@ -355,14 +359,14 @@ public class TestNeo4j extends AbstractNeo4jTestCase
         db.shutdown();
         
         config.remove( Config.KEEP_LOGICAL_LOGS );
-        db = new EmbeddedGraphDatabase( "target/configdb", config );
+        db = new EmbeddedGraphDatabase( storeDir, config );
         xaDsMgr = db.getConfig().getTxModule().getXaDataSourceManager();
         xaDs = xaDsMgr.getXaDataSource( "nioneodb" );
         assertTrue( !xaDs.isLogicalLogKept() );
         db.shutdown();
 
         config.put( Config.KEEP_LOGICAL_LOGS, "true" );
-        db = new EmbeddedGraphDatabase( "target/configdb", config );
+        db = new EmbeddedGraphDatabase( storeDir, config );
         xaDsMgr = db.getConfig().getTxModule().getXaDataSourceManager();
         xaDs = xaDsMgr.getXaDataSource( "nioneodb" );
         assertTrue( xaDs.isLogicalLogKept() );

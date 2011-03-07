@@ -19,6 +19,8 @@
  */
 package examples;
 
+import java.io.File;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -40,6 +42,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.Traversal;
 
+import common.Neo4jAlgoTestCase;
+
 public class SiteExamples
 {
     private static GraphDatabaseService graphDb;
@@ -53,7 +57,9 @@ public class SiteExamples
     @BeforeClass
     public static void startDb()
     {
-        graphDb = new EmbeddedGraphDatabase( "target/var/examples" );
+        String storeDir = "target/var/examples";
+        Neo4jAlgoTestCase.deleteFileOrDirectory( new File( storeDir ) );
+        graphDb = new EmbeddedGraphDatabase( storeDir );
     }
     
     @Before

@@ -663,7 +663,7 @@ abstract class Command extends XaCommand
 
         private static PropertyType getType( int type )
         {
-            return PropertyType.getPropertyType( type, false );
+            return PropertyType.getPropertyType( type, true );
         }
 
         @Override

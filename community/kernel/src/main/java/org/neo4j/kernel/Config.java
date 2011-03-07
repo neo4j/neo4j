@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.RelationshipTypeHolder;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.persistence.IdGenerator;
 import org.neo4j.kernel.impl.persistence.IdGeneratorModule;
@@ -110,7 +111,7 @@ public class Config
             LockReleaser lockReleaser, IdGeneratorFactory idGeneratorFactory,
             TxEventSyncHookFactory txSyncHookFactory,
             RelationshipTypeCreator relTypeCreator, TxIdGenerator txIdGenerator,
-            LastCommittedTxIdSetter lastCommittedTxIdSetter )
+            LastCommittedTxIdSetter lastCommittedTxIdSetter, FileSystemAbstraction fileSystem )
     {
         this.storeDir = storeDir;
         this.inputParams = inputParams;
@@ -118,6 +119,7 @@ public class Config
         this.relTypeCreator = relTypeCreator;
         this.txIdGenerator = txIdGenerator;
         this.params = getDefaultParams();
+        params.put( FileSystemAbstraction.class, fileSystem );
         this.txModule = txModule;
         this.lockManager = lockManager;
         this.lockReleaser = lockReleaser;
