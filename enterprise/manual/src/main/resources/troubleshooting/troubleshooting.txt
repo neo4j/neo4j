@@ -16,5 +16,6 @@ Troubleshooting guide
 
 | DeadlockDetectedException
 | Concurrent updates of contended resources or not finishing transactions properly.
-| See deadlock section under Transaction section.
+| See <<transactions-deadlocks>>.
 |=============================
+

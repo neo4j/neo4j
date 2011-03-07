@@ -240,7 +240,8 @@ public class DataBrowserWebTest extends WebDriverTest {
         lastPropertyKeyInput.sendKeys( propertyKey, Keys.RETURN );
         lastPropertyValueInput.sendKeys( "\"asdasdas\"", Keys.RETURN );
         
-        lastTooltip.waitForTextToChangeTo( "This is key already exist, please pick a different one." );
+        ElementReference tooltip = new ElementReference(webDriver, By.xpath( "//div[contains(.,'This key already exists, please pick a different one.')]"));
+        tooltip.waitUntilVisible();
         
         Node n = testHelper.getDatabase().getReferenceNode();
         String value = (String) n.getProperty( propertyKey );

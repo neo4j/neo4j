@@ -136,7 +136,7 @@ wa.components.data.PropertyEditor = (function($) {
 	    if( ! me.keyFieldIsMarkedAsDuplicate(el)) {
 	        me.duplicateKeyFields.push(el);
 	    }
-	    me.showTooltip(el, "This is key already exist, please pick a different one.");
+	    me.showTooltip(el, "This key already exists, please pick a different one.");
 	    $(el).addClass("error");
 	};
 	
