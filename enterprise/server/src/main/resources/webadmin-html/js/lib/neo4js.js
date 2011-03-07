@@ -383,6 +383,9 @@ neo4j.exceptions.NotFoundException=function(a){Error.call(this,"The object at ur
 this.url=a
 };
 neo4j.exceptions.NotFoundException.prototype=new Error();
+neo4j.exceptions.InvalidDataException=function(){Error.call(this,"Unable to create relationship or node from the provided data. This may be because you tried to get a node or relationship from an invalid url.")
+};
+neo4j.exceptions.InvalidDataException.prototype=new Error();
 _.extend(neo4j,{setTimeout:function(b,a){if(typeof(setTimeout)!="undefined"){return setTimeout(b,a)
 }else{if(a===0){b()
 }else{neo4j.log("No timeout implementation found, unable to do timed tasks.")
@@ -768,9 +771,10 @@ d(b)
 },c)
 })
 }},fetch:function(){var b=this,a=this.db.web;
-return new neo4j.Promise(function(d,c){a.get(b._self).then(function(e){b._init(e.data);
+return new neo4j.Promise(function(d,c){a.get(b._self).then(function(e){if(e.data&&e.data.self){b._init(e.data);
 d(b)
-},c)
+}else{c(new neo4j.exceptions.InvalidDataException())
+}},c)
 })
 },remove:function(){var e=this,b=this.db.web,a=false,d=this.db,c=e.getSelf();
 return new neo4j.Promise(function(g,f){b.del(e.getSelf()).then(function(){d.getReferenceNodeUrl().then(function(h){if(h==c){d.forceRediscovery()
@@ -822,9 +826,10 @@ d(a)
 },c)
 })
 }},fetch:function(){var a=this,b=this.db.web;
-return new neo4j.Promise(function(d,c){b.get(a._self).then(function(e){a._init(e.data);
+return new neo4j.Promise(function(d,c){b.get(a._self).then(function(e){if(e.data&&e.data.self&&e.data.start&&e.data.end){a._init(e.data);
 d(a)
-},c)
+}else{c(new neo4j.exceptions.InvalidDataException())
+}},c)
 })
 },remove:function(){var a=this,b=this.db.web;
 return new neo4j.Promise(function(d,c){b.del(a.getSelf()).then(function(){d(true)
@@ -916,7 +921,8 @@ neo4j.services.ConsoleService=function(a){neo4j.Service.call(this,a)
 _.extend(neo4j.services.ConsoleService.prototype,neo4j.Service.prototype);
 neo4j.services.ConsoleService.prototype.exec=neo4j.Service.resourceFactory({resource:"exec",method:"POST",before:function(b,a){b({command:a[0],engine:a[1]},a[2])
 }});
-neo4j.services.JmxService=function(a){neo4j.Service.call(this,a)
+neo4j.services.JmxService=function(a){neo4j.Service.call(this,a);
+this.kernelInstance=neo4j.cachedFunction(this.kernelInstance,0,2000)
 };
 _.extend(neo4j.services.JmxService.prototype,neo4j.Service.prototype);
 neo4j.services.JmxService.prototype.getDomains=neo4j.Service.resourceFactory({resource:"domains",method:"GET"});
@@ -1035,6 +1041,9 @@ return this.getServiceDefinition().then(function(b,d,c){a.web.get(b.relationship
 })
 },getReferenceNodeUrl:function(){return this.getServiceDefinition().then(function(c,b,a){if(typeof(c.reference_node)!=="undefined"){b(c.reference_node)
 }else{a()
+}})
+},nodeUri:function(a){return this.getServiceDefinition().then(function(c,b){if(/^[0-9]+$/i.test(a)){b(c.node+"/"+a)
+}else{b(a)
 }})
 },getServiceDefinition:function(){if(typeof(this._serviceDefinitionPromise)==="undefined"){var a=this;
 this._serviceDefinitionPromise=this.getDiscoveryDocument().then(function(c,d,b){a.web.get(c.data,function(e){d(e)

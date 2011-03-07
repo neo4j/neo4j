@@ -29,11 +29,14 @@ public class WebadminWebdriverLibrary extends WebdriverLibrary
     
     private String serverUrl;
     private final ElementReference dataBrowserSearchField;
+    private final ElementReference dataBrowserItemHeadline;
     
     public WebadminWebdriverLibrary(WebDriverFacade wf, ServerIntegrationTestFacade serverFacade) throws InvocationTargetException, IllegalAccessException, InstantiationException {
         super(wf);
         
         setServerUrl( serverFacade.getServerUrl() );
+        
+        dataBrowserItemHeadline = new ElementReference(d, By.xpath( "//div[@id='data-area']//h1" ));
         dataBrowserSearchField = new ElementReference(d, By.id( "data-console" ));
     }
     
@@ -56,6 +59,26 @@ public class WebadminWebdriverLibrary extends WebdriverLibrary
     
     public void searchForInDataBrowser(String query) {
         dataBrowserSearchField.sendKeys( query );
+    }
+    
+    public String getCurrentDatabrowserItemHeadline() {
+        return dataBrowserItemHeadline.getText();
+    }
+    
+    public String createNodeInDataBrowser() throws Exception {
+        goToWebadminStartPage();
+        clickOnTab( "Data browser" );
+        String prevItemHeadline = getCurrentDatabrowserItemHeadline();
+        
+        clickOnButton( "Node" );
+        
+        dataBrowserItemHeadline.waitForTextToChangeFrom( prevItemHeadline );
+        
+        return getCurrentDatabrowserItemHeadline();
+    }
+    
+    public ElementReference getDataBrowserItemHeadline() {
+        return dataBrowserItemHeadline;
     }
     
 }

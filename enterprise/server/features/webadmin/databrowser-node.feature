@@ -9,11 +9,18 @@ Feature: Webadmin data browser allows me to see and change details for a node
     And I click on the Data browser tab in webadmin
     Then The data browser item headline should be http://localhost:7474/db/data/node/0
 
-  Scenario: Find nodes by id in webadmin
+  Scenario: Find node by id in webadmin
     Given I have a neo4j server running
     And I have created a node through webadmin
     When I look at the webadmin data browser in a web browser
     And I enter node:1 into the data browser search field
+    Then The data browser item headline should be http://localhost:7474/db/data/node/1
+
+  Scenario: Find node by url in webadmin
+    Given I have a neo4j server running
+    And I have created a node through webadmin
+    When I look at the webadmin data browser in a web browser
+    And I enter http://localhost:7474/db/data/node/1 into the data browser search field
     Then The data browser item headline should be http://localhost:7474/db/data/node/1
 
   Scenario: Create nodes in webadmin
@@ -23,12 +30,9 @@ Feature: Webadmin data browser allows me to see and change details for a node
     Then The data browser item headline should change from http://localhost:7474/db/data/node/0
     And The data browser item headline should be http://localhost:7474/db/data/node/[0-9]+
 
-  Scenario: Create, remove and edit node properties in webadmin
+  Scenario: Create node properties in webadmin
     Given I have a neo4j server running
     When I look at the webadmin data browser in a web browser
-    And I click on the Node button in webadmin
-    Then The data browser item headline should change from http://localhost:7474/db/data/node/0
-    
     When I click on the Add property button in webadmin
     Then An element should appear that can be found by the xpath //li[1]/ul/li/input[@class="property-key"]
     
@@ -36,5 +40,6 @@ Feature: Webadmin data browser allows me to see and change details for a node
     And I type 12 into the element found by the xpath //li[1]/ul/li/input[@class="property-value"]
     And I hit return in the element found by the xpath //li[1]/ul/li/input[@class="property-value"]
     Then The databrowser save button should change to saying Saved
+    And The currently visible node in webadmin should have a property mykey with the value 12
 
     

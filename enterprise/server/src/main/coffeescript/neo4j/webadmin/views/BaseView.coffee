@@ -39,4 +39,5 @@ define ['neo4j/webadmin/templates/base','lib/backbone'], (template) ->
 
       if @mainView?
         $("#contents").append @mainView.render().el
+        @mainView.delegateEvents()
       return this

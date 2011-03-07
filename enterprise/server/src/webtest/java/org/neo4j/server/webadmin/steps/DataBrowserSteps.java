@@ -40,7 +40,6 @@ import cuke4duke.spring.StepDefinitions;
 public class DataBrowserSteps
 {
     private final WebDriver d;
-    private final ElementReference itemHeadline;
     private final ElementReference saveButton;
     
     private final WebadminWebdriverLibrary wl;
@@ -50,19 +49,12 @@ public class DataBrowserSteps
         d = facade.getWebDriver();
         this.wl = wl;
         
-        itemHeadline = new ElementReference(d, By.xpath( "//div[@id='data-area']//h1" ));
         saveButton = new ElementReference(d, By.xpath( "//button[@class='data-save-properties']" ));
     }
     
     @Given("^I have created a node through webadmin$")
     public void iHaveCreatedANode() throws Exception {
-        wl.goToWebadminStartPage();
-        wl.clickOnTab( "Data browser" );
-        String prevItemHeadline = itemHeadline.getText();
-        
-        wl.clickOnButton( "Node" );
-        
-        itemHeadline.waitForTextToChangeFrom( prevItemHeadline );
+        wl.createNodeInDataBrowser();
     }
     
     @When("^I look at the webadmin data browser in a web browser$") 
@@ -79,12 +71,12 @@ public class DataBrowserSteps
     
     @Then("^The data browser item headline should be (.+)$")
     public void theDataBrowserItemHeadlineShouldBe(String expected) {
-        itemHeadline.waitForTextToChangeTo( expected );
+        wl.getDataBrowserItemHeadline().waitForTextToChangeTo( expected );
     }
     
     @Then("^The data browser item headline should change from (.+)$")
     public void theDataBrowserShouldChangeFrom(String expected) {
-        itemHeadline.waitForTextToChangeFrom( expected );
+        wl.getDataBrowserItemHeadline().waitForTextToChangeFrom( expected );
     }
     
     @Then("^The databrowser save button should say (.+)$")
@@ -97,4 +89,15 @@ public class DataBrowserSteps
         saveButton.waitForTextToChangeTo( text );
     }
     
+    @Then("^The currently visible (node|relationship) in webadmin should have a property (.+) with the value (.+)$")
+    public void theCurrentlyVisibleNodeShouldHavePropertyXAndValueY(String expectedKey, String expectedValue) {
+        theNodeOrRelationshipWithUrlUShouldHavePropertyXAndValueY( wl.getCurrentDatabrowserItemHeadline(), expectedKey, expectedValue );
+    }
+    
+    @Then("^The (node|relationship) with url (.+) in webadmin should have a property (.+) with the value (.+)$")
+    public void theNodeOrRelationshipWithUrlUShouldHavePropertyXAndValueY(String url, String expectedKey, String expectedValue) {
+        iEnterXIntoTheDatabrowserSearchField(url);
+        ElementReference el = wl.getElement( By.xpath( "//input[@value='"+expectedKey+"']/../..//input[@class='property-key']"  ) );
+        assertThat(el.getValue(), is(expectedValue));
+    }
 }
