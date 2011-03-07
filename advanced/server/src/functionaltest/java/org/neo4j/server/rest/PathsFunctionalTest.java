@@ -70,6 +70,7 @@ public class PathsFunctionalTest
 
         // Get all shortest paths
         ClientResponse response = postPathQuery( nodes, getAllShortestPathPayLoad( nodes[ 1 ] ), "/paths" );
+        assertEquals( 200, response.getStatus() );
 
         String entity = response.getEntity( String.class );
         Collection<?> result = (Collection<?>)JsonHelper.jsonToSingleValue( entity );
@@ -90,6 +91,7 @@ public class PathsFunctionalTest
 
         // Get single shortest path
         ClientResponse response = postPathQuery( nodes, getAllShortestPathPayLoad( nodes[ 1 ] ), "/path" );
+        assertEquals( 200, response.getStatus() );
 
         Map<?, ?> path = JsonHelper.jsonToMap( response.getEntity( String.class ) );
         assertTrue( path.get( "start" ).toString().endsWith( "/node/" + nodes[ 0 ] ) );
@@ -105,6 +107,7 @@ public class PathsFunctionalTest
 
 //        Get cheapest paths using Dijkstra
         ClientResponse response = postPathQuery( nodes, getAllPathsUsingDijkstraPayLoad( nodes[ 1 ], false ), "/path" );
+        assertEquals( 200, response.getStatus() );
 
 
         Map<?, ?> path = JsonHelper.jsonToMap( response.getEntity( String.class ) );
@@ -119,8 +122,6 @@ public class PathsFunctionalTest
         Client client = Client.create();
         WebResource resource = client.resource( functionalTestHelper.nodeUri( nodes[ 0 ] ) + functionToCall );
         ClientResponse response = resource.type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( query ).post( ClientResponse.class );
-        assertEquals( 200, response.getStatus() );
-        assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
 
         return response;
     }
@@ -132,6 +133,7 @@ public class PathsFunctionalTest
 
         // Get cheapest paths using Dijkstra
         ClientResponse response = postPathQuery( nodes, getAllPathsUsingDijkstraPayLoad( nodes[ 1 ], true ), "/path" );
+        assertEquals( 200, response.getStatus() );
 
 
         Map<?, ?> path = JsonHelper.jsonToMap( response.getEntity( String.class ) );
@@ -142,7 +144,7 @@ public class PathsFunctionalTest
     }
 
     @Test
-    public void shouldReturn404WhenFailingToFindASinglePath()
+    public void shouldReturn404WhenFailingToFindASinglePath() throws JsonParseException
     {
         long[] nodes = createMoreComplexGraph();
 
@@ -151,7 +153,6 @@ public class PathsFunctionalTest
                 + "\", \"max depth\":3, \"relationships\":{\"type\":\"to\", \"direction\":\"in\"}, \"algorithm\":\"shortestPath\"}";
 
         ClientResponse response = postPathQuery( nodes, noHitsJson, "/path" );
-
         assertEquals( 404, response.getStatus() );
     }
 
