@@ -624,6 +624,7 @@
 	            <jvmArg>-DtestWithExternalServer=${testWithExternalServer}</jvmArg>
 	          </jvmArgs>
 	          <cucumberArgs>
+	            <cucumberArg>${cukeArgs}</cucumberArg>
 	            <cucumberArg>--verbose</cucumberArg>
 	            <cucumberArg>--strict</cucumberArg>
 	            <cucumberArg>--color</cucumberArg>
