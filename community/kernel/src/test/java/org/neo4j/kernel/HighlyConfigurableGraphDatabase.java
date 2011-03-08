@@ -31,6 +31,11 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
+/**
+ * Used in testing and makes some internals configurable, f.ex {@link FileSystemAbstraction}
+ * and {@link IdGeneratorFactory}. Otherwise its functionality is equivalent to
+ * {@link EmbeddedGraphDatabase}.
+ */
 public class HighlyConfigurableGraphDatabase extends AbstractGraphDatabase
 {
     private final EmbeddedGraphDbImpl impl;
