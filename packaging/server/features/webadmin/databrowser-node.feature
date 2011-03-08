@@ -16,11 +16,11 @@ Feature: Webadmin data browser allows me to see and change details for a node
     And I enter node:1 into the data browser search field
     Then The data browser item headline should be http://localhost:7474/db/data/node/1
 
-  Scenario: Find node by url in webadmin
+  Scenario: Find node by plain id in webadmin
     Given I have a neo4j server running
     And I have created a node through webadmin
     When I look at the webadmin data browser in a web browser
-    And I enter http://localhost:7474/db/data/node/1 into the data browser search field
+    And I enter 1 into the data browser search field
     Then The data browser item headline should be http://localhost:7474/db/data/node/1
 
   Scenario: Create nodes in webadmin

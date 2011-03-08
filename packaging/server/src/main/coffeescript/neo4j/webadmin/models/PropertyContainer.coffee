@@ -75,8 +75,10 @@ define ['lib/backbone'], () ->
         @setNotSaved()
 
     deleteProperty : (id) =>
-      if not isCantSave()
+      if not @isCantSave()
         @setNotSaved()
+        property = @getProperty(id)
+        @getItem().removeProperty(oldKey)
 
     addProperty : (key="", value="", updatePropertyList=true, propertyMeta={}, opts={}) =>
       id = @generatePropertyId()
@@ -142,7 +144,7 @@ define ['lib/backbone'], () ->
       @getSaveState() == "cantSave"
 
     isNotSaved : => 
-      @getSaveState() == "notSaved" or isCantSave()
+      @getSaveState() == "notSaved" or @isCantSave()
 
     getSaveState : =>
       @get "saveState"
