@@ -221,4 +221,20 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         assertPaths( GraphAlgoFactory.shortestPath(
                 Traversal.expanderForAllTypes().addNodeFilter( filter ), 10 ).findAllPaths( a, d ), "a,g,h,d" );
     }
+    
+    @Test
+    public void testFinderShouldNotFindAnythingBeyondLimit()
+    {
+        graph.makeEdgeChain( "a,b,c,d,e" );
+
+        PathFinder<Path> finderLimitZero = instantiatePathFinder(Traversal.emptyExpander(), 0 );
+        PathFinder<Path> finderLimitOne = instantiatePathFinder(Traversal.emptyExpander(), 1 );
+        PathFinder<Path> finderLimitTwo = instantiatePathFinder(Traversal.emptyExpander(), 2 );
+
+        assertPaths( finderLimitZero.findAllPaths( graph.getNode( "a" ), graph.getNode( "b" ) ) );
+        assertPaths( finderLimitOne.findAllPaths( graph.getNode( "a" ), graph.getNode( "c" ) ) );
+        assertPaths( finderLimitOne.findAllPaths( graph.getNode( "a" ), graph.getNode( "d" ) ) );
+        assertPaths( finderLimitTwo.findAllPaths( graph.getNode( "a" ), graph.getNode( "d" ) ) );
+        assertPaths( finderLimitTwo.findAllPaths( graph.getNode( "a" ), graph.getNode( "e" ) ) );
+    }
 }
