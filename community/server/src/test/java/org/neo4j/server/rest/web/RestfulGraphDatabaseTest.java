@@ -19,15 +19,14 @@
  */
 package org.neo4j.server.rest.web;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.hasKey;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -944,30 +943,14 @@ public class RestfulGraphDatabaseTest
         assertTrue( map.containsKey( "self" ) );
     }
 
+
     @Test
-    public void shouldBeAbleToGetListOfNodeRepresentationsFromIndexLookup() throws DatabaseBlockedException, PropertyValueException
+    public void shouldBeAbleToGetListOfNodeRepresentationsFromIndexLookup() throws DatabaseBlockedException, PropertyValueException, URISyntaxException
     {
-        String key = "key_get";
-        String value = "value";
+        RestfulModelHelper.DomainModel matrixers = RestfulModelHelper.generateMatrix( service );
 
-        String name1 = "Thomas Anderson";
-        String name2 = "Agent Smith";
-        URI location1 = (URI) service.createNode( "{\"name\":\"" + name1 + "\"}" ).getMetadata().getFirst(
-                "Location" );
-        URI location2 = (URI) service.createNode( "{\"name\":\"" + name2 + "\"}" ).getMetadata().getFirst(
-                "Location" );
-        String indexName = "matrixal-nodes";
-        URI indexLocation1 = (URI) service.addToNodeIndex( indexName, key, value,
-                JsonHelper.createJsonFrom( location1.toString() ) ).getMetadata().getFirst(
-                "Location" );
-        URI indexLocation2 = (URI) service.addToNodeIndex( indexName, key, value,
-                JsonHelper.createJsonFrom( location2.toString() ) ).getMetadata().getFirst(
-                "Location" );
-        Map<String, String> uriToName = new HashMap<String, String>();
-        uriToName.put( indexLocation1.toString(), name1 );
-        uriToName.put( indexLocation2.toString(), name2 );
-
-        Response response = service.getIndexedNodes( indexName, key, value );
+        Map.Entry<String, String> indexedKeyValue = matrixers.indexedNodeKeyValues.entrySet().iterator().next();
+        Response response = service.getIndexedNodes( matrixers.nodeIndexName, indexedKeyValue.getKey(), indexedKeyValue.getValue() );
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
         Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( entityAsString( response ) );
         int counter = 0;
@@ -977,11 +960,37 @@ public class RestfulGraphDatabaseTest
             Map<?, ?> properties = (Map<?, ?>) map.get( "data" );
             assertNotNull( map.get( "self" ) );
             String indexedUri = (String) map.get( "indexed" );
-            assertEquals( uriToName.get( indexedUri ), properties.get( "name" ) );
+            assertEquals( matrixers.indexedNodeUriToEntityMap.get( new URI(indexedUri) ).properties.get("name"), properties.get( "name" ) );
             counter++;
         }
         assertEquals( 2, counter );
     }
+
+    @Test
+    public void shouldBeAbleToGetListOfNodeRepresentationsFromIndexQuery() throws DatabaseBlockedException, PropertyValueException, URISyntaxException
+    {
+        RestfulModelHelper.DomainModel matrixers = RestfulModelHelper.generateMatrix( service );
+
+        Map.Entry<String, String> indexedKeyValue = matrixers.indexedNodeKeyValues.entrySet().iterator().next();
+        // query for the first letter with which the nodes were indexed.
+        Response response = service.getIndexedNodesByQuery( matrixers.nodeIndexName, indexedKeyValue.getKey(), indexedKeyValue.getValue().substring( 0, 1 ) + "*" );
+        assertEquals( Status.OK.getStatusCode(), response.getStatus() );
+        Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( entityAsString( response ) );
+        int counter = 0;
+        for ( Object item : items )
+        {
+            Map<?, ?> map = (Map<?, ?>) item;
+            Map<?, ?> properties = (Map<?, ?>) map.get( "data" );
+            String indexedUri = (String) map.get( "indexed" ); // unlike exact match, a query can not return a sensible index uri for the result
+            assertNull(indexedUri);
+            String selfUri = (String) map.get("self");
+            assertNotNull( selfUri );
+            assertEquals( matrixers.nodeUriToEntityMap.get( new URI(selfUri) ).properties.get("name"), properties.get( "name" ) );
+            counter++;
+        }
+        assertThat( counter, is( greaterThanOrEqualTo(2)) );
+    }
+
 
     @Test
     public void shouldBeAbleToGetListOfRelationshipRepresentationsFromIndexLookup() throws DatabaseBlockedException, PropertyValueException
@@ -1018,6 +1027,43 @@ public class RestfulGraphDatabaseTest
             counter++;
         }
         assertEquals( 2, counter );
+    }
+
+    @Test
+    public void shouldBeAbleToGetListOfRelationshipRepresentationsFromIndexQuery() throws DatabaseBlockedException, PropertyValueException
+    {
+        String key = "key_get";
+        String value = "value";
+
+        long startNodeId = helper.createNode();
+        long endNodeId = helper.createNode();
+
+        String relationshipType1 = "KNOWS";
+        long relationshipId1 = helper.createRelationship( relationshipType1, startNodeId, endNodeId );
+        String relationshipType2 = "PLAYS-NICE-WITH";
+        long relationshipId2 = helper.createRelationship( relationshipType2, startNodeId, endNodeId );
+
+        String indexName = "matrixal-relationships";
+        helper.createRelationshipIndex( indexName );
+        helper.addRelationshipToIndex( indexName, key, value, relationshipId1 );
+        helper.addRelationshipToIndex( indexName, key, value, relationshipId2 );
+
+        Response response = service.getIndexedRelationshipsByQuery( indexName, key, value.substring( 0,1 ) + "*" );
+        assertEquals( Status.OK.getStatusCode(), response.getStatus() );
+        Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( entityAsString( response ) );
+        int counter = 0;
+        for ( Object item : items )
+        {
+            Map<?, ?> map = (Map<?, ?>) item;
+            String indexedUri = (String) map.get( "indexed" );
+            assertNull( indexedUri ); // queries can not return a sensible index uri
+            String selfUri = (String) map.get("self");
+            assertNotNull( selfUri );
+            assertTrue( selfUri.endsWith( Long.toString( relationshipId1 ) ) ||
+                    selfUri.endsWith( Long.toString( relationshipId2 ) ) );
+            counter++;
+        }
+        assertThat( counter, is(greaterThanOrEqualTo( 2 )));
     }
 
     @Test
@@ -1079,7 +1125,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldGet404WhentTraversingFromNonExistentNode() throws DatabaseBlockedException
+    public void shouldGet404WhenTraversingFromNonExistentNode() throws DatabaseBlockedException
     {
         Response response = service.traverse( 9999999, TraverserReturnType.node, "{}" );
         assertEquals( Status.NOT_FOUND.getStatusCode(), response.getStatus() );
