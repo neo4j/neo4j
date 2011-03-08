@@ -44,7 +44,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdType;
 
-//@Ignore( "Causes OOM, and won't run very nicely on Windows" )
 public class TestBigBatchStore implements RelationshipType
 {
     private static final String PATH = "target/var/bigb";

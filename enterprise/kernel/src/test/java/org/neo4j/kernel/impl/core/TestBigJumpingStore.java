@@ -75,7 +75,7 @@ public class TestBigJumpingStore
     }
 
     @Test
-    public void testCreateSomeNodes() throws Exception
+    public void crudOnHighIds() throws Exception
     {
         // Create stuff
         List<Node> nodes = new ArrayList<Node>();
@@ -92,7 +92,8 @@ public class TestBigJumpingStore
             nodes.add( node );
         }
         
-        for ( int i = 0; i < numberOfNodes-100; i++ )
+        int numberOfRels = numberOfNodes-100;
+        for ( int i = 0; i < numberOfRels; i++ )
         {
             Node node1 = nodes.get( i/100 );
             Node node2 = nodes.get( i+1 );
@@ -103,19 +104,20 @@ public class TestBigJumpingStore
         tx.finish();
         
         // Verify
+        int relCount = 0;
         for ( int t = 0; t < 2; t++ )
         {
             int nodeCount = 0;
+            relCount = 0;
             for ( Node node : nodes )
             {
                 node = db.getNodeById( node.getId() );
                 assertProperties( map( "number", nodeCount++, "string", stringValue, "array", arrayValue ), node );
-                for ( Relationship rel : node.getRelationships( Direction.OUTGOING ) )
-                {
-                }
+                relCount += count( node.getRelationships( Direction.OUTGOING ) );
             }
             ((AbstractGraphDatabase)db).getConfig().getGraphDbModule().getNodeManager().clearCache();
         }
+        assertEquals( numberOfRels, relCount );
         
         // Remove stuff
         tx = db.beginTx();
@@ -148,33 +150,15 @@ public class TestBigJumpingStore
             {
                 if ( i % 2 == 0 )
                 {
-                    Relationship firstRel = firstOrNull( node.getRelationships() );
-                    if ( firstRel != null )
-                    {
-                        firstRel.delete();
-                    }
-                    Relationship lastRel = lastOrNull( node.getRelationships() );
-                    if ( lastRel != null )
-                    {
-                        lastRel.delete();
-                    }
+                    deleteIfNotNull( firstOrNull( node.getRelationships() ) );
+                    deleteIfNotNull( lastOrNull( node.getRelationships() ) );
                 }
                 else
                 {
-                    int relCount = 0;
-                    for ( Relationship rel : node.getRelationships() )
-                    {
-                        if ( relCount++ % 2 == 0 )
-                        {
-                            rel.delete();
-                        }
-                    }
+                    deleteEveryOther( node.getRelationships() );
                 }
                 
-                for ( Relationship rel : node.getRelationships( Direction.OUTGOING ) )
-                {
-                    rel.setProperty( "relprop", "rel value" );
-                }
+                setPropertyOnAll( node.getRelationships( Direction.OUTGOING ), "relprop", "rel value" );
             }
             else if ( i % 20 == 0 )
             {
@@ -216,12 +200,41 @@ public class TestBigJumpingStore
                     }
                     else
                     {
-                        fail( "Invalid type" );
+                        fail( "Invalid type " + rel.getType() + " for " + rel );
                     }
                 }
                 nodeCount++;
             }
             ((AbstractGraphDatabase)db).getConfig().getGraphDbModule().getNodeManager().clearCache();
+        }
+    }
+
+    private void setPropertyOnAll( Iterable<Relationship> relationships, String key,
+            Object value )
+    {
+        for ( Relationship rel : relationships )
+        {
+            rel.setProperty( key, value );
+        }
+    }
+
+    private void deleteEveryOther( Iterable<Relationship> relationships )
+    {
+        int relCounter = 0;
+        for ( Relationship rel : relationships )
+        {
+            if ( relCounter++ % 2 == 0 )
+            {
+                rel.delete();
+            }
+        }
+    }
+
+    private void deleteIfNotNull( Relationship relationship )
+    {
+        if ( relationship != null )
+        {
+            relationship.delete();
         }
     }
 }
