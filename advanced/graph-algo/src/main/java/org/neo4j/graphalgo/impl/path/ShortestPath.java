@@ -237,7 +237,15 @@ public class ShortestPath implements PathFinder<Path>
             this.stopAsap = stopAsap;
             this.expander = expander;
             this.sharedVisitedRels = sharedVisitedRels;
-            prepareNextLevel();
+            
+            if ( sharedCurrentDepth.value < maxDepth )
+            {
+                prepareNextLevel();
+            }
+            else
+            {
+                this.nextRelationships = Collections.<Relationship>emptyList().iterator();
+            }
         }
         
         private void prepareNextLevel()
