@@ -43,6 +43,8 @@ public class ElementReference
     protected By selector;
     protected WebDriver webDriver;
     protected boolean matchLast;
+    
+    private static final long MAX_WAIT_TIME = 60000;
 
     public ElementReference( WebDriver webDriver, By selector )
     {
@@ -75,7 +77,7 @@ public class ElementReference
      */
     public RenderedWebElement getElement( By selector )
     {
-        long end = System.currentTimeMillis() + 10000;
+        long end = System.currentTimeMillis() + MAX_WAIT_TIME;
         while ( System.currentTimeMillis() < end )
         {
             try
@@ -107,7 +109,7 @@ public class ElementReference
         }
 
         throw new NoSuchElementException( "Unable to locate element: "
-                                          + selector.toString() );
+                                          + selector.toString() + "\nHTML dump:\n" + webDriver.getPageSource() );
     }
 
     public RenderedWebElement findElement( By by )
@@ -222,7 +224,7 @@ public class ElementReference
 
     public void waitUntilVisible()
     {
-        long end = System.currentTimeMillis() + 10000;
+        long end = System.currentTimeMillis() + MAX_WAIT_TIME;
         while ( System.currentTimeMillis() < end )
         {
             try
@@ -247,12 +249,12 @@ public class ElementReference
         }
 
         throw new RuntimeException(
-                "Element did not become visible within a reasonable time." );
+                "Element did not become visible within a reasonable time." + "\nHTML dump:\n" + webDriver.getPageSource()  );
     }
 
     public void waitUntilNotVisible()
     {
-        long end = System.currentTimeMillis() + 10000;
+        long end = System.currentTimeMillis() + MAX_WAIT_TIME;
         try
         {
             while ( System.currentTimeMillis() < end )
@@ -282,12 +284,12 @@ public class ElementReference
         }
 
         throw new RuntimeException(
-                "Element did disappear within a reasonable time. " );
+                "Element did disappear within a reasonable time. " + "\nHTML dump:\n" + webDriver.getPageSource()  );
     }
 
     public void waitForAttributeToBe( String attributeName, String expectedValue )
     {
-        long end = System.currentTimeMillis() + 10000;
+        long end = System.currentTimeMillis() + MAX_WAIT_TIME;
         String attr;
         while ( System.currentTimeMillis() < end )
         {
@@ -317,13 +319,13 @@ public class ElementReference
         }
 
         throw new RuntimeException(
-                "Element did not become visible within a reasonable time." );
+                "Element did not become visible within a reasonable time." + "\nHTML dump:\n" + webDriver.getPageSource()  );
     }
 
     public void waitForAttributeToChangeFrom( String attributeName,
             String currentValue )
     {
-        long end = System.currentTimeMillis() + 10000;
+        long end = System.currentTimeMillis() + MAX_WAIT_TIME;
         String attr;
         while ( System.currentTimeMillis() < end )
         {
@@ -351,12 +353,12 @@ public class ElementReference
         }
 
         throw new RuntimeException(
-                "Element attribute did not change within a reasonable time." );
+                "Element attribute did not change within a reasonable time." + "\nHTML dump:\n" + webDriver.getPageSource()  );
     }
 
     public void waitForTextToChangeFrom( String currentValue )
     {
-        long end = System.currentTimeMillis() + 10000;
+        long end = System.currentTimeMillis() + MAX_WAIT_TIME;
         while ( System.currentTimeMillis() < end )
         {
             if ( !this.getText().equals( currentValue ) )
@@ -374,12 +376,12 @@ public class ElementReference
         }
 
         throw new RuntimeException(
-                "Element attribute did not change within a reasonable time." );
+                "Element attribute did not change within a reasonable time." + "\nHTML dump:\n" + webDriver.getPageSource()  );
     }
 
     public void waitForTextToChangeTo( String newValue )
     {
-        long end = System.currentTimeMillis() + 10000;
+        long end = System.currentTimeMillis() + MAX_WAIT_TIME;
         while ( System.currentTimeMillis() < end )
         {
 
@@ -407,7 +409,7 @@ public class ElementReference
         }
 
         throw new RuntimeException(
-                "Element attribute did not change within a reasonable time." );
+                "Element attribute did not change within a reasonable time." + "\nHTML dump:\n" + webDriver.getPageSource()  );
     }
 
 }
