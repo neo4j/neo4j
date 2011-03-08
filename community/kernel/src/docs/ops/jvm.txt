@@ -15,7 +15,7 @@ The different high level cache implementations available in Neo4j together with 
 The default cache (soft reference based LRU cache) works best with a heap that never gets full: a graph where the most used nodes and relationships can be cached. 
 If the heap gets too full there is a risk that a full GC will be triggered; the larger the heap, the longer it can take to determine what soft references should be cleared. 
 
-Using the strong reference cache means 'all' the nodes and relationships being used must fit in available heap.
+Using the strong reference cache means that 'all' the nodes and relationships being used must fit in the available heap.
 Otherwise there is a risk of getting out-of-memory exceptions. 
 The soft reference and strong reference caches are well suited for applications were the overal throughput is important.
 
