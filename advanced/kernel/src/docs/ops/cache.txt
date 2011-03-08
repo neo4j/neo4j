@@ -1,8 +1,8 @@
 [[configuration-caches]]
 Caches in Neo4j
-===============
+=============
 
-Neo4j utilizes two different types of caches.
+Neo4j utilizes two different types of caches:
 A file buffer cache and an object cache.
 The file buffer cache caches the storage file data in the same format as it is stored on the durable storage media.
 The object cache caches the nodes, relationships and properties in a format that is optimized for high traversal speeds and transactional mutation.
@@ -41,6 +41,7 @@ Each Neo4j storage file contains uniform fixed size records of a particular type
 For strings and arrays, where data can be of variable length, data is stored in one or more 120B chunks, with 13B record overhead.
 The sizes of these blocks can actually be configured when the store is created using the `string_block_size` and `array_block_size` parameters.
 The size of each record type can also be used to calculate the storage requirements of a Neo4j graph or the appropriate cache size for each file buffer cache.
+Note that some strings can be stored without using the string store, see <<short-strings>>.
 
 Neo4j uses multiple file buffer caches, one for each different storage file.
 Each file buffer cache divides its storage file into a number of equally sized windows.

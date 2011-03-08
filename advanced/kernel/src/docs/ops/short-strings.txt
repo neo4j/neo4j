@@ -3,7 +3,7 @@ Compressed storage of short strings
 ===================================
 
 Neo4j will classify your strings and store them accordingly.
-If a string is classified as a short string it will be stored without indirection.
+If a string is classified as a short string it will be stored without indirection in the property store.
 This means that there will be no string records created for storing that string.
 Additionally, when no string record is needed to store the property, it can be read and written in a single lookup.
 This leads to improvements in performance and lower storage overhead.
