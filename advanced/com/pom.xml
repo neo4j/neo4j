@@ -32,15 +32,6 @@
       </extension>
     </extensions>
   </build>
-  <repositories>
-    <repository>
-      <id>repository.jboss.org</id>
-      <url>http://repository.jboss.org/nexus/content/groups/public/</url>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
 
   <dependencies>
     <dependency>
@@ -49,9 +40,9 @@
       <version>1.3-SNAPSHOT</version>
     </dependency>
     <dependency>
-      <groupId>org.jboss.netty</groupId>
-      <artifactId>netty</artifactId>
-      <version>3.2.1.Final</version>
+      <groupId>org.apache.servicemix.bundles</groupId>
+      <artifactId>org.apache.servicemix.bundles.netty</artifactId>
+      <version>3.2.3.Final_1</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
