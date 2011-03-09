@@ -22,7 +22,6 @@ public class WidgetTestApplication extends Application {
         window = new Window("Widget Test");
         setMainWindow(window);
         window.addComponent(new GraphComponent(graphDb));
-        window.addComponent(new Label("Hello Kitty!"));
+        window.getContent().setSizeFull();
     }
-
 }
