@@ -42,6 +42,8 @@ import org.neo4j.server.rest.web.AllowAjaxFilter;
 import com.sun.jersey.api.core.ResourceConfig;
 import com.sun.jersey.spi.container.servlet.ServletContainer;
 
+import javax.servlet.Servlet;
+
 public class Jetty6WebServer implements WebServer
 {
     public static final Logger log = Logger.getLogger( Jetty6WebServer.class );
@@ -116,6 +118,18 @@ public class Jetty6WebServer implements WebServer
         servletHolder.setInitParameter(ResourceConfig.PROPERTY_CONTAINER_RESPONSE_FILTERS, AllowAjaxFilter.class.getName());
         log.info("Adding JAXRS package %s at [%s]", packageNames, mountPoint);
         jaxRSPackages.put(mountPoint, servletHolder);
+    }
+
+    @Override
+    public void addServlet( Servlet unmanagedServlet, String mountPoint )
+    {
+        log.info("adding Servlet [%s] at [%s]", unmanagedServlet.getClass().getName(), mountPoint);
+        Context servletContext = new Context(jetty, mountPoint);
+        SessionManager sm = new HashSessionManager();
+        SessionHandler sh = new SessionHandler(sm);
+        ServletHolder servletHolder = new ServletHolder(unmanagedServlet);
+        servletContext.addServlet(servletHolder, "/*");
+        servletContext.setSessionHandler(sh);
     }
 
     private String trimTrailingSlash(String mountPoint) {

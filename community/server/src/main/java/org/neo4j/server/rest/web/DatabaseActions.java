@@ -27,8 +27,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.graphalgo.CommonEvaluators;
+import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
+import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Expander;
@@ -69,6 +72,7 @@ import org.neo4j.server.rest.repr.RelationshipIndexRootRepresentation;
 import org.neo4j.server.rest.repr.RelationshipRepresentation;
 import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.RepresentationType;
+import org.neo4j.server.rest.repr.WeightedPathRepresentation;
 
 // TODO: move this to another package. domain?
 public class DatabaseActions
@@ -312,6 +316,7 @@ public class DatabaseActions
         if ( indexSpecification.containsKey( "config" ) )
         {
 
+            @SuppressWarnings( "unchecked" )
             Map<String, String> config = (Map<String, String>) indexSpecification.get( "config" );
             graphDb.index().forNodes( indexName, config );
 
@@ -319,7 +324,7 @@ public class DatabaseActions
         }
 
         graphDb.index().forNodes( indexName );
-        return new NodeIndexRepresentation( indexName, Collections.EMPTY_MAP );
+        return new NodeIndexRepresentation( indexName, Collections.<String, String>emptyMap() );
     }
 
 
@@ -329,6 +334,7 @@ public class DatabaseActions
         if ( indexSpecification.containsKey( "config" ) )
         {
 
+            @SuppressWarnings( "unchecked" )
             Map<String, String> config = (Map<String, String>) indexSpecification.get( "config" );
             graphDb.index().forRelationships( indexName, config );
 
@@ -336,7 +342,7 @@ public class DatabaseActions
         }
 
         graphDb.index().forRelationships( indexName );
-        return new RelationshipIndexRepresentation( indexName, Collections.EMPTY_MAP );
+        return new RelationshipIndexRepresentation( indexName, Collections.<String, String>emptyMap() );
     }
 
     public boolean nodeIsIndexed( String indexName, String key, Object value, long nodeId ) throws DatabaseBlockedException
@@ -611,7 +617,7 @@ public class DatabaseActions
             Index<Relationship> index = graphDb.index().forRelationships( indexName );
             index.add( relationship, key, value );
             tx.success();
-            return new IndexedEntityRepresentation( relationship, key, value, new RelationshipIndexRepresentation( indexName, Collections.EMPTY_MAP ) );
+            return new IndexedEntityRepresentation( relationship, key, value, new RelationshipIndexRepresentation( indexName, Collections.<String, String>emptyMap() ) );
         } finally
         {
             tx.finish();
@@ -628,7 +634,7 @@ public class DatabaseActions
             Index<Node> index = graphDb.index().forNodes( indexName );
             index.add( node, key, value );
             tx.success();
-            return new IndexedEntityRepresentation( node, key, value, new NodeIndexRepresentation( indexName, Collections.EMPTY_MAP ) );
+            return new IndexedEntityRepresentation( node, key, value, new NodeIndexRepresentation( indexName, Collections.<String, String>emptyMap() ) );
         } finally
         {
             tx.finish();
@@ -669,7 +675,7 @@ public class DatabaseActions
         if ( !nodeIsIndexed( indexName, key, value, id ) )
             throw new NotFoundException();
         Node node = graphDb.getNodeById( id );
-        return new IndexedEntityRepresentation( node, key, value, new NodeIndexRepresentation( indexName, Collections.EMPTY_MAP ) );
+        return new IndexedEntityRepresentation( node, key, value, new NodeIndexRepresentation( indexName, Collections.<String, String>emptyMap() ) );
     }
 
     public IndexedEntityRepresentation getIndexedRelationship( String indexName,
@@ -678,7 +684,7 @@ public class DatabaseActions
         if ( !relationshipIsIndexed( indexName, key, value, id ) )
             throw new NotFoundException();
         Relationship node = graphDb.getRelationshipById( id );
-        return new IndexedEntityRepresentation( node, key, value, new RelationshipIndexRepresentation( indexName, Collections.EMPTY_MAP ) );
+        return new IndexedEntityRepresentation( node, key, value, new RelationshipIndexRepresentation( indexName, Collections.<String, String>emptyMap() ) );
     }
 
     public ListRepresentation getIndexedNodesByExactMatch( String indexName, String key,
@@ -748,11 +754,12 @@ public class DatabaseActions
         return new ListRepresentation( returnType.repType, result );
     }
 
+    @SuppressWarnings( "rawtypes" )
     public PathRepresentation findSinglePath( long startId, long endId,
                                               Map<String, Object> map )
     {
         FindParams findParams = new FindParams( startId, endId, map ).invoke();
-        PathFinder<Path> finder = findParams.getFinder();
+        PathFinder finder = findParams.getFinder();
         Node startNode = findParams.getStartNode();
         Node endNode = findParams.getEndNode();
 
@@ -761,25 +768,26 @@ public class DatabaseActions
         {
             throw new NotFoundException();
         }
-        return new PathRepresentation( path );
+        return findParams.pathRepresentationOf( path );
     }
 
+    @SuppressWarnings( { "rawtypes", "unchecked" } )
     public ListRepresentation findPaths( long startId, long endId,
                                          Map<String, Object> map )
     {
-        FindParams findParams = new FindParams( startId, endId, map ).invoke();
-        PathFinder<Path> finder = findParams.getFinder();
+        final FindParams findParams = new FindParams( startId, endId, map ).invoke();
+        PathFinder finder = findParams.getFinder();
         Node startNode = findParams.getStartNode();
         Node endNode = findParams.getEndNode();
 
-        Iterable<Path> paths = finder.findAllPaths( startNode, endNode );
+        Iterable paths = finder.findAllPaths( startNode, endNode );
 
         IterableWrapper<PathRepresentation, Path> pathRepresentations = new IterableWrapper<PathRepresentation, Path>( paths )
         {
             @Override
-            protected PathRepresentation underlyingObjectToObject( final Path path )
+            protected PathRepresentation underlyingObjectToObject( Path path )
             {
-                return new PathRepresentation( path );
+                return findParams.pathRepresentationOf( path );
             }
         };
 
@@ -793,7 +801,9 @@ public class DatabaseActions
         private final Map<String, Object> map;
         private Node startNode;
         private Node endNode;
-        private PathFinder<Path> finder;
+        private PathFinder<? extends Path> finder;
+        @SuppressWarnings( "rawtypes" )
+        private PathRepresentationCreator representationCreator = PATH_REPRESENTATION_CREATOR;
 
         public FindParams( final long startId, final long endId, final Map<String, Object> map )
         {
@@ -812,9 +822,15 @@ public class DatabaseActions
             return endNode;
         }
 
-        public PathFinder<Path> getFinder()
+        public PathFinder<? extends Path> getFinder()
         {
             return finder;
+        }
+        
+        @SuppressWarnings( "unchecked" )
+        public PathRepresentation<? extends Path> pathRepresentationOf( Path path )
+        {
+            return representationCreator.from( path );
         }
 
         public FindParams invoke()
@@ -834,7 +850,7 @@ public class DatabaseActions
             return this;
         }
 
-        private PathFinder<Path> getAlgorithm( String algorithm, RelationshipExpander expander, int maxDepth )
+        private PathFinder<? extends Path> getAlgorithm( String algorithm, RelationshipExpander expander, int maxDepth )
         {
             if ( algorithm.equals( "shortestPath" ) )
             {
@@ -848,8 +864,42 @@ public class DatabaseActions
             {
                 return GraphAlgoFactory.allPaths( expander, maxDepth );
             }
+            else if ( algorithm.equals( "dijkstra" ) )
+            {
+                String costProperty = (String) map.get( "cost property" );
+                Number defaultCost = (Number) map.get( "default cost" );
+                CostEvaluator<Double> costEvaluator = defaultCost == null ?
+                        CommonEvaluators.doubleCostEvaluator( costProperty ) :
+                        CommonEvaluators.doubleCostEvaluator( costProperty, defaultCost.doubleValue() );
+                representationCreator = WEIGHTED_PATH_REPRESENTATION_CREATOR;
+                return GraphAlgoFactory.dijkstra( expander, costEvaluator );
+            }
 
             throw new RuntimeException( "Failed to find matching algorithm" );
         }
     }
+    
+    private interface PathRepresentationCreator<T extends Path>
+    {
+        PathRepresentation<T> from( T path );
+    }
+    
+    private static final PathRepresentationCreator<Path> PATH_REPRESENTATION_CREATOR = new PathRepresentationCreator<Path>()
+    {
+        @Override
+        public PathRepresentation<Path> from( Path path )
+        {
+            return new PathRepresentation<Path>( path );
+        }
+    };
+    
+    private static final PathRepresentationCreator<WeightedPath> WEIGHTED_PATH_REPRESENTATION_CREATOR =
+            new PathRepresentationCreator<WeightedPath>()
+    {
+        @Override
+        public PathRepresentation<WeightedPath> from( WeightedPath path )
+        {
+            return new WeightedPathRepresentation( path );
+        }
+    };
 }

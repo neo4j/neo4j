@@ -1,5 +1,4 @@
 
-@import url(modules.css);
 @import url(buttons.css);
 @import url(typography.css);
 @import url(tables.css);
@@ -176,12 +175,28 @@ body { width:100%; height:100%; color: #333; background:#fff; padding:0;margin:0
 
 /* FOLDOUT CONTENT */
 
-.foldout { border-top:1px solid #eee; }
+.foldout { }
 .foldout > h2 { margin: 0; padding:0; width:100%; }
-.foldout > h2 a { text-decoration:none; margin: 0; width:auto; display:block; padding: 3px 5px 2px 10px; color: #444; font-size: 10px; background: #E0F0F5; line-height: 16px; font-weight: bold; border-top:1px solid #d4d4d4;}
-.foldout > h2 a:hover { background:#c0e0e5; }
+.foldout > h2 a { 
+  text-decoration:none; 
+  margin: 0; 
+  width:auto; 
+  display:block; 
+  cursor:pointer;
+  padding: 3px 5px 2px 22px; 
+  color: inherit; 
+  font-size: 10px;
+  line-height: 16px;
+  background:url("../img/tinyarrow-right.png") no-repeat scroll 10px center transparent;
+  font-weight: bold;}
+.foldout.visible > h2 a {
+  background:url("../img/tinyarrow-down.png") no-repeat scroll 10px center transparent;
+}
+.foldout > h2 a:hover {
+  color:#555;
+}
 .foldout_content { display:none; border-top:1px solid #e4e4e4; }
-.foldout_content.visible { display:block; }
+.foldout.visible .foldout_content { display:block; }
 
 /* INFO LIST */
 .info_list { font-size:70%; list-style:none; margin:0; padding: 5px 10px; }
@@ -221,10 +236,7 @@ ol lh {
   background: none repeat scroll 0 0 #FFFFFF;
   border-top: 1px solid #EEEEEE;
   display: block;
-  font-size: 14px;
-  font-weight: bold;
   padding: 5px;
-  text-decoration: none;
 }
 
 /**
