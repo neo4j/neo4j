@@ -39,6 +39,23 @@
       </dependencies>
     </profile>
     <profile>
+      <id>Mac-OS-X-dependency-jconsole.jar</id>
+      <activation>
+        <os><family>mac</family></os>
+        <file><exists>${java.home}/lib/jconsole.jar</exists></file>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>com.sun.tools</groupId>
+          <artifactId>jconsole</artifactId>
+          <version>1.6</version>
+          <scope>system</scope>
+          <systemPath>${java.home}/lib/jconsole.jar</systemPath>
+          <optional>true</optional>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
       <id>Windows-dependency-jconsole.jar</id>
       <activation>
         <os><family>Windows</family></os>
