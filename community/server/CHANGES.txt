@@ -1,3 +1,10 @@
+1.3.M04 (2011-03-10)
+--------------------
+o All manpages are included in the manual.
+o Some fixes to be more Windows friendly.
+o Added Dijkstra to the list of graph algorithms to be used when finding paths.
+o Support for advanced index queries through REST.
+
 1.3.M03 (2011-02-24)
 --------------------
 o Numerous updates to the Webadmin tool to make it more usable and to fix some visual bugs
