@@ -46,11 +46,13 @@ public class NodeHandler implements MouseDownHandler, MouseUpHandler,
     public void onMouseMove(MouseMoveEvent event) {
         if (dragging) {
             Element element = node.getElement();
-
             int newX = event.getX() + element.getOffsetLeft() - dragStartX;
+            newX = limit(0, newX,
+                    parent.getOffsetWidth() - node.getOffsetWidth());
             int newY = event.getY() + element.getOffsetTop() - dragStartY;
+            newY = limit(0, newY,
+                    parent.getOffsetHeight() - node.getOffsetHeight());
 
-            // TODO: limit movement to canvas
             // TODO: if mouse moves outside browser, cancel drag
 
             Style style = element.getStyle();
@@ -59,5 +61,9 @@ public class NodeHandler implements MouseDownHandler, MouseUpHandler,
             parent.updateLinesFor(node);
         }
         event.preventDefault();
+    }
+
+    private static int limit(int min, int value, int max) {
+        return Math.min(Math.max(min, value), max);
     }
 }
