@@ -26,6 +26,7 @@ import static org.neo4j.server.webadmin.webtest.IsVisible.isVisible;
 import java.util.List;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.RenderedWebElement;
@@ -34,6 +35,7 @@ import org.openqa.selenium.WebElement;
 /**
  * Test that the webadmin HTTP console works and produces output as expected.
  */
+@RunWith( ThirdTimeIsTheCharmTestRunner.class )
 public class ConsoleWebTest extends WebDriverTest
 {
    
