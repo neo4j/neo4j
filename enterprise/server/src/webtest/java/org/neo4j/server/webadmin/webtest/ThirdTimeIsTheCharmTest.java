@@ -27,7 +27,7 @@ import static org.junit.Assert.fail;
 
 @RunWith( ThirdTimeIsTheCharmTestRunner.class )
 @Ignore
-public class ThirdTimeGilltTest
+public class ThirdTimeIsTheCharmTest
 {
     private static boolean alreadyFailed = false;
 
