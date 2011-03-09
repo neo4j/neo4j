@@ -13,8 +13,10 @@ import com.google.gwt.dom.client.Style.Position;
 import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
+import com.google.gwt.event.logical.shared.ResizeHandler;
 import com.google.gwt.user.client.Element;
 import com.google.gwt.user.client.Random;
+import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.AbsolutePanel;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTML;
@@ -25,6 +27,7 @@ import com.google.gwt.user.client.ui.Widget;
 import com.vaadin.terminal.gwt.client.ApplicationConnection;
 import com.vaadin.terminal.gwt.client.Paintable;
 import com.vaadin.terminal.gwt.client.UIDL;
+import com.vaadin.terminal.gwt.client.Util;
 
 public class VGraphComponent extends Composite implements Paintable,
         ClickHandler {
@@ -40,8 +43,8 @@ public class VGraphComponent extends Composite implements Paintable,
     /** Reference to the server connection object. */
     ApplicationConnection client;
 
-    private Panel root;
-    private DrawingArea canvas;
+    private Panel root = new AbsolutePanel();
+    private DrawingArea canvas = new DrawingArea(0, 0);
     private Set<Widget> nodes = new HashSet<Widget>();
     private Map<Widget, Set<Line>> linesFrom = new HashMap<Widget, Set<Line>>();
     private Map<Widget, Set<Line>> linesTo = new HashMap<Widget, Set<Line>>();
@@ -51,17 +54,13 @@ public class VGraphComponent extends Composite implements Paintable,
      * then handle any initialization relevant to Vaadin.
      */
     public VGraphComponent() {
-        root = new AbsolutePanel();
         initWidget(root);
-
-        canvas = new DrawingArea(400, 400);
         RootPanel.getBodyElement().getStyle().setBackgroundColor("green");
         Style canvasStyle = canvas.getElement().getStyle();
         canvasStyle.setPosition(Position.ABSOLUTE);
         canvasStyle.setBackgroundColor("white");
         root.add(canvas);
         root.getElement().getStyle().setPosition(Position.ABSOLUTE);
-
         canvas.addClickHandler(this);
 
         // This method call of the Paintable interface sets the component
@@ -69,20 +68,33 @@ public class VGraphComponent extends Composite implements Paintable,
         setStyleName(CLASSNAME);
     }
 
+    public void setWidth(String width) {
+        Util.setWidthExcludingPaddingAndBorder(this, width, 0);
+        canvas.setWidth(getOffsetWidth());
+        constrainNodes();
+    }
+
+    public void setHeight(String height) {
+        Util.setHeightExcludingPaddingAndBorder(this, height, 0);
+        canvas.setHeight(getOffsetHeight());
+        constrainNodes();
+    }
+
     private Widget createRandomNode() {
-        return createNode(Math.random() * canvas.getHeight(), Math.random()
-                * canvas.getWidth());
+        return createNode(Math.random() * canvas.getWidth(), Math.random()
+                * canvas.getHeight());
     }
 
     private Widget createNode(double x, double y) {
-        HTML node = new HTML();
+        HTML node = new HTML("<div style='text-align:center'>node "
+                + nodes.size() + "</div>");
         Style nodeStyle = node.getElement().getStyle();
         nodeStyle.setPosition(Position.ABSOLUTE);
         nodeStyle.setLeft(x, Unit.PX);
         nodeStyle.setTop(y, Unit.PX);
         nodeStyle.setWidth(NODE_SIZE, Unit.PX);
         nodeStyle.setHeight(NODE_SIZE, Unit.PX);
-        nodeStyle.setBackgroundColor("blue");
+        nodeStyle.setBackgroundColor("lightblue");
         root.add(node);
         nodes.add(node);
         new NodeHandler(node, this);
@@ -181,5 +193,26 @@ public class VGraphComponent extends Composite implements Paintable,
                 line.setY2(centerY);
             }
         }
+    }
+
+    public void constrainNodes() {
+        for (Widget node : nodes) {
+            Element element = node.getElement();
+            reposition(node, element.getOffsetLeft(), element.getOffsetTop());
+        }
+    }
+
+    void reposition(Widget node, int newX, int newY) {
+        Style style = node.getElement().getStyle();
+        style.setLeft(limit(0, newX, getOffsetWidth() - node.getOffsetWidth()),
+                Unit.PX);
+        style.setTop(
+                limit(0, newY, getOffsetHeight() - node.getOffsetHeight()),
+                Unit.PX);
+        updateLinesFor(node);
+    }
+
+    private static int limit(int min, int value, int max) {
+        return Math.min(Math.max(min, value), max);
     }
 }
