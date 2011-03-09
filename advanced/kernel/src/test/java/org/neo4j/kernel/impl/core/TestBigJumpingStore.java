@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
@@ -72,6 +73,13 @@ public class TestBigJumpingStore
                 "neostore.propertystore.db.mapped_memory", "0M",
                 "neostore.propertystore.db.strings.mapped_memory", "0M",
                 "neostore.propertystore.db.arrays.mapped_memory", "0M" );
+    }
+    
+    @After
+    public void doAfter()
+    {
+        if ( db != null ) db.shutdown();
+        db = null;
     }
 
     @Test
@@ -136,6 +144,7 @@ public class TestBigJumpingStore
                 break;
             case 4:
                 node.setProperty( "new", 34 );
+                break;
             case 5:
                 Object oldValue = node.getProperty( "string", null );
                 if ( oldValue != null )
@@ -143,7 +152,6 @@ public class TestBigJumpingStore
                     node.setProperty( "string", "asjdkasdjkasjdkasjdkasdjkasdj" );
                     node.setProperty( "string", stringValue );
                 }
-            default:
             }
             
             if ( count( node.getRelationships() ) > 50 )

@@ -36,7 +36,7 @@ public class NodeStore extends AbstractStore implements Store
     private static final String VERSION = "NodeStore v0.9.9";
 
     // in_use(byte)+next_rel_id(int)+next_prop_id(int)
-    private static final int RECORD_SIZE = 9;
+    public static final int RECORD_SIZE = 9;
 
     /**
      * See {@link AbstractStore#AbstractStore(String, Map)}

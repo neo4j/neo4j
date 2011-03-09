@@ -28,7 +28,11 @@ import java.nio.channels.FileLock;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 
+import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.NodeStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 
 public class JumpingFileSystemAbstraction implements FileSystemAbstraction
 {
@@ -58,20 +62,20 @@ public class JumpingFileSystemAbstraction implements FileSystemAbstraction
     {
         if ( fileName.endsWith( "nodestore.db" ) )
         {
-            return 9;
+            return NodeStore.RECORD_SIZE;
         }
         else if ( fileName.endsWith( "relationshipstore.db" ) )
         {
-            return 33;
+            return RelationshipStore.RECORD_SIZE;
         }
         else if ( fileName.endsWith( "propertystore.db.strings" ) ||
                 fileName.endsWith( "propertystore.db.arrays" ) )
         {
-            return 133;
+            return AbstractDynamicStore.getRecordSize( PropertyStore.DEFAULT_DATA_BLOCK_SIZE );
         }
         else if ( fileName.endsWith( "propertystore.db" ) )
         {
-            return 25;
+            return PropertyStore.RECORD_SIZE;
         }
         throw new IllegalArgumentException( fileName );
     }
@@ -86,8 +90,13 @@ public class JumpingFileSystemAbstraction implements FileSystemAbstraction
             this.actual = actual;
             this.recordSize = recordSize;
         }
-
+        
         private long translateIncoming( long position )
+        {
+            return translateIncoming( position, false );
+        }
+
+        private long translateIncoming( long position, boolean allowFix )
         {
             long actualRecord = position/recordSize;
             if ( actualRecord < sizePerJump/2 )
@@ -98,7 +107,7 @@ public class JumpingFileSystemAbstraction implements FileSystemAbstraction
             {
                 long jumpIndex = (actualRecord+sizePerJump)/0x100000000L;
                 long diff = actualRecord - jumpIndex * 0x100000000L;
-                assertWithinDiff( diff );
+                diff = assertWithinDiff( diff, allowFix );
                 long offsettedRecord = jumpIndex*sizePerJump + diff;
                 return offsettedRecord*recordSize;
             }
@@ -115,18 +124,32 @@ public class JumpingFileSystemAbstraction implements FileSystemAbstraction
             {
                 long jumpIndex = (offsettedRecord-sizePerJump/2) / sizePerJump + 1;
                 long diff = ((offsettedRecord-sizePerJump/2) % sizePerJump) - sizePerJump/2;
-                assertWithinDiff( diff );
+                assertWithinDiff( diff, false );
                 long actualRecord = jumpIndex*0x100000000L - sizePerJump/2 + diff;
                 return actualRecord*recordSize;
             }
         }
 
-        private void assertWithinDiff( long diff )
+        private long assertWithinDiff( long diff, boolean allowFix )
         {
             if ( diff < -sizePerJump/2 || diff > sizePerJump/2 )
             {
+                if ( allowFix )
+                {
+                    // This is needed for shutdown() to work, PropertyStore
+                    // gives an invalid offset for truncate.
+                    if ( diff < -sizePerJump / 2 )
+                    {
+                        return -sizePerJump / 2;
+                    }
+                    else
+                    {
+                        return sizePerJump / 2;
+                    }
+                }
                 throw new IllegalArgumentException( "" + diff );
             }
+            return diff;
         }
         
         public long getInternalPosition() throws IOException
@@ -180,7 +203,7 @@ public class JumpingFileSystemAbstraction implements FileSystemAbstraction
         @Override
         public FileChannel truncate( long size ) throws IOException
         {
-            actual.truncate( translateIncoming( size ) );
+            actual.truncate( translateIncoming( size, true ) );
             return this;
         }
 
