@@ -10,6 +10,7 @@ import com.google.gwt.event.dom.client.MouseUpEvent;
 import com.google.gwt.event.dom.client.MouseUpHandler;
 import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.Element;
+import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.Widget;
 
 public class NodeHandler implements MouseDownHandler, MouseUpHandler,
@@ -52,13 +53,16 @@ public class NodeHandler implements MouseDownHandler, MouseUpHandler,
             int newY = event.getY() + element.getOffsetTop() - dragStartY;
             newY = limit(0, newY,
                     parent.getOffsetHeight() - node.getOffsetHeight());
-
-            // TODO: if mouse moves outside browser, cancel drag
-
             Style style = element.getStyle();
             style.setLeft(newX, Unit.PX);
             style.setTop(newY, Unit.PX);
             parent.updateLinesFor(node);
+            int clientX = event.getClientX();
+            int clientY = event.getClientY();
+            if (clientX < 0 || clientY < 0 || clientX > Window.getClientWidth()
+                    || clientY > Window.getClientHeight()) {
+                dragging = false;
+            }
         }
         event.preventDefault();
     }
