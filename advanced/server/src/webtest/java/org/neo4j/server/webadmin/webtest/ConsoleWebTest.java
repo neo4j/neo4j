@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.webadmin.webtest;
 
-import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.server.webadmin.webtest.IsVisible.isVisible;
 
@@ -29,6 +28,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.RenderedWebElement;
 import org.openqa.selenium.WebElement;
 
@@ -50,12 +50,16 @@ public class ConsoleWebTest extends WebDriverTest
     public void shouldOutputSysErrorWrites() throws InterruptedException {
     	consoleMenu.getElement().click();
 
-        consoleInput.waitUntilVisible();
+    	waitUntilConsoleLoaded();
+    	
     	consoleInput.sendKeys("invalidoperation!¤", Keys.RETURN);
     	consoleInput.waitUntilVisible();
     	
-    	lastOutputLine.waitForTextToChangeFrom( "gremlin> invalidoperation!¤" );
-    	assertThat(lastOutputLine.getText(), is( "==> 1 error" ));
+    	lastOutputLine.waitForTextToChangeTo( "==> 1 error" );
+    }
+    
+    private void waitUntilConsoleLoaded() {
+        lastOutputLine.waitForTextToChangeTo( "==>" );
     }
     
     private ElementReference consoleInput = new ElementReference(webDriver, By.id("mor_console_input"));
@@ -64,7 +68,11 @@ public class ConsoleWebTest extends WebDriverTest
         @Override
         public RenderedWebElement getElement() {
             List<WebElement> el = super.getElement().findElements(By.tagName("p"));
-            return (RenderedWebElement) el.get( el.size() - 3 );
+            try {
+                return (RenderedWebElement) el.get( el.size() - 3 );
+            } catch(Exception e) {
+                throw new NoSuchElementException("Unable to find last output line in console.");
+            }
         }
     };
 }

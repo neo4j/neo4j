@@ -30,12 +30,12 @@ import org.junit.runners.model.InitializationError;
 
 /**
  * We have had a lot of problems with tests failing randomly.
- *
+ * <p/>
  * This is the dirtiest, and simplest solution I could come up
  * with. Run the tests. If a test method fails, try again. Try
  * up to three times. If all runs fails, we will fail the test.
  * Otherwise it will mark the test as green.
- *
+ * <p/>
  * The name comes from Swedish: "Tredje gången gillt", like the
  * english "Third time is the charm".
  */
@@ -67,6 +67,11 @@ public class ThirdTimeIsTheCharmTestRunner extends BlockJUnit4ClassRunner
                 if ( myNotifier.failures > 2 )
                 {
                     notifier.fireTestFailure( myNotifier.failure );
+                }
+
+                if ( myNotifier.failures > 0 && !myNotifier.failed )
+                {
+                    System.out.println( "Test failed at least once. *** Third time is the charm! ***" );
                 }
 
             } finally
