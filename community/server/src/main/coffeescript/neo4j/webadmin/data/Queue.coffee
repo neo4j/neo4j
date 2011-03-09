@@ -18,34 +18,22 @@ You should have received a copy of the GNU Affero General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 ###
 
-define(
-  ["./UrlSearcher", 
-   "./NodeSearcher", 
-   "./RelationshipSearcher"], 
-  (UrlSearcher, NodeSearcher, RelationshipSearcher) ->
+define [], () ->
 
-    class Search
+  class Queue extends Backbone.Model
 
-      constructor : (@server) ->
-        
-        @searchers = [
-          new UrlSearcher(server),
-          new NodeSearcher(server),
-          new RelationshipSearcher(server)
-        ]
+    constructor : () ->
+      @queue = []
+
+    pull : () =>
+      item = @queue.shift()
+      @trigger("item:pulled", this, item)
+      return item
       
+    push : (item) =>
+      @queue.push(item)
+      @trigger("item:pushed", this, item)
 
-      exec : (statement) =>
-        searcher = @pickSearcher statement
-        if searcher? 
-          searcher.exec statement
-        else
-          return neo4j.Promise.fulfilled(null)
-
-      pickSearcher : (statement) =>
-        
-        for searcher in @searchers
-          if searcher.match statement
-            return searcher
-)
+    hasMoreItems : () =>
+      @queue.length > 0
 
