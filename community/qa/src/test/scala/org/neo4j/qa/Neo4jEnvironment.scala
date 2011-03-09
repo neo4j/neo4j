@@ -10,7 +10,11 @@ class Neo4jEnvironment
 
   var version = UNSPECIFIED
   var downloadHost = UNSPECIFIED
-  var neo4jHome:File = null
+  var home:File = new File(UNSPECIFIED)
+
+  def libDir = new File(home, "lib")
+  def systemDir = new File(home, "system")
+  def systemLibDir = new File(systemDir, "lib")
 
   def archiveName =
   {
@@ -36,4 +40,5 @@ class Neo4jEnvironment
         "archiveName: " + archiveName +
         "}"
   }
+
 }
