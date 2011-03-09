@@ -174,8 +174,6 @@
               <doctitle>Neo4j ${project.version} API</doctitle>
               <outputDirectory>${project.build.directory}/site/apidocs</outputDirectory>
               <sourcepath>${project.build.directory}/javadoc-sources</sourcepath>
-              <excludePackageNames>*.impl.*:org.neo4j.shell:org.neo4j.remote.inspect:org.neo4j.onlinebackup.ha:org.neo4j.onlinebackup.net:org.neo4j.ext.udc:org.neo4j.kernel.ha:org.neo4j.kernel.ha.*
-          </excludePackageNames>
             </configuration>
           </execution>
         </executions>
@@ -231,7 +229,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
         <configuration>
-          <excludePackageNames>*.impl.*:org.neo4j.ext.udc:org.neo4j.kernel.ha:org.neo4j.kernel.ha.*</excludePackageNames>
+          <excludePackageNames>*.impl.*:org.neo4j.ext.udc:org.neo4j.kernel.ha:org.neo4j.kernel.ha.*:org.neo4j.com:org.neo4j.com.*</excludePackageNames>
           <groups>
             <group>
               <title>Graph database</title>
