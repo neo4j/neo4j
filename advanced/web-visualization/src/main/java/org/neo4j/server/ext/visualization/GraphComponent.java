@@ -19,8 +19,8 @@ public class GraphComponent extends AbstractComponent {
 
     public GraphComponent(GraphDatabaseService graphDb) {
         this.visualGraph = new VisualGraphDatabase(graphDb);
-        setWidth("400px");
-        setHeight("400px");
+        setWidth("100%");
+        setHeight("100%");
     }
 
     @Override
