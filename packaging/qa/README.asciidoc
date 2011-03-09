@@ -30,18 +30,9 @@ With maven (subequent times):
 
   `mvn integration-test`
 
-With sbt (first time):
+To run only a particular feature:
 
-  `sbt update cucumber`
-
-With sbt (subsequent times):
-
-  `sbt cucumber`
-
-Run specific features
----------------------
-
-
+  `mvn integration-test -Dcucumber.features=features/download-and-unpack.feature`
 
 
 References

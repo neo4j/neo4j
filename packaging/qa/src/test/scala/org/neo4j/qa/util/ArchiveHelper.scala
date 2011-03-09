@@ -35,6 +35,7 @@ object ArchiveHelper
             val process = Runtime.getRuntime.exec("tar xvzf " + archive.getAbsolutePath + " --strip-components 1", Array[String](), destdir)
             IOUtils.copy(process.getErrorStream, System.out)
             IOUtils.copy(process.getInputStream, System.out)
+            process.waitFor
             if ( process.exitValue == 0 ) Right(destdir)
             else (Left(new RuntimeException("Untar failed with exit code \"" + process + "\". Check stderr for details.")))
           }

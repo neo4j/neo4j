@@ -11,7 +11,9 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
+    <!-- NOTE: to pass properties to cucumber, they must be added to the plugin below -->
     <neo4j.version>1.3-SNAPSHOT</neo4j.version>
+    <neo4j.home>${project.build.directory}/neo4j_home</neo4j.home>
 
     <cuke4duke.version>0.4.3</cuke4duke.version>
     <jruby.version>1.5.6</jruby.version>
@@ -25,7 +27,6 @@
     <junit.version>4.8.2</junit.version>
     <commons-lang.version>2.5</commons-lang.version>
     <commons-io.version>2.0.1</commons-io.version>
-    <cukeArg>${cukeArgs} </cukeArg>
   </properties>
 
 
@@ -153,6 +154,7 @@
           <jvmArgs>
             <jvmArg>-Dcuke4duke.objectFactory=cuke4duke.internal.jvmclass.PicoFactory</jvmArg>
             <jvmArg>-Dneo4j.version=${neo4j.version}</jvmArg>
+            <jvmArg>-Dneo4j.home=${neo4j.home}</jvmArg>
           </jvmArgs>
           <!-- You may not need all of these arguments in your own project. We have a lot here for testing purposes... -->
           <cucumberArgs>
@@ -169,7 +171,6 @@
             <cucumberArg>--out</cucumberArg>
             <cucumberArg>target/usage.txt</cucumberArg>
             <cucumberArg>${basedir}/target/test-classes</cucumberArg>
-            <!-- cucumberArg>${cukeArg}</cucumberArg -->
           </cucumberArgs>
           <gems>
             <gem>install cuke4duke --version ${cuke4duke.version}</gem>
