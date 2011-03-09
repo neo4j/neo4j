@@ -607,6 +607,40 @@ curl -X DELETE http://localhost:7474/db/data/index/node/my_nodes/the_key/the_val
 
 *** 404: Index entry not found
 
+* {Remove from index without supplying value}
+
+** DELETE /index/node/my_nodes/the_key/123
+
+	Will remove all indexing for node 123 and the specified key irregardless of value.
+    Similarly for relationship indexes.
+    
+** Example using curl
+
+---
+curl -X DELETE http://localhost:7474/db/data/index/node/my_nodes/the_key/123
+---
+
+** Response
+
+*** 204: OK, no content returned
+
+* {Remove from index with supplying neither key nor value}
+
+** DELETE /index/node/my_nodes/123
+
+	Will remove all indexing for node 123 irregardless of key and value.
+    Similarly for relationship indexes.
+    
+** Example using curl
+
+---
+curl -X DELETE http://localhost:7474/db/data/index/node/my_nodes/123
+---
+
+** Response
+
+*** 204: OK, no content returned
+
 * {Query index}
 
 ** GET /index/node/my_nodes/the_key/the_value
