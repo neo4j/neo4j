@@ -73,12 +73,16 @@ public class RestfulGraphDatabase {
     protected static final String PATH_NODE_INDEX_GET = PATH_NAMED_NODE_INDEX + "/{key}/{value}";
     protected static final String PATH_NODE_INDEX_QUERY = PATH_NAMED_NODE_INDEX + "/{key}"; // http://localhost/db/data/index/node/foo?query=somelucenestuff
     protected static final String PATH_NODE_INDEX_ID = PATH_NODE_INDEX_GET + "/{id}";
+    protected static final String PATH_NODE_INDEX_REMOVE_KEY = PATH_NAMED_NODE_INDEX + "/{key}/{id}";
+    protected static final String PATH_NODE_INDEX_REMOVE = PATH_NAMED_NODE_INDEX + "/{id}";
 
     protected static final String PATH_RELATIONSHIP_INDEX = "index/relationship";
     protected static final String PATH_NAMED_RELATIONSHIP_INDEX = PATH_RELATIONSHIP_INDEX + "/{indexName}";
     protected static final String PATH_RELATIONSHIP_INDEX_GET = PATH_NAMED_RELATIONSHIP_INDEX + "/{key}/{value}";
     protected static final String PATH_RELATIONSHIP_INDEX_QUERY = PATH_NAMED_RELATIONSHIP_INDEX + "/{key}";
     protected static final String PATH_RELATIONSHIP_INDEX_ID = PATH_RELATIONSHIP_INDEX_GET + "/{id}";
+    protected static final String PATH_RELATIONSHIP_INDEX_REMOVE_KEY = PATH_NAMED_RELATIONSHIP_INDEX + "/{key}/{id}";
+    protected static final String PATH_RELATIONSHIP_INDEX_REMOVE = PATH_NAMED_RELATIONSHIP_INDEX + "/{id}";
 
     private final DatabaseActions server;
     private final OutputFormat output;
@@ -528,6 +532,28 @@ public class RestfulGraphDatabase {
     }
 
     @DELETE
+    @Path(PATH_NODE_INDEX_REMOVE_KEY)
+    public Response deleteFromNodeIndexNoValue(@PathParam("indexName") String indexName, @PathParam("key") String key, @PathParam("id") long id) {
+        try {
+            server.removeFromNodeIndexNoValue(indexName, key, id);
+            return nothing();
+        } catch (NotFoundException nfe) {
+            return output.notFound(nfe);
+        }
+    }
+    
+    @DELETE
+    @Path(PATH_NODE_INDEX_REMOVE)
+    public Response deleteFromNodeIndexNoKeyValue(@PathParam("indexName") String indexName, @PathParam("id") long id) {
+        try {
+            server.removeFromNodeIndexNoKeyValue(indexName, id);
+            return nothing();
+        } catch (NotFoundException nfe) {
+            return output.notFound(nfe);
+        }
+    }
+    
+    @DELETE
     @Path(PATH_RELATIONSHIP_INDEX_ID)
     public Response deleteFromRelationshipIndex(@PathParam("indexName") String indexName, @PathParam("key") String key, @PathParam("value") String value,
             @PathParam("id") long id) {
@@ -537,9 +563,32 @@ public class RestfulGraphDatabase {
         } catch (NotFoundException nfe) {
             return output.notFound(nfe);
         }
-
     }
 
+    @DELETE
+    @Path(PATH_RELATIONSHIP_INDEX_REMOVE_KEY)
+    public Response deleteFromRelationshipIndexnoValue(@PathParam("indexName") String indexName, @PathParam("key") String key,
+            @PathParam("id") long id) {
+        try {
+            server.removeFromRelationshipIndexNoValue(indexName, key, id);
+            return nothing();
+        } catch (NotFoundException nfe) {
+            return output.notFound(nfe);
+        }
+    }
+    
+    @DELETE
+    @Path(PATH_RELATIONSHIP_INDEX_REMOVE)
+    public Response deleteFromRelationshipIndex(@PathParam("indexName") String indexName, @PathParam("value") String value,
+            @PathParam("id") long id) {
+        try {
+            server.removeFromRelationshipIndexNoKeyValue(indexName, id);
+            return nothing();
+        } catch (NotFoundException nfe) {
+            return output.notFound(nfe);
+        }
+    }
+    
     // Traversal
 
     @POST
