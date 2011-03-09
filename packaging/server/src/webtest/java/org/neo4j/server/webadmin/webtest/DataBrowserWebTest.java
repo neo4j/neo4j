@@ -19,13 +19,8 @@
  */
 package org.neo4j.server.webadmin.webtest;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.server.webadmin.webtest.IsVisible.isVisible;
-
-import java.util.List;
-
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.neo4j.graphdb.Node;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
@@ -33,9 +28,16 @@ import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.RenderedWebElement;
 import org.openqa.selenium.WebElement;
 
+import java.util.List;
+
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.server.webadmin.webtest.IsVisible.isVisible;
+
 /**
  * Test that the webadmin data browser behaves as expected.
  */
+@RunWith( ThirdTimeIsTheCharmTestRunner.class )
 public class DataBrowserWebTest extends WebDriverTest {
 	
 	@Test
