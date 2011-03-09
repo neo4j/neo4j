@@ -19,16 +19,18 @@
  */
 package org.neo4j.server.webadmin.webtest;
 
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.server.webadmin.webtest.IsVisible.isVisible;
+
 import java.io.IOException;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.openqa.selenium.By;
 
-import static org.junit.Assert.assertThat;
-import static org.neo4j.server.webadmin.webtest.IsVisible.isVisible;
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.Matchers.greaterThan;
-
+@Ignore
 public class JmxWebTest extends WebDriverTest {
  
 	@Test

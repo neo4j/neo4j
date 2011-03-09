@@ -12,8 +12,7 @@ public class WidgetTestApplication extends Application {
     private Window window;
     private GraphDatabaseService graphDb;
 
-    public WidgetTestApplication() {
-    }
+    public WidgetTestApplication() {}
 
     @Override
     public void init() {

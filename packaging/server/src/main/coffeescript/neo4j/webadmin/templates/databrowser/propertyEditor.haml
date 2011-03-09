@@ -1,0 +1,16 @@
+%ul
+  :each property in properties
+    %li
+      %ul
+        %li
+          %input.property-id(type="hidden" value="#{property.id}")
+          :if property.isDuplicate
+            .error This property already exists, please change the name.
+          %input.property-key(type="text" value="#{property.key}")
+        %li
+          %input.property-value(type="text" value="#{property.value}")
+        %li
+          %button.delete-property Remove
+
+  %li 
+    %button.add-property Add property

@@ -22,7 +22,7 @@ include::installation-deployment/index.txt[]
 
 :leveloffset: 1
 
-include::configuration-performance/index.txt[]
+include::{importdir}/neo4j-kernel-docs-jar/ops/index.txt[]
 
 :leveloffset: 1
 

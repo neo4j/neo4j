@@ -75,6 +75,7 @@ public final class PluginManager implements ExtensionInjector, PluginInvocator
         }
         for ( Pair<ServerPlugin, ServerExtender> extension : extensions.values() )
         {
+            log.info( String.format( "Loaded server plugin \"%s\"", extension.first().name ));
             this.extensions.put( extension.first().name, extension.other() );
         }
     }
