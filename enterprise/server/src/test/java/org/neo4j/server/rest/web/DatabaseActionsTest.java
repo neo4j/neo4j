@@ -27,6 +27,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.serialize;
 
 import java.io.File;
@@ -745,6 +746,53 @@ public class DatabaseActionsTest
         graphdbHelper.createRelationship( "to", c, g );
         return new long[]{a, g};
     }
+    
+    private void createRelationshipWithProperties( long start, long end, Map<String, Object> properties )
+    {
+        long rel = graphdbHelper.createRelationship( "to", start, end );
+        graphdbHelper.setRelationshipProperties( rel, properties );
+    }
+    
+    private long[] createDijkstraGraph( boolean includeOnes ) throws DatabaseBlockedException
+    {
+        /* Layout:
+         *                       (y)    
+         *                        ^     
+         *                        [2]  _____[1]___
+         *                          \ v           |
+         * (start)--[1]->(a)--[9]-->(x)<-        (e)--[2]->(f)
+         *                |         ^ ^^  \       ^
+         *               [1]  ---[7][5][4] -[3]  [1]
+         *                v  /       | /      \  /
+         *               (b)--[1]-->(c)--[1]->(d)
+         */
+
+        Map<String, Object> costOneProperties = includeOnes ? map( "cost", (double) 1 ) : map();
+        long start = graphdbHelper.createNode();
+        long a = graphdbHelper.createNode();
+        long b = graphdbHelper.createNode();
+        long c = graphdbHelper.createNode();
+        long d = graphdbHelper.createNode();
+        long e = graphdbHelper.createNode();
+        long f = graphdbHelper.createNode();
+        long x = graphdbHelper.createNode();
+        long y = graphdbHelper.createNode();
+        
+        createRelationshipWithProperties( start, a, costOneProperties );
+        createRelationshipWithProperties( a, x, map( "cost", (double) 9 ) );
+        createRelationshipWithProperties( a, b, costOneProperties );
+        createRelationshipWithProperties( b, x, map( "cost", (double) 7 ) );
+        createRelationshipWithProperties( b, c, costOneProperties );
+        createRelationshipWithProperties( c, x, map( "cost", (double) 5 ) );
+        createRelationshipWithProperties( c, x, map( "cost", (double) 4 ) );
+        createRelationshipWithProperties( c, d, costOneProperties );
+        createRelationshipWithProperties( d, x, map( "cost", (double) 3 ) );
+        createRelationshipWithProperties( d, e, costOneProperties );
+        createRelationshipWithProperties( e, x, costOneProperties );
+        createRelationshipWithProperties( e, f, map( "cost", (double) 2 ) );
+        createRelationshipWithProperties( x, y, map( "cost", (double) 2 ) );
+        return new long[] { start, x };
+    }
 
     @Test
     public void shouldBeAbleToTraverseWithDefaultParameters() throws DatabaseBlockedException
@@ -884,13 +932,51 @@ public class DatabaseActionsTest
                 "direction", "out" ), "single", false ) ) );
         assertPaths( 1, nodes, 2, Arrays.<Object>asList( path ) );
     }
+    
+    @Test
+    public void shouldBeAbleToGetPathsUsingDijkstra() throws Exception
+    {
+        long[] nodes = createDijkstraGraph( true );
 
+        // /paths
+        List<Object> result = serialize( actions.findPaths( nodes[ 0 ], nodes[ 1 ], map(
+                "algorithm", "dijkstra", "cost property", "cost", "relationships", map( "type",
+                "to", "direction", "out" ) ) ) );
+        assertPaths( 1, nodes, 6, result );
+
+        // /path
+        Map<String, Object> path = serialize( actions.findSinglePath( nodes[ 0 ], nodes[ 1 ],
+                map( "algorithm", "dijkstra", "cost property", "cost", "relationships",
+                        map( "type", "to", "direction", "out" ) ) ) );
+        assertPaths( 1, nodes, 6, Arrays.<Object>asList( path ) );
+        assertEquals( 6.0d, path.get( "weight" ) );
+    }
+
+    @Test
+    public void shouldBeAbleToGetPathsUsingDijkstraWithDefaults() throws Exception
+    {
+        long[] nodes = createDijkstraGraph( false );
+
+        // /paths
+        List<Object> result = serialize( actions.findPaths( nodes[ 0 ], nodes[ 1 ], map(
+                "algorithm", "dijkstra", "cost property", "cost", "default cost", 1,
+                "relationships", map( "type", "to", "direction", "out" ) ) ) );
+        assertPaths( 1, nodes, 6, result );
+
+        // /path
+        Map<String, Object> path = serialize( actions.findSinglePath( nodes[ 0 ], nodes[ 1 ],
+                map( "algorithm", "dijkstra", "cost property", "cost", "default cost", 1,
+                        "relationships", map( "type", "to", "direction", "out" ) ) ) );
+        assertPaths( 1, nodes, 6, Arrays.<Object>asList( path ) );
+        assertEquals( 6.0d, path.get( "weight" ) );
+    }
+    
     @Test( expected = NotFoundException.class )
     public void shouldHandleNoFoundPathsCorrectly()
     {
         long[] nodes = createMoreComplexGraph();
-        serialize( actions.findSinglePath( nodes[ 0 ], nodes[ 1 ], MapUtil.map( "max depth", 2,
-                "algorithm", "shortestPath", "relationships", MapUtil.map( "type", "to",
+        serialize( actions.findSinglePath( nodes[ 0 ], nodes[ 1 ], map( "max depth", 2,
+                "algorithm", "shortestPath", "relationships", map( "type", "to",
                 "direction", "in" ), "single", false ) ) );
     }
 

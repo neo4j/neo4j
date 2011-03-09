@@ -25,6 +25,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -46,7 +47,8 @@ import org.rrd4j.core.RrdDb;
 
 public class MonitorServiceTest implements JobScheduler
 {
-    public MonitorService monitorService;
+    private RrdDb rrdDb;
+    private MonitorService monitorService;
     private ImpermanentGraphDatabase database;
     private EntityOutputFormat output;
 
@@ -58,6 +60,7 @@ public class MonitorServiceTest implements JobScheduler
         assertEquals(200, resp.getStatus());
 
         Map<String, Object> resultAsMap = output.getResultAsMap();
+        @SuppressWarnings( "unchecked" )
         Map<String,Object> resources = (Map<String, Object>)resultAsMap.get( "resources" );
         assertThat( (String)resources.get( "data_from" ), containsString( "/fetch/{start}" ));
         assertThat( (String)resources.get( "data_period" ), containsString( "/fetch/{start}/{stop}" ));
@@ -85,7 +88,7 @@ public class MonitorServiceTest implements JobScheduler
     public void setUp() throws Exception
     {
         database = new ImpermanentGraphDatabase();
-        RrdDb rrdDb = RrdFactory.createRrdDbAndSampler( database, this );
+        rrdDb = RrdFactory.createRrdDbAndSampler( database, this );
 
         output = new EntityOutputFormat( new JsonFormat(),
                 URI.create( "http://peteriscool.com:6666/" ), null );
@@ -95,6 +98,14 @@ public class MonitorServiceTest implements JobScheduler
     @After
     public void shutdownDatabase()
     {
+        try
+        {
+            rrdDb.close();
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
         this.database.shutdown();
     }
 
