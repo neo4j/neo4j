@@ -695,6 +695,35 @@ public class DatabaseActionsTest
         assertEquals( 0, graphdbHelper.getIndexedNodes( indexName, key, value2 ).size() );
     }
 
+    @Test
+    public void shouldBeAbleToRemoveNodeFromIndexWithoutKeyValue() throws DatabaseBlockedException
+    {
+        String key1 = "kvkey1";
+        String key2 = "kvkey2";
+        String value = "myvalue";
+        String value2 = "myvalue2";
+        String indexName = "node";
+        long nodeId = graphdbHelper.createNode();
+        actions.addToNodeIndex( indexName, key1, value, nodeId );
+        actions.addToNodeIndex( indexName, key1, value2, nodeId );
+        actions.addToNodeIndex( indexName, key2, value, nodeId );
+        actions.addToNodeIndex( indexName, key2, value2, nodeId );
+        assertEquals( 1, graphdbHelper.getIndexedNodes( indexName, key1, value ).size() );
+        assertEquals( 1, graphdbHelper.getIndexedNodes( indexName, key1, value2 ).size() );
+        assertEquals( 1, graphdbHelper.getIndexedNodes( indexName, key2, value ).size() );
+        assertEquals( 1, graphdbHelper.getIndexedNodes( indexName, key2, value2 ).size() );
+        actions.removeFromNodeIndexNoValue( indexName, key1, nodeId );
+        assertEquals( 0, graphdbHelper.getIndexedNodes( indexName, key1, value ).size() );
+        assertEquals( 0, graphdbHelper.getIndexedNodes( indexName, key1, value2 ).size() );
+        assertEquals( 1, graphdbHelper.getIndexedNodes( indexName, key2, value ).size() );
+        assertEquals( 1, graphdbHelper.getIndexedNodes( indexName, key2, value2 ).size() );
+        actions.removeFromNodeIndexNoKeyValue( indexName, nodeId );
+        assertEquals( 0, graphdbHelper.getIndexedNodes( indexName, key1, value ).size() );
+        assertEquals( 0, graphdbHelper.getIndexedNodes( indexName, key1, value2 ).size() );
+        assertEquals( 0, graphdbHelper.getIndexedNodes( indexName, key2, value ).size() );
+        assertEquals( 0, graphdbHelper.getIndexedNodes( indexName, key2, value2 ).size() );
+    }
+    
     private long createBasicTraversableGraph() throws DatabaseBlockedException
     {
         // (Root)
