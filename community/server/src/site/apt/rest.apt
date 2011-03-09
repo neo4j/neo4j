@@ -609,12 +609,16 @@ curl -X DELETE http://localhost:7474/db/data/index/node/my_nodes/the_key/the_val
 
 * {Query index -- Exact}
 
-There are two ways to query an index - using the get method, or the more advanced query
-method. Use the first for exact matches, and the second for advanced index querying.
-This is the simple, exact matching get operation.
+    There are two ways to query an index - using the get method, or
+    the more advanced query method. Use the first for exact matches,
+    and the second for advanced index querying. 
+    
+    This is the simple, exact matching get operation.
  
 
-** GET /index/node/my_nodes/the_key/the_value** GET /index/relationship/my_rels/the_key/the_value
+** GET /index/node/my_nodes/the_key/the_value
+
+** GET /index/relationship/my_rels/the_key/the_value
 
 
 ** Example using curl
