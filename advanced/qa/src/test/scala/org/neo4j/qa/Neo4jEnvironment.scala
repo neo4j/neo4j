@@ -1,13 +1,10 @@
 package org.neo4j.qa
 
 import java.io.File
+import org.neo4j.qa.util.Platform
 
 class Neo4jEnvironment
 {
-
-  val WindowsPlatformRE = """.*([Ww]in).*""".r
-  val MacPlatformRE = """.*([mM]ac).*""".r
-  val UnixPlatformRE = """.*(n[iu]x).*""".r
 
   val UNSPECIFIED = "unspecified"
 
@@ -25,16 +22,7 @@ class Neo4jEnvironment
     }
   }
 
-  def hostPlatform =
-  {
-    System.getProperty("os.name") match
-    {
-      case WindowsPlatformRE(_) => Platform.Windows
-      case MacPlatformRE(_) => Platform.Unix
-      case UnixPlatformRE(_) => Platform.Unix
-      case _ => Platform.Unknown
-    }
-  }
+  def hostPlatform = Platform.current
 
   override def toString: String =
   {
