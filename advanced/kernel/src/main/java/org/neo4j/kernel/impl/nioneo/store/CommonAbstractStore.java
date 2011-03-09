@@ -163,23 +163,23 @@ public abstract class CommonAbstractStore
         this.idGeneratorFactory = (IdGeneratorFactory)
                 config.get( IdGeneratorFactory.class );
         
-        try
-        {
+//        try
+//        {
             checkStorage();
             loadStorage();
             initStorage();
-        }
-        catch ( RuntimeException e )
-        {
-            closeFileChannelIfOpened();
-            if ( idGenerator != null )
-            {
-                idGenerator.close();
-                idGenerator = null;
-            }
-            closeStorage();
-            throw e;
-        }
+//        }
+//        catch ( RuntimeException e )
+//        {
+//            closeFileChannelIfOpened();
+//            if ( idGenerator != null )
+//            {
+//                idGenerator.close();
+//                idGenerator = null;
+//            }
+//            closeStorage();
+//            throw e;
+//        }
     }
 
     boolean isReadOnly()
