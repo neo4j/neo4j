@@ -446,12 +446,13 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 //            closeIdGenerator();
 //            return true;
 //        }
-        if ( version.equals( "RelationshipTypeStore v0.9.5" ) )
+        String nineFiveVersionString = "RelationshipTypeStore v0.9.5";
+        if ( version.equals( nineFiveVersionString ) )
         {
             try
             {
                 long fileSize = getFileChannel().size();
-                long recordCount = fileSize / getRecordSize();
+                long recordCount = (fileSize-nineFiveVersionString.getBytes().length) / getRecordSize();
                 // 0xFFFF magic -1
                 if ( recordCount > 0xFFFF )
                 {
