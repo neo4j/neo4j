@@ -1,22 +1,3 @@
-/*
- * Copyright (c) 2002-2011 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
 (function() {
   /*
   Copyright (c) 2002-2011 "Neo Technology,"
@@ -44,7 +25,7 @@
     child.__super__ = parent.prototype;
     return child;
   };
-  define(['neo4j/webadmin/data/Search', './views/DataBrowserView', './models/DataBrowserState', './models/DataItem', 'lib/backbone'], function(Search, DataBrowserView, DataBrowserState, DataItem) {
+  define(['neo4j/webadmin/data/QueuedSearch', './views/DataBrowserView', './models/DataBrowserState', './models/DataItem', 'lib/backbone'], function(QueuedSearch, DataBrowserView, DataBrowserState, DataItem) {
     var DEFAULT_QUERY, DataBrowserController;
     DEFAULT_QUERY = "node:0";
     return DataBrowserController = (function() {
@@ -64,7 +45,7 @@
       DataBrowserController.prototype.initialize = function(appState) {
         this.appState = appState;
         this.server = appState.get("server");
-        this.searcher = new Search(this.server);
+        this.searcher = new QueuedSearch(this.server);
         this.dataModel = new DataBrowserState({
           server: this.server
         });

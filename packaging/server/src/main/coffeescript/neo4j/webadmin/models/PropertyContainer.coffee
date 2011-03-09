@@ -18,7 +18,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 ###
 
-define ['lib/backbone'], () ->
+define ['./Property','lib/backbone'], (Property) ->
   
   ID_COUNTER = 0
 
@@ -50,43 +50,59 @@ define ['lib/backbone'], () ->
       property = @getProperty(id)
 
       oldKey = property.key
-      property.key = key
+      property.set "key": key
       
       if not @isCantSave()
         @setNotSaved()
 
-      property.saved = false
-
       if duplicate
-        property.isDuplicate = true
+        property.set "isDuplicate": true
         @setCantSave()
       else
-        property.isDuplicate = false
+        property.set "isDuplicate": false
 
         if not @hasDuplicates()
           @setNotSaved()
 
         @getItem().removeProperty(oldKey)
-        @getItem().setProperty(key, property.value)
+        @getItem().setProperty(key, property.getValue())
       @updatePropertyList()
  
     setValue : (id, value) =>
+      property = @getProperty(id)
+      cleanedValue = @cleanPropertyValue(value)
       if not @isCantSave()
         @setNotSaved()
 
-    deleteProperty : (id) =>
+      if cleanedValue.value?
+        property.set "valueError": false
+        property.set "value": cleanedValue.value
+
+        @getItem().setProperty(property.getKey(), cleanedValue.value)
+
+      else
+        property.set "value": null
+        property.set "valueError": cleanedValue.error
+      @updatePropertyList()
+
+    deleteProperty : (id, updatePropertyList=true, opts={}) =>
       if not @isCantSave()
         @setNotSaved()
+
         property = @getProperty(id)
-        @getItem().removeProperty(oldKey)
+        delete(@properties[id])
+
+        @getItem().removeProperty property.getKey()
+        if updatePropertyList
+          @updatePropertyList(opts)
 
     addProperty : (key="", value="", updatePropertyList=true, propertyMeta={}, opts={}) =>
       id = @generatePropertyId()
 
       isDuplicate = if propertyMeta.isDuplicate? then true else false
-      saved = if propertyMeta.saved? then true else false
 
-      @properties[id] = {key:key, value:value, id:id, isDuplicate:isDuplicate, saved:saved}
+      @properties[id] = new Property({key:key, value:value, localId:id, isDuplicate:isDuplicate})
+       
       if updatePropertyList
         @updatePropertyList(opts)
 
@@ -95,7 +111,7 @@ define ['lib/backbone'], () ->
 
     hasKey : (search, ignoreId=null) =>
       for id, property of @properties
-        if property.key == search and id != ignoreId
+        if property.getKey() == search and id != ignoreId
           return true
 
       return false
@@ -113,20 +129,17 @@ define ['lib/backbone'], () ->
 
     hasDuplicates : =>
       for key, property of @properties
-        if property.isDuplicate
+        if property.isDuplicate()
           return true
 
       return false
-
 
     save : () =>
       @setSaveState("saving")
       @getItem().save().then @setSaved, @saveFailed
 
-
     saveFailed : (ev) =>
       @setNotSaved()
-
 
     setSaved : () =>
       @setSaveState("saved")
@@ -151,6 +164,45 @@ define ['lib/backbone'], () ->
     
     setSaveState : (state, opts={}) =>
       @set { saveState : state }, opts
+
+    
+    cleanPropertyValue : (rawVal) =>
+      try
+        val = JSON.parse rawVal
+        if  val == null
+          return error:"Null values are not allowed."
+        else if @isMap val
+          return error:"Maps are not supported property values."
+        else if _(val).isArray() and not @isValidArrayValue val
+          return error:"Only arrays with one type of values, and only primitive types, is allowed."
+        else
+          return value:val
+      catch e
+        return error:"This does not appear to be a valid JSON value."
+
+
+    isMap : (val) => 
+      return JSON.stringify(val).indexOf("{") == 0
+
+    isValidArrayValue : (val) =>
+      if val.length == 0
+        return true
+
+      firstValue = val[0]
+      if _.isString firstValue
+        validType = _.isString 
+      else if _.isNumber firstValue
+        validType = _.isNumber
+      else if _.isBoolean firstValue
+        validType = _.isBoolean
+      else 
+        return false
+
+      for value in val
+        if not validType value
+          return false;
+
+      return true;
 
 
     generatePropertyId : () =>

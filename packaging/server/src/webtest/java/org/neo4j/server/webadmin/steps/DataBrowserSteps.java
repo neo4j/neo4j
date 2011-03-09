@@ -65,7 +65,7 @@ public class DataBrowserSteps
     }
     
     @When("I enter (.+) into the data browser search field")
-    public void iEnterXIntoTheDatabrowserSearchField(String keysToSend) {
+    public void iEnterXIntoTheDatabrowserSearchField(String keysToSend) throws Exception {
         wl.searchForInDataBrowser( keysToSend );
     }
     
@@ -90,15 +90,15 @@ public class DataBrowserSteps
     }
     
     @Then("^The currently visible (node|relationship) in webadmin should have a property (.+) with the value (.+)$")
-    public void theCurrentlyVisibleNodeShouldHavePropertyXAndValueY(String type, String expectedKey, String expectedValue) {
+    public void theCurrentlyVisibleNodeShouldHavePropertyXAndValueY(String type, String expectedKey, String expectedValue) throws Exception {
         theNodeOrRelationshipWithUrlUShouldHavePropertyXAndValueY(type, wl.getCurrentDatabrowserItemHeadline(), expectedKey, expectedValue );
     }
     
     @Then("^The (node|relationship) with url (.+) in webadmin should have a property (.+) with the value (.+)$")
-    public void theNodeOrRelationshipWithUrlUShouldHavePropertyXAndValueY(String type, String url, String expectedKey, String expectedValue) {
+    public void theNodeOrRelationshipWithUrlUShouldHavePropertyXAndValueY(String type, String url, String expectedKey, String expectedValue) throws Exception {
         iEnterXIntoTheDatabrowserSearchField(url);
-        ElementReference keyEl = wl.getElement( By.xpath( "//input[@value='"+expectedKey+"']"  ) );
-        keyEl.getElement();
-        //assertThat(el.getValue(), is(expectedValue));
+        ElementReference el = wl.getElement( By.xpath( "//input[@value='"+expectedKey+"']/../..//input[@class='property-value']"  ) );
+        el.getElement();
+        assertThat(el.getValue(), is(expectedValue));
     }
 }
