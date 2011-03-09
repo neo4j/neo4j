@@ -60,10 +60,11 @@ public class OrderedPathTest
         tx.success();
         tx.finish();
     }
-    // START SNIPPET: walkOrderedPath
+
     @Test
     public void testPath()
     {
+        // START SNIPPET: walkOrderedPath
         final ArrayList<RelationshipType> orderedPathContext = new ArrayList<RelationshipType>();
         orderedPathContext.add( REL1 );
         orderedPathContext.add( withName( "REL2" ) );
@@ -111,6 +112,5 @@ public class OrderedPathTest
             System.out.println( path );
         }
         // END SNIPPET: walkOrderedPath
-
     }
 }
