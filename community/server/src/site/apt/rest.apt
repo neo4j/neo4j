@@ -648,9 +648,9 @@ curl -H Accept:application/json http://localhost:7474/db/data/index/relationship
 
 ---
 
-    The response is a ordered list of node/relationship
+    The response is an ordered list of node or relationship
     representations, with one new property added: indexed. This
-    property can be used to remove the indexation at a later point. 
+    property can be used to remove the indexed entity at a later point. 
 
 * {Query index -- Advanced}
 	
@@ -659,7 +659,7 @@ curl -H Accept:application/json http://localhost:7474/db/data/index/relationship
 
 ** GET /index/node/my_nodes/the_key?query=the_value
 
-** GET /index/relationship/my_rels/the_key/the_value
+** GET /index/relationship/my_rels/the_key?query=the_value
 
 
 ** Example using curl
@@ -669,7 +669,7 @@ curl -H Accept:application/json http://localhost:7474/db/data/index/node/my_node
 curl -H Accept:application/json http://localhost:7474/db/data/index/relationship/my_rels/the_key?query=the_value%20with%20space
 ---
 
-    The response is a ordered list of node/relationship
+    The response is an ordered list of node/relationship
     representations.
 
 * {Traverse}
