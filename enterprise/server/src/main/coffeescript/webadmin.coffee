@@ -17,6 +17,15 @@ GNU Affero General Public License for more details.
 You should have received a copy of the GNU Affero General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 ###
+
+window.log = () ->
+  if $("#messages").length is 0
+    $("body").append("<ul id='messages'></ul>")
+  
+  for item in arguments
+   $("#messages").append("<li>#{item}")
+
+
 require(
   ["neo4j/webadmin/DashboardController"
    "neo4j/webadmin/DataBrowserController"

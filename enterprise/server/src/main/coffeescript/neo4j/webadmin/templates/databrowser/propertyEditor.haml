@@ -3,12 +3,14 @@
     %li
       %ul
         %li
-          %input.property-id(type="hidden" value="#{property.id}")
-          :if property.isDuplicate
+          %input.property-id(type="hidden" value="#{property.getLocalId()}")
+          :if property.isDuplicate()
             .error This property already exists, please change the name.
-          %input.property-key(type="text" value="#{property.key}")
+          %input.property-key(type="text" value="#{escape(property.getKey())}")
         %li
-          %input.property-value(type="text" value="#{property.value}")
+          :if property.getValueError()
+            .error= property.getValueError()
+          %input.property-value(type="text" value="#{property.getValueAsHtml()}")
         %li
           %button.delete-property Remove
 

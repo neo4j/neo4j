@@ -266,3 +266,20 @@ ol lh {
 .span-all { width: 100%; float:left; clear:right; }
 
 .last { clear:right; margin-right:0; }
+
+/**
+ * DEBUGGING
+ */
+
+#messages {
+  background: none repeat scroll 0 0 #DDDDDD;
+  font-family: monospace;
+  font-size: 10px;
+  height: 300px;
+  list-style: none outside none;
+  overflow: auto;
+  padding: 10px;
+  position: absolute;
+  right: 0;
+  top: 100px;
+}

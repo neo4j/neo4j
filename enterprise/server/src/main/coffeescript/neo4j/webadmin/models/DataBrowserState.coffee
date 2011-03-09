@@ -41,7 +41,7 @@ define(
         @set {"query" : val }, opts
 
       setData : (result, basedOnCurrentQuery=true, opts={}) =>
-        @set({"data":result, "queryOutOfSyncWithData":basedOnCurrentQuery }, {silent:true})
+        @set({"data":result, "queryOutOfSyncWithData" : not basedOnCurrentQuery }, {silent:true})
 
         if result instanceof neo4j.models.Node
           @set({type:"node"}, opts)
