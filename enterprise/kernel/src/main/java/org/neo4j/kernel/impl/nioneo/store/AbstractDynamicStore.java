@@ -99,7 +99,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         {
             throw new IllegalArgumentException( "Illegal block size[" + blockSize + "], limit is 65535" );
         }
-        blockSize += 13; // in_use(1)+length(4)+prev_block(4)+next_block(4)
+        blockSize += BLOCK_HEADER_SIZE;
 
         // write the header
         try
@@ -250,6 +250,17 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
     public void freeBlockId( long blockId )
     {
         freeId( blockId );
+    }
+    
+    /**
+     * Calculate the size of a dynamic record given the size of the data block.
+     * 
+     * @param dataSize the size of the data block in bytes.
+     * @return the size of a dynamic record.
+     */
+    public static int getRecordSize( int dataSize )
+    {
+        return dataSize + BLOCK_HEADER_SIZE;
     }
 
     // in_use(byte)+prev_block(int)+nr_of_bytes(int)+next_block(int)
