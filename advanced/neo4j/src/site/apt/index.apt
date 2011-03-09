@@ -8,21 +8,17 @@ Neo4j
 Included components 
 
 *----+------+------+
-| {{{../neo4j-kernel/}neo4j-kernel}} | the neo4j kernel | the neo4j graph database engine |
+| neo4j-kernel | the neo4j kernel | the neo4j graph database engine |
 *----+------+------+
-| {{{../neo4j-index/}neo4j-index}} | indexing and data structures | enables you to lookup nodes and relationships by property values |
+| neo4j-lucene-index | indexing with Lucene | integration layer between Neo4j and Lucene, for indexing of nodes and relationships |
 *----+------+------+
-| {{{../neo4j-lucene-index/}neo4j-lucene-index}} | indexing with Lucene | integration layer between Neo4j and Lucene, implementing the Index API |
+| neo4j-graph-algo | graph algorithms | graph algorithms like shortest path etc. |
 *----+------+------+
-| {{{../neo4j-shell/}neo4j-shell}} | text command shell | enables you to browse the node space from a local or remote JVM |
+| neo4j-ha | high availability | set up a highly available Neo4j cluster |
 *----+------+------+
-| {{{../neo4j-graph-algo/}neo4j-graph-algo}} | graph algorithms | graph algorithms like shortest path etc. |
+| neo4j-management | monitoring and management | management support using JMX |
 *----+------+------+
-| {{{../neo4j-online-backup/}neo4j-online-backup}} | create backups | create backups from a running database |
-*----+------+------+
-| {{{../neo4j-management/}neo4j-management}} | monitoring and management | management support using JMX |
-*----+------+------+
-| {{{../neo4j-remote-graphdb/}neo4j-remote-graphdb}} | introspection tool | enables you to connect to a running Neo4j instance from another JVM |
+| neo4j-udc | usage data | usage data collector |
 *----+------+------+
 
 Usage
