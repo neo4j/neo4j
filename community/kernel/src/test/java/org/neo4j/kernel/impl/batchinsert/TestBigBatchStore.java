@@ -23,6 +23,7 @@ import static java.lang.Math.pow;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.*;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
@@ -94,10 +95,7 @@ public class TestBigBatchStore implements RelationshipType
     
     private void testHighIds( long highMark, int minus, int requiredHeapMb )
     {
-        if ( !machineIsOkToRunThisTest( testName.getMethodName(), requiredHeapMb ) )
-        {
-            return;
-        }
+        assumeTrue( machineIsOkToRunThisTest( testName.getMethodName(), requiredHeapMb ) );
         
         long idBelow = highMark-minus;
         setHighId( IdType.NODE, idBelow );
