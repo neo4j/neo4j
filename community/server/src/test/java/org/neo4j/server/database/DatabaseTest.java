@@ -37,6 +37,7 @@ public class DatabaseTest {
 
     private File databaseDirectory;
     private Database theDatabase;
+    private boolean deletionFailureOk;
 
     @Before
     public void setup() throws Exception {
@@ -48,7 +49,20 @@ public class DatabaseTest {
     public void shutdownDatabase() throws IOException
     {
         this.theDatabase.shutdown();
-        FileUtils.forceDelete( databaseDirectory );
+        
+        try
+        {
+            FileUtils.forceDelete( databaseDirectory );
+        }
+        catch ( IOException e )
+        {
+            // TODO Removed this when EmbeddedGraphDatabase startup failures closes its
+            // files properly.
+            if ( !deletionFailureOk )
+            {
+                throw e;
+            }
+        }
     }
 
     @Test
@@ -59,7 +73,6 @@ public class DatabaseTest {
 
         assertThat(appender.toString(), containsString("Successfully started database"));
     }
-
 
     @Test
     public void shouldShutdownCleanly() {
@@ -73,6 +86,7 @@ public class DatabaseTest {
 
     @Test(expected = TransactionFailureException.class)
     public void shouldComplainIfDatabaseLocationIsAlreadyInUse() {
+        deletionFailureOk = true;
         new Database( DatabaseMode.STANDALONE, theDatabase.getLocation() );
     }
 }
