@@ -169,7 +169,7 @@
             <cucumberArg>--out</cucumberArg>
             <cucumberArg>target/usage.txt</cucumberArg>
             <cucumberArg>${basedir}/target/test-classes</cucumberArg>
-            <cucumberArg>${cukeArg}</cucumberArg>
+            <!-- cucumberArg>${cukeArg}</cucumberArg -->
           </cucumberArgs>
           <gems>
             <gem>install cuke4duke --version ${cuke4duke.version}</gem>
