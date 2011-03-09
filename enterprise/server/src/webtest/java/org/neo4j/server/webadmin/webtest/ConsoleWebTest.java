@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.webadmin.webtest;
 
-import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.server.webadmin.webtest.IsVisible.isVisible;
 
@@ -52,8 +51,7 @@ public class ConsoleWebTest extends WebDriverTest
     	consoleInput.sendKeys("invalidoperation!¤", Keys.RETURN);
     	consoleInput.waitUntilVisible();
     	
-    	lastOutputLine.waitForTextToChangeFrom( "gremlin> invalidoperation!¤" );
-    	assertThat(lastOutputLine.getText(), is( "==> 1 error" ));
+    	lastOutputLine.waitForTextToChangeTo( "==> 1 error" );
     }
     
     private ElementReference consoleInput = new ElementReference(webDriver, By.id("mor_console_input"));
