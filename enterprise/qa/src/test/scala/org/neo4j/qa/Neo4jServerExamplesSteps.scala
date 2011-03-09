@@ -25,17 +25,17 @@ class Neo4jServerExamplesSteps(neo4j: Neo4jEnvironment) extends ScalaDsl with EN
     (envVar: String) =>
       val neo4jHomeValue = System.getenv(envVar)
       neo4jHomeValue should not be (null)
-      neo4j.neo4jHome = new File(neo4jHomeValue)
-      neo4j.neo4jHome should exist
+      neo4j.home = new File(neo4jHomeValue)
+      neo4j.home should exist
 
-      new File(neo4j.neo4jHome, "bin" + File.separator + "neo4j") should exist
+      new File(neo4j.home, "bin" + File.separator + "neo4j") should exist
 
   }
 
   When("""^I look in the "([^"]*)" directory under NEO4J_HOME$""")
   {
     (dir: String) =>
-      directoryForFind = new File(neo4j.neo4jHome, dir)
+      directoryForFind = new File(neo4j.home, dir)
       directoryForFind should exist
   }
 
@@ -67,11 +67,11 @@ class Neo4jServerExamplesSteps(neo4j: Neo4jEnvironment) extends ScalaDsl with EN
   {
     (partialFilename:String, extension:String, sourceDir:String, destDir:String) =>
 
-      val filesToSearch = FileUtils.listFiles(new File(neo4j.neo4jHome, sourceDir), Array(extension), true)
+      val filesToSearch = FileUtils.listFiles(new File(neo4j.home, sourceDir), Array(extension), true)
       val foundFile = filesToSearch.find(f =>
           f.getName contains partialFilename
           ).getOrElse(fail(partialFilename + " not found under " + sourceDir))
-    FileUtils.copyFileToDirectory(foundFile, new File(neo4j.neo4jHome, destDir))
+    FileUtils.copyFileToDirectory(foundFile, new File(neo4j.home, destDir))
   }
   
   When("""^I browse the REST API to the database extensions$""")

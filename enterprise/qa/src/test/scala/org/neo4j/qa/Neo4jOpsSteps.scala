@@ -2,10 +2,11 @@ package org.neo4j.qa
 
 import cuke4duke.{EN, ScalaDsl}
 import dispatch._
-import java.io.{FileOutputStream, File}
 import org.scalatest.matchers.ShouldMatchers
 import org.apache.http.conn.HttpHostConnectException
-import org.neo4j.qa.util.{Platform, ArchiveHelper}
+import org.neo4j.qa.util.{Neo4jHelper, Platform, ArchiveHelper}
+import java.io.{FilenameFilter, FileOutputStream, File}
+import java.lang.String
 
 /**
  * Operations steps for working with Neo4j server.
@@ -17,15 +18,23 @@ class Neo4jOpsSteps(neo4j: Neo4jEnvironment) extends ScalaDsl with EN with Shoul
   Given("""^a platform supported by Neo4j$""")
   {
     () =>
-    neo4j.hostPlatform should not be (Platform.Unknown)
+      neo4j.hostPlatform should not be (Platform.Unknown)
   }
 
   Given("""^Neo4j version based on system property "([^"]*)"$""")
   {
     (propertyName: String) =>
       val propertyValue = System.getProperty(propertyName)
-      propertyValue should not be (null, "Expected system property \"" + propertyName + "\" is null.")
+      propertyValue should not (be (null))
       neo4j.version = propertyValue
+  }
+
+  Given("""^Neo4j Home based on system property \"([^\"]*)\"$""")
+  {
+    (propertyName: String) =>
+    val propertyValue = System.getProperty(propertyName)
+    propertyValue should not (be (null))
+    neo4j.home = new File(propertyValue)
   }
 
   Given("""^Neo4j version "([^"]*)"$""")
@@ -87,12 +96,13 @@ class Neo4jOpsSteps(neo4j: Neo4jEnvironment) extends ScalaDsl with EN with Shoul
 
   }
 
-  When("""^I unpack the archive into "([^"]*)"$""")
+  When("""^I unpack the archive into Neo4j Home$""")
   {
-    (destination: String) =>
+    () =>
+      val destination = neo4j.home
       neo4j.archiveName match
       {
-        case Some(validArchive) => ArchiveHelper.unarchive(validArchive, destination)
+        case Some(validArchive) => ArchiveHelper.unarchive(validArchive, destination.getAbsolutePath)
         case None => fail("Could not determine archive to download.")
       }
   }
@@ -103,12 +113,13 @@ class Neo4jOpsSteps(neo4j: Neo4jEnvironment) extends ScalaDsl with EN with Shoul
     neo4j.hostPlatform match
     {
       case Platform.Windows => fail("not yet implemented") /* launch windows */
-      case Platform.Unix => Runtime.getRuntime().exec("sh " + neo4j.neo4jHome.getAbsolutePath + "/bin/neo4j start")
+      case Platform.Unix => Runtime.getRuntime().exec(neo4j.home.getAbsolutePath + "/bin/neo4j start")
     }
   }
 
   Then("""^the current directory should contain a Neo4j archive$""")
   {
+    () =>
     neo4j.archiveName match
     {
       case Some(expectedArchive) =>
@@ -117,6 +128,19 @@ class Neo4jOpsSteps(neo4j: Neo4jEnvironment) extends ScalaDsl with EN with Shoul
       }
       case None => fail("Could not determine what archive to expect.")
     }
+  }
+
+  Then("""^Neo4j Home should contain a Neo4j Server installation$""")
+  {
+    () =>
+    val isInstalled = Neo4jHelper.neo4jIsInstalledIn(neo4j.home)
+    isInstalled should be (true)
+  }
+
+  Then("""^the Neo4j version of the installation should be correct$""")
+  {
+    Neo4jHelper.badlyVersionedJarsIn(neo4j.libDir, neo4j.version) should have size(0)
+    Neo4jHelper.badlyVersionedJarsIn(neo4j.systemLibDir, neo4j.version) should have size(0)
   }
 }
 
