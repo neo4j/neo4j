@@ -607,10 +607,14 @@ curl -X DELETE http://localhost:7474/db/data/index/node/my_nodes/the_key/the_val
 
 *** 404: Index entry not found
 
-* {Query index}
+* {Query index -- Exact}
 
-** GET /index/node/my_nodes/the_key/the_value
-** GET /index/relationship/my_rels/the_key/the_value
+There are two ways to query an index - using the get method, or the more advanced query
+method. Use the first for exact matches, and the second for advanced index querying.
+This is the simple, exact matching get operation.
+ 
+
+** GET /index/node/my_nodes/the_key/the_value** GET /index/relationship/my_rels/the_key/the_value
 
 
 ** Example using curl
@@ -643,6 +647,26 @@ curl -H Accept:application/json http://localhost:7474/db/data/index/relationship
     The response is a ordered list of node/relationship
     representations, with one new property added: indexed. This
     property can be used to remove the indexation at a later point. 
+
+* {Query index -- Advanced}
+	
+	This is the advanced query operation for an index.
+ 
+
+** GET /index/node/my_nodes/the_key?query=the_value
+
+** GET /index/relationship/my_rels/the_key/the_value
+
+
+** Example using curl
+
+---
+curl -H Accept:application/json http://localhost:7474/db/data/index/node/my_nodes/the_key?query=the_value%20with%20space
+curl -H Accept:application/json http://localhost:7474/db/data/index/relationship/my_rels/the_key?query=the_value%20with%20space
+---
+
+    The response is a ordered list of node/relationship
+    representations.
 
 * {Traverse}
 
