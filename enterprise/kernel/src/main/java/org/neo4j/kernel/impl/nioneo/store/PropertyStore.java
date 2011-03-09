@@ -40,13 +40,15 @@ import org.neo4j.kernel.IdType;
  */
 public class PropertyStore extends AbstractStore implements Store
 {
+    public static final int DEFAULT_DATA_BLOCK_SIZE = 120;
+
     // store version, each store ends with this string (byte encoded)
     private static final String VERSION = "PropertyStore v0.9.9";
 
     // record header size
     // in_use(byte)+type(int)+key_indexId(int)+prop_blockId(long)+
     // prev_prop_id(int)+next_prop_id(int)
-    private static final int RECORD_SIZE = 25;
+    public static final int RECORD_SIZE = 25;
 
     private DynamicStringStore stringPropertyStore;
     private PropertyIndexStore propertyIndexStore;
@@ -152,8 +154,8 @@ public class PropertyStore extends AbstractStore implements Store
                 IdGeneratorFactory.class );
                 
         createEmptyStore( fileName, VERSION, idGeneratorFactory );
-        int stringStoreBlockSize = 120;
-        int arrayStoreBlockSize = 120;
+        int stringStoreBlockSize = DEFAULT_DATA_BLOCK_SIZE;
+        int arrayStoreBlockSize = DEFAULT_DATA_BLOCK_SIZE;
         try
         {
             String stringBlockSize = (String) config.get( STRING_BLOCK_SIZE );
