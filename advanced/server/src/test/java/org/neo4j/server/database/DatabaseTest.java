@@ -19,22 +19,19 @@
  */
 package org.neo4j.server.database;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
+
+import java.io.File;
+import java.io.IOException;
+
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.logging.InMemoryAppender;
-
-import java.io.File;
-import java.io.IOException;
-import java.net.Socket;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 public class DatabaseTest {
 

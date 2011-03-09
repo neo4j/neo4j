@@ -37,6 +37,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
@@ -305,6 +306,41 @@ public class IndexRelationshipFunctionalTest
         assertEquals( Status.NOT_FOUND.getStatusCode(), response.getStatus() );
     }
 
+    @Test
+    public void shouldBeAbleToRemoveIndexing() throws DatabaseBlockedException, JsonParseException
+    {
+        String key1 = "kvkey1";
+        String key2 = "kvkey2";
+        String value1 = "value1";
+        String value2 = "value2";
+        String indexName = "kvrel";
+        long relationship = helper.createRelationship( "some type" );
+        helper.setRelationshipProperties( relationship, MapUtil.map( key1, value1, key1, value2, key2, value1, key2, value2 ) );
+        helper.addRelationshipToIndex( indexName, key1, value1, relationship );
+        helper.addRelationshipToIndex( indexName, key1, value2, relationship );
+        helper.addRelationshipToIndex( indexName, key2, value1, relationship );
+        helper.addRelationshipToIndex( indexName, key2, value2, relationship );
+        assertEquals( 1, helper.getIndexedRelationships( indexName, key1, value1 ).size() );
+        assertEquals( 1, helper.getIndexedRelationships( indexName, key1, value2 ).size() );
+        assertEquals( 1, helper.getIndexedRelationships( indexName, key2, value1 ).size() );
+        assertEquals( 1, helper.getIndexedRelationships( indexName, key2, value2 ).size() );
+        Client.create().resource( functionalTestHelper.relationshipIndexUri() + indexName + "/" + key1 + "/" + value1 + "/" + relationship ).delete( ClientResponse.class );
+        assertEquals( 0, helper.getIndexedRelationships( indexName, key1, value1 ).size() );
+        assertEquals( 1, helper.getIndexedRelationships( indexName, key1, value2 ).size() );
+        assertEquals( 1, helper.getIndexedRelationships( indexName, key2, value1 ).size() );
+        assertEquals( 1, helper.getIndexedRelationships( indexName, key2, value2 ).size() );
+        Client.create().resource( functionalTestHelper.relationshipIndexUri() + indexName + "/" + key2 + "/" + relationship ).delete( ClientResponse.class );
+        assertEquals( 0, helper.getIndexedRelationships( indexName, key1, value1 ).size() );
+        assertEquals( 1, helper.getIndexedRelationships( indexName, key1, value2 ).size() );
+        assertEquals( 0, helper.getIndexedRelationships( indexName, key2, value1 ).size() );
+        assertEquals( 0, helper.getIndexedRelationships( indexName, key2, value2 ).size() );
+        Client.create().resource( functionalTestHelper.relationshipIndexUri() + indexName + "/" + relationship ).delete( ClientResponse.class );
+        assertEquals( 0, helper.getIndexedRelationships( indexName, key1, value1 ).size() );
+        assertEquals( 0, helper.getIndexedRelationships( indexName, key1, value2 ).size() );
+        assertEquals( 0, helper.getIndexedRelationships( indexName, key2, value1 ).size() );
+        assertEquals( 0, helper.getIndexedRelationships( indexName, key2, value2 ).size() );
+    }
+    
     @Test
     public void shouldBeAbleToIndexValuesContainingSpaces() throws Exception
     {

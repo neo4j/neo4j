@@ -655,6 +655,34 @@ public class DatabaseActions
         }
     }
 
+    public void removeFromNodeIndexNoValue( String indexName, String key, long id )
+    {
+        Index<Node> index = graphDb.index().forNodes( indexName );
+        Transaction tx = graphDb.beginTx();
+        try
+        {
+            index.remove( graphDb.getNodeById( id ), key );
+            tx.success();
+        } finally
+        {
+            tx.finish();
+        }
+    }
+    
+    public void removeFromNodeIndexNoKeyValue( String indexName, long id )
+    {
+        Index<Node> index = graphDb.index().forNodes( indexName );
+        Transaction tx = graphDb.beginTx();
+        try
+        {
+            index.remove( graphDb.getNodeById( id ) );
+            tx.success();
+        } finally
+        {
+            tx.finish();
+        }
+    }
+    
     public void removeFromRelationshipIndex( String indexName, String key, String value, long id )
     {
         RelationshipIndex index = graphDb.index().forRelationships( indexName );
@@ -669,6 +697,34 @@ public class DatabaseActions
         }
     }
 
+    public void removeFromRelationshipIndexNoValue( String indexName, String key, long id )
+    {
+        RelationshipIndex index = graphDb.index().forRelationships( indexName );
+        Transaction tx = graphDb.beginTx();
+        try
+        {
+            index.remove( graphDb.getRelationshipById( id ), key );
+            tx.success();
+        } finally
+        {
+            tx.finish();
+        }
+    }
+    
+    public void removeFromRelationshipIndexNoKeyValue( String indexName, long id )
+    {
+        RelationshipIndex index = graphDb.index().forRelationships( indexName );
+        Transaction tx = graphDb.beginTx();
+        try
+        {
+            index.remove( graphDb.getRelationshipById( id ) );
+            tx.success();
+        } finally
+        {
+            tx.finish();
+        }
+    }
+    
     public IndexedEntityRepresentation getIndexedNode( String indexName,
                                                        String key, String value, long id )
     {
