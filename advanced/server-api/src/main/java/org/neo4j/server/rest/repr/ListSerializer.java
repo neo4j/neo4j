@@ -69,11 +69,9 @@ public class ListSerializer extends Serializer
         }
         else
         {
-            if ( !"java.lang".equals( value.getClass().getPackage().getName() ) )
-            {
-                throw new IllegalArgumentException( "Unsupported number type: " + value.getClass() );
-            }
+            checkThatItIsBuiltInType( value );
             writer.writeInteger( RepresentationType.valueOf( value.getClass() ), value.longValue() );
         }
     }
+
 }

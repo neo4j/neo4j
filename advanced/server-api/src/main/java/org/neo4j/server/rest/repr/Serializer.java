@@ -100,4 +100,12 @@ abstract class Serializer
         }
         return base + path;
     }
+
+    protected void checkThatItIsBuiltInType( Object value )
+    {
+        if ( !"java.lang".equals( value.getClass().getPackage().getName() ) )
+        {
+            throw new IllegalArgumentException( "Unsupported number type: " + value.getClass() );
+        }
+    }
 }
