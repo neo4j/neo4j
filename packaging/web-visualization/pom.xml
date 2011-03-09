@@ -28,6 +28,19 @@
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-eclipse-plugin</artifactId>
+        <version>2.8</version>
+        <configuration>
+          <downloadSources>true</downloadSources>
+          <downloadJavadocs>false</downloadJavadocs>
+          <wtpversion>2.0</wtpversion>
+          <wtpmanifest>false</wtpmanifest>
+          <wtpapplicationxml>true</wtpapplicationxml>
+          <wtpContextName>${project.artifactId}</wtpContextName>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
           <source>1.5</source>
@@ -44,7 +57,8 @@
             <index>true</index>
             <manifest>
               <addClasspath>true</addClasspath>
-              <!-- Implementation-Title and Implementation-Version come from the POM by default -->
+              <!-- Implementation-Title and Implementation-Version come from the 
+                POM by default -->
               <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
             </manifest>
             <manifestEntries>
@@ -53,11 +67,9 @@
 
               <!-- Add-on specific fields to update -->
 
-              <!-- Implementation-Title and Implementation-Version come from the POM by default -->
-              <!--
-                <Implementation-Title>${pom.name}</Implementation-Title>
-                <Implementation-Version>${pom.version}</Implementation-Version>
-              -->
+              <!-- Implementation-Title and Implementation-Version come from the 
+                POM by default -->
+              <!-- <Implementation-Title>${pom.name}</Implementation-Title> <Implementation-Version>${pom.version}</Implementation-Version> -->
 
               <!-- Comma-separated list of widgetsets in the package -->
               <Vaadin-Widgetsets>org.neo4j.server.ext.visualization.gwt.MyWidgetSet</Vaadin-Widgetsets>
@@ -67,22 +79,24 @@
       </plugin>
 
       <!-- Compiles your custom GWT components with the GWT compiler -->
-      <!-- A hosted mode browser for client-side widget debugging can be run with the goal gwt:run after uncommenting the 
-        correct line below. A remote debugger can then be connected to port 8998. Note that e.g. a Jetty server should be running 
-        with the server side parts - use the goal jetty:run . -->
+      <!-- A hosted mode browser for client-side widget debugging can be run with 
+        the goal gwt:run after uncommenting the correct line below. A remote debugger can 
+        then be connected to port 8998. Note that e.g. a Jetty server should be running with 
+        the server side parts - use the goal jetty:run . -->
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>gwt-maven-plugin</artifactId>
         <version>2.1.0-1</version>
         <configuration>
           <!-- if you don't specify any modules, the plugin will find them -->
-          <!-- <modules> <module>org.neo4j.server.ext.visualization.gwt.MyWidgetSet</module> </modules> -->
+          <!-- <modules> <module>org.neo4j.server.ext.visualization.gwt.MyWidgetSet</module> 
+            </modules> -->
           <webappDirectory>${project.build.directory}/${project.build.finalName}/VAADIN/widgetsets</webappDirectory>
           <!-- On Mac running Snow Leopard, add "-d32" -->
-          <!-- This causes error messages (but build works) in phase "package": two processes would use the same debug 
-            port -->
-          <!--extraJvmArgs>-Xmx512M -Xss1024k -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=8998</extraJvmArgs -->
-          <extraJvmArgs>-Xmx512M -Xss1024k</extraJvmArgs>
+          <!-- This causes error messages (but build works) in phase "package": two 
+            processes would use the same debug port -->
+          <extraJvmArgs>-Xmx512M -Xss1024k -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=8998</extraJvmArgs>
+          <!-- <extraJvmArgs>-Xmx512M -Xss1024k</extraJvmArgs> -->
           <runTarget>neo4j-visualization</runTarget>
           <hostedWebapp>${project.build.directory}/${project.build.finalName}</hostedWebapp>
           <noServer>true</noServer>
@@ -106,7 +120,8 @@
           <execution>
             <configuration>
               <!-- if you don't specify any modules, the plugin will find them -->
-              <!-- <modules> <module>org.neo4j.server.ext.visualization.gwt.MyWidgetSet</module> </modules> -->
+              <!-- <modules> <module>org.neo4j.server.ext.visualization.gwt.MyWidgetSet</module> 
+                </modules> -->
             </configuration>
             <goals>
               <goal>update-widgetset</goal>
@@ -115,8 +130,8 @@
         </executions>
       </plugin>
 
-      <!-- A simple Jetty test server at http://localhost:8080/neo4j-visualization can be launched with the Maven goal jetty:run 
-        and stopped with jetty:stop -->
+      <!-- A simple Jetty test server at http://localhost:8080/neo4j-visualization 
+        can be launched with the Maven goal jetty:run and stopped with jetty:stop -->
       <plugin>
         <groupId>org.mortbay.jetty</groupId>
         <artifactId>maven-jetty-plugin</artifactId>
@@ -124,7 +139,8 @@
         <configuration>
           <stopPort>9966</stopPort>
           <stopKey>neo4j-visualization</stopKey>
-          <!-- Redeploy every x seconds if changes are detected, 0 for no automatic redeployment -->
+          <!-- Redeploy every x seconds if changes are detected, 0 for no automatic 
+            redeployment -->
           <scanIntervalSeconds>0</scanIntervalSeconds>
           <!-- make sure Jetty also finds the widgetset -->
           <webAppConfig>
@@ -160,6 +176,7 @@
       <plugin>
         <groupId>cuke4duke</groupId>
         <artifactId>cuke4duke-maven-plugin</artifactId>
+        <version>0.4.3</version>
         <configuration>
           <jvmArgs>
             <jvmArg>-Xmx384m</jvmArg>
@@ -189,7 +206,8 @@
       </plugin>
     </plugins>
 
-    <!-- This is needed for the sources required by the GWT compiler to be included in the produced JARs -->
+    <!-- This is needed for the sources required by the GWT compiler to be included 
+      in the produced JARs -->
     <resources>
       <resource>
         <directory>src/main/java</directory>
@@ -264,6 +282,11 @@
       <artifactId>gwt-user</artifactId>
       <version>2.1.1</version>
       <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.vaadin.addons</groupId>
+      <artifactId>gwt-graphics</artifactId>
+      <version>0.9.7</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
