@@ -62,7 +62,7 @@ public class TestUpgradeStore
     public void makeSureStoreWithTooManyRelationshipTypesCannotBeUpgraded() throws Exception
     {
         new EmbeddedGraphDatabase( PATH ).shutdown();
-        createManyRelationshipTypes( 0xFFFF+10 );
+        createManyRelationshipTypes( 0x10000 );
         assertCannotStart( "Shouldn't be able to upgrade with that many types set" );
     }
     
@@ -70,7 +70,7 @@ public class TestUpgradeStore
     public void makeSureStoreWithDecentAmountOfRelationshipTypesCanBeUpgraded() throws Exception
     {
         new EmbeddedGraphDatabase( PATH ).shutdown();
-        createManyRelationshipTypes( 0xFFFF-10 );
+        createManyRelationshipTypes( 0xFFFF );
         assertCanStart();
     }
     
