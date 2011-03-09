@@ -1,3 +1,8 @@
+1.3.M04 (2011-03-10)
+--------------------
+o A database can now contain 32 billion nodes/relationships and 64 billion properties.
+o Fixed some issues with files not being closed, which also makes all tests pass on Windows.
+
 1.3.M03 (2011-02-24)
 --------------------
 o Incremental and full backups can now be performed over the network (configurable port) using backup tool.
