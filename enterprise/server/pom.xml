@@ -214,28 +214,12 @@
     <!-- Test dependencies -->
 
     <dependency>
-      <groupId>org.seleniumhq.webdriver</groupId>
-      <artifactId>webdriver-firefox</artifactId>
-      <version>0.9.7376</version>
-      <scope>test</scope>
+        <groupId>org.seleniumhq.selenium</groupId>
+        <artifactId>selenium-firefox-driver</artifactId>
+        <version>2.0b1</version>
+        <scope>test</scope>
     </dependency>
-
-    <dependency>
-      <groupId>org.seleniumhq.webdriver</groupId>
-      <artifactId>webdriver-htmlunit</artifactId>
-      <version>0.9.7376</version>
-      <type>jar</type>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.seleniumhq.webdriver</groupId>
-      <artifactId>webdriver-chrome</artifactId>
-      <version>0.9.7376</version>
-      <type>jar</type>
-      <scope>test</scope>
-    </dependency>
-
+    
     <dependency>
       <!-- Provides Autoprocessor.
         This dependency makes the plugin loader Felix-specific
@@ -303,6 +287,7 @@
     	<type>jar</type>
     	<scope>test</scope>
     </dependency>
+    
   </dependencies>
 
   <build>
