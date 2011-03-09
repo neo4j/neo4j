@@ -19,11 +19,11 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['neo4j/webadmin/data/Search',
+  ['neo4j/webadmin/data/QueuedSearch',
    './views/DataBrowserView', 
    './models/DataBrowserState', 
    './models/DataItem', 'lib/backbone'], 
-  (Search, DataBrowserView, DataBrowserState, DataItem) ->
+  (QueuedSearch, DataBrowserView, DataBrowserState, DataItem) ->
   
     DEFAULT_QUERY = "node:0"
 
@@ -35,7 +35,8 @@ define(
       initialize : (appState) =>
         @appState = appState
         @server = appState.get "server"
-        @searcher = new Search(@server)
+        @searcher = new QueuedSearch(@server)
+
         @dataModel = new DataBrowserState( server : @server )
 
         @dataModel.bind "change:query", @queryChanged
@@ -52,7 +53,7 @@ define(
         url = "#/data/search/#{encodedQuery}/"
 
         if location.hash != url
-          location.hash = url    
+          location.hash = url
 
         if @dataModel.get "queryOutOfSyncWithData"
           @searcher.exec(@dataModel.get "query").then(@showResult, @showResult)

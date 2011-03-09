@@ -57,7 +57,7 @@ public class WebadminWebdriverLibrary extends WebdriverLibrary
         getElement( By.xpath( "//ul[@id='mainmenu']//a[contains(.,'"+tab+"')]") ).click();
     }
     
-    public void searchForInDataBrowser(CharSequence ... keysToSend) {
+    public void searchForInDataBrowser(CharSequence ... keysToSend) throws Exception {
         dataBrowserSearchField.sendKeys( keysToSend );
     }
     
