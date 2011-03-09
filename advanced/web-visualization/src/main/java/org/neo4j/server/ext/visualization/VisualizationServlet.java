@@ -58,6 +58,6 @@ public class VisualizationServlet extends AbstractApplicationServlet
     @Override
     protected Application getNewApplication( HttpServletRequest request ) throws ServletException
     {
-        return new WidgetTestApplication();
+        return new WidgetTestApplication(graphDb );
     }
 }
