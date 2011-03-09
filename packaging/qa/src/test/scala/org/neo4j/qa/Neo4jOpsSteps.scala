@@ -3,9 +3,9 @@ package org.neo4j.qa
 import cuke4duke.{EN, ScalaDsl}
 import dispatch._
 import java.io.{FileOutputStream, File}
-import neo4j.qa.util.ArchiveHelper
 import org.scalatest.matchers.ShouldMatchers
 import org.apache.http.conn.HttpHostConnectException
+import org.neo4j.qa.util.{Platform, ArchiveHelper}
 
 /**
  * Operations steps for working with Neo4j server.
@@ -120,11 +120,5 @@ class Neo4jOpsSteps(neo4j: Neo4jEnvironment) extends ScalaDsl with EN with Shoul
   }
 }
 
-object Platform extends Enumeration
-{
-  type Platform = Value
-  val Windows = Value("windows")
-  val Unix = Value("unix")
-  val Unknown = Value("unknown")
-}
+
 
