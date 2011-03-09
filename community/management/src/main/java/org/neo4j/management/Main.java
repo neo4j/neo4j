@@ -32,6 +32,7 @@ class Main
 
     private Main()
     {
+        // no instances
     }
 
     public static void main( String[] args ) throws Throwable
@@ -44,14 +45,25 @@ class Main
         }
         catch ( ClassNotFoundException ex )
         {
-            ClassLoader loader;
-            try
+            File jar = new File( new File( System.getProperty( "java.home" ), "lib" ), "jconsole.jar" );
+            if ( !jar.exists() )
             {
-                loader = new URLClassLoader(
-                        new URL[] { new File( new File( System.getProperty( "java.home" ), "lib" ),
-                                "jconsole.jar" ).toURI().toURL() }, Main.class.getClassLoader() );
+                jar = new File( new File( new File( System.getProperty( "java.home" ) ).getParentFile(), "lib" ),
+                        "jconsole.jar" );
             }
-            catch ( MalformedURLException e )
+            ClassLoader loader = null;
+            if ( jar.exists() )
+            {
+                try
+                {
+                    loader = new URLClassLoader( new URL[] { jar.toURI().toURL() }, Main.class.getClassLoader() );
+                }
+                catch ( MalformedURLException e )
+                {
+                    // Handled by null check
+                }
+            }
+            if ( loader == null )
             {
                 System.err.println( "Could not find jconsole.jar" );
                 return;

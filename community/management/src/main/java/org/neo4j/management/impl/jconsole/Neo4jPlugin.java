@@ -40,7 +40,6 @@ import com.sun.tools.jconsole.JConsolePlugin;
  *
  * @author Tobias Ivarsson <tobias.ivarsson@neotechnology.com>
  */
-@SuppressWarnings( "restriction" )
 public class Neo4jPlugin extends JConsolePlugin
 {
     private final Collection<Widget> widgets = new LinkedList<Widget>();
@@ -78,6 +77,7 @@ public class Neo4jPlugin extends JConsolePlugin
         }
         catch ( Exception haNotAvailable )
         {
+            // ok, just don't include HA info
         }
         try
         {
@@ -90,9 +90,11 @@ public class Neo4jPlugin extends JConsolePlugin
         }
         catch ( LinkageError dataBrowserNotAvailable )
         {
+            // ok, just don't data browser
         }
         catch ( Exception dataBrowserNotAvailable )
         {
+            // ok, just don't data browser
         }
     }
 
