@@ -29,10 +29,12 @@ import static org.neo4j.server.webadmin.webtest.IsVisible.isVisible;
 import java.io.IOException;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.openqa.selenium.By;
 
 
+@RunWith( ThirdTimeIsTheCharmTestRunner.class )
 public class DashboardWebTest extends WebDriverTest {
 
 	@Test
