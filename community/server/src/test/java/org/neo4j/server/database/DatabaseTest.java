@@ -78,14 +78,4 @@ public class DatabaseTest {
     public void shouldComplainIfDatabaseLocationIsAlreadyInUse() {
         new Database( DatabaseMode.STANDALONE, theDatabase.getLocation() );
     }
-
-    @Test
-    @Ignore
-    public void shouldEnableRemoteShellByDefault() throws IOException
-    {
-        int wellKnownSocket = 1337;
-        Socket rmiSocketToServer = new Socket("localhost", wellKnownSocket );
-        assertTrue(rmiSocketToServer.isBound());
-        rmiSocketToServer.close();
-    }
 }
