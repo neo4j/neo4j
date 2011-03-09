@@ -39,7 +39,7 @@ public class RelationshipStore extends AbstractStore implements Store
     // directed|in_use(byte)+first_node(int)+second_node(int)+rel_type(int)+
     // first_prev_rel_id(int)+first_next_rel_id+second_prev_rel_id(int)+
     // second_next_rel_id+next_prop_id(int)
-    private static final int RECORD_SIZE = 33;
+    public static final int RECORD_SIZE = 33;
 
     /**
      * See {@link AbstractStore#AbstractStore(String, Map)}

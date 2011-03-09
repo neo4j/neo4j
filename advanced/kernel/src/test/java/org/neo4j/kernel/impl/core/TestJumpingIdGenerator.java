@@ -86,10 +86,6 @@ public class TestJumpingIdGenerator
         
         for ( int i = 0; i < 16; i++ )
         {
-            if ( i == 14 )
-            {
-                System.out.println( "noob Johan" );
-            }
             assertEquals( i, readSomethingLikeNodeRecord( channel, idGenerator.nextId() ) );
         }
         
