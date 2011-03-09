@@ -14,6 +14,7 @@ import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.user.client.Element;
+import com.google.gwt.user.client.Random;
 import com.google.gwt.user.client.ui.AbsolutePanel;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTML;
@@ -107,8 +108,11 @@ public class VGraphComponent extends Composite implements Paintable,
     public void onClick(ClickEvent event) {
         System.out.println("Click " + event.getNativeButton());
         if (event.isShiftKeyDown()) {
-            createNode(event.getRelativeX(canvas.getElement()),
-                    event.getRelativeY(canvas.getElement()));
+            Widget[] list = nodes.toArray(new Widget[nodes.size()]);
+            createLine(
+                    list[(int) Random.nextInt(list.length)],
+                    createNode(event.getRelativeX(canvas.getElement()),
+                            event.getRelativeY(canvas.getElement())));
             event.preventDefault();
         }
     }
@@ -144,14 +148,14 @@ public class VGraphComponent extends Composite implements Paintable,
                 getCenterX(node2), getCenterY(node2));
 
         canvas.add(line);
-        mapRelationship(linesFrom, node1, line);
-        mapRelationship(linesTo, node2, line);
+        mapRelationship(node1, line, linesFrom);
+        mapRelationship(node2, line, linesTo);
 
         return line;
     }
 
-    private void mapRelationship(Map<Widget, Set<Line>> map, Widget node,
-            Line line) {
+    private static void mapRelationship(Widget node, Line line,
+            Map<Widget, Set<Line>> map) {
         Set<Line> lines = map.get(node);
         if (lines == null) {
             lines = new HashSet<Line>();
