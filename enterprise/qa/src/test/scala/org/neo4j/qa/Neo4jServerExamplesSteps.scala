@@ -7,7 +7,7 @@ import Http._
 
 import java.io.{FileOutputStream, File}
 import org.scalatest.matchers.{MatchResult, Matcher, ShouldMatchers}
-import neo4j.qa.util.{CustomMatchers, ArchiveHelper}
+import org.neo4j.qa.util.{CustomMatchers, ArchiveHelper}
 import org.apache.commons.io.FileUtils
 import scala.collection.JavaConversions._
 import scala.util.parsing.json.JSON._

@@ -1,8 +1,6 @@
-package neo4j.qa.util
+package org.neo4j.qa.util
 
 import org.scalatest.matchers.{MatchResult, Matcher}
-
-;
 
 trait CustomMatchers {
   class FileExistsMatcher extends Matcher[java.io.File] {
