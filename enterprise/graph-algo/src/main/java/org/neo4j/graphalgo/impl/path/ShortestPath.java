@@ -491,14 +491,16 @@ public class ShortestPath implements PathFinder<Path>
             for ( PathData entry : set )
             {
                 // One path...
-                int counter = 0;
                 Node otherNode = entry.rels.getFirst().getOtherNode( entry.node );
                 LevelData otherLevelData = data.visitedNodes.get( otherNode );
+                int counter = 0;
                 for ( long rel : otherLevelData.relsToHere )
                 {
                     // ...may split into several paths
-                    LinkedList<Relationship> rels = counter++ == 0 ? entry.rels : 
-                        new LinkedList<Relationship>( entry.rels );
+                    LinkedList<Relationship> rels = ++counter == otherLevelData.relsToHere.length ?
+                            // This is a little optimization which reduces number of
+                            // lists being copied
+                            entry.rels : new LinkedList<Relationship>( entry.rels );
                     rels.addFirst( graphDb.getRelationshipById( rel ) );
                     nextSet.add( new PathData( otherNode, rels ) );
                 }
