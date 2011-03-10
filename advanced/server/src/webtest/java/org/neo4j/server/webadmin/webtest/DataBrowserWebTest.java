@@ -19,13 +19,8 @@
  */
 package org.neo4j.server.webadmin.webtest;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.server.webadmin.webtest.IsVisible.isVisible;
-
-import java.util.List;
-
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.neo4j.graphdb.Node;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
@@ -33,9 +28,16 @@ import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.RenderedWebElement;
 import org.openqa.selenium.WebElement;
 
+import java.util.List;
+
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.server.webadmin.webtest.IsVisible.isVisible;
+
 /**
  * Test that the webadmin data browser behaves as expected.
  */
+@RunWith( ThirdTimeIsTheCharmTestRunner.class )
 public class DataBrowserWebTest extends WebDriverTest {
 	
 	@Test
@@ -223,6 +225,28 @@ public class DataBrowserWebTest extends WebDriverTest {
        
         lastTooltip.waitForTextToChangeTo( "This does not appear to be a valid JSON value." );
     }
+    
+    @Test
+    public void shouldNotBeAbleToCreateDuplicatePropertyKeys() {
+
+        String propertyKey = "mykey";
+        
+        dataMenu.click();
+        addPropertyButton.click();
+        firstPropertyKeyInput.sendKeys( propertyKey, Keys.RETURN );
+        firstPropertyValueInput.sendKeys( "\"whoah\"", Keys.RETURN );
+
+        addPropertyButton.click();
+        lastPropertyKeyInput.sendKeys( propertyKey, Keys.RETURN );
+        lastPropertyValueInput.sendKeys( "\"asdasdas\"", Keys.RETURN );
+        
+        ElementReference tooltip = new ElementReference(webDriver, By.xpath( "//div[contains(.,'This key already exists, please pick a different one.')]"));
+        tooltip.waitUntilVisible();
+        
+        Node n = testHelper.getDatabase().getReferenceNode();
+        String value = (String) n.getProperty( propertyKey );
+        assertThat(value,is("whoah"));
+    }
 	
 	@Test
     public void shouldBeAbleToRemoveNode() {
@@ -389,12 +413,12 @@ public class DataBrowserWebTest extends WebDriverTest {
 	private ElementReference firstPropertyKeyInput = new ElementReference(webDriver, By.className("mor_data_key_input"));
 	private ElementReference firstPropertyValueInput = new ElementReference(webDriver, By.className("mor_data_value_input"));
 	
-	private ElementReference lastPropertyKeyInput = new ElementReference(webDriver, By.className("mor_data_key_input")){
+	private ElementReference lastPropertyKeyInput = new ElementReference(webDriver, By.className("mor_data_key_input"), true){
 	    @Override
 	    public RenderedWebElement getElement() {
 	        List<WebElement> elements = webDriver.findElements( selector );
-	        if(elements.size() > 0) {
-	            return (RenderedWebElement) elements.get( elements.size() - 1 );
+	        if(elements.size() > 1) {
+	            return (RenderedWebElement) elements.get( elements.size() - 2 );
 	        } else {
 	            throw new NoSuchElementException("Cannot find last property key");
 	        }
@@ -404,8 +428,8 @@ public class DataBrowserWebTest extends WebDriverTest {
         @Override
         public RenderedWebElement getElement() {
             List<WebElement> elements = webDriver.findElements( selector );
-            if(elements.size() > 0) {
-                return (RenderedWebElement) elements.get( elements.size() - 1 );
+            if(elements.size() > 1) {
+                return (RenderedWebElement) elements.get( elements.size() - 2 );
             } else {
                 throw new NoSuchElementException("Cannot find last property key");
             }

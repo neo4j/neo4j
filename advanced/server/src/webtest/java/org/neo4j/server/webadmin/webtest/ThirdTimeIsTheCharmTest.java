@@ -19,22 +19,47 @@
  */
 package org.neo4j.server.webadmin.webtest;
 
-import static org.junit.Assert.assertThat;
-import static org.neo4j.server.webadmin.webtest.IsVisible.isVisible;
-
 import org.junit.Ignore;
 import org.junit.Test;
-import org.openqa.selenium.By;
+import org.junit.runner.RunWith;
 
+import static org.junit.Assert.fail;
+
+@RunWith( ThirdTimeIsTheCharmTestRunner.class )
 @Ignore
-public class ImportExportWebTest extends WebDriverTest {
+public class ThirdTimeIsTheCharmTest
+{
+    private static boolean alreadyFailed = false;
 
-	@Test
-	public void shouldHaveImportExportWindow() {
-		ioMenu.getElement().click();
-		assertThat(ioUrlImportButtonWrap.getElement(), isVisible());
-	}
-	
-	private ElementReference ioUrlImportButtonWrap =  new ElementReference(webDriver, By.className("mor_io_urlImport_button_wrap"));
-	
+    @Test
+    public void failOnce()
+    {
+        if ( !alreadyFailed )
+        {
+            alreadyFailed = true;
+            fail();
+        }
+    }
+
+    private static int failTwice = 0;
+    @Test
+    public void failTwice() throws Exception
+    {
+        if ( failTwice < 2 )
+        {
+            failTwice++;
+            fail();
+        }
+    }
+
+    private static int failThrice = 0;
+    @Test
+    public void failThrice() throws Exception
+    {
+        if ( failThrice < 3 )
+        {
+            failThrice++;
+            fail();
+        }
+    }
 }
