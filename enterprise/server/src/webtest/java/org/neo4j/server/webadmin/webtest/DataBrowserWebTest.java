@@ -19,6 +19,12 @@
  */
 package org.neo4j.server.webadmin.webtest;
 
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.server.webadmin.webtest.IsVisible.isVisible;
+
+import java.util.List;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.neo4j.graphdb.Node;
@@ -27,12 +33,6 @@ import org.openqa.selenium.Keys;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.RenderedWebElement;
 import org.openqa.selenium.WebElement;
-
-import java.util.List;
-
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.server.webadmin.webtest.IsVisible.isVisible;
 
 /**
  * Test that the webadmin data browser behaves as expected.
@@ -389,6 +389,22 @@ public class DataBrowserWebTest extends WebDriverTest {
         
     }
 	
+	@Test
+    public void shouldBeAbleToRemoveRelationship() {
+        
+        String relUrl = testHelper.relationshipUri( dbHelper.createRelationship( "SOMETYPE" ) );
+        int relCount = dbHelper.getNumberOfRelationships();
+        
+        dataMenu.click();
+        getByUrlInput.sendKeys(relUrl, Keys.RETURN);
+        
+        clickYesOnAllConfirmDialogs();
+        deleteRelationshipButton.click();
+        
+        currentNodeId.waitUntilVisible();
+        assertThat(dbHelper.getNumberOfRelationships(), is(relCount - 1));
+    }
+	
 	private ElementReference nodeId = new ElementReference(webDriver, By.className("mor_data_item_id")) {
 		@Override
 		public RenderedWebElement getElement() {
@@ -407,6 +423,7 @@ public class DataBrowserWebTest extends WebDriverTest {
 	private ElementReference deleteNodeButton = new ElementReference(webDriver, By.className("mor_data_delete_node_button"));
 	private ElementReference addRelationshipButton = new ElementReference(webDriver, By.className("mor_data_add_relationship"));
 	private ElementReference saveNewRelationshipButton = new ElementReference(webDriver, By.className("mor_data_relationship_dialog_save"));
+	private ElementReference deleteRelationshipButton = new ElementReference(webDriver, By.className("mor_data_delete_relationship_button"));
 	
 	private ElementReference addPropertyButton = new ElementReference(webDriver, By.className("mor_data_add_property"));
 	private ElementReference savePropertiesButton = new ElementReference(webDriver, By.className("mor_data_save"));
