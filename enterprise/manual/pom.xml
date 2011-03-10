@@ -210,6 +210,22 @@
               <attach>true</attach>
             </configuration>
           </execution>
+          <execution>
+            <id>upgrade</id>
+            <!-- disable for now -->
+            <phase>none</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <descriptors>
+                <descriptor>src/main/assemblies/upgrade.xml</descriptor>
+              </descriptors>
+              <finalName>${project.artifactId}-${project.version}</finalName>
+              <appendAssemblyId>true</appendAssemblyId>
+              <attach>true</attach>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
       <plugin>
