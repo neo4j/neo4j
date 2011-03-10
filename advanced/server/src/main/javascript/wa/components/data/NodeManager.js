@@ -45,6 +45,8 @@ wa.components.data.NodeManager = (function($) {
 		if( confirm("Are you sure?")) {
 		    me.item().remove().then(function(data) {
 		        me.showReferenceNode();
+			}, function(error) {
+			    wa.ui.ErrorBox.showError("Error trying to remove node: " + error.message);
 			});
 		}
 	};
