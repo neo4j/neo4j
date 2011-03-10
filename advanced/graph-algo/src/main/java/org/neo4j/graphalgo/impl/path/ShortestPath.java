@@ -110,10 +110,10 @@ public class ShortestPath implements PathFinder<Path>
         MutableInteger sharedFrozenDepth = new MutableInteger( MutableInteger.NULL );
         MutableBoolean sharedStop = new MutableBoolean();
         MutableInteger sharedCurrentDepth = new MutableInteger( 0 );
-        final DirectionData startData = new DirectionData( start,
+        final DirectionData startData = new DirectionData( Direction.OUTGOING, start,
                 sharedVisitedRels, sharedFrozenDepth, sharedStop,
                 sharedCurrentDepth, stopAsap, relExpander );
-        final DirectionData endData = new DirectionData( end,
+        final DirectionData endData = new DirectionData( Direction.INCOMING, end,
                 sharedVisitedRels, sharedFrozenDepth, sharedStop,
                 sharedCurrentDepth, stopAsap, relExpander.reversed() );
         
@@ -208,6 +208,9 @@ public class ShortestPath implements PathFinder<Path>
     // Two long-lived instances
     protected class DirectionData extends PrefetchingIterator<Node>
     {
+        // For debugging, the one from the first node has OUTGOING, the other INCOMING.
+        private Direction direction;
+        
         private final Node startNode;
         private int currentDepth;
         private Iterator<Relationship> nextRelationships;
@@ -223,11 +226,12 @@ public class ShortestPath implements PathFinder<Path>
         private final boolean stopAsap;
         private final RelationshipExpander expander;
         
-        DirectionData( Node startNode, Collection<Long> sharedVisitedRels,
+        DirectionData( Direction direction, Node startNode, Collection<Long> sharedVisitedRels,
                 MutableInteger sharedFrozenDepth, MutableBoolean sharedStop,
                 MutableInteger sharedCurrentDepth, boolean stopAsap,
                 RelationshipExpander expander )
         {
+            this.direction = direction;
             this.startNode = startNode;
             this.visitedNodes.put( startNode, new LevelData( null, 0 ) );
             this.nextNodes.add( startNode );
