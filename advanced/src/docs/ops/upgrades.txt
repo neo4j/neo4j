@@ -35,5 +35,5 @@ Upgrade cannot be performed if either the number of relationship types or the co
 . make sure the database you are upgrading have been cleanly shut down and will start with the configuration parameter "allow_store_upgrade=true".
 . start the database.
 . the upgrade will happen during startup and the process is done when the database has been successfully started.
-. "allow_store_upgrade=true" configuration parameter can be removed because it will not be needed anymore.
+. "allow_store_upgrade=true" configuration parameter should be removed.
 
