@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.webadmin.webtest;
 
+<<<<<<< HEAD
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -27,10 +28,24 @@ import static org.neo4j.server.webadmin.webtest.IsVisible.isVisible;
 import java.io.IOException;
 
 import org.junit.Ignore;
+=======
+>>>>>>> 4e7109c8fe571e519680b9334e11c63eb3bb87e6
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.openqa.selenium.By;
 
+<<<<<<< HEAD
 @Ignore
+=======
+import java.io.IOException;
+
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.server.webadmin.webtest.IsVisible.isVisible;
+
+@RunWith( ThirdTimeIsTheCharmTestRunner.class )
+>>>>>>> 4e7109c8fe571e519680b9334e11c63eb3bb87e6
 public class JmxWebTest extends WebDriverTest {
  
 	@Test

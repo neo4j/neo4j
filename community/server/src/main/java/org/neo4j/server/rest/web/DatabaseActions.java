@@ -655,6 +655,34 @@ public class DatabaseActions
         }
     }
 
+    public void removeFromNodeIndexNoValue( String indexName, String key, long id )
+    {
+        Index<Node> index = graphDb.index().forNodes( indexName );
+        Transaction tx = graphDb.beginTx();
+        try
+        {
+            index.remove( graphDb.getNodeById( id ), key );
+            tx.success();
+        } finally
+        {
+            tx.finish();
+        }
+    }
+    
+    public void removeFromNodeIndexNoKeyValue( String indexName, long id )
+    {
+        Index<Node> index = graphDb.index().forNodes( indexName );
+        Transaction tx = graphDb.beginTx();
+        try
+        {
+            index.remove( graphDb.getNodeById( id ) );
+            tx.success();
+        } finally
+        {
+            tx.finish();
+        }
+    }
+    
     public void removeFromRelationshipIndex( String indexName, String key, String value, long id )
     {
         RelationshipIndex index = graphDb.index().forRelationships( indexName );
@@ -669,6 +697,34 @@ public class DatabaseActions
         }
     }
 
+    public void removeFromRelationshipIndexNoValue( String indexName, String key, long id )
+    {
+        RelationshipIndex index = graphDb.index().forRelationships( indexName );
+        Transaction tx = graphDb.beginTx();
+        try
+        {
+            index.remove( graphDb.getRelationshipById( id ), key );
+            tx.success();
+        } finally
+        {
+            tx.finish();
+        }
+    }
+    
+    public void removeFromRelationshipIndexNoKeyValue( String indexName, long id )
+    {
+        RelationshipIndex index = graphDb.index().forRelationships( indexName );
+        Transaction tx = graphDb.beginTx();
+        try
+        {
+            index.remove( graphDb.getRelationshipById( id ) );
+            tx.success();
+        } finally
+        {
+            tx.finish();
+        }
+    }
+    
     public IndexedEntityRepresentation getIndexedNode( String indexName,
                                                        String key, String value, long id )
     {
@@ -686,6 +742,7 @@ public class DatabaseActions
         Relationship node = graphDb.getRelationshipById( id );
         return new IndexedEntityRepresentation( node, key, value, new RelationshipIndexRepresentation( indexName, Collections.<String, String>emptyMap() ) );
     }
+
 
     public ListRepresentation getIndexedNodesByExactMatch( String indexName, String key,
                                                String value )
@@ -711,6 +768,29 @@ public class DatabaseActions
         }
     }
 
+    public ListRepresentation getIndexedNodesByQuery( String indexName, String key,
+                                               String query )
+    {
+        if ( !graphDb.index().existsForNodes( indexName ) )
+            throw new NotFoundException();
+        Index<Node> index = graphDb.index().forNodes( indexName );
+        List<Representation> representations = new ArrayList<Representation>();
+
+        Transaction tx = graphDb.beginTx();
+        try
+        {
+            for ( Node node : index.query( key, query ) )
+            {
+                representations.add( new NodeRepresentation( node ));
+            }
+            tx.success();
+            return new ListRepresentation( RepresentationType.NODE, representations );
+        } finally
+        {
+            tx.finish();
+        }
+    }
+
 
     public ListRepresentation getIndexedRelationships( String indexName, String key,
                                                        String value )
@@ -727,6 +807,29 @@ public class DatabaseActions
             for ( Relationship node : index.get( key, value ) )
             {
                 representations.add( new IndexedEntityRepresentation( node, key, value, indexRepresentation ) );
+            }
+            tx.success();
+            return new ListRepresentation( RepresentationType.RELATIONSHIP, representations );
+        } finally
+        {
+            tx.finish();
+        }
+    }
+
+    public ListRepresentation getIndexedRelationshipsByQuery( String indexName, String key,
+                                                       String query )
+    {
+        if ( !graphDb.index().existsForRelationships( indexName ) )
+            throw new NotFoundException();
+        List<Representation> representations = new ArrayList<Representation>();
+        Index<Relationship> index = graphDb.index().forRelationships( indexName );
+
+        Transaction tx = graphDb.beginTx();
+        try
+        {
+            for ( Relationship rel : index.query( key, query ) )
+            {
+                representations.add( new RelationshipRepresentation( rel ));
             }
             tx.success();
             return new ListRepresentation( RepresentationType.RELATIONSHIP, representations );

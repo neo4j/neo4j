@@ -15,4 +15,8 @@ build
 server/src/main/resources/webadmin-html/webadmin.js
 server/neo4j-home/data
 /bin
+<<<<<<< HEAD
 .gradle
+=======
+server/rrd
+>>>>>>> 4e7109c8fe571e519680b9334e11c63eb3bb87e6

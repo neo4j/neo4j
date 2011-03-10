@@ -30,11 +30,20 @@ import java.io.IOException;
 
 import org.junit.Ignore;
 import org.junit.Test;
+<<<<<<< HEAD
 import org.neo4j.management.Kernel;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.openqa.selenium.By;
 
 @Ignore
+=======
+import org.junit.runner.RunWith;
+import org.neo4j.server.rest.domain.GraphDbHelper;
+import org.openqa.selenium.By;
+
+
+@RunWith( ThirdTimeIsTheCharmTestRunner.class )
+>>>>>>> 4e7109c8fe571e519680b9334e11c63eb3bb87e6
 public class DashboardWebTest extends WebDriverTest {
 
 	@Test

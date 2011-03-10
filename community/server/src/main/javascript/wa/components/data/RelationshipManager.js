@@ -26,7 +26,7 @@ wa.components.data.RelationshipManager = (function($) {
 	var me = {};
 	
 	me.dataCore = wa.components.data.DataBrowser;
-	
+    me.showReferenceNode = wa.components.data.DataBrowser.showReferenceNode;
 	me.web = new neo4j.Web();
 	
 	//
@@ -86,10 +86,12 @@ wa.components.data.RelationshipManager = (function($) {
 	me.deleteItem = function(ev) {
 		ev.preventDefault();
 		if( confirm("Are you sure?")) {
-		    me.web.del(me.dataCore.getItem().self, function(data) {
+		    me.dataCore.getItem().remove().then(function(data) {
 				// Go to root node
-				$.bbq.pushState({ dataurl: "node/0" });
-			});
+		        me.showReferenceNode();
+			}, function(error) {
+                wa.ui.ErrorBox.showError("Error trying to remove relationship: " + error.message);
+            });
 		}
 	};
 	

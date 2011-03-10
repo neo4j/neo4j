@@ -224,7 +224,6 @@
       <classifier>download</classifier>
       <type>tar.gz</type>
     </dependency>
-    <!-- Not ready for release. -->
     <dependency>
       <groupId>org.neo4j.examples</groupId>
       <artifactId>neo4j-server-examples</artifactId>
