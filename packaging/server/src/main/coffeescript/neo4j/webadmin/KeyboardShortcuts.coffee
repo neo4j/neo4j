@@ -18,34 +18,27 @@ You should have received a copy of the GNU Affero General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 ###
 
-define(
-  ["./UrlSearcher", 
-   "./NodeSearcher", 
-   "./RelationshipSearcher"], 
-  (UrlSearcher, NodeSearcher, RelationshipSearcher) ->
+define( 
+  ['order!lib/jquery', 'order!lib/jquery.hotkeys'], 
+  () ->
+    
+    class KeyboardShortcuts
 
-    class Search
+      shortcuts : 
+        "s" : "search"
 
-      constructor : (@server) ->
+      constructor : (dashboardController, databrowserController, consoleController, serverInfoController) ->
+        @databrowserController = databrowserController
+
+      init : () =>
+        for definition, method of @shortcuts
+          $(document).bind("keyup", definition, this[method])
+
+      search : (ev) =>
+        @databrowserController.base()
         
-        @searchers = [
-          new UrlSearcher(server),
-          new NodeSearcher(server),
-          new RelationshipSearcher(server)
-        ]
-      
-
-      exec : (statement) =>
-        searcher = @pickSearcher statement
-        if searcher? 
-          searcher.exec statement
-        else
-          return neo4j.Promise.fulfilled(null)
-
-      pickSearcher : (statement) =>
-        
-        for searcher in @searchers
-          if searcher.match statement
-            return searcher
+        setTimeout( () -> 
+          $("#data-console").val("")
+          $("#data-console").focus()
+        1)
 )
-
