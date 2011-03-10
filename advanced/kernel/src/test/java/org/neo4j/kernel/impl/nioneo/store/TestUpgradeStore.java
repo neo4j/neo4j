@@ -164,6 +164,57 @@ public class TestUpgradeStore
         assertFalse( new File( path, "nioneo_logical.log.v2" ).exists() );
     }
     
+    @Test
+    public void makeSureStoreCantBeUpgradedIfNotExplicitlyToldTo() throws Exception
+    {
+        String path = path( 11 );
+        new EmbeddedGraphDatabase( path ).shutdown();
+        setOlderNeoStoreVersion( path );
+        
+        try
+        {
+            new EmbeddedGraphDatabase( path );
+            fail( "Shouldn't be able to upgrade if not told to" );
+        }
+        catch ( TransactionFailureException e )
+        {
+            if ( !( e.getCause() instanceof IllegalStoreVersionException ) )
+            {
+                throw e;
+            }
+        }
+    }
+    
+    @Test
+    public void makeSureStoreCantBeUpgradedIfNotExplicitlyToldTo2() throws Exception
+    {
+        String path = path( 12 );
+        new EmbeddedGraphDatabase( path ).shutdown();
+        setOlderNeoStoreVersion( path );
+        
+        try
+        {
+            new EmbeddedGraphDatabase( path, stringMap( ALLOW_STORE_UPGRADE, "false" ) );
+            fail( "Shouldn't be able to upgrade if not told to" );
+        }
+        catch ( TransactionFailureException e )
+        {
+            if ( !( e.getCause() instanceof IllegalStoreVersionException ) )
+            {
+                throw e;
+            }
+        }
+    }
+    
+    @Test
+    public void makeSureStoreCanBeUpgradedIfExplicitlyToldTo() throws Exception
+    {
+        String path = path( 13 );
+        new EmbeddedGraphDatabase( path ).shutdown();
+        setOlderNeoStoreVersion( path );
+        new EmbeddedGraphDatabase( path, stringMap( ALLOW_STORE_UPGRADE, "true" ) ).shutdown();
+    }
+    
     private void assertCannotStart( String path, String failMessage )
     {
         GraphDatabaseService db = null;
