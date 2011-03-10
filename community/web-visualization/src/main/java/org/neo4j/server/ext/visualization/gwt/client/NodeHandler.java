@@ -1,7 +1,5 @@
 package org.neo4j.server.ext.visualization.gwt.client;
 
-import com.google.gwt.dom.client.Style;
-import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.event.dom.client.MouseDownEvent;
 import com.google.gwt.event.dom.client.MouseDownHandler;
 import com.google.gwt.event.dom.client.MouseMoveEvent;
@@ -21,7 +19,7 @@ public class NodeHandler implements MouseDownHandler, MouseUpHandler,
     private VGraphComponent parent;
     private Widget node;
 
-    public NodeHandler(Widget node, VGraphComponent parent) {
+    NodeHandler(Widget node, VGraphComponent parent) {
         this.node = node;
         this.parent = parent;
         node.addDomHandler(this, MouseDownEvent.getType());
