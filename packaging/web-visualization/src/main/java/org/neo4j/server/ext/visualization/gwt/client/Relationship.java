@@ -5,25 +5,22 @@ import org.vaadin.gwtgraphics.client.Line;
 import com.google.gwt.dom.client.Style;
 import com.google.gwt.dom.client.Style.Position;
 import com.google.gwt.dom.client.Style.Unit;
-import com.google.gwt.user.client.Element;
 import com.google.gwt.user.client.ui.HTML;
-import com.google.gwt.user.client.ui.UIObject;
-import com.google.gwt.user.client.ui.Widget;
 
-public class Relationship {
+class Relationship {
 
     private static final int ARROWHEAD_LENGTH = 10;
     private static final int ARROWHEAD_WIDTH = ARROWHEAD_LENGTH / 2;
     private Line edge;
     private HTML label;
-    private Widget from;
-    private Widget to;
+    private Node from;
+    private Node to;
     private Line arrowheadLeft;
     private Line arrowheadRight;
 
-    Relationship(VGraphComponent parent, Widget from, Widget to, String type) {
-        this.from = from;
-        this.to = to;
+    Relationship(VGraphComponent parent, Node node1, Node node2, String type) {
+        this.from = node1;
+        this.to = node2;
         addEdge(parent);
         addArrowhead(parent);
         addLabel(parent, type);
@@ -38,10 +35,9 @@ public class Relationship {
     }
 
     private void addEdge(VGraphComponent parent) {
-        edge = new Line((int) Math.round(getCenterX(from)),
-                (int) Math.round(getCenterY(from)),
-                (int) Math.round(getCenterX(to)),
-                (int) Math.round(getCenterY(to)));
+        edge = new Line((int) Math.round(from.getCenterX()),
+                (int) Math.round(from.getCenterY()), (int) Math.round(to
+                        .getCenterX()), (int) Math.round(to.getCenterY()));
         parent.add(edge);
     }
 
@@ -52,7 +48,7 @@ public class Relationship {
         Style style = label.getElement().getStyle();
         style.setPosition(Position.ABSOLUTE);
         style.setBackgroundColor("white");
-        style.setFontSize(9, Unit.PX);
+        style.setFontSize(10, Unit.PX);
         updateLabel();
     }
 
@@ -63,10 +59,13 @@ public class Relationship {
     }
 
     private void updateArrowhead() {
-        double originX = getArrowheadOrigin(getCenterX(from), getCenterX(to));
-        double originY = getArrowheadOrigin(getCenterY(from), getCenterY(to));
-        double angle = Math.atan2(getCenterY(to) - getCenterY(from),
-                getCenterX(to) - getCenterX(from));
+        double fromX = from.getCenterX();
+        double fromY = from.getCenterY();
+        double toX = to.getCenterX();
+        double toY = to.getCenterY();
+        double originX = getArrowheadOrigin(fromX, toX);
+        double originY = getArrowheadOrigin(fromY, toY);
+        double angle = Math.atan2(toY - fromY, toX - fromX);
 
         double leftX = originX
                 + rotateX(-ARROWHEAD_LENGTH, -ARROWHEAD_WIDTH, angle);
@@ -82,17 +81,17 @@ public class Relationship {
     }
 
     private void updateEdge() {
-        updateLine(edge, getCenterX(from), getCenterY(from), getCenterX(to),
-                getCenterY(to));
+        updateLine(edge, from.getCenterX(), from.getCenterY(), to.getCenterX(),
+                to.getCenterY());
     }
 
     private Style updateLabel() {
         Style style = label.getElement().getStyle();
 
-        double x = getLabelCenter(getCenterX(from), getCenterX(to))
+        double x = getLabelCenter(from.getCenterX(), to.getCenterX())
                 - label.getOffsetWidth() / 2;
         style.setLeft(x, Unit.PX);
-        double y = getLabelCenter(getCenterY(from), getCenterY(to))
+        double y = getLabelCenter(from.getCenterY(), to.getCenterY())
                 - label.getOffsetHeight() / 2;
         style.setTop(y, Unit.PX);
         return style;
@@ -113,22 +112,6 @@ public class Relationship {
 
     private static double getArrowheadOrigin(double nearest, double farthest) {
         return .1 * nearest + .9 * farthest;
-    }
-
-    private static double getCenterX(Element element) {
-        return element.getOffsetLeft() + element.getOffsetWidth() / 2.0;
-    }
-
-    private static double getCenterX(UIObject node) {
-        return getCenterX(node.getElement());
-    }
-
-    private static double getCenterY(Element element) {
-        return element.getOffsetTop() + element.getOffsetHeight() / 2.0;
-    }
-
-    private static double getCenterY(UIObject node) {
-        return getCenterY(node.getElement());
     }
 
     private static double getLabelCenter(double nearest, double farthest) {
