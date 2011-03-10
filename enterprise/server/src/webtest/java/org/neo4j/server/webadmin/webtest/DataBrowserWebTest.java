@@ -27,6 +27,7 @@ import java.util.List;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.neo4j.graphdb.Node;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
@@ -37,7 +38,11 @@ import org.openqa.selenium.WebElement;
 /**
  * Test that the webadmin data browser behaves as expected.
  */
+<<<<<<< HEAD
 @Ignore
+=======
+@RunWith( ThirdTimeIsTheCharmTestRunner.class )
+>>>>>>> 4e7109c8fe571e519680b9334e11c63eb3bb87e6
 public class DataBrowserWebTest extends WebDriverTest {
 	
 	@Test
@@ -389,6 +394,22 @@ public class DataBrowserWebTest extends WebDriverTest {
         
     }
 	
+	@Test
+    public void shouldBeAbleToRemoveRelationship() {
+        
+        String relUrl = testHelper.relationshipUri( dbHelper.createRelationship( "SOMETYPE" ) );
+        int relCount = dbHelper.getNumberOfRelationships();
+        
+        dataMenu.click();
+        getByUrlInput.sendKeys(relUrl, Keys.RETURN);
+        
+        clickYesOnAllConfirmDialogs();
+        deleteRelationshipButton.click();
+        
+        currentNodeId.waitUntilVisible();
+        assertThat(dbHelper.getNumberOfRelationships(), is(relCount - 1));
+    }
+	
 	private ElementReference nodeId = new ElementReference(webDriver, By.className("mor_data_item_id")) {
 		@Override
 		public RenderedWebElement getElement() {
@@ -407,6 +428,7 @@ public class DataBrowserWebTest extends WebDriverTest {
 	private ElementReference deleteNodeButton = new ElementReference(webDriver, By.className("mor_data_delete_node_button"));
 	private ElementReference addRelationshipButton = new ElementReference(webDriver, By.className("mor_data_add_relationship"));
 	private ElementReference saveNewRelationshipButton = new ElementReference(webDriver, By.className("mor_data_relationship_dialog_save"));
+	private ElementReference deleteRelationshipButton = new ElementReference(webDriver, By.className("mor_data_delete_relationship_button"));
 	
 	private ElementReference addPropertyButton = new ElementReference(webDriver, By.className("mor_data_add_property"));
 	private ElementReference savePropertiesButton = new ElementReference(webDriver, By.className("mor_data_save"));

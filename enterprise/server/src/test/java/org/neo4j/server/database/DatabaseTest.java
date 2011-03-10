@@ -19,27 +19,25 @@
  */
 package org.neo4j.server.database;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
+
+import java.io.File;
+import java.io.IOException;
+
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.logging.InMemoryAppender;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.Socket;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 public class DatabaseTest {
 
     private File databaseDirectory;
     private Database theDatabase;
+    private boolean deletionFailureOk;
 
     @Before
     public void setup() throws Exception {
@@ -51,7 +49,20 @@ public class DatabaseTest {
     public void shutdownDatabase() throws IOException
     {
         this.theDatabase.shutdown();
-        FileUtils.forceDelete( databaseDirectory );
+        
+        try
+        {
+            FileUtils.forceDelete( databaseDirectory );
+        }
+        catch ( IOException e )
+        {
+            // TODO Removed this when EmbeddedGraphDatabase startup failures closes its
+            // files properly.
+            if ( !deletionFailureOk )
+            {
+                throw e;
+            }
+        }
     }
 
     @Test
@@ -62,7 +73,6 @@ public class DatabaseTest {
 
         assertThat(appender.toString(), containsString("Successfully started database"));
     }
-
 
     @Test
     public void shouldShutdownCleanly() {
@@ -76,16 +86,7 @@ public class DatabaseTest {
 
     @Test(expected = TransactionFailureException.class)
     public void shouldComplainIfDatabaseLocationIsAlreadyInUse() {
+        deletionFailureOk = true;
         new Database( DatabaseMode.STANDALONE, theDatabase.getLocation() );
-    }
-
-    @Test
-    @Ignore
-    public void shouldEnableRemoteShellByDefault() throws IOException
-    {
-        int wellKnownSocket = 1337;
-        Socket rmiSocketToServer = new Socket("localhost", wellKnownSocket );
-        assertTrue(rmiSocketToServer.isBound());
-        rmiSocketToServer.close();
     }
 }

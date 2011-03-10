@@ -607,14 +607,58 @@ curl -X DELETE http://localhost:7474/db/data/index/node/my_nodes/the_key/the_val
 
 *** 404: Index entry not found
 
-* {Query index}
+* {Remove from index without supplying value}
 
+** DELETE /index/node/my_nodes/the_key/123
+
+	Will remove all indexing for node 123 and the specified key irregardless of value.
+    Similarly for relationship indexes.
+    
+** Example using curl
+
+---
+curl -X DELETE http://localhost:7474/db/data/index/node/my_nodes/the_key/123
+---
+
+** Response
+
+*** 204: OK, no content returned
+
+* {Remove from index with supplying neither key nor value}
+
+** DELETE /index/node/my_nodes/123
+
+	Will remove all indexing for node 123 irregardless of key and value.
+    Similarly for relationship indexes.
+    
+** Example using curl
+
+---
+curl -X DELETE http://localhost:7474/db/data/index/node/my_nodes/123
+---
+
+** Response
+
+*** 204: OK, no content returned
+
+* {Query index -- Exact}
+
+    There are two ways to query an index - using the get method, or
+    the more advanced query method. Use the first for exact matches,
+    and the second for advanced index querying. 
+    
+    This is the simple, exact matching get operation.
+ 
 ** GET /index/node/my_nodes/the_key/the_value
+
+** GET /index/relationship/my_rels/the_key/the_value
+
 
 ** Example using curl
 
 ---
 curl -H Accept:application/json http://localhost:7474/db/data/index/node/my_nodes/the_key/the_value%20with%20space
+curl -H Accept:application/json http://localhost:7474/db/data/index/relationship/my_rels/the_key/the_value%20with%20space
 ---
 
 ** Response
@@ -634,12 +678,32 @@ curl -H Accept:application/json http://localhost:7474/db/data/index/node/my_node
     "indexed": "http://localhost:7474/db/data/index/node/the_key/the_value%20with%20space/325"
   }
 ]
+
 ---
 
-    With node/relationship representations with an additional index
-    URI used when removing it from the index.
+    The response is an ordered list of node or relationship
+    representations, with one new property added: indexed. This
+    property can be used to remove the indexed entity at a later point. 
 
-    Similarly for relationship indexes.
+* {Query index -- Advanced}
+	
+	This is the advanced query operation for an index.
+ 
+
+** GET /index/node/my_nodes/the_key?query=the_value
+
+** GET /index/relationship/my_rels/the_key?query=the_value
+
+
+** Example using curl
+
+---
+curl -H Accept:application/json http://localhost:7474/db/data/index/node/my_nodes/the_key?query=the_value%20with%20space
+curl -H Accept:application/json http://localhost:7474/db/data/index/relationship/my_rels/the_key?query=the_value%20with%20space
+---
+
+    The response is an ordered list of node/relationship
+    representations.
 
 * {Traverse}
 

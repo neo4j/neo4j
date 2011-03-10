@@ -39,6 +39,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
@@ -291,6 +292,40 @@ public class IndexNodeFunctionalTest
         assertEquals( Status.NOT_FOUND.getStatusCode(), response.getStatus() );
     }
 
+    @Test
+    public void shouldBeAbleToRemoveIndexing() throws DatabaseBlockedException, JsonParseException
+    {
+        String key1 = "kvkey1";
+        String key2 = "kvkey2";
+        String value1 = "value1";
+        String value2 = "value2";
+        String indexName = "kvnode";
+        long node = helper.createNode( MapUtil.map( key1, value1, key1, value2, key2, value1, key2, value2 ) );
+        helper.addNodeToIndex( indexName, key1, value1, node );
+        helper.addNodeToIndex( indexName, key1, value2, node );
+        helper.addNodeToIndex( indexName, key2, value1, node );
+        helper.addNodeToIndex( indexName, key2, value2, node );
+        assertEquals( 1, helper.getIndexedNodes( indexName, key1, value1 ).size() );
+        assertEquals( 1, helper.getIndexedNodes( indexName, key1, value2 ).size() );
+        assertEquals( 1, helper.getIndexedNodes( indexName, key2, value1 ).size() );
+        assertEquals( 1, helper.getIndexedNodes( indexName, key2, value2 ).size() );
+        Client.create().resource( functionalTestHelper.nodeIndexUri() + indexName + "/" + key1 + "/" + value1 + "/" + node ).delete( ClientResponse.class );
+        assertEquals( 0, helper.getIndexedNodes( indexName, key1, value1 ).size() );
+        assertEquals( 1, helper.getIndexedNodes( indexName, key1, value2 ).size() );
+        assertEquals( 1, helper.getIndexedNodes( indexName, key2, value1 ).size() );
+        assertEquals( 1, helper.getIndexedNodes( indexName, key2, value2 ).size() );
+        Client.create().resource( functionalTestHelper.nodeIndexUri() + indexName + "/" + key2 + "/" + node ).delete( ClientResponse.class );
+        assertEquals( 0, helper.getIndexedNodes( indexName, key1, value1 ).size() );
+        assertEquals( 1, helper.getIndexedNodes( indexName, key1, value2 ).size() );
+        assertEquals( 0, helper.getIndexedNodes( indexName, key2, value1 ).size() );
+        assertEquals( 0, helper.getIndexedNodes( indexName, key2, value2 ).size() );
+        Client.create().resource( functionalTestHelper.nodeIndexUri() + indexName + "/" + node ).delete( ClientResponse.class );
+        assertEquals( 0, helper.getIndexedNodes( indexName, key1, value1 ).size() );
+        assertEquals( 0, helper.getIndexedNodes( indexName, key1, value2 ).size() );
+        assertEquals( 0, helper.getIndexedNodes( indexName, key2, value1 ).size() );
+        assertEquals( 0, helper.getIndexedNodes( indexName, key2, value2 ).size() );
+    }
+    
     @Test
     public void shouldBeAbleToIndexValuesContainingSpaces() throws Exception
     {

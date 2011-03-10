@@ -3,9 +3,12 @@ ${server.fullname} Configuration
 
 ${server.fullname} configuration files.
 
-* ${server.shortname}-wrapper.conf      -- environment and launch settings
-* ${server.shortname}-server.properties -- runtime operational settings
-* log4j.properties -- logging configuration
+* neo4j-server.properties -- runtime operational settings
+* neo4j.properties        -- database configuration
+* coord.cfg               -- coordinator settings
+* neo4j-wrapper.conf      -- environment and launch settings for Neo4j Server
+* coord-wrapper.conf      -- environment and launch settings for Neo4j Coordinator
+* log4j.properties         -- logging configuration
 
 References
 ----------
