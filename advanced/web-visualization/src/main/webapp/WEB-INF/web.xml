@@ -3,7 +3,7 @@
          xmlns:web="http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
          xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
          id="WebApp_ID" version="2.5">
-  <display-name>Vaadin Widget Test Application</display-name>
+  <display-name>Graph Explorer Application</display-name>
   <context-param>
     <description>Vaadin production mode</description>
     <param-name>productionMode</param-name>

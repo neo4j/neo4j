@@ -19,7 +19,7 @@ public class WidgetTestApplication extends Application {
 
     @Override
     public void init() {
-        window = new Window("Widget Test");
+        window = new Window("Graph Explorer");
         setMainWindow(window);
         window.addComponent(new GraphComponent(graphDb));
         window.getContent().setSizeFull();
