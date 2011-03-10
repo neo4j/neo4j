@@ -25,30 +25,29 @@
     child.__super__ = parent.prototype;
     return child;
   };
-  define(['neo4j/webadmin/templates/dashboard', './DashboardInfoView', 'lib/backbone'], function(template, DashboardInfoView) {
-    var DashboardView;
-    return DashboardView = (function() {
-      function DashboardView() {
-        this.render = __bind(this.render, this);;
-        this.initialize = __bind(this.initialize, this);;        DashboardView.__super__.constructor.apply(this, arguments);
+  define([], function() {
+    var Queue;
+    return Queue = (function() {
+      __extends(Queue, Backbone.Model);
+      function Queue() {
+        this.hasMoreItems = __bind(this.hasMoreItems, this);;
+        this.push = __bind(this.push, this);;
+        this.pull = __bind(this.pull, this);;        this.queue = [];
       }
-      __extends(DashboardView, Backbone.View);
-      DashboardView.prototype.template = template;
-      DashboardView.prototype.initialize = function(opts) {
-        this.appState = opts.state;
-        return this.infoView = new DashboardInfoView(opts);
+      Queue.prototype.pull = function() {
+        var item;
+        item = this.queue.shift();
+        this.trigger("item:pulled", this, item);
+        return item;
       };
-      DashboardView.prototype.render = function() {
-        $(this.el).html(this.template({
-          server: {
-            url: "someurl",
-            version: "someversion"
-          }
-        }));
-        $("#dashboard-info", this.el).append(this.infoView.render().el);
-        return this;
+      Queue.prototype.push = function(item) {
+        this.queue.push(item);
+        return this.trigger("item:pushed", this, item);
       };
-      return DashboardView;
+      Queue.prototype.hasMoreItems = function() {
+        return this.queue.length > 0;
+      };
+      return Queue;
     })();
   });
 }).call(this);
