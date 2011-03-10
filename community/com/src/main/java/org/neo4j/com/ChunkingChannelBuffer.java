@@ -738,7 +738,7 @@ public class ChunkingChannelBuffer implements ChannelBuffer
 
     public int compareTo( ChannelBuffer buffer )
     {
-        return buffer.compareTo( buffer );
+        return this.buffer.compareTo( buffer );
     }
 
     public String toString()
