@@ -297,7 +297,7 @@ public abstract class StandardExpander implements Expander
         @Override
         public StandardExpander reversed()
         {
-            return this;
+            return new AllExpander( direction.reverse() );
         }
     }
 

@@ -19,9 +19,18 @@
  */
 package org.neo4j.graphalgo.path;
 
+import static common.SimpleGraphBuilder.KEY_ID;
+import static org.junit.Assert.fail;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.junit.Test;
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
+import org.neo4j.graphalgo.impl.path.ShortestPath;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -236,5 +245,41 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         assertPaths( finderLimitOne.findAllPaths( graph.getNode( "a" ), graph.getNode( "d" ) ) );
         assertPaths( finderLimitTwo.findAllPaths( graph.getNode( "a" ), graph.getNode( "d" ) ) );
         assertPaths( finderLimitTwo.findAllPaths( graph.getNode( "a" ), graph.getNode( "e" ) ) );
+    }
+    
+    @Test
+    public void makeSureDescentStopsWhenPathIsFound() throws Exception
+    {
+        /*
+         * (a)==>(b)==>(c)==>(d)==>(e)
+         *   \
+         *    v
+         *    (f)-->(g)-->(h)-->(i)
+         */
+        
+        graph.makeEdgeChain( "a,b,c,d,e" );
+        graph.makeEdgeChain( "a,b,c,d,e" );
+        graph.makeEdgeChain( "a,f,g,h,i" );
+        Node a = graph.getNode( "a" );
+        Node b = graph.getNode( "b" );
+        Node c = graph.getNode( "c" );
+        final Set<Node> allowedNodes = new HashSet<Node>( Arrays.asList( a, b, c ) );
+        
+        PathFinder<Path> finder = new ShortestPath( 100, Traversal.expanderForAllTypes( Direction.OUTGOING ) )
+        {
+            @Override
+            protected Collection<Node> filterNextLevelNodes( Collection<Node> nextNodes )
+            {
+                for ( Node node : nextNodes )
+                {
+                    if ( !allowedNodes.contains( node ) )
+                    {
+                        fail( "Node " + node.getProperty( KEY_ID ) + " shouldn't be expanded" );
+                    }
+                }
+                return nextNodes;
+            }
+        };
+        finder.findAllPaths( a, c );
     }
 }
