@@ -60,6 +60,16 @@
       </includes>
       <filtered>true</filtered>
     </fileSet>
+    <!-- upgrade text file -->
+    <fileSet>
+      <directory>../manual/target/upgrade</directory>
+      <outputDirectory>/</outputDirectory>
+      <fileMode>0644</fileMode>
+      <lineEnding>dos</lineEnding>
+      <includes>
+        <include>UPGRADE.txt</include>
+      </includes>
+    </fileSet>
   </fileSets>
 
   <dependencySets>
@@ -113,7 +123,7 @@
         <include>org.neo4j.examples:neo4j-examples</include>
       </includes>
     </dependencySet>
-    <!-- Not ready for release. -->
+    <!-- server examples. -->
     <dependencySet>
       <outputDirectory>examples/java/server</outputDirectory>
       <unpack>true</unpack>
