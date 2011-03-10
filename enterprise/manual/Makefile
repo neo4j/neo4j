@@ -245,6 +245,7 @@ upgrade:
 	#
 	#
 	mkdir -p $(UPGRADE)
-	a2x -k -f text -D $(UPGRADE) $(IMPORTDIR)/neo4j-docs-jar/ops/upgrades.txt
+	#a2x -k -f text -D $(UPGRADE) $(IMPORTDIR)/neo4j-docs-jar/ops/upgrades.txt
+	a2x -k -f text -D $(UPGRADE) $(SRCDIR)/installation-deployment/upgrades.txt
 	mv $(UPGRADE)/upgrades.text $(UPGRADE)/UPGRADE.txt
 
