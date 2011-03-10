@@ -18,34 +18,33 @@ You should have received a copy of the GNU Affero General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 ###
 
-define(
-  ["./UrlSearcher", 
-   "./NodeSearcher", 
-   "./RelationshipSearcher"], 
-  (UrlSearcher, NodeSearcher, RelationshipSearcher) ->
+define ['neo4j/webadmin/security/HtmlEscaper','lib/backbone'], (HtmlEscaper) ->
+  
+  htmlEscaper = new HtmlEscaper
 
-    class Search
+  class Property extends Backbone.Model
+    
+    defaults :
+      key : ""
+      value : ""
+      isDuplicate : false
+      valueError : false
 
-      constructor : (@server) ->
-        
-        @searchers = [
-          new UrlSearcher(server),
-          new NodeSearcher(server),
-          new RelationshipSearcher(server)
-        ]
-      
+    getLocalId : =>
+      @get "localId"
 
-      exec : (statement) =>
-        searcher = @pickSearcher statement
-        if searcher? 
-          searcher.exec statement
-        else
-          return neo4j.Promise.fulfilled(null)
+    getKey : () =>
+      @get "key"
 
-      pickSearcher : (statement) =>
-        
-        for searcher in @searchers
-          if searcher.match statement
-            return searcher
-)
+    getValue : () =>
+      @get "value"
 
+    getValueError : =>
+      @get "valueError"
+
+    isDuplicate : =>
+      @get "isDuplicate"
+
+    getValueAsHtml : () =>
+      htmlEscaper.escape JSON.stringify(@getValue())
+    

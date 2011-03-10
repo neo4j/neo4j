@@ -1,22 +1,3 @@
-/*
- * Copyright (c) 2002-2011 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
 (function() {
   /*
   Copyright (c) 2002-2011 "Neo Technology,"
@@ -49,6 +30,7 @@
     return PropertyContainerView = (function() {
       function PropertyContainerView() {
         this.getPropertyField = __bind(this.getPropertyField, this);;
+        this.shouldBeConvertedToString = __bind(this.shouldBeConvertedToString, this);;
         this.renderProperties = __bind(this.renderProperties, this);;
         this.render = __bind(this.render, this);;
         this.setDataModel = __bind(this.setDataModel, this);;
@@ -101,15 +83,20 @@
         return this.propertyContainer.save();
       };
       PropertyContainerView.prototype.valueChangeDone = function(ev) {
-        var id;
+        var el, id;
         id = this.getPropertyIdForElement(ev.target);
-        this.propertyContainer.setValue(id, $(ev.target).val());
+        el = $(ev.target);
+        if (this.shouldBeConvertedToString(el.val())) {
+          el.val("'" + (el.val()) + "'");
+        }
+        this.propertyContainer.setValue(id, el.val());
         return this.propertyContainer.save();
       };
       PropertyContainerView.prototype.deleteProperty = function(ev) {
         var id;
         id = this.getPropertyIdForElement(ev.target);
-        return this.propertyContainer.deleteProperty(id);
+        this.propertyContainer.deleteProperty(id);
+        return this.propertyContainer.save();
       };
       PropertyContainerView.prototype.addProperty = function(ev) {
         return this.propertyContainer.addProperty();
@@ -158,7 +145,7 @@
         }
       };
       PropertyContainerView.prototype.getPropertyIdForElement = function(element) {
-        return $(element).closest("li").find("input.property-id").val();
+        return $(element).closest("ul").find("input.property-id").val();
       };
       PropertyContainerView.prototype.setDataModel = function(dataModel) {
         this.dataModel = dataModel;
@@ -179,6 +166,14 @@
           this.getPropertyField(this.focusedField.id, this.focusedField.type);
         }
         return this;
+      };
+      PropertyContainerView.prototype.shouldBeConvertedToString = function(val) {
+        try {
+          JSON.parse(val);
+          return false;
+        } catch (e) {
+          return /^[a-z0-9-_\/\\\(\)#%\&!$]+$/i.test(val);
+        }
       };
       PropertyContainerView.prototype.getPropertyField = function(id, type) {};
       return PropertyContainerView;

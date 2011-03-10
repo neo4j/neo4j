@@ -19,9 +19,8 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['neo4j/webadmin/security/HtmlEscaper',
-   'lib/backbone'], 
-  (HtmlEscaper) ->
+  ['lib/backbone'], 
+  () ->
   
     class DataBrowserState extends Backbone.Model
       
@@ -33,17 +32,16 @@ define(
 
       initialize : (options) =>
         @server = options.server
-        @escaper = new HtmlEscaper
 
       getEscapedQuery : =>
-        @escaper.escape(@get "query")
+        encodeURIComponent(@get "query")
 
       setQuery : (val, isForCurrentData=false, opts={}) =>
         @set {"queryOutOfSyncWithData": not isForCurrentData }, opts
         @set {"query" : val }, opts
 
       setData : (result, basedOnCurrentQuery=true, opts={}) =>
-        @set({"data":result, "queryOutOfSyncWithData":basedOnCurrentQuery }, {silent:true})
+        @set({"data":result, "queryOutOfSyncWithData" : not basedOnCurrentQuery }, {silent:true})
 
         if result instanceof neo4j.models.Node
           @set({type:"node"}, opts)

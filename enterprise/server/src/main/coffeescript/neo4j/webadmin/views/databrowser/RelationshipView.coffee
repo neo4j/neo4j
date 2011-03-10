@@ -19,7 +19,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['neo4j/webadmin/templates/data/relationship',
+  ['neo4j/webadmin/templates/databrowser/relationship',
    './PropertyContainerView','lib/backbone'], 
   (template, PropertyContainerView) ->
   

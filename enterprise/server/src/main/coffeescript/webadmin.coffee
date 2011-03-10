@@ -17,6 +17,15 @@ GNU Affero General Public License for more details.
 You should have received a copy of the GNU Affero General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 ###
+
+window.log = () ->
+  if $("#messages").length is 0
+    $("body").append("<ul id='messages'></ul>")
+  
+  for item in arguments
+   $("#messages").append("<li>#{item}")
+
+
 require(
   ["neo4j/webadmin/DashboardController"
    "neo4j/webadmin/DataBrowserController"
@@ -25,21 +34,25 @@ require(
    "neo4j/webadmin/models/ApplicationState"
    "neo4j/webadmin/views/BaseView"
    "neo4j/webadmin/ui/FoldoutWatcher"
+   "neo4j/webadmin/KeyboardShortcuts"
    "lib/neo4js", "lib/jquery", "lib/underscore", "lib/backbone"]
-  (DashboardController, DataBrowserController, ConsoleController, ServerInfoController, ApplicationState, BaseView, FoldoutWatcher) ->
+  (DashboardController, DataBrowserController, ConsoleController, ServerInfoController, ApplicationState, BaseView, FoldoutWatcher, KeyboardShortcuts) ->
     
     appState = new ApplicationState
     appState.set server : new neo4j.GraphDatabase(location.protocol + "//" + location.host)
 
     new BaseView(el:$("body"),appState:appState)
 
-    new DashboardController appState
-    new DataBrowserController appState
-    new ConsoleController appState
-    new ServerInfoController appState
+    dashboardController   = new DashboardController appState
+    databrowserController = new DataBrowserController appState
+    consoleController     = new ConsoleController appState
+    serverInfoController  = new ServerInfoController appState
 
     foldoutWatcher = new FoldoutWatcher
     foldoutWatcher.init()
+
+    shortcuts = new KeyboardShortcuts(dashboardController, databrowserController, consoleController, serverInfoController)
+    shortcuts.init()
 
     Backbone.history.start()
 )
