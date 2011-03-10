@@ -19,28 +19,41 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ["./UrlSearcher", 
-   "./NodeSearcher", 
-   "./RelationshipSearcher"], 
-  (UrlSearcher, NodeSearcher, RelationshipSearcher) ->
+  ["./Queue", 
+   "./Search",], 
+  (Queue, Search) ->
 
-    class Search
+    class QueuedSearch extends Search
 
-      constructor : (@server) ->
-        
-        @searchers = [
-          new UrlSearcher(server),
-          new NodeSearcher(server),
-          new RelationshipSearcher(server)
-        ]
-      
+      constructor : (server) ->
+        super(server)
+        @queue = new Queue
+        @queue.bind("item:pushed", @jobAdded)
+        @isSearching = false
 
       exec : (statement) =>
-        searcher = @pickSearcher statement
-        if searcher? 
-          searcher.exec statement
-        else
-          return neo4j.Promise.fulfilled(null)
+        promise = new neo4j.Promise
+        @queue.push {statement : statement, promise : promise}
+        return promise
+
+      jobAdded : () =>
+        if not @isSearching
+          @executeNextJob()
+
+      jobDone : () =>
+        @isSearching = false
+        if @queue.hasMoreItems()
+          @executeNextJob()
+
+      executeNextJob : () =>
+        job = @queue.pull()
+        @isSearching = true
+
+        jobDone = (result) =>
+          job.promise.fulfill(result)
+          setTimeout(@jobDone, 0)
+  
+        QueuedSearch.__super__.exec.call(this, job.statement).then(jobDone, jobDone)
 
       pickSearcher : (statement) =>
         

@@ -55,14 +55,20 @@ define(
         @propertyContainer.setKey(id, $(ev.target).val())
         @propertyContainer.save()
 
-      valueChangeDone : (ev) =>
+      valueChangeDone : (ev) =>    
         id = @getPropertyIdForElement(ev.target)
-        @propertyContainer.setValue(id, $(ev.target).val())
+        el = $(ev.target)
+
+        if @shouldBeConvertedToString(el.val())
+          el.val("'#{el.val()}'")        
+        
+        @propertyContainer.setValue(id, el.val())
         @propertyContainer.save()
 
       deleteProperty : (ev) =>
         id = @getPropertyIdForElement(ev.target)
         @propertyContainer.deleteProperty(id)
+        @propertyContainer.save()
 
       addProperty : (ev) =>
         @propertyContainer.addProperty()
@@ -77,7 +83,6 @@ define(
       focusedOnValueField : (ev) =>
         id = @getPropertyIdForElement(ev.target)
         @focusedField = { id:id, type:"value" }
-
       
       updateSaveState : (ev) =>
         state = @propertyContainer.getSaveState()
@@ -96,7 +101,7 @@ define(
           button.removeAttr("disabled")
         
       getPropertyIdForElement : (element) =>
-        $(element).closest("li").find("input.property-id").val()
+        $(element).closest("ul").find("input.property-id").val()
 
       setDataModel : (dataModel) =>
         @dataModel = dataModel
@@ -118,6 +123,13 @@ define(
           @getPropertyField(@focusedField.id, @focusedField.type)
 
         return this
+
+      shouldBeConvertedToString : (val) =>
+        try 
+          JSON.parse val
+          return false
+        catch e
+          return /^[a-z0-9-_\/\\\(\)#%\&!$]+$/i.test(val)
 
       getPropertyField : (id, type) =>
         

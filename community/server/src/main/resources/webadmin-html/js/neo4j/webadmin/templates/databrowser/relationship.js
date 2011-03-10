@@ -18,5 +18,5 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 define(function(){return function(vars){ with(vars||{}) { return "<div class=\"simple-data-area\"><h1>" + 
-item.getUrl() + 
-"</h1><div class=\"properties\"></div></div>";}}; });
+item.getSelf() + 
+"</h1><button disabled=\"true\" class=\"data-save-properties\">Saved</button><div class=\"properties\"></div></div>";}}; });
