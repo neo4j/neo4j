@@ -22,8 +22,8 @@
     <neo-server.confdir>target/test-classes/etc/neo-server</neo-server.confdir>
     <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
     <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
-    <neo4j.version>1.3.M03</neo4j.version>
-    <neo4js.version>0.4</neo4js.version>    
+    <neo4j.version>1.3-SNAPSHOT</neo4j.version>
+    <neo4js.version>0.5-SNAPSHOT</neo4js.version>    
   </properties>
 
   <packaging>bundle</packaging>
@@ -214,28 +214,12 @@
     <!-- Test dependencies -->
 
     <dependency>
-      <groupId>org.seleniumhq.webdriver</groupId>
-      <artifactId>webdriver-firefox</artifactId>
-      <version>0.9.7376</version>
-      <scope>test</scope>
+        <groupId>org.seleniumhq.selenium</groupId>
+        <artifactId>selenium-firefox-driver</artifactId>
+        <version>2.0b1</version>
+        <scope>test</scope>
     </dependency>
-
-    <dependency>
-      <groupId>org.seleniumhq.webdriver</groupId>
-      <artifactId>webdriver-htmlunit</artifactId>
-      <version>0.9.7376</version>
-      <type>jar</type>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.seleniumhq.webdriver</groupId>
-      <artifactId>webdriver-chrome</artifactId>
-      <version>0.9.7376</version>
-      <type>jar</type>
-      <scope>test</scope>
-    </dependency>
-
+    
     <dependency>
       <!-- Provides Autoprocessor.
         This dependency makes the plugin loader Felix-specific
@@ -289,6 +273,21 @@
       <version>${neo4j.version}</version>
     	<scope>runtime</scope>
     </dependency>
+    <dependency>
+    	<groupId>junit</groupId>
+    	<artifactId>junit</artifactId>
+    	<version>4.8.2</version>
+    	<type>jar</type>
+    	<scope>test</scope>
+    </dependency>
+    <dependency>
+    	<groupId>org.hamcrest</groupId>
+    	<artifactId>hamcrest-all</artifactId>
+    	<version>1.1</version>
+    	<type>jar</type>
+    	<scope>test</scope>
+    </dependency>
+    
   </dependencies>
 
   <build>

@@ -1,7 +1,8 @@
 *~
 \#*
-*/target/
-/target/
+.gradle
+target
+build
 *.swp
 .project
 .classpath
@@ -9,8 +10,9 @@
 *.iws
 *.ipr
 *.iml
-.idea/
+.idea
 .DS_Store
 server/src/main/resources/webadmin-html/webadmin.js
 server/neo4j-home/data
 /bin
+server/rrd
