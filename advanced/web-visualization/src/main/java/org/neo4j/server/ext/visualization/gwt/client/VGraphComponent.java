@@ -1,27 +1,21 @@
 package org.neo4j.server.ext.visualization.gwt.client;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 import org.vaadin.gwtgraphics.client.DrawingArea;
-import org.vaadin.gwtgraphics.client.Line;
 import org.vaadin.gwtgraphics.client.VectorObject;
 
 import com.google.gwt.dom.client.Style;
 import com.google.gwt.dom.client.Style.Position;
-import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
-import com.google.gwt.user.client.Element;
 import com.google.gwt.user.client.Random;
 import com.google.gwt.user.client.ui.AbsolutePanel;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.Panel;
 import com.google.gwt.user.client.ui.RootPanel;
-import com.google.gwt.user.client.ui.Widget;
 import com.vaadin.terminal.gwt.client.ApplicationConnection;
 import com.vaadin.terminal.gwt.client.Paintable;
 import com.vaadin.terminal.gwt.client.UIDL;
@@ -33,19 +27,15 @@ public class VGraphComponent extends Composite implements Paintable,
     /** Set the CSS class name to allow styling. */
     public static final String CLASSNAME = "v-mycomponent";
 
-    private static final int NODE_SIZE = 30;
-
     /** The client side widget identifier */
     protected String paintableId;
 
     /** Reference to the server connection object. */
     ApplicationConnection client;
 
-    private Panel root = new AbsolutePanel();
-    private DrawingArea canvas = new DrawingArea(0, 0);
-    private Set<Widget> nodes = new HashSet<Widget>();
-    private Map<Widget, Set<Relationship>> edgesFrom = new HashMap<Widget, Set<Relationship>>();
-    private Map<Widget, Set<Relationship>> edgesTo = new HashMap<Widget, Set<Relationship>>();
+    private final Panel root = new AbsolutePanel();
+    private final DrawingArea canvas = new DrawingArea(0, 0);
+    private final Set<Node> nodes = new HashSet<Node>();
 
     /**
      * The constructor should first call super() to initialize the component and
@@ -69,52 +59,45 @@ public class VGraphComponent extends Composite implements Paintable,
     public void setWidth(String width) {
         Util.setWidthExcludingPaddingAndBorder(this, width, 0);
         canvas.setWidth(getOffsetWidth());
-        constrainNodes();
+        updateNodes();
     }
 
     public void setHeight(String height) {
         Util.setHeightExcludingPaddingAndBorder(this, height, 0);
         canvas.setHeight(getOffsetHeight());
-        constrainNodes();
+        updateNodes();
     }
 
-    private Widget createRandomNode() {
-        return createNode(Math.random() * canvas.getWidth(), Math.random()
-                * canvas.getHeight());
+    private Node createRandomNode() {
+        return createNode(Random.nextDouble() * canvas.getWidth(),
+                Random.nextDouble() * canvas.getHeight());
     }
 
-    private Widget createNode(double x, double y) {
-        HTML node = new HTML("<div style='text-align:center'>Node "
-                + nodes.size() + "</div>");
-        Style style = node.getElement().getStyle();
-        style.setPosition(Position.ABSOLUTE);
-        style.setLeft(x, Unit.PX);
-        style.setTop(y, Unit.PX);
-        style.setWidth(NODE_SIZE, Unit.PX);
-        style.setHeight(NODE_SIZE, Unit.PX);
-        style.setBackgroundColor("lightblue");
-        style.setFontSize(12, Unit.PX);
-        root.add(node);
+    private Node createNode(double x, double y) {
+        Node node = new Node(this, "Node " + nodes.size(), x, y);
         nodes.add(node);
-        new NodeHandler(node, this);
         return node;
     }
 
     public void onClick(ClickEvent event) {
         System.out.println("Click " + event.getNativeButton());
         if (event.isShiftKeyDown()) {
-            Widget[] list = nodes.toArray(new Widget[nodes.size()]);
-            Widget other = list[Random.nextInt(list.length)];
-            Widget node = createNode(event.getRelativeX(canvas.getElement()),
+            Node[] list = nodes.toArray(new Node[nodes.size()]);
+            Node other = list[Random.nextInt(list.length)];
+            Node node = createNode(event.getRelativeX(canvas.getElement()),
                     event.getRelativeY(canvas.getElement()));
-            int choice = Random.nextInt(3);
-            if (choice == 0 || choice == 2) {
-                createRelationship(node, other);
-            } 
-            if (choice == 1 || choice == 2) {
-                createRelationship(other, node);
-            }
+            createRandomRelationships(node, other);
             event.preventDefault();
+        }
+    }
+
+    private void createRandomRelationships(Node node1, Node node2) {
+        int choice = Random.nextInt(3);
+        if (choice == 0 || choice == 2) {
+            createRelationship(node1, node2);
+        }
+        if (choice == 1 || choice == 2) {
+            createRelationship(node2, node1);
         }
     }
 
@@ -138,65 +121,27 @@ public class VGraphComponent extends Composite implements Paintable,
         // Save the client side identifier (paintable id) for the widget
         paintableId = uidl.getId();
 
-        Widget node1 = createRandomNode();
-        Widget node2 = createRandomNode();
+        Node node1 = createRandomNode();
+        Node node2 = createRandomNode();
 
         createRelationship(node1, node2);
         createRelationship(node2, node1);
     }
 
-    private Relationship createRelationship(Widget node1, Widget node2) {
+    private Relationship createRelationship(Node from, Node to) {
         String type = new String[] { "LIKES", "EATS", "FEARS" }[Random
                 .nextInt(3)];
-        Relationship edge = new Relationship(this, node1, node2, type);
+        Relationship edge = new Relationship(this, from, to, type);
 
-        mapRelationship(node1, edge, edgesFrom);
-        mapRelationship(node2, edge, edgesTo);
+        from.addOutgoing(edge);
+        to.addIncoming(edge);
         return edge;
     }
 
-    private static void mapRelationship(Widget node, Relationship edge,
-            Map<Widget, Set<Relationship>> map) {
-        Set<Relationship> edges = map.get(node);
-        if (edges == null) {
-            edges = new HashSet<Relationship>();
-            map.put(node, edges);
+    public void updateNodes() {
+        for (Node node : nodes) {
+            node.update();
         }
-        edges.add(edge);
-    }
-
-    void updateRelationshipsFor(Widget node) {
-        update(edgesFrom.get(node));
-        update(edgesTo.get(node));
-    }
-
-    private void update(Set<Relationship> edges) {
-        if (edges != null) {
-            for (Relationship edge : edges) {
-                edge.update();
-            }
-        }
-    }
-
-    public void constrainNodes() {
-        for (Widget node : nodes) {
-            Element element = node.getElement();
-            reposition(node, element.getOffsetLeft(), element.getOffsetTop());
-        }
-    }
-
-    void reposition(Widget node, int newX, int newY) {
-        Style style = node.getElement().getStyle();
-        style.setLeft(limit(0, newX, getOffsetWidth() - node.getOffsetWidth()),
-                Unit.PX);
-        style.setTop(
-                limit(0, newY, getOffsetHeight() - node.getOffsetHeight()),
-                Unit.PX);
-        updateRelationshipsFor(node);
-    }
-
-    private static int limit(int min, int value, int max) {
-        return Math.min(Math.max(min, value), max);
     }
 
     void add(HTML widget) {
@@ -205,5 +150,10 @@ public class VGraphComponent extends Composite implements Paintable,
 
     void add(VectorObject widget) {
         canvas.add(widget);
+    }
+
+    void addNeighborTo(Node node) {
+        Node other = createRandomNode();
+        createRandomRelationships(node, other);
     }
 }
