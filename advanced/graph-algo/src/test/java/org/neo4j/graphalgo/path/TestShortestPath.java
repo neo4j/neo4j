@@ -282,4 +282,27 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         };
         finder.findAllPaths( a, c );
     }
+    
+    @Test
+    public void makeSureRelationshipNotConnectedIssueNotThere() throws Exception
+    {
+        /*
+         *                                  (g)
+         *                                  / ^
+         *                                 v   \
+         * (a)<--(b)<--(c)<--(d)<--(e)<--(f)   (i)
+         *                                 ^   /
+         *                                  \ v
+         *                                  (h)
+         */
+        
+        graph.makeEdgeChain( "i,g,f,e,d,c,b,a" );
+        graph.makeEdgeChain( "i,h,f" );
+        
+        PathFinder<Path> finder = instantiatePathFinder(
+                Traversal.expanderForTypes( MyRelTypes.R1, Direction.INCOMING ), 10 );
+        Node start = graph.getNode( "a" );
+        Node end = graph.getNode( "i" );
+        assertPaths( finder.findAllPaths( start, end ), "a,b,c,d,e,f,g,i", "a,b,c,d,e,f,h,i" );
+    }
 }
