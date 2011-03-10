@@ -250,6 +250,7 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+<<<<<<< HEAD
       <groupId>org.seleniumhq.webdriver</groupId>
       <artifactId>webdriver-firefox</artifactId>
       <version>${webdriver.version}</version>
@@ -266,8 +267,14 @@
       <artifactId>webdriver-support</artifactId>
       <version>${webdriver.version}</version>
       <scope>test</scope>
+=======
+        <groupId>org.seleniumhq.selenium</groupId>
+        <artifactId>selenium-firefox-driver</artifactId>
+        <version>2.0b1</version>
+        <scope>test</scope>
+>>>>>>> 4e7109c8fe571e519680b9334e11c63eb3bb87e6
     </dependency>
-
+    
     <dependency>
       <!-- Provides Autoprocessor.
         This dependency makes the plugin loader Felix-specific
@@ -321,6 +328,21 @@
       <version>${neo4j.version}</version>
     	<scope>runtime</scope>
     </dependency>
+    <dependency>
+    	<groupId>junit</groupId>
+    	<artifactId>junit</artifactId>
+    	<version>4.8.2</version>
+    	<type>jar</type>
+    	<scope>test</scope>
+    </dependency>
+    <dependency>
+    	<groupId>org.hamcrest</groupId>
+    	<artifactId>hamcrest-all</artifactId>
+    	<version>1.1</version>
+    	<type>jar</type>
+    	<scope>test</scope>
+    </dependency>
+    
   </dependencies>
 
   <build>
