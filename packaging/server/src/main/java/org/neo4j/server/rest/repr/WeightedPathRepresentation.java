@@ -17,24 +17,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.webadmin.webtest;
+package org.neo4j.server.rest.repr;
 
-import static org.junit.Assert.assertThat;
-import static org.neo4j.server.webadmin.webtest.IsVisible.isVisible;
+import org.neo4j.graphalgo.WeightedPath;
 
-import org.junit.Ignore;
-import org.junit.Test;
-import org.openqa.selenium.By;
-
-@Ignore
-public class ConfigurationWebTest extends WebDriverTest {
-
-	@Test
-	public void shouldHaveConfigurationWindow() {
-		configMenu.getElement().click();
-		assertThat(dbRootConfig.getElement(), isVisible());
-	}
-	
-	private ElementReference dbRootConfig = new ElementReference(webDriver, By.id("mor_setting_db.root"));
-
+public class WeightedPathRepresentation extends PathRepresentation<WeightedPath>
+{
+    public WeightedPathRepresentation( WeightedPath path )
+    {
+        super( path );
+    }
+    
+    @Mapping( "weight" )
+    public ValueRepresentation weight()
+    {
+        return ValueRepresentation.number( getPath().weight() );
+    }
 }
