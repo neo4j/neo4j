@@ -25,9 +25,9 @@ define ['neo4j/webadmin/security/HtmlEscaper','lib/backbone'], (HtmlEscaper) ->
   class Property extends Backbone.Model
     
     defaults :
-      key : ""
-      value : ""
-      isDuplicate : false
+      key        : ""
+      value      : ""
+      keyError   : false
       valueError : false
 
     getLocalId : =>
@@ -42,9 +42,28 @@ define ['neo4j/webadmin/security/HtmlEscaper','lib/backbone'], (HtmlEscaper) ->
     getValueError : =>
       @get "valueError"
 
-    isDuplicate : =>
-      @get "isDuplicate"
+    getKeyError : =>
+      @get "keyError"
 
     getValueAsHtml : () =>
-      htmlEscaper.escape JSON.stringify(@getValue())
+      value = if @hasValueError() then @getValue() else JSON.stringify(@getValue())
+      htmlEscaper.escape value
+
+    setKeyError : (error) =>
+      @set "keyError" : error
+
+    setValueError : (error) =>
+      @set "valueError" : error  
+
+    setValue : (value) =>
+      @set "value" : value
+
+    setKey : (key) =>
+      @set "key" : key
+
+    hasKeyError : =>
+      @getKeyError() is not false
+
+    hasValueError : =>
+      @getValueError() is not false
     

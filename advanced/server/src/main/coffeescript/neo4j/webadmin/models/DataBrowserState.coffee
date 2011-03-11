@@ -27,7 +27,7 @@ define(
       defaults :
         type : null
         data : null
-        query : ""
+        query : "0"
         queryOutOfSyncWithData : true
 
       initialize : (options) =>
@@ -37,8 +37,9 @@ define(
         encodeURIComponent(@get "query")
 
       setQuery : (val, isForCurrentData=false, opts={}) =>
-        @set {"queryOutOfSyncWithData": not isForCurrentData }, opts
-        @set {"query" : val }, opts
+        if @get("query") != val
+          @set {"queryOutOfSyncWithData": not isForCurrentData }, opts
+          @set {"query" : val }, opts
 
       setData : (result, basedOnCurrentQuery=true, opts={}) =>
         @set({"data":result, "queryOutOfSyncWithData" : not basedOnCurrentQuery }, {silent:true})

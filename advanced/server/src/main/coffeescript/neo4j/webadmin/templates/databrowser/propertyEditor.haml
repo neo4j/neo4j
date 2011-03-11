@@ -4,11 +4,11 @@
       %ul
         %li
           %input.property-id(type="hidden" value="#{property.getLocalId()}")
-          :if property.isDuplicate()
-            .error This property already exists, please change the name.
+          :if property.hasKeyError()
+            .error= property.getKeyError()
           %input.property-key(type="text" value="#{escape(property.getKey())}")
         %li
-          :if property.getValueError()
+          :if property.hasValueError()
             .error= property.getValueError()
           %input.property-value(type="text" value="#{property.getValueAsHtml()}")
         %li

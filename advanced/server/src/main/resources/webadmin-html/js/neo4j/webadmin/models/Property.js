@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2002-2011 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 (function() {
   /*
   Copyright (c) 2002-2011 "Neo Technology,"
@@ -30,8 +49,14 @@
     htmlEscaper = new HtmlEscaper;
     return Property = (function() {
       function Property() {
+        this.hasValueError = __bind(this.hasValueError, this);;
+        this.hasKeyError = __bind(this.hasKeyError, this);;
+        this.setKey = __bind(this.setKey, this);;
+        this.setValue = __bind(this.setValue, this);;
+        this.setValueError = __bind(this.setValueError, this);;
+        this.setKeyError = __bind(this.setKeyError, this);;
         this.getValueAsHtml = __bind(this.getValueAsHtml, this);;
-        this.isDuplicate = __bind(this.isDuplicate, this);;
+        this.getKeyError = __bind(this.getKeyError, this);;
         this.getValueError = __bind(this.getValueError, this);;
         this.getValue = __bind(this.getValue, this);;
         this.getKey = __bind(this.getKey, this);;
@@ -41,7 +66,7 @@
       Property.prototype.defaults = {
         key: "",
         value: "",
-        isDuplicate: false,
+        keyError: false,
         valueError: false
       };
       Property.prototype.getLocalId = function() {
@@ -56,11 +81,39 @@
       Property.prototype.getValueError = function() {
         return this.get("valueError");
       };
-      Property.prototype.isDuplicate = function() {
-        return this.get("isDuplicate");
+      Property.prototype.getKeyError = function() {
+        return this.get("keyError");
       };
       Property.prototype.getValueAsHtml = function() {
-        return htmlEscaper.escape(JSON.stringify(this.getValue()));
+        var value;
+        value = this.hasValueError() ? this.getValue() : JSON.stringify(this.getValue());
+        return htmlEscaper.escape(value);
+      };
+      Property.prototype.setKeyError = function(error) {
+        return this.set({
+          "keyError": error
+        });
+      };
+      Property.prototype.setValueError = function(error) {
+        return this.set({
+          "valueError": error
+        });
+      };
+      Property.prototype.setValue = function(value) {
+        return this.set({
+          "value": value
+        });
+      };
+      Property.prototype.setKey = function(key) {
+        return this.set({
+          "key": key
+        });
+      };
+      Property.prototype.hasKeyError = function() {
+        return this.getKeyError() === !false;
+      };
+      Property.prototype.hasValueError = function() {
+        return this.getValueError() === !false;
       };
       return Property;
     })();
