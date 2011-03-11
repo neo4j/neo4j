@@ -22,26 +22,29 @@ package org.neo4j.helpers.collection;
 import java.util.Iterator;
 
 /**
- * For each item in the supplied iterator (called "surface item") there's
- * instantiated an iterator from that item which is iterated before moving
- * on to the next surface item.
+ * Concatenates sub-iterators of an iterator.
+ * 
+ * Iterates through each item in an iterator. For each item, the
+ * {@link #createNestedIterator(Object)} is invoked to create a sub-iterator.
+ * The resulting iterator iterates over each item in each sub-iterator. In
+ * effect flattening the iteration.
  *
  * @param <T> the type of items to return
  * @param <U> the type of items in the surface item iterator
  */
 public abstract class NestingIterator<T, U> extends PrefetchingIterator<T>
 {
-	private Iterator<U> source;
+	private final Iterator<U> source;
 	private Iterator<T> currentNestedIterator;
 	private U currentSurfaceItem;
-	
+
 	public NestingIterator( Iterator<U> source )
 	{
 		this.source = source;
 	}
-	
+
 	protected abstract Iterator<T> createNestedIterator( U item );
-	
+
 	public U getCurrentSurfaceItem()
 	{
 		if ( this.currentSurfaceItem == null )
@@ -51,7 +54,7 @@ public abstract class NestingIterator<T, U> extends PrefetchingIterator<T>
 		}
 		return this.currentSurfaceItem;
 	}
-	
+
 	@Override
 	protected T fetchNextOrNull()
 	{
