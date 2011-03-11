@@ -219,7 +219,7 @@ public class TestUpgradeStore
     @Test
     public void makeSureStoreCantBeUpgradedByBatchInserterEvenIfExplicitlyToldTo() throws Exception
     {
-        String path = path( 11 );
+        String path = path( 14 );
         new EmbeddedGraphDatabase( path ).shutdown();
         setOlderNeoStoreVersion( path );
         
