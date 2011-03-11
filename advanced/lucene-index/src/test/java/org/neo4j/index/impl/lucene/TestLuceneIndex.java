@@ -39,8 +39,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser.Operator;
@@ -48,19 +46,12 @@ import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.RelationshipIndex;
@@ -69,143 +60,8 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
-public class TestLuceneIndex
+public class TestLuceneIndex extends AbstractLuceneIndexTest
 {
-    private static GraphDatabaseService graphDb;
-    private Transaction tx;
-
-    @BeforeClass
-    public static void setUpStuff()
-    {
-        String storeDir = "target/var/freshindex";
-        Neo4jTestCase.deleteFileOrDirectory( new File( storeDir ) );
-        graphDb = new EmbeddedGraphDatabase( storeDir );
-    }
-
-    @AfterClass
-    public static void tearDownStuff()
-    {
-        graphDb.shutdown();
-    }
-    
-    @After
-    public void commitTx()
-    {
-        finishTx( true );
-    }
-    
-    private void rollbackTx()
-    {
-        finishTx( false );
-    }
-
-    public void finishTx( boolean success )
-    {
-        if ( tx != null )
-        {
-            if ( success )
-            {
-                tx.success();
-            }
-            tx.finish();
-            tx = null;
-        }
-    }
-
-    @Before
-    public void beginTx()
-    {
-        if ( tx == null )
-        {
-            tx = graphDb.beginTx();
-        }
-    }
-
-    void restartTx()
-    {
-        commitTx();
-        beginTx();
-    }
-
-    private static abstract interface EntityCreator<T extends PropertyContainer>
-    {
-        T create( Object... properties );
-        
-        void delete( T entity );
-    }
-
-    private static final RelationshipType TEST_TYPE =
-            DynamicRelationshipType.withName( "TEST_TYPE" );
-    private static final EntityCreator<Node> NODE_CREATOR = new EntityCreator<Node>()
-    {
-        public Node create( Object... properties )
-        {
-            Node node = graphDb.createNode();
-            setProperties( node, properties );
-            return node;
-        }
-        
-        public void delete( Node entity )
-        {
-            entity.delete();
-        }
-    };
-    private static final EntityCreator<Relationship> RELATIONSHIP_CREATOR =
-            new EntityCreator<Relationship>()
-            {
-                public Relationship create( Object... properties )
-                {
-                    Relationship rel = graphDb.createNode().createRelationshipTo( graphDb.createNode(), TEST_TYPE );
-                    setProperties( rel, properties );
-                    return rel;
-                }
-                
-                public void delete( Relationship entity )
-                {
-                    entity.delete();
-                }
-            };
-
-    static class FastRelationshipCreator implements EntityCreator<Relationship>
-    {
-        private Node node, otherNode;
-
-        public Relationship create( Object... properties )
-        {
-            if ( node == null )
-            {
-                node = graphDb.createNode();
-                otherNode = graphDb.createNode();
-            }
-            Relationship rel = node.createRelationshipTo( otherNode, TEST_TYPE );
-            setProperties( rel, properties );
-            return rel;
-        }
-        
-        public void delete( Relationship entity )
-        {
-            entity.delete();
-        }
-    }
-    
-    private static void setProperties( PropertyContainer entity, Object... properties )
-    {
-        for ( Map.Entry<String, Object> entry : MapUtil.map( properties ).entrySet() )
-        {
-            entity.setProperty( entry.getKey(), entry.getValue() );
-        }
-    }
-    
-    private Index<Node> nodeIndex( String name, Map<String, String> config )
-    {
-        return graphDb.index().forNodes( name, config );
-    }
-    
-    private RelationshipIndex relationshipIndex( String name, Map<String, String> config )
-    {
-        return graphDb.index().forRelationships( name, config );
-    }
-    
     @SuppressWarnings( "unchecked" )
     private <T extends PropertyContainer> void makeSureAdditionsCanBeRead(
             Index<T> index, EntityCreator<T> entityCreator )
@@ -805,80 +661,6 @@ public class TestLuceneIndex
         }
     }
 
-    private <T extends PropertyContainer> void testInsertionSpeed(
-            Index<T> index,
-            EntityCreator<T> creator )
-    {
-        long t = System.currentTimeMillis();
-        for ( int i = 0; i < 300000; i++ )
-        {
-            T entity = creator.create();
-            if ( i % 5000 == 5 )
-            {
-                index.query( new TermQuery( new Term( "name", "The name " + i ) ) );
-            }
-            IteratorUtil.lastOrNull( (Iterable<T>) index.query( new QueryContext( new TermQuery( new Term( "name", "The name " + i ) ) ).tradeCorrectnessForSpeed() ) );
-            IteratorUtil.lastOrNull( (Iterable<T>) index.get( "name", "The name " + i ) );
-            index.add( entity, "name", "The name " + i );
-            index.add( entity, "title", "Some title " + i );
-            index.add( entity, "something", i + "Nothing" );
-            index.add( entity, "else", i + "kdfjkdjf" + i );
-            if ( i % 10000 == 0 )
-            {
-                restartTx();
-                System.out.println( i );
-            }
-        }
-        System.out.println( "insert:" + ( System.currentTimeMillis() - t ) );
-
-        t = System.currentTimeMillis();
-        int count = 1000;
-        int resultCount = 0;
-        for ( int i = 0; i < count; i++ )
-        {
-            for ( T entity : index.get( "name", "The name " + i*900 ) )
-            {
-                resultCount++;
-            }
-        }
-        System.out.println( "get(" + resultCount + "):" + (double)( System.currentTimeMillis() - t ) / (double)count );
-
-        t = System.currentTimeMillis();
-        resultCount = 0;
-        for ( int i = 0; i < count; i++ )
-        {
-            for ( T entity : index.get( "something", i*900 + "Nothing" ) )
-            {
-                resultCount++;
-            }
-        }
-        System.out.println( "get(" + resultCount + "):" + (double)( System.currentTimeMillis() - t ) / (double)count );
-    }
-    
-    @Ignore
-    @Test
-    public void testNodeInsertionSpeed()
-    {
-        testInsertionSpeed( nodeIndex( "insertion-speed",
-                LuceneIndexImplementation.EXACT_CONFIG ), NODE_CREATOR );
-    }
-
-    @Ignore
-    @Test
-    public void testNodeFulltextInsertionSpeed()
-    {
-        testInsertionSpeed( nodeIndex( "insertion-speed-full",
-                LuceneIndexImplementation.FULLTEXT_CONFIG ), NODE_CREATOR );
-    }
-
-    @Ignore
-    @Test
-    public void testRelationshipInsertionSpeed()
-    {
-        testInsertionSpeed( relationshipIndex( "insertion-speed",
-                LuceneIndexImplementation.EXACT_CONFIG ), new FastRelationshipCreator() );
-    }
-    
     @Test( expected = IllegalArgumentException.class )
     public void makeSureIndexGetsCreatedImmediately()
     {
@@ -964,93 +746,6 @@ public class TestLuceneIndex
         restartTx();
         assertTrue( CustomAnalyzer.called );
         assertThat( index.query( key, "[A TO Z]" ), contains( node ) );
-    }
-    
-    @Ignore
-    @Test
-    public void makeSureFilesAreClosedProperly() throws Exception
-    {
-        commitTx();
-        final Index<Node> index = nodeIndex( "open-files", LuceneIndexImplementation.EXACT_CONFIG );
-        final long time = System.currentTimeMillis();
-        final CountDownLatch latch = new CountDownLatch( 30 );
-        for ( int t = 0; t < latch.getCount(); t++ ) 
-        {
-            new Thread()
-            {
-                public void run()
-                {
-                    for ( int i = 0; System.currentTimeMillis() - time < 100*1000; i++ )
-                    {
-                        if ( i%10 == 0 )
-                        {
-                            if ( i%100 == 0 )
-                            {
-                                int size = 0;
-                                int type = (int)(System.currentTimeMillis()%3);
-                                if ( type == 0 )
-                                {
-                                    IndexHits<Node> itr = index.get( "key", "value5" );
-                                    try
-                                    {
-                                        itr.getSingle();
-                                    }
-                                    catch ( NoSuchElementException e )
-                                    {
-            
-                                    }
-                                    size = 99;
-                                }
-                                else if ( type == 1 )
-                                {
-                                    IndexHits<Node> itr = index.get( "key", "value5" );
-                                    for ( ;itr.hasNext() && size < 5; size++ )
-                                    {
-                                        itr.next();
-                                    }
-                                    itr.close();
-                                }
-                                else
-                                {
-                                    IndexHits<Node> itr = index.get( "key", "crap value" ); /* Will return 0 hits */
-                                    // Iterate over the hits sometimes (it's always gonna be 0 sized)
-                                    if ( System.currentTimeMillis()%10 > 5 )
-                                    {
-                                        IteratorUtil.count( (Iterator<Node>) itr );
-                                    }
-                                }
-                                
-                                System.out.println( "C iterated " + size + " only" );
-                            }
-                            else
-                            {
-                                int size = IteratorUtil.count( (Iterator<Node>) index.get( "key", "value5" ) );
-                                System.out.println( "hit size:" + size );
-                            }
-                        }
-                        else
-                        {
-                            Transaction tx = graphDb.beginTx();
-                            try
-                            {
-                                for ( int ii = 0; ii < 20; ii++ )
-                                {
-                                    Node node = graphDb.createNode();
-                                    index.add( node, "key", "value" + ii );
-                                }
-                                tx.success();
-                            }
-                            finally
-                            {
-                                tx.finish();
-                            }
-                        }
-                    }
-                    latch.countDown();
-                }
-            }.start();
-        }
-        latch.await();
     }
     
     @Test
