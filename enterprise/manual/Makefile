@@ -22,6 +22,7 @@ CHUNKEDHTMLDIR   = $(BUILDDIR)/chunked
 CHUNKEDOFFLINEHTMLDIR = $(BUILDDIR)/chunked-offline
 CHUNKEDTARGET     = $(BUILDDIR)/neo4j-manual.chunked
 MANPAGES         = $(BUILDDIR)/manpages
+UPGRADE          = $(BUILDDIR)/upgrade
 
 ifdef VERBOSE
 	V = -v
@@ -48,7 +49,7 @@ endif
 
 GENERAL_FLAGS = $(V) $(K) $(VERS) $(IMPDIR)
 
-.PHONY: all dist docbook help clean pdf latexpdf html offline-html singlehtml text cleanup annotated manpages
+.PHONY: all dist docbook help clean pdf latexpdf html offline-html singlehtml text cleanup annotated manpages upgrade
 
 help:
 	@echo "Please use 'make <target>' where <target> is one of"
@@ -66,7 +67,7 @@ help:
 	@echo "To keep temporary files, use 'KEEP=1'".
 	@echo "To set the version, use 'VERSION=[the version]'".
 
-dist: pdf html offline-html annotated text manpages cleanup
+dist: pdf html offline-html annotated text manpages upgrade cleanup
 
 all: pdf latexpdf html offline-html singlehtml text annotated manpages cleanup
 
@@ -84,6 +85,8 @@ ifndef KEEP
 	rm -f $(DOCBOOKSHORTINFOFILE)
 	rm -f $(BUILDDIR)/*.xml
 	rm -f $(FOPDIR)/images
+	rm -f $(UPGRADE)/*.xml
+	rm -f $(UPGRADE)/*.html
 endif
 
 copyimages:
@@ -234,4 +237,15 @@ manpages:
 	mv $(MANPAGES)/*.xml $(BUILDDIR)
 	rm -rf $(MANPAGES)/*.html
 	# gzip -q $(MANPAGES)/*
+
+upgrade:
+	#
+	#
+	# Building upgrade text.
+	#
+	#
+	mkdir -p $(UPGRADE)
+	#a2x -k -f text -D $(UPGRADE) $(IMPORTDIR)/neo4j-docs-jar/ops/upgrades.txt
+	a2x -k -f text -D $(UPGRADE) $(SRCDIR)/installation-deployment/upgrades.txt
+	mv $(UPGRADE)/upgrades.text $(UPGRADE)/UPGRADE.txt
 

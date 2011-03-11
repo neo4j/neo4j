@@ -30,7 +30,7 @@
 
     <!-- other filter properties -->
     <wrapper.conf>conf/neo4j-wrapper.conf</wrapper.conf>
-    <neo4j.version>1.3-SNAPSHOT</neo4j.version>
+    <neo4j.version>1.3.M04</neo4j.version>
 
     <!-- conf/neo4j-server.properties filter properties -->
     <org.neo4j.database.location>data/graph.db</org.neo4j.database.location>
@@ -224,7 +224,6 @@
       <classifier>download</classifier>
       <type>tar.gz</type>
     </dependency>
-    <!-- Not ready for release. -->
     <dependency>
       <groupId>org.neo4j.examples</groupId>
       <artifactId>neo4j-server-examples</artifactId>
