@@ -26,8 +26,7 @@
     return child;
   };
   define(['neo4j/webadmin/data/QueuedSearch', './views/DataBrowserView', './models/DataBrowserState', './models/DataItem', 'lib/backbone'], function(QueuedSearch, DataBrowserView, DataBrowserState, DataItem) {
-    var DEFAULT_QUERY, DataBrowserController;
-    DEFAULT_QUERY = "node:0";
+    var DataBrowserController;
     return DataBrowserController = (function() {
       function DataBrowserController() {
         this.getDataBrowserView = __bind(this.getDataBrowserView, this);;
@@ -52,12 +51,13 @@
         return this.dataModel.bind("change:query", this.queryChanged);
       };
       DataBrowserController.prototype.base = function() {
-        return location.hash = "#/data/search/" + DEFAULT_QUERY + "/";
+        return this.queryChanged();
       };
       DataBrowserController.prototype.search = function(query) {
         this.appState.set({
           mainView: this.getDataBrowserView()
         });
+        console.log("Setting query..");
         return this.dataModel.setQuery(decodeURIComponent(query));
       };
       DataBrowserController.prototype.queryChanged = function() {
