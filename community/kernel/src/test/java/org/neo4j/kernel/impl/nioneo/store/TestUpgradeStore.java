@@ -47,6 +47,7 @@ import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
 
 public class TestUpgradeStore
 {
@@ -213,6 +214,23 @@ public class TestUpgradeStore
         new EmbeddedGraphDatabase( path ).shutdown();
         setOlderNeoStoreVersion( path );
         new EmbeddedGraphDatabase( path, stringMap( ALLOW_STORE_UPGRADE, "true" ) ).shutdown();
+    }
+    
+    @Test
+    public void makeSureStoreCantBeUpgradedByBatchInserterEvenIfExplicitlyToldTo() throws Exception
+    {
+        String path = path( 11 );
+        new EmbeddedGraphDatabase( path ).shutdown();
+        setOlderNeoStoreVersion( path );
+        
+        try
+        {
+            new BatchInserterImpl( path, stringMap( ALLOW_STORE_UPGRADE, "true" ) );
+            fail( "Shouldn't be able to upgrade with batch inserter" );
+        }
+        catch ( IllegalArgumentException e )
+        {   // Good
+        }
     }
     
     private void assertCannotStart( String path, String failMessage )
