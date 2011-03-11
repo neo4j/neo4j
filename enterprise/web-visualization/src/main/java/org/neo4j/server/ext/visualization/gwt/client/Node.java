@@ -19,6 +19,11 @@ import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.UIObject;
 
+/**
+ * A labeled vertex in a graph.
+ * 
+ * @author Marlon Richert
+ */
 class Node {
     private static final int FONT_SIZE = 16;
     private static final int NODE_SIZE = FONT_SIZE * 3;
