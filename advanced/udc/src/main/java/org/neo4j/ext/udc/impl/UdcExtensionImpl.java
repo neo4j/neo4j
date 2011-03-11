@@ -19,6 +19,7 @@
  */
 package org.neo4j.ext.udc.impl;
 
+import java.io.InputStream;
 import java.util.Properties;
 import java.util.Timer;
 
@@ -177,8 +178,13 @@ public class UdcExtensionImpl extends KernelExtension<UdcTimerTask> implements U
         Properties sysProps = System.getProperties();
         try
         {
-            sysProps.load( getClass().getResourceAsStream( "/org/neo4j/ext/udc/udc.properties" ) );
-        } catch ( Exception e )
+            InputStream resource = getClass().getResourceAsStream( "/org/neo4j/ext/udc/udc.properties" );
+            if ( resource != null )
+            {
+                sysProps.load( resource );
+            }
+        }
+        catch ( Exception e )
         {
             System.err.println( "failed to load udc.properties, because: " + e );
         }
