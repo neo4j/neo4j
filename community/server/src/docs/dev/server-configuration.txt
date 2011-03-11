@@ -23,8 +23,9 @@ Set the location on disk of the database directory
 ----
 org.neo4j.server.database.location=data/graph.db
 ----
+Note that on Windows systems, absolute locations including drive letters need to read "c:/data/db"
 
-Specifying the port fo the HTTP server that supports data, administrative, and UI access:
+Specifying the port for the HTTP server that supports data, administrative, and UI access:
 [source,shell]
 ----
 org.neo4j.server.webserver.port=7474
