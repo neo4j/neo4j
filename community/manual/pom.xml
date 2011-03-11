@@ -19,7 +19,7 @@
     <docs.sources>${project.build.directory}/docs</docs.sources>
     <docs.test-sources>${project.build.directory}/test-sources</docs.test-sources>
     <docs.images>${project.build.outputDirectory}/images</docs.images>
-    <neo4j.version>1.3.M04</neo4j.version>
+    <neo4j.version>1.3-SNAPSHOT</neo4j.version>
   </properties>
 
   <scm>
