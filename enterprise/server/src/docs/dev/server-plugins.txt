@@ -35,7 +35,7 @@ public class GetAll extends ServerPlugin
   }
  
 
-@Description( "Get all relationships from the Neo4j graph database" )
+  @Description( "Get all relationships from the Neo4j graph database" )
   @PluginTarget( GraphDatabaseService.class )
   public Iterable<Relationship> getAllRelationships( @Source GraphDatabaseService graphDb )
   {
@@ -47,6 +47,32 @@ public class GetAll extends ServerPlugin
               return item.getRelationships( Direction.OUTGOING ).iterator();
           }
       };
+  }
+
+  @Description( "Find the shortest path between two nodes." )
+  @PluginTarget( Node.class )
+  public Iterable<Path> shortestPath(
+            @Source Node source,
+            @Description( "The node to find the shortest path to." ) @Parameter( name = "target" ) Node target,
+            @Description( "The relationship types to follow when searching for the shortest path(s). Order is insignificant, if omitted all types are followed." ) @Parameter( name = "types", optional = true ) String[] types,
+            @Description( "The maximum path length to search for, default value (if omitted) is 4." ) @Parameter( name = "depth", optional = true ) Integer depth )
+  {
+        Expander expander;
+        if ( types == null )
+        {
+            expander = Traversal.expanderForAllTypes();
+        }
+        else
+        {
+            expander = Traversal.emptyExpander();
+            for ( int i = 0; i < types.length; i++ )
+            {
+                expander = expander.add( DynamicRelationshipType.withName( types[i] ) );
+            }
+        }
+        PathFinder<Path> shortestPath = GraphAlgoFactory.shortestPath( expander, depth == null ? 4
+                : depth.intValue() );
+        return shortestPath.findAllPaths( source, target );
   }
 }
 ----
