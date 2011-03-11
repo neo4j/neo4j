@@ -56,7 +56,7 @@ public class TestAStar extends Neo4jAlgoTestCase
             return result;
         }
     };
-    
+
     private PathFinder<WeightedPath> newFinder()
     {
         return GraphAlgoFactory.aStar( Traversal.expanderForAllTypes(),
@@ -85,7 +85,17 @@ public class TestAStar extends Neo4jAlgoTestCase
 //        assertEquals( 2, counter );
     }
 
-    @Ignore
+    /**
+     * <pre>
+     *   01234567
+     *  +-------->x  A - C: 10
+     * 0|A      C    A - B:  2 (x2)
+     * 1|  B         B - C:  6
+     *  V
+     *  y
+     * </pre>
+     */
+    @Ignore( "A* doesn't return multiple equal paths" )
     @Test
     public void canGetMultiplePathsInTriangleGraph() throws Exception
     {
@@ -93,16 +103,16 @@ public class TestAStar extends Neo4jAlgoTestCase
         Node nodeB = graph.makeNode( "B", "x", 2d, "y", 1d );
         Node nodeC = graph.makeNode( "C", "x", 7d, "y", 0d );
         Set<Relationship> expectedFirsts = new HashSet<Relationship>();
-        expectedFirsts.add( graph.makeEdge( "A", "B", "length", 1d ) );
-        expectedFirsts.add( graph.makeEdge( "A", "B", "length", 1d ) );
-        Relationship expectedSecond = graph.makeEdge( "B", "C", "length", 2d );
-        graph.makeEdge( "A", "C", "length", 5d );
+        expectedFirsts.add( graph.makeEdge( "A", "B", "length", 2d ) );
+        expectedFirsts.add( graph.makeEdge( "A", "B", "length", 2d ) );
+        Relationship expectedSecond = graph.makeEdge( "B", "C", "length", 6d );
+        graph.makeEdge( "A", "C", "length", 10d );
 
         PathFinder<WeightedPath> algo = newFinder();
         Iterator<WeightedPath> paths = algo.findAllPaths( nodeA, nodeC ).iterator();
-        for ( int i = 0; i < 2; i++ )
+        for ( int foundCount = 0; foundCount < 2; foundCount++ )
         {
-            assertTrue( "expected more paths (i=" + i + ")", paths.hasNext() );
+            assertTrue( "expected more paths (found: " + foundCount + ")", paths.hasNext() );
             Path path = paths.next();
             assertPath( path, nodeA, nodeB, nodeC );
 
@@ -120,16 +130,29 @@ public class TestAStar extends Neo4jAlgoTestCase
         assertFalse( "expected at most two paths", paths.hasNext() );
     }
 
-    @Ignore
+    /**
+     * <pre>
+     *   012345    A - B:  2
+     *  +------>x  A - C:  2.5
+     * 0|  C       C - D:  7.3
+     * 1|A    F    B - D:  2.5
+     * 2| B D      D - E:  3
+     * 3|    E     C - E:  5
+     *  V          E - F:  5
+     *  x          C - F: 12
+     *             A - F: 25
+     * </pre>
+     */
+    @Ignore( "A* doesn't return multiple equal paths" )
     @Test
     public void canGetMultiplePathsInASmallRoadNetwork() throws Exception
     {
-        Node nodeA = graph.makeNode( "A", "x", 1d, "y", 1d );
-        Node nodeB = graph.makeNode( "B", "x", 2d, "y", 2d );
-        Node nodeC = graph.makeNode( "C", "x", 0d, "y", 3d );
-        Node nodeD = graph.makeNode( "D", "x", 1d, "y", 4d );
-        Node nodeE = graph.makeNode( "E", "x", 1d, "y", 4d );
-        Node nodeF = graph.makeNode( "F", "x", 1d, "y", 4d );
+        Node nodeA = graph.makeNode( "A", "x", 1d, "y", 0d );
+        Node nodeB = graph.makeNode( "B", "x", 2d, "y", 1d );
+        Node nodeC = graph.makeNode( "C", "x", 0d, "y", 2d );
+        Node nodeD = graph.makeNode( "D", "x", 2d, "y", 3d );
+        Node nodeE = graph.makeNode( "E", "x", 3d, "y", 4d );
+        Node nodeF = graph.makeNode( "F", "x", 1d, "y", 5d );
         graph.makeEdge( "A", "B", "length", 2d );
         graph.makeEdge( "A", "C", "length", 2.5d );
         graph.makeEdge( "C", "D", "length", 7.3d );
@@ -147,9 +170,9 @@ public class TestAStar extends Neo4jAlgoTestCase
         {
             int found = 0;
             Iterator<WeightedPath> paths = algo.findAllPaths( nodes[0], nodes[1] ).iterator();
-            for ( int i = 0; i < 2; i++ )
+            for ( int foundCount = 0; foundCount < 2; foundCount++ )
             {
-                assertTrue( "expected more paths (i=" + i + ")", paths.hasNext() );
+                assertTrue( "expected more paths (found: " + foundCount + ")", paths.hasNext() );
                 Path path = paths.next();
                 if ( path.length() != found && path.length() == 3 )
                 {
