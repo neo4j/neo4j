@@ -24,8 +24,6 @@ define(
    './models/DataBrowserState', 
    './models/DataItem', 'lib/backbone'], 
   (QueuedSearch, DataBrowserView, DataBrowserState, DataItem) ->
-  
-    DEFAULT_QUERY = "node:0"
 
     class DataBrowserController extends Backbone.Controller
       routes : 
@@ -42,10 +40,12 @@ define(
         @dataModel.bind "change:query", @queryChanged
 
       base : =>
-        location.hash = "#/data/search/#{DEFAULT_QUERY}/"
+        @queryChanged()
 
       search : (query) =>
         @appState.set( mainView : @getDataBrowserView() )
+
+        console.log "Setting query.."
         @dataModel.setQuery decodeURIComponent(query)
 
       queryChanged : =>

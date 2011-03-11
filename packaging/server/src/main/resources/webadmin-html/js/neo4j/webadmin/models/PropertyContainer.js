@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2002-2011 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 (function() {
   /*
   Copyright (c) 2002-2011 "Neo Technology,"
@@ -34,6 +53,7 @@
         this.isValidArrayValue = __bind(this.isValidArrayValue, this);;
         this.isMap = __bind(this.isMap, this);;
         this.cleanPropertyValue = __bind(this.cleanPropertyValue, this);;
+        this.validate = __bind(this.validate, this);;
         this.setSaveState = __bind(this.setSaveState, this);;
         this.getSaveState = __bind(this.getSaveState, this);;
         this.isNotSaved = __bind(this.isNotSaved, this);;
@@ -72,9 +92,7 @@
         _ref = this.getItem().getProperties();
         for (key in _ref) {
           value = _ref[key];
-          this.addProperty(key, value, false, {
-            saved: true
-          }, {
+          this.addProperty(key, value, {
             silent: true
           });
         }
@@ -140,11 +158,8 @@
         }
         return this.updatePropertyList();
       };
-      PropertyContainer.prototype.deleteProperty = function(id, updatePropertyList, opts) {
+      PropertyContainer.prototype.deleteProperty = function(id, opts) {
         var property;
-        if (updatePropertyList == null) {
-          updatePropertyList = true;
-        }
         if (opts == null) {
           opts = {};
         }
@@ -153,39 +168,27 @@
           property = this.getProperty(id);
           delete this.properties[id];
           this.getItem().removeProperty(property.getKey());
-          if (updatePropertyList) {
-            return this.updatePropertyList(opts);
-          }
+          return this.updatePropertyList(opts);
         }
       };
-      PropertyContainer.prototype.addProperty = function(key, value, updatePropertyList, propertyMeta, opts) {
-        var id, isDuplicate;
+      PropertyContainer.prototype.addProperty = function(key, value, opts) {
+        var id;
         if (key == null) {
           key = "";
         }
         if (value == null) {
           value = "";
         }
-        if (updatePropertyList == null) {
-          updatePropertyList = true;
-        }
-        if (propertyMeta == null) {
-          propertyMeta = {};
-        }
         if (opts == null) {
           opts = {};
         }
         id = this.generatePropertyId();
-        isDuplicate = propertyMeta.isDuplicate != null ? true : false;
         this.properties[id] = new Property({
           key: key,
           value: value,
-          localId: id,
-          isDuplicate: isDuplicate
+          localId: id
         });
-        if (updatePropertyList) {
-          return this.updatePropertyList(opts);
-        }
+        return this.updatePropertyList(opts);
       };
       PropertyContainer.prototype.getProperty = function(id) {
         return this.properties[id];
@@ -210,10 +213,9 @@
             silent: true
           };
         }
-        this.set({
+        return this.set({
           propertyList: this.getPropertyList()
         }, opts);
-        return this.change();
       };
       PropertyContainer.prototype.getPropertyList = function() {
         var arrayed, key, property, _ref;
@@ -271,6 +273,16 @@
         return this.set({
           saveState: state
         }, opts);
+      };
+      PropertyContainer.prototype.validate = function() {
+        var property, _i, _len, _ref;
+        _ref = this.properties;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          property = _ref[_i];
+          if (property.hasKeyError() || property.hasValueError()) {
+            return false;
+          }
+        }
       };
       PropertyContainer.prototype.cleanPropertyValue = function(rawVal) {
         var val;
