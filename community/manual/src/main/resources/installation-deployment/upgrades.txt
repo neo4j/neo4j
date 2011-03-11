@@ -28,6 +28,15 @@ To perform a special upgrade (for significant changes to the database store):
 . "allow_store_upgrade=true" configuration parameter should be removed, set to "false" or commented out
 
 
+[[deployment-upgrading-one-three-milestones]]
+== Upgrade 1.3-M03 -> 1.3-M04 ==
+
+[WARNING]
+Upgrading from 1.3-M03 -> 1.3-M04 must be done explicitly since store format has changed between those two versions.
+
+The store format, as well as logical log format, have changed between these two versions to allow for bigger stores. 
+
+
 [[deployment-upgrading-one-three]]
 == Upgrade 1.2 -> 1.3 ==
 
@@ -48,4 +57,4 @@ Upgrade cannot be performed if either the number of relationship types or the co
 [[deployment-upgrading-one-two]]
 == Upgrade 1.1 -> 1.2 ==
 
-Upgrading from Neo4j 1.2 to Neo4j 1.2 is a "normal" upgrade.
+Upgrading from Neo4j 1.1 to Neo4j 1.2 is a "normal" upgrade.
