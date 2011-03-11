@@ -13,7 +13,7 @@ However, some upgrades make significant changes to the database store. Neo4j wil
 
 To perform a normal upgrade (for minor changes to the database store):
 
-. download the newer version of neo4j
+. download the newer version of Neo4j
 . cleanly shutdown the database to upgrade, if it is running
 . startup the database with the newer version of Neo4j
 
@@ -29,10 +29,10 @@ To perform a special upgrade (for significant changes to the database store):
 
 
 [[deployment-upgrading-one-three-milestones]]
-== Upgrade 1.3-M03 -> 1.3-M04 ==
+== Upgrade 1.3.M03 -> 1.3.M04 ==
 
 [WARNING]
-Upgrading from 1.3-M03 -> 1.3-M04 must be done explicitly since store format has changed between those two versions.
+Upgrading from 1.3.M03 -> 1.3.M04 must be done explicitly since store format has changed between those two versions.
 
 The store format, as well as logical log format, have changed between these two versions to allow for bigger stores. 
 
