@@ -26,14 +26,12 @@ import java.io.File;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
-@Ignore( "this behavior is under consideration" )
 public class TestShutdownSequence
 {
     private EmbeddedGraphDatabase graphDb;
@@ -69,6 +67,7 @@ public class TestShutdownSequence
 
             public void kernelPanic( ErrorState error )
             {
+                // do nothing
             }
 
             public ExecutionOrder orderComparedTo( KernelEventHandler other )
@@ -107,6 +106,7 @@ public class TestShutdownSequence
 
             public void kernelPanic( ErrorState error )
             {
+                // do nothing
             }
 
             public ExecutionOrder orderComparedTo( KernelEventHandler other )

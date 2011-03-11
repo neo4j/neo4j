@@ -65,7 +65,7 @@ public abstract class Neo4jAlgoTestCase
         graphDb = new EmbeddedGraphDatabase( storeDir );
         graph = new SimpleGraphBuilder( graphDb, MyRelTypes.R1 );
     }
-    
+
     @Before
     public void setUpTransaction()
     {
@@ -77,7 +77,7 @@ public abstract class Neo4jAlgoTestCase
     {
         graphDb.shutdown();
     }
-    
+
     @After
     public void tearDownTransactionAndGraph()
     {
@@ -85,7 +85,7 @@ public abstract class Neo4jAlgoTestCase
         tx.success();
         tx.finish();
     }
-    
+
     protected void restartTx()
     {
         tx.success();
@@ -112,7 +112,7 @@ public abstract class Neo4jAlgoTestCase
             file.delete();
         }
     }
-    
+
     protected void assertPathDef( Path path, String... names )
     {
         int i = 0;
@@ -123,14 +123,14 @@ public abstract class Neo4jAlgoTestCase
         }
         assertEquals( names.length, i );
     }
-    
+
     protected void assertPath( Path path, Node... nodes )
     {
         int i = 0;
         for ( Node node : path.nodes() )
         {
             assertEquals( "Wrong node " + i + " in " + getPathDef( path ),
-                    nodes[i++], node );
+                    nodes[i++].getProperty( SimpleGraphBuilder.KEY_ID ), node.getProperty( SimpleGraphBuilder.KEY_ID ) );
         }
         assertEquals( nodes.length, i );
     }
@@ -165,7 +165,7 @@ public abstract class Neo4jAlgoTestCase
         }
         return builder.toString();
     }
-    
+
     public void assertPaths( Iterable<? extends Path> paths, String... pathDefinitions )
     {
         List<String> pathDefs = new ArrayList<String>( Arrays.asList( pathDefinitions ) );

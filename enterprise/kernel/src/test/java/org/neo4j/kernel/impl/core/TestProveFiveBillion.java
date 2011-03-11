@@ -37,7 +37,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.batchinsert.BatchInserter;
 import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
 
-@Ignore
+@Ignore( "Requires a lot of disk space" )
 public class TestProveFiveBillion
 {
     private static final String PATH = "target/var/5b";
