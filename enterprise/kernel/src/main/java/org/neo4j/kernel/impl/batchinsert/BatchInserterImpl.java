@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.batchinsert;
 
+import static java.lang.Boolean.parseBoolean;
+import static org.neo4j.kernel.Config.ALLOW_STORE_UPGRADE;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,9 +38,9 @@ import org.neo4j.kernel.AutoConfigurator;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.index.IndexStore;
-import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
@@ -85,6 +88,7 @@ public class BatchInserterImpl implements BatchInserter
     public BatchInserterImpl( String storeDir, 
         Map<String,String> stringParams )
     {
+        rejectAutoUpgrade( stringParams );
         msgLog = StringLogger.getLogger( storeDir );
         Map<Object,Object> params = getDefaultParams();
         params.put( Config.USE_MEMORY_MAPPED_BUFFERS, "false" );
@@ -121,6 +125,15 @@ public class BatchInserterImpl implements BatchInserter
         indexStore = new IndexStore( storeDir );
     }
     
+    private void rejectAutoUpgrade( Map<String, String> stringParams )
+    {
+        if ( parseBoolean( stringParams.get( ALLOW_STORE_UPGRADE ) ) )
+        {
+            throw new IllegalArgumentException( "Batch inserter is not allowed to do upgrade of a store" +
+            		", use " + EmbeddedGraphDatabase.class.getSimpleName() + " instead" );
+        }
+    }
+
     public long createNode( Map<String,Object> properties )
     {
         long nodeId = getNodeStore().nextId();
