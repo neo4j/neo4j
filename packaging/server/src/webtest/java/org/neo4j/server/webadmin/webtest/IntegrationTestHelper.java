@@ -51,6 +51,10 @@ public class IntegrationTestHelper {
     public String nodeUri(long id) {
         return nodeUri() + "/" + id;
     }
+    
+    public String relationshipUri(long id) {
+        return dataUri() + "relationship/" + id;
+    }
 
     public AbstractGraphDatabase getDatabase() {
         return server.getDatabase().graph;
