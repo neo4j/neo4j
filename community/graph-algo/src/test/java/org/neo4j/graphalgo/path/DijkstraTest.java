@@ -28,7 +28,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.WeightedPath;
@@ -42,12 +41,6 @@ import common.Neo4jAlgoTestCase;
 
 public class DijkstraTest extends Neo4jAlgoTestCase
 {
-    @Test
-    public void testNothing()
-    {
-    }
-
-    @Ignore
     @Test
     public void canGetPathsInTriangleGraph() throws Exception
     {
@@ -69,7 +62,6 @@ public class DijkstraTest extends Neo4jAlgoTestCase
         assertPath( algo.findSinglePath( nodeA, nodeC ), nodeA, nodeB, nodeC );
     }
 
-    @Ignore
     @Test
     public void canGetMultiplePathsInTriangleGraph() throws Exception
     {
@@ -106,7 +98,6 @@ public class DijkstraTest extends Neo4jAlgoTestCase
         assertFalse( "expected at most two paths", paths.hasNext() );
     }
 
-    @Ignore
     @Test
     public void canGetMultiplePathsInASmallRoadNetwork() throws Exception
     {
