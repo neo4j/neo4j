@@ -38,7 +38,7 @@
       DataBrowserState.prototype.defaults = {
         type: null,
         data: null,
-        query: "",
+        query: "0",
         queryOutOfSyncWithData: true
       };
       DataBrowserState.prototype.initialize = function(options) {
@@ -54,12 +54,14 @@
         if (opts == null) {
           opts = {};
         }
-        this.set({
-          "queryOutOfSyncWithData": !isForCurrentData
-        }, opts);
-        return this.set({
-          "query": val
-        }, opts);
+        if (this.get("query") !== val) {
+          this.set({
+            "queryOutOfSyncWithData": !isForCurrentData
+          }, opts);
+          return this.set({
+            "query": val
+          }, opts);
+        }
       };
       DataBrowserState.prototype.setData = function(result, basedOnCurrentQuery, opts) {
         if (basedOnCurrentQuery == null) {

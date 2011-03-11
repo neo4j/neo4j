@@ -34,7 +34,7 @@ define ['./Property','lib/backbone'], (Property) ->
       @dataModel = dataModel
       @properties = {}
       for key, value of @getItem().getProperties()
-        @addProperty(key, value, false, {saved:true},{silent:true})
+        @addProperty(key, value, {silent:true})
 
       @setSaved()
       @updatePropertyList()
@@ -45,30 +45,27 @@ define ['./Property','lib/backbone'], (Property) ->
     getSelf : () =>
       @dataModel.get("data").getSelf()
 
-    setKey : (id, key) =>
+    setKey : (id, key, opts={}) =>
       duplicate = @hasKey(key, id)
       property = @getProperty(id)
 
       oldKey = property.key
       property.set "key": key
       
-      if not @isCantSave()
+      if @validate()
         @setNotSaved()
 
       if duplicate
-        property.set "isDuplicate": true
-        @setCantSave()
+        property.setKeyError "This key is already used, please choose a different one."
       else
-        property.set "isDuplicate": false
-
-        if not @hasDuplicates()
-          @setNotSaved()
+        property.setKeyError false
 
         @getItem().removeProperty(oldKey)
         @getItem().setProperty(key, property.getValue())
-      @updatePropertyList()
+
+      @updatePropertyList(opts)
  
-    setValue : (id, value) =>
+    setValue : (id, value, opts={}) =>
       property = @getProperty(id)
       cleanedValue = @cleanPropertyValue(value)
       if not @isCantSave()
@@ -83,9 +80,9 @@ define ['./Property','lib/backbone'], (Property) ->
       else
         property.set "value": null
         property.set "valueError": cleanedValue.error
-      @updatePropertyList()
+      @updatePropertyList(opts)
 
-    deleteProperty : (id, updatePropertyList=true, opts={}) =>
+    deleteProperty : (id, opts={}) =>
       if not @isCantSave()
         @setNotSaved()
 
@@ -93,18 +90,13 @@ define ['./Property','lib/backbone'], (Property) ->
         delete(@properties[id])
 
         @getItem().removeProperty property.getKey()
-        if updatePropertyList
-          @updatePropertyList(opts)
-
-    addProperty : (key="", value="", updatePropertyList=true, propertyMeta={}, opts={}) =>
-      id = @generatePropertyId()
-
-      isDuplicate = if propertyMeta.isDuplicate? then true else false
-
-      @properties[id] = new Property({key:key, value:value, localId:id, isDuplicate:isDuplicate})
-       
-      if updatePropertyList
         @updatePropertyList(opts)
+
+    addProperty : (key="", value="", opts={}) =>
+
+      id = @generatePropertyId()
+      @properties[id] = new Property({key:key, value:value, localId:id})
+      @updatePropertyList(opts)
 
     getProperty : (id) =>
       @properties[id]
@@ -117,15 +109,11 @@ define ['./Property','lib/backbone'], (Property) ->
       return false
 
     updatePropertyList : (opts={silent:true}) =>
-      @set { propertyList : @getPropertyList() }, opts
-      @change()
-
-    getPropertyList : () =>
-      arrayed = []
+      flatProperties = []
       for key, property of @properties
-        arrayed.push(property)
+        flatProperties.push(property)
 
-      return arrayed
+      @set { propertyList : flatProperties) }, opts
 
     hasDuplicates : =>
       for key, property of @properties
@@ -164,6 +152,13 @@ define ['./Property','lib/backbone'], (Property) ->
     
     setSaveState : (state, opts={}) =>
       @set { saveState : state }, opts
+
+
+    validate : =>
+      
+      for property in @properties
+        if property.hasKeyError() or property.hasValueError()
+          return false
 
     
     cleanPropertyValue : (rawVal) =>
