@@ -11,6 +11,8 @@ import com.vaadin.ui.ClientWidget;
 
 /**
  * Server side component for the VGraphComponent widget.
+ * 
+ * @author Marlon Richert @ Vaadin
  */
 @ClientWidget(VGraphComponent.class)
 public class GraphComponent extends AbstractComponent {
