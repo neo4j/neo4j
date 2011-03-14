@@ -21,9 +21,11 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 define(
   ['neo4j/webadmin/data/Search',
    'neo4j/webadmin/data/ItemUrlResolver',
+   'neo4j/webadmin/security/HtmlEscaper',
    './databrowser/SimpleView',
-   'neo4j/webadmin/templates/data/base','lib/backbone'], 
-  (Search, ItemUrlResolver, SimpleView, template) ->
+   './databrowser/CreateRelationshipDialog',
+   'neo4j/webadmin/templates/databrowser/base','lib/backbone'], 
+  (Search, ItemUrlResolver, HtmlEscaper, SimpleView, CreateRelationshipDialog, template) ->
 
     class DataBrowserView extends Backbone.View
       
@@ -32,17 +34,26 @@ define(
       events : 
         "keyup #data-console" : "search"
         "click #data-create-node" : "createNode"
+        "click #data-create-relationship" : "createRelationship"
 
       initialize : (options)->
         @dataModel = options.dataModel
         @server = options.state.getServer()
-        @urlResolver = new ItemUrlResolver(@server)
-        @dataView = new SimpleView(dataModel:options.dataModel)
 
-      render : ->
-        $(@el).html(@template())
-        $("#data-area", @el).append @dataView.el 
+        @htmlEscaper = new HtmlEscaper
+
+        @urlResolver = new ItemUrlResolver(@server)
+        @dataView = new SimpleView(dataModel:@dataModel)
+
+        @dataModel.bind("change:query", @queryChanged)
+
+      render : =>
+        $(@el).html(@template( query : @htmlEscaper.escape(@dataModel.getQuery()) ))
+        $("#data-area", @el).append @dataView.render().el
         return this
+
+      queryChanged : =>
+        $("#data-console",@el).val(@dataModel.getQuery())
 
       search : (ev) =>
         @dataModel.setQuery( $("#data-console",@el).val() )
@@ -52,4 +63,14 @@ define(
           id = @urlResolver.extractNodeId(node.getSelf())
           @dataModel.setData( node, true, {silent:true} ) 
           @dataModel.setQuery( id, true) 
+
+      createRelationship : =>
+        button = $("#data-create-relationship")
+        if @createRelationshipDialog?
+          @createRelationshipDialog.remove()
+          delete(@createRelationshipDialog)
+          button.removeClass("selected")
+        else
+          button.addClass("selected")
+          @createRelationshipDialog = new CreateRelationshipDialog(button)
 )

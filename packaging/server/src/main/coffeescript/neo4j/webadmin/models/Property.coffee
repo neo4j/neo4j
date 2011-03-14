@@ -62,8 +62,8 @@ define ['neo4j/webadmin/security/HtmlEscaper','lib/backbone'], (HtmlEscaper) ->
       @set "key" : key
 
     hasKeyError : =>
-      @getKeyError() is not false
+      @getKeyError() != false
 
     hasValueError : =>
-      @getValueError() is not false
+      @getValueError() != false
     

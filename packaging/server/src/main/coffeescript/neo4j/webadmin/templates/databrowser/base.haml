@@ -1,10 +1,11 @@
 .workarea.pad
   .controls
-    %input#data-console
+    %input#data-console(value="#{query}")
     %button#data-execute-console.icon-button
     
     .data-toolbar
       %button#data-create-node.text-icon-button Node
+      %button#data-create-relationship.text-icon-button Relationship
       %button#data-home.icon-button
       %button#data-refresh.icon-button
 
