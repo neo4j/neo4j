@@ -58,6 +58,7 @@ public class WebadminWebdriverLibrary extends WebdriverLibrary
     }
     
     public void searchForInDataBrowser(CharSequence ... keysToSend) throws Exception {
+        clearInput( dataBrowserSearchField );
         dataBrowserSearchField.sendKeys( keysToSend );
     }
     

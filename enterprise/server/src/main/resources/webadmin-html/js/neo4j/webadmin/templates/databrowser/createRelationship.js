@@ -17,6 +17,4 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-define(function(){return function(vars){ with(vars||{}) { return "<div class=\"workarea pad\"><div class=\"controls\"><input value=\"" +
-query +
-"\" id=\"data-console\" /><button class=\"icon-button\" id=\"data-execute-console\"></button><div class=\"data-toolbar\"><button class=\"text-icon-button\" id=\"data-create-node\">Node</button><button class=\"text-icon-button\" id=\"data-create-relationship\">Relationship</button><button class=\"icon-button\" id=\"data-home\"></button><button class=\"icon-button\" id=\"data-refresh\"></button></div><div class=\"break\"></div></div><div id=\"data-area\"></div></div>";}}; });
+define(function(){return function(vars){ with(vars||{}) { return "<h1>hello</h1>";}}; });

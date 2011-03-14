@@ -20,8 +20,7 @@
 
 package org.neo4j.server.webadmin.steps;
 
-import java.lang.reflect.InvocationTargetException;
-
+import org.neo4j.server.webdriver.ElementReference;
 import org.neo4j.server.webdriver.WebDriverFacade;
 import org.neo4j.server.webdriver.WebadminWebdriverLibrary;
 import org.openqa.selenium.By;
@@ -38,7 +37,7 @@ public class WebadminSteps
     private final WebDriver d;
     private final WebadminWebdriverLibrary wl;
     
-    public WebadminSteps( WebDriverFacade facade, WebadminWebdriverLibrary wl ) throws InvocationTargetException, InstantiationException, IllegalAccessException
+    public WebadminSteps( WebDriverFacade facade, WebadminWebdriverLibrary wl ) throws Exception
     {
         d = facade.getWebDriver();
         this.wl = wl;
@@ -46,7 +45,9 @@ public class WebadminSteps
     
     @When("^I type (.+) into the element found by the xpath (.+)$")
     public void iTypeIntoElementByXpath(String toType, String xPath) {
-        d.findElement( By.xpath( xPath ) ).sendKeys( toType );
+        ElementReference el = wl.getElement( By.xpath( xPath ) );
+        wl.clearInput( el );
+        el.sendKeys( toType );
     }
     
     @When("^I look at the root server page with a web browser$")
