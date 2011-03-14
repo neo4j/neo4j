@@ -28,7 +28,7 @@ define(
     class DataBrowserController extends Backbone.Controller
       routes : 
         "/data/" : "base",
-        "/data/search/:query/" : "search"
+        "/data/search/*query" : "search"
 
       initialize : (appState) =>
         @appState = appState
@@ -43,14 +43,15 @@ define(
         @queryChanged()
 
       search : (query) =>
-        @appState.set( mainView : @getDataBrowserView() )
+        if query.substr(-1) is "/"
+          query = query.substr(0, query.length - 1)
 
-        console.log "Setting query.."
-        @dataModel.setQuery decodeURIComponent(query)
+        @appState.set( mainView : @getDataBrowserView() )
+        @dataModel.setQuery query
 
       queryChanged : =>
-        encodedQuery = encodeURIComponent(@dataModel.get "query")
-        url = "#/data/search/#{encodedQuery}/"
+        query = @dataModel.get "query"
+        url = "#/data/search/#{query}/"
 
         if location.hash != url
           location.hash = url

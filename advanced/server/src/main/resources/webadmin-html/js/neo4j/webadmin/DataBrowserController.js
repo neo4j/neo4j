@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2002-2011 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 (function() {
   /*
   Copyright (c) 2002-2011 "Neo Technology,"
@@ -39,7 +58,7 @@
       __extends(DataBrowserController, Backbone.Controller);
       DataBrowserController.prototype.routes = {
         "/data/": "base",
-        "/data/search/:query/": "search"
+        "/data/search/*query": "search"
       };
       DataBrowserController.prototype.initialize = function(appState) {
         this.appState = appState;
@@ -54,16 +73,18 @@
         return this.queryChanged();
       };
       DataBrowserController.prototype.search = function(query) {
+        if (query.substr(-1) === "/") {
+          query = query.substr(0, query.length - 1);
+        }
         this.appState.set({
           mainView: this.getDataBrowserView()
         });
-        console.log("Setting query..");
-        return this.dataModel.setQuery(decodeURIComponent(query));
+        return this.dataModel.setQuery(query);
       };
       DataBrowserController.prototype.queryChanged = function() {
-        var encodedQuery, url;
-        encodedQuery = encodeURIComponent(this.dataModel.get("query"));
-        url = "#/data/search/" + encodedQuery + "/";
+        var query, url;
+        query = this.dataModel.get("query");
+        url = "#/data/search/" + query + "/";
         if (location.hash !== url) {
           location.hash = url;
         }

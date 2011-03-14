@@ -44,43 +44,47 @@
     child.__super__ = parent.prototype;
     return child;
   };
-  define(['./NodeView', './RelationshipView', './ListView', 'neo4j/webadmin/templates/databrowser/notfound', 'lib/backbone'], function(NodeView, RelationshipView, ListView, notFoundTemplate) {
-    var SimpleView;
-    return SimpleView = (function() {
-      function SimpleView() {
-        this.render = __bind(this.render, this);;        SimpleView.__super__.constructor.apply(this, arguments);
+  define(['neo4j/webadmin/templates/databrowser/createRelationship', 'lib/backbone'], function(template) {
+    var CreateRelationshipDialog;
+    return CreateRelationshipDialog = (function() {
+      function CreateRelationshipDialog() {
+        this.render = __bind(this.render, this);;
+        this.position = __bind(this.position, this);;
+        this.initialize = __bind(this.initialize, this);;        CreateRelationshipDialog.__super__.constructor.apply(this, arguments);
       }
-      __extends(SimpleView, Backbone.View);
-      SimpleView.prototype.initialize = function(options) {
-        this.nodeView = new NodeView;
-        this.relationshipView = new RelationshipView;
-        this.listView = new ListView;
-        this.dataModel = options.dataModel;
-        return this.dataModel.bind("change", this.render);
+      __extends(CreateRelationshipDialog, Backbone.View);
+      CreateRelationshipDialog.prototype.className = "create-relationship-dialog";
+      CreateRelationshipDialog.prototype.initialize = function(baseElement, from, type, types, to) {
+        this.baseElement = baseElement;
+        this.from = from != null ? from : "";
+        this.type = type != null ? type : "RELATED_TO";
+        this.types = types != null ? types : [];
+        this.to = to != null ? to : "";
+        $("body").append(this.el);
+        this.render();
+        return this.position();
       };
-      SimpleView.prototype.render = function() {
-        var type, view;
-        type = this.dataModel.get("type");
-        switch (type) {
-          case "node":
-            view = this.nodeView;
-            break;
-          case "relationship":
-            view = this.relationshipView;
-            break;
-          case "set":
-            view = this.listView;
-            break;
-          default:
-            $(this.el).html(notFoundTemplate());
-            return this;
-        }
-        view.setDataModel(this.dataModel);
-        $(this.el).html(view.render().el);
-        view.delegateEvents();
+      CreateRelationshipDialog.prototype.position = function() {
+        var basePos, left, top;
+        basePos = $(this.baseElement).offset();
+        top = basePos.top + $(this.baseElement).outerHeight();
+        left = basePos.left - ($(this.el).outerWidth() - $(this.baseElement).outerWidth());
+        return $(this.el).css({
+          position: "absolute",
+          top: top + "px",
+          left: left + "px"
+        });
+      };
+      CreateRelationshipDialog.prototype.render = function() {
+        $(this.el).html(template({
+          from: this.from,
+          to: this.to,
+          type: this.type,
+          types: this.types
+        }));
         return this;
       };
-      return SimpleView;
+      return CreateRelationshipDialog;
     })();
   });
 }).call(this);

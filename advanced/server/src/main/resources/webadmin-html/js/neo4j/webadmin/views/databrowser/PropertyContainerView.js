@@ -80,36 +80,29 @@
         "click button.data-save-properties": "saveChanges"
       };
       PropertyContainerView.prototype.initialize = function(opts) {
-        this.template = opts.template;
-        this.propertyContainer = new PropertyContainer();
-        this.propertyContainer.bind("change:propertyList", this.renderProperties);
-        return this.propertyContainer.bind("change:saveState", this.updateSaveState);
+        return this.template = opts.template;
       };
       PropertyContainerView.prototype.keyChanged = function(ev) {
-        var id;
-        id = this.getPropertyIdForElement(ev.target);
-        return this.propertyContainer.setKey(id, $(ev.target).val());
+        return this.propertyContainer.setNotSaved();
       };
       PropertyContainerView.prototype.valueChanged = function(ev) {
-        var id;
-        id = this.getPropertyIdForElement(ev.target);
-        return this.propertyContainer.setValue(id, $(ev.target).val());
+        return this.propertyContainer.setNotSaved();
       };
       PropertyContainerView.prototype.keyChangeDone = function(ev) {
         var id;
         id = this.getPropertyIdForElement(ev.target);
         this.propertyContainer.setKey(id, $(ev.target).val());
-        return this.propertyContainer.save();
+        return this.saveChanges();
       };
       PropertyContainerView.prototype.valueChangeDone = function(ev) {
         var el, id;
         id = this.getPropertyIdForElement(ev.target);
         el = $(ev.target);
         if (this.shouldBeConvertedToString(el.val())) {
-          el.val("'" + (el.val()) + "'");
+          el.val('"' + el.val() + '"');
         }
         this.propertyContainer.setValue(id, el.val());
-        return this.propertyContainer.save();
+        return this.saveChanges();
       };
       PropertyContainerView.prototype.deleteProperty = function(ev) {
         var id;
@@ -167,8 +160,9 @@
         return $(element).closest("ul").find("input.property-id").val();
       };
       PropertyContainerView.prototype.setDataModel = function(dataModel) {
-        this.dataModel = dataModel;
-        return this.propertyContainer.setDataModel(this.dataModel);
+        this.propertyContainer = dataModel.getData();
+        this.propertyContainer.bind("change:propertyList", this.renderProperties);
+        return this.propertyContainer.bind("change:status", this.updateSaveState);
       };
       PropertyContainerView.prototype.render = function() {
         $(this.el).html(this.template({

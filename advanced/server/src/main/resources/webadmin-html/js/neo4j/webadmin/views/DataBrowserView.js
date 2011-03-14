@@ -44,31 +44,42 @@
     child.__super__ = parent.prototype;
     return child;
   };
-  define(['neo4j/webadmin/data/Search', 'neo4j/webadmin/data/ItemUrlResolver', './databrowser/SimpleView', 'neo4j/webadmin/templates/data/base', 'lib/backbone'], function(Search, ItemUrlResolver, SimpleView, template) {
+  define(['neo4j/webadmin/data/Search', 'neo4j/webadmin/data/ItemUrlResolver', 'neo4j/webadmin/security/HtmlEscaper', './databrowser/SimpleView', './databrowser/CreateRelationshipDialog', 'neo4j/webadmin/templates/databrowser/base', 'lib/backbone'], function(Search, ItemUrlResolver, HtmlEscaper, SimpleView, CreateRelationshipDialog, template) {
     var DataBrowserView;
     return DataBrowserView = (function() {
       function DataBrowserView() {
+        this.createRelationship = __bind(this.createRelationship, this);;
         this.createNode = __bind(this.createNode, this);;
-        this.search = __bind(this.search, this);;        DataBrowserView.__super__.constructor.apply(this, arguments);
+        this.search = __bind(this.search, this);;
+        this.queryChanged = __bind(this.queryChanged, this);;
+        this.render = __bind(this.render, this);;        DataBrowserView.__super__.constructor.apply(this, arguments);
       }
       __extends(DataBrowserView, Backbone.View);
       DataBrowserView.prototype.template = template;
       DataBrowserView.prototype.events = {
         "keyup #data-console": "search",
-        "click #data-create-node": "createNode"
+        "click #data-create-node": "createNode",
+        "click #data-create-relationship": "createRelationship"
       };
       DataBrowserView.prototype.initialize = function(options) {
         this.dataModel = options.dataModel;
         this.server = options.state.getServer();
+        this.htmlEscaper = new HtmlEscaper;
         this.urlResolver = new ItemUrlResolver(this.server);
-        return this.dataView = new SimpleView({
-          dataModel: options.dataModel
+        this.dataView = new SimpleView({
+          dataModel: this.dataModel
         });
+        return this.dataModel.bind("change:query", this.queryChanged);
       };
       DataBrowserView.prototype.render = function() {
-        $(this.el).html(this.template());
-        $("#data-area", this.el).append(this.dataView.el);
+        $(this.el).html(this.template({
+          query: this.htmlEscaper.escape(this.dataModel.getQuery())
+        }));
+        $("#data-area", this.el).append(this.dataView.render().el);
         return this;
+      };
+      DataBrowserView.prototype.queryChanged = function() {
+        return $("#data-console", this.el).val(this.dataModel.getQuery());
       };
       DataBrowserView.prototype.search = function(ev) {
         return this.dataModel.setQuery($("#data-console", this.el).val());
@@ -82,6 +93,18 @@
           });
           return this.dataModel.setQuery(id, true);
         }, this));
+      };
+      DataBrowserView.prototype.createRelationship = function() {
+        var button;
+        button = $("#data-create-relationship");
+        if (this.createRelationshipDialog != null) {
+          this.createRelationshipDialog.remove();
+          delete this.createRelationshipDialog;
+          return button.removeClass("selected");
+        } else {
+          button.addClass("selected");
+          return this.createRelationshipDialog = new CreateRelationshipDialog(button);
+        }
       };
       return DataBrowserView;
     })();

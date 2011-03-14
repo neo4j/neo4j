@@ -120,7 +120,7 @@ body { width:100%; height:100%; color: #333; background:#fff; padding:0;margin:0
 #data-home {
   background:url("../img/icons/glyphish/53-house.png") no-repeat scroll center center #ccc;
 }
-#data-create-node {
+#data-create-node, #data-create-relationship {
   background:url("../img/icons/glyphish/add.png") no-repeat scroll 5px center #ccc;
 }
 #data-refresh:hover {
@@ -129,8 +129,18 @@ body { width:100%; height:100%; color: #333; background:#fff; padding:0;margin:0
 #data-home:hover {
   background:url("../img/icons/glyphish/53-house.png") no-repeat scroll center center #fff;
 }
-#data-create-node:hover {
+#data-create-node:hover, #data-create-relationship:hover {
   background:url("../img/icons/glyphish/add.png") no-repeat scroll 5px center #fff;
+}
+
+#data-create-relationship.selected {
+  -moz-border-radius-bottomright:0;
+  -webkit-border-bottom-right-radius:0;
+  border-bottom-right-radius:0;
+  -moz-border-radius-bottomleft:0;
+  -webkit-border-bottom-left-radius:0;
+  border-bottom-left-radius:0;
+  background:url("../img/icons/glyphish/add.png") no-repeat scroll 5px center #333;
 }
 
 #data-execute-console {
@@ -138,6 +148,19 @@ body { width:100%; height:100%; color: #333; background:#fff; padding:0;margin:0
 }
 #data-execute-console:hover {
   background:url("../img/icons/glyphish/06-magnify.png") no-repeat scroll center center #fff;
+}
+
+
+.create-relationship-dialog {
+  width:300px;
+  background: #333;
+  padding: 5px;
+  -moz-border-radius:4px;
+  -webkit-border-radius:4px;
+  border-radius:4px;
+  -moz-border-radius-topright:0;
+  -webkit-border-top-right-radius:0;
+  border-top-right-radius:0;
 }
 
 .simple-data-area {
