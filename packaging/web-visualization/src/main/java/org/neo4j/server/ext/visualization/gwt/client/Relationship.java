@@ -7,6 +7,11 @@ import com.google.gwt.dom.client.Style.Position;
 import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.user.client.ui.HTML;
 
+/**
+ * A directional, labeled edge/line between 2 nodes.
+ * 
+ * @author Marlon Richert @ Vaadin
+ */
 class Relationship {
 
     private static final int ARROWHEAD_LENGTH = 10;
