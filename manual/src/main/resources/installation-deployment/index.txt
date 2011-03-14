@@ -10,7 +10,5 @@ include::installation.txt[]
 
 include::requirements.txt[]
 
-//include::{importdir}/neo4j-docs-jar/ops/upgrades.txt[]
-
-include::upgrades.txt[]
+include::{importdir}/neo4j-docs-jar/ops/upgrades.txt[]
 
