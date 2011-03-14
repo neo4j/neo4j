@@ -38,32 +38,27 @@ define(
 
       initialize : (opts) =>
         @template = opts.template
-        @propertyContainer = new PropertyContainer()
-        @propertyContainer.bind "change:propertyList", @renderProperties
-        @propertyContainer.bind "change:saveState", @updateSaveState
 
       keyChanged : (ev) =>
-        id = @getPropertyIdForElement(ev.target)
-        @propertyContainer.setKey(id, $(ev.target).val())
+        @propertyContainer.setNotSaved()
 
       valueChanged : (ev) =>
-        id = @getPropertyIdForElement(ev.target)
-        @propertyContainer.setValue(id, $(ev.target).val())
+        @propertyContainer.setNotSaved()
 
       keyChangeDone : (ev) =>
         id = @getPropertyIdForElement(ev.target)
         @propertyContainer.setKey(id, $(ev.target).val())
-        @propertyContainer.save()
+        @saveChanges()
 
       valueChangeDone : (ev) =>    
         id = @getPropertyIdForElement(ev.target)
         el = $(ev.target)
 
         if @shouldBeConvertedToString(el.val())
-          el.val("'#{el.val()}'")        
+          el.val('"' + el.val() + '"');
         
         @propertyContainer.setValue(id, el.val())
-        @propertyContainer.save()
+        @saveChanges()
 
       deleteProperty : (ev) =>
         id = @getPropertyIdForElement(ev.target)
@@ -104,8 +99,9 @@ define(
         $(element).closest("ul").find("input.property-id").val()
 
       setDataModel : (dataModel) =>
-        @dataModel = dataModel
-        @propertyContainer.setDataModel(@dataModel)
+        @propertyContainer = dataModel.getData()
+        @propertyContainer.bind "change:propertyList", @renderProperties
+        @propertyContainer.bind "change:status", @updateSaveState
 
       render : =>
         $(@el).html(@template(

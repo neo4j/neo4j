@@ -25,13 +25,12 @@ define ['./Property','lib/backbone'], (Property) ->
   class PropertyContainer extends Backbone.Model
     
     defaults :
-      saveState : "saved"
+      status : "saved"
 
-    initialize : (opts) =>
+    initialize : (item, opts) =>
       @properties = {}
 
-    setDataModel : (dataModel) =>
-      @dataModel = dataModel
+      @item = item
       @properties = {}
       for key, value of @getItem().getProperties()
         @addProperty(key, value, {silent:true})
@@ -40,10 +39,10 @@ define ['./Property','lib/backbone'], (Property) ->
       @updatePropertyList()
 
     getItem : () =>
-       @dataModel.get("data")
+      @item
       
     getSelf : () =>
-      @dataModel.get("data").getSelf()
+      @getItem().getSelf()
 
     setKey : (id, key, opts={}) =>
       duplicate = @hasKey(key, id)
@@ -52,8 +51,7 @@ define ['./Property','lib/backbone'], (Property) ->
       oldKey = property.key
       property.set "key": key
       
-      if @validate()
-        @setNotSaved()
+      @setNotSaved()
 
       if duplicate
         property.setKeyError "This key is already used, please choose a different one."
@@ -68,8 +66,8 @@ define ['./Property','lib/backbone'], (Property) ->
     setValue : (id, value, opts={}) =>
       property = @getProperty(id)
       cleanedValue = @cleanPropertyValue(value)
-      if not @isCantSave()
-        @setNotSaved()
+      
+      @setNotSaved()
 
       if cleanedValue.value?
         property.set "valueError": false
@@ -78,12 +76,12 @@ define ['./Property','lib/backbone'], (Property) ->
         @getItem().setProperty(property.getKey(), cleanedValue.value)
 
       else
-        property.set "value": null
+        property.set "value": value
         property.set "valueError": cleanedValue.error
       @updatePropertyList(opts)
 
     deleteProperty : (id, opts={}) =>
-      if not @isCantSave()
+      if @noErrors(ignore:id)
         @setNotSaved()
 
         property = @getProperty(id)
@@ -108,23 +106,22 @@ define ['./Property','lib/backbone'], (Property) ->
 
       return false
 
-    updatePropertyList : (opts={silent:true}) =>
+    updatePropertyList : (opts={}) =>
       flatProperties = []
       for key, property of @properties
         flatProperties.push(property)
+      
+      silent = opts.silent? and opts.silent is true
+      opts.silent = true
+      @set { propertyList : flatProperties }, opts
 
-      @set { propertyList : flatProperties) }, opts
-
-    hasDuplicates : =>
-      for key, property of @properties
-        if property.isDuplicate()
-          return true
-
-      return false
+      if not silent
+        @trigger("change:propertyList")
 
     save : () =>
-      @setSaveState("saving")
-      @getItem().save().then @setSaved, @saveFailed
+      if @noErrors()
+        @setSaveState("saving")
+        @getItem().save().then @setSaved, @saveFailed
 
     saveFailed : (ev) =>
       @setNotSaved()
@@ -132,34 +129,28 @@ define ['./Property','lib/backbone'], (Property) ->
     setSaved : () =>
       @setSaveState("saved")
 
-    setCantSave : () =>
-      @setSaveState("cantSave")
-
     setNotSaved : () =>
       @setSaveState("notSaved")
 
     isSaved : =>
       @getSaveState() == "saved"
 
-    isCantSave : () =>
-      @getSaveState() == "cantSave"
-
     isNotSaved : => 
-      @getSaveState() == "notSaved" or @isCantSave()
+      @getSaveState() == "notSaved"
 
     getSaveState : =>
-      @get "saveState"
+      @get "status"
     
     setSaveState : (state, opts={}) =>
-      @set { saveState : state }, opts
+      @set { status : state }
 
+    noErrors : (opts={}) =>
+      for id, property of @properties
+        if not (opts.ignore?) or opts.ignore != id
+          if property.hasKeyError() or property.hasValueError()
+            return false
 
-    validate : =>
-      
-      for property in @properties
-        if property.hasKeyError() or property.hasValueError()
-          return false
-
+      return true
     
     cleanPropertyValue : (rawVal) =>
       try

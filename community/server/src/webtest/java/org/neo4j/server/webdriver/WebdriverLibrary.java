@@ -29,6 +29,7 @@ import java.util.Date;
 
 import org.hamcrest.Matcher;
 import org.openqa.selenium.By;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
 
 public class WebdriverLibrary
@@ -61,6 +62,13 @@ public class WebdriverLibrary
     
     public void waitUntil(Matcher<WebDriver> cond, String errorMessage) throws Exception {
         waitUntil( cond, errorMessage, 10000);
+    }
+    
+    public void clearInput(ElementReference el) {
+        int len = el.getValue().length();
+        while(len-- >= 0) {
+            el.sendKeys( Keys.BACK_SPACE );
+        }
     }
     
     public void waitUntil(Matcher<WebDriver> matcher, String errorMessage, long timeout) throws Exception {

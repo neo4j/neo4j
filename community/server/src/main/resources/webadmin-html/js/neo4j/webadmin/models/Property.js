@@ -110,10 +110,10 @@
         });
       };
       Property.prototype.hasKeyError = function() {
-        return this.getKeyError() === !false;
+        return this.getKeyError() !== false;
       };
       Property.prototype.hasValueError = function() {
-        return this.getValueError() === !false;
+        return this.getValueError() !== false;
       };
       return Property;
     })();

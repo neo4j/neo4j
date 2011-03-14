@@ -19,8 +19,8 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['lib/backbone'], 
-  () ->
+  ['./PropertyContainer', 'lib/backbone'], 
+  (PropertyContainer) ->
   
     class DataBrowserState extends Backbone.Model
       
@@ -33,8 +33,11 @@ define(
       initialize : (options) =>
         @server = options.server
 
-      getEscapedQuery : =>
-        encodeURIComponent(@get "query")
+      getQuery : =>
+        @get "query"
+
+      getData : =>
+        @get "data"
 
       setQuery : (val, isForCurrentData=false, opts={}) =>
         if @get("query") != val
@@ -45,9 +48,9 @@ define(
         @set({"data":result, "queryOutOfSyncWithData" : not basedOnCurrentQuery }, {silent:true})
 
         if result instanceof neo4j.models.Node
-          @set({type:"node"}, opts)
+          @set({type:"node","data":new PropertyContainer(result)}, opts)
         else if result instanceof neo4j.models.Relationship
-          @set({type:"relationship"}, opts)
+          @set({type:"relationship","data":new PropertyContainer(result)}, opts)
         else if _(result).isArray()
           @set({type:"list"}, opts)
         else

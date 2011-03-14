@@ -52,5 +52,6 @@ define(
         view.setDataModel(@dataModel)
         $(@el).html(view.render().el)
         view.delegateEvents()
+        return this
 
 )

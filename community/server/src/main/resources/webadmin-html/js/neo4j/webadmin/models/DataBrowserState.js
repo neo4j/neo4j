@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2002-2011 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 (function() {
   /*
   Copyright (c) 2002-2011 "Neo Technology,"
@@ -25,13 +44,14 @@
     child.__super__ = parent.prototype;
     return child;
   };
-  define(['lib/backbone'], function() {
+  define(['./PropertyContainer', 'lib/backbone'], function(PropertyContainer) {
     var DataBrowserState;
     return DataBrowserState = (function() {
       function DataBrowserState() {
         this.setData = __bind(this.setData, this);;
         this.setQuery = __bind(this.setQuery, this);;
-        this.getEscapedQuery = __bind(this.getEscapedQuery, this);;
+        this.getData = __bind(this.getData, this);;
+        this.getQuery = __bind(this.getQuery, this);;
         this.initialize = __bind(this.initialize, this);;        DataBrowserState.__super__.constructor.apply(this, arguments);
       }
       __extends(DataBrowserState, Backbone.Model);
@@ -44,8 +64,11 @@
       DataBrowserState.prototype.initialize = function(options) {
         return this.server = options.server;
       };
-      DataBrowserState.prototype.getEscapedQuery = function() {
-        return encodeURIComponent(this.get("query"));
+      DataBrowserState.prototype.getQuery = function() {
+        return this.get("query");
+      };
+      DataBrowserState.prototype.getData = function() {
+        return this.get("data");
       };
       DataBrowserState.prototype.setQuery = function(val, isForCurrentData, opts) {
         if (isForCurrentData == null) {
@@ -78,11 +101,13 @@
         });
         if (result instanceof neo4j.models.Node) {
           return this.set({
-            type: "node"
+            type: "node",
+            "data": new PropertyContainer(result)
           }, opts);
         } else if (result instanceof neo4j.models.Relationship) {
           return this.set({
-            type: "relationship"
+            type: "relationship",
+            "data": new PropertyContainer(result)
           }, opts);
         } else if (_(result).isArray()) {
           return this.set({
