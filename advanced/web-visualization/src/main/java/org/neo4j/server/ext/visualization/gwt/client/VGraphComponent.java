@@ -21,6 +21,11 @@ import com.vaadin.terminal.gwt.client.Paintable;
 import com.vaadin.terminal.gwt.client.UIDL;
 import com.vaadin.terminal.gwt.client.Util;
 
+/**
+ * Client-side component for visually exploring a large graph.
+ * 
+ * @author Marlon Richert @ Vaadin
+ */
 public class VGraphComponent extends Composite implements Paintable,
         ClickHandler {
 
