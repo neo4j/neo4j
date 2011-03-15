@@ -39,6 +39,12 @@ define(
       getData : =>
         @get "data"
 
+      dataIsSingleNode : () =>
+        return @get("type") == "node"
+     
+      dataIsSingleRelationship : () =>
+        return @get("type") == "relationship"
+
       setQuery : (val, isForCurrentData=false, opts={}) =>
         if @get("query") != val
           @set {"queryOutOfSyncWithData": not isForCurrentData }, opts

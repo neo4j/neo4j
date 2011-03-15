@@ -2,6 +2,7 @@
 @import url(buttons.css);
 @import url(typography.css);
 @import url(tables.css);
+@import url(forms.css);
 
 body { width:100%; height:100%; color: #333; background:#fff; padding:0;margin:0; font-family:arial, sans-serif; }
 
@@ -156,6 +157,7 @@ body { width:100%; height:100%; color: #333; background:#fff; padding:0;margin:0
   -webkit-border-bottom-left-radius:0;
   border-bottom-left-radius:0;
   background:url("../img/icons/glyphish/add.png") no-repeat scroll 5px center #333;
+  color:#eee;
 }
 
 #data-execute-console {
@@ -176,6 +178,7 @@ body { width:100%; height:100%; color: #333; background:#fff; padding:0;margin:0
   -moz-border-radius-topright:0;
   -webkit-border-top-right-radius:0;
   border-top-right-radius:0;
+  color: #eee;
 }
 
 .simple-data-area {
