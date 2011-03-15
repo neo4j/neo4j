@@ -22,10 +22,11 @@ define(
   ['neo4j/webadmin/data/Search',
    'neo4j/webadmin/data/ItemUrlResolver',
    'neo4j/webadmin/security/HtmlEscaper',
-   './databrowser/SimpleView',
+   './databrowser/TabularView',
+   './databrowser/VisualizedView',
    './databrowser/CreateRelationshipDialog',
    'neo4j/webadmin/templates/databrowser/base','lib/backbone'], 
-  (Search, ItemUrlResolver, HtmlEscaper, SimpleView, CreateRelationshipDialog, template) ->
+  (Search, ItemUrlResolver, HtmlEscaper, TabularView, VisualizedView, CreateRelationshipDialog, template) ->
 
     class DataBrowserView extends Backbone.View
       
@@ -43,13 +44,14 @@ define(
         @htmlEscaper = new HtmlEscaper
 
         @urlResolver = new ItemUrlResolver(@server)
-        @dataView = new SimpleView(dataModel:@dataModel)
-
+        
         @dataModel.bind("change:query", @queryChanged)
+        @switchToTabularView()
 
       render : =>
         $(@el).html(@template( query : @htmlEscaper.escape(@dataModel.getQuery()) ))
-        $("#data-area", @el).append @dataView.render().el
+        $("#data-area", @el).append @dataView.el
+        @dataView.render()
         return this
 
       queryChanged : =>
@@ -73,4 +75,15 @@ define(
         else
           button.addClass("selected")
           @createRelationshipDialog = new CreateRelationshipDialog(button)
+
+      switchToVisualizedView : =>
+        if @dataView?
+          @dataView.remove()
+        @dataView = new VisualizedView(dataModel:@dataModel, server:@server)
+
+      switchToTabularView : =>
+        if @dataView?
+          @dataView.remove()
+        @dataView = new TabularView(dataModel:@dataModel, server:@server)
+
 )
