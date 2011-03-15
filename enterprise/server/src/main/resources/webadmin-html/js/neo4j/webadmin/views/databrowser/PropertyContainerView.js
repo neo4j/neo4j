@@ -51,6 +51,8 @@
         this.getPropertyField = __bind(this.getPropertyField, this);;
         this.shouldBeConvertedToString = __bind(this.shouldBeConvertedToString, this);;
         this.renderProperties = __bind(this.renderProperties, this);;
+        this.unbind = __bind(this.unbind, this);;
+        this.remove = __bind(this.remove, this);;
         this.render = __bind(this.render, this);;
         this.setDataModel = __bind(this.setDataModel, this);;
         this.getPropertyIdForElement = __bind(this.getPropertyIdForElement, this);;
@@ -160,6 +162,7 @@
         return $(element).closest("ul").find("input.property-id").val();
       };
       PropertyContainerView.prototype.setDataModel = function(dataModel) {
+        this.unbind();
         this.propertyContainer = dataModel.getData();
         this.propertyContainer.bind("change:propertyList", this.renderProperties);
         return this.propertyContainer.bind("change:status", this.updateSaveState);
@@ -170,6 +173,16 @@
         }));
         this.renderProperties();
         return this;
+      };
+      PropertyContainerView.prototype.remove = function() {
+        this.unbind();
+        return PropertyContainerView.__super__.remove.call(this);
+      };
+      PropertyContainerView.prototype.unbind = function() {
+        if (this.propertyContainer != null) {
+          this.propertyContainer.unbind("change:propertyList", this.renderProperties);
+          return this.propertyContainer.unbind("change:status", this.updateSaveState);
+        }
       };
       PropertyContainerView.prototype.renderProperties = function() {
         $(".properties", this.el).html(propertyEditorTemplate({
