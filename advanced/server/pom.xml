@@ -22,14 +22,14 @@
     <neo-server.confdir>target/test-classes/etc/neo-server</neo-server.confdir>
     <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
     <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
-    
+ 
     <!-- Run integration tests against a server that is started elsewhere
          This is used in ServerIntegrationTestFacade, which currently assumes
          external servers to be running at http://localhost:7474/ -->
     <testWithExternalServer>false</testWithExternalServer>
     
     <!-- For cucumber "feature" tests -->
-	  <cuke4duke.version>0.4.3</cuke4duke.version>
+    <cuke4duke.version>0.4.3</cuke4duke.version>
     <pico.version>2.11.2</pico.version>
     <cukeArgs></cukeArgs>
     
@@ -37,7 +37,7 @@
     <webdriver.impl.class>org.openqa.selenium.firefox.FirefoxDriver</webdriver.impl.class>
 
     <neo4j.version>1.3-SNAPSHOT</neo4j.version>
-    <neo4js.version>0.5</neo4js.version>
+    <neo4js.version>0.6-SNAPSHOT</neo4js.version>
   </properties>
 
   <packaging>bundle</packaging>
