@@ -18,178 +18,190 @@ You should have received a copy of the GNU Affero General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 ###
 
-define ['./Property','lib/backbone'], (Property) ->
+define(
+  ['neo4j/webadmin/data/ItemUrlResolver'
+   './Property','lib/backbone'], 
+  (ItemUrlResolver, Property) ->
   
-  ID_COUNTER = 0
+    ID_COUNTER = 0
 
-  class PropertyContainer extends Backbone.Model
-    
-    defaults :
-      status : "saved"
-
-    initialize : (item, opts) =>
-      @properties = {}
-
-      @item = item
-      @properties = {}
-      for key, value of @getItem().getProperties()
-        @addProperty(key, value, {silent:true})
-
-      @setSaved()
-      @updatePropertyList()
-
-    getItem : () =>
-      @item
+    class PropertyContainer extends Backbone.Model
       
-    getSelf : () =>
-      @getItem().getSelf()
+      defaults :
+        status : "saved"
 
-    setKey : (id, key, opts={}) =>
-      duplicate = @hasKey(key, id)
-      property = @getProperty(id)
+      initialize : (item, opts) =>
+        @properties = {}
 
-      oldKey = property.key
-      property.set "key": key
-      
-      @setNotSaved()
+        @urlResolver = new ItemUrlResolver
 
-      if duplicate
-        property.setKeyError "This key is already used, please choose a different one."
-      else
-        property.setKeyError false
+        @item = item
+        @properties = {}
+        for key, value of @getItem().getProperties()
+          @addProperty(key, value, {silent:true})
 
-        @getItem().removeProperty(oldKey)
-        @getItem().setProperty(key, property.getValue())
+        @setSaved()
+        @updatePropertyList()
 
-      @updatePropertyList(opts)
- 
-    setValue : (id, value, opts={}) =>
-      property = @getProperty(id)
-      cleanedValue = @cleanPropertyValue(value)
-      
-      @setNotSaved()
+      getItem : () =>
+        @item
+        
+      getSelf : () =>
+        @getItem().getSelf()
 
-      if cleanedValue.value?
-        property.set "valueError": false
-        property.set "value": cleanedValue.value
+      getId : () =>
+        if @item instanceof neo4j.models.Node
+          @urlResolver.extractNodeId(@getSelf())
+        else
+          @urlResolver.extractRelationshipId(@getSelf())
 
-        @getItem().setProperty(property.getKey(), cleanedValue.value)
+      setKey : (id, key, opts={}) =>
+        duplicate = @hasKey(key, id)
+        property = @getProperty(id)
 
-      else
-        property.set "value": value
-        property.set "valueError": cleanedValue.error
-      @updatePropertyList(opts)
-
-    deleteProperty : (id, opts={}) =>
-      if @noErrors(ignore:id)
+        oldKey = property.key
+        property.set "key": key
+        
         @setNotSaved()
 
-        property = @getProperty(id)
-        delete(@properties[id])
+        if duplicate
+          property.setKeyError "This key is already used, please choose a different one."
+        else
+          property.setKeyError false
 
-        @getItem().removeProperty property.getKey()
+          @getItem().removeProperty(oldKey)
+          @getItem().setProperty(key, property.getValue())
+
+        @updatePropertyList(opts)
+   
+      setValue : (id, value, opts={}) =>
+        property = @getProperty(id)
+        cleanedValue = @cleanPropertyValue(value)
+        
+        @setNotSaved()
+
+        if cleanedValue.value?
+          property.set "valueError": false
+          property.set "value": cleanedValue.value
+
+          @getItem().setProperty(property.getKey(), cleanedValue.value)
+
+        else
+          property.set "value": value
+          property.set "valueError": cleanedValue.error
         @updatePropertyList(opts)
 
-    addProperty : (key="", value="", opts={}) =>
+      deleteProperty : (id, opts={}) =>
+        if @noErrors(ignore:id)
+          @setNotSaved()
 
-      id = @generatePropertyId()
-      @properties[id] = new Property({key:key, value:value, localId:id})
-      @updatePropertyList(opts)
+          property = @getProperty(id)
+          delete(@properties[id])
 
-    getProperty : (id) =>
-      @properties[id]
+          @getItem().removeProperty property.getKey()
+          @updatePropertyList(opts)
 
-    hasKey : (search, ignoreId=null) =>
-      for id, property of @properties
-        if property.getKey() == search and id != ignoreId
-          return true
+      addProperty : (key="", value="", opts={}) =>
 
-      return false
+        id = @generatePropertyId()
+        @properties[id] = new Property({key:key, value:value, localId:id})
+        @updatePropertyList(opts)
 
-    updatePropertyList : (opts={}) =>
-      flatProperties = []
-      for key, property of @properties
-        flatProperties.push(property)
-      
-      silent = opts.silent? and opts.silent is true
-      opts.silent = true
-      @set { propertyList : flatProperties }, opts
+      getProperty : (id) =>
+        @properties[id]
 
-      if not silent
-        @trigger("change:propertyList")
+      hasKey : (search, ignoreId=null) =>
+        for id, property of @properties
+          if property.getKey() == search and id != ignoreId
+            return true
 
-    save : () =>
-      if @noErrors()
-        @setSaveState("saving")
-        @getItem().save().then @setSaved, @saveFailed
-
-    saveFailed : (ev) =>
-      @setNotSaved()
-
-    setSaved : () =>
-      @setSaveState("saved")
-
-    setNotSaved : () =>
-      @setSaveState("notSaved")
-
-    isSaved : =>
-      @getSaveState() == "saved"
-
-    isNotSaved : => 
-      @getSaveState() == "notSaved"
-
-    getSaveState : =>
-      @get "status"
-    
-    setSaveState : (state, opts={}) =>
-      @set { status : state }
-
-    noErrors : (opts={}) =>
-      for id, property of @properties
-        if not (opts.ignore?) or opts.ignore != id
-          if property.hasKeyError() or property.hasValueError()
-            return false
-
-      return true
-    
-    cleanPropertyValue : (rawVal) =>
-      try
-        val = JSON.parse rawVal
-        if  val == null
-          return error:"Null values are not allowed."
-        else if @isMap val
-          return error:"Maps are not supported property values."
-        else if _(val).isArray() and not @isValidArrayValue val
-          return error:"Only arrays with one type of values, and only primitive types, is allowed."
-        else
-          return value:val
-      catch e
-        return error:"This does not appear to be a valid JSON value."
-
-
-    isMap : (val) => 
-      return JSON.stringify(val).indexOf("{") == 0
-
-    isValidArrayValue : (val) =>
-      if val.length == 0
-        return true
-
-      firstValue = val[0]
-      if _.isString firstValue
-        validType = _.isString 
-      else if _.isNumber firstValue
-        validType = _.isNumber
-      else if _.isBoolean firstValue
-        validType = _.isBoolean
-      else 
         return false
 
-      for value in val
-        if not validType value
-          return false;
+      updatePropertyList : (opts={}) =>
+        flatProperties = []
+        for key, property of @properties
+          flatProperties.push(property)
+        
+        silent = opts.silent? and opts.silent is true
+        opts.silent = true
+        @set { propertyList : flatProperties }, opts
 
-      return true;
+        if not silent
+          @trigger("change:propertyList")
+
+      save : () =>
+        if @noErrors()
+          @setSaveState("saving")
+          @getItem().save().then @setSaved, @saveFailed
+
+      saveFailed : (ev) =>
+        @setNotSaved()
+
+      setSaved : () =>
+        @setSaveState("saved")
+
+      setNotSaved : () =>
+        @setSaveState("notSaved")
+
+      isSaved : =>
+        @getSaveState() == "saved"
+
+      isNotSaved : => 
+        @getSaveState() == "notSaved"
+
+      getSaveState : =>
+        @get "status"
+      
+      setSaveState : (state, opts={}) =>
+        @set { status : state }
+
+      noErrors : (opts={}) =>
+        for id, property of @properties
+          if not (opts.ignore?) or opts.ignore != id
+            if property.hasKeyError() or property.hasValueError()
+              return false
+
+        return true
+      
+      cleanPropertyValue : (rawVal) =>
+        try
+          val = JSON.parse rawVal
+          if  val == null
+            return error:"Null values are not allowed."
+          else if @isMap val
+            return error:"Maps are not supported property values."
+          else if _(val).isArray() and not @isValidArrayValue val
+            return error:"Only arrays with one type of values, and only primitive types, is allowed."
+          else
+            return value:val
+        catch e
+          return error:"This does not appear to be a valid JSON value."
 
 
-    generatePropertyId : () =>
-      ID_COUNTER++
+      isMap : (val) => 
+        return JSON.stringify(val).indexOf("{") == 0
+
+      isValidArrayValue : (val) =>
+        if val.length == 0
+          return true
+
+        firstValue = val[0]
+        if _.isString firstValue
+          validType = _.isString 
+        else if _.isNumber firstValue
+          validType = _.isNumber
+        else if _.isBoolean firstValue
+          validType = _.isBoolean
+        else 
+          return false
+
+        for value in val
+          if not validType value
+            return false;
+
+        return true;
+
+
+      generatePropertyId : () =>
+        ID_COUNTER++
+)
