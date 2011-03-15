@@ -53,8 +53,10 @@ define(
         $(@el).html @template( 
           query : @htmlEscaper.escape(@dataModel.getQuery())
           viewType : @viewType )
+        @renderDataView()
 
-        $("#data-area", @el).append @dataView.el
+      renderDataView : =>
+        $("#data-area", @el).empty().append @dataView.el
         @dataView.render()
         return this
 
@@ -71,14 +73,22 @@ define(
           @dataModel.setQuery( id, true) 
 
       createRelationship : =>
-        button = $("#data-create-relationship")
+        if @createRelationshipDialog?
+          @hideCreateRelationshipDialog()
+        else
+          button = $("#data-create-relationship")
+          button.addClass("selected")
+          @createRelationshipDialog = new CreateRelationshipDialog(
+            baseElement : button
+            dataModel : @dataModel
+            server : @server
+            closeCallback : @hideCreateRelationshipDialog)
+
+      hideCreateRelationshipDialog : =>
         if @createRelationshipDialog?
           @createRelationshipDialog.remove()
           delete(@createRelationshipDialog)
-          button.removeClass("selected")
-        else
-          button.addClass("selected")
-          @createRelationshipDialog = new CreateRelationshipDialog(button)
+          $("#data-create-relationship").removeClass("selected")
 
 
       switchView : (ev) =>
@@ -89,7 +99,7 @@ define(
           $(ev.target).addClass("tabular")
           @switchToVisualizedView()
         
-        @render()
+        @renderDataView()
           
 
       switchToVisualizedView : =>

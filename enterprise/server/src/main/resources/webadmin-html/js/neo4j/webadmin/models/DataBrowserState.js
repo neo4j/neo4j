@@ -1,22 +1,3 @@
-/*
- * Copyright (c) 2002-2011 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
 (function() {
   /*
   Copyright (c) 2002-2011 "Neo Technology,"
@@ -50,6 +31,8 @@
       function DataBrowserState() {
         this.setData = __bind(this.setData, this);;
         this.setQuery = __bind(this.setQuery, this);;
+        this.dataIsSingleRelationship = __bind(this.dataIsSingleRelationship, this);;
+        this.dataIsSingleNode = __bind(this.dataIsSingleNode, this);;
         this.getData = __bind(this.getData, this);;
         this.getQuery = __bind(this.getQuery, this);;
         this.initialize = __bind(this.initialize, this);;        DataBrowserState.__super__.constructor.apply(this, arguments);
@@ -69,6 +52,12 @@
       };
       DataBrowserState.prototype.getData = function() {
         return this.get("data");
+      };
+      DataBrowserState.prototype.dataIsSingleNode = function() {
+        return this.get("type") === "node";
+      };
+      DataBrowserState.prototype.dataIsSingleRelationship = function() {
+        return this.get("type") === "relationship";
       };
       DataBrowserState.prototype.setQuery = function(val, isForCurrentData, opts) {
         if (isForCurrentData == null) {

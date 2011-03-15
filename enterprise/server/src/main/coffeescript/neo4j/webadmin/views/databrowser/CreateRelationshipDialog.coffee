@@ -19,18 +19,61 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['neo4j/webadmin/templates/databrowser/createRelationship',
+  ['neo4j/webadmin/data/ItemUrlResolver'
+   'neo4j/webadmin/templates/databrowser/createRelationship',
    'lib/backbone'], 
-  (template) ->
+  (ItemUrlResolver, template) ->
   
     class CreateRelationshipDialog extends Backbone.View
 
       className: "create-relationship-dialog"
 
-      initialize : (@baseElement, @from="", @type="RELATED_TO", @types=[], @to="") =>
+      events : 
+        "click #create-relationship" : "save"
+        "change #create-relationship-types" : "pickedFromAvailableTypes"
+
+      initialize : (opts) =>
         $("body").append(@el)
-        @render()
-        @position()
+
+        @baseElement = opts.baseElement
+        @server = opts.server
+        @dataModel = opts.dataModel
+        @closeCallback = opts.closeCallback
+
+        @urlResolver = new ItemUrlResolver(@server)
+
+        @type = "RELATED_TO"
+        if @dataModel.dataIsSingleNode()
+          @from = @dataModel.getData().getId()
+        else
+          @from = ""
+
+        @to = ""
+        
+        @server.getAvailableRelationshipTypes().then (types) =>
+          @types = types          
+          @render()
+          @position()
+
+      pickedFromAvailableTypes : =>
+        type = $("#create-relationship-types").val()
+        if type != "Types in use"
+          $("#create-relationship-type").val(type)
+        $("#create-relationship-types").val("Types in use")
+
+      save : =>
+        type = $("#create-relationship-type").val()
+        fromId = @urlResolver.extractNodeId($("#create-relationship-from").val())
+        toId = @urlResolver.extractNodeId($("#create-relationship-to").val())
+
+        fromUrl = @urlResolver.getNodeUrl(fromId)
+        toUrl = @urlResolver.getNodeUrl(toId)
+
+        @server.rel(fromUrl, type, toUrl).then (relationship) =>
+          id = @urlResolver.extractRelationshipId(relationship.getSelf())
+          @dataModel.setData( relationship, true, {silent:true} ) 
+          @dataModel.setQuery( "rel:#{id}", true)
+          @closeCallback()
 
       position : =>
         basePos = $(@baseElement).offset()
