@@ -37,8 +37,10 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.Neo4jTestCase;
+import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
 
 /**
  * Don't extend Neo4jTestCase since these tests restarts the db in the tests. 
@@ -206,7 +208,8 @@ public class TestRecovery
         // Instead I have to do this
         Map<Object, Object> params = MapUtil.genericMap(
                 "store_dir", getDbPath(),
-                IndexStore.class, new IndexStore( getDbPath() ) );
+                IndexStore.class, new IndexStore( getDbPath() ),
+                LogBufferFactory.class, CommonFactories.defaultLogBufferFactory( MapUtil.stringMap() ) );
         LuceneDataSource ds = new LuceneDataSource( params );
         ds.close();
     }

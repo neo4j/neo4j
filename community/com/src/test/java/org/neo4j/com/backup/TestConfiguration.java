@@ -29,7 +29,6 @@ import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 public class TestConfiguration
@@ -85,7 +84,6 @@ public class TestConfiguration
     @Test
     public void testEnableDefaultsInConfig() throws Exception
     {
-        if ( Config.osIsWindows() ) return;
         GraphDatabaseService db = newDb( "true" );
         OnlineBackup.from( "localhost" ).full( BACKUP_DIR );
         db.shutdown();
@@ -94,7 +92,6 @@ public class TestConfiguration
     @Test
     public void testEnableCustomPortInConfig() throws Exception
     {
-        if ( Config.osIsWindows() ) return;
         int customPort = 12345;
         GraphDatabaseService db = newDb( "port=" + customPort );
         try

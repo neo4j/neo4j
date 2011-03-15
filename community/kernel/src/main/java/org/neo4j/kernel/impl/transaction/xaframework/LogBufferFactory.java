@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.nioneo.store;
+package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 
-public interface FileSystemAbstraction
+public interface LogBufferFactory
 {
-    FileChannel open( String fileName, String mode ) throws IOException;
+    LogBuffer create( FileChannel fileChannel ) throws IOException;
     
-    FileLock tryLock( String fileName, FileChannel channel ) throws IOException;
+    FileChannel combine( FileChannel fileChannel, LogBuffer logBuffer ) throws IOException;
 }

@@ -91,7 +91,6 @@ public class TestBackup
     @Test
     public void fullThenIncremental() throws Exception
     {
-        if ( Config.osIsWindows() ) return;
         DbRepresentation initialDataSetRepresentation = createInitialDataSet( serverPath );
         ServerInterface server = startServer( serverPath );
         OnlineBackup backup = OnlineBackup.from( "localhost" );
@@ -109,7 +108,6 @@ public class TestBackup
     @Test
     public void makeSureStoreIdIsEnforced() throws Exception
     {
-        if ( Config.osIsWindows() ) return;
         // Create data set X on server A
         DbRepresentation initialDataSetRepresentation = createInitialDataSet( serverPath );
         ServerInterface server = startServer( serverPath );

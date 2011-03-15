@@ -38,8 +38,10 @@ import javax.transaction.xa.Xid;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
+import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
+import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
@@ -324,6 +326,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
     {
         Map<Object,Object> config = new HashMap<Object,Object>();
         config.put( "store_dir", "target/var" );
+        config.put( LogBufferFactory.class, CommonFactories.defaultLogBufferFactory( config ) );
         xaDsMgr.registerDataSource( "dummy_datasource", new DummyXaDataSource(
                 config ), "DDDDDD".getBytes() );
         XaDataSource xaDs = xaDsMgr.getXaDataSource( "dummy_datasource" );
@@ -386,6 +389,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         {
             Map<Object,Object> config = new HashMap<Object,Object>();
             config.put( "store_dir", "target/var" );
+            config.put( LogBufferFactory.class, CommonFactories.defaultLogBufferFactory( config ) );
             xaDsMgr.registerDataSource( "dummy_datasource1",
                     new DummyXaDataSource( config ), "DDDDDD".getBytes() );
             xaDs1 = (DummyXaDataSource) xaDsMgr

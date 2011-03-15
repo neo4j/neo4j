@@ -48,6 +48,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdType;
 
@@ -179,8 +180,7 @@ public class TestBigStore implements RelationshipType
     
     public static boolean machineIsOkToRunThisTest( String testName, int requiredHeapMb )
     {
-        String nameOs = System.getProperty( "os.name" );
-        if ( nameOs.startsWith( "Windows" ) )
+        if ( Config.osIsWindows() )
         {
             System.out.println( testName + ": This test cannot be run on Windows because it can't handle files of this size in a timely manner" );
             return false;

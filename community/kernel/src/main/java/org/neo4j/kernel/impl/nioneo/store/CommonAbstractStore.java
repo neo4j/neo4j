@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -259,7 +258,7 @@ public abstract class CommonAbstractStore
         {
             if ( (!readOnly || backupSlave) && grabFileLock )
             {
-                this.fileLock = this.fileChannel.tryLock();
+                this.fileLock = getFileSystem().tryLock( storageFileName, fileChannel );
                 if ( fileLock == null )
                 {
                     throw new IllegalStateException( "Unable to lock store ["
@@ -686,7 +685,10 @@ public abstract class CommonAbstractStore
                     fileChannel.write( buffer );
                     fileChannel.truncate( fileChannel.position() );
                     fileChannel.force( false );
-                    fileLock.release();
+                    if ( fileLock != null )
+                    {
+                        fileLock.release();
+                    }
                     fileChannel.close();
                     fileChannel = null;
                     success = true;

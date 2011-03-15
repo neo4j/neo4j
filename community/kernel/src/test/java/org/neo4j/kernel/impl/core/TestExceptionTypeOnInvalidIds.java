@@ -54,7 +54,6 @@ public class TestExceptionTypeOnInvalidIds
     @BeforeClass
     public static void createDatabase()
     {
-        if ( AbstractNeo4jTestCase.osIsWindows() ) return;
         String storeDir = "target/var/id_test";
         AbstractNeo4jTestCase.deleteFileOrDirectory( new File( storeDir ) );
         graphdb = new EmbeddedGraphDatabase( storeDir );
@@ -64,7 +63,6 @@ public class TestExceptionTypeOnInvalidIds
     @AfterClass
     public static void destroyDatabase()
     {
-        if ( AbstractNeo4jTestCase.osIsWindows() ) return;
         graphDbReadOnly.shutdown();
         graphDbReadOnly = null;
         graphdb.shutdown();
@@ -74,14 +72,12 @@ public class TestExceptionTypeOnInvalidIds
     @Before
     public void startTransaction()
     {
-        if ( AbstractNeo4jTestCase.osIsWindows() ) return;
         tx = graphdb.beginTx();
     }
 
     @After
     public void endTransaction()
     {
-        if ( AbstractNeo4jTestCase.osIsWindows() ) return;
         tx.finish();
         tx = null;
     }
@@ -216,11 +212,6 @@ public class TestExceptionTypeOnInvalidIds
 
     private void getNodeById( long index )
     {
-        if ( AbstractNeo4jTestCase.osIsWindows() )
-        {
-            throw new NotFoundException();
-        }
-
         Node value = graphdb.getNodeById( index );
         fail( String.format( "Returned Node [0x%x] for index 0x%x (int value: 0x%x)",
                 value.getId(), index, (int) index ) );
@@ -228,11 +219,6 @@ public class TestExceptionTypeOnInvalidIds
 
     private void getNodeByIdReadOnly( long index )
     {
-        if ( AbstractNeo4jTestCase.osIsWindows() )
-        {
-            throw new NotFoundException();
-        }
-
         Node value = graphDbReadOnly.getNodeById( index );
         fail( String.format( "Returned Node [0x%x] for index 0x%x (int value: 0x%x)",
                 value.getId(), index, (int) index ) );
@@ -240,11 +226,6 @@ public class TestExceptionTypeOnInvalidIds
 
     private void getRelationshipById( long index )
     {
-        if ( AbstractNeo4jTestCase.osIsWindows() )
-        {
-            throw new NotFoundException();
-        }
-
         Relationship value = graphdb.getRelationshipById( index );
         fail( String.format( "Returned Relationship [0x%x] for index 0x%x (int value: 0x%x)",
                 value.getId(), index, (int) index ) );
@@ -252,11 +233,6 @@ public class TestExceptionTypeOnInvalidIds
 
     private void getRelationshipByIdReadOnly( long index )
     {
-        if ( AbstractNeo4jTestCase.osIsWindows() )
-        {
-            throw new NotFoundException();
-        }
-
         Relationship value = graphDbReadOnly.getRelationshipById( index );
         fail( String.format( "Returned Relationship [0x%x] for index 0x%x (int value: 0x%x)",
                 value.getId(), index, (int) index ) );

@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.persistence.IdGeneratorModule;
 import org.neo4j.kernel.impl.persistence.PersistenceModule;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TxModule;
+import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 
 /**
@@ -111,7 +112,8 @@ public class Config
             LockReleaser lockReleaser, IdGeneratorFactory idGeneratorFactory,
             TxEventSyncHookFactory txSyncHookFactory,
             RelationshipTypeCreator relTypeCreator, TxIdGenerator txIdGenerator,
-            LastCommittedTxIdSetter lastCommittedTxIdSetter, FileSystemAbstraction fileSystem )
+            LastCommittedTxIdSetter lastCommittedTxIdSetter, FileSystemAbstraction fileSystem,
+            LogBufferFactory logBufferFactory )
     {
         this.storeDir = storeDir;
         this.inputParams = inputParams;
@@ -129,6 +131,7 @@ public class Config
         this.syncHookFactory = txSyncHookFactory;
         this.persistenceModule = new PersistenceModule();
         this.cacheManager = new AdaptiveCacheManager();
+        params.put( LogBufferFactory.class, logBufferFactory );
         graphDbModule = new GraphDbModule( graphDb, cacheManager, lockManager,
                 txModule.getTxManager(), idGeneratorModule.getIdGenerator(),
                 readOnly );
