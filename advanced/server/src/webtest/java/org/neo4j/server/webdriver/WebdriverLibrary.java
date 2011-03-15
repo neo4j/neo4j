@@ -41,11 +41,11 @@ public class WebdriverLibrary
     }
     
     public void clickOnButton(String text) {
-        d.findElement( By.xpath( "//button[contains(.,'"+text+"')]") ).click();
+        getElement( By.xpath( "//button[contains(.,'"+text+"')]") ).click();
     }
     
     public void clickOnLink(String text) {
-        d.findElement( By.xpath( "//a[contains(.,'"+text+"')]") ).click();
+        getElement( By.xpath( "//a[contains(.,'"+text+"')]") ).click();
     }
     
     public void waitForUrlToBe(String url) throws Exception {
