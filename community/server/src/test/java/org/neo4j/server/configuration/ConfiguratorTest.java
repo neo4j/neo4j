@@ -71,25 +71,21 @@ public class ConfiguratorTest {
         configFile.delete();
     }
 
-    private static final String NEOSTORE_NODESTORE_DB_MAPPED_MEMORY_KEY = "neostore.nodestore.db.mapped_memory";
-    private static final String NEOSTORE_NODESTORE_DB_MAPPED_MEMORY = "25M";
-    private static final String NEOSTORE_RELATIONSHIPSTORE_DB_MAPPED_MEMORY_KEY = "neostore.relationshipstore.db.mapped_memory";
-    private static final String NEOSTORE_RELATIONSHIPSTORE_DB_MAPPED_MEMORY = "50M";
-
     @Test
-    public void shouldProvideDatabaseTuningParametersSeparately() throws IOException {
-        File databaseTuningPropertyFile = ServerTestUtils.createTempPropertyFile();
-        ServerTestUtils.writePropertyToFile(NEOSTORE_NODESTORE_DB_MAPPED_MEMORY_KEY, NEOSTORE_NODESTORE_DB_MAPPED_MEMORY, databaseTuningPropertyFile);
-        ServerTestUtils.writePropertyToFile(NEOSTORE_RELATIONSHIPSTORE_DB_MAPPED_MEMORY_KEY, NEOSTORE_RELATIONSHIPSTORE_DB_MAPPED_MEMORY,
-                databaseTuningPropertyFile);
+    public void shouldSupportProvidingDatabaseTuningParametersSeparately() throws IOException {
+        File databaseTuningPropertyFile = DatabaseTuningPropertyFileBuilder.builder().build();
+
 
         File propertyFileWithDbTuningProperty = PropertyFileBuilder.builder().withDbTuningPropertyFile(databaseTuningPropertyFile).build();
+        
+        System.out.println(databaseTuningPropertyFile.getAbsolutePath());
+        System.out.println(propertyFileWithDbTuningProperty.getAbsolutePath());
 
         Configurator configurator = new PropertyFileConfigurator(propertyFileWithDbTuningProperty);
 
         Map<String, String> databaseTuningProperties = configurator.getDatabaseTuningProperties();
         assertNotNull(databaseTuningProperties);
-        assertEquals(2, databaseTuningProperties.size());
+        assertEquals(5, databaseTuningProperties.size());
 
         propertyFileWithDbTuningProperty.delete();
     }
