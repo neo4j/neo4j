@@ -1,13 +1,17 @@
 .workarea.pad
   .controls
     %input#data-console(value="#{query}")
-    %button#data-execute-console.icon-button
+    %button#data-execute-console.icon-button(title="Search")
     
     .data-toolbar
-      %button#data-create-node.text-icon-button Node
-      %button#data-create-relationship.text-icon-button Relationship
-      %button#data-home.icon-button
-      %button#data-refresh.icon-button
+      %button#data-create-node.text-icon-button(title="Create a node") Node
+      %button#data-create-relationship.text-icon-button(title="Create a relationship") Relationship
+      :if viewType === "tabular"      
+        %button#data-switch-view.icon-button(title="Switch view mode")
+      :if viewType !== "tabular"      
+        %button#data-switch-view.icon-button.tabular(title="Switch view mode")
+      %button#data-home.icon-button(title="Go to reference node")
+      %button#data-refresh.icon-button(title="Refresh current data")
 
     .break
 
