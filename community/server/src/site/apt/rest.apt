@@ -839,7 +839,7 @@ curl -H Accept:application/json -H Content-Type:application/json -X POST -d '{"o
 ** Example using curl
 
 ---
-curl -H Accept:application/json -H Content-Type:application/json -X POST http://localhost:7474/db/data/node/123/path -d '{"to":"http://localhost:7474/db/data/node/456","relationships":{"type":"KNOWS"},"algorithm":"shortestPath"}'
+curl -H Accept:application/json -H Content-Type:application/json -X POST http://localhost:7474/db/data/node/123/path -d '{"to":"http://localhost:7474/db/data/node/456","relationships":{"type":"KNOWS"},"algorithm":"shortestPath","max depth":10}'
 curl -H Accept:application/json -H Content-Type:application/json -X POST http://localhost:7474/db/data/node/123/path -d '{"to":"http://localhost:7474/db/data/node/456","relationships":{"type":"KNOWS"},"algorithm":"dijkstra","cost property":"cost","default cost":1}'
 ---
 
@@ -879,7 +879,7 @@ curl -H Accept:application/json -H Content-Type:application/json -X POST http://
 ** Example using curl
 
 ---
-curl -H Accept:application/json -H Content-Type:application/json -X POST http://localhost:7474/db/data/node/123/paths -d '{"to":"http://localhost:7474/db/data/node/456","relationships":{"type":"KNOWS"},"algorithm":"shortestPath"}'
+curl -H Accept:application/json -H Content-Type:application/json -X POST http://localhost:7474/db/data/node/123/paths -d '{"to":"http://localhost:7474/db/data/node/456","relationships":{"type":"KNOWS"},"algorithm":"shortestPath","max depth":10}'
 curl -H Accept:application/json -H Content-Type:application/json -X POST http://localhost:7474/db/data/node/123/paths -d '{"to":"http://localhost:7474/db/data/node/456","relationships":{"type":"KNOWS"},"algorithm":"dijkstra","cost property":"cost","default cost":1}'
 ---
 
