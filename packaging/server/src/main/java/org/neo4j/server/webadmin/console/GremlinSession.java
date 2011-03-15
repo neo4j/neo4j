@@ -87,8 +87,6 @@ public class GremlinSession implements ScriptSession
             resetIO();
             return result;
         } catch(GroovyRuntimeException ex) {
-            // Exception messages do not have gremlin prompts.
-            // Add them for output consistency.
             return ex.getMessage();
         }
 
