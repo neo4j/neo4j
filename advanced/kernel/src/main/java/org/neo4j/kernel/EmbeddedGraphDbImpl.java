@@ -111,7 +111,7 @@ class EmbeddedGraphDbImpl
         final Config config = new Config( graphDbService, storeDir, storeId, inputParams,
                 kernelPanicEventGenerator, txModule, lockManager, lockReleaser, idGeneratorFactory,
                 new SyncHookFactory(), relTypeCreator, txIdFactory.create( txModule.getTxManager() ),
-                lastCommittedTxIdSetter, fileSystem );
+                lastCommittedTxIdSetter, fileSystem, CommonFactories.defaultLogBufferFactory( inputParams ) );
         graphDbInstance = new GraphDbInstance( storeDir, true, config );
         this.msgLog = StringLogger.getLogger( storeDir );
         this.graphDbService = graphDbService;

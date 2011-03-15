@@ -24,11 +24,11 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 
 import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
+import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
@@ -56,6 +56,12 @@ public class JumpingFileSystemAbstraction implements FileSystemAbstraction
                     recordSizeFor( fileName ) );
         }
         return new RandomAccessFile( fileName, mode ).getChannel();
+    }
+    
+    @Override
+    public FileLock tryLock( String fileName, FileChannel channel ) throws IOException
+    {
+        return FileLock.getOsSpecificFileLock( fileName, channel );
     }
     
     private int recordSizeFor( String fileName )
@@ -246,13 +252,13 @@ public class JumpingFileSystemAbstraction implements FileSystemAbstraction
         }
 
         @Override
-        public FileLock lock( long position, long size, boolean shared ) throws IOException
+        public java.nio.channels.FileLock lock( long position, long size, boolean shared ) throws IOException
         {
             return actual.lock( translateIncoming( position ), size, shared );
         }
 
         @Override
-        public FileLock tryLock( long position, long size, boolean shared ) throws IOException
+        public java.nio.channels.FileLock tryLock( long position, long size, boolean shared ) throws IOException
         {
             return actual.tryLock( translateIncoming( position ), size, shared );
         }

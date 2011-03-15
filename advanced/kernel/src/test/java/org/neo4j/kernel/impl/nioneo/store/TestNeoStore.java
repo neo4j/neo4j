@@ -53,6 +53,7 @@ import org.neo4j.kernel.impl.nioneo.xa.RelationshipEventConsumer;
 import org.neo4j.kernel.impl.nioneo.xa.RelationshipTypeEventConsumer;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.XidImpl;
+import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
@@ -92,7 +93,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
     {
         NeoStore.createStore( file( "neo" ), MapUtil.map(
                 IdGeneratorFactory.class, ID_GENERATOR_FACTORY,
-                FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction() ) );
+                FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction(),
+                LogBufferFactory.class, CommonFactories.defaultLogBufferFactory( MapUtil.stringMap() ) ) );
     }
 
     private static class MyPropertyIndex extends
@@ -150,6 +152,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
                     LockReleaser.class, lockReleaser,
                     IdGeneratorFactory.class, ID_GENERATOR_FACTORY,
                     FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction(),
+                    LogBufferFactory.class, CommonFactories.defaultLogBufferFactory( MapUtil.stringMap() ),
                     TxIdGenerator.class, TxIdGenerator.DEFAULT,
                     "store_dir", path(),
                     "neo_store", file( "neo" ),

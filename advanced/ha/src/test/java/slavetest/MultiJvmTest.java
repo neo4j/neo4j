@@ -29,7 +29,6 @@ import java.util.Map;
 import org.junit.After;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.ha.StandaloneDatabase;
-import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 public class MultiJvmTest extends AbstractHaTest
@@ -68,7 +67,6 @@ public class MultiJvmTest extends AbstractHaTest
     @After
     public void shutdownDbsAndVerify() throws Exception
     {
-        if ( Config.osIsWindows() ) return;
         shutdownDbs();
 
         GraphDatabaseService masterDb = new EmbeddedGraphDatabase( dbPath( 0 ).getAbsolutePath() );

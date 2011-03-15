@@ -58,6 +58,7 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaConnection;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.XidImpl;
+import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 
 public class TestXa extends AbstractNeo4jTestCase
@@ -452,6 +453,7 @@ public class TestXa extends AbstractNeo4jTestCase
             LockReleaser.class, lockReleaser,
             IdGeneratorFactory.class, ID_GENERATOR_FACTORY,
             FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction(),
+            LogBufferFactory.class, CommonFactories.defaultLogBufferFactory( config ),
             TxIdGenerator.class, TxIdGenerator.DEFAULT,
             "store_dir", path(),
             "neo_store", file( "neo" ),
