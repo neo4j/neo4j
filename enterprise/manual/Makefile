@@ -7,6 +7,7 @@ SRCFILE          = $(SRCDIR)/neo4j-manual.txt
 CONFDIR          = $(SRCDIR)/conf
 DOCBOOKFILE      = $(BUILDDIR)/neo4j-manual.xml
 DOCBOOKSHORTINFOFILE = $(BUILDDIR)/neo4j-manual-shortinfo.xml
+DOCBOOKFILEPDF   = $(BUILDDIR)/neo4j-manual-pdf.xml
 FOPDIR           = $(BUILDDIR)/pdf
 FOPFILE          = $(FOPDIR)/neo4j-manual.fo
 FOPPDF           = $(FOPDIR)/neo4j-manual.pdf
@@ -82,6 +83,7 @@ cleanup:
 	#
 ifndef KEEP
 	rm -f $(DOCBOOKFILE)
+	rm -f $(DOCBOOKFILEPDF)
 	rm -f $(DOCBOOKSHORTINFOFILE)
 	rm -f $(BUILDDIR)/*.xml
 	rm -f $(FOPDIR)/images
@@ -123,9 +125,10 @@ pdf:  docbook copyimages
 	# Building PDF.
 	#
 	#
+	sed 's/\&#8594;/\&#8211;\&gt;/g' <$(DOCBOOKFILE) >$(DOCBOOKFILEPDF)
 	mkdir -p $(FOPDIR)
 	cd $(FOPDIR)
-	xsltproc --xinclude --output $(FOPFILE) $(CONFDIR)/fo.xsl $(DOCBOOKFILE)
+	xsltproc --xinclude --output $(FOPFILE) $(CONFDIR)/fo.xsl $(DOCBOOKFILEPDF)
 	ln -s $(SRCDIR)/images $(FOPDIR)/images
 	fop -fo $(FOPFILE) -pdf $(FOPPDF)
 ifndef KEEP
@@ -245,7 +248,6 @@ upgrade:
 	#
 	#
 	mkdir -p $(UPGRADE)
-	#a2x -k -f text -D $(UPGRADE) $(IMPORTDIR)/neo4j-docs-jar/ops/upgrades.txt
-	a2x -k -f text -D $(UPGRADE) $(SRCDIR)/installation-deployment/upgrades.txt
+	a2x -k -f text -D $(UPGRADE) $(IMPORTDIR)/neo4j-docs-jar/ops/upgrades.txt
 	mv $(UPGRADE)/upgrades.text $(UPGRADE)/UPGRADE.txt
 
