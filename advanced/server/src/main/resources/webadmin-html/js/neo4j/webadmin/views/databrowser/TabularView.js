@@ -48,6 +48,7 @@
     var SimpleView;
     return SimpleView = (function() {
       function SimpleView() {
+        this.remove = __bind(this.remove, this);;
         this.render = __bind(this.render, this);;        SimpleView.__super__.constructor.apply(this, arguments);
       }
       __extends(SimpleView, Backbone.View);
@@ -79,6 +80,13 @@
         $(this.el).html(view.render().el);
         view.delegateEvents();
         return this;
+      };
+      SimpleView.prototype.remove = function() {
+        this.nodeView.remove();
+        this.relationshipView.remove();
+        this.listView.remove();
+        this.dataModel.unbind("change", this.render);
+        return SimpleView.__super__.remove.call(this);
       };
       return SimpleView;
     })();

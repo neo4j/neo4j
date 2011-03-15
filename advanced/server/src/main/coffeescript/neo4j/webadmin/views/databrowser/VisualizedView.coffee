@@ -217,4 +217,9 @@ define(
         if @loader?
           @loader.destroy()
 
+
+      remove : =>
+        @dataModel.unbind("change", @render)
+        super()
+
 )
