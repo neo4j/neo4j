@@ -31,6 +31,7 @@
       function DataBrowserView() {
         this.switchToTabularView = __bind(this.switchToTabularView, this);;
         this.switchToVisualizedView = __bind(this.switchToVisualizedView, this);;
+        this.switchView = __bind(this.switchView, this);;
         this.createRelationship = __bind(this.createRelationship, this);;
         this.createNode = __bind(this.createNode, this);;
         this.search = __bind(this.search, this);;
@@ -42,7 +43,8 @@
       DataBrowserView.prototype.events = {
         "keyup #data-console": "search",
         "click #data-create-node": "createNode",
-        "click #data-create-relationship": "createRelationship"
+        "click #data-create-relationship": "createRelationship",
+        "click #data-switch-view": "switchView"
       };
       DataBrowserView.prototype.initialize = function(options) {
         this.dataModel = options.dataModel;
@@ -54,7 +56,8 @@
       };
       DataBrowserView.prototype.render = function() {
         $(this.el).html(this.template({
-          query: this.htmlEscaper.escape(this.dataModel.getQuery())
+          query: this.htmlEscaper.escape(this.dataModel.getQuery()),
+          viewType: this.viewType
         }));
         $("#data-area", this.el).append(this.dataView.el);
         this.dataView.render();
@@ -88,10 +91,21 @@
           return this.createRelationshipDialog = new CreateRelationshipDialog(button);
         }
       };
+      DataBrowserView.prototype.switchView = function(ev) {
+        if (this.viewType === "visualized") {
+          $(ev.target).removeClass("tabular");
+          this.switchToTabularView();
+        } else {
+          $(ev.target).addClass("tabular");
+          this.switchToVisualizedView();
+        }
+        return this.render();
+      };
       DataBrowserView.prototype.switchToVisualizedView = function() {
         if (this.dataView != null) {
           this.dataView.remove();
         }
+        this.viewType = "visualized";
         return this.dataView = new VisualizedView({
           dataModel: this.dataModel,
           server: this.server
@@ -101,6 +115,7 @@
         if (this.dataView != null) {
           this.dataView.remove();
         }
+        this.viewType = "tabular";
         return this.dataView = new TabularView({
           dataModel: this.dataModel,
           server: this.server
