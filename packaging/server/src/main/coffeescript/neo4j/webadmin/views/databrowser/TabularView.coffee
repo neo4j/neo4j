@@ -53,5 +53,13 @@ define(
         $(@el).html(view.render().el)
         view.delegateEvents()
         return this
+      
+      remove : =>
+        @nodeView.remove()
+        @relationshipView.remove()
+        @listView.remove()
+        @dataModel.unbind("change", @render)
+        super()
+
 
 )
