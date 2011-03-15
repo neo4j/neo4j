@@ -36,6 +36,7 @@ define(
         "keyup #data-console" : "search"
         "click #data-create-node" : "createNode"
         "click #data-create-relationship" : "createRelationship"
+        "click #data-switch-view" : "switchView"
 
       initialize : (options)->
         @dataModel = options.dataModel
@@ -49,7 +50,10 @@ define(
         @switchToTabularView()
 
       render : =>
-        $(@el).html(@template( query : @htmlEscaper.escape(@dataModel.getQuery()) ))
+        $(@el).html @template( 
+          query : @htmlEscaper.escape(@dataModel.getQuery())
+          viewType : @viewType )
+
         $("#data-area", @el).append @dataView.el
         @dataView.render()
         return this
@@ -76,14 +80,28 @@ define(
           button.addClass("selected")
           @createRelationshipDialog = new CreateRelationshipDialog(button)
 
+
+      switchView : (ev) =>
+        if @viewType == "visualized"
+          $(ev.target).removeClass("tabular")
+          @switchToTabularView()
+        else
+          $(ev.target).addClass("tabular")
+          @switchToVisualizedView()
+        
+        @render()
+          
+
       switchToVisualizedView : =>
         if @dataView?
           @dataView.remove()
+        @viewType = "visualized"
         @dataView = new VisualizedView(dataModel:@dataModel, server:@server)
 
       switchToTabularView : =>
         if @dataView?
           @dataView.remove()
+        @viewType = "tabular"
         @dataView = new TabularView(dataModel:@dataModel, server:@server)
 
 )
