@@ -72,6 +72,11 @@ public class WebadminSteps
         wl.clickOnButton( text );
     }
     
+    @When("^I click on the (.+) link in webadmin$")
+    public void iClickOnXLink(String text) throws Exception {
+        wl.clickOnLink( text );
+    }
+    
     @When("^I look at ([^ ]+) with a web browser$")
     public void iLookAtUrlWithAWebBrowser(String url)
     {
