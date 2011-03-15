@@ -78,6 +78,19 @@ public class WebadminWebdriverLibrary extends WebdriverLibrary
         return getCurrentDatabrowserItemHeadline();
     }
     
+    public String createRelationshipInDataBrowser() throws Exception {
+        createNodeInDataBrowser();
+        String prevItemHeadline = getCurrentDatabrowserItemHeadline();
+        
+        clickOnButton( "Relationship" );
+        getElement( By.id( "create-relationship-to" ) ).sendKeys( "0" );
+        clickOnButton( "Create" );
+        
+        dataBrowserItemHeadline.waitForTextToChangeFrom( prevItemHeadline );
+        
+        return getCurrentDatabrowserItemHeadline();
+    }
+    
     public ElementReference getDataBrowserItemHeadline() {
         return dataBrowserItemHeadline;
     }

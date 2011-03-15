@@ -57,6 +57,11 @@ public class DataBrowserSteps
         wl.createNodeInDataBrowser();
     }
     
+    @Given("^I have created a relationship through webadmin$")
+    public void iHaveCreatedARelationship() throws Exception {
+        wl.createRelationshipInDataBrowser();
+    }
+    
     @When("^I look at the webadmin data browser in a web browser$") 
     public void iLookAtDatabrowserInABrowser() throws Exception
     {
@@ -77,6 +82,11 @@ public class DataBrowserSteps
     @Then("^The data browser item headline should change from (.+)$")
     public void theDataBrowserShouldChangeFrom(String expected) {
         wl.getDataBrowserItemHeadline().waitForTextToChangeFrom( expected );
+    }
+    
+    @Then("^The data browser item headline should change to (.+)$")
+    public void theDataBrowserItemHeadlineShouldChangeTo(String expected) {
+        wl.getDataBrowserItemHeadline().waitForTextToChangeTo( expected );
     }
     
     @Then("^The databrowser save button should say (.+)$")
