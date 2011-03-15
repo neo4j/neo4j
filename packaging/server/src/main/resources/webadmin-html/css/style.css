@@ -263,6 +263,19 @@ ol lh {
 }
 
 /**
+ * LOADER
+ */
+.loading-spinner {
+  background: url(../img/transparent-bg.png) repeat scroll 0 0 transparent;
+}
+
+.loading-spinner .inner {
+  background: url(../img/spinner.gif) no-repeat center center transparent;
+  width:100%;
+  height:100%;
+} 
+
+/**
  * UTILS
  */
 

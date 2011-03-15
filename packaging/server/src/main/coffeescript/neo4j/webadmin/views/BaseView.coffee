@@ -38,6 +38,7 @@ define ['neo4j/webadmin/templates/base','lib/backbone'], (template) ->
         { label : "Server info", subtitle:"Detailed information",url : "#/info/" ,    current: location.hash is "#/info/" } ] )
 
       if @mainView?
-        $("#contents").append @mainView.render().el
+        $("#contents").append @mainView.el
+        @mainView.render()
         @mainView.delegateEvents()
       return this
