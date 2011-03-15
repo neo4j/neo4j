@@ -1,22 +1,3 @@
-/*
- * Copyright (c) 2002-2011 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
 (function() {
   /*
   Copyright (c) 2002-2011 "Neo Technology,"
@@ -44,7 +25,7 @@
     child.__super__ = parent.prototype;
     return child;
   };
-  define(['./Property', 'lib/backbone'], function(Property) {
+  define(['neo4j/webadmin/data/ItemUrlResolver', './Property', 'lib/backbone'], function(ItemUrlResolver, Property) {
     var ID_COUNTER, PropertyContainer;
     ID_COUNTER = 0;
     return PropertyContainer = (function() {
@@ -69,6 +50,7 @@
         this.deleteProperty = __bind(this.deleteProperty, this);;
         this.setValue = __bind(this.setValue, this);;
         this.setKey = __bind(this.setKey, this);;
+        this.getId = __bind(this.getId, this);;
         this.getSelf = __bind(this.getSelf, this);;
         this.getItem = __bind(this.getItem, this);;
         this.initialize = __bind(this.initialize, this);;        PropertyContainer.__super__.constructor.apply(this, arguments);
@@ -80,6 +62,7 @@
       PropertyContainer.prototype.initialize = function(item, opts) {
         var key, value, _ref;
         this.properties = {};
+        this.urlResolver = new ItemUrlResolver;
         this.item = item;
         this.properties = {};
         _ref = this.getItem().getProperties();
@@ -97,6 +80,13 @@
       };
       PropertyContainer.prototype.getSelf = function() {
         return this.getItem().getSelf();
+      };
+      PropertyContainer.prototype.getId = function() {
+        if (this.item instanceof neo4j.models.Node) {
+          return this.urlResolver.extractNodeId(this.getSelf());
+        } else {
+          return this.urlResolver.extractRelationshipId(this.getSelf());
+        }
       };
       PropertyContainer.prototype.setKey = function(id, key, opts) {
         var duplicate, oldKey, property;
