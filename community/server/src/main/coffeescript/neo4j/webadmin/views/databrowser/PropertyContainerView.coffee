@@ -99,6 +99,7 @@ define(
         $(element).closest("ul").find("input.property-id").val()
 
       setDataModel : (dataModel) =>
+        @unbind()
         @propertyContainer = dataModel.getData()
         @propertyContainer.bind "change:propertyList", @renderProperties
         @propertyContainer.bind "change:status", @updateSaveState
@@ -109,6 +110,16 @@ define(
         ))
         @renderProperties()
         return this
+
+      remove : =>
+        @unbind()
+        super()
+
+      unbind : =>
+        if @propertyContainer?
+          @propertyContainer.unbind "change:propertyList", @renderProperties
+          @propertyContainer.unbind "change:status", @updateSaveState
+
 
       renderProperties : =>
         $(".properties",@el).html(propertyEditorTemplate(

@@ -49,6 +49,7 @@
     GROUP_IDS = 0;
     return VisualizedView = (function() {
       function VisualizedView() {
+        this.remove = __bind(this.remove, this);;
         this.hideLoader = __bind(this.hideLoader, this);;
         this.showLoader = __bind(this.showLoader, this);;
         this.removeVisualNode = __bind(this.removeVisualNode, this);;
@@ -292,6 +293,10 @@
         if (this.loader != null) {
           return this.loader.destroy();
         }
+      };
+      VisualizedView.prototype.remove = function() {
+        this.dataModel.unbind("change", this.render);
+        return VisualizedView.__super__.remove.call(this);
       };
       return VisualizedView;
     })();
