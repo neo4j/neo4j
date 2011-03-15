@@ -35,7 +35,6 @@ import java.util.logging.Logger;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
-import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.FileUtils;
@@ -92,8 +91,8 @@ public class XaLogicalLog
     private long rotateAtSize = 25*1024*1024; // 25MB
     private boolean backupSlave = false;
 //    private boolean slave = false;
-    private boolean useMemoryMapped = true;
     private final String storeDir;
+    private final LogBufferFactory logBufferFactory;
 
     private final StringLogger msgLog;
 
@@ -108,19 +107,12 @@ public class XaLogicalLog
         this.xaRm = xaRm;
         this.cf = cf;
         this.xaTf = xaTf;
-        this.useMemoryMapped = getMemoryMapped( config );
+        this.logBufferFactory = (LogBufferFactory) config.get( LogBufferFactory.class );
         log = Logger.getLogger( this.getClass().getName() + File.separator + fileName );
         buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
             + Xid.MAXBQUALSIZE * 10 );
         storeDir = (String) config.get( "store_dir" );
         msgLog = StringLogger.getLogger( storeDir);
-    }
-
-    private boolean getMemoryMapped( Map<Object,Object> config )
-    {
-        String configValue = config != null ?
-                (String) config.get( Config.USE_MEMORY_MAPPED_BUFFERS ) : null;
-        return configValue != null ? Boolean.parseBoolean( configValue ) : true;
     }
 
     synchronized void open() throws IOException
@@ -228,8 +220,7 @@ public class XaLogicalLog
 
 	private LogBuffer instantiateCorrectWriteBuffer( FileChannel channel ) throws IOException
     {
-        return useMemoryMapped ? new MemoryMappedLogBuffer( channel ) :
-                new DirectMappedLogBuffer( channel );
+        return logBufferFactory.create( channel );
     }
 
     private void safeDeleteFile( File file )
@@ -1087,6 +1078,11 @@ public class XaLogicalLog
         {
             String currentLogName = getCurrentLogFileName();
             FileChannel channel = new RandomAccessFile( currentLogName, "r" ).getChannel();
+            
+            // Combined with the writeBuffer in cases where a DirectMappedLogBuffer
+            // is used, on Windows or when memory mapping is turned off.
+            // Otherwise the channel is returned directly.
+            channel = logBufferFactory.combine( channel, writeBuffer );
             channel.position( position );
             return channel;
         }

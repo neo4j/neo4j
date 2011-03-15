@@ -156,4 +156,9 @@ class DirectMappedLogBuffer implements LogBuffer
     {
         return fileChannel;
     }
+
+    public ByteBuffer getByteBuffer()
+    {
+        return byteBuffer;
+    }
 }

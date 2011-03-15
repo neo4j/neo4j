@@ -31,6 +31,7 @@ import javax.transaction.TransactionManager;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
 import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
+import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
@@ -38,6 +39,8 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TxFinishHook;
 import org.neo4j.kernel.impl.transaction.TxModule;
+import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGeneratorFactory;
 
@@ -139,6 +142,17 @@ public class CommonFactories
             {
                 return new RandomAccessFile( fileName, mode ).getChannel();
             }
+            
+            @Override
+            public FileLock tryLock( String fileName, FileChannel channel ) throws IOException
+            {
+                return FileLock.getOsSpecificFileLock( fileName, channel );
+            }
         };
+    }
+    
+    public static LogBufferFactory defaultLogBufferFactory( Map<?, ?> config )
+    {
+        return DefaultLogBufferFactory.create( config );
     }
 }

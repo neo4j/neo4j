@@ -28,7 +28,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.neo4j.ha.LocalhostZooKeeperCluster;
 import org.neo4j.ha.StandaloneDatabase;
-import org.neo4j.kernel.Config;
 
 public class MultiJvmWithZooKeeperTest extends MultiJvmTest
 {
@@ -43,7 +42,6 @@ public class MultiJvmWithZooKeeperTest extends MultiJvmTest
     @Before
     public void startZooKeeperCluster() throws Exception
     {
-        if ( Config.osIsWindows() ) return;
         FileUtils.deleteDirectory( BASE_ZOO_KEEPER_DATA_DIR );
         zooKeeperCluster = new LocalhostZooKeeperCluster( getClass(), /*ports:*/2181, 2182, 2183 );
     }
@@ -84,7 +82,6 @@ public class MultiJvmWithZooKeeperTest extends MultiJvmTest
     @After
     public void shutdownZooKeeperCluster()
     {
-        if ( Config.osIsWindows() ) return;
         zooKeeperCluster.shutdown();
     }
 }

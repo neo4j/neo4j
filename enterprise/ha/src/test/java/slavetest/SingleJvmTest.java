@@ -119,7 +119,6 @@ public class SingleJvmTest extends AbstractHaTest
     @After
     public void verifyAndShutdownDbs()
     {
-        if ( Config.osIsWindows() ) return;
         try
         {
             verify( master.getGraphDb(), haDbs.toArray( new GraphDatabaseService[haDbs.size()] ) );
@@ -184,8 +183,6 @@ public class SingleJvmTest extends AbstractHaTest
     @Test
     public void testMixingEntitiesFromWrongDbs() throws Exception
     {
-        if ( Config.osIsWindows() ) return;
-
         initializeDbs( 1 );
         GraphDatabaseService haDb1 = haDbs.get( 0 );
         GraphDatabaseService mDb = master.getGraphDb();

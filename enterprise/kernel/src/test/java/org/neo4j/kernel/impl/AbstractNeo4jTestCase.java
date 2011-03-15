@@ -27,7 +27,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.core.NodeManager;
 
@@ -173,10 +172,5 @@ public abstract class AbstractNeo4jTestCase
     {
         getEmbeddedGraphDb().getConfig().getGraphDbModule()
             .getNodeManager().clearCache();
-    }
-
-    public static boolean osIsWindows()
-    {
-        return Config.osIsWindows();
     }
 }

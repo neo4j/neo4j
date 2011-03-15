@@ -25,7 +25,6 @@ import org.junit.Test;
 import org.neo4j.com.Protocol;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.Config;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.AbstractBroker;
 import org.neo4j.kernel.ha.Broker;
@@ -39,7 +38,6 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
     @Test
     public void assertThatNettyIsUsed() throws Exception
     {
-        if ( Config.osIsWindows() ) return;
         initializeDbs( 1 );
         assertTrue(
                 "Slave Broker is not a client",
