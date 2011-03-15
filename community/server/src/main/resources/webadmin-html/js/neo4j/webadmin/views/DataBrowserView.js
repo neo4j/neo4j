@@ -1,22 +1,3 @@
-/*
- * Copyright (c) 2002-2011 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
 (function() {
   /*
   Copyright (c) 2002-2011 "Neo Technology,"
@@ -44,10 +25,12 @@
     child.__super__ = parent.prototype;
     return child;
   };
-  define(['neo4j/webadmin/data/Search', 'neo4j/webadmin/data/ItemUrlResolver', 'neo4j/webadmin/security/HtmlEscaper', './databrowser/SimpleView', './databrowser/CreateRelationshipDialog', 'neo4j/webadmin/templates/databrowser/base', 'lib/backbone'], function(Search, ItemUrlResolver, HtmlEscaper, SimpleView, CreateRelationshipDialog, template) {
+  define(['neo4j/webadmin/data/Search', 'neo4j/webadmin/data/ItemUrlResolver', 'neo4j/webadmin/security/HtmlEscaper', './databrowser/TabularView', './databrowser/VisualizedView', './databrowser/CreateRelationshipDialog', 'neo4j/webadmin/templates/databrowser/base', 'lib/backbone'], function(Search, ItemUrlResolver, HtmlEscaper, TabularView, VisualizedView, CreateRelationshipDialog, template) {
     var DataBrowserView;
     return DataBrowserView = (function() {
       function DataBrowserView() {
+        this.switchToTabularView = __bind(this.switchToTabularView, this);;
+        this.switchToVisualizedView = __bind(this.switchToVisualizedView, this);;
         this.createRelationship = __bind(this.createRelationship, this);;
         this.createNode = __bind(this.createNode, this);;
         this.search = __bind(this.search, this);;
@@ -66,16 +49,15 @@
         this.server = options.state.getServer();
         this.htmlEscaper = new HtmlEscaper;
         this.urlResolver = new ItemUrlResolver(this.server);
-        this.dataView = new SimpleView({
-          dataModel: this.dataModel
-        });
-        return this.dataModel.bind("change:query", this.queryChanged);
+        this.dataModel.bind("change:query", this.queryChanged);
+        return this.switchToTabularView();
       };
       DataBrowserView.prototype.render = function() {
         $(this.el).html(this.template({
           query: this.htmlEscaper.escape(this.dataModel.getQuery())
         }));
-        $("#data-area", this.el).append(this.dataView.render().el);
+        $("#data-area", this.el).append(this.dataView.el);
+        this.dataView.render();
         return this;
       };
       DataBrowserView.prototype.queryChanged = function() {
@@ -105,6 +87,24 @@
           button.addClass("selected");
           return this.createRelationshipDialog = new CreateRelationshipDialog(button);
         }
+      };
+      DataBrowserView.prototype.switchToVisualizedView = function() {
+        if (this.dataView != null) {
+          this.dataView.remove();
+        }
+        return this.dataView = new VisualizedView({
+          dataModel: this.dataModel,
+          server: this.server
+        });
+      };
+      DataBrowserView.prototype.switchToTabularView = function() {
+        if (this.dataView != null) {
+          this.dataView.remove();
+        }
+        return this.dataView = new TabularView({
+          dataModel: this.dataModel,
+          server: this.server
+        });
       };
       return DataBrowserView;
     })();
