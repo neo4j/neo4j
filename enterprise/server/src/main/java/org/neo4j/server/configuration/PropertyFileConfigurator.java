@@ -35,7 +35,6 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.configuration.SystemConfiguration;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.logging.Logger;
 
@@ -86,12 +85,15 @@ public class PropertyFileConfigurator implements Configurator {
 
     private void loadDatabaseTuningProperties(File configFile) throws ConfigurationException {
         String databaseTuningPropertyFileLocation = serverConfiguration.getString(DB_TUNING_PROPERTY_FILE_KEY);
+        
+        System.out.println(databaseTuningPropertyFileLocation);
 
         if (databaseTuningPropertyFileLocation == null) {
             if(propertyFileDirectoryContainsDBTuningFile()) {
                 databaseTuningPropertyFileLocation = new File (propertyFileDirectory, NEO4J_PROPERTIES_FILENAME).getAbsolutePath();
                 log.info("No database tuning file explicitly set, defaulting to [%s]", databaseTuningPropertyFileLocation);
             } else {
+                log.info("No database tuning properties (org.neo4j.server.db.tuning.properties) found in [%s], using defaults.", databaseTuningPropertyFileLocation);
                 return;
             }
         }
@@ -103,7 +105,9 @@ public class PropertyFileConfigurator implements Configurator {
             return;
         }
         
-        //serverConfiguration.addConfiguration(new PropertiesConfiguration(databaseTuningPropertyFile));
+        // Just as a courtesy in case any modules want their config this way
+        serverConfiguration.addConfiguration(new PropertiesConfiguration(databaseTuningPropertyFile));
+        
         databaseTuningProperties = new HashMap<String, String>();
         PropertiesConfiguration propertiesConfiguration = new PropertiesConfiguration(databaseTuningPropertyFile);
         Iterator keys = propertiesConfiguration.getKeys();
