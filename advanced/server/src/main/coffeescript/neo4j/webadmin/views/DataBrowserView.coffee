@@ -114,4 +114,9 @@ define(
         @viewType = "tabular"
         @dataView = new TabularView(dataModel:@dataModel, server:@server)
 
+      remove : =>
+        @dataModel.unbind("change:query", @queryChanged)
+        @dataView.remove()
+        super()
+
 )

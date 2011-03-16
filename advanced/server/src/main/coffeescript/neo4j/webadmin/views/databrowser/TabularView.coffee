@@ -55,10 +55,10 @@ define(
         return this
       
       remove : =>
+        @dataModel.unbind("change", @render)
         @nodeView.remove()
         @relationshipView.remove()
         @listView.remove()
-        @dataModel.unbind("change", @render)
         super()
 
 

@@ -19,22 +19,36 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define( 
-  ['neo4j/webadmin/templates/dashboard',
-   './DashboardInfoView',        
+  ['neo4j/webadmin/templates/dashboard/base',
+   './dashboard/DashboardInfoView',
+   './dashboard/DashboardChartsView',
    'lib/backbone'], 
-  (template, DashboardInfoView) ->
+  (template, DashboardInfoView, DashboardChartsView) ->
 
     class DashboardView extends Backbone.View
       
       template : template
      
-      initialize : (opts) =>
+      initialize : (@opts) =>
         @appState = opts.state
-        @infoView = new DashboardInfoView(opts)
 
       render : =>
         $(@el).html @template(
           server : { url : "someurl", version : "someversion" } )
-        $("#dashboard-info", @el).append(@infoView.render().el)
+        
+        @infoView = new DashboardInfoView(@opts)
+        @chartsView = new DashboardChartsView(@opts)
+        
+        $("#dashboard-info", @el).append(@infoView.el)
+        $("#dashboard-charts", @el).append(@chartsView.el)
+
+        @infoView.render()
+        @chartsView.render()
+
         return this
+
+      remove : =>
+        @infoView.remove()
+        @chartsView.remove()
+        super()
 )

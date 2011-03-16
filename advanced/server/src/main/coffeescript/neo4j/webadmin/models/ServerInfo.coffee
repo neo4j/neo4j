@@ -39,8 +39,8 @@ define ['lib/backbone'], () ->
     parseJmxBeans : (beans) =>
       NEO4J_DOMAIN = "org.neo4j"
       beans = beans.sort (a,b) ->
-        aName = if a.domain is NEO4J_DOMAIN then "0" + a.getName() else a.jmxName
-        bName = if b.domain is NEO4J_DOMAIN then "0" + b.getName() else b.jmxName
+        aName = if a.domain is NEO4J_DOMAIN then "000" + a.getName() else a.jmxName
+        bName = if b.domain is NEO4J_DOMAIN then "000" + b.getName() else b.jmxName
         return aName.toLowerCase() > bName.toLowerCase()
 
       domains = []

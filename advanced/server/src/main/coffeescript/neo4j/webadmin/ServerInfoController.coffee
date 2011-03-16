@@ -43,5 +43,7 @@ define(
         @serverInfo.setCurrent(domain, name)
 
       getServerInfoView : =>
-        @serverInfoView ?= new ServerInfoView( {appState:@appState, serverInfo:@serverInfo} )
+        new ServerInfoView
+          appState:@appState
+          serverInfo:@serverInfo
 )

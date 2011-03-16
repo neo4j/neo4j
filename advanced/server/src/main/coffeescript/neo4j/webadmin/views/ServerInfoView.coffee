@@ -19,8 +19,8 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['neo4j/webadmin/templates/server_info',
-   'neo4j/webadmin/templates/server_info_bean',
+  ['neo4j/webadmin/templates/serverinfo/base',
+   'neo4j/webadmin/templates/serverinfo/bean',
    'lib/backbone'], 
   (baseTemplate, beanTemplate) ->
   
@@ -71,4 +71,9 @@ define(
             pushedAttr.value = attr.value
 
         return flattened
+
+      remove : =>
+        @serverInfo.unbind "change:domains", @render
+        @serverInfo.unbind "change:current", @renderBean
+        super()
 )
