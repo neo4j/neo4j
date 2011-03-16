@@ -51,7 +51,13 @@ public class RrdFactoryTest
     @After
     public void tearDown() throws Exception
     {
-        db.shutdown();
+        try
+        {
+            db.shutdown();
+        } catch ( Exception e )
+        {
+            ;
+        }
     }
 
     @Test
@@ -72,10 +78,12 @@ public class RrdFactoryTest
     {
         TestableRrdFactory factory = createRrdFactory();
 
-        factory.createRrdDbAndSampler( db, new NullJobScheduler() );
+        RrdDb rrdDbAndSampler = factory.createRrdDbAndSampler( db, new NullJobScheduler() );
 
         assertThat( factory.directoryUsed, startsWith( db.getStoreDir() ) );
         assertThat( factory.directoryUsed, endsWith( "rrd" ) );
+
+        rrdDbAndSampler.close();
     }
 
     private TestableRrdFactory createRrdFactory()
