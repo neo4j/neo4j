@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -35,6 +36,7 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.configuration.SystemConfiguration;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.logging.Logger;
 
@@ -85,8 +87,6 @@ public class PropertyFileConfigurator implements Configurator {
 
     private void loadDatabaseTuningProperties(File configFile) throws ConfigurationException {
         String databaseTuningPropertyFileLocation = serverConfiguration.getString(DB_TUNING_PROPERTY_FILE_KEY);
-        
-        System.out.println(databaseTuningPropertyFileLocation);
 
         if (databaseTuningPropertyFileLocation == null) {
             if(propertyFileDirectoryContainsDBTuningFile()) {
@@ -105,19 +105,12 @@ public class PropertyFileConfigurator implements Configurator {
             return;
         }
         
-        // Just as a courtesy in case any modules want their config this way
-        serverConfiguration.addConfiguration(new PropertiesConfiguration(databaseTuningPropertyFile));
-        
-        databaseTuningProperties = new HashMap<String, String>();
-        PropertiesConfiguration propertiesConfiguration = new PropertiesConfiguration(databaseTuningPropertyFile);
-        Iterator keys = propertiesConfiguration.getKeys();
-        while(keys.hasNext()) {
-            String key = (String)keys.next();
-            Object value = propertiesConfiguration.getProperty((String) key);
-            databaseTuningProperties.put(key, String.valueOf(value));
-        }
+        databaseTuningProperties = EmbeddedGraphDatabase.loadConfigurations(databaseTuningPropertyFileLocation);
         
     }
+    
+ 
+
     
     private void loadPropertiesConfig(File configFile) throws ConfigurationException {
         PropertiesConfiguration propertiesConfig = new PropertiesConfiguration(configFile);
