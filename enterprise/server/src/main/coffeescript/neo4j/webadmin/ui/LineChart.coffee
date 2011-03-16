@@ -41,7 +41,7 @@ define(
 
         grid  : { hoverable: true }
         colors : ["#326a75","#4f848f","#a0c2c8","#00191e"]
-        tooltipYFormatter : (v) -> v
+        tooltipYFormatter : (v) -> Math.round(v)
         tooltipXFormatter : (v) -> DateFormat.format(new Date(v))
 
       constructor : (el) ->
