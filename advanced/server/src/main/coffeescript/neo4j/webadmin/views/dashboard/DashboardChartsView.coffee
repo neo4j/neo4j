@@ -49,20 +49,28 @@ define(
 
       redrawChart : =>
         if @chart?
-          chartSettings = @dashboardState.getChart()
+          chartDef = @dashboardState.getChart()
           zoomLevel = @dashboardState.getZoomLevel()
 
-          metrics = @statistics.getMetrics(chartSettings.metrics)
+          metricKeys = for v in chartDef.layers
+            v.key
+
+          metrics = @statistics.getMetrics(metricKeys)
+          
+          data = for i in [0...metrics.length]
+            _.extend({ data:metrics[i] }, chartDef.layers[i] )
 
           xmin = 0
           if metrics[0].length > 0
             xmin = metrics[0][metrics[0].length-1][0] - zoomLevel.xSpan
           
-          @chart.render metrics,
+          settings = 
             xaxis : 
               min : xmin
               mode : "time"
               timeformat : zoomLevel.timeformat
+
+          @chart.render data, _.extend(chartDef.chartSettings || {}, settings)
 
       switchChartClicked : (ev) =>
         @dashboardState.setChartByKey $(ev.target).val()
@@ -74,7 +82,8 @@ define(
         @dashboardState.unbind "change:chart", @redrawChart
         @dashboardState.unbind "change:zoomLevel", @redrawChart
         @statistics.unbind "change:metrics", @redrawChart
-        delete @chart
+        if @chart?        
+          @chart.remove()
         super()
 
 )

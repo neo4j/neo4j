@@ -56,22 +56,43 @@
         return this;
       };
       DashboardChartsView.prototype.redrawChart = function() {
-        var chartSettings, metrics, xmin, zoomLevel;
+        var chartDef, data, i, metricKeys, metrics, settings, v, xmin, zoomLevel;
         if (this.chart != null) {
-          chartSettings = this.dashboardState.getChart();
+          chartDef = this.dashboardState.getChart();
           zoomLevel = this.dashboardState.getZoomLevel();
-          metrics = this.statistics.getMetrics(chartSettings.metrics);
+          metricKeys = (function() {
+            var _i, _len, _ref, _results;
+            _ref = chartDef.layers;
+            _results = [];
+            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+              v = _ref[_i];
+              _results.push(v.key);
+            }
+            return _results;
+          })();
+          metrics = this.statistics.getMetrics(metricKeys);
+          data = (function() {
+            var _ref, _results;
+            _results = [];
+            for (i = 0, _ref = metrics.length; (0 <= _ref ? i < _ref : i > _ref); (0 <= _ref ? i += 1 : i -= 1)) {
+              _results.push(_.extend({
+                data: metrics[i]
+              }, chartDef.layers[i]));
+            }
+            return _results;
+          })();
           xmin = 0;
           if (metrics[0].length > 0) {
             xmin = metrics[0][metrics[0].length - 1][0] - zoomLevel.xSpan;
           }
-          return this.chart.render(metrics, {
+          settings = {
             xaxis: {
               min: xmin,
               mode: "time",
               timeformat: zoomLevel.timeformat
             }
-          });
+          };
+          return this.chart.render(data, _.extend(chartDef.chartSettings || {}, settings));
         }
       };
       DashboardChartsView.prototype.switchChartClicked = function(ev) {
@@ -84,7 +105,9 @@
         this.dashboardState.unbind("change:chart", this.redrawChart);
         this.dashboardState.unbind("change:zoomLevel", this.redrawChart);
         this.statistics.unbind("change:metrics", this.redrawChart);
-        delete this.chart;
+        if (this.chart != null) {
+          this.chart.remove();
+        }
         return DashboardChartsView.__super__.remove.call(this);
       };
       return DashboardChartsView;

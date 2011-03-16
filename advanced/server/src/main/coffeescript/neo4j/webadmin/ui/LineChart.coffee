@@ -19,8 +19,10 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['lib/jquery.flot','lib/backbone']
-  () ->
+  ['lib/DateFormat'
+   'neo4j/webadmin/ui/Tooltip'
+   'lib/jquery.flot','lib/backbone']
+  (DateFormat, Tooltip) ->
     class LineChart
       
       defaultSettings : 
@@ -32,16 +34,44 @@ define(
         yaxis : { }
         legend:
             position : 'nw'
-        grid  : { hoverable: true }
-        series : {}
-        colors : ["#326a75","#4f848f","#a0c2c8","#00191e"]
-        tooltipValueFormatter : (v) -> v
 
-      constructor : (el, opts) ->
+        series:
+          points : { show: true }
+          lines : { show: true }
+
+        grid  : { hoverable: true }
+        colors : ["#326a75","#4f848f","#a0c2c8","#00191e"]
+        tooltipYFormatter : (v) -> v
+        tooltipXFormatter : (v) -> DateFormat.format(new Date(v))
+
+      constructor : (el) ->
         @el = $(el)
-        @settings = _.extend @defaultSettings, opts
+        @settings = @defaultSettings
+
+        @tooltip = new Tooltip({ closeButton : false })
+        
+        @el.bind "plothover", @mouseOverPlot
+
+      mouseOverPlot : (event, pos, item) =>
+        if item
+          if @previousHoverPoint != item.datapoint
+            @previousHoverPoint = item.datapoint
+
+            x = @settings.tooltipXFormatter(item.datapoint[0])
+            y = @settings.tooltipYFormatter(item.datapoint[1])
+
+            @tooltip.show("<b>" + item.series.label + "</b><span class='chart-y'>" + y + "</span><span class='chart-x'>" + x + "</span>", [item.pageX, item.pageY])
+
+        else
+          @tooltip.hide()
 
       render : (data, opts) =>
-        $.plot @el, data, _.extend({}, @settings, opts)
+        @settings = _.extend({}, @defaultSettings, opts)
+        $.plot @el, data, @settings
+
+      remove : () =>
+        @el.unbind "plothover", @mouseOverPlot
+        @tooltip.remove()
+        @el.remove()
 
 )
