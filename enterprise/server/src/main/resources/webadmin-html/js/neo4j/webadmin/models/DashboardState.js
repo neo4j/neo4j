@@ -40,10 +40,40 @@
       __extends(DashboardState, Backbone.Model);
       DashboardState.prototype.charts = {
         primitives: {
-          metrics: ['node_count', 'property_count', 'relationship_count']
+          layers: [
+            {
+              label: "Nodes",
+              key: 'node_count'
+            }, {
+              label: "Properties",
+              key: 'property_count'
+            }, {
+              label: "Relationships",
+              key: 'relationship_count'
+            }
+          ]
         },
         memory: {
-          metrics: ['memory_usage_percent']
+          layers: [
+            {
+              label: "Memory usage",
+              key: 'memory_usage_percent',
+              lines: {
+                show: true,
+                fill: true,
+                fillColor: "#4f848f"
+              }
+            }
+          ],
+          chartSettings: {
+            yaxis: {
+              min: 0,
+              max: 100
+            },
+            tooltipYFormatter: function(v) {
+              return Math.floor(v) + "%";
+            }
+          }
         }
       };
       DashboardState.prototype.zoomLevels = {

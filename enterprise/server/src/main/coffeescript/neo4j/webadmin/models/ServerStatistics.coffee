@@ -21,7 +21,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 define ['lib/backbone'], () ->
   
   class ServerStatistics extends Backbone.Model
-    
+
     initialize : (options) =>
       @server = options.server
       @heartbeat = @server.heartbeat
