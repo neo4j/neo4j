@@ -66,4 +66,7 @@ define(
         if wrap[0]
           wrap[0].scrollTop = wrap[0].scrollHeight
 
+      remove : =>
+        @consoleState.unbind("change", @renderConsole)
+        super()
 )

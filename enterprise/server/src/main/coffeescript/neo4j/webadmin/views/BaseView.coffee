@@ -26,14 +26,18 @@ define ['neo4j/webadmin/templates/base','lib/backbone'], (template) ->
     
     initialize : (options) =>
       @appState = options.appState
-      @appState.bind 'change:mainView', (event) =>
-        @mainView = event.attributes.mainView
-        @render()
+      @appState.bind 'change:mainView', @mainViewChanged
+
+    mainViewChanged : (event) =>
+      if @mainView?
+        @mainView.remove()
+      @mainView = event.attributes.mainView
+      @render()
 
     render : ->
       $(@el).html @template( mainmenu : [ 
         { label : "Dashboard",   subtitle:"Get a grip",url : "#",           current: location.hash is "" }
-        { label : "Data browser",subtitle:"Explore and edit",url : "#/data/" ,    current: location.hash is "#/data/" }
+        { label : "Data browser",subtitle:"Explore and edit",url : "#/data/" ,    current: location.hash.indexOf("#/data/") is 0 }
         { label : "Console",     subtitle:"Power tool",url : "#/console/" , current: location.hash is "#/console/" }
         { label : "Server info", subtitle:"Detailed information",url : "#/info/" ,    current: location.hash is "#/info/" } ] )
 
@@ -42,3 +46,9 @@ define ['neo4j/webadmin/templates/base','lib/backbone'], (template) ->
         @mainView.render()
         @mainView.delegateEvents()
       return this
+
+    remove : =>
+      @appState.unbind 'change:mainView', @mainViewChanged
+      if @mainView?
+          @mainView.remove()
+      super()

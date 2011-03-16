@@ -1,22 +1,3 @@
-/*
- * Copyright (c) 2002-2011 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
 (function() {
   /*
   Copyright (c) 2002-2011 "Neo Technology,"
@@ -44,18 +25,19 @@
     child.__super__ = parent.prototype;
     return child;
   };
-  define(['neo4j/webadmin/templates/dashboard', './DashboardInfoView', 'lib/backbone'], function(template, DashboardInfoView) {
+  define(['neo4j/webadmin/templates/dashboard/base', './dashboard/DashboardInfoView', './dashboard/DashboardChartsView', 'lib/backbone'], function(template, DashboardInfoView, DashboardChartsView) {
     var DashboardView;
     return DashboardView = (function() {
       function DashboardView() {
+        this.remove = __bind(this.remove, this);;
         this.render = __bind(this.render, this);;
         this.initialize = __bind(this.initialize, this);;        DashboardView.__super__.constructor.apply(this, arguments);
       }
       __extends(DashboardView, Backbone.View);
       DashboardView.prototype.template = template;
       DashboardView.prototype.initialize = function(opts) {
-        this.appState = opts.state;
-        return this.infoView = new DashboardInfoView(opts);
+        this.opts = opts;
+        return this.appState = opts.state;
       };
       DashboardView.prototype.render = function() {
         $(this.el).html(this.template({
@@ -64,8 +46,18 @@
             version: "someversion"
           }
         }));
-        $("#dashboard-info", this.el).append(this.infoView.render().el);
+        this.infoView = new DashboardInfoView(this.opts);
+        this.chartsView = new DashboardChartsView(this.opts);
+        $("#dashboard-info", this.el).append(this.infoView.el);
+        $("#dashboard-charts", this.el).append(this.chartsView.el);
+        this.infoView.render();
+        this.chartsView.render();
         return this;
+      };
+      DashboardView.prototype.remove = function() {
+        this.infoView.remove();
+        this.chartsView.remove();
+        return DashboardView.__super__.remove.call(this);
       };
       return DashboardView;
     })();
