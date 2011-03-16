@@ -23,8 +23,10 @@ define(
    './models/ServerPrimitives'
    './models/DiskUsage'
    './models/CacheUsage'
+   './models/ServerStatistics'
+   './models/DashboardState'
    'lib/backbone'],
-  (DashboardView, ServerPrimitives, DiskUsage, CacheUsage) ->
+  (DashboardView, ServerPrimitives, DiskUsage, CacheUsage, ServerStatistics, DashboardState) ->
   
     class DashboardController extends Backbone.Controller
       routes : 
@@ -37,11 +39,13 @@ define(
         @appState.set( mainView : @getDashboardView() )
 
       getDashboardView : =>
-        @dashboardView ?= new DashboardView  
+        new DashboardView  
           state      : @appState
+          dashboardState : @getDashboardState()
           primitives : @getServerPrimitives()
           diskUsage  : @getDiskUsage()
           cacheUsage : @getCacheUsage()
+          statistics : @getServerStatistics()
 
       getServerPrimitives : =>
         @serverPrimitives ?= new ServerPrimitives( server : @appState.getServer(), pollingInterval : 5000 )
@@ -51,5 +55,11 @@ define(
 
       getCacheUsage : =>
         @cacheUsage ?= new CacheUsage( server : @appState.getServer(), pollingInterval : 5000 )
+      
+      getServerStatistics : =>
+        @serverStatistics ?= new ServerStatistics( server : @appState.getServer() )
+      
+      getDashboardState : =>
+        @dashboardState ?= new DashboardState( server : @appState.getServer() )
 
 )

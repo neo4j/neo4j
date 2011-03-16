@@ -1,22 +1,3 @@
-/*
- * Copyright (c) 2002-2011 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
 (function() {
   /*
   Copyright (c) 2002-2011 "Neo Technology,"
@@ -48,6 +29,7 @@
     var DataBrowserView;
     return DataBrowserView = (function() {
       function DataBrowserView() {
+        this.remove = __bind(this.remove, this);;
         this.switchToTabularView = __bind(this.switchToTabularView, this);;
         this.switchToVisualizedView = __bind(this.switchToVisualizedView, this);;
         this.switchView = __bind(this.switchView, this);;
@@ -154,6 +136,11 @@
           dataModel: this.dataModel,
           server: this.server
         });
+      };
+      DataBrowserView.prototype.remove = function() {
+        this.dataModel.unbind("change:query", this.queryChanged);
+        this.dataView.remove();
+        return DataBrowserView.__super__.remove.call(this);
       };
       return DataBrowserView;
     })();

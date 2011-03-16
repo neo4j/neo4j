@@ -32,7 +32,7 @@ define ['./models/Console', './views/ConsoleView', 'lib/backbone'], (Console, Co
       @appState.set( mainView : @getConsoleView() )
 
     getConsoleView : =>
-      @consoleView ?= new ConsoleView(
+      new ConsoleView
         appState : @appState
-        consoleState : @consoleState)
+        consoleState : @consoleState
 

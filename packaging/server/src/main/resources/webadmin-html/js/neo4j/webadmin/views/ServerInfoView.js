@@ -1,22 +1,3 @@
-/*
- * Copyright (c) 2002-2011 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
 (function() {
   /*
   Copyright (c) 2002-2011 "Neo Technology,"
@@ -44,10 +25,11 @@
     child.__super__ = parent.prototype;
     return child;
   };
-  define(['neo4j/webadmin/templates/server_info', 'neo4j/webadmin/templates/server_info_bean', 'lib/backbone'], function(baseTemplate, beanTemplate) {
+  define(['neo4j/webadmin/templates/serverinfo/base', 'neo4j/webadmin/templates/serverinfo/bean', 'lib/backbone'], function(baseTemplate, beanTemplate) {
     var ServerInfoView;
     return ServerInfoView = (function() {
       function ServerInfoView() {
+        this.remove = __bind(this.remove, this);;
         this.flattenAttributes = __bind(this.flattenAttributes, this);;
         this.renderBean = __bind(this.renderBean, this);;
         this.render = __bind(this.render, this);;        ServerInfoView.__super__.constructor.apply(this, arguments);
@@ -108,6 +90,11 @@
           }
         }
         return flattened;
+      };
+      ServerInfoView.prototype.remove = function() {
+        this.serverInfo.unbind("change:domains", this.render);
+        this.serverInfo.unbind("change:current", this.renderBean);
+        return ServerInfoView.__super__.remove.call(this);
       };
       return ServerInfoView;
     })();

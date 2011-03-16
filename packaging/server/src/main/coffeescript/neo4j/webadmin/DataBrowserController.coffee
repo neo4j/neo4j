@@ -63,5 +63,7 @@ define(
         @dataModel.setData(result)
 
       getDataBrowserView : =>
-        @dataBrowserView ?= new DataBrowserView({state:@appState, dataModel:@dataModel})
+        new DataBrowserView
+          state:@appState
+          dataModel:@dataModel
 )
