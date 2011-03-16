@@ -18,7 +18,7 @@
   You should have received a copy of the GNU Affero General Public License
   along with this program. If not, see <http://www.gnu.org/licenses/>.
   */  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
-  define(['lib/jquery.flot', 'lib/backbone'], function() {
+  define(['lib/DateFormat', 'neo4j/webadmin/ui/Tooltip', 'lib/jquery.flot', 'lib/backbone'], function(DateFormat, Tooltip) {
     var LineChart;
     return LineChart = (function() {
       LineChart.prototype.defaultSettings = {
@@ -32,21 +32,56 @@
         legend: {
           position: 'nw'
         },
+        series: {
+          points: {
+            show: true
+          },
+          lines: {
+            show: true
+          }
+        },
         grid: {
           hoverable: true
         },
-        series: {},
         colors: ["#326a75", "#4f848f", "#a0c2c8", "#00191e"],
-        tooltipValueFormatter: function(v) {
+        tooltipYFormatter: function(v) {
           return v;
+        },
+        tooltipXFormatter: function(v) {
+          return DateFormat.format(new Date(v));
         }
       };
-      function LineChart(el, opts) {
-        this.render = __bind(this.render, this);;        this.el = $(el);
-        this.settings = _.extend(this.defaultSettings, opts);
+      function LineChart(el) {
+        this.remove = __bind(this.remove, this);;
+        this.render = __bind(this.render, this);;
+        this.mouseOverPlot = __bind(this.mouseOverPlot, this);;        this.el = $(el);
+        this.settings = this.defaultSettings;
+        this.tooltip = new Tooltip({
+          closeButton: false
+        });
+        this.el.bind("plothover", this.mouseOverPlot);
       }
+      LineChart.prototype.mouseOverPlot = function(event, pos, item) {
+        var x, y;
+        if (item) {
+          if (this.previousHoverPoint !== item.datapoint) {
+            this.previousHoverPoint = item.datapoint;
+            x = this.settings.tooltipXFormatter(item.datapoint[0]);
+            y = this.settings.tooltipYFormatter(item.datapoint[1]);
+            return this.tooltip.show("<b>" + item.series.label + "</b><span class='chart-y'>" + y + "</span><span class='chart-x'>" + x + "</span>", [item.pageX, item.pageY]);
+          }
+        } else {
+          return this.tooltip.hide();
+        }
+      };
       LineChart.prototype.render = function(data, opts) {
-        return $.plot(this.el, data, _.extend({}, this.settings, opts));
+        this.settings = _.extend({}, this.defaultSettings, opts);
+        return $.plot(this.el, data, this.settings);
+      };
+      LineChart.prototype.remove = function() {
+        this.el.unbind("plothover", this.mouseOverPlot);
+        this.tooltip.remove();
+        return this.el.remove();
       };
       return LineChart;
     })();
