@@ -228,6 +228,11 @@ public class ZooClient extends AbstractZooKeeperManager
 
     protected void setDataChangeWatcher( String child, int currentMasterId )
     {
+        setDataChangeWatcher( child, currentMasterId, false );
+    }
+    
+    protected void setDataChangeWatcher( String child, int currentMasterId, boolean checkIfCurrentMasterIsSame )
+    {
         try
         {
             String root = getRoot();
@@ -238,12 +243,16 @@ public class ZooClient extends AbstractZooKeeperManager
             {
                 data = zooKeeper.getData( path, true, null );
                 exists = true;
-//                int id = ByteBuffer.wrap( data ).getInt();
-//                if ( currentMasterId == -1 || id == currentMasterId )
-//                {
-//                    msgLog.logMessage( child + " not set, is already " + currentMasterId );
-//                    return;
-//                }
+                
+                if ( checkIfCurrentMasterIsSame )
+                {
+                    int id = ByteBuffer.wrap( data ).getInt();
+                    if ( currentMasterId == -1 || id == currentMasterId )
+                    {
+                        msgLog.logMessage( child + " not set, is already " + currentMasterId );
+                        return;
+                    }
+                }
             }
             catch ( KeeperException e )
             {

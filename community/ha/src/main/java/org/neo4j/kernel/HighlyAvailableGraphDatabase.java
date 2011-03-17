@@ -439,6 +439,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         }
         else
         {
+            broker.notifyMasterChange( master.other() );
             if ( this.localGraph == null || iAmCurrentlyMaster )
             {
                 internalShutdown();
@@ -545,9 +546,9 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         }
         else
         {
-            String msg = "Broken store, my last committed tx,machineId[" +
-                myLastCommittedTx + "," + masterForMyHighestCommonTxId +
-                "] but master says machine id for that txId is " + masterForMastersHighestCommonTxId;
+            String msg = "Broken store, I (machineId:" + machineId + ") think machineId for txId (" +
+                    highestCommonTxId + ") is " + masterForMyHighestCommonTxId + ", but master (machineId:" +
+                    master.other().getMachineId() + ") says that it's " + masterForMastersHighestCommonTxId;
             msgLog.logMessage( msg, true );
             RuntimeException exception = new BranchedDataException( msg );
             shutdown( exception, false );
