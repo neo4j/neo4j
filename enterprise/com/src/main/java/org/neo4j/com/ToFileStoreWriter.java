@@ -40,6 +40,7 @@ public class ToFileStoreWriter implements StoreWriter
     {
         try
         {
+            temporaryBuffer.clear();
             File file = new File( basePath, path );
             RandomAccessFile randomAccessFile = null;
             try

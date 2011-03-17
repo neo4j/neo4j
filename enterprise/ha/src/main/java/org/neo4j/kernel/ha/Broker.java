@@ -44,6 +44,8 @@ public interface Broker
 
     void rebindMaster();
 
+    void notifyMasterChange( Machine newMaster );
+    
     void shutdown();
 
     void setConnectionInformation( KernelData kernel );
