@@ -24,7 +24,6 @@ import static org.neo4j.kernel.Config.USE_MEMORY_MAPPED_BUFFERS;
 import static org.neo4j.kernel.Config.osIsWindows;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Map;
 
@@ -57,7 +56,7 @@ public abstract class DefaultLogBufferFactory implements LogBufferFactory
                     // (appends) made to it and its underlying byte array is final anyway
                     // (HeapByteBuffer). Maybe a bad assumption? But nice to skip
                     // synchronization.
-                    ByteBuffer byteBuffer = ((DirectMappedLogBuffer)logBuffer).getByteBuffer().duplicate();
+                    CloseableByteBuffer byteBuffer = ((DirectMappedLogBuffer)logBuffer).getBuffer();
                     byteBuffer.flip();
                     return new BufferedReadableByteChannel( fileChannel, byteBuffer );
                 }
