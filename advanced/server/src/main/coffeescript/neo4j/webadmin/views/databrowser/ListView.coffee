@@ -20,10 +20,11 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 define(
   ['neo4j/webadmin/templates/databrowser/list',
+   'neo4j/webadmin/views/View',
    'lib/backbone'], 
-  (template, PropertyEditorView) ->
+  (template, View) ->
   
-    class ListView extends Backbone.View
+    class ListView extends View
 
       render : =>
         $(@el).html(template())

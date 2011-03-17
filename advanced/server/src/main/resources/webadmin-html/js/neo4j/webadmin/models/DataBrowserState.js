@@ -41,7 +41,7 @@
       DataBrowserState.prototype.defaults = {
         type: null,
         data: null,
-        query: "",
+        query: null,
         queryOutOfSyncWithData: true
       };
       DataBrowserState.prototype.initialize = function(options) {

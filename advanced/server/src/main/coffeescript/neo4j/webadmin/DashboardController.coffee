@@ -39,7 +39,7 @@ define(
         @appState.set( mainView : @getDashboardView() )
 
       getDashboardView : =>
-        new DashboardView  
+        @view ?= new DashboardView  
           state      : @appState
           dashboardState : @getDashboardState()
           primitives : @getServerPrimitives()

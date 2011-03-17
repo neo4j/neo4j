@@ -1,22 +1,3 @@
-/*
- * Copyright (c) 2002-2011 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
 (function() {
   /*
   Copyright (c) 2002-2011 "Neo Technology,"
@@ -44,11 +25,10 @@
     child.__super__ = parent.prototype;
     return child;
   };
-  define(['neo4j/webadmin/models/PropertyContainer', 'neo4j/webadmin/templates/databrowser/propertyEditor', 'lib/backbone'], function(PropertyContainer, propertyEditorTemplate) {
+  define(['neo4j/webadmin/models/PropertyContainer', 'neo4j/webadmin/views/View', 'neo4j/webadmin/templates/databrowser/propertyEditor', 'lib/backbone'], function(PropertyContainer, View, propertyEditorTemplate) {
     var PropertyContainerView;
     return PropertyContainerView = (function() {
       function PropertyContainerView() {
-        this.getPropertyField = __bind(this.getPropertyField, this);;
         this.shouldBeConvertedToString = __bind(this.shouldBeConvertedToString, this);;
         this.renderProperties = __bind(this.renderProperties, this);;
         this.unbind = __bind(this.unbind, this);;
@@ -58,8 +38,6 @@
         this.getPropertyIdForElement = __bind(this.getPropertyIdForElement, this);;
         this.setSaveState = __bind(this.setSaveState, this);;
         this.updateSaveState = __bind(this.updateSaveState, this);;
-        this.focusedOnValueField = __bind(this.focusedOnValueField, this);;
-        this.focusedOnKeyField = __bind(this.focusedOnKeyField, this);;
         this.saveChanges = __bind(this.saveChanges, this);;
         this.addProperty = __bind(this.addProperty, this);;
         this.deleteProperty = __bind(this.deleteProperty, this);;
@@ -69,10 +47,8 @@
         this.keyChanged = __bind(this.keyChanged, this);;
         this.initialize = __bind(this.initialize, this);;        PropertyContainerView.__super__.constructor.apply(this, arguments);
       }
-      __extends(PropertyContainerView, Backbone.View);
+      __extends(PropertyContainerView, View);
       PropertyContainerView.prototype.events = {
-        "focus input.property-key": "focusedOnKeyField",
-        "focus input.property-value": "focusedOnValueField",
         "keyup input.property-key": "keyChanged",
         "keyup input.property-value": "valueChanged",
         "change input.property-key": "keyChangeDone",
@@ -85,10 +61,18 @@
         return this.template = opts.template;
       };
       PropertyContainerView.prototype.keyChanged = function(ev) {
-        return this.propertyContainer.setNotSaved();
+        var id;
+        id = this.getPropertyIdForElement(ev.target);
+        if ($(ev.target).val() !== this.propertyContainer.getProperty(id).getKey()) {
+          return this.propertyContainer.setNotSaved();
+        }
       };
       PropertyContainerView.prototype.valueChanged = function(ev) {
-        return this.propertyContainer.setNotSaved();
+        var id;
+        id = this.getPropertyIdForElement(ev.target);
+        if ($(ev.target).val() !== this.propertyContainer.getProperty(id).getValueAsJSON()) {
+          return this.propertyContainer.setNotSaved();
+        }
       };
       PropertyContainerView.prototype.keyChangeDone = function(ev) {
         var id;
@@ -117,22 +101,6 @@
       };
       PropertyContainerView.prototype.saveChanges = function(ev) {
         return this.propertyContainer.save();
-      };
-      PropertyContainerView.prototype.focusedOnKeyField = function(ev) {
-        var id;
-        id = this.getPropertyIdForElement(ev.target);
-        return this.focusedField = {
-          id: id,
-          type: "key"
-        };
-      };
-      PropertyContainerView.prototype.focusedOnValueField = function(ev) {
-        var id;
-        id = this.getPropertyIdForElement(ev.target);
-        return this.focusedField = {
-          id: id,
-          type: "value"
-        };
       };
       PropertyContainerView.prototype.updateSaveState = function(ev) {
         var state;
@@ -164,7 +132,8 @@
       PropertyContainerView.prototype.setDataModel = function(dataModel) {
         this.unbind();
         this.propertyContainer = dataModel.getData();
-        this.propertyContainer.bind("change:propertyList", this.renderProperties);
+        this.propertyContainer.bind("remove:property", this.renderProperties);
+        this.propertyContainer.bind("add:property", this.renderProperties);
         return this.propertyContainer.bind("change:status", this.updateSaveState);
       };
       PropertyContainerView.prototype.render = function() {
@@ -180,7 +149,8 @@
       };
       PropertyContainerView.prototype.unbind = function() {
         if (this.propertyContainer != null) {
-          this.propertyContainer.unbind("change:propertyList", this.renderProperties);
+          this.propertyContainer.unbind("remove:property", this.renderProperties);
+          this.propertyContainer.unbind("add:property", this.renderProperties);
           return this.propertyContainer.unbind("change:status", this.updateSaveState);
         }
       };
@@ -188,9 +158,6 @@
         $(".properties", this.el).html(propertyEditorTemplate({
           properties: this.propertyContainer.get("propertyList")
         }));
-        if (this.focusedField != null) {
-          this.getPropertyField(this.focusedField.id, this.focusedField.type);
-        }
         return this;
       };
       PropertyContainerView.prototype.shouldBeConvertedToString = function(val) {
@@ -201,7 +168,6 @@
           return /^[a-z0-9-_\/\\\(\)#%\&!$]+$/i.test(val);
         }
       };
-      PropertyContainerView.prototype.getPropertyField = function(id, type) {};
       return PropertyContainerView;
     })();
   });

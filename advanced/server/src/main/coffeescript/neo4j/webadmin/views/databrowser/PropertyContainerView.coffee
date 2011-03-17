@@ -20,14 +20,13 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 define(
   ['neo4j/webadmin/models/PropertyContainer',
+   'neo4j/webadmin/views/View',
    'neo4j/webadmin/templates/databrowser/propertyEditor','lib/backbone'], 
-  (PropertyContainer, propertyEditorTemplate) ->
+  (PropertyContainer, View, propertyEditorTemplate) ->
 
-    class PropertyContainerView extends Backbone.View
+    class PropertyContainerView extends View
 
-      events : 
-        "focus input.property-key"     : "focusedOnKeyField",
-        "focus input.property-value"   : "focusedOnValueField",
+      events :
         "keyup input.property-key"     : "keyChanged",
         "keyup input.property-value"   : "valueChanged",
         "change input.property-key"    : "keyChangeDone",
@@ -40,10 +39,14 @@ define(
         @template = opts.template
 
       keyChanged : (ev) =>
-        @propertyContainer.setNotSaved()
+        id = @getPropertyIdForElement(ev.target)
+        if $(ev.target).val() != @propertyContainer.getProperty(id).getKey()
+          @propertyContainer.setNotSaved()
 
       valueChanged : (ev) =>
-        @propertyContainer.setNotSaved()
+        id = @getPropertyIdForElement(ev.target)
+        if $(ev.target).val() != @propertyContainer.getProperty(id).getValueAsJSON()
+          @propertyContainer.setNotSaved()
 
       keyChangeDone : (ev) =>
         id = @getPropertyIdForElement(ev.target)
@@ -70,14 +73,6 @@ define(
 
       saveChanges : (ev) =>
         @propertyContainer.save()
-
-      focusedOnKeyField : (ev) =>
-        id = @getPropertyIdForElement(ev.target)
-        @focusedField = { id:id, type:"key" }
-      
-      focusedOnValueField : (ev) =>
-        id = @getPropertyIdForElement(ev.target)
-        @focusedField = { id:id, type:"value" }
       
       updateSaveState : (ev) =>
         state = @propertyContainer.getSaveState()
@@ -101,7 +96,8 @@ define(
       setDataModel : (dataModel) =>
         @unbind()
         @propertyContainer = dataModel.getData()
-        @propertyContainer.bind "change:propertyList", @renderProperties
+        @propertyContainer.bind "remove:property", @renderProperties
+        @propertyContainer.bind "add:property", @renderProperties
         @propertyContainer.bind "change:status", @updateSaveState
 
       render : =>
@@ -117,17 +113,14 @@ define(
 
       unbind : =>
         if @propertyContainer?
-          @propertyContainer.unbind "change:propertyList", @renderProperties
+          @propertyContainer.unbind "remove:property", @renderProperties
+          @propertyContainer.unbind "add:property", @renderProperties
           @propertyContainer.unbind "change:status", @updateSaveState
-
 
       renderProperties : =>
         $(".properties",@el).html(propertyEditorTemplate(
           properties : @propertyContainer.get "propertyList"
         ))
-
-        if @focusedField?
-          @getPropertyField(@focusedField.id, @focusedField.type)
 
         return this
 
@@ -137,7 +130,4 @@ define(
           return false
         catch e
           return /^[a-z0-9-_\/\\\(\)#%\&!$]+$/i.test(val)
-
-      getPropertyField : (id, type) =>
-        
 )

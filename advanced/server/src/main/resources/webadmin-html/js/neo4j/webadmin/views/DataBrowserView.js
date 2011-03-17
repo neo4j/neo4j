@@ -1,22 +1,3 @@
-/*
- * Copyright (c) 2002-2011 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
 (function() {
   /*
   Copyright (c) 2002-2011 "Neo Technology,"
@@ -44,7 +25,7 @@
     child.__super__ = parent.prototype;
     return child;
   };
-  define(['neo4j/webadmin/data/Search', 'neo4j/webadmin/data/ItemUrlResolver', 'neo4j/webadmin/security/HtmlEscaper', './databrowser/TabularView', './databrowser/VisualizedView', './databrowser/CreateRelationshipDialog', 'neo4j/webadmin/templates/databrowser/base', 'lib/backbone'], function(Search, ItemUrlResolver, HtmlEscaper, TabularView, VisualizedView, CreateRelationshipDialog, template) {
+  define(['neo4j/webadmin/data/Search', 'neo4j/webadmin/data/ItemUrlResolver', 'neo4j/webadmin/security/HtmlEscaper', './databrowser/TabularView', './databrowser/VisualizedView', './databrowser/CreateRelationshipDialog', 'neo4j/webadmin/views/View', 'neo4j/webadmin/templates/databrowser/base', 'lib/backbone'], function(Search, ItemUrlResolver, HtmlEscaper, TabularView, VisualizedView, CreateRelationshipDialog, View, template) {
     var DataBrowserView;
     return DataBrowserView = (function() {
       function DataBrowserView() {
@@ -60,7 +41,7 @@
         this.renderDataView = __bind(this.renderDataView, this);;
         this.render = __bind(this.render, this);;        DataBrowserView.__super__.constructor.apply(this, arguments);
       }
-      __extends(DataBrowserView, Backbone.View);
+      __extends(DataBrowserView, View);
       DataBrowserView.prototype.template = template;
       DataBrowserView.prototype.events = {
         "keyup #data-console": "search",
@@ -158,8 +139,7 @@
       };
       DataBrowserView.prototype.remove = function() {
         this.dataModel.unbind("change:query", this.queryChanged);
-        this.dataView.remove();
-        return DataBrowserView.__super__.remove.call(this);
+        return this.dataView.remove();
       };
       return DataBrowserView;
     })();
