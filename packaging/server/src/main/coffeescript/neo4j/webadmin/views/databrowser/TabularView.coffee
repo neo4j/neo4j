@@ -22,11 +22,12 @@ define(
   ['./NodeView',
    './RelationshipView',
    './ListView',
+   'neo4j/webadmin/views/View',
    'neo4j/webadmin/templates/databrowser/notfound',
    'lib/backbone'], 
-  (NodeView, RelationshipView, ListView, notFoundTemplate) ->
+  (NodeView, RelationshipView, ListView, View, notFoundTemplate) ->
   
-    class SimpleView extends Backbone.View
+    class SimpleView extends View
 
       initialize : (options)->
         
@@ -39,7 +40,6 @@ define(
 
       render : =>
         type = @dataModel.get("type")
-        console.log type, @dataModel.get "query"
         switch type
           when "node"
             view = @nodeView

@@ -21,10 +21,11 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 define(
   ['neo4j/webadmin/templates/serverinfo/base',
    'neo4j/webadmin/templates/serverinfo/bean',
+   'neo4j/webadmin/views/View',
    'lib/backbone'], 
-  (baseTemplate, beanTemplate) ->
+  (baseTemplate, beanTemplate, View) ->
   
-    class ServerInfoView extends Backbone.View
+    class ServerInfoView extends View
       
       initialize : (options) ->
         @serverInfo = options.serverInfo

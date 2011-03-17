@@ -59,17 +59,17 @@ define(
         duplicate = @hasKey(key, id)
         property = @getProperty(id)
 
-        oldKey = property.key
+        oldKey = property.getKey()
         property.set "key": key
         
         @setNotSaved()
+
+        @getItem().removeProperty(oldKey)
 
         if duplicate
           property.setKeyError "This key is already used, please choose a different one."
         else
           property.setKeyError false
-
-          @getItem().removeProperty(oldKey)
           @getItem().setProperty(key, property.getValue())
 
         @updatePropertyList(opts)
@@ -100,12 +100,14 @@ define(
 
           @getItem().removeProperty property.getKey()
           @updatePropertyList(opts)
+          @trigger("remove:property")
 
       addProperty : (key="", value="", opts={}) =>
 
         id = @generatePropertyId()
         @properties[id] = new Property({key:key, value:value, localId:id})
         @updatePropertyList(opts)
+        @trigger("add:property")
 
       getProperty : (id) =>
         @properties[id]

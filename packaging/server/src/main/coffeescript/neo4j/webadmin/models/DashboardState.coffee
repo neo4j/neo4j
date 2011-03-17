@@ -64,23 +64,30 @@ define(
           timeformat: "%H:%M"
 
       initialize : (options) =>
-        @set
-          chart : @charts.primitives
-          zoomLevel : @zoomLevels.six_hours
+        @setChartByKey "primitives"
+        @setZoomLevelByKey "six_hours"
 
       getChart : () =>
         @get "chart"
+      
+      getChartKey : () =>
+        @get "chartKey"
 
       getZoomLevel : () =>
         @get "zoomLevel"
 
+      getZoomLevelKey : () =>
+        @get "zoomLevelKey"
+
       setZoomLevelByKey : (key) =>
+        @set "zoomLevelKey" : key
         @setZoomLevel @zoomLevels[key]
       
       setZoomLevel : (zl) =>
         @set zoomLevel : zl
 
       setChartByKey : (key) =>
+        @set "chartKey" : key
         @setChart @charts[key]
       
       setChart : (chart) =>

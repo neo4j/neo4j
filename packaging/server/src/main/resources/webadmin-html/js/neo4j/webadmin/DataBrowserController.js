@@ -57,14 +57,17 @@
         if (query.substr(-1) === "/") {
           query = query.substr(0, query.length - 1);
         }
-        this.appState.set({
+        this.dataModel.setQuery(query);
+        return this.appState.set({
           mainView: this.getDataBrowserView()
         });
-        return this.dataModel.setQuery(query);
       };
       DataBrowserController.prototype.queryChanged = function() {
         var query, url;
         query = this.dataModel.get("query");
+        if (query === null) {
+          return this.search("0");
+        }
         url = "#/data/search/" + query + "/";
         if (location.hash !== url) {
           location.hash = url;
@@ -77,7 +80,8 @@
         return this.dataModel.setData(result);
       };
       DataBrowserController.prototype.getDataBrowserView = function() {
-        return new DataBrowserView({
+        var _ref;
+        return (_ref = this.view) != null ? _ref : this.view = new DataBrowserView({
           state: this.appState,
           dataModel: this.dataModel
         });

@@ -45,9 +45,14 @@ define ['neo4j/webadmin/security/HtmlEscaper','lib/backbone'], (HtmlEscaper) ->
     getKeyError : =>
       @get "keyError"
 
+    getValueAsJSON : () =>
+      if @hasValueError() then @getValue() else JSON.stringify(@getValue())
+
     getValueAsHtml : () =>
-      value = if @hasValueError() then @getValue() else JSON.stringify(@getValue())
-      htmlEscaper.escape value
+      htmlEscaper.escape @getValueAsJSON()
+
+    getKeyAsHtml : () =>
+      htmlEscaper.escape @getKey()
 
     setKeyError : (error) =>
       @set "keyError" : error

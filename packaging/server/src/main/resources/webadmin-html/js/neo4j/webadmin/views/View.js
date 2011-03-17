@@ -17,7 +17,7 @@
 
   You should have received a copy of the GNU Affero General Public License
   along with this program. If not, see <http://www.gnu.org/licenses/>.
-  */  var __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+  */  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
     for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
     function ctor() { this.constructor = child; }
     ctor.prototype = parent.prototype;
@@ -25,17 +25,21 @@
     child.__super__ = parent.prototype;
     return child;
   };
-  define(['lib/backbone'], function() {
-    var ApplicationState;
-    return ApplicationState = (function() {
-      function ApplicationState() {
-        ApplicationState.__super__.constructor.apply(this, arguments);
+  define(['lib/backbone'], function(template) {
+    var View;
+    return View = (function() {
+      function View() {
+        this.attach = __bind(this.attach, this);;
+        this.detach = __bind(this.detach, this);;        View.__super__.constructor.apply(this, arguments);
       }
-      __extends(ApplicationState, Backbone.Model);
-      ApplicationState.prototype.getServer = function() {
-        return this.get("server");
+      __extends(View, Backbone.View);
+      View.prototype.detach = function() {
+        return $(this.el).detach();
       };
-      return ApplicationState;
+      View.prototype.attach = function(parent) {
+        return $(parent).append(this.el);
+      };
+      return View;
     })();
   });
 }).call(this);
