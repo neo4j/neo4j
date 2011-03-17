@@ -285,7 +285,6 @@
             }
             return _results;
           }).call(this);
-          console.log(propHtml, node.getProperties(), node);
           propHtml = propHtml.join("\n");
           html = "<ul class='tiny-property-list'>" + propHtml + "</ul>";
         } else {

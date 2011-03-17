@@ -38,6 +38,7 @@
         this.getPropertyIdForElement = __bind(this.getPropertyIdForElement, this);;
         this.setSaveState = __bind(this.setSaveState, this);;
         this.updateSaveState = __bind(this.updateSaveState, this);;
+        this.deleteItem = __bind(this.deleteItem, this);;
         this.saveChanges = __bind(this.saveChanges, this);;
         this.addProperty = __bind(this.addProperty, this);;
         this.deleteProperty = __bind(this.deleteProperty, this);;
@@ -55,7 +56,8 @@
         "change input.property-value": "valueChangeDone",
         "click button.delete-property": "deleteProperty",
         "click button.add-property": "addProperty",
-        "click button.data-save-properties": "saveChanges"
+        "click button.data-save-properties": "saveChanges",
+        "click button.data-delete-item": "deleteItem"
       };
       PropertyContainerView.prototype.initialize = function(opts) {
         return this.template = opts.template;
@@ -101,6 +103,11 @@
       };
       PropertyContainerView.prototype.saveChanges = function(ev) {
         return this.propertyContainer.save();
+      };
+      PropertyContainerView.prototype.deleteItem = function(ev) {
+        return this.propertyContainer.getItem().remove().then(function() {
+          return window.location = "#/data/search/0";
+        });
       };
       PropertyContainerView.prototype.updateSaveState = function(ev) {
         var state;
