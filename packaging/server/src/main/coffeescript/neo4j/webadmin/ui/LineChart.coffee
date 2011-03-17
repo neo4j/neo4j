@@ -40,7 +40,7 @@ define(
           lines : { show: true }
 
         grid  : { hoverable: true }
-        colors : ["#326a75","#4f848f","#a0c2c8","#00191e"]
+        colors : ["#490A3D","#BD1550","#E97F02","#F8CA00","#8A9B0F"]
         tooltipYFormatter : (v) -> Math.round(v)
         tooltipXFormatter : (v) -> DateFormat.format(new Date(v))
 
