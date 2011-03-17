@@ -40,6 +40,9 @@ define(
 
       getData : =>
         @get "data"
+      
+      getDataType : =>
+        @get "type"
 
       dataIsSingleNode : () =>
         return @get("type") == "node"
@@ -62,7 +65,7 @@ define(
           @set({type:"relationship","data":new RelationshipProxy(result)}, opts)
 
         else if _(result).isArray()
-          @set({type:"list", "data":new RelationshipList(result)}, opts)
+          @set({type:"relationshipList", "data":new RelationshipList(result)}, opts)
 
         else
           @set({"data":null, type:"not-found"}, opts)

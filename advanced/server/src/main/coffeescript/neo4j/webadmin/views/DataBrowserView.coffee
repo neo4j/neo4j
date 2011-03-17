@@ -53,11 +53,12 @@ define(
       render : =>
         $(@el).html @template( 
           query : @htmlEscaper.escape(@dataModel.getQuery())
-          viewType : @viewType )
+          viewType : @viewType
+          dataType : @dataModel.getDataType() )
         @renderDataView()
 
       renderDataView : =>
-        $("#data-area", @el).empty().append @dataView.el
+        @dataView.attach($("#data-area", @el).empty())
         @dataView.render()
         return this
 
@@ -105,15 +106,19 @@ define(
 
       switchToVisualizedView : =>
         if @dataView?
-          @dataView.remove()
+          @dataView.detach()
+        
+        @visualizedView ?= new VisualizedView(dataModel:@dataModel, server:@server)
         @viewType = "visualized"
-        @dataView = new VisualizedView(dataModel:@dataModel, server:@server)
+        @dataView = @visualizedView 
 
       switchToTabularView : =>
         if @dataView?
-          @dataView.remove()
+          @dataView.detach()
+      
+        @tabularView ?= new TabularView(dataModel:@dataModel, server:@server)
         @viewType = "tabular"
-        @dataView = new TabularView(dataModel:@dataModel, server:@server)
+        @dataView = @tabularView
 
       remove : =>
         @dataModel.unbind("change:query", @queryChanged)

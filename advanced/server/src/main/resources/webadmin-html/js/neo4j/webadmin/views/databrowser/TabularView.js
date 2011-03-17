@@ -50,7 +50,7 @@
           case "relationship":
             view = this.relationshipView;
             break;
-          case "list":
+          case "relationshipList":
             view = this.relationshipListView;
             break;
           default:

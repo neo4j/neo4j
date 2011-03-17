@@ -30,6 +30,7 @@ define(
         @setRawRelationships(relationships || [])
 
       setRawRelationships : (relationships) =>
+        @set "rawRelationships" : relationships        
         rels = []
         propertyKeyMap = {}
         for rel in relationships
@@ -48,5 +49,8 @@ define(
 
       getRelationships : () =>
         @get "relationships"
+
+      getRawRelationships : () =>
+        @get "rawRelationships"
 
 )

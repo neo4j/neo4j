@@ -7,12 +7,19 @@
 .button-bar {
   list-style:none;
   margin:0;
+  padding: 0;
 }
 
 .button-bar li {
   display:block;
   float:left;
+  padding-right: 5px;
 }
+
+.button-bar li:last-child {
+  padding-right: 0;
+}
+
 
 /**
  * Buttons
@@ -23,7 +30,6 @@
   border: 0 none;
   height: 32px;
   padding: 0 5px;
-  margin:0 4px;
   cursor:pointer;
   -moz-border-radius:4px;
   -webkit-border-radius:4px;
@@ -34,6 +40,10 @@
   color:#4C4C4C;
   background:#CCCCCC;
   text-decoration:none;
+}
+
+.button:hover {
+  background: #fff;
 }
 
 a.button {
@@ -50,6 +60,7 @@ a.button {
   text-decoration: none;
   text-shadow: 1px 1px 0 #222222;
 }
+
 .title-button .subtitle {
   clear: right;
   color: #AAAAAA;
@@ -60,22 +71,35 @@ a.button {
 /**
  * Micro button 
  */
+
 .micro-button {
   -moz-border-radius:8px;
   -webkit-border-radius:8px;
   border-radius:8px;
   padding: 3px 6px;
-  background: #555;
-  border: 1px solid #444;
   font-size:10px;
-  color:#eee;
+  color:#4C4C4C;
+  background:#CCCCCC;
   text-decoration:none;
 }
 
 .micro-button:hover {
+  background:#FFF;
+}
+
+/**
+ * DARK BUTTON 
+ */
+
+.dark-button {
+  background: #555;
+  border: 1px solid #444;
+  color:#eee;
+}
+
+.dark-button:hover {
   color:#eee;
   background: #666;
-  text-decoration:none;
 }
 
 /**
@@ -87,7 +111,6 @@ a.button {
   height: 32px;
   padding: 0;
   width: 32px;
-  margin:0 4px;
   cursor:pointer;
   -moz-border-radius:4px;
   -webkit-border-radius:4px;

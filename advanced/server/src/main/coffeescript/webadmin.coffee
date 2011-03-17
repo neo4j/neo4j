@@ -41,7 +41,8 @@ require(
     appState = new ApplicationState
     appState.set server : new neo4j.GraphDatabase(location.protocol + "//" + location.host)
 
-    new BaseView(el:$("body"),appState:appState)
+    baseView = new BaseView(appState:appState)
+    $("body").append(baseView.el)
 
     dashboardController   = new DashboardController appState
     databrowserController = new DataBrowserController appState

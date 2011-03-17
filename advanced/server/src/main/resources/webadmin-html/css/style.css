@@ -199,6 +199,7 @@ body {
 
 #data-execute-console {
   background:url("../img/icons/glyphish/06-magnify.png") no-repeat scroll center center #ccc;
+  margin-left:5px;
 }
 #data-execute-console:hover {
   background:url("../img/icons/glyphish/06-magnify.png") no-repeat scroll center center #fff;
@@ -289,6 +290,24 @@ body {
   width:100%;
 }
 
+
+.relationship-meta {
+  clear:both;
+  list-style:none;
+  padding:10px 0 5px;
+  margin:0;
+}
+
+.relationship-meta li { 
+  float:left;
+  display:block;
+}
+
+.relationship-meta li.type {
+  font-size: 12px;
+  padding: 5px 10px;
+}
+
 /**
  * CONSOLE
  */
@@ -318,7 +337,6 @@ body {
  */
 
 .headline-bar {
-  height: 30px;
   background: none repeat scroll 0 0 #82BA5A;
   border-bottom: 1px solid #79AD54;
   border-top: 1px solid #8BC760;
@@ -348,6 +366,7 @@ body {
   color:#547939;
   cursor:pointer;
   font-size:12px;
+  height: 32px;
 }
 .headline-bar .tabs li a:hover, .headline-bar .tabs li button:hover,
 .headline-bar .tabs li a.current, .headline-bar .tabs li button.current  {
@@ -355,12 +374,19 @@ body {
   color:#fff;
 }
 
+.headline-bar .title {
+  float:left;
+}
+
+.headline-bar .title p {
+  margin: 2px 0;
+}
+
 .headline-bar h3 {
   color: #FFFFFF;
   font-size: 16px;
   margin: 3px 0;
   text-shadow: 1px -1px 0 #73A650;
-  float:left;
 }
 
 /**
@@ -368,46 +394,46 @@ body {
  */
  
 .tooltip-wrap {
-    display:none;
-    position: absolute;
-    width: 160px;
-    padding-bottom:9px;
-    z-index:101;
-    background: url(../img/tooltip-tail-down.png) bottom center no-repeat;
+  display:none;
+  position: absolute;
+  width: 160px;
+  padding-bottom:9px;
+  z-index:101;
+  background: url(../img/tooltip-tail-down.png) bottom center no-repeat;
 }
 .tooltip-wrap.tooltip-pos-below {
-    padding-bottom :0;
-    padding-top:9px;
-    background: url(../img/tooltip-tail-up.png) top center no-repeat;
+  padding-bottom :0;
+  padding-top:9px;
+  background: url(../img/tooltip-tail-up.png) top center no-repeat;
 }
 .tooltip-wrap.tooltip-pos-right {
-    padding-bottom :0;
-    padding-left:9px;
-    background: url(../img/tooltip-tail-left.png) center left no-repeat;
+  padding-bottom :0;
+  padding-left:9px;
+  background: url(../img/tooltip-tail-left.png) center left no-repeat;
 }
 .tooltip-wrap.tooltip-pos-left {
-    padding-bottom :0;
-    padding-right:9px;
-    background: url(../img/tooltip-tail-right.png) center right no-repeat;
+  padding-bottom :0;
+  padding-right:9px;
+  background: url(../img/tooltip-tail-right.png) center right no-repeat;
 }
 
 .tooltip-close {
-    background: url(../img/tooltip-close.png) no-repeat #333;
-    height: 10px;
-    position: absolute;
-    right: 6px;
-    top: 6px;
-    width: 10px;
-    cursor:pointer;
+  background: url(../img/tooltip-close.png) no-repeat #333;
+  height: 10px;
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  width: 10px;
+  cursor:pointer;
 }
 
 .tooltip {
-background: none repeat scroll 0 0 #DDDDDD;
-    border: 3px solid #EEEEEE;
-    color: #666666;
-    font-size: 12px;
-    padding: 8px 12px;
-    text-align: center;
+  background: none repeat scroll 0 0 #DDDDDD;
+  border: 3px solid #EEEEEE;
+  color: #666666;
+  font-size: 12px;
+  padding: 8px 12px;
+  text-align: center;
 	-webkit-border-radius:4px; 
 	-moz-border-radius:4px; 
 }
@@ -455,6 +481,24 @@ background: none repeat scroll 0 0 #DDDDDD;
 .info_list li h3 { margin: 0; padding: 4px 0 0 0; }
 .info_list li p { margin: 0; padding: 2px 0; }
 
+/**
+ * TINY PROPERTY LIST
+ */
+
+.tiny-property-list { 
+  list-style:none;
+  padding:0;
+  margin:0;
+}
+
+.tiny-property-list .key {
+  width:30%;
+  font-weight:bold;
+}
+
+.tiny-property-list .value {
+  width:69%;
+}
 /**
  * PLAIN HTML
  */

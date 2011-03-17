@@ -39,13 +39,9 @@ table.data-table tr td, table.data-table tr th {
   border-bottom: 1px solid #79ad54;
   border-top: 1px solid #8bc760;
   padding: 0 10px;
-  margin: 2px 0;
-  padding: 3px 5px;
+  margin: 0;
+  padding: 5px 5px;
   border-left: 1px solid #79ad54;
-}
-
-table.data-table tr td a, table.data-table tr th a {
-  color: #fff;
 }
 
 table.data-table tr:nth-child(odd) td, table.data-table tr:nth-child(odd) th {
