@@ -21,6 +21,7 @@ package org.neo4j.kernel.ha;
 
 import javax.transaction.Transaction;
 
+import org.neo4j.com.ComException;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.transaction.TxFinishHook;
@@ -53,7 +54,7 @@ public class SlaveTxRollbackHook implements TxFinishHook
             receiver.newMaster( null, e );
             throw e;
         }
-        catch ( HaCommunicationException e )
+        catch ( ComException e )
         {
             receiver.newMaster( null, e );
             throw e;

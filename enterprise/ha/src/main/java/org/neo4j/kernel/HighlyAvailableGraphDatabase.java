@@ -36,6 +36,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.com.ComException;
 import org.neo4j.com.MasterUtil;
 import org.neo4j.com.Response;
 import org.neo4j.com.SlaveContext;
@@ -52,7 +53,6 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.ha.BranchedDataException;
 import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.BrokerFactory;
-import org.neo4j.kernel.ha.HaCommunicationException;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterIdGeneratorFactory;
 import org.neo4j.kernel.ha.MasterServer;
@@ -380,7 +380,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             newMaster( null, e );
             throw e;
         }
-        catch ( HaCommunicationException e )
+        catch ( ComException e )
         {
             newMaster( null, e );
             throw e;
@@ -763,9 +763,9 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         {
             msgLog.logMessage( "ZooKeeper exception in newMaster", ee );
         }
-        catch ( HaCommunicationException ee )
+        catch ( ComException ee )
         {
-            msgLog.logMessage( "HaComminucationException in newMaster", ee );
+            msgLog.logMessage( "Communication exception in newMaster", ee );
         }
         // BranchedDataException will escape from this method since the catch clause below
         // sees to that.
