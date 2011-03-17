@@ -1,0 +1,404 @@
+[[indexing]]
+Indexing
+========
+
+:lucene-version: 3_0_1
+
+Indexing in Neo4j can be done in two fundamentally different ways:
+
+. The database has a _natural index_ consisting of its relationships of different types.
+  For example a tree structure can be layered on top of the data and used for index lookups performed by a traverser.
+. Separate index engines can be used, _Apache Lucene_ being the default backend, included with Neo4j.
+
+This chapter will go into some detail on how to use the second type of indexing.
+
+[[indexing-introduction]]
+== Introduction ==
+
+Indexing operations are part of the http://api.neo4j.org/current/org/neo4j/graphdb/index/package-summary.html[Neo4j API].
+Each index is tied to a unique, user-specified name, for example "persons" and the index framework is capable of indexing both nodes and relationships.
+
+Index support is provided by the +neo4j-lucene-index+ component.
+This component is included in the standard Neo4j download or can be downloaded separately from http://repo1.maven.org/maven2/org/neo4j/neo4j-lucene-index/ .
+For Maven users, it has the coordinates +org.neo4j:neo4j-lucene-index+ and should be used together with the same version +org.neo4j:neo4j-kernel+.
+Both components are included transitively by the +org.neo4j:neo4j:pom+ artifact which makes it simple to keep the versions in sync.
+
+.Transactions
+NOTE: In true Neo4j manner all modifying index operations must be performed inside a transaction.
+
+
+[[indexing-create]]
+== Create ==
+
+An index is created if it doesn't exist when you ask for it and will (if you don't give it custom configuration) be created with default configuration and backend.
+
+To set the stage for our examples, let's create some indices to begin with:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=createIndices
+----
+
+This will create two node indices and one relationship index with default configuration.
+Note that +RelationshipIndex+ extends +Index<Relationship>+ by providing support for limiting a search to relationships with a specific start and/or end node.
+
+You can also check if an index exists like this:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=checkIfExists
+----
+
+
+[[indexing-delete]]
+== Delete ==
+
+Indices can be deleted, which means that the entire contents of the index will be removed as well as its associated configuration, making that index name available to be created at a later time (even with different configuration if required).
+
+index.delete();
+
+Where the actual deletion of the index is made during the committing of the surrounding transaction. Calls made to such an index instance after delete() has been called are invalid inside that transaction as well as outside (if the transaction is successful), but valid again if the transaction is rolled back.
+
+
+[[indexing-add]]
+== Add ==
+
+Each index supports associating any number of key-value pairs with any number of entities (nodes or relationships), where each association between entity and key-value pair is performed individually.
+To begin with, let's add a few nodes to the indices:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=createNodes
+----
+
+Note that there can be multiple values associated with the same entity and key!
+
+Next up, we'll create relationships and index them as well:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=createRelationships
+----
+
+Assuming we set the same key-calue pairs as properties as well, this is how our example graph looks:
+
+image::indexing-imdb-example.png[scaledwidth="50%", alt="Indexing example node space"]
+
+
+[[indexing-remove]]
+== Remove ==
+
+Removing from an index is similar to adding, but can be done by supplying one of the following combinations of arguments:
+
+* entity
+* entity, key
+* entity, key, value
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=removeNodeFromIndex
+----
+
+
+[[indexing-update]]
+== Update ==
+
+IMPORTANT: To update an index entry, remove the old one and add a new.
+
+Remember that a node or relationship can be associated with any number of key-value pairs in an index?
+This means that you can index a node or relationship with many key-value pairs having the same key.
+With this background we realize that it's not enough to just index the new value (in the case where a property value changes and you'd like to update the index with the new value).
+Instead, you'll have to remove the old value as well.
+
+Here's a code example for it:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=update
+----
+
+
+[[indexing-search]]
+== Search ==
+
+An index can be searched in two ways, +get+ and +query+.
+The +get+ method will return exact matches to the given key-value pair, whereas +query+ exposes querying capabilities directly from the backend used by the index.
+For example the http://lucene.apache.org/java/{lucene-version}/queryparsersyntax.html[Lucene query syntax] can be used directly with the default indexing backend, as it uses Lucene.
+
+[[indexing-search-get]]
+=== Get ===
+
+This is how to search for a single exact match:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=getSingleNode
+----
+
++IndexHits+ is an +Iterable+ with some added useful methods on it, for example +getSingle()+ which returns the first and only item from the result iterator, or +null+ if there wasn't any hit.
+
+Here's how to get a single relationship by exact matching and retrieve the start and end nodes of it:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=getSingleRelationship
+----
+
+Finally, let's iterate over all exact matches from a relationship index:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=getRelationships
+----
+
+IMPORTANT: In case you're not iterating through all the hits, +IndexHits.close()+ must be called.
+
+[[indexing-search-query]]
+=== Query ===
+
+There are two query methods, one which has a key-value signature where the value represents a query for values with the given key only.
+The other method is more generic and can also support querying for more than one key-value pair in the same query.
+
+Here's an example using the key-query option:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=actorsQuery
+----
+
+In the following example the query uses multiple keys:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=matrixQuery
+----
+
+NOTE: Beginning a wildcard search with "*" or "?" is discouraged by Lucene,
+  but will nevertheless work.
+
+CAUTION: You can't have _any whitespace_ in the search term with this syntax.
+  See <<indexing-lucene-query-objects>> for how to do that.
+
+
+[[indexing-relationships]]
+== Relationship indices ==
+
+An index for relationships is just like an index for nodes, but with some extra methods for including start/end node in the queries.
+These extra methods reside in the +RelationshipIndex+ interface which extends the +Index<Relationship>+ interface.
+
+Example of querying a relationship index:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=queryForRelationships
+----
+
+And here's an example for the special case of searching for a specific relationship type:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=queryForRelationshipType
+----
+
+Such an index can be useful if your domain can have nodes with a very large number of relationships between nodes, lowering the time to search for a relationship between two nodes.
+An example is time series data represented as a relationship per occurrence.
+
+[[indexing-scores]]
+== Scores ==
+
+The +IndexHits+ interface exposes scoring so that the index can communicate scores for the hits.
+Note that are not sorted by the score unless you specify that.
+See <<indexing-lucene-sort>> for how to sort by score.
+
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=queryWithScore
+----
+
+
+[[indexing-create-advanced]]
+== Advanced creation and fulltext ==
+
+At the time of creation extra configuration can be specified to control the behavior of the index and even which backend to use.
+For example to create a Lucene fulltext index:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=fulltext
+----
+
+NOTE: In order to search for the tokenized words, the +query+ method has to be used.
+  The +get+ method will only match the full string value, not the tokens.
+
+The configuration of the index is persisted once the index has been created.
+The +provider+ configuration key is interpreted by Neo4j, but any other configuration is up to the selected backend to interpret.
+
+.Lucene indexing configuration parameters
+[options="header",frame="none",cols="<15m,<30,<55"]
+|========================================================
+| Parameter                 | Possible values   | Effect
+| type | +exact+, +fulltext+ |
+  +exact+ is the default and uses a Lucene keyword analyzer.
+  +fulltext+ uses a white-space tokenizer in its analyzer.
+| to_lower_case | `true`, `false` | This parameter goes together with +type+: +fulltext+ and converts values to lower case during both additions and querying, making the index case insensitive. Defaults to `true`.
+| analyzer | the full class name of an Analyzer | Overrides the +type+ so that a custom analyzer can be used.
+  Note: +to_lower_case+ still affects lowercasing of string queries. 
+  If the custom analyzer uppercases the indexed tokens, string queries will not match as expected. 
+|========================================================
+
+
+[[indexing-lucene-extras]]
+== Extra features for Lucene indexes ==
+
+[[indexing-lucene-numeric-ranges]]
+=== Numeric ranges ===
+
+Lucene supports smart indexing of numbers, querying for ranges and sorting such results, and so does its backend for Neo4j.
+To mark a value so that it gets indexes as a numeric value, make use of the +ValueContext+ class, like this:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=numericRange
+----
+
+////
+// example using dates
+Index<Relationship> dateIndex = graphDb.index().forRelationships( "friendships" );
+index.add( myRelationship, "date", new ValueContext( (Long) myRelationship.getProperty( "date" ) ).indexNumeric() );
+index.add( myOtherRelationship, "date", new ValueContext( (Long) myOtherRelationship.getProperty( "date" ) ).indexNumeric() );
+ 
+// Query for range
+long startDate = ...;
+long endDate = ...;
+index.query( NumericRangeQuery.newLongRange( "date", startDate, endDate, true, true ) );
+////
+
+[[indexing-lucene-sort]]
+=== Sorting ===
+
+Sorting is something Lucene does well and that is also exposed in the index backend, through the QueryContext class:
+
+index.query( "name", new QueryContext( "*sson" ).sort( "name" ) );
+index.query( new QueryContext( "name:*sson AND title:Hacker" ).sort( "name", "title" ) );
+
+To sort the results by relevance (score) do like this:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=queryWithRelevance
+----
+
+[[indexing-lucene-query-objects]]
+=== Querying with Lucene Query objects ===
+
+Instead of passing in Lucene query syntax queries, you can instantiate such queries programmatically and pass in as argument, for example:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=termQuery
+----
+
+This is how to perform wildcard searches using Lucene Query Objects:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=wildcardTermQuery
+----
+
+Note that this allows for whitespace in the search string.
+
+[[indexing-lucene-compound]]
+=== Compound queries ===
+
+Lucene supports querying for multiple terms in the same query, like so:
+
+index.query( new QueryContext( "name:*sson AND title:Hacker AND company-name:Neotechnology" ).sort( "name", "title" ) );
+
+
+[[indexing-lucene-default-operator]]
+=== Default operator ===
+
+The default operator, i.e. whether AND or OR is used in between different terms in a query is OR. Changing that behavior is also done via the QueryContext class:
+
+index.query( new QueryContext( "name:*sson title:Hacker" ).defaultOperator( Operator.AND ).sort( "name" ) );
+
+[[indexing-lucene-caching]]
+=== Caching ===
+
+If your index lookups becomes a performance bottle neck, caching can be enabled for certain keys in certain indexes (key locations) to speed up get requests. The caching is implemented with a LRU cache so that only the most recently accessed results are cached (with "results" meaning a query result of a get request, not a single entity). You can control the size of the cache (the maximum number of results) per index key.
+
+Index<Node> index = graphDb.index().forNodes( "persons" );
+((LuceneIndex) index).setCacheCapacity( "name", 300000 );
+
+This is a one-time-per-application-lifecycle operation which needs to be done each time the graph database is started if such caching is wanted.
+
+
+[[indexing-batchinsert]]
+== Batch insertion ==
+
+Neo4j has a batch insertion mode intended for initial imports, which must run in a single thread and bypasses transactions and other checks in favor of performance. Indexing during batch insertion is done using BatchInserterIndex which are provided via BatchInserterIndexProvider. An example:
+
+BatchInserter inserter = new BatchInserterImpl( "neo4j-db" );
+BatchInserterIndexProvider indexProvider = new LuceneBatchInserterIndexProvider( inserter );
+BatchInserterIndex persons = indexProvider.nodeIndex( "persons", MapUtil.stringMap( "type", "exact" ) );
+persons.setCacheCapacity( "name", 100000 );
+ 
+Map<String, Object> properties = MapUtil.map( "name", "Mattias" );
+long node = inserter.createNode( properties );
+persons.add( node, properties );
+ 
+// Make sure to shut down the index provider
+indexProvider.shutdown();
+inserter.shutdown();
+
+The configuration parameters correspond to those of the normal integrated API.
+
+[[indexing-batchinsert-best-practices]]
+=== Best practices ===
+
+Here are some pointers to get the most performance out of BatchInserterIndex:
+
+* Try to avoid flushing too often because each flush will result in all additions (since last flush) to be visible to the querying methods, and publishing those changes can be a performance penalty.
+* Have (as big as possible) phases where one phase is either only writes or only reads, and don't forget to flush after a write phase so that those changes becomes visible to the querying methods.
+* Enable caching for keys you know you're going to do lookups for later on to increase performance significantly (insertion performance may slow down slightly).
+    
+
