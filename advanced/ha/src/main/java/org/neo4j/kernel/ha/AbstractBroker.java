@@ -47,6 +47,12 @@ public abstract class AbstractBroker implements Broker
     {
         return this.myMachineId;
     }
+    
+    @Override
+    public void notifyMasterChange( Machine newMaster )
+    {
+        // Do nothing
+    }
 
     public String getStoreDir()
     {

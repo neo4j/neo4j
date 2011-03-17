@@ -162,4 +162,10 @@ public class ZooKeeperBroker extends AbstractBroker
     {
         zooClient.setDataChangeWatcher( ZooClient.MASTER_REBOUND_CHILD, machineId );
     }
+    
+    @Override
+    public void notifyMasterChange( Machine newMaster )
+    {
+        zooClient.setDataChangeWatcher( ZooClient.MASTER_NOTIFY_CHILD, newMaster.getMachineId(), true );
+    }
 }
