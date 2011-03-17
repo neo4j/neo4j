@@ -27,7 +27,7 @@ define(
       defaults :
         type : null
         data : null
-        query : "0"
+        query : ""
         queryOutOfSyncWithData : true
 
       initialize : (options) =>
