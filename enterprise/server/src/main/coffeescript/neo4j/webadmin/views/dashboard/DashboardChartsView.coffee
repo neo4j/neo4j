@@ -45,6 +45,9 @@ define(
         @chart = new LineChart($("#monitor-chart"))
         @redrawChart()
 
+        @highlightChartSwitchTab "primitives"
+        @highlightZoomTab "six_hours"
+
         return this
 
       redrawChart : =>
@@ -73,10 +76,20 @@ define(
           @chart.render data, _.extend(chartDef.chartSettings || {}, settings)
 
       switchChartClicked : (ev) =>
+        @highlightChartSwitchTab $(ev.target).val()
         @dashboardState.setChartByKey $(ev.target).val()
       
       switchZoomClicked : (ev) =>
+        @highlightZoomTab $(ev.target).val()
         @dashboardState.setZoomLevelByKey $(ev.target).val()
+
+      highlightChartSwitchTab : (tabKey) =>
+        $("button.switch-dashboard-chart", @el).removeClass("current")
+        $("button.switch-dashboard-chart[value='#{tabKey}']", @el).addClass("current")
+
+      highlightZoomTab : (tabKey) =>
+        $("button.switch-dashboard-zoom", @el).removeClass("current")
+        $("button.switch-dashboard-zoom[value='#{tabKey}']", @el).addClass("current")
 
       remove : =>
         @dashboardState.unbind "change:chart", @redrawChart
