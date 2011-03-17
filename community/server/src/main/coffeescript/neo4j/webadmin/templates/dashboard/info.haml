@@ -1,7 +1,6 @@
-.span-third
-  .pad
-    %h2 Primitives
-    %table.fancy
+.pad
+  .span-third
+    %table.info-table(cellspacing=0)
       %tbody
         %tr
           %th Nodes
@@ -16,13 +15,11 @@
           %th Relationship types
           %td= primitives.get("NumberOfRelationshipTypeIdsInUse")
 
-.span-third
-  .pad
-    %h2 Disk usage
-    %table.fancy
+  .span-third
+    %table.info-table(cellspacing=0)
       %tbody
         %tr
-          %th Total size
+          %th Total disk usage
           %td= Math.round(diskUsage.get("TotalStoreSize") / 1024) + " kB "
         %tr
           %th Database size
@@ -31,10 +28,8 @@
           %th Logical log size
           %td= Math.round( diskUsage.getLogicalLogSize() / 1024) + " kB " + "(" + diskUsage.getLogicalLogPercentage() + "%)"
 
-.span-third.last
-  .pad
-    %h2 Cache
-    %table.fancy
+  .span-third.last
+    %table.info-table(cellspacing=0)
       %tbody
         %tr
           %th Cached nodes
@@ -45,4 +40,6 @@
         %tr 
           %th Cache type
           %td= cacheUsage.get("CacheType")
+
+  .break
 
