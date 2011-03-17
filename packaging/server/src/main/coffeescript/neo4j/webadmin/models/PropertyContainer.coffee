@@ -112,12 +112,15 @@ define(
       getProperty : (id) =>
         @properties[id]
 
-      hasKey : (search, ignoreId=null) =>
+      getPropertyByKey : (key, ignoreId=null) =>
         for id, property of @properties
-          if property.getKey() == search and id != ignoreId
-            return true
+          if property.getKey() == key and id != ignoreId
+            return property
 
-        return false
+        return null
+
+      hasKey : (search, ignoreId=null) =>
+        @getPropertyByKey(search, ignoreId) != null
 
       updatePropertyList : (opts={}) =>
         flatProperties = []

@@ -19,14 +19,34 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['neo4j/webadmin/templates/databrowser/list',
-   'neo4j/webadmin/views/View',
+  ['neo4j/webadmin/data/ItemUrlResolver'
+   './RelationshipProxy'
    'lib/backbone'], 
-  (template, View) ->
+  (ItemUrlResolver, RelationshipProxy) ->
   
-    class ListView extends View
+    class RelationshipList extends Backbone.Model
+      
+      initialize : (relationships) =>
+        @setRawRelationships(relationships || [])
 
-      render : =>
-        $(@el).html(template())
-        return this
+      setRawRelationships : (relationships) =>
+        rels = []
+        propertyKeyMap = {}
+        for rel in relationships
+          for key, value of rel.getProperties()
+            propertyKeyMap[key] = true
+          rels.push( new RelationshipProxy(rel) )
+
+        propertyKeys = for key, value of propertyKeyMap
+          key
+
+        @set "propertyKeys" : propertyKeys
+        @set "relationships" : rels
+
+      getPropertyKeys : () =>
+        @get "propertyKeys"
+
+      getRelationships : () =>
+        @get "relationships"
+
 )

@@ -25,7 +25,7 @@
     child.__super__ = parent.prototype;
     return child;
   };
-  define(['./PropertyContainer', 'lib/backbone'], function(PropertyContainer) {
+  define(['./NodeProxy', './RelationshipProxy', './RelationshipList', 'lib/backbone'], function(NodeProxy, RelationshipProxy, RelationshipList) {
     var DataBrowserState;
     return DataBrowserState = (function() {
       function DataBrowserState() {
@@ -91,16 +91,17 @@
         if (result instanceof neo4j.models.Node) {
           return this.set({
             type: "node",
-            "data": new PropertyContainer(result)
+            "data": new NodeProxy(result)
           }, opts);
         } else if (result instanceof neo4j.models.Relationship) {
           return this.set({
             type: "relationship",
-            "data": new PropertyContainer(result)
+            "data": new RelationshipProxy(result)
           }, opts);
         } else if (_(result).isArray()) {
           return this.set({
-            type: "list"
+            type: "list",
+            "data": new RelationshipList(result)
           }, opts);
         } else {
           return this.set({

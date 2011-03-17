@@ -5,4 +5,7 @@
     %li
       %button.data-save-properties.button(disabled="true") Saved
 
+  %a(href="#/data/search/#{item.getItem().getStartNodeUrl()}/")= item.getItem().getStartNodeUrl()
+  %a(href="#/data/search/#{item.getItem().getEndNodeUrl()}/")= item.getItem().getEndNodeUrl()
+
 .properties

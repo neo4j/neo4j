@@ -109,7 +109,7 @@
         };
       };
       VisualizedView.prototype.addRelationships = function(rels, node) {
-        var group, groups, rel, trype, _i, _len;
+        var group, groups, rel, type, _i, _len;
         groups = {};
         for (_i = 0, _len = rels.length; _i < _len; _i++) {
           rel = rels[_i];
@@ -123,8 +123,8 @@
           groups[rel.getType()].size++;
           groups[rel.getType()].relationships.push(rel);
         }
-        for (trype in groups) {
-          group = groups[trype];
+        for (type in groups) {
+          group = groups[type];
           if (group.size > 5) {
             this.addGroup(group, node);
           } else {

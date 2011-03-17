@@ -35,7 +35,7 @@
       __extends(RelationshipListView, View);
       RelationshipListView.prototype.render = function() {
         $(this.el).html(template({
-          relationships: this.dataModel.getData()
+          relationshipList: this.dataModel.getData()
         }));
         return this;
       };
