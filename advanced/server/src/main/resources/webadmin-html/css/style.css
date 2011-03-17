@@ -218,13 +218,75 @@ body {
   color: #eee;
 }
 
-.simple-data-area {
-  background: none repeat scroll 0 0 #FFFFFF;
-  margin: 10px 0;
-  padding: 10px;
-	-moz-border-radius: 4px;
-	-webkit-border-radius: 4px;
-	border-radius: 4px;
+/**
+ * TABULAR DATA VIEW
+ */
+
+.item-controls {
+  float:right;
+}
+
+.add-property {
+  background:url("../img/icons/glyphish/add.png") no-repeat scroll 5px center #ccc;
+}
+.add-property:hover {
+  background:url("../img/icons/glyphish/add.png") no-repeat scroll 5px center #fff;
+}
+
+.property-list {
+  margin:0;
+  list-style:none;
+  padding:0;
+}
+
+.property-controls {
+  padding:0 10px;
+}
+
+.property-list > li {
+  margin:0;
+  list-style:none;
+  padding: 5px 10px;
+  background: none repeat scroll 0 0 #82BA5A;
+  border-bottom: 1px solid #79ad54;
+  border-top: 1px solid #8bc760;
+}
+
+.property-list > li:nth-child(odd) {
+  background: none repeat scroll 0 0 #8bc760;
+}
+
+.property-row {
+  padding: 0;
+}
+
+.property-row li {
+  display:block;
+  float:left;
+}
+
+.property-input-wrap {
+  padding: 0 10px 0 0;
+}
+
+.property-row input {
+  height: 24px;
+}
+
+.property-key-wrap {
+  width:30%;
+}
+
+.property-value-wrap {
+  width:60%;
+}
+
+.property-actions-wrap {
+  width:10%;
+}
+
+.property-key-wrap input, .property-value-wrap input, .property-actions-wrap input {
+  width:100%;
 }
 
 /**
@@ -293,6 +355,13 @@ body {
   color:#fff;
 }
 
+.headline-bar h3 {
+  color: #FFFFFF;
+  font-size: 16px;
+  margin: 3px 0;
+  text-shadow: 1px -1px 0 #73A650;
+  float:left;
+}
 
 /**
  * TOOLTIP
