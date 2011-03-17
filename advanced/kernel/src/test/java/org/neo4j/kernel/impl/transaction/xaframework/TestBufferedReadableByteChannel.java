@@ -181,7 +181,8 @@ public class TestBufferedReadableByteChannel
         {
             buffer = ByteBuffer.allocate(0);
         }
-        channel = new BufferedReadableByteChannel( channel, buffer );
+        buffer.rewind();
+        channel = new BufferedReadableByteChannel( channel, CloseableByteBuffer.wrap(buffer));
         return channel;
     }
 }
