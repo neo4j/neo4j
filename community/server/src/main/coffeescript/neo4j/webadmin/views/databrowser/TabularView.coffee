@@ -39,6 +39,7 @@ define(
 
       render : =>
         type = @dataModel.get("type")
+        console.log type, @dataModel.get "query"
         switch type
           when "node"
             view = @nodeView
