@@ -4,7 +4,16 @@
 @import url(tables.css);
 @import url(forms.css);
 
-body { width:100%; height:100%; color: #333; background:#fff; padding:0;margin:0; font-family:arial, sans-serif; }
+body { 
+  width:100%; 
+  height:100%; 
+  color: #333; 
+  background:#fff; 
+  padding:0;
+  margin:0; 
+  font-family:arial, sans-serif; 
+  overflow:hidden;
+}
 
 /* CONTENTS */
 
@@ -103,9 +112,28 @@ body { width:100%; height:100%; color: #333; background:#fff; padding:0;margin:0
  * DASHBOARD
  */
 
+
+#monitor-chart-wrap {
+  padding: 0 10px 10px;
+  background: none repeat scroll 0 0 #8bc760;
+  border-bottom: 1px solid #8BC760;
+}
+
 #monitor-chart {
-  height:300px;
+  height:200px;
   width:100%;
+  background: none repeat scroll 0 0 #8bc760;
+}
+
+.dashboard-chart-tabs {
+  float:left;
+  padding:0;
+  margin-left:10px !important;
+}
+.dashboard-zoom-tabs {
+  float:right;
+  padding:0;
+  margin-right:10px !important;
 }
 
 /**
@@ -222,6 +250,49 @@ body { width:100%; height:100%; color: #333; background:#fff; padding:0;margin:0
   font:inherit;
   width:80%;
 }
+
+/**
+ * HEADLINE BAR
+ */
+
+.headline-bar {
+  height: 30px;
+  background: none repeat scroll 0 0 #82BA5A;
+  border-bottom: 1px solid #79AD54;
+  border-top: 1px solid #8BC760;
+}
+
+.headline-bar .tabs {
+  list-style:none;
+  margin:0;
+  height:100%;
+  border-right:1px solid #79AD54;
+} 
+
+.headline-bar .tabs li {
+  display:block;
+  float:left;
+  margin:0;
+  padding:0;
+  height:100%;
+  border-left:1px solid #79AD54;
+}
+
+.headline-bar .tabs li a, .headline-bar .tabs li button {
+  background:none;
+  height:100%;
+  width:100px;
+  border:0;
+  color:#547939;
+  cursor:pointer;
+  font-size:12px;
+}
+.headline-bar .tabs li a:hover, .headline-bar .tabs li button:hover,
+.headline-bar .tabs li a.current, .headline-bar .tabs li button.current  {
+  background: #8bc760;
+  color:#fff;
+}
+
 
 /**
  * TOOLTIP
