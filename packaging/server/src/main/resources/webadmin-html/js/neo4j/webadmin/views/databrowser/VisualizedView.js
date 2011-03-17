@@ -25,24 +25,29 @@
     child.__super__ = parent.prototype;
     return child;
   };
-  define(['neo4j/webadmin/data/ItemUrlResolver', 'neo4j/webadmin/ui/LoadingSpinner', 'neo4j/webadmin/views/View', 'neo4j/webadmin/templates/databrowser/visualization', 'lib/raphael', 'lib/dracula.graffle', 'lib/dracula.graph', 'lib/backbone'], function(ItemUrlResolver, LoadingSpinner, View, template) {
+  define(['neo4j/webadmin/data/ItemUrlResolver', 'neo4j/webadmin/ui/LoadingSpinner', 'neo4j/webadmin/views/View', 'neo4j/webadmin/ui/Tooltip', 'neo4j/webadmin/security/HtmlEscaper', 'neo4j/webadmin/templates/databrowser/visualization', 'lib/raphael', 'lib/dracula.graffle', 'lib/dracula.graph', 'lib/backbone'], function(ItemUrlResolver, LoadingSpinner, View, Tooltip, HtmlEscaper, template) {
     var GROUP_IDS, VisualizedView;
     GROUP_IDS = 0;
     return VisualizedView = (function() {
       function VisualizedView() {
+        this.attach = __bind(this.attach, this);;
+        this.detach = __bind(this.detach, this);;
         this.remove = __bind(this.remove, this);;
         this.hideLoader = __bind(this.hideLoader, this);;
         this.showLoader = __bind(this.showLoader, this);;
         this.removeVisualNode = __bind(this.removeVisualNode, this);;
         this.loadRelationships = __bind(this.loadRelationships, this);;
         this.groupClicked = __bind(this.groupClicked, this);;
+        this.mouseLeavingNode = __bind(this.mouseLeavingNode, this);;
+        this.mouseOverNode = __bind(this.mouseOverNode, this);;
         this.nodeClicked = __bind(this.nodeClicked, this);;
         this.groupRenderer = __bind(this.groupRenderer, this);;
         this.unexploredNodeRenderer = __bind(this.unexploredNodeRenderer, this);;
         this.nodeRenderer = __bind(this.nodeRenderer, this);;
-        this.addExplodedGroup = __bind(this.addExplodedGroup, this);;
-        this.addGroup = __bind(this.addGroup, this);;
         this.addRelationships = __bind(this.addRelationships, this);;
+        this.addGroup = __bind(this.addGroup, this);;
+        this.addAndGroupRelationships = __bind(this.addAndGroupRelationships, this);;
+        this.addRelationship = __bind(this.addRelationship, this);;
         this.addUnexploredNode = __bind(this.addUnexploredNode, this);;
         this.addNode = __bind(this.addNode, this);;
         this.hasNode = __bind(this.hasNode, this);;
@@ -53,24 +58,35 @@
       VisualizedView.prototype.initialize = function(options) {
         this.server = options.server;
         this.urlResolver = new ItemUrlResolver(this.server);
+        this.htmlEscaper = new HtmlEscaper;
         this.dataModel = options.dataModel;
-        this.dataModel.bind("change", this.render);
+        this.tooltip = new Tooltip;
         this.nodeMap = {};
         return this.groupMap = {};
       };
       VisualizedView.prototype.render = function() {
-        var height, width;
-        if (this.dataModel.get("type") === "node") {
-          this.baseNode = this.dataModel.getData().getItem();
-        } else {
-          return this;
-        }
+        var height, node, width;
         $(this.el).html(template());
+        this.nodeMap = {};
+        this.groupMap = {};
         width = $(document).width() - 40;
         height = $(document).height() - 120;
         this.g = new Graph();
-        this.addNode(this.baseNode);
-        this.loadRelationships(this.baseNode);
+        switch (this.dataModel.get("type")) {
+          case "node":
+            node = this.dataModel.getData().getItem();
+            this.addNode(node);
+            this.loadRelationships(node);
+            break;
+          case "relationship":
+            this.addRelationship(this.dataModel.getData().getItem());
+            break;
+          case "relationshipList":
+            this.addRelationships(this.dataModel.getData().getRawRelationships());
+            break;
+          default:
+            return this;
+        }
         this.layout = new Graph.Layout.Spring(this.g);
         this.renderer = new Graph.Renderer.Raphael('visualization', this.g, width, height);
         return this;
@@ -108,7 +124,10 @@
           })
         };
       };
-      VisualizedView.prototype.addRelationships = function(rels, node) {
+      VisualizedView.prototype.addRelationship = function(rel) {
+        return this.addRelationships([rel]);
+      };
+      VisualizedView.prototype.addAndGroupRelationships = function(rels, node) {
         var group, groups, rel, type, _i, _len;
         groups = {};
         for (_i = 0, _len = rels.length; _i < _len; _i++) {
@@ -128,7 +147,7 @@
           if (group.size > 5) {
             this.addGroup(group, node);
           } else {
-            this.addExplodedGroup(group, node);
+            this.addRelationships(group.relationships);
           }
         }
         return this.redrawVisualization();
@@ -148,12 +167,11 @@
           label: group.type
         });
       };
-      VisualizedView.prototype.addExplodedGroup = function(group) {
-        var rel, _i, _len, _ref, _results;
-        _ref = group.relationships;
+      VisualizedView.prototype.addRelationships = function(rels) {
+        var rel, _i, _len, _results;
         _results = [];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          rel = _ref[_i];
+        for (_i = 0, _len = rels.length; _i < _len; _i++) {
+          rel = rels[_i];
           if (this.hasNode(rel.getEndNodeUrl()) === false) {
             this.addUnexploredNode(rel.getEndNodeUrl());
           }
@@ -168,7 +186,7 @@
         return _results;
       };
       VisualizedView.prototype.nodeRenderer = function(r, node) {
-        var circle, clickHandler, label, shape;
+        var circle, clickHandler, label, mouseOutHandler, mouseOverHandler, shape;
         circle = r.circle(0, 0, 10).attr({
           fill: "#ffffff",
           stroke: "#333333",
@@ -182,13 +200,21 @@
         clickHandler = __bind(function(ev) {
           return this.nodeClicked(node, circle);
         }, this);
+        mouseOverHandler = __bind(function(ev) {
+          return this.mouseOverNode(ev, node, circle);
+        }, this);
+        mouseOutHandler = __bind(function(ev) {
+          return this.mouseLeavingNode(ev, node, circle);
+        }, this);
         circle.click(clickHandler);
         label.click(clickHandler);
+        circle.hover(mouseOverHandler, mouseOutHandler);
+        label.hover(mouseOverHandler, mouseOutHandler);
         shape = r.set().push(circle).push(label);
         return shape;
       };
       VisualizedView.prototype.unexploredNodeRenderer = function(r, node) {
-        var circle, clickHandler, label, shape;
+        var circle, clickHandler, label, mouseOutHandler, mouseOverHandler, shape;
         circle = r.circle(0, 0, 10).attr({
           fill: "#ffffff",
           stroke: "#dddddd",
@@ -198,8 +224,16 @@
         clickHandler = __bind(function(ev) {
           return this.nodeClicked(node, circle);
         }, this);
+        mouseOverHandler = __bind(function(ev) {
+          return this.mouseOverNode(ev, node, circle);
+        }, this);
+        mouseOutHandler = __bind(function(ev) {
+          return this.mouseLeavingNode(ev, node, circle);
+        }, this);
         circle.click(clickHandler);
         label.click(clickHandler);
+        circle.hover(mouseOverHandler, mouseOutHandler);
+        label.hover(mouseOverHandler, mouseOutHandler);
         shape = r.set().push(circle).push(label);
         return shape;
       };
@@ -227,12 +261,40 @@
             stroke: "#333333",
             "stroke-width": 2
           });
-          nodeMeta.explored = true;
           return this.server.node(nodeMeta.url).then(__bind(function(node) {
+            nodeMeta.explored = true;
+            nodeMeta.node = node;
             this.addNode(node);
             return this.loadRelationships(node);
           }, this));
         }
+      };
+      VisualizedView.prototype.mouseOverNode = function(ev, nodeMeta, circle) {
+        var html, key, node, propHtml, val;
+        if (nodeMeta.explored) {
+          node = nodeMeta.node;
+          propHtml = (function() {
+            var _ref, _results;
+            _ref = node.getProperties();
+            _results = [];
+            for (key in _ref) {
+              val = _ref[key];
+              key = this.htmlEscaper.escape(key);
+              val = this.htmlEscaper.escape(JSON.stringify(val));
+              _results.push("<li><span class='key'>" + key + "</span>: <span class='value'>" + val + "</span></li>");
+            }
+            return _results;
+          }).call(this);
+          console.log(propHtml, node.getProperties(), node);
+          propHtml = propHtml.join("\n");
+          html = "<ul class='tiny-property-list'>" + propHtml + "</ul>";
+        } else {
+          html = "<p>Unexplored node</p>";
+        }
+        return this.tooltip.show(html, [ev.clientX, ev.clientY]);
+      };
+      VisualizedView.prototype.mouseLeavingNode = function(ev, nodeMeta, circle) {
+        return this.tooltip.hide();
       };
       VisualizedView.prototype.groupClicked = function(groupMeta, circle) {
         var group, ungroup, visualNode;
@@ -250,7 +312,7 @@
       VisualizedView.prototype.loadRelationships = function(node) {
         this.showLoader();
         return node.getRelationships().then(__bind(function(rels) {
-          this.addRelationships(rels, node);
+          this.addAndGroupRelationships(rels, node);
           return this.hideLoader();
         }, this));
       };
@@ -278,6 +340,14 @@
       VisualizedView.prototype.remove = function() {
         this.dataModel.unbind("change", this.render);
         return VisualizedView.__super__.remove.call(this);
+      };
+      VisualizedView.prototype.detach = function() {
+        this.dataModel.unbind("change", this.render);
+        return VisualizedView.__super__.detach.call(this);
+      };
+      VisualizedView.prototype.attach = function(parent) {
+        VisualizedView.__super__.attach.call(this, parent);
+        return this.dataModel.bind("change", this.render);
       };
       return VisualizedView;
     })();

@@ -8,18 +8,18 @@ key +
 (function () { var __result__ = [], __key__, relationship; for (__key__ in relationshipList.getRelationships()) { if (relationshipList.getRelationships().hasOwnProperty(__key__)) { relationship = relationshipList.getRelationships()[__key__]; __result__.push(
 "<tr><td><a href=\"#/data/search/rel:" +
 relationship.getId() +
-"/\">" + 
-relationship.getId() + 
+"/\" class=\"micro-button\">" + 
+"Relationship " + relationship.getId() + 
 "</a></td><td><a href=\"#/data/search/" +
 relationship.getStartId() +
-"/\">" + 
-relationship.getStartId() + 
+"/\" class=\"micro-button\">" + 
+"Node " +relationship.getStartId() + 
 "</a></td><td class=\"small\">" + 
 relationship.getItem().getType() + 
 "</td><td><a href=\"#/data/search/" +
 relationship.getEndId() +
-"/\">" + 
-relationship.getEndId() + 
+"/\" class=\"micro-button\">" + 
+"Node " + relationship.getEndId() + 
 "</a></td>" +
 (function () { var __result__ = [], __key__, key; for (__key__ in relationshipList.getPropertyKeys()) { if (relationshipList.getPropertyKeys().hasOwnProperty(__key__)) { key = relationshipList.getPropertyKeys()[__key__]; __result__.push(
 "<td class=\"small\">" + 
