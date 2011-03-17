@@ -1,5 +1,9 @@
-.simple-data-area
-  %h1= item.getSelf()
-  %button.data-save-properties(disabled="true") Saved
 
-  .properties
+.headline-bar.pad
+  %h3= item.getSelf()
+  
+  %ul.button-bar.item-controls
+    %li
+      %button.data-save-properties.button(disabled="true") Saved
+
+.properties
