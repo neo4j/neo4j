@@ -22,6 +22,7 @@ package org.neo4j.kernel.ha;
 import java.util.EnumMap;
 import java.util.Map;
 
+import org.neo4j.com.ComException;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -151,7 +152,7 @@ public class SlaveIdGenerator implements IdGenerator
             receiver.newMaster( null, e );
             throw e;
         }
-        catch ( HaCommunicationException e )
+        catch ( ComException e )
         {
             receiver.newMaster( null, e );
             throw e;

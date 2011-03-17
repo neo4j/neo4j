@@ -21,6 +21,7 @@ package org.neo4j.kernel.ha;
 
 import javax.transaction.TransactionManager;
 
+import org.neo4j.com.ComException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.DeadlockDetectedException;
@@ -114,7 +115,7 @@ public class SlaveLockManager extends LockManager
             receiver.newMaster( null, e );
             throw e;
         }
-        catch ( HaCommunicationException e )
+        catch ( ComException e )
         {
             receiver.newMaster( null, e );
             throw e;
@@ -169,7 +170,7 @@ public class SlaveLockManager extends LockManager
             receiver.newMaster( null, e );
             throw e;
         }
-        catch ( HaCommunicationException e )
+        catch ( ComException e )
         {
             receiver.newMaster( null, e );
             throw e;
