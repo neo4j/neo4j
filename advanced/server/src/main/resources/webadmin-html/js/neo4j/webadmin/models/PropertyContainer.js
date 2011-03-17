@@ -45,6 +45,7 @@
         this.save = __bind(this.save, this);;
         this.updatePropertyList = __bind(this.updatePropertyList, this);;
         this.hasKey = __bind(this.hasKey, this);;
+        this.getPropertyByKey = __bind(this.getPropertyByKey, this);;
         this.getProperty = __bind(this.getProperty, this);;
         this.addProperty = __bind(this.addProperty, this);;
         this.deleteProperty = __bind(this.deleteProperty, this);;
@@ -174,7 +175,7 @@
       PropertyContainer.prototype.getProperty = function(id) {
         return this.properties[id];
       };
-      PropertyContainer.prototype.hasKey = function(search, ignoreId) {
+      PropertyContainer.prototype.getPropertyByKey = function(key, ignoreId) {
         var id, property, _ref;
         if (ignoreId == null) {
           ignoreId = null;
@@ -182,11 +183,17 @@
         _ref = this.properties;
         for (id in _ref) {
           property = _ref[id];
-          if (property.getKey() === search && id !== ignoreId) {
-            return true;
+          if (property.getKey() === key && id !== ignoreId) {
+            return property;
           }
         }
-        return false;
+        return null;
+      };
+      PropertyContainer.prototype.hasKey = function(search, ignoreId) {
+        if (ignoreId == null) {
+          ignoreId = null;
+        }
+        return this.getPropertyByKey(search, ignoreId) !== null;
       };
       PropertyContainer.prototype.updatePropertyList = function(opts) {
         var flatProperties, key, property, silent, _ref;

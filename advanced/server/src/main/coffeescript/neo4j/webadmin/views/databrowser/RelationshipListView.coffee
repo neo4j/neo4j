@@ -19,15 +19,20 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['neo4j/webadmin/templates/databrowser/relationship',
-   './PropertyContainerView','lib/backbone'], 
-  (template, PropertyContainerView) ->
+  ['neo4j/webadmin/templates/databrowser/relationshipList',
+   'neo4j/webadmin/views/View',
+   'lib/backbone'], 
+  (template, View) ->
   
-    class RelationshipView extends PropertyContainerView
+    class RelationshipListView extends View
 
-      initialize : (opts={}) =>
-        opts.template = template
-        super(opts)
-
+      render : =>
+        $(@el).html(template(
+          relationshipList : @dataModel.getData()    
+        ))
+        return this
+      
+      setDataModel : (dataModel) =>
+        @dataModel = dataModel
 
 )

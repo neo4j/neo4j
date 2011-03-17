@@ -18,14 +18,14 @@
   You should have received a copy of the GNU Affero General Public License
   along with this program. If not, see <http://www.gnu.org/licenses/>.
   */  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
-  define(["./UrlSearcher", "./NodeSearcher", "./RelationshipSearcher"], function(UrlSearcher, NodeSearcher, RelationshipSearcher) {
+  define(["./UrlSearcher", "./NodeSearcher", "./RelationshipSearcher", "./RelationshipsForNodeSearcher"], function(UrlSearcher, NodeSearcher, RelationshipSearcher, RelationshipsForNodeSearcher) {
     var Search;
     return Search = (function() {
       function Search(server) {
         this.server = server;
         this.pickSearcher = __bind(this.pickSearcher, this);;
         this.exec = __bind(this.exec, this);;
-        this.searchers = [new UrlSearcher(server), new NodeSearcher(server), new RelationshipSearcher(server)];
+        this.searchers = [new UrlSearcher(server), new NodeSearcher(server), new RelationshipSearcher(server), new RelationshipsForNodeSearcher(server)];
       }
       Search.prototype.exec = function(statement) {
         var searcher;

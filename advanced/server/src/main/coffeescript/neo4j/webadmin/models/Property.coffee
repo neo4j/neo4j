@@ -51,6 +51,12 @@ define ['neo4j/webadmin/security/HtmlEscaper','lib/backbone'], (HtmlEscaper) ->
     getValueAsHtml : () =>
       htmlEscaper.escape @getValueAsJSON()
 
+    getTruncatedHtmlValue : (maxLength=100) =>
+      str = @getValueAsJSON()
+      if str.length > maxLength
+        str = str.substr(0,maxLength-3) + ".."
+      htmlEscaper.escape str
+
     getKeyAsHtml : () =>
       htmlEscaper.escape @getKey()
 
