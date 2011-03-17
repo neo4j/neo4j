@@ -52,7 +52,7 @@ import org.neo4j.kernel.ha.BrokerFactory;
 public abstract class AbstractHaTest
 {
     static final RelationshipType REL_TYPE = DynamicRelationshipType.withName( "HA_TEST" );
-    static final File PARENT_PATH = new File( "target/havar" );
+    static final File PARENT_PATH = new File( "target"+File.separator+"havar" );
     static final File DBS_PATH = new File( PARENT_PATH, "dbs" );
     static final File SKELETON_DB_PATH = new File( DBS_PATH, "skeleton" );
 
@@ -313,6 +313,14 @@ public abstract class AbstractHaTest
 
     private void clearDbs() throws IOException
     {
+        try
+        {
+            Thread.sleep( 1500 );
+        }
+        catch (InterruptedException e)
+        {
+            e.printStackTrace();
+        }
         FileUtils.deleteDirectory( PARENT_PATH );
     }
 

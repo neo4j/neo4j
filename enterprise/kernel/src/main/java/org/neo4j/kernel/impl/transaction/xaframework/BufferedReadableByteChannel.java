@@ -47,20 +47,19 @@ import java.nio.channels.WritableByteChannel;
 class BufferedReadableByteChannel extends FileChannel
 {
     private final FileChannel fileChannel;
-    private final ByteBuffer byteBuffer;
+    private CloseableByteBuffer byteBuffer;
     // The position after which reads are from the buffer and not the channel
     private final long bufferStartPosition;
     // The current position
     private long position;
 
-    BufferedReadableByteChannel( FileChannel fileChannel, ByteBuffer buffer )
+    BufferedReadableByteChannel( FileChannel fileChannel, CloseableByteBuffer buffer )
                                                                              throws IOException
     {
         this.fileChannel = fileChannel;
         bufferStartPosition = fileChannel.size();
         position = fileChannel.position();
         byteBuffer = buffer;
-        byteBuffer.rewind();
     }
 
     public int read( ByteBuffer dst ) throws IOException
@@ -184,5 +183,6 @@ class BufferedReadableByteChannel extends FileChannel
     protected void implCloseChannel() throws IOException
     {
         fileChannel.close();
+        byteBuffer.close();
     }
 }
