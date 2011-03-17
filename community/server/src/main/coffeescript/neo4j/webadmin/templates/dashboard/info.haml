@@ -1,10 +1,10 @@
 .span-third
-  .module
+  .pad
     %h2 Primitives
     %table.fancy
       %tbody
         %tr
-          %th Cached nodes
+          %th Nodes
           %td= primitives.get("NumberOfNodeIdsInUse")
         %tr
           %th Properties
@@ -17,7 +17,7 @@
           %td= primitives.get("NumberOfRelationshipTypeIdsInUse")
 
 .span-third
-  .module
+  .pad
     %h2 Disk usage
     %table.fancy
       %tbody
@@ -32,7 +32,7 @@
           %td= Math.round( diskUsage.getLogicalLogSize() / 1024) + " kB " + "(" + diskUsage.getLogicalLogPercentage() + "%)"
 
 .span-third.last
-  .module
+  .pad
     %h2 Cache
     %table.fancy
       %tbody

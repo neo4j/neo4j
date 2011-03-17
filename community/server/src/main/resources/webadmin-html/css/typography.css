@@ -4,6 +4,11 @@ p {
   font-size:12px; 
 }
 
+a:active {
+  outline: none;
+}
+button::-moz-focus-inner { border: 0; }
+
 .small { font-size:12px; }
 
 h1 { font-size:0.9em; }
@@ -17,5 +22,3 @@ h3 { font-size:0.8em; }
 h4 { font-size:0.8em; }
 h5 { font-size:0.6em; }
 h6 { font-size:0.6em; }
-
-
