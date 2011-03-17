@@ -12,15 +12,27 @@ table.data-table tr {
   color: #FFFFFF;
 }
 
+table.data-table tr:first-child > * {
+  border-top:1px solid #82ba5a !important;
+}
+
 table.data-table tr:nth-child(odd) {
   background: none repeat scroll 0 0 #8bc760;
 }
 
 table.data-table tr th {
   text-align:left;
-  padding: 5px 10px !important;
-  background: #c1eda1;
+  background: none repeat scroll 0 0 #79ad54;
+  border-left: 1px solid #609a53 !important;
 }
+
+table.data-table tr > *:first-child {
+  padding-left:10px !important;
+}
+
+table.data-table tr > *:last-child {
+  padding-right:10px !important;
+} 
 
 table.data-table tr td, table.data-table tr th {    
   vertical-align: top;
@@ -28,17 +40,19 @@ table.data-table tr td, table.data-table tr th {
   border-top: 1px solid #8bc760;
   padding: 0 10px;
   margin: 2px 0;
+  padding: 3px 5px;
+  border-left: 1px solid #79ad54;
 }
 
-table.data-table tr td:nth-child(even){
-  border-left: 1px solid #79ad54;
+table.data-table tr td a, table.data-table tr th a {
+  color: #fff;
 }
 
 table.data-table tr:nth-child(odd) td, table.data-table tr:nth-child(odd) th {
   border-top: 1px solid #9de06d;
 }
 
-table.data-table tr h3 {
+table.data-table h3 {
   font-size: 16px;
   margin: 3px 0;
   color: #fff;

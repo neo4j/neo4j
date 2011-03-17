@@ -21,11 +21,11 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 define(
   ['./NodeView',
    './RelationshipView',
-   './ListView',
+   './RelationshipListView',
    'neo4j/webadmin/views/View',
    'neo4j/webadmin/templates/databrowser/notfound',
    'lib/backbone'], 
-  (NodeView, RelationshipView, ListView, View, notFoundTemplate) ->
+  (NodeView, RelationshipView, RelationshipListView, View, notFoundTemplate) ->
   
     class SimpleView extends View
 
@@ -33,7 +33,7 @@ define(
         
         @nodeView = new NodeView
         @relationshipView = new RelationshipView
-        @listView = new ListView
+        @relationshipListView = new RelationshipListView
 
         @dataModel = options.dataModel
         @dataModel.bind("change", @render)
@@ -45,8 +45,8 @@ define(
             view = @nodeView
           when "relationship"
             view = @relationshipView
-          when "set"
-            view = @listView
+          when "list"
+            view = @relationshipListView
           else
             $(@el).html(notFoundTemplate())
             return this
@@ -59,7 +59,7 @@ define(
         @dataModel.unbind("change", @render)
         @nodeView.remove()
         @relationshipView.remove()
-        @listView.remove()
+        @relationshipListView.remove()
         super()
 
 

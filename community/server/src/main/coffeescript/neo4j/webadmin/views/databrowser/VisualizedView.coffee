@@ -94,7 +94,7 @@ define(
           groups[rel.getType()].size++
           groups[rel.getType()].relationships.push(rel)
 
-        for trype, group of groups
+        for type, group of groups
 
           if group.size > 5
             @addGroup(group, node)

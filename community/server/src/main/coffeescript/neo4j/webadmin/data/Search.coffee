@@ -21,8 +21,9 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 define(
   ["./UrlSearcher", 
    "./NodeSearcher", 
-   "./RelationshipSearcher"], 
-  (UrlSearcher, NodeSearcher, RelationshipSearcher) ->
+   "./RelationshipSearcher",
+   "./RelationshipsForNodeSearcher"], 
+  (UrlSearcher, NodeSearcher, RelationshipSearcher, RelationshipsForNodeSearcher) ->
 
     class Search
 
@@ -32,6 +33,7 @@ define(
           new UrlSearcher(server),
           new NodeSearcher(server),
           new RelationshipSearcher(server)
+          new RelationshipsForNodeSearcher(server)
         ]
       
 
