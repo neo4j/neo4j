@@ -15,12 +15,12 @@
     :each relationship in relationshipList.getRelationships()
       %tr
         %td
-          %a(href="#/data/search/rel:#{relationship.getId()}/")= relationship.getId()
+          %a.micro-button(href="#/data/search/rel:#{relationship.getId()}/")= "Relationship " + relationship.getId()
         %td
-          %a(href="#/data/search/#{relationship.getStartId()}/")= relationship.getStartId()
+          %a.micro-button(href="#/data/search/#{relationship.getStartId()}/")= "Node " +relationship.getStartId()
         %td.small= relationship.getItem().getType()
         %td
-          %a(href="#/data/search/#{relationship.getEndId()}/")= relationship.getEndId()
+          %a.micro-button(href="#/data/search/#{relationship.getEndId()}/")= "Node " + relationship.getEndId()
         
         :each key in relationshipList.getPropertyKeys()
           %td.small

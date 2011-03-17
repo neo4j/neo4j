@@ -29,6 +29,7 @@
     var RelationshipList;
     return RelationshipList = (function() {
       function RelationshipList() {
+        this.getRawRelationships = __bind(this.getRawRelationships, this);;
         this.getRelationships = __bind(this.getRelationships, this);;
         this.getPropertyKeys = __bind(this.getPropertyKeys, this);;
         this.setRawRelationships = __bind(this.setRawRelationships, this);;
@@ -40,6 +41,9 @@
       };
       RelationshipList.prototype.setRawRelationships = function(relationships) {
         var key, propertyKeyMap, propertyKeys, rel, rels, value, _i, _len, _ref;
+        this.set({
+          "rawRelationships": relationships
+        });
         rels = [];
         propertyKeyMap = {};
         for (_i = 0, _len = relationships.length; _i < _len; _i++) {
@@ -72,6 +76,9 @@
       };
       RelationshipList.prototype.getRelationships = function() {
         return this.get("relationships");
+      };
+      RelationshipList.prototype.getRawRelationships = function() {
+        return this.get("rawRelationships");
       };
       return RelationshipList;
     })();

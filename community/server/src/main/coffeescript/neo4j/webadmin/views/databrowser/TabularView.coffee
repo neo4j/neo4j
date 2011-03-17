@@ -45,7 +45,7 @@ define(
             view = @nodeView
           when "relationship"
             view = @relationshipView
-          when "list"
+          when "relationshipList"
             view = @relationshipListView
           else
             $(@el).html(notFoundTemplate())

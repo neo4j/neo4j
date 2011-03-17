@@ -21,13 +21,15 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 define(
   ['neo4j/webadmin/data/ItemUrlResolver'
    'neo4j/webadmin/ui/LoadingSpinner'
-   'neo4j/webadmin/views/View',
+   'neo4j/webadmin/views/View'
+   'neo4j/webadmin/ui/Tooltip'
+   'neo4j/webadmin/security/HtmlEscaper'
    'neo4j/webadmin/templates/databrowser/visualization'
    'lib/raphael'
    'lib/dracula.graffle'
    'lib/dracula.graph'
    'lib/backbone'], 
-  (ItemUrlResolver, LoadingSpinner, View, template) ->
+  (ItemUrlResolver, LoadingSpinner, View, Tooltip, HtmlEscaper, template) ->
   
     GROUP_IDS = 0
 
@@ -38,27 +40,37 @@ define(
         @server = options.server
 
         @urlResolver = new ItemUrlResolver(@server)
+        @htmlEscaper = new HtmlEscaper
 
         @dataModel = options.dataModel
-        @dataModel.bind("change", @render)
+
+        @tooltip = new Tooltip
 
         @nodeMap = {}
         @groupMap = {}
 
       render : =>
-        if @dataModel.get("type") is "node"
-          @baseNode = @dataModel.getData().getItem()
-        else 
-          return this
         $(@el).html(template())
+
+        @nodeMap = {}
+        @groupMap = {}
 
         width = $(document).width() - 40;
         height = $(document).height() - 120;
 
         @g = new Graph()
         
-        @addNode(@baseNode)
-        @loadRelationships(@baseNode)
+        switch @dataModel.get("type") 
+          when "node"
+            node = @dataModel.getData().getItem()
+            @addNode(node)
+            @loadRelationships(node)
+          when "relationship"
+            @addRelationship(@dataModel.getData().getItem())
+          when "relationshipList"
+            @addRelationships(@dataModel.getData().getRawRelationships())
+          else 
+            return this
 
         @layout = new Graph.Layout.Spring(@g)
         @renderer = new Graph.Renderer.Raphael('visualization', @g, width, height)
@@ -85,7 +97,10 @@ define(
           neoNode    : null
           visualNode : @g.addNode(nodeUrl, { node : null, url:nodeUrl, explored:false, render:@unexploredNodeRenderer})
 
-      addRelationships : (rels, node) =>
+      addRelationship : (rel) =>
+        @addRelationships([rel])
+
+      addAndGroupRelationships : (rels, node) =>
         groups = {}
         for rel in rels
           if not groups[rel.getType()]
@@ -99,7 +114,7 @@ define(
           if group.size > 5
             @addGroup(group, node)
           else
-            @addExplodedGroup(group, node)
+            @addRelationships(group.relationships)
           
         @redrawVisualization()
 
@@ -112,9 +127,9 @@ define(
 
         @g.addEdge(node.getSelf(), id, { label : group.type })
 
-      addExplodedGroup : (group) =>
+      addRelationships : (rels) =>
         
-        for rel in group.relationships
+        for rel in rels
           if @hasNode(rel.getEndNodeUrl()) == false
             @addUnexploredNode(rel.getEndNodeUrl())
 
@@ -135,8 +150,16 @@ define(
         clickHandler = (ev) =>
           @nodeClicked(node, circle)
 
+        mouseOverHandler = (ev) =>
+          @mouseOverNode(ev, node, circle)
+        
+        mouseOutHandler = (ev) =>
+          @mouseLeavingNode(ev, node, circle)
+
         circle.click(clickHandler)
         label.click(clickHandler)
+        circle.hover(mouseOverHandler, mouseOutHandler)
+        label.hover(mouseOverHandler, mouseOutHandler)
 
         shape = r.set().
           push(circle).
@@ -150,8 +173,17 @@ define(
           
         clickHandler = (ev) =>
           @nodeClicked(node, circle)
+
+        mouseOverHandler = (ev) =>
+          @mouseOverNode(ev, node, circle)
+        
+        mouseOutHandler = (ev) =>
+          @mouseLeavingNode(ev, node, circle)
+
         circle.click(clickHandler)
         label.click(clickHandler)
+        circle.hover(mouseOverHandler, mouseOutHandler)
+        label.hover(mouseOverHandler, mouseOutHandler)
 
         shape = r.set().
           push(circle).
@@ -178,10 +210,30 @@ define(
 
         if nodeMeta.explored == false
           circle.attr({fill: "#ffffff", stroke: "#333333", "stroke-width": 2})
-          nodeMeta.explored = true
           @server.node(nodeMeta.url).then (node) =>
+            nodeMeta.explored = true
+            nodeMeta.node = node
             @addNode(node)
             @loadRelationships(node)
+
+      mouseOverNode : (ev, nodeMeta, circle) =>
+        # XXX: As with most things in this class, this is a temp hack
+        if nodeMeta.explored
+          node = nodeMeta.node
+          propHtml = for key, val of node.getProperties()
+            key = @htmlEscaper.escape(key)
+            val = @htmlEscaper.escape JSON.stringify(val)
+            "<li><span class='key'>#{key}</span>: <span class='value'>#{val}</span></li>"
+
+          console.log propHtml, node.getProperties(), node
+          propHtml = propHtml.join("\n")
+          html = "<ul class='tiny-property-list'>#{propHtml}</ul>"
+        else
+          html = "<p>Unexplored node</p>"
+        @tooltip.show(html, [ev.clientX, ev.clientY])
+  
+      mouseLeavingNode : (ev, nodeMeta, circle) =>
+        @tooltip.hide()
 
       groupClicked : (groupMeta, circle) =>
         group = @groupMap[groupMeta.id].group
@@ -199,7 +251,7 @@ define(
       loadRelationships : (node) =>
         @showLoader()
         node.getRelationships().then (rels) =>
-          @addRelationships(rels, node)
+          @addAndGroupRelationships(rels, node)
           @hideLoader()
 
       removeVisualNode : (visualNode, id) =>
@@ -221,5 +273,14 @@ define(
       remove : =>
         @dataModel.unbind("change", @render)
         super()
+
+      detach : =>
+        @dataModel.unbind("change", @render)
+        super()
+
+      attach : (parent) =>
+        super(parent)
+        @dataModel.bind("change", @render)
+        
 
 )

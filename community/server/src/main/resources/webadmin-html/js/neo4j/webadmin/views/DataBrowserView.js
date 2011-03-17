@@ -60,12 +60,13 @@
       DataBrowserView.prototype.render = function() {
         $(this.el).html(this.template({
           query: this.htmlEscaper.escape(this.dataModel.getQuery()),
-          viewType: this.viewType
+          viewType: this.viewType,
+          dataType: this.dataModel.getDataType()
         }));
         return this.renderDataView();
       };
       DataBrowserView.prototype.renderDataView = function() {
-        $("#data-area", this.el).empty().append(this.dataView.el);
+        this.dataView.attach($("#data-area", this.el).empty());
         this.dataView.render();
         return this;
       };
@@ -118,24 +119,28 @@
         return this.renderDataView();
       };
       DataBrowserView.prototype.switchToVisualizedView = function() {
+        var _ref;
         if (this.dataView != null) {
-          this.dataView.remove();
+          this.dataView.detach();
         }
-        this.viewType = "visualized";
-        return this.dataView = new VisualizedView({
+        (_ref = this.visualizedView) != null ? _ref : this.visualizedView = new VisualizedView({
           dataModel: this.dataModel,
           server: this.server
         });
+        this.viewType = "visualized";
+        return this.dataView = this.visualizedView;
       };
       DataBrowserView.prototype.switchToTabularView = function() {
+        var _ref;
         if (this.dataView != null) {
-          this.dataView.remove();
+          this.dataView.detach();
         }
-        this.viewType = "tabular";
-        return this.dataView = new TabularView({
+        (_ref = this.tabularView) != null ? _ref : this.tabularView = new TabularView({
           dataModel: this.dataModel,
           server: this.server
         });
+        this.viewType = "tabular";
+        return this.dataView = this.tabularView;
       };
       DataBrowserView.prototype.remove = function() {
         this.dataModel.unbind("change:query", this.queryChanged);

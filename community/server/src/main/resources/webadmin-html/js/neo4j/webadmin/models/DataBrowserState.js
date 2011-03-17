@@ -33,6 +33,7 @@
         this.setQuery = __bind(this.setQuery, this);;
         this.dataIsSingleRelationship = __bind(this.dataIsSingleRelationship, this);;
         this.dataIsSingleNode = __bind(this.dataIsSingleNode, this);;
+        this.getDataType = __bind(this.getDataType, this);;
         this.getData = __bind(this.getData, this);;
         this.getQuery = __bind(this.getQuery, this);;
         this.initialize = __bind(this.initialize, this);;        DataBrowserState.__super__.constructor.apply(this, arguments);
@@ -52,6 +53,9 @@
       };
       DataBrowserState.prototype.getData = function() {
         return this.get("data");
+      };
+      DataBrowserState.prototype.getDataType = function() {
+        return this.get("type");
       };
       DataBrowserState.prototype.dataIsSingleNode = function() {
         return this.get("type") === "node";
@@ -100,7 +104,7 @@
           }, opts);
         } else if (_(result).isArray()) {
           return this.set({
-            type: "list",
+            type: "relationshipList",
             "data": new RelationshipList(result)
           }, opts);
         } else {
