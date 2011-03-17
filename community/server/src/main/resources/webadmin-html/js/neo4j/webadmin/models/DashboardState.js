@@ -1,22 +1,3 @@
-/*
- * Copyright (c) 2002-2011 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
 (function() {
   /*
   Copyright (c) 2002-2011 "Neo Technology,"
@@ -52,7 +33,9 @@
         this.setChartByKey = __bind(this.setChartByKey, this);;
         this.setZoomLevel = __bind(this.setZoomLevel, this);;
         this.setZoomLevelByKey = __bind(this.setZoomLevelByKey, this);;
+        this.getZoomLevelKey = __bind(this.getZoomLevelKey, this);;
         this.getZoomLevel = __bind(this.getZoomLevel, this);;
+        this.getChartKey = __bind(this.getChartKey, this);;
         this.getChart = __bind(this.getChart, this);;
         this.initialize = __bind(this.initialize, this);;        DashboardState.__super__.constructor.apply(this, arguments);
       }
@@ -122,18 +105,25 @@
         }
       };
       DashboardState.prototype.initialize = function(options) {
-        return this.set({
-          chart: this.charts.primitives,
-          zoomLevel: this.zoomLevels.six_hours
-        });
+        this.setChartByKey("primitives");
+        return this.setZoomLevelByKey("six_hours");
       };
       DashboardState.prototype.getChart = function() {
         return this.get("chart");
       };
+      DashboardState.prototype.getChartKey = function() {
+        return this.get("chartKey");
+      };
       DashboardState.prototype.getZoomLevel = function() {
         return this.get("zoomLevel");
       };
+      DashboardState.prototype.getZoomLevelKey = function() {
+        return this.get("zoomLevelKey");
+      };
       DashboardState.prototype.setZoomLevelByKey = function(key) {
+        this.set({
+          "zoomLevelKey": key
+        });
         return this.setZoomLevel(this.zoomLevels[key]);
       };
       DashboardState.prototype.setZoomLevel = function(zl) {
@@ -142,6 +132,9 @@
         });
       };
       DashboardState.prototype.setChartByKey = function(key) {
+        this.set({
+          "chartKey": key
+        });
         return this.setChart(this.charts[key]);
       };
       DashboardState.prototype.setChart = function(chart) {

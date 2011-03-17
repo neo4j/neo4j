@@ -46,11 +46,14 @@ define(
         if query.substr(-1) is "/"
           query = query.substr(0, query.length - 1)
 
-        @appState.set( mainView : @getDataBrowserView() )
         @dataModel.setQuery query
+        @appState.set( mainView : @getDataBrowserView() )
 
       queryChanged : =>
         query = @dataModel.get "query"
+        if query == null
+          return @search("0")
+
         url = "#/data/search/#{query}/"
 
         if location.hash != url
@@ -63,7 +66,7 @@ define(
         @dataModel.setData(result)
 
       getDataBrowserView : =>
-        new DataBrowserView
+        @view ?= new DataBrowserView
           state:@appState
           dataModel:@dataModel
 )

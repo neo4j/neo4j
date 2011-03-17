@@ -18,31 +18,35 @@ You should have received a copy of the GNU Affero General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 ###
 
-define ['neo4j/webadmin/templates/dashboard/info','lib/backbone'], (template) ->
+define( 
+  ['neo4j/webadmin/templates/dashboard/info',
+   'neo4j/webadmin/views/View',
+   'lib/backbone'], 
+  (template,View) ->
   
-  class DashboardInfoView extends Backbone.View
-    
-    template : template
-   
-    initialize : (opts) =>
-      @primitives = opts.primitives
-      @diskUsage = opts.diskUsage
-      @cacheUsage = opts.cacheUsage
+    class DashboardInfoView extends View
       
-      @primitives.bind("change",@render)
-      @diskUsage.bind("change",@render)
-      @cacheUsage.bind("change",@render)
+      template : template
+     
+      initialize : (opts) =>
+        @primitives = opts.primitives
+        @diskUsage = opts.diskUsage
+        @cacheUsage = opts.cacheUsage
+        
+        @primitives.bind("change",@render)
+        @diskUsage.bind("change",@render)
+        @cacheUsage.bind("change",@render)
 
-    render : =>
-      $(@el).html @template
-        primitives : @primitives
-        diskUsage  : @diskUsage
-        cacheUsage : @cacheUsage
-      return this
+      render : =>
+        $(@el).html @template
+          primitives : @primitives
+          diskUsage  : @diskUsage
+          cacheUsage : @cacheUsage
+        return this
 
-    remove : =>
-      @primitives.unbind("change",@render)
-      @diskUsage.unbind("change",@render)
-      @cacheUsage.unbind("change",@render)
-      super()
-
+      remove : =>
+        @primitives.unbind("change",@render)
+        @diskUsage.unbind("change",@render)
+        @cacheUsage.unbind("change",@render)
+        super()
+)

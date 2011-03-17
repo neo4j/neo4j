@@ -20,10 +20,11 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 define(
   ['neo4j/webadmin/ui/LineChart'
+   'neo4j/webadmin/views/View',
    'neo4j/webadmin/templates/dashboard/charts','lib/backbone'], 
-  (LineChart, template) ->
+  (LineChart, View, template) ->
   
-    class DashboardChartsView extends Backbone.View
+    class DashboardChartsView extends View
       
       template : template
 
@@ -34,10 +35,7 @@ define(
       initialize : (opts) =>
         @statistics = opts.statistics
         @dashboardState = opts.dashboardState
-
-        @dashboardState.bind "change:chart", @redrawChart
-        @dashboardState.bind "change:zoomLevel", @redrawChart
-        @statistics.bind "change:metrics", @redrawChart
+        @bind()
 
       render : =>
         $(@el).html @template()
@@ -45,8 +43,8 @@ define(
         @chart = new LineChart($("#monitor-chart"))
         @redrawChart()
 
-        @highlightChartSwitchTab "primitives"
-        @highlightZoomTab "six_hours"
+        @highlightChartSwitchTab @dashboardState.getChartKey()
+        @highlightZoomTab @dashboardState.getZoomLevelKey()
 
         return this
 
@@ -92,11 +90,19 @@ define(
         $("button.switch-dashboard-zoom[value='#{tabKey}']", @el).addClass("current")
 
       remove : =>
-        @dashboardState.unbind "change:chart", @redrawChart
-        @dashboardState.unbind "change:zoomLevel", @redrawChart
-        @statistics.unbind "change:metrics", @redrawChart
+        @unbind()
         if @chart?        
           @chart.remove()
         super()
+
+      bind : =>
+        @dashboardState.bind "change:chart", @redrawChart
+        @dashboardState.bind "change:zoomLevel", @redrawChart
+        @statistics.bind "change:metrics", @redrawChart
+
+      unbind : =>
+        @dashboardState.unbind "change:chart", @redrawChart
+        @dashboardState.unbind "change:zoomLevel", @redrawChart
+        @statistics.unbind "change:metrics", @redrawChart
 
 )

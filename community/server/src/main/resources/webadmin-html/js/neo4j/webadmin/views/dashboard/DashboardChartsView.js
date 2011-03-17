@@ -1,22 +1,3 @@
-/*
- * Copyright (c) 2002-2011 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
 (function() {
   /*
   Copyright (c) 2002-2011 "Neo Technology,"
@@ -44,10 +25,12 @@
     child.__super__ = parent.prototype;
     return child;
   };
-  define(['neo4j/webadmin/ui/LineChart', 'neo4j/webadmin/templates/dashboard/charts', 'lib/backbone'], function(LineChart, template) {
+  define(['neo4j/webadmin/ui/LineChart', 'neo4j/webadmin/views/View', 'neo4j/webadmin/templates/dashboard/charts', 'lib/backbone'], function(LineChart, View, template) {
     var DashboardChartsView;
     return DashboardChartsView = (function() {
       function DashboardChartsView() {
+        this.unbind = __bind(this.unbind, this);;
+        this.bind = __bind(this.bind, this);;
         this.remove = __bind(this.remove, this);;
         this.highlightZoomTab = __bind(this.highlightZoomTab, this);;
         this.highlightChartSwitchTab = __bind(this.highlightChartSwitchTab, this);;
@@ -57,7 +40,7 @@
         this.render = __bind(this.render, this);;
         this.initialize = __bind(this.initialize, this);;        DashboardChartsView.__super__.constructor.apply(this, arguments);
       }
-      __extends(DashboardChartsView, Backbone.View);
+      __extends(DashboardChartsView, View);
       DashboardChartsView.prototype.template = template;
       DashboardChartsView.prototype.events = {
         'click .switch-dashboard-chart': 'switchChartClicked',
@@ -66,16 +49,14 @@
       DashboardChartsView.prototype.initialize = function(opts) {
         this.statistics = opts.statistics;
         this.dashboardState = opts.dashboardState;
-        this.dashboardState.bind("change:chart", this.redrawChart);
-        this.dashboardState.bind("change:zoomLevel", this.redrawChart);
-        return this.statistics.bind("change:metrics", this.redrawChart);
+        return this.bind();
       };
       DashboardChartsView.prototype.render = function() {
         $(this.el).html(this.template());
         this.chart = new LineChart($("#monitor-chart"));
         this.redrawChart();
-        this.highlightChartSwitchTab("primitives");
-        this.highlightZoomTab("six_hours");
+        this.highlightChartSwitchTab(this.dashboardState.getChartKey());
+        this.highlightZoomTab(this.dashboardState.getZoomLevelKey());
         return this;
       };
       DashboardChartsView.prototype.redrawChart = function() {
@@ -135,13 +116,21 @@
         return $("button.switch-dashboard-zoom[value='" + tabKey + "']", this.el).addClass("current");
       };
       DashboardChartsView.prototype.remove = function() {
-        this.dashboardState.unbind("change:chart", this.redrawChart);
-        this.dashboardState.unbind("change:zoomLevel", this.redrawChart);
-        this.statistics.unbind("change:metrics", this.redrawChart);
+        this.unbind();
         if (this.chart != null) {
           this.chart.remove();
         }
         return DashboardChartsView.__super__.remove.call(this);
+      };
+      DashboardChartsView.prototype.bind = function() {
+        this.dashboardState.bind("change:chart", this.redrawChart);
+        this.dashboardState.bind("change:zoomLevel", this.redrawChart);
+        return this.statistics.bind("change:metrics", this.redrawChart);
+      };
+      DashboardChartsView.prototype.unbind = function() {
+        this.dashboardState.unbind("change:chart", this.redrawChart);
+        this.dashboardState.unbind("change:zoomLevel", this.redrawChart);
+        return this.statistics.unbind("change:metrics", this.redrawChart);
       };
       return DashboardChartsView;
     })();

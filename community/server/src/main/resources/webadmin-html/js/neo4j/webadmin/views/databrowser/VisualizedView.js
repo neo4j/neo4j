@@ -1,22 +1,3 @@
-/*
- * Copyright (c) 2002-2011 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
 (function() {
   /*
   Copyright (c) 2002-2011 "Neo Technology,"
@@ -44,7 +25,7 @@
     child.__super__ = parent.prototype;
     return child;
   };
-  define(['neo4j/webadmin/data/ItemUrlResolver', 'neo4j/webadmin/ui/LoadingSpinner', 'neo4j/webadmin/templates/databrowser/visualization', 'lib/raphael', 'lib/dracula.graffle', 'lib/dracula.graph', 'lib/backbone'], function(ItemUrlResolver, LoadingSpinner, template) {
+  define(['neo4j/webadmin/data/ItemUrlResolver', 'neo4j/webadmin/ui/LoadingSpinner', 'neo4j/webadmin/views/View', 'neo4j/webadmin/templates/databrowser/visualization', 'lib/raphael', 'lib/dracula.graffle', 'lib/dracula.graph', 'lib/backbone'], function(ItemUrlResolver, LoadingSpinner, View, template) {
     var GROUP_IDS, VisualizedView;
     GROUP_IDS = 0;
     return VisualizedView = (function() {
@@ -68,7 +49,7 @@
         this.redrawVisualization = __bind(this.redrawVisualization, this);;
         this.render = __bind(this.render, this);;        VisualizedView.__super__.constructor.apply(this, arguments);
       }
-      __extends(VisualizedView, Backbone.View);
+      __extends(VisualizedView, View);
       VisualizedView.prototype.initialize = function(options) {
         this.server = options.server;
         this.urlResolver = new ItemUrlResolver(this.server);

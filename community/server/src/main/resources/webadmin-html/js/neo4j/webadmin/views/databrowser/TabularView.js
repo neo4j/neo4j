@@ -25,14 +25,14 @@
     child.__super__ = parent.prototype;
     return child;
   };
-  define(['./NodeView', './RelationshipView', './ListView', 'neo4j/webadmin/templates/databrowser/notfound', 'lib/backbone'], function(NodeView, RelationshipView, ListView, notFoundTemplate) {
+  define(['./NodeView', './RelationshipView', './ListView', 'neo4j/webadmin/views/View', 'neo4j/webadmin/templates/databrowser/notfound', 'lib/backbone'], function(NodeView, RelationshipView, ListView, View, notFoundTemplate) {
     var SimpleView;
     return SimpleView = (function() {
       function SimpleView() {
         this.remove = __bind(this.remove, this);;
         this.render = __bind(this.render, this);;        SimpleView.__super__.constructor.apply(this, arguments);
       }
-      __extends(SimpleView, Backbone.View);
+      __extends(SimpleView, View);
       SimpleView.prototype.initialize = function(options) {
         this.nodeView = new NodeView;
         this.relationshipView = new RelationshipView;
@@ -43,7 +43,6 @@
       SimpleView.prototype.render = function() {
         var type, view;
         type = this.dataModel.get("type");
-        console.log(type, this.dataModel.get("query"));
         switch (type) {
           case "node":
             view = this.nodeView;

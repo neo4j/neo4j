@@ -512,6 +512,10 @@ ol lh {
 .left { float:left; }
 .pad { padding:10px; }
 
+.error {
+  font-size: 12px;
+}
+
 .span-1  { width: 6.958%; float:left;  margin-right:1.5%; }
 .span-2  { width: 15.416%; float:left; margin-right:1.5%; }
 .span-3  { width: 23.875%; float:left; margin-right:1.5%; }

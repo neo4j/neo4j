@@ -1,22 +1,3 @@
-/*
- * Copyright (c) 2002-2011 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
 (function() {
   /*
   Copyright (c) 2002-2011 "Neo Technology,"
@@ -55,7 +36,9 @@
         this.setValue = __bind(this.setValue, this);;
         this.setValueError = __bind(this.setValueError, this);;
         this.setKeyError = __bind(this.setKeyError, this);;
+        this.getKeyAsHtml = __bind(this.getKeyAsHtml, this);;
         this.getValueAsHtml = __bind(this.getValueAsHtml, this);;
+        this.getValueAsJSON = __bind(this.getValueAsJSON, this);;
         this.getKeyError = __bind(this.getKeyError, this);;
         this.getValueError = __bind(this.getValueError, this);;
         this.getValue = __bind(this.getValue, this);;
@@ -84,10 +67,18 @@
       Property.prototype.getKeyError = function() {
         return this.get("keyError");
       };
+      Property.prototype.getValueAsJSON = function() {
+        if (this.hasValueError()) {
+          return this.getValue();
+        } else {
+          return JSON.stringify(this.getValue());
+        }
+      };
       Property.prototype.getValueAsHtml = function() {
-        var value;
-        value = this.hasValueError() ? this.getValue() : JSON.stringify(this.getValue());
-        return htmlEscaper.escape(value);
+        return htmlEscaper.escape(this.getValueAsJSON());
+      };
+      Property.prototype.getKeyAsHtml = function() {
+        return htmlEscaper.escape(this.getKey());
       };
       Property.prototype.setKeyError = function(error) {
         return this.set({
