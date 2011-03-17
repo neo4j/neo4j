@@ -34,6 +34,7 @@ define(
         "click button.delete-property" : "deleteProperty",
         "click button.add-property"    : "addProperty",
         "click button.data-save-properties" : "saveChanges"
+        "click button.data-delete-item" : "deleteItem"
 
       initialize : (opts) =>
         @template = opts.template
@@ -73,6 +74,10 @@ define(
 
       saveChanges : (ev) =>
         @propertyContainer.save()
+
+      deleteItem : (ev) =>
+        @propertyContainer.getItem().remove().then () ->
+          window.location = "#/data/search/0"
       
       updateSaveState : (ev) =>
         state = @propertyContainer.getSaveState()

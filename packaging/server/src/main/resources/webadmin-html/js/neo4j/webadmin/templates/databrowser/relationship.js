@@ -2,7 +2,7 @@ define(function(){return function(vars){ with(vars||{}) { return "<div class=\"h
 "Relationship " + item.getId() + 
 "</h3><p class=\"small\">" + 
 item.getSelf() + 
-"</p></div><ul class=\"button-bar item-controls\"><li><button disabled=\"true\" class=\"data-save-properties button\">Saved</button></li></ul><ul class=\"relationship-meta\"><li><a href=\"#/data/search/" +
+"</p></div><ul class=\"button-bar item-controls\"><li><button disabled=\"true\" class=\"data-save-properties button\">Saved</button></li><li><button class=\"data-delete-item button\">Delete</button></li></ul><ul class=\"relationship-meta\"><li><a href=\"#/data/search/" +
 item.getStartId() +
 "/\" class=\"micro-button\">" + 
 "Node " + item.getStartId() + 
