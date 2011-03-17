@@ -225,7 +225,6 @@ define(
             val = @htmlEscaper.escape JSON.stringify(val)
             "<li><span class='key'>#{key}</span>: <span class='value'>#{val}</span></li>"
 
-          console.log propHtml, node.getProperties(), node
           propHtml = propHtml.join("\n")
           html = "<ul class='tiny-property-list'>#{propHtml}</ul>"
         else
