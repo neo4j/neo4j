@@ -60,13 +60,13 @@ public interface IndexHits<T> extends Iterator<T>, Iterable<T>
      * ignore any consequtive call (for convenience).
      */
     void close();
-    
+
     /**
-     * Returns the first and only item from the result iterator,
-     * or {@code null} there was none. If there were more than one item in the
-     * result a {@link NoSuchElementException} will be thrown. This method
-     * must be called first in the iteration and will grab the first item
-     * from the iteration, so the result is considered broken after this call.
+     * Returns the first and only item from the result iterator, or {@code null}
+     * if there was none. If there were more than one item in the result a
+     * {@link NoSuchElementException} will be thrown. This method must be called
+     * first in the iteration and will grab the first item from the iteration,
+     * so the result is considered broken after this call.
      * 
      * @return the first and only item, or {@code null} if none.
      */
