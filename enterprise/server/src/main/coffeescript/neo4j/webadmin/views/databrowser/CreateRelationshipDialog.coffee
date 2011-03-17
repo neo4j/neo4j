@@ -21,10 +21,11 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 define(
   ['neo4j/webadmin/data/ItemUrlResolver'
    'neo4j/webadmin/templates/databrowser/createRelationship',
+   'neo4j/webadmin/views/View',
    'lib/backbone'], 
-  (ItemUrlResolver, template) ->
+  (ItemUrlResolver, template, View) ->
   
-    class CreateRelationshipDialog extends Backbone.View
+    class CreateRelationshipDialog extends View
 
       className: "create-relationship-dialog"
 

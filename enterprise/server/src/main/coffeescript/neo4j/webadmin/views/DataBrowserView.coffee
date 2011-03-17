@@ -25,10 +25,11 @@ define(
    './databrowser/TabularView',
    './databrowser/VisualizedView',
    './databrowser/CreateRelationshipDialog',
+   'neo4j/webadmin/views/View',
    'neo4j/webadmin/templates/databrowser/base','lib/backbone'], 
-  (Search, ItemUrlResolver, HtmlEscaper, TabularView, VisualizedView, CreateRelationshipDialog, template) ->
+  (Search, ItemUrlResolver, HtmlEscaper, TabularView, VisualizedView, CreateRelationshipDialog, View, template) ->
 
-    class DataBrowserView extends Backbone.View
+    class DataBrowserView extends View
       
       template : template
 
@@ -117,6 +118,5 @@ define(
       remove : =>
         @dataModel.unbind("change:query", @queryChanged)
         @dataView.remove()
-        super()
 
 )

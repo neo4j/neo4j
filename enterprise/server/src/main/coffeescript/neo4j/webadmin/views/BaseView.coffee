@@ -18,37 +18,41 @@ You should have received a copy of the GNU Affero General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 ###
 
-define ['neo4j/webadmin/templates/base','lib/backbone'], (template) ->
+define(
+  ['neo4j/webadmin/templates/base',
+   'neo4j/webadmin/views/View',
+   'lib/backbone'], 
+  (template, View) ->
   
-  class BaseView extends Backbone.View
-    
-    template : template
-    
-    initialize : (options) =>
-      @appState = options.appState
-      @appState.bind 'change:mainView', @mainViewChanged
+    class BaseView extends View
+      
+      template : template
+      
+      initialize : (options) =>
+        @appState = options.appState
+        @appState.bind 'change:mainView', @mainViewChanged
 
-    mainViewChanged : (event) =>
-      if @mainView?
-        @mainView.remove()
-      @mainView = event.attributes.mainView
-      @render()
+      mainViewChanged : (event) =>
+        if @mainView?
+          @mainView.detach()
+        @mainView = event.attributes.mainView
+        @render()
 
-    render : ->
-      $(@el).html @template( mainmenu : [ 
-        { label : "Dashboard",   subtitle:"Get a grip",url : "#",           current: location.hash is "" }
-        { label : "Data browser",subtitle:"Explore and edit",url : "#/data/" ,    current: location.hash.indexOf("#/data/") is 0 }
-        { label : "Console",     subtitle:"Power tool",url : "#/console/" , current: location.hash is "#/console/" }
-        { label : "Server info", subtitle:"Detailed information",url : "#/info/" ,    current: location.hash is "#/info/" } ] )
+      render : ->
+        $(@el).html @template( mainmenu : [ 
+          { label : "Dashboard",   subtitle:"Get a grip",url : "#",           current: location.hash is "" }
+          { label : "Data browser",subtitle:"Explore and edit",url : "#/data/" ,    current: location.hash.indexOf("#/data/") is 0 }
+          { label : "Console",     subtitle:"Power tool",url : "#/console/" , current: location.hash is "#/console/" }
+          { label : "Server info", subtitle:"Detailed information",url : "#/info/" ,    current: location.hash is "#/info/" } ] )
 
-      if @mainView?
-        $("#contents").append @mainView.el
-        @mainView.render()
-        @mainView.delegateEvents()
-      return this
+        if @mainView?
+          @mainView.attach($("#contents"))
+          @mainView.render()
+        return this
 
-    remove : =>
-      @appState.unbind 'change:mainView', @mainViewChanged
-      if @mainView?
-          @mainView.remove()
-      super()
+      remove : =>
+        @appState.unbind 'change:mainView', @mainViewChanged
+        if @mainView?
+            @mainView.remove()
+        super()
+)

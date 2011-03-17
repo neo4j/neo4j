@@ -22,10 +22,11 @@ define(
   ['neo4j/webadmin/templates/dashboard/base',
    './dashboard/DashboardInfoView',
    './dashboard/DashboardChartsView',
+   'neo4j/webadmin/views/View',
    'lib/backbone'], 
-  (template, DashboardInfoView, DashboardChartsView) ->
+  (template, DashboardInfoView, DashboardChartsView, View) ->
 
-    class DashboardView extends Backbone.View
+    class DashboardView extends View
       
       template : template
      
@@ -35,7 +36,7 @@ define(
       render : =>
         $(@el).html @template(
           server : { url : "someurl", version : "someversion" } )
-        
+
         @infoView = new DashboardInfoView(@opts)
         @chartsView = new DashboardChartsView(@opts)
         
@@ -51,4 +52,9 @@ define(
         @infoView.remove()
         @chartsView.remove()
         super()
+
+      detach : =>
+        @chartsView.unbind()
+        super()
+
 )

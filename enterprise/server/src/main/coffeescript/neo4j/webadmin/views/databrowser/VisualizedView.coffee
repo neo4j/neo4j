@@ -21,16 +21,17 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 define(
   ['neo4j/webadmin/data/ItemUrlResolver'
    'neo4j/webadmin/ui/LoadingSpinner'
+   'neo4j/webadmin/views/View',
    'neo4j/webadmin/templates/databrowser/visualization'
    'lib/raphael'
    'lib/dracula.graffle'
    'lib/dracula.graph'
    'lib/backbone'], 
-  (ItemUrlResolver, LoadingSpinner, template) ->
+  (ItemUrlResolver, LoadingSpinner, View, template) ->
   
     GROUP_IDS = 0
 
-    class VisualizedView extends Backbone.View
+    class VisualizedView extends View
 
       initialize : (options)->
 

@@ -1,22 +1,3 @@
-/*
- * Copyright (c) 2002-2011 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
 (function() {
   /*
   Copyright (c) 2002-2011 "Neo Technology,"
@@ -44,15 +25,16 @@
     child.__super__ = parent.prototype;
     return child;
   };
-  define(['neo4j/webadmin/templates/dashboard/base', './dashboard/DashboardInfoView', './dashboard/DashboardChartsView', 'lib/backbone'], function(template, DashboardInfoView, DashboardChartsView) {
+  define(['neo4j/webadmin/templates/dashboard/base', './dashboard/DashboardInfoView', './dashboard/DashboardChartsView', 'neo4j/webadmin/views/View', 'lib/backbone'], function(template, DashboardInfoView, DashboardChartsView, View) {
     var DashboardView;
     return DashboardView = (function() {
       function DashboardView() {
+        this.detach = __bind(this.detach, this);;
         this.remove = __bind(this.remove, this);;
         this.render = __bind(this.render, this);;
         this.initialize = __bind(this.initialize, this);;        DashboardView.__super__.constructor.apply(this, arguments);
       }
-      __extends(DashboardView, Backbone.View);
+      __extends(DashboardView, View);
       DashboardView.prototype.template = template;
       DashboardView.prototype.initialize = function(opts) {
         this.opts = opts;
@@ -77,6 +59,10 @@
         this.infoView.remove();
         this.chartsView.remove();
         return DashboardView.__super__.remove.call(this);
+      };
+      DashboardView.prototype.detach = function() {
+        this.chartsView.unbind();
+        return DashboardView.__super__.detach.call(this);
       };
       return DashboardView;
     })();
