@@ -19,15 +19,11 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['neo4j/webadmin/templates/databrowser/relationship',
-   './PropertyContainerView','lib/backbone'], 
-  (template, PropertyContainerView) ->
+  ['./PropertyContainer'
+   'lib/backbone'], 
+  (PropertyContainer) ->
   
-    class RelationshipView extends PropertyContainerView
-
-      initialize : (opts={}) =>
-        opts.template = template
-        super(opts)
-
+    class NodeProxy extends PropertyContainer
+      
 
 )

@@ -19,6 +19,7 @@
  */
 
 .button {
+  display:block;
   border: 0 none;
   height: 32px;
   padding: 0 5px;
@@ -29,6 +30,15 @@
   border-radius:4px;
   float:left;
   font-weight: bold;
+  font-size: 13px;
+  color:#4C4C4C;
+  background:#CCCCCC;
+  text-decoration:none;
+}
+
+a.button {
+  padding-top:9px;
+  height: 23px;
 }
 
 /** 

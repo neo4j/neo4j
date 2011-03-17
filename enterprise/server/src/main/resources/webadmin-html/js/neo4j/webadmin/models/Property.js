@@ -37,6 +37,7 @@
         this.setValueError = __bind(this.setValueError, this);;
         this.setKeyError = __bind(this.setKeyError, this);;
         this.getKeyAsHtml = __bind(this.getKeyAsHtml, this);;
+        this.getTruncatedHtmlValue = __bind(this.getTruncatedHtmlValue, this);;
         this.getValueAsHtml = __bind(this.getValueAsHtml, this);;
         this.getValueAsJSON = __bind(this.getValueAsJSON, this);;
         this.getKeyError = __bind(this.getKeyError, this);;
@@ -76,6 +77,17 @@
       };
       Property.prototype.getValueAsHtml = function() {
         return htmlEscaper.escape(this.getValueAsJSON());
+      };
+      Property.prototype.getTruncatedHtmlValue = function(maxLength) {
+        var str;
+        if (maxLength == null) {
+          maxLength = 100;
+        }
+        str = this.getValueAsJSON();
+        if (str.length > maxLength) {
+          str = str.substr(0, maxLength - 3) + "..";
+        }
+        return htmlEscaper.escape(str);
       };
       Property.prototype.getKeyAsHtml = function() {
         return htmlEscaper.escape(this.getKey());

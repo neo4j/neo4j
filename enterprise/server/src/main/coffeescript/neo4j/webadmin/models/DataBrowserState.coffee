@@ -19,8 +19,10 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['./PropertyContainer', 'lib/backbone'], 
-  (PropertyContainer) ->
+  ['./NodeProxy'
+   './RelationshipProxy'
+   './RelationshipList', 'lib/backbone'], 
+  (NodeProxy, RelationshipProxy, RelationshipList) ->
   
     class DataBrowserState extends Backbone.Model
       
@@ -54,11 +56,14 @@ define(
         @set({"data":result, "queryOutOfSyncWithData" : not basedOnCurrentQuery }, {silent:true})
 
         if result instanceof neo4j.models.Node
-          @set({type:"node","data":new PropertyContainer(result)}, opts)
+          @set({type:"node","data":new NodeProxy(result)}, opts)
+
         else if result instanceof neo4j.models.Relationship
-          @set({type:"relationship","data":new PropertyContainer(result)}, opts)
+          @set({type:"relationship","data":new RelationshipProxy(result)}, opts)
+
         else if _(result).isArray()
-          @set({type:"list"}, opts)
+          @set({type:"list", "data":new RelationshipList(result)}, opts)
+
         else
           @set({"data":null, type:"not-found"}, opts)
 

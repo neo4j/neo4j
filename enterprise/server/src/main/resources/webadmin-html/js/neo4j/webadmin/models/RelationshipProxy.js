@@ -25,24 +25,21 @@
     child.__super__ = parent.prototype;
     return child;
   };
-  define(['neo4j/webadmin/templates/databrowser/relationshipList', 'neo4j/webadmin/views/View', 'lib/backbone'], function(template, View) {
-    var RelationshipListView;
-    return RelationshipListView = (function() {
-      function RelationshipListView() {
-        this.setDataModel = __bind(this.setDataModel, this);;
-        this.render = __bind(this.render, this);;        RelationshipListView.__super__.constructor.apply(this, arguments);
+  define(['./PropertyContainer', 'lib/backbone'], function(PropertyContainer) {
+    var RelationshipProxy;
+    return RelationshipProxy = (function() {
+      function RelationshipProxy() {
+        this.getStartId = __bind(this.getStartId, this);;
+        this.getEndId = __bind(this.getEndId, this);;        RelationshipProxy.__super__.constructor.apply(this, arguments);
       }
-      __extends(RelationshipListView, View);
-      RelationshipListView.prototype.render = function() {
-        $(this.el).html(template({
-          relationships: this.dataModel.getData()
-        }));
-        return this;
+      __extends(RelationshipProxy, PropertyContainer);
+      RelationshipProxy.prototype.getEndId = function() {
+        return this.urlResolver.extractRelationshipId(this.getItem().getEndNodeUrl());
       };
-      RelationshipListView.prototype.setDataModel = function(dataModel) {
-        return this.dataModel = dataModel;
+      RelationshipProxy.prototype.getStartId = function() {
+        return this.urlResolver.extractRelationshipId(this.getItem().getStartNodeUrl());
       };
-      return RelationshipListView;
+      return RelationshipProxy;
     })();
   });
 }).call(this);
