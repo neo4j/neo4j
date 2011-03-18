@@ -34,6 +34,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -125,6 +126,12 @@ public class ImdbExampleTest
         {
             transaction.finish();
         }
+    }
+
+    @AfterClass
+    public static void tearDownDb()
+    {
+        graphDb.shutdown();
     }
 
     @Before
@@ -339,7 +346,7 @@ public class ImdbExampleTest
         for ( Node movie : hits )
         {
             System.out.println( movie.getProperty( "title" ) + " "
-                                + hits.currentScore() );
+                    + hits.currentScore() );
             // END SNIPPET: queryWithScore
             assertTrue( ( (String) movie.getProperty( "title" ) ).startsWith( "The" ) );
             // START SNIPPET: queryWithScore
@@ -370,13 +377,13 @@ public class ImdbExampleTest
                 new TermQuery( new Term( "name", "Keanu Reeves" ) ) ).getSingle();
         // END SNIPPET: termQuery
         assertEquals( "Keanu Reeves", actor.getProperty( "name" ) );
-        
+
         Node theMatrix = movies.get( "title", "The Matrix" ).getSingle();
         Node theMatrixReloaded = movies.get( "title", "The Matrix Reloaded" ).getSingle();
 
         // START SNIPPET: wildcardTermQuery
         hits = movies.query( new WildcardQuery( new Term( "title",
-                "The Matrix*" ) ) );
+        "The Matrix*" ) ) );
         for ( Node movie : hits )
         {
             System.out.println( movie.getProperty( "title" ) );
