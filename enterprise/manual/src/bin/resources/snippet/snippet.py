@@ -45,21 +45,28 @@ def snippet(source=None, component=None, classifier="test-sources", tag=None,
         buff = []
         mindent = 1<<32 # a large numer - no indentation is this long
         emit = False
+
         for line in sourceFile:
             if END in line: emit = False
             if emit:
                 line = line.replace(']]>',']]>]]&gt;<![CDATA[')
                 meat = line.lstrip()
-                indent = line[:-len(meat)].replace('\t', tablength)
-                mindent = min(mindent, len(indent))
-                buff.append(indent + meat)
+                if meat:
+                    indent = line[:-len(meat)].replace('\t', tablength)
+                    mindent = min(mindent, len(indent))
+                    buff.append(indent + meat)
+                else:
+                    buff.append('')
             if START in line: emit = True
         # END SNIPPET: self-test
     finally:
         sourceFile.close()
     
     for line in buff:
-        yield line[mindent:]
+        if line:
+            yield line[mindent:]
+        else:
+            yield '\n'
 
 if __name__ == '__main__':
     import traceback
