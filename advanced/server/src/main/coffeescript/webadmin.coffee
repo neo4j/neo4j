@@ -35,9 +35,11 @@ require(
    "neo4j/webadmin/views/BaseView"
    "neo4j/webadmin/ui/FoldoutWatcher"
    "neo4j/webadmin/KeyboardShortcuts"
-   "lib/neo4js", "lib/jquery", "lib/underscore", "lib/backbone"]
+   "lib/jquery"
+   "lib/neo4js"
+   "lib/backbone"]
   (DashboardController, DataBrowserController, ConsoleController, ServerInfoController, ApplicationState, BaseView, FoldoutWatcher, KeyboardShortcuts) ->
-    
+
     appState = new ApplicationState
     appState.set server : new neo4j.GraphDatabase(location.protocol + "//" + location.host)
 
