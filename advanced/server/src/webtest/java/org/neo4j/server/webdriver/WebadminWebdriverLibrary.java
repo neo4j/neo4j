@@ -29,14 +29,14 @@ public class WebadminWebdriverLibrary extends WebdriverLibrary
     
     private String serverUrl;
     private final ElementReference dataBrowserSearchField;
-    private final ElementReference dataBrowserItemHeadline;
+    private final ElementReference dataBrowserItemSubtitle;
     
     public WebadminWebdriverLibrary(WebDriverFacade wf, ServerIntegrationTestFacade serverFacade) throws InvocationTargetException, IllegalAccessException, InstantiationException {
         super(wf);
         
         setServerUrl( serverFacade.getServerUrl() );
         
-        dataBrowserItemHeadline = new ElementReference(d, By.xpath( "//div[@id='data-area']//h1" ));
+        dataBrowserItemSubtitle = new ElementReference(d, By.xpath( "//div[@id='data-area']//div[@class='title']//p[@class='small']" ));
         dataBrowserSearchField = new ElementReference(d, By.id( "data-console" ));
     }
     
@@ -62,37 +62,37 @@ public class WebadminWebdriverLibrary extends WebdriverLibrary
         dataBrowserSearchField.sendKeys( keysToSend );
     }
     
-    public String getCurrentDatabrowserItemHeadline() {
-        return dataBrowserItemHeadline.getText();
+    public String getCurrentDatabrowserItemSubtitle() {
+        return dataBrowserItemSubtitle.getText();
     }
     
     public String createNodeInDataBrowser() throws Exception {
         goToWebadminStartPage();
         clickOnTab( "Data browser" );
-        String prevItemHeadline = getCurrentDatabrowserItemHeadline();
+        String prevItemHeadline = getCurrentDatabrowserItemSubtitle();
         
         clickOnButton( "Node" );
         
-        dataBrowserItemHeadline.waitForTextToChangeFrom( prevItemHeadline );
+        dataBrowserItemSubtitle.waitForTextToChangeFrom( prevItemHeadline );
         
-        return getCurrentDatabrowserItemHeadline();
+        return getCurrentDatabrowserItemSubtitle();
     }
     
     public String createRelationshipInDataBrowser() throws Exception {
         createNodeInDataBrowser();
-        String prevItemHeadline = getCurrentDatabrowserItemHeadline();
+        String prevItemHeadline = getCurrentDatabrowserItemSubtitle();
         
         clickOnButton( "Relationship" );
         getElement( By.id( "create-relationship-to" ) ).sendKeys( "0" );
         clickOnButton( "Create" );
         
-        dataBrowserItemHeadline.waitForTextToChangeFrom( prevItemHeadline );
+        dataBrowserItemSubtitle.waitForTextToChangeFrom( prevItemHeadline );
         
-        return getCurrentDatabrowserItemHeadline();
+        return getCurrentDatabrowserItemSubtitle();
     }
     
     public ElementReference getDataBrowserItemHeadline() {
-        return dataBrowserItemHeadline;
+        return dataBrowserItemSubtitle;
     }
     
 }
