@@ -21,10 +21,9 @@ package org.neo4j.server.web;
 
 import java.util.List;
 
-import org.neo4j.server.NeoServer;
-import org.neo4j.server.ext.visualization.VisualizationServlet;
-
 import javax.servlet.Servlet;
+
+import org.neo4j.server.NeoServer;
 
 public interface WebServer {
     public void setNeoServer(NeoServer server);
