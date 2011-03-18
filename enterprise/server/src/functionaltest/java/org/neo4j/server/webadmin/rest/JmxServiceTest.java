@@ -38,7 +38,7 @@ public class JmxServiceTest
 {
     public JmxService jmxService;
     private final URI uri = URI.create( "http://peteriscool.com:6666/" );
-
+    
     @Test
     public void correctRepresentation() throws URISyntaxException, UnsupportedEncodingException
     {
