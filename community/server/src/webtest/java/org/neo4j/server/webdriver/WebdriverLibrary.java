@@ -19,17 +19,19 @@
  */
 package org.neo4j.server.webdriver;
 
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.fail;
 import static org.neo4j.server.webdriver.BrowserTitleIs.browserTitleIs;
 import static org.neo4j.server.webdriver.BrowserUrlIs.browserUrlIs;
 import static org.neo4j.server.webdriver.ElementVisible.elementVisible;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.Date;
 
 import org.hamcrest.Matcher;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
+import org.openqa.selenium.RenderedWebElement;
+import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 
 public class WebdriverLibrary
@@ -48,20 +50,20 @@ public class WebdriverLibrary
         getElement( By.xpath( "//a[contains(.,'"+text+"')]") ).click();
     }
     
-    public void waitForUrlToBe(String url) throws Exception {
-        waitUntil( browserUrlIs( url ), "Url did not change within a reasonable time." );
+    public void waitForUrlToBe(String url) {
+        waitUntil( browserUrlIs( url ), "Url did not change to expected value within a reasonable time." );
     }
     
-    public void waitForTitleToBe(String title) throws Exception {
-        waitUntil( browserTitleIs( title ), "Title did not change within a reasonable time." );
+    public void waitForTitleToBe(String title) {
+        waitUntil( browserTitleIs( title ), "Title did not change to expected value within a reasonable time." );
     }
     
-    public void waitForElementToAppear(By by) throws Exception {
+    public void waitForElementToAppear(By by) {
         waitUntil( elementVisible( by ), "Element did not appear within a reasonable time." );
     }
     
-    public void waitUntil(Matcher<WebDriver> cond, String errorMessage) throws Exception {
-        waitUntil( cond, errorMessage, 10000);
+    public void waitForElementToDisappear(By by) {
+        waitUntil( not( elementVisible( by )), "Element did not disappear within a reasonable time." );
     }
     
     public void clearInput(ElementReference el) {
@@ -70,21 +72,27 @@ public class WebdriverLibrary
             el.sendKeys( Keys.BACK_SPACE );
         }
     }
+
+    public void waitUntil(Matcher<WebDriver> matcher, String errorMessage) {
+        waitUntil( matcher, errorMessage, 10000);
+    }
     
-    public void waitUntil(Matcher<WebDriver> matcher, String errorMessage, long timeout) throws Exception {
-        timeout = new Date().getTime() + timeout;
-        while((new Date().getTime()) < timeout) {
-          Thread.sleep( 50 );
-          if (matcher.matches( d )) {
-              return;
-          }
+    public void waitUntil(Matcher<WebDriver> matcher, String errorMessage, long timeout) {
+        try {
+            Condition<WebDriver> cond = new Condition<WebDriver>(matcher, d);
+            cond.waitUntilFulfilled(timeout);
+        } catch( TimeoutException e) {
+            fail(errorMessage);
         }
-        
-        fail(errorMessage);
     }
     
     public ElementReference getElement(By by) {
-        return new ElementReference(d, by);
+        return new ElementReference(this, by);
+    }
+    
+    public RenderedWebElement getWebElement(By by) {
+        waitForElementToAppear(by);
+        return (RenderedWebElement) d.findElement( by );
     }
     
     public void refresh() {
