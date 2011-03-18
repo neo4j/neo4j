@@ -95,12 +95,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.neo4j.server.ext</groupId>
-      <artifactId>neo4j-visualization</artifactId>
-      <version>${neo4j.version}</version>
-    </dependency>
-
-    <dependency>
       <groupId>log4j</groupId>
       <artifactId>log4j</artifactId>
     </dependency>
@@ -488,9 +482,7 @@
               </archive>
               <excludes>
                 <exclude>webadmin-html/**</exclude>
-                <exclude>wa/**</exclude>
                 <exclude>lib/**</exclude>
-                <exclude>boot.js</exclude>
               </excludes>
             </configuration>
           </execution>
