@@ -63,14 +63,12 @@ public class DatabaseTuningFunctionalTest {
 
     @Test
     public void shouldLogWarningAndContinueIfNoTuningFilePropertyPresent() throws IOException {
-        InMemoryAppender appender = new InMemoryAppender(Database.log);
+        InMemoryAppender appender = new InMemoryAppender(PropertyFileConfigurator.log);
         
-        String propertyFilePath = "/tmp/some/path/to/a/server/property/file";
-        System.setProperty("org.neo4j.server.properties", propertyFilePath);
-        NeoServer server = ServerBuilder.server().withPassingStartupHealthcheck().withRandomDatabaseDir().build();
+        NeoServer server = ServerBuilder.server().withPassingStartupHealthcheck().withNonResolvableTuningFile().withRandomDatabaseDir().build();
         server.start();
         
-        assertThat(appender.toString(), containsString("No database tuning properties set in the property file, using defaults. Please specify the performance properties file with org.neo4j.server.db.tuning.properties in the server properties file [" + propertyFilePath + "]."));
+        assertThat(appender.toString(), containsString("The specified file for database performance tuning properties"));
         
         server.stop();
     }

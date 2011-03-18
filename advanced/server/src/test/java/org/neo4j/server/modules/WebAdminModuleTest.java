@@ -19,21 +19,22 @@
  */
 package org.neo4j.server.modules;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.*;
-
-import java.net.URI;
-import java.util.Set;
-
-import javax.management.ObjectName;
-
+import org.apache.commons.configuration.MapConfiguration;
 import org.junit.Test;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.management.Kernel;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.web.WebServer;
+
+import javax.management.ObjectName;
+import java.net.URI;
+import java.util.HashMap;
+import java.util.Set;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 
 public class WebAdminModuleTest {
@@ -53,6 +54,7 @@ public class WebAdminModuleTest {
         when(db.graph.getManagementBean(Kernel.class)).thenReturn(mockKernel);
         
         when(neoServer.getDatabase()).thenReturn(db);
+        when(neoServer.getConfiguration()).thenReturn( new MapConfiguration( new HashMap() ) );
         
         WebAdminModule module = new WebAdminModule();
         Set<URI> uris = module.start(neoServer);
