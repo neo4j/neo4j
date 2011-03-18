@@ -49,7 +49,7 @@ public class DataBrowserSteps
         d = facade.getWebDriver();
         this.wl = wl;
         
-        saveButton = new ElementReference(d, By.xpath( "//button[@class='data-save-properties']" ));
+        saveButton = new ElementReference(d, By.xpath( "//button[@class='data-save-properties button']" ));
     }
     
     @Given("^I have created a node through webadmin$")
@@ -74,17 +74,17 @@ public class DataBrowserSteps
         wl.searchForInDataBrowser( keysToSend );
     }
     
-    @Then("^The data browser item headline should be (.+)$")
+    @Then("^The data browser item subtitle should be (.+)$")
     public void theDataBrowserItemHeadlineShouldBe(String expected) {
         wl.getDataBrowserItemHeadline().waitForTextToChangeTo( expected );
     }
     
-    @Then("^The data browser item headline should change from (.+)$")
+    @Then("^The data browser item subtitle should change from (.+)$")
     public void theDataBrowserShouldChangeFrom(String expected) {
         wl.getDataBrowserItemHeadline().waitForTextToChangeFrom( expected );
     }
     
-    @Then("^The data browser item headline should change to (.+)$")
+    @Then("^The data browser item subtitle should change to (.+)$")
     public void theDataBrowserItemHeadlineShouldChangeTo(String expected) {
         wl.getDataBrowserItemHeadline().waitForTextToChangeTo( expected );
     }
@@ -101,13 +101,13 @@ public class DataBrowserSteps
     
     @Then("^The currently visible (node|relationship) in webadmin should have a property (.+) with the value (.+)$")
     public void theCurrentlyVisibleNodeShouldHavePropertyXAndValueY(String type, String expectedKey, String expectedValue) throws Exception {
-        theNodeOrRelationshipWithUrlUShouldHavePropertyXAndValueY(type, wl.getCurrentDatabrowserItemHeadline(), expectedKey, expectedValue );
+        theNodeOrRelationshipWithUrlUShouldHavePropertyXAndValueY(type, wl.getCurrentDatabrowserItemSubtitle(), expectedKey, expectedValue );
     }
     
     @Then("^The (node|relationship) with url (.+) in webadmin should have a property (.+) with the value (.+)$")
     public void theNodeOrRelationshipWithUrlUShouldHavePropertyXAndValueY(String type, String url, String expectedKey, String expectedValue) throws Exception {
         iEnterXIntoTheDatabrowserSearchField(url);
-        ElementReference el = wl.getElement( By.xpath( "//input[@value='"+expectedKey+"']/../..//input[@class='property-value']"  ) );
+        ElementReference el = wl.getElement( By.xpath( "//input[@value='"+expectedKey+"']/../../..//input[@class='property-value']"  ) );
         el.getElement();
         assertThat(el.getValue(), is(expectedValue));
     }
