@@ -42,6 +42,10 @@ public class WebdriverLibrary
         this.d = df.getWebDriver();
     }
     
+    public WebDriver getWebDriver() {
+        return d;
+    }
+    
     public void clickOnButton(String text) {
         getElement( By.xpath( "//button[contains(.,'"+text+"')]") ).click();
     }
@@ -79,7 +83,7 @@ public class WebdriverLibrary
     
     public void waitUntil(Matcher<WebDriver> matcher, String errorMessage, long timeout) {
         try {
-            Condition<WebDriver> cond = new Condition<WebDriver>(matcher, d);
+            Condition<WebDriver> cond = new WebdriverCondition<WebDriver>( getWebDriver(), matcher, d);
             cond.waitUntilFulfilled(timeout);
         } catch( TimeoutException e) {
             fail(errorMessage);

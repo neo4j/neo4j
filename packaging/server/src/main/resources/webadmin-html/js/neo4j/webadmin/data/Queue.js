@@ -44,7 +44,7 @@
     child.__super__ = parent.prototype;
     return child;
   };
-  define([], function() {
+  define(['lib/backbone'], function() {
     var Queue;
     return Queue = (function() {
       __extends(Queue, Backbone.Model);
