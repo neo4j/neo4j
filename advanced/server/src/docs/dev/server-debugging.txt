@@ -1,15 +1,16 @@
 [[server-debugging]]
-Neo4j Server Setup for remote debugging 
-=================================
+Setup for remote debugging
+==========================
 
 In order to configure the Neo4j server for remote debugging sessions, the java debugging 
 parameters need to be passed to the java process through the configuration. They live in
+
 [source,shell]
 ----
 conf/neo4j-wrapper.properties
 ----
 
-In order to specify the parameters, add a line for the additional java arguments to read
+In order to specify the parameters, add a line for the additional java arguments to read.
 
 [source,shell]
 ----
@@ -22,3 +23,4 @@ wrapper.java.additional.3=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,
 which will start a Neo4j server ready for remote debugging attachement at localhost and port 5005. Use
 these parameters to attach to the process after starting the server from Eclipse, IntelliJ or your
 remote debugger of choice.
+
