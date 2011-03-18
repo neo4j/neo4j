@@ -143,22 +143,22 @@ public class ElementReference {
     }
 
     public void waitForAttributeToBe(String attr, String value) {
-        Condition<ElementReference> cond = new Condition<ElementReference>(elementAttributeIs(attr, value), this);
+        Condition<ElementReference> cond = new WebdriverCondition<ElementReference>( wl.getWebDriver(), elementAttributeIs(attr, value), this);
         cond.waitUntilFulfilled(10000, "Attribute "+attr+" did not change to "+value+" within a reasonable time.");
     }
 
     public void waitForAttributeToChangeFrom(String attr, String value) {
-        Condition<ElementReference> cond = new Condition<ElementReference>(not( elementAttributeIs(attr, value) ), this);
+        Condition<ElementReference> cond = new WebdriverCondition<ElementReference>( wl.getWebDriver(), not( elementAttributeIs(attr, value) ), this);
         cond.waitUntilFulfilled(10000, "Attribute "+attr+" did not change from "+value+" within a reasonable time.");
     }
     
     public void waitForTextToChangeFrom(String value) {
-        Condition<ElementReference> cond = new Condition<ElementReference>(not( elementTextIs(value) ), this);
+        Condition<ElementReference> cond = new WebdriverCondition<ElementReference>( wl.getWebDriver(), not( elementTextIs(value) ), this);
         cond.waitUntilFulfilled(10000, "Element text did not change from "+value+" within a reasonable time.");
     }
     
     public void waitForTextToChangeTo(String value) {
-        Condition<ElementReference> cond = new Condition<ElementReference>( elementTextIs(value), this);
+        Condition<ElementReference> cond = new WebdriverCondition<ElementReference>( wl.getWebDriver(), elementTextIs(value), this);
         cond.waitUntilFulfilled(10000, "Element text did not change from "+value+" within a reasonable time.");
     }
 
