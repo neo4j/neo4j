@@ -1,7 +1,14 @@
 #!/usr/bin/env python
 # -*- mode: Python; coding: utf-8 -*-
+"""
+source=ignored
+component=ignored
+tag=self-test
+"""
 
 import sys
+
+PATH_PATTERN="target/%(classifier)s/%(component)s-%(classifier)s-jar/%(source)s"
 
 def configuration(indata):
     config = {}
@@ -16,35 +23,60 @@ def configuration(indata):
     return config
 
 def snippet(source=None, component=None, classifier="test-sources", tag=None,
-            **other):
+            tablength="4", **other):
     for key in other:
         sys.stderr.write("WARNING: unknown config key: '%s'\n" % key)
     if not tag: raise ValueError("'tag' must be specified")
     if not source: raise ValueError("'source' must be specified")
     if not component: raise ValueError("'component' must be specified")
     if not classifier: raise ValueError("'classifier' must be specified")
+    try:
+        tablength = ' ' * int(tablength)
+    except:
+        raise ValueError("'tablength' must be specified as an integer")
 
     START = "START SNIPPET: %s" % tag
     END = "END SNIPPET: %s" % tag
 
-    sourceFile = open("target/%(classifier)s/%(component)s-%(classifier)s-jar"
-                      "/%(source)s" % locals())
+    sourceFile = open(PATH_PATTERN % locals())
+
     try:
+        # START SNIPPET: self-test
+        buff = []
+        mindent = 1<<32 # a large numer - no indentation is this long
         emit = False
         for line in sourceFile:
             if END in line: emit = False
-            if emit: sys.stdout.write(line.replace(']]>',']]>]]&gt;<![CDATA['))
+            if emit:
+                line = line.replace(']]>',']]>]]&gt;<![CDATA[')
+                meat = line.lstrip()
+                indent = line[:-len(meat)].replace('\t', tablength)
+                mindent = min(mindent, len(indent))
+                buff.append(indent + meat)
             if START in line: emit = True
+        # END SNIPPET: self-test
     finally:
         sourceFile.close()
+    
+    for line in buff:
+        yield line[mindent:]
 
 if __name__ == '__main__':
     import traceback
+    indata = sys.stdin
+    if len(sys.argv) == 2 and sys.argv[1] == '--self-test':
+        PATH_PATTERN = __file__
+        indata = __doc__.split('\n')
     try:
+        # START SNIPPET: self-test
         sys.stdout.write("<![CDATA[")
-        snippet(**configuration(sys.stdin))
+        for line in snippet(**configuration(indata)):
+            sys.stdout.write(line)
+        # END SNIPPET: self-test
     except:
         traceback.print_exc(file=sys.stdout)
         raise
     finally:
+        # START SNIPPET: self-test
         sys.stdout.write("]]>")
+        # END SNIPPET: self-test
