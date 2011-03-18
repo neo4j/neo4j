@@ -31,7 +31,6 @@ import org.neo4j.server.NeoServer;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.RoundRobinJobScheduler;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.ext.visualization.VisualizationServlet;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rrd.RrdFactory;
 import org.rrd4j.core.RrdDb;
@@ -65,11 +64,6 @@ public class WebAdminModule implements ServerModule
 
         HashSet<URI> ownedUris = new HashSet<URI>();
         ownedUris.add(JAXRSHelper.generateUriFor(neoServer.baseUri(), DEFAULT_WEB_ADMIN_PATH));
-
-        neoServer.getWebServer().addServlet(new VisualizationServlet(neoServer.getDatabase().graph), DEFAULT_WEB_VISUALIZATION_PATH);
-        log.info("Mounted visualization at [%s]", DEFAULT_WEB_VISUALIZATION_PATH);
-        ownedUris.add( JAXRSHelper.generateUriFor( neoServer.baseUri(), DEFAULT_WEB_ADMIN_PATH ) );
-
         return ownedUris;
     }
 
