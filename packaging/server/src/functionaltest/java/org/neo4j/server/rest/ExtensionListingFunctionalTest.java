@@ -46,7 +46,7 @@ public class ExtensionListingFunctionalTest
     @Before
     public void startServer() throws IOException
     {
-        server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
+        server = ServerBuilder.server().withRandomDatabaseDir().withNonResolvableTuningFile().withPassingStartupHealthcheck().build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper( server );
     }
