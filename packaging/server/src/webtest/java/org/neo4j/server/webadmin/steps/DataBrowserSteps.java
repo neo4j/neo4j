@@ -26,10 +26,8 @@ import static org.junit.Assert.assertThat;
 import java.lang.reflect.InvocationTargetException;
 
 import org.neo4j.server.webdriver.ElementReference;
-import org.neo4j.server.webdriver.WebDriverFacade;
 import org.neo4j.server.webdriver.WebadminWebdriverLibrary;
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
 
 import cuke4duke.annotation.I18n.EN.Given;
 import cuke4duke.annotation.I18n.EN.Then;
@@ -39,17 +37,14 @@ import cuke4duke.spring.StepDefinitions;
 @StepDefinitions
 public class DataBrowserSteps
 {
-    private final WebDriver d;
     private final ElementReference saveButton;
     
     private final WebadminWebdriverLibrary wl;
     
-    public DataBrowserSteps( WebDriverFacade facade, WebadminWebdriverLibrary wl ) throws InvocationTargetException, InstantiationException, IllegalAccessException
+    public DataBrowserSteps(  WebadminWebdriverLibrary wl ) throws InvocationTargetException, InstantiationException, IllegalAccessException
     {
-        d = facade.getWebDriver();
         this.wl = wl;
-        
-        saveButton = new ElementReference(d, By.xpath( "//button[@class='data-save-properties button']" ));
+        saveButton = new ElementReference(wl, By.xpath( "//button[@class='data-save-properties button']" ));
     }
     
     @Given("^I have created a node through webadmin$")

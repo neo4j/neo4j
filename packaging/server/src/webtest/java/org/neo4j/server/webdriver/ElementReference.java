@@ -20,13 +20,15 @@
 
 package org.neo4j.server.webdriver;
 
+import static org.hamcrest.Matchers.not;
+import static org.neo4j.server.webdriver.ElementAttributeIs.elementAttributeIs;
+import static org.neo4j.server.webdriver.ElementTextIs.elementTextIs;
+
 import java.util.List;
 
 import org.openqa.selenium.By;
-import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.RenderedWebElement;
 import org.openqa.selenium.StaleElementReferenceException;
-import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 
 /**
@@ -41,59 +43,21 @@ import org.openqa.selenium.WebElement;
 public class ElementReference {
 
     protected By selector;
-    protected WebDriver webDriver;
+    protected WebdriverLibrary wl;
     protected boolean matchLast;
     
-    public ElementReference(WebDriver webDriver, By selector) {
-        this(webDriver, selector, false);
+    public ElementReference(WebdriverLibrary wl, By selector) {
+        this(wl, selector, false);
     }
     
-    public ElementReference(WebDriver webDriver, By selector, boolean matchLast) {
-        this.webDriver = webDriver;
+    public ElementReference(WebdriverLibrary wl, By selector, boolean matchLast) {
+        this.wl = wl;
         this.selector = selector;
         this.matchLast = matchLast;
     }
     
-    /**
-     * Attempts to fetch this element. If no element can be found, 
-     * fetching the element will be retried until one is found, or
-     * 10 seconds have passed.
-     * 
-     * @return
-     */
     public RenderedWebElement getElement() {
-        return getElement(selector);
-    }
-    
-    /**
-     * Attempts to fetch an element. If no element can be found, 
-     * fetching will be retried until one is found, or
-     * 10 seconds have passed.
-     * 
-     * @return
-     */
-    public RenderedWebElement getElement(By selector) {
-        long end = System.currentTimeMillis() + 10000;
-        while (System.currentTimeMillis() < end) {
-            try {
-                if(matchLast) {
-                    List<WebElement> els = webDriver.findElements(selector);
-                    if(els.size() > 0) {
-                        return (RenderedWebElement) els.get(els.size()-1);
-                    }
-                } else {
-                    return (RenderedWebElement) webDriver.findElement(selector);
-                }
-            } catch (NoSuchElementException ex) {
-                try {
-                    Thread.sleep(13);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-
-        throw new NoSuchElementException("Unable to locate element: " + selector.toString());
+        return wl.getWebElement( selector );
     }
     
     public RenderedWebElement findElement(By by) {
@@ -171,123 +135,31 @@ public class ElementReference {
     }
     
     public void waitUntilVisible() {
-        long end = System.currentTimeMillis() + 10000;
-        while (System.currentTimeMillis() < end) {
-            try {
-                if ( ! this.getValueOfCssProperty("display").equals("none")) {
-                    return;
-                }
-            } catch(NoSuchElementException e) {
-                // Empty
-            }
-            try{
-                Thread.sleep(13);
-            } catch(Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        throw new RuntimeException("Element did not become visible within a reasonable time.");
+        wl.waitForElementToAppear( selector );
     }
     
     public void waitUntilNotVisible() {
-        long end = System.currentTimeMillis() + 10000;
-        try{
-            while (System.currentTimeMillis() < end) {
-                if ( this.getElement().getValueOfCssProperty("display").equals("none")) {
-                    return;
-                }
-                try{
-                    Thread.sleep(13);
-                } catch(Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        } catch(StaleElementReferenceException e) { 
-            return;
-        }  catch(NoSuchElementException e) {
-            return;
-        }
-
-        throw new RuntimeException("Element did disappear within a reasonable time. ");
+        wl.waitForElementToDisappear( selector );
     }
 
-    public void waitForAttributeToBe(String attributeName, String expectedValue) {
-        long end = System.currentTimeMillis() + 10000;
-        String attr;
-        while (System.currentTimeMillis() < end) {
-            try {
-                attr = this.getAttribute(attributeName);
-                
-                if ( (attr == null && expectedValue == null) || (attr != null && attr.matches(expectedValue))) {
-                    return;
-                }
-            } catch(NoSuchElementException e) {
-                // Empty
-            }
-            try{
-                Thread.sleep(13);
-            } catch(Exception e) {
-                throw new RuntimeException(e);
-            }
-            
-        }
-
-        throw new RuntimeException("Element did not become visible within a reasonable time.");
+    public void waitForAttributeToBe(String attr, String value) {
+        Condition<ElementReference> cond = new Condition<ElementReference>(elementAttributeIs(attr, value), this);
+        cond.waitUntilFulfilled(10000, "Attribute "+attr+" did not change to "+value+" within a reasonable time.");
     }
 
-    public void waitForAttributeToChangeFrom(String attributeName, String currentValue) {
-        long end = System.currentTimeMillis() + 10000;
-        String attr;
-        while (System.currentTimeMillis() < end) {
-            try{
-                attr = this.getAttribute(attributeName);
-                if ( (attr == null && currentValue != null) || ( attr != null && !attr.matches(currentValue))) {
-                    return;
-                }
-            } catch(NoSuchElementException e) {
-                // Empty
-            }
-            try{
-                Thread.sleep(13);
-            } catch(Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        throw new RuntimeException("Element attribute did not change within a reasonable time.");
+    public void waitForAttributeToChangeFrom(String attr, String value) {
+        Condition<ElementReference> cond = new Condition<ElementReference>(not( elementAttributeIs(attr, value) ), this);
+        cond.waitUntilFulfilled(10000, "Attribute "+attr+" did not change from "+value+" within a reasonable time.");
     }
     
-    public void waitForTextToChangeFrom(String currentValue) {
-        long end = System.currentTimeMillis() + 10000;
-        while (System.currentTimeMillis() < end) {
-            if ( !this.getText().matches(currentValue)) {
-                return;
-            }
-            try{
-                Thread.sleep(13);
-            } catch(Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        throw new RuntimeException("Element attribute did not change within a reasonable time.");
+    public void waitForTextToChangeFrom(String value) {
+        Condition<ElementReference> cond = new Condition<ElementReference>(not( elementTextIs(value) ), this);
+        cond.waitUntilFulfilled(10000, "Element text did not change from "+value+" within a reasonable time.");
     }
     
-    public void waitForTextToChangeTo(String newValue) {
-        long end = System.currentTimeMillis() + 10000;
-        while (System.currentTimeMillis() < end) {
-            if ( this.getText().matches(newValue)) {
-                return;
-            }
-            try{
-                Thread.sleep(13);
-            } catch(Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        throw new RuntimeException("Element attribute did not change within a reasonable time.");
+    public void waitForTextToChangeTo(String value) {
+        Condition<ElementReference> cond = new Condition<ElementReference>( elementTextIs(value), this);
+        cond.waitUntilFulfilled(10000, "Element text did not change from "+value+" within a reasonable time.");
     }
 
 }

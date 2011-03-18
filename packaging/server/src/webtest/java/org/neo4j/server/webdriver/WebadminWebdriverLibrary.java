@@ -36,8 +36,8 @@ public class WebadminWebdriverLibrary extends WebdriverLibrary
         
         setServerUrl( serverFacade.getServerUrl() );
         
-        dataBrowserItemSubtitle = new ElementReference(d, By.xpath( "//div[@id='data-area']//div[@class='title']//p[@class='small']" ));
-        dataBrowserSearchField = new ElementReference(d, By.id( "data-console" ));
+        dataBrowserItemSubtitle = new ElementReference(this, By.xpath( "//div[@id='data-area']//div[@class='title']//p[@class='small']" ));
+        dataBrowserSearchField = new ElementReference(this, By.id( "data-console" ));
     }
     
     public void setServerUrl(String url) {
