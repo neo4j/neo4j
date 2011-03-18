@@ -34,6 +34,10 @@ include::{importdir}/neo4j-server-docs-jar/dev/index.txt[]
 
 :leveloffset: 1
 
+include::{importdir}/neo4j-lucene-index-docs-jar/dev/index.txt[]
+
+:leveloffset: 1
+
 include::{importdir}/neo4j-ha-docs-jar/dev/index.txt[]
 
 :leveloffset: 1
