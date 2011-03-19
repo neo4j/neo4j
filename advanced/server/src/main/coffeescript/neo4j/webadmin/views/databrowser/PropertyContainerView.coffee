@@ -47,12 +47,13 @@ define(
       valueChanged : (ev) =>
         id = @getPropertyIdForElement(ev.target)
         if $(ev.target).val() != @propertyContainer.getProperty(id).getValueAsJSON()
-          @propertyContainer.setNotSaved()
+          prop = @propertyContainer.setNotSaved()
 
       keyChangeDone : (ev) =>
         id = @getPropertyIdForElement(ev.target)
         @propertyContainer.setKey(id, $(ev.target).val())
         @saveChanges()
+        @updateErrorMessages()
 
       valueChangeDone : (ev) =>    
         id = @getPropertyIdForElement(ev.target)
@@ -63,6 +64,7 @@ define(
         
         @propertyContainer.setValue(id, el.val())
         @saveChanges()
+        @updateErrorMessages()
 
       deleteProperty : (ev) =>
         id = @getPropertyIdForElement(ev.target)
@@ -79,6 +81,16 @@ define(
         @propertyContainer.getItem().remove().then () ->
           window.location = "#/data/search/0"
       
+      updateErrorMessages : () =>
+        for row in $("ul.property-row",@el)
+          id =$(row).find("input.property-id").val()
+          prop = @propertyContainer.getProperty(id)
+          if prop
+            keyError = if prop.hasKeyError() then prop.getKeyError() else ""
+            valueError = if prop.hasValueError() then prop.getValueError() else ""
+            $(row).find(".property-key-wrap .error").html(keyError)
+            $(row).find(".property-value-wrap .error").html(valueError)
+
       updateSaveState : (ev) =>
         state = @propertyContainer.getSaveState()
         switch state
@@ -112,6 +124,13 @@ define(
         @renderProperties()
         return this
 
+      renderProperties : =>
+        $(".properties",@el).html(propertyEditorTemplate(
+          properties : @propertyContainer.get "propertyList"
+        ))
+
+        return this
+
       remove : =>
         @unbind()
         super()
@@ -121,13 +140,6 @@ define(
           @propertyContainer.unbind "remove:property", @renderProperties
           @propertyContainer.unbind "add:property", @renderProperties
           @propertyContainer.unbind "change:status", @updateSaveState
-
-      renderProperties : =>
-        $(".properties",@el).html(propertyEditorTemplate(
-          properties : @propertyContainer.get "propertyList"
-        ))
-
-        return this
 
       shouldBeConvertedToString : (val) =>
         try 

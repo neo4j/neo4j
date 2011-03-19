@@ -5,13 +5,15 @@
         %li.property-key-wrap
           .property-input-wrap
             %input.property-id(type="hidden" value="#{property.getLocalId()}")
-            :if property.hasKeyError()
-              .error= property.getKeyError()
+            .error
+              :if property.hasKeyError()
+                = property.getKeyError()
             %input.property-key(type="text" value="#{escape(property.getKey())}")
         %li.property-value-wrap
           .property-input-wrap
-            :if property.hasValueError()
-              .error= property.getValueError()
+            .error
+              :if property.hasValueError()
+                = property.getValueError()
             %input.property-value(type="text" value="#{property.getValueAsHtml()}")
         %li.property-actions-wrap
           .property-input-wrap
