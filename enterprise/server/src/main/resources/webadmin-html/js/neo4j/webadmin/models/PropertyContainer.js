@@ -1,22 +1,3 @@
-/*
- * Copyright (c) 2002-2011 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
 (function() {
   /*
   Copyright (c) 2002-2011 "Neo Technology,"
@@ -153,23 +134,24 @@
             "valueError": cleanedValue.error
           });
         }
-        return this.updatePropertyList(opts);
+        this.updatePropertyList(opts);
+        return property;
       };
       PropertyContainer.prototype.deleteProperty = function(id, opts) {
-        var property;
+        var potentialDuplicate, property;
         if (opts == null) {
           opts = {};
         }
-        if (this.noErrors({
-          ignore: id
-        })) {
-          this.setNotSaved();
-          property = this.getProperty(id);
-          delete this.properties[id];
-          this.getItem().removeProperty(property.getKey());
-          this.updatePropertyList(opts);
-          return this.trigger("remove:property");
+        this.setNotSaved();
+        property = this.getProperty(id);
+        delete this.properties[id];
+        this.getItem().removeProperty(property.getKey());
+        potentialDuplicate = this.getPropertyByKey(property.getKey());
+        if (potentialDuplicate) {
+          this.setKey(potentialDuplicate.getLocalId(), potentialDuplicate.getKey(), opts);
         }
+        this.updatePropertyList(opts);
+        return this.trigger("remove:property");
       };
       PropertyContainer.prototype.addProperty = function(key, value, opts) {
         var id;
@@ -202,7 +184,7 @@
         _ref = this.properties;
         for (id in _ref) {
           property = _ref[id];
-          if (property.getKey() === key && id !== ignoreId) {
+          if (property.getKey() === key && parseInt(id) !== parseInt(ignoreId)) {
             return property;
           }
         }
@@ -288,11 +270,11 @@
           val = JSON.parse(rawVal);
           if (val === null) {
             return {
-              error: "Null values are not allowed."
+              error: "Null values are not allowed. Please use strings, numbers or arrays."
             };
           } else if (this.isMap(val)) {
             return {
-              error: "Maps are not supported property values."
+              error: "Maps are not supported property values. Please use strings, numbers or arrays."
             };
           } else if (_(val).isArray() && !this.isValidArrayValue(val)) {
             return {
@@ -305,7 +287,7 @@
           }
         } catch (e) {
           return {
-            error: "This does not appear to be a valid JSON value."
+            error: "This does not appear to be a valid JSON value. Valid values are JSON strings, numbers or arrays. For instance 1.2, \"bob\" and [1,2,3]."
           };
         }
       };
