@@ -90,17 +90,22 @@ define(
           property.set "value": value
           property.set "valueError": cleanedValue.error
         @updatePropertyList(opts)
+        return property
 
       deleteProperty : (id, opts={}) =>
-        if @noErrors(ignore:id)
-          @setNotSaved()
+        @setNotSaved()
 
-          property = @getProperty(id)
-          delete(@properties[id])
+        property = @getProperty(id)
+        delete(@properties[id])
 
-          @getItem().removeProperty property.getKey()
-          @updatePropertyList(opts)
-          @trigger("remove:property")
+        @getItem().removeProperty property.getKey()
+
+        potentialDuplicate = @getPropertyByKey(property.getKey())
+        if potentialDuplicate
+          @setKey(potentialDuplicate.getLocalId(), potentialDuplicate.getKey(), opts)
+
+        @updatePropertyList(opts)
+        @trigger("remove:property")
 
       addProperty : (key="", value="", opts={}) =>
 
@@ -114,7 +119,7 @@ define(
 
       getPropertyByKey : (key, ignoreId=null) =>
         for id, property of @properties
-          if property.getKey() == key and id != ignoreId
+          if property.getKey() is key and parseInt(id) isnt parseInt(ignoreId)
             return property
 
         return null
@@ -172,15 +177,15 @@ define(
         try
           val = JSON.parse rawVal
           if  val == null
-            return error:"Null values are not allowed."
+            return error:"Null values are not allowed. Please use strings, numbers or arrays."
           else if @isMap val
-            return error:"Maps are not supported property values."
+            return error:"Maps are not supported property values. Please use strings, numbers or arrays."
           else if _(val).isArray() and not @isValidArrayValue val
             return error:"Only arrays with one type of values, and only primitive types, is allowed."
           else
             return value:val
         catch e
-          return error:"This does not appear to be a valid JSON value."
+          return error:"This does not appear to be a valid JSON value. Valid values are JSON strings, numbers or arrays. For instance 1.2, \"bob\" and [1,2,3]."
 
 
       isMap : (val) => 
