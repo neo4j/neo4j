@@ -1,22 +1,3 @@
-/*
- * Copyright (c) 2002-2011 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
 (function() {
   /*
   Copyright (c) 2002-2011 "Neo Technology,"
@@ -49,14 +30,15 @@
     return PropertyContainerView = (function() {
       function PropertyContainerView() {
         this.shouldBeConvertedToString = __bind(this.shouldBeConvertedToString, this);;
-        this.renderProperties = __bind(this.renderProperties, this);;
         this.unbind = __bind(this.unbind, this);;
         this.remove = __bind(this.remove, this);;
+        this.renderProperties = __bind(this.renderProperties, this);;
         this.render = __bind(this.render, this);;
         this.setDataModel = __bind(this.setDataModel, this);;
         this.getPropertyIdForElement = __bind(this.getPropertyIdForElement, this);;
         this.setSaveState = __bind(this.setSaveState, this);;
         this.updateSaveState = __bind(this.updateSaveState, this);;
+        this.updateErrorMessages = __bind(this.updateErrorMessages, this);;
         this.deleteItem = __bind(this.deleteItem, this);;
         this.saveChanges = __bind(this.saveChanges, this);;
         this.addProperty = __bind(this.addProperty, this);;
@@ -89,17 +71,18 @@
         }
       };
       PropertyContainerView.prototype.valueChanged = function(ev) {
-        var id;
+        var id, prop;
         id = this.getPropertyIdForElement(ev.target);
         if ($(ev.target).val() !== this.propertyContainer.getProperty(id).getValueAsJSON()) {
-          return this.propertyContainer.setNotSaved();
+          return prop = this.propertyContainer.setNotSaved();
         }
       };
       PropertyContainerView.prototype.keyChangeDone = function(ev) {
         var id;
         id = this.getPropertyIdForElement(ev.target);
         this.propertyContainer.setKey(id, $(ev.target).val());
-        return this.saveChanges();
+        this.saveChanges();
+        return this.updateErrorMessages();
       };
       PropertyContainerView.prototype.valueChangeDone = function(ev) {
         var el, id;
@@ -109,7 +92,8 @@
           el.val('"' + el.val() + '"');
         }
         this.propertyContainer.setValue(id, el.val());
-        return this.saveChanges();
+        this.saveChanges();
+        return this.updateErrorMessages();
       };
       PropertyContainerView.prototype.deleteProperty = function(ev) {
         var id;
@@ -127,6 +111,18 @@
         return this.propertyContainer.getItem().remove().then(function() {
           return window.location = "#/data/search/0";
         });
+      };
+      PropertyContainerView.prototype.updateErrorMessages = function() {
+        var id, keyError, prop, row, valueError, _i, _len, _ref, _results;
+        _ref = $("ul.property-row", this.el);
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          row = _ref[_i];
+          id = $(row).find("input.property-id").val();
+          prop = this.propertyContainer.getProperty(id);
+          _results.push(prop ? (keyError = prop.hasKeyError() ? prop.getKeyError() : "", valueError = prop.hasValueError() ? prop.getValueError() : "", $(row).find(".property-key-wrap .error").html(keyError), $(row).find(".property-value-wrap .error").html(valueError)) : void 0);
+        }
+        return _results;
       };
       PropertyContainerView.prototype.updateSaveState = function(ev) {
         var state;
@@ -169,6 +165,12 @@
         this.renderProperties();
         return this;
       };
+      PropertyContainerView.prototype.renderProperties = function() {
+        $(".properties", this.el).html(propertyEditorTemplate({
+          properties: this.propertyContainer.get("propertyList")
+        }));
+        return this;
+      };
       PropertyContainerView.prototype.remove = function() {
         this.unbind();
         return PropertyContainerView.__super__.remove.call(this);
@@ -179,12 +181,6 @@
           this.propertyContainer.unbind("add:property", this.renderProperties);
           return this.propertyContainer.unbind("change:status", this.updateSaveState);
         }
-      };
-      PropertyContainerView.prototype.renderProperties = function() {
-        $(".properties", this.el).html(propertyEditorTemplate({
-          properties: this.propertyContainer.get("propertyList")
-        }));
-        return this;
       };
       PropertyContainerView.prototype.shouldBeConvertedToString = function(val) {
         try {
