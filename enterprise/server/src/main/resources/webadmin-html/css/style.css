@@ -361,11 +361,12 @@ body {
 .headline-bar .tabs li a, .headline-bar .tabs li button {
   background:none;
   height:100%;
-  width:100px;
+  width:70px;
+  padding:0;
   border:0;
   color:#547939;
   cursor:pointer;
-  font-size:12px;
+  font-size:11px;
   height: 32px;
 }
 .headline-bar .tabs li a:hover, .headline-bar .tabs li button:hover,
