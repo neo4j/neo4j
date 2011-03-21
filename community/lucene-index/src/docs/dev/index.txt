@@ -8,7 +8,7 @@ Indexing in Neo4j can be done in two fundamentally different ways:
 
 . The database has a _natural index_ consisting of its relationships of different types.
   For example a tree structure can be layered on top of the data and used for index lookups performed by a traverser.
-. Separate index engines can be used, _Apache Lucene_ being the default backend, included with Neo4j.
+. Separate index engines can be used, http://lucene.apache.org/java/{lucene-version}/index.html[Apache Lucene] being the default backend, included with Neo4j.
 
 This chapter will go into some detail on how to use the second type of indexing.
 
@@ -16,11 +16,11 @@ This chapter will go into some detail on how to use the second type of indexing.
 == Introduction ==
 
 Indexing operations are part of the http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/package-summary.html[Neo4j index API].
-Each index is tied to a unique, user-specified name, for example "persons" and the index framework is capable of indexing both nodes and relationships.
+Each index is tied to a unique, user-specified name, for example "persons" and can index either http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Node.html[nodes] or http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Relationship.html[relationships].
 
-Index support is provided by the +neo4j-lucene-index+ component.
+The default index implementation is provided by the +neo4j-lucene-index+ component.
 This component is included in the standard Neo4j download or can be downloaded separately from http://repo1.maven.org/maven2/org/neo4j/neo4j-lucene-index/ .
-For Maven users, it has the coordinates +org.neo4j:neo4j-lucene-index+ and should be used together with the same version +org.neo4j:neo4j-kernel+.
+For Maven users, it has the coordinates +org.neo4j:neo4j-lucene-index+ and should be used together with the same version as +org.neo4j:neo4j-kernel+.
 Both components are included transitively by the +org.neo4j:neo4j:pom+ artifact which makes it simple to keep the versions in sync.
 
 .Transactions
@@ -42,7 +42,9 @@ tag=createIndices
 ----
 
 This will create two node indices and one relationship index with default configuration.
-Note that +RelationshipIndex+ extends +Index<Relationship>+ by providing support for limiting a search to relationships with a specific start and/or end node.
+See <<indexing-relationships>> for more information specific to relationship indices.
+
+See <<indexing-create-advanced>> for how to create _fulltext_ indices.
 
 You can also check if an index exists like this:
 
@@ -68,7 +70,7 @@ tag=delete
 ----
 
 Note that the actual deletion of the index is made during the commit of _the surrounding transaction_.
-Calls made to such an index instance after +delete()+ has been called are invalid inside that transaction as well as outside (if the transaction is successful), but valid again if the transaction is rolled back.
+Calls made to such an index instance after http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html#delete%28%29[delete()] has been called are invalid inside that transaction as well as outside (if the transaction is successful), but valid again if the transaction is rolled back.
 
 
 [[indexing-add]]
@@ -103,7 +105,7 @@ image::indexing-imdb-example.png[scaledwidth="50%", alt="Indexing example node s
 [[indexing-remove]]
 == Remove ==
 
-Removing from an index is similar to adding, but can be done by supplying one of the following combinations of arguments:
+http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html#remove%28T,%20java.lang.String,%20java.lang.Object%29[Removing] from an index is similar to adding, but can be done by supplying one of the following combinations of arguments:
 
 * entity
 * entity, key
@@ -122,7 +124,7 @@ tag=removeNodeFromIndex
 
 IMPORTANT: To update an index entry, remove the old one and add a new.
 
-Remember that a node or relationship can be associated with any number of key-value pairs in an index?
+Remember that a node or relationship can be associated with any number of key-value pairs in an index.
 This means that you can index a node or relationship with many key-value pairs having the same key.
 With this background we realize that it's not enough to just index the new value (in the case where a property value changes and you'd like to update the index with the new value).
 Instead, you'll have to remove the old value as well.
@@ -140,7 +142,7 @@ tag=update
 [[indexing-search]]
 == Search ==
 
-An index can be searched in two ways, +get+ and +query+.
+An index can be searched in two ways, http://components.neo4j.org/neo4j{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html#get%28java.lang.String,%20java.lang.Object%29[get] and http://components.neo4j.org/neo4j{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html#query%28java.lang.String,%20java.lang.Object%29[query].
 The +get+ method will return exact matches to the given key-value pair, whereas +query+ exposes querying capabilities directly from the backend used by the index.
 For example the http://lucene.apache.org/java/{lucene-version}/queryparsersyntax.html[Lucene query syntax] can be used directly with the default indexing backend.
 
@@ -156,7 +158,7 @@ source=examples/ImdbExampleTest.java
 tag=getSingleNode
 ----
 
-+IndexHits+ is an +Iterable+ with some added useful methods on it, for example +getSingle()+ which returns the first and only item from the result iterator, or +null+ if there wasn't any hit.
+http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/IndexHits.html[IndexHits] is an +Iterable+ with some added useful methods on it, for example http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/IndexHits.html#getSingle%28%29[getSingle()] which returns the first and only item from the result iterator, or +null+ if there wasn't any hit.
 
 Here's how to get a single relationship by exact matching and retrieve the start and end nodes of it:
 
@@ -176,7 +178,7 @@ source=examples/ImdbExampleTest.java
 tag=getRelationships
 ----
 
-IMPORTANT: In case you're not iterating through all the hits, +IndexHits.close()+ must be called.
+IMPORTANT: In case you're not iterating through all the hits, http://components.neo4j.org/neo4j{neo4j-version}/apidocs/org/neo4j/graphdb/index/IndexHits.html#close%28%29[IndexHits.close()] must be called.
 
 [[indexing-search-query]]
 === Query ===
@@ -213,7 +215,7 @@ CAUTION: You can't have _any whitespace_ in the search term with this syntax.
 == Relationship indices ==
 
 An index for relationships is just like an index for nodes, but with some extra methods for including start/end node in the queries.
-These extra methods reside in the +RelationshipIndex+ interface which extends the +Index<Relationship>+ interface.
+These extra methods reside in the http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/RelationshipIndex.html[RelationshipIndex] interface which extends the http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html[Index<Relationship>] interface.
 
 Example of querying a relationship index:
 
@@ -239,7 +241,7 @@ An example is time series data represented as a relationship per occurrence.
 [[indexing-scores]]
 == Scores ==
 
-The +IndexHits+ interface exposes scoring so that the index can communicate scores for the hits.
+The +IndexHits+ interface exposes http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/IndexHits.html#currentScore%28%29[scoring] so that the index can communicate scores for the hits.
 Note that the result is not sorted by the score unless you specify that.
 See <<indexing-lucene-sort>> for how to sort by score.
 
@@ -276,10 +278,10 @@ The +provider+ configuration key is interpreted by Neo4j, but any other configur
 |========================================================
 | Parameter                 | Possible values   | Effect
 | type | +exact+, +fulltext+ |
-  +exact+ is the default and uses a Lucene keyword analyzer.
+  +exact+ is the default and uses a Lucene http://lucene.apache.org/java/{lucene-version}/api/core/org/apache/lucene/analysis/KeywordAnalyzer.html[keyword analyzer].
   +fulltext+ uses a white-space tokenizer in its analyzer.
 | to_lower_case | `true`, `false` | This parameter goes together with +type+: +fulltext+ and converts values to lower case during both additions and querying, making the index case insensitive. Defaults to `true`.
-| analyzer | the full class name of an +Analyzer+ | Overrides the +type+ so that a custom analyzer can be used.
+| analyzer | the full class name of an http://lucene.apache.org/java/{lucene-version}/api/core/org/apache/lucene/analysis/Analyzer.html[Analyzer] | Overrides the +type+ so that a custom analyzer can be used.
   Note: +to_lower_case+ still affects lowercasing of string queries. 
   If the custom analyzer uppercases the indexed tokens, string queries will not match as expected. 
 |========================================================
@@ -292,7 +294,7 @@ The +provider+ configuration key is interpreted by Neo4j, but any other configur
 === Numeric ranges ===
 
 Lucene supports smart indexing of numbers, querying for ranges and sorting such results, and so does its backend for Neo4j.
-To mark a value so that it gets indexes as a numeric value, make use of the +ValueContext+ class, like this:
+To mark a value so that it gets indexes as a numeric value, make use of the http://components.neo4j.org/neo4j-lucene-index/{neo4j-version}/apidocs/org/neo4j/index/lucene/ValueContext.html[ValueContext] class, like this:
 
 [snippet,java]
 ----
@@ -300,6 +302,8 @@ component=neo4j-lucene-index
 source=examples/ImdbExampleTest.java
 tag=numericRange
 ----
+
+NOTE: Values that are indexed numerically must be queried using http://lucene.apache.org/java/{lucene-version}/api/core/org/apache/lucene/search/NumericRangeQuery.html[NumericRangeQuery].
 
 ////
 // example using dates
@@ -313,12 +317,11 @@ long endDate = ...;
 index.query( NumericRangeQuery.newLongRange( "date", startDate, endDate, true, true ) );
 ////
 
+
 [[indexing-lucene-sort]]
 === Sorting ===
 
-Sorting is something Lucene does well and that is also exposed in the index backend, through the QueryContext class:
-
-//index.query( new QueryContext( "name:*sson AND title:Hacker" ).sort( "name", "title" ) );
+Sorting is something Lucene does well and that is also exposed in the index backend, through the http://components.neo4j.org/neo4j-lucene-index/{neo4j-version}/apidocs/org/neo4j/index/lucene/QueryContext.html[QueryContext] class:
 
 [snippet,java]
 ----
@@ -327,7 +330,7 @@ source=examples/ImdbExampleTest.java
 tag=sortedResult
 ----
 
-To sort the results by relevance (score) do like this:
+To sort the results by score do like this:
 
 [snippet,java]
 ----
@@ -347,6 +350,8 @@ component=neo4j-lucene-index
 source=examples/ImdbExampleTest.java
 tag=termQuery
 ----
+
+Note that the http://lucene.apache.org/java/{lucene-version}/api/core/org/apache/lucene/search/TermQuery.html[TermQuery] is basically the same thing as using the +get+ method on the index.
 
 This is how to perform _wildcard_ searches using Lucene Query Objects:
 
@@ -371,11 +376,12 @@ source=examples/ImdbExampleTest.java
 tag=compoundQueries
 ----
 
+CAUTION: Compound queries can't search across committed index entries and those who haven't got committed yet at the same time.
 
 [[indexing-lucene-default-operator]]
 === Default operator ===
 
-The default operator, that is whether +AND+ or +OR+ is used in between different terms in a query is +OR+. Changing that behavior is also done via the +QueryContext+ class:
+The default operator, that is whether +AND+ or +OR+ is used in between different terms in a query is +OR+. Changing that behavior is also done via the http://components.neo4j.org/neo4j-lucene-index/{neo4j-version}/apidocs/org/neo4j/index/lucene/QueryContext.html[QueryContext] class:
 
 [snippet,java]
 ----
@@ -405,7 +411,7 @@ CAUTION: This setting is not persisted after shutting down the database.
 == Batch insertion ==
 
 Neo4j has a batch insertion mode intended for initial imports, which must run in a single thread and bypasses transactions and other checks in favor of performance.
-Indexing during batch insertion is done using +BatchInserterIndex+ which are provided via +BatchInserterIndexProvider+.
+Indexing during batch insertion is done using http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/BatchInserterIndex.html[BatchInserterIndex] which are provided via http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/BatchInserterIndexProvider.html[BatchInserterIndexProvider].
 An example:
 
 [snippet,java]
@@ -422,8 +428,8 @@ The configuration parameters are the same as mentioned in <<indexing-create-adva
 
 Here are some pointers to get the most performance out of +BatchInserterIndex+:
 
-* Try to avoid flushing too often because each flush will result in all additions (since last flush) to be visible to the querying methods, and publishing those changes can be a performance penalty.
+* Try to avoid http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/BatchInserterIndex.html#flush%28%29[flushing] too often because each flush will result in all additions (since last flush) to be visible to the querying methods, and publishing those changes can be a performance penalty.
 * Have (as big as possible) phases where one phase is either only writes or only reads, and don't forget to flush after a write phase so that those changes becomes visible to the querying methods.
-* Enable caching for keys you know you're going to do lookups for later on to increase performance significantly (insertion performance may slow down slightly).
+* Enable http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/BatchInserterIndex.html#setCacheCapacity%28java.lang.String,%20int%29[caching] for keys you know you're going to do http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/BatchInserterIndex.html#get%28java.lang.String,%20java.lang.Object%29[lookups] for later on to increase performance significantly (insertion performance may slow down slightly).
     
 
