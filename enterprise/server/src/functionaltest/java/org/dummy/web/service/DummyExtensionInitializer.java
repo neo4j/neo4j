@@ -17,30 +17,45 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server;
+package org.dummy.web.service;
 
 import org.apache.commons.configuration.Configuration;
-import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.database.Database;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.server.plugins.Injectable;
-import org.neo4j.server.plugins.PluginManager;
+import org.neo4j.server.plugins.UnmanagedExtensionLifecycle;
 
 import java.util.Collection;
-import java.util.List;
-import java.util.Set;
+import java.util.Collections;
 
-public interface NeoServer {
-    void start();
+public class DummyExtensionInitializer implements UnmanagedExtensionLifecycle
+{
+    public DummyExtensionInitializer()
+    {
+        System.out.println();
+    }
 
-    Configuration getConfiguration();
+    @Override
+    public Collection<Injectable<?>> start( GraphDatabaseService graphDatabaseService, Configuration config )
+    {
+        return Collections.<Injectable<?>>singleton( new Injectable<Long>()
+        {
+            @Override
+            public Long getValue()
+            {
+                return 42L;
 
-    void stop();
+            }
 
-    Database getDatabase();
+            @Override
+            public Class<Long> getType()
+            {
+                return Long.class;
+            }
+        } );
+    }
 
-    Configurator getConfigurator();
-
-    PluginManager getExtensionManager();
-
-    Collection<Injectable<?>> getInjectables( List<String> packageNames );
+    @Override
+    public void stop()
+    {
+    }
 }

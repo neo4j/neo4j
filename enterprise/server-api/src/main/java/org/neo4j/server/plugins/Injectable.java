@@ -17,31 +17,17 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.dummy.web.service;
+package org.neo4j.server.plugins;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+public interface Injectable<T>
+{
+    /**
+     * Get the injectable value.
+     *
+     * @return the injectable value
+     */
+    T getValue();
 
+    Class<T> getType();
 
-@Path("/")
-public class DummyThirdPartyWebService {
-
-    public static final String DUMMY_WEB_SERVICE_MOUNT_POINT = "/dummy";
-
-    @GET
-    @Produces(MediaType.TEXT_PLAIN)
-    public Response sayHello() {
-        return Response.ok().entity("hello").build();
-    }
-
-    @GET
-    @Path("sayFortyTwo")
-    @Produces(MediaType.TEXT_PLAIN)
-    public Response sayFortyTwo(@Context Long fortyTwo) {
-        return Response.ok().entity("hello "+fortyTwo).build();
-    }
 }
