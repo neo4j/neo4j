@@ -46,8 +46,17 @@ end
 When /^I unpack the archive into Neo4j Home$/ do
   full_archive_name= File.expand_path(archive_name)
   pushd neo4j.home
-  `tar xzf #{full_archive_name} --strip-components 1`
-  fail 'unpacking failed' unless $?.to_i == 0
+
+  if (current_platform.unix?)
+    `tar xzf #{full_archive_name} --strip-components 1`
+    fail 'unpacking failed' unless $?.to_i == 0
+  elsif  current_platform.windows?
+    unzip= File.expand_path("../../support/unzip.vbs", __FILE__)
+    puts `#{unzip} #{full_archive_name} #{neo4j.home}`
+    fail 'unpacking failed' unless $?.to_i == 0
+  else
+    fail 'platform not supported'
+  end
   popd
 end
 
@@ -56,8 +65,7 @@ Then /^Neo4j Home should contain a Neo4j Server installation$/ do
 end
 
 Then /^the Neo4j version of the installation should be correct$/ do
-
-  (Dir.entries (neo4j.home+"/lib") + Dir.entries (neo4j.home+"/system/lib")).each do |lib|
+  (Dir.entries(neo4j.home+"/lib") + Dir.entries(neo4j.home+"/system/lib")).each do |lib|
     if lib =~ /^neo4j.*\.jar$/
       fail lib+" does not contain the Neo4j-version" unless lib =~ /#{neo4j.version}/;
     end
