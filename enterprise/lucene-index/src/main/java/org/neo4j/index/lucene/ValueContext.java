@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.index.impl.lucene;
+package org.neo4j.index.lucene;
 
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.index.Index;
@@ -28,12 +28,20 @@ import org.neo4j.graphdb.index.Index;
  */
 public class ValueContext
 {
-    final Object value;
-    boolean indexNumeric;
+    private final Object value;
+    private boolean indexNumeric;
 
     public ValueContext( Object value )
     {
         this.value = value;
+    }
+    
+    /**
+     * @return the value object specified in the constructor.
+     */
+    public Object getValue()
+    {
+        return value;
     }
 
     /**
@@ -52,7 +60,13 @@ public class ValueContext
         return this;
     }
     
-    Object getCorrectValue()
+    /**
+     * Returns the string representation of the value given in the constructor,
+     * or the unmodified value if {@link #indexNumeric()} has been called.
+     * 
+     * @return 
+     */
+    public Object getCorrectValue()
     {
         return this.indexNumeric ? this.value : this.value.toString();
     }

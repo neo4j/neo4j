@@ -47,6 +47,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.neo4j.helpers.Pair;
+import org.neo4j.index.lucene.QueryContext;
 
 class FullTxData extends ExactTxData
 {
@@ -193,8 +194,8 @@ class FullTxData extends ExactTxData
 
         try
         {
-            Sort sorting = contextOrNull != null ? contextOrNull.sorting : null;
-            boolean prioritizeCorrectness = contextOrNull == null || !contextOrNull.tradeCorrectnessForSpeed;
+            Sort sorting = contextOrNull != null ? contextOrNull.getSorting() : null;
+            boolean prioritizeCorrectness = contextOrNull == null || !contextOrNull.getTradeCorrectnessForSpeed();
             query = includeOrphans( query );
             Hits hits = new Hits( searcher( prioritizeCorrectness ), query, null, sorting, prioritizeCorrectness );
             Collection<Long> result = new ArrayList<Long>();
@@ -328,7 +329,7 @@ class FullTxData extends ExactTxData
     @Override
     Pair<Searcher, TxData> asSearcher( QueryContext context )
     {
-        boolean refresh = context == null || !context.tradeCorrectnessForSpeed;
+        boolean refresh = context == null || !context.getTradeCorrectnessForSpeed();
         return Pair.of( (Searcher) searcher( refresh ), (TxData) this );
     }
 }

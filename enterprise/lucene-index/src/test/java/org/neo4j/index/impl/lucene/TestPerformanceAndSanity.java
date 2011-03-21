@@ -37,6 +37,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.index.lucene.QueryContext;
 
 @Ignore( "These are performance and sanity tests which can't really be executed as automated tests " +
         "for example a long running test which checks so that files aren't kept open" )
