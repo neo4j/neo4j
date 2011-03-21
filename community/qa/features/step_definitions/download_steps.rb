@@ -1,4 +1,5 @@
 require 'net/http'
+require 'time'
 
 Given /^a platform supported by Neo4j$/ do
   fail "unsupported platform #{current_platform}" unless current_platform.supported?
@@ -22,8 +23,20 @@ Given /^a web site at host "([^"]*)"$/ do |host|
 end
 
 When /^I download Neo4j \(if I haven't already\)$/ do
-  `wget -c -O #{archive_name} #{neo4j.download_host}/#{archive_name}`
-  fail 'download did not succeed' unless $?.to_i == 0
+  server = Net::HTTP.new(neo4j.download_host, 80)
+  head = server.head("/"+archive_name)
+  server_time = Time.httpdate(head['last-modified'])
+  if (!File.exists?(archive_name) || server_time != File.mtime(archive_name))
+    puts archive_name+" missing or newer version on server - downloading"
+    server.get2("/"+archive_name) do |res|
+      open(archive_name, "wb") do |file|
+        file.write(res.body)
+      end
+    end
+    File.utime(0, server_time, archive_name)
+  else
+    puts archive_name+" not modified - download skipped"
+  end
 end
 
 Then /^the working directory should contain a Neo4j archive$/ do
