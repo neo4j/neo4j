@@ -5,11 +5,11 @@
 		<ul class="mor_info_list">
 			<li>
 				<h3>Data url</h3>
-				<p><a href="{ $T.server.url }">{ $T.server.url }</a></p>
+				<p id="mor_monitor_serverurl"><a href="{ $T.server.url }">{ $T.server.url }</a></p>
 			</li>
 			<li>
 				<h3>Kernel version</h3>
-				<p>{ $T.kernelInfo.getAttribute("KernelVersion").value }</p>
+				<p id="mor_monitor_kernelversion">{ $T.kernelInfo.getAttribute("KernelVersion").value }</p>
 			</li>
 		</ul>
 		<!--div class="mor_module_foldout">

@@ -1,0 +1,108 @@
+###
+Copyright (c) 2002-2011 "Neo Technology,"
+Network Engine for Objects in Lund AB [http://neotechnology.com]
+
+This file is part of Neo4j.
+
+Neo4j is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <http://www.gnu.org/licenses/>.
+###
+
+define(
+  ['neo4j/webadmin/ui/LineChart'
+   'neo4j/webadmin/views/View',
+   'neo4j/webadmin/templates/dashboard/charts','lib/backbone'], 
+  (LineChart, View, template) ->
+  
+    class DashboardChartsView extends View
+      
+      template : template
+
+      events : 
+        'click .switch-dashboard-chart' : 'switchChartClicked'
+        'click .switch-dashboard-zoom' : 'switchZoomClicked'
+      
+      initialize : (opts) =>
+        @statistics = opts.statistics
+        @dashboardState = opts.dashboardState
+        @bind()
+
+      render : =>
+        $(@el).html @template()
+
+        @chart = new LineChart($("#monitor-chart"))
+        @redrawChart()
+
+        @highlightChartSwitchTab @dashboardState.getChartKey()
+        @highlightZoomTab @dashboardState.getZoomLevelKey()
+
+        return this
+
+      redrawChart : =>
+        if @chart?
+          chartDef = @dashboardState.getChart()
+          zoomLevel = @dashboardState.getZoomLevel()
+
+          metricKeys = for v in chartDef.layers
+            v.key
+
+          metrics = @statistics.getMetrics(metricKeys)
+          
+          data = for i in [0...metrics.length]
+            _.extend({ data:metrics[i] }, chartDef.layers[i] )
+
+          xmin = 0
+          if metrics[0].length > 0
+            xmin = metrics[0][metrics[0].length-1][0] - zoomLevel.xSpan
+          
+          settings = 
+            xaxis : 
+              min : xmin
+              mode : "time"
+              timeformat : zoomLevel.timeformat
+
+          @chart.render data, _.extend(chartDef.chartSettings || {}, settings)
+
+      switchChartClicked : (ev) =>
+        @highlightChartSwitchTab $(ev.target).val()
+        @dashboardState.setChartByKey $(ev.target).val()
+      
+      switchZoomClicked : (ev) =>
+        @highlightZoomTab $(ev.target).val()
+        @dashboardState.setZoomLevelByKey $(ev.target).val()
+
+      highlightChartSwitchTab : (tabKey) =>
+        $("button.switch-dashboard-chart", @el).removeClass("current")
+        $("button.switch-dashboard-chart[value='#{tabKey}']", @el).addClass("current")
+
+      highlightZoomTab : (tabKey) =>
+        $("button.switch-dashboard-zoom", @el).removeClass("current")
+        $("button.switch-dashboard-zoom[value='#{tabKey}']", @el).addClass("current")
+
+      remove : =>
+        @unbind()
+        if @chart?        
+          @chart.remove()
+        super()
+
+      bind : =>
+        @dashboardState.bind "change:chart", @redrawChart
+        @dashboardState.bind "change:zoomLevel", @redrawChart
+        @statistics.bind "change:metrics", @redrawChart
+
+      unbind : =>
+        @dashboardState.unbind "change:chart", @redrawChart
+        @dashboardState.unbind "change:zoomLevel", @redrawChart
+        @statistics.unbind "change:metrics", @redrawChart
+
+)
