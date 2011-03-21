@@ -41,26 +41,36 @@ import java.rmi.server.RemoteObject;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
+import com.sun.jdi.ReferenceType;
+import com.sun.jdi.event.EventQueue;
+import com.sun.jdi.event.LocatableEvent;
+import com.sun.jdi.request.ClassPrepareRequest;
+
+@SuppressWarnings( "serial" )
 public abstract class SubProcess<T, P> implements Serializable
 {
     private interface NoInterface
     {
+        // Used when no interface is declared
     }
 
     private final Class<T> t;
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings( { "unchecked", "rawtypes" } )
     public SubProcess()
     {
         if ( getClass().getSuperclass() != SubProcess.class )
         {
-            throw new ClassCastException( SubProcess.class.getName()
-                                          + " may only be extended one level " );
+            throw new ClassCastException( SubProcess.class.getName() + " may only be extended one level " );
         }
         Class<?> me = getClass();
         while ( me.getSuperclass() != SubProcess.class )
@@ -81,7 +91,7 @@ public abstract class SubProcess<T, P> implements Serializable
         {
             throw new ClassCastException( "Illegal type parameter " + type );
         }
-        if ( t == Object.class ) t = (Class<T>) (Class) NoInterface.class;
+        if ( t == Object.class ) t = (Class) NoInterface.class;
         if ( !t.isInterface() )
         {
             throw new ClassCastException( t + " is not an interface" );
@@ -92,13 +102,14 @@ public abstract class SubProcess<T, P> implements Serializable
         }
         else
         {
-            throw new ClassCastException( getClass().getName()
-                                          + " must implement declared interface " + t );
+            throw new ClassCastException( getClass().getName() + " must implement declared interface " + t );
         }
     }
 
-    public T start( P parameter )
+    public T start( P parameter, SubProcessBreakPoint... breakpoints )
     {
+        DebuggerConnector debugger = null;
+        if ( breakpoints != null && breakpoints.length != 0 ) debugger = new DebuggerConnector( breakpoints );
         DispatcherTrapImpl callback;
         try
         {
@@ -108,25 +119,199 @@ public abstract class SubProcess<T, P> implements Serializable
         {
             throw new RuntimeException( "Failed to create local RMI endpoint.", e );
         }
-        ProcessBuilder builder = new ProcessBuilder( "java", "-cp",
-                System.getProperty( "java.class.path" ), SubProcess.class.getName(),
-                serialize( callback ) );
         Process process;
+        String pid;
+        synchronized ( debugger != null ? DebuggerConnector.class : new Object() )
+        {
+            if ( debugger != null )
+            {
+                process = start( "java", debugger.listen(), "-cp", System.getProperty( "java.class.path" ),
+                        SubProcess.class.getName(),
+                        serialize( callback ) );
+            }
+            else
+            {
+                process = start( "java", "-cp", System.getProperty( "java.class.path" ), SubProcess.class.getName(),
+                        serialize( callback ) );
+            }
+            pid = getPid( process );
+            pipe( "[" + toString() + ":" + pid + "] ", process.getErrorStream(), System.err );
+            pipe( "[" + toString() + ":" + pid + "] ", process.getInputStream(), System.out );
+            if ( debugger != null )
+            {
+                debugger.connect( toString() + ":" + pid );
+            }
+        }
+        Dispatcher dispatcher = callback.get( process );
+        if ( dispatcher == null ) throw new IllegalStateException( "failed to start sub process" );
+        return t.cast( Proxy.newProxyInstance( t.getClassLoader(), new Class[] { t },//
+                live( new Handler( t, dispatcher, process, "<" + toString() + ":" + pid + ">" ) ) ) );
+    }
+
+    private static Process start( String... args )
+    {
+        ProcessBuilder builder = new ProcessBuilder( args );
         try
         {
-            process = builder.start();
+            return builder.start();
         }
         catch ( IOException e )
         {
             throw new RuntimeException( "Failed to start sub process", e );
         }
-        String pid = getPid( process );
-        pipe( "[" + toString() + ":" + pid + "] ", process.getErrorStream(), System.err );
-        pipe( "[" + toString() + ":" + pid + "] ", process.getInputStream(), System.out );
-        Dispatcher dispatcher = callback.get( process );
-        if ( dispatcher == null ) throw new IllegalStateException( "failed to start sub process" );
-        return t.cast( Proxy.newProxyInstance( t.getClassLoader(), new Class[] { t },//
-                live( new Handler( t, dispatcher, process, "<" + toString() + ":" + pid + ">" ) ) ) );
+    }
+
+    @SuppressWarnings( "restriction" )
+    private static class DebuggerConnector
+    {
+        private static final com.sun.jdi.connect.ListeningConnector connector;
+        static
+        {
+            com.sun.jdi.connect.ListeningConnector first = null;
+            for ( com.sun.jdi.connect.ListeningConnector conn : com.sun.jdi.Bootstrap.virtualMachineManager().listeningConnectors() )
+            {
+                first = conn;
+                break;
+            }
+            connector = first;
+        }
+        private final Map<String, List<SubProcessBreakPoint>> breakpoints = new HashMap<String, List<SubProcessBreakPoint>>();
+        private final Map<String, ? extends com.sun.jdi.connect.Connector.Argument> args;
+
+        DebuggerConnector( SubProcessBreakPoint[] breakpoints )
+        {
+            this.args = connector.defaultArguments();
+            for ( SubProcessBreakPoint breakpoint : breakpoints )
+            {
+                List<SubProcessBreakPoint> list = this.breakpoints.get( breakpoint.type );
+                if ( list == null )
+                    this.breakpoints.put( breakpoint.type, list = new ArrayList<SubProcessBreakPoint>() );
+                list.add( breakpoint );
+            }
+        }
+
+        String listen()
+        {
+            try
+            {
+                return String.format( "-agentlib:jdwp=transport=%s,address=%s", connector.transport().name(),
+                        connector.startListening( args ) );
+            }
+            catch ( Exception e )
+            {
+                throw new UnsupportedOperationException( "Debugger not supported", e );
+            }
+        }
+
+        void connect( String string )
+        {
+            final com.sun.jdi.VirtualMachine vm;
+            try
+            {
+                vm = connector.accept( args );
+                connector.stopListening( args );
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( "Debugger connection failure", e );
+            }
+            com.sun.jdi.request.EventRequestManager erm = vm.eventRequestManager();
+            TYPES: for ( Map.Entry<String, List<SubProcessBreakPoint>> entry : breakpoints.entrySet() )
+            {
+                for ( com.sun.jdi.ReferenceType type : vm.classesByName( entry.getKey() ) )
+                {
+                    if ( type.name().equals( entry.getKey() ) )
+                    {
+                        for ( SubProcessBreakPoint breakpoint : entry.getValue() )
+                        {
+                            breakpoint.setup( type );
+                        }
+                        continue TYPES;
+                    }
+                }
+                ClassPrepareRequest prepare = erm.createClassPrepareRequest();
+                prepare.addClassFilter( entry.getKey() );
+                prepare.enable();
+            }
+            new Thread( new DebugDispatch( vm.eventQueue(), breakpoints ), "Debugger: [" + string + "]" ).start();
+        }
+    }
+
+    @SuppressWarnings( "restriction" )
+    private static class DebugDispatch implements Runnable
+    {
+        private final EventQueue queue;
+        private final Map<String, List<SubProcessBreakPoint>> breakpoints;
+
+        DebugDispatch( com.sun.jdi.event.EventQueue queue, Map<String, List<SubProcessBreakPoint>> breakpoints )
+        {
+            this.queue = queue;
+            this.breakpoints = breakpoints;
+        }
+
+        @Override
+        public void run()
+        {
+            for ( ;; )
+            {
+                final com.sun.jdi.event.EventSet events;
+                try
+                {
+                    events = queue.remove();
+                }
+                catch ( InterruptedException e )
+                {
+                    return;
+                }
+                try
+                {
+                    for ( com.sun.jdi.event.Event event : events )
+                    {
+                        if ( event instanceof com.sun.jdi.event.LocatableEvent )
+                        {
+                            callback( (com.sun.jdi.event.LocatableEvent) event );
+                        }
+                        else if ( event instanceof com.sun.jdi.event.ClassPrepareEvent )
+                        {
+                            setup( ( (com.sun.jdi.event.ClassPrepareEvent) event ).referenceType() );
+                        }
+                        else if ( event instanceof com.sun.jdi.event.VMDisconnectEvent
+                                  || event instanceof com.sun.jdi.event.VMDeathEvent )
+                        {
+                            return;
+                        }
+                    }
+                }
+                finally
+                {
+                    events.resume();
+                }
+            }
+        }
+
+        private void setup( ReferenceType type )
+        {
+            List<SubProcessBreakPoint> list = breakpoints.get( type.name() );
+            if ( list == null ) return;
+            for ( SubProcessBreakPoint breakpoint : list )
+            {
+                breakpoint.setup( type );
+            }
+        }
+
+        private void callback( LocatableEvent event )
+        {
+            List<SubProcessBreakPoint> list = breakpoints.get( event.location().declaringType().name() );
+            if ( list == null ) return;
+            com.sun.jdi.Method method = event.location().method();
+            for ( SubProcessBreakPoint breakpoint : list )
+            {
+                if ( breakpoint.matches( method.name(), method.argumentTypeNames() ) )
+                {
+                    breakpoint.callback();
+                }
+            }
+        }
     }
 
     protected abstract void startup( P parameter ) throws Throwable;
@@ -138,7 +323,12 @@ public abstract class SubProcess<T, P> implements Serializable
 
     public static void stop( Object subprocess )
     {
-        ( (Handler) Proxy.getInvocationHandler( subprocess ) ).stop();
+        ( (Handler) Proxy.getInvocationHandler( subprocess ) ).stop( null, 0 );
+    }
+
+    public static void stop( Object subprocess, long timeout, TimeUnit unit )
+    {
+        ( (Handler) Proxy.getInvocationHandler( subprocess ) ).stop( unit, timeout );
     }
 
     public static void kill( Object subprocess )
@@ -156,12 +346,42 @@ public abstract class SubProcess<T, P> implements Serializable
     {
         if ( args.length != 1 )
         {
-            throw new IllegalArgumentException( "Needs to be started from "
-                                                + SubProcess.class.getName() );
+            throw new IllegalArgumentException( "Needs to be started from " + SubProcess.class.getName() );
         }
         DispatcherTrap trap = deserialize( args[0] );
         SubProcess<?, Object> subProcess = trap.getSubProcess();
-        subProcess.startup( trap.trap( new DispatcherImpl( subProcess ) ) );
+        subProcess.doStart( trap.trap( new DispatcherImpl( subProcess ) ) );
+    }
+
+    private transient volatile boolean alive;
+
+    private void doStart( P parameter ) throws Throwable
+    {
+        alive = true;
+        startup( parameter );
+        liveLoop();
+    }
+
+    private void doStop()
+    {
+        alive = false;
+        shutdown();
+    }
+
+    private void liveLoop() throws Exception
+    {
+        while ( alive )
+        {
+            for ( int i = System.in.available(); i >= 0; i-- )
+            {
+                if ( System.in.read() == -1 )
+                {
+                    // Parent process exited, die with it
+                    doStop();
+                }
+                Thread.sleep( 1 );
+            }
+        }
     }
 
     private static final Field PID;
@@ -192,6 +412,7 @@ public abstract class SubProcess<T, P> implements Serializable
             }
             catch ( Exception ok )
             {
+                // handled by lastPid++
             }
         }
         return Integer.toString( lastPid++ );
@@ -295,8 +516,7 @@ public abstract class SubProcess<T, P> implements Serializable
 
     private static PipeThread piper;
 
-    private static void pipe( final String prefix, final InputStream source,
-            final PrintStream target )
+    private static void pipe( final String prefix, final InputStream source, final PrintStream target )
     {
         synchronized ( PipeThread.class )
         {
@@ -329,7 +549,7 @@ public abstract class SubProcess<T, P> implements Serializable
             this.parameter = parameter;
         }
 
-        Dispatcher get( Process process )
+        Dispatcher get( @SuppressWarnings( "hiding" ) Process process )
         {
             while ( dispatcher == null )
             {
@@ -354,10 +574,9 @@ public abstract class SubProcess<T, P> implements Serializable
             return dispatcher;
         }
 
-        public synchronized Object trap( Dispatcher dispatcher )
+        public synchronized Object trap( @SuppressWarnings( "hiding" ) Dispatcher dispatcher )
         {
-            if ( this.dispatcher != null )
-                throw new IllegalStateException( "Dispatcher already trapped!" );
+            if ( this.dispatcher != null ) throw new IllegalStateException( "Dispatcher already trapped!" );
             this.dispatcher = dispatcher;
             return parameter;
         }
@@ -404,8 +623,7 @@ public abstract class SubProcess<T, P> implements Serializable
     {
         void stop() throws RemoteException;
 
-        Object dispatch( String name, String[] types, Object[] args ) throws RemoteException,
-                Throwable;
+        Object dispatch( String name, String[] types, Object[] args ) throws RemoteException, Throwable;
     }
 
     private static InvocationHandler live( Handler handler )
@@ -447,6 +665,7 @@ public abstract class SubProcess<T, P> implements Serializable
             }
             catch ( UnsupportedOperationException ok )
             {
+                // ok, already dead
             }
         }
     }
@@ -506,16 +725,40 @@ public abstract class SubProcess<T, P> implements Serializable
             }
         }
 
-        int stop()
+        int stop( TimeUnit unit, long timeout )
         {
+            final CountDownLatch latch = new CountDownLatch( unit == null ? 0 : 1 );
+            Thread stopper = new Thread()
+            {
+                @Override
+                public void run()
+                {
+                    latch.countDown();
+                    try
+                    {
+                        dispatcher.stop();
+                    }
+                    catch ( RemoteException e )
+                    {
+                        process.destroy();
+                    }
+                }
+            };
+            stopper.start();
             try
             {
-                dispatcher.stop();
+                latch.await();
+                timeout = System.currentTimeMillis() + ( unit == null ? 0 : unit.toMillis( timeout ) );
+                while ( stopper.isAlive() && System.currentTimeMillis() < timeout )
+                {
+                    Thread.sleep( 1 );
+                }
             }
-            catch ( RemoteException e )
+            catch ( InterruptedException e )
             {
-                process.destroy();
+                // handled by exit
             }
+            if ( stopper.isAlive() ) stopper.interrupt();
             dead( this );
             return await( process );
         }
@@ -578,8 +821,7 @@ public abstract class SubProcess<T, P> implements Serializable
             this.subprocess = subprocess;
         }
 
-        public Object dispatch( String name, String[] types, Object[] args )
-                throws RemoteException, Throwable
+        public Object dispatch( String name, String[] types, Object[] args ) throws RemoteException, Throwable
         {
             Class<?>[] params = new Class<?>[types.length];
             for ( int i = 0; i < params.length; i++ )
@@ -602,7 +844,7 @@ public abstract class SubProcess<T, P> implements Serializable
 
         public void stop() throws RemoteException
         {
-            subprocess.shutdown();
+            subprocess.doStop();
         }
     }
 }
