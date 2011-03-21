@@ -17,11 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.index.timeline;
+package org.neo4j.index.lucene;
 
 import static java.lang.Long.MAX_VALUE;
 import static org.apache.lucene.search.NumericRangeQuery.newLongRange;
-import static org.neo4j.index.impl.lucene.ValueContext.numeric;
+import static org.neo4j.index.lucene.ValueContext.numeric;
 
 import java.util.Map;
 
@@ -31,7 +31,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
-import org.neo4j.index.impl.lucene.QueryContext;
 
 public class LuceneTimeline<T extends PropertyContainer> implements TimelineIndex<T>
 {

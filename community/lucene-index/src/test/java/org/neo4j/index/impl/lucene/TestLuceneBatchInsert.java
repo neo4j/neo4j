@@ -28,7 +28,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.index.Neo4jTestCase.assertContains;
 import static org.neo4j.index.impl.lucene.LuceneIndexImplementation.EXACT_CONFIG;
-import static org.neo4j.index.impl.lucene.ValueContext.numeric;
+import static org.neo4j.index.lucene.ValueContext.numeric;
 
 import java.io.File;
 import java.util.ArrayList;

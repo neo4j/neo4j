@@ -38,6 +38,7 @@ import org.apache.lucene.search.TopDocs;
 import org.neo4j.graphdb.index.BatchInserterIndex;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.Pair;
+import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.kernel.impl.batchinsert.BatchInserter;
 import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
 import org.neo4j.kernel.impl.cache.LruCache;

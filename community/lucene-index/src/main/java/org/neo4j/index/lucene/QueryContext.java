@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.index.impl.lucene;
+package org.neo4j.index.lucene;
 
 import org.apache.lucene.queryParser.QueryParser.Operator;
 import org.apache.lucene.search.IndexSearcher;
@@ -35,15 +35,23 @@ import org.neo4j.graphdb.index.IndexHits;
  */
 public class QueryContext
 {
-    final Object queryOrQueryObject;
-    Sort sorting;
-    Operator defaultOperator;
-    boolean tradeCorrectnessForSpeed;
-    int topHits;
+    private final Object queryOrQueryObject;
+    private Sort sorting;
+    private Operator defaultOperator;
+    private boolean tradeCorrectnessForSpeed;
+    private int topHits;
     
     public QueryContext( Object queryOrQueryObject )
     {
         this.queryOrQueryObject = queryOrQueryObject;
+    }
+    
+    /**
+     * @return the query (or query object) specified in the constructor.
+     */
+    public Object getQueryOrQueryObject()
+    {
+        return queryOrQueryObject;
     }
 
     /**
@@ -81,7 +89,25 @@ public class QueryContext
         }
         return sort( new Sort( sortFields ) );
     }
-
+    
+    /**
+     * @return a QueryContext with sorting by relevance, i.e. sorted after which
+     * score each hit has. 
+     */
+    public QueryContext sortByScore()
+    {
+        return sort( Sort.RELEVANCE );
+    }
+    
+    /**
+     * @return the sorting set with one of the sort methods, f.ex
+     * {@link #sort(Sort)} or {@link #sortByScore()}
+     */
+    public Sort getSorting()
+    {
+        return this.sorting;
+    }
+    
     /**
      * Lucenes default operator is OR. Using this method, the default operator
      * can be changed for the query.
@@ -93,6 +119,15 @@ public class QueryContext
     {
         this.defaultOperator = defaultOperator;
         return this;
+    }
+    
+    /**
+     * @return the default {@link Operator} specified with {@link #defaultOperator(Operator)}
+     * or "OR" if none specified.
+     */
+    public Operator getDefaultOperator()
+    {
+        return this.defaultOperator;
     }
 
     /**
@@ -115,6 +150,14 @@ public class QueryContext
     }
     
     /**
+     * @return whether or not {@link #tradeCorrectnessForSpeed()} has been called.
+     */
+    public boolean getTradeCorrectnessForSpeed()
+    {
+        return tradeCorrectnessForSpeed;
+    }
+    
+    /**
      * Makes use of {@link IndexSearcher#search(org.apache.lucene.search.Query, int)},
      * alt. {@link IndexSearcher#search(org.apache.lucene.search.Query, org.apache.lucene.search.Filter, int, Sort)}
      * where only the top {@code numberOfTopHits} hits are returned. Default
@@ -128,5 +171,13 @@ public class QueryContext
     {
         this.topHits = numberOfTopHits;
         return this;
+    }
+    
+    /**
+     * @return the top hits set with {@link #top(int)}.
+     */
+    public int getTop()
+    {
+        return this.topHits;
     }
 }
