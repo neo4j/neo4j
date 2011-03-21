@@ -19,12 +19,11 @@
  */
 package org.neo4j.server;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.server.ServerTestUtils.createTempDir;
-import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
-import static org.neo4j.server.ServerTestUtils.writePropertiesToFile;
-import static org.neo4j.server.ServerTestUtils.writePropertyToFile;
+import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.modules.ServerModule;
+import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
+import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
+import org.neo4j.server.web.Jetty6WebServer;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -38,18 +37,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
 
-import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.modules.ServerModule;
-import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
-import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
-import org.neo4j.server.web.Jetty6WebServer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.server.ServerTestUtils.*;
 
 public class ServerBuilder {
 
     private String portNo = "7474";
     private String dbDir = null;
-    private String rrdbDir = "/tmp/neo.rr.db"; // TODO: should we require this
-                                               // to be null as well?
     private String webAdminUri = "/db/manage/";
     private String webAdminDataUri = "/db/data/";
     private StartupHealthCheck startupHealthCheck;
@@ -92,7 +87,6 @@ public class ServerBuilder {
         if (portNo != null) {
             writePropertyToFile(Configurator.WEBSERVER_PORT_PROPERTY_KEY, portNo, temporaryConfigFile);
         }
-        writePropertyToFile(Configurator.RRDB_LOCATION_PROPERTY_KEY, rrdbDir, temporaryConfigFile);
         writePropertyToFile(Configurator.MANAGEMENT_PATH_PROPERTY_KEY, webAdminUri, temporaryConfigFile);
         writePropertyToFile(Configurator.DATA_API_PATH_PROPERTY_KEY, webAdminDataUri, temporaryConfigFile);
         
@@ -153,11 +147,6 @@ public class ServerBuilder {
 
     public ServerBuilder withRandomDatabaseDir() throws IOException {
         this.dbDir = createTempDir().getAbsolutePath();
-        return this;
-    }
-
-    public ServerBuilder usingRoundRobinDatabaseDir(String rrdbDir) {
-        this.rrdbDir = rrdbDir;
         return this;
     }
 

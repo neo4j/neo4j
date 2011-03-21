@@ -7,6 +7,7 @@ SRCFILE          = $(SRCDIR)/neo4j-manual.txt
 CONFDIR          = $(SRCDIR)/conf
 DOCBOOKFILE      = $(BUILDDIR)/neo4j-manual.xml
 DOCBOOKSHORTINFOFILE = $(BUILDDIR)/neo4j-manual-shortinfo.xml
+DOCBOOKFILEPDF   = $(BUILDDIR)/neo4j-manual-pdf.xml
 FOPDIR           = $(BUILDDIR)/pdf
 FOPFILE          = $(FOPDIR)/neo4j-manual.fo
 FOPPDF           = $(FOPDIR)/neo4j-manual.pdf
@@ -22,6 +23,7 @@ CHUNKEDHTMLDIR   = $(BUILDDIR)/chunked
 CHUNKEDOFFLINEHTMLDIR = $(BUILDDIR)/chunked-offline
 CHUNKEDTARGET     = $(BUILDDIR)/neo4j-manual.chunked
 MANPAGES         = $(BUILDDIR)/manpages
+UPGRADE          = $(BUILDDIR)/upgrade
 
 ifdef VERBOSE
 	V = -v
@@ -48,7 +50,7 @@ endif
 
 GENERAL_FLAGS = $(V) $(K) $(VERS) $(IMPDIR)
 
-.PHONY: all dist docbook help clean pdf latexpdf html offline-html singlehtml text cleanup annotated manpages
+.PHONY: all dist docbook help clean pdf latexpdf html offline-html singlehtml text cleanup annotated manpages upgrade
 
 help:
 	@echo "Please use 'make <target>' where <target> is one of"
@@ -66,7 +68,7 @@ help:
 	@echo "To keep temporary files, use 'KEEP=1'".
 	@echo "To set the version, use 'VERSION=[the version]'".
 
-dist: pdf html offline-html annotated text manpages cleanup
+dist: pdf html offline-html annotated text manpages upgrade cleanup
 
 all: pdf latexpdf html offline-html singlehtml text annotated manpages cleanup
 
@@ -81,9 +83,12 @@ cleanup:
 	#
 ifndef KEEP
 	rm -f $(DOCBOOKFILE)
+	rm -f $(DOCBOOKFILEPDF)
 	rm -f $(DOCBOOKSHORTINFOFILE)
 	rm -f $(BUILDDIR)/*.xml
 	rm -f $(FOPDIR)/images
+	rm -f $(UPGRADE)/*.xml
+	rm -f $(UPGRADE)/*.html
 endif
 
 copyimages:
@@ -120,9 +125,10 @@ pdf:  docbook copyimages
 	# Building PDF.
 	#
 	#
+	sed 's/\&#8594;/\&#8211;\&gt;/g' <$(DOCBOOKFILE) >$(DOCBOOKFILEPDF)
 	mkdir -p $(FOPDIR)
 	cd $(FOPDIR)
-	xsltproc --xinclude --output $(FOPFILE) $(CONFDIR)/fo.xsl $(DOCBOOKFILE)
+	xsltproc --xinclude --output $(FOPFILE) $(CONFDIR)/fo.xsl $(DOCBOOKFILEPDF)
 	ln -s $(SRCDIR)/images $(FOPDIR)/images
 	fop -fo $(FOPFILE) -pdf $(FOPPDF)
 ifndef KEEP
@@ -234,4 +240,14 @@ manpages:
 	mv $(MANPAGES)/*.xml $(BUILDDIR)
 	rm -rf $(MANPAGES)/*.html
 	# gzip -q $(MANPAGES)/*
+
+upgrade:
+	#
+	#
+	# Building upgrade text.
+	#
+	#
+	mkdir -p $(UPGRADE)
+	a2x -k -f text -D $(UPGRADE) $(IMPORTDIR)/neo4j-docs-jar/ops/upgrades.txt
+	mv $(UPGRADE)/upgrades.text $(UPGRADE)/UPGRADE.txt
 

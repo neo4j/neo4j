@@ -19,22 +19,33 @@
  */
 package org.neo4j.server.rrd;
 
+import java.io.File;
+import java.io.IOException;
+
+import javax.management.MalformedObjectNameException;
+
+import org.apache.commons.configuration.Configuration;
 import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.server.configuration.Configurator;
 import org.rrd4j.ConsolFun;
 import org.rrd4j.DsType;
 import org.rrd4j.core.RrdDb;
 import org.rrd4j.core.RrdDef;
 
-import javax.management.MalformedObjectNameException;
-import java.io.File;
-import java.io.IOException;
-
 public class RrdFactory
 {
-	public static final int STEP_SIZE = 3000;
-	public static final int STEPS_PER_ARCHIVE = 750;
+    public static final int STEP_SIZE = 3000;
+    public static final int STEPS_PER_ARCHIVE = 750;
+    private final Configuration config;
 
-	public static RrdDb createRrdDbAndSampler( AbstractGraphDatabase db, JobScheduler scheduler ) throws MalformedObjectNameException, IOException
+    public RrdFactory( Configuration config )
+    {
+
+        this.config = config;
+    }
+
+    public RrdDb createRrdDbAndSampler( AbstractGraphDatabase db,
+                                        JobScheduler scheduler ) throws MalformedObjectNameException, IOException
     {
         Sampleable[] sampleables = new Sampleable[]{
                 new MemoryUsedSampleable(),
@@ -43,15 +54,22 @@ public class RrdFactory
                 new RelationshipCountSampleable( db )
         };
 
-        RrdDb rrdb = createRrdb( new File( db.getStoreDir(), "rrd" ).getAbsolutePath(), STEP_SIZE, STEPS_PER_ARCHIVE, sampleables );
-        RrdSampler sampler = new RrdSampler( rrdb.createSample(), sampleables);
-        RrdJob job = new RrdJob(sampler);
+        String basePath = config.getString( Configurator.RRDB_LOCATION_PROPERTY_KEY, getDefaultDirectory( db ) );
+        RrdDb rrdb = createRrdb( basePath, STEP_SIZE, STEPS_PER_ARCHIVE, sampleables );
+
+        RrdSampler sampler = new RrdSampler( rrdb.createSample(), sampleables );
+        RrdJob job = new RrdJob( sampler );
         scheduler.scheduleToRunEveryXSeconds( job, 3 );
         return rrdb;
     }
 
-    public static RrdDb createRrdb( String inDirectory, int stepSize, int stepsPerArchive,
-                                    Sampleable... sampleables ) throws IOException
+    private String getDefaultDirectory( AbstractGraphDatabase db )
+    {
+        return new File( db.getStoreDir(), "rrd" ).getAbsolutePath();
+    }
+
+    protected RrdDb createRrdb( String inDirectory, int stepSize, int stepsPerArchive,
+                                Sampleable... sampleables ) throws IOException
     {
         if ( !new File( inDirectory ).exists() )
         {
