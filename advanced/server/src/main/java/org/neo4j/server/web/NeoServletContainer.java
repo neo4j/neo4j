@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.web;
 
+import com.sun.jersey.api.core.HttpContext;
 import com.sun.jersey.api.core.ResourceConfig;
 import com.sun.jersey.spi.container.WebApplication;
 import com.sun.jersey.spi.container.servlet.ServletContainer;
@@ -26,36 +27,66 @@ import com.sun.jersey.spi.container.servlet.WebConfig;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.NeoServerProvider;
 import org.neo4j.server.configuration.ConfigurationProvider;
+import org.neo4j.server.database.AbstractInjectableProvider;
 import org.neo4j.server.database.DatabaseProvider;
 import org.neo4j.server.database.GraphDatabaseServiceProvider;
+import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.plugins.PluginInvocatorProvider;
 import org.neo4j.server.rest.repr.InputFormatProvider;
 import org.neo4j.server.rest.repr.OutputFormatProvider;
 import org.neo4j.server.rest.repr.RepresentationFormatRepository;
 import org.neo4j.server.rrd.RrdDbProvider;
 
+import java.util.Collection;
+import java.util.Set;
+
 @SuppressWarnings("serial")
 public class NeoServletContainer extends ServletContainer {
     private final NeoServer server;
+    private final Collection<Injectable<?>> injectables;
 
-    public NeoServletContainer(NeoServer server) {
+    public NeoServletContainer( NeoServer server, Collection<Injectable<?>> injectables ) {
         this.server = server;
+        this.injectables = injectables;
     }
 
     @Override
     protected void configure(WebConfig wc, ResourceConfig rc, WebApplication wa) {
         super.configure(wc, rc, wa);
 
-        rc.getSingletons().add(new DatabaseProvider(server.getDatabase()));
-        rc.getSingletons().add(new GraphDatabaseServiceProvider(server.getDatabase().graph));
-        rc.getSingletons().add(new NeoServerProvider(server));
-        rc.getSingletons().add(new ConfigurationProvider(server.getConfiguration()));
+        Set<Object> singletons = rc.getSingletons();
+        singletons.add( new DatabaseProvider( server.getDatabase() ) );
+        singletons.add( new GraphDatabaseServiceProvider( server.getDatabase().graph ) );
+        singletons.add( new NeoServerProvider( server ) );
+        singletons.add( new ConfigurationProvider( server.getConfiguration() ) );
         if(server.getDatabase().rrdDb() != null) {
-            rc.getSingletons().add(new RrdDbProvider(server.getDatabase().rrdDb()));
+            singletons.add( new RrdDbProvider( server.getDatabase().rrdDb() ) );
         }
         RepresentationFormatRepository repository = new RepresentationFormatRepository(server.getExtensionManager());
-        rc.getSingletons().add(new InputFormatProvider(repository));
-        rc.getSingletons().add(new OutputFormatProvider(repository));
-        rc.getSingletons().add(new PluginInvocatorProvider(server.getExtensionManager()));
+        singletons.add( new InputFormatProvider( repository ) );
+        singletons.add( new OutputFormatProvider( repository ) );
+        singletons.add( new PluginInvocatorProvider( server.getExtensionManager() ) );
+
+        for ( final Injectable injectable : injectables )
+        {
+            singletons.add( new InjectableWrapper( injectable ) );
+        }
+    }
+
+    private static class InjectableWrapper extends AbstractInjectableProvider<Object>
+    {
+        private final Injectable injectable;
+
+        public InjectableWrapper( Injectable injectable )
+        {
+            super( injectable.getType() );
+            this.injectable = injectable;
+        }
+
+        @Override
+        public Object getValue( HttpContext c )
+        {
+            return injectable.getValue();
+        }
     }
 }

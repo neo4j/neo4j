@@ -19,13 +19,6 @@
  */
 package org.neo4j.server;
 
-import java.io.File;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
@@ -35,15 +28,25 @@ import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseMode;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.modules.DiscoveryModule;
+import org.neo4j.server.modules.ExtensionInitializer;
 import org.neo4j.server.modules.ManagementApiModule;
 import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.modules.ThirdPartyJAXRSModule;
 import org.neo4j.server.modules.WebAdminModule;
+import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.plugins.PluginManager;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 import org.neo4j.server.web.WebServer;
+
+import java.io.File;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 public class NeoServerWithEmbeddedWebServer implements NeoServer {
     
@@ -58,6 +61,7 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
     private final AddressResolver addressResolver;
 
     private List<ServerModule> serverModules = new ArrayList<ServerModule>();
+    private ExtensionInitializer extensionInitializer;
 
     public NeoServerWithEmbeddedWebServer(AddressResolver addressResolver, StartupHealthCheck startupHealthCheck, File configFile, WebServer webServer) {
         this.addressResolver = addressResolver;
@@ -79,10 +83,17 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
         
         startDatabase();
 
+        startExtensionInitialization();
+
         registerServerModules();
         startModules();
         
         startWebServer();
+    }
+
+    private void startExtensionInitialization()
+    {
+        extensionInitializer = new ExtensionInitializer( this );
     }
 
     /**
@@ -117,7 +128,14 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
     
     private void stopModules() {
         for(ServerModule module : serverModules) {
-            module.stop();
+
+            try{
+                module.stop();
+            }
+            catch(Exception e)
+            {
+               log.error( e );
+            }
         }
     }
 
@@ -172,6 +190,7 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
     public void stop() {
         try {
             stopModules();
+            stopExtensionInitializers();
             stopDatabase();
             stopWebServer();
             log.info("Successfully shutdown Neo Server on port [%d], database [%s]", getWebServerPort(), getDatabase().getLocation());
@@ -179,6 +198,11 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
             log.warn("Failed to cleanly shutdown Neo Server on port [%d], database [%s]. Reason: %s", getWebServerPort(), getDatabase().getLocation(),
                     e.getMessage());
         }
+    }
+
+    private void stopExtensionInitializers()
+    {
+        extensionInitializer.stop(  );
     }
 
     private void stopWebServer() {
@@ -240,7 +264,13 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
             return null;
         }
     }
-    
+
+    @Override
+    public Collection<Injectable<?>> getInjectables( List<String> packageNames )
+    {
+        return extensionInitializer.intitializePackages( packageNames );
+    }
+
     private boolean hasModule(Class<? extends ServerModule> clazz) {
         for(ServerModule sm : serverModules) {
             if(sm.getClass() == clazz) {
@@ -260,4 +290,5 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
         
         return null;
     }
+
 }
