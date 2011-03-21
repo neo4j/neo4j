@@ -19,27 +19,6 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsNull.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.index.Neo4jTestCase.assertContains;
-import static org.neo4j.index.Neo4jTestCase.assertContainsInOrder;
-import static org.neo4j.index.impl.lucene.Contains.contains;
-import static org.neo4j.index.impl.lucene.IsEmpty.isEmpty;
-import static org.neo4j.index.lucene.ValueContext.numeric;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser.Operator;
 import org.apache.lucene.search.DefaultSimilarity;
@@ -61,6 +40,21 @@ import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
+import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsNull.nullValue;
+import static org.junit.Assert.*;
+import static org.neo4j.index.Neo4jTestCase.assertContains;
+import static org.neo4j.index.Neo4jTestCase.assertContainsInOrder;
+import static org.neo4j.index.impl.lucene.Contains.contains;
+import static org.neo4j.index.impl.lucene.IsEmpty.isEmpty;
+import static org.neo4j.index.lucene.ValueContext.numeric;
 
 public class TestLuceneIndex extends AbstractLuceneIndexTest
 {
@@ -1207,4 +1201,21 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
             restartTx();
         }
     }
+
+    @Test
+	public void shouldNotFindValueDeletedInSameTx2() {
+		Index<Node> nodeIndex = graphDb.index().forNodes("index");
+		Node node = graphDb.createNode();
+		nodeIndex.add(node, "key1", "value1");
+		Node node2 = graphDb.createNode();
+		nodeIndex.add(node2, "key2", "value2");
+
+		restartTx();
+		nodeIndex.remove(node);
+
+		IndexHits<Node> hits = nodeIndex.get("key2", "value2");
+		assertEquals(node2, hits.getSingle());
+		assertEquals(1, hits.size());
+		hits.close();
+	}
 }
