@@ -10,7 +10,6 @@ module Neo4JHelpers
   end
 
   def archive_name
-    puts "====> archive_name "+current_platform.type
     "neo4j-" + @neo4j.version + "-" + current_platform.type + "."+current_platform.extension
   end
 
