@@ -1186,4 +1186,23 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         assertContainsInOrder( index.query( key, new QueryContext( "*" ).sort( key ) ), first, second, third, fourth );
         assertContainsInOrder( index.query( key, new QueryContext( "*" ).sort( key ).top( 2 ) ), first, second );
     }
+
+    @Test
+    public void shouldNotFindValueDeletedInSameTx()
+    {
+        Index<Node> nodeIndex = graphDb.index().forNodes( "size-after-removal" );
+        Node node = graphDb.createNode();
+        nodeIndex.add( node, "key", "value" );
+        restartTx();
+
+        nodeIndex.remove( node );
+        for ( int i = 0; i < 2; i++ )
+        {
+            IndexHits<Node> hits = nodeIndex.get( "key", "value" );
+            assertEquals( 0, hits.size() );
+            assertNull( hits.getSingle() );
+            hits.close();
+            restartTx();
+        }
+    }
 }
