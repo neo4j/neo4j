@@ -155,6 +155,12 @@ public abstract class Neo4jTestCase
         return graphDb;
     }
     
+//    public static <T> void assertContains( IndexHits<T> hits, T... expectedItems )
+//    {
+//        assertEquals( expectedItems.length, hits.size() );
+//        assertContains( (Iterable<T>) hits, expectedItems );
+//    }
+    
     public static <T> void assertContains( Collection<T> collection,
         T... expectedItems )
     {

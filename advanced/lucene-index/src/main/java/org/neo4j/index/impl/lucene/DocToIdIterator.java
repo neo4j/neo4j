@@ -79,7 +79,7 @@ class DocToIdIterator extends AbstractIndexHits<Long>
 
     public int size()
     {
-        return source.size();
+        return exclude == null ? source.size() : source.size()-exclude.size();
     }
 
     public float currentScore()
