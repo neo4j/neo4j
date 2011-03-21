@@ -40,6 +40,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.Version;
+import org.neo4j.index.lucene.QueryContext;
 
 abstract class IndexType
 {
@@ -271,9 +272,9 @@ abstract class IndexType
         QueryParser parser = new QueryParser( Version.LUCENE_30, keyOrNull, analyzer );
         parser.setAllowLeadingWildcard( true );
         parser.setLowercaseExpandedTerms( toLowerCase );
-        if ( contextOrNull != null && contextOrNull.defaultOperator != null )
+        if ( contextOrNull != null && contextOrNull.getDefaultOperator() != null )
         {
-            parser.setDefaultOperator( contextOrNull.defaultOperator );
+            parser.setDefaultOperator( contextOrNull.getDefaultOperator() );
         }
         try
         {

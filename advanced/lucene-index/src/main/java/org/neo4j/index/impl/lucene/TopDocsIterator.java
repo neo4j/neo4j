@@ -30,6 +30,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldCollector;
 import org.neo4j.helpers.collection.ArrayIterator;
+import org.neo4j.index.lucene.QueryContext;
 
 class TopDocsIterator extends AbstractIndexHits<Document>
 {
@@ -48,24 +49,24 @@ class TopDocsIterator extends AbstractIndexHits<Document>
 
     private TopDocs toTopDocs( Query query, QueryContext context, Searcher searcher ) throws IOException
     {
-        Sort sorting = context != null ? context.sorting : null;
+        Sort sorting = context != null ? context.getSorting() : null;
         TopDocs topDocs = null;
         if ( sorting == null )
         {
-            topDocs = searcher.search( query, context.topHits );
+            topDocs = searcher.search( query, context.getTop() );
         }
         else
         {
-            boolean forceScore = context == null || !context.tradeCorrectnessForSpeed;
+            boolean forceScore = context == null || !context.getTradeCorrectnessForSpeed();
             if ( forceScore )
             {
-                TopFieldCollector collector = LuceneDataSource.scoringCollector( sorting, context.topHits );
+                TopFieldCollector collector = LuceneDataSource.scoringCollector( sorting, context.getTop() );
                 searcher.search( query, collector );
                 topDocs = collector.topDocs();
             }
             else
             {
-                topDocs = searcher.search( query, null, context.topHits, sorting );
+                topDocs = searcher.search( query, null, context.getTop(), sorting );
             }
         }
         return topDocs;

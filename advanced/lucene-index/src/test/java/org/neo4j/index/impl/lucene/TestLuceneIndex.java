@@ -32,7 +32,7 @@ import static org.neo4j.index.Neo4jTestCase.assertContains;
 import static org.neo4j.index.Neo4jTestCase.assertContainsInOrder;
 import static org.neo4j.index.impl.lucene.Contains.contains;
 import static org.neo4j.index.impl.lucene.IsEmpty.isEmpty;
-import static org.neo4j.index.impl.lucene.ValueContext.numeric;
+import static org.neo4j.index.lucene.ValueContext.numeric;
 
 import java.io.File;
 import java.io.IOException;
@@ -58,6 +58,8 @@ import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.Neo4jTestCase;
+import org.neo4j.index.lucene.QueryContext;
+import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 public class TestLuceneIndex extends AbstractLuceneIndexTest

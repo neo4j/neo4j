@@ -38,8 +38,8 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Pair;
-import org.neo4j.index.timeline.LuceneTimeline;
-import org.neo4j.index.timeline.TimelineIndex;
+import org.neo4j.index.lucene.LuceneTimeline;
+import org.neo4j.index.lucene.TimelineIndex;
 import org.neo4j.kernel.ImpermanentGraphDatabase;
 
 public class TestTimeline

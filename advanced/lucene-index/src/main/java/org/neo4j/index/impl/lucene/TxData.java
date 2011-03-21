@@ -24,6 +24,7 @@ import java.util.Collection;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Searcher;
 import org.neo4j.helpers.Pair;
+import org.neo4j.index.lucene.QueryContext;
 
 abstract class TxData
 {

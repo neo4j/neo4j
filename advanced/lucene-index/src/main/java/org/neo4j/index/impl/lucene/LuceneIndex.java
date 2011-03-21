@@ -40,6 +40,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
+import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
@@ -193,7 +194,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         QueryContext context = queryOrQueryObject instanceof QueryContext ?
                 (QueryContext) queryOrQueryObject : null;
         return query( type.query( key, context != null ?
-                context.queryOrQueryObject : queryOrQueryObject, context ), null, null, context );
+                context.getQueryOrQueryObject() : queryOrQueryObject, context ), null, null, context );
     }
 
     /**
@@ -325,16 +326,16 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
             Searcher searcher = additionsSearcher == null ? searcherRef.getSearcher() :
                     new MultiSearcher( searcherRef.getSearcher(), additionsSearcher );
             IndexHits<Document> result = null;
-            if ( additionalParametersOrNull != null && additionalParametersOrNull.topHits > 0 )
+            if ( additionalParametersOrNull != null && additionalParametersOrNull.getTop() > 0 )
             {
                 result = new TopDocsIterator( query, additionalParametersOrNull, searcher );
             }
             else
             {
                 Sort sorting = additionalParametersOrNull != null ?
-                        additionalParametersOrNull.sorting : null;
+                        additionalParametersOrNull.getSorting() : null;
                 boolean forceScore = additionalParametersOrNull == null ||
-                        !additionalParametersOrNull.tradeCorrectnessForSpeed;
+                        !additionalParametersOrNull.getTradeCorrectnessForSpeed();
                 Hits hits = new Hits( searcher, query, null, sorting, forceScore );
                 result = new HitsIterator( hits );
             }
@@ -471,11 +472,11 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
                             (QueryContext) queryOrQueryObjectOrNull : null;
                     
             BooleanQuery query = new BooleanQuery();
-            if ( (context != null && context.queryOrQueryObject != null) ||
+            if ( (context != null && context.getQueryOrQueryObject() != null) ||
                     (context == null && queryOrQueryObjectOrNull != null ) )
             {
                 query.add( type.query( key, context != null ?
-                        context.queryOrQueryObject : queryOrQueryObjectOrNull, context ), Occur.MUST );
+                        context.getQueryOrQueryObject() : queryOrQueryObjectOrNull, context ), Occur.MUST );
             }
             addIfNotNull( query, startNodeOrNull, KEY_START_NODE_ID );
             addIfNotNull( query, endNodeOrNull, KEY_END_NODE_ID );

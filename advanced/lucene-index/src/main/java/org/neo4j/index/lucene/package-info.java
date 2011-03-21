@@ -19,8 +19,10 @@
  */
 
 /**
- * A timeline implementation on top of an {@link org.neo4j.graphdb.index.Index}
- * based on Lucene.
+ * Contains {@link QueryContext} and {@link ValueContext} which is part of the
+ * public API for an {@link org.neo4j.graphdb.index.Index} backed by Lucene.
+ * 
+ * Also contain a timeline implementation on top of an
+ * {@link org.neo4j.graphdb.index.Index} based on Lucene.
  */
-package org.neo4j.index.timeline;
-
+package org.neo4j.index.lucene;

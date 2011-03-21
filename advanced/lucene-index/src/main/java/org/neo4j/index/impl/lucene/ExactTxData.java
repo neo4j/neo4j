@@ -30,6 +30,8 @@ import java.util.Set;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Searcher;
 import org.neo4j.helpers.Pair;
+import org.neo4j.index.lucene.QueryContext;
+import org.neo4j.index.lucene.ValueContext;
 
 public class ExactTxData extends TxData
 {
@@ -125,7 +127,7 @@ public class ExactTxData extends TxData
     @Override
     Pair<Collection<Long>, TxData> query( Query query, QueryContext contextOrNull )
     {
-        if ( contextOrNull != null && contextOrNull.tradeCorrectnessForSpeed )
+        if ( contextOrNull != null && contextOrNull.getTradeCorrectnessForSpeed() )
         {
             return Pair.<Collection<Long>, TxData>of( Collections.<Long>emptyList(), this );
         }
@@ -195,7 +197,7 @@ public class ExactTxData extends TxData
     @Override
     Pair<Searcher, TxData> asSearcher( QueryContext context )
     {
-        if ( context != null && context.tradeCorrectnessForSpeed )
+        if ( context != null && context.getTradeCorrectnessForSpeed() )
         {
             return Pair.<Searcher, TxData>of( null, this );
         }
