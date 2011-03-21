@@ -19,16 +19,16 @@
  */
 package org.neo4j.server.modules;
 
-import static org.neo4j.server.JAXRSHelper.listFrom;
+import org.neo4j.server.JAXRSHelper;
+import org.neo4j.server.NeoServerWithEmbeddedWebServer;
+import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
+import org.neo4j.server.logging.Logger;
 
 import java.net.URI;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.server.JAXRSHelper;
-import org.neo4j.server.NeoServerWithEmbeddedWebServer;
-import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
-import org.neo4j.server.logging.Logger;
+import static org.neo4j.server.JAXRSHelper.listFrom;
 
 public class ThirdPartyJAXRSModule implements ServerModule {
 
@@ -47,6 +47,7 @@ public class ThirdPartyJAXRSModule implements ServerModule {
     }
 
     public void stop() {
+
         // Do nothing.
     }
 }
