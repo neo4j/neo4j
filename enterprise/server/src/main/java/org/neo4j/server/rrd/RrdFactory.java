@@ -19,6 +19,11 @@
  */
 package org.neo4j.server.rrd;
 
+import java.io.File;
+import java.io.IOException;
+
+import javax.management.MalformedObjectNameException;
+
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.configuration.Configurator;
@@ -26,10 +31,6 @@ import org.rrd4j.ConsolFun;
 import org.rrd4j.DsType;
 import org.rrd4j.core.RrdDb;
 import org.rrd4j.core.RrdDef;
-
-import javax.management.MalformedObjectNameException;
-import java.io.File;
-import java.io.IOException;
 
 public class RrdFactory
 {

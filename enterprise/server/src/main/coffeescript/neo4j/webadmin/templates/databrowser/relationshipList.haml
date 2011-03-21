@@ -1,0 +1,28 @@
+%table.data-table(cellspacing="0")
+  %tbody
+    %tr
+      %th 
+        %h3 Relationship
+      %th 
+        %h3 Start node
+      %th 
+        %h3 Type
+      %th 
+        %h3 End node
+      :each key in relationshipList.getPropertyKeys()
+        %th
+          %h3= key
+    :each relationship in relationshipList.getRelationships()
+      %tr
+        %td
+          %a.micro-button(href="#/data/search/rel:#{relationship.getId()}/")= "Relationship " + relationship.getId()
+        %td
+          %a.micro-button(href="#/data/search/#{relationship.getStartId()}/")= "Node " +relationship.getStartId()
+        %td.small= relationship.getItem().getType()
+        %td
+          %a.micro-button(href="#/data/search/#{relationship.getEndId()}/")= "Node " + relationship.getEndId()
+        
+        :each key in relationshipList.getPropertyKeys()
+          %td.small
+            :if relationship.getPropertyByKey(key)
+              = relationship.getPropertyByKey(key).getTruncatedHtmlValue(50)

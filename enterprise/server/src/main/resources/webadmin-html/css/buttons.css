@@ -1,0 +1,126 @@
+
+
+/**
+ * Button bar
+ */
+
+.button-bar {
+  list-style:none;
+  margin:0;
+  padding: 0;
+}
+
+.button-bar li {
+  display:block;
+  float:left;
+  padding-right: 5px;
+}
+
+.button-bar li:last-child {
+  padding-right: 0;
+}
+
+
+/**
+ * Buttons
+ */
+
+.button {
+  display:block;
+  border: 0 none;
+  height: 32px;
+  padding: 0 5px;
+  cursor:pointer;
+  -moz-border-radius:4px;
+  -webkit-border-radius:4px;
+  border-radius:4px;
+  float:left;
+  font-weight: bold;
+  font-size: 13px;
+  color:#4C4C4C;
+  background:#CCCCCC;
+  text-decoration:none;
+}
+
+.button:hover {
+  background: #fff;
+}
+
+a.button {
+  padding-top:9px;
+  height: 23px;
+}
+
+/** 
+ * Big buttons with subtitles (used in the top header for the tabs)
+ */
+
+.title-button {
+  color: #EEEEEE;
+  text-decoration: none;
+  text-shadow: 1px 1px 0 #222222;
+}
+
+.title-button .subtitle {
+  clear: right;
+  color: #AAAAAA;
+  display: block;
+  font-size: 10px;
+}
+
+/**
+ * Micro button 
+ */
+
+.micro-button {
+  -moz-border-radius:8px;
+  -webkit-border-radius:8px;
+  border-radius:8px;
+  padding: 3px 6px;
+  font-size:10px;
+  color:#4C4C4C;
+  background:#CCCCCC;
+  text-decoration:none;
+}
+
+.micro-button:hover {
+  background:#FFF;
+}
+
+/**
+ * DARK BUTTON 
+ */
+
+.dark-button {
+  background: #555;
+  border: 1px solid #444;
+  color:#eee;
+}
+
+.dark-button:hover {
+  color:#eee;
+  background: #666;
+}
+
+/**
+ * Icon buttons
+ */
+
+.text-icon-button, .icon-button {
+  border: 0 none;
+  height: 32px;
+  padding: 0;
+  width: 32px;
+  cursor:pointer;
+  -moz-border-radius:4px;
+  -webkit-border-radius:4px;
+  border-radius:4px;
+  float:left;
+}
+
+.text-icon-button {
+  padding: 0 5px 0 32px;
+  width:auto;
+  font-size:13px;
+  font-weight:bold;
+}
