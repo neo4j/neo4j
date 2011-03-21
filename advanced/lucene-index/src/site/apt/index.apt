@@ -6,23 +6,6 @@ Neo4j Lucene Index
     
 	This implementation is the default to use as a backend for an index if no provider
 	is specified. The provider name is "lucene".
+	
+	See {{{http://docs.neo4j.org/chunked/snapshot/indexing.html}the documentation}} for more information.
 
-Adding to an index
-
-	Indexing are available for both nodes and relationships.
-
-%{source-code|snippet=add|file=src/test/java/examples/LuceneIndexSiteExamples.java}
-
-Querying an index
-
-	Querying can be made using <<<get>>> which performs an exact match of key/value.
-
-%{source-code|snippet=get|file=src/test/java/examples/LuceneIndexSiteExamples.java}
-
-	Or full-blown querying (the full lucene query syntax exposed if your index is backed by lucene).
-
-%{source-code|snippet=query|file=src/test/java/examples/LuceneIndexSiteExamples.java}
-
-See more
-
-	Please read more about indexing on the {{{http://wiki.neo4j.org/content/Index_Framework}wiki page}}.
