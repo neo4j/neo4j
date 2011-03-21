@@ -49,14 +49,13 @@ When /^I unpack the archive into Neo4j Home$/ do
 
   if (current_platform.unix?)
     `tar xzf #{full_archive_name} --strip-components 1`
-    fail 'unpacking failed' unless $?.to_i == 0
+    fail "unpacking failed (#{$?})" unless $?.to_i == 0
   elsif  current_platform.windows?
     unzip= File.expand_path("../../support/unzip.vbs", __FILE__)
     cmd = "cmd /c #{unzip.tr('/', '\\')} #{full_archive_name.tr('/', '\\')} #{neo4j.home.tr('/', '\\')}"
     puts cmd
     puts `#{cmd}`
-    puts `#{unzip} #{full_archive_name} #{neo4j.home}`
-    fail 'unpacking failed' unless $?.to_i == 0
+    fail "unpacking failed (#{$?})" unless $?.to_i == 0
   else
     fail 'platform not supported'
   end
