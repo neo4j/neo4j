@@ -1,30 +1,11 @@
 #! /bin/sh
 
-#
-# Copyright (c) 1999, 2010 Tanuki Software, Ltd.
-# http://www.tanukisoftware.com
-# All rights reserved.
-#
-# This software is the proprietary information of Tanuki Software.
-# You shall use it only in accordance with the terms of the
-# license agreement you entered into with Tanuki Software.
-# http://wrapper.tanukisoftware.com/doc/english/licenseOverview.html
-#
-# Java Service Wrapper sh script.  Suitable for starting and stopping
-#  wrapped Java applications on UNIX platforms.
-#
-
-#-----------------------------------------------------------------------------
-# These settings can be modified to fit the needs of your application
-# Optimized for use with version 3.5.4 of the Wrapper.
-
-
 # Application
 APP_NAME="neo4j-server"
 APP_LONG_NAME="Neo4j Server"
 
 # Wrapper
-WRAPPER_CMD="wrapper"
+WRAPPER_CMD="wrapper.sh"
 WRAPPER_CONF="../conf/neo4j-wrapper.conf"
 
 # Priority at which to run the wrapper.  See "man nice" for valid priorities.
