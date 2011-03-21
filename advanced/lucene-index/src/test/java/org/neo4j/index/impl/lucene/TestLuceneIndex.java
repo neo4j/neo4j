@@ -1203,7 +1203,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     }
 
     @Test
-	public void shouldNotFindValueDeletedInSameTx2() {
+	public void shouldCountCorrectlyEvenIfNodesHaveBeenRemoved() {
 		Index<Node> nodeIndex = graphDb.index().forNodes("index");
 		Node node = graphDb.createNode();
 		nodeIndex.add(node, "key1", "value1");
