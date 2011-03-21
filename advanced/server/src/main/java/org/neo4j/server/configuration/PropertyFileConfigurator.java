@@ -20,8 +20,10 @@
 package org.neo4j.server.configuration;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
@@ -38,17 +40,16 @@ import org.neo4j.server.logging.Logger;
 
 public class PropertyFileConfigurator implements Configurator {
 
+    private static final String NEO4J_PROPERTIES_FILENAME = "neo4j.properties";
+
     public static Logger log = Logger.getLogger(PropertyFileConfigurator.class);
 
     private CompositeConfiguration serverConfiguration = new CompositeConfiguration();
+    private File propertyFileDirectory;
 
     private Validator validator = new Validator();
     private Map<String, String> databaseTuningProperties = null;
     private HashSet<ThirdPartyJaxRsPackage> thirdPartyPackages;
-
-    PropertyFileConfigurator() {
-        this(new Validator(), null);
-    }
 
     public PropertyFileConfigurator(File propertiesFile) {
         this(null, propertiesFile);
@@ -64,7 +65,9 @@ public class PropertyFileConfigurator implements Configurator {
         }
 
         try {
+            propertyFileDirectory = propertiesFile.getParentFile();
             loadPropertiesConfig(propertiesFile);
+            loadDatabaseTuningProperties(propertiesFile);
             normalizeUris();
             if (v != null) {
                 v.validate(this.configuration());
@@ -80,11 +83,37 @@ public class PropertyFileConfigurator implements Configurator {
         return serverConfiguration == null ? new SystemConfiguration() : serverConfiguration;
     }
 
+    private void loadDatabaseTuningProperties(File configFile) throws ConfigurationException {
+        String databaseTuningPropertyFileLocation = serverConfiguration.getString(DB_TUNING_PROPERTY_FILE_KEY);
+
+        if (databaseTuningPropertyFileLocation == null) {
+            if(propertyFileDirectoryContainsDBTuningFile()) {
+                databaseTuningPropertyFileLocation = new File (propertyFileDirectory, NEO4J_PROPERTIES_FILENAME).getAbsolutePath();
+                log.info("No database tuning file explicitly set, defaulting to [%s]", databaseTuningPropertyFileLocation);
+            } else {
+                log.info("No database tuning properties (org.neo4j.server.db.tuning.properties) found in [%s], using defaults.", databaseTuningPropertyFileLocation);
+                return;
+            }
+        }
+
+        File databaseTuningPropertyFile = new File(databaseTuningPropertyFileLocation);
+        
+        if (!databaseTuningPropertyFile.exists()) {
+            log.warn("The specified file for database performance tuning properties [%s] does not exist.", databaseTuningPropertyFileLocation);
+            return;
+        }
+        
+        databaseTuningProperties = EmbeddedGraphDatabase.loadConfigurations(databaseTuningPropertyFileLocation);
+        
+    }
+    
+ 
+
+    
     private void loadPropertiesConfig(File configFile) throws ConfigurationException {
         PropertiesConfiguration propertiesConfig = new PropertiesConfiguration(configFile);
         if (validator.validate(propertiesConfig)) {
             serverConfiguration.addConfiguration(propertiesConfig);
-            loadDatabaseTuningProperties();
         } else {
             String failed = String.format("Error processing [%s], configuration file has failed validation.", configFile.getAbsolutePath());
             log.fatal(failed);
@@ -108,26 +137,20 @@ public class PropertyFileConfigurator implements Configurator {
 
     }
 
-    private void loadDatabaseTuningProperties() {
-        String databaseTuningPropertyFileLocation = serverConfiguration.getString(DB_TUNING_PROPERTY_FILE_KEY);
+    private boolean propertyFileDirectoryContainsDBTuningFile() {
+        File[] neo4jPropertyFiles = propertyFileDirectory.listFiles(new FilenameFilter() {
 
-        if (databaseTuningPropertyFileLocation == null) {
-            return;
-        }
-
-        File databaseTuningPropertyFile = new File(databaseTuningPropertyFileLocation);
-        
-        if (!databaseTuningPropertyFile.exists()) {
-            log.warn("The specified file for database performance tuning properties [%s] does not exist.", databaseTuningPropertyFileLocation);
-            return;
-        }
-
-        databaseTuningProperties = EmbeddedGraphDatabase.loadConfigurations(databaseTuningPropertyFile.getAbsolutePath());
+            @Override
+            public boolean accept(File dir, String name) {
+                return name.toLowerCase().equals(NEO4J_PROPERTIES_FILENAME);
+            }
+        });
+        return neo4jPropertyFiles != null && neo4jPropertyFiles.length == 1;
     }
 
     @Override
     public Map<String, String> getDatabaseTuningProperties() {
-        return databaseTuningProperties;
+        return databaseTuningProperties == null ? new HashMap<String, String>() : databaseTuningProperties;
     }
 
     @Override

@@ -1,0 +1,25 @@
+%ul.property-list
+  :each property in properties
+    %li
+      %ul.property-row
+        %li.property-key-wrap
+          .property-input-wrap
+            %input.property-id(type="hidden" value="#{property.getLocalId()}")
+            .error
+              :if property.hasKeyError()
+                = property.getKeyError()
+            %input.property-key(type="text" value="#{escape(property.getKey())}")
+        %li.property-value-wrap
+          .property-input-wrap
+            .error
+              :if property.hasValueError()
+                = property.getValueError()
+            %input.property-value(type="text" value="#{property.getValueAsHtml()}")
+        %li.property-actions-wrap
+          .property-input-wrap
+            %button.delete-property.button Remove
+      .break
+
+  %li.property-controls
+    %button.add-property.text-icon-button(title="Add a new property") Add property
+    .break

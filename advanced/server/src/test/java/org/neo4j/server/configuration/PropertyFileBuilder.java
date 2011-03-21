@@ -19,70 +19,87 @@
  */
 package org.neo4j.server.configuration;
 
-import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
-import static org.neo4j.server.ServerTestUtils.writePropertyToFile;
+import org.neo4j.server.ServerTestUtils;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
-public class PropertyFileBuilder {
-    
+import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
+import static org.neo4j.server.ServerTestUtils.writePropertyToFile;
+
+public class PropertyFileBuilder
+{
+
     private String portNo = "7474";
-    private String dbDir = "/tmp/neo.db";
-    private String rrdbDir = "/tmp/neo.rr.db";
     private String webAdminUri = "http://localhost:7474/db/manage/";
     private String webAdminDataUri = "http://localhost:7474/db/data/";
     private String dbTuningPropertyFile = null;
     private ArrayList<Tuple> nameValuePairs = new ArrayList<Tuple>();
 
-    private static class Tuple {
-        public Tuple(String name, String value) {
+    private static class Tuple
+    {
+        public Tuple( String name, String value )
+        {
             this.name = name;
             this.value = value;
         }
+
         public String name;
         public String value;
     }
-    
-    public static PropertyFileBuilder builder() {
+
+    public static PropertyFileBuilder builder()
+    {
         return new PropertyFileBuilder();
     }
-    
-    private PropertyFileBuilder() {}
-    
-    public File build() throws IOException {
+
+    private PropertyFileBuilder()
+    {
+    }
+
+    public File build() throws IOException
+    {
         File temporaryConfigFile = createTempPropertyFile();
-        writePropertyToFile(Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir, temporaryConfigFile);
-        if (portNo != null) {
-            writePropertyToFile(Configurator.WEBSERVER_PORT_PROPERTY_KEY, portNo, temporaryConfigFile);
+
+        String dbDir = ServerTestUtils.createTempDir().getAbsolutePath();
+        String rrdbDir = ServerTestUtils.createTempDir().getAbsolutePath();
+        writePropertyToFile( Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir, temporaryConfigFile );
+        if ( portNo != null )
+        {
+            writePropertyToFile( Configurator.WEBSERVER_PORT_PROPERTY_KEY, portNo, temporaryConfigFile );
         }
-        writePropertyToFile(Configurator.RRDB_LOCATION_PROPERTY_KEY, rrdbDir, temporaryConfigFile);
-        writePropertyToFile(Configurator.MANAGEMENT_PATH_PROPERTY_KEY, webAdminUri, temporaryConfigFile);
-        writePropertyToFile(Configurator.DATA_API_PATH_PROPERTY_KEY, webAdminDataUri, temporaryConfigFile);
-        if(dbTuningPropertyFile != null) {
-            writePropertyToFile(Configurator.DB_TUNING_PROPERTY_FILE_KEY, dbTuningPropertyFile, temporaryConfigFile);
+        writePropertyToFile( Configurator.RRDB_LOCATION_PROPERTY_KEY, rrdbDir, temporaryConfigFile );
+        writePropertyToFile( Configurator.MANAGEMENT_PATH_PROPERTY_KEY, webAdminUri, temporaryConfigFile );
+        writePropertyToFile( Configurator.DATA_API_PATH_PROPERTY_KEY, webAdminDataUri, temporaryConfigFile );
+        if ( dbTuningPropertyFile != null )
+        {
+            writePropertyToFile( Configurator.DB_TUNING_PROPERTY_FILE_KEY, dbTuningPropertyFile, temporaryConfigFile );
         }
-        
-        for(Tuple t: nameValuePairs) {
-            writePropertyToFile(t.name, t.value, temporaryConfigFile);
+
+        for ( Tuple t : nameValuePairs )
+        {
+            writePropertyToFile( t.name, t.value, temporaryConfigFile );
         }
-        
-        
+
+
         return temporaryConfigFile;
     }
 
-    public PropertyFileBuilder withDbTuningPropertyFile(File f) {
+    public PropertyFileBuilder withDbTuningPropertyFile( File f )
+    {
         dbTuningPropertyFile = f.getAbsolutePath();
         return this;
     }
 
-    public PropertyFileBuilder withNameValue(String name, String value) {
-        nameValuePairs.add(new Tuple(name, value));
+    public PropertyFileBuilder withNameValue( String name, String value )
+    {
+        nameValuePairs.add( new Tuple( name, value ) );
         return this;
     }
 
-    public PropertyFileBuilder withDbTuningPropertyFile(String propertyFileLocation) {
+    public PropertyFileBuilder withDbTuningPropertyFile( String propertyFileLocation )
+    {
         dbTuningPropertyFile = propertyFileLocation;
         return this;
     }
