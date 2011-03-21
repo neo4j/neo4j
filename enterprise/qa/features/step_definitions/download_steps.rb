@@ -39,12 +39,15 @@ When /^I unpack the archive into Neo4j Home$/ do
 end
 
 Then /^Neo4j Home should contain a Neo4j Server installation$/ do
-## TODO
-# pending # express the regexp above with the code you wish you had
+  fail "file "+neo4j.home+"/bin/neo4j not found" unless File.exists?(neo4j.home+"/bin/neo4j")
 end
 
 Then /^the Neo4j version of the installation should be correct$/ do
-## TODO
-##  pending # express the regexp above with the code you wish you had
+
+  (Dir.entries (neo4j.home+"/lib") + Dir.entries (neo4j.home+"/system/lib")).each do |lib|
+    if lib =~ /^neo4j.*\.jar$/
+      fail lib+" does not contain the Neo4j-version" unless lib =~ /#{neo4j.version}/;
+    end
+  end
 end
 
