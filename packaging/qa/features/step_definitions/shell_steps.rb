@@ -17,11 +17,11 @@ end
 
 
 Given /^these command\-line tools:$/ do |table|
-  table.hashes.each do |hash|  
+  table.hashes.each do |hash|
     bash("#{hash[:command]} #{hash[:version_switch]}")
     last_stdout.any?{|line| /#{hash[:version]}/ =~ line}.should be_true,
       "#{hash[:command]} version #{hash[:expected_version]} not found"
-  end  
+  end
 end
 
 Given /^environment variable "([^"]*)" set to "([^"]*)"$/ do |env_var, env_value|
@@ -62,7 +62,7 @@ Then /^"([^"]*)" should exist as a directory$/ do |expected_directory|
 end
 
 Then /^"([^"]*)" should( not)? exist as a file$/ do |expected_file, negation|
-  if negation then 
+  if negation then
     test_file(expected_file).should be_false
   else
     test_file(expected_file).should be_true
