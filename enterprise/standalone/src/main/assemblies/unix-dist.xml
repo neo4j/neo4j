@@ -45,13 +45,18 @@
     </fileSet>
     <!-- chmod 755 for unix bins -->
     <fileSet>
-      <directory>src/main/distribution/binary</directory>
-      <outputDirectory>/</outputDirectory>
+      <directory>../tools/yajsw</directory>
+      <outputDirectory>/bin</outputDirectory>
       <fileMode>0755</fileMode>
       <includes>
-        <include>bin/lib/lib*</include>
-        <include>bin/wrapper-*</include>
+        <include>wrapper.jar</include>
+        <include>wrapperApp.jar</include>
       </includes>
+    </fileSet>
+    <fileSet>
+      <directory>../tools/yajsw/lib</directory>
+      <outputDirectory>/bin/lib</outputDirectory>
+      <fileMode>0755</fileMode>
     </fileSet>
     <!-- filter and chmod 755 shell scripts -->
     <fileSet>
