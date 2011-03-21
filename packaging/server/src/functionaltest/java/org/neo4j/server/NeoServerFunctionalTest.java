@@ -19,27 +19,22 @@
  */
 package org.neo4j.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.URI;
-
-import javax.ws.rs.core.MediaType;
-
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
 import org.dummy.web.service.DummyThirdPartyWebService;
 import org.junit.After;
 import org.junit.Test;
 import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.server.rest.FunctionalTestHelper;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
+import javax.ws.rs.core.MediaType;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.URI;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.*;
 
 public class NeoServerFunctionalTest {
 
@@ -147,6 +142,17 @@ public class NeoServerFunctionalTest {
         URI thirdPartyServiceUri = new URI(server.baseUri().toString() + DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT).normalize();
         String response = Client.create().resource(thirdPartyServiceUri.toString()).get(String.class);
         assertEquals("hello", response);
+    }
+
+    @Test
+    public void shouldLoadExtensionInitializers() throws Exception {
+        server = ServerBuilder.server().withThirdPartyJaxRsPackage("org.dummy.web.service", DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT)
+                .withPassingStartupHealthcheck().withRandomDatabaseDir().build();
+        server.start();
+
+        URI thirdPartyServiceUri = new URI(server.baseUri().toString() + DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT + "/sayFortyTwo").normalize();
+        String response = Client.create().resource(thirdPartyServiceUri.toString()).get(String.class);
+        assertEquals("hello 42", response);
     }
 
 }
