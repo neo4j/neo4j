@@ -5,16 +5,18 @@ Feature: Download and unpack Neo4j Server
 
   Background:
     Given a platform supported by Neo4j
-    And Neo4j version based on system property "neo4j.version"
-    And Neo4j Home based on system property "neo4j.home"
+    And a working directory at relative path "target"
+    And set Neo4j Home to "neo4j_home"
+    And Neo4j version based on system property "NEO4J_VERSION"
     And a web site at host "dist.neo4j.org"
 
   Scenario: Download Neo4j 
     When I download Neo4j (if I haven't already)
-    Then the current directory should contain a Neo4j archive
+    Then the working directory should contain a Neo4j archive
 
   Scenario: Unpack downloaded archive
     When I unpack the archive into Neo4j Home
+#    When set And the NEO4J_HOME should point to the installation
     Then Neo4j Home should contain a Neo4j Server installation
     And the Neo4j version of the installation should be correct
 
