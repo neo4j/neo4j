@@ -19,6 +19,7 @@ Then /^I (start|stop) Neo4j Server$/ do |action|
   puts `#{neo4j.home}/bin/neo4j #{action}`
   fail "already running" if $? == 256
   fail "unknown return code #{$?} " if $?!= 0
+  sleep 5
 #  puts `ps -o ppid,pid, xau`
 end
 
