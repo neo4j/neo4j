@@ -19,6 +19,13 @@
  */
 package org.neo4j.server.modules;
 
+import java.io.IOException;
+import java.net.URI;
+import java.util.HashSet;
+import java.util.Set;
+
+import javax.management.MalformedObjectNameException;
+
 import org.neo4j.server.JAXRSHelper;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
@@ -28,12 +35,6 @@ import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rrd.RrdFactory;
 import org.rrd4j.core.RrdDb;
 
-import javax.management.MalformedObjectNameException;
-import java.io.IOException;
-import java.net.URI;
-import java.util.HashSet;
-import java.util.Set;
-
 public class WebAdminModule implements ServerModule
 {
 
@@ -41,6 +42,8 @@ public class WebAdminModule implements ServerModule
 
     private static final String DEFAULT_WEB_ADMIN_PATH = "/webadmin";
     private static final String DEFAULT_WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION = "webadmin-html";
+
+    private static final String DEFAULT_WEB_VISUALIZATION_PATH = "/visualization";
 
     private NeoServer neoServer;
     private final RoundRobinJobScheduler jobScheduler = new RoundRobinJobScheduler();
@@ -60,8 +63,7 @@ public class WebAdminModule implements ServerModule
         log.info( "Mounted webadmin at [%s]", DEFAULT_WEB_ADMIN_PATH );
 
         HashSet<URI> ownedUris = new HashSet<URI>();
-        ownedUris.add( JAXRSHelper.generateUriFor( neoServer.baseUri(), DEFAULT_WEB_ADMIN_PATH ) );
-
+        ownedUris.add(JAXRSHelper.generateUriFor(neoServer.baseUri(), DEFAULT_WEB_ADMIN_PATH));
         return ownedUris;
     }
 
