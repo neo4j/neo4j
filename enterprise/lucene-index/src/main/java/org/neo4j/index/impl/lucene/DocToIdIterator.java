@@ -19,16 +19,21 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import java.util.Collection;
-
 import org.apache.lucene.document.Document;
 import org.neo4j.graphdb.index.IndexHits;
+
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.Queue;
 
 class DocToIdIterator extends AbstractIndexHits<Long>
 {
     private final Collection<Long> exclude;
     private IndexSearcherRef searcherOrNull;
     private final IndexHits<Document> source;
+    private final Queue<Long> spool = new LinkedList<Long>();
+    private int served = 0;
+    private boolean closed = false;
     
     DocToIdIterator( IndexHits<Document> source, Collection<Long> exclude, IndexSearcherRef searcherOrNull )
     {
@@ -43,6 +48,22 @@ class DocToIdIterator extends AbstractIndexHits<Long>
 
     @Override
     protected Long fetchNextOrNull()
+    {
+        Long result = getNextOrNullFromSource();
+
+        if(spool.size()>0)
+        {
+            return spool.poll();
+        }
+
+        if(result != null)
+        {
+            served++;
+        }
+        return result;
+    }
+
+    private Long getNextOrNullFromSource()
     {
         Long result = null;
         while ( result == null )
@@ -61,16 +82,17 @@ class DocToIdIterator extends AbstractIndexHits<Long>
         }
         return result;
     }
-    
+
     protected void endReached()
     {
+        closed=true;
         close();
     }
     
     @Override
     public void close()
     {
-        if ( this.searcherOrNull != null )
+        if ( !isClosed() )
         {
             this.searcherOrNull.closeStrict();
             this.searcherOrNull = null;
@@ -79,7 +101,25 @@ class DocToIdIterator extends AbstractIndexHits<Long>
 
     public int size()
     {
-        return exclude == null ? source.size() : source.size()-exclude.size();
+        if( closed )
+        {
+            return served;
+        }
+
+
+        Long result = getNextOrNullFromSource();
+        while(result!=null) {
+            spool.add( result );
+            served++;
+            result = getNextOrNullFromSource();
+        }
+
+        return served;
+    }
+
+    private boolean isClosed()
+    {
+        return searcherOrNull==null;
     }
 
     public float currentScore()
