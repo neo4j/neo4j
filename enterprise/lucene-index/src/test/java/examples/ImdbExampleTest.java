@@ -34,7 +34,6 @@ import java.util.Set;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser.Operator;
 import org.apache.lucene.search.NumericRangeQuery;
-import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.junit.After;
@@ -204,7 +203,7 @@ public class ImdbExampleTest
         assertNotNull( bellucci );
 
         // START SNIPPET: removeNodeFromIndex
-        // completely remove bellucci from the movies index
+        // completely remove bellucci from the actors index
         actors.remove( bellucci );
         // END SNIPPET: removeNodeFromIndex
 
@@ -216,7 +215,7 @@ public class ImdbExampleTest
         rollbackTx();
 
         // START SNIPPET: removeNodeFromIndex
-        // remove any "name" entry of bellucci from the movies index
+        // remove any "name" entry of bellucci from the actors index
         actors.remove( bellucci, "name" );
         // END SNIPPET: removeNodeFromIndex
 
@@ -383,7 +382,7 @@ public class ImdbExampleTest
         assertEquals( 2, hits.size() );
 
         // START SNIPPET: queryWithRelevance
-        hits = movies.query( "title", new QueryContext( "The*" ).sort( Sort.RELEVANCE ) );
+        hits = movies.query( "title", new QueryContext( "The*" ).sortByScore() );
         // END SNIPPET: queryWithRelevance
         float previous = Float.MAX_VALUE;
         // START SNIPPET: queryWithRelevance
@@ -502,9 +501,13 @@ public class ImdbExampleTest
         // using a relationship type.
         // this is how to add it to the index:
         roles.add( reevesAsNeo, "type", reevesAsNeo.getType().name() );
+        // Note that to use a compound query, we can't combine committed
+        // and uncommitted index entries, so we'll commit before querying:
+        tx.success();
+        tx.finish();
         // and now we can search for it:
         IndexHits<Relationship> typeHits;
-        typeHits = roles.get( "type", "ACTS_IN", null, theMatrix );
+        typeHits = roles.query( "type:ACTS_IN AND name:Neo", null, theMatrix );
         Relationship typeNeo = typeHits.iterator().next();
         typeHits.close();
         // END SNIPPET: queryForRelationshipType
