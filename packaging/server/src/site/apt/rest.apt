@@ -476,6 +476,29 @@ curl -H Accept:application/json http://localhost:7474/db/data/node/123/relations
 
 *** 404: Node not found
 
+* {Get relationships types}
+
+** GET /relationship/types
+
+** Example using curl
+
+---
+curl -H Accept:application/json http://localhost:7474/db/data/relationship/types
+---
+
+** Response
+
+*** 200: OK
+
+---
+[
+  "KNOWS",
+  "LOVES"
+]
+---
+
+
+
 * {Listing node indexes}
 
 ** GET /index/node

@@ -15,7 +15,7 @@ The main configuration file for the server can be found:
 conf/neo4j-server.properties
 ----
 
-This file contains serveral important settings, and although the defaults are sensible
+This file contains several important settings, and although the defaults are sensible
 administrators might choose to make changes (especially to the port settings).
 
 Set the location on disk of the database directory 
