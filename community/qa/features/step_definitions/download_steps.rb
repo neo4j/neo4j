@@ -52,6 +52,9 @@ When /^I unpack the archive into Neo4j Home$/ do
     fail 'unpacking failed' unless $?.to_i == 0
   elsif  current_platform.windows?
     unzip= File.expand_path("../../support/unzip.vbs", __FILE__)
+    cmd = "cmd /c #{unzip.tr('/', '\\')} #{full_archive_name.tr('/', '\\')} #{neo4j.home.tr('/', '\\')}"
+    puts cmd
+    puts `#{cmd}`
     puts `#{unzip} #{full_archive_name} #{neo4j.home}`
     fail 'unpacking failed' unless $?.to_i == 0
   else
