@@ -163,10 +163,6 @@
             <cucumberArg>--format</cucumberArg>
             <cucumberArg>pretty</cucumberArg>
             <cucumberArg>--format</cucumberArg>
-            <cucumberArg>junit</cucumberArg>
-            <cucumberArg>--out</cucumberArg>
-            <cucumberArg>target/surefire-report</cucumberArg>
-            <cucumberArg>--format</cucumberArg>
             <cucumberArg>usage</cucumberArg>
             <cucumberArg>--out</cucumberArg>
             <cucumberArg>target/usage.txt</cucumberArg>
