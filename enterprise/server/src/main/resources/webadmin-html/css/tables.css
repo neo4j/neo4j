@@ -1,0 +1,126 @@
+
+/**
+ * DATA TABLE
+ */
+
+table.data-table {
+  width:100%;
+}
+
+table.data-table tr {
+  background: none repeat scroll 0 0 #82BA5A;
+  color: #FFFFFF;
+}
+
+table.data-table tr:first-child > * {
+  border-top:1px solid #82ba5a !important;
+}
+
+table.data-table tr:nth-child(odd) {
+  background: none repeat scroll 0 0 #8bc760;
+}
+
+table.data-table tr th {
+  text-align:left;
+  background: none repeat scroll 0 0 #79ad54;
+  border-left: 1px solid #609a53 !important;
+}
+
+table.data-table tr > *:first-child {
+  padding-left:10px !important;
+}
+
+table.data-table tr > *:last-child {
+  padding-right:10px !important;
+} 
+
+table.data-table tr td, table.data-table tr th {    
+  vertical-align: top;
+  border-bottom: 1px solid #79ad54;
+  border-top: 1px solid #8bc760;
+  padding: 0 10px;
+  margin: 0;
+  padding: 5px 5px;
+  border-left: 1px solid #79ad54;
+}
+
+table.data-table tr:nth-child(odd) td, table.data-table tr:nth-child(odd) th {
+  border-top: 1px solid #9de06d;
+}
+
+table.data-table h3 {
+  font-size: 16px;
+  margin: 3px 0;
+  color: #fff;
+  text-shadow: 1px -1px 0 #73a650;
+}
+
+table.data-table tr td.value {
+  font-size: 14px;
+  padding: 10px 5px;
+  font-weight:bold;
+  color: #425e2d;
+}
+
+table.data-table .small {
+  color: #547939;
+  text-shadow: none;
+}
+
+/**
+ * INFO TABLE
+ */
+table.info-table {
+  width:100%;
+  font-size:12px;
+}
+
+table.info-table tr {
+  background: none repeat scroll 0 0 #82BA5A;
+  color: #FFFFFF;
+}
+
+table.info-table tr:nth-child(odd) {
+  background: none repeat scroll 0 0 #8bc760;
+}
+
+table.info-table tr th {
+  text-align:left;
+  padding: 2px 5px !important;
+}
+
+table.info-table tr td, table.info-table tr th {    
+  vertical-align: top;
+  border-bottom: 1px solid #79ad54;
+  border-top: 1px solid #8bc760;
+  padding: 0 10px;
+  margin: 2px 0;
+}
+
+table.info-table tr td:nth-child(even){
+  border-left: 1px solid #79ad54;
+}
+
+table.info-table tr:nth-child(odd) td, table.info-table tr:nth-child(odd) th {
+  border-top: 1px solid #9de06d;
+}
+
+table.info-table tr h3 {
+  font-size: 16px;
+  margin: 3px 0;
+  color: #fff;
+  text-shadow: 1px -1px 0 #73a650;
+}
+
+table.info-table tr td.value {
+  font-size: 14px;
+  padding: 10px 5px;
+  font-weight:bold;
+  color: #425e2d;
+}
+
+table.info-table .small {
+  color: #547939;
+  text-shadow: none;
+}
+

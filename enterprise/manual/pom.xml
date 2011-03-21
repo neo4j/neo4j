@@ -58,6 +58,13 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-lucene-index</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>docs</classifier>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-ha</artifactId>
       <version>${neo4j.version}</version>
       <classifier>docs</classifier>
@@ -73,6 +80,13 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-shell</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>docs</classifier>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-udc</artifactId>
       <version>${neo4j.version}</version>
       <classifier>docs</classifier>
       <scope>provided</scope>
@@ -204,6 +218,22 @@
             <configuration>
               <descriptors>
                 <descriptor>src/main/assemblies/manpages.xml</descriptor>
+              </descriptors>
+              <finalName>${project.artifactId}-${project.version}</finalName>
+              <appendAssemblyId>true</appendAssemblyId>
+              <attach>true</attach>
+            </configuration>
+          </execution>
+          <execution>
+            <id>upgrade</id>
+            <!-- disable for now -->
+            <phase>none</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <descriptors>
+                <descriptor>src/main/assemblies/upgrade.xml</descriptor>
               </descriptors>
               <finalName>${project.artifactId}-${project.version}</finalName>
               <appendAssemblyId>true</appendAssemblyId>

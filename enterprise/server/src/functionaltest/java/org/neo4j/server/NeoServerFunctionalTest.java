@@ -59,8 +59,6 @@ public class NeoServerFunctionalTest {
         FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper(server);
 
         Client client = Client.create();
-        // ClientResponse response =
-        // client.resource(server.webadminUri()).get(ClientResponse.class);
         ClientResponse response = client.resource(functionalTestHelper.getWebadminUri()).get(ClientResponse.class);
 
         assertThat(response.getStatus(), is(200));
