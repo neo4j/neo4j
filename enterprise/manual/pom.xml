@@ -65,6 +65,13 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-graph-algo</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>docs</classifier>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-ha</artifactId>
       <version>${neo4j.version}</version>
       <classifier>docs</classifier>
@@ -179,15 +186,15 @@
             <goals>
               <goal>exec</goal>
             </goals>
-				    <configuration>
-				      <executable>make</executable>
-				      <arguments>
-				        <argument>VERBOSE=1</argument>
-				        <argument>dist</argument>
-				        <argument>VERSION=${project.version}</argument>
-				        <argument>IMPORTDIR=${docs.sources}</argument>
-				      </arguments>
-				    </configuration>
+            <configuration>
+              <executable>make</executable>
+              <arguments>
+                <argument>VERBOSE=1</argument>
+                <argument>dist</argument>
+                <argument>VERSION=${project.version}</argument>
+                <argument>IMPORTDIR=${docs.sources}</argument>
+              </arguments>
+            </configuration>
           </execution>
           <execution>
             <id>upload-to-servers</id>
@@ -195,9 +202,9 @@
             <goals>
               <goal>exec</goal>
             </goals>
-				    <configuration>
-				      <executable>upload.sh</executable>
-				    </configuration>
+            <configuration>
+              <executable>upload.sh</executable>
+            </configuration>
           </execution>
         </executions>
       </plugin>
@@ -289,6 +296,36 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>manual-in-multimodule-build</id>
+      <activation>
+        <property>
+          <name>manual</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>upload-to-servers</id>
+                <configuration>
+                  <executable>manual/upload.sh</executable>
+                  <arguments>
+                    <argument>CD=1</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
   <distributionManagement>
     <site>
