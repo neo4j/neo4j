@@ -19,7 +19,7 @@ Then /^I (start|stop) Neo4j Server$/ do |action|
     puts `#{neo4j.home}/bin/neo4j #{action}`
     fail "already running" if $? == 256
     fail "unknown return code #{$?} " if $?!= 0
-    sleep 1
+    sleep 5
   elsif (current_platform.windows?)
     puts `#{neo4j.home}\\bin\\wrapper-windows-x86-32.exe #{ action == 'start' ? '-it' : '-r' } ..\\conf\\neo4j-wrapper.conf`
     fail "failed #{$?} " if $?!= 0
