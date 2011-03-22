@@ -16,7 +16,6 @@ Feature: Download and unpack Neo4j Server
 
   Scenario: Unpack downloaded archive
     When I unpack the archive into Neo4j Home
-#    When set And the NEO4J_HOME should point to the installation
     Then Neo4j Home should contain a Neo4j Server installation
     And the Neo4j version of the installation should be correct
-    And in Windows I will patch the "neo4j_home/conf/neo4j-wrapper.conf" adding "wrapper.java.command" to "#{ENV['JAVA_HOME']}/bin/java.exe"
+    And in Windows I will patch the "neo4j_home/conf/neo4j-wrapper.conf" adding "wrapper.java.command" to "#{ENV['JAVA_HOME']}\\bin\\java.exe"
