@@ -25,7 +25,8 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Priority;
 
 
-public class Logger {
+public class Logger
+{
 
     public static Logger log = Logger.getLogger(Logger.class);
 
