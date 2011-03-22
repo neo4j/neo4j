@@ -17,44 +17,28 @@ end
 Then /^I (start|stop) Neo4j Server$/ do |action|
   if (current_platform.unix?)
     puts `#{neo4j.home}/bin/neo4j #{action}`
-    fail "already running" if $? == 256
-    fail "unknown return code #{$?} " if $?!= 0
-    sleep 5
   elsif (current_platform.windows?)
     puts `#{neo4j.home}\\bin\\wrapper-windows-x86-32.exe #{ action == 'start' ? '-it' : '-r' } ..\\conf\\neo4j-wrapper.conf`
-    fail "failed #{$?} " if $?!= 0
-
-    uri = "http://localhost:7474"
-    begin
-      response = Net::HTTP.get_response(URI.parse(uri))
-      puts "DEBUG:========================"
-      p response
-    rescue Exception=>e
-      puts "DEBUG:========================"
-      p e
-    end
-
-    sleep 2
-    begin
-      response = Net::HTTP.get_response(URI.parse(uri))
-      puts "DEBUG:========================"
-      p response
-    rescue Exception=>e
-      puts "DEBUG:========================"
-      p e
-    end
-
-    sleep 3
-    begin
-      response = Net::HTTP.get_response(URI.parse(uri))
-      puts "DEBUG:========================"
-      p response
-    rescue Exception=>e
-      puts "DEBUG:========================"
-      p e
-    end
   else
     fail 'platform not supported'
+  end
+  fail "failed #{$?} " if $?!= 0
+end
+
+
+When /^wait for Server started at "([^\"]*)"$/ do |uri|
+  i = 0
+  while i<30 do
+    p i
+    begin
+      response = Net::HTTP.get_response(URI.parse(uri))
+      p response
+      return if (response.code.to_i == 200)
+    rescue Exception=>e
+      p e
+    end
+    sleep 1
+    i += 1
   end
 end
 
