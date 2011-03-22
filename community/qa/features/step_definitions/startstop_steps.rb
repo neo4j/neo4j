@@ -19,10 +19,40 @@ Then /^I (start|stop) Neo4j Server$/ do |action|
     puts `#{neo4j.home}/bin/neo4j #{action}`
     fail "already running" if $? == 256
     fail "unknown return code #{$?} " if $?!= 0
-    sleep 20
+    sleep 5
   elsif (current_platform.windows?)
     puts `#{neo4j.home}\\bin\\wrapper-windows-x86-32.exe #{ action == 'start' ? '-it' : '-r' } ..\\conf\\neo4j-wrapper.conf`
     fail "failed #{$?} " if $?!= 0
+
+    uri = "http://localhost:7474"
+    begin
+      response = Net::HTTP.get_response(URI.parse(uri))
+      puts "DEBUG:========================"
+      p response
+    rescue Exception=>e
+      puts "DEBUG:========================"
+      p e
+    end
+
+    sleep 2
+    begin
+      response = Net::HTTP.get_response(URI.parse(uri))
+      puts "DEBUG:========================"
+      p response
+    rescue Exception=>e
+      puts "DEBUG:========================"
+      p e
+    end
+
+    sleep 3
+    begin
+      response = Net::HTTP.get_response(URI.parse(uri))
+      puts "DEBUG:========================"
+      p response
+    rescue Exception=>e
+      puts "DEBUG:========================"
+      p e
+    end
   else
     fail 'platform not supported'
   end
