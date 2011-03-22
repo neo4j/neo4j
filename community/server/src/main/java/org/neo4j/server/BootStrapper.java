@@ -60,6 +60,8 @@ public class BootStrapper
                     getConfigFile(),
                     webServer);
             server.start();
+            log.info( "Server started and listening on %s", server.baseUri() );
+
 
             Runtime.getRuntime().addShutdownHook(new Thread() {
                 @Override
