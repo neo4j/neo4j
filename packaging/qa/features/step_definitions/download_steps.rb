@@ -12,6 +12,7 @@ end
 
 Given /^set Neo4j Home to "([^"]*)"$/ do |home|
   neo4j.home = File.expand_path(home)
+  neo4j.home = neo4j.home.tr('/', '\\') if (current_platform.windows?)
   puts "using neo4j.home "+neo4j.home
   ENV["NEO4J_HOME"] = neo4j.home
   Dir.mkdir(neo4j.home) unless File.exists?(neo4j.home)
@@ -51,8 +52,9 @@ When /^I unpack the archive into Neo4j Home$/ do
     `tar xzf #{full_archive_name} --strip-components 1`
     fail "unpacking failed (#{$?})" unless $?.to_i == 0
   elsif  current_platform.windows?
-    unzip= File.expand_path("../../support/unzip.vbs", __FILE__)
-    cmd = "cmd /c #{unzip.tr('/', '\\')} #{full_archive_name.tr('/', '\\')} #{neo4j.home.tr('/', '\\')}"
+    unzip = File.expand_path("../../support/unzip.vbs", __FILE__).tr('/', '\\')
+    full_archive_name = full_archive_name.tr('/', '\\')
+    cmd = "cmd /c #{unzip} #{full_archive_name} #{neo4j.home}"
     puts cmd
     puts `#{cmd}`
     fail "unpacking failed (#{$?})" unless $?.to_i == 0
@@ -63,7 +65,13 @@ When /^I unpack the archive into Neo4j Home$/ do
 end
 
 Then /^Neo4j Home should contain a Neo4j Server installation$/ do
-  fail "file "+neo4j.home+"/bin/neo4j not found" unless File.exists?(neo4j.home+"/bin/neo4j")
+  if (current_platform.unix?)
+    fail "file "+neo4j.home+"/bin/neo4j not found" unless File.exists?(neo4j.home+"/bin/neo4j")
+  elsif (current_platform.windows?)
+    fail "file "+neo4j.home+"\\bin\\neo4j.bat not found" unless File.exists?(neo4j.home+"\\bin\\neo4j.bat")
+  else
+    fail 'platform not supported'
+  end
 end
 
 Then /^the Neo4j version of the installation should be correct$/ do
@@ -76,7 +84,6 @@ end
 
 When /^in (Windows|Unix) I will patch the "([^\"]*)" adding "([^\"]*)" to ("[^\"]*")$/ do |platform, config, param, value|
   if (platform == "Windows" && current_platform.windows?) || (platform == "Unix" && current_platform.unix?)
-    puts "patching"
     File.open(config, "a") do |config_file|
       config_file.puts "#{param}=" + eval(value)
     end
