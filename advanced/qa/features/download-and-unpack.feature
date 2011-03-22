@@ -10,7 +10,7 @@ Feature: Download and unpack Neo4j Server
     And Neo4j version based on system property "NEO4J_VERSION"
     And a web site at host "dist.neo4j.org"
 
-  Scenario: Download Neo4j 
+  Scenario: Download Neo4j
     When I download Neo4j (if I haven't already)
     Then the working directory should contain a Neo4j archive
 
@@ -19,4 +19,4 @@ Feature: Download and unpack Neo4j Server
 #    When set And the NEO4J_HOME should point to the installation
     Then Neo4j Home should contain a Neo4j Server installation
     And the Neo4j version of the installation should be correct
-
+    And in Windows I will patch the "neo4j_home/conf/neo4j-wrapper.conf" adding "wrapper.java.command" to "#{ENV['JAVA_HOME']}/bin/java.exe"
