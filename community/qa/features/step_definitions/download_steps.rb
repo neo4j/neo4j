@@ -74,3 +74,11 @@ Then /^the Neo4j version of the installation should be correct$/ do
   end
 end
 
+When /^in (Windows|Unix) I will patch the "([^\"]*)" adding "([^\"]*)" to ("[^\"]*")$/ do |platform, config, param, value|
+  if (platform == "Windows" && current_platform.windows?) || (platform == "Unix" && current_platform.unix?)
+    puts "patching"
+    File.open(config, "a") do |config_file|
+      config_file.puts "#{param}=" + eval(value)
+    end
+  end
+end
