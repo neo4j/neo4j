@@ -174,21 +174,32 @@
         <artifactId>exec-maven-plugin</artifactId>
         <executions>
           <execution>
+            <id>execute-asciidoc</id>
             <phase>compile</phase>
             <goals>
               <goal>exec</goal>
             </goals>
+				    <configuration>
+				      <executable>make</executable>
+				      <arguments>
+				        <argument>VERBOSE=1</argument>
+				        <argument>dist</argument>
+				        <argument>VERSION=${project.version}</argument>
+				        <argument>IMPORTDIR=${docs.sources}</argument>
+				      </arguments>
+				    </configuration>
+          </execution>
+          <execution>
+            <id>upload-to-servers</id>
+            <phase>deploy</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+				    <configuration>
+				      <executable>upload.sh</executable>
+				    </configuration>
           </execution>
         </executions>
-        <configuration>
-          <executable>make</executable>
-          <arguments>
-            <argument>VERBOSE=1</argument>
-            <argument>dist</argument>
-            <argument>VERSION=${project.version}</argument>
-            <argument>IMPORTDIR=${docs.sources}</argument>
-          </arguments>
-        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
