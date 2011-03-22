@@ -24,6 +24,8 @@ CHUNKEDOFFLINEHTMLDIR = $(BUILDDIR)/chunked-offline
 CHUNKEDTARGET     = $(BUILDDIR)/neo4j-manual.chunked
 MANPAGES         = $(BUILDDIR)/manpages
 UPGRADE          = $(BUILDDIR)/upgrade
+FILTERSRC        = $(CURDIR)/src/bin/resources
+FILTERDEST       = ~/.asciidoc/filters
 
 ifdef VERBOSE
 	V = -v
@@ -50,27 +52,24 @@ endif
 
 GENERAL_FLAGS = $(V) $(K) $(VERS) $(IMPDIR)
 
-.PHONY: all dist docbook help clean pdf latexpdf html offline-html singlehtml text cleanup annotated manpages upgrade
+.PHONY: all dist docbook help clean pdf latexpdf html offline-html singlehtml text cleanup annotated manpages upgrade installfilter
 
 help:
 	@echo "Please use 'make <target>' where <target> is one of"
 	@echo "  clean       to clean the build directory"
 	@echo "  dist        to generate the common distribution formats"
 	@echo "  pdf         to generate a PDF file using FOP"
-	@echo "  latexpdf    to generate a PDF file using LaTeX"
 	@echo "  html        to make standalone HTML files"
 	@echo "  singlehtml  to make a single large HTML file"
 	@echo "  text        to make text files"
 	@echo "  annotated   to make a single annotated HTML file"
 	@echo "  manpages    to make the manpages"
-	@echo "  all         to make all formats"
 	@echo "For verbose output, use 'VERBOSE=1'".
 	@echo "To keep temporary files, use 'KEEP=1'".
 	@echo "To set the version, use 'VERSION=[the version]'".
+	@echo "To set the importdir, use 'IMPORTDIR=[the importdir]'".
 
-dist: pdf html offline-html annotated text manpages upgrade cleanup
-
-all: pdf latexpdf html offline-html singlehtml text annotated manpages cleanup
+dist: installfilter pdf html offline-html annotated text manpages upgrade cleanup
 
 clean:
 	-rm -rf $(BUILDDIR)/*
@@ -90,6 +89,15 @@ ifndef KEEP
 	rm -f $(UPGRADE)/*.xml
 	rm -f $(UPGRADE)/*.html
 endif
+
+installfilter:
+	#
+	#
+	# Installing asciidoc filters.
+	#
+	#
+	mkdir -p $(FILTERDEST)
+	cp -fru $(FILTERSRC)/* $(FILTERDEST)
 
 copyimages:
 	#

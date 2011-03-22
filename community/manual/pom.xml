@@ -253,10 +253,22 @@
         </configuration>
       </plugin>
       <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-docs</id>
+            <phase>none</phase>
+          </execution>
+          <execution>
+            <id>attach-test-jar</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <artifactId>maven-release-plugin</artifactId>
         <configuration>
           <tag>${releaseVersion}</tag>
-          <tagBase>https://svn.neo4j.org/documentation/${short-name}/tags</tagBase>
         </configuration>
       </plugin>
       <plugin>
