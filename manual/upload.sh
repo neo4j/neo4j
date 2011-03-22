@@ -3,6 +3,12 @@ set -e
 
 # Deploys build artifacts to relevant servers
 
+if [[ $CD ]]
+then
+	cd manual
+fi
+
+
 # Which version the documentation is now.
 VERSION=$(cat target/classes/version)
 
@@ -40,3 +46,9 @@ ssh docs-server "cd $ROOTPATHDOCS/chunked/ && (rm $SYMLINKVERSION || true); ln -
 ssh dist-server "cd $ROOTPATHDIST && (rm neo4j-manual-$SYMLINKVERSION.pdf || true); ln -s neo4j-manual-$VERSION.pdf neo4j-manual-$SYMLINKVERSION.pdf"
 
 echo Apparently, successfully copied artifacts to docs-server and dist-server.
+
+if [[ $CD ]]
+then
+	cd ..
+fi
+
