@@ -898,7 +898,7 @@ installdaemon() {
         eval echo  'Must be root to perform this action.'
         exit 1
     else
-      COMMAND_LINE="$java_exe $yajsw_java_options -jar $yajsw_jar -i $WRAPPER_CONF &"
+      COMMAND_LINE="$java_exe $yajsw_java_options -jar $yajsw_jar -i $WRAPPER_CONF"
       eval $COMMAND_LINE
     fi
 }
@@ -909,130 +909,9 @@ removedaemon() {
         exit 1
     else
         stopit "0"
-        APP_NAME_LOWER=`echo "$APP_NAME" | tr [A-Z] [a-z]`
-        if [ "$DIST_OS" = "solaris" ] ; then
-            eval echo  'Detected Solaris:'
-            if [ -f "/etc/init.d/$APP_NAME" ] ; then
-                eval echo  ' Removing $APP_LONG_NAME daemon...'
-                for i in "/etc/rc3.d/S20$APP_NAME_LOWER" "/etc/rc3.d/K20$APP_NAME_LOWER" "/etc/init.d/$APP_NAME"
-                do
-                    rm -f $i
-                done
-            else
-                eval echo  ' The $APP_LONG_NAME daemon is not currently installed.'
-                exit 1
-            fi
-        elif [ "$DIST_OS" = "linux" ] ; then
-            if [ -f /etc/redhat-release -o -f /etc/redhat_version -o -f /etc/fedora-release ] ; then
-                eval echo  'Detected RHEL or Fedora:'
-                if [ -f "/etc/init.d/$APP_NAME" ] ; then
-                    eval echo  ' Removing $APP_LONG_NAME daemon...'
-                    /sbin/chkconfig "$APP_NAME" off
-                    /sbin/chkconfig --del "$APP_NAME"
-                    rm -f "/etc/init.d/$APP_NAME"
-                else
-                    eval echo  ' The $APP_LONG_NAME daemon is not currently installed.'
-                    exit 1
-                fi
-            elif [ -f /etc/SuSE-release ] ; then
-                eval echo  'Detected SuSE or SLES:'
-                if [ -f "/etc/init.d/$APP_NAME" ] ; then
-                    eval echo  ' Removing $APP_LONG_NAME daemon...'
-                    insserv -r "/etc/init.d/$APP_NAME"
-                    rm -f "/etc/init.d/$APP_NAME"
-                else
-                    eval echo  ' The $APP_LONG_NAME daemon is not currently installed.'
-                    exit 1
-                fi
-            elif [ -f /etc/lsb-release ] ; then
-                eval echo  'Detected Ubuntu:'
-                if [ -f "/etc/init.d/$APP_NAME" ] ; then
-                    eval echo  ' Removing $APP_LONG_NAME daemon...'
-                    update-rc.d -f "$APP_NAME" remove
-                    rm -f "/etc/init.d/$APP_NAME"
-                else
-                    eval echo  ' The $APP_LONG_NAME daemon is not currently installed.'
-                    exit 1
-                fi
-            else
-                eval echo  'Detected Linux:'
-                if [ -f "/etc/init.d/$APP_NAME" ] ; then
-                    eval echo  ' Removing $APP_LONG_NAME daemon...'
-                    for i in "/etc/rc3.d/K20$APP_NAME_LOWER" "/etc/rc5.d/K20$APP_NAME_LOWER" "/etc/rc3.d/S20$APP_NAME_LOWER" "/etc/init.d/$APP_NAME" "/etc/rc5.d/S20$APP_NAME_LOWER"
-                    do
-                        rm -f $i
-                    done
-                else
-                    eval echo  ' The $APP_LONG_NAME daemon is not currently installed.'
-                    exit 1
-                fi
-            fi
-        elif [ "$DIST_OS" = "hpux" ] ; then
-            eval echo  'Detected HP-UX:'
-            if [ -f "/sbin/init.d/$APP_NAME" ] ; then
-                eval echo  ' Removing $APP_LONG_NAME daemon...'
-                for i in "/sbin/rc3.d/K20$APP_NAME_LOWER" "/sbin/rc3.d/S20$APP_NAME_LOWER" "/sbin/init.d/$APP_NAME"
-                do
-                    rm -f $i
-                done
-            else
-                eval echo  ' The $APP_LONG_NAME daemon is not currently installed.'
-                exit 1
-            fi
-        elif [ "$DIST_OS" = "aix" ] ; then
-            eval echo  'Detected AIX:'
-            if [ -f "/etc/rc.d/init.d/$APP_NAME" ] ; then
-                eval echo  ' Removing $APP_LONG_NAME daemon...'
-                for i in "/etc/rc.d/rc2.d/S20$APP_NAME_LOWER" "/etc/rc.d/rc2.d/K20$APP_NAME_LOWER" "/etc/rc.d/init.d/$APP_NAME"
-                do
-                    rm -f $i
-                done
-            else
-                eval echo  ' The $APP_LONG_NAME daemon is not currently installed.'
-                exit 1
-            fi
-        elif [ "$DIST_OS" = "freebsd" ] ; then
-            eval echo  'Detected FreeBSD:'
-            if [ -f "/etc/rc.d/$APP_NAME" ] ; then
-                eval echo  ' Removing $APP_LONG_NAME daemon...'
-                for i in "/etc/rc.d/$APP_NAME"
-                do
-                    rm -f $i
-                done
-                sed -i .bak "/${APP_NAME}_enable=\"YES\"/d" /etc/rc.conf
-            else
-                eval echo  ' The $APP_LONG_NAME daemon is not currently installed.'
-                exit 1
-            fi
-        elif [ "$DIST_OS" = "macosx" ] ; then
-            eval echo  'Detected Mac OSX:'
-            if [ -f "/Library/LaunchDaemons/${APP_PLIST}" ] ; then
-                eval echo  ' Removing $APP_LONG_NAME daemon...'
-                # Make sure the plist is installed
-                LOADED_PLIST=`launchctl list | grep ${APP_PLIST_BASE}`
-                if [ "X${LOADED_PLIST}" != "X" ] ; then
-                    launchctl unload "/Library/LaunchDaemons/${APP_PLIST}"
-                fi
-                rm -f "/Library/LaunchDaemons/${APP_PLIST}"
-            else
-                eval echo  ' The $APP_LONG_NAME daemon is not currently installed.'
-                exit 1
-            fi
-        elif [ "$DIST_OS" = "zos" ] ; then
-            eval echo  'Detected z/OS:'
-            if [ -f /etc/rc.bak ] ; then
-                eval echo  ' Removing $APP_LONG_NAME daemon...'
-                cp /etc/rc /etc/rc.bak
-                sed  "s/_BPX_JOBNAME=\'APP_NAME\'.*//g" /etc/rc.bak > /etc/rc
-                rm /etc/rc.bak
-            else
-                eval echo  ' The $APP_LONG_NAME daemon is not currently installed.'
-                exit 1
-            fi
-        else
-            eval echo  'Remove not currently supported for $DIST_OS'
-            exit 1
-        fi
+
+        COMMAND_LINE="$java_exe $yajsw_java_options -jar $yajsw_jar -r $WRAPPER_CONF"
+        eval $COMMAND_LINE
     fi
 }
 
