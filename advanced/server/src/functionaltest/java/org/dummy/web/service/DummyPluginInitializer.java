@@ -31,7 +31,6 @@ public class DummyPluginInitializer implements PluginLifecycle
 {
     public DummyPluginInitializer()
     {
-        System.out.println();
     }
 
     @Override
