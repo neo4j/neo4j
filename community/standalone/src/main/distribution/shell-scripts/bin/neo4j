@@ -5,8 +5,9 @@ APP_NAME="neo4j-server"
 APP_LONG_NAME="Neo4j Server"
 
 # Wrapper
-WRAPPER_CMD="wrapper.sh"
+WRAPPER_CMD="wrapper.jar"
 WRAPPER_CONF="../conf/neo4j-wrapper.conf"
+
 
 # Priority at which to run the wrapper.  See "man nice" for valid priorities.
 #  nice is only used if a priority is specified.
@@ -101,6 +102,31 @@ done
 # Change the current directory to the location of the script
 cd "`dirname "$REALPATH"`"
 REALDIR=`pwd`
+
+#
+# yajsw env
+#
+yajsw_home="$REALDIR"/..
+export yajsw_home
+
+yajsw_jar="$REALDIR"/wrapper.jar
+export yajsw_jar
+
+yajsw_java_options=-Xmx15m
+export yajsw_java_options
+
+# ABK: this needs to be more sophisticated
+java_exe=java
+export java_exe
+
+conf_file="$yajsw_home"/conf/neo4j-wrapper.conf
+export conf_file
+
+conf_default_file="$yajsw_home"/conf/wrapper.conf.default
+export conf_default_file
+
+### end of yajsw env
+
 
 # If the PIDDIR is relative, set its value relative to the full REALPATH to avoid problems if
 #  the working directory is later changed.
@@ -666,7 +692,8 @@ console() {
     then
         trap '' 3
         # The string passed to eval must handles spaces in paths correctly.
-        COMMAND_LINE="$REALDIR/runConsole.sh"
+        #COMMAND_LINE="$REALDIR/runConsole.sh"
+        COMMAND_LINE="$java_exe $yajsw_java_options -jar $yajsw_jar -c $WRAPPER_CONF"
         eval $COMMAND_LINE
     else
         eval echo  '$APP_LONG_NAME is already running.'
@@ -766,9 +793,11 @@ start() {
     getpid
     if [ "X$pid" = "X" ]
     then
-      COMMAND_LINE="$REALDIR/runConsole.sh &"
-        eval $COMMAND_LINE
-        echo $! > $PIDFILE
+      #COMMAND_LINE="$WRAPPER_CMD -c $WRAPPER_CONF &"
+      COMMAND_LINE="$java_exe $yajsw_java_options -jar $yajsw_jar -c $WRAPPER_CONF &"
+      eval $COMMAND_LINE
+      PID=$!
+      echo $PID > $PIDFILE
     else
         eval echo  '$APP_LONG_NAME is already running.'
         exit 1
