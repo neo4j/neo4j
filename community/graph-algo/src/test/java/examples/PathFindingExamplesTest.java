@@ -19,7 +19,10 @@
  */
 package examples;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.File;
+import java.util.Iterator;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -44,16 +47,16 @@ import org.neo4j.kernel.Traversal;
 
 import common.Neo4jAlgoTestCase;
 
-public class SiteExamples
+public class PathFindingExamplesTest
 {
     private static GraphDatabaseService graphDb;
     private Transaction tx;
-    
+
     private static enum ExampleTypes implements RelationshipType
     {
         MY_TYPE
     }
-    
+
     @BeforeClass
     public static void startDb()
     {
@@ -61,30 +64,30 @@ public class SiteExamples
         Neo4jAlgoTestCase.deleteFileOrDirectory( new File( storeDir ) );
         graphDb = new EmbeddedGraphDatabase( storeDir );
     }
-    
+
     @Before
     public void doBefore()
     {
         tx = graphDb.beginTx();
     }
-    
+
     @After
     public void doAfter()
     {
         tx.success();
         tx.finish();
     }
-    
+
     @AfterClass
     public static void shutdownDb()
     {
         graphDb.shutdown();
     }
-    
+
     @Test
-    // START SNIPPET: shortestPathUsage
     public void shortestPathExample()
     {
+        // START SNIPPET: shortestPathUsage
         Node startNode = graphDb.createNode();
         Node middleNode1 = graphDb.createNode();
         Node middleNode2 = graphDb.createNode();
@@ -92,7 +95,7 @@ public class SiteExamples
         Node endNode = graphDb.createNode();
         createRelationshipsBetween( startNode, middleNode1, endNode );
         createRelationshipsBetween( startNode, middleNode2, middleNode3, endNode );
-        
+
         // Will find the shortest path between startNode and endNode via
         // "MY_TYPE" relationships (in OUTGOING direction), like f.ex:
         //
@@ -101,10 +104,17 @@ public class SiteExamples
         PathFinder<Path> finder = GraphAlgoFactory.shortestPath(
                 Traversal.expanderForTypes( ExampleTypes.MY_TYPE, Direction.OUTGOING ), 15 );
         Iterable<Path> paths = finder.findAllPaths( startNode, endNode );
+        // END SNIPPET: shortestPathUsage
+        Path path = paths.iterator().next();
+        assertEquals( 2, path.length() );
+        assertEquals( startNode, path.startNode() );
+        assertEquals( endNode, path.endNode() );
+        Iterator<Node> iterator = path.nodes().iterator();
+        iterator.next();
+        assertEquals( middleNode1, iterator.next() );
     }
-    // END SNIPPET: shortestPathUsage
-    
-    private void createRelationshipsBetween( Node... nodes )
+
+    private void createRelationshipsBetween( final Node... nodes )
     {
         for ( int i = 0; i < nodes.length - 1; i++ )
         {
@@ -121,13 +131,13 @@ public class SiteExamples
         rel.setProperty( "cost", 1d );
         findCheapestPathWithDijkstra( node1, node2 );
     }
-    
+
     // START SNIPPET: dijkstraUsage
-    public WeightedPath findCheapestPathWithDijkstra( Node start, Node end )
+    public WeightedPath findCheapestPathWithDijkstra( final Node start, final Node end )
     {
         PathFinder<WeightedPath> finder = GraphAlgoFactory.dijkstra(
                 Traversal.expanderForTypes( ExampleTypes.MY_TYPE, Direction.BOTH ), "cost" );
-        
+
         WeightedPath path = finder.findSinglePath( start, end );
 
         // Get the weight for the found path
@@ -135,13 +145,13 @@ public class SiteExamples
         return path;
     }
     // END SNIPPET: dijkstraUsage
-    
-    private Node createNode( Object... properties )
+
+    private Node createNode( final Object... properties )
     {
         return setProperties( graphDb.createNode(), properties );
     }
-    
-    private <T extends PropertyContainer> T setProperties( T entity, Object[] properties )
+
+    private <T extends PropertyContainer> T setProperties( final T entity, final Object[] properties )
     {
         for ( int i = 0; i < properties.length; i++ )
         {
@@ -152,13 +162,13 @@ public class SiteExamples
         return entity;
     }
 
-    private Relationship createRelationship( Node start, Node end,
-            Object... properties )
+    private Relationship createRelationship( final Node start, final Node end,
+            final Object... properties )
     {
         return setProperties( start.createRelationshipTo( end, ExampleTypes.MY_TYPE ),
                 properties );
     }
-    
+
     @Test
     // START SNIPPET: astarUsage
     public void astarExample()
@@ -169,10 +179,10 @@ public class SiteExamples
         Relationship relAB = createRelationship( nodeA, nodeB, "length", 2d );
         Relationship relBC = createRelationship( nodeB, nodeC, "length", 3d );
         Relationship relAC = createRelationship( nodeA, nodeC, "length", 10d );
-        
+
         EstimateEvaluator<Double> estimateEvaluator = new EstimateEvaluator<Double>()
         {
-            public Double getCost( Node node, Node goal )
+            public Double getCost( final Node node, final Node goal )
             {
                 double dx = (Double) node.getProperty( "x" ) - (Double) goal.getProperty( "x" );
                 double dy = (Double) node.getProperty( "y" ) - (Double) goal.getProperty( "y" );
