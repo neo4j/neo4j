@@ -1,3 +1,10 @@
+1.3.M05 (2011-03-24)
+--------------------
+o Added support for HA and backup on Windows.
+o Updated index API documentation.
+o Fixed a bug in graph-algo that could produce invalid path.
+o Fixed a bug in HA that could prevent election of new master.
+
 1.3.M04 (2011-03-10)
 --------------------
 o A database can now contain 32 billion nodes/relationships and 64 billion properties.
