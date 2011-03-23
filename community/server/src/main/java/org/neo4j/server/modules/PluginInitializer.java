@@ -23,21 +23,24 @@ import org.apache.commons.configuration.Configuration;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.NeoServer;
+import org.neo4j.server.plugins.PluginLifecycle;
 import org.neo4j.server.plugins.Injectable;
-import org.neo4j.server.plugins.UnmanagedExtensionLifecycle;
 
 import java.util.Collection;
 import java.util.HashSet;
 
-public class ExtensionInitializer
+/**
+ *  Allows Plugins to provide their own initialization
+ */
+public class PluginInitializer
 {
-    private final Iterable<UnmanagedExtensionLifecycle> extensionLifecycles;
+    private final Iterable<PluginLifecycle> pluginLifecycles;
     private final NeoServer neoServer;
 
-    public ExtensionInitializer( NeoServer neoServer )
+    public PluginInitializer(NeoServer neoServer)
     {
         this.neoServer = neoServer;
-        extensionLifecycles = Service.load( UnmanagedExtensionLifecycle.class );
+        pluginLifecycles = Service.load( PluginLifecycle.class );
     }
 
     public Collection<Injectable<?>> intitializePackages( Iterable<String> packageNames )
@@ -46,20 +49,20 @@ public class ExtensionInitializer
         Configuration configuration = neoServer.getConfiguration();
 
         Collection<Injectable<?>> injectables = new HashSet<Injectable<?>>();
-        for ( UnmanagedExtensionLifecycle extensionLifecycle : extensionLifecycles )
+        for ( PluginLifecycle pluginLifecycle : pluginLifecycles)
         {
-            if ( hasPackage( extensionLifecycle, packageNames ) )
+            if ( hasPackage(pluginLifecycle, packageNames ) )
             {
-                Collection<Injectable<?>> start = extensionLifecycle.start( graphDatabaseService, configuration );
+                Collection<Injectable<?>> start = pluginLifecycle.start( graphDatabaseService, configuration );
                 injectables.addAll( start );
             }
         }
         return injectables;
     }
 
-    private boolean hasPackage( UnmanagedExtensionLifecycle extensionLifecycle, Iterable<String> packageNames )
+    private boolean hasPackage( PluginLifecycle pluginLifecycle, Iterable<String> packageNames )
     {
-        String lifecyclePackageName = extensionLifecycle.getClass().getPackage().getName();
+        String lifecyclePackageName = pluginLifecycle.getClass().getPackage().getName();
         for ( String packageName : packageNames )
         {
             if ( lifecyclePackageName.startsWith( packageName ) )
@@ -72,9 +75,9 @@ public class ExtensionInitializer
 
     public void stop()
     {
-        for ( UnmanagedExtensionLifecycle extensionLifecycle : extensionLifecycles )
+        for ( PluginLifecycle pluginLifecycle : pluginLifecycles)
         {
-            extensionLifecycle.stop();
+            pluginLifecycle.stop();
         }
     }
 }

@@ -24,9 +24,28 @@ import org.neo4j.graphdb.GraphDatabaseService;
 
 import java.util.Collection;
 
-public interface UnmanagedExtensionLifecycle
+/**
+ *  Interface to be implemented and exposed via the Java ServiceLocator mechanism that allows
+ *  plugins to provide their own initialization.<br/>
+ *  The implementations of this interface have to be listed in a file
+ *  META-INF/services/org.neo4j.server.plugins.PluginLifecycle
+ *  that contains the fully qualified class names of the individual plugin. This file
+ *  has to be supplied with the plugin jar to the Neo4j server.<br/>
+ *  The plugin might return a collection of @{see Injectable}s that can later be used with
+ *  @Context injections.
+ */
+public interface PluginLifecycle
 {
+    /**
+     * Called at initialization time, before the plugin ressources are acutally loaded.
+     * @param graphDatabaseService of the Neo4j service, use it to integrate it with custom configuration mechanisms
+     * @param config server configuration
+     * @return A list of @{see Injectable}s that will be available to resource dependency injection later
+     */
     Collection<Injectable<?>> start( GraphDatabaseService graphDatabaseService, Configuration config );
 
+    /**
+     * called to shutdown individual external resources or configurations
+     */
     void stop();
 }
