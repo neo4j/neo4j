@@ -20,13 +20,9 @@
 package org.neo4j.server;
 
 import java.io.File;
-import java.net.MalformedURLException;
 
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.core.util.StatusPrinter;
-import org.apache.log4j.BasicConfigurator;
-import org.apache.log4j.PropertyConfigurator;
-import org.apache.log4j.xml.DOMConfigurator;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.logging.Logger;
