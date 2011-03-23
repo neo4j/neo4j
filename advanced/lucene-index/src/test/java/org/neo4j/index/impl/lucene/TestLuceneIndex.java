@@ -1201,21 +1201,4 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
             restartTx();
         }
     }
-
-    @Test
-	public void shouldCountCorrectlyEvenIfNodesHaveBeenRemoved() {
-		Index<Node> nodeIndex = graphDb.index().forNodes("index");
-		Node node = graphDb.createNode();
-		nodeIndex.add(node, "key1", "value1");
-		Node node2 = graphDb.createNode();
-		nodeIndex.add(node2, "key2", "value2");
-
-		restartTx();
-		nodeIndex.remove(node);
-
-		IndexHits<Node> hits = nodeIndex.get("key2", "value2");
-		assertEquals(node2, hits.getSingle());
-		assertEquals(1, hits.size());
-		hits.close();
-	}
 }
