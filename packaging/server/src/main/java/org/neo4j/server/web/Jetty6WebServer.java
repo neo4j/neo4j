@@ -69,8 +69,9 @@ public class Jetty6WebServer implements WebServer
          *  This is the recommended, programmatic way for jetty to acquire an
          *  alternate logging class.
          */
-        System.getProperties().put( "org.mortbay.log.class",
-                "org.neo4j.server.logging.JettyLoggerAdapter" );
+        // all logging has switched to slf4j, which jetty should use
+//        System.getProperties().put( "org.mortbay.log.class",
+//                "org.neo4j.server.logging.JettyLoggerAdapter" );
         jetty = new Server(jettyPort);
         jetty.setStopAtShutdown(true);
         MovedContextHandler redirector = new MovedContextHandler();
