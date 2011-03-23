@@ -20,8 +20,12 @@
 package org.neo4j.server;
 
 import java.io.File;
+import java.net.MalformedURLException;
 
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.core.util.StatusPrinter;
 import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.xml.DOMConfigurator;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.server.configuration.Configurator;
@@ -30,6 +34,9 @@ import org.neo4j.server.startup.healthcheck.ConfigFileMustBePresentRule;
 import org.neo4j.server.startup.healthcheck.Neo4jPropertiesMustExistRule;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.web.Jetty6WebServer;
+import org.slf4j.LoggerFactory;
+import org.slf4j.bridge.SLF4JBridgeHandler;
+import uk.org.lidalia.sysoutslf4j.context.SysOutOverSLF4J;
 
 public class BootStrapper
 {
@@ -40,6 +47,7 @@ public class BootStrapper
     public static final Integer WEB_SERVER_STARTUP_ERROR_CODE = 1;
     public static final Integer GRAPH_DATABASE_STARTUP_ERROR_CODE = 2;
     public static final String KEY_LOG4J_CONFIG_XML_PATH = "log4j.config.xml.path";
+    public static final String KEY_LOG4J_CONFIG_PROPS_PATH = "log4j.config.props.path";
 
     private NeoServerWithEmbeddedWebServer server;
 
@@ -119,6 +127,14 @@ public class BootStrapper
 
     private static void configureLogging()
     {
+        SLF4JBridgeHandler.install();
+        SysOutOverSLF4J.sendSystemOutAndErrToSLF4J();
+
+        // print logback's internal status
+        LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
+        StatusPrinter.print( lc );
+
+        /**
         String log4jConfigPath = System.getProperty( KEY_LOG4J_CONFIG_XML_PATH );
         if ( log4jConfigPath != null )
         {
@@ -127,8 +143,22 @@ public class BootStrapper
         }
         else
         {
+            String log4jPropsPathProperty = System.getProperty( KEY_LOG4J_CONFIG_PROPS_PATH, "conf" + File.separator + "log4j.properties");
+            File log4jProps = new File(log4jPropsPathProperty);
+            if (log4jProps.exists()) {
+                try
+                {
+                    PropertyConfigurator.configure( log4jProps.toURI().toURL() );
+                    System.out.println( "Configured logging from file: " + log4jProps );
+                } catch ( MalformedURLException e )
+                {
+                    BasicConfigurator.configure();
+                }
+            } else {
             BasicConfigurator.configure();
-            System.out.println( "Configured default logging." );
+            System.out.println( "Configured default logging. Bleh" );
+            }
         }
+         **/
     }
 }
