@@ -1,3 +1,8 @@
+1.3.M05 (2011-03-24)
+--------------------
+o Updated documentation
+o Moved QueryContext and ValueContext to be part of API
+
 1.3.M04 (2011-03-10)
 --------------------
 o Fixed an issue where batch inserter indexes would ignore numeric values.
