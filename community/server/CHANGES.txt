@@ -1,3 +1,10 @@
+1.3.M05 (2011-03-24)
+--------------------
+o New look and feel of the webadmin
+o New visual data browser
+o Updated to Gremlin 0.8
+o Added docs for server plugin initialization.
+
 1.3.M04 (2011-03-10)
 --------------------
 o All manpages are included in the manual.
