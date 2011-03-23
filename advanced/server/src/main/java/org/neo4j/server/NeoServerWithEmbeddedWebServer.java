@@ -27,13 +27,8 @@ import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseMode;
 import org.neo4j.server.logging.Logger;
-import org.neo4j.server.modules.DiscoveryModule;
-import org.neo4j.server.modules.ExtensionInitializer;
-import org.neo4j.server.modules.ManagementApiModule;
-import org.neo4j.server.modules.RESTApiModule;
-import org.neo4j.server.modules.ServerModule;
-import org.neo4j.server.modules.ThirdPartyJAXRSModule;
-import org.neo4j.server.modules.WebAdminModule;
+import org.neo4j.server.modules.*;
+import org.neo4j.server.modules.PluginInitializer;
 import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.plugins.PluginManager;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
@@ -61,7 +56,7 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
     private final AddressResolver addressResolver;
 
     private List<ServerModule> serverModules = new ArrayList<ServerModule>();
-    private ExtensionInitializer extensionInitializer;
+    private PluginInitializer pluginInitializer;
 
     public NeoServerWithEmbeddedWebServer(AddressResolver addressResolver, StartupHealthCheck startupHealthCheck, File configFile, WebServer webServer) {
         this.addressResolver = addressResolver;
@@ -91,9 +86,12 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
         startWebServer();
     }
 
-    private void startExtensionInitialization()
+    /**
+     *  Initializes individual plugins using the mechanism provided via @{see PluginInitializer} and the java service locator
+     */
+    protected void startExtensionInitialization()
     {
-        extensionInitializer = new ExtensionInitializer( this );
+        pluginInitializer = new PluginInitializer( this );
     }
 
     /**
@@ -200,9 +198,12 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
         }
     }
 
+    /**
+     * shuts down initializers of individual plugins
+     */
     private void stopExtensionInitializers()
     {
-        extensionInitializer.stop(  );
+        pluginInitializer.stop(  );
     }
 
     private void stopWebServer() {
@@ -268,7 +269,7 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
     @Override
     public Collection<Injectable<?>> getInjectables( List<String> packageNames )
     {
-        return extensionInitializer.intitializePackages( packageNames );
+        return pluginInitializer.intitializePackages( packageNames );
     }
 
     private boolean hasModule(Class<? extends ServerModule> clazz) {
