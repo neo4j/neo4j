@@ -132,19 +132,19 @@ public class PathFindingExamplesTest
         findCheapestPathWithDijkstra( node1, node2 );
     }
 
-    // START SNIPPET: dijkstraUsage
-    public WeightedPath findCheapestPathWithDijkstra( final Node start, final Node end )
+    public WeightedPath findCheapestPathWithDijkstra( final Node startNode, final Node endNode )
     {
+        // START SNIPPET: dijkstraUsage
         PathFinder<WeightedPath> finder = GraphAlgoFactory.dijkstra(
                 Traversal.expanderForTypes( ExampleTypes.MY_TYPE, Direction.BOTH ), "cost" );
 
-        WeightedPath path = finder.findSinglePath( start, end );
+        WeightedPath path = finder.findSinglePath( startNode, endNode );
 
         // Get the weight for the found path
         path.weight();
+        // END SNIPPET: dijkstraUsage
         return path;
     }
-    // END SNIPPET: dijkstraUsage
 
     private Node createNode( final Object... properties )
     {
@@ -170,9 +170,9 @@ public class PathFindingExamplesTest
     }
 
     @Test
-    // START SNIPPET: astarUsage
     public void astarExample()
     {
+        // START SNIPPET: astarUsage
         Node nodeA = createNode( "name", "A", "x", 0d, "y", 0d );
         Node nodeB = createNode( "name", "B", "x", 2d, "y", 1d );
         Node nodeC = createNode( "name", "C", "x", 7d, "y", 0d );
@@ -194,6 +194,6 @@ public class PathFindingExamplesTest
                 Traversal.expanderForAllTypes(),
                 CommonEvaluators.doubleCostEvaluator( "length" ), estimateEvaluator );
         Path path = astar.findSinglePath( nodeA, nodeC );
+        // END SNIPPET: astarUsage
     }
-    // END SNIPPET: astarUsage
 }

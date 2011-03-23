@@ -9,17 +9,17 @@ Path finding examples
 
 	Calculating the shortest path (least number of relationships) between node A and B
 	
-%{source-code|snippet=shortestPathUsage|file=src/test/java/examples/SiteExamples.java}
+%{source-code|snippet=shortestPathUsage|file=src/test/java/examples/PathFindingExamplesTest.java}
 
 	Using Dijkstra to calculate cheapest path between node A and B where each relationship
 	can have a weight (i.e. cost) and the path(s) with least cost are found.
 
-%{source-code|snippet=dijkstraUsage|file=src/test/java/examples/SiteExamples.java}
+%{source-code|snippet=dijkstraUsage|file=src/test/java/examples/PathFindingExamplesTest.java}
 
 	Using A* to calculate the cheapest path between node A and B, where cheapest is
 	f.ex. the path in a network of roads which has the shortest length between node A and B.
 
-%{source-code|snippet=astarUsage|file=src/test/java/examples/SiteExamples.java}
+%{source-code|snippet=astarUsage|file=src/test/java/examples/PathFindingExamplesTest.java}
 
 Other algos
 
