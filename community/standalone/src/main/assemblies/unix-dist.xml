@@ -92,7 +92,7 @@
         <include>org.apache.servicemix.bundles:org.apache.servicemix.bundles.lucene</include>
         <include>org.jboss.netty:netty</include>
         <include>org.apache.zookeeper:zookeeper</include>
-        <include>log4j:log4j</include>
+        <!-- include>log4j:log4j</include -->
       </includes>
       <excludes>
         <exclude>*:javadoc:*</exclude>
