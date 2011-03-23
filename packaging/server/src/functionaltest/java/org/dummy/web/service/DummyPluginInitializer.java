@@ -21,15 +21,15 @@ package org.dummy.web.service;
 
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.server.plugins.PluginLifecycle;
 import org.neo4j.server.plugins.Injectable;
-import org.neo4j.server.plugins.UnmanagedExtensionLifecycle;
 
 import java.util.Collection;
 import java.util.Collections;
 
-public class DummyExtensionInitializer implements UnmanagedExtensionLifecycle
+public class DummyPluginInitializer implements PluginLifecycle
 {
-    public DummyExtensionInitializer()
+    public DummyPluginInitializer()
     {
         System.out.println();
     }
