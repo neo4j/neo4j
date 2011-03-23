@@ -15,18 +15,6 @@ PRIORITY=
 # Location of the pid file.
 PIDDIR="../data"
 
-# If uncommented, causes the Wrapper to be shutdown using an anchor file.
-#  When launched with the 'start' command, it will also ignore all INT and
-#  TERM signals.
-#IGNORE_SIGNALS=true
-
-# Wrapper will start the JVM asynchronously. Your application may have some
-#  initialization tasks and it may be desirable to wait a few seconds
-#  before returning.  For example, to delay the invocation of following
-#  startup scripts.  Setting WAIT_AFTER_STARTUP to a positive number will
-#  cause the start command to delay for the indicated period of time 
-#  (in seconds).
-# 
 WAIT_AFTER_STARTUP=0
 
 # If set, wait for the wrapper to report that the daemon has started
@@ -56,19 +44,6 @@ WAIT_FOR_STARTED_TIMEOUT=120
 #  prefix the plist file name.
 PLIST_DOMAIN=org.tanukisoftware.wrapper
  
-# Initialization block for the install_initd and remove_initd scripts used by
-#  SUSE linux distributions.
-### BEGIN INIT INFO
-# Provides: testwrapper
-# Required-Start: $local_fs $network $syslog
-# Should-Start: 
-# Required-Stop:
-# Default-Start: 2 3 4 5
-# Default-Stop: 0 1 6
-# Short-Description: Test Wrapper Sample Application
-# Description: Test Wrapper Sample Application Description
-### END INIT INFO
-
 # Do not modify anything beyond this point
 #-----------------------------------------------------------------------------
 
@@ -406,7 +381,8 @@ if [ "X$DETAIL_STATUS$WAIT_FOR_STARTED_STATUS" = "X" ]
 then
    STATUSPROP=
 else
-   STATUSPROP="wrapper.statusfile=\"$STATUSFILE\" wrapper.java.statusfile=\"$JAVASTATUSFILE\""
+   STATUSPROP=
+   #STATUSPROP="wrapper.statusfile=\"$STATUSFILE\" wrapper.java.statusfile=\"$JAVASTATUSFILE\""
 fi
 
 if [ ! -n "$WAIT_FOR_STARTED_STATUS" ]
@@ -415,7 +391,8 @@ then
 fi
 
 if [ $WAIT_FOR_STARTED_STATUS = true ] ; then
-    DETAIL_STATUS=true
+    # DETAIL_STATUS=true // ABK: not produced by yajsw
+    DETAIL_STATUS=
 fi
 
 
@@ -677,6 +654,11 @@ launchdinternal() {
     fi
 }
 
+mkpid() {
+  PID=$!
+  echo $PID > $PIDFILE
+}
+
 console() {
     eval echo  'Running $APP_LONG_NAME...'
     getpid
@@ -684,7 +666,7 @@ console() {
     then
         trap '' 3
         # The string passed to eval must handles spaces in paths correctly.
-        COMMAND_LINE="$CMDNICE \"$WRAPPER_CMD\" \"$WRAPPER_CONF\" wrapper.syslog.ident=\"$APP_NAME\" wrapper.pidfile=\"$PIDFILE\" wrapper.name=\"$APP_NAME\" wrapper.displayname=\"$APP_LONG_NAME\" $ANCHORPROP $STATUSPROP $LOCKPROP"
+        COMMAND_LINE="$REALDIR/runConsole.sh"
         eval $COMMAND_LINE
     else
         eval echo  '$APP_LONG_NAME is already running.'
@@ -784,9 +766,9 @@ start() {
     getpid
     if [ "X$pid" = "X" ]
     then
-        # The string passed to eval must handles spaces in paths correctly.
-        COMMAND_LINE="$CMDNICE \"$WRAPPER_CMD\" \"$WRAPPER_CONF\" wrapper.syslog.ident=\"$APP_NAME\" wrapper.pidfile=\"$PIDFILE\" wrapper.name=\"$APP_NAME\" wrapper.displayname=\"$APP_LONG_NAME\" wrapper.daemonize=TRUE $ANCHORPROP $IGNOREPROP $STATUSPROP $LOCKPROP"
+      COMMAND_LINE="$REALDIR/runConsole.sh &"
         eval $COMMAND_LINE
+        echo $! > $PIDFILE
     else
         eval echo  '$APP_LONG_NAME is already running.'
         exit 1
@@ -808,6 +790,7 @@ stopit() {
             exit 1
         fi
     else
+        eval echo '\tpid: $pid'
         if [ "X$IGNORE_SIGNALS" = "X" ]
         then
             # Running so try to stop it.
@@ -986,10 +969,10 @@ installdaemon() {
                     echo "name=\"$APP_NAME\"" >> "/etc/rc.d/$APP_NAME"
                     echo "rcvar=\`set_rcvar\`" >> "/etc/rc.d/$APP_NAME"
                     echo "command=\"${REALDIR}/${APP_NAME}\"" >> "/etc/rc.d/$APP_NAME"
-                    echo 'start_cmd="${name}_start"' >> "/etc/rc.d/$APP_NAME"
+                    echo 'start_cmd="Neo4j - Server Assembler_start"' >> "/etc/rc.d/$APP_NAME"
                     echo 'load_rc_config $name' >> "/etc/rc.d/$APP_NAME"
-                    echo 'status_cmd="${name}_status"' >> "/etc/rc.d/$APP_NAME"
-                    echo 'stop_cmd="${name}_stop"' >> "/etc/rc.d/$APP_NAME"
+                    echo 'status_cmd="Neo4j - Server Assembler_status"' >> "/etc/rc.d/$APP_NAME"
+                    echo 'stop_cmd="Neo4j - Server Assembler_stop"' >> "/etc/rc.d/$APP_NAME"
                     echo "${APP_NAME}_status() {" >> "/etc/rc.d/$APP_NAME"
                     echo '${command} status' >> "/etc/rc.d/$APP_NAME"
                     echo '}' >> "/etc/rc.d/$APP_NAME"
