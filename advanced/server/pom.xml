@@ -96,12 +96,11 @@ external servers to be running at http://localhost:7474/ -->
       <scope>test</scope>
     </dependency>
 
-    <!--
     <dependency>
       <groupId>log4j</groupId>
       <artifactId>log4j</artifactId>
+      <scope>test</scope>
     </dependency>
-    -->
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
