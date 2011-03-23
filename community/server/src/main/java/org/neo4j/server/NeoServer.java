@@ -19,15 +19,14 @@
  */
 package org.neo4j.server;
 
+import java.util.Collection;
+import java.util.List;
+
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.plugins.PluginManager;
-
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
 
 public interface NeoServer {
     void start();
