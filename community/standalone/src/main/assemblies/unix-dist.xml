@@ -121,6 +121,14 @@
         <exclude>log4j:log4j</exclude>
       </excludes>
     </dependencySet>
+    <dependencySet>
+      <outputDirectory>system/coord/lib</outputDirectory>
+      <unpack>false</unpack>
+      <useProjectArtifact>false</useProjectArtifact>
+      <includes>
+        <include>log4j:log4j</include>
+      </includes>
+    </dependencySet>
     <!-- java examples -->
     <dependencySet>
       <outputDirectory>examples/java/embedded</outputDirectory>
