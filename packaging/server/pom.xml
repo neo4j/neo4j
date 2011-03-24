@@ -9,7 +9,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.app</groupId>
   <artifactId>neo4j-server</artifactId>
-  <version>1.3-SNAPSHOT</version>
+  <version>1.3.M05</version>
   <name>Neo4j Server</name>
   <description>Standalone Neo4j server application.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -31,7 +31,7 @@
     <!-- For cucumber "feature" tests -->
     <cuke4duke.version>0.4.3</cuke4duke.version>
     <pico.version>2.11.2</pico.version>
-    <cukeArgs></cukeArgs>
+    <cukeArgs />
     
     <webdriver.version>2.0b1</webdriver.version>
     <webdriver.impl.class>org.openqa.selenium.firefox.FirefoxDriver</webdriver.impl.class>
