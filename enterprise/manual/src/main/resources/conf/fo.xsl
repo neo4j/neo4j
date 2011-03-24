@@ -214,6 +214,12 @@
   </fo:inline>
 </xsl:template>
 
+<xsl:attribute-set name="monospace.verbatim.properties" use-attribute-sets="verbatim.properties">
+  <xsl:attribute name="font-size">8pt</xsl:attribute>
+  <xsl:attribute name="line-height">11pt</xsl:attribute>
+  <xsl:attribute name="background-color">#F0F0F0</xsl:attribute>
+</xsl:attribute-set>
+
 <!-- color for links -->
 <xsl:attribute-set name="xref.properties">
   <xsl:attribute name="color">
