@@ -2,6 +2,23 @@
 setlocal
 call setenv.bat
 
+rem This script is the main controller for the server
+rem There are commands to install, uninstall, start, stop 
+rem and restart the service on windows and also run it as
+rem a console process. For the first four operations however,
+rem Administrator rights are required. To enable the Administrator
+rem account, issue in the command line
+rem
+rem net user Administrator /active:yes
+rem net user Administrator <new passwd>
+rem
+rem and then to run a command from the console as admin,
+rem
+rem runas /env /user:Administrator Neo4j.bat install
+rem
+rem You will be prompted for the admin passwd and then
+rem the service will be installed.
+
 set _WRAPPER_CONF_DEFAULT="../conf/neo4j-wrapper.conf"
 set _WRAPPER_CONF=%_WRAPPER_CONF_DEFAULT%
 
