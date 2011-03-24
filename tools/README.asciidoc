@@ -9,8 +9,11 @@ yajsw
 A fork of http://sourceforge.net/projects/yajsw/[Yet Another Java Service Wrapper], 
 used to launch the server.
 
-Note that this is a git submodule. 
+Note that this is a git submodule. To see content, you'll need to:
 
+* `cd ..`
+* `git submodule init`
+* `git submodule update`
 
 Ha-Ops 
 ------
