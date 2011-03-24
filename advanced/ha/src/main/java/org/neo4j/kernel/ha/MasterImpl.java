@@ -383,7 +383,7 @@ public class MasterImpl implements Master
                 }
                 // Put back slave one tx so that it gets one transaction
                 txs.add( Pair.of( resourceName, dataSource.getLastCommittedTxId() - 1 ) );
-                System.out.println( "Pushed in one extra tx " + dataSource.getLastCommittedTxId() );
+//                System.out.println( "Pushed in one extra tx " + dataSource.getLastCommittedTxId() );
             }
             else
             {
