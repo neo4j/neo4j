@@ -56,10 +56,9 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
- * The {@link Master} a slave should use to communicate with its master. It
- * serializes requests and sends them to the master, more specifically
- * {@link Server} (which delegates to {@link MasterImpl}
- * on the master side.
+ * A means for a client to communicate with a {@link Server}. It
+ * serializes requests and sends them to the server and waits for
+ * a response back.
  */
 public abstract class Client<M> implements ChannelPipelineFactory
 {
@@ -272,7 +271,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
 
     public void shutdown()
     {
-        msgLog.logMessage( "MasterClient shutdown", true );
+        msgLog.logMessage( getClass().getSimpleName() + " shutdown", true );
         channelPool.close( true );
         executor.shutdownNow();
     }

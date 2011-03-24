@@ -278,7 +278,7 @@ public abstract class IteratorUtil
      * 
      * @param <T> the type of elements in {@code iterator}.
      * @param iterable the {@link Iterable} to get elements from.
-     * @param n the n:th item from the end to get.
+     * @param countFromEnd the n:th item from the end to get.
      * @return the iterator's n:th item from the end of the iteration,
      * or {@code null} if the iterator doesn't contain that many items.
      */
