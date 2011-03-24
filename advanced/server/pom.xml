@@ -9,7 +9,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.app</groupId>
   <artifactId>neo4j-server</artifactId>
-  <version>1.3.M05</version>
+  <version>1.3-SNAPSHOT</version>
   <name>Neo4j Server</name>
   <description>Standalone Neo4j server application.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -36,7 +36,7 @@
     <webdriver.version>2.0b1</webdriver.version>
     <webdriver.impl.class>org.openqa.selenium.firefox.FirefoxDriver</webdriver.impl.class>
 
-    <neo4j.version>1.3.M05</neo4j.version>
+    <neo4j.version>1.3-SNAPSHOT</neo4j.version>
     <neo4js.version>0.6</neo4js.version>
   </properties>
 
