@@ -70,7 +70,7 @@
           mainmenu: [
             {
               label: "Dashboard",
-              subtitle: "Get a grip",
+              subtitle: "Overview",
               url: "#",
               current: location.hash === ""
             }, {
@@ -85,7 +85,7 @@
               current: location.hash === "#/console/"
             }, {
               label: "Server info",
-              subtitle: "Detailed information",
+              subtitle: "Detailed Stats",
               url: "#/info/",
               current: location.hash === "#/info/"
             }
