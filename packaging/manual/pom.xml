@@ -203,7 +203,7 @@
               <goal>exec</goal>
             </goals>
             <configuration>
-              <executable>upload.sh</executable>
+              <executable>${project.build.directory}/../upload.sh</executable>
             </configuration>
           </execution>
         </executions>
@@ -296,36 +296,6 @@
       </plugin>
     </plugins>
   </build>
-
-  <profiles>
-    <profile>
-      <id>manual-in-multimodule-build</id>
-      <activation>
-        <property>
-          <name>manual</name>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>exec-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>upload-to-servers</id>
-                <configuration>
-                  <executable>manual/upload.sh</executable>
-                  <arguments>
-                    <argument>CD=1</argument>
-                  </arguments>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 
   <distributionManagement>
     <site>
