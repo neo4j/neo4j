@@ -9,7 +9,7 @@
 
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j</artifactId>
-  <version>1.3-SNAPSHOT</version>
+  <version>1.3.M05</version>
   <name>Neo4j</name>
   <packaging>jar</packaging>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -29,37 +29,37 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.3-SNAPSHOT</version>
+      <version>1.3.M05</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-lucene-index</artifactId>
-      <version>1.3-SNAPSHOT</version>
+      <version>1.3.M05</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-graph-algo</artifactId>
-      <version>1.3-SNAPSHOT</version>
+      <version>1.3.M05</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-udc</artifactId>
-      <version>1.3-SNAPSHOT</version>
+      <version>1.3.M05</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-management</artifactId>
-      <version>1.3-SNAPSHOT</version>
+      <version>1.3.M05</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-com</artifactId>
-      <version>1.3-SNAPSHOT</version>
+      <version>1.3.M05</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-ha</artifactId>
-      <version>1.3-SNAPSHOT</version>
+      <version>1.3.M05</version>
     </dependency>
     <!-- Needed for the javadoc generation! -->
     <dependency>
