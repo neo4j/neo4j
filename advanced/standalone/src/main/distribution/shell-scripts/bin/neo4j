@@ -887,7 +887,11 @@ status() {
             eval echo  '$APP_LONG_NAME is running: PID:$pid'
         else
             getstatus
-            eval echo  '$APP_LONG_NAME is running: PID:$pid, Wrapper:$STATUS, Java:$JAVASTATUS'
+            eval echo  '$APP_LONG_NAME is running' 
+            eval echo  'PID : $pid'
+            COMMAND_LINE="$java_exe $yajsw_java_options -jar $yajsw_jar -q $WRAPPER_CONF"
+            eval $COMMAND_LINE
+            #eval echo  '$APP_LONG_NAME is running: PID:$pid, Wrapper:$STATUS, Java:$JAVASTATUS'
         fi
         exit 0
     fi
