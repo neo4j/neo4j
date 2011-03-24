@@ -22,6 +22,10 @@ package org.neo4j.graphdb.index;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
+
 /**
  * An {@link Iterator} with additional {@link #size()} and {@link #close()}
  * methods on it, used for iterating over index query results. It is first and
@@ -40,11 +44,16 @@ import java.util.NoSuchElementException;
 public interface IndexHits<T> extends Iterator<T>, Iterable<T>
 {
     /**
-     * Returns the size of this iterable. The size is given at construction time
-     * so that the size is known before-hand so that it's basically just a
-     * simple return statement of an integer variable.
+     * Returns the size of this iterable, in most scenarios this value is accurate
+     * while in some scenarios near-accurate.
      * 
-     * @return the size if this iterable.
+     * There's no cost in calling this method. It's considered near-accurate if this
+     * {@link IndexHits} object has been returned when inside a {@link Transaction}
+     * which has index modifications, of a certain nature. Also entities
+     * ({@link Node}s/{@link Relationship}s) which have been deleted from the graph,
+     * but are still in the index will also affect the accuracy of the returned size.
+     * 
+     * @return the near-accurate size if this iterable.
      */
     int size();
 
