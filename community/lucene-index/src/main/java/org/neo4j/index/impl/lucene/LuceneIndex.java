@@ -187,7 +187,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
      * 
      * Because of performance issues, including uncommitted transaction modifications
      * in the result is disabled by default, but can be enabled using
-     * {@link QueryContext#allowQueryingModifications()}. 
+     * {@link QueryContext#tradeCorrectnessForSpeed()}. 
      */
     public IndexHits<T> query( String key, Object queryOrQueryObject )
     {

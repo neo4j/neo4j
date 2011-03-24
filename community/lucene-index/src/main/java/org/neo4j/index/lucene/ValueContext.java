@@ -64,7 +64,7 @@ public class ValueContext
      * Returns the string representation of the value given in the constructor,
      * or the unmodified value if {@link #indexNumeric()} has been called.
      * 
-     * @return 
+     * @return the, by the user, intended value to index.
      */
     public Object getCorrectValue()
     {

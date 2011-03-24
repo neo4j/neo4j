@@ -204,7 +204,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                     try
                     {
                         copyStoreFromMaster( master );
-                        System.out.println( "copied store from master" );
+                        msgLog.logMessage( "copied store from master" );
                         exception = null;
                         break;
                     }

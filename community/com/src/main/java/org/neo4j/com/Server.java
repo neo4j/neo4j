@@ -57,7 +57,8 @@ import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Sits on the master side, receiving serialized requests from slaves (via
- * {@link Client}). Delegates actual work to {@link MasterImpl}.
+ * {@link Client}). Delegates actual work to an instance of a specified communication
+ * interface, injected in the constructor. 
  */
 public abstract class Server<M, R> extends Protocol implements ChannelPipelineFactory
 {
@@ -326,7 +327,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
     {
         // Close all open connections
         deadConnectionsPoller.shutdown();
-        msgLog.logMessage( "Master server shutdown, closing all channels", true );
+        msgLog.logMessage( getClass().getSimpleName() + " shutdown, closing all channels", true );
         channelGroup.close().awaitUninterruptibly();
         executor.shutdown();
         // TODO This should work, but blocks with busy wait sometimes
