@@ -42,6 +42,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
@@ -278,8 +279,8 @@ public class TestUpgradeStore
     {
         String oldVersion = "NeoStore v0.9.6";
         FileChannel channel = new RandomAccessFile( new File( path, "neostore" ), "rw" ).getChannel();
-        channel.position( channel.size()-oldVersion.getBytes().length );
-        ByteBuffer buffer = ByteBuffer.wrap( oldVersion.getBytes() );
+        channel.position( channel.size() - UTF8.encode( oldVersion ).length );
+        ByteBuffer buffer = ByteBuffer.wrap( UTF8.encode( oldVersion ) );
         channel.write( buffer );
         channel.close();
     }
@@ -295,8 +296,8 @@ public class TestUpgradeStore
         channel.write( buffer );
         
         // It's the same length as the current version v0.9.9
-        channel.position( channel.size()-oldVersionToSet.getBytes().length );
-        buffer = ByteBuffer.wrap( oldVersionToSet.getBytes() );
+        channel.position( channel.size() - UTF8.encode( oldVersionToSet ).length );
+        buffer = ByteBuffer.wrap( UTF8.encode( oldVersionToSet ) );
         channel.write( buffer );
         channel.close();
     }

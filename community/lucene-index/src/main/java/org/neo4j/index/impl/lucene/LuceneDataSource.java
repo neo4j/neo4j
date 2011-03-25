@@ -59,6 +59,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
+import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.ClosableIterable;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.cache.LruCache;
@@ -81,7 +82,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaTransactionFactory;
 public class LuceneDataSource extends LogBackedXaDataSource
 {
     public static final String DEFAULT_NAME = "lucene-index";
-    public static final byte[] DEFAULT_BRANCH_ID = "162374".getBytes();
+    public static final byte[] DEFAULT_BRANCH_ID = UTF8.encode( "162374" );
     
     /**
      * Default {@link Analyzer} for fulltext parsing.

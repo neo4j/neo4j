@@ -48,6 +48,7 @@ import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResource;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -136,7 +137,7 @@ public class TxManager extends AbstractTransactionManager
                 fc.read( buf );
                 fc.close();
                 String currentTxLog = txLogDir + separator
-                    + new String( fileName ).trim();
+                    + UTF8.decode( fileName ).trim();
                 if ( !new File( currentTxLog ).exists() )
                 {
                     throw new TransactionFailureException( 
@@ -223,7 +224,7 @@ public class TxManager extends AbstractTransactionManager
         // change active log
         FileChannel fc = new RandomAccessFile( logSwitcherFileName, "rw" )
             .getChannel();
-        ByteBuffer buf = ByteBuffer.wrap( newFileName.getBytes() );
+        ByteBuffer buf = ByteBuffer.wrap( UTF8.encode( newFileName ) );
         fc.truncate( 0 );
         fc.write( buf );
         fc.force( true );

@@ -27,6 +27,7 @@ import java.nio.channels.OverlappingFileLockException;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
@@ -681,7 +682,7 @@ public abstract class CommonAbstractStore
                 {
                     fileChannel.position( highId * recordSize );
                     ByteBuffer buffer = ByteBuffer.wrap(
-                        getTypeAndVersionDescriptor().getBytes() );
+                        UTF8.encode( getTypeAndVersionDescriptor() ) );
                     fileChannel.write( buffer );
                     fileChannel.truncate( fileChannel.position() );
                     fileChannel.force( false );
