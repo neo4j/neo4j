@@ -30,6 +30,7 @@ import javax.transaction.TransactionManager;
 import org.junit.Test;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
+import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
@@ -46,7 +47,7 @@ public class TestKernelPanic
             graphDb.getConfig().getTxModule().getXaDataSourceManager();
         
         IllBehavingXaDataSource noob = new IllBehavingXaDataSource();
-        xaDs.registerDataSource( "noob", noob, "554342".getBytes() );
+        xaDs.registerDataSource( "noob", noob, UTF8.encode( "554342" ) );
         
         Panic panic = new Panic();
         graphDb.registerKernelEventHandler( panic );

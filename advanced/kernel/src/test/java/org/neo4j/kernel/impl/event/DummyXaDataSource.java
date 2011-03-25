@@ -25,6 +25,7 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
+import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
@@ -66,7 +67,7 @@ public class DummyXaDataSource extends XaDataSource
     {
         public byte[] getBranchId()
         {
-            return "554342".getBytes();
+            return UTF8.encode( "554342" );
         }
 
         public void setBranchId( byte[] branchId )
