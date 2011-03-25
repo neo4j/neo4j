@@ -28,6 +28,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
@@ -99,9 +100,9 @@ public abstract class AbstractStore extends CommonAbstractStore
         try
         {
             FileChannel channel = new FileOutputStream( fileName ).getChannel();
-            int endHeaderSize = typeAndVersionDescriptor.getBytes().length;
+            int endHeaderSize = UTF8.encode( typeAndVersionDescriptor ).length;
             ByteBuffer buffer = ByteBuffer.allocate( endHeaderSize );
-            buffer.put( typeAndVersionDescriptor.getBytes() ).flip();
+            buffer.put( UTF8.encode( typeAndVersionDescriptor ) ).flip();
             channel.write( buffer );
             channel.force( false );
             channel.close();
@@ -130,7 +131,7 @@ public abstract class AbstractStore extends CommonAbstractStore
         {
             long fileSize = getFileChannel().size();
             String expectedVersion = getTypeAndVersionDescriptor();
-            byte version[] = new byte[expectedVersion.getBytes().length];
+            byte version[] = new byte[UTF8.encode( expectedVersion ).length];
             ByteBuffer buffer = ByteBuffer.wrap( version );
             if ( fileSize >= version.length )
             {
@@ -141,9 +142,9 @@ public abstract class AbstractStore extends CommonAbstractStore
                 setStoreNotOk();
             }
             getFileChannel().read( buffer );
-            if ( !expectedVersion.equals( new String( version ) ) && !isReadOnly() )
+            if ( !expectedVersion.equals( UTF8.decode( version ) ) && !isReadOnly() )
             {
-                if ( !versionFound( new String( version ) ) )
+                if ( !versionFound( UTF8.decode( version ) ) )
                 {
                     setStoreNotOk();
                 }
