@@ -92,7 +92,7 @@ class GraphDbInstance
         StringLogger logger = StringLogger.getLogger( storeDir );
         AutoConfigurator autoConfigurator = new AutoConfigurator( storeDir, useMemoryMapped, dumpToConsole );
         autoConfigurator.configure( subset( config.getInputParams(), Config.USE_MEMORY_MAPPED_BUFFERS ) );
-        params.putAll( config.getInputParams() );
+        // params.putAll( config.getInputParams() );
 
         String separator = System.getProperty( "file.separator" );
         String store = storeDir + separator + "neostore";

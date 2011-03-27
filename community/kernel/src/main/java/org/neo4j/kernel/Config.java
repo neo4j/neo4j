@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.persistence.IdGeneratorModule;
 import org.neo4j.kernel.impl.persistence.PersistenceModule;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TxModule;
-import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 
 /**
@@ -112,16 +111,18 @@ public class Config
             LockReleaser lockReleaser, IdGeneratorFactory idGeneratorFactory,
             TxEventSyncHookFactory txSyncHookFactory,
             RelationshipTypeCreator relTypeCreator, TxIdGenerator txIdGenerator,
-            LastCommittedTxIdSetter lastCommittedTxIdSetter, FileSystemAbstraction fileSystem,
-            LogBufferFactory logBufferFactory )
+            LastCommittedTxIdSetter lastCommittedTxIdSetter,
+            FileSystemAbstraction fileSystem )
     {
         this.storeDir = storeDir;
         this.inputParams = inputParams;
+        // Get the default params and override with the user supplied values
+        this.params = getDefaultParams();
+        this.params.putAll( inputParams );
+
         this.idGeneratorFactory = idGeneratorFactory;
         this.relTypeCreator = relTypeCreator;
         this.txIdGenerator = txIdGenerator;
-        this.params = getDefaultParams();
-        params.put( FileSystemAbstraction.class, fileSystem );
         this.txModule = txModule;
         this.lockManager = lockManager;
         this.lockReleaser = lockReleaser;
@@ -131,7 +132,8 @@ public class Config
         this.syncHookFactory = txSyncHookFactory;
         this.persistenceModule = new PersistenceModule();
         this.cacheManager = new AdaptiveCacheManager();
-        params.put( LogBufferFactory.class, logBufferFactory );
+        this.params.put( FileSystemAbstraction.class, fileSystem );
+        // params.put( LogBufferFactory.class, logBufferFactory );
         graphDbModule = new GraphDbModule( graphDb, cacheManager, lockManager,
                 txModule.getTxManager(), idGeneratorModule.getIdGenerator(),
                 readOnly );
@@ -160,6 +162,11 @@ public class Config
         if ( osIsWindows() )
         {
             params.put( Config.USE_MEMORY_MAPPED_BUFFERS, "false" );
+        }
+        else
+        {
+            // If not on win, default use memory mapping
+            params.put( Config.USE_MEMORY_MAPPED_BUFFERS, "true" );
         }
         return params;
     }
