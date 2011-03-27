@@ -30,6 +30,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 
@@ -452,7 +453,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
             try
             {
                 long fileSize = getFileChannel().size();
-                long recordCount = (fileSize-nineFiveVersionString.getBytes().length) / getRecordSize();
+                long recordCount = (fileSize - UTF8.encode( nineFiveVersionString ).length) / getRecordSize();
                 // 0xFFFF magic -1
                 if ( recordCount > 0xFFFF )
                 {
