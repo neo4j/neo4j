@@ -34,6 +34,8 @@ import java.util.Map;
 
 import javax.transaction.xa.Xid;
 
+import org.neo4j.helpers.UTF8;
+
 // TODO: fixed sized logs (pre-initialize them)
 // keep dangling records in memory for log switch
 // batch disk forces
@@ -358,7 +360,7 @@ public class TxLog
                 Xid xid = new XidImpl( globalId, new byte[0] );
                 if ( !recordMap.containsKey( xid ) )
                 {
-                    throw new IOException( "Branch[" + new String( branchId )
+                    throw new IOException( "Branch[" + UTF8.decode( branchId )
                         + "] found for [" + xid
                         + "] but no record list found in map" );
                 }

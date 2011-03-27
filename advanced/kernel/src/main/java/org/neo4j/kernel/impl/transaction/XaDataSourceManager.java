@@ -29,6 +29,7 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResource;
 
@@ -111,7 +112,7 @@ public class XaDataSourceManager
         dataSource.setBranchId( branchId );
         dataSource.setName( name );
         dataSources.put( name, dataSource );
-        branchIdMapping.put( new String( branchId ), dataSource );
+        branchIdMapping.put( UTF8.decode( branchId ), dataSource );
         sourceIdMapping.put( name, branchId );
     }
 
@@ -124,7 +125,7 @@ public class XaDataSourceManager
         byte branchId[] = getBranchId( 
             dataSource.getXaConnection().getXaResource() );
         dataSources.remove( name );
-        branchIdMapping.remove( new String( branchId ) );
+        branchIdMapping.remove( UTF8.decode( branchId ) );
         sourceIdMapping.remove( name );
         dataSource.close();
     }
@@ -179,12 +180,12 @@ public class XaDataSourceManager
 
     synchronized XAResource getXaResource( byte branchId[] )
     {
-        XaDataSource dataSource = branchIdMapping.get( new String( branchId ) );
+        XaDataSource dataSource = branchIdMapping.get( UTF8.decode( branchId ) );
         if ( dataSource == null )
         {
             throw new TransactionFailureException( 
                 "No mapping found for branchId[0x" +
-                new String( branchId ) + "]" );
+                UTF8.decode( branchId ) + "]" );
         }
         return dataSource.getXaConnection().getXaResource();
     }

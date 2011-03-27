@@ -38,6 +38,7 @@ import javax.transaction.xa.Xid;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
+import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
@@ -328,7 +329,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         config.put( "store_dir", "target/var" );
         config.put( LogBufferFactory.class, CommonFactories.defaultLogBufferFactory( config ) );
         xaDsMgr.registerDataSource( "dummy_datasource", new DummyXaDataSource(
-                config ), "DDDDDD".getBytes() );
+                config ), UTF8.encode( "DDDDDD" ) );
         XaDataSource xaDs = xaDsMgr.getXaDataSource( "dummy_datasource" );
         DummyXaConnection xaC = null;
         try
@@ -391,7 +392,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             config.put( "store_dir", "target/var" );
             config.put( LogBufferFactory.class, CommonFactories.defaultLogBufferFactory( config ) );
             xaDsMgr.registerDataSource( "dummy_datasource1",
-                    new DummyXaDataSource( config ), "DDDDDD".getBytes() );
+                    new DummyXaDataSource( config ), UTF8.encode( "DDDDDD" ) );
             xaDs1 = (DummyXaDataSource) xaDsMgr
                 .getXaDataSource( "dummy_datasource1" );
             xaC1 = (DummyXaConnection) xaDs1.getXaConnection();

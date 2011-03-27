@@ -30,6 +30,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -106,11 +107,11 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         {
             FileChannel channel = new FileOutputStream( fileName ).getChannel();
             int endHeaderSize = blockSize
-                + typeAndVersionDescriptor.getBytes().length;
+                + UTF8.encode( typeAndVersionDescriptor ).length;
             ByteBuffer buffer = ByteBuffer.allocate( endHeaderSize );
             buffer.putInt( blockSize );
             buffer.position( endHeaderSize - typeAndVersionDescriptor.length() );
-            buffer.put( typeAndVersionDescriptor.getBytes() ).flip();
+            buffer.put( UTF8.encode( typeAndVersionDescriptor ) ).flip();
             channel.write( buffer );
             channel.force( false );
             channel.close();
@@ -149,7 +150,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         {
             long fileSize = getFileChannel().size();
             String expectedVersion = getTypeAndVersionDescriptor();
-            byte version[] = new byte[expectedVersion.getBytes().length];
+            byte version[] = new byte[UTF8.encode( expectedVersion ).length];
             ByteBuffer buffer = ByteBuffer.wrap( version );
             getFileChannel().position( fileSize - version.length );
             getFileChannel().read( buffer );
@@ -163,9 +164,9 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
                 throw new InvalidRecordException( "Illegal block size: " + 
                     blockSize + " in " + getStorageFileName() );
             }
-            if ( !expectedVersion.equals( new String( version ) ) )
+            if ( !expectedVersion.equals( UTF8.decode( version ) ) )
             {
-                if ( !versionFound( new String( version ) ) && !isReadOnly() )
+                if ( !versionFound( UTF8.decode( version ) ) && !isReadOnly() )
                 {
                     setStoreNotOk();
                 }

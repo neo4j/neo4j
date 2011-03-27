@@ -36,6 +36,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Service;
+import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.nioneo.xa.NioNeoDbPersistenceSource;
 import org.neo4j.kernel.impl.transaction.LockManager;
@@ -101,7 +102,7 @@ class GraphDbInstance
         params.put( "create", String.valueOf( create ) );
         String logicalLog = storeDir + separator + "nioneo_logical.log";
         params.put( "logical_log", logicalLog );
-        byte resourceId[] = "414141".getBytes();
+        byte resourceId[] = UTF8.encode( "414141" );
         params.put( LockManager.class, config.getLockManager() );
         params.put( LockReleaser.class, config.getLockReleaser() );
 
@@ -116,7 +117,7 @@ class GraphDbInstance
             {
                 Class clazz = Class.forName( Config.LUCENE_DS_CLASS );
                 cleanWriteLocksInLuceneDirectory( storeDir + File.separator + "lucene" );
-                byte luceneId[] = "162373".getBytes();
+                byte luceneId[] = UTF8.encode( "162373" );
                 registerLuceneDataSource( "lucene", clazz.getName(),
                         config.getTxModule(), storeDir + File.separator + "lucene",
                         config.getLockManager(), luceneId, params );
@@ -132,7 +133,7 @@ class GraphDbInstance
             {
                 Class clazz = Class.forName( Config.LUCENE_FULLTEXT_DS_CLASS );
                 cleanWriteLocksInLuceneDirectory( storeDir + File.separator + "lucene-fulltext" );
-                byte[] luceneId = "262374".getBytes();
+                byte[] luceneId = UTF8.encode( "262374" );
                 registerLuceneDataSource( "lucene-fulltext",
                         clazz.getName(), config.getTxModule(),
                         storeDir + File.separator + "lucene-fulltext", config.getLockManager(),
