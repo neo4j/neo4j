@@ -34,6 +34,7 @@ import javax.transaction.xa.Xid;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
@@ -60,9 +61,9 @@ public class TestJtaCompliance extends AbstractNeo4jTestCase
         try
         {
             xaDsMgr.registerDataSource( "fakeRes1",
-                new DummyXaDataSource( map1 ), "0xDDDDDE".getBytes() );
+                new DummyXaDataSource( map1 ), UTF8.encode( "0xDDDDDE" ) );
             xaDsMgr.registerDataSource( "fakeRes2",
-                new DummyXaDataSource( map2 ), "0xDDDDDF".getBytes() );
+                new DummyXaDataSource( map2 ), UTF8.encode( "0xDDDDDF" ) );
         }
         catch ( Exception e )
         {
