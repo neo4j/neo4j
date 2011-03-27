@@ -61,6 +61,7 @@ import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TxFinishHook;
 import org.neo4j.kernel.impl.transaction.TxModule;
+import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGeneratorFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -111,7 +112,13 @@ class EmbeddedGraphDbImpl
         final Config config = new Config( graphDbService, storeDir, storeId, inputParams,
                 kernelPanicEventGenerator, txModule, lockManager, lockReleaser, idGeneratorFactory,
                 new SyncHookFactory(), relTypeCreator, txIdFactory.create( txModule.getTxManager() ),
-                lastCommittedTxIdSetter, fileSystem, CommonFactories.defaultLogBufferFactory( inputParams ) );
+                lastCommittedTxIdSetter, fileSystem );
+        /*
+         *  LogBufferFactory needs access to the parameters so it has to be added after the default and
+         *  user supplied configurations are consolidated
+         */
+        config.getParams().put( LogBufferFactory.class,
+                CommonFactories.defaultLogBufferFactory( config.getParams() ) );
         graphDbInstance = new GraphDbInstance( storeDir, true, config );
         this.msgLog = StringLogger.getLogger( storeDir );
         this.graphDbService = graphDbService;
@@ -159,16 +166,19 @@ class EmbeddedGraphDbImpl
                 {
                     private Collection<KernelExtension<?>> loaded;
 
+                    @Override
                     public void configureKernelExtensions()
                     {
                         loaded = extensions.loadExtensionConfigurations( msgLog );
                     }
 
+                    @Override
                     public void initializeIndexProviders()
                     {
                         extensions.loadIndexImplementations( indexManager, msgLog );
                     }
 
+                    @Override
                     public void load()
                     {
                         extensions.loadExtensions( loaded, msgLog );
@@ -404,6 +414,7 @@ class EmbeddedGraphDbImpl
     {
         return new Iterable<Node>()
         {
+            @Override
             public Iterator<Node> iterator()
             {
                 long highId = nodeManager.getHighestPossibleIdInUse( Node.class );
@@ -425,6 +436,7 @@ class EmbeddedGraphDbImpl
             this.highId = highId;
         }
 
+        @Override
         public synchronized boolean hasNext()
         {
             while ( currentNode == null && currentNodeId <= highId )
@@ -441,6 +453,7 @@ class EmbeddedGraphDbImpl
             return currentNode != null;
         }
 
+        @Override
         public synchronized Node next()
         {
             if ( !hasNext() )
@@ -453,6 +466,7 @@ class EmbeddedGraphDbImpl
             return nextNode;
         }
 
+        @Override
         public void remove()
         {
             throw new UnsupportedOperationException();
@@ -519,6 +533,7 @@ class EmbeddedGraphDbImpl
 
     private class SyncHookFactory implements TxEventSyncHookFactory
     {
+        @Override
         public TransactionEventsSyncHook create()
         {
             return transactionEventHandlers.isEmpty() ? null :
