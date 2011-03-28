@@ -5,25 +5,11 @@ Neo4j graph-algo
 	can be found in <<org.neo4j.graphalgo.GraphAlgoFactory>> factory. There you can
 	find algos for shortest paths, all paths, all simple paths, Dijkstra and A* etc.
 
-Path finding examples
-
-	Calculating the shortest path (least number of relationships) between node A and B
-	
-%{source-code|snippet=shortestPathUsage|file=src/test/java/examples/PathFindingExamplesTest.java}
-
-	Using Dijkstra to calculate cheapest path between node A and B where each relationship
-	can have a weight (i.e. cost) and the path(s) with least cost are found.
-
-%{source-code|snippet=dijkstraUsage|file=src/test/java/examples/PathFindingExamplesTest.java}
-
-	Using A* to calculate the cheapest path between node A and B, where cheapest is
-	f.ex. the path in a network of roads which has the shortest length between node A and B.
-
-%{source-code|snippet=astarUsage|file=src/test/java/examples/PathFindingExamplesTest.java}
+    See {{{http://docs.neo4j.org/chunked/snapshot/graph-algo.html}the documentation}} for more information.
 
 Other algos
 
 	There are other algorithms which can be used on smaller graphs, f.ex. calculating
 	centrality, betweeness, closeness, eccentrity and more. Those algos aren't designed
 	to scale to very big graphs, but can still be useful in some scenarios. They reside in the
-	<<org.neo4j.graphalgo.impl.centrality>> package.
+	<<org.neo4j.graphalgo.impl.centrality>> package and are not considered production quality.
