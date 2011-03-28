@@ -133,7 +133,6 @@ public class Config
         this.persistenceModule = new PersistenceModule();
         this.cacheManager = new AdaptiveCacheManager();
         this.params.put( FileSystemAbstraction.class, fileSystem );
-        // params.put( LogBufferFactory.class, logBufferFactory );
         graphDbModule = new GraphDbModule( graphDb, cacheManager, lockManager,
                 txModule.getTxManager(), idGeneratorModule.getIdGenerator(),
                 readOnly );
