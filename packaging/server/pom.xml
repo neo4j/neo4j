@@ -32,13 +32,8 @@ external servers to be running at http://localhost:7474/ -->
     <!-- For cucumber "feature" tests -->
     <cuke4duke.version>0.4.3</cuke4duke.version>
     <pico.version>2.11.2</pico.version>
-<<<<<<< HEAD
     <cukeArgs></cukeArgs>
 
-=======
-    <cukeArgs />
-    
->>>>>>> master
     <webdriver.version>2.0b1</webdriver.version>
     <webdriver.impl.class>org.openqa.selenium.firefox.FirefoxDriver</webdriver.impl.class>
 
