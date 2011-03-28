@@ -43,7 +43,7 @@ WAIT_FOR_STARTED_TIMEOUT=120
 
 # When installing on On Mac OSX platforms, the following domain will be used to
 #  prefix the plist file name.
-PLIST_DOMAIN=org.tanukisoftware.wrapper
+PLIST_DOMAIN=org.neo4j
  
 # Do not modify anything beyond this point
 #-----------------------------------------------------------------------------

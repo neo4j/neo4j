@@ -121,18 +121,14 @@
         <exclude>log4j:log4j</exclude>
       </excludes>
     </dependencySet>
-    <!-- 
-         ABK: probably not needed. zookeeper dep on log4j should work with slf4j-log4j bridge
-         TODO: remove this dependencySet
     <dependencySet>
-      <outputDirectory>system/coord/lib</outputDirectory>
+      <outputDirectory>system/coordinator/lib</outputDirectory>
       <unpack>false</unpack>
       <useProjectArtifact>false</useProjectArtifact>
       <includes>
         <include>log4j:log4j</include>
       </includes>
     </dependencySet>
-    -->
     <!-- java examples -->
     <dependencySet>
       <outputDirectory>examples/java/embedded</outputDirectory>
