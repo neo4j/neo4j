@@ -18,7 +18,7 @@ rem wrapper bat file for running the wrapper
 set wrapper_bat="%wrapper_home%\wrapper.bat"
 
 rem configuration file used by all bat files
-set conf_file="%wrapper_home%\..\conf\neo4j-wrapper.conf"
+set conf_file=%_WRAPPER_CONF%
 
 rem default configuration used in genConfig
-set conf_default_file="%wrapper_home%\..\conf\wrapper.conf.default"
+set conf_default_file=%_WRAPPER_CONF_DEFAULT%
