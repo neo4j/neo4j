@@ -30,25 +30,6 @@ public class Logger
 
     public static Logger log = Logger.getLogger(Logger.class);
 
-    private static HashSet<String> illegalParameters = new HashSet<String>();
-
-    static {
-        illegalParameters.add("%b");
-        illegalParameters.add("%h");
-        illegalParameters.add("%s");
-        illegalParameters.add("%c");
-        illegalParameters.add("%d");
-        illegalParameters.add("%o");
-        illegalParameters.add("%x");
-        illegalParameters.add("%e");
-        illegalParameters.add("%f");
-        illegalParameters.add("%g");
-        illegalParameters.add("%a");
-        illegalParameters.add("%t");
-        illegalParameters.add("%%");
-        illegalParameters.add("%n");
-    }
-
     org.apache.log4j.Logger logger;
 
     public static Logger getLogger(Class<?> clazz) {
@@ -72,16 +53,6 @@ public class Logger
     }
 
     public void log(Level level, String message, Object... parameters) {
-
-        for (Object obj : parameters) {
-            if (obj != null) {
-                String s = obj.toString();
-                if (illegalParameters.contains(s.toLowerCase())) {
-                    log.warn("Failed to log, parameters like " + s + " are not supported.");
-                    return;
-                }
-            }
-        }
 
         if (logger.isEnabledFor(level)) {
             logger.log(level, String.format(message, parameters));

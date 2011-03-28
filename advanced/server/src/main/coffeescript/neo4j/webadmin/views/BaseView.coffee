@@ -40,10 +40,10 @@ define(
 
       render : ->
         $(@el).html @template( mainmenu : [ 
-          { label : "Dashboard",   subtitle:"Get a grip",url : "#",           current: location.hash is "" }
+          { label : "Dashboard",   subtitle:"Overview",url : "#",           current: location.hash is "" }
           { label : "Data browser",subtitle:"Explore and edit",url : "#/data/" ,    current: location.hash.indexOf("#/data/") is 0 }
           { label : "Console",     subtitle:"Power tool",url : "#/console/" , current: location.hash is "#/console/" }
-          { label : "Server info", subtitle:"Detailed information",url : "#/info/" ,    current: location.hash is "#/info/" } ] )
+          { label : "Server info", subtitle:"Details",url : "#/info/" ,    current: location.hash is "#/info/" } ] )
 
         if @mainView?
           @mainView.attach($("#contents"))

@@ -1,3 +1,11 @@
+1.3.M05 (2011-03-24)
+--------------------
+o New look and feel of the webadmin
+o New visual data browser
+o Added support for HA and backup on Windows.
+o Updated index API documentation.
+o Bug fixes in graph-algo and HA.
+
 1.3.M04 (2011-03-10)
 --------------------
 o A database can now contain 32 billion nodes/relationships and 64 billion properties.

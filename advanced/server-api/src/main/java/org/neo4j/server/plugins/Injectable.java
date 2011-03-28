@@ -17,25 +17,17 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.logging;
+package org.neo4j.server.plugins;
 
-import org.junit.Test;
+public interface Injectable<T>
+{
+    /**
+     * Get the injectable value.
+     *
+     * @return the injectable value
+     */
+    T getValue();
 
-import static org.junit.Assert.assertEquals;
+    Class<T> getType();
 
-public class LoggerTest {
-
-    public static Logger log = Logger.getLogger(LoggerTest.class);
-    
-    @Test
-    public void logsShouldTolerateAccidentalControlCharacters() {
-        InMemoryAppender appender = new InMemoryAppender(log);
-        
-        String illegalParameter = "%n";
-        log.error("No configuration file at [%s]", illegalParameter);
-        
-        String emptyString = "";
-        
-        assertEquals(emptyString, appender.toString());
-    }
 }
