@@ -38,6 +38,7 @@ import org.apache.zookeeper.server.quorum.QuorumMXBean;
 import org.apache.zookeeper.server.quorum.QuorumPeerMain;
 import org.jboss.netty.handler.timeout.TimeoutException;
 import org.junit.Ignore;
+import org.neo4j.kernel.ha.zookeeper.ClusterManager;
 import org.neo4j.test.SubProcess;
 import org.neo4j.test.TargetDirectory;
 
@@ -67,7 +68,7 @@ public final class LocalhostZooKeeperCluster
                 connection.append( "localhost:" + ports[i] );
             }
             this.connection = connection.toString();
-            await( keeper, 10, TimeUnit.SECONDS );
+            await( keeper, 15, TimeUnit.SECONDS );
             success = true;
         }
         finally
@@ -76,29 +77,51 @@ public final class LocalhostZooKeeperCluster
         }
     }
 
-    private static void await( ZooKeeper[] keepers, long timeout, TimeUnit unit )
+    private void await( ZooKeeper[] keepers, long timeout, TimeUnit unit )
     {
         timeout = System.currentTimeMillis() + unit.toMillis( timeout );
-        boolean done;
         do
         {
-            done = true;
-            for ( ZooKeeper keeper : keepers )
-            {
-                if ( keeper.getQuorumSize() != keepers.length ) done = false;
-            }
-            if ( System.currentTimeMillis() > timeout )
-                throw new TimeoutException( "waiting for ZooKeeper cluster to start" );
+            ClusterManager cm = null;
             try
             {
-                Thread.sleep( 10 );
+                cm = new ClusterManager( getConnectionString() );
+                cm.waitForSyncConnected();
+                break;
+            }
+            catch ( Exception e )
+            {
+                e.printStackTrace();
+                // ok retry
+            }
+            finally
+            {
+                if ( cm != null )
+                {
+                    try
+                    {
+                        cm.shutdown();
+                    }
+                    catch ( Throwable t )
+                    {
+                        t.printStackTrace();
+                    }
+                }
+            }
+            if ( System.currentTimeMillis() > timeout )
+            {
+                throw new TimeoutException( "waiting for ZooKeeper cluster to start" );
+            }
+            try
+            {
+                Thread.sleep( 2000 );
             }
             catch ( InterruptedException e )
             {
-                throw new TimeoutException( "waiting for ZooKeeper cluster to start", e );
+                Thread.interrupted();
             }
         }
-        while ( !done );
+        while ( true );
     }
 
     @Override
@@ -171,6 +194,8 @@ public final class LocalhostZooKeeperCluster
 
     public synchronized void shutdown()
     {
+        new Exception().printStackTrace();
+        System.out.println ( "GHDJDSJDSDSFLJDFSLJLJDSHFLJHDSFJLHSDFJHLDFSLJHFSDLJHLJHDFSLJHDSFL" );
         if ( keeper.length > 0 && keeper[0] == null ) return;
         for ( ZooKeeper zk : keeper )
         {
