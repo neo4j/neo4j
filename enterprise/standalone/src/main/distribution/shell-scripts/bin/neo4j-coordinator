@@ -680,11 +680,6 @@ launchdinternal() {
     fi
 }
 
-mkpid() {
-  PID=$!
-  echo $PID > $PIDFILE
-}
-
 console() {
     eval echo  'Running $APP_LONG_NAME...'
     getpid
@@ -796,8 +791,6 @@ start() {
       #COMMAND_LINE="$WRAPPER_CMD -c $WRAPPER_CONF &"
       COMMAND_LINE="$java_exe $yajsw_java_options -jar $yajsw_jar -c $WRAPPER_CONF &"
       eval $COMMAND_LINE
-      PID=$!
-      echo $PID > $PIDFILE
     else
         eval echo  '$APP_LONG_NAME is already running.'
         exit 1
