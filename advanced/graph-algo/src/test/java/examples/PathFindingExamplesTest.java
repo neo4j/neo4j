@@ -132,13 +132,13 @@ public class PathFindingExamplesTest
         findCheapestPathWithDijkstra( node1, node2 );
     }
 
-    public WeightedPath findCheapestPathWithDijkstra( final Node startNode, final Node endNode )
+    public WeightedPath findCheapestPathWithDijkstra( final Node nodeA, final Node nodeB )
     {
         // START SNIPPET: dijkstraUsage
         PathFinder<WeightedPath> finder = GraphAlgoFactory.dijkstra(
                 Traversal.expanderForTypes( ExampleTypes.MY_TYPE, Direction.BOTH ), "cost" );
 
-        WeightedPath path = finder.findSinglePath( startNode, endNode );
+        WeightedPath path = finder.findSinglePath( nodeA, nodeB );
 
         // Get the weight for the found path
         path.weight();
@@ -174,11 +174,11 @@ public class PathFindingExamplesTest
     {
         // START SNIPPET: astarUsage
         Node nodeA = createNode( "name", "A", "x", 0d, "y", 0d );
-        Node nodeB = createNode( "name", "B", "x", 2d, "y", 1d );
-        Node nodeC = createNode( "name", "C", "x", 7d, "y", 0d );
-        Relationship relAB = createRelationship( nodeA, nodeB, "length", 2d );
-        Relationship relBC = createRelationship( nodeB, nodeC, "length", 3d );
-        Relationship relAC = createRelationship( nodeA, nodeC, "length", 10d );
+        Node nodeB = createNode( "name", "B", "x", 7d, "y", 0d );
+        Node nodeC = createNode( "name", "C", "x", 2d, "y", 1d );
+        Relationship relAB = createRelationship( nodeA, nodeC, "length", 2d );
+        Relationship relBC = createRelationship( nodeC, nodeB, "length", 3d );
+        Relationship relAC = createRelationship( nodeA, nodeB, "length", 10d );
 
         EstimateEvaluator<Double> estimateEvaluator = new EstimateEvaluator<Double>()
         {
@@ -193,7 +193,8 @@ public class PathFindingExamplesTest
         PathFinder<WeightedPath> astar = GraphAlgoFactory.aStar(
                 Traversal.expanderForAllTypes(),
                 CommonEvaluators.doubleCostEvaluator( "length" ), estimateEvaluator );
-        Path path = astar.findSinglePath( nodeA, nodeC );
+        WeightedPath path = astar.findSinglePath( nodeA, nodeB );
         // END SNIPPET: astarUsage
+        System.out.println( path.weight() );
     }
 }
