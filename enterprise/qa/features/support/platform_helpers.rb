@@ -24,7 +24,7 @@ module PlatformHelpers
       @type == WINDOWS.type
     end
 
-    def mac?
+    def unix?
       @type == UNIX.type
     end
 

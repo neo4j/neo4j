@@ -65,6 +65,13 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-graph-algo</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>docs</classifier>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-ha</artifactId>
       <version>${neo4j.version}</version>
       <classifier>docs</classifier>
@@ -174,21 +181,32 @@
         <artifactId>exec-maven-plugin</artifactId>
         <executions>
           <execution>
+            <id>execute-asciidoc</id>
             <phase>compile</phase>
             <goals>
               <goal>exec</goal>
             </goals>
+            <configuration>
+              <executable>make</executable>
+              <arguments>
+                <argument>VERBOSE=1</argument>
+                <argument>dist</argument>
+                <argument>VERSION=${project.version}</argument>
+                <argument>IMPORTDIR=${docs.sources}</argument>
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>upload-to-servers</id>
+            <phase>deploy</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>${project.build.directory}/../upload.sh</executable>
+            </configuration>
           </execution>
         </executions>
-        <configuration>
-          <executable>make</executable>
-          <arguments>
-            <argument>VERBOSE=1</argument>
-            <argument>dist</argument>
-            <argument>VERSION=${project.version}</argument>
-            <argument>IMPORTDIR=${docs.sources}</argument>
-          </arguments>
-        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -253,10 +271,22 @@
         </configuration>
       </plugin>
       <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-docs</id>
+            <phase>none</phase>
+          </execution>
+          <execution>
+            <id>attach-test-jar</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <artifactId>maven-release-plugin</artifactId>
         <configuration>
           <tag>${releaseVersion}</tag>
-          <tagBase>https://svn.neo4j.org/documentation/${short-name}/tags</tagBase>
         </configuration>
       </plugin>
       <plugin>

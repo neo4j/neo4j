@@ -22,6 +22,7 @@ package org.dummy.web.service;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
@@ -35,5 +36,12 @@ public class DummyThirdPartyWebService {
     @Produces(MediaType.TEXT_PLAIN)
     public Response sayHello() {
         return Response.ok().entity("hello").build();
+    }
+
+    @GET
+    @Path("sayFortyTwo")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response sayFortyTwo(@Context Long fortyTwo) {
+        return Response.ok().entity("hello "+fortyTwo).build();
     }
 }
