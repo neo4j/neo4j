@@ -19,12 +19,8 @@
  */
 package org.neo4j.server.web;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.HashMap;
-import java.util.List;
-
+import com.sun.jersey.api.core.ResourceConfig;
+import com.sun.jersey.spi.container.servlet.ServletContainer;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.SessionManager;
 import org.mortbay.jetty.handler.MovedContextHandler;
@@ -39,8 +35,11 @@ import org.neo4j.server.NeoServer;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rest.web.AllowAjaxFilter;
 
-import com.sun.jersey.api.core.ResourceConfig;
-import com.sun.jersey.spi.container.servlet.ServletContainer;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.List;
 
 import javax.servlet.Servlet;
 
@@ -125,7 +124,7 @@ public class Jetty6WebServer implements WebServer
         // Trim any trailing slash to keep Jetty happy
         mountPoint = trimTrailingSlash(mountPoint);
 
-        ServletContainer container = new NeoServletContainer(server);
+        ServletContainer container = new NeoServletContainer(server, server.getInjectables( packageNames ) );
         ServletHolder servletHolder = new ServletHolder(container);
         servletHolder.setInitParameter("com.sun.jersey.config.property.packages", toCommaSeparatedList(packageNames));
         servletHolder.setInitParameter(ResourceConfig.PROPERTY_CONTAINER_RESPONSE_FILTERS, AllowAjaxFilter.class.getName());

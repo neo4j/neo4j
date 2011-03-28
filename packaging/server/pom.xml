@@ -32,13 +32,18 @@ external servers to be running at http://localhost:7474/ -->
     <!-- For cucumber "feature" tests -->
     <cuke4duke.version>0.4.3</cuke4duke.version>
     <pico.version>2.11.2</pico.version>
+<<<<<<< HEAD
     <cukeArgs></cukeArgs>
 
+=======
+    <cukeArgs />
+    
+>>>>>>> master
     <webdriver.version>2.0b1</webdriver.version>
     <webdriver.impl.class>org.openqa.selenium.firefox.FirefoxDriver</webdriver.impl.class>
 
     <neo4j.version>1.3-SNAPSHOT</neo4j.version>
-    <neo4js.version>0.6-SNAPSHOT</neo4js.version>
+    <neo4js.version>0.6</neo4js.version>
   </properties>
 
   <packaging>bundle</packaging>
@@ -614,6 +619,20 @@ external servers to be running at http://localhost:7474/ -->
                   <sources>
                     <source>src/functionaltest/java</source>
                   </sources>
+                </configuration>
+              </execution>
+              <execution>
+                <id>add-test-resource</id>
+                <phase>generate-test-resources</phase>
+                <goals>
+                  <goal>add-test-resource</goal>
+                </goals>
+                <configuration>
+                  <resources>
+                    <resource>
+                        <directory>src/functionaltest/resources</directory>
+                    </resource>
+                  </resources>
                 </configuration>
               </execution>
             </executions>
