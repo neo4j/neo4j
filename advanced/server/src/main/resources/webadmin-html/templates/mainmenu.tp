@@ -1,5 +1,0 @@
-{#foreach $T.items as item}
-	<li id="mainmenu-{$T.item.page}" class="{#if $T.item.isCurrent} current{#/if}" >
-		<a href="#p={$T.item.page}{$T.urlAppend}">{$T.item.label}</a>
-	</li>
-{#/for}
