@@ -25,17 +25,20 @@
     child.__super__ = parent.prototype;
     return child;
   };
-  define(['lib/backbone'], function() {
-    var ApplicationState;
-    return ApplicationState = (function() {
-      function ApplicationState() {
-        ApplicationState.__super__.constructor.apply(this, arguments);
+  define(['./JmxBackedModel', 'lib/backbone'], function(JmxBackedModel) {
+    var KernelBean;
+    return KernelBean = (function() {
+      function KernelBean() {
+        KernelBean.__super__.constructor.apply(this, arguments);
       }
-      __extends(ApplicationState, Backbone.Model);
-      ApplicationState.prototype.getServer = function() {
-        return this.get("server");
+      __extends(KernelBean, JmxBackedModel);
+      KernelBean.prototype.beans = {
+        version: {
+          domain: 'neo4j',
+          name: 'Kernel'
+        }
       };
-      return ApplicationState;
+      return KernelBean;
     })();
   });
 }).call(this);
