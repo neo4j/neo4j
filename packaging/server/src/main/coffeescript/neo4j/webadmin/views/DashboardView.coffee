@@ -32,23 +32,31 @@ define(
      
       initialize : (@opts) =>
         @appState = opts.state
+        @server = @appState.getServer()
+        @kernelBean = opts.kernelBean
+        
+        @kernelBean.bind "change", @render
 
       render : =>
         $(@el).html @template(
-          server : { url : "someurl", version : "someversion" } )
+          server : { url : @server.url, version : @kernelBean.get "KernelVersion" } )
+
+        if @infoView?
+          @infoView.remove()
+        if @chartsView?
+          @chartsView.remove()
 
         @infoView = new DashboardInfoView(@opts)
         @chartsView = new DashboardChartsView(@opts)
-        
-        $("#dashboard-info", @el).append(@infoView.el)
-        $("#dashboard-charts", @el).append(@chartsView.el)
-
+        @infoView.attach $("#dashboard-info", @el)
+        @chartsView.attach $("#dashboard-charts", @el)
         @infoView.render()
         @chartsView.render()
 
         return this
 
       remove : =>
+        @kernelBean.unbind("change",@render)
         @infoView.remove()
         @chartsView.remove()
         super()
