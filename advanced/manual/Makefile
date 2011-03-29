@@ -4,6 +4,9 @@
 BUILDDIR         = $(CURDIR)/target
 SRCDIR           = $(BUILDDIR)/classes
 SRCFILE          = $(SRCDIR)/neo4j-manual.txt
+IMGDIR           = $(SRCDIR)/images
+CSSDIR           = $(SRCDIR)/css
+JSDIR            = $(SRCDIR)/js
 CONFDIR          = $(SRCDIR)/conf
 DOCBOOKFILE      = $(BUILDDIR)/neo4j-manual.xml
 DOCBOOKSHORTINFOFILE = $(BUILDDIR)/neo4j-manual-shortinfo.xml
@@ -22,6 +25,7 @@ ANNOTATEDFILE    = $(HTMLDIR)/neo4j-manual.html
 CHUNKEDHTMLDIR   = $(BUILDDIR)/chunked
 CHUNKEDOFFLINEHTMLDIR = $(BUILDDIR)/chunked-offline
 CHUNKEDTARGET     = $(BUILDDIR)/neo4j-manual.chunked
+CHUNKEDSHORTINFOTARGET = $(BUILDDIR)/neo4j-manual-shortinfo.chunked
 MANPAGES         = $(BUILDDIR)/manpages
 UPGRADE          = $(BUILDDIR)/upgrade
 FILTERSRC        = $(CURDIR)/src/bin/resources
@@ -152,29 +156,27 @@ latexpdf:  manpages copyimages
 	mkdir -p $(BUILDDIR)/dblatex
 	a2x $(GENERAL_FLAGS) -L -f pdf -D $(BUILDDIR)/dblatex --conf-file=$(CONFDIR)/dblatex.conf $(SRCFILE)
 
-# currently builds docbook format first
-html: manpages copyimages
+html: manpages copyimages docbook-shortinfo
 	#
 	#
 	# Building html output.
 	#
 	#
-	a2x $(GENERAL_FLAGS) -L -f chunked -D $(BUILDDIR) --attribute docinfo1 --attribute=icons --doctype book --asciidoc-opts "--conf-file=$(CONFDIR)/asciidoc.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/docbook45.conf" --xsl-file=$(CONFDIR)/chunked.xsl --xsltproc-opts "--stringparam admon.graphics 1" --xsltproc-opts "--xinclude" --xsltproc-opts "--stringparam chunk.section.depth 1" $(SRCFILE)
+	a2x $(V) -L -f chunked -D $(BUILDDIR) --xsl-file=$(CONFDIR)/chunked.xsl -r $(IMGDIR) -r $(CSSDIR) --xsltproc-opts "--stringparam admon.graphics 1" --xsltproc-opts "--xinclude" --xsltproc-opts "--stringparam chunk.section.depth 1" --xsltproc-opts "--stringparam toc.section.depth 1" $(DOCBOOKSHORTINFOFILE)
 	rm -rf $(CHUNKEDHTMLDIR)
-	mv $(CHUNKEDTARGET) $(CHUNKEDHTMLDIR)
-	cp -fr $(SRCDIR)/js $(CHUNKEDHTMLDIR)/js
+	mv $(CHUNKEDSHORTINFOTARGET) $(CHUNKEDHTMLDIR)
+	cp -fr $(JSDIR) $(CHUNKEDHTMLDIR)/js
 
-# currently builds docbook format first
-offline-html:  manpages copyimages
+offline-html:  manpages copyimages docbook-shortinfo
 	#
 	#
 	# Building html output for offline use.
 	#
 	#
-	a2x $(GENERAL_FLAGS) -L -f chunked -D $(BUILDDIR) --attribute docinfo1 --attribute=icons --doctype book --asciidoc-opts "--conf-file=$(CONFDIR)/asciidoc.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/docbook45.conf" --xsl-file=$(CONFDIR)/chunked-offline.xsl --xsltproc-opts "--stringparam admon.graphics 1" --xsltproc-opts "--xinclude" --xsltproc-opts "--stringparam chunk.section.depth 1" $(SRCFILE)
+	a2x $(V) -L -f chunked -D $(BUILDDIR) --xsl-file=$(CONFDIR)/chunked-offline.xsl -r $(IMGDIR) -r $(CSSDIR) --xsltproc-opts "--stringparam admon.graphics 1" --xsltproc-opts "--xinclude" --xsltproc-opts "--stringparam chunk.section.depth 1" --xsltproc-opts "--stringparam toc.section.depth 1" $(DOCBOOKSHORTINFOFILE)
 	rm -rf $(CHUNKEDOFFLINEHTMLDIR)
-	mv $(CHUNKEDTARGET) $(CHUNKEDOFFLINEHTMLDIR)
-	cp -fr $(SRCDIR)/js $(CHUNKEDOFFLINEHTMLDIR)/js
+	mv $(CHUNKEDSHORTINFOTARGET) $(CHUNKEDOFFLINEHTMLDIR)
+	cp -fr $(JSDIR) $(CHUNKEDOFFLINEHTMLDIR)/js
 
 # currently builds docbook format first
 singlehtml:  manpages copyimages
@@ -185,7 +187,7 @@ singlehtml:  manpages copyimages
 	#
 	mkdir -p $(SINGLEHTMLDIR)
 	a2x $(GENERAL_FLAGS) -L -f xhtml -D $(SINGLEHTMLDIR) --conf-file=$(CONFDIR)/xhtml.conf --asciidoc-opts "--conf-file=$(CONFDIR)/asciidoc.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/docbook45.conf" --xsl-file=$(CONFDIR)/xhtml.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(SRCFILE)
-	cp -fr $(SRCDIR)/js $(SINGLEHTMLDIR)/js
+	cp -fr $(JSDIR) $(SINGLEHTMLDIR)/js
 
 # currently builds docbook format first
 annotated:  manpages copyimages
