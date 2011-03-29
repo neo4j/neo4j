@@ -714,6 +714,40 @@
       </build>
     </profile>
 
+    <profile>
+      <!-- Temporarily disconnected from the rest of the build
+      because "brew" is not in maven central. To use this, mvn install
+       -->
+      <id>webadmin-build</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.voltvoodoo</groupId>
+            <artifactId>brew</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <executions>
+              <execution>
+              	<id>build-webadmin</id>
+                <goals>
+                  <goal>compile-haml</goal>
+                  <goal>compile-coffeescript</goal>
+                  <goal>optimize</goal>
+                </goals>
+              </execution>
+            </executions>
+            
+            <configuration>
+              <module>webadmin</module>
+              <coffeeOutputDir>${basedir}/src/main/resources/webadmin-html/js</coffeeOutputDir>
+              <hamlOutputDir>${basedir}/src/main/resources/webadmin-html/js</hamlOutputDir>
+              <optimizeSourceDir>${basedir}/src/main/resources/webadmin-html/js</optimizeSourceDir>
+              <optimizeOutputDir>${basedir}/src/main/resources/webadmin-html/js</optimizeOutputDir>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+   </profile>
+
     <!-- Firefox is default implementation, set in properties at the top of this file. -->
     <profile>
       <id>htmlunit</id>
