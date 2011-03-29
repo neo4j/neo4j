@@ -21,8 +21,6 @@ package org.neo4j.server;
 
 import java.io.File;
 
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.core.util.StatusPrinter;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.logging.Logger;
@@ -30,8 +28,6 @@ import org.neo4j.server.startup.healthcheck.ConfigFileMustBePresentRule;
 import org.neo4j.server.startup.healthcheck.Neo4jPropertiesMustExistRule;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.web.Jetty6WebServer;
-import org.slf4j.LoggerFactory;
-import org.slf4j.bridge.SLF4JBridgeHandler;
 import uk.org.lidalia.sysoutslf4j.context.SysOutOverSLF4J;
 
 public class BootStrapper
@@ -123,12 +119,7 @@ public class BootStrapper
 
     private static void configureLogging()
     {
-        SLF4JBridgeHandler.install();
         SysOutOverSLF4J.sendSystemOutAndErrToSLF4J();
-
-        // print logback's internal status
-        LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
-        StatusPrinter.print( lc );
 
         /**
         String log4jConfigPath = System.getProperty( KEY_LOG4J_CONFIG_XML_PATH );
