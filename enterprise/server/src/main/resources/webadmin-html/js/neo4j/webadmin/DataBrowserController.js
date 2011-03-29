@@ -44,7 +44,7 @@
     child.__super__ = parent.prototype;
     return child;
   };
-  define(['neo4j/webadmin/data/QueuedSearch', './views/DataBrowserView', './models/DataBrowserState', './models/DataItem', 'lib/backbone'], function(QueuedSearch, DataBrowserView, DataBrowserState, DataItem) {
+  define(['neo4j/webadmin/data/QueuedSearch', './views/DataBrowserView', './models/DataBrowserState', 'lib/backbone'], function(QueuedSearch, DataBrowserView, DataBrowserState) {
     var DataBrowserController;
     return DataBrowserController = (function() {
       function DataBrowserController() {
