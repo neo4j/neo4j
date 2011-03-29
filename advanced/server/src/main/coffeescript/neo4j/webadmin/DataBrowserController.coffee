@@ -22,8 +22,8 @@ define(
   ['neo4j/webadmin/data/QueuedSearch',
    './views/DataBrowserView', 
    './models/DataBrowserState', 
-   './models/DataItem', 'lib/backbone'], 
-  (QueuedSearch, DataBrowserView, DataBrowserState, DataItem) ->
+   'lib/backbone'], 
+  (QueuedSearch, DataBrowserView, DataBrowserState) ->
 
     class DataBrowserController extends Backbone.Controller
       routes : 

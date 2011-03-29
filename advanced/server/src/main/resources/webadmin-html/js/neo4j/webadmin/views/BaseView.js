@@ -85,7 +85,7 @@
               current: location.hash === "#/console/"
             }, {
               label: "Server info",
-              subtitle: "Detailed Stats",
+              subtitle: "Details",
               url: "#/info/",
               current: location.hash === "#/info/"
             }
