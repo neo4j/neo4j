@@ -24,7 +24,6 @@ import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Collection;
@@ -588,24 +587,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     public Node createNode()
     {
         return localGraph().createNode();
-    }
-
-    /**
-     * @deprecated See {@link GraphDatabaseService#enableRemoteShell()}
-     */
-    @Override
-    public boolean enableRemoteShell()
-    {
-        return localGraph().enableRemoteShell();
-    }
-
-    /**
-     * @deprecated See {@link GraphDatabaseService#enableRemoteShell(Map)}
-     */
-    @Override
-    public boolean enableRemoteShell( Map<String, Serializable> initialProperties )
-    {
-        return localGraph().enableRemoteShell( initialProperties );
     }
 
     public Iterable<Node> getAllNodes()

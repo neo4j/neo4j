@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel;
 
-import java.io.Serializable;
-import java.util.Collections;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.Config.ENABLE_REMOTE_SHELL;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -57,9 +58,7 @@ public class StandaloneWithShell
     private void initialize( Map<String, String> arguments )
     {
         String path = arguments.get( "path" );
-        this.embeddedDb = new EmbeddedGraphDatabase( path );
-        Map<String, Serializable> shellProperties = Collections.emptyMap();
-        getGraphDb().enableRemoteShell( shellProperties );
+        this.embeddedDb = new EmbeddedGraphDatabase( path, stringMap( ENABLE_REMOTE_SHELL, "true" ) );
         log.info( "Neo4j started at '" + path + "'" );
     }
 
