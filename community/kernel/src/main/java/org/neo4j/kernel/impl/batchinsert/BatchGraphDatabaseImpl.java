@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.batchinsert;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -102,16 +101,6 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
     static Map<String,Object> emptyProps()
     {
         return new HashMap<String,Object>();
-    }
-
-    public boolean enableRemoteShell()
-    {
-        return false;
-    }
-
-    public boolean enableRemoteShell( Map<String,Serializable> initialProperties )
-    {
-        return false;
     }
 
     public Iterable<Node> getAllNodes()

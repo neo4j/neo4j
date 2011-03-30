@@ -19,9 +19,6 @@
  */
 package slavetest;
 
-import java.io.Serializable;
-import java.util.Map;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -88,18 +85,6 @@ public class PlaceHolderGraphDatabaseService extends AbstractGraphDatabase
     public void shutdown()
     {
         db.shutdown();
-    }
-
-    @Override
-    public boolean enableRemoteShell()
-    {
-        return db.enableRemoteShell();
-    }
-
-    @Override
-    public boolean enableRemoteShell( Map<String, Serializable> initialProperties )
-    {
-        return db.enableRemoteShell( initialProperties );
     }
 
     @Override
