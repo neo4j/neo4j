@@ -194,8 +194,6 @@ public final class LocalhostZooKeeperCluster
 
     public synchronized void shutdown()
     {
-        new Exception().printStackTrace();
-        System.out.println ( "GHDJDSJDSDSFLJDFSLJLJDSHFLJHDSFJLHSDFJHLDFSLJHFSDLJHLJHDFSLJHDSFL" );
         if ( keeper.length > 0 && keeper[0] == null ) return;
         for ( ZooKeeper zk : keeper )
         {
