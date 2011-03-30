@@ -19,9 +19,6 @@
  */
 package org.neo4j.graphdb;
 
-import java.io.Serializable;
-import java.util.Map;
-
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.IndexManager;
@@ -115,83 +112,6 @@ public interface GraphDatabaseService
      * of GraphDatabaseService should be discarded.
      */
     public void shutdown();
-
-    /**
-     * Enables remote shell access (with default configuration) to this Neo4j
-     * instance, if the Neo4j <a
-     * href="http://components.neo4j.org/neo4j-shell/">shell component</a> is
-     * available on the classpath. This method is identical to invoking
-     * {@link #enableRemoteShell(Map) enableRemoteShell( null )}.
-     * 
-     * @return <code>true</code> if the shell has been enabled,
-     *         <code>false</code> otherwise (<code>false</code> usually
-     *         indicates that the <code>shell</code> jar dependency is not on
-     *         the classpath)
-     *         
-     * @deprecated in favor of a configuration parameter 'enable_remote_shell'
-     * Simply put:
-     * <pre>
-     * enable_remote_shell = true
-     * </pre>
-     * In your configuration and it will be started with default port and
-     * RMI name. If you'd like to control the port and RMI name of the shell
-     * instead put:
-     * <pre>
-     * enable_remote_shell = port=1337,name=shell
-     * </pre>
-     */
-    @Deprecated
-    public boolean enableRemoteShell();
-
-    /**
-     * Enables remote shell access to this Neo4j instance, if the Neo4j <a
-     * href="http://components.neo4j.org/neo4j-shell/">Shell component</a> is
-     * available on the classpath. This will publish a shell access interface on
-     * an RMI registry on localhost (with configurable port and RMI binding
-     * name). It can be accessed by a client that implements
-     * org.neo4j.shell.ShellClient from the Neo4j Shell project. Typically, the
-     * <code>neo4j-shell</code> binary package is used (see <a
-     * href="http://neo4j.org/download">neo4j.org/download</a>).
-     * <p>
-     * The shell is parameterized by a map of properties passed in to this
-     * method. Currently, two properties are used:
-     * <ul>
-     * <li><code>port</code>, an {@link Integer} describing the port of the RMI
-     * registry where the Neo4j shell will be bound, defaults to
-     * <code>1337</code>
-     * <li><code>name</code>, the {@link String} under which the Neo4j shell
-     * will be bound in the RMI registry, defaults to <code>shell</code>
-     * </ul>
-     * 
-     * @param initialProperties a set of properties that will be used to
-     *            configure the remote shell, or <code>null</code> if the
-     *            default properties should be used
-     * @return <code>true</code> if the shell has been enabled,
-     *         <code>false</code> otherwise (<code>false</code> usually
-     *         indicates that the <code>shell</code> jar dependency is not on
-     *         the classpath)
-     * @throws ClassCastException if the shell library is available, but one (or
-     *             more) of the configuration properties have an unexpected type
-     * @throws IllegalStateException if the shell library is available, but the
-     *             remote shell can't be enabled anyway
-     * @deprecated in favor of a configuration parameter 'enable_remote_shell'
-     *             Put:
-     * 
-     *             <pre>
-     * enable_remote_shell = port=1337,name=shell
-     * </pre>
-     * 
-     *             In your configuration and it will be started with the
-     *             supplied port and RMI name. If you instead would like to use
-     *             default parameters, put:
-     * 
-     *             <pre>
-     * enable_remote_shell = true
-     * </pre>
-     */
-    @Deprecated
-    public boolean enableRemoteShell(
-            Map<String, Serializable> initialProperties );
 
     /**
      * Starts a new transaction and associates it with the current thread.

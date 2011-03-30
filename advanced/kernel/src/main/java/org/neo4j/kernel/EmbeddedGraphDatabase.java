@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -124,25 +123,6 @@ public final class EmbeddedGraphDatabase extends AbstractGraphDatabase implement
     public void shutdown()
     {
         graphDbImpl.shutdown();
-    }
-
-    /**
-     * @deprecated See {@link GraphDatabaseService#enableRemoteShell()}
-     */
-    @Override
-    public boolean enableRemoteShell()
-    {
-        return graphDbImpl.enableRemoteShell();
-    }
-
-    /**
-     * @deprecated See {@link GraphDatabaseService#enableRemoteShell(Map)}
-     */
-    @Override
-    public boolean enableRemoteShell(
-        final Map<String,Serializable> initialProperties )
-    {
-        return graphDbImpl.enableRemoteShell( initialProperties );
     }
 
     public Iterable<RelationshipType> getRelationshipTypes()

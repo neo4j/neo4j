@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -26,12 +31,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.IndexManager;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * A database meant to be used in unit tests. It will always be empty on start.
@@ -134,17 +133,6 @@ public class ImpermanentGraphDatabase extends AbstractGraphDatabase
     {
         inner.shutdown();
         deleteRecursively( new File( storeDir ) );
-    }
-
-    public boolean enableRemoteShell()
-    {
-        return inner.enableRemoteShell();
-    }
-
-    public boolean enableRemoteShell(
-            Map<String, Serializable> initialProperties )
-    {
-        return inner.enableRemoteShell( initialProperties );
     }
 
     public Transaction beginTx()
