@@ -22,10 +22,8 @@ package org.neo4j.shell;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.Config.ENABLE_REMOTE_SHELL;
 
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -74,12 +72,9 @@ public class ShellTest
     @Test
     public void testEnableRemoteShell() throws Exception
     {
-        GraphDatabaseService graphDb = new EmbeddedGraphDatabase(
-            "target/shell-neo" );
-        Map<String, Serializable> map = new HashMap<String, Serializable>();
         int port = 8085;
-        map.put( "port", port );
-        graphDb.enableRemoteShell( map );
+        GraphDatabaseService graphDb = new EmbeddedGraphDatabase(
+            "target/shell-neo", stringMap( ENABLE_REMOTE_SHELL, "port=" + port ) );
         ShellLobby.newClient( port, AbstractServer.DEFAULT_NAME );
         graphDb.shutdown();
     }
