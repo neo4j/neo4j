@@ -11,7 +11,7 @@ define(
   () ->
     class Renderer
 
-      constructor : (canvas, @labelFactory) ->
+      constructor : (canvas, @nodeStyler, @relationshipStyler) ->
         @canvas = $(canvas).get(0)
         @ctx = @canvas.getContext("2d")
         @gfx = arbor.Graphics(@canvas)
@@ -42,36 +42,32 @@ define(
         # node: {mass:#, p:{x,y}, name:"", data:{}}
         # pt:   {x:#, y:#}  node position in screen coords
 
-        # Fixate nodes as appropriate
-        if node.data.fixated
-          node.fixed = true
+        style = @nodeStyler.getStyleFor(node)
+        label = style.labelText
 
         # determine the box size and round off the coords if we'll be 
         # drawing a text label (awful alignment jitter otherwise...)
-        label = @labelFactory.getLabelFor(node)
         w = @ctx.measureText(""+label).width + 10
         if not (""+label).match(/^[ \t]*$/)
           pt.x = Math.floor(pt.x)
           pt.y = Math.floor(pt.y)
         else
           label = null
+        
 
-        nodeStyle = {fill:node.data.color or "#000000", alpha:node.data.alpha or 0.2}
-
-        if node.data.shape == 'dot' 
-          @gfx.oval(pt.x-w/2, pt.y-w/2, w,w, nodeStyle)
+        if style.nodeStyle.shape == 'dot' 
+          @gfx.oval(pt.x-w/2, pt.y-w/2, w,w, style.nodeStyle)
           @nodeBoxes[node.name] = [pt.x-w/2, pt.y-w/2, w,w]
         else
-          @gfx.rect(pt.x-w/2, pt.y-10, w,20, 4, nodeStyle)
+          @gfx.rect(pt.x-w/2, pt.y-10, w,20, 4, style.nodeStyle)
           @nodeBoxes[node.name] = [pt.x-w/2, pt.y-11, w, 22]
 
         # draw the text
         if label 
-          @ctx.font = "12px Helvetica"
+          @ctx.font = style.labelStyle.font
           @ctx.textAlign = "center"
-          @ctx.fillStyle = "white"
-          if (node.data.color=='none') then @ctx.fillStyle = '#333333'
-          @ctx.fillText(label||"", pt.x, pt.y+4)
+          @ctx.fillStyle = style.labelStyle.color
+
           @ctx.fillText(label||"", pt.x, pt.y+4)
 
       renderEdge : (edge, pt1, pt2) =>
@@ -79,10 +75,7 @@ define(
         # pt1:  {x:#, y:#}  source position in screen coords
         # pt2:  {x:#, y:#}  target position in screen coords
 
-        weight = edge.data.weight
-        color = edge.data.color
-
-        color = if color? and not (""+color).match(/^[ \t]*$/) then color else "#cccccc"
+        style = @relationshipStyler.getStyleFor(edge)
 
         # find the start point
         tail = @intersect_line_box(pt1, pt2, @nodeBoxes[edge.source.name])
@@ -91,8 +84,8 @@ define(
         @ctx.save() 
         
         @ctx.beginPath()
-        @ctx.lineWidth = if not isNaN(weight) then parseFloat(weight) else 1
-        @ctx.strokeStyle = color
+        @ctx.lineWidth = style.edgeStyle.width
+        @ctx.strokeStyle = style.edgeStyle.color
         @ctx.fillStyle = "rgba(0, 0, 0, 0)"
 
         @ctx.moveTo(tail.x, tail.y)
@@ -105,10 +98,10 @@ define(
         if edge.data.directed
           @ctx.save()
           # move to the head position of the edge we just drew
-          wt = if not isNaN(weight) then parseFloat(weight) else 1
+          wt = style.edgeStyle.width
           arrowLength = 6 + wt
           arrowWidth = 2 + wt
-          @ctx.fillStyle = color
+          @ctx.fillStyle = style.edgeStyle.color
           @ctx.translate(head.x, head.y)
           @ctx.rotate(Math.atan2(head.y - tail.y, head.x - tail.x))
 
@@ -123,6 +116,15 @@ define(
           @ctx.lineTo(-arrowLength * 0.8, -0)
           @ctx.closePath()
           @ctx.fill()
+          @ctx.restore()
+
+        # draw the text
+        if style.labelText and false
+          @ctx.save()
+          @ctx.font = style.labelStyle.font
+          @ctx.textAlign = "center"
+          @ctx.fillStyle = style.labelStyle.color
+          @ctx.fillText(style.labelText||"", pt2.x, pt2.y+4)
           @ctx.restore()
 
       initMouseHandling : () =>

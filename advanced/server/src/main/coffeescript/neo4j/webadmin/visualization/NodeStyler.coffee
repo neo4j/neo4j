@@ -22,24 +22,56 @@ define(
   ['neo4j/webadmin/data/ItemUrlResolver'], 
   (ItemUrlResolver) ->
   
-    class LabelFormatter
+    class NodeStyler
+
+      defaultExploredStyle : 
+        nodeStyle  : 
+          fill  : "#000000"
+          alpha : 0.6
+        labelStyle : 
+          color : "white"
+          font  : "12px Helvetica"
+
+      defaultUnexploredStyle : 
+        nodeStyle  : 
+          fill  : "#000000"
+          alpha : 0.2
+        labelStyle : 
+          color : "rgba(255, 255, 255, 0.4)"
+          font  : "12px Helvetica"
+
+      defaultGroupStyle : 
+        nodeStyle  : 
+          shape : "dot"
+          fill  : "#000000"
+          alpha : 0.2
+        labelStyle : 
+          color : "white"
+          font  : "12px Helvetica"
 
       constructor : () ->
         @labelProperties = []
         @itemUrlUtils = new ItemUrlResolver()
 
-      getLabelFor : (visualNode) =>
+      getStyleFor : (visualNode) ->
         switch visualNode.data.type
           when "explored-node"
             node = visualNode.data.neoNode
+            
             for prop in @labelProperties
               if node.hasProperty(prop)
-                return node.getProperty(prop)
-            return @itemUrlUtils.extractNodeId(node.getSelf())
+                label = node.getProperty(prop)
+                break
+                      
+            label ?= @itemUrlUtils.extractNodeId(node.getSelf())
+            return { nodeStyle:@defaultExploredStyle.nodeStyle, labelStyle:@defaultExploredStyle.labelStyle, labelText:label}
+
           when "unexplored-node"
-            return "Unexplored:" + @itemUrlUtils.extractNodeId(visualNode.data.neoUrl)
+            label = @itemUrlUtils.extractNodeId(visualNode.data.neoUrl)
+            return { nodeStyle:@defaultUnexploredStyle.nodeStyle, labelStyle:@defaultUnexploredStyle.labelStyle, labelText:label }
+
           else
-            return "Group"
+            return { nodeStyle:@defaultGroupStyle.nodeStyle, labelStyle:@defaultGroupStyle.labelStyle, labelText:"Group" }
 
       setLabelProperties : (labelProperties) ->
         @labelProperties = labelProperties
