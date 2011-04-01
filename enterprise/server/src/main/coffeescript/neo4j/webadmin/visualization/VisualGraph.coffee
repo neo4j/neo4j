@@ -51,7 +51,10 @@ define(
         @setNodes([node])
 
       setNodes : (nodes) =>
-        @visualizedGraph = {nodes:{}, edges:{}}
+        # Nodes and edges are used by arbor.js, relationships is our own
+        # map of relationship id -> relationship (edges are a map of node id -> node ids
+        # plus relationship meta data)
+        @visualizedGraph = {nodes:{}, edges:{}, relationships:{}}
         @addNodes nodes
 
 
@@ -60,8 +63,9 @@ define(
 
       addNodes : (nodes) =>
         # Short-hand references
-        relMap = @visualizedGraph.edges
+        relToNodeMap = @visualizedGraph.edges
         nodeMap = @visualizedGraph.nodes
+        relMap = @visualizedGraph.relationships
 
         fetchCountdown = nodes.length
         for node in nodes
@@ -71,12 +75,13 @@ define(
               nodeMap[rel.getStartNodeUrl()] ?= { neoUrl : rel.getStartNodeUrl(), type : "unexplored-node" }
               nodeMap[rel.getEndNodeUrl()] ?= { neoUrl : rel.getEndNodeUrl(), type : "unexplored-node" }
 
-              relMap[rel.getStartNodeUrl()] ?= {}
-              relMap[rel.getStartNodeUrl()][rel.getEndNodeUrl()] ?= { relationships : [], directed:true }
-              relMap[rel.getStartNodeUrl()][rel.getEndNodeUrl()].relationships.push rel
+              if not relMap[rel.getSelf()]?
+                relMap[rel.getSelf()] = rel
+                relToNodeMap[rel.getStartNodeUrl()] ?= {}
+                relToNodeMap[rel.getStartNodeUrl()][rel.getEndNodeUrl()] ?= { relationships : [], directed:true }
+                relToNodeMap[rel.getStartNodeUrl()][rel.getEndNodeUrl()].relationships.push rel
 
             if (--fetchCountdown) == 0
-              @visualizedGraph = { nodes:nodeMap, edges:relMap }
               # This deletes all current data not mentioned in our visualizedMap data structure
               # but retains the position of any data it recognizes.
               @sys.merge @visualizedGraph
