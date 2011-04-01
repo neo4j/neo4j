@@ -77,10 +77,11 @@ define(
           @closeCallback()
 
         failCallback = (error) =>
-          if error instanceof neo4j.exceptions.NotFoundException
-            console.log "AAA"
-          else
-            console.log "Unknwo"
+          # TODO: Add proper error message here
+          #if error instanceof neo4j.exceptions.NotFoundException
+          #  console.log "AAA"
+          #else
+          #  console.log "Unknwo"
 
         @server.rel(fromUrl, type, toUrl).then successCallback, failCallback
 
