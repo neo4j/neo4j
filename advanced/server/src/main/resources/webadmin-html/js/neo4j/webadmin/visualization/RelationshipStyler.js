@@ -28,7 +28,7 @@
         },
         labelStyle: {
           color: "white",
-          font: "12px Helvetica"
+          font: "10px Helvetica"
         }
       };
       RelationshipStyler.prototype.defaultToUnknownStyle = {
@@ -37,8 +37,8 @@
           width: 1
         },
         labelStyle: {
-          color: "white",
-          font: "12px Helvetica"
+          color: "rgba(0, 0, 0, 0.4)",
+          font: "10px Helvetica"
         }
       };
       RelationshipStyler.prototype.defaultToGroupStyle = {
@@ -47,26 +47,46 @@
           width: 1
         },
         labelStyle: {
-          color: "white",
-          font: "12px Helvetica"
+          color: "rgba(0, 0, 0, 0.4)",
+          font: "10px Helvetica"
         }
       };
       RelationshipStyler.prototype.getStyleFor = function(visualRelationship) {
-        var dstType, srcType;
+        var dstType, rel, srcType, types;
         srcType = visualRelationship.source.data.type;
         dstType = visualRelationship.target.data.type;
         if (srcType === "explored-node" && dstType === "explored-node") {
+          types = (function() {
+            var _i, _len, _ref, _results;
+            _ref = visualRelationship.data.relationships;
+            _results = [];
+            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+              rel = _ref[_i];
+              _results.push(rel.getType());
+            }
+            return _results;
+          })();
           return {
             edgeStyle: this.defaultBetweenExploredStyle.edgeStyle,
             labelStyle: this.defaultBetweenExploredStyle.labelStyle,
-            labelText: "hello, world!"
+            labelText: types.join(", ")
           };
         }
         if (srcType === "unexplored-node" || dstType === "unexplored-node") {
+          types = (function() {
+            var _i, _len, _ref, _results;
+            _ref = visualRelationship.data.relationships;
+            _results = [];
+            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+              rel = _ref[_i];
+              _results.push(rel.getType());
+            }
+            return _results;
+          })();
           return {
             edgeStyle: this.defaultToUnknownStyle.edgeStyle,
             labelStyle: this.defaultToUnknownStyle.labelStyle,
-            labelText: "hello, world!"
+            labelText: types.join(", ")
           };
         }
         return {

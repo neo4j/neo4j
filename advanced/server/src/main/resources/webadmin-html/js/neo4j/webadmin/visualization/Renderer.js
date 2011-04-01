@@ -66,7 +66,7 @@
         }
       };
       Renderer.prototype.renderEdge = function(edge, pt1, pt2) {
-        var arrowLength, arrowWidth, head, style, tail, wt;
+        var arrowLength, arrowWidth, dx, head, style, tail, wt;
         style = this.relationshipStyler.getStyleFor(edge);
         tail = this.intersect_line_box(pt1, pt2, this.nodeBoxes[edge.source.name]);
         head = this.intersect_line_box(tail, pt2, this.nodeBoxes[edge.target.name]);
@@ -97,12 +97,22 @@
           this.ctx.fill();
           this.ctx.restore();
         }
-        if (style.labelText && false) {
+        if (style.labelText) {
           this.ctx.save();
           this.ctx.font = style.labelStyle.font;
-          this.ctx.textAlign = "center";
+          this.ctx.translate(head.x, head.y);
+          dx = head.x - tail.x;
+          if (dx < 0) {
+            this.ctx.textAlign = "left";
+            this.ctx.rotate(Math.atan2(head.y - tail.y, dx) - Math.PI);
+            this.ctx.translate(20, style.edgeStyle.width - 5);
+          } else {
+            this.ctx.textAlign = "right";
+            this.ctx.rotate(Math.atan2(head.y - tail.y, dx));
+            this.ctx.translate(-20, style.edgeStyle.width - 5);
+          }
           this.ctx.fillStyle = style.labelStyle.color;
-          this.ctx.fillText(style.labelText || "", pt2.x, pt2.y + 4);
+          this.ctx.fillText(style.labelText || "", 0, 0);
           return this.ctx.restore();
         }
       };
