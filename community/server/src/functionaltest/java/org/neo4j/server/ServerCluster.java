@@ -39,7 +39,6 @@ import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.management.HighAvailability;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.database.DatabaseMode;
 import org.neo4j.test.SubProcess;
 import org.neo4j.test.TargetDirectory;
 
@@ -67,7 +66,7 @@ public final class ServerCluster
         {
             // shutdownAndCleanUp( servers );
             for ( Pair<URI, File> UGLY_CODE_DUE_TO_ISSUES_IN_HA : shutdown(
-                    (Class<Pair<URI, File>>) (Class) Pair.class, servers ) )
+                    (Class) Pair.class, servers ) )
             {
                 if ( UGLY_CODE_DUE_TO_ISSUES_IN_HA != null )
                     TargetDirectory.recursiveDelete( UGLY_CODE_DUE_TO_ISSUES_IN_HA.other() );
@@ -161,7 +160,6 @@ public final class ServerCluster
 
         // Server configuration
         config( serverConfig,//
-                Pair.of( Configurator.DB_MODE_KEY, DatabaseMode.HA.name() ),//
                 Pair.of( Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir.getAbsolutePath() ),//
                 Pair.of( Configurator.WEBSERVER_PORT_PROPERTY_KEY, ports.other().toString() ),//
                 Pair.of( Configurator.DB_TUNING_PROPERTY_FILE_KEY, dbConfig.getAbsolutePath() ) );
@@ -260,7 +258,7 @@ public final class ServerCluster
     private static class ServerProcess extends SubProcess<ServerManager, String> implements
             ServerManager
     {
-        private transient BootStrapper bootstrap = null;
+        private transient Bootstrapper bootstrap = null;
         private transient volatile Integer startupStatus = null;
         private final String name;
 
@@ -280,7 +278,7 @@ public final class ServerCluster
         {
             System.out.println( "configFilePath=" + configFilePath );
             System.setProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY, configFilePath );
-            this.bootstrap = new BootStrapper();
+            this.bootstrap = new EnterpriseNeoServerBootstrapper();
             this.startupStatus = this.bootstrap.start();
         }
 
@@ -313,9 +311,9 @@ public final class ServerCluster
             {
                 throw new RuntimeException( "Interrupted during startup", ex );
             }
-            if ( startupStatus.equals( BootStrapper.GRAPH_DATABASE_STARTUP_ERROR_CODE ) )
+            if ( startupStatus.equals( Bootstrapper.GRAPH_DATABASE_STARTUP_ERROR_CODE ) )
                 throw new RuntimeException( "Database startup failure" );
-            if ( startupStatus.equals( BootStrapper.WEB_SERVER_STARTUP_ERROR_CODE ) )
+            if ( startupStatus.equals( Bootstrapper.WEB_SERVER_STARTUP_ERROR_CODE ) )
                 throw new RuntimeException( "Server startup failure" );
             return bootstrap.getServer().baseUri();
         }

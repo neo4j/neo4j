@@ -30,6 +30,11 @@ import javax.ws.rs.core.MediaType;
 
 import org.junit.After;
 import org.junit.Test;
+import org.neo4j.server.modules.DiscoveryModule;
+import org.neo4j.server.modules.ManagementApiModule;
+import org.neo4j.server.modules.RESTApiModule;
+import org.neo4j.server.modules.ThirdPartyJAXRSModule;
+import org.neo4j.server.modules.WebAdminModule;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
@@ -37,7 +42,7 @@ import com.sun.jersey.api.client.ClientResponse;
 public class ServerConfigTest {
 
     private NeoServerWithEmbeddedWebServer server;
-    
+
     @After
     public void stopServer() {
         if(server != null) {
@@ -48,7 +53,7 @@ public class ServerConfigTest {
     @Test
     public void shouldPickUpPortFromConfig() throws Exception {
         final int NON_DEFAULT_PORT = 4321;
-        
+
         server = server().withRandomDatabaseDir().withPassingStartupHealthcheck().onPort(
                 NON_DEFAULT_PORT ).build();
         server.start();
@@ -60,30 +65,35 @@ public class ServerConfigTest {
 
         assertThat(response.getStatus(), is(200));
     }
-    
+
     @Test
     public void shouldPickupRelativeUrisForWebAdminAndWebAdminRest() throws IOException {
         String webAdminDataUri = "/a/different/webadmin/data/uri/";
         String webAdminManagementUri = "/a/different/webadmin/management/uri/";
-        
-        server = server().withRandomDatabaseDir().withRelativeWebDataAdminUriPath(webAdminDataUri).withRelativeWebAdminUriPath(webAdminManagementUri).withPassingStartupHealthcheck().build();
+
+        // FIXME: is it bad that we need all modules here in order to operate?
+        // The reason we split the bootstrap class was to be able to load
+        // different modules for different product lines... needs fixing.
+        server = server().withRandomDatabaseDir().withRelativeWebDataAdminUriPath( webAdminDataUri ).withRelativeWebAdminUriPath(
+                webAdminManagementUri ).withSpecificServerModules( DiscoveryModule.class, RESTApiModule.class,
+                ManagementApiModule.class, ThirdPartyJAXRSModule.class, WebAdminModule.class ).withPassingStartupHealthcheck().build();
         server.start();
-        
+
         Client client = Client.create();
         ClientResponse response = client.resource("http://localhost:7474" + webAdminDataUri).accept(MediaType.TEXT_HTML).get(ClientResponse.class);
         assertEquals(200, response.getStatus());
-        
+
         response = client.resource("http://localhost:7474" + webAdminManagementUri).accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
         assertEquals(200, response.getStatus());
     }
-    
+
     @Test
     public void shouldPickupAbsoluteUrisForWebAdminAndWebAdminRest() {
-        
+
     }
-    
+
     @Test
     public void shouldDealWithNonNormalizedUrisForWebAdminAndWebAdminRest() {
-        
+
     }
 }
