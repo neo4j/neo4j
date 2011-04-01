@@ -130,7 +130,6 @@ define(
         @selected = null
         @nearest = null
         @dragged = null
-        @oldmass = 1
 
         $(@canvas).mousedown(@clicked)
         
@@ -142,7 +141,7 @@ define(
         @selected = @nearest = @dragged = @particleSystem.nearest(p)
 
         if @dragged.node? then @dragged.node.fixed = true
-
+        
         $(@canvas).bind('mousemove', @nodeDragged)
         $(window).bind('mouseup', @nodeDropped)
 
