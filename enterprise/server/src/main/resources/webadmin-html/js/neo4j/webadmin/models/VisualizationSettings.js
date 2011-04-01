@@ -25,20 +25,28 @@
     child.__super__ = parent.prototype;
     return child;
   };
-  define(['./JmxBackedModel', 'lib/backbone'], function(JmxBackedModel) {
-    var KernelBean;
-    return KernelBean = (function() {
-      function KernelBean() {
-        KernelBean.__super__.constructor.apply(this, arguments);
+  define(['neo4j/webadmin/models/LocallyStoredModel'], function(LocallyStoredModel) {
+    var VisualizationSettings;
+    return VisualizationSettings = (function() {
+      function VisualizationSettings() {
+        VisualizationSettings.__super__.constructor.apply(this, arguments);
       }
-      __extends(KernelBean, JmxBackedModel);
-      KernelBean.prototype.beans = {
-        version: {
-          domain: 'neo4j',
-          name: 'Kernel'
-        }
+      __extends(VisualizationSettings, LocallyStoredModel);
+      VisualizationSettings.prototype.defaults = {
+        labelProperties: ['name']
       };
-      return KernelBean;
+      VisualizationSettings.prototype.getStorageKey = function() {
+        return "visualization-settings";
+      };
+      VisualizationSettings.prototype.getLabelProperties = function() {
+        return this.get("labelProperties") || [];
+      };
+      VisualizationSettings.prototype.setLabelProperties = function(labelProps) {
+        return this.set({
+          "labelProperties": labelProps
+        });
+      };
+      return VisualizationSettings;
     })();
   });
 }).call(this);

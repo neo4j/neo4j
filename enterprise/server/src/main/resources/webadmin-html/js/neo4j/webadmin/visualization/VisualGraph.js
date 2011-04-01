@@ -18,7 +18,7 @@
   You should have received a copy of the GNU Affero General Public License
   along with this program. If not, see <http://www.gnu.org/licenses/>.
   */  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
-  define(['neo4j/webadmin/visualization/Renderer', 'order!lib/jquery', 'order!lib/arbor', 'order!lib/arbor-graphics', 'order!lib/arbor-tween'], function(Renderer) {
+  define(['neo4j/webadmin/visualization/Renderer', 'neo4j/webadmin/visualization/LabelFormatter', 'order!lib/jquery', 'order!lib/arbor', 'order!lib/arbor-graphics', 'order!lib/arbor-tween'], function(Renderer, LabelFormatter) {
     var VisualGraph;
     return VisualGraph = (function() {
       function VisualGraph(server, width, height) {
@@ -33,13 +33,14 @@
         this.attach = __bind(this.attach, this);;
         this.start = __bind(this.start, this);;
         this.stop = __bind(this.stop, this);;
+        this.getLabelFormatter = __bind(this.getLabelFormatter, this);;
         this.nodeClicked = __bind(this.nodeClicked, this);;
         this.addNodes = __bind(this.addNodes, this);;
         this.addNode = __bind(this.addNode, this);;
         this.setNodes = __bind(this.setNodes, this);;
         this.setNode = __bind(this.setNode, this);;
-        this.getLabelFor = __bind(this.getLabelFor, this);;
         this.el = $("<canvas width='" + width + "' height='" + height + "'></canvas>");
+        this.labelFormatter = new LabelFormatter();
         this.groupCount = 0;
         this.visualizedGraph = {
           nodes: {},
@@ -47,20 +48,10 @@
         };
         this.sys = arbor.ParticleSystem(1000, 600, 0.5, true, 30, 0.03);
         this.stop();
-        this.sys.renderer = new Renderer(this.el, this);
+        this.sys.renderer = new Renderer(this.el, this.labelFormatter);
         this.sys.renderer.bind("node:click", this.nodeClicked);
         this.sys.screenPadding(20);
       }
-      VisualGraph.prototype.getLabelFor = function(visualNode) {
-        switch (visualNode.data.type) {
-          case "explored-node":
-            return visualNode.data.neoNode.getSelf();
-          case "unexplored-node":
-            return "Unexplored";
-          default:
-            return "Group";
-        }
-      };
       VisualGraph.prototype.setNode = function(node) {
         return this.setNodes([node]);
       };
@@ -100,7 +91,8 @@
               };
               (_ref3 = relMap[_name3 = rel.getStartNodeUrl()]) != null ? _ref3 : relMap[_name3] = {};
               (_ref4 = (_base = relMap[rel.getStartNodeUrl()])[_name4 = rel.getEndNodeUrl()]) != null ? _ref4 : _base[_name4] = {
-                relationships: []
+                relationships: [],
+                directed: true
               };
               relMap[rel.getStartNodeUrl()][rel.getEndNodeUrl()].relationships.push(rel);
             }
@@ -119,6 +111,9 @@
         if ((visualNode.data.type != null) && visualNode.data.type === "unexplored-node") {
           return this.server.node(visualNode.data.neoUrl).then(this.addNode);
         }
+      };
+      VisualGraph.prototype.getLabelFormatter = function() {
+        return this.labelFormatter;
       };
       VisualGraph.prototype.stop = function() {
         return this.sys.stop();

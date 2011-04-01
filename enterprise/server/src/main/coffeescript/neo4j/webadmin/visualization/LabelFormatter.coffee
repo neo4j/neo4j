@@ -19,19 +19,29 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['neo4j/webadmin/models/VisualizationSettings'
-   'lib/backbone'], 
-  (VisualizationSettings) ->
+  ['neo4j/webadmin/data/ItemUrlResolver'], 
+  (ItemUrlResolver) ->
   
-    class ApplicationState extends Backbone.Model
-      
-      getServer : ->
-        @get "server"
+    class LabelFormatter
 
-      getVisualizationSettings : () ->
-        if not @visualizationSettings?
-          @visualizationSettings = new VisualizationSettings()
-          @visualizationSettings.fetch()
-        return @visualizationSettings
+      constructor : () ->
+        @labelProperties = []
+        @itemUrlUtils = new ItemUrlResolver()
+
+      getLabelFor : (visualNode) =>
+        switch visualNode.data.type
+          when "explored-node"
+            node = visualNode.data.neoNode
+            for prop in @labelProperties
+              if node.hasProperty(prop)
+                return node.getProperty(prop)
+            return @itemUrlUtils.extractNodeId(node.getSelf())
+          when "unexplored-node"
+            return "Unexplored:" + @itemUrlUtils.extractNodeId(visualNode.data.neoUrl)
+          else
+            return "Group"
+
+      setLabelProperties : (labelProperties) ->
+        @labelProperties = labelProperties
 
 )
