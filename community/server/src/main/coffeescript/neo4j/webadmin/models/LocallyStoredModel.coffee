@@ -27,9 +27,9 @@ define(
       store : (key, obj) ->
         localStorage.setItem(key, JSON.stringify(obj))
 
-      fetch : (key, default={}) ->
+      fetch : (key, defaults={}) ->
         stored = localStorage.getItem(key)
-        if stored != null then JSON.parse(stored) else default
+        if stored != null then JSON.parse(stored) else defaults
 
     class InMemoryStoringStrategy
       
@@ -39,8 +39,8 @@ define(
       store : (key, obj) ->
         @storage[key] = obj
 
-      fetch : (key, default={}) ->
-        if @storage[key]? then @storage[key] else @default
+      fetch : (key, defaults={}) ->
+        if @storage[key]? then @storage[key] else @defaults
     
     class LocallyStoredModel extends Backbone.Model
 
