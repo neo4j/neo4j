@@ -21,19 +21,27 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 define(
   ['neo4j/webadmin/visualization/VisualGraph'
    'neo4j/webadmin/data/ItemUrlResolver'
-   'neo4j/webadmin/ui/LoadingSpinner'
+   'neo4j/webadmin/views/databrowser/VisualizationSettingsDialog'
    'neo4j/webadmin/views/View'
    'neo4j/webadmin/security/HtmlEscaper'
    'neo4j/webadmin/templates/databrowser/visualization'
    'lib/backbone'], 
-  (VisualGraph, ItemUrlResolver, LoadingSpinner, View, HtmlEscaper, template) ->
+  (VisualGraph, ItemUrlResolver, VisualizationSettingsDialog, View, HtmlEscaper, template) ->
 
     class VisualizedView extends View
+
+      events : 
+        'click #visualization-show-settings' : "showSettingsDialog"
+
 
       initialize : (options)->
 
         @server = options.server
+        @appState = options.appState
+        @settings = @appState.getVisualizationSettings()
         @dataModel = options.dataModel
+
+        @settings.bind("change", @settingsChanged)
 
       render : =>
 
@@ -49,20 +57,36 @@ define(
             node = @dataModel.getData().getItem()
             @getViz().setNode(node)
 
+      settingsChanged : () =>
+        if @viz?
+          @viz.getLabelFormatter().setLabelProperties(@settings.getLabelProperties())
+
       
       getViz : () =>
         width = $(document).width() - 40;
         height = $(document).height() - 120;
         @viz ?= new VisualGraph(@server,width,height)
+        @settingsChanged()
+        return @viz
 
-      showLoader : =>
-        @hideLoader()        
-        @loader = new LoadingSpinner($(".workarea"))
-        @loader.show()
 
-      hideLoader : =>
-        if @loader?
-          @loader.destroy()
+      showSettingsDialog : =>
+        if @settingsDialog?
+          @hideSettingsDialog()
+        else
+          button = $("#visualization-show-settings")
+          button.addClass("selected")
+          @settingsDialog = new VisualizationSettingsDialog(
+            appState : @appState
+            baseElement : button
+            closeCallback : @hideSettingsDialog)
+
+      hideSettingsDialog : =>
+        if @settingsDialog?
+          @settingsDialog.remove()
+          delete(@settingsDialog)
+          $("#visualization-show-settings").removeClass("selected")
+
 
       remove : =>
         @dataModel.unbind("change:data", @render)

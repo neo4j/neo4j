@@ -20,43 +20,39 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 define(
   ['neo4j/webadmin/visualization/Renderer'
+   'neo4j/webadmin/visualization/LabelFormatter'
    'order!lib/jquery'
    'order!lib/arbor'
    'order!lib/arbor-graphics'
    'order!lib/arbor-tween'], 
-  (Renderer) ->
+  (Renderer, LabelFormatter) ->
   
     class VisualGraph
 
       constructor : (@server, width=800, height=400) ->
         @el = $("<canvas width='#{width}' height='#{height}'></canvas>")
         
+        @labelFormatter = new LabelFormatter()
+
         @groupCount = 0
         @visualizedGraph = {nodes:{}, edges:{}}
         
         @sys = arbor.ParticleSystem(1000, 600, 0.5, true, 30, 0.03)
         @stop()
 
-        @sys.renderer = new Renderer(@el, this)
+        @sys.renderer = new Renderer(@el, @labelFormatter)
         @sys.renderer.bind "node:click", @nodeClicked
         @sys.screenPadding(20)
 
-      getLabelFor : (visualNode) =>
-        switch visualNode.data.type
-          when "explored-node"
-            return visualNode.data.neoNode.getSelf()
-          when "unexplored-node"
-            return "Unexplored"
-          else
-            return "Group"
+
 
       setNode : (node) =>
         @setNodes([node])
 
       setNodes : (nodes) =>
-
         @visualizedGraph = {nodes:{}, edges:{}}
         @addNodes nodes
+
 
       addNode : (node) =>
         @addNodes([node])
@@ -76,7 +72,7 @@ define(
               nodeMap[rel.getEndNodeUrl()] ?= { neoUrl : rel.getEndNodeUrl(), type : "unexplored-node" }
 
               relMap[rel.getStartNodeUrl()] ?= {}
-              relMap[rel.getStartNodeUrl()][rel.getEndNodeUrl()] ?= { relationships : [] }
+              relMap[rel.getStartNodeUrl()][rel.getEndNodeUrl()] ?= { relationships : [], directed:true }
               relMap[rel.getStartNodeUrl()][rel.getEndNodeUrl()].relationships.push rel
 
             if (--fetchCountdown) == 0
@@ -88,6 +84,11 @@ define(
       nodeClicked : (visualNode) =>
         if visualNode.data.type? and visualNode.data.type is "unexplored-node"
           @server.node(visualNode.data.neoUrl).then @addNode
+
+
+      getLabelFormatter : () =>
+        @labelFormatter
+      
 
       stop : () =>
         @sys.stop()
