@@ -19,21 +19,18 @@
  */
 package org.neo4j.server.startup.healthcheck;
 
-import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.database.DatabaseMode;
-
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
 
+import org.neo4j.server.configuration.Configurator;
+
 public class Neo4jPropertiesMustExistRule implements StartupHealthCheckRule
 {
-
     private static final String EMPTY_STRING = "";
     private boolean passed = false;
     private boolean ran = false;
-    private String failureMessage = EMPTY_STRING;
+    String failureMessage = EMPTY_STRING;
 
     public boolean execute(Properties properties) {
         ran = true;
@@ -66,26 +63,14 @@ public class Neo4jPropertiesMustExistRule implements StartupHealthCheckRule
             }
         }
 
-        String configuredDatabaseMode = configProperties.getProperty( Configurator.DB_MODE_KEY, "unspecified");
-
-        if (DatabaseMode.HA.name().equals(configuredDatabaseMode)) {
-            String dbTuningFilename = configProperties.getProperty( Configurator.DB_TUNING_PROPERTY_FILE_KEY );
-            if (dbTuningFilename == null) {
-                failureMessage = String.format("High-Availability mode requires %s to be set in %s",
-                        Configurator.DB_TUNING_PROPERTY_FILE_KEY,
-                        Configurator.NEO_SERVER_CONFIG_FILE_KEY);
-                return false;
-            } else {
-                File dbTuningFile = new File(dbTuningFilename);
-                if(!dbTuningFile.exists()) {
-                    failureMessage = String.format("No database tuning file at [%s]", dbTuningFile.getAbsoluteFile());
-                    return false;
-                }
-            }
-        }
-
-        passed = true;
+        passed = validateProperties( configProperties );
         return passed;
+    }
+
+    protected boolean validateProperties( Properties configProperties )
+    {
+        // default implementation: all OK
+        return true;
     }
 
     public String getFailureMessage() {
