@@ -19,25 +19,24 @@
  */
 package org.neo4j.server.startup.healthcheck;
 
-import org.junit.Test;
-import org.neo4j.server.ServerTestUtils;
-import org.neo4j.server.configuration.Configurator;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Properties;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import org.junit.Test;
+import org.neo4j.server.ServerTestUtils;
+import org.neo4j.server.configuration.Configurator;
 
-public class Neo4jPropertiesMustExistRuleTest
+public class Neo4jHAPropertiesMustExistRuleTest
 {
     @Test
     public void shouldPassIfHAModeIsSetAndTheDbTuningFileHasBeenSpecifiedAndExists() throws IOException
     {
-        Neo4jPropertiesMustExistRule rule = new Neo4jPropertiesMustExistRule();
+        Neo4jHAPropertiesMustExistRule rule = new Neo4jHAPropertiesMustExistRule();
         File serverPropertyFile = ServerTestUtils.createTempPropertyFile();
-        ServerTestUtils.writePropertyToFile(Configurator.DB_MODE_KEY, "HA", serverPropertyFile);
         File dbTuningFile = ServerTestUtils.createTempPropertyFile();
         ServerTestUtils.writePropertyToFile(Configurator.DB_TUNING_PROPERTY_FILE_KEY, dbTuningFile.getAbsolutePath(), serverPropertyFile);
         ServerTestUtils.writePropertyToFile("foo", "bar", dbTuningFile);
@@ -51,9 +50,8 @@ public class Neo4jPropertiesMustExistRuleTest
     @Test
     public void shouldFailIfHAModeIsSetAndTheDbTuningFileHasBeenSpecifiedButDoesNotExist() throws IOException
     {
-        Neo4jPropertiesMustExistRule rule = new Neo4jPropertiesMustExistRule();
+        Neo4jHAPropertiesMustExistRule rule = new Neo4jHAPropertiesMustExistRule();
         File serverPropertyFile = ServerTestUtils.createTempPropertyFile();
-        ServerTestUtils.writePropertyToFile(Configurator.DB_MODE_KEY, "HA", serverPropertyFile);
         File dbTuningFile = ServerTestUtils.createTempPropertyFile();
         ServerTestUtils.writePropertyToFile(Configurator.DB_TUNING_PROPERTY_FILE_KEY, dbTuningFile.getAbsolutePath(), serverPropertyFile);
 
@@ -66,9 +64,8 @@ public class Neo4jPropertiesMustExistRuleTest
     @Test
     public void shouldFailIfHAModeIsSetAndTheDbTuningFileHasNotBeenSpecified() throws IOException
     {
-        Neo4jPropertiesMustExistRule rule = new Neo4jPropertiesMustExistRule();
+        Neo4jHAPropertiesMustExistRule rule = new Neo4jHAPropertiesMustExistRule();
         File serverPropertyFile = ServerTestUtils.createTempPropertyFile();
-        ServerTestUtils.writePropertyToFile(Configurator.DB_MODE_KEY, "HA", serverPropertyFile);
 
         assertFalse( rule.execute( propertiesWithConfigFileLocation( serverPropertyFile ) ) );
 

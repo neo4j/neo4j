@@ -18,7 +18,7 @@
   <properties>
     <bundle.namespace>org.neo4j.server</bundle.namespace>
     <short-name>server</short-name>
-    <neo4j-server.mainClass>org.neo4j.server.BootStrapper</neo4j-server.mainClass>
+    <neo4j-server.mainClass>org.neo4j.server.Bootstrapper</neo4j-server.mainClass>
     <neo-server.home>target/generated-resources/appassembler/jsw</neo-server.home>
     <neo-server.confdir>target/test-classes/etc/neo-server</neo-server.confdir>
     <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
@@ -453,7 +453,8 @@
             <configuration>
               <basedir>src/main/resources/webadmin-html/</basedir>
               <includes>
-                <include>**/*.js</include>
+                <!-- temporary configuration fix -->
+                <include>**/webadmin-min.js</include>
               </includes>
               <excludes>
                 <exclude>lib/*</exclude>
@@ -464,6 +465,26 @@
             </goals>
           </execution>
         </executions>
+        <!-- temporary configuration fix -->
+        <configuration>
+          <strictCheck>true</strictCheck>
+          <header>${license-text.header}</header>
+          <includes>
+            <include>src/**/*.java</include>
+            <include>src/**/*.js</include>
+            <include>src/**/*.scala</include>
+            <include>src/**/*.xml</include>
+          </includes>
+          <excludes>
+            <exclude>**/lib/*.js</exclude>
+            <exclude>**/lib/**/*.js</exclude>
+            <exclude>**/javascript/vend/**</exclude>
+            <exclude>**/webadmin-html/**</exclude>
+          </excludes>
+          <mapping>
+            <scala>JAVADOC_STYLE</scala>
+          </mapping>
+        </configuration>
       </plugin>
 
       <plugin>
