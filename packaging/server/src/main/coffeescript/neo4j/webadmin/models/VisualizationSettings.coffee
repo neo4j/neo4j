@@ -19,19 +19,22 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['neo4j/webadmin/models/VisualizationSettings'
-   'lib/backbone'], 
-  (VisualizationSettings) ->
-  
-    class ApplicationState extends Backbone.Model
-      
-      getServer : ->
-        @get "server"
+  ['neo4j/webadmin/models/LocallyStoredModel'], 
+  (LocallyStoredModel) ->
 
-      getVisualizationSettings : () ->
-        if not @visualizationSettings?
-          @visualizationSettings = new VisualizationSettings()
-          @visualizationSettings.fetch()
-        return @visualizationSettings
+    class VisualizationSettings extends LocallyStoredModel
+      
+      defaults :
+        labelProperties : ['name']
+
+      getStorageKey : () ->
+        "visualization-settings"
+
+      getLabelProperties : () ->
+        @get("labelProperties") or []
+      
+      setLabelProperties : (labelProps) ->
+        @set("labelProperties" : labelProps)
+
 
 )
