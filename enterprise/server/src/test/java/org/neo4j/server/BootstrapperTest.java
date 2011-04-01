@@ -19,30 +19,23 @@
  */
 package org.neo4j.server;
 
-import java.net.URI;
-import java.util.Collection;
-import java.util.List;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-import org.apache.commons.configuration.Configuration;
-import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.database.Database;
-import org.neo4j.server.plugins.Injectable;
-import org.neo4j.server.plugins.PluginManager;
+import org.junit.Test;
 
-public interface NeoServer {
-    void start();
+public class BootstrapperTest
+{
+    @Test
+    public void shouldFindTheMostDerivedType() throws Exception
+    {
+        Bootstrapper bs = new NeoServerBootstrapper();
+        Bootstrapper other = new MoreDerivedBootstrapper();
+        assertFalse( bs.isMoreDerivedThan( other ) );
+        assertTrue( other.isMoreDerivedThan( bs ) );
+    }
 
-    Configuration getConfiguration();
-
-    void stop();
-
-    Database getDatabase();
-
-    Configurator getConfigurator();
-
-    PluginManager getExtensionManager();
-
-    Collection<Injectable<?>> getInjectables( List<String> packageNames );
-
-    URI baseUri();
+    private static class MoreDerivedBootstrapper extends NeoServerBootstrapper
+    {
+    }
 }
