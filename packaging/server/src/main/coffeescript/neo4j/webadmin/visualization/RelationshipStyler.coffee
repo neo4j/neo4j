@@ -30,32 +30,37 @@ define(
           width : 1
         labelStyle : 
           color : "white"
-          font  : "12px Helvetica"
+          font  : "10px Helvetica"
 
       defaultToUnknownStyle : 
         edgeStyle :
           color : "rgba(0, 0, 0, 0.2)"
           width : 1
         labelStyle : 
-          color : "white"
-          font  : "12px Helvetica"
+          color : "rgba(0, 0, 0, 0.4)"
+          font  : "10px Helvetica"
 
       defaultToGroupStyle : 
         edgeStyle : 
           color : "rgba(0, 0, 0, 0.5)"
           width : 1
         labelStyle : 
-          color : "white"
-          font  : "12px Helvetica"
+          color : "rgba(0, 0, 0, 0.4)"
+          font  : "10px Helvetica"
 
       getStyleFor : (visualRelationship) ->
         srcType = visualRelationship.source.data.type
         dstType = visualRelationship.target.data.type
         if srcType is "explored-node" and dstType is "explored-node"
-          return { edgeStyle : @defaultBetweenExploredStyle.edgeStyle, labelStyle : @defaultBetweenExploredStyle.labelStyle , labelText : "hello, world!" }
+          types = for rel in visualRelationship.data.relationships
+            rel.getType()
+
+          return { edgeStyle : @defaultBetweenExploredStyle.edgeStyle, labelStyle : @defaultBetweenExploredStyle.labelStyle , labelText : types.join(", ") }
 
         if srcType is "unexplored-node" or dstType is "unexplored-node"
-          return { edgeStyle : @defaultToUnknownStyle.edgeStyle, labelStyle : @defaultToUnknownStyle.labelStyle, labelText : "hello, world!" }
+          types = for rel in visualRelationship.data.relationships
+            rel.getType()
+          return { edgeStyle : @defaultToUnknownStyle.edgeStyle, labelStyle : @defaultToUnknownStyle.labelStyle, labelText : types.join(", ") }
         
         return { edgeStyle : @defaultToGroupStyle.edgeStyle, labelStyle : @defaultToGroupStyle.labelStyle, labelText : "hello, world!" }
 

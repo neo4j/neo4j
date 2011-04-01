@@ -61,7 +61,8 @@
       VisualGraph.prototype.setNodes = function(nodes) {
         this.visualizedGraph = {
           nodes: {},
-          edges: {}
+          edges: {},
+          relationships: {}
         };
         return this.addNodes(nodes);
       };
@@ -69,9 +70,10 @@
         return this.addNodes([node]);
       };
       VisualGraph.prototype.addNodes = function(nodes) {
-        var fetchCountdown, node, nodeMap, relMap, _i, _len, _results;
-        relMap = this.visualizedGraph.edges;
+        var fetchCountdown, node, nodeMap, relMap, relToNodeMap, _i, _len, _results;
+        relToNodeMap = this.visualizedGraph.edges;
         nodeMap = this.visualizedGraph.nodes;
+        relMap = this.visualizedGraph.relationships;
         fetchCountdown = nodes.length;
         _results = [];
         for (_i = 0, _len = nodes.length; _i < _len; _i++) {
@@ -92,18 +94,17 @@
                 neoUrl: rel.getEndNodeUrl(),
                 type: "unexplored-node"
               };
-              (_ref3 = relMap[_name3 = rel.getStartNodeUrl()]) != null ? _ref3 : relMap[_name3] = {};
-              (_ref4 = (_base = relMap[rel.getStartNodeUrl()])[_name4 = rel.getEndNodeUrl()]) != null ? _ref4 : _base[_name4] = {
-                relationships: [],
-                directed: true
-              };
-              relMap[rel.getStartNodeUrl()][rel.getEndNodeUrl()].relationships.push(rel);
+              if (!(relMap[rel.getSelf()] != null)) {
+                relMap[rel.getSelf()] = rel;
+                (_ref3 = relToNodeMap[_name3 = rel.getStartNodeUrl()]) != null ? _ref3 : relToNodeMap[_name3] = {};
+                (_ref4 = (_base = relToNodeMap[rel.getStartNodeUrl()])[_name4 = rel.getEndNodeUrl()]) != null ? _ref4 : _base[_name4] = {
+                  relationships: [],
+                  directed: true
+                };
+                relToNodeMap[rel.getStartNodeUrl()][rel.getEndNodeUrl()].relationships.push(rel);
+              }
             }
             if ((--fetchCountdown) === 0) {
-              this.visualizedGraph = {
-                nodes: nodeMap,
-                edges: relMap
-              };
               return this.sys.merge(this.visualizedGraph);
             }
           }, this)));
