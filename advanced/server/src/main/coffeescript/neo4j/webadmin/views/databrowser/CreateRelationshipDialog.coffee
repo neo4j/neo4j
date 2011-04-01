@@ -70,11 +70,19 @@ define(
         fromUrl = @urlResolver.getNodeUrl(fromId)
         toUrl = @urlResolver.getNodeUrl(toId)
 
-        @server.rel(fromUrl, type, toUrl).then (relationship) =>
+        successCallback = (relationship) =>
           id = @urlResolver.extractRelationshipId(relationship.getSelf())
           @dataModel.setData( relationship, true, {silent:true} ) 
           @dataModel.setQuery( "rel:#{id}", true)
           @closeCallback()
+
+        failCallback = (error) =>
+          if error instanceof neo4j.exceptions.NotFoundException
+            console.log "AAA"
+          else
+            console.log "Unknwo"
+
+        @server.rel(fromUrl, type, toUrl).then successCallback, failCallback
 
       position : =>
         basePos = $(@baseElement).offset()

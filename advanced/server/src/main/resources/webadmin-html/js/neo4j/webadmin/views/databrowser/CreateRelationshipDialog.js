@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2002-2011 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 (function() {
   /*
   Copyright (c) 2002-2011 "Neo Technology,"
@@ -70,13 +89,13 @@
         return $("#create-relationship-types").val("Types in use");
       };
       CreateRelationshipDialog.prototype.save = function() {
-        var fromId, fromUrl, toId, toUrl, type;
+        var failCallback, fromId, fromUrl, successCallback, toId, toUrl, type;
         type = $("#create-relationship-type").val();
         fromId = this.urlResolver.extractNodeId($("#create-relationship-from").val());
         toId = this.urlResolver.extractNodeId($("#create-relationship-to").val());
         fromUrl = this.urlResolver.getNodeUrl(fromId);
         toUrl = this.urlResolver.getNodeUrl(toId);
-        return this.server.rel(fromUrl, type, toUrl).then(__bind(function(relationship) {
+        successCallback = __bind(function(relationship) {
           var id;
           id = this.urlResolver.extractRelationshipId(relationship.getSelf());
           this.dataModel.setData(relationship, true, {
@@ -84,7 +103,15 @@
           });
           this.dataModel.setQuery("rel:" + id, true);
           return this.closeCallback();
-        }, this));
+        }, this);
+        failCallback = __bind(function(error) {
+          if (error instanceof neo4j.exceptions.NotFoundException) {
+            return console.log("AAA");
+          } else {
+            return console.log("Unknwo");
+          }
+        }, this);
+        return this.server.rel(fromUrl, type, toUrl).then(successCallback, failCallback);
       };
       CreateRelationshipDialog.prototype.position = function() {
         var basePos, left, top;
