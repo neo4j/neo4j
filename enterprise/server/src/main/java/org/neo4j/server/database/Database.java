@@ -22,13 +22,13 @@ package org.neo4j.server.database;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.ext.udc.UdcProperties;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.logging.Logger;
-import org.neo4j.ext.udc.UdcProperties;
 import org.rrd4j.core.RrdDb;
 
 public class Database
@@ -46,19 +46,19 @@ public class Database
         graph = db;
     }
 
-    public Database( DatabaseMode mode, String databaseStoreDirectory )
+    public Database( GraphDatabaseFactory factory, String databaseStoreDirectory )
     {
-        this( createDatabase( mode, databaseStoreDirectory, null ) );
+        this( createDatabase( factory, databaseStoreDirectory, null ) );
         log.warn( "No database tuning properties set in the property file, using defaults. Please specify the performance properties file with org.neo4j.server.db.tuning.properties in the server properties file [%s].", System.getProperty( "org.neo4j.server.properties" ) );
     }
 
-    public Database( DatabaseMode mode, String databaseStoreDirectory,
+    public Database( GraphDatabaseFactory factory, String databaseStoreDirectory,
             Map<String, String> databaseTuningProperties )
     {
-        this( createDatabase( mode, databaseStoreDirectory, databaseTuningProperties ) );
+        this( createDatabase( factory, databaseStoreDirectory, databaseTuningProperties ) );
     }
 
-    private static AbstractGraphDatabase createDatabase( DatabaseMode mode,
+    private static AbstractGraphDatabase createDatabase( GraphDatabaseFactory factory,
             String databaseStoreDirectory, Map<String, String> databaseProperties )
     {
         log.info( "Creating database at " + databaseStoreDirectory );
@@ -72,7 +72,7 @@ public class Database
         databaseProperties.put( org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS, "true" );
         databaseProperties.put( UdcProperties.UDC_SOURCE_KEY, "server" );
 
-        return mode.createDatabase( databaseStoreDirectory, databaseProperties );
+        return factory.createDatabase( databaseStoreDirectory, databaseProperties );
     }
 
 

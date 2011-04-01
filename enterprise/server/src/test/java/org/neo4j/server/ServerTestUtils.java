@@ -30,8 +30,22 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 
+import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.server.database.GraphDatabaseFactory;
+
 public class ServerTestUtils
 {
+    public static final GraphDatabaseFactory EMBEDDED_GRAPH_DATABASE_FACTORY = new GraphDatabaseFactory()
+    {
+        @Override
+        public AbstractGraphDatabase createDatabase( String databaseStoreDirectory,
+                Map<String, String> databaseProperties )
+        {
+            return new EmbeddedGraphDatabase( databaseStoreDirectory, databaseProperties );
+        }
+    };
+
     public static File createTempDir() throws IOException
     {
         File d = File.createTempFile( "neo4j-test", "dir" );
@@ -55,7 +69,7 @@ public class ServerTestUtils
     {
         writePropertyToFile( outerPropertyName, asOneLine( properties ), propertyFile );
     }
-    
+
     private static String asOneLine( Map<String, String> properties )
     {
         StringBuilder builder = new StringBuilder();
