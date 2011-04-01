@@ -32,13 +32,12 @@ import static org.neo4j.server.rest.repr.RepresentationTestBase.serialize;
 
 import java.io.File;
 import java.io.IOException;
-
-import java.util.Map;
-import java.util.List;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
@@ -54,7 +53,6 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseBlockedException;
-import org.neo4j.server.database.DatabaseMode;
 import org.neo4j.server.rest.domain.EndNodeNotFoundException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.StartNodeNotFoundException;
@@ -78,8 +76,7 @@ public class DatabaseActionsTest
     public void clearDb() throws IOException
     {
         databasePath = ServerTestUtils.createTempDir().getAbsolutePath();
-        database = new Database( DatabaseMode.STANDALONE,
-                databasePath );
+        database = new Database( ServerTestUtils.EMBEDDED_GRAPH_DATABASE_FACTORY, databasePath );
 
         graphdbHelper = new GraphDbHelper( database );
         this.actions = new DatabaseActions( database );
@@ -157,8 +154,8 @@ public class DatabaseActionsTest
             tx.finish();
         }
     }
-    
-    
+
+
     @Test(expected = PropertyValueException.class)
     public void shouldFailOnTryingToStoreMixedArraysAsAProperty() throws Exception
     {
@@ -169,10 +166,10 @@ public class DatabaseActionsTest
         dodgyArray[1] = 1;
         dodgyArray[2] = "two";
         properties.put( "foo", dodgyArray);
-        
+
         actions.setAllNodeProperties( nodeId, properties );
     }
-    
+
     @Test
     public void shouldOverwriteExistingProperties() throws DatabaseBlockedException,
             PropertyValueException, NodeNotFoundException
@@ -273,7 +270,7 @@ public class DatabaseActionsTest
     {
         String key = "foo";
         Object value = "bar";
-        long nodeId = createNode( Collections.singletonMap( key, (Object)value ) );
+        long nodeId = createNode( Collections.singletonMap( key, value ) );
         assertEquals( value, serialize( actions.getNodeProperty( nodeId, key ) ) );
     }
 
@@ -723,7 +720,7 @@ public class DatabaseActionsTest
         assertEquals( 0, graphdbHelper.getIndexedNodes( indexName, key2, value ).size() );
         assertEquals( 0, graphdbHelper.getIndexedNodes( indexName, key2, value2 ).size() );
     }
-    
+
     private long createBasicTraversableGraph() throws DatabaseBlockedException
     {
         // (Root)
@@ -775,18 +772,18 @@ public class DatabaseActionsTest
         graphdbHelper.createRelationship( "to", c, g );
         return new long[]{a, g};
     }
-    
+
     private void createRelationshipWithProperties( long start, long end, Map<String, Object> properties )
     {
         long rel = graphdbHelper.createRelationship( "to", start, end );
         graphdbHelper.setRelationshipProperties( rel, properties );
     }
-    
+
     private long[] createDijkstraGraph( boolean includeOnes ) throws DatabaseBlockedException
     {
         /* Layout:
-         *                       (y)    
-         *                        ^     
+         *                       (y)
+         *                        ^
          *                        [2]  _____[1]___
          *                          \ v           |
          * (start)--[1]->(a)--[9]-->(x)<-        (e)--[2]->(f)
@@ -806,7 +803,7 @@ public class DatabaseActionsTest
         long f = graphdbHelper.createNode();
         long x = graphdbHelper.createNode();
         long y = graphdbHelper.createNode();
-        
+
         createRelationshipWithProperties( start, a, costOneProperties );
         createRelationshipWithProperties( a, x, map( "cost", (double) 9 ) );
         createRelationshipWithProperties( a, b, costOneProperties );
@@ -961,7 +958,7 @@ public class DatabaseActionsTest
                 "direction", "out" ), "single", false ) ) );
         assertPaths( 1, nodes, 2, Arrays.<Object>asList( path ) );
     }
-    
+
     @Test
     public void shouldBeAbleToGetPathsUsingDijkstra() throws Exception
     {
@@ -999,7 +996,7 @@ public class DatabaseActionsTest
         assertPaths( 1, nodes, 6, Arrays.<Object>asList( path ) );
         assertEquals( 6.0d, path.get( "weight" ) );
     }
-    
+
     @Test( expected = NotFoundException.class )
     public void shouldHandleNoFoundPathsCorrectly()
     {
