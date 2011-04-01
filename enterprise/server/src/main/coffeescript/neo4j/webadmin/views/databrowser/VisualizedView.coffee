@@ -59,7 +59,7 @@ define(
 
       settingsChanged : () =>
         if @viz?
-          @viz.getLabelFormatter().setLabelProperties(@settings.getLabelProperties())
+          @viz.getNodeStyler().setLabelProperties(@settings.getLabelProperties())
 
       
       getViz : () =>
