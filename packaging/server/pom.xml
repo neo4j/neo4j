@@ -18,7 +18,7 @@
   <properties>
     <bundle.namespace>org.neo4j.server</bundle.namespace>
     <short-name>server</short-name>
-    <neo4j-server.mainClass>org.neo4j.server.BootStrapper</neo4j-server.mainClass>
+    <neo4j-server.mainClass>org.neo4j.server.Bootstrapper</neo4j-server.mainClass>
     <neo-server.home>target/generated-resources/appassembler/jsw</neo-server.home>
     <neo-server.confdir>target/test-classes/etc/neo-server</neo-server.confdir>
     <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
