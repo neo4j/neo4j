@@ -55,6 +55,16 @@
   <build>
     <plugins>
       <plugin>
+        <groupId>com.mycila.maven-license-plugin</groupId>
+        <artifactId>maven-license-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>check-licenses</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <artifactId>maven-deploy-plugin</artifactId>
         <!-- fix issue with appassembler -->
         <version>2.4</version>
