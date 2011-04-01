@@ -1,22 +1,3 @@
-/*
- * Copyright (c) 2002-2011 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
 (function() {
   /*
   Renderer, forked from the halfviz library.
@@ -24,8 +5,9 @@
   define(['order!lib/jquery', 'order!lib/arbor', 'order!lib/arbor-graphics', 'order!lib/arbor-tween', 'order!lib/backbone'], function() {
     var Renderer;
     return Renderer = (function() {
-      function Renderer(canvas, labelFactory) {
-        this.labelFactory = labelFactory;
+      function Renderer(canvas, nodeStyler, relationshipStyler) {
+        this.nodeStyler = nodeStyler;
+        this.relationshipStyler = relationshipStyler;
         this.intersect_line_box = __bind(this.intersect_line_box, this);;
         this.intersect_line_line = __bind(this.intersect_line_line, this);;
         this.thesePointsAreReallyClose = __bind(this.thesePointsAreReallyClose, this);;
@@ -59,11 +41,9 @@
         return this.nodeBoxes = {};
       };
       Renderer.prototype.renderNode = function(node, pt) {
-        var label, nodeStyle, w;
-        if (node.data.fixated) {
-          node.fixed = true;
-        }
-        label = this.labelFactory.getLabelFor(node);
+        var label, style, w;
+        style = this.nodeStyler.getStyleFor(node);
+        label = style.labelText;
         w = this.ctx.measureText("" + label).width + 10;
         if (!("" + label).match(/^[ \t]*$/)) {
           pt.x = Math.floor(pt.x);
@@ -71,39 +51,29 @@
         } else {
           label = null;
         }
-        nodeStyle = {
-          fill: node.data.color || "#000000",
-          alpha: node.data.alpha || 0.2
-        };
-        if (node.data.shape === 'dot') {
-          this.gfx.oval(pt.x - w / 2, pt.y - w / 2, w, w, nodeStyle);
+        if (style.nodeStyle.shape === 'dot') {
+          this.gfx.oval(pt.x - w / 2, pt.y - w / 2, w, w, style.nodeStyle);
           this.nodeBoxes[node.name] = [pt.x - w / 2, pt.y - w / 2, w, w];
         } else {
-          this.gfx.rect(pt.x - w / 2, pt.y - 10, w, 20, 4, nodeStyle);
+          this.gfx.rect(pt.x - w / 2, pt.y - 10, w, 20, 4, style.nodeStyle);
           this.nodeBoxes[node.name] = [pt.x - w / 2, pt.y - 11, w, 22];
         }
         if (label) {
-          this.ctx.font = "12px Helvetica";
+          this.ctx.font = style.labelStyle.font;
           this.ctx.textAlign = "center";
-          this.ctx.fillStyle = "white";
-          if (node.data.color === 'none') {
-            this.ctx.fillStyle = '#333333';
-          }
-          this.ctx.fillText(label || "", pt.x, pt.y + 4);
+          this.ctx.fillStyle = style.labelStyle.color;
           return this.ctx.fillText(label || "", pt.x, pt.y + 4);
         }
       };
       Renderer.prototype.renderEdge = function(edge, pt1, pt2) {
-        var arrowLength, arrowWidth, color, head, tail, weight, wt;
-        weight = edge.data.weight;
-        color = edge.data.color;
-        color = (color != null) && !("" + color).match(/^[ \t]*$/) ? color : "#cccccc";
+        var arrowLength, arrowWidth, head, style, tail, wt;
+        style = this.relationshipStyler.getStyleFor(edge);
         tail = this.intersect_line_box(pt1, pt2, this.nodeBoxes[edge.source.name]);
         head = this.intersect_line_box(tail, pt2, this.nodeBoxes[edge.target.name]);
         this.ctx.save();
         this.ctx.beginPath();
-        this.ctx.lineWidth = !isNaN(weight) ? parseFloat(weight) : 1;
-        this.ctx.strokeStyle = color;
+        this.ctx.lineWidth = style.edgeStyle.width;
+        this.ctx.strokeStyle = style.edgeStyle.color;
         this.ctx.fillStyle = "rgba(0, 0, 0, 0)";
         this.ctx.moveTo(tail.x, tail.y);
         this.ctx.lineTo(head.x, head.y);
@@ -111,10 +81,10 @@
         this.ctx.restore();
         if (edge.data.directed) {
           this.ctx.save();
-          wt = !isNaN(weight) ? parseFloat(weight) : 1;
+          wt = style.edgeStyle.width;
           arrowLength = 6 + wt;
           arrowWidth = 2 + wt;
-          this.ctx.fillStyle = color;
+          this.ctx.fillStyle = style.edgeStyle.color;
           this.ctx.translate(head.x, head.y);
           this.ctx.rotate(Math.atan2(head.y - tail.y, head.x - tail.x));
           this.ctx.clearRect(-arrowLength / 2, -wt / 2, arrowLength / 2, wt);
@@ -125,6 +95,14 @@
           this.ctx.lineTo(-arrowLength * 0.8, -0);
           this.ctx.closePath();
           this.ctx.fill();
+          this.ctx.restore();
+        }
+        if (style.labelText && false) {
+          this.ctx.save();
+          this.ctx.font = style.labelStyle.font;
+          this.ctx.textAlign = "center";
+          this.ctx.fillStyle = style.labelStyle.color;
+          this.ctx.fillText(style.labelText || "", pt2.x, pt2.y + 4);
           return this.ctx.restore();
         }
       };

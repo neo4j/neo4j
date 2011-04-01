@@ -32,8 +32,17 @@
       LocalStorageStoringStrategy.prototype.store = function(key, obj) {
         return localStorage.setItem(key, JSON.stringify(obj));
       };
-      LocalStorageStoringStrategy.prototype.fetch = function(key) {
-        return JSON.parse(localStorage.getItem(key));
+      LocalStorageStoringStrategy.prototype.fetch = function(key, defaults) {
+        var stored;
+        if (defaults == null) {
+          defaults = {};
+        }
+        stored = localStorage.getItem(key);
+        if (stored !== null) {
+          return JSON.parse(stored);
+        } else {
+          return defaults;
+        }
       };
       return LocalStorageStoringStrategy;
     })();
@@ -44,8 +53,15 @@
       InMemoryStoringStrategy.prototype.store = function(key, obj) {
         return this.storage[key] = obj;
       };
-      InMemoryStoringStrategy.prototype.fetch = function(key) {
-        return this.storage[key];
+      InMemoryStoringStrategy.prototype.fetch = function(key, defaults) {
+        if (defaults == null) {
+          defaults = {};
+        }
+        if (this.storage[key] != null) {
+          return this.storage[key];
+        } else {
+          return this.defaults;
+        }
       };
       return InMemoryStoringStrategy;
     })();
@@ -68,7 +84,7 @@
         this.clear({
           silent: true
         });
-        return this.set(this.storingStrategy.fetch(this.getStorageKey()));
+        return this.set(this.storingStrategy.fetch(this.getStorageKey(), this.defaults));
       };
       LocallyStoredModel.prototype.save = function() {
         return this.storingStrategy.store(this.getStorageKey(), this.toJSON());

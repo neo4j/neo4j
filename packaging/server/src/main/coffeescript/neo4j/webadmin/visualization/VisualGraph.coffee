@@ -20,30 +20,31 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 define(
   ['neo4j/webadmin/visualization/Renderer'
-   'neo4j/webadmin/visualization/LabelFormatter'
+   'neo4j/webadmin/visualization/NodeStyler'
+   'neo4j/webadmin/visualization/RelationshipStyler'
    'order!lib/jquery'
    'order!lib/arbor'
    'order!lib/arbor-graphics'
    'order!lib/arbor-tween'], 
-  (Renderer, LabelFormatter) ->
+  (Renderer, NodeStyler, RelationshipStyler) ->
   
     class VisualGraph
 
-      constructor : (@server, width=800, height=400) ->
+      constructor : (@server, width=800, height=400, @groupingThreshold=10) ->
         @el = $("<canvas width='#{width}' height='#{height}'></canvas>")
         
-        @labelFormatter = new LabelFormatter()
+        @nodeStyler = new NodeStyler()
+        @relationshipStyler = new RelationshipStyler()
 
         @groupCount = 0
         @visualizedGraph = {nodes:{}, edges:{}}
         
-        @sys = arbor.ParticleSystem(1000, 600, 0.5, true, 30, 0.03)
+        @sys = arbor.ParticleSystem(600, 100, 0.8, false, 30, 0.03)
         @stop()
 
-        @sys.renderer = new Renderer(@el, @labelFormatter)
+        @sys.renderer = new Renderer(@el, @nodeStyler, @relationshipStyler)
         @sys.renderer.bind "node:click", @nodeClicked
         @sys.screenPadding(20)
-
 
 
       setNode : (node) =>
@@ -67,7 +68,6 @@ define(
           nodeMap[node.getSelf()] = { neoNode : node, type : "explored-node" }
           node.getRelationships().then (rels) =>
             for rel in rels
-              
               nodeMap[rel.getStartNodeUrl()] ?= { neoUrl : rel.getStartNodeUrl(), type : "unexplored-node" }
               nodeMap[rel.getEndNodeUrl()] ?= { neoUrl : rel.getEndNodeUrl(), type : "unexplored-node" }
 
@@ -88,6 +88,9 @@ define(
 
       getLabelFormatter : () =>
         @labelFormatter
+      
+      getNodeStyler : () =>
+        @nodeStyler
       
 
       stop : () =>

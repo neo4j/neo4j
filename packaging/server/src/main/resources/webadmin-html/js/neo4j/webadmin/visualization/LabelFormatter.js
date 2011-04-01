@@ -39,7 +39,7 @@
             }
             return this.itemUrlUtils.extractNodeId(node.getSelf());
           case "unexplored-node":
-            return "Unexplored:" + this.itemUrlUtils.extractNodeId(visualNode.data.neoUrl);
+            return this.itemUrlUtils.extractNodeId(visualNode.data.neoUrl);
           default:
             return "Group";
         }
