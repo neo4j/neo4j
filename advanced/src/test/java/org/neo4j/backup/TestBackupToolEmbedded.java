@@ -25,8 +25,10 @@ import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
 import static org.neo4j.kernel.Config.osIsWindows;
 
 import java.io.File;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
@@ -42,8 +44,8 @@ import org.neo4j.test.DbRepresentation;
 
 public class TestBackupToolEmbedded
 {
-    static final String PATH = "target/var/db";
-    static final String BACKUP_PATH = "target/var/backup-db";
+    public static final String PATH = "target/var/db";
+    public static final String BACKUP_PATH = "target/var/backup-db";
     private GraphDatabaseService db;
     
     @Before
@@ -54,7 +56,7 @@ public class TestBackupToolEmbedded
         FileUtils.deleteDirectory( new File( BACKUP_PATH ) );
     }
     
-    static DbRepresentation createSomeData( GraphDatabaseService db )
+    public static DbRepresentation createSomeData( GraphDatabaseService db )
     {
         Transaction tx = db.beginTx();
         Node node = db.createNode();
@@ -80,11 +82,14 @@ public class TestBackupToolEmbedded
         assertEquals( 1, runBackupToolFromOtherJvmToGetExitCode() );
         assertEquals( 1, runBackupToolFromOtherJvmToGetExitCode( "-full" ) );
         assertEquals( 1, runBackupToolFromOtherJvmToGetExitCode( "-incremental" ) );
-        assertEquals( 1, runBackupToolFromOtherJvmToGetExitCode( "-from", "localhost" ) );
+        assertEquals(
+                1,
+                runBackupToolFromOtherJvmToGetExitCode( "-from", "localhost" ) );
         assertEquals( 1, runBackupToolFromOtherJvmToGetExitCode( "-to", "some-dir" ) );
-        assertEquals( 1, runBackupToolFromOtherJvmToGetExitCode( "-from-ha", "localhost:2181" ) );
-        assertEquals( 1, runBackupToolFromOtherJvmToGetExitCode( "-full", "-from", "localhost", "-to", "some-dir", "-incremental" ) );
-        assertEquals( 1, runBackupToolFromOtherJvmToGetExitCode( "-full", "-from", "localhost", "-from-ha", "localhost:2181", "-to", "some-dir" ) );
+        assertEquals(
+                1,
+                runBackupToolFromOtherJvmToGetExitCode( "-full", "-from",
+                        "foo://localhost", "-to", "some-dir", "-incremental" ) );
     }
     
     @Test
@@ -92,10 +97,16 @@ public class TestBackupToolEmbedded
     {
         if ( osIsWindows() ) return;
         startDb( "true" );
-        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( "-full", "-from", "localhost", "-to", BACKUP_PATH ) );
+        assertEquals(
+                0,
+                runBackupToolFromOtherJvmToGetExitCode( "-full", "-from",
+                        "simple://localhost", "-to", BACKUP_PATH ) );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( BACKUP_PATH ) );
         createSomeData( db );
-        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( "-incremental", "-from", "localhost", "-to", BACKUP_PATH ) );
+        assertEquals(
+                0,
+                runBackupToolFromOtherJvmToGetExitCode( "-incremental",
+                        "-from", "simple://localhost", "-to", BACKUP_PATH ) );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( BACKUP_PATH ) );
     }
 
@@ -105,11 +116,21 @@ public class TestBackupToolEmbedded
         if ( osIsWindows() ) return;
         int port = 4445;
         startDb( "port=" + port );
-        assertEquals( 1, runBackupToolFromOtherJvmToGetExitCode( "-full", "-from", "localhost", "-to", BACKUP_PATH ) );
-        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( "-full", "-from", "localhost:" + port, "-to", BACKUP_PATH ) );
+        assertEquals(
+                1,
+                runBackupToolFromOtherJvmToGetExitCode( "-full", "-from",
+                        "simple://localhost", "-to", BACKUP_PATH ) );
+        assertEquals(
+                0,
+                runBackupToolFromOtherJvmToGetExitCode( "-full", "-from",
+                        "simple://localhost:" + port, "-to", BACKUP_PATH ) );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( BACKUP_PATH ) );
         createSomeData( db );
-        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( "-incremental", "-from", "localhost:" + port, "-to", BACKUP_PATH ) );
+        assertEquals(
+                0,
+                runBackupToolFromOtherJvmToGetExitCode( "-incremental",
+                        "-from", "simple://localhost:" + port, "-to",
+                        BACKUP_PATH ) );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( BACKUP_PATH ) );
     }
     
@@ -126,10 +147,31 @@ public class TestBackupToolEmbedded
         createSomeData( db );
     }
     
-    static int runBackupToolFromOtherJvmToGetExitCode( String... args ) throws Exception
+    public static int runBackupToolFromOtherJvmToGetExitCode( String... args )
+            throws Exception
     {
-        List<String> allArgs = new ArrayList<String>( Arrays.asList( "java", "-cp", System.getProperty( "java.class.path" ), Backup.class.getName() ) );
+        List<String> allArgs = new ArrayList<String>( Arrays.asList( "java", "-cp", System.getProperty( "java.class.path" ), BackupTool.class.getName() ) );
         allArgs.addAll( Arrays.asList( args ) );
-        return Runtime.getRuntime().exec( allArgs.toArray( new String[allArgs.size()] ) ).waitFor();
+        
+        Process p = Runtime.getRuntime().exec( allArgs.toArray( new String[allArgs.size()] ));
+        List<Thread> threads = new LinkedList<Thread>();
+        launchStreamConsumers(threads, p);
+        
+        int toReturn = p.waitFor();
+        for (Thread t : threads)
+            t.join();
+        return toReturn;
+    }
+
+    private static void launchStreamConsumers( List<Thread> join, Process p )
+    {
+        InputStream outStr = p.getInputStream();
+        InputStream errStr = p.getErrorStream();
+        Thread out = new Thread( new StreamConsumer( outStr, System.out ) );
+        join.add( out );
+        Thread err = new Thread( new StreamConsumer( errStr, System.err ) );
+        join.add( err );
+        out.start();
+        err.start();
     }
 }

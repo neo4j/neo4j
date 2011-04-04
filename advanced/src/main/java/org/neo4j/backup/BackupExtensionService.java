@@ -19,9 +19,16 @@
  */
 package org.neo4j.backup;
 
-public interface ServerInterface
+import java.net.URI;
+
+import org.neo4j.helpers.Service;
+
+public abstract class BackupExtensionService extends Service
 {
-    void shutdown();
-    
-    void awaitStarted();
+    public BackupExtensionService( String name )
+    {
+        super( name );
+    }
+
+    public abstract URI resolve( String from );
 }
