@@ -19,9 +19,15 @@
  */
 package org.neo4j.management;
 
+import org.neo4j.jmx.Description;
+import org.neo4j.jmx.ManagementInterface;
+
+@ManagementInterface( name = XaManager.NAME )
+@Description( "Information about the XA transaction manager" )
 public interface XaManager
 {
     final String NAME = "XA Resources";
 
+    @Description( "Information about all XA resources managed by the transaction manager" )
     XaResourceInfo[] getXaResources();
 }

@@ -28,10 +28,11 @@ import java.util.Map;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.neo4j.jmx.Kernel;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
-public class JmxTest
+public class ManagementBeansTest
 {
     private static AbstractGraphDatabase graphDb;
 
@@ -39,7 +40,7 @@ public class JmxTest
     public static synchronized void startGraphDb()
     {
 		graphDb = new EmbeddedGraphDatabase("target" + File.separator + "var"
-				+ File.separator + JmxTest.class.getSimpleName());
+				+ File.separator + ManagementBeansTest.class.getSimpleName());
     }
 
     @AfterClass

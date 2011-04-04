@@ -25,7 +25,10 @@ import java.io.IOException;
 import javax.management.NotCompliantMBeanException;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.KernelData;
+import org.neo4j.jmx.impl.KernelBean;
+import org.neo4j.jmx.impl.ManagementBeanProvider;
+import org.neo4j.jmx.impl.ManagementData;
+import org.neo4j.jmx.impl.Neo4jMBean;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.management.StoreFile;
 
@@ -38,12 +41,11 @@ public final class StoreFileBean extends ManagementBeanProvider
     }
 
     @Override
-    protected Neo4jMBean createMBean( KernelData kernel ) throws NotCompliantMBeanException
+    protected Neo4jMBean createMBean( ManagementData management ) throws NotCompliantMBeanException
     {
-        return new StoreFileImpl( this, kernel );
+        return new StoreFileImpl( management );
     }
 
-    @Description( "Information about the sizes of the different parts of the Neo4j graph store" )
     private static class StoreFileImpl extends Neo4jMBean implements StoreFile
     {
         private static final String NODE_STORE = "neostore.nodestore.db";
@@ -55,11 +57,10 @@ public final class StoreFileBean extends ManagementBeanProvider
         private static final String LOGICAL_LOG2 = "nioneo_logical.log.2";
         private final File storePath;
 
-        StoreFileImpl( ManagementBeanProvider provider, KernelData kernel )
-                throws NotCompliantMBeanException
+        StoreFileImpl( ManagementData management ) throws NotCompliantMBeanException
         {
-            super( provider, kernel );
-            NeoStoreXaDataSource nioneodb = KernelBean.getNeoDataSource( kernel );
+            super( management );
+            NeoStoreXaDataSource nioneodb = KernelBean.getNeoDataSource( management.getKernelData() );
             File path;
             try
             {
@@ -72,13 +73,11 @@ public final class StoreFileBean extends ManagementBeanProvider
             this.storePath = path;
         }
 
-        @Description( "The total disk space used by this Neo4j instance, in bytes." )
         public long getTotalStoreSize()
         {
             return sizeOf( storePath );
         }
 
-        @Description( "The amount of disk space used by the current Neo4j logical log, in bytes." )
         public long getLogicalLogSize()
         {
             File logicalLog = new File( storePath, LOGICAL_LOG1 );
@@ -112,32 +111,26 @@ public final class StoreFileBean extends ManagementBeanProvider
             return sizeOf( new File( storePath, name ) );
         }
 
-        @Description( "The amount of disk space used to store array properties, in bytes." )
         public long getArrayStoreSize()
         {
             return sizeOf( ARRAY_STORE );
         }
 
-        @Description( "The amount of disk space used to store nodes, in bytes." )
         public long getNodeStoreSize()
         {
             return sizeOf( NODE_STORE );
         }
 
-        @Description( "The amount of disk space used to store properties "
-                      + "(excluding string values and array values), in bytes." )
         public long getPropertyStoreSize()
         {
             return sizeOf( PROPERTY_STORE );
         }
 
-        @Description( "The amount of disk space used to store relationships, in bytes." )
         public long getRelationshipStoreSize()
         {
             return sizeOf( RELATIONSHIP_STORE );
         }
 
-        @Description( "The amount of disk space used to store string properties, in bytes." )
         public long getStringStoreSize()
         {
             return sizeOf( STRING_STORE );

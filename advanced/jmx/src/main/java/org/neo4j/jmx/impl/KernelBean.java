@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.management.impl;
+package org.neo4j.jmx.impl;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,13 +26,12 @@ import java.util.Date;
 import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
 
+import org.neo4j.jmx.Kernel;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.management.Kernel;
 
-@Description( "Information about the Neo4j kernel" )
-class KernelBean extends Neo4jMBean implements Kernel
+public class KernelBean extends Neo4jMBean implements Kernel
 {
     private final long kernelStartTime;
     private final long storeCreationDate;
@@ -43,13 +42,12 @@ class KernelBean extends Neo4jMBean implements Kernel
     private final String storeDir;
     private final ObjectName query;
 
-    KernelBean( KernelData kernel )
-            throws NotCompliantMBeanException
+    KernelBean( KernelData kernel, ManagementSupport support ) throws NotCompliantMBeanException
     {
-        super( Kernel.class, kernel );
+        super( Kernel.class, kernel, support );
         NeoStoreXaDataSource datasource = getNeoDataSource( kernel );
         this.kernelVersion = kernel.version().toString();
-        this.query = JmxExtension.getObjectName( kernel, null, null );
+        this.query = support.createMBeanQuery( kernel.instanceId() );
         storeCreationDate = datasource.getCreationTime();
         storeLogVersion = datasource.getCurrentLogVersion();
         isReadOnly = datasource.isReadOnly();
@@ -69,56 +67,47 @@ class KernelBean extends Neo4jMBean implements Kernel
         kernelStartTime = new Date().getTime();
     }
 
-    static NeoStoreXaDataSource getNeoDataSource( KernelData kernel )
+    public static NeoStoreXaDataSource getNeoDataSource( KernelData kernel )
     {
         XaDataSourceManager mgr = kernel.getConfig().getTxModule().getXaDataSourceManager();
         return (NeoStoreXaDataSource) mgr.getXaDataSource( "nioneodb" );
     }
 
-    @Description( "An ObjectName that can be used as a query for getting all management "
-                  + "beans for this Neo4j instance." )
     public ObjectName getMBeanQuery()
     {
         return query;
     }
 
-    @Description( "The time from which this Neo4j instance was in operational mode." )
     public Date getKernelStartTime()
     {
         return new Date( kernelStartTime );
     }
 
-    @Description( "The time when this Neo4j graph store was created." )
     public Date getStoreCreationDate()
     {
         return new Date( storeCreationDate );
     }
 
-    @Description( "An identifier that uniquely identifies this Neo4j graph store." )
     public String getStoreId()
     {
         return Long.toHexString( storeId );
     }
 
-    @Description( "The current version of the Neo4j store logical log." )
     public long getStoreLogVersion()
     {
         return storeLogVersion;
     }
 
-    @Description( "The version of Neo4j" )
     public String getKernelVersion()
     {
         return kernelVersion;
     }
 
-    @Description( "Whether this is a read only instance" )
     public boolean isReadOnly()
     {
         return isReadOnly;
     }
 
-    @Description( "The location where the Neo4j store is located" )
     public String getStoreDirectory()
     {
         return storeDir;

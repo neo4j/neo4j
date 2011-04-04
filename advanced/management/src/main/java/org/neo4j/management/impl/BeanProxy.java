@@ -35,7 +35,7 @@ abstract class BeanProxy
         this.supportsMxBeans = supportsMxBeans;
     }
 
-    static <T> T load( MBeanServerConnection mbs, Class<T> beanInterface, ObjectName name )
+    public static <T> T load( MBeanServerConnection mbs, Class<T> beanInterface, ObjectName name )
     {
         return factory.makeProxy( mbs, beanInterface, name );
     }

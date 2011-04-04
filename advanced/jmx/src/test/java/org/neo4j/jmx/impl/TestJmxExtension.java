@@ -17,21 +17,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.management.impl;
+package org.neo4j.jmx.impl;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import org.neo4j.jmx.impl.JmxExtension;
+import org.neo4j.kernel.KernelExtensionContractTest;
 
-import javax.management.MBeanOperationInfo;
-
-@Target( { ElementType.METHOD, ElementType.TYPE, ElementType.FIELD } )
-@Retention( RetentionPolicy.RUNTIME )
-public @interface Description
+public class TestJmxExtension extends KernelExtensionContractTest<JmxExtension.JmxData, JmxExtension>
 {
-    // TODO: refactor for localization
-    String value();
-
-    int impact() default MBeanOperationInfo.UNKNOWN;
+    public TestJmxExtension()
+    {
+        super( JmxExtension.KEY, JmxExtension.class );
+    }
 }
