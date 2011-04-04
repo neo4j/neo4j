@@ -44,34 +44,43 @@ define(
         nodeStyle  : 
           shape : "dot"
           fill  : "#000000"
-          alpha : 0.2
+          alpha : 0.4
         labelStyle : 
           color : "white"
-          font  : "12px Helvetica"
+          font  : "10px Helvetica"
 
       constructor : () ->
         @labelProperties = []
         @itemUrlUtils = new ItemUrlResolver()
 
       getStyleFor : (visualNode) ->
-        switch visualNode.data.type
-          when "explored-node"
+        type = visualNode.data.type
+        if type is "group"
+          nodeStyle = @defaultGroupStyle.nodeStyle
+          labelStyle = @defaultGroupStyle.labelStyle
+          labelText = visualNode.data.group.nodeCount
+        else 
+
+          if visualNode.data.neoNode?
             node = visualNode.data.neoNode
-            
+            id = @itemUrlUtils.extractNodeId(node.getSelf())
             for prop in @labelProperties
               if node.hasProperty(prop)
-                label = node.getProperty(prop)
+                labelText = id + ": " + node.getProperty(prop)
                 break
                       
-            label ?= @itemUrlUtils.extractNodeId(node.getSelf())
-            return { nodeStyle:@defaultExploredStyle.nodeStyle, labelStyle:@defaultExploredStyle.labelStyle, labelText:label}
-
-          when "unexplored-node"
-            label = @itemUrlUtils.extractNodeId(visualNode.data.neoUrl)
-            return { nodeStyle:@defaultUnexploredStyle.nodeStyle, labelStyle:@defaultUnexploredStyle.labelStyle, labelText:label }
-
+            labelText ?= id
+          else 
+            labelText = "?"
+          
+          if type is "explored"
+            nodeStyle = @defaultExploredStyle.nodeStyle
+            labelStyle = @defaultExploredStyle.labelStyle
           else
-            return { nodeStyle:@defaultGroupStyle.nodeStyle, labelStyle:@defaultGroupStyle.labelStyle, labelText:"Group" }
+            nodeStyle = @defaultUnexploredStyle.nodeStyle
+            labelStyle = @defaultUnexploredStyle.labelStyle
+
+        return { nodeStyle:nodeStyle, labelStyle:labelStyle, labelText:labelText }
 
       setLabelProperties : (labelProperties) ->
         @labelProperties = labelProperties
