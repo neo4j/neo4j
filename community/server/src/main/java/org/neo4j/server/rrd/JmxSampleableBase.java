@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.rrd;
 
+import org.neo4j.jmx.Kernel;
+import org.neo4j.jmx.Primitives;
 import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.management.Kernel;
-import org.neo4j.management.Primitives;
 
 import javax.management.AttributeNotFoundException;
 import javax.management.InstanceNotFoundException;
