@@ -29,7 +29,7 @@ import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.server.startup.healthcheck.Neo4jHAPropertiesMustExistRule;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
 
-public class EnterpriseNeoServerBootstrapper extends NeoServerBootstrapper
+public class EnterpriseNeoServerBootstrapper extends AdvancedNeoServerBootstrapper
 {
     @Override
     public AbstractGraphDatabase createDatabase( String databaseStoreDirectory, Map<String, String> databaseProperties )
