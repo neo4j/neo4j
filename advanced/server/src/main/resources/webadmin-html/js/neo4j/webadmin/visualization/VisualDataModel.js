@@ -118,7 +118,6 @@
           _results.push((function() {
             var _i, _len, _ref, _ref2, _results;
             if (this.data.nodes[nodeUrl] != null) {
-              console.log("node", nodeUrl, this.data.nodes[nodeUrl].groups);
               meta = this.data.nodes[nodeUrl];
               _ref = meta.groups;
               _results = [];
@@ -127,11 +126,9 @@
                 group = groupMeta.group;
                 group.nodeCount--;
                 delete group.grouped[nodeUrl];
-                console.log("group", key);
                 _ref2 = groupMeta.relationships;
                 for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
                   rel = _ref2[_i];
-                  console.log("rel", rel.getSelf());
                   this._addUnexploredNode(group.baseNode, rel);
                 }
                 _results.push(group.nodeCount <= 0 ? this._removeGroup(group) : void 0);
@@ -192,12 +189,12 @@
           for (toUrl in toMap) {
             relMeta = toMap[toUrl];
             if (fromUrl === nodeUrl) {
-              if (this.visualGraph.nodes[toUrl].type === "unexplored") {
+              if ((this.visualGraph.nodes[toUrl].type != null) && this.visualGraph.nodes[toUrl].type === "unexplored") {
                 found[toUrl] = this.data.nodes[toUrl];
               }
             }
             if (toUrl === nodeUrl) {
-              if (this.visualGraph.nodes[fromUrl].type === "unexplored") {
+              if ((this.visualGraph.nodes[fromUrl].type != null) && this.visualGraph.nodes[fromUrl].type === "unexplored") {
                 found[fromUrl] = this.data.nodes[fromUrl];
               }
             }
@@ -297,7 +294,7 @@
         }
       };
       VisualDataModel.prototype._removeRelationshipsFor = function(node) {
-        var fromUrl, nodeUrl, rel, relMeta, toMap, toUrl, _i, _len, _ref, _ref2;
+        var fromUrl, nodeUrl, rel, relMeta, toMap, toUrl, url, _ref, _ref2;
         nodeUrl = node.getSelf();
         _ref = this.visualGraph.edges;
         for (fromUrl in _ref) {
@@ -306,8 +303,8 @@
             relMeta = toMap[toUrl];
             if (toUrl === nodeUrl || fromUrl === nodeUrl) {
               _ref2 = this.visualGraph.edges[fromUrl][toUrl].relationships;
-              for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
-                rel = _ref2[_i];
+              for (url in _ref2) {
+                rel = _ref2[url];
                 delete this.data.relationships[rel.getSelf()];
               }
             }

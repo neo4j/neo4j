@@ -50,7 +50,6 @@
         return this.settings.bind("change", this.settingsChanged);
       };
       VisualizedView.prototype.render = function() {
-        var node;
         if (this.vizEl != null) {
           this.getViz().detach();
         }
@@ -59,9 +58,43 @@
         this.getViz().attach(this.vizEl);
         switch (this.dataModel.get("type")) {
           case "node":
-            node = this.dataModel.getData().getItem();
-            return this.getViz().setNode(node);
+            this.visualizeFromNode(this.dataModel.getData().getItem());
+            break;
+          case "relationship":
+            this.visualizeFromRelationships([this.dataModel.getData().getItem()]);
+            break;
+          case "relationshipList":
+            this.visualizeFromRelationships(this.dataModel.getData().getRawRelationships());
         }
+        return this;
+      };
+      VisualizedView.prototype.visualizeFromNode = function(node) {
+        return this.getViz().setNode(node);
+      };
+      VisualizedView.prototype.visualizeFromRelationships = function(rels) {
+        var MAX, allNodes, i, nodeDownloadChecklist, nodePromises, rel, _ref;
+        MAX = 10;
+        nodeDownloadChecklist = {};
+        nodePromises = [];
+        for (i = 0, _ref = rels.length; (0 <= _ref ? i < _ref : i > _ref); (0 <= _ref ? i += 1 : i -= 1)) {
+          rel = rels[i];
+          if (i >= MAX) {
+            alert("Only showing the first ten in the set, to avoid crashing the visualization. We're working on adding filtering here!");
+            break;
+          }
+          if (!(nodeDownloadChecklist[rel.getStartNodeUrl()] != null)) {
+            nodeDownloadChecklist[rel.getStartNodeUrl()] = true;
+            nodePromises.push(rel.getStartNode());
+          }
+          if (!(nodeDownloadChecklist[rel.getEndNodeUrl()] != null)) {
+            nodeDownloadChecklist[rel.getStartNodeUrl()] = true;
+            nodePromises.push(rel.getEndNode());
+          }
+        }
+        allNodes = neo4j.Promise.join.apply(this, nodePromises);
+        return allNodes.then(__bind(function(nodes) {
+          return this.getViz().setNodes(nodes);
+        }, this));
       };
       VisualizedView.prototype.settingsChanged = function() {
         if (this.viz != null) {
