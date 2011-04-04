@@ -33,56 +33,39 @@ public class BackupTool
     private static final String FROM = "from";
     private static final String INCREMENTAL = "incremental";
     private static final String FULL = "full";
+    public static final String DEFAULT_SCHEME = "simple";
 
     public static void main( String[] args )
     {
         Args arguments = new Args( args );
+
+        checkArguments( arguments );
+
         boolean full = arguments.has( FULL );
-        boolean incremental = arguments.has( INCREMENTAL );
-        if ( full&incremental || !(full|incremental) )
-        {
-            System.out.println( "Specify either " + dash( FULL ) + " or " + dash( INCREMENTAL ) );
-            exitAbnormally();
-        }
-
         String from = arguments.get( FROM, null );
-        if ( from == null )
-        {
-            System.out.println( "Please specify " + dash( FROM ) );
-            exitAbnormally();
-        }
-
         String to = arguments.get( TO, null );
-        if ( to == null )
-        {
-            System.out.println( "Specify target location with " + dash( TO ) + " <target-directory>" );
-            exitAbnormally();
-        }
-
         URI backupURI = null;
         try
         {
             backupURI = new URI( from );
         }
-        catch ( URISyntaxException e1 )
+        catch ( URISyntaxException e )
         {
-            System.out.println( "Please properly specify a location to backup as a valid URI in the form {simple|ha}://host[:port]" );
+            System.out.println( "Please properly specify a location to backup as a valid URI in the form <scheme>://<host>[:port], where scheme is the target database's running mode, eg ha" );
             exitAbnormally();
         }
         String module = backupURI.getScheme();
 
         /*
-         * So, if the scheme is present it is considered to be the module name and an attempt at
-         * loading the service is made. If it fails, we do a last, desperate attempt at getting
-         * a backup from the URI as it was passed.
+         * So, the scheme is considered to be the module name and an attempt at
+         * loading the service is made.
          */
         BackupExtensionService service = null;
-        if ( module != null && !"simple".equals( module ) )
+        if ( module != null && !DEFAULT_SCHEME.equals( module ) )
         {
             try
             {
-            service = Service.load(
-                    BackupExtensionService.class, module );
+                service = Service.load( BackupExtensionService.class, module );
             }
             catch ( NoSuchElementException e )
             {
@@ -92,11 +75,36 @@ public class BackupTool
                 exitAbnormally();
             }
         }
-        if (service != null)
-        { // If in here, it means a module was loaded. Use it.
+        if ( service != null )
+        { // If in here, it means a module was loaded. Use it and substitute the
+          // passed URI
             backupURI = service.resolve( backupURI );
         }
         doBackup( full, backupURI, to );
+    }
+
+    private static void checkArguments( Args arguments )
+    {
+
+        boolean full = arguments.has( FULL );
+        boolean incremental = arguments.has( INCREMENTAL );
+        if ( full&incremental || !(full|incremental) )
+        {
+            System.out.println( "Specify either " + dash( FULL ) + " or " + dash( INCREMENTAL ) );
+            exitAbnormally();
+        }
+
+        if ( arguments.get( FROM, null ) == null )
+        {
+            System.out.println( "Please specify " + dash( FROM ) );
+            exitAbnormally();
+        }
+
+        if ( arguments.get( TO, null ) == null )
+        {
+            System.out.println( "Specify target location with " + dash( TO ) + " <target-directory>" );
+            exitAbnormally();
+        }
     }
 
     private static void doBackup( boolean trueForFullFalseForIncremental,
