@@ -93,13 +93,13 @@ public class TestBackupToolHa
         assertEquals(
                 0,
                 runBackupToolFromOtherJvmToGetExitCode( "-full", "-from",
-                        "ha:localhost:2181", "-to", BACKUP_PATH ) );
+                        "ha://localhost:2181", "-to", BACKUP_PATH ) );
         assertEquals( representation, DbRepresentation.of( BACKUP_PATH ) );
         DbRepresentation newRepresentation = createSomeData( instances.get( 2 ) );
         assertEquals(
                 0,
                 runBackupToolFromOtherJvmToGetExitCode( "-incremental",
-                        "-from", "ha:localhost:2182", "-to", BACKUP_PATH ) );
+                        "-from", "ha://localhost:2182", "-to", BACKUP_PATH ) );
         assertEquals( newRepresentation, DbRepresentation.of( BACKUP_PATH ) );
     }
 }
