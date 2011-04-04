@@ -37,7 +37,22 @@ import org.neo4j.graphdb.Transaction;
  * 
  * When you're done with the result and haven't reached the end of the
  * iteration {@link #close()} must be called. Results which are looped through
- * entirely closes automatically.
+ * entirely closes automatically. Typical use:
+ * 
+ * <pre>
+ * IndexHits<Node> hits = index.get( "key", "value" );
+ * try
+ * {
+ *     for ( Node node : hits )
+ *     {
+ *         // do something with the hit
+ *     }
+ * }
+ * finally
+ * {
+ *     hits.close();
+ * }
+ * </pre> 
  * 
  * @param <T> the type of items in the Iterator.
  */
