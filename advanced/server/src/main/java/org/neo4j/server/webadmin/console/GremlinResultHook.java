@@ -21,13 +21,12 @@ package org.neo4j.server.webadmin.console;
 
 import groovy.lang.Closure;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 
 import org.codehaus.groovy.tools.shell.IO;
-
-import com.tinkerpop.gremlin.console.ArrayIterator;
-import com.tinkerpop.pipes.SingleIterator;
 
 /**
  * Version of ResultHookClosure that does not add ==> to the output. This is
@@ -66,15 +65,19 @@ public class GremlinResultHook extends Closure
         }
         else if ( result instanceof Object[] )
         {
-            itty = new ArrayIterator( (Object[]) result );
+            itty = Arrays.asList( (Object[])result ).iterator();
         }
         else if ( result instanceof Map )
         {
             itty = ( (Map) result ).entrySet().iterator();
         }
+        else if ( result == null)
+        {
+            itty = Collections.singleton( "" ).iterator();
+        }
         else
         {
-            itty = new SingleIterator<Object>( result );
+            itty = Collections.singleton( result ).iterator();
         }
 
         while ( itty.hasNext() )
