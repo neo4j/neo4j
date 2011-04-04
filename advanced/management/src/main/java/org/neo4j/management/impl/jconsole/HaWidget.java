@@ -25,12 +25,12 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 import org.neo4j.management.HighAvailability;
-import org.neo4j.management.Neo4jManager;
 
 class HaWidget extends Widget
 {
-    HaWidget( Neo4jManager manager, HighAvailability ha )
+    HaWidget( ManagementAccess manager, HighAvailability ha )
     {
+        // TODO Auto-generated constructor stub
     }
 
     @Override

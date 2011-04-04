@@ -22,6 +22,7 @@ package org.neo4j.management;
 import java.beans.ConstructorProperties;
 import java.io.Serializable;
 
+@SuppressWarnings( "serial" )
 public final class XaResourceInfo implements Serializable
 {
     private final String name;

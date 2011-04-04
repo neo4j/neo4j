@@ -93,7 +93,7 @@ public class InstanceInfo implements Serializable
             throw new IllegalStateException( "The instance does not have a public JMX server." );
         }
         Neo4jManager manager = Neo4jManager.get( url(), username, password, instanceId );
-        return Pair.of( manager, manager.getBean( HighAvailability.class ) );
+        return Pair.of( manager, manager.getHighAvailabilityBean() );
     }
 
     private JMXServiceURL url()

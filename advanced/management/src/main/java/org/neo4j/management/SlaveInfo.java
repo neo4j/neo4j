@@ -47,7 +47,7 @@ public final class SlaveInfo extends InstanceInfo
 
         public long getLastTransaction( String resource )
         {
-            return lastTransactions.get( resource );
+            return lastTransactions.get( resource ).longValue();
         }
     }
 

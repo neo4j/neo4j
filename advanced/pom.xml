@@ -27,6 +27,7 @@
 
   <modules>
     <module>kernel</module>
+    <module>jmx</module>
     <module>management</module>
     <module>com</module>
     <module>backup</module>

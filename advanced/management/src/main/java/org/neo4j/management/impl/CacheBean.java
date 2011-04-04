@@ -19,11 +19,12 @@
  */
 package org.neo4j.management.impl;
 
-import javax.management.MBeanOperationInfo;
 import javax.management.NotCompliantMBeanException;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.KernelData;
+import org.neo4j.jmx.impl.ManagementBeanProvider;
+import org.neo4j.jmx.impl.ManagementData;
+import org.neo4j.jmx.impl.Neo4jMBean;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.management.Cache;
 
@@ -36,42 +37,36 @@ public class CacheBean extends ManagementBeanProvider
     }
 
     @Override
-    protected Neo4jMBean createMBean( KernelData kernel ) throws NotCompliantMBeanException
+    protected Neo4jMBean createMBean( ManagementData management ) throws NotCompliantMBeanException
     {
-        return new CacheManager( this, kernel );
+        return new CacheManager( management );
     }
 
-    @Description( "Information about the caching in Neo4j" )
     private class CacheManager extends Neo4jMBean implements Cache
     {
-        CacheManager( ManagementBeanProvider provider, KernelData kernel )
-                throws NotCompliantMBeanException
+        CacheManager( ManagementData management ) throws NotCompliantMBeanException
         {
-            super( provider, kernel );
-            this.nodeManager = kernel.getConfig().getGraphDbModule().getNodeManager();
+            super( management );
+            this.nodeManager = management.getKernelData().getConfig().getGraphDbModule().getNodeManager();
         }
 
         private final NodeManager nodeManager;
 
-        @Description( "The type of cache used by Neo4j" )
         public String getCacheType()
         {
             return nodeManager.getCacheType().getDescription();
         }
 
-        @Description( "The number of Nodes currently in cache" )
         public int getNodeCacheSize()
         {
             return nodeManager.getNodeCacheSize();
         }
 
-        @Description( "The number of Relationships currently in cache" )
         public int getRelationshipCacheSize()
         {
             return nodeManager.getRelationshipCacheSize();
         }
 
-        @Description( value = "Clears the Neo4j caches", impact = MBeanOperationInfo.ACTION )
         public void clear()
         {
             nodeManager.clearCache();
