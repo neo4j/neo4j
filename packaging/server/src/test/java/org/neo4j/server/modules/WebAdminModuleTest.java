@@ -21,8 +21,8 @@ package org.neo4j.server.modules;
 
 import org.apache.commons.configuration.MapConfiguration;
 import org.junit.Test;
+import org.neo4j.jmx.Kernel;
 import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.management.Kernel;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.web.WebServer;
