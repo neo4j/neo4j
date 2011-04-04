@@ -24,6 +24,11 @@ import java.net.URI;
 import org.neo4j.backup.BackupExtensionService;
 import org.neo4j.helpers.Service;
 
+/**
+ * A funny little extension used for testing. It exits the vm it runs on with an
+ * exit code equal to the port in the URI.
+ * 
+ */
 @Service.Implementation( BackupExtensionService.class )
 public class ExitOnCallBackupProvider extends BackupExtensionService
 {
