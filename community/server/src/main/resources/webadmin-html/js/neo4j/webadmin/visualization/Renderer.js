@@ -69,7 +69,13 @@
         var arrowLength, arrowWidth, dx, head, style, tail, wt;
         style = this.relationshipStyler.getStyleFor(edge);
         tail = this.intersect_line_box(pt1, pt2, this.nodeBoxes[edge.source.name]);
+        if (tail === false) {
+          return;
+        }
         head = this.intersect_line_box(tail, pt2, this.nodeBoxes[edge.target.name]);
+        if (head === false) {
+          return;
+        }
         this.ctx.save();
         this.ctx.beginPath();
         this.ctx.lineWidth = style.edgeStyle.width;
