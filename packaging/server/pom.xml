@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-pom</artifactId>
@@ -17,22 +18,21 @@
   <properties>
     <bundle.namespace>org.neo4j.server</bundle.namespace>
     <short-name>server</short-name>
-    <neo4j-server.mainClass>org.neo4j.server.BootStrapper</neo4j-server.mainClass>
+    <neo4j-server.mainClass>org.neo4j.server.Bootstrapper</neo4j-server.mainClass>
     <neo-server.home>target/generated-resources/appassembler/jsw</neo-server.home>
     <neo-server.confdir>target/test-classes/etc/neo-server</neo-server.confdir>
     <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
     <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
- 
-    <!-- Run integration tests against a server that is started elsewhere
-         This is used in ServerIntegrationTestFacade, which currently assumes
-         external servers to be running at http://localhost:7474/ -->
+
+    <!-- Run integration tests against a server that is started elsewhere This is used in ServerIntegrationTestFacade, 
+      which currently assumes external servers to be running at http://localhost:7474/ -->
     <testWithExternalServer>false</testWithExternalServer>
-    
+
     <!-- For cucumber "feature" tests -->
     <cuke4duke.version>0.4.3</cuke4duke.version>
     <pico.version>2.11.2</pico.version>
     <cukeArgs />
-    
+
     <webdriver.version>2.0b1</webdriver.version>
     <webdriver.impl.class>org.openqa.selenium.firefox.FirefoxDriver</webdriver.impl.class>
 
@@ -117,6 +117,21 @@
       <version>1.6</version>
       <type>jar</type>
       <scope>compile</scope>
+      <exclusions>
+        <exclusion>
+          <artifactId>commons-digester</artifactId>
+          <groupId>commons-digester</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <!-- Added directly to avoid version clash in commons-configuration. -->
+    <dependency>
+      <groupId>commons-digester</groupId>
+      <artifactId>commons-digester</artifactId>
+      <version>1.8.1</version>
+      <type>jar</type>
+      <scope>compile</scope>
     </dependency>
 
     <dependency>
@@ -141,26 +156,26 @@
       <version>0.8</version>
       <type>jar</type>
       <exclusions>
-      	<exclusion>
-      		<artifactId>sesame-sail-api</artifactId>
-      		<groupId>org.openrdf.sesame</groupId>
-      	</exclusion>
-      	<exclusion>
-      		<artifactId>gmaven-plugin</artifactId>
-      		<groupId>org.codehaus.groovy.maven</groupId>
-      	</exclusion>
-      	<exclusion>
-      		<artifactId>common</artifactId>
-      		<groupId>net.fortytwo.sesametools</groupId>
-      	</exclusion>
-      	<exclusion>
-      		<artifactId>aduna-commons-iteration</artifactId>
-      		<groupId>info.aduna.commons</groupId>
-      	</exclusion>
-      	<exclusion>
-      		<artifactId>jung-api</artifactId>
-      		<groupId>net.sf.jung</groupId>
-      	</exclusion>
+        <exclusion>
+          <artifactId>sesame-sail-api</artifactId>
+          <groupId>org.openrdf.sesame</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>gmaven-plugin</artifactId>
+          <groupId>org.codehaus.groovy.maven</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>common</artifactId>
+          <groupId>net.fortytwo.sesametools</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>aduna-commons-iteration</artifactId>
+          <groupId>info.aduna.commons</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>jung-api</artifactId>
+          <groupId>net.sf.jung</groupId>
+        </exclusion>
       </exclusions>
     </dependency>
 
@@ -183,11 +198,8 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- dependency>
-      <groupId>org.rrd4j</groupId>
-      <artifactId>rrd4j</artifactId>
-      <version>2.0.6</version>
-    </dependency -->
+    <!-- dependency> <groupId>org.rrd4j</groupId> <artifactId>rrd4j</artifactId> <version>2.0.6</version> 
+      </dependency -->
 
     <dependency>
       <groupId>de.huxhorn.lilith</groupId>
@@ -204,18 +216,9 @@
       <optional>true</optional>
     </dependency>
 
-    <!-- Neo4j manual to be exposed via the web.
-         NOTE: no more. now points to online doc site
-         otherwise, users can look for local docs on
-         the filesystem.
-    <dependency>
-      <groupId>org.neo4j.doc</groupId>
-      <artifactId>neo4j-manual</artifactId>
-      <classifier>html</classifier>
-      <version>1.3-SNAPSHOT</version>
-      <optional>true</optional>
-    </dependency>
-    -->
+    <!-- Neo4j manual to be exposed via the web. NOTE: no more. now points to online doc site otherwise, 
+      users can look for local docs on the filesystem. <dependency> <groupId>org.neo4j.doc</groupId> <artifactId>neo4j-manual</artifactId> 
+      <classifier>html</classifier> <version>1.3-SNAPSHOT</version> <optional>true</optional> </dependency> -->
 
     <!-- File uploads -->
     <dependency>
@@ -237,38 +240,36 @@
       <version>${pico.version}</version>
       <scope>test</scope>
     </dependency>
-    
+
     <dependency>
-        <groupId>org.seleniumhq.selenium</groupId>
-        <artifactId>selenium-firefox-driver</artifactId>
-        <version>${webdriver.version}</version>
-        <scope>test</scope>
+      <groupId>org.seleniumhq.selenium</groupId>
+      <artifactId>selenium-firefox-driver</artifactId>
+      <version>${webdriver.version}</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
-    	<groupId>org.seleniumhq.selenium</groupId>
-    	<artifactId>selenium-htmlunit-driver</artifactId>
-    	<version>${webdriver.version}</version>
-    	<scope>test</scope>
+      <groupId>org.seleniumhq.selenium</groupId>
+      <artifactId>selenium-htmlunit-driver</artifactId>
+      <version>${webdriver.version}</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
-    	<groupId>org.seleniumhq.selenium</groupId>
-    	<artifactId>selenium-chrome-driver</artifactId>
-    	<version>${webdriver.version}</version>
-    	<scope>test</scope>
+      <groupId>org.seleniumhq.selenium</groupId>
+      <artifactId>selenium-chrome-driver</artifactId>
+      <version>${webdriver.version}</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
-    	<groupId>org.seleniumhq.selenium</groupId>
-    	<artifactId>selenium-ie-driver</artifactId>
-    	<version>${webdriver.version}</version>
-    	<scope>test</scope>
+      <groupId>org.seleniumhq.selenium</groupId>
+      <artifactId>selenium-ie-driver</artifactId>
+      <version>${webdriver.version}</version>
+      <scope>test</scope>
     </dependency>
-    
-    
+
+
     <dependency>
-      <!-- Provides Autoprocessor.
-        This dependency makes the plugin loader Felix-specific
-        rather than generic. Consider refactoring out this dependency,
-        or don't worry about it and always uses Felix. -->
+      <!-- Provides Autoprocessor. This dependency makes the plugin loader Felix-specific rather than 
+        generic. Consider refactoring out this dependency, or don't worry about it and always uses Felix. -->
       <groupId>org.apache.felix</groupId>
       <artifactId>org.apache.felix.main</artifactId>
       <version>3.0.2</version>
@@ -312,26 +313,26 @@
     </dependency>
 
     <dependency>
-    	<groupId>org.neo4j</groupId>
-    	<artifactId>neo4j-shell</artifactId>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-shell</artifactId>
       <version>${neo4j.version}</version>
-    	<scope>runtime</scope>
+      <scope>runtime</scope>
     </dependency>
     <dependency>
-    	<groupId>junit</groupId>
-    	<artifactId>junit</artifactId>
-    	<version>4.8.2</version>
-    	<type>jar</type>
-    	<scope>test</scope>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.8.2</version>
+      <type>jar</type>
+      <scope>test</scope>
     </dependency>
     <dependency>
-    	<groupId>org.hamcrest</groupId>
-    	<artifactId>hamcrest-all</artifactId>
-    	<version>1.1</version>
-    	<type>jar</type>
-    	<scope>test</scope>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-all</artifactId>
+      <version>1.1</version>
+      <type>jar</type>
+      <scope>test</scope>
     </dependency>
-    
+
   </dependencies>
 
   <build>
@@ -392,7 +393,7 @@
           </execution>
         </executions>
       </plugin>
-      
+
       <plugin>
         <artifactId>maven-site-plugin</artifactId>
         <executions>
@@ -446,17 +447,17 @@
         <executions>
           <execution>
             <id>inject-license-in-js-files</id>
-            <!-- Done in validate phase b/c the license header
-            check is done in the intialize phase, validate is the
-            only one before it. -->
+            <!-- Done in validate phase b/c the license header check is done in the intialize phase, 
+              validate is the only one before it. -->
             <phase>validate</phase>
             <configuration>
               <basedir>src/main/resources/webadmin-html/</basedir>
               <includes>
-                <include>**/*.js</include>
+                <!-- temporary configuration fix -->
+                <include>**/webadmin-min.js</include>
               </includes>
               <excludes>
-              	<exclude>lib/*</exclude>
+                <exclude>lib/*</exclude>
               </excludes>
             </configuration>
             <goals>
@@ -464,6 +465,26 @@
             </goals>
           </execution>
         </executions>
+        <!-- temporary configuration fix -->
+        <configuration>
+          <strictCheck>true</strictCheck>
+          <header>${license-text.header}</header>
+          <includes>
+            <include>src/**/*.java</include>
+            <include>src/**/*.js</include>
+            <include>src/**/*.scala</include>
+            <include>src/**/*.xml</include>
+          </includes>
+          <excludes>
+            <exclude>**/lib/*.js</exclude>
+            <exclude>**/lib/**/*.js</exclude>
+            <exclude>**/javascript/vend/**</exclude>
+            <exclude>**/webadmin-html/**</exclude>
+          </excludes>
+          <mapping>
+            <scala>JAVADOC_STYLE</scala>
+          </mapping>
+        </configuration>
       </plugin>
 
       <plugin>
@@ -537,15 +558,18 @@
         </configuration>
       </plugin>
 
-      <!-- experiment with copying artifacts into expected startup directories... <plugin> <groupId>org.apache.maven.plugins</groupId> <artifactId>maven-dependency-plugin</artifactId>
-        <executions> <execution> <id>copy-dependencies</id> <phase>package</phase> <goals> <goal>copy-dependencies</goal> </goals>
-        <configuration> <outputDirectory>${project.build.directory}/lib</outputDirectory> <overWriteReleases>false</overWriteReleases> <overWriteSnapshots>true</overWriteSnapshots>
-        <includeScope>runtime</includeScope> <excludeScope>test</excludeScope> </configuration> </execution> <execution> <id>copy-extensions</id>
-        <phase>package</phase> <goals> <goal>copy</goal> </goals> <configuration> <artifactItems> <artifactItem> <groupId>org.neo4j.ext</groupId> <artifactId>hello-ext</artifactId>
-        <version>0.1-SNAPSHOT</version> <classifier>next</classifier> </artifactItem> </artifactItems> <outputDirectory>${project.build.directory}/ext</outputDirectory>
-        </configuration> </execution> <execution> <id>copy-installed</id> <phase>install</phase> <goals> <goal>copy</goal> </goals> <configuration> <artifactItems>
-        <artifactItem> <groupId>${project.groupId}</groupId> <artifactId>${project.artifactId}</artifactId> <version>${project.version}</version> <type>${project.packaging}</type>
-        </artifactItem> </artifactItems> <outputDirectory>${project.build.directory}/lib</outputDirectory> </configuration> </execution> </executions>
+      <!-- experiment with copying artifacts into expected startup directories... <plugin> <groupId>org.apache.maven.plugins</groupId> 
+        <artifactId>maven-dependency-plugin</artifactId> <executions> <execution> <id>copy-dependencies</id> 
+        <phase>package</phase> <goals> <goal>copy-dependencies</goal> </goals> <configuration> <outputDirectory>${project.build.directory}/lib</outputDirectory> 
+        <overWriteReleases>false</overWriteReleases> <overWriteSnapshots>true</overWriteSnapshots> <includeScope>runtime</includeScope> 
+        <excludeScope>test</excludeScope> </configuration> </execution> <execution> <id>copy-extensions</id> 
+        <phase>package</phase> <goals> <goal>copy</goal> </goals> <configuration> <artifactItems> <artifactItem> 
+        <groupId>org.neo4j.ext</groupId> <artifactId>hello-ext</artifactId> <version>0.1-SNAPSHOT</version> <classifier>next</classifier> 
+        </artifactItem> </artifactItems> <outputDirectory>${project.build.directory}/ext</outputDirectory> </configuration> 
+        </execution> <execution> <id>copy-installed</id> <phase>install</phase> <goals> <goal>copy</goal> </goals> 
+        <configuration> <artifactItems> <artifactItem> <groupId>${project.groupId}</groupId> <artifactId>${project.artifactId}</artifactId> 
+        <version>${project.version}</version> <type>${project.packaging}</type> </artifactItem> </artifactItems> 
+        <outputDirectory>${project.build.directory}/lib</outputDirectory> </configuration> </execution> </executions> 
         </plugin> -->
     </plugins>
   </build>
@@ -586,7 +610,7 @@
                 <configuration>
                   <resources>
                     <resource>
-                        <directory>src/functionaltest/resources</directory>
+                      <directory>src/functionaltest/resources</directory>
                     </resource>
                   </resources>
                 </configuration>
@@ -635,39 +659,39 @@
               </execution>
             </executions>
           </plugin>
-          
+
           <plugin>
-	        <groupId>cuke4duke</groupId>
-	        <artifactId>cuke4duke-maven-plugin</artifactId>
-	        <configuration>
-	          <jvmArgs>
-	            <jvmArg>-Xmx384m</jvmArg>
-	            <jvmArg>-Dlog4j.configuration=file:///${project.basedir}/target/test-classes/log4j.properties</jvmArg>
-	            <jvmArg>-Dwebdriver.impl=${webdriver.impl.class}</jvmArg>
-	            <jvmArg>-DtestWithExternalServer=${testWithExternalServer}</jvmArg>
-	          </jvmArgs>
-	          <cucumberArgs>
-	            <cucumberArg>--verbose</cucumberArg>
-	            <cucumberArg>--strict</cucumberArg>
-	            <cucumberArg>--color</cucumberArg>
-	            <cucumberArg>--require</cucumberArg>
-	            <cucumberArg>${basedir}/target/test-classes</cucumberArg>
-	          </cucumberArgs>
-	          <gems>
-	            <gem>install cuke4duke --version ${cuke4duke.version}</gem>
-	          </gems>
-	        </configuration>
-	        <executions>
-	          <execution>
-	            <id>run-features</id>
-	            <phase>integration-test</phase>
-	            <goals>
-	              <goal>cucumber</goal>
-	            </goals>
-	          </execution>
-	        </executions>
-	      </plugin>
-	      
+            <groupId>cuke4duke</groupId>
+            <artifactId>cuke4duke-maven-plugin</artifactId>
+            <configuration>
+              <jvmArgs>
+                <jvmArg>-Xmx384m</jvmArg>
+                <jvmArg>-Dlog4j.configuration=file:///${project.basedir}/target/test-classes/log4j.properties</jvmArg>
+                <jvmArg>-Dwebdriver.impl=${webdriver.impl.class}</jvmArg>
+                <jvmArg>-DtestWithExternalServer=${testWithExternalServer}</jvmArg>
+              </jvmArgs>
+              <cucumberArgs>
+                <cucumberArg>--verbose</cucumberArg>
+                <cucumberArg>--strict</cucumberArg>
+                <cucumberArg>--color</cucumberArg>
+                <cucumberArg>--require</cucumberArg>
+                <cucumberArg>${basedir}/target/test-classes</cucumberArg>
+              </cucumberArgs>
+              <gems>
+                <gem>install cuke4duke --version ${cuke4duke.version}</gem>
+              </gems>
+            </configuration>
+            <executions>
+              <execution>
+                <id>run-features</id>
+                <phase>integration-test</phase>
+                <goals>
+                  <goal>cucumber</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
@@ -677,40 +701,75 @@
               </includes>
             </configuration>
           </plugin>
-          
-        </plugins>
-      </build>
-    </profile>
-    
-    <profile>
-      <!-- An execution that adds src/main/resources to the classpath. Allows changing
-           static files and seeing results without restarting server. Done with ant b/c
-           of problems adding local directory to classpath when using exec. -->
-      <id>webdev-exec</id>
-      <build>
-        <plugins>
-          <plugin>
-		    <groupId>org.apache.maven.plugins</groupId>
-		    <artifactId>maven-antrun-plugin</artifactId>
-		    <version>1.6</version>
-		
-		    <configuration>
-		      <target>
-		        <property name="classpath" refid="maven.runtime.classpath" />
-		        <exec executable="java">
-				  <arg line="-Dorg.neo4j.server.properties=${basedir}/neo4j-home/conf/neo4j-server.properties" />
-				  <arg line="-classpath" />
-				  <arg line="${basedir}/src/main/resources:${classpath}" />
-				  <arg line="${neo4j-server.mainClass}" />
-				</exec>
-		      </target>
-		    </configuration>
-          </plugin>  
+
         </plugins>
       </build>
     </profile>
 
-	<!-- Firefox is default implementation, set in properties at the top of this file.  -->
+    <profile>
+      <!-- An execution that adds src/main/resources to the classpath. Allows changing static files and 
+        seeing results without restarting server. Done with ant b/c of problems adding local directory to classpath 
+        when using exec. -->
+      <id>webdev-exec</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <version>1.6</version>
+
+            <configuration>
+              <target>
+                <property name="classpath" refid="maven.runtime.classpath" />
+                <exec executable="java">
+                  <arg
+                    line="-Dorg.neo4j.server.properties=${basedir}/neo4j-home/conf/neo4j-server.properties" />
+                  <arg line="-classpath" />
+                  <arg line="${basedir}/src/main/resources:${classpath}" />
+                  <arg line="${neo4j-server.mainClass}" />
+                </exec>
+              </target>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
+      <!-- Temporarily disconnected from the rest of the build
+      because "brew" is not in maven central. To use this, mvn install
+       -->
+      <id>webadmin-build</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.voltvoodoo</groupId>
+            <artifactId>brew</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <executions>
+              <execution>
+              	<id>build-webadmin</id>
+                <goals>
+                  <goal>compile-haml</goal>
+                  <goal>compile-coffeescript</goal>
+                  <goal>optimize</goal>
+                </goals>
+              </execution>
+            </executions>
+            
+            <configuration>
+              <module>webadmin</module>
+              <coffeeOutputDir>${basedir}/src/main/resources/webadmin-html/js</coffeeOutputDir>
+              <hamlOutputDir>${basedir}/src/main/resources/webadmin-html/js</hamlOutputDir>
+              <optimizeSourceDir>${basedir}/src/main/resources/webadmin-html/js</optimizeSourceDir>
+              <optimizeOutputDir>${basedir}/src/main/resources/webadmin-html/js</optimizeOutputDir>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+   </profile>
+
+    <!-- Firefox is default implementation, set in properties at the top of this file. -->
     <profile>
       <id>htmlunit</id>
       <properties>

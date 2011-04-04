@@ -18,19 +18,25 @@
           %p &gt; refNode = g.v(0)
         %li
           %h3 Set property on Node
-          %p &gt; refNode.name = "bob"
+          %p &gt; refNode.name = "Bob"
         %li
           %h3 List all node properties
-          %p &gt; refNode.map
+          %p &gt; refNode.map()
         %li
           %h3 Define a properties map
           %p &gt; props = [:]
         %li
+          %h3 Add a property to the map
+          %p &gt; props["name"] = "Ariel"
+        %li
           %h3 Create a node
           %p &gt; secondNode = g.addVertex(props)
         %li
+          %h3 Another property map
+          %p &gt; edgeProps = ["quality":"awesome"]
+        %li
           %h3 Create relation
-          %p &gt; myRelation = g.addEdge(props, refNode, secondNode, 'KNOWS')
+          %p &gt; myRelation = g.addEdge(edgeProps, refNode, secondNode, 'KNOWS')
         %li
           %h3 Remove node or relation
           %p &gt; g.removeEdge(myRelation)
