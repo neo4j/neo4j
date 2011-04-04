@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.Arrays;
 
 import org.neo4j.server.modules.DiscoveryModule;
+import org.neo4j.server.modules.ManagementApiModule;
 import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.modules.ThirdPartyJAXRSModule;
@@ -38,8 +39,7 @@ public class CleaningNeoServer extends NeoServerWithEmbeddedWebServer {
     public CleaningNeoServer(final AddressResolver addressResolver, final StartupHealthCheck startupHealthCheck, final File configFile,
             final Jetty6WebServer jetty6WebServer, final String dir, Class<? extends ServerModule>... serverModules) {
         super( ServerTestUtils.EMBEDDED_GRAPH_DATABASE_FACTORY, addressResolver, startupHealthCheck, configFile,
-                jetty6WebServer,
-                serverModulesOrDefault( serverModules ) );
+                jetty6WebServer, serverModulesOrDefault( serverModules ) );
         this.configFile = configFile;
 
         this.dir = dir;
@@ -59,8 +59,8 @@ public class CleaningNeoServer extends NeoServerWithEmbeddedWebServer {
     {
         if ( serverModules == null || serverModules.length == 0 )
         {
-            return Arrays.asList( DiscoveryModule.class, RESTApiModule.class, ThirdPartyJAXRSModule.class,
-                    WebAdminModule.class );
+            return Arrays.asList( DiscoveryModule.class, RESTApiModule.class, ManagementApiModule.class,
+                    ThirdPartyJAXRSModule.class, WebAdminModule.class );
         }
         return Arrays.asList( serverModules );
     }
