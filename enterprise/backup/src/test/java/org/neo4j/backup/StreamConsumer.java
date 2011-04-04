@@ -19,8 +19,19 @@
  */
 package org.neo4j.backup;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.Writer;
 
+/**
+ * A simple Runnable that is meant to consume the output and error streams of a
+ * detached process, for debugging purposes.
+ * 
+ */
 public class StreamConsumer implements Runnable
 {
 
