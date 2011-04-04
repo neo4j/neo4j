@@ -30,7 +30,8 @@ import com.tinkerpop.gremlin.console.NullResultHookClosure;
 
 public class GremlinWebConsole
 {
-    public Groovysh groovy;
+    private static final Groovysh ERROR_STATE_PLACEHOLDER_FOR_ERRANT_GROOVY_SHELLS = null;
+    private final Groovysh groovy;
 
     public GremlinWebConsole( Binding bindings, IO io )
     {
@@ -44,5 +45,14 @@ public class GremlinWebConsole
         groovy.setResultHook( new GremlinResultHook( groovy, io ) );
         Gremlin.load();
     }
-    
+
+    protected GremlinWebConsole()
+    {
+        groovy = ERROR_STATE_PLACEHOLDER_FOR_ERRANT_GROOVY_SHELLS;
+    }
+
+    public void execute( String script )
+    {
+        groovy.execute( script );
+    }
 }
