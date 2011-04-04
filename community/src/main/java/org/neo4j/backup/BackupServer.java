@@ -19,33 +19,36 @@
  */
 package org.neo4j.backup;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
+import org.jboss.netty.channel.Channel;
+import org.neo4j.backup.BackupClient.BackupRequestType;
+import org.neo4j.com.RequestType;
+import org.neo4j.com.Server;
+import org.neo4j.com.SlaveContext;
 
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-
-public class EmbeddedServer implements ServerInterface
+class BackupServer extends Server<TheBackupInterface, Object>
 {
-    private EmbeddedGraphDatabase db;
-
-    public EmbeddedServer( String storeDir, String backupConfigValue )
-    {
-        if ( backupConfigValue == null )
-        {
-            this.db = new EmbeddedGraphDatabase( storeDir );
-        }
-        else
-        {
-            this.db = new EmbeddedGraphDatabase( storeDir, stringMap( ENABLE_ONLINE_BACKUP, backupConfigValue ) );
-        }
-    }
+    private final BackupRequestType[] contexts = BackupRequestType.values();
+    static int DEFAULT_PORT = DEFAULT_BACKUP_PORT;
     
-    public void shutdown()
+    public BackupServer( TheBackupInterface realMaster, int port, String storeDir )
     {
-        db.shutdown();
+        super( realMaster, port, storeDir );
     }
 
-    public void awaitStarted()
+    @Override
+    protected void responseWritten( RequestType<TheBackupInterface> type, Channel channel,
+            SlaveContext context )
+    {
+    }
+
+    @Override
+    protected RequestType<TheBackupInterface> getRequestContext( byte id )
+    {
+        return contexts[id];
+    }
+
+    @Override
+    protected void finishOffConnection( Channel channel, SlaveContext context )
     {
     }
 }
