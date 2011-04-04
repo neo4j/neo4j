@@ -94,7 +94,7 @@ public class BackupTool
         }
         if (service != null)
         { // If in here, it means a module was loaded. Use it.
-            backupURI = service.resolve( from );
+            backupURI = service.resolve( backupURI );
         }
         doBackup( full, backupURI, to );
     }

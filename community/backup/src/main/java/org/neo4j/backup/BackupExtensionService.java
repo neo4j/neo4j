@@ -30,5 +30,5 @@ public abstract class BackupExtensionService extends Service
         super( name );
     }
 
-    public abstract URI resolve( String from );
+    public abstract URI resolve( URI from );
 }
