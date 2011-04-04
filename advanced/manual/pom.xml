@@ -19,7 +19,7 @@
     <docs.sources>${project.build.directory}/docs</docs.sources>
     <docs.test-sources>${project.build.directory}/test-sources</docs.test-sources>
     <docs.images>${project.build.outputDirectory}/images</docs.images>
-    <neo4j.version>1.3.M05</neo4j.version>
+    <neo4j.version>1.3-SNAPSHOT</neo4j.version>
   </properties>
 
   <scm>
@@ -189,7 +189,6 @@
             <configuration>
               <executable>make</executable>
               <arguments>
-                <argument>VERBOSE=1</argument>
                 <argument>dist</argument>
                 <argument>VERSION=${project.version}</argument>
                 <argument>IMPORTDIR=${docs.sources}</argument>
@@ -203,7 +202,7 @@
               <goal>exec</goal>
             </goals>
             <configuration>
-              <executable>upload.sh</executable>
+              <executable>${project.build.directory}/../upload.sh</executable>
             </configuration>
           </execution>
         </executions>
@@ -296,36 +295,6 @@
       </plugin>
     </plugins>
   </build>
-
-  <profiles>
-    <profile>
-      <id>manual-in-multimodule-build</id>
-      <activation>
-        <property>
-          <name>manual</name>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>exec-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>upload-to-servers</id>
-                <configuration>
-                  <executable>manual/upload.sh</executable>
-                  <arguments>
-                    <argument>CD=1</argument>
-                  </arguments>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 
   <distributionManagement>
     <site>

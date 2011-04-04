@@ -41,6 +41,7 @@ define(
 
       initialize : (options)->
         @dataModel = options.dataModel
+        @appState = options.state
         @server = options.state.getServer()
 
         @htmlEscaper = new HtmlEscaper
@@ -108,7 +109,7 @@ define(
         if @dataView?
           @dataView.detach()
         
-        @visualizedView ?= new VisualizedView(dataModel:@dataModel, server:@server)
+        @visualizedView ?= new VisualizedView(dataModel:@dataModel, appState:@appState, server:@server)
         @viewType = "visualized"
         @dataView = @visualizedView 
 
@@ -116,7 +117,7 @@ define(
         if @dataView?
           @dataView.detach()
       
-        @tabularView ?= new TabularView(dataModel:@dataModel, server:@server)
+        @tabularView ?= new TabularView(dataModel:@dataModel, appState:@appState, server:@server)
         @viewType = "tabular"
         @dataView = @tabularView
 

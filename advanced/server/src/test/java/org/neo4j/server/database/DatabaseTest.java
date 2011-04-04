@@ -42,14 +42,15 @@ public class DatabaseTest {
     @Before
     public void setup() throws Exception {
         databaseDirectory = ServerTestUtils.createTempDir();
-        theDatabase = new Database( DatabaseMode.STANDALONE, databaseDirectory.getAbsolutePath() );
+        theDatabase = new Database( ServerTestUtils.EMBEDDED_GRAPH_DATABASE_FACTORY,
+                databaseDirectory.getAbsolutePath() );
     }
 
     @After
     public void shutdownDatabase() throws IOException
     {
         this.theDatabase.shutdown();
-        
+
         try
         {
             FileUtils.forceDelete( databaseDirectory );
@@ -87,6 +88,6 @@ public class DatabaseTest {
     @Test(expected = TransactionFailureException.class)
     public void shouldComplainIfDatabaseLocationIsAlreadyInUse() {
         deletionFailureOk = true;
-        new Database( DatabaseMode.STANDALONE, theDatabase.getLocation() );
+        new Database( ServerTestUtils.EMBEDDED_GRAPH_DATABASE_FACTORY, theDatabase.getLocation() );
     }
 }
