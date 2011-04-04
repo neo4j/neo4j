@@ -23,6 +23,32 @@ import java.net.URI;
 
 import org.neo4j.helpers.Service;
 
+/**
+ * <p>
+ * This class provides a basic interface for backup sources to implement their
+ * own resolution algorithms. The backup tool in general expects a location to
+ * backup from but the format of it is in general specific to the source
+ * database, while the OnlineBackup class expects a valid socket to connect to
+ * and perform the backup. For that reason each implementation is expected to
+ * provide a translator from its specific addressing scheme to a valid
+ * <i>host:port</i> combination.
+ * </p>
+ * <p>
+ * The prime consumer of this API is the HA component, where a set of ZooKeeper
+ * instances can be passed as targets to backup but only one will be used. It is
+ * expected therefore that a {@link Service} implementation will be present on
+ * the classpath that will properly communicate with the cluster and find the
+ * master.
+ * </p>
+ * <p>
+ * The URI is strictly expected to have a scheme component, matching the name of
+ * the service implementation used to resolve it. The same holds for the default
+ * case, with a scheme name of simple. The scheme specific fragment after that
+ * will be the responsibility of the plugin to resolve to a valid host. In any
+ * case, the resolve method is expected to return a valid URI, with a scheme
+ * which is the same as the one passed to it (ie the service's name).
+ * </p>
+ */
 public abstract class BackupExtensionService extends Service
 {
     public BackupExtensionService( String name )
@@ -30,5 +56,12 @@ public abstract class BackupExtensionService extends Service
         super( name );
     }
 
+    /**
+     * The source specific target to valid backup host translation method.
+     * 
+     * @param from The URI as passed in the command line
+     * @return A URI where the scheme is the service's name and there exist host
+     *         and port parts that point to a backup source.
+     */
     public abstract URI resolve( URI from );
 }

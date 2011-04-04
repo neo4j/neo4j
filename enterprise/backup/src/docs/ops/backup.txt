@@ -10,6 +10,14 @@ A _full backup_ copies the entire store files from the source database and is re
 An _incremental backup_ will only retrieve and apply the changes since the most recent full or incremental backup.
 Because of that incremental backup is much more efficient than doing full backups every time.
 
+The database to be backed up is specified using a URI with syntax
+
+<running mode>://<host>[:port]{,<host>[:port]*}
+
+Running mode must be defined and is either _simple_ for non-HA or _ha_ for HA clusters. The <host>[:port] part
+points to a host running the database, on port _port_ if not the default. The additional _host:port_ arguments
+are useful for passing multiple ZooKeeper instances
+
 [IMPORTANT]
 Backups can only be performed on databases which have the configuration parameter `enable_online_backup=true` set.
 That will make the backup service available on the default port (6362).
