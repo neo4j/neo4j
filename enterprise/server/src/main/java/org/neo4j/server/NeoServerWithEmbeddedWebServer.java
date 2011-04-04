@@ -19,22 +19,6 @@
  */
 package org.neo4j.server;
 
-import org.apache.commons.configuration.Configuration;
-import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.configuration.PropertyFileConfigurator;
-import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
-import org.neo4j.server.configuration.validation.Validator;
-import org.neo4j.server.database.Database;
-import org.neo4j.server.database.DatabaseMode;
-import org.neo4j.server.logging.Logger;
-import org.neo4j.server.modules.*;
-import org.neo4j.server.modules.PluginInitializer;
-import org.neo4j.server.plugins.Injectable;
-import org.neo4j.server.plugins.PluginManager;
-import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
-import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
-import org.neo4j.server.web.WebServer;
-
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -43,8 +27,25 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.configuration.Configuration;
+import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.configuration.PropertyFileConfigurator;
+import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
+import org.neo4j.server.configuration.validation.Validator;
+import org.neo4j.server.database.Database;
+import org.neo4j.server.database.GraphDatabaseFactory;
+import org.neo4j.server.logging.Logger;
+import org.neo4j.server.modules.PluginInitializer;
+import org.neo4j.server.modules.RESTApiModule;
+import org.neo4j.server.modules.ServerModule;
+import org.neo4j.server.plugins.Injectable;
+import org.neo4j.server.plugins.PluginManager;
+import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
+import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
+import org.neo4j.server.web.WebServer;
+
 public class NeoServerWithEmbeddedWebServer implements NeoServer {
-    
+
     public static final Logger log = Logger.getLogger(NeoServerWithEmbeddedWebServer.class);
 
     private final File configFile;
@@ -55,19 +56,30 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
 
     private final AddressResolver addressResolver;
 
-    private List<ServerModule> serverModules = new ArrayList<ServerModule>();
+    private final List<ServerModule> serverModules = new ArrayList<ServerModule>();
     private PluginInitializer pluginInitializer;
+    private final GraphDatabaseFactory dbFactory;
 
-    public NeoServerWithEmbeddedWebServer(AddressResolver addressResolver, StartupHealthCheck startupHealthCheck, File configFile, WebServer webServer) {
+    public NeoServerWithEmbeddedWebServer( GraphDatabaseFactory dbFactory, AddressResolver addressResolver,
+            StartupHealthCheck startupHealthCheck, File configFile, WebServer webServer,
+            Iterable<Class<? extends ServerModule>> moduleClasses )
+    {
+        this.dbFactory = dbFactory;
         this.addressResolver = addressResolver;
         this.startupHealthCheck = startupHealthCheck;
         this.configFile = configFile;
         this.webServer = webServer;
-        webServer.setNeoServer(this);
+        webServer.setNeoServer( this );
+        for ( Class<? extends ServerModule> moduleClass : moduleClasses )
+        {
+            registerModule( moduleClass );
+        }
     }
 
-    public NeoServerWithEmbeddedWebServer(StartupHealthCheck startupHealthCheck, File configFile, WebServer ws) {
-        this(new AddressResolver(), startupHealthCheck, configFile, ws);
+    public NeoServerWithEmbeddedWebServer( GraphDatabaseFactory dbFactory, StartupHealthCheck startupHealthCheck,
+            File configFile, WebServer ws, Iterable<Class<? extends ServerModule>> mc )
+    {
+        this( dbFactory, new AddressResolver(), startupHealthCheck, configFile, ws, mc );
     }
 
     @Override
@@ -75,14 +87,13 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
         // Start at the bottom of the stack and work upwards to the Web container
         startupHealthCheck();
         validateConfiguration();
-        
+
         startDatabase();
 
         startExtensionInitialization();
 
-        registerServerModules();
         startModules();
-        
+
         startWebServer();
     }
 
@@ -95,18 +106,6 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
     }
 
     /**
-     * Override this method to wire up different server modules. The default behaviour is to register all server modules.
-     * This method is called by start
-     */
-    protected void registerServerModules() {
-        registerModule(DiscoveryModule.class);
-        registerModule(RESTApiModule.class);
-        registerModule(ManagementApiModule.class);
-        registerModule(ThirdPartyJAXRSModule.class);
-        registerModule(WebAdminModule.class);
-    }
-    
-    /**
      * Use this method to register server modules from subclasses
      * @param clazz
      */
@@ -114,16 +113,16 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
         try {
             serverModules.add(clazz.newInstance());
         } catch (Exception e) {
-            log.warn("Failed to instantiate server module [%s], reason: %s", clazz.getName(), e.getMessage());
+            log.warn( "Failed to instantiate server module [%s], reason: %s", clazz.getName(), e.getMessage() );
         }
     }
-    
+
     private void startModules() {
         for(ServerModule module : serverModules) {
             module.start(this);
         }
     }
-    
+
     private void stopModules() {
         for(ServerModule module : serverModules) {
 
@@ -149,13 +148,11 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
 
     private void startDatabase() {
         String dbLocation = new File(configurator.configuration().getString(Configurator.DATABASE_LOCATION_PROPERTY_KEY)).getAbsolutePath();
-        DatabaseMode mode = DatabaseMode.valueOf( configurator.configuration().getString(
-                Configurator.DB_MODE_KEY, DatabaseMode.STANDALONE.name() ).toUpperCase() );
         Map<String, String> databaseTuningProperties = configurator.getDatabaseTuningProperties();
         if (databaseTuningProperties != null) {
-            this.database = new Database( mode, dbLocation, databaseTuningProperties );
+            this.database = new Database( dbFactory, dbLocation, databaseTuningProperties );
         } else {
-            this.database = new Database( mode, dbLocation );
+            this.database = new Database( dbFactory, dbLocation );
         }
     }
 
@@ -251,7 +248,7 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
     public WebServer getWebServer() {
         return webServer;
     }
-    
+
     @Override
     public Configurator getConfigurator() {
         return configurator;
@@ -288,7 +285,7 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
                 return (T) sm;
             }
         }
-        
+
         return null;
     }
 

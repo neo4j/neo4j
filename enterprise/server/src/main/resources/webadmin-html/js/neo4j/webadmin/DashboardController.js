@@ -1,22 +1,3 @@
-/*
- * Copyright (c) 2002-2011 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
 (function() {
   /*
   Copyright (c) 2002-2011 "Neo Technology,"
@@ -44,7 +25,7 @@
     child.__super__ = parent.prototype;
     return child;
   };
-  define(['./views/DashboardView', './models/ServerPrimitives', './models/DiskUsage', './models/CacheUsage', './models/ServerStatistics', './models/DashboardState', 'lib/backbone'], function(DashboardView, ServerPrimitives, DiskUsage, CacheUsage, ServerStatistics, DashboardState) {
+  define(['./views/DashboardView', './models/ServerPrimitives', './models/DiskUsage', './models/CacheUsage', './models/ServerStatistics', './models/DashboardState', './models/KernelBean', 'lib/backbone'], function(DashboardView, ServerPrimitives, DiskUsage, CacheUsage, ServerStatistics, DashboardState, KernelBean) {
     var DashboardController;
     return DashboardController = (function() {
       function DashboardController() {
@@ -52,6 +33,7 @@
         this.getServerStatistics = __bind(this.getServerStatistics, this);;
         this.getCacheUsage = __bind(this.getCacheUsage, this);;
         this.getDiskUsage = __bind(this.getDiskUsage, this);;
+        this.getKernelBean = __bind(this.getKernelBean, this);;
         this.getServerPrimitives = __bind(this.getServerPrimitives, this);;
         this.getDashboardView = __bind(this.getDashboardView, this);;
         this.dashboard = __bind(this.dashboard, this);;
@@ -77,7 +59,8 @@
           primitives: this.getServerPrimitives(),
           diskUsage: this.getDiskUsage(),
           cacheUsage: this.getCacheUsage(),
-          statistics: this.getServerStatistics()
+          statistics: this.getServerStatistics(),
+          kernelBean: this.getKernelBean()
         });
       };
       DashboardController.prototype.getServerPrimitives = function() {
@@ -85,6 +68,13 @@
         return (_ref = this.serverPrimitives) != null ? _ref : this.serverPrimitives = new ServerPrimitives({
           server: this.appState.getServer(),
           pollingInterval: 5000
+        });
+      };
+      DashboardController.prototype.getKernelBean = function() {
+        var _ref;
+        return (_ref = this.kernelBean) != null ? _ref : this.kernelBean = new KernelBean({
+          server: this.appState.getServer(),
+          pollingInterval: 10000
         });
       };
       DashboardController.prototype.getDiskUsage = function() {
