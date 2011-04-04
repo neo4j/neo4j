@@ -26,7 +26,7 @@ define(
 
       constructor : (@groupingThreshold=5) ->
         @clear()
-      
+        
       clear : () ->
         @groupCount = 0
 
@@ -83,16 +83,13 @@ define(
         for node in nodes
           nodeUrl = node.getSelf()
           if @data.nodes[nodeUrl]?
-            console.log "node", nodeUrl, @data.nodes[nodeUrl].groups
             meta = @data.nodes[nodeUrl]
             for key, groupMeta of meta.groups
               group = groupMeta.group
               group.nodeCount--
               delete group.grouped[nodeUrl]
-              console.log "group", key
 
               for rel in groupMeta.relationships
-                console.log "rel", rel.getSelf()
                 @_addUnexploredNode group.baseNode, rel
 
               if group.nodeCount <= 0
@@ -136,10 +133,10 @@ define(
         for fromUrl, toMap of @visualGraph.edges
           for toUrl, relMeta of toMap
             if fromUrl is nodeUrl
-              if @visualGraph.nodes[toUrl].type is "unexplored"
+              if @visualGraph.nodes[toUrl].type? and @visualGraph.nodes[toUrl].type is "unexplored"
                 found[toUrl] = @data.nodes[toUrl]
             if toUrl is nodeUrl
-              if @visualGraph.nodes[fromUrl].type is "unexplored"
+              if @visualGraph.nodes[fromUrl].type? and @visualGraph.nodes[fromUrl].type is "unexplored"
                 found[fromUrl] = @data.nodes[fromUrl]
 
         return found
@@ -211,7 +208,7 @@ define(
         for fromUrl, toMap of @visualGraph.edges
           for toUrl, relMeta of toMap
             if toUrl is nodeUrl or fromUrl is nodeUrl
-              for rel in @visualGraph.edges[fromUrl][toUrl].relationships
+              for url, rel of @visualGraph.edges[fromUrl][toUrl].relationships
                 delete @data.relationships[rel.getSelf()]
             if toUrl is nodeUrl
               delete @visualGraph.edges[fromUrl][toUrl]

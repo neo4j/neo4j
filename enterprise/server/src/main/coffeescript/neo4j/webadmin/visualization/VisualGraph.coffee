@@ -86,8 +86,6 @@ define(
             when "group"
               nodes = for url, groupedMeta of visualNode.data.group.grouped
                 groupedMeta.node
-
-              console.log nodes
               @dataModel.ungroup nodes
               @sys.merge @dataModel.getVisualGraph()
 
