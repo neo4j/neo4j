@@ -19,31 +19,22 @@
  */
 package org.neo4j.server.modules;
 
-import org.neo4j.server.JAXRSHelper;
+import static org.neo4j.server.JAXRSHelper.listFrom;
+
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
 import org.neo4j.server.logging.Logger;
 
-import java.net.URI;
-import java.util.HashSet;
-import java.util.Set;
-
-import static org.neo4j.server.JAXRSHelper.listFrom;
-
 public class ThirdPartyJAXRSModule implements ServerModule {
 
     private final Logger log = Logger.getLogger(ThirdPartyJAXRSModule.class);
-    
-    public Set<URI> start(NeoServerWithEmbeddedWebServer neoServer) {
-        HashSet<URI> ownedUris = new HashSet<URI>();
-        
+
+    public void start( NeoServerWithEmbeddedWebServer neoServer )
+    {
         for (ThirdPartyJaxRsPackage tpp : neoServer.getConfigurator().getThirdpartyJaxRsClasses()) {
             neoServer.getWebServer().addJAXRSPackages(listFrom(new String[] { tpp.getPackageName() }), tpp.getMountPoint());
             log.info("Mounted third-party JAX-RS package [%s] at [%s]", tpp.getPackageName(), tpp.getMountPoint());
-            ownedUris.add(JAXRSHelper.generateUriFor(neoServer.baseUri(), tpp.getMountPoint()));
         }
-
-        return ownedUris;
     }
 
     public void stop() {
