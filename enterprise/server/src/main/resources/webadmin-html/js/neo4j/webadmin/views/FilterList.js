@@ -54,7 +54,8 @@
         $(this.el).html(template({
           filter: this.filter
         }));
-        return this.renderListSelector();
+        this.renderListSelector();
+        return $(".filterText", this.el).focus();
       };
       FilterList.prototype.renderListSelector = function() {
         return $('.selectWrap', this.el).html(selectTemplate({
