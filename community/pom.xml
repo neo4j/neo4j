@@ -29,6 +29,7 @@
     <module>kernel</module>
     <module>management</module>
     <module>com</module>
+    <module>backup</module>
     <module>udc</module>
     <module>lucene-index</module>
     <module>graph-algo</module>
