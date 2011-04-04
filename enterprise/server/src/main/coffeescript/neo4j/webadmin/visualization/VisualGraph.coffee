@@ -23,17 +23,20 @@ define(
    'neo4j/webadmin/visualization/NodeStyler'
    'neo4j/webadmin/visualization/RelationshipStyler'
    'neo4j/webadmin/visualization/VisualDataModel'
+   'neo4j/webadmin/views/NodeFilterDialog'
    'order!lib/jquery'
    'order!lib/arbor'
    'order!lib/arbor-graphics'
    'order!lib/arbor-tween'], 
-  (Renderer, NodeStyler, RelationshipStyler, VisualDataModel) ->
+  (Renderer, NodeStyler, RelationshipStyler, VisualDataModel, NodeFilterDialog) ->
   
     class VisualGraph
 
       constructor : (@server, width=800, height=400, @groupingThreshold=10) ->
         @el = $("<canvas width='#{width}' height='#{height}'></canvas>")
         
+        @labelProperties = []
+
         @nodeStyler = new NodeStyler()
         @relationshipStyler = new RelationshipStyler()
 
@@ -84,14 +87,22 @@ define(
               @dataModel.unexplore visualNode.data.neoNode
               @sys.merge @dataModel.getVisualGraph()
             when "group"
+
               nodes = for url, groupedMeta of visualNode.data.group.grouped
                 groupedMeta.node
-              @dataModel.ungroup nodes
-              @sys.merge @dataModel.getVisualGraph()
+
+              completeCallback = (filteredNodes, dialog) =>
+                dialog.remove()
+                @dataModel.ungroup filteredNodes
+                @sys.merge @dataModel.getVisualGraph()
+
+              dialog = new NodeFilterDialog { nodes : nodes, completeCallback : completeCallback, labelProperties : @labelProperties }
+              dialog.show()
 
 
-      getLabelFormatter : () =>
-        @labelFormatter
+      setLabelProperties : (labelProps) ->
+        @nodeStyler.setLabelProperties(labelProps)
+        @labelProperties = labelProps
       
       getNodeStyler : () =>
         @nodeStyler

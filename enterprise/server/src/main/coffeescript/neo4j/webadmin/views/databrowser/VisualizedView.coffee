@@ -91,7 +91,7 @@ define(
 
       settingsChanged : () =>
         if @viz?
-          @viz.getNodeStyler().setLabelProperties(@settings.getLabelProperties())
+          @viz.setLabelProperties(@settings.getLabelProperties())
       
       getViz : () =>
         width = $(document).width() - 40;
