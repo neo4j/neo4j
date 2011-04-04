@@ -48,6 +48,7 @@ define(
       render : () ->
         $(@el).html(template( filter:@filter ))
         @renderListSelector()
+        $(".filterText",@el).focus()
 
       renderListSelector : () ->
         $('.selectWrap', @el).html(selectTemplate(items : @filteredItems))
