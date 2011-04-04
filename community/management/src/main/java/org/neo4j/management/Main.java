@@ -82,7 +82,7 @@ class Main
         {
             try
             {
-                main = jconsole.getMethod( "main", String[].class );
+                main = jconsole.getDeclaredMethod( "main", String[].class );
             }
             catch ( Exception ex )
             {

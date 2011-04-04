@@ -19,9 +19,16 @@
  */
 package org.neo4j.management;
 
+import org.neo4j.jmx.Description;
+import org.neo4j.jmx.ManagementInterface;
+
+@ManagementInterface( name = MemoryMapping.NAME )
+@Description( "The status of Neo4j memory mapping" )
 public interface MemoryMapping
 {
     final String NAME = "Memory Mapping";
 
+    @Description( "Get information about each pool of memory mapped regions from store files with "
+                  + "memory mapping enabled" )
     WindowPoolInfo[] getMemoryPools();
 }

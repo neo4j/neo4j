@@ -29,6 +29,7 @@ import java.util.Map;
 
 import javax.management.AttributeList;
 import javax.management.AttributeNotFoundException;
+import javax.management.DynamicMBean;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanException;
 import javax.management.MBeanInfo;
@@ -36,8 +37,12 @@ import javax.management.NotCompliantMBeanException;
 import javax.management.ReflectionException;
 
 import org.neo4j.helpers.Service;
+import org.neo4j.jmx.Description;
+import org.neo4j.jmx.ManagementInterface;
+import org.neo4j.jmx.impl.ManagementBeanProvider;
+import org.neo4j.jmx.impl.ManagementData;
+import org.neo4j.jmx.impl.Neo4jMBean;
 import org.neo4j.kernel.Config;
-import org.neo4j.kernel.KernelData;
 
 @Service.Implementation( ManagementBeanProvider.class )
 public final class ConfigurationBean extends ManagementBeanProvider
@@ -84,13 +89,19 @@ public final class ConfigurationBean extends ManagementBeanProvider
 
     public ConfigurationBean()
     {
-        super( CONFIGURATION_MBEAN_NAME );
+        super( ConfigurationInterface.class );
+    }
+
+    @ManagementInterface( name = CONFIGURATION_MBEAN_NAME )
+    private interface ConfigurationInterface extends DynamicMBean
+    {
+        // a hack to conform to the constructor of the ManagementBeanProvider
     }
 
     @Override
-    protected Neo4jMBean createMBean( KernelData kernel ) throws NotCompliantMBeanException
+    protected Neo4jMBean createMBean( ManagementData management ) throws NotCompliantMBeanException
     {
-        return new ConfigurationImpl( this, kernel );
+        return new ConfigurationImpl( management );
     }
 
     @Description( "The configuration parameters used to configure Neo4j" )
@@ -122,11 +133,10 @@ public final class ConfigurationBean extends ManagementBeanProvider
         }
         private final Map<Object, Object> config;
 
-        protected ConfigurationImpl( ManagementBeanProvider provider, KernelData kernel )
-                throws NotCompliantMBeanException
+        protected ConfigurationImpl( ManagementData management ) throws NotCompliantMBeanException
         {
-            super( provider, kernel );
-            this.config = kernel.getConfigParams();
+            super( management );
+            this.config = management.getKernelData().getConfigParams();
         }
 
         private static String describeConfigParameter( String param )

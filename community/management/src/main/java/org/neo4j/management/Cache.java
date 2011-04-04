@@ -19,15 +19,26 @@
  */
 package org.neo4j.management;
 
+import javax.management.MBeanOperationInfo;
+
+import org.neo4j.jmx.Description;
+import org.neo4j.jmx.ManagementInterface;
+
+@ManagementInterface( name = Cache.NAME )
+@Description( "Information about the caching in Neo4j" )
 public interface Cache
 {
     final String NAME = "Cache";
 
+    @Description( "The type of cache used by Neo4j" )
     String getCacheType();
 
+    @Description( "The number of Nodes currently in cache" )
     int getNodeCacheSize();
 
+    @Description( "The number of Relationships currently in cache" )
     int getRelationshipCacheSize();
 
+    @Description( value = "Clears the Neo4j caches", impact = MBeanOperationInfo.ACTION )
     void clear();
 }

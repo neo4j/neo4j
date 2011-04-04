@@ -24,11 +24,9 @@ import java.util.Collection;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-import org.neo4j.management.Neo4jManager;
-
 class KernelWidget extends Widget
 {
-    KernelWidget( Neo4jManager manager )
+    KernelWidget( ManagementAccess manager )
     {
     }
 
