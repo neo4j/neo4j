@@ -21,45 +21,64 @@ package org.neo4j.management.impl;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.NoSuchElementException;
 
 import javax.management.MBeanServerConnection;
+import javax.management.MalformedObjectNameException;
 import javax.management.ObjectInstance;
 import javax.management.ObjectName;
-import javax.management.remote.JMXServiceURL;
 
-import org.neo4j.kernel.KernelData;
-import org.neo4j.management.Kernel;
+import org.neo4j.jmx.ManagementInterface;
 
+/**
+ * Does not have any public methods - since the public interface of
+ * {@link org.neo4j.management.Neo4jManager} should be defined completely in
+ * that class.
+ *
+ * Does not have any (direct or transitive) dependencies on any part of the jmx
+ * component - since this class is used in
+ * {@link org.neo4j.management.impl.jconsole.Neo4jPlugin the JConsole plugin},
+ * and the jmx component is not on the class path in JConsole.
+ *
+ * @author Tobias Ivarsson <tobias.ivarsson@neotechnology.com>
+ */
 public abstract class KernelProxy
 {
+    static final String KERNEL_BEAN_TYPE = "org.neo4j.jmx.Kernel";
+    protected static final String KERNEL_BEAN_NAME = "Kernel";
+    static final String MBEAN_QUERY = "MBeanQuery";
     protected final MBeanServerConnection server;
-    protected final Kernel kernel;
+    protected final ObjectName kernel;
 
-    protected KernelProxy( MBeanServerConnection server, Kernel kernel )
+    protected KernelProxy( MBeanServerConnection server, ObjectName kernel )
     {
+        String className = null;
+        try
+        {
+            className = server.getMBeanInfo( kernel ).getClassName();
+        }
+        catch ( Exception e )
+        {
+            // fall through
+        }
+        if ( !KERNEL_BEAN_TYPE.equals( className ) )
+        {
+            throw new IllegalArgumentException(
+                    "The specified ObjectName does not represent a Neo4j Kernel bean in the specified MBean server." );
+        }
         this.server = server;
         this.kernel = kernel;
     }
 
-    protected static ObjectName getObjectName( Class<?> beanType, String kernelIdentifier )
-    {
-        return BeanNaming.getObjectName( kernelIdentifier, beanType, null );
-    }
-
-    protected static <T> T proxy( MBeanServerConnection server, Class<T> beanType, ObjectName name )
-    {
-        return BeanProxy.load( server, beanType, name );
-    }
-
-    public List<Object> allBeans()
+    protected List<Object> allBeans()
     {
         List<Object> beans = new ArrayList<Object>();
         Iterable<ObjectInstance> mbeans;
         try
         {
-            mbeans = server.queryMBeans( kernel.getMBeanQuery(), null );
+            mbeans = server.queryMBeans( mbeanQuery(), null );
         }
         catch ( IOException handled )
         {
@@ -73,46 +92,27 @@ public abstract class KernelProxy
             {
                 if ( className != null ) beanType = Class.forName( className );
             }
-            catch ( Throwable e )
+            catch ( Exception ignored )
             {
+                // fall through
             }
-            CREATE_PROXY: while ( beanType != null && beanType != Kernel.class )
+            catch ( LinkageError ignored )
+            {
+                // fall through
+            }
+            if ( beanType != null )
             {
                 try
                 {
                     beans.add( BeanProxy.load( server, beanType, instance.getObjectName() ) );
                 }
-                catch ( IllegalArgumentException couldNotCreateProxy )
+                catch ( Exception ignored )
                 {
-                    Class<?>[] interfaces = beanType.getInterfaces();
-                    if ( interfaces.length == 0 )
-                    {
-                        beanType = beanType.getSuperclass();
-                        continue;
-                    }
-                    for ( Class<?> type : interfaces )
-                    {
-                        if ( type.getName().equals( beanType.getName() + "MBean" ) )
-                        {
-                            beanType = type;
-                            continue CREATE_PROXY;
-                        }
-                    }
+                    // fall through
                 }
-                break;
             }
         }
         return beans;
-    }
-
-    protected ObjectName getObjectName( String beanName )
-    {
-        return assertExists( BeanNaming.getObjectName( kernel.getMBeanQuery(), null, beanName ) );
-    }
-
-    protected ObjectName getObjectName( Class<?> beanInterface )
-    {
-        return assertExists( BeanNaming.getObjectName( kernel.getMBeanQuery(), beanInterface, null ) );
     }
 
     private ObjectName assertExists( ObjectName name )
@@ -126,17 +126,84 @@ public abstract class KernelProxy
         }
         catch ( IOException handled )
         {
+            // fall through
         }
         throw new NoSuchElementException( "No MBeans matching " + name );
     }
 
     protected <T> T getBean( Class<T> beanInterface )
     {
-        return BeanProxy.load( server, beanInterface, getObjectName( beanInterface ) );
+        return BeanProxy.load( server, beanInterface, createObjectName( beanInterface ) );
     }
 
-    protected static JMXServiceURL getConnectionURL( KernelData kernel )
+    private ObjectName createObjectName( Class<?> beanInterface )
     {
-        return new JmxExtension().getConnectionURL( kernel );
+        return assertExists( createObjectName( mbeanQuery(), beanInterface ) );
+    }
+
+    protected ObjectName createObjectName( String beanName )
+    {
+        return assertExists( createObjectName( mbeanQuery(), beanName ) );
+    }
+
+    protected ObjectName mbeanQuery()
+    {
+        try
+        {
+            return (ObjectName) server.getAttribute( kernel, MBEAN_QUERY );
+        }
+        catch ( Exception cause )
+        {
+            throw new IllegalStateException( "Could not get MBean query.", cause );
+        }
+    }
+
+    protected static ObjectName createObjectName( String kernelIdentifier, Class<?> beanInterface )
+    {
+        return createObjectName( kernelIdentifier, beanName( beanInterface ) );
+    }
+
+    protected static ObjectName createObjectName( String kernelIdentifier, String beanName )
+    {
+        Hashtable<String, String> properties = new Hashtable<String, String>();
+        properties.put( "instance", "kernel#" + kernelIdentifier );
+        return createObjectName("org.neo4j", properties, beanName);
+    }
+
+    static ObjectName createObjectName( ObjectName query, Class<?> beanInterface )
+    {
+        return createObjectName( query, beanName( beanInterface ) );
+    }
+
+    private static ObjectName createObjectName( ObjectName query, String beanName )
+    {
+        Hashtable<String, String> properties = new Hashtable<String, String>(query.getKeyPropertyList());
+        return createObjectName( query.getDomain(), properties, beanName );
+    }
+
+    static String beanName( Class<?> beanInterface )
+    {
+        if ( beanInterface.isInterface() )
+        {
+            ManagementInterface management = beanInterface.getAnnotation( ManagementInterface.class );
+            if ( management != null )
+            {
+                return management.name();
+            }
+        }
+        throw new IllegalArgumentException( beanInterface + " is not a Neo4j Management Been interface" );
+    }
+
+    private static ObjectName createObjectName( String domain, Hashtable<String, String> properties, String beanName )
+    {
+        properties.put( "name", beanName );
+        try
+        {
+            return new ObjectName( domain, properties );
+        }
+        catch ( MalformedObjectNameException e )
+        {
+            return null;
+        }
     }
 }

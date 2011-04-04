@@ -19,21 +19,34 @@
  */
 package org.neo4j.management;
 
+import org.neo4j.jmx.Description;
+import org.neo4j.jmx.ManagementInterface;
+
+@ManagementInterface( name = StoreFile.NAME )
+@Description( "Information about the sizes of the different parts of the Neo4j graph store" )
 public interface StoreFile
 {
     final String NAME = "Store file sizes";
 
+    @Description( "The amount of disk space used by the current Neo4j logical log, in bytes." )
     long getLogicalLogSize();
 
+    @Description( "The total disk space used by this Neo4j instance, in bytes." )
     long getTotalStoreSize();
 
+    @Description( "The amount of disk space used to store nodes, in bytes." )
     long getNodeStoreSize();
 
+    @Description( "The amount of disk space used to store relationships, in bytes." )
     long getRelationshipStoreSize();
 
+    @Description( "The amount of disk space used to store properties "
+                  + "(excluding string values and array values), in bytes." )
     long getPropertyStoreSize();
 
+    @Description( "The amount of disk space used to store string properties, in bytes." )
     long getStringStoreSize();
 
+    @Description( "The amount of disk space used to store array properties, in bytes." )
     long getArrayStoreSize();
 }

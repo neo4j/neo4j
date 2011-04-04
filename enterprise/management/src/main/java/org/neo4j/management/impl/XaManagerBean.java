@@ -25,7 +25,9 @@ import java.util.List;
 import javax.management.NotCompliantMBeanException;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.KernelData;
+import org.neo4j.jmx.impl.ManagementBeanProvider;
+import org.neo4j.jmx.impl.ManagementData;
+import org.neo4j.jmx.impl.Neo4jMBean;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.management.XaManager;
@@ -40,36 +42,33 @@ public final class XaManagerBean extends ManagementBeanProvider
     }
 
     @Override
-    protected Neo4jMBean createMBean( KernelData kernel ) throws NotCompliantMBeanException
+    protected Neo4jMBean createMBean( ManagementData management ) throws NotCompliantMBeanException
     {
-        return new XaManagerImpl( null, kernel );
+        return new XaManagerImpl( management );
     }
 
     @Override
-    protected Neo4jMBean createMXBean( KernelData kernel ) throws NotCompliantMBeanException
+    protected Neo4jMBean createMXBean( ManagementData management ) throws NotCompliantMBeanException
     {
-        return new XaManagerImpl( this, kernel, true );
+        return new XaManagerImpl( management, true );
     }
 
-    @Description( "Information about the XA transaction manager" )
     private static class XaManagerImpl extends Neo4jMBean implements XaManager
     {
         private final XaDataSourceManager datasourceMananger;
 
-        XaManagerImpl( ManagementBeanProvider provider, KernelData kernel )
-                throws NotCompliantMBeanException
+        XaManagerImpl( ManagementData management ) throws NotCompliantMBeanException
         {
-            super( provider, kernel );
-            this.datasourceMananger = kernel.getConfig().getTxModule().getXaDataSourceManager();
+            super( management );
+            this.datasourceMananger = management.getKernelData().getConfig().getTxModule().getXaDataSourceManager();
         }
 
-        XaManagerImpl( XaManagerBean provider, KernelData kernel, boolean isMxBean )
+        XaManagerImpl( ManagementData management, boolean isMxBean )
         {
-            super( provider, kernel, isMxBean );
-            this.datasourceMananger = kernel.getConfig().getTxModule().getXaDataSourceManager();
+            super( management, isMxBean );
+            this.datasourceMananger = management.getKernelData().getConfig().getTxModule().getXaDataSourceManager();
         }
 
-        @Description( "Information about all XA resources managed by the transaction manager" )
         public XaResourceInfo[] getXaResources()
         {
             return getXaResourcesImpl( datasourceMananger );

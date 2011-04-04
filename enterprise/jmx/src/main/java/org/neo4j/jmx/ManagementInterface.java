@@ -17,29 +17,21 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.management;
+package org.neo4j.jmx;
 
-import java.util.Date;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-import javax.management.ObjectName;
-
-public interface Kernel
+/**
+ * Marks that an interface is a Neo4j management interface.
+ * 
+ * @author Tobias Ivarsson <tobias.ivarsson@neotechnology.com>
+ */
+@Target( ElementType.TYPE )
+@Retention( RetentionPolicy.RUNTIME )
+public @interface ManagementInterface
 {
-    final String NAME = "Kernel";
-
-    ObjectName getMBeanQuery();
-
-    String getStoreDirectory();
-
-    String getKernelVersion();
-
-    Date getKernelStartTime();
-
-    Date getStoreCreationDate();
-
-    String getStoreId();
-
-    long getStoreLogVersion();
-
-    boolean isReadOnly();
+    String name();
 }

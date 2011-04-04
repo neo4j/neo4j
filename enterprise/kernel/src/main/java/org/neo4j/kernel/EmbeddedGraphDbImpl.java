@@ -21,7 +21,8 @@ package org.neo4j.kernel;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -69,7 +70,7 @@ class EmbeddedGraphDbImpl
 {
     private static final long MAX_NODE_ID = IdType.NODE.getMaxValue();
     private static final long MAX_RELATIONSHIP_ID = IdType.RELATIONSHIP.getMaxValue();
-    
+
     private static Logger log =
         Logger.getLogger( EmbeddedGraphDbImpl.class.getName() );
     private Transaction placeboTransaction = null;
@@ -96,7 +97,7 @@ class EmbeddedGraphDbImpl
      * future releases.
      *
      * @param storeDir the store directory for the db files
-     * @param fileSystem 
+     * @param fileSystem
      * @param config configuration parameters
      */
     public EmbeddedGraphDbImpl( String storeDir, StoreId storeId, Map<String, String> inputParams,
@@ -218,16 +219,46 @@ class EmbeddedGraphDbImpl
     <T> T getManagementBean( Class<T> beanClass )
     {
         KernelExtension<?> jmx = Service.load( KernelExtension.class, "kernel jmx" );
-        KernelExtension<?>.Function<T> getBean = null;
-        if ( jmx != null && jmx.isLoaded( extensions ) )
+        if ( jmx != null )
         {
-            getBean = jmx.function( extensions, "getBean", beanClass, Class.class );
+            Method getManagementBean = null;
+            Object state = jmx.getState( extensions );
+            if ( state != null )
+            {
+                try
+                {
+                    getManagementBean = state.getClass().getMethod( "getManagementBean", Class.class );
+                }
+                catch ( Exception e )
+                {
+                    // getManagementBean will be null
+                }
+            }
+            if ( getManagementBean != null )
+            {
+                try
+                {
+                    return beanClass.cast( getManagementBean.invoke( state, beanClass ) );
+                }
+                catch ( InvocationTargetException ex )
+                {
+                    Throwable cause = ex.getTargetException();
+                    if ( cause instanceof Error )
+                    {
+                        throw (Error) cause;
+                    }
+                    if ( cause instanceof RuntimeException )
+                    {
+                        throw (RuntimeException) cause;
+                    }
+                }
+                catch ( Exception ignored )
+                {
+                    // exception thrown below
+                }
+            }
         }
-        if ( getBean == null )
-        {
-            throw new UnsupportedOperationException( "Neo4j JMX support not enabled" );
-        }
-        return getBean.call( beanClass );
+        throw new UnsupportedOperationException( "Neo4j JMX support not enabled" );
     }
 
     /**
@@ -329,29 +360,6 @@ class EmbeddedGraphDbImpl
         {
             handler.beforeShutdown();
         }
-    }
-
-    public boolean enableRemoteShell()
-    {
-        return this.enableRemoteShell( null );
-    }
-
-    public boolean enableRemoteShell( final Map<String, Serializable> config )
-    {
-        KernelExtension<?> shell = Service.load( KernelExtension.class, "shell" );
-        KernelExtension<?>.Function<Void> enable = null;
-        if ( shell != null )
-        {
-            enable = shell.function( extensions, "enableRemoteShell", void.class, Map.class );
-        }
-        if ( enable == null )
-        {
-            log.info( "Shell library not available. Neo4j shell not "
-                      + "started. Please add the Neo4j shell jar to the classpath." );
-            return false;
-        }
-        enable.call( config );
-        return true;
     }
 
     public Iterable<RelationshipType> getRelationshipTypes()

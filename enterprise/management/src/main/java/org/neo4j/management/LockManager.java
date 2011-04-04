@@ -19,9 +19,16 @@
  */
 package org.neo4j.management;
 
+import org.neo4j.jmx.Description;
+import org.neo4j.jmx.ManagementInterface;
+
+@ManagementInterface( name = LockManager.NAME )
+@Description( "Information about the Neo4j lock status" )
 public interface LockManager
 {
     final String NAME = "Locking";
 
+    @Description( "The number of lock sequences that would have lead to a deadlock situation that "
+                  + "Neo4j has detected and adverted (by throwing DeadlockDetectedException)." )
     long getNumberOfAdvertedDeadlocks();
 }

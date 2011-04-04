@@ -30,7 +30,6 @@ import javax.swing.JPanel;
 import javax.swing.SwingWorker;
 
 import org.neo4j.management.HighAvailability;
-import org.neo4j.management.Neo4jManager;
 import org.neo4j.management.RemoteConnection;
 
 import com.sun.tools.jconsole.JConsolePlugin;
@@ -47,7 +46,7 @@ public class Neo4jPlugin extends JConsolePlugin
     @Override
     public Map<String, JPanel> getTabs()
     {
-        Neo4jManager[] managers = Neo4jManager.getAll( getContext().getMBeanServerConnection() );
+        ManagementAccess[] managers = ManagementAccess.getAll( getContext().getMBeanServerConnection() );
         Map<String, JPanel> result = new LinkedHashMap<String, JPanel>();
         if ( managers.length == 1 )
         {
@@ -55,7 +54,7 @@ public class Neo4jPlugin extends JConsolePlugin
         }
         else
         {
-            for ( Neo4jManager manager : managers )
+            for ( ManagementAccess manager : managers )
             {
                 addTabs( manager,
                         " (" + manager.getMBeanQuery().getKeyProperty( "instance" ) + ")", result );
@@ -64,7 +63,7 @@ public class Neo4jPlugin extends JConsolePlugin
         return result;
     }
 
-    private void addTabs( Neo4jManager manager, String suffix, Map<String, JPanel> result )
+    private void addTabs( ManagementAccess manager, String suffix, Map<String, JPanel> result )
     {
         result.put( "Neo4j" + suffix, add( new KernelWidget( manager ) ) );
         try
