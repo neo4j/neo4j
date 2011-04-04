@@ -22,11 +22,12 @@ define(
   ['neo4j/webadmin/visualization/Renderer'
    'neo4j/webadmin/visualization/NodeStyler'
    'neo4j/webadmin/visualization/RelationshipStyler'
+   'neo4j/webadmin/visualization/VisualDataModel'
    'order!lib/jquery'
    'order!lib/arbor'
    'order!lib/arbor-graphics'
    'order!lib/arbor-tween'], 
-  (Renderer, NodeStyler, RelationshipStyler) ->
+  (Renderer, NodeStyler, RelationshipStyler, VisualDataModel) ->
   
     class VisualGraph
 
@@ -36,59 +37,59 @@ define(
         @nodeStyler = new NodeStyler()
         @relationshipStyler = new RelationshipStyler()
 
-        @groupCount = 0
-        @visualizedGraph = {nodes:{}, edges:{}}
-        
+        @dataModel = new VisualDataModel()
         @sys = arbor.ParticleSystem(600, 100, 0.8, false, 30, 0.03)
+
         @stop()
 
         @sys.renderer = new Renderer(@el, @nodeStyler, @relationshipStyler)
         @sys.renderer.bind "node:click", @nodeClicked
         @sys.screenPadding(20)
 
-
       setNode : (node) =>
         @setNodes([node])
 
       setNodes : (nodes) =>
-        # Nodes and edges are used by arbor.js, relationships is our own
-        # map of relationship id -> relationship (edges are a map of node id -> node ids
-        # plus relationship meta data)
-        @visualizedGraph = {nodes:{}, edges:{}, relationships:{}}
+        @dataModel.clear()
         @addNodes nodes
-
 
       addNode : (node) =>
         @addNodes([node])
 
       addNodes : (nodes) =>
-        # Short-hand references
-        relToNodeMap = @visualizedGraph.edges
-        nodeMap = @visualizedGraph.nodes
-        relMap = @visualizedGraph.relationships
-
+          
         fetchCountdown = nodes.length
+        @sys.stop()
         for node in nodes
-          nodeMap[node.getSelf()] = { neoNode : node, type : "explored-node" }
-          node.getRelationships().then (rels) =>
-            for rel in rels
-              nodeMap[rel.getStartNodeUrl()] ?= { neoUrl : rel.getStartNodeUrl(), type : "unexplored-node" }
-              nodeMap[rel.getEndNodeUrl()] ?= { neoUrl : rel.getEndNodeUrl(), type : "unexplored-node" }
+          do (node) =>
+            relPromise = node.getRelationships()
+            # Default depth 1 traversal, gets us all the end nodes of all relationships.
+            relatedNodesPromise = node.traverse({})
 
-              if not relMap[rel.getSelf()]?
-                relMap[rel.getSelf()] = rel
-                relToNodeMap[rel.getStartNodeUrl()] ?= {}
-                relToNodeMap[rel.getStartNodeUrl()][rel.getEndNodeUrl()] ?= { relationships : [], directed:true }
-                relToNodeMap[rel.getStartNodeUrl()][rel.getEndNodeUrl()].relationships.push rel
-
-            if (--fetchCountdown) == 0
-              # This deletes all current data not mentioned in our visualizedMap data structure
-              # but retains the position of any data it recognizes.
-              @sys.merge @visualizedGraph
-
+            neo4j.Promise.join(relPromise, relatedNodesPromise).then (result) =>
+              
+              [rels, nodes] = result
+              @dataModel.addNode node, rels, nodes
+    
+              if (--fetchCountdown) == 0
+                @sys.merge @dataModel.getVisualGraph()
+                @sys.start()
+    
       nodeClicked : (visualNode) =>
-        if visualNode.data.type? and visualNode.data.type is "unexplored-node"
-          @server.node(visualNode.data.neoUrl).then @addNode
+        if visualNode.data.type?
+          switch visualNode.data.type
+            when "unexplored"
+              @addNode visualNode.data.neoNode
+            when "explored"
+              @dataModel.unexplore visualNode.data.neoNode
+              @sys.merge @dataModel.getVisualGraph()
+            when "group"
+              nodes = for url, groupedMeta of visualNode.data.group.grouped
+                groupedMeta.node
+
+              console.log nodes
+              @dataModel.ungroup nodes
+              @sys.merge @dataModel.getVisualGraph()
 
 
       getLabelFormatter : () =>

@@ -52,16 +52,16 @@
         }
       };
       RelationshipStyler.prototype.getStyleFor = function(visualRelationship) {
-        var dstType, rel, srcType, types;
+        var dstType, rel, srcType, types, url;
         srcType = visualRelationship.source.data.type;
         dstType = visualRelationship.target.data.type;
-        if (srcType === "explored-node" && dstType === "explored-node") {
+        if (srcType === "explored" && dstType === "explored") {
           types = (function() {
-            var _i, _len, _ref, _results;
+            var _ref, _results;
             _ref = visualRelationship.data.relationships;
             _results = [];
-            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-              rel = _ref[_i];
+            for (url in _ref) {
+              rel = _ref[url];
               _results.push(rel.getType());
             }
             return _results;
@@ -72,13 +72,13 @@
             labelText: types.join(", ")
           };
         }
-        if (srcType === "unexplored-node" || dstType === "unexplored-node") {
+        if (srcType === "unexplored" || dstType === "unexplored") {
           types = (function() {
-            var _i, _len, _ref, _results;
+            var _ref, _results;
             _ref = visualRelationship.data.relationships;
             _results = [];
-            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-              rel = _ref[_i];
+            for (url in _ref) {
+              rel = _ref[url];
               _results.push(rel.getType());
             }
             return _results;
@@ -92,7 +92,7 @@
         return {
           edgeStyle: this.defaultToGroupStyle.edgeStyle,
           labelStyle: this.defaultToGroupStyle.labelStyle,
-          labelText: "hello, world!"
+          labelText: visualRelationship.data.relType
         };
       };
       return RelationshipStyler;
