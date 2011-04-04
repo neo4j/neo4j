@@ -46,6 +46,7 @@ public class ServerProcess extends SubProcess<ServerInterface, Pair<String, Stri
         }
     }
     
+    @Override
     public void awaitStarted()
     {
         while ( db == null )
@@ -67,6 +68,7 @@ public class ServerProcess extends SubProcess<ServerInterface, Pair<String, Stri
         db.shutdown();
         new Thread()
         {
+            @Override
             public void run()
             {
                 try
