@@ -19,17 +19,53 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['neo4j/webadmin/views/Dialog'
+  ['neo4j/webadmin/data/ItemUrlResolver'
+   'neo4j/webadmin/views/Dialog'
    'neo4j/webadmin/views/FilterList'
+   'neo4j/webadmin/templates/nodeFilterDialog'
    'lib/backbone'], 
-  (Dialog, FilterList) ->
+  (ItemUrlResolver, Dialog, FilterList, template) ->
   
     class NodeFilterDialog extends Dialog
       
-      initialize : (items) ->
+      events : 
+        'click .complete'  : 'complete'
+        'click .selectAll' : 'selectAll'
+        'click .cancel'    : 'cancel'
+
+      initialize : (opts) ->
+        @completeCallback = opts.completeCallback
+        @urlResolver = new ItemUrlResolver()
+
+        labelProperties = opts.labelProperties or []
+
+        @nodes = opts.nodes
+        filterableItems = for node in @nodes
+          id = @urlResolver.extractNodeId(node.getSelf())
+          label = id
+          for labelProp in labelProperties
+            if node.hasProperty(labelProp)
+              label = "#{id}: " + JSON.stringify node.getProperty(labelProp)
+          { node : node, key : node.getSelf(), label : label }
+
+        @filterList = new FilterList(filterableItems)
         super()
 
       render : () ->
-        @el.html("<h1>Hello, world!</h1>")
+        $(@el).html(template())
+        @filterList.attach $(".filter", @el)
+        @filterList.render()
+
+      complete : () =>
+        nodes = for item in @filterList.getFilteredItems()
+          item.node
+        @completeCallback(nodes, this)
+
+      selectAll : () ->
+        @completeCallback(@nodes, this)
+
+      cancel : () ->
+        @completeCallback([], this)
+
 
 )
