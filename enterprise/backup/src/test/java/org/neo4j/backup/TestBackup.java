@@ -33,7 +33,6 @@ import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.test.DbRepresentation;
@@ -59,7 +58,7 @@ public class TestBackup
     {
         createInitialDataSet( serverPath );
         ServerInterface server = startServer( serverPath );
-        OnlineBackup backup = OnlineBackup.from( "simple:localhost" );
+        OnlineBackup backup = OnlineBackup.from( "localhost" );
         createInitialDataSet( backupPath );
         try
         {
@@ -67,7 +66,8 @@ public class TestBackup
             fail( "Shouldn't be able to do full backup into existing db" );
         }
         catch ( Exception e )
-        { // Good
+        {
+            // good
         }
         shutdownServer( server );
     }
@@ -77,14 +77,15 @@ public class TestBackup
     {
         createInitialDataSet( serverPath );
         ServerInterface server = startServer( serverPath );
-        OnlineBackup backup = OnlineBackup.from( "simple://localhost" );
+        OnlineBackup backup = OnlineBackup.from( "localhost" );
         try
         {
             backup.incremental( backupPath );
             fail( "Shouldn't be able to do incremental backup into non-existing db" );
         }
         catch ( Exception e )
-        { // Good
+        {
+            // Good
         }
         shutdownServer( server );
     }
@@ -94,7 +95,7 @@ public class TestBackup
     {
         DbRepresentation initialDataSetRepresentation = createInitialDataSet( serverPath );
         ServerInterface server = startServer( serverPath );
-        OnlineBackup backup = OnlineBackup.from( "simple://localhost" );
+        OnlineBackup backup = OnlineBackup.from( "localhost" );
         backup.full( backupPath );
         assertEquals( initialDataSetRepresentation, DbRepresentation.of( backupPath ) );
         shutdownServer( server );
@@ -114,7 +115,7 @@ public class TestBackup
         ServerInterface server = startServer( serverPath );
         
         // Grab initial backup from server A
-        OnlineBackup backup = OnlineBackup.from( "simple://localhost" );
+        OnlineBackup backup = OnlineBackup.from( "localhost" );
         backup.full( backupPath );
         assertEquals( initialDataSetRepresentation, DbRepresentation.of( backupPath ) );
         shutdownServer( server );
@@ -144,9 +145,10 @@ public class TestBackup
         assertEquals( furtherRepresentation, DbRepresentation.of( backupPath ) );
         shutdownServer( server );
     }
-    
+
     private ServerInterface startServer( String path ) throws Exception
     {
+        /*
         ServerProcess server = new ServerProcess();
         try
         {
@@ -157,6 +159,8 @@ public class TestBackup
             // TODO Auto-generated catch block
             throw new RuntimeException( e );
         }
+        */
+        ServerInterface server = new EmbeddedServer( path, "true" );
         server.awaitStarted();
         return server;
     }
@@ -173,7 +177,8 @@ public class TestBackup
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         node.setProperty( "backup", "Is great" );
-        db.getReferenceNode().createRelationshipTo( node, DynamicRelationshipType.withName( "LOVES" ) );
+        db.getReferenceNode().createRelationshipTo( node,
+                DynamicRelationshipType.withName( "LOVES" ) );
         tx.success();
         tx.finish();
         DbRepresentation result = DbRepresentation.of( db );
@@ -183,7 +188,8 @@ public class TestBackup
 
     private GraphDatabaseService startGraphDatabase( String path )
     {
-        return new EmbeddedGraphDatabase( path, stringMap( Config.KEEP_LOGICAL_LOGS, "true" ) );
+        return new EmbeddedGraphDatabase( path, stringMap(
+                Config.KEEP_LOGICAL_LOGS, "true" ) );
     }
 
     private DbRepresentation createInitialDataSet( String path )
@@ -192,7 +198,8 @@ public class TestBackup
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         node.setProperty( "myKey", "myValue" );
-        db.getReferenceNode().createRelationshipTo( node, DynamicRelationshipType.withName( "KNOWS" ) );
+        db.getReferenceNode().createRelationshipTo( node,
+                DynamicRelationshipType.withName( "KNOWS" ) );
         tx.success();
         tx.finish();
         DbRepresentation result = DbRepresentation.of( db );

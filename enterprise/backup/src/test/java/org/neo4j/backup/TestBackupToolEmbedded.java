@@ -79,17 +79,32 @@ public class TestBackupToolEmbedded
     {
         if ( osIsWindows() ) return;
         startDb( "true" );
+        // No args at all
         assertEquals( 1, runBackupToolFromOtherJvmToGetExitCode() );
+        // no targets
         assertEquals( 1, runBackupToolFromOtherJvmToGetExitCode( "-full" ) );
         assertEquals( 1, runBackupToolFromOtherJvmToGetExitCode( "-incremental" ) );
+        // Invalid from and no to
         assertEquals(
                 1,
                 runBackupToolFromOtherJvmToGetExitCode( "-from", "localhost" ) );
+        // invalid from and no to
+        assertEquals(
+                1,
+                runBackupToolFromOtherJvmToGetExitCode( "-from",
+                        "foo:localhost:123" ) );
+        // no from with to
         assertEquals( 1, runBackupToolFromOtherJvmToGetExitCode( "-to", "some-dir" ) );
+        // all in place but both modes
         assertEquals(
                 1,
                 runBackupToolFromOtherJvmToGetExitCode( "-full", "-from",
                         "foo://localhost", "-to", "some-dir", "-incremental" ) );
+        // all in place, typo in from uri
+        assertEquals(
+                1,
+                runBackupToolFromOtherJvmToGetExitCode( "-full", "-from",
+                        "foo:/localhost", "-to", "some-dir" ) );
     }
     
     @Test
@@ -100,13 +115,15 @@ public class TestBackupToolEmbedded
         assertEquals(
                 0,
                 runBackupToolFromOtherJvmToGetExitCode( "-full", "-from",
-                        "simple://localhost", "-to", BACKUP_PATH ) );
+                        BackupTool.DEFAULT_SCHEME + "://localhost", "-to",
+                        BACKUP_PATH ) );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( BACKUP_PATH ) );
         createSomeData( db );
         assertEquals(
                 0,
                 runBackupToolFromOtherJvmToGetExitCode( "-incremental",
-                        "-from", "simple://localhost", "-to", BACKUP_PATH ) );
+                        "-from", BackupTool.DEFAULT_SCHEME + "://localhost",
+                        "-to", BACKUP_PATH ) );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( BACKUP_PATH ) );
     }
 
@@ -119,17 +136,20 @@ public class TestBackupToolEmbedded
         assertEquals(
                 1,
                 runBackupToolFromOtherJvmToGetExitCode( "-full", "-from",
-                        "simple://localhost", "-to", BACKUP_PATH ) );
+                        BackupTool.DEFAULT_SCHEME + "://localhost", "-to",
+                        BACKUP_PATH ) );
         assertEquals(
                 0,
                 runBackupToolFromOtherJvmToGetExitCode( "-full", "-from",
-                        "simple://localhost:" + port, "-to", BACKUP_PATH ) );
+                        BackupTool.DEFAULT_SCHEME + "://localhost:" + port,
+                        "-to", BACKUP_PATH ) );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( BACKUP_PATH ) );
         createSomeData( db );
         assertEquals(
                 0,
                 runBackupToolFromOtherJvmToGetExitCode( "-incremental",
-                        "-from", "simple://localhost:" + port, "-to",
+                        "-from", BackupTool.DEFAULT_SCHEME + "://localhost:"
+                                 + port, "-to",
                         BACKUP_PATH ) );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( BACKUP_PATH ) );
     }
