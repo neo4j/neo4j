@@ -33,15 +33,15 @@ import javax.management.NotCompliantMBeanException;
 import org.neo4j.com.SlaveContext;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Service;
+import org.neo4j.jmx.impl.ManagementBeanProvider;
+import org.neo4j.jmx.impl.ManagementData;
+import org.neo4j.jmx.impl.Neo4jMBean;
 import org.neo4j.kernel.ha.ConnectionInformation;
 import org.neo4j.kernel.ha.MasterServer;
 import org.neo4j.management.HighAvailability;
 import org.neo4j.management.InstanceInfo;
 import org.neo4j.management.SlaveInfo;
 import org.neo4j.management.SlaveInfo.SlaveTransaction;
-import org.neo4j.management.impl.Description;
-import org.neo4j.management.impl.ManagementBeanProvider;
-import org.neo4j.management.impl.Neo4jMBean;
 
 @Service.Implementation( ManagementBeanProvider.class )
 public final class HighAvailabilityBean extends ManagementBeanProvider
@@ -54,36 +54,34 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
     }
 
     @Override
-    protected Neo4jMBean createMXBean( KernelData kernel ) throws NotCompliantMBeanException
+    protected Neo4jMBean createMXBean( ManagementData management ) throws NotCompliantMBeanException
     {
-        return new HighAvailibilityImpl( this, kernel, true );
+        return new HighAvailibilityImpl( management, true );
     }
 
     @Override
-    protected Neo4jMBean createMBean( KernelData kernel ) throws NotCompliantMBeanException
+    protected Neo4jMBean createMBean( ManagementData management ) throws NotCompliantMBeanException
     {
-        return new HighAvailibilityImpl( this, kernel );
+        return new HighAvailibilityImpl( management );
     }
 
-    @Description( "Information about an instance participating in a HA cluster" )
     private static class HighAvailibilityImpl extends Neo4jMBean implements HighAvailability
     {
         private final HighlyAvailableGraphDatabase db;
 
-        HighAvailibilityImpl( ManagementBeanProvider provider, KernelData kernel )
+        HighAvailibilityImpl( ManagementData management )
                 throws NotCompliantMBeanException
         {
-            super( provider, kernel );
-            this.db = (HighlyAvailableGraphDatabase) kernel.graphDatabase();
+            super( management );
+            this.db = (HighlyAvailableGraphDatabase) management.getKernelData().graphDatabase();
         }
 
-        HighAvailibilityImpl( ManagementBeanProvider provider, KernelData kernel, boolean isMXBean )
+        HighAvailibilityImpl( ManagementData management, boolean isMXBean )
         {
-            super( provider, kernel, isMXBean );
-            this.db = (HighlyAvailableGraphDatabase) kernel.graphDatabase();
+            super( management, isMXBean );
+            this.db = (HighlyAvailableGraphDatabase) management.getKernelData().graphDatabase();
         }
 
-        @Description( "The identifier used to identify this machine in the HA cluster" )
         public String getMachineId()
         {
             return Integer.toString( db.getMachineId() );
@@ -103,14 +101,11 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
             return result;
         }
 
-        @Description( "Whether this instance is master or not" )
         public boolean isMaster()
         {
             return db.getMasterServerIfMaster() != null;
         }
 
-        @Description( "(If this is a master) Information about "
-                      + "the instances connected to this instance" )
         public SlaveInfo[] getConnectedSlaves()
         {
             MasterServer master = db.getMasterServerIfMaster();
@@ -128,8 +123,6 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
             return ISO8601.format( new Date( db.lastUpdateTime() ) );
         }
 
-        @Description( "(If this is a slave) Update the database on this "
-                      + "instance with the latest transactions from the master" )
         public String update()
         {
             long time = System.currentTimeMillis();

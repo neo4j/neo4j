@@ -140,13 +140,20 @@
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-kernel</artifactId>
+      <artifactId>neo4j-jmx</artifactId>
       <version>1.3-SNAPSHOT</version>
-      <scope>provided</scope>
+      <scope>provided</scope><!-- because it is not available when used from JConsole -->
     </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel</artifactId>
+      <version>1.3-SNAPSHOT</version>
+      <scope>provided</scope><!-- because the jmx dependency is provided transitive dependencies doesn't come through -->
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>

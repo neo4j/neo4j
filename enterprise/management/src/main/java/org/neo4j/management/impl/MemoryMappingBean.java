@@ -25,10 +25,12 @@ import java.util.Iterator;
 import javax.management.NotCompliantMBeanException;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.KernelData;
+import org.neo4j.jmx.impl.KernelBean;
+import org.neo4j.jmx.impl.ManagementBeanProvider;
+import org.neo4j.jmx.impl.ManagementData;
+import org.neo4j.jmx.impl.Neo4jMBean;
 import org.neo4j.kernel.impl.nioneo.store.WindowPoolStats;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.management.MemoryMapping;
 import org.neo4j.management.WindowPoolInfo;
 
@@ -41,38 +43,33 @@ public final class MemoryMappingBean extends ManagementBeanProvider
     }
 
     @Override
-    protected Neo4jMBean createMBean( KernelData kernel ) throws NotCompliantMBeanException
+    protected Neo4jMBean createMBean( ManagementData management ) throws NotCompliantMBeanException
     {
-        return new MemoryMappingImpl( this, kernel );
+        return new MemoryMappingImpl( management );
     }
 
     @Override
-    protected Neo4jMBean createMXBean( KernelData kernel ) throws NotCompliantMBeanException
+    protected Neo4jMBean createMXBean( ManagementData management ) throws NotCompliantMBeanException
     {
-        return new MemoryMappingImpl( this, kernel, true );
+        return new MemoryMappingImpl( management, true );
     }
 
-    @Description( "The status of Neo4j memory mapping" )
     private static class MemoryMappingImpl extends Neo4jMBean implements MemoryMapping
     {
         private final NeoStoreXaDataSource datasource;
 
-        MemoryMappingImpl( ManagementBeanProvider provider, KernelData kernel )
-                throws NotCompliantMBeanException
+        MemoryMappingImpl( ManagementData management ) throws NotCompliantMBeanException
         {
-            super( provider, kernel );
-            this.datasource = KernelBean.getNeoDataSource( kernel );
+            super( management );
+            this.datasource = KernelBean.getNeoDataSource( management.getKernelData() );
         }
 
-        MemoryMappingImpl( ManagementBeanProvider provider, KernelData kernel, boolean isMxBean )
+        MemoryMappingImpl( ManagementData management, boolean isMxBean )
         {
-            super( provider, kernel, isMxBean );
-            XaDataSourceManager mgr = kernel.getConfig().getTxModule().getXaDataSourceManager();
-            this.datasource = (NeoStoreXaDataSource) mgr.getXaDataSource( "nioneodb" );
+            super( management, isMxBean );
+            this.datasource = KernelBean.getNeoDataSource( management.getKernelData() );
         }
 
-        @Description( "Get information about each pool of memory mapped regions from store files with "
-                      + "memory mapping enabled" )
         public WindowPoolInfo[] getMemoryPools()
         {
             return getMemoryPoolsImpl( datasource );
