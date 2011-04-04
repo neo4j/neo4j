@@ -19,18 +19,17 @@
  */
 package org.neo4j.backup;
 
-import org.apache.zookeeper.KeeperException;
-import org.neo4j.com.ComException;
-import org.neo4j.com.backup.OnlineBackup;
-import org.neo4j.helpers.Args;
-import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.ha.zookeeper.ClusterManager;
-import org.neo4j.kernel.ha.zookeeper.Machine;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.NoSuchElementException;
 
-public class Backup
+import org.neo4j.com.ComException;
+import org.neo4j.helpers.Args;
+import org.neo4j.helpers.Service;
+
+public class BackupTool
 {
     private static final String TO = "to";
-    private static final String FROM_HA = "from-ha";
     private static final String FROM = "from";
     private static final String INCREMENTAL = "incremental";
     private static final String FULL = "full";
@@ -45,53 +44,63 @@ public class Backup
             System.out.println( "Specify either " + dash( FULL ) + " or " + dash( INCREMENTAL ) );
             exitAbnormally();
         }
-        
+
         String from = arguments.get( FROM, null );
-        String fromHa = arguments.get( FROM_HA, null );
-        if ( (from != null && fromHa != null) || (from == null && fromHa == null) )
+        if ( from == null )
         {
-            System.out.println( "Specify either " + dash( FROM ) + " or " + dash( FROM_HA ) );
+            System.out.println( "Please specify " + dash( FROM ) );
             exitAbnormally();
         }
-        
+
         String to = arguments.get( TO, null );
         if ( to == null )
         {
             System.out.println( "Specify target location with " + dash( TO ) + " <target-directory>" );
             exitAbnormally();
         }
-        
-        if ( fromHa != null )
+
+        URI backupURI = null;
+        try
         {
-            // This means we're trying to reach an HA cluster, a ZooKeeper service
-            // managing that cluster, that is.
+            backupURI = new URI( from );
+        }
+        catch ( URISyntaxException e1 )
+        {
+            System.out.println( "Please properly specify a location to backup as a valid URI in the form {simple|ha}://host[:port]" );
+            exitAbnormally();
+        }
+        String module = backupURI.getScheme();
+
+        /*
+         * So, if the scheme is present it is considered to be the module name and an attempt at
+         * loading the service is made. If it fails, we do a last, desperate attempt at getting
+         * a backup from the URI as it was passed.
+         */
+        BackupExtensionService service = null;
+        if ( module != null && !"simple".equals( module ) )
+        {
             try
             {
-                System.out.println( "Asking ZooKeeper service at '" + fromHa + "' for master" );
-                from = getMasterServerInCluster( fromHa );
-                System.out.println( "Found master '" + from + "' in cluster" );
+            service = Service.load(
+                    BackupExtensionService.class, module );
             }
-            catch ( ComException e )
+            catch ( NoSuchElementException e )
             {
-                System.out.println( e.getMessage() );
+                System.out.println( String.format(
+                        "%s was specified as a backup module but it was not found. Please make sure that the implementing service is on the classpath.",
+                        module ) );
                 exitAbnormally();
             }
-            catch ( RuntimeException e )
-            {
-                if ( e.getCause() instanceof KeeperException )
-                {
-                    KeeperException zkException = (KeeperException) e.getCause();
-                    System.out.println( "Couldn't connect to '" + fromHa + "', " + zkException.getMessage() );
-                    exitAbnormally();
-                }
-                throw e;
-            }
         }
-        
-        doBackup( full, from, to );
+        if (service != null)
+        { // If in here, it means a module was loaded. Use it.
+            backupURI = service.resolve( from );
+        }
+        doBackup( full, backupURI, to );
     }
 
-    private static void doBackup( boolean trueForFullFalseForIncremental, String from, String to )
+    private static void doBackup( boolean trueForFullFalseForIncremental,
+            URI from, String to )
     {
         OnlineBackup backup = newOnlineBackup( from );
         try
@@ -125,37 +134,13 @@ public class Backup
         return "-" + name;
     }
 
-    private static OnlineBackup newOnlineBackup( String from )
+    private static OnlineBackup newOnlineBackup( URI from )
     {
-        if ( from.contains( ":" ) )
-        {
-            int colonIndex = from.indexOf( ':' );
-            String host = from.substring( 0, colonIndex );
-            int port = Integer.parseInt( from.substring( colonIndex+1 ) );
+        String host = from.getHost();
+        int port = from.getPort();
+        if ( port == -1 )
+            return OnlineBackup.from( host );
+        else
             return OnlineBackup.from( host, port );
-        }
-        return OnlineBackup.from( from );
-    }
-
-    private static String getMasterServerInCluster( String from )
-    {
-        ClusterManager clusterManager = new ClusterManager( from );
-        Pair<String, Integer> masterServer = null;
-        try
-        {
-            clusterManager.waitForSyncConnected();
-            Machine master = clusterManager.getMaster();
-            masterServer = master.getServer();
-            if ( masterServer != null )
-            {
-                int backupPort = clusterManager.getBackupPort( master.getMachineId() );
-                return masterServer.first() + ":" + backupPort;
-            }
-            throw new ComException( "Master couldn't be found from cluster managed by " + from );
-        }
-        finally
-        {
-            clusterManager.shutdown();
-        }
     }
 }
