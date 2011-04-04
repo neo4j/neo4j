@@ -21,13 +21,13 @@ To perform a backup from a running embedded or server database run:
 [source,shell]
 ----
 # Performing a full backup
-./neo4j-backup -full -from 192.168.1.34 -to /mnt/backup/neo4j-backup
+./neo4j-backup -full -from simple://192.168.1.34 -to /mnt/backup/neo4j-backup
 
 # Performing an incremental backup
-./neo4j-backup -incremental -from 192.168.1.34 -to /mnt/backup/neo4j-backup
+./neo4j-backup -incremental -from simple://192.168.1.34 -to /mnt/backup/neo4j-backup
 
 # Performing an incremental backup where the service is registered on a custom port
-./neo4j-backup -incremental -from 192.168.1.34:9999 -to /mnt/backup/neo4j-backup
+./neo4j-backup -incremental -from simple://192.168.1.34:9999 -to /mnt/backup/neo4j-backup
 ----
 
 == High Availability ==
@@ -36,8 +36,8 @@ To perform a backup on an HA cluster you specify one or more ZooKeeper services 
 [source,shell]
 ----
 # Performing a full backup from HA cluster, specifying two possible ZooKeeper services
-./neo4j-backup -full -from-ha 192.168.1.15:2181,192.168.1.16:2181 -to /mnt/backup/neo4j-backup
+./neo4j-backup -full -from ha://192.168.1.15:2181,192.168.1.16:2181 -to /mnt/backup/neo4j-backup
 
 # Performing an incremental backup from HA cluster, specifying only one ZooKeeper service
-./neo4j-backup -incremental -from-ha 192.168.1.15:2181 -to /mnt/backup/neo4j-backup
+./neo4j-backup -incremental -from ha://192.168.1.15:2181 -to /mnt/backup/neo4j-backup
 ----
