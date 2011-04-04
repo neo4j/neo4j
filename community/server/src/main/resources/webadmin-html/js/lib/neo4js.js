@@ -761,6 +761,10 @@ _.bindAll(this,"save","fetch","getRelationships","_init")
 neo4j.models.Node.IN="in";
 neo4j.models.Node.OUT="out";
 neo4j.models.Node.ALL="all";
+neo4j.traverse={};
+neo4j.traverse.RETURN_NODES="node";
+neo4j.traverse.RETURN_RELATIONSHIPS="relationship";
+neo4j.traverse.RETURN_PATHS="path";
 _.extend(neo4j.models.Node.prototype,neo4j.models.PropertyContainer.prototype,{save:function(){var b=this,a=this.db.web;
 if(!this.exists()){return new neo4j.Promise(function(d,c){b.db.getServiceDefinition().then(function(e){a.post(e.node,b._data).then(function(f){b._init(f.data);
 d(b)
@@ -790,7 +794,20 @@ e.remove().then(function(){g(true)
 })
 },getCreateRelationshipUrl:function(){if(this.exists()){return this._urls.create_relationship
 }else{throw new Error("You can't get the create relationship url until you have saved the node!")
-}},getRelationships:function(c,d){var c=c||neo4j.models.Node.ALL,d=d||null,e=this,b;
+}},traverse:function(b,d){d=d||neo4j.traverse.RETURN_NODES;
+var c=this.db.web.replace(this._urls.traverse,{returnType:d}),e=this,a;
+switch(d){case neo4j.traverse.RETURN_RELATIONSHIPS:a=neo4j.models.Relationship;
+break;
+case neo4j.traverse.RETURN_PATHS:a=neo4j.models.Path;
+break;
+default:a=neo4j.models.Node;
+break
+}return new neo4j.Promise(function(g,f){e.db.web.post(c,b).then(function(h){var i=_.map(h.data,function(j){return new a(j,e.db)
+});
+g(i)
+},f)
+})
+},getRelationships:function(c,d){var c=c||neo4j.models.Node.ALL,d=d||null,e=this,b;
 var a=d?true:false;
 if(_.isArray(d)){d=d.join("&")
 }switch(c){case neo4j.models.Node.IN:b=a?this._urls.incoming_typed_relationships:this._urls.incoming_relationships;
@@ -807,7 +824,7 @@ g(i)
 })
 },_init:function(a){this._self=a.self||null;
 this._data=a.data||{};
-this._urls={properties:a.properties||"",create_relationship:a.create_relationship||"",all_relationships:a.all_relationships||"",all_typed_relationships:a.all_typed_relationships||"",incoming_relationships:a.incoming_relationships||"",incoming_typed_relationships:a.incoming_typed_relationships||"",outgoing_relationships:a.outgoing_relationships||"",outgoing_typed_relationships:a.outgoing_typed_relationships||""}
+this._urls={properties:a.properties||"",traverse:a.traverse||"",create_relationship:a.create_relationship||"",all_relationships:a.all_relationships||"",all_typed_relationships:a.all_typed_relationships||"",incoming_relationships:a.incoming_relationships||"",incoming_typed_relationships:a.incoming_typed_relationships||"",outgoing_relationships:a.outgoing_relationships||"",outgoing_typed_relationships:a.outgoing_typed_relationships||""}
 }});
 neo4j.models.Relationship=function(a,b){neo4j.models.PropertyContainer.call(this);
 this.db=b;
@@ -864,6 +881,16 @@ this._startUrl=a.start.getSelf()
 this._endUrl=a.end.getSelf()
 }else{this._endUrl=a.end
 }}}});
+neo4j.models.Path=function(a,b){this.db=b;
+this._init(a);
+_.bindAll(this,"_init")
+};
+_.extend(neo4j.models.Path.prototype,{_init:function(a){this._start=a.start;
+this._end=a.end;
+this._length=a.length;
+this._nodeUrls=a.nodes;
+this._relationshipUrls=a.relationships
+}});
 neo4j.services.BackupService=function(a){neo4j.Service.call(this,a)
 };
 _.extend(neo4j.services.BackupService.prototype,neo4j.Service.prototype);
