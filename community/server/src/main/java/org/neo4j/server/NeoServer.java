@@ -19,6 +19,7 @@
  */
 package org.neo4j.server;
 
+import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 
@@ -42,4 +43,6 @@ public interface NeoServer {
     PluginManager getExtensionManager();
 
     Collection<Injectable<?>> getInjectables( List<String> packageNames );
+
+    URI baseUri();
 }

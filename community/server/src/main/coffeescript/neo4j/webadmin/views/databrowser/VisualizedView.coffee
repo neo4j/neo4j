@@ -19,267 +19,89 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['neo4j/webadmin/data/ItemUrlResolver'
-   'neo4j/webadmin/ui/LoadingSpinner'
+  ['neo4j/webadmin/visualization/VisualGraph'
+   'neo4j/webadmin/data/ItemUrlResolver'
+   'neo4j/webadmin/views/databrowser/VisualizationSettingsDialog'
    'neo4j/webadmin/views/View'
-   'neo4j/webadmin/ui/Tooltip'
    'neo4j/webadmin/security/HtmlEscaper'
    'neo4j/webadmin/templates/databrowser/visualization'
-   'lib/raphael'
-   'lib/dracula.graffle'
-   'lib/dracula.graph'
    'lib/backbone'], 
-  (ItemUrlResolver, LoadingSpinner, View, Tooltip, HtmlEscaper, template) ->
-  
-    GROUP_IDS = 0
+  (VisualGraph, ItemUrlResolver, VisualizationSettingsDialog, View, HtmlEscaper, template) ->
 
     class VisualizedView extends View
+
+      events : 
+        'click #visualization-show-settings' : "showSettingsDialog"
+
 
       initialize : (options)->
 
         @server = options.server
-
-        @urlResolver = new ItemUrlResolver(@server)
-        @htmlEscaper = new HtmlEscaper
-
+        @appState = options.appState
+        @settings = @appState.getVisualizationSettings()
         @dataModel = options.dataModel
 
-        @tooltip = new Tooltip
-
-        @nodeMap = {}
-        @groupMap = {}
+        @settings.bind("change", @settingsChanged)
 
       render : =>
+
+        if @vizEl? then @getViz().detach()
+        
         $(@el).html(template())
 
-        @nodeMap = {}
-        @groupMap = {}
+        @vizEl = $("#visualization", @el)
+        @getViz().attach(@vizEl)
 
-        width = $(document).width() - 40;
-        height = $(document).height() - 120;
-
-        @g = new Graph()
-        
-        switch @dataModel.get("type") 
+        switch @dataModel.get("type")
           when "node"
             node = @dataModel.getData().getItem()
-            @addNode(node)
-            @loadRelationships(node)
-          when "relationship"
-            @addRelationship(@dataModel.getData().getItem())
-          when "relationshipList"
-            @addRelationships(@dataModel.getData().getRawRelationships())
-          else 
-            return this
+            @getViz().setNode(node)
 
-        @layout = new Graph.Layout.Spring(@g)
-        @renderer = new Graph.Renderer.Raphael('visualization', @g, width, height)
+      settingsChanged : () =>
+        if @viz?
+          @viz.getNodeStyler().setLabelProperties(@settings.getLabelProperties())
 
-        return this
-
-      redrawVisualization : =>
-        @layout.layout()
-        @renderer.draw()
-
-      hasNode : (nodeUrl) =>
-         if @nodeMap[nodeUrl]
-           return true
-         else
-           return false
- 
-      addNode : (node) =>
-        @nodeMap[node.getSelf()] = 
-          neoNode    : node
-          visualNode : @g.addNode(node.getSelf(), { node : node, url:node.getSelf(), explored:true, render:@nodeRenderer })
-
-      addUnexploredNode : (nodeUrl) =>
-        @nodeMap[nodeUrl] = 
-          neoNode    : null
-          visualNode : @g.addNode(nodeUrl, { node : null, url:nodeUrl, explored:false, render:@unexploredNodeRenderer})
-
-      addRelationship : (rel) =>
-        @addRelationships([rel])
-
-      addAndGroupRelationships : (rels, node) =>
-        groups = {}
-        for rel in rels
-          if not groups[rel.getType()]
-            groups[rel.getType()] = { type:rel.getType(), size:0, relationships:[] }
-
-          groups[rel.getType()].size++
-          groups[rel.getType()].relationships.push(rel)
-
-        for type, group of groups
-
-          if group.size > 5
-            @addGroup(group, node)
-          else
-            @addRelationships(group.relationships)
-          
-        @redrawVisualization()
-
-      addGroup : (group, node) =>
-
-        id = "group-" + GROUP_IDS++
-        @groupMap[id] = 
-          group : group
-          visualNode : @g.addNode(id, { id:id, size:group.size, render:@groupRenderer })
-
-        @g.addEdge(node.getSelf(), id, { label : group.type })
-
-      addRelationships : (rels) =>
-        
-        for rel in rels
-          if @hasNode(rel.getEndNodeUrl()) == false
-            @addUnexploredNode(rel.getEndNodeUrl())
-
-          if @hasNode(rel.getStartNodeUrl()) == false
-            @addUnexploredNode(rel.getStartNodeUrl())
-          
-          @g.addEdge(rel.getStartNodeUrl(), rel.getEndNodeUrl(), { label : rel.getType(), directed : true })
-
-
-      nodeRenderer : (r, node) =>
-        circle = r.circle(0, 0, 10).attr({fill: "#ffffff", stroke: "#333333", "stroke-width": 2})
-
-        if node.node.hasProperty("name")        
-          label = r.text(0, 0, node.node.getProperty("name"))
-        else
-          label = r.text(0, 0, @urlResolver.extractNodeId(node.url))
-        
-        clickHandler = (ev) =>
-          @nodeClicked(node, circle)
-
-        mouseOverHandler = (ev) =>
-          @mouseOverNode(ev, node, circle)
-        
-        mouseOutHandler = (ev) =>
-          @mouseLeavingNode(ev, node, circle)
-
-        circle.click(clickHandler)
-        label.click(clickHandler)
-        circle.hover(mouseOverHandler, mouseOutHandler)
-        label.hover(mouseOverHandler, mouseOutHandler)
-
-        shape = r.set().
-          push(circle).
-          push(label)
-        return shape
-
-      unexploredNodeRenderer : (r, node) =>
-        circle = r.circle(0, 0, 10).attr({fill: "#ffffff", stroke: "#dddddd", "stroke-width": 2})
-
-        label = r.text(0, 0, @urlResolver.extractNodeId(node.url))
-          
-        clickHandler = (ev) =>
-          @nodeClicked(node, circle)
-
-        mouseOverHandler = (ev) =>
-          @mouseOverNode(ev, node, circle)
-        
-        mouseOutHandler = (ev) =>
-          @mouseLeavingNode(ev, node, circle)
-
-        circle.click(clickHandler)
-        label.click(clickHandler)
-        circle.hover(mouseOverHandler, mouseOutHandler)
-        label.hover(mouseOverHandler, mouseOutHandler)
-
-        shape = r.set().
-          push(circle).
-          push(label)
-        return shape
-
-      groupRenderer : (r, group) =>
-        circle = r.circle(0, 0, 6).attr({fill: "#eeeeee", stroke: "#dddddd", "stroke-width": 2})
-        
-        label = r.text(0, 0, group.size)
-          
-        clickHandler = (ev) =>
-          @groupClicked(group, circle)
-        circle.click(clickHandler)
-        label.click(clickHandler)
-
-        shape = r.set().
-          push(circle).
-          push(label)
-        return shape
       
-      nodeClicked : (nodeMeta, circle) =>
-        nodeMeta = @nodeMap[nodeMeta.url].visualNode
+      getViz : () =>
+        width = $(document).width() - 40;
+        height = $(document).height() - 120;
+        @viz ?= new VisualGraph(@server,width,height)
+        @settingsChanged()
+        return @viz
 
-        if nodeMeta.explored == false
-          circle.attr({fill: "#ffffff", stroke: "#333333", "stroke-width": 2})
-          @server.node(nodeMeta.url).then (node) =>
-            nodeMeta.explored = true
-            nodeMeta.node = node
-            @addNode(node)
-            @loadRelationships(node)
 
-      mouseOverNode : (ev, nodeMeta, circle) =>
-        # XXX: As with most things in this class, this is a temp hack
-        if nodeMeta.explored
-          node = nodeMeta.node
-          propHtml = for key, val of node.getProperties()
-            key = @htmlEscaper.escape(key)
-            val = @htmlEscaper.escape JSON.stringify(val)
-            "<li><span class='key'>#{key}</span>: <span class='value'>#{val}</span></li>"
-
-          propHtml = propHtml.join("\n")
-          html = "<ul class='tiny-property-list'>#{propHtml}</ul>"
+      showSettingsDialog : =>
+        if @settingsDialog?
+          @hideSettingsDialog()
         else
-          html = "<p>Unexplored node</p>"
-        @tooltip.show(html, [ev.clientX, ev.clientY])
-  
-      mouseLeavingNode : (ev, nodeMeta, circle) =>
-        @tooltip.hide()
+          button = $("#visualization-show-settings")
+          button.addClass("selected")
+          @settingsDialog = new VisualizationSettingsDialog(
+            appState : @appState
+            baseElement : button
+            closeCallback : @hideSettingsDialog)
 
-      groupClicked : (groupMeta, circle) =>
-        group = @groupMap[groupMeta.id].group
-        visualNode = @groupMap[groupMeta.id].visualNode
-        @showLoader()
-    
-        ungroup = ()=>
-          @removeVisualNode(visualNode)
-          @addExplodedGroup(group)
-          @redrawVisualization()
-          @hideLoader()
+      hideSettingsDialog : =>
+        if @settingsDialog?
+          @settingsDialog.remove()
+          delete(@settingsDialog)
+          $("#visualization-show-settings").removeClass("selected")
 
-        setTimeout( ungroup, 1 )
-
-      loadRelationships : (node) =>
-        @showLoader()
-        node.getRelationships().then (rels) =>
-          @addAndGroupRelationships(rels, node)
-          @hideLoader()
-
-      removeVisualNode : (visualNode, id) =>
-        visualNode.hide()
-        for edge in visualNode.edges
-          edge.connection.label.hide()
-          edge.hide()
-        @g.removeNode(visualNode.id)
-
-      showLoader : =>
-        @hideLoader()        
-        @loader = new LoadingSpinner($(".workarea"))
-        @loader.show()
-
-      hideLoader : =>
-        if @loader?
-          @loader.destroy()
 
       remove : =>
-        @dataModel.unbind("change", @render)
+        @dataModel.unbind("change:data", @render)
+        @getViz().stop()
         super()
 
       detach : =>
-        @dataModel.unbind("change", @render)
+        @dataModel.unbind("change:data", @render)
+        @getViz().stop()
         super()
 
       attach : (parent) =>
         super(parent)
-        @dataModel.bind("change", @render)
-        
+        if @vizEl?
+          @getViz().start()
+        @dataModel.bind("change:data", @render)
 
 )

@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.logging;
 
-import java.util.HashSet;
-
 import org.apache.log4j.Level;
 import org.apache.log4j.Priority;
 

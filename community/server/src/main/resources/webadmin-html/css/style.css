@@ -1,4 +1,7 @@
 
+
+@import url(jquery.ui.css);
+@import url(jquery.notify.css);
 @import url(buttons.css);
 @import url(typography.css);
 @import url(tables.css);
@@ -186,7 +189,7 @@ body {
   background:url("../img/icons/glyphish/add.png") no-repeat scroll 5px center #fff;
 }
 
-#data-create-relationship.selected {
+#data-create-relationship.selected, #visualization-show-settings.selected  {
   -moz-border-radius-bottomright:0;
   -webkit-border-bottom-right-radius:0;
   border-bottom-right-radius:0;
@@ -206,7 +209,7 @@ body {
 }
 
 
-.create-relationship-dialog {
+.create-relationship-dialog, .visualization-settings-dialog {
   width:300px;
   background: #333;
   padding: 5px;
@@ -218,6 +221,8 @@ body {
   border-top-right-radius:0;
   color: #eee;
 }
+
+
 
 /**
  * TABULAR DATA VIEW
@@ -307,6 +312,15 @@ body {
   font-size: 12px;
   padding: 5px 10px;
 }
+
+/**
+ * VISUALIZED DATA VIEW 
+ */
+
+#visualization .item-controls {
+  padding: 0 10px;
+}
+
 
 /**
  * CONSOLE
