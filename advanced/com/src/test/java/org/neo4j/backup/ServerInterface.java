@@ -17,28 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.com.backup;
+package org.neo4j.backup;
 
-import java.util.Map;
-
-import org.neo4j.kernel.Config;
-import org.neo4j.kernel.KernelExtensionContractTest;
-
-public class TestOnlineBackupExtension extends KernelExtensionContractTest<BackupServer, OnlineBackupExtension>
+public interface ServerInterface
 {
-    public TestOnlineBackupExtension()
-    {
-        super( OnlineBackupExtension.KEY, OnlineBackupExtension.class );
-    }
-
-    @Override
-    protected Map<String, String> configuration( boolean shouldLoad, int instance )
-    {
-        Map<String, String> configuration = super.configuration( shouldLoad, instance );
-        if ( shouldLoad )
-        {
-            configuration.put( Config.ENABLE_ONLINE_BACKUP, "port=" + ( BackupServer.DEFAULT_PORT + instance ) );
-        }
-        return configuration;
-    }
+    void shutdown();
+    
+    void awaitStarted();
 }

@@ -70,7 +70,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
             msgLog = null;
         }
     }
-    
+
     protected ZooKeeper instantiateZooKeeper()
     {
         try

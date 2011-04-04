@@ -17,11 +17,35 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.com.backup;
+package org.neo4j.backup;
 
-public interface ServerInterface
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
+
+import org.neo4j.kernel.EmbeddedGraphDatabase;
+
+public class EmbeddedServer implements ServerInterface
 {
-    void shutdown();
+    private EmbeddedGraphDatabase db;
+
+    public EmbeddedServer( String storeDir, String backupConfigValue )
+    {
+        if ( backupConfigValue == null )
+        {
+            this.db = new EmbeddedGraphDatabase( storeDir );
+        }
+        else
+        {
+            this.db = new EmbeddedGraphDatabase( storeDir, stringMap( ENABLE_ONLINE_BACKUP, backupConfigValue ) );
+        }
+    }
     
-    void awaitStarted();
+    public void shutdown()
+    {
+        db.shutdown();
+    }
+
+    public void awaitStarted()
+    {
+    }
 }
