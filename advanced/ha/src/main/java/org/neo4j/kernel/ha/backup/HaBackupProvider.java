@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.ha.backup;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+
 import org.apache.zookeeper.KeeperException;
 import org.neo4j.backup.BackupExtensionService;
 import org.neo4j.com.ComException;
@@ -39,14 +42,16 @@ public final class HaBackupProvider extends BackupExtensionService
     }
 
     @Override
-    public String resolve( String address )
+    public URI resolve( URI address )
     {
         String master = null;
         try
         {
             System.out.println( "Asking ZooKeeper service at '" + address
                                 + "' for master" );
-            master = getMasterServerInCluster( address );
+            master = getMasterServerInCluster( address.getPort() == -1 ? address.getHost()
+                    : String.format(
+                    ServerAddressFormat, address.getHost(), address.getPort() ) );
             System.out.println( "Found master '" + master + "' in cluster" );
         }
         catch ( ComException e )
@@ -63,7 +68,16 @@ public final class HaBackupProvider extends BackupExtensionService
             }
             throw e;
         }
-        return master;
+        URI toReturn = null;
+        try
+        {
+            toReturn = new URI( master );
+        }
+        catch ( URISyntaxException e )
+        {
+            // no way
+        }
+        return toReturn;
     }
 
     private static String getMasterServerInCluster( String from )
