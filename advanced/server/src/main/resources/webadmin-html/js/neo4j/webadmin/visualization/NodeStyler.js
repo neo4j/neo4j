@@ -44,11 +44,11 @@
         nodeStyle: {
           shape: "dot",
           fill: "#000000",
-          alpha: 0.2
+          alpha: 0.4
         },
         labelStyle: {
           color: "white",
-          font: "12px Helvetica"
+          font: "10px Helvetica"
         }
       };
       function NodeStyler() {
@@ -56,38 +56,41 @@
         this.itemUrlUtils = new ItemUrlResolver();
       }
       NodeStyler.prototype.getStyleFor = function(visualNode) {
-        var label, node, prop, _i, _len, _ref;
-        switch (visualNode.data.type) {
-          case "explored-node":
+        var id, labelStyle, labelText, node, nodeStyle, prop, type, _i, _len, _ref;
+        type = visualNode.data.type;
+        if (type === "group") {
+          nodeStyle = this.defaultGroupStyle.nodeStyle;
+          labelStyle = this.defaultGroupStyle.labelStyle;
+          labelText = visualNode.data.group.nodeCount;
+        } else {
+          if (visualNode.data.neoNode != null) {
             node = visualNode.data.neoNode;
+            id = this.itemUrlUtils.extractNodeId(node.getSelf());
             _ref = this.labelProperties;
             for (_i = 0, _len = _ref.length; _i < _len; _i++) {
               prop = _ref[_i];
               if (node.hasProperty(prop)) {
-                label = node.getProperty(prop);
+                labelText = id + ": " + node.getProperty(prop);
                 break;
               }
             }
-            label != null ? label : label = this.itemUrlUtils.extractNodeId(node.getSelf());
-            return {
-              nodeStyle: this.defaultExploredStyle.nodeStyle,
-              labelStyle: this.defaultExploredStyle.labelStyle,
-              labelText: label
-            };
-          case "unexplored-node":
-            label = this.itemUrlUtils.extractNodeId(visualNode.data.neoUrl);
-            return {
-              nodeStyle: this.defaultUnexploredStyle.nodeStyle,
-              labelStyle: this.defaultUnexploredStyle.labelStyle,
-              labelText: label
-            };
-          default:
-            return {
-              nodeStyle: this.defaultGroupStyle.nodeStyle,
-              labelStyle: this.defaultGroupStyle.labelStyle,
-              labelText: "Group"
-            };
+            labelText != null ? labelText : labelText = id;
+          } else {
+            labelText = "?";
+          }
+          if (type === "explored") {
+            nodeStyle = this.defaultExploredStyle.nodeStyle;
+            labelStyle = this.defaultExploredStyle.labelStyle;
+          } else {
+            nodeStyle = this.defaultUnexploredStyle.nodeStyle;
+            labelStyle = this.defaultUnexploredStyle.labelStyle;
+          }
         }
+        return {
+          nodeStyle: nodeStyle,
+          labelStyle: labelStyle,
+          labelText: labelText
+        };
       };
       NodeStyler.prototype.setLabelProperties = function(labelProperties) {
         return this.labelProperties = labelProperties;
