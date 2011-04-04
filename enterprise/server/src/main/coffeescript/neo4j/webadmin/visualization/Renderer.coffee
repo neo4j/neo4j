@@ -119,12 +119,24 @@ define(
           @ctx.restore()
 
         # draw the text
-        if style.labelText and false
+        if style.labelText
           @ctx.save()
           @ctx.font = style.labelStyle.font
-          @ctx.textAlign = "center"
+
+          @ctx.translate(head.x, head.y)
+
+          dx = head.x - tail.x
+          if dx < 0
+            @ctx.textAlign = "left"
+            @ctx.rotate(Math.atan2(head.y - tail.y, dx) - Math.PI)
+            @ctx.translate(20, style.edgeStyle.width - 5)
+          else
+            @ctx.textAlign = "right"
+            @ctx.rotate(Math.atan2(head.y - tail.y, dx))
+            @ctx.translate(-20, style.edgeStyle.width - 5)
+
           @ctx.fillStyle = style.labelStyle.color
-          @ctx.fillText(style.labelText||"", pt2.x, pt2.y+4)
+          @ctx.fillText(style.labelText||"", 0, 0)
           @ctx.restore()
 
       initMouseHandling : () =>

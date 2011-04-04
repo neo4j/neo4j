@@ -60,11 +60,10 @@ define(
       settingsChanged : () =>
         if @viz?
           @viz.getNodeStyler().setLabelProperties(@settings.getLabelProperties())
-
       
       getViz : () =>
         width = $(document).width() - 40;
-        height = $(document).height() - 120;
+        height = $(document).height() - 160;
         @viz ?= new VisualGraph(@server,width,height)
         @settingsChanged()
         return @viz

@@ -71,7 +71,7 @@
       VisualizedView.prototype.getViz = function() {
         var height, width, _ref;
         width = $(document).width() - 40;
-        height = $(document).height() - 120;
+        height = $(document).height() - 160;
         (_ref = this.viz) != null ? _ref : this.viz = new VisualGraph(this.server, width, height);
         this.settingsChanged();
         return this.viz;
