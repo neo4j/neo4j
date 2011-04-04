@@ -34,7 +34,7 @@ import org.neo4j.kernel.ha.zookeeper.Machine;
 public final class HaBackupProvider extends BackupExtensionService
 {
     // The server address is <host>:<port>
-    private static final String ServerAddressFormat = "%s:%d";
+    private static final String ServerAddressFormat = "ha://%s:%d";
 
     public HaBackupProvider()
     {
@@ -49,9 +49,8 @@ public final class HaBackupProvider extends BackupExtensionService
         {
             System.out.println( "Asking ZooKeeper service at '" + address
                                 + "' for master" );
-            master = getMasterServerInCluster( address.getPort() == -1 ? address.getHost()
-                    : String.format(
-                    ServerAddressFormat, address.getHost(), address.getPort() ) );
+            master = getMasterServerInCluster( address.getSchemeSpecificPart().substring(
+                    2 ) ); // skip the "//" part
             System.out.println( "Found master '" + master + "' in cluster" );
         }
         catch ( ComException e )
