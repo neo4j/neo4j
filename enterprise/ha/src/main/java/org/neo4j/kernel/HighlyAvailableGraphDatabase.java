@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel;
 
-import static org.neo4j.com.backup.OnlineBackupExtension.parsePort;
+import static org.neo4j.backup.OnlineBackupExtension.parsePort;
 import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
 
 import java.io.File;
@@ -289,6 +289,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     {
         return new BrokerFactory()
         {
+            @Override
             public Broker create( GraphDatabaseService graphDb, Map<String, String> config )
             {
                 return new ZooKeeperBroker( graphDb,
@@ -564,6 +565,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             updatePuller = new ScheduledThreadPoolExecutor( 1 );
             updatePuller.scheduleWithFixedDelay( new Runnable()
             {
+                @Override
                 public void run()
                 {
                     try
@@ -579,47 +581,56 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         }
     }
 
+    @Override
     public Transaction beginTx()
     {
         return localGraph().beginTx();
     }
 
+    @Override
     public Node createNode()
     {
         return localGraph().createNode();
     }
 
+    @Override
     public Iterable<Node> getAllNodes()
     {
         return localGraph().getAllNodes();
     }
 
+    @Override
     public Node getNodeById( long id )
     {
         return localGraph().getNodeById( id );
     }
 
+    @Override
     public Node getReferenceNode()
     {
         return localGraph().getReferenceNode();
     }
 
+    @Override
     public Relationship getRelationshipById( long id )
     {
         return localGraph().getRelationshipById( id );
     }
 
+    @Override
     public Iterable<RelationshipType> getRelationshipTypes()
     {
         return localGraph().getRelationshipTypes();
     }
 
+    @Override
     public KernelEventHandler registerKernelEventHandler( KernelEventHandler handler )
     {
         this.kernelEventHandlers.add( handler );
         return localGraph().registerKernelEventHandler( handler );
     }
 
+    @Override
     public <T> TransactionEventHandler<T> registerTransactionEventHandler(
             TransactionEventHandler<T> handler )
     {
@@ -669,22 +680,26 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         internalShutdown();
     }
 
+    @Override
     public synchronized void shutdown()
     {
         shutdown( new IllegalStateException(), true );
     }
 
+    @Override
     public KernelEventHandler unregisterKernelEventHandler( KernelEventHandler handler )
     {
         return localGraph().unregisterKernelEventHandler( handler );
     }
 
+    @Override
     public <T> TransactionEventHandler<T> unregisterTransactionEventHandler(
             TransactionEventHandler<T> handler )
     {
         return localGraph().unregisterTransactionEventHandler( handler );
     }
 
+    @Override
     public SlaveContext getSlaveContext( int eventIdentifier )
     {
         XaDataSourceManager localDataSourceManager =
@@ -700,6 +715,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         return new SlaveContext( machineId, eventIdentifier, txs );
     }
 
+    @Override
     public <T> T receive( Response<T> response )
     {
         try
@@ -715,6 +731,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         }
     }
 
+    @Override
     public void newMaster( Pair<Master, Machine> master, Exception e )
     {
         newMaster( master, null, e );
@@ -786,6 +803,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         return false;
     }
 
+    @Override
     public IndexManager index()
     {
         return localGraph().index();

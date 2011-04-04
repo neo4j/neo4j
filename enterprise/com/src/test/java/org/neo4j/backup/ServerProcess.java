@@ -17,23 +17,33 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.com.backup;
+package org.neo4j.backup;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.test.SubProcess;
 
-public class ServerProcess extends SubProcess<ServerInterface, String> implements ServerInterface
+public class ServerProcess extends SubProcess<ServerInterface, Pair<String, String>> implements ServerInterface
 {
     private volatile transient GraphDatabaseService db;
     
     @Override
-    protected void startup( String parameter ) throws Throwable
+    protected void startup( Pair<String, String> config ) throws Throwable
     {
-        db = new EmbeddedGraphDatabase( parameter, stringMap( ENABLE_ONLINE_BACKUP, "true" ) );
+        String storeDir = config.first();
+        String backupConfigValue = config.other();
+        if ( backupConfigValue == null )
+        {
+            this.db = new EmbeddedGraphDatabase( storeDir );
+        }
+        else
+        {
+            this.db = new EmbeddedGraphDatabase( storeDir, stringMap( ENABLE_ONLINE_BACKUP, backupConfigValue ) );
+        }
     }
     
     public void awaitStarted()
