@@ -42,34 +42,49 @@ public class GremlinSession implements ScriptSession
 {
 
     private static final String INIT_FUNCTION = "init()";
-    
+
     protected GremlinWebConsole scriptEngine;
     protected StringWriter outputWriter;
-    private Database database;
-    private IO io;
-    private ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    private List<String> initialBindings;
+    private final Database database;
+    private final IO io;
+    private final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    private final List<String> initialBindings;
 
     public GremlinSession( Database database )
     {
         this.database = database;
         PrintStream out = new PrintStream(new BufferedOutputStream( baos ));
-        
+
         io = new IO( System.in, out, out);
-        
+
         Map<String, Object> bindings = new HashMap<String, Object>();
         bindings.put( "g", getGremlinWrappedGraph() );
         bindings.put( "out", out );
-        
+
         initialBindings = new ArrayList<String>(bindings.keySet());
-        
-        scriptEngine = new GremlinWebConsole(new Binding( bindings ), io );
+
+        try
+        {
+            scriptEngine = new GremlinWebConsole( new Binding( bindings ), io );
+        }
+        catch ( final Exception failure )
+        {
+            scriptEngine = new GremlinWebConsole()
+            {
+                @Override
+                public void execute( String script )
+                {
+                    io.out.println( "Could not start Groovy during Gremlin initialization, reason:" );
+                    failure.printStackTrace( io.out );
+                }
+            };
+        }
     }
 
     /**
      * Take some gremlin script, evaluate it in the context of this gremlin
      * session, and return the result.
-     * 
+     *
      * @param script
      * @return
      */
@@ -77,12 +92,12 @@ public class GremlinSession implements ScriptSession
     public String evaluate( String script )
     {
         try {
-            
+
             if( script.equals( INIT_FUNCTION )) {
                 return init();
             }
-            
-            scriptEngine.groovy.execute( script );            
+
+            scriptEngine.execute( script );
             String result = baos.toString();
             resetIO();
             return result;
@@ -91,7 +106,7 @@ public class GremlinSession implements ScriptSession
         }
 
     }
-    
+
     private String init() {
         StringBuffer out = new StringBuffer();
         out.append("\n");
@@ -99,14 +114,14 @@ public class GremlinSession implements ScriptSession
         out.append("         (o o)\n");
         out.append("-----oOOo-(_)-oOOo-----\n");
         out.append("\n");
-        
+
         out.append("Available variables:\n");
         for(String variable : initialBindings) {
             out.append("  " + variable + "\t= ");
             out.append(evaluate(variable));
         }
         out.append("\n");
-        
+
         return out.toString();
     }
 
