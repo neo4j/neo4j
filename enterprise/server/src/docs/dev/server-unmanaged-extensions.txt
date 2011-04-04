@@ -15,7 +15,7 @@ In your code, you get access to the underlying GraphDatabaseService through the 
 
 [source,java]
 --------
-public MyCoolService(@Context Database database)
+public MyCoolService(@Context GraphDatabaseService database)
 {
   // Have fun here, but be safe!
 }
@@ -31,9 +31,9 @@ In order to specify the mount point of your extension, a full class looks like
 public class HelloWorldResource
 {
 
-    private final Database database;
+    private final GraphDatabaseService database;
 
-    public HelloWorldResource( @Context Database database) 
+    public HelloWorldResource( @Context GraphDatabaseService database) 
     {
       this.database = database;
     }
