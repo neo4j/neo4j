@@ -32,7 +32,7 @@ public class ServerProcess extends SubProcess<ServerInterface, Pair<String, Stri
     private volatile transient GraphDatabaseService db;
     
     @Override
-    protected void startup( Pair<String, String> config ) throws Throwable
+    public void startup( Pair<String, String> config ) throws Throwable
     {
         String storeDir = config.first();
         String backupConfigValue = config.other();
