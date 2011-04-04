@@ -26,6 +26,7 @@ import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.server.database.GraphDatabaseFactory;
 import org.neo4j.server.modules.DiscoveryModule;
+import org.neo4j.server.modules.ManagementApiModule;
 import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.modules.ThirdPartyJAXRSModule;
@@ -43,10 +44,11 @@ public class NeoServerBootstrapper extends Bootstrapper implements GraphDatabase
     }
 
     @Override
+    @SuppressWarnings( "unchecked" )
     public Iterable<Class<? extends ServerModule>> getServerModules()
     {
-        return Arrays.asList( DiscoveryModule.class, RESTApiModule.class, ThirdPartyJAXRSModule.class,
-                WebAdminModule.class );
+        return Arrays.asList( DiscoveryModule.class, RESTApiModule.class, ManagementApiModule.class,
+                ThirdPartyJAXRSModule.class, WebAdminModule.class );
     }
 
     @Override
