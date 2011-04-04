@@ -216,7 +216,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
         }
     }
 
-    private StoreId getMyStoreId()
+    protected StoreId getMyStoreId()
     {
         if ( myStoreId == null )
         {

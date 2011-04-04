@@ -31,13 +31,6 @@
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-com</artifactId>
       <version>${neo4j.version}</version>
-      <classifier>tests</classifier>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-com</artifactId>
-      <version>${neo4j.version}</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
