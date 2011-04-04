@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -44,6 +45,9 @@ import javax.management.remote.JMXServiceURL;
 import javax.management.remote.rmi.RMIConnectorServer;
 import javax.rmi.ssl.SslRMIClientSocketFactory;
 
+import org.neo4j.jmx.Kernel;
+import org.neo4j.jmx.Primitives;
+import org.neo4j.jmx.impl.JmxExtension;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.management.impl.ConfigurationBean;
 import org.neo4j.management.impl.KernelProxy;
@@ -78,7 +82,7 @@ public final class Neo4jManager extends KernelProxy implements Kernel
     public static Neo4jManager get( JMXServiceURL url, String username, String password,
             String kernelIdentifier )
     {
-        return get( connect( url, null, null ) );
+        return get( connect( url, username, password ), kernelIdentifier );
     }
 
     private static MBeanServerConnection connect( JMXServiceURL url, String username,
@@ -118,7 +122,7 @@ public final class Neo4jManager extends KernelProxy implements Kernel
         server.getClass();
         try
         {
-            return get( server, server.queryNames( getObjectName( Kernel.class, null ), null ) );
+            return get( server, server.queryNames( createObjectName( "*", Kernel.class ), null ) );
         }
         catch ( IOException e )
         {
@@ -132,7 +136,7 @@ public final class Neo4jManager extends KernelProxy implements Kernel
         kernelIdentifier.getClass();
         try
         {
-            return get( server, server.queryNames( getObjectName( Kernel.class, kernelIdentifier ),
+            return get( server, server.queryNames( createObjectName( kernelIdentifier, Kernel.class ),
                     null ) );
         }
         catch ( IOException e )
@@ -145,12 +149,12 @@ public final class Neo4jManager extends KernelProxy implements Kernel
     {
         try
         {
-            Set<ObjectName> kernels = server.queryNames( getObjectName( Kernel.class, null ), null );
+            Set<ObjectName> kernels = server.queryNames( createObjectName( "*", Kernel.class ), null );
             Neo4jManager[] managers = new Neo4jManager[kernels.size()];
             Iterator<ObjectName> it = kernels.iterator();
             for ( int i = 0; i < managers.length; i++ )
             {
-                managers[i] = new Neo4jManager( server, proxy( server, Kernel.class, it.next() ) );
+                managers[i] = new Neo4jManager( server, it.next() );
             }
             return managers;
         }
@@ -168,8 +172,7 @@ public final class Neo4jManager extends KernelProxy implements Kernel
         }
         else if ( kernels.size() == 1 )
         {
-            return new Neo4jManager( server,
-                    proxy( server, Kernel.class, kernels.iterator().next() ) );
+            return new Neo4jManager( server, kernels.iterator().next() );
         }
         else
         {
@@ -179,10 +182,11 @@ public final class Neo4jManager extends KernelProxy implements Kernel
     }
 
     private final ObjectName config;
+    private final Kernel proxy;
 
     public Neo4jManager( Kernel kernel )
     {
-        this( getServer( kernel ), actual( kernel ) );
+        this( getServer( kernel ), getName( kernel ) );
     }
 
     private static MBeanServerConnection getServer( Kernel kernel )
@@ -202,15 +206,28 @@ public final class Neo4jManager extends KernelProxy implements Kernel
         throw new UnsupportedOperationException( "Cannot get server for kernel: " + kernel );
     }
 
-    private static Kernel actual( Kernel kernel )
+    private static ObjectName getName( Kernel kernel )
     {
-        return kernel instanceof Neo4jManager ? ( (Neo4jManager) kernel ).kernel : kernel;
+        if ( kernel instanceof Proxy )
+        {
+            InvocationHandler handler = Proxy.getInvocationHandler( kernel );
+            if ( handler instanceof MBeanServerInvocationHandler )
+            {
+                return ( (MBeanServerInvocationHandler) handler ).getObjectName();
+            }
+        }
+        else if ( kernel instanceof Neo4jManager )
+        {
+            return ( (Neo4jManager) kernel ).kernel;
+        }
+        throw new UnsupportedOperationException( "Cannot get name for kernel: " + kernel );
     }
 
-    private Neo4jManager( MBeanServerConnection server, Kernel kernel )
+    private Neo4jManager( MBeanServerConnection server, ObjectName kernel )
     {
         super( server, kernel );
-        this.config = getObjectName( ConfigurationBean.CONFIGURATION_MBEAN_NAME );
+        this.config = createObjectName( ConfigurationBean.CONFIGURATION_MBEAN_NAME );
+        this.proxy = getBean( Kernel.class );
     }
 
     public Cache getCacheBean()
@@ -246,6 +263,11 @@ public final class Neo4jManager extends KernelProxy implements Kernel
     public XaManager getXaManagerBean()
     {
         return getBean( XaManager.class );
+    }
+
+    public HighAvailability getHighAvailabilityBean()
+    {
+        return getBean( HighAvailability.class );
     }
 
     public Object getConfigurationParameter( String key )
@@ -292,53 +314,63 @@ public final class Neo4jManager extends KernelProxy implements Kernel
     }
 
     @Override
-    public <T> T getBean( Class<T> beanInterface )
+    public List<Object> allBeans()
     {
-        return super.getBean( beanInterface );
+        List<Object> beans = super.allBeans();
+        @SuppressWarnings( "hiding" ) Kernel kernel = null;
+        for ( Object bean : beans )
+        {
+            if ( bean instanceof Kernel )
+            {
+                kernel = (Kernel) bean;
+            }
+        }
+        if ( kernel != null ) beans.remove( kernel );
+        return beans;
     }
 
     public Date getKernelStartTime()
     {
-        return kernel.getKernelStartTime();
+        return proxy.getKernelStartTime();
     }
 
     public String getKernelVersion()
     {
-        return kernel.getKernelVersion();
+        return proxy.getKernelVersion();
     }
 
     public ObjectName getMBeanQuery()
     {
-        return kernel.getMBeanQuery();
+        return proxy.getMBeanQuery();
     }
 
     public Date getStoreCreationDate()
     {
-        return kernel.getStoreCreationDate();
+        return proxy.getStoreCreationDate();
     }
 
     public String getStoreDirectory()
     {
-        return kernel.getStoreDirectory();
+        return proxy.getStoreDirectory();
     }
 
     public String getStoreId()
     {
-        return kernel.getStoreId();
+        return proxy.getStoreId();
     }
 
     public long getStoreLogVersion()
     {
-        return kernel.getStoreLogVersion();
+        return proxy.getStoreLogVersion();
     }
 
     public boolean isReadOnly()
     {
-        return kernel.isReadOnly();
+        return proxy.isReadOnly();
     }
 
     public static JMXServiceURL getConnectionURL( KernelData kernel )
     {
-        return KernelProxy.getConnectionURL( kernel );
+        return new JmxExtension().getConnectionURL( kernel );
     }
 }

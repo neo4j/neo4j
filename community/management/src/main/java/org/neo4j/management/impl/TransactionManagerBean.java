@@ -22,7 +22,9 @@ package org.neo4j.management.impl;
 import javax.management.NotCompliantMBeanException;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.KernelData;
+import org.neo4j.jmx.impl.ManagementBeanProvider;
+import org.neo4j.jmx.impl.ManagementData;
+import org.neo4j.jmx.impl.Neo4jMBean;
 import org.neo4j.kernel.impl.transaction.TxModule;
 import org.neo4j.management.TransactionManager;
 
@@ -35,48 +37,41 @@ public final class TransactionManagerBean extends ManagementBeanProvider
     }
 
     @Override
-    protected Neo4jMBean createMBean( KernelData kernel ) throws NotCompliantMBeanException
+    protected Neo4jMBean createMBean( ManagementData management ) throws NotCompliantMBeanException
     {
-        return new TransactionManagerImpl( this, kernel );
+        return new TransactionManagerImpl( management );
     }
 
-    @Description( "Information about the Neo4j transaction manager" )
     private static class TransactionManagerImpl extends Neo4jMBean implements TransactionManager
     {
         private final TxModule txModule;
 
-        TransactionManagerImpl( ManagementBeanProvider provider, KernelData kernel )
-                throws NotCompliantMBeanException
+        TransactionManagerImpl( ManagementData management ) throws NotCompliantMBeanException
         {
-            super( provider, kernel );
-            this.txModule = kernel.getConfig().getTxModule();
+            super( management );
+            this.txModule = management.getKernelData().getConfig().getTxModule();
         }
 
-        @Description( "The number of currently open transactions" )
         public int getNumberOfOpenTransactions()
         {
             return txModule.getActiveTxCount();
         }
 
-        @Description( "The highest number of transactions ever opened concurrently" )
         public int getPeakNumberOfConcurrentTransactions()
         {
             return txModule.getPeakConcurrentTxCount();
         }
 
-        @Description( "The total number started transactions" )
         public int getNumberOfOpenedTransactions()
         {
             return txModule.getStartedTxCount();
         }
 
-        @Description( "The total number of committed transactions" )
         public long getNumberOfCommittedTransactions()
         {
             return txModule.getCommittedTxCount();
         }
 
-        @Description( "The total number of rolled back transactions" )
         public long getNumberOfRolledBackTransactions()
         {
             return txModule.getRolledbackTxCount();

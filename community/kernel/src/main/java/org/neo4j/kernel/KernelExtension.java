@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-
 import org.neo4j.helpers.Service;
 
 /**
@@ -129,75 +125,5 @@ public abstract class KernelExtension<S> extends Service
     protected boolean isLoaded( KernelData kernel )
     {
         return getState( kernel ) != null;
-    }
-
-    public class Function<T>
-    {
-        private final Class<T> type;
-        private final KernelData kernel;
-        private final Method method;
-
-        private Function( Class<T> type, KernelData kernel, Method method )
-        {
-            this.type = type;
-            this.kernel = kernel;
-            this.method = method;
-        }
-
-        public T call( Object... args )
-        {
-            Object[] arguments = new Object[args == null ? 1 : ( args.length + 1 )];
-            arguments[0] = kernel;
-            if ( args != null && args.length > 0 )
-            {
-                System.arraycopy( args, 0, arguments, 1, args.length );
-            }
-            try
-            {
-                return type.cast( method.invoke( KernelExtension.this, arguments ) );
-            }
-            catch ( IllegalAccessException e )
-            {
-                throw new IllegalStateException( "Access denied", e );
-            }
-            catch ( InvocationTargetException e )
-            {
-                Throwable exception = e.getTargetException();
-                if ( exception instanceof RuntimeException )
-                {
-                    throw (RuntimeException) exception;
-                }
-                else if ( exception instanceof Error )
-                {
-                    throw (Error) exception;
-                }
-                else
-                {
-                    throw new RuntimeException( "Unexpected exception: " + exception.getClass(), exception );
-                }
-            }
-        }
-    }
-
-    protected <T> Function<T> function( KernelData kernel, String name, Class<T> result, Class<?>... params )
-    {
-        Class<?>[] parameters = new Class[params == null ? 1 : ( params.length + 1 )];
-        parameters[0] = KernelData.class;
-        if ( params != null && params.length != 0 )
-        {
-            System.arraycopy( params, 0, parameters, 1, params.length );
-        }
-        final Method method;
-        try
-        {
-            method = getClass().getMethod( name, parameters );
-            /* if ( !result.isAssignableFrom( method.getReturnType() ) ) return null; */
-            if ( !Modifier.isPublic( method.getModifiers() ) ) return null;
-        }
-        catch ( Exception e )
-        {
-            return null;
-        }
-        return new Function<T>( result, kernel, method );
     }
 }

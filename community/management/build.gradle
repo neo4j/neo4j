@@ -1,4 +1,0 @@
-dependencies {
-    compile project(":neo4j-kernel"),
-            files("${System.getenv('JAVA_HOME')}/lib/jconsole.jar")
-}

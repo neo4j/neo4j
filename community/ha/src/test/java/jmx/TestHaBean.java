@@ -33,10 +33,10 @@ import org.neo4j.ha.LocalhostZooKeeperCluster;
 import org.neo4j.ha.Neo4jHaCluster;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.jmx.Kernel;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.management.HighAvailability;
 import org.neo4j.management.InstanceInfo;
-import org.neo4j.management.Kernel;
 import org.neo4j.management.Neo4jManager;
 import org.neo4j.test.TargetDirectory;
 
@@ -70,7 +70,7 @@ public class TestHaBean
     public void canGetHaBean() throws Exception
     {
         Neo4jManager neo4j = new Neo4jManager( db.getManagementBean( Kernel.class ) );
-        HighAvailability ha = neo4j.getBean( HighAvailability.class );
+        HighAvailability ha = neo4j.getHighAvailabilityBean();
         assertNotNull( "could not get ha bean", ha );
         assertTrue( "single instance should be master", ha.isMaster() );
     }
@@ -79,7 +79,7 @@ public class TestHaBean
     public void canGetInstanceConnectionInformation() throws Exception
     {
         Neo4jManager neo4j = new Neo4jManager( db.getManagementBean( Kernel.class ) );
-        InstanceInfo[] instances = neo4j.getBean( HighAvailability.class ).getInstancesInCluster();
+        InstanceInfo[] instances = neo4j.getHighAvailabilityBean().getInstancesInCluster();
         assertNotNull( instances );
         assertEquals( 1, instances.length );
         InstanceInfo instance = instances[0];
@@ -94,7 +94,7 @@ public class TestHaBean
     public void canConnectToInstance() throws Exception
     {
         Neo4jManager neo4j = new Neo4jManager( db.getManagementBean( Kernel.class ) );
-        HighAvailability ha = neo4j.getBean( HighAvailability.class );
+        HighAvailability ha = neo4j.getHighAvailabilityBean();
         InstanceInfo[] instances = ha.getInstancesInCluster();
         assertNotNull( instances );
         assertEquals( 1, instances.length );

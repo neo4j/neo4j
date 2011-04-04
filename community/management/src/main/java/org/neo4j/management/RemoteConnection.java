@@ -19,6 +19,9 @@
  */
 package org.neo4j.management;
 
+import org.neo4j.jmx.ManagementInterface;
+
+@ManagementInterface( name = RemoteConnection.NAME )
 public interface RemoteConnection
 {
     final String NAME = "Remote Connection";

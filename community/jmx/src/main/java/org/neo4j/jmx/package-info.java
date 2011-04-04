@@ -17,14 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.management.impl;
-
-import org.neo4j.kernel.KernelExtensionContractTest;
-
-public class TestJmxExtension extends KernelExtensionContractTest<JmxExtension.JmxData, JmxExtension>
-{
-    public TestJmxExtension()
-    {
-        super( JmxExtension.KEY, JmxExtension.class );
-    }
-}
+/**
+ * Management support using JMX.
+ */
+package org.neo4j.jmx;

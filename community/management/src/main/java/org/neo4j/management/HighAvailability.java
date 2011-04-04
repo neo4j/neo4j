@@ -19,19 +19,31 @@
  */
 package org.neo4j.management;
 
+import org.neo4j.jmx.Description;
+import org.neo4j.jmx.ManagementInterface;
+
+@ManagementInterface( name = HighAvailability.NAME )
+@Description( "Information about an instance participating in a HA cluster" )
 public interface HighAvailability
 {
     final String NAME = "High Availability";
 
+    @Description( "The identifier used to identify this machine in the HA cluster" )
     String getMachineId();
 
+    @Description( "Whether this instance is master or not" )
     boolean isMaster();
 
+    @Description( "The time when the data on this instance was last updated from the master" )
     String getLastUpdateTime();
 
+    @Description( "(If this is a master) Information about the instances connected to this instance" )
     SlaveInfo[] getConnectedSlaves();
 
+    @Description( "Information about all instances in this cluster" )
     InstanceInfo[] getInstancesInCluster();
 
+    @Description( "(If this is a slave) Update the database on this "
+                  + "instance with the latest transactions from the master" )
     String update();
 }

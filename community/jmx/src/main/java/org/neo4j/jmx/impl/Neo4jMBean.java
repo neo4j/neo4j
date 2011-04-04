@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.management.impl;
+package org.neo4j.jmx.impl;
 
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanFeatureInfo;
@@ -27,43 +27,47 @@ import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
 import javax.management.StandardMBean;
 
+import org.neo4j.jmx.Description;
+import org.neo4j.jmx.Kernel;
 import org.neo4j.kernel.KernelData;
-import org.neo4j.management.Kernel;
 
-public class Neo4jMBean extends StandardMBean
+public abstract class Neo4jMBean extends StandardMBean
 {
     final ObjectName objectName;
 
-    protected Neo4jMBean( ManagementBeanProvider provider, KernelData kernel, boolean isMXBean )
+    protected Neo4jMBean( ManagementData management, boolean isMXBean )
     {
-        super( provider.beanInterface, isMXBean );
-        this.objectName = provider.getObjectName( kernel );
+        super( management.provider.beanInterface, isMXBean );
+        management.validate( getClass() );
+        this.objectName = management.getObjectName();
     }
 
-    protected Neo4jMBean( ManagementBeanProvider provider, KernelData kernel )
+    protected Neo4jMBean( ManagementData management )
             throws NotCompliantMBeanException
     {
-        super( provider.beanInterface );
-        this.objectName = provider.getObjectName( kernel );
+        super( management.provider.beanInterface );
+        management.validate( getClass() );
+        this.objectName = management.getObjectName();
     }
 
-    Neo4jMBean( Class<Kernel> beenInterface, KernelData kernel ) throws NotCompliantMBeanException
+    Neo4jMBean( Class<Kernel> beanInterface, KernelData kernel, ManagementSupport support )
+            throws NotCompliantMBeanException
     {
-        super( beenInterface );
-        this.objectName = JmxExtension.getObjectName( kernel, beenInterface, null );
+        super( beanInterface );
+        this.objectName = support.createObjectName( kernel.instanceId(), beanInterface );
     }
 
     @Override
     protected String getClassName( MBeanInfo info )
     {
         final Class<?> iface = this.getMBeanInterface();
-        return iface == null ? info.getClassName() : iface.getName();
+        return iface == null ? super.getClassName( info ) : iface.getName();
     }
 
     @Override
     protected String getDescription( MBeanInfo info )
     {
-        Description description = getClass().getAnnotation( Description.class );
+        Description description = describeClass();
         if ( description != null ) return description.value();
         return super.getDescription( info );
     }
@@ -92,13 +96,41 @@ public class Neo4jMBean extends StandardMBean
         return super.getImpact( info );
     }
 
+    private Description describeClass()
+    {
+        Description description = getClass().getAnnotation( Description.class );
+        if ( description == null )
+        {
+            for ( Class<?> iface : getClass().getInterfaces() )
+            {
+                description = iface.getAnnotation( Description.class );
+                if ( description != null ) break;
+            }
+        }
+        return description;
+    }
+
     private Description describeMethod( MBeanFeatureInfo info, String... prefixes )
+    {
+        Description description = describeMethod( getClass(), info.getName(), prefixes );
+        if ( description == null )
+        {
+            for ( Class<?> iface : getClass().getInterfaces() )
+            {
+                description = describeMethod( iface, info.getName(), prefixes );
+                if ( description != null ) break;
+            }
+        }
+        return description;
+    }
+
+    private static Description describeMethod( Class<?> type, String methodName, String[] prefixes )
     {
         if ( prefixes == null || prefixes.length == 0 )
         {
             try
             {
-                return getClass().getMethod( info.getName() ).getAnnotation( Description.class );
+                return type.getMethod( methodName ).getAnnotation( Description.class );
             }
             catch ( Exception e )
             {
@@ -111,11 +143,11 @@ public class Neo4jMBean extends StandardMBean
             {
                 try
                 {
-                    return getClass().getMethod( prefix + info.getName() ).getAnnotation(
-                            Description.class );
+                    return type.getMethod( prefix + methodName ).getAnnotation( Description.class );
                 }
                 catch ( Exception e )
                 {
+                    // continue to next
                 }
             }
             return null;
