@@ -40,7 +40,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import org.neo4j.management.Kernel;
+import org.neo4j.jmx.Kernel;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.JsonHelper;
