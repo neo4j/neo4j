@@ -105,7 +105,6 @@
                 }
                 return _results;
               })();
-              console.log(nodes);
               this.dataModel.ungroup(nodes);
               return this.sys.merge(this.dataModel.getVisualGraph());
           }

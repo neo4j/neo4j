@@ -54,8 +54,40 @@ define(
 
         switch @dataModel.get("type")
           when "node"
-            node = @dataModel.getData().getItem()
-            @getViz().setNode(node)
+            @visualizeFromNode @dataModel.getData().getItem()
+          when "relationship"
+            @visualizeFromRelationships [@dataModel.getData().getItem()]
+          when "relationshipList"
+            @visualizeFromRelationships @dataModel.getData().getRawRelationships()
+
+        return this
+
+      visualizeFromNode : (node) ->
+        @getViz().setNode(node)
+
+      visualizeFromRelationships : (rels) ->
+
+        MAX = 10 # Temporary limit, should be replaced by filtering
+
+        nodeDownloadChecklist = {}
+        nodePromises = []
+        
+        for i in [0...rels.length]
+          rel = rels[i]
+          if i >= MAX
+            alert "Only showing the first ten in the set, to avoid crashing the visualization. We're working on adding filtering here!"
+            break
+          if not nodeDownloadChecklist[rel.getStartNodeUrl()]?
+            nodeDownloadChecklist[rel.getStartNodeUrl()] = true
+            nodePromises.push rel.getStartNode()
+
+          if not nodeDownloadChecklist[rel.getEndNodeUrl()]?
+            nodeDownloadChecklist[rel.getStartNodeUrl()] = true
+            nodePromises.push rel.getEndNode()
+
+        allNodes = neo4j.Promise.join.apply(this, nodePromises)
+        allNodes.then (nodes) =>
+          @getViz().setNodes nodes
 
       settingsChanged : () =>
         if @viz?
