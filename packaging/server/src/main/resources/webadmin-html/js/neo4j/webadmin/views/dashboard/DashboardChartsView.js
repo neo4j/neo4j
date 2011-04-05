@@ -60,7 +60,7 @@
         return this;
       };
       DashboardChartsView.prototype.redrawChart = function() {
-        var chartDef, data, i, metricKeys, metrics, settings, v, xmin, zoomLevel;
+        var chartDef, data, i, metricKeys, metrics, settings, startTime, v, zoomLevel;
         if (this.chart != null) {
           chartDef = this.dashboardState.getChart();
           zoomLevel = this.dashboardState.getZoomLevel();
@@ -74,7 +74,8 @@
             }
             return _results;
           })();
-          metrics = this.statistics.getMetrics(metricKeys);
+          startTime = (new Date()).getTime() - zoomLevel.xSpan;
+          metrics = this.statistics.getMetrics(metricKeys, startTime, zoomLevel.granularity);
           data = (function() {
             var _ref, _results;
             _results = [];
@@ -85,13 +86,9 @@
             }
             return _results;
           })();
-          xmin = 0;
-          if (metrics[0].length > 0) {
-            xmin = metrics[0][metrics[0].length - 1][0] - zoomLevel.xSpan;
-          }
           settings = {
             xaxis: {
-              min: xmin,
+              min: startTime - this.statistics.timezoneOffset,
               mode: "time",
               timeformat: zoomLevel.timeformat
             }

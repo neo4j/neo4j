@@ -56,18 +56,16 @@ define(
           metricKeys = for v in chartDef.layers
             v.key
 
-          metrics = @statistics.getMetrics(metricKeys)
+          startTime = (new Date()).getTime() - zoomLevel.xSpan
+          metrics = @statistics.getMetrics(metricKeys, startTime, zoomLevel.granularity)
           
+          # Add meta info to each data layer
           data = for i in [0...metrics.length]
             _.extend({ data:metrics[i] }, chartDef.layers[i] )
-
-          xmin = 0
-          if metrics[0].length > 0
-            xmin = metrics[0][metrics[0].length-1][0] - zoomLevel.xSpan
           
           settings = 
             xaxis : 
-              min : xmin
+              min : startTime - @statistics.timezoneOffset
               mode : "time"
               timeformat : zoomLevel.timeformat
 
