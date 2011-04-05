@@ -82,6 +82,10 @@ for jar in ${REPO}/*.jar
 do
   LIBRARY_JARS=${LIBRARY_JARS}:$jar
 done
+for jar in ${BASEDIR}/system/coordinator/lib/*.jar
+do
+  LIBRARY_JARS=${LIBRARY_JARS}:$jar
+done
 echo $LIBRARY_JARS
 
 CLASSPATH=$CLASSPATH_PREFIX${LIBRARY_JARS}
