@@ -41,13 +41,29 @@ define(
         @relationshipStyler = new RelationshipStyler()
 
         @dataModel = new VisualDataModel()
-        @sys = arbor.ParticleSystem(600, 100, 0.8, false, 30, 0.03)
+        #@sys = arbor.ParticleSystem(600, 100, 0.8, false, 30, 0.03)
+        @sys = arbor.ParticleSystem()
+        @sys.parameters({
+          repulsion:10, 
+          stiffness:100, 
+          friction:0.5,
+          gravity:true,
+          fps:30, 
+          dt:0.015,
+          precision:0.5
+        })
 
         @stop()
 
         @sys.renderer = new Renderer(@el, @nodeStyler, @relationshipStyler)
         @sys.renderer.bind "node:click", @nodeClicked
         @sys.screenPadding(20)
+
+        @steadStateWorker = setInterval(@steadyStateCheck, 1000)
+
+      steadyStateCheck : () =>
+        meanEnergy = @sys.energy().mean
+        if  meanEnergy < 0.01 then @sys.stop()
 
       setNode : (node) =>
         @setNodes([node])

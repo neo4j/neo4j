@@ -12,7 +12,7 @@ rem net user Administrator <new passwd>
 rem
 rem and then to run a command from the console as admin,
 rem
-rem runas /env /user:Administrator "Neo4j.bat install"
+rem runas /env /user:Administrator "Neo4jCoord.bat install"
 rem
 rem You will be prompted for the admin passwd and then
 rem the service will be installed.
@@ -20,14 +20,15 @@ rem the service will be installed.
 setlocal
 call "%~dp0"setenv.bat
 
-set _WRAPPER_CONF_DEFAULT="../conf/neo4j-wrapper.conf"
+set _WRAPPER_CONF_DEFAULT="..\conf\coord-wrapper.conf"
 set _WRAPPER_CONF=%_WRAPPER_CONF_DEFAULT%
 
 set _REALPATH=%~dp0
 
+
 set _WRAPPER_EXE="%_REALPATH%wrapper.bat"
 
-for /F %%v in ('echo %1^|findstr "^help$ ^console$ ^start$ ^stop$ ^query$ ^restart$ ^install$ ^remove$"') do call :exec set COMMAND=%%v
+for /F %%v in ('echo %1^|findstr "^help$ ^console$ ^start$ ^stop$ ^restart$ ^query$ ^install$ ^remove$"') do call :exec set COMMAND=%%v
 
 if "%COMMAND%" == "" (
     set COMMAND=console
