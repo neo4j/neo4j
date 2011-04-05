@@ -48,11 +48,13 @@
       ServerStatistics.prototype.setMonitorData = function(monitorData) {
         var data, key, update, _ref;
         this.timestamps = this.toLocalTimestamps(monitorData.timestamps);
+        this.indexesToSave = this.getTimestampIndexes(0, 1000 * 30);
+        this.timestamps = this.extractValues(this.timestamps, this.indexesToSave);
         update = {};
         _ref = monitorData.data;
         for (key in _ref) {
           data = _ref[key];
-          update["metric:" + key] = this.addTimestampsToArray(data, this.timestamps);
+          update["metric:" + key] = this.addTimestampsToArray(this.extractValues(data, this.indexesToSave), this.timestamps);
         }
         this.set(update);
         return this.trigger("change:metrics");

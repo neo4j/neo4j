@@ -35,15 +35,23 @@ define ['lib/DateFormat', 'lib/backbone'], (DateFormat) ->
     setMonitorData : (monitorData) =>
 
       @timestamps = @toLocalTimestamps(monitorData.timestamps) # Because flot has no notion of timezones
+
+      # We don't need data as granular as neo4js gives us. 
+      # Weed some of it out to save memory.
+      @indexesToSave = @getTimestampIndexes(0, 1000 * 30)
+      @timestamps = @extractValues(@timestamps, @indexesToSave)
+
       update = {}
       for key, data of monitorData.data
-        update["metric:#{key}"] = @addTimestampsToArray(data, @timestamps)
+        update["metric:#{key}"] = @addTimestampsToArray(@extractValues(data, @indexesToSave), @timestamps)
       
       @set update
 
       @trigger "change:metrics"
 
     getMetrics : (keys, fromTimestamp=0, granularity=10000) =>
+      # fromTimestamp and granularity handling here is
+      # to keep data points low in order to keep charting and so on fast.
       startIndex = @getClosestPreceedingTimestampIndex(fromTimestamp)
       if startIndex is -1
         startIndex = 0
