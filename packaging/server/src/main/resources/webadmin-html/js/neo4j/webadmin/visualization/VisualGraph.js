@@ -18,7 +18,7 @@
   You should have received a copy of the GNU Affero General Public License
   along with this program. If not, see <http://www.gnu.org/licenses/>.
   */  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
-  define(['neo4j/webadmin/visualization/Renderer', 'neo4j/webadmin/visualization/NodeStyler', 'neo4j/webadmin/visualization/RelationshipStyler', 'neo4j/webadmin/visualization/VisualDataModel', 'order!lib/jquery', 'order!lib/arbor', 'order!lib/arbor-graphics', 'order!lib/arbor-tween'], function(Renderer, NodeStyler, RelationshipStyler, VisualDataModel) {
+  define(['neo4j/webadmin/visualization/Renderer', 'neo4j/webadmin/visualization/NodeStyler', 'neo4j/webadmin/visualization/RelationshipStyler', 'neo4j/webadmin/visualization/VisualDataModel', 'neo4j/webadmin/views/NodeFilterDialog', 'order!lib/jquery', 'order!lib/arbor', 'order!lib/arbor-graphics', 'order!lib/arbor-tween'], function(Renderer, NodeStyler, RelationshipStyler, VisualDataModel, NodeFilterDialog) {
     var VisualGraph;
     return VisualGraph = (function() {
       function VisualGraph(server, width, height, groupingThreshold) {
@@ -35,13 +35,13 @@
         this.start = __bind(this.start, this);;
         this.stop = __bind(this.stop, this);;
         this.getNodeStyler = __bind(this.getNodeStyler, this);;
-        this.getLabelFormatter = __bind(this.getLabelFormatter, this);;
         this.nodeClicked = __bind(this.nodeClicked, this);;
         this.addNodes = __bind(this.addNodes, this);;
         this.addNode = __bind(this.addNode, this);;
         this.setNodes = __bind(this.setNodes, this);;
         this.setNode = __bind(this.setNode, this);;
         this.el = $("<canvas width='" + width + "' height='" + height + "'></canvas>");
+        this.labelProperties = [];
         this.nodeStyler = new NodeStyler();
         this.relationshipStyler = new RelationshipStyler();
         this.dataModel = new VisualDataModel();
@@ -86,7 +86,7 @@
         return _results;
       };
       VisualGraph.prototype.nodeClicked = function(visualNode) {
-        var groupedMeta, nodes, url;
+        var completeCallback, dialog, groupedMeta, nodes, url;
         if (visualNode.data.type != null) {
           switch (visualNode.data.type) {
             case "unexplored":
@@ -105,13 +105,23 @@
                 }
                 return _results;
               })();
-              this.dataModel.ungroup(nodes);
-              return this.sys.merge(this.dataModel.getVisualGraph());
+              completeCallback = __bind(function(filteredNodes, dialog) {
+                dialog.remove();
+                this.dataModel.ungroup(filteredNodes);
+                return this.sys.merge(this.dataModel.getVisualGraph());
+              }, this);
+              dialog = new NodeFilterDialog({
+                nodes: nodes,
+                completeCallback: completeCallback,
+                labelProperties: this.labelProperties
+              });
+              return dialog.show();
           }
         }
       };
-      VisualGraph.prototype.getLabelFormatter = function() {
-        return this.labelFormatter;
+      VisualGraph.prototype.setLabelProperties = function(labelProps) {
+        this.nodeStyler.setLabelProperties(labelProps);
+        return this.labelProperties = labelProps;
       };
       VisualGraph.prototype.getNodeStyler = function() {
         return this.nodeStyler;

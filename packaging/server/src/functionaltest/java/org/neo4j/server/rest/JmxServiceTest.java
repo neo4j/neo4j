@@ -32,11 +32,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
-import org.neo4j.server.modules.DiscoveryModule;
-import org.neo4j.server.modules.ManagementApiModule;
-import org.neo4j.server.modules.RESTApiModule;
-import org.neo4j.server.modules.ThirdPartyJAXRSModule;
-import org.neo4j.server.modules.WebAdminModule;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
@@ -48,12 +43,7 @@ public class JmxServiceTest
 
     @Before
     public void setupServer() throws IOException {
-        // FIXME: is it bad that we need all modules here in order to operate?
-        // The reason we split the bootstrap class was to be able to load
-        // different modules for different product lines... needs fixing.
-        server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().withSpecificServerModules(
-                DiscoveryModule.class, RESTApiModule.class, ManagementApiModule.class, ThirdPartyJAXRSModule.class,
-                WebAdminModule.class ).build();
+        server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper(server);
     }

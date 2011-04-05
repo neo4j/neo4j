@@ -30,6 +30,8 @@
   <modules>
     <module>server-api</module>
     <module>server</module>
+    <module>server-advanced</module><!-- TODO: move to own repo -->
+    <module>server-enterprise</module><!-- TODO: move to own repo -->
     <module>examples</module>
     <module>standalone</module>
   </modules>
