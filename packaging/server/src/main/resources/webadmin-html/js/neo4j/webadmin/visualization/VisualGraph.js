@@ -40,17 +40,35 @@
         this.addNode = __bind(this.addNode, this);;
         this.setNodes = __bind(this.setNodes, this);;
         this.setNode = __bind(this.setNode, this);;
+        this.steadyStateCheck = __bind(this.steadyStateCheck, this);;
         this.el = $("<canvas width='" + width + "' height='" + height + "'></canvas>");
         this.labelProperties = [];
         this.nodeStyler = new NodeStyler();
         this.relationshipStyler = new RelationshipStyler();
         this.dataModel = new VisualDataModel();
-        this.sys = arbor.ParticleSystem(600, 100, 0.8, false, 30, 0.03);
+        this.sys = arbor.ParticleSystem();
+        this.sys.parameters({
+          repulsion: 10,
+          stiffness: 100,
+          friction: 0.5,
+          gravity: true,
+          fps: 30,
+          dt: 0.015,
+          precision: 0.5
+        });
         this.stop();
         this.sys.renderer = new Renderer(this.el, this.nodeStyler, this.relationshipStyler);
         this.sys.renderer.bind("node:click", this.nodeClicked);
         this.sys.screenPadding(20);
+        this.steadStateWorker = setInterval(this.steadyStateCheck, 1000);
       }
+      VisualGraph.prototype.steadyStateCheck = function() {
+        var meanEnergy;
+        meanEnergy = this.sys.energy().mean;
+        if (meanEnergy < 0.01) {
+          return this.sys.stop();
+        }
+      };
       VisualGraph.prototype.setNode = function(node) {
         return this.setNodes([node]);
       };
