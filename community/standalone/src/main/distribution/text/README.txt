@@ -40,13 +40,6 @@ look at the web interface...
    * Windows: type Ctrl-C to terminate the batch script
    * Linux/Mac: use `bin/neo4j stop`
 
-### NOTE: Windows 64-bit Java
-
-The server wrapper does not support 64-bit Java under Windows. You'll have to 
-use 32-bit Java, otherwise you'd require a commercial license for the Windows 
-Java Service Wrapper. A trial version of the wrapper is available from Tanuki 
-Software. See `doc\windows-64bit.txt` for instructions.
-
 Learn more
 ----------
 
