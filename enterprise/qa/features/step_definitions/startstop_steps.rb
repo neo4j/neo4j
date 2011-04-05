@@ -14,7 +14,7 @@ Given /^Neo4j Server is (not )?running$/ do |negate|
 end
 
 
-Then /^I (start|stop) Neo4j Server$/ do |action|
+When /^I (start|stop) Neo4j Server$/ do |action|
   if (current_platform.unix?)
     puts `#{neo4j.home}/bin/neo4j #{action}`
   elsif (current_platform.windows?)
