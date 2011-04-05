@@ -6,3 +6,13 @@ label {
   width: 100px;
   font-weight:bold;
 }
+
+.filter .filterText {
+  padding: 4px 3px;
+  width: 90%;
+}
+
+.filter .selectList {
+  height: 200px;
+  width: 450px;
+}

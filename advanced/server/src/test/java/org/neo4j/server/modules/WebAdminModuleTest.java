@@ -19,22 +19,24 @@
  */
 package org.neo4j.server.modules;
 
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.net.URI;
+import java.util.HashMap;
+
+import javax.management.ObjectName;
+
 import org.apache.commons.configuration.MapConfiguration;
 import org.junit.Test;
+import org.neo4j.jmx.Kernel;
 import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.management.Kernel;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.web.WebServer;
-
-import javax.management.ObjectName;
-import java.net.URI;
-import java.util.HashMap;
-import java.util.Set;
-
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import org.rrd4j.core.RrdDb;
 
 
 public class WebAdminModuleTest {
@@ -45,21 +47,20 @@ public class WebAdminModuleTest {
         NeoServerWithEmbeddedWebServer neoServer = mock(NeoServerWithEmbeddedWebServer.class);
         when(neoServer.baseUri()).thenReturn(new URI("http://localhost:7575"));
         when(neoServer.getWebServer()).thenReturn(webServer);
-        
+
         Database db = mock(Database.class);
         db.graph = (mock(AbstractGraphDatabase.class));
         Kernel mockKernel = mock(Kernel.class);
         ObjectName mockObjectName = mock(ObjectName.class);
         when(mockKernel.getMBeanQuery()).thenReturn(mockObjectName);
         when(db.graph.getManagementBean(Kernel.class)).thenReturn(mockKernel);
-        
+
         when(neoServer.getDatabase()).thenReturn(db);
-        when(neoServer.getConfiguration()).thenReturn( new MapConfiguration( new HashMap() ) );
-        
+        when( neoServer.getConfiguration() ).thenReturn( new MapConfiguration( new HashMap<Object, Object>() ) );
+
         WebAdminModule module = new WebAdminModule();
-        Set<URI> uris = module.start(neoServer);
-        
-        assertEquals(1, uris.size());
-        assertEquals("/webadmin", uris.iterator().next().getPath());
+        module.start( neoServer );
+
+        verify( db ).setRrdDb( any( RrdDb.class ) );
     }
 }

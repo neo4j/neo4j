@@ -21,11 +21,6 @@ package org.neo4j.server.modules;
 
 import static org.neo4j.server.JAXRSHelper.listFrom;
 
-import java.net.URI;
-import java.util.HashSet;
-import java.util.Set;
-
-import org.neo4j.server.JAXRSHelper;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.logging.Logger;
@@ -34,16 +29,13 @@ public class DiscoveryModule implements ServerModule {
 
     private static final Logger log = Logger.getLogger(DiscoveryModule.class);
     private static final String ROOT_PATH = "/";
-    
-    public Set<URI> start(NeoServerWithEmbeddedWebServer neoServer) {
+
+    public void start( NeoServerWithEmbeddedWebServer neoServer )
+    {
         neoServer.getWebServer().addJAXRSPackages(listFrom(new String[] { Configurator.ROOT_DISCOVERY_REST_API_PACKAGE }), ROOT_PATH);
         log.info("Mounted discovery module at [%s]", ROOT_PATH);
-        
-        HashSet<URI> ownedUris = new HashSet<URI>();
-        ownedUris.add(JAXRSHelper.generateUriFor(neoServer.baseUri(), ROOT_PATH));
-        return ownedUris;
     }
-    
+
     public void stop() {
         // Do nothing.
     }

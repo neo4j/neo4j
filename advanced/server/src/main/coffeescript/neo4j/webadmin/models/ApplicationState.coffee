@@ -18,9 +18,20 @@ You should have received a copy of the GNU Affero General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 ###
 
-define ['lib/backbone'], () ->
+define(
+  ['neo4j/webadmin/models/VisualizationSettings'
+   'lib/backbone'], 
+  (VisualizationSettings) ->
   
-  class ApplicationState extends Backbone.Model
-    
-    getServer : ->
-      @get "server"
+    class ApplicationState extends Backbone.Model
+      
+      getServer : ->
+        @get "server"
+
+      getVisualizationSettings : () ->
+        if not @visualizationSettings?
+          @visualizationSettings = new VisualizationSettings()
+          @visualizationSettings.fetch()
+        return @visualizationSettings
+
+)

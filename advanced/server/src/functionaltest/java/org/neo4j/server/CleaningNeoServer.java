@@ -21,9 +21,13 @@ package org.neo4j.server;
 
 import java.io.File;
 import java.util.Arrays;
-import java.util.List;
 
+import org.neo4j.server.modules.DiscoveryModule;
+import org.neo4j.server.modules.ManagementApiModule;
+import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.modules.ServerModule;
+import org.neo4j.server.modules.ThirdPartyJAXRSModule;
+import org.neo4j.server.modules.WebAdminModule;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.web.Jetty6WebServer;
 
@@ -31,20 +35,14 @@ public class CleaningNeoServer extends NeoServerWithEmbeddedWebServer {
     private final String dir;
     private static RuntimeException lastStarted;
     private final File configFile;
-    private List<Class<? extends ServerModule>> serverModules;
 
     public CleaningNeoServer(final AddressResolver addressResolver, final StartupHealthCheck startupHealthCheck, final File configFile,
             final Jetty6WebServer jetty6WebServer, final String dir, Class<? extends ServerModule>... serverModules) {
-        super(addressResolver, startupHealthCheck, configFile, jetty6WebServer);
+        super( ServerTestUtils.EMBEDDED_GRAPH_DATABASE_FACTORY, addressResolver, startupHealthCheck, configFile,
+                jetty6WebServer, serverModulesOrDefault( serverModules ) );
         this.configFile = configFile;
 
         this.dir = dir;
-
-        if (noServerModulesSuppied(serverModules)) {
-            super.registerServerModules();
-        } else {
-            this.serverModules = Arrays.asList(serverModules);
-        }
 
         if (lastStarted != null) {
             try {
@@ -55,21 +53,16 @@ public class CleaningNeoServer extends NeoServerWithEmbeddedWebServer {
         }
     }
 
-    private boolean noServerModulesSuppied(Class<? extends ServerModule>... serverModules) {
-        return serverModules == null || serverModules.length == 0;
-    }
-
-    @Override
-    protected void registerServerModules() {
-        if (haveChangedServerModuleDefaults()) {
-            for (Class<? extends ServerModule> sm : serverModules) {
-                registerModule(sm);
-            }
+    @SuppressWarnings( "unchecked" )
+    private static Iterable<Class<? extends ServerModule>> serverModulesOrDefault(
+            Class<? extends ServerModule>[] serverModules )
+    {
+        if ( serverModules == null || serverModules.length == 0 )
+        {
+            return Arrays.asList( DiscoveryModule.class, RESTApiModule.class, ManagementApiModule.class,
+                    ThirdPartyJAXRSModule.class, WebAdminModule.class );
         }
-    }
-
-    private boolean haveChangedServerModuleDefaults() {
-        return serverModules != null && serverModules.size() > 0;
+        return Arrays.asList( serverModules );
     }
 
     @Override
