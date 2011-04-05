@@ -145,7 +145,7 @@ public abstract class Bootstrapper
         bootstrapper.start( args );
     }
 
-    private static Bootstrapper loadMostDerivedBootstrapper()
+    public static Bootstrapper loadMostDerivedBootstrapper()
     {
         Bootstrapper winner = new NeoServerBootstrapper();
         for ( Bootstrapper candidate : Service.load( Bootstrapper.class ) )
