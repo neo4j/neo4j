@@ -81,26 +81,32 @@
       DashboardState.prototype.zoomLevels = {
         year: {
           xSpan: 1000 * 60 * 60 * 24 * 365,
+          granularity: 1000 * 60 * 60 * 24 * 12,
           timeformat: "%d/%m %y"
         },
         month: {
           xSpan: 1000 * 60 * 60 * 24 * 30,
+          granularity: 1000 * 60 * 60 * 24,
           timeformat: "%d/%m"
         },
         week: {
           xSpan: 1000 * 60 * 60 * 24 * 7,
+          granularity: 1000 * 60 * 60 * 6,
           timeformat: "%d/%m"
         },
         day: {
           xSpan: 1000 * 60 * 60 * 24,
+          granularity: 1000 * 60 * 48,
           timeformat: "%H:%M"
         },
         six_hours: {
           xSpan: 1000 * 60 * 60 * 6,
+          granularity: 1000 * 60 * 12,
           timeformat: "%H:%M"
         },
         thirty_minutes: {
           xSpan: 1000 * 60 * 30,
+          granularity: 1000 * 60,
           timeformat: "%H:%M"
         }
       };
