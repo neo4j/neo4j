@@ -260,7 +260,6 @@
           rel = relationships[_i];
           nodeUrl = rel.getOtherNodeUrl(baseNodeUrl);
           if (!(this.data.nodes[nodeUrl] != null)) {
-            console.log("" + nodeUrl + " not found, yet referred to by ", rel);
             continue;
           }
           nodeMeta = this.data.nodes[nodeUrl];
