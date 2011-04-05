@@ -21,8 +21,6 @@ package org.neo4j.server;
 
 import java.io.File;
 
-import org.apache.log4j.BasicConfigurator;
-import org.apache.log4j.xml.DOMConfigurator;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -33,6 +31,8 @@ import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
 import org.neo4j.server.web.Jetty6WebServer;
+
+import uk.org.lidalia.sysoutslf4j.context.SysOutOverSLF4J;
 
 public abstract class Bootstrapper
 {
@@ -64,6 +64,7 @@ public abstract class Bootstrapper
             server = new NeoServerWithEmbeddedWebServer( getGraphDatabaseFactory(), new AddressResolver(),
                     startupHealthCheck, getConfigFile(), webServer, getServerModules() );
             server.start();
+            log.info( "Server started on [%s]", server.baseUri() );
 
             Runtime.getRuntime().addShutdownHook( new Thread()
             {
@@ -163,16 +164,6 @@ public abstract class Bootstrapper
 
     private static void configureLogging()
     {
-        String log4jConfigPath = System.getProperty( KEY_LOG4J_CONFIG_XML_PATH );
-        if ( log4jConfigPath != null )
-        {
-            DOMConfigurator.configure( log4jConfigPath );
-            System.out.println( "Configured logging from file: " + log4jConfigPath );
-        }
-        else
-        {
-            BasicConfigurator.configure();
-            System.out.println( "Configured default logging." );
-        }
+        SysOutOverSLF4J.sendSystemOutAndErrToSLF4J();
     }
 }
