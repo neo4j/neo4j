@@ -37,7 +37,7 @@ import com.sun.jersey.api.client.ClientResponse;
 public class ServerConfigTest {
 
     private NeoServerWithEmbeddedWebServer server;
-    
+
     @After
     public void stopServer() {
         if(server != null) {
@@ -48,7 +48,7 @@ public class ServerConfigTest {
     @Test
     public void shouldPickUpPortFromConfig() throws Exception {
         final int NON_DEFAULT_PORT = 4321;
-        
+
         server = server().withRandomDatabaseDir().withPassingStartupHealthcheck().onPort(
                 NON_DEFAULT_PORT ).build();
         server.start();
@@ -60,30 +60,31 @@ public class ServerConfigTest {
 
         assertThat(response.getStatus(), is(200));
     }
-    
+
     @Test
     public void shouldPickupRelativeUrisForWebAdminAndWebAdminRest() throws IOException {
         String webAdminDataUri = "/a/different/webadmin/data/uri/";
         String webAdminManagementUri = "/a/different/webadmin/management/uri/";
-        
-        server = server().withRandomDatabaseDir().withRelativeWebDataAdminUriPath(webAdminDataUri).withRelativeWebAdminUriPath(webAdminManagementUri).withPassingStartupHealthcheck().build();
+
+        server = server().withRandomDatabaseDir().withRelativeWebDataAdminUriPath( webAdminDataUri ).withRelativeWebAdminUriPath(
+                webAdminManagementUri ).withPassingStartupHealthcheck().build();
         server.start();
-        
+
         Client client = Client.create();
         ClientResponse response = client.resource("http://localhost:7474" + webAdminDataUri).accept(MediaType.TEXT_HTML).get(ClientResponse.class);
         assertEquals(200, response.getStatus());
-        
+
         response = client.resource("http://localhost:7474" + webAdminManagementUri).accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
         assertEquals(200, response.getStatus());
     }
-    
+
     @Test
     public void shouldPickupAbsoluteUrisForWebAdminAndWebAdminRest() {
-        
+
     }
-    
+
     @Test
     public void shouldDealWithNonNormalizedUrisForWebAdminAndWebAdminRest() {
-        
+
     }
 }

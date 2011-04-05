@@ -489,7 +489,7 @@ Graph.Layout.Ordered.prototype = {
 };
 
 /*
- * usefull JavaScript extensions, 
+ * useful JavaScript extensions 
  */
 
 function log(a) {console.log&&console.log(a);}
