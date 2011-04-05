@@ -56,13 +56,11 @@
         _results = [];
         for (key in _ref) {
           def = _ref[key];
-          _results.push(this.jmx.getBean(def.domain, def.name, function(bean) {
-            return parseBean(key, bean);
-          }));
+          _results.push(this.jmx.getBean(def.domain, def.name, this.parseBean));
         }
         return _results;
       };
-      JmxBackedModel.prototype.parseBean = function(key, bean) {
+      JmxBackedModel.prototype.parseBean = function(bean) {
         var attribute, values, _i, _len, _ref;
         if (bean != null) {
           values = {};

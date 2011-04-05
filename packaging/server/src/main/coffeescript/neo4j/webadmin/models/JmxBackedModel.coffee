@@ -39,13 +39,13 @@ define ['lib/backbone'], () ->
     fetch : =>
       parseBean = @parseBean
       for key, def of @beans
-        @jmx.getBean def.domain, def.name, (bean) ->
-          parseBean(key, bean)
+        @jmx.getBean def.domain, def.name, @parseBean
 
-    parseBean : (key, bean) =>
+    parseBean : (bean) =>
       if bean?
         values = {}
         for attribute in bean.attributes
           values[attribute.name] = attribute.value
 
         @set(values)
+
