@@ -51,21 +51,6 @@
       <artifactId>neo4j-jmx</artifactId>
       <version>1.3-SNAPSHOT</version>
     </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-management</artifactId>
-      <version>1.3-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-com</artifactId>
-      <version>1.3-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-ha</artifactId>
-      <version>1.3-SNAPSHOT</version>
-    </dependency>
     <!-- Needed for the javadoc generation! -->
     <dependency>
       <groupId>org.osgi</groupId>
