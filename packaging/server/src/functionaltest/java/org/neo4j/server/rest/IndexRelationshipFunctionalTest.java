@@ -286,6 +286,11 @@ public class IndexRelationshipFunctionalTest
         assertEquals( 200, response.getStatus() );
     }
 
+    /**
+     * FIXME: this is a duplicate of
+     * {@link IndexNodeFunctionalTest#shouldGet200AndBeAbleToRemoveIndexing()}
+     * it should at least be adapted for relationships
+     */
     @Test
     @Ignore("Unclear contract: remove the index itself? That is unsupported in the new index api")
     public void shouldGet200AndBeAbleToRemoveIndexing() throws DatabaseBlockedException, JsonParseException
@@ -340,7 +345,7 @@ public class IndexRelationshipFunctionalTest
         assertEquals( 0, helper.getIndexedRelationships( indexName, key2, value1 ).size() );
         assertEquals( 0, helper.getIndexedRelationships( indexName, key2, value2 ).size() );
     }
-    
+
     @Test
     public void shouldBeAbleToIndexValuesContainingSpaces() throws Exception
     {

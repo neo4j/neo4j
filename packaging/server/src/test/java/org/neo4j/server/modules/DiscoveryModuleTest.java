@@ -19,18 +19,21 @@
  */
 package org.neo4j.server.modules;
 
-import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.net.URI;
-import java.util.Set;
+import java.util.List;
 
 import org.junit.Test;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.web.WebServer;
 
 public class DiscoveryModuleTest {
+    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldRegisterAtRootByDefault() throws Exception {
         WebServer webServer = mock(WebServer.class);
@@ -38,11 +41,11 @@ public class DiscoveryModuleTest {
         NeoServerWithEmbeddedWebServer neoServer = mock(NeoServerWithEmbeddedWebServer.class);
         when(neoServer.baseUri()).thenReturn(new URI("http://localhost:7575"));
         when(neoServer.getWebServer()).thenReturn(webServer);
-        
+
         DiscoveryModule module = new DiscoveryModule();
-        Set<URI> uris = module.start(neoServer);
-        
-        assertEquals(1, uris.size());
-        assertEquals("/",uris.iterator().next().getPath());
+
+        module.start(neoServer);
+
+        verify( webServer ).addJAXRSPackages( any( List.class ), anyString() );
     }
 }

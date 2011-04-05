@@ -21,13 +21,14 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 define(
   ['neo4j/webadmin/data/QueuedSearch',
    './views/DataBrowserView', 
+   './views/databrowser/VisualizationSettingsView', 
    './models/DataBrowserState', 
-   './models/DataItem', 'lib/backbone'], 
-  (QueuedSearch, DataBrowserView, DataBrowserState, DataItem) ->
+   'lib/backbone'], 
+  (QueuedSearch, DataBrowserView, VisualizationSettingsView, DataBrowserState) ->
 
     class DataBrowserController extends Backbone.Controller
       routes : 
-        "/data/" : "base",
+        "/data/" : "base"
         "/data/search/*query" : "search"
 
       initialize : (appState) =>

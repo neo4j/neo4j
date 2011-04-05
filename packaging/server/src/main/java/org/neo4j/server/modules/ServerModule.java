@@ -19,9 +19,6 @@
  */
 package org.neo4j.server.modules;
 
-import java.net.URI;
-import java.util.Set;
-
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 
 /**
@@ -31,11 +28,10 @@ public interface ServerModule {
 
     /**
      * Start a module within the server
-     * 
+     *
      * @param neoServer The NeoServer that owns the module
-     * @return a Set of URIs that are owned by the module, or an empty set if no URIs are claimed
      */
-    public Set<URI> start(NeoServerWithEmbeddedWebServer neoServer);
-    
+    public void start( NeoServerWithEmbeddedWebServer neoServer );
+
     public void stop();
 }
