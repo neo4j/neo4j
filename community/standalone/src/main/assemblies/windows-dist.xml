@@ -44,6 +44,18 @@
       </includes>
     </fileSet>
     <fileSet>
+      <directory>../tools/yajsw</directory>
+      <outputDirectory>/bin</outputDirectory>
+      <includes>
+        <include>wrapper.jar</include>
+        <include>wrapperApp.jar</include>
+      </includes>
+    </fileSet>
+    <fileSet>
+      <directory>../tools/yajsw/lib</directory>
+      <outputDirectory>/bin/lib</outputDirectory>
+    </fileSet>
+    <fileSet>
       <directory>src/main/distribution/binary</directory>
       <outputDirectory>/</outputDirectory>
       <includes>

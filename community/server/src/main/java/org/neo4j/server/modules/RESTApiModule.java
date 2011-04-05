@@ -23,59 +23,54 @@ import static org.neo4j.server.JAXRSHelper.listFrom;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.UnknownHostException;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.plugins.PluginManager;
 
-public class RESTApiModule implements ServerModule {
+public class RESTApiModule implements ServerModule
+{
 
-    private static final Logger log = Logger.getLogger(RESTApiModule.class);
+    private static final Logger log = Logger.getLogger( RESTApiModule.class );
     private PluginManager plugins;
-    private NeoServerWithEmbeddedWebServer neoServer;
 
+    public void start( NeoServerWithEmbeddedWebServer neoServer )
+    {
+        try
+        {
+            URI restApiUri = restApiUri( neoServer );
 
-    public Set<URI> start(NeoServerWithEmbeddedWebServer neoServer) {
-        this.neoServer = neoServer;
-        
-        HashSet<URI> ownedUris = new HashSet<URI>();
-        try {
-            URI restApiUri = restApiUri();
-            
-            neoServer.getWebServer().addJAXRSPackages(listFrom(new String[] { Configurator.DATA_API_PACKAGE }), restApiUri.toString());
-            loadPlugins();
-            
-            log.info("Mounted REST API at [%s]", restApiUri.toString());
-            
-            ownedUris.add(restApiUri);
-            return ownedUris;
-        } catch (UnknownHostException e) {
-            log.warn(e);
-            return new HashSet<URI>();
+            neoServer.getWebServer().addJAXRSPackages( listFrom( new String[] { Configurator.DATA_API_PACKAGE } ),
+                    restApiUri.toString() );
+            loadPlugins( neoServer );
+
+            log.info( "Mounted REST API at [%s]", restApiUri.toString() );
+        }
+        catch ( URISyntaxException e )
+        {
+            log.warn( e );
         }
     }
-    
-    public void stop() {
+
+    public void stop()
+    {
         // Do nothing.
     }
-    
-    private URI restApiUri() throws UnknownHostException {
-        try {
-            return new URI(neoServer.getConfiguration().getString( Configurator.DATA_API_PATH_PROPERTY_KEY, Configurator.DEFAULT_DATA_API_PATH));
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
+
+    private URI restApiUri( NeoServerWithEmbeddedWebServer neoServer ) throws URISyntaxException
+    {
+            return new URI( neoServer.getConfiguration().getString( Configurator.DATA_API_PATH_PROPERTY_KEY,
+                    Configurator.DEFAULT_DATA_API_PATH ) );
     }
 
-    private void loadPlugins() {
-        plugins = new PluginManager(neoServer.getConfiguration());
+    private void loadPlugins( NeoServerWithEmbeddedWebServer neoServer )
+    {
+        plugins = new PluginManager( neoServer.getConfiguration() );
     }
 
-    public PluginManager getPlugins() {
+    public PluginManager getPlugins()
+    {
         return plugins;
     }
 }

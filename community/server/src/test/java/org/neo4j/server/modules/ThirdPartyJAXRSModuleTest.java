@@ -19,13 +19,15 @@
  */
 package org.neo4j.server.modules;
 
-import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.net.URI;
 import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 
 import org.junit.Test;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
@@ -43,20 +45,19 @@ public class ThirdPartyJAXRSModuleTest {
         NeoServerWithEmbeddedWebServer neoServer = mock(NeoServerWithEmbeddedWebServer.class);
         when(neoServer.baseUri()).thenReturn(new URI("http://localhost:7575"));
         when(neoServer.getWebServer()).thenReturn(webServer);
-        
+
         Configurator configurator = mock(PropertyFileConfigurator.class);
         HashSet<ThirdPartyJaxRsPackage> jaxRsPackages = new HashSet<ThirdPartyJaxRsPackage>();
         String path = "/third/party/package";
-        jaxRsPackages.add(new ThirdPartyJaxRsPackage("org.example.neo4j", path));        
+        jaxRsPackages.add(new ThirdPartyJaxRsPackage("org.example.neo4j", path));
         when(configurator.getThirdpartyJaxRsClasses()).thenReturn(jaxRsPackages);
-        
-        when(neoServer.getConfigurator()).thenReturn(configurator);
-        
-        
-        ThirdPartyJAXRSModule module = new ThirdPartyJAXRSModule();
-        Set<URI> uris = module.start(neoServer);
 
-        assertEquals(1, uris.size());
-        assertEquals(path, uris.iterator().next().getPath());
+        when(neoServer.getConfigurator()).thenReturn(configurator);
+
+
+        ThirdPartyJAXRSModule module = new ThirdPartyJAXRSModule();
+        module.start( neoServer );
+
+        verify( webServer ).addJAXRSPackages( any( List.class ), anyString() );
     }
 }

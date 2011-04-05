@@ -56,11 +56,13 @@ public class Jetty6WebServer implements WebServer
     private NeoServer server;
 
 
+    @Override
     public void setNeoServer( NeoServer server )
     {
         this.server = server;
     }
 
+    @Override
     public void start() {
         jetty = new Server(jettyPort);
         jetty.setStopAtShutdown(true);
@@ -78,6 +80,7 @@ public class Jetty6WebServer implements WebServer
         }
     }
 
+    @Override
     public void stop()
     {
         try
@@ -96,14 +99,17 @@ public class Jetty6WebServer implements WebServer
         }
     }
 
+    @Override
     public void setPort(int portNo) {
         jettyPort = portNo;
     }
 
+    @Override
     public void setMaxThreads(int maxThreads) {
         jetty.setThreadPool(new QueuedThreadPool(maxThreads));
     }
 
+    @Override
     public void addJAXRSPackages(List<String> packageNames, String mountPoint) {
         // We don't want absolute URIs at this point
         mountPoint = ensureRelativeUri(mountPoint);
@@ -156,6 +162,7 @@ public class Jetty6WebServer implements WebServer
         }
     }
 
+    @Override
     public void addStaticContent(String contentLocation, String serverMountPoint) {
         staticContent.put(serverMountPoint, contentLocation);
     }

@@ -19,12 +19,14 @@
  */
 package org.neo4j.server.modules;
 
-import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.net.URI;
-import java.util.Set;
+import java.util.List;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -42,18 +44,17 @@ public class ManagementApiModuleTest {
         NeoServerWithEmbeddedWebServer neoServer = mock(NeoServerWithEmbeddedWebServer.class);
         when(neoServer.baseUri()).thenReturn(new URI("http://localhost:7575"));
         when(neoServer.getWebServer()).thenReturn(webServer);
-        
+
         Configuration config = new PropertiesConfiguration();
         String managementPath = "/db/manage";
         config.addProperty(Configurator.MANAGEMENT_PATH_PROPERTY_KEY, managementPath);
-        
+
         when(neoServer.getConfiguration()).thenReturn(config);
-        
-        
+
+
         ManagementApiModule module = new ManagementApiModule();
-        Set<URI> uris = module.start(neoServer);
-        
-        assertEquals(1, uris.size());
-        assertEquals(managementPath,uris.iterator().next().getPath());
+        module.start( neoServer );
+
+        verify( webServer ).addJAXRSPackages( any( List.class ), anyString() );
     }
 }
