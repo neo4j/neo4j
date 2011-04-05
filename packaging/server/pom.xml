@@ -792,7 +792,14 @@
             </executions>
             
             <configuration>
-              <module>webadmin</module>
+              <modules>
+              	<module>
+                  <name>webadmin</name>
+                  <exclude>
+                  	<exclude>lib/arbor.js</exclude>
+                  </exclude>
+              	</module>
+              </modules>
               <coffeeOutputDir>${basedir}/src/main/resources/webadmin-html/js</coffeeOutputDir>
               <hamlOutputDir>${basedir}/src/main/resources/webadmin-html/js</hamlOutputDir>
               <optimizeSourceDir>${basedir}/src/main/resources/webadmin-html/js</optimizeSourceDir>
