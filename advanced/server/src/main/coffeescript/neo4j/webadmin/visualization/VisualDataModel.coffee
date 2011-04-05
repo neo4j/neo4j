@@ -178,7 +178,6 @@ define(
         for rel in relationships 
           nodeUrl = rel.getOtherNodeUrl(baseNodeUrl)
           if not @data.nodes[nodeUrl]?
-            console.log "#{nodeUrl} not found, yet referred to by ", rel
             continue
           nodeMeta = @data.nodes[nodeUrl]
           if not grouped[nodeUrl]?
