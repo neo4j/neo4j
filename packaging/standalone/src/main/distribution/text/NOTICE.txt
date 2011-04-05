@@ -16,8 +16,6 @@ Third party libraries
 
 Full license texts are found in LICENSES.txt.
 
-GNU General Public License Version 2: Tanuki Java Service Wrapper
-
 GNU General Public License Version 2 with classpath exception: MIME streaming extension,
  jersey-client, jersey-core, jersey-multipart, jersey-server, jsr311-api
 
