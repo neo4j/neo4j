@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server;
+package org.neo4j.server.enterprise;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -26,6 +26,7 @@ import java.util.Map;
 import org.neo4j.helpers.collection.CombiningIterable;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
+import org.neo4j.server.advanced.AdvancedNeoServerBootstrapper;
 import org.neo4j.server.startup.healthcheck.Neo4jHAPropertiesMustExistRule;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
 

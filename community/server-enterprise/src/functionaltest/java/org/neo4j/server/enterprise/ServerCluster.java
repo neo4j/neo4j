@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server;
+package org.neo4j.server.enterprise;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -38,7 +38,9 @@ import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.management.HighAvailability;
+import org.neo4j.server.Bootstrapper;
 import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.enterprise.EnterpriseNeoServerBootstrapper;
 import org.neo4j.test.SubProcess;
 import org.neo4j.test.TargetDirectory;
 
