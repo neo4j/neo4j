@@ -25,10 +25,14 @@ define ['lib/backbone'], () ->
     initialize : (options) =>
       @server = options.server
       @jmx = @server.manage.jmx
+      @dataAvailable = false
 
       if options.pollingInterval? and options.pollingInterval > 0
         @fetch()
         @setPollingInterval options.pollingInterval
+
+    isDataAvailable : () ->
+      @dataAvailable
 
     setPollingInterval : (ms) =>
       if @interval?
@@ -43,6 +47,7 @@ define ['lib/backbone'], () ->
 
     parseBean : (bean) =>
       if bean?
+        @dataAvailable = true
         values = {}
         for attribute in bean.attributes
           values[attribute.name] = attribute.value
