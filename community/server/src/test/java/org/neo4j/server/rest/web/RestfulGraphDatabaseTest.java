@@ -55,7 +55,6 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseBlockedException;
-import org.neo4j.server.database.DatabaseMode;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
@@ -79,7 +78,7 @@ public class RestfulGraphDatabaseTest
     public void doBefore() throws IOException
     {
         databasePath = ServerTestUtils.createTempDir().getAbsolutePath();
-        database = new Database( DatabaseMode.STANDALONE, databasePath );
+        database = new Database( ServerTestUtils.EMBEDDED_GRAPH_DATABASE_FACTORY, databasePath );
         helper = new GraphDbHelper( database );
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
         service = new RestfulGraphDatabase( uriInfo(), database, new JsonFormat(), output );
@@ -872,24 +871,24 @@ public class RestfulGraphDatabaseTest
         assertNotNull( map.get( "relationship_index" ) );
         assertEquals( response.getMetadata().getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
     }
-    
+
     @Test
     public void shouldBeAbleToGetRootWhenNoReferenceNodePresent() throws JsonParseException
     {
         helper.deleteNode( 0l );
-        
+
         Response response = service.getRoot();
         assertEquals( 200, response.getStatus() );
         String entity = entityAsString( response );
         Map<String, Object> map = JsonHelper.jsonToMap( entity );
         assertNotNull( map.get( "node" ) );
-        
+
         assertNotNull( map.get( "node_index" ) );
         assertNotNull( map.get( "extensions_info" ) );
         assertNotNull( map.get( "relationship_index" ) );
-        
+
         assertNull( map.get( "reference_node" ) );
-        
+
         assertEquals( response.getMetadata().getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
     }
 
@@ -1311,7 +1310,7 @@ public class RestfulGraphDatabaseTest
         assertEquals( Status.OK.getStatusCode(), service.traverse( node, TraverserReturnType.node,
                 markWithUnicodeMarker( "{\"max depth\":2}" ) ).getStatus() );
     }
-    
+
     @Test
     public void shouldAdvertiseUriForQueringAllRelationsInTheDatabase() {
         Response response = service.getRoot();

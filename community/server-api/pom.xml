@@ -1,96 +1,115 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <groupId>org.neo4j</groupId>
-        <artifactId>parent-central</artifactId>
-        <version>18</version>
-    </parent>
-
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
     <groupId>org.neo4j</groupId>
-    <artifactId>server-api</artifactId>
-    <version>1.3-SNAPSHOT</version>
-    <packaging>jar</packaging>
-    <name>Neo4j Server API</name>
-    <description>Interfaces and baseclasses needed to create your own extensions.</description>
-    <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+    <artifactId>parent-central</artifactId>
+    <version>18</version>
+  </parent>
 
-    <properties>
-        <short-name>server-extensions</short-name>
-        <bundle.namespace>org.neo4j.server</bundle.namespace>
-        <neo4j.version>1.3-SNAPSHOT</neo4j.version>
-    </properties>
+  <groupId>org.neo4j</groupId>
+  <artifactId>server-api</artifactId>
+  <version>1.3-SNAPSHOT</version>
+  <packaging>jar</packaging>
+  <name>Neo4j Server API</name>
+  <description>Interfaces and baseclasses needed to create your own extensions.</description>
+  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
-    <scm>
-        <url>https://github.com/neo4j/server/tree/master/server-extensions</url>
-    </scm>
+  <properties>
+    <short-name>server-api</short-name>
+    <bundle.namespace>org.neo4j.server</bundle.namespace>
+    <neo4j.version>1.3-SNAPSHOT</neo4j.version>
+  </properties>
 
-    <licenses>
-        <license>
-            <name>GNU Affero General Public License, Version 3</name>
-            <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
-        </license>
-    </licenses>
+  <scm>
+    <url>https://github.com/neo4j/server/tree/master/server-api</url>
+  </scm>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-kernel</artifactId>
-            <version>${neo4j.version}</version>
-        </dependency>
+  <licenses>
+    <license>
+      <name>GNU Affero General Public License, Version 3</name>
+      <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
+    </license>
+  </licenses>
 
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-        </dependency>
+  <dependencies>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel</artifactId>
+      <version>${neo4j.version}</version>
+    </dependency>
 
-        <dependency>
-            <groupId>javax.ws.rs</groupId>
-            <artifactId>jsr311-api</artifactId>
-            <version>1.1.1</version>
-        </dependency>
-        <dependency>
-            <groupId>commons-configuration</groupId>
-            <artifactId>commons-configuration</artifactId>
-            <version>1.6</version>
-        </dependency>
-    </dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+    </dependency>
 
-    <build>
-        <plugins>
-            <plugin>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <!-- fix issue with appassembler -->
-                <version>2.4</version>
-            </plugin>
-        </plugins>
-    </build>
+    <dependency>
+      <groupId>javax.ws.rs</groupId>
+      <artifactId>jsr311-api</artifactId>
+      <version>1.1.1</version>
+    </dependency>
 
-    <distributionManagement>
-        <site>
-            <id>neo4j-site</id>
-            <url>scpexe://components.neo4j.org/home/neo/components/${project.artifactId}/${project.version}</url>
-        </site>
-    </distributionManagement>
+    <dependency>
+      <groupId>commons-configuration</groupId>
+      <artifactId>commons-configuration</artifactId>
+      <version>1.6</version>
+      <type>jar</type>
+      <scope>compile</scope>
+      <exclusions>
+        <exclusion>
+          <artifactId>commons-digester</artifactId>
+          <groupId>commons-digester</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
 
-    <developers>
-        <developer>
-            <id>andres</id>
-            <name>Andrés Taylor</name>
-            <email>andres.taylor [at] neotechnology.com</email>
-            <timezone>+1</timezone>
-            <roles>
-                <role>Developer</role>
-            </roles>
-        </developer>
-        <developer>
-            <id>tobias</id>
-            <name>Tobias Ivarsson</name>
-            <email>tobias [at] neotechnology.com</email>
-            <timezone>+1</timezone>
-            <roles>
-                <role>Developer</role>
-            </roles>
-        </developer>
-    </developers>
+    <!-- Added directly to avoid version clash in commons-configuration. -->
+    <dependency>
+      <groupId>commons-digester</groupId>
+      <artifactId>commons-digester</artifactId>
+      <version>1.8.1</version>
+      <type>jar</type>
+      <scope>compile</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <!-- fix issue with appassembler -->
+        <version>2.4</version>
+      </plugin>
+    </plugins>
+  </build>
+
+  <distributionManagement>
+    <site>
+      <id>neo4j-site</id>
+      <url>scpexe://components.neo4j.org/home/neo/components/${project.artifactId}/${project.version}</url>
+    </site>
+  </distributionManagement>
+
+  <developers>
+    <developer>
+      <id>andres</id>
+      <name>Andrés Taylor</name>
+      <email>andres.taylor [at] neotechnology.com</email>
+      <timezone>+1</timezone>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>tobias</id>
+      <name>Tobias Ivarsson</name>
+      <email>tobias [at] neotechnology.com</email>
+      <timezone>+1</timezone>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+  </developers>
 </project>
