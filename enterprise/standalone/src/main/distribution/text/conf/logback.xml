@@ -46,8 +46,10 @@
   <root level="INFO">
     <appender-ref ref="R"/>
   </root>
+<!--
   <logger name="org.neo4j.server" level="INFO">
     <appender-ref ref="STDOUT"/>
   </logger>
+-->
 </configuration>
 
