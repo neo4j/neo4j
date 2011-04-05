@@ -11,6 +11,7 @@
         this.intersect_line_box = __bind(this.intersect_line_box, this);;
         this.intersect_line_line = __bind(this.intersect_line_line, this);;
         this.thesePointsAreReallyClose = __bind(this.thesePointsAreReallyClose, this);;
+        this.ghostify = __bind(this.ghostify, this);;
         this.nodeDropped = __bind(this.nodeDropped, this);;
         this.nodeDragged = __bind(this.nodeDragged, this);;
         this.clicked = __bind(this.clicked, this);;
@@ -27,6 +28,7 @@
       Renderer.prototype.init = function(system) {
         this.particleSystem = system;
         this.particleSystem.screenSize(this.canvas.width, this.canvas.height);
+        this.particleSystem.screenStep(0.000);
         this.particleSystem.screenPadding(40);
         return this.initMouseHandling();
       };
@@ -149,6 +151,7 @@
         old_nearest = this.nearest && this.nearest.node._id;
         pos = $(this.canvas).offset();
         s = arbor.Point(e.pageX - pos.left, e.pageY - pos.top);
+        this.ghostify(this.dragged.node);
         if (!this.nearest) {
           return;
         }
@@ -165,18 +168,24 @@
         if (this.dragged.node !== null) {
           this.dragged.node.fixed = this.dragged.node.data.fixated;
         }
-        this.dragged.node.tempMass = 1000;
+        this.dragged.node.fixed = true;
+        this.dragged.node.mass = 1;
         if (this.dragged.node !== null && this.thesePointsAreReallyClose(this.dragStart, {
           x: e.pageX,
           y: e.pageY
         })) {
           this.trigger("node:click", this.dragged.node);
         }
+        this.particleSystem.start();
         this.dragged = null;
         this.selected = null;
         $(this.canvas).unbind('mousemove', this.nodeDragged);
         $(window).unbind('mouseup', this.nodeDropped);
         return false;
+      };
+      Renderer.prototype.ghostify = function(node) {
+        node.mass = 10000.001;
+        return node.fixed = true;
       };
       Renderer.prototype.thesePointsAreReallyClose = function(p1, p2) {
         return Math.abs(p1.x - p2.x) < 5 && Math.abs(p1.y - p2.y) < 5;
