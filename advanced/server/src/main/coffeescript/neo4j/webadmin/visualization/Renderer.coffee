@@ -21,6 +21,7 @@ define(
       init : (system) =>
         @particleSystem = system
         @particleSystem.screenSize(@canvas.width, @canvas.height) 
+        @particleSystem.screenStep(0.000)
         @particleSystem.screenPadding(40)
 
         @initMouseHandling()
@@ -154,8 +155,10 @@ define(
         p = arbor.Point(e.pageX-pos.left, e.pageY-pos.top)
         @selected = @nearest = @dragged = @particleSystem.nearest(p)
 
-        if @dragged.node? then @dragged.node.fixed = true
-        
+        if @dragged.node? 
+          @dragged.node.fixed = true
+          #@particleSystem.stop()
+
         $(@canvas).bind('mousemove', @nodeDragged)
         $(window).bind('mouseup', @nodeDropped)
 
@@ -166,7 +169,10 @@ define(
         pos = $(@canvas).offset()
         s = arbor.Point(e.pageX-pos.left, e.pageY-pos.top)
 
+        @ghostify(@dragged.node)
+
         if not @nearest then return
+
         if @dragged != null and @dragged.node != null
           p = @particleSystem.fromScreen(s)
           @dragged.node.p = p
@@ -176,17 +182,25 @@ define(
       nodeDropped : (e) =>
         if @dragged is null or @dragged.node is undefined then return
         if @dragged.node != null then @dragged.node.fixed = @dragged.node.data.fixated
-        @dragged.node.tempMass = 1000
+        @dragged.node.fixed = true
+        @dragged.node.mass = 1
 
         if @dragged.node != null and @thesePointsAreReallyClose(@dragStart, {x:e.pageX, y:e.pageY})
           @trigger("node:click", @dragged.node)
+
+        @particleSystem.start() # ABK: hack start up the springy-spring machine
 
         @dragged = null
         @selected = null
         $(@canvas).unbind('mousemove', @nodeDragged)
         $(window).unbind('mouseup', @nodeDropped)
         return false
+
       
+      ghostify : (node) =>
+        node.mass = 10000.001
+        node.fixed = true
+
       thesePointsAreReallyClose : (p1, p2) =>
         Math.abs(p1.x - p2.x) < 5 and Math.abs(p1.y - p2.y) < 5 
 
