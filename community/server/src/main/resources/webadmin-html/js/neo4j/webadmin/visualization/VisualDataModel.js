@@ -148,6 +148,7 @@
         if (this.visualGraph.nodes[nodeUrl] != null) {
           visualNode = this.visualGraph.nodes[nodeUrl];
           visualNode.type = "unexplored";
+          node.fixed = false;
           potentiallRemove = this._getUnexploredNodesRelatedTo(nodeUrl);
           for (relatedNodeUrl in potentiallRemove) {
             relatedNodeMeta = potentiallRemove[relatedNodeUrl];
