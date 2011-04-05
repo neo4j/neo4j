@@ -21,6 +21,8 @@
   define(['lib/DateFormat', 'neo4j/webadmin/ui/Tooltip', 'lib/jquery.flot', 'lib/backbone'], function(DateFormat, Tooltip) {
     var LineChart;
     return LineChart = (function() {
+      var timezoneOffset;
+      timezoneOffset = (new Date()).getTimezoneOffset() * 60 * 1000;
       LineChart.prototype.defaultSettings = {
         label: "",
         xaxis: {
@@ -48,7 +50,7 @@
           return Math.round(v);
         },
         tooltipXFormatter: function(v) {
-          return DateFormat.format(new Date(v));
+          return DateFormat.format(new Date(v + timezoneOffset));
         }
       };
       function LineChart(el) {
