@@ -1,31 +1,13 @@
 #! /bin/sh
 
-#
-# Copyright (c) 1999, 2010 Tanuki Software, Ltd.
-# http://www.tanukisoftware.com
-# All rights reserved.
-#
-# This software is the proprietary information of Tanuki Software.
-# You shall use it only in accordance with the terms of the
-# license agreement you entered into with Tanuki Software.
-# http://wrapper.tanukisoftware.com/doc/english/licenseOverview.html
-#
-# Java Service Wrapper sh script.  Suitable for starting and stopping
-#  wrapped Java applications on UNIX platforms.
-#
-
-#-----------------------------------------------------------------------------
-# These settings can be modified to fit the needs of your application
-# Optimized for use with version 3.5.4 of the Wrapper.
-
-
 # Application
 APP_NAME="neo4j-server"
 APP_LONG_NAME="Neo4j Server"
 
 # Wrapper
-WRAPPER_CMD="wrapper"
+WRAPPER_CMD="wrapper.jar"
 WRAPPER_CONF="../conf/neo4j-wrapper.conf"
+
 
 # Priority at which to run the wrapper.  See "man nice" for valid priorities.
 #  nice is only used if a priority is specified.
@@ -34,18 +16,6 @@ PRIORITY=
 # Location of the pid file.
 PIDDIR="../data"
 
-# If uncommented, causes the Wrapper to be shutdown using an anchor file.
-#  When launched with the 'start' command, it will also ignore all INT and
-#  TERM signals.
-#IGNORE_SIGNALS=true
-
-# Wrapper will start the JVM asynchronously. Your application may have some
-#  initialization tasks and it may be desirable to wait a few seconds
-#  before returning.  For example, to delay the invocation of following
-#  startup scripts.  Setting WAIT_AFTER_STARTUP to a positive number will
-#  cause the start command to delay for the indicated period of time 
-#  (in seconds).
-# 
 WAIT_AFTER_STARTUP=0
 
 # If set, wait for the wrapper to report that the daemon has started
@@ -73,21 +43,8 @@ WAIT_FOR_STARTED_TIMEOUT=120
 
 # When installing on On Mac OSX platforms, the following domain will be used to
 #  prefix the plist file name.
-PLIST_DOMAIN=org.tanukisoftware.wrapper
+PLIST_DOMAIN=org.neo4j
  
-# Initialization block for the install_initd and remove_initd scripts used by
-#  SUSE linux distributions.
-### BEGIN INIT INFO
-# Provides: testwrapper
-# Required-Start: $local_fs $network $syslog
-# Should-Start: 
-# Required-Stop:
-# Default-Start: 2 3 4 5
-# Default-Stop: 0 1 6
-# Short-Description: Test Wrapper Sample Application
-# Description: Test Wrapper Sample Application Description
-### END INIT INFO
-
 # Do not modify anything beyond this point
 #-----------------------------------------------------------------------------
 
@@ -145,6 +102,31 @@ done
 # Change the current directory to the location of the script
 cd "`dirname "$REALPATH"`"
 REALDIR=`pwd`
+
+#
+# yajsw env
+#
+yajsw_home="$REALDIR"/..
+export yajsw_home
+
+yajsw_jar="$REALDIR"/wrapper.jar
+export yajsw_jar
+
+yajsw_java_options=-Xmx15m
+export yajsw_java_options
+
+# ABK: this needs to be more sophisticated
+java_exe=java
+export java_exe
+
+conf_file="$yajsw_home"/conf/neo4j-wrapper.conf
+export conf_file
+
+conf_default_file="$yajsw_home"/conf/wrapper.conf.default
+export conf_default_file
+
+### end of yajsw env
+
 
 # If the PIDDIR is relative, set its value relative to the full REALPATH to avoid problems if
 #  the working directory is later changed.
@@ -425,7 +407,8 @@ if [ "X$DETAIL_STATUS$WAIT_FOR_STARTED_STATUS" = "X" ]
 then
    STATUSPROP=
 else
-   STATUSPROP="wrapper.statusfile=\"$STATUSFILE\" wrapper.java.statusfile=\"$JAVASTATUSFILE\""
+   STATUSPROP=
+   #STATUSPROP="wrapper.statusfile=\"$STATUSFILE\" wrapper.java.statusfile=\"$JAVASTATUSFILE\""
 fi
 
 if [ ! -n "$WAIT_FOR_STARTED_STATUS" ]
@@ -434,7 +417,8 @@ then
 fi
 
 if [ $WAIT_FOR_STARTED_STATUS = true ] ; then
-    DETAIL_STATUS=true
+    # DETAIL_STATUS=true // ABK: not produced by yajsw
+    DETAIL_STATUS=
 fi
 
 
@@ -696,6 +680,11 @@ launchdinternal() {
     fi
 }
 
+mkpid() {
+  PID=$!
+  echo $PID > $PIDFILE
+}
+
 console() {
     eval echo  'Running $APP_LONG_NAME...'
     getpid
@@ -703,7 +692,8 @@ console() {
     then
         trap '' 3
         # The string passed to eval must handles spaces in paths correctly.
-        COMMAND_LINE="$CMDNICE \"$WRAPPER_CMD\" \"$WRAPPER_CONF\" wrapper.syslog.ident=\"$APP_NAME\" wrapper.pidfile=\"$PIDFILE\" wrapper.name=\"$APP_NAME\" wrapper.displayname=\"$APP_LONG_NAME\" $ANCHORPROP $STATUSPROP $LOCKPROP"
+        #COMMAND_LINE="$REALDIR/runConsole.sh"
+        COMMAND_LINE="$java_exe $yajsw_java_options -jar $yajsw_jar -c $WRAPPER_CONF"
         eval $COMMAND_LINE
     else
         eval echo  '$APP_LONG_NAME is already running.'
@@ -803,9 +793,12 @@ start() {
     getpid
     if [ "X$pid" = "X" ]
     then
-        # The string passed to eval must handles spaces in paths correctly.
-        COMMAND_LINE="$CMDNICE \"$WRAPPER_CMD\" \"$WRAPPER_CONF\" wrapper.syslog.ident=\"$APP_NAME\" wrapper.pidfile=\"$PIDFILE\" wrapper.name=\"$APP_NAME\" wrapper.displayname=\"$APP_LONG_NAME\" wrapper.daemonize=TRUE $ANCHORPROP $IGNOREPROP $STATUSPROP $LOCKPROP"
-        eval $COMMAND_LINE
+      #COMMAND_LINE="$WRAPPER_CMD -c $WRAPPER_CONF &"
+      COMMAND_LINE="$java_exe $yajsw_java_options -jar $yajsw_jar -c $WRAPPER_CONF &"
+      eval $COMMAND_LINE
+      # pidfile should be created by yajsw
+      #PID=$!
+      #echo $PID > $PIDFILE
     else
         eval echo  '$APP_LONG_NAME is already running.'
         exit 1
@@ -827,6 +820,7 @@ stopit() {
             exit 1
         fi
     else
+        eval echo '\tpid: $pid'
         if [ "X$IGNORE_SIGNALS" = "X" ]
         then
             # Running so try to stop it.
@@ -894,7 +888,11 @@ status() {
             eval echo  '$APP_LONG_NAME is running: PID:$pid'
         else
             getstatus
-            eval echo  '$APP_LONG_NAME is running: PID:$pid, Wrapper:$STATUS, Java:$JAVASTATUS'
+            eval echo  '$APP_LONG_NAME is running' 
+            eval echo  'PID : $pid'
+            COMMAND_LINE="$java_exe $yajsw_java_options -jar $yajsw_jar -q $WRAPPER_CONF"
+            eval $COMMAND_LINE
+            #eval echo  '$APP_LONG_NAME is running: PID:$pid, Wrapper:$STATUS, Java:$JAVASTATUS'
         fi
         exit 0
     fi
@@ -905,175 +903,8 @@ installdaemon() {
         eval echo  'Must be root to perform this action.'
         exit 1
     else
-        APP_NAME_LOWER=`echo "$APP_NAME" | tr [A-Z] [a-z]`
-        if [ "$DIST_OS" = "solaris" ] ; then
-            eval echo  'Detected Solaris:'
-            if [ -f /etc/init.d/$APP_NAME ] ; then
-                eval echo  ' The $APP_LONG_NAME daemon is already installed.'
-                exit 1
-            else
-                eval echo  ' Installing the $APP_LONG_NAME daemon..'
-                ln -s "$REALPATH" "/etc/init.d/$APP_NAME"
-                ln -s "/etc/init.d/$APP_NAME" "/etc/rc3.d/K20$APP_NAME_LOWER"
-                ln -s "/etc/init.d/$APP_NAME" "/etc/rc3.d/S20$APP_NAME_LOWER"
-            fi
-        elif [ "$DIST_OS" = "linux" ] ; then
-            if [ -f /etc/redhat-release -o -f /etc/redhat_version -o -f /etc/fedora-release ]  ; then
-                eval echo  'Detected RHEL or Fedora:'                  
-                if [ -f "/etc/init.d/$APP_NAME" ] ; then
-                    eval echo  ' The $APP_LONG_NAME daemon is already installed.'
-                    exit 1
-                else
-                    eval echo  ' Installing the $APP_LONG_NAME daemon..'
-                    ln -s "$REALPATH" "/etc/init.d/$APP_NAME"
-                    /sbin/chkconfig --add "$APP_NAME"
-                    /sbin/chkconfig "$APP_NAME" on
-                fi
-            elif [ -f /etc/SuSE-release ] ; then
-                eval echo  'Detected SuSE or SLES:'
-                if [ -f "/etc/init.d/$APP_NAME" ] ; then
-                    eval echo  ' The $APP_LONG_NAME daemon is already installed.'
-                    exit 1
-                else
-                    eval echo  ' Installing the $APP_LONG_NAME daemon..'
-                    ln -s "$REALPATH" "/etc/init.d/$APP_NAME"
-                    insserv "/etc/init.d/$APP_NAME"
-                fi
-            elif [ -f /etc/lsb-release ] ; then
-                eval echo  'Detected Ubuntu:'
-                if [ -f "/etc/init.d/$APP_NAME" ] ; then
-                    eval echo  ' The $APP_LONG_NAME daemon is already installed.'
-                    exit 1
-                else
-                    eval echo  ' Installing the $APP_LONG_NAME daemon..'
-                    ln -s "$REALPATH" "/etc/init.d/$APP_NAME"
-                    update-rc.d "$APP_NAME" defaults
-                fi
-            else
-                eval echo  'Detected Linux:'
-                if [ -f "/etc/init.d/$APP_NAME" ] ; then
-                    eval echo  ' The $APP_LONG_NAME daemon is already installed.'
-                    exit 1
-                else
-                    eval echo  ' Installing the $APP_LONG_NAME daemon..'
-                    ln -s "$REALPATH" /etc/init.d/$APP_NAME
-                    ln -s "/etc/init.d/$APP_NAME" "/etc/rc3.d/K20$APP_NAME_LOWER"
-                    ln -s "/etc/init.d/$APP_NAME" "/etc/rc3.d/S20$APP_NAME_LOWER"
-                    ln -s "/etc/init.d/$APP_NAME" "/etc/rc5.d/S20$APP_NAME_LOWER"
-                    ln -s "/etc/init.d/$APP_NAME" "/etc/rc5.d/K20$APP_NAME_LOWER"
-                fi
-            fi
-        elif [ "$DIST_OS" = "hpux" ] ; then     
-            eval echo  'Detected HP-UX:'          
-            if [ -f "/sbin/init.d/$APP_NAME" ] ; then
-                eval echo  ' The $APP_LONG_NAME daemon is already installed.'
-                exit 1
-            else
-                eval echo  ' Installing the $APP_LONG_NAME daemon..'
-                ln -s "$REALPATH" "/sbin/init.d/$APP_NAME"
-                ln -s "/sbin/init.d/$APP_NAME" "/sbin/rc3.d/K20$APP_NAME_LOWER"
-                ln -s "/sbin/init.d/$APP_NAME" "/sbin/rc3.d/S20$APP_NAME_LOWER"
-            fi
-        elif [ "$DIST_OS" = "aix" ] ; then
-            eval echo  'Detected AIX:'
-            if [ -f "/etc/rc.d/init.d/$APP_NAME" ] ; then
-                eval echo  ' The $APP_LONG_NAME daemon is already installed.'
-                exit 1
-            else 
-                eval echo  ' Installing the $APP_LONG_NAME daemon..'
-                ln -s "$REALPATH" /etc/rc.d/init.d/$APP_NAME
-                ln -s "/etc/rc.d/init.d/$APP_NAME" "/etc/rc.d/rc2.d/S20$APP_NAME_LOWER"
-                ln -s "/etc/rc.d/init.d/$APP_NAME" "/etc/rc.d/rc2.d/K20$APP_NAME_LOWER"
-            fi
-        elif [ "$DIST_OS" = "freebsd" ] ; then
-            eval echo  'Detected FreeBSD:'                
-            if [ -f "/etc/rc.d/$APP_NAME" ] ; then
-                eval echo  ' The $APP_LONG_NAME daemon is already installed.'
-                exit 1
-            else
-                eval echo  ' Installing the $APP_LONG_NAME daemon..'
-                sed -i .bak "/${APP_NAME}_enable=\"YES\"/d" /etc/rc.conf
-                if [ -f "${REALDIR}/${APP_NAME}.install" ] ; then
-                    ln -s "${REALDIR}/${APP_NAME}.install" "/etc/rc.d/$APP_NAME"
-                else
-                    echo '#!/bin/sh' > "/etc/rc.d/$APP_NAME"
-                    echo "#" >> "/etc/rc.d/$APP_NAME"
-                    echo "# PROVIDE: $APP_NAME" >> "/etc/rc.d/$APP_NAME"
-                    echo "# REQUIRE: NETWORKING" >> "/etc/rc.d/$APP_NAME"
-                    echo "# KEYWORD: shutdown" >> "/etc/rc.d/$APP_NAME"
-                    echo ". /etc/rc.subr" >> "/etc/rc.d/$APP_NAME"
-                    echo "name=\"$APP_NAME\"" >> "/etc/rc.d/$APP_NAME"
-                    echo "rcvar=\`set_rcvar\`" >> "/etc/rc.d/$APP_NAME"
-                    echo "command=\"${REALDIR}/${APP_NAME}\"" >> "/etc/rc.d/$APP_NAME"
-                    echo 'start_cmd="${name}_start"' >> "/etc/rc.d/$APP_NAME"
-                    echo 'load_rc_config $name' >> "/etc/rc.d/$APP_NAME"
-                    echo 'status_cmd="${name}_status"' >> "/etc/rc.d/$APP_NAME"
-                    echo 'stop_cmd="${name}_stop"' >> "/etc/rc.d/$APP_NAME"
-                    echo "${APP_NAME}_status() {" >> "/etc/rc.d/$APP_NAME"
-                    echo '${command} status' >> "/etc/rc.d/$APP_NAME"
-                    echo '}' >> "/etc/rc.d/$APP_NAME"
-                    echo "${APP_NAME}_stop() {" >> "/etc/rc.d/$APP_NAME"
-                    echo '${command} stop' >> "/etc/rc.d/$APP_NAME"
-                    echo '}' >> "/etc/rc.d/$APP_NAME"
-                    echo "${APP_NAME}_start() {" >> "/etc/rc.d/$APP_NAME"
-                    echo '${command} start' >> "/etc/rc.d/$APP_NAME"
-                    echo '}' >> "/etc/rc.d/$APP_NAME"
-                    echo 'run_rc_command "$1"' >> "/etc/rc.d/$APP_NAME"
-                fi
-                echo "${APP_NAME}_enable=\"YES\"" >> /etc/rc.conf
-                chmod 555 "/etc/rc.d/$APP_NAME"
-            fi
-        elif [ "$DIST_OS" = "macosx" ] ; then
-            eval echo  'Detected Mac OSX:'
-            if [ -f "/Library/LaunchDaemons/${APP_PLIST}" ] ; then
-                eval echo  ' The $APP_LONG_NAME daemon is already installed.'
-                exit 1
-            else
-                eval echo  ' Installing the $APP_LONG_NAME daemon..'
-                if [ -f "${REALDIR}/${APP_PLIST}" ] ; then
-                    ln -s "${REALDIR}/${APP_PLIST}" "/Library/LaunchDaemons/${APP_PLIST}"
-                else
-                    echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" > "/Library/LaunchDaemons/${APP_PLIST}"
-                    echo "<!DOCTYPE plist PUBLIC \"-//Apple Computer//DTD PLIST 1.0//EN\"" >> "/Library/LaunchDaemons/${APP_PLIST}"
-                    echo "\"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">" >> "/Library/LaunchDaemons/${APP_PLIST}"
-                    echo "<plist version=\"1.0\">" >> "/Library/LaunchDaemons/${APP_PLIST}"
-                    echo "    <dict>" >> "/Library/LaunchDaemons/${APP_PLIST}"
-                    echo "        <key>Label</key>" >> "/Library/LaunchDaemons/${APP_PLIST}"
-                    echo "        <string>${APP_PLIST_BASE}</string>" >> "/Library/LaunchDaemons/${APP_PLIST}"
-                    echo "        <key>ProgramArguments</key>" >> "/Library/LaunchDaemons/${APP_PLIST}"
-                    echo "        <array>" >> "/Library/LaunchDaemons/${APP_PLIST}"
-                    echo "            <string>${REALDIR}/${APP_NAME}</string>" >> "/Library/LaunchDaemons/${APP_PLIST}"
-                    echo "            <string>launchdinternal</string>" >> "/Library/LaunchDaemons/${APP_PLIST}"
-                    echo "        </array>" >> "/Library/LaunchDaemons/${APP_PLIST}"
-                    echo "        <key>OnDemand</key>" >> "/Library/LaunchDaemons/${APP_PLIST}"
-                    echo "        <true/>" >> "/Library/LaunchDaemons/${APP_PLIST}"
-                    echo "        <key>RunAtLoad</key>" >> "/Library/LaunchDaemons/${APP_PLIST}"
-                    echo "        <true/>" >> "/Library/LaunchDaemons/${APP_PLIST}"
-                    if [ "X$RUN_AS_USER" != "X" ] ; then
-                        echo "        <key>UserName</key>" >> "/Library/LaunchDaemons/${APP_PLIST}"
-                        echo "        <string>${RUN_AS_USER}</string>" >> "/Library/LaunchDaemons/${APP_PLIST}"
-                    fi
-                    echo "    </dict>" >> "/Library/LaunchDaemons/${APP_PLIST}"
-                    echo "</plist>" >> "/Library/LaunchDaemons/${APP_PLIST}"
-                fi
-                chmod 555 "/Library/LaunchDaemons/${APP_PLIST}"
-            fi
-        elif [ "$DIST_OS" = "zos" ] ; then
-            eval echo  'Detected z/OS:'
-            if [ -f /etc/rc.bak ] ; then
-                eval echo  ' The $APP_LONG_NAME daemon is already installed.'
-                exit 1
-            else
-                eval echo  ' Installing the $APP_LONG_NAME daemon..'
-                cp /etc/rc /etc/rc.bak
-                sed  "s:echo /etc/rc script executed, \`date\`::g" /etc/rc.bak > /etc/rc
-                echo "_BPX_JOBNAME='${APP_NAME}' \"${REALDIR}/${APP_NAME}\" start" >>/etc/rc
-                echo '/etc/rc script executed, `date`' >>/etc/rc
-            fi
-        else
-            eval echo  'Install not currently supported for $DIST_OS'
-            exit 1
-        fi
+      COMMAND_LINE="$java_exe $yajsw_java_options -jar $yajsw_jar -i $WRAPPER_CONF"
+      eval $COMMAND_LINE
     fi
 }
 
@@ -1083,130 +914,9 @@ removedaemon() {
         exit 1
     else
         stopit "0"
-        APP_NAME_LOWER=`echo "$APP_NAME" | tr [A-Z] [a-z]`
-        if [ "$DIST_OS" = "solaris" ] ; then
-            eval echo  'Detected Solaris:'
-            if [ -f "/etc/init.d/$APP_NAME" ] ; then
-                eval echo  ' Removing $APP_LONG_NAME daemon...'
-                for i in "/etc/rc3.d/S20$APP_NAME_LOWER" "/etc/rc3.d/K20$APP_NAME_LOWER" "/etc/init.d/$APP_NAME"
-                do
-                    rm -f $i
-                done
-            else
-                eval echo  ' The $APP_LONG_NAME daemon is not currently installed.'
-                exit 1
-            fi
-        elif [ "$DIST_OS" = "linux" ] ; then
-            if [ -f /etc/redhat-release -o -f /etc/redhat_version -o -f /etc/fedora-release ] ; then
-                eval echo  'Detected RHEL or Fedora:'
-                if [ -f "/etc/init.d/$APP_NAME" ] ; then
-                    eval echo  ' Removing $APP_LONG_NAME daemon...'
-                    /sbin/chkconfig "$APP_NAME" off
-                    /sbin/chkconfig --del "$APP_NAME"
-                    rm -f "/etc/init.d/$APP_NAME"
-                else
-                    eval echo  ' The $APP_LONG_NAME daemon is not currently installed.'
-                    exit 1
-                fi
-            elif [ -f /etc/SuSE-release ] ; then
-                eval echo  'Detected SuSE or SLES:'
-                if [ -f "/etc/init.d/$APP_NAME" ] ; then
-                    eval echo  ' Removing $APP_LONG_NAME daemon...'
-                    insserv -r "/etc/init.d/$APP_NAME"
-                    rm -f "/etc/init.d/$APP_NAME"
-                else
-                    eval echo  ' The $APP_LONG_NAME daemon is not currently installed.'
-                    exit 1
-                fi
-            elif [ -f /etc/lsb-release ] ; then
-                eval echo  'Detected Ubuntu:'
-                if [ -f "/etc/init.d/$APP_NAME" ] ; then
-                    eval echo  ' Removing $APP_LONG_NAME daemon...'
-                    update-rc.d -f "$APP_NAME" remove
-                    rm -f "/etc/init.d/$APP_NAME"
-                else
-                    eval echo  ' The $APP_LONG_NAME daemon is not currently installed.'
-                    exit 1
-                fi
-            else
-                eval echo  'Detected Linux:'
-                if [ -f "/etc/init.d/$APP_NAME" ] ; then
-                    eval echo  ' Removing $APP_LONG_NAME daemon...'
-                    for i in "/etc/rc3.d/K20$APP_NAME_LOWER" "/etc/rc5.d/K20$APP_NAME_LOWER" "/etc/rc3.d/S20$APP_NAME_LOWER" "/etc/init.d/$APP_NAME" "/etc/rc5.d/S20$APP_NAME_LOWER"
-                    do
-                        rm -f $i
-                    done
-                else
-                    eval echo  ' The $APP_LONG_NAME daemon is not currently installed.'
-                    exit 1
-                fi
-            fi
-        elif [ "$DIST_OS" = "hpux" ] ; then
-            eval echo  'Detected HP-UX:'
-            if [ -f "/sbin/init.d/$APP_NAME" ] ; then
-                eval echo  ' Removing $APP_LONG_NAME daemon...'
-                for i in "/sbin/rc3.d/K20$APP_NAME_LOWER" "/sbin/rc3.d/S20$APP_NAME_LOWER" "/sbin/init.d/$APP_NAME"
-                do
-                    rm -f $i
-                done
-            else
-                eval echo  ' The $APP_LONG_NAME daemon is not currently installed.'
-                exit 1
-            fi
-        elif [ "$DIST_OS" = "aix" ] ; then
-            eval echo  'Detected AIX:'
-            if [ -f "/etc/rc.d/init.d/$APP_NAME" ] ; then
-                eval echo  ' Removing $APP_LONG_NAME daemon...'
-                for i in "/etc/rc.d/rc2.d/S20$APP_NAME_LOWER" "/etc/rc.d/rc2.d/K20$APP_NAME_LOWER" "/etc/rc.d/init.d/$APP_NAME"
-                do
-                    rm -f $i
-                done
-            else
-                eval echo  ' The $APP_LONG_NAME daemon is not currently installed.'
-                exit 1
-            fi
-        elif [ "$DIST_OS" = "freebsd" ] ; then
-            eval echo  'Detected FreeBSD:'
-            if [ -f "/etc/rc.d/$APP_NAME" ] ; then
-                eval echo  ' Removing $APP_LONG_NAME daemon...'
-                for i in "/etc/rc.d/$APP_NAME"
-                do
-                    rm -f $i
-                done
-                sed -i .bak "/${APP_NAME}_enable=\"YES\"/d" /etc/rc.conf
-            else
-                eval echo  ' The $APP_LONG_NAME daemon is not currently installed.'
-                exit 1
-            fi
-        elif [ "$DIST_OS" = "macosx" ] ; then
-            eval echo  'Detected Mac OSX:'
-            if [ -f "/Library/LaunchDaemons/${APP_PLIST}" ] ; then
-                eval echo  ' Removing $APP_LONG_NAME daemon...'
-                # Make sure the plist is installed
-                LOADED_PLIST=`launchctl list | grep ${APP_PLIST_BASE}`
-                if [ "X${LOADED_PLIST}" != "X" ] ; then
-                    launchctl unload "/Library/LaunchDaemons/${APP_PLIST}"
-                fi
-                rm -f "/Library/LaunchDaemons/${APP_PLIST}"
-            else
-                eval echo  ' The $APP_LONG_NAME daemon is not currently installed.'
-                exit 1
-            fi
-        elif [ "$DIST_OS" = "zos" ] ; then
-            eval echo  'Detected z/OS:'
-            if [ -f /etc/rc.bak ] ; then
-                eval echo  ' Removing $APP_LONG_NAME daemon...'
-                cp /etc/rc /etc/rc.bak
-                sed  "s/_BPX_JOBNAME=\'APP_NAME\'.*//g" /etc/rc.bak > /etc/rc
-                rm /etc/rc.bak
-            else
-                eval echo  ' The $APP_LONG_NAME daemon is not currently installed.'
-                exit 1
-            fi
-        else
-            eval echo  'Remove not currently supported for $DIST_OS'
-            exit 1
-        fi
+
+        COMMAND_LINE="$java_exe $yajsw_java_options -jar $yajsw_jar -r $WRAPPER_CONF"
+        eval $COMMAND_LINE
     fi
 }
 

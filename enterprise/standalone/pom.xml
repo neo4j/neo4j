@@ -44,9 +44,10 @@
     <neo4j.datadir>${neo4j.home}/data</neo4j.datadir> <!-- needed? -->
     <neo4j.logdir>${neo4j.datadir}/log</neo4j.logdir> <!-- needed? -->
 
-    <!-- OSGi Bundle versions -->
+    <!-- OSGi Bundle versions 
     <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
     <pax-logging.version>1.5.3</pax-logging.version>
+    -->
 
   </properties>
 
@@ -137,6 +138,17 @@
 	       <!-- fix issue with appassembler -->
 	       <version>2.4</version>
 	     </plugin>
+
+      <plugin>
+        <groupId>com.mycila.maven-license-plugin</groupId>
+        <artifactId>maven-license-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <exclude>**/logback.xml</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+
     </plugins>
   </build>
 
@@ -238,7 +250,7 @@
       <version>${neo4j.version}</version>
     </dependency>
 
-    <!-- OSGi Bundles -->
+    <!-- OSGi Bundles
     <dependency>
       <groupId>org.apache.felix</groupId>
       <artifactId>org.apache.felix.fileinstall</artifactId>
@@ -255,7 +267,7 @@
       <artifactId>pax-logging-service</artifactId>
       <version>${pax-logging.version}</version>
     </dependency>
-
+    -->
     <dependency>
       <groupId>org.neo4j.doc</groupId>
       <artifactId>neo4j-manual</artifactId>
