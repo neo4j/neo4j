@@ -104,6 +104,7 @@ define(
         if @visualGraph.nodes[nodeUrl]?
           visualNode = @visualGraph.nodes[nodeUrl]
           visualNode.type = "unexplored"
+          node.fixed = false
 
           potentiallRemove = @_getUnexploredNodesRelatedTo nodeUrl
           
