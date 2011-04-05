@@ -80,8 +80,12 @@ define(
 
         # find the start point
         tail = @intersect_line_box(pt1, pt2, @nodeBoxes[edge.source.name])
+        if tail is false
+          return
         head = @intersect_line_box(tail, pt2, @nodeBoxes[edge.target.name])
-
+        if head is false
+          return
+  
         @ctx.save() 
         
         @ctx.beginPath()

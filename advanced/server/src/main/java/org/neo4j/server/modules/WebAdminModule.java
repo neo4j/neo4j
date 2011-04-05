@@ -20,14 +20,9 @@
 package org.neo4j.server.modules;
 
 import java.io.IOException;
-import java.net.URI;
-import java.util.HashSet;
-import java.util.Set;
 
 import javax.management.MalformedObjectNameException;
 
-import org.neo4j.server.JAXRSHelper;
-import org.neo4j.server.NeoServer;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.RoundRobinJobScheduler;
 import org.neo4j.server.database.Database;
@@ -43,28 +38,20 @@ public class WebAdminModule implements ServerModule
     private static final String DEFAULT_WEB_ADMIN_PATH = "/webadmin";
     private static final String DEFAULT_WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION = "webadmin-html";
 
-    private static final String DEFAULT_WEB_VISUALIZATION_PATH = "/visualization";
-
-    private NeoServer neoServer;
     private final RoundRobinJobScheduler jobScheduler = new RoundRobinJobScheduler();
 
-    public Set<URI> start( NeoServerWithEmbeddedWebServer neoServer )
+    public void start( NeoServerWithEmbeddedWebServer neoServer )
     {
-        this.neoServer = neoServer;
         try
         {
-            startRoundRobinDB();
+            startRoundRobinDB( neoServer );
         } catch ( Exception e )
         {
-            e.printStackTrace();
-            throw new RuntimeException( e );
+            log.warn( e );
+            return;
         }
         neoServer.getWebServer().addStaticContent( DEFAULT_WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION, DEFAULT_WEB_ADMIN_PATH );
         log.info( "Mounted webadmin at [%s]", DEFAULT_WEB_ADMIN_PATH );
-
-        HashSet<URI> ownedUris = new HashSet<URI>();
-        ownedUris.add(JAXRSHelper.generateUriFor(neoServer.baseUri(), DEFAULT_WEB_ADMIN_PATH));
-        return ownedUris;
     }
 
     public void stop()
@@ -72,7 +59,8 @@ public class WebAdminModule implements ServerModule
         jobScheduler.stopJobs();
     }
 
-    private void startRoundRobinDB() throws MalformedObjectNameException, IOException
+    private void startRoundRobinDB( NeoServerWithEmbeddedWebServer neoServer ) throws MalformedObjectNameException,
+            IOException
     {
         Database db = neoServer.getDatabase();
         RrdFactory rrdFactory = new RrdFactory( neoServer.getConfiguration() );

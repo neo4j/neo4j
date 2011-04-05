@@ -1,0 +1,1 @@
+define(function(){return function(vars){ with(vars||{}) { return "<h1>Choose nodes</h1><div class=\"filter\"></div><button class=\"complete\">Select</button><button class=\"selectAll\">Select all</button><button class=\"cancel\">Select none</button>";}}; });

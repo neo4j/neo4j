@@ -38,10 +38,14 @@
       JmxBackedModel.prototype.initialize = function(options) {
         this.server = options.server;
         this.jmx = this.server.manage.jmx;
+        this.dataAvailable = false;
         if ((options.pollingInterval != null) && options.pollingInterval > 0) {
           this.fetch();
           return this.setPollingInterval(options.pollingInterval);
         }
+      };
+      JmxBackedModel.prototype.isDataAvailable = function() {
+        return this.dataAvailable;
       };
       JmxBackedModel.prototype.setPollingInterval = function(ms) {
         if (this.interval != null) {
@@ -56,15 +60,14 @@
         _results = [];
         for (key in _ref) {
           def = _ref[key];
-          _results.push(this.jmx.getBean(def.domain, def.name, function(bean) {
-            return parseBean(key, bean);
-          }));
+          _results.push(this.jmx.getBean(def.domain, def.name, this.parseBean));
         }
         return _results;
       };
-      JmxBackedModel.prototype.parseBean = function(key, bean) {
+      JmxBackedModel.prototype.parseBean = function(bean) {
         var attribute, values, _i, _len, _ref;
         if (bean != null) {
+          this.dataAvailable = true;
           values = {};
           _ref = bean.attributes;
           for (_i = 0, _len = _ref.length; _i < _len; _i++) {

@@ -405,6 +405,48 @@ body {
 }
 
 /**
+ * OVERLAY
+ */
+
+.overlay {
+  background: none repeat scroll 0 0 black;
+  bottom: 0;
+  left: 0;
+  opacity: 0.5;
+  position: fixed;
+  right: 0;
+  top: 0;
+
+  /* Mmm, IE */
+  -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
+	filter: alpha(opacity=50);
+}
+
+/**
+ * DIALOG
+ */
+
+.dialog-wrap {
+  bottom: 0;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+.dialog {
+  -moz-border-radius: 5px 5px 5px 5px;
+  -webkit-border-radius: 5px 5px 5px 5px;
+  border-radius: 5px 5px 5px 5px;
+  background: none repeat scroll 0 0 white;
+  height: 80%;
+  margin: 3% auto;
+  overflow: auto;
+  padding: 10px;
+  width: 500px;
+}
+
+/**
  * TOOLTIP
  */
  
@@ -450,7 +492,8 @@ body {
   padding: 8px 12px;
   text-align: center;
 	-webkit-border-radius:4px; 
-	-moz-border-radius:4px; 
+	-moz-border-radius:4px;
+  border-radius:4px;
 }
 
 .tooltip .chart-y {

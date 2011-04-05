@@ -98,7 +98,7 @@
       };
       VisualizedView.prototype.settingsChanged = function() {
         if (this.viz != null) {
-          return this.viz.getNodeStyler().setLabelProperties(this.settings.getLabelProperties());
+          return this.viz.setLabelProperties(this.settings.getLabelProperties());
         }
       };
       VisualizedView.prototype.getViz = function() {
