@@ -9,15 +9,15 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.app</groupId>
-  <artifactId>neo4j-server</artifactId>
+  <artifactId>neo4j-server-enterprise</artifactId>
   <version>1.3-SNAPSHOT</version>
-  <name>Neo4j Server</name>
+  <name>Neo4j Enterprise Server</name>
   <description>Standalone Neo4j server application.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <bundle.namespace>org.neo4j.server</bundle.namespace>
-    <short-name>server</short-name>
+    <bundle.namespace>org.neo4j.server.enterprise</bundle.namespace>
+    <short-name>server-enterprise</short-name>
     <neo4j-server.mainClass>org.neo4j.server.Bootstrapper</neo4j-server.mainClass>
     <neo-server.home>target/generated-resources/appassembler/jsw</neo-server.home>
     <neo-server.confdir>target/test-classes/etc/neo-server</neo-server.confdir>
@@ -43,7 +43,7 @@
   <packaging>bundle</packaging>
 
   <scm>
-    <url>https://github.com/neo4j/server/tree/master/server</url>
+    <url>https://github.com/neo4j/server/tree/master/server-enterprise</url>
   </scm>
 
   <licenses>
@@ -60,18 +60,33 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j</artifactId>
+      <groupId>org.neo4j.app</groupId>
+      <artifactId>neo4j-server-advanced</artifactId>
       <version>${neo4j.version}</version>
-      <type>pom</type>
-      <exclusions>
-        <exclusion>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-index</artifactId>
-        </exclusion>
-      </exclusions>
+    </dependency>
+    <!-- TODO: move com & ha to some neo4j-enterprise pom -->
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-com</artifactId>
+      <version>1.3-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-ha</artifactId>
+      <version>1.3-SNAPSHOT</version>
+    </dependency>
+    <!-- /move -->
+
+    <dependency>
+      <groupId>org.neo4j.drivers</groupId>
+      <artifactId>neo4js</artifactId>
+      <version>${neo4js.version}</version>
+      <type>jar</type>
+      <scope>provided</scope>
+      <optional>true</optional>
     </dependency>
 
+    <!-- Test dependencies -->
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
@@ -79,101 +94,12 @@
       <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
-
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>server-api</artifactId>
+      <artifactId>neo4j-ha</artifactId>
       <version>${neo4j.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>log4j</groupId>
-      <artifactId>log4j</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.mortbay.jetty</groupId>
-      <artifactId>jetty</artifactId>
-      <version>6.1.25</version>
-    </dependency>
-
-    <dependency>
-      <groupId>com.sun.jersey</groupId>
-      <artifactId>jersey-server</artifactId>
-      <version>1.3</version>
-    </dependency>
-
-    <dependency>
-      <groupId>commons-configuration</groupId>
-      <artifactId>commons-configuration</artifactId>
-      <version>1.6</version>
-      <type>jar</type>
-      <scope>compile</scope>
-      <exclusions>
-        <exclusion>
-          <artifactId>commons-digester</artifactId>
-          <groupId>commons-digester</groupId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <!-- Added directly to avoid version clash in commons-configuration. -->
-    <dependency>
-      <groupId>commons-digester</groupId>
-      <artifactId>commons-digester</artifactId>
-      <version>1.8.1</version>
-      <type>jar</type>
-      <scope>compile</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.codehaus.jackson</groupId>
-      <artifactId>jackson-jaxrs</artifactId>
-      <version>1.6.1</version>
-    </dependency>
-    <dependency>
-      <groupId>org.codehaus.jackson</groupId>
-      <artifactId>jackson-mapper-asl</artifactId>
-      <version>1.6.1</version>
-    </dependency>
-
-    <dependency>
-      <groupId>com.tinkerpop</groupId>
-      <artifactId>gremlin</artifactId>
-      <version>0.8</version>
-      <type>jar</type>
-      <exclusions>
-        <exclusion>
-          <artifactId>sesame-sail-api</artifactId>
-          <groupId>org.openrdf.sesame</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>gmaven-plugin</artifactId>
-          <groupId>org.codehaus.groovy.maven</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>common</artifactId>
-          <groupId>net.fortytwo.sesametools</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>aduna-commons-iteration</artifactId>
-          <groupId>info.aduna.commons</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>jung-api</artifactId>
-          <groupId>net.sf.jung</groupId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <dependency>
-      <groupId>org.hamcrest</groupId>
-      <artifactId>hamcrest-all</artifactId>
+      <classifier>tests</classifier>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -190,42 +116,13 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- dependency> <groupId>org.rrd4j</groupId> <artifactId>rrd4j</artifactId> <version>2.0.6</version> 
-      </dependency -->
-
-    <dependency>
-      <groupId>de.huxhorn.lilith</groupId>
-      <artifactId>de.huxhorn.lilith.3rdparty.rrd4j</artifactId>
-      <version>2.0.5</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.neo4j.drivers</groupId>
-      <artifactId>neo4js</artifactId>
-      <version>${neo4js.version}</version>
-      <type>jar</type>
-      <scope>provided</scope>
-      <optional>true</optional>
-    </dependency>
-
-    <!-- Neo4j manual to be exposed via the web. NOTE: no more. now points to online doc site otherwise, 
-      users can look for local docs on the filesystem. <dependency> <groupId>org.neo4j.doc</groupId> <artifactId>neo4j-manual</artifactId> 
-      <classifier>html</classifier> <version>1.3-SNAPSHOT</version> <optional>true</optional> </dependency> -->
-
-    <!-- File uploads -->
-    <dependency>
-      <groupId>com.sun.jersey.contribs</groupId>
-      <artifactId>jersey-multipart</artifactId>
-      <version>1.3</version>
-    </dependency>
-
-    <!-- Test dependencies -->
     <dependency>
       <groupId>cuke4duke</groupId>
       <artifactId>cuke4duke</artifactId>
       <version>${cuke4duke.version}</version>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>org.picocontainer</groupId>
       <artifactId>picocontainer</artifactId>
@@ -239,32 +136,26 @@
       <version>${webdriver.version}</version>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
       <artifactId>selenium-htmlunit-driver</artifactId>
       <version>${webdriver.version}</version>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
       <artifactId>selenium-chrome-driver</artifactId>
       <version>${webdriver.version}</version>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
       <artifactId>selenium-ie-driver</artifactId>
       <version>${webdriver.version}</version>
       <scope>test</scope>
-    </dependency>
-
-
-    <dependency>
-      <!-- Provides Autoprocessor. This dependency makes the plugin loader Felix-specific rather than 
-        generic. Consider refactoring out this dependency, or don't worry about it and always uses Felix. -->
-      <groupId>org.apache.felix</groupId>
-      <artifactId>org.apache.felix.main</artifactId>
-      <version>3.0.2</version>
     </dependency>
 
     <dependency>
@@ -284,18 +175,11 @@
     </dependency>
 
     <dependency>
-      <groupId>org.apache.felix</groupId>
-      <artifactId>org.apache.felix.fileinstall</artifactId>
-      <version>${felix-fileinstall.version}</version>
-    </dependency>
-
-    <dependency>
       <groupId>org.ops4j.pax.swissbox</groupId>
       <artifactId>pax-swissbox-tinybundles</artifactId>
       <version>1.3.0</version>
       <scope>test</scope>
     </dependency>
-
 
     <dependency>
       <groupId>org.ops4j.pax.url</groupId>
@@ -431,52 +315,6 @@
             </goals>
           </execution>
         </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>com.mycila.maven-license-plugin</groupId>
-        <artifactId>maven-license-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>inject-license-in-js-files</id>
-            <!-- Done in validate phase b/c the license header check is done in the intialize phase, 
-              validate is the only one before it. -->
-            <phase>validate</phase>
-            <configuration>
-              <basedir>src/main/resources/webadmin-html/</basedir>
-              <includes>
-                <!-- temporary configuration fix -->
-                <include>**/webadmin-min.js</include>
-              </includes>
-              <excludes>
-                <exclude>lib/*</exclude>
-              </excludes>
-            </configuration>
-            <goals>
-              <goal>format</goal>
-            </goals>
-          </execution>
-        </executions>
-        <!-- temporary configuration fix -->
-        <configuration>
-          <strictCheck>true</strictCheck>
-          <header>${license-text.header}</header>
-          <includes>
-            <include>src/**/*.java</include>
-            <include>src/**/*.js</include>
-            <include>src/**/*.scala</include>
-            <include>src/**/*.xml</include>
-          </includes>
-          <excludes>
-            <exclude>**/lib/*.js</exclude>
-            <exclude>**/lib/**/*.js</exclude>
-            <exclude>**/javascript/vend/**</exclude>
-            <exclude>**/webadmin-html/**</exclude>
-          </excludes>
-          <mapping>
-            <scala>JAVADOC_STYLE</scala>
-          </mapping>
-        </configuration>
       </plugin>
 
       <plugin>
