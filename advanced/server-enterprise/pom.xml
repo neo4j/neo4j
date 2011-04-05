@@ -284,40 +284,6 @@
       </plugin>
 
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>static-web</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <attach>true</attach>
-              <descriptors>
-                <descriptor>src/main/assemblies/static-web.xml</descriptor>
-              </descriptors>
-            </configuration>
-          </execution>
-          <execution>
-            <id>site</id>
-            <phase>package</phase>
-            <configuration>
-              <attach>true</attach>
-              <appendAssemblyId>true</appendAssemblyId>
-              <descriptors>
-                <descriptor>src/main/assemblies/site-assembly.xml</descriptor>
-              </descriptors>
-            </configuration>
-            <goals>
-              <goal>single</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
         <artifactId>maven-jar-plugin</artifactId>
         <executions>
           <execution>
