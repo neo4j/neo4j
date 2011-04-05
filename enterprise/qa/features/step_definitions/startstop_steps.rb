@@ -16,7 +16,7 @@ end
 
 Then /^I (start|stop) Neo4j Server$/ do |action|
   if (current_platform.unix?)
-    puts `#{neo4j.home}/bin/neo4j #{action}`
+    puts `#{neo4j.home}/bin/neo4j #{action} >/dev/null 2&>1 `   ### todo reenable stdout
   elsif (current_platform.windows?)
     puts `#{neo4j.home}\\bin\\wrapper-windows-x86-32.exe #{ action == 'start' ? '-it' : '-r' } ..\\conf\\neo4j-wrapper.conf`
   else
