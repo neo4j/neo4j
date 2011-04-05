@@ -25,8 +25,8 @@ import java.util.Date;
 
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.jmx.Kernel;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.management.Kernel;
 
 public class JmxTest
 {
