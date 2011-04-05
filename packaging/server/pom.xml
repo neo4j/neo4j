@@ -26,6 +26,7 @@
 
     <!-- Run integration tests against a server that is started elsewhere This is used in ServerIntegrationTestFacade, 
       which currently assumes external servers to be running at http://localhost:7474/ -->
+
     <testWithExternalServer>false</testWithExternalServer>
 
     <!-- For cucumber "feature" tests -->
@@ -55,7 +56,8 @@
 
   <issueManagement>
     <system>Trac</system>
-    <url>https://trac.neo4j.org/query?status=assigned&amp;status=new&amp;status=reopened&amp;component=${short-name}</url>
+    <url>https://trac.neo4j.org/query?status=assigned&amp;status=new&amp;status=reopened&amp;component=${short-name}
+    </url>
   </issueManagement>
 
   <dependencies>
@@ -86,10 +88,50 @@
       <version>${neo4j.version}</version>
     </dependency>
 
+	<!-- 
     <dependency>
       <groupId>log4j</groupId>
       <artifactId>log4j</artifactId>
     </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>0.9.27</version>
+    </dependency>
+     -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>1.6.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-jdk14</artifactId>
+      <version>1.6.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>log4j-over-slf4j</artifactId>
+      <version>1.6.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>jcl-over-slf4j</artifactId>
+      <version>1.6.1</version>
+    </dependency>
+    <!--
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>jul-to-slf4j</artifactId>
+      <version>1.6.1</version>
+    </dependency>
+    -->
+    <dependency>
+      <groupId>uk.org.lidalia</groupId>
+      <artifactId>sysout-over-slf4j</artifactId>
+      <version>1.0.2</version>
+    </dependency>
+
 
     <dependency>
       <groupId>org.mortbay.jetty</groupId>
@@ -145,30 +187,30 @@
     <dependency>
       <groupId>com.tinkerpop</groupId>
       <artifactId>gremlin</artifactId>
-      <version>0.8</version>
+      <version>0.9</version>
       <type>jar</type>
       <exclusions>
+        <!-- Sail support not needed --> 
         <exclusion>
-          <artifactId>sesame-sail-api</artifactId>
-          <groupId>org.openrdf.sesame</groupId>
+          <groupId>com.tinkerpop.blueprints</groupId>
+          <artifactId>blueprints-sail-graph</artifactId>
         </exclusion>
+        <!-- Maven support in groovy not needed -->
         <exclusion>
-          <artifactId>gmaven-plugin</artifactId>
           <groupId>org.codehaus.groovy.maven</groupId>
+          <artifactId>gmaven-plugin</artifactId>
         </exclusion>
+        <!-- "readline" not needed - we only expose gremlin through webadmin -->
         <exclusion>
-          <artifactId>common</artifactId>
-          <groupId>net.fortytwo.sesametools</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>aduna-commons-iteration</artifactId>
-          <groupId>info.aduna.commons</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>jung-api</artifactId>
-          <groupId>net.sf.jung</groupId>
+          <groupId>jline</groupId>
+          <artifactId>jline</artifactId>
         </exclusion>
       </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>com.tinkerpop.blueprints</groupId>
+      <artifactId>blueprints-neo4j-graph</artifactId>
+      <version>0.6</version>
     </dependency>
 
     <dependency>
