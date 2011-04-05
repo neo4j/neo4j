@@ -264,6 +264,7 @@
         </executions>
       </plugin>
 
+      <!-- Disabled until webadmin is extended with advanced functionality
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
@@ -297,6 +298,7 @@
           </execution>
         </executions>
       </plugin>
+      -->
 
       <plugin>
         <artifactId>maven-jar-plugin</artifactId>
