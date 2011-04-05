@@ -51,16 +51,18 @@ define(
       getStyleFor : (visualRelationship) ->
         srcType = visualRelationship.source.data.type
         dstType = visualRelationship.target.data.type
-        if srcType is "explored" and dstType is "explored"
+
+        if visualRelationship.target.data.relType != null
           types = for url, rel of visualRelationship.data.relationships
             rel.getType()
+          types = _.uniq(types)
+          labelText = types.join(", ")
 
-          return { edgeStyle : @defaultBetweenExploredStyle.edgeStyle, labelStyle : @defaultBetweenExploredStyle.labelStyle , labelText : types.join(", ") }
+        if srcType is "explored" and dstType is "explored"
+          return { edgeStyle : @defaultBetweenExploredStyle.edgeStyle, labelStyle : @defaultBetweenExploredStyle.labelStyle, labelText : labelText }
 
         if srcType is "unexplored" or dstType is "unexplored"
-          types = for url, rel of visualRelationship.data.relationships
-            rel.getType()
-          return { edgeStyle : @defaultToUnknownStyle.edgeStyle, labelStyle : @defaultToUnknownStyle.labelStyle, labelText : types.join(", ") }
+          return { edgeStyle : @defaultToUnknownStyle.edgeStyle, labelStyle : @defaultToUnknownStyle.labelStyle, labelText : labelText }
         
         return { edgeStyle : @defaultToGroupStyle.edgeStyle, labelStyle : @defaultToGroupStyle.labelStyle, labelText : visualRelationship.data.relType }
 

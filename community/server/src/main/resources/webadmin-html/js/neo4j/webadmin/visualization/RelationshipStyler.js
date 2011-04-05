@@ -52,10 +52,10 @@
         }
       };
       RelationshipStyler.prototype.getStyleFor = function(visualRelationship) {
-        var dstType, rel, srcType, types, url;
+        var dstType, labelText, rel, srcType, types, url;
         srcType = visualRelationship.source.data.type;
         dstType = visualRelationship.target.data.type;
-        if (srcType === "explored" && dstType === "explored") {
+        if (visualRelationship.target.data.relType !== null) {
           types = (function() {
             var _ref, _results;
             _ref = visualRelationship.data.relationships;
@@ -66,27 +66,21 @@
             }
             return _results;
           })();
+          types = _.uniq(types);
+          labelText = types.join(", ");
+        }
+        if (srcType === "explored" && dstType === "explored") {
           return {
             edgeStyle: this.defaultBetweenExploredStyle.edgeStyle,
             labelStyle: this.defaultBetweenExploredStyle.labelStyle,
-            labelText: types.join(", ")
+            labelText: labelText
           };
         }
         if (srcType === "unexplored" || dstType === "unexplored") {
-          types = (function() {
-            var _ref, _results;
-            _ref = visualRelationship.data.relationships;
-            _results = [];
-            for (url in _ref) {
-              rel = _ref[url];
-              _results.push(rel.getType());
-            }
-            return _results;
-          })();
           return {
             edgeStyle: this.defaultToUnknownStyle.edgeStyle,
             labelStyle: this.defaultToUnknownStyle.labelStyle,
-            labelText: types.join(", ")
+            labelText: labelText
           };
         }
         return {
