@@ -156,7 +156,7 @@ define(
 
       _addRelationship : (from, to, rel, relType=null) ->
         @visualGraph.edges[from] ?= {}
-        @visualGraph.edges[from][to] ?= { relationships : {}, directed:true, relType:relType }
+        @visualGraph.edges[from][to] ?= { length:.5, relationships : {}, directed:true, relType:relType }
         if rel != false
           @visualGraph.edges[from][to].relationships[rel.getSelf()] = rel
 

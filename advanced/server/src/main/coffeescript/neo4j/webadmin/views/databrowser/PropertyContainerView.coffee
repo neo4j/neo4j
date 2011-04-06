@@ -78,8 +78,9 @@ define(
         @propertyContainer.save()
 
       deleteItem : (ev) =>
-        @propertyContainer.getItem().remove().then () ->
-          window.location = "#/data/search/0"
+        if confirm "Are you sure?"
+          @propertyContainer.getItem().remove().then () ->
+            window.location = "#/data/search/0"
       
       updateErrorMessages : () =>
         for row in $("ul.property-row",@el)
