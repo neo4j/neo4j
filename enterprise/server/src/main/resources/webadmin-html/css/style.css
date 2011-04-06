@@ -151,6 +151,10 @@ body {
   float:left;
 }
 
+#data-area {
+  background: none repeat scroll 0 0 #8BC760;
+}
+
 .data-console-wrap .helpbox {
   padding: 3px 5px;
 }
@@ -312,8 +316,14 @@ body {
  * VISUALIZED DATA VIEW 
  */
 
+#visualization {
+  position:relative;
+}
+
 #visualization .item-controls {
-  padding: 0 10px;
+  position: absolute;
+  right: 10px;
+  top: 10px;
 }
 
 

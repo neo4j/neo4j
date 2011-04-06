@@ -23,7 +23,7 @@
       NodeStyler.prototype.defaultExploredStyle = {
         nodeStyle: {
           fill: "#000000",
-          alpha: 0.6
+          alpha: 0.9
         },
         labelStyle: {
           color: "white",
@@ -44,7 +44,7 @@
         nodeStyle: {
           shape: "dot",
           fill: "#000000",
-          alpha: 0.4
+          alpha: 0.8
         },
         labelStyle: {
           color: "white",
