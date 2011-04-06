@@ -3,7 +3,7 @@
   <parent>
     <artifactId>parent-central</artifactId>
     <groupId>org.neo4j</groupId>
-    <version>18</version>
+    <version>19</version>
   </parent>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-backup</artifactId>
