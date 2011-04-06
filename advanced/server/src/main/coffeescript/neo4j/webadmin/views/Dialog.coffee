@@ -49,14 +49,14 @@ define(
           setTimeout @hide, timeout
 
       bind : () ->
-        @wrapper.bind("click", @overlayClicked)
+        @wrapper.bind("click", @wrapperClicked)
     
       unbind : () ->
-        @wrapper.unbind("click", @overlayClicked)
+        @wrapper.unbind("click", @wrapperClicked)
 
-      overlayClicked : () =>
-        # Override for more awesome behaviour
-        @hide()
+      wrapperClicked : (ev) =>
+        if ev.originalTarget is ev.currentTarget
+          @hide()
 
       hide : () =>
         @unbind()

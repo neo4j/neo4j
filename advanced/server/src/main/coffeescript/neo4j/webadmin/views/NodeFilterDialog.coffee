@@ -56,8 +56,9 @@ define(
         @filterList.attach $(".filter", @el)
         @filterList.render()
 
-      overlayClicked : () =>
-        @cancel()
+      wrapperClicked : (ev) =>
+        if ev.originalTarget is ev.currentTarget
+          @cancel()
 
       complete : () =>
         nodes = for item in @filterList.getFilteredItems()

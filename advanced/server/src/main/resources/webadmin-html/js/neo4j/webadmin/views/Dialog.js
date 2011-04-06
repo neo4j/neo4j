@@ -33,7 +33,7 @@
         this.detach = __bind(this.detach, this);;
         this.remove = __bind(this.remove, this);;
         this.hide = __bind(this.hide, this);;
-        this.overlayClicked = __bind(this.overlayClicked, this);;
+        this.wrapperClicked = __bind(this.wrapperClicked, this);;
         this.show = __bind(this.show, this);;        Dialog.__super__.constructor.apply(this, arguments);
       }
       __extends(Dialog, View);
@@ -60,13 +60,15 @@
         }
       };
       Dialog.prototype.bind = function() {
-        return this.wrapper.bind("click", this.overlayClicked);
+        return this.wrapper.bind("click", this.wrapperClicked);
       };
       Dialog.prototype.unbind = function() {
-        return this.wrapper.unbind("click", this.overlayClicked);
+        return this.wrapper.unbind("click", this.wrapperClicked);
       };
-      Dialog.prototype.overlayClicked = function() {
-        return this.hide();
+      Dialog.prototype.wrapperClicked = function(ev) {
+        if (ev.originalTarget === ev.currentTarget) {
+          return this.hide();
+        }
       };
       Dialog.prototype.hide = function() {
         this.unbind();

@@ -62,8 +62,10 @@ define(
         @steadStateWorker = setInterval(@steadyStateCheck, 1000)
 
       steadyStateCheck : () =>
-        meanEnergy = @sys.energy().mean
-        if  meanEnergy < 0.01 then @sys.stop()
+        energy = @sys.energy()
+        if energy?
+          meanEnergy = energy.mean
+          if  meanEnergy < 0.01 then @sys.stop()
 
       setNode : (node) =>
         @setNodes([node])
@@ -125,10 +127,16 @@ define(
       
 
       stop : () =>
+        if @sys.renderer?
+          @sys.renderer.stop()
         @sys.stop()
+        console.log "system stopped"
 
       start : () =>
+        if @sys.renderer?
+          @sys.renderer.start()
         @sys.start()
+        console.log "system started"
 
       attach : (parent) =>
         @detach()
