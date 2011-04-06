@@ -7,6 +7,14 @@ label {
   font-weight:bold;
 }
 
+input {
+  outline:none;
+}
+
+button {
+  outline:none; 
+}
+
 .filter .filterText {
   padding: 4px 3px;
   width: 90%;
