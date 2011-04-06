@@ -44,7 +44,6 @@ require(
     appState.set server : new neo4j.GraphDatabase(location.protocol + "//" + location.host)
 
     baseView = new BaseView(appState:appState)
-    $("body").append(baseView.el)
 
     dashboardController   = new DashboardController appState
     databrowserController = new DataBrowserController appState
@@ -57,5 +56,7 @@ require(
     shortcuts = new KeyboardShortcuts(dashboardController, databrowserController, consoleController, serverInfoController)
     shortcuts.init()
 
+    
+    $("body").append(baseView.el)
     Backbone.history.start()
 )

@@ -177,6 +177,12 @@ body {
 #data-switch-view.tabular {
   background:url("../img/icons/glyphish/tabular.png") no-repeat scroll center center #333;
 }
+#visualization-show-settings {
+  background:url("../img/icons/glyphish/157-wrench.png") no-repeat scroll 5px center #333;
+}
+#visualization-reflow {
+  background:url("../img/icons/glyphish/05-shuffle.png") no-repeat scroll center center #333;
+}
 
 
 #data-refresh:hover {
