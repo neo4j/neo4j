@@ -36,7 +36,7 @@
         this.initialize = __bind(this.initialize, this);;        CreateRelationshipDialog.__super__.constructor.apply(this, arguments);
       }
       __extends(CreateRelationshipDialog, View);
-      CreateRelationshipDialog.prototype.className = "create-relationship-dialog";
+      CreateRelationshipDialog.prototype.className = "popout";
       CreateRelationshipDialog.prototype.events = {
         "click #create-relationship": "save",
         "change #create-relationship-types": "pickedFromAvailableTypes"

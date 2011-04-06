@@ -132,11 +132,13 @@
       };
       VisualizedView.prototype.remove = function() {
         this.dataModel.unbind("change:data", this.render);
+        this.hideSettingsDialog();
         this.getViz().stop();
         return VisualizedView.__super__.remove.call(this);
       };
       VisualizedView.prototype.detach = function() {
         this.dataModel.unbind("change:data", this.render);
+        this.hideSettingsDialog();
         this.getViz().stop();
         return VisualizedView.__super__.detach.call(this);
       };

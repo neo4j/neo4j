@@ -27,7 +27,7 @@ define(
   
     class VisualizationSettingsDialog extends View
 
-      className: "visualization-settings-dialog"
+      className: "popout"
 
       events : 
         "click #save-visualization-settings" : "save"
