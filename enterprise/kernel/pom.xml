@@ -165,7 +165,7 @@
               <property environment="env" />
               <target>
                 <mkdir dir="target/generated-sources/version/org/neo4j/kernel/impl/" />
-                <exec executable="${git.executable}" failifexecutionfails="true" failonerror="true">
+                <exec executable="${git.executable}" failifexecutionfails="false" failonerror="false">
                   <arg value="fetch" />
                   <arg value="--tags" />
                 </exec>
