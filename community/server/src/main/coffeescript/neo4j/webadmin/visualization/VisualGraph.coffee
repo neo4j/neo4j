@@ -132,7 +132,7 @@ define(
 
       attach : (parent) =>
         @detach()
-        $(parent).append(@el)
+        $(parent).prepend(@el)
         @start()
 
       detach : () =>
