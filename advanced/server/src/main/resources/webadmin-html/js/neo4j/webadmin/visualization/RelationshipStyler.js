@@ -27,7 +27,7 @@
           width: 1
         },
         labelStyle: {
-          color: "white",
+          color: "rgba(0, 0, 0, 1)",
           font: "10px Helvetica"
         }
       };
@@ -43,11 +43,11 @@
       };
       RelationshipStyler.prototype.defaultToGroupStyle = {
         edgeStyle: {
-          color: "rgba(0, 0, 0, 0.5)",
+          color: "rgba(0, 0, 0, 0.8)",
           width: 1
         },
         labelStyle: {
-          color: "rgba(0, 0, 0, 0.4)",
+          color: "rgba(0, 0, 0, 0.8)",
           font: "10px Helvetica"
         }
       };
