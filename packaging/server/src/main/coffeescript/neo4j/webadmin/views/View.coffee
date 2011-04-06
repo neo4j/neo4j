@@ -26,3 +26,9 @@ define ['lib/backbone'], (template) ->
 
     attach : (parent) =>
       $(parent).append(@el)
+
+    height : (val) ->
+      $(@el).height(val)
+    
+    width : (val) ->
+      $(@el).width(val)

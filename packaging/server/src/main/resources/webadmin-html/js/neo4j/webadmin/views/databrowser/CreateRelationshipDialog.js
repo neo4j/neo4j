@@ -44,6 +44,7 @@
         "change #create-relationship-types": "pickedFromAvailableTypes"
       };
       CreateRelationshipDialog.prototype.initialize = function(opts) {
+        $(this.el).hide();
         $("body").append(this.el);
         this.formHelper = new FormHelper(this.el);
         this.baseElement = opts.baseElement;
@@ -60,8 +61,9 @@
         this.to = "";
         return this.server.getAvailableRelationshipTypes().then(__bind(function(types) {
           this.types = types;
+          this.position();
           this.render();
-          return this.position();
+          return $(this.el).show();
         }, this));
       };
       CreateRelationshipDialog.prototype.pickedFromAvailableTypes = function() {

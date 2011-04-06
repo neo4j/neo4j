@@ -35,6 +35,7 @@ define(
         "change #create-relationship-types" : "pickedFromAvailableTypes"
 
       initialize : (opts) =>
+        $(@el).hide()
         $("body").append(@el)
 
         @formHelper = new FormHelper(@el)
@@ -55,8 +56,9 @@ define(
         
         @server.getAvailableRelationshipTypes().then (types) =>
           @types = types          
-          @render()
           @position()
+          @render()
+          $(@el).show()
 
       pickedFromAvailableTypes : =>
         type = $("#create-relationship-types").val()

@@ -117,14 +117,14 @@ body {
 
 #monitor-chart-wrap {
   padding: 0 10px 10px;
-  background: none repeat scroll 0 0 #8bc760;
-  border-bottom: 1px solid #8BC760;
+  background: none repeat scroll 0 0 #eee;
+  border-bottom: 1px solid #ccc;
 }
 
 #monitor-chart {
   height:200px;
   width:100%;
-  background: none repeat scroll 0 0 #8bc760;
+  background: none repeat scroll 0 0 #eee;
 }
 
 .dashboard-chart-tabs {
@@ -363,6 +363,7 @@ body {
 .headline-bar {
   border-bottom: 1px solid #DDD;
   border-top: 1px solid #DDD;
+  background: #eee;
 }
 
 .headline-bar .tabs {
@@ -387,7 +388,7 @@ body {
   width:70px;
   padding:0;
   border:0;
-  color:#547939;
+  color:#333;
   cursor:pointer;
   font-size:11px;
   height: 32px;
@@ -395,7 +396,7 @@ body {
 .headline-bar .tabs li a:hover, .headline-bar .tabs li button:hover,
 .headline-bar .tabs li a.current, .headline-bar .tabs li button.current  {
   background: #8bc760;
-  color:#fff;
+  color:#333;
 }
 
 .headline-bar .title {

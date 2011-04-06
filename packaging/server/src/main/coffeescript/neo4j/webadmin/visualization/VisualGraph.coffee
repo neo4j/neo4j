@@ -130,13 +130,11 @@ define(
         if @sys.renderer?
           @sys.renderer.stop()
         @sys.stop()
-        console.log "system stopped"
 
       start : () =>
         if @sys.renderer?
           @sys.renderer.start()
         @sys.start()
-        console.log "system started"
 
       attach : (parent) =>
         @detach()

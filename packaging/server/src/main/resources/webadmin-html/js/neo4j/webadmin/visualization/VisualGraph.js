@@ -151,15 +151,13 @@
         if (this.sys.renderer != null) {
           this.sys.renderer.stop();
         }
-        this.sys.stop();
-        return console.log("system stopped");
+        return this.sys.stop();
       };
       VisualGraph.prototype.start = function() {
         if (this.sys.renderer != null) {
           this.sys.renderer.start();
         }
-        this.sys.start();
-        return console.log("system started");
+        return this.sys.start();
       };
       VisualGraph.prototype.attach = function(parent) {
         this.detach();
