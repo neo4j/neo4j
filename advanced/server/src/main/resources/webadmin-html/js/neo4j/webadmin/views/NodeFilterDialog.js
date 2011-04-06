@@ -70,9 +70,12 @@
         return NodeFilterDialog.__super__.initialize.call(this);
       };
       NodeFilterDialog.prototype.render = function() {
+        var wrapHeight;
         $(this.el).html(template());
         this.filterList.attach($(".filter", this.el));
-        return this.filterList.render();
+        this.filterList.render();
+        wrapHeight = $(this.el).height();
+        return this.filterList.height(wrapHeight - 80);
       };
       NodeFilterDialog.prototype.wrapperClicked = function(ev) {
         if (ev.originalTarget === ev.currentTarget) {

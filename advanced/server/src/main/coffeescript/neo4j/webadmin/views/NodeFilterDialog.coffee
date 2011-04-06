@@ -56,6 +56,10 @@ define(
         @filterList.attach $(".filter", @el)
         @filterList.render()
 
+        wrapHeight = $(@el).height()
+        @filterList.height(wrapHeight - 80)
+        
+
       wrapperClicked : (ev) =>
         if ev.originalTarget is ev.currentTarget
           @cancel()
