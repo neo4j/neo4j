@@ -1,6 +1,8 @@
 %p
-  %label(for="create-relationship-from") Properties to use as labels
+  %label(for="create-relationship-from") Label keys
   %input#visualization-label-properties(type="text" value="#{labels}")
+  .helpbox.break
+    Comma separated list of property keys to use for labeling nodes, in priority order.
 
 %p
   %button#save-visualization-settings Done
