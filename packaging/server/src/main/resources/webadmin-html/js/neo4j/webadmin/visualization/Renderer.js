@@ -69,6 +69,9 @@
       };
       Renderer.prototype.renderEdge = function(edge, pt1, pt2) {
         var arrowLength, arrowWidth, dx, head, style, tail, wt;
+        if (this.stopped === true) {
+          return;
+        }
         style = this.relationshipStyler.getStyleFor(edge);
         tail = this.intersect_line_box(pt1, pt2, this.nodeBoxes[edge.source.name]);
         if (tail === false) {
@@ -130,6 +133,12 @@
         this.dragged = null;
         return $(this.canvas).mousedown(this.clicked);
       };
+      Renderer.prototype.start = function() {
+        return this.stopped = false;
+      };
+      Renderer.prototype.stop = function() {
+        return this.stopped = true;
+      };
       Renderer.prototype.clicked = function(e) {
         var p, pos;
         pos = $(this.canvas).offset();
@@ -184,7 +193,6 @@
         return false;
       };
       Renderer.prototype.ghostify = function(node) {
-        node.mass = 10000.001;
         return node.fixed = true;
       };
       Renderer.prototype.thesePointsAreReallyClose = function(p1, p2) {
