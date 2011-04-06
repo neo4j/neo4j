@@ -46,7 +46,6 @@ body {
   right:0;
   left:0;
   padding:0;
-  background: #70A14E;
   overflow:auto;
 }
 
@@ -152,7 +151,9 @@ body {
 }
 
 #data-area {
-  background: none repeat scroll 0 0 #8BC760;
+  background: none repeat scroll 0 0 #EEEEEE;
+  border-bottom: 1px solid #DDDDDD;
+  border-top: 1px solid #DDD;
 }
 
 .data-console-wrap .helpbox {
@@ -164,37 +165,37 @@ body {
 }
 
 #data-refresh {
-  background:url("../img/icons/glyphish/01-refresh.png") no-repeat scroll center center #ccc;
+  background:url("../img/icons/glyphish/01-refresh.png") no-repeat scroll center center #333;
 }
 #data-home {
-  background:url("../img/icons/glyphish/53-house.png") no-repeat scroll center center #ccc;
+  background:url("../img/icons/glyphish/53-house.png") no-repeat scroll center center #333;
 }
 #data-switch-view {
-  background:url("../img/icons/glyphish/55-network.png") no-repeat scroll center center #ccc;
+  background:url("../img/icons/glyphish/55-network.png") no-repeat scroll center center #333;
 }
 #data-switch-view.tabular {
-  background:url("../img/icons/glyphish/tabular.png") no-repeat scroll center center #ccc;
+  background:url("../img/icons/glyphish/tabular.png") no-repeat scroll center center #333;
 }
 
 
 #data-refresh:hover {
-  background:url("../img/icons/glyphish/01-refresh.png") no-repeat scroll center center #fff;
+  background:url("../img/icons/glyphish/01-refresh.png") no-repeat scroll center center #555;
 }
 #data-home:hover {
-  background:url("../img/icons/glyphish/53-house.png") no-repeat scroll center center #fff;
+  background:url("../img/icons/glyphish/53-house.png") no-repeat scroll center center #555;
 }
 #data-switch-view:hover {
-  background:url("../img/icons/glyphish/55-network.png") no-repeat scroll center center #fff;
+  background:url("../img/icons/glyphish/55-network.png") no-repeat scroll center center #555;
 }
 #data-switch-view.tabular:hover {
-  background:url("../img/icons/glyphish/tabular.png") no-repeat scroll center center #fff;
+  background:url("../img/icons/glyphish/tabular.png") no-repeat scroll center center #555;
 }
 
 #data-create-node, #data-create-relationship {
-  background:url("../img/icons/glyphish/add.png") no-repeat scroll 5px center #ccc;
+  background:url("../img/icons/glyphish/add.png") no-repeat scroll 5px center #333;
 }
 #data-create-node:hover, #data-create-relationship:hover {
-  background:url("../img/icons/glyphish/add.png") no-repeat scroll 5px center #fff;
+  background:url("../img/icons/glyphish/add.png") no-repeat scroll 5px center #555;
 }
 
 #data-create-relationship.selected, #visualization-show-settings.selected  {
@@ -209,11 +210,11 @@ body {
 }
 
 #data-execute-console {
-  background:url("../img/icons/glyphish/06-magnify.png") no-repeat scroll center center #ccc;
+  background:url("../img/icons/glyphish/06-magnify.png") no-repeat scroll center center #333;
   margin-left:5px;
 }
 #data-execute-console:hover {
-  background:url("../img/icons/glyphish/06-magnify.png") no-repeat scroll center center #fff;
+  background:url("../img/icons/glyphish/06-magnify.png") no-repeat scroll center center #555;
 }
 
 
@@ -232,10 +233,10 @@ body {
 }
 
 .add-property {
-  background:url("../img/icons/glyphish/add.png") no-repeat scroll 5px center #ccc;
+  background:url("../img/icons/glyphish/add.png") no-repeat scroll 5px center #333;
 }
 .add-property:hover {
-  background:url("../img/icons/glyphish/add.png") no-repeat scroll 5px center #fff;
+  background:url("../img/icons/glyphish/add.png") no-repeat scroll 5px center #555;
 }
 
 .property-list {
@@ -252,13 +253,13 @@ body {
   margin:0;
   list-style:none;
   padding: 5px 10px;
-  background: none repeat scroll 0 0 #82BA5A;
-  border-bottom: 1px solid #79ad54;
-  border-top: 1px solid #8bc760;
+  background: none repeat scroll 0 0 #EEEEEE;
+  border-bottom: 1px solid #DDDDDD;
+  border-top: 1px solid #EFEFEF;
 }
 
 .property-list > li:nth-child(odd) {
-  background: none repeat scroll 0 0 #8bc760;
+  background: none repeat scroll 0 0 #E8E8E8;
 }
 
 .property-row {
@@ -356,16 +357,15 @@ body {
  */
 
 .headline-bar {
-  background: none repeat scroll 0 0 #82BA5A;
-  border-bottom: 1px solid #79AD54;
-  border-top: 1px solid #8BC760;
+  border-bottom: 1px solid #DDD;
+  border-top: 1px solid #DDD;
 }
 
 .headline-bar .tabs {
   list-style:none;
   margin:0;
   height:100%;
-  border-right:1px solid #79AD54;
+  border-right:1px solid #DDD;
 } 
 
 .headline-bar .tabs li {
@@ -374,7 +374,7 @@ body {
   margin:0;
   padding:0;
   height:100%;
-  border-left:1px solid #79AD54;
+  border-left:1px solid #DDD;
 }
 
 .headline-bar .tabs li a, .headline-bar .tabs li button {
@@ -403,10 +403,10 @@ body {
 }
 
 .headline-bar h3 {
-  color: #FFFFFF;
+  color: #222;
   font-size: 16px;
   margin: 3px 0;
-  text-shadow: 1px -1px 0 #73A650;
+  text-shadow: 1px -1px 0 #ddd;
 }
 
 /**

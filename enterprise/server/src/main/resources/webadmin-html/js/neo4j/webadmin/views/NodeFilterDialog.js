@@ -30,7 +30,7 @@
     return NodeFilterDialog = (function() {
       function NodeFilterDialog() {
         this.complete = __bind(this.complete, this);;
-        this.overlayClicked = __bind(this.overlayClicked, this);;        NodeFilterDialog.__super__.constructor.apply(this, arguments);
+        this.wrapperClicked = __bind(this.wrapperClicked, this);;        NodeFilterDialog.__super__.constructor.apply(this, arguments);
       }
       __extends(NodeFilterDialog, Dialog);
       NodeFilterDialog.prototype.events = {
@@ -74,8 +74,10 @@
         this.filterList.attach($(".filter", this.el));
         return this.filterList.render();
       };
-      NodeFilterDialog.prototype.overlayClicked = function() {
-        return this.cancel();
+      NodeFilterDialog.prototype.wrapperClicked = function(ev) {
+        if (ev.originalTarget === ev.currentTarget) {
+          return this.cancel();
+        }
       };
       NodeFilterDialog.prototype.complete = function() {
         var item, nodes;
