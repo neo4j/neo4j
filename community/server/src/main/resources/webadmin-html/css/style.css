@@ -71,7 +71,7 @@ body {
     display: block;
     float: left;
     height: 40px;
-    padding: 10px 20px 0;
+    padding: 10px 15px 0;
     text-decoration: none;
     text-shadow: 1px 1px 0 #222222;
   }
@@ -86,6 +86,7 @@ body {
   }
   #header_submenu ul {
     margin: 14px 0 0;
+    list-style:none;
   }
 
 /* FOOTER */
