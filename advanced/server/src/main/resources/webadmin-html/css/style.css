@@ -213,19 +213,10 @@ body {
 }
 
 
-.create-relationship-dialog, .visualization-settings-dialog {
-  width:300px;
-  background: #333;
-  padding: 5px;
-  -moz-border-radius:4px;
-  -webkit-border-radius:4px;
-  border-radius:4px;
-  -moz-border-radius-topright:0;
-  -webkit-border-top-right-radius:0;
-  border-top-right-radius:0;
-  color: #eee;
+#create-relationship-types {
+  float:right;
+  clear:both;
 }
-
 
 
 /**
