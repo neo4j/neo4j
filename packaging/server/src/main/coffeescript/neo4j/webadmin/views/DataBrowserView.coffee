@@ -106,6 +106,7 @@ define(
           
 
       switchToVisualizedView : =>
+        
         if @dataView?
           @dataView.detach()
         
