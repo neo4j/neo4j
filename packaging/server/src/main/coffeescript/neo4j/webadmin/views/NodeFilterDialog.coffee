@@ -56,6 +56,9 @@ define(
         @filterList.attach $(".filter", @el)
         @filterList.render()
 
+      overlayClicked : () =>
+        @cancel()
+
       complete : () =>
         nodes = for item in @filterList.getFilteredItems()
           item.node

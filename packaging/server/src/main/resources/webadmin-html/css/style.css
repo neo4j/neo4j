@@ -147,8 +147,12 @@ body {
   color: #444444;
   font-size: 14px;
   padding: 5px;
-  width: 50%;
+  width: 85%;
   float:left;
+}
+
+.data-console-wrap .helpbox {
+  padding: 3px 5px;
 }
 
 .data-toolbar {
@@ -614,8 +618,14 @@ ol lh {
 .left { float:left; }
 .pad { padding:10px; }
 
+.helpbox {
+  font-size: 10px;
+  padding: 3px 0;
+}
+
 .error {
-  font-size: 12px;
+  font-size: 10px;
+  padding: 2px 5px;
 }
 
 .span-1  { width: 6.958%; float:left;  margin-right:1.5%; }
