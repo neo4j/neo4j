@@ -12,4 +12,4 @@ item.getItem().getType() +
 item.getEndId() +
 "/\" class=\"micro-button\">" + 
 "Node " + item.getEndId() + 
-"</a></li></ul><div class=\"break\"></div></div><div class=\"properties\"></div>";}}; });
+"</a></li></ul><div class=\"break\"></div></div><div class=\"properties\"></div><div class=\"break\"></div>";}}; });

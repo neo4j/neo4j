@@ -152,7 +152,7 @@
       };
       VisualGraph.prototype.attach = function(parent) {
         this.detach();
-        $(parent).append(this.el);
+        $(parent).prepend(this.el);
         return this.start();
       };
       VisualGraph.prototype.detach = function() {
