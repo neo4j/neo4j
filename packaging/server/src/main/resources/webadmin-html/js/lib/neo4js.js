@@ -386,6 +386,10 @@ neo4j.exceptions.NotFoundException.prototype=new Error();
 neo4j.exceptions.InvalidDataException=function(){Error.call(this,"Unable to create relationship or node from the provided data. This may be because you tried to get a node or relationship from an invalid url.")
 };
 neo4j.exceptions.InvalidDataException.prototype=new Error();
+neo4j.exceptions.StartNodeSameAsEndNodeException=function(a){Error.call(this,"You cannot create a relationship with the same start and end node.");
+this.url=a
+};
+neo4j.exceptions.StartNodeSameAsEndNodeException.prototype=new Error();
 _.extend(neo4j,{setTimeout:function(b,a){if(typeof(setTimeout)!="undefined"){return setTimeout(b,a)
 }else{if(a===0){b()
 }else{neo4j.log("No timeout implementation found, unable to do timed tasks.")
@@ -778,7 +782,8 @@ d(b)
 return new neo4j.Promise(function(d,c){a.get(b._self).then(function(e){if(e.data&&e.data.self){b._init(e.data);
 d(b)
 }else{c(new neo4j.exceptions.InvalidDataException())
-}},c)
+}},function(e){c(new neo4j.exceptions.NotFoundException(b._self))
+})
 })
 },remove:function(){var e=this,b=this.db.web,a=false,d=this.db,c=e.getSelf();
 return new neo4j.Promise(function(g,f){b.del(e.getSelf()).then(function(){d.getReferenceNodeUrl().then(function(h){if(h==c){d.forceRediscovery()
@@ -835,9 +840,11 @@ _.extend(neo4j.models.Relationship.prototype,neo4j.models.PropertyContainer.prot
 if(!this.exists()){return this.getStartNode().then(function(f,d,c){var e=b.post(f.getCreateRelationshipUrl(),{to:a._endUrl,type:a.getType(),data:a.getProperties()});
 e.then(function(g){a._init(g.data);
 d(a)
-},function(g){if(g.error&&g.error.data&&g.error.data.message&&g.error.data.message.indexOf(a._endUrl)>-1){c(new neo4j.exceptions.NotFoundException(a._endUrl))
-}else{c(g)
-}})
+},function(g){if(g.error&&g.error.data&&g.error.data.exception){var h=g.error.data.exception;
+if(h.indexOf("EndNodeNotFoundException")>-1||(h.indexOf("BadInputException")>-1&&h.indexOf(a._endUrl)>-1)){return c(new neo4j.exceptions.NotFoundException(a._endUrl))
+}else{if(h.indexOf("StartNodeSameAsEndNodeException")>-1){return c(new neo4j.exceptions.StartNodeSameAsEndNodeException(a._endUrl))
+}}}c(g)
+})
 })
 }else{return new neo4j.Promise(function(d,c){b.put(a._urls.properties,a.getProperties()).then(function(){d(a)
 },c)
