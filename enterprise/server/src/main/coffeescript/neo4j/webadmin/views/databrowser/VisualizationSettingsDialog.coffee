@@ -39,8 +39,8 @@ define(
         @closeCallback = opts.closeCallback
         @settings = opts.appState.getVisualizationSettings()
 
-        @render()
         @position()
+        @render()
 
       save : =>
         keys = $("#visualization-label-properties").val().split(",")

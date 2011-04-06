@@ -44,8 +44,8 @@
         this.baseElement = opts.baseElement;
         this.closeCallback = opts.closeCallback;
         this.settings = opts.appState.getVisualizationSettings();
-        this.render();
-        return this.position();
+        this.position();
+        return this.render();
       };
       VisualizationSettingsDialog.prototype.save = function() {
         var keys;
