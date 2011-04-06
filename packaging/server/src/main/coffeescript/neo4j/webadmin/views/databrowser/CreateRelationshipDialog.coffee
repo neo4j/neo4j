@@ -27,7 +27,7 @@ define(
   
     class CreateRelationshipDialog extends View
 
-      className: "create-relationship-dialog"
+      className: "popout"
 
       events : 
         "click #create-relationship" : "save"
