@@ -37,7 +37,8 @@ define(
       show : (timeout=false) =>
         
         @overlay.show()
-
+        @bind()
+        
         if not @attachedToBody
           $("body").append @wrapper
 
@@ -46,12 +47,24 @@ define(
         
         if timeout 
           setTimeout @hide, timeout
+
+      bind : () ->
+        @wrapper.bind("click", @overlayClicked)
     
+      unbind : () ->
+        @wrapper.unbind("click", @overlayClicked)
+
+      overlayClicked : () =>
+        # Override for more awesome behaviour
+        @hide()
+
       hide : () =>
+        @unbind()
         @wrapper.hide()
         @overlay.hide()
 
       remove : () =>
+        @unbind()
         @wrapper.remove()
         @overlay.hide()
 
