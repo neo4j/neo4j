@@ -54,7 +54,7 @@
         return this.queryChanged();
       };
       DataBrowserController.prototype.search = function(query) {
-        if (query.substr(-1) === "/") {
+        while (query.charAt(query.length - 1) === "/") {
           query = query.substr(0, query.length - 1);
         }
         this.dataModel.setQuery(query);
