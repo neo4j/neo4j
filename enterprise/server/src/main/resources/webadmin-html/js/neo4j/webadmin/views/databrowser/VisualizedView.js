@@ -32,6 +32,7 @@
         this.attach = __bind(this.attach, this);;
         this.detach = __bind(this.detach, this);;
         this.remove = __bind(this.remove, this);;
+        this.reflowGraphLayout = __bind(this.reflowGraphLayout, this);;
         this.hideSettingsDialog = __bind(this.hideSettingsDialog, this);;
         this.showSettingsDialog = __bind(this.showSettingsDialog, this);;
         this.getViz = __bind(this.getViz, this);;
@@ -40,7 +41,8 @@
       }
       __extends(VisualizedView, View);
       VisualizedView.prototype.events = {
-        'click #visualization-show-settings': "showSettingsDialog"
+        'click #visualization-show-settings': "showSettingsDialog",
+        'click #visualization-reflow': "reflowGraphLayout"
       };
       VisualizedView.prototype.initialize = function(options) {
         this.server = options.server;
@@ -128,6 +130,11 @@
           this.settingsDialog.remove();
           delete this.settingsDialog;
           return $("#visualization-show-settings").removeClass("selected");
+        }
+      };
+      VisualizedView.prototype.reflowGraphLayout = function() {
+        if (this.viz !== null) {
+          return this.viz.reflow();
         }
       };
       VisualizedView.prototype.remove = function() {

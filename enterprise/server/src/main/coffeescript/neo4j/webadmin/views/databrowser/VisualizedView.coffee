@@ -32,6 +32,7 @@ define(
 
       events : 
         'click #visualization-show-settings' : "showSettingsDialog"
+        'click #visualization-reflow' : "reflowGraphLayout"
 
 
       initialize : (options)->
@@ -118,6 +119,9 @@ define(
           delete(@settingsDialog)
           $("#visualization-show-settings").removeClass("selected")
 
+      reflowGraphLayout : () =>
+        if @viz != null
+          @viz.reflow()
 
       remove : =>
         @dataModel.unbind("change:data", @render)
