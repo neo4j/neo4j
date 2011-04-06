@@ -35,7 +35,7 @@
         this.initialize = __bind(this.initialize, this);;        VisualizationSettingsDialog.__super__.constructor.apply(this, arguments);
       }
       __extends(VisualizationSettingsDialog, View);
-      VisualizationSettingsDialog.prototype.className = "visualization-settings-dialog";
+      VisualizationSettingsDialog.prototype.className = "popout";
       VisualizationSettingsDialog.prototype.events = {
         "click #save-visualization-settings": "save"
       };

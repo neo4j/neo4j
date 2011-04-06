@@ -121,11 +121,13 @@ define(
 
       remove : =>
         @dataModel.unbind("change:data", @render)
+        @hideSettingsDialog()
         @getViz().stop()
         super()
 
       detach : =>
         @dataModel.unbind("change:data", @render)
+        @hideSettingsDialog()
         @getViz().stop()
         super()
 
