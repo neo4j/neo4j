@@ -35,30 +35,31 @@ define(
 
 
       initialize : (options)->
-
         @server = options.server
         @appState = options.appState
-        @settings = @appState.getVisualizationSettings()
         @dataModel = options.dataModel
-
+      
+        @settings = @appState.getVisualizationSettings()
         @settings.bind("change", @settingsChanged)
 
       render : =>
+        if @browserHasRequiredFeatures()
+          if @vizEl? then @getViz().detach()
+          
+          $(@el).html(template())
 
-        if @vizEl? then @getViz().detach()
-        
-        $(@el).html(template())
+          @vizEl = $("#visualization", @el)
+          @getViz().attach(@vizEl)
 
-        @vizEl = $("#visualization", @el)
-        @getViz().attach(@vizEl)
-
-        switch @dataModel.get("type")
-          when "node"
-            @visualizeFromNode @dataModel.getData().getItem()
-          when "relationship"
-            @visualizeFromRelationships [@dataModel.getData().getItem()]
-          when "relationshipList"
-            @visualizeFromRelationships @dataModel.getData().getRawRelationships()
+          switch @dataModel.get("type")
+            when "node"
+              @visualizeFromNode @dataModel.getData().getItem()
+            when "relationship"
+              @visualizeFromRelationships [@dataModel.getData().getItem()]
+            when "relationshipList"
+              @visualizeFromRelationships @dataModel.getData().getRawRelationships()
+        else 
+          @showBrowserNotSupportedMessage()
 
         return this
 
@@ -118,23 +119,34 @@ define(
           delete(@settingsDialog)
           $("#visualization-show-settings").removeClass("selected")
 
+      browserHasRequiredFeatures : ->
+        Object.prototype.__defineGetter__?
+
+      showBrowserNotSupportedMessage : ->
+        $(@el).html("<div class='pad'>
+          <h1>I currently do not support visualization in this browser :(</h1>
+          <p>I can't find the __defineGetter__ API method, which the visualization lib I use, Arbor.js, needs.</p>
+          <p>If you really want to use visualization (it's pretty awesome), please consider using Google Chrome, Firefox or Safari.</p>
+          </div>")
 
       remove : =>
-        @dataModel.unbind("change:data", @render)
-        @hideSettingsDialog()
-        @getViz().stop()
+        if @browserHasRequiredFeatures()
+          @dataModel.unbind("change:data", @render)
+          @hideSettingsDialog()
+          @getViz().stop()
         super()
 
       detach : =>
-        @dataModel.unbind("change:data", @render)
-        @hideSettingsDialog()
-        @getViz().stop()
+        if @browserHasRequiredFeatures()
+          @dataModel.unbind("change:data", @render)
+          @hideSettingsDialog()
+          @getViz().stop()
         super()
 
       attach : (parent) =>
         super(parent)
-        if @vizEl?
+        if @browserHasRequiredFeatures() and @vizEl?
           @getViz().start()
-        @dataModel.bind("change:data", @render)
+          @dataModel.bind("change:data", @render)
 
 )
