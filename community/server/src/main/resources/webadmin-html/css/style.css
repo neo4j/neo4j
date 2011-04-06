@@ -205,8 +205,12 @@ body {
   -moz-border-radius-bottomleft:0;
   -webkit-border-bottom-left-radius:0;
   border-bottom-left-radius:0;
-  background:url("../img/icons/glyphish/add.png") no-repeat scroll 5px center #333;
+  border: 1px solid #333;
+  background-color:#333 !important;
   color:#eee;
+}
+#data-create-relationship.selected {
+  background: url("../img/icons/glyphish/add.png") no-repeat scroll 5px center #333 !important;
 }
 
 #data-execute-console {
