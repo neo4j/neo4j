@@ -34,6 +34,8 @@
         this.attach = __bind(this.attach, this);;
         this.start = __bind(this.start, this);;
         this.stop = __bind(this.stop, this);;
+        this.floatNode = __bind(this.floatNode, this);;
+        this.reflow = __bind(this.reflow, this);;
         this.getNodeStyler = __bind(this.getNodeStyler, this);;
         this.nodeClicked = __bind(this.nodeClicked, this);;
         this.addNodes = __bind(this.addNodes, this);;
@@ -147,10 +149,23 @@
       VisualGraph.prototype.getNodeStyler = function() {
         return this.nodeStyler;
       };
+      VisualGraph.prototype.reflow = function() {
+        this.sys.eachNode(this.floatNode);
+        this.sys.parameters({
+          gravity: true
+        });
+        return this.start();
+      };
+      VisualGraph.prototype.floatNode = function(node, pt) {
+        return node.fixed = false;
+      };
       VisualGraph.prototype.stop = function() {
         if (this.sys.renderer != null) {
           this.sys.renderer.stop();
         }
+        this.sys.parameters({
+          gravity: false
+        });
         return this.sys.stop();
       };
       VisualGraph.prototype.start = function() {

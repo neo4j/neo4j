@@ -234,6 +234,7 @@
         }
         (_ref = (_base = this.visualGraph.edges)[from]) != null ? _ref : _base[from] = {};
         (_ref2 = (_base2 = this.visualGraph.edges[from])[to]) != null ? _ref2 : _base2[to] = {
+          length: .5,
           relationships: {},
           directed: true,
           relType: relType
