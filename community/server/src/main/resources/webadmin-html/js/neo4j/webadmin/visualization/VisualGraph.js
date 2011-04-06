@@ -63,10 +63,13 @@
         this.steadStateWorker = setInterval(this.steadyStateCheck, 1000);
       }
       VisualGraph.prototype.steadyStateCheck = function() {
-        var meanEnergy;
-        meanEnergy = this.sys.energy().mean;
-        if (meanEnergy < 0.01) {
-          return this.sys.stop();
+        var energy, meanEnergy;
+        energy = this.sys.energy();
+        if (energy != null) {
+          meanEnergy = energy.mean;
+          if (meanEnergy < 0.01) {
+            return this.sys.stop();
+          }
         }
       };
       VisualGraph.prototype.setNode = function(node) {
@@ -145,10 +148,18 @@
         return this.nodeStyler;
       };
       VisualGraph.prototype.stop = function() {
-        return this.sys.stop();
+        if (this.sys.renderer != null) {
+          this.sys.renderer.stop();
+        }
+        this.sys.stop();
+        return console.log("system stopped");
       };
       VisualGraph.prototype.start = function() {
-        return this.sys.start();
+        if (this.sys.renderer != null) {
+          this.sys.renderer.start();
+        }
+        this.sys.start();
+        return console.log("system started");
       };
       VisualGraph.prototype.attach = function(parent) {
         this.detach();
