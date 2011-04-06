@@ -43,7 +43,7 @@
 }
 
 .button:hover {
-  background: #fff;
+  background: #ddd;
 }
 
 a.button {
@@ -84,7 +84,7 @@ a.button {
 }
 
 .micro-button:hover {
-  background:#FFF;
+  background:#ddd;
 }
 
 /**
@@ -100,6 +100,18 @@ a.button {
 .dark-button:hover {
   color:#eee;
   background: #666;
+}
+
+/**
+ * BAD BUTTON 
+ */
+
+.bad-button {
+  background: #E1686B;
+}
+
+.bad-button:hover {
+  background: #ef8184;
 }
 
 /**
