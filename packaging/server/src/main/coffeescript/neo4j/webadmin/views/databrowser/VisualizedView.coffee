@@ -32,6 +32,7 @@ define(
 
       events : 
         'click #visualization-show-settings' : "showSettingsDialog"
+        'click #visualization-reflow' : "reflowGraphLayout"
 
 
       initialize : (options)->
@@ -128,6 +129,10 @@ define(
           <p>I can't find the __defineGetter__ API method, which the visualization lib I use, Arbor.js, needs.</p>
           <p>If you really want to use visualization (it's pretty awesome), please consider using Google Chrome, Firefox or Safari.</p>
           </div>")
+
+      reflowGraphLayout : () =>
+        if @viz != null
+          @viz.reflow()
 
       remove : =>
         if @browserHasRequiredFeatures()

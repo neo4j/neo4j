@@ -32,6 +32,7 @@
         this.attach = __bind(this.attach, this);;
         this.detach = __bind(this.detach, this);;
         this.remove = __bind(this.remove, this);;
+        this.reflowGraphLayout = __bind(this.reflowGraphLayout, this);;
         this.hideSettingsDialog = __bind(this.hideSettingsDialog, this);;
         this.showSettingsDialog = __bind(this.showSettingsDialog, this);;
         this.getViz = __bind(this.getViz, this);;
@@ -40,7 +41,8 @@
       }
       __extends(VisualizedView, View);
       VisualizedView.prototype.events = {
-        'click #visualization-show-settings': "showSettingsDialog"
+        'click #visualization-show-settings': "showSettingsDialog",
+        'click #visualization-reflow': "reflowGraphLayout"
       };
       VisualizedView.prototype.initialize = function(options) {
         this.server = options.server;
@@ -139,6 +141,11 @@
       };
       VisualizedView.prototype.showBrowserNotSupportedMessage = function() {
         return $(this.el).html("<div class='pad'>          <h1>I currently do not support visualization in this browser :(</h1>          <p>I can't find the __defineGetter__ API method, which the visualization lib I use, Arbor.js, needs.</p>          <p>If you really want to use visualization (it's pretty awesome), please consider using Google Chrome, Firefox or Safari.</p>          </div>");
+      };
+      VisualizedView.prototype.reflowGraphLayout = function() {
+        if (this.viz !== null) {
+          return this.viz.reflow();
+        }
       };
       VisualizedView.prototype.remove = function() {
         if (this.browserHasRequiredFeatures()) {
