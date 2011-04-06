@@ -4,7 +4,7 @@
   <parent>
     <artifactId>assembly-pom</artifactId>
     <groupId>org.neo4j.assembly</groupId>
-    <version>18</version>
+    <version>19</version>
   </parent>
 
   <groupId>org.neo4j.assembly</groupId>
