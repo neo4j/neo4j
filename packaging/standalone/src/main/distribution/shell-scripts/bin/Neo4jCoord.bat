@@ -1,21 +1,26 @@
 @echo off
 
-rem This script is the main controller for the server
+rem
+rem This script is the main controller for the server coordinator
 rem There are commands to install, uninstall, start, stop 
 rem and restart the service on windows and also run it as
 rem a console process. For the first four operations however,
-rem Administrator rights are required. To enable the Administrator
-rem account, issue in the command line
+rem Administrator rights are required.
 rem
-rem net user Administrator /active:yes
-rem net user Administrator <new passwd>
+rem To do that, you can go to
 rem
-rem and then to run a command from the console as admin,
+rem Start -> All Programs -> Accessories -> Right click on Command Prompt
+rem Click "Run as Administrator"
 rem
-rem runas /env /user:Administrator "Neo4jCoord.bat install"
+rem Provide confirmation and/or the Administrator password if requested.
+rem From the command prompt that will come up, navigate to the directory
+rem containing the unpacked distribution and issue the command you wish,
+rem for example
 rem
-rem You will be prompted for the admin passwd and then
-rem the service will be installed.
+rem bin\Neo4jCoord.bat install
+rem
+rem to install Neo4j as a Windows Service.
+rem
 
 setlocal
 call "%~dp0"setenv.bat
@@ -49,32 +54,32 @@ pause
 goto :eof
 
 :console
-call "%_REALPATH%runConsole.bat" %_WRAPPER_CONF%
+call %wrapper_bat% -c %_WRAPPER_CONF%
 goto :eof
 
 :start
-call "%_REALPATH%startService.bat" %_WRAPPER_CONF%
+call %wrapper_bat% -t %_WRAPPER_CONF%
 goto :eof
 
 :stop
-call "%_REALPATH%stopService.bat" %_WRAPPER_CONF%
+call %wrapper_bat% -p %_WRAPPER_CONF%
 goto :eof
 
 :query
-call "%_REALPATH%queryService.bat" %_WRAPPER_CONF%
+call %wrapper_bat% -q %_WRAPPER_CONF%
 goto :eof
 
 :install
-call "%_REALPATH%installService.bat" %_WRAPPER_CONF%
+call %wrapper_bat% -i %_WRAPPER_CONF%
 goto :eof
 
 :remove
-call "%_REALPATH%uninstallService.bat" %_WRAPPER_CONF%
+call %wrapper_bat% -r %_WRAPPER_CONF%
 goto :eof
 
 :restart
-call "%_REALPATH%stopService.bat %_WRAPPER_CONF%"
-call "%_REALPATH%startService.bat %_WRAPPER_CONF%"
+call %wrapper_bat% -p %_WRAPPER_CONF%
+call %wrapper_bat% -t %_WRAPPER_CONF%
 goto :eof
 
 :exec
