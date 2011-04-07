@@ -65,13 +65,11 @@
       <version>${neo4j.version}</version>
     </dependency>
     
-    <!-- TODO: move management to some neo4j-advanced pom -->
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-management</artifactId>
+      <artifactId>neo4j-advanced</artifactId>
       <version>1.3-SNAPSHOT</version>
     </dependency>
-    <!-- /move -->
 
     <dependency>
       <groupId>org.neo4j.drivers</groupId>
