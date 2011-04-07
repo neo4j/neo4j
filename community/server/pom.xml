@@ -211,6 +211,12 @@
       <groupId>com.tinkerpop.blueprints</groupId>
       <artifactId>blueprints-neo4j-graph</artifactId>
       <version>0.6</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.neo4j</groupId>
+          <artifactId>neo4j</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
