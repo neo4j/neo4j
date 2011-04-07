@@ -24,6 +24,14 @@
   </licenses>
 
   <build>
+  <plugins>
+     <plugin>
+       <artifactId>maven-surefire-plugin</artifactId>
+       <configuration>
+         <argLine>-Xmx300m</argLine>
+       </configuration>
+     </plugin>
+    </plugins>
     <extensions>
       <extension>
         <groupId>org.apache.maven.wagon</groupId>
