@@ -1,0 +1,63 @@
+Social Network
+
+    Social networks (know as social graphs out on the web) are natural to
+    model with a graph. This example shows a very simple social model
+    that connects friends and keeps track of status updates.
+
+Simple Social Model
+
+[./images/socnet-model.png] Social network data model 
+
+    The data model for a social network is pretty simple: <<<Persons>>> with names
+    and <<<StatusUpdates>>> with timestamped text. These entities are then connected
+    by specific relationships.
+
+* <<<Person>>>
+
+    * <<<friend>>>: relates two distinct <<<Person>>> instances (no self-reference)
+    
+    * <<<status>>>: connects to the most recent <<<StatusUpdate>>>
+
+* <<<StatusUpdate>>>
+
+    * <<<next>>>: points to the next <<<StatusUpdate>>> in the chain, which was posted
+    before the current one
+
+Status Graph Instance
+
+    The <<<StatusUpdate>>> list for a <<<Person>>> is a linked list. The head
+    of the list (the most recent status) is found by following <<<status>>>.
+    Each subsequent <<<StatusUpdate>>> is connected by <<<next>>>. 
+
+    Here's an example where Andreas Kollegger micro-blogged his way to work 
+    in the morning:
+
+[./images/social_status.png] Andreas Kollegger's status updates
+	To read the status updates, we can create a traversal, like so:
+
+%{source-code|snippet=getStatusTraversal|file=src/main/java/org/neo4j/examples/socnet/Person.java}
+
+	This gives us a traverser that will start at one StatusUpdate, and will follow the chain 
+	of updates until they run out. Traversers are lazy loading, so it's performant even when
+	dealing with thousands of statuses - they are not loaded until we actually consume them.
+
+Activity Stream
+
+	Once we have friends, and they have status messages, we might want to read our friends
+	status' messages, in reverse time order - latest first. To do this, we go through these steps:
+	
+	[[1]] Gather all friend's status update iterators in a list - latest date first
+		
+	[[2]] Sort the list
+	
+	[[3]] Return the first item in the list
+	
+	[[4]] If the first iterator is exhausted, remove it from the list. Otherwise, get the next item in that iterator
+	
+	[[5]] Go to step 2 until there are no iterators left in the list
+	
+	Animated, the sequence looks like {{{http://www.slideshare.net/systay/pattern-activity-stream}this}}.
+	
+	The code looks like: 
+	
+%{source-code|snippet=getActivityStream|file=src/main/java/org/neo4j/examples/socnet/FriendsStatusUpdateIterator.java}

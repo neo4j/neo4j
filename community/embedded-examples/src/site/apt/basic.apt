@@ -1,0 +1,35 @@
+Basic usage
+
+Hello world
+
+	Create and access nodes and relationships.
+
+    To begin with, we define the relationship types we want to use:
+	
+%{source-code|snippet=createReltype|file=src/main/java/org/neo4j/examples/EmbeddedNeo4j.java}
+
+    The next step is to start the database server:
+
+%{source-code|snippet=startDb|file=src/main/java/org/neo4j/examples/EmbeddedNeo4j.java}
+
+    As seen, we register a shutdown hook that will make sure the database
+    shuts down when the JVM exits.
+    
+    Now it's time to interact with the database:
+
+%{source-code|snippet=operationsInATransaction|file=src/main/java/org/neo4j/examples/EmbeddedNeo4j.java}
+
+    At this point this is how the database looks:
+
+[./images/hello-world.png] Node space view
+
+    In this case we'll remove the data before committing:
+
+%{source-code|snippet=removingData|file=src/main/java/org/neo4j/examples/EmbeddedNeo4j.java}
+
+    Finally, shut down the database server <when the application finishes>:
+
+%{source-code|snippet=shutdownServer|file=src/main/java/org/neo4j/examples/EmbeddedNeo4j.java}
+
+    Full source code: {{{./xref/org/neo4j/examples/EmbeddedNeo4j.html}EmbeddedNeo4j}}
+    

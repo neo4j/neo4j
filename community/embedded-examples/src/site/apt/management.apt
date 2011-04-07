@@ -1,0 +1,18 @@
+Management features
+
+Reading a management attribute
+
+	The {{{./apidocs/org/neo4j/kernel/EmbeddedGraphDatabase.html}EmbeddedGraphDatabase}}
+	class includes a 
+	{{{./apidocs/org/neo4j/kernel/EmbeddedGraphDatabase.html#getManagementBean(java.lang.Class)}convenience method}}
+	to get instances of Neo4j management beans.
+	The common JMX service can be used as well, but from your code you probably rather
+	want to use the approach outlined here.
+
+    This example shows how to get the start time of a database:
+	
+%{source-code|snippet=getStartTime|file=src/test/java/org/neo4j/examples/JmxTest.java}
+
+    To find more management beans to use, look into the management package
+    {{{./apidocs/org/neo4j/management/package-summary.html}apidocs}} and
+    {{{http://components.neo4j.org/neo4j-management/}site}}.

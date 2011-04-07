@@ -1,0 +1,21 @@
+Domain entities
+
+    This page demonstrates one way to handle domain entities
+    when using Neo4j. The principle at use is to wrap the entities
+    around a node (the same approach can be used with relationships
+    as well).
+
+    First off, store the node and make it accessible inside the
+    package:
+	
+%{source-code|snippet=the-node|file=src/main/java/org/neo4j/examples/socnet/Person.java}
+
+    Delegate attributes to the node:    
+
+%{source-code|snippet=delegate-to-the-node|file=src/main/java/org/neo4j/examples/socnet/Person.java}
+
+    Make sure to override these methods:
+    
+%{source-code|snippet=override|file=src/main/java/org/neo4j/examples/socnet/Person.java}
+
+    Full source code: {{{./xref/org/neo4j/examples/socnet/Person.html}Person}}

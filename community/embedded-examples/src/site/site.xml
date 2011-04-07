@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+
+    Licensed to Neo Technology under one or more contributor
+    license agreements. See the NOTICE file distributed with
+    this work for additional information regarding copyright
+    ownership. Neo Technology licenses this file to you under
+    the Apache License, Version 2.0 (the "License"); you may
+    not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on an
+    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+    KIND, either express or implied. See the License for the
+    specific language governing permissions and limitations
+    under the License.
+
+-->
+<project name="Neo4j ${project.version}">
+  <version position="left" />
+  <bannerLeft>
+    <name>Neo4j</name>
+    <src>images/logos/logo-dark.png</src>
+    <href>http://neo4j.org/</href>
+  </bannerLeft>
+  <body>
+    <links>
+      <item name="Neo4j home" href="http://neo4j.org/" />
+      <item name="news" href="http://news.neo4j.org/" />
+      <item name="wiki" href="http://wiki.neo4j.org/" />
+      <item name="issues" href="https://trac.neo4j.org/" />
+      <item name="components" href="http://components.neo4j.org/" />
+      <item name="apidocs" href="http://api.neo4j.org/" />
+    </links>
+    <menu name="Neo4j Embedded Examples">
+      <item name="Introduction" href="index.html" />
+      <item name="Neo4j JavaDocs" href="apidocs/index.html" />
+      <item name="Wiki" href="http://wiki.neo4j.org/content/Getting_Started_With_Apoc" />
+      <item name="Source Repository" href="${scm.url}" />
+      <item name="Downloads" href="http://neo4j.org/download/" />
+    </menu>
+    <menu name="Examples">
+      <item name="Basic usage" href="basic.html" />
+      <item name="Basic index usage" href="basic-index.html" />
+      <item name="Integrated indexing" href="integrated-index.html" />
+      <item name="Traversal" href="traversal.html" />
+      <item name="Ordered path traversal" href="ordered-path.html" />
+      <item name="Domain entities" href="entities.html" />
+      <item name="Social network" href="social-network.html" />
+      <item name="Graph algorithms" href="graphalgo.html" />
+      <item name="Management features" href="management.html" />
+    </menu>
+    <menu name="Test examples">
+      <item name="Base test" href="base-test.html" />
+    </menu>
+    <menu name="Examples full source code">
+      <item name="Example code" href="xref/index.html" />
+      <item name="Example test code" href="xref-test/index.html" />
+    </menu>
+    <menu ref="reports" />
+  </body>
+  <skin>
+    <groupId>${skinGroupId}</groupId>
+    <artifactId>${skinArtifactId}</artifactId>
+    <version>${skinVersion}</version>
+  </skin>
+</project>
