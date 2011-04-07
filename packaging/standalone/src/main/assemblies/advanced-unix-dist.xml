@@ -87,7 +87,7 @@
       <unpack>false</unpack>
       <useProjectArtifact>false</useProjectArtifact>
       <includes>
-        <include>org.neo4j:*</include>
+        <include>org.neo4j:neo4j-community</include>
         <include>org.apache.geronimo.specs:geronimo-jta_1.1_spec</include>
         <include>org.apache.servicemix.bundles:org.apache.servicemix.bundles.jline</include>
         <include>org.apache.servicemix.bundles:org.apache.servicemix.bundles.lucene</include>
