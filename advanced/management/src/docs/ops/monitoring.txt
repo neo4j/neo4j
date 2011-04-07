@@ -2,6 +2,8 @@
 Monitoring
 ==========
 
+NOTE: Most of the monitoring features are only available in the Advanced and Enterprise editions of Neo4j.
+
 In order to be able to continuously get an overview of the health of a Neo4j database, there are different levels of monitoring facilities available.
 
 
