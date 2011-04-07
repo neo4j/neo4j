@@ -66,6 +66,7 @@
       <fileMode>0755</fileMode>
       <excludes>
         <exclude>**/*.bat</exclude>
+        <exclude>**/neo4j-backup*</exclude>
       </excludes>
       <filtered>true</filtered>
     </fileSet>
