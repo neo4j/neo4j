@@ -1,3 +1,0 @@
-{
-  "run_list":["recipe[neo4j::windows]"]
-}
