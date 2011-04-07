@@ -1,0 +1,27 @@
+NEO4J-COORDINATOR-SHELL(1)
+==========================
+:author: The Neo4j Team
+
+NAME
+----
+neo4j-coordinator-shell - Neo4j Coordinator Shell interactive interface
+
+
+[[neo4j-coordinator-shell-manpage]]
+SYNOPSIS
+--------
+*neo4j-coordinator-shell* -server <host:port> [<cmd> <args>]
+
+[[neo4j-coordinator-shell-manpage-description]]
+DESCRIPTION
+-----------
+Neo4j Coordinator Shell provides an interactive text-based interface to a running Neo4j Coordinator server.
+
+[[neo4j-coordinator-shell-manpage-options]]
+OPTIONS
+-------
+*-server* 'HOST:PORT'::
+  Connects to a Neo4j Coordinator at the specified host and port.
+
+
+

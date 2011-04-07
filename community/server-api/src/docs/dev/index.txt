@@ -1,0 +1,70 @@
+[[server-api]]
+Server API
+==========
+
+.Quick info
+***********
+* The server's functionality can be extended by adding plugins. Plugins are user-specified code which extend the capabilities of the database, nodes, or relations. The neo4j server will then advertise the plugin functionality within representations as clients interact via HTTP.
+***********
+
+Dependencies needed for developing a <<server-plugins,server plugins>> are provided by the server api module.
+
+This includes public interfaces, annotations, exceptions and required superclasses.
+
+the means for custom initializers server plugins and extensions are also available.
+
+
+Plugin/Extension Initialization
+===============================
+
+The lifecycle of a custom plugin/extension is supported by Neo4j server in
+
+
+must be listed in a file named META-INF/services/org.neo4j.server.plugins.PluginLifecycle which must be included
+in the plugin jar.
+
+[source, txt]
+----
+com.example.helloworld.HelloPluginInitializer
+----
+
+[source,java]
+----
+package com.example.helloworld;
+
+public class HelloPluginInitializer implements PluginLifecycle
+{
+    MessageService messageService;
+    public HelloPluginInitializer()
+    {
+    }
+
+    @Override
+    public Collection<Injectable<?>> start( GraphDatabaseService graphDatabaseService, Configuration config )
+    {
+        this.messageService = new MessageService(graphDatabaseService);
+        return Collections.<Injectable<?>>singleton( new Injectable<MessageService>()
+        {
+            @Override
+            public MessageService getValue()
+            {
+                return this.messageService;
+
+            }
+
+            @Override
+            public Class<MessageService> getType()
+            {
+                return MessageService.class;
+            }
+        } );
+    }
+
+    @Override
+    public void stop()
+    {
+        this.messageService.stop();
+    }
+}
+
+----

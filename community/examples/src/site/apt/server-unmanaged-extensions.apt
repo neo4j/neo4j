@@ -1,0 +1,43 @@
+Unmanged Server JAXRS extensions
+
+    Some projects want extremely fine control over their server-side code and the representation. For this we’ve introduced an unmanaged extension API. It’s a sharp tool, allowing users to deploy arbitrary JAX-RS classes to the server and so you should be careful when thinking about using this. In particular you should understand that it’s easy to consume lots of heap space on the server and hinder performance if you’re not careful. Still, if you understand the disclaimer, then you load your JAX-RS classes into the Neo4j server simply by adding adding a @Context annotation to your code, compiling against the Neo4j server jar, and then adding your classes to the runtime classpath (just drop it in the lib directory of the Neo4j server). In return you get access to the hosted environment of the Neo4j server like logging through the org.neo4j.server.logging.Logger.
+    
+    You can mout the neo4j server dependencies in Maven via something like
+    
+---
+<dependency>
+  <groupId>org.neo4j.app</groupId>
+  <artifactId>neo4j-server</artifactId>
+  <version>1.3-SNAPSHOT</version>
+</dependency>
+----
+    
+    or get the JAR files from the neo4j repository at http://m2.neo4j.org/org/neo4j/app/neo4j-server/ or in the system/lib
+    directory of the Neo4j Server distribution.
+    
+    
+%{source-code|snippet=All|file=src/main/java/org/neo4j/examples/server/unmanaged/HelloWorldResource.java}
+
+  This defines a GET endpoint at /helloworld/{nodeId} that will be added to the mount point of this resource
+
+  Now, list your extension package in neo4j-server.properties with something like
+  
+---  
+#Comma separated list of JAXRS classes, one package name for each mount point.
+org.neo4j.server.thirdparty_jaxrs_classes=com.example.mycoolextensions="/custom"
+---
+  
+  Now, place the myextension.jar (and any custom dependencies) into the $NEO$J_SERVER_HOME/plugins directory, start the server check out the
+  database representation for the listing of your extension:
+  
+---
+curl -v htto://localhost:7474/custom/helloworld/123
+---
+  
+  will get you 
+
+---
+Hello World, nodeId=123
+---
+  
+  Full source code: {{{./xref/org/neo4j/examples/server/unmanaged/HelloWorldResource.html}HelloWorldResource.java}}

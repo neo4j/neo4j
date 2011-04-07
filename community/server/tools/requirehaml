@@ -1,0 +1,99 @@
+#!/usr/bin/env node
+
+var path = require('path');
+var sys  = require('sys');
+var fs   = require('fs');
+var exec = require('child_process').exec;
+var Haml = require('haml');
+
+var sourceDir, outputDir;
+
+function parseOptions() {
+  sourceDir = process.argv[2];
+  outputDir = process.argv[3];
+}
+
+function compile(source, input, base) {
+  writeJs(source,
+          "define(function(){return function(vars){ with(vars||{}) { return " + Haml.optimize(Haml.compile(input)) + ";}}; });" , base);
+}
+
+function writeJs(source, js, base) {
+  var baseDir, compile, dir, filename, jsPath, srcDir;
+  filename = path.basename(source, path.extname(source)) + '.js';
+  srcDir = path.dirname(source);
+  baseDir = base === '.' ? srcDir : srcDir.substring(base.length);
+  dir = path.join(outputDir, baseDir);
+  jsPath = path.join(dir, filename);
+  compile = function() {
+    if (js.length <= 0) {
+      js = ' ';
+    }
+    return fs.writeFile(jsPath, js, function(err) {
+      if (err) {
+        return sys.puts(err.message);
+      } else {
+        return console.log("" + ((new Date).toTimeString()) + " - compiled " + source);
+      }
+    });
+  };
+  return path.exists(dir, function(exists) {
+    if (exists) {
+      return compile();
+    } else {
+      return exec("mkdir -p " + dir, compile);
+   }
+  });
+}
+
+function compileAll() {
+
+  var base, compileRecursive, source, _i, _len, _results;
+
+  source = sourceDir;
+  base = path.join(source);
+  compileRecursive = function(source, topLevel) {
+    return path.exists(source, function(exists) {
+      if (topLevel && !exists) {
+        throw new Error("File not found: " + source);
+      }
+      return fs.stat(source, function(err, stats) {
+        if (stats.isDirectory()) {
+          return fs.readdir(source, function(err, files) {
+            var file, _i, _len;
+            for (_i = 0, _len = files.length; _i < _len; _i++) {
+              file = files[_i];
+              compileRecursive(path.join(source, file));
+            }
+          });
+        } else if (topLevel || path.extname(source) === '.haml') {
+          fs.readFile(source, function(err, code) {
+            return compile(source, code.toString(), base);
+          });
+          return watch(source, base);
+        }
+      });
+    });
+  };
+  compileRecursive(source, true);
+}
+
+function watch(sourceFile, base) {
+  fs.watchFile(sourceFile, {
+    persistent: true,
+    interval: 500}, 
+  function(curr, prev) {
+    if (curr.size === prev.size && curr.mtime.getTime() === prev.mtime.getTime()) {
+      return;
+    }
+    return fs.readFile(sourceFile, function(err, code) {
+      if (err) {
+        throw err;
+      }
+      return compile(sourceFile, code.toString(), base);
+    });
+  });
+}
+
+parseOptions();
+compileAll();

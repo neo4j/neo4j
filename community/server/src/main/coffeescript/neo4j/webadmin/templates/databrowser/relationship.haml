@@ -1,0 +1,23 @@
+.headline-bar.pad
+  .title
+    %h3= "Relationship " + item.getId()
+    %p.small = item.getSelf()
+  
+  %ul.button-bar.item-controls
+    %li
+      %button.data-save-properties.button(disabled="true") Saved
+    %li
+      %button.data-delete-item.bad-button Delete
+
+  %ul.relationship-meta  
+    %li
+      %a.micro-button(href="#/data/search/#{item.getStartId()}/")= "Node " + item.getStartId()
+    %li.type = item.getItem().getType()
+    %li
+      %a.micro-button(href="#/data/search/#{item.getEndId()}/")= "Node " + item.getEndId()
+
+  .break
+
+.properties
+
+.break

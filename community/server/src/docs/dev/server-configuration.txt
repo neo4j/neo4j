@@ -1,0 +1,91 @@
+[[server-configuration]]
+Server Configuration 
+====================
+
+.Quick info
+***********
+* The server's primary configuration file is found under conf/neo4j-server.properties 
+* The conf/log4j.properties file contains the default server logging configuration
+* Low-level performance tuning parameters are found in conf/neo4j.properties
+***********
+
+The main configuration file for the server can be found:
+[source,shell]
+----
+conf/neo4j-server.properties
+----
+
+This file contains several important settings, and although the defaults are sensible
+administrators might choose to make changes (especially to the port settings).
+
+Set the location on disk of the database directory 
+[source,shell]
+----
+org.neo4j.server.database.location=data/graph.db
+----
+Note that on Windows systems, absolute locations including drive letters need to read "c:/data/db"
+
+Specifying the port for the HTTP server that supports data, administrative, and UI access:
+[source,shell]
+----
+org.neo4j.server.webserver.port=7474
+----
+
+Set the location of the round-robin database directory which gathers metrics on the running 
+server instance.
+[source,shell]
+----
+org.neo4j.server.webadmin.rrdb.location=data/graph.db/../rrd
+----
+
+Set the URI path for the REST data API through which the database is accessed. For non-local access, consider to put in the external hostname of your server instead of localhost, e.g. http://my.host:7474/db/data .
+[source,shell]
+----
+org.neo4j.server.webadmin.data.uri=http://localhost:7474/db/data/
+----
+
+The management URI for the administration API that the  Webadmin tool uses. If you plan to connect to the Webadmin from other than localhost, put in the external hostname of your server instead of localhost, e.g. http://my.host:7474/db/manage .
+[source,shell]
+----
+org.neo4j.server.webadmin.management.uri=http://localhost:7474/db/manage
+----
+
+Low-level performance tuning parameters can be explicitly set by referring
+to the following property:
+
+[source,shell]
+----
+org.neo4j.server.db.tuning.properties=neo4j.properties
+----
+
+If this property isn't set, the server will look for a file called +neo4j.properties+ in 
+the same directory as the +neo4j-server.properties+ file.
+
+If this property isn't set, and there is no +neo4j.properties+ file in the default
+configuration directory, then the server will log a warning. Subsequently at runtime the
+database engine will attempt tune itself based on the prevailing conditions.
+
+
+The default log4j.properties file uses a rolling appender and outputs logs by default to the
+data/log directory. Most deployments will choose to use their own configuration here to meet 
+local standards. During development, much useful information can be found in the logs so some
+form of logging to disk is well worth keeping.  
+
+[source,shell]
+----
+conf/log4j.properties
+----
+
+The fine-tuning of the low-level Neo4j graph database engine is specified in a separate
+properties file.
+[source,shell]
+----
+conf/neo4j.properties
+----
+
+The graph database engine has a range of performance tuning options which are enumerated in
+<<server-performance>>. Note that other factors than Neo4j tuning should be considered
+when performance tuning a server, including general server load, memory and file contention, 
+and even garbage collection penalties on the JVM, though such considerations are beyond the scope
+of this configuration document.
+

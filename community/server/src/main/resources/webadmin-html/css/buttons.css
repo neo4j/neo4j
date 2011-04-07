@@ -1,0 +1,135 @@
+
+
+/**
+ * Button bar
+ */
+
+.button-bar {
+  list-style:none;
+  margin:0;
+  padding: 0;
+}
+
+.button-bar li {
+  display:block;
+  float:left;
+  padding-right: 5px;
+}
+
+.button-bar li:last-child {
+  padding-right: 0;
+}
+
+
+/**
+ * Buttons
+ */
+
+.button, .text-icon-button, .icon-button, .micro-button, .bad-button {
+  -moz-border-radius: 4px 4px 4px 4px;
+  -webkit-border-radius:4px;
+  border-radius:4px;
+  background-color: #82BA5A !important;
+  border: 1px solid #6A994A;
+  color: #454545;
+  cursor: pointer;
+  display: block;
+  float: left;
+  font-size: 13px;
+  font-weight: bold;
+  height: 32px;
+  padding: 0 5px;
+  text-decoration: none;
+}
+
+.button:hover, .text-icon-button:hover, .icon-button:hover, .micro-button:hover {
+  background-color: #8bc760 !important;
+}
+
+a.button {
+  padding-top:9px;
+  height: 23px;
+}
+
+/** 
+ * Big buttons with subtitles (used in the top header for the tabs)
+ */
+
+.title-button {
+  color: #EEEEEE;
+  text-decoration: none;
+  text-shadow: 1px 1px 0 #222222;
+  font-size:14px;
+}
+
+.title-button .subtitle {
+  clear: right;
+  color: #AAAAAA;
+  display: block;
+  font-size: 10px;
+}
+
+/**
+ * Micro button 
+ */
+
+.micro-button {
+  -moz-border-radius:8px;
+  -webkit-border-radius:8px;
+  border-radius:8px;
+  padding: 3px 6px;
+  font-size:10px;
+  height:auto;
+}
+
+/**
+ * BAD BUTTON 
+ */
+
+.bad-button {
+  background-color: #BA5A5A !important;
+  border-color: #994A4A;
+  color:#222;
+}
+
+.bad-button:hover {
+  background-color: #c76060 !important;
+}
+
+/**
+ * Icon buttons
+ */
+
+.text-icon-button, .icon-button {
+  padding: 0;
+  width: 32px;
+}
+
+.text-icon-button {
+  padding: 0 5px 0 32px;
+  width:auto;
+  font-size:13px;
+  font-weight:bold;
+}
+
+/**
+ * POPOUT BUTTONS
+ */
+.popout {
+  width:300px;
+  background: #333;
+  padding: 10px;
+  -moz-border-radius:4px;
+  -webkit-border-radius:4px;
+  border-radius:4px;
+  -moz-border-radius-topright:0;
+  -webkit-border-top-right-radius:0;
+  border-top-right-radius:0;
+  color: #eee;
+}
+
+.popout-controls {
+  padding: 10px 0 !important;
+}
+
+
