@@ -1,0 +1,31 @@
+Neo4j
+
+This software is Copyright (c) 2002-2011 "Neo Technology,"
+    Network Engine for Objects in Lund AB [http://neotechnology.com]
+
+It is licensed under the GNU Affero General Public License version 3 or later,
+which in essence means that it's free to embed in other works of free software.
+(http://www.fsf.org/licensing/licenses/agpl-3.0.html)
+
+However, if you're writing non-free (which usually means commercial) software
+and wish to use Neo4j, then you must buy a commercial license from Neo Technology
+(http://neotechnology.com).
+
+For legalese details, see LICENSE.txt.
+
+For more information, contact info@neotechnology.com.
+
+The bundled Apache Geronimo JTA library is copyright
+The Apache Software Foundation  (http://www.apache.org/)
+under the Apache License version 2.0.
+
+The bundled Lucene text search engine library is copyright
+The Apache Software Foundation  (http://www.apache.org/)
+under the Apache License version 2.0.
+
+The bundled JLine library is copyright under the
+BSD License  (http://www.opensource.org/licenses/bsd-license.php).
+
+The bundled Google Protocol Buffers library is copyright under the
+BSD License  (http://www.opensource.org/licenses/bsd-license.php).
+
