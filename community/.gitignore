@@ -12,3 +12,5 @@ build
 *.iml
 .idea
 .DS_Store
+server/neo4j-home/data/
+server/neo4j-home/rrd
