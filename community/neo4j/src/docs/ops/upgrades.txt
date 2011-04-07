@@ -53,6 +53,8 @@ Upgrading between these two version needs to be performed explicitly using a con
 [CAUTION]
 Upgrade cannot be performed if either the number of relationship types or the configured block size for either the dynamic array store or string store is greater than 65534.
 
+[CAUTION]
+Indexes created using the old IndexService/LuceneIndexService are no longer accessible out of the box in 1.3 in favor of the integrated index. An automatic upgrade isn't possible so a full rebuild of the index data into the integrated index framework is required. For reference the legacy index can be downloaded from the Neo4j repository, http://m2.neo4j.org/org/neo4j/neo4j-legacy-index/
 
 [[deployment-upgrading-one-two]]
 == Upgrade 1.1 -> 1.2 ==
