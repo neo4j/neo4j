@@ -42,7 +42,7 @@ Finishing the transaction will perform commit or rollback depending on the succe
 
 [CAUTION]
 _All modifications performed in a transaction are kept in memory._
-This means that very large updates they have to be split into several top level transactions to avoid running out of memory.
+This means that very large updates have to be split into several top level transactions to avoid running out of memory.
 It must be a top level transaction since splitting up the work in many nested transactions will just add all the work to the top level transaction.
 
 In an environment that makes use of _((thread pooling))_ other errors may occur when failing to finish a transaction properly.
