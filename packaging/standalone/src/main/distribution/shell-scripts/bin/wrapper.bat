@@ -1,3 +1,4 @@
+@echo off
 rem Copyright (c) 2002-2011 "Neo Technology,"
 rem Network Engine for Objects in Lund AB [http://neotechnology.com]
 rem

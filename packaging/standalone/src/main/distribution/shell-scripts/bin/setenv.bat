@@ -1,3 +1,4 @@
+@echo off
 rem Copyright (c) 2002-2011 "Neo Technology,"
 rem Network Engine for Objects in Lund AB [http://neotechnology.com]
 rem
@@ -16,8 +17,6 @@ rem
 rem You should have received a copy of the GNU General Public License
 rem along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-@echo off
 rem quotes are required for correct handling of path with spaces
 
 rem default java home

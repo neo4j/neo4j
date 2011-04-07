@@ -5,17 +5,17 @@ rem
 rem This file is part of Neo4j.
 rem
 rem Neo4j is free software: you can redistribute it and/or modify
-rem it under the terms of the GNU Affero General Public License as
-rem published by the Free Software Foundation, either version 3 of the
-rem License, or (at your option) any later version.
+rem it under the terms of the GNU General Public License as published by
+rem the Free Software Foundation, either version 3 of the License, or
+rem (at your option) any later version.
 rem
 rem This program is distributed in the hope that it will be useful,
 rem but WITHOUT ANY WARRANTY; without even the implied warranty of
 rem MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-rem GNU Affero General Public License for more details.
+rem GNU General Public License for more details.
 rem
-rem You should have received a copy of the GNU Affero General Public License
-rem along with this program. If not, see <http://www.gnu.org/licenses/>.
+rem You should have received a copy of the GNU General Public License
+rem along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 set ERROR_CODE=0
 
@@ -64,7 +64,6 @@ set BASEDIR=%~dp0\..
 
 :repoSetup
 
-
 if "%JAVACMD%"=="" set JAVACMD=java
 
 if "%REPO%"=="" set REPO=%BASEDIR%\lib
@@ -92,7 +91,7 @@ goto endInit
 @REM Reaching here means variables are defined and arguments have been captured
 :endInit
 
-%JAVACMD% %JAVA_OPTS% %EXTRA_JVM_ARGUMENTS% -classpath %CLASSPATH_PREFIX%;%CLASSPATH% -Dapp.name="neo4j-backup" -Dapp.repo="%REPO%" -Dbasedir="%BASEDIR%" org.neo4j.backup.BackupTool %CMD_LINE_ARGS%
+%JAVACMD% %JAVA_OPTS% %EXTRA_JVM_ARGUMENTS% -classpath %CLASSPATH_PREFIX%;%CLASSPATH% -Dapp.name="Neo4j Coordinator Shell" -Dapp.repo="%REPO%" -Dbasedir="%BASEDIR%" org.apache.zookeeper.ZooKeeperMain %CMD_LINE_ARGS%
 if ERRORLEVEL 1 goto error
 goto end
 
