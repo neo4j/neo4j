@@ -57,6 +57,13 @@
         this.renderListSelector();
         return $(".filterText", this.el).focus();
       };
+      FilterList.prototype.height = function(val) {
+        if (val != null) {
+          return $(".selectList", this.el).height(val - 50);
+        } else {
+          return FilterList.__super__.height.call(this);
+        }
+      };
       FilterList.prototype.renderListSelector = function() {
         return $('.selectWrap', this.el).html(selectTemplate({
           items: this.filteredItems

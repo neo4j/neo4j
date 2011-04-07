@@ -106,6 +106,7 @@ define(
           
 
       switchToVisualizedView : =>
+        
         if @dataView?
           @dataView.detach()
         
@@ -121,8 +122,19 @@ define(
         @viewType = "tabular"
         @dataView = @tabularView
 
-      remove : =>
+      unbind : ->
         @dataModel.unbind("change:query", @queryChanged)
+        
+      detach : ->
+        @unbind()
+        @hideCreateRelationshipDialog()
+        if @dataView?
+          @dataView.detach()
+        super()
+
+      remove : =>
+        @unbind()
+        @hideCreateRelationshipDialog()
         @dataView.remove()
 
 )

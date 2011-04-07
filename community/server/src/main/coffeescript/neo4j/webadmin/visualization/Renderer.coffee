@@ -76,6 +76,9 @@ define(
         # pt1:  {x:#, y:#}  source position in screen coords
         # pt2:  {x:#, y:#}  target position in screen coords
 
+        if @stopped is true
+          return
+
         style = @relationshipStyler.getStyleFor(edge)
 
         # find the start point
@@ -151,6 +154,12 @@ define(
         @dragged = null
 
         $(@canvas).mousedown(@clicked)
+
+      start : ->
+        @stopped = false
+
+      stop : ->
+        @stopped = true
         
       clicked: (e) =>
         pos = $(@canvas).offset()
@@ -202,7 +211,7 @@ define(
 
       
       ghostify : (node) =>
-        node.mass = 10000.001
+        #node.mass = 10000.001
         node.fixed = true
 
       thesePointsAreReallyClose : (p1, p2) =>

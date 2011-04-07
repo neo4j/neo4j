@@ -25,25 +25,25 @@
  * Buttons
  */
 
-.button {
-  display:block;
-  border: 0 none;
-  height: 32px;
-  padding: 0 5px;
-  cursor:pointer;
-  -moz-border-radius:4px;
+.button, .text-icon-button, .icon-button, .micro-button, .bad-button {
+  -moz-border-radius: 4px 4px 4px 4px;
   -webkit-border-radius:4px;
   border-radius:4px;
-  float:left;
-  font-weight: bold;
+  background-color: #82BA5A !important;
+  border: 1px solid #6A994A;
+  color: #454545;
+  cursor: pointer;
+  display: block;
+  float: left;
   font-size: 13px;
-  color:#4C4C4C;
-  background:#CCCCCC;
-  text-decoration:none;
+  font-weight: bold;
+  height: 32px;
+  padding: 0 5px;
+  text-decoration: none;
 }
 
-.button:hover {
-  background: #fff;
+.button:hover, .text-icon-button:hover, .icon-button:hover, .micro-button:hover {
+  background-color: #8bc760 !important;
 }
 
 a.button {
@@ -59,6 +59,7 @@ a.button {
   color: #EEEEEE;
   text-decoration: none;
   text-shadow: 1px 1px 0 #222222;
+  font-size:14px;
 }
 
 .title-button .subtitle {
@@ -78,28 +79,21 @@ a.button {
   border-radius:8px;
   padding: 3px 6px;
   font-size:10px;
-  color:#4C4C4C;
-  background:#CCCCCC;
-  text-decoration:none;
-}
-
-.micro-button:hover {
-  background:#FFF;
+  height:auto;
 }
 
 /**
- * DARK BUTTON 
+ * BAD BUTTON 
  */
 
-.dark-button {
-  background: #555;
-  border: 1px solid #444;
-  color:#eee;
+.bad-button {
+  background-color: #BA5A5A !important;
+  border-color: #994A4A;
+  color:#222;
 }
 
-.dark-button:hover {
-  color:#eee;
-  background: #666;
+.bad-button:hover {
+  background-color: #c76060 !important;
 }
 
 /**
@@ -107,15 +101,8 @@ a.button {
  */
 
 .text-icon-button, .icon-button {
-  border: 0 none;
-  height: 32px;
   padding: 0;
   width: 32px;
-  cursor:pointer;
-  -moz-border-radius:4px;
-  -webkit-border-radius:4px;
-  border-radius:4px;
-  float:left;
 }
 
 .text-icon-button {
@@ -124,3 +111,25 @@ a.button {
   font-size:13px;
   font-weight:bold;
 }
+
+/**
+ * POPOUT BUTTONS
+ */
+.popout {
+  width:300px;
+  background: #333;
+  padding: 10px;
+  -moz-border-radius:4px;
+  -webkit-border-radius:4px;
+  border-radius:4px;
+  -moz-border-radius-topright:0;
+  -webkit-border-top-right-radius:0;
+  border-top-right-radius:0;
+  color: #eee;
+}
+
+.popout-controls {
+  padding: 10px 0 !important;
+}
+
+

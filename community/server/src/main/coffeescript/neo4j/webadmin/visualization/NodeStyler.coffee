@@ -27,7 +27,7 @@ define(
       defaultExploredStyle : 
         nodeStyle  : 
           fill  : "#000000"
-          alpha : 0.6
+          alpha : 0.9
         labelStyle : 
           color : "white"
           font  : "12px Helvetica"
@@ -44,7 +44,7 @@ define(
         nodeStyle  : 
           shape : "dot"
           fill  : "#000000"
-          alpha : 0.4
+          alpha : 0.8
         labelStyle : 
           color : "white"
           font  : "10px Helvetica"

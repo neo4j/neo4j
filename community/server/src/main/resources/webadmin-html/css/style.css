@@ -46,7 +46,6 @@ body {
   right:0;
   left:0;
   padding:0;
-  background: #70A14E;
   overflow:auto;
 }
 
@@ -72,7 +71,7 @@ body {
     display: block;
     float: left;
     height: 40px;
-    padding: 10px 20px 0;
+    padding: 10px 15px 0;
     text-decoration: none;
     text-shadow: 1px 1px 0 #222222;
   }
@@ -87,6 +86,7 @@ body {
   }
   #header_submenu ul {
     margin: 14px 0 0;
+    list-style:none;
   }
 
 /* FOOTER */
@@ -118,14 +118,14 @@ body {
 
 #monitor-chart-wrap {
   padding: 0 10px 10px;
-  background: none repeat scroll 0 0 #8bc760;
-  border-bottom: 1px solid #8BC760;
+  background: none repeat scroll 0 0 #eee;
+  border-bottom: 1px solid #ccc;
 }
 
 #monitor-chart {
   height:200px;
   width:100%;
-  background: none repeat scroll 0 0 #8bc760;
+  background: none repeat scroll 0 0 #eee;
 }
 
 .dashboard-chart-tabs {
@@ -147,8 +147,18 @@ body {
   color: #444444;
   font-size: 14px;
   padding: 5px;
-  width: 50%;
+  width: 85%;
   float:left;
+}
+
+#data-area {
+  background: none repeat scroll 0 0 #EEEEEE;
+  border-bottom: 1px solid #DDDDDD;
+  border-top: 1px solid #DDD;
+}
+
+.data-console-wrap .helpbox {
+  padding: 3px 5px;
 }
 
 .data-toolbar {
@@ -156,37 +166,43 @@ body {
 }
 
 #data-refresh {
-  background:url("../img/icons/glyphish/01-refresh.png") no-repeat scroll center center #ccc;
+  background:url("../img/icons/glyphish/01-refresh.png") no-repeat scroll center center #333;
 }
 #data-home {
-  background:url("../img/icons/glyphish/53-house.png") no-repeat scroll center center #ccc;
+  background:url("../img/icons/glyphish/53-house.png") no-repeat scroll center center #333;
 }
 #data-switch-view {
-  background:url("../img/icons/glyphish/55-network.png") no-repeat scroll center center #ccc;
+  background:url("../img/icons/glyphish/55-network.png") no-repeat scroll center center #333;
 }
 #data-switch-view.tabular {
-  background:url("../img/icons/glyphish/tabular.png") no-repeat scroll center center #ccc;
+  background:url("../img/icons/glyphish/tabular.png") no-repeat scroll center center #333;
+}
+#visualization-show-settings {
+  background:url("../img/icons/glyphish/157-wrench.png") no-repeat scroll 5px center #333;
+}
+#visualization-reflow {
+  background:url("../img/icons/glyphish/05-shuffle.png") no-repeat scroll center center #333;
 }
 
 
 #data-refresh:hover {
-  background:url("../img/icons/glyphish/01-refresh.png") no-repeat scroll center center #fff;
+  background:url("../img/icons/glyphish/01-refresh.png") no-repeat scroll center center #555;
 }
 #data-home:hover {
-  background:url("../img/icons/glyphish/53-house.png") no-repeat scroll center center #fff;
+  background:url("../img/icons/glyphish/53-house.png") no-repeat scroll center center #555;
 }
 #data-switch-view:hover {
-  background:url("../img/icons/glyphish/55-network.png") no-repeat scroll center center #fff;
+  background:url("../img/icons/glyphish/55-network.png") no-repeat scroll center center #555;
 }
 #data-switch-view.tabular:hover {
-  background:url("../img/icons/glyphish/tabular.png") no-repeat scroll center center #fff;
+  background:url("../img/icons/glyphish/tabular.png") no-repeat scroll center center #555;
 }
 
 #data-create-node, #data-create-relationship {
-  background:url("../img/icons/glyphish/add.png") no-repeat scroll 5px center #ccc;
+  background:url("../img/icons/glyphish/add.png") no-repeat scroll 5px center #333;
 }
 #data-create-node:hover, #data-create-relationship:hover {
-  background:url("../img/icons/glyphish/add.png") no-repeat scroll 5px center #fff;
+  background:url("../img/icons/glyphish/add.png") no-repeat scroll 5px center #555;
 }
 
 #data-create-relationship.selected, #visualization-show-settings.selected  {
@@ -196,32 +212,27 @@ body {
   -moz-border-radius-bottomleft:0;
   -webkit-border-bottom-left-radius:0;
   border-bottom-left-radius:0;
-  background:url("../img/icons/glyphish/add.png") no-repeat scroll 5px center #333;
+  border: 1px solid #333;
+  background-color:#333 !important;
   color:#eee;
+}
+#data-create-relationship.selected {
+  background: url("../img/icons/glyphish/add.png") no-repeat scroll 5px center #333 !important;
 }
 
 #data-execute-console {
-  background:url("../img/icons/glyphish/06-magnify.png") no-repeat scroll center center #ccc;
+  background:url("../img/icons/glyphish/06-magnify.png") no-repeat scroll center center #333;
   margin-left:5px;
 }
 #data-execute-console:hover {
-  background:url("../img/icons/glyphish/06-magnify.png") no-repeat scroll center center #fff;
+  background:url("../img/icons/glyphish/06-magnify.png") no-repeat scroll center center #555;
 }
 
 
-.create-relationship-dialog, .visualization-settings-dialog {
-  width:300px;
-  background: #333;
-  padding: 5px;
-  -moz-border-radius:4px;
-  -webkit-border-radius:4px;
-  border-radius:4px;
-  -moz-border-radius-topright:0;
-  -webkit-border-top-right-radius:0;
-  border-top-right-radius:0;
-  color: #eee;
+#create-relationship-types {
+  float:right;
+  clear:both;
 }
-
 
 
 /**
@@ -233,10 +244,10 @@ body {
 }
 
 .add-property {
-  background:url("../img/icons/glyphish/add.png") no-repeat scroll 5px center #ccc;
+  background:url("../img/icons/glyphish/add.png") no-repeat scroll 5px center #333;
 }
 .add-property:hover {
-  background:url("../img/icons/glyphish/add.png") no-repeat scroll 5px center #fff;
+  background:url("../img/icons/glyphish/add.png") no-repeat scroll 5px center #555;
 }
 
 .property-list {
@@ -253,13 +264,13 @@ body {
   margin:0;
   list-style:none;
   padding: 5px 10px;
-  background: none repeat scroll 0 0 #82BA5A;
-  border-bottom: 1px solid #79ad54;
-  border-top: 1px solid #8bc760;
+  background: none repeat scroll 0 0 #EEEEEE;
+  border-bottom: 1px solid #DDDDDD;
+  border-top: 1px solid #EFEFEF;
 }
 
 .property-list > li:nth-child(odd) {
-  background: none repeat scroll 0 0 #8bc760;
+  background: none repeat scroll 0 0 #E8E8E8;
 }
 
 .property-row {
@@ -317,8 +328,14 @@ body {
  * VISUALIZED DATA VIEW 
  */
 
+#visualization {
+  position:relative;
+}
+
 #visualization .item-controls {
-  padding: 0 10px;
+  position: absolute;
+  right: 10px;
+  top: 10px;
 }
 
 
@@ -351,16 +368,16 @@ body {
  */
 
 .headline-bar {
-  background: none repeat scroll 0 0 #82BA5A;
-  border-bottom: 1px solid #79AD54;
-  border-top: 1px solid #8BC760;
+  border-bottom: 1px solid #DDD;
+  border-top: 1px solid #DDD;
+  background: #eee;
 }
 
 .headline-bar .tabs {
   list-style:none;
   margin:0;
   height:100%;
-  border-right:1px solid #79AD54;
+  border-right:1px solid #DDD;
 } 
 
 .headline-bar .tabs li {
@@ -369,7 +386,7 @@ body {
   margin:0;
   padding:0;
   height:100%;
-  border-left:1px solid #79AD54;
+  border-left:1px solid #DDD;
 }
 
 .headline-bar .tabs li a, .headline-bar .tabs li button {
@@ -378,7 +395,7 @@ body {
   width:70px;
   padding:0;
   border:0;
-  color:#547939;
+  color:#333;
   cursor:pointer;
   font-size:11px;
   height: 32px;
@@ -386,7 +403,7 @@ body {
 .headline-bar .tabs li a:hover, .headline-bar .tabs li button:hover,
 .headline-bar .tabs li a.current, .headline-bar .tabs li button.current  {
   background: #8bc760;
-  color:#fff;
+  color:#333;
 }
 
 .headline-bar .title {
@@ -398,10 +415,10 @@ body {
 }
 
 .headline-bar h3 {
-  color: #FFFFFF;
+  color: #222;
   font-size: 16px;
   margin: 3px 0;
-  text-shadow: 1px -1px 0 #73A650;
+  text-shadow: 1px -1px 0 #ddd;
 }
 
 /**
@@ -614,8 +631,14 @@ ol lh {
 .left { float:left; }
 .pad { padding:10px; }
 
+.helpbox {
+  font-size: 10px;
+  padding: 3px 0;
+}
+
 .error {
-  font-size: 12px;
+  font-size: 10px;
+  padding: 2px 5px;
 }
 
 .span-1  { width: 6.958%; float:left;  margin-right:1.5%; }
