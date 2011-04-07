@@ -53,8 +53,8 @@
 
   <licenses>
     <license>
-      <name>GNU Affero General Public License, Version 3</name>
-      <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
+      <name>GNU General Public License, Version 3</name>
+      <url>http://www.gnu.org/licenses/gpl-3.0-standalone.html</url>
     </license>
   </licenses>
 
@@ -85,7 +85,7 @@
         <artifactId>maven-assembly-plugin</artifactId>
         <executions>
           <execution>
-            <id>unix-dist</id>
+            <id>community-unix-dist</id>
             <phase>package</phase>
             <goals>
               <goal>single</goal>
@@ -93,13 +93,41 @@
             <configuration>
               <attach>true</attach>
               <descriptors>
-                <descriptor>src/main/assemblies/unix-dist.xml</descriptor>
+                <descriptor>src/main/assemblies/community-unix-dist.xml</descriptor>
               </descriptors>
-              <finalName>${server.shortname}-${project.version}</finalName>
+              <finalName>${server.shortname}-community-${project.version}</finalName>
             </configuration>
           </execution>
           <execution>
-            <id>windows-dist</id>
+            <id>advanced-unix-dist</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <attach>true</attach>
+              <descriptors>
+                <descriptor>src/main/assemblies/advanced-unix-dist.xml</descriptor>
+              </descriptors>
+              <finalName>${server.shortname}-advanced-${project.version}</finalName>
+            </configuration>
+          </execution>
+          <execution>
+            <id>enterprise-unix-dist</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <attach>true</attach>
+              <descriptors>
+                <descriptor>src/main/assemblies/enterprise-unix-dist.xml</descriptor>
+              </descriptors>
+              <finalName>${server.shortname}-enterprise-${project.version}</finalName>
+            </configuration>
+          </execution>
+          <execution>
+            <id>community-windows-dist</id>
             <phase>package</phase>
             <goals>
               <goal>single</goal>
@@ -107,12 +135,42 @@
             <configuration>
               <attach>false</attach>
               <descriptors>
-                <descriptor>src/main/assemblies/windows-dist.xml</descriptor>
+                <descriptor>src/main/assemblies/community-windows-dist.xml</descriptor>
               </descriptors>
-              <finalName>${server.shortname}-${project.version}</finalName>
+              <finalName>${server.shortname}-community-${project.version}</finalName>
               <appendAssemblyId>true</appendAssemblyId>
             </configuration>
           </execution>
+ 		  <execution>
+            <id>advanced-windows-dist</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <attach>false</attach>
+              <descriptors>
+                <descriptor>src/main/assemblies/advanced-windows-dist.xml</descriptor>
+              </descriptors>
+              <finalName>${server.shortname}-advanced-${project.version}</finalName>
+              <appendAssemblyId>true</appendAssemblyId>
+            </configuration>
+          </execution>
+           <execution>
+            <id>enterprise-windows-dist</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <attach>false</attach>
+              <descriptors>
+                <descriptor>src/main/assemblies/enterprise-windows-dist.xml</descriptor>
+              </descriptors>
+              <finalName>${server.shortname}-enterprise-${project.version}</finalName>
+              <appendAssemblyId>true</appendAssemblyId>
+            </configuration>
+          </execution>         
         </executions>
       </plugin>
       <plugin>
@@ -179,7 +237,29 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j</artifactId>
+      <artifactId>neo4j-community</artifactId>
+      <version>${neo4j.version}</version>
+      <exclusions>
+        <exclusion>
+          <artifactId>neo4j-udc</artifactId>
+          <groupId>org.neo4j</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-advanced</artifactId>
+      <version>${neo4j.version}</version>
+      <exclusions>
+        <exclusion>
+          <artifactId>neo4j-udc</artifactId>
+          <groupId>org.neo4j</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-enterprise</artifactId>
       <version>${neo4j.version}</version>
       <exclusions>
         <exclusion>
@@ -244,24 +324,6 @@
       <type>tar.gz</type>
     </dependency>
 
-    <!-- OSGi Bundles
-    <dependency>
-      <groupId>org.apache.felix</groupId>
-      <artifactId>org.apache.felix.fileinstall</artifactId>
-      <version>${felix-fileinstall.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.ops4j.pax.logging</groupId>
-      <artifactId>pax-logging-api</artifactId>
-      <version>${pax-logging.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.ops4j.pax.logging</groupId>
-      <artifactId>pax-logging-service</artifactId>
-      <version>${pax-logging.version}</version>
-    </dependency>
-    -->
     <dependency>
       <groupId>org.neo4j.doc</groupId>
       <artifactId>neo4j-manual</artifactId>
