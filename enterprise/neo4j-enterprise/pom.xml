@@ -4,51 +4,47 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-central</artifactId>
-    <version>19</version>
+    <version>1</version>
   </parent>
 
   <groupId>org.neo4j</groupId>
-  <artifactId>neo4j</artifactId>
+  <artifactId>neo4j-enterprise</artifactId>
   <version>1.3-SNAPSHOT</version>
-  <name>Neo4j</name>
+  <name>Neo4j Enterprise</name>
   <packaging>jar</packaging>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
-  <description>A meta package containing the most used Neo4j libraries. Intended use: as a Maven dependency.</description>
+  <description>A meta package containing the most used Neo4j Enterprise libraries. Intended use: as a Maven dependency.</description>
 
   <properties>
-    <short-name>neo4j</short-name>
+    <short-name>neo4j-enterprise</short-name>
     <bundle.namespace>org.neo4j</bundle.namespace>
+    <neo4j.version>1.3-SNAPSHOT</neo4j.version>
   </properties>
 
   <scm>
-    <url>https://github.com/neo4j/graphdb</url>
+    <url>https://github.com/neo4j/enterprise</url>
   </scm>
 
 
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-kernel</artifactId>
+      <artifactId>neo4j-advanced</artifactId>
+      <version>${neo4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-com</artifactId>
       <version>1.3-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-lucene-index</artifactId>
+      <artifactId>neo4j-backup</artifactId>
       <version>1.3-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-graph-algo</artifactId>
-      <version>1.3-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-udc</artifactId>
-      <version>1.3-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-jmx</artifactId>
+      <artifactId>neo4j-ha</artifactId>
       <version>1.3-SNAPSHOT</version>
     </dependency>
     <!-- Needed for the javadoc generation! -->
