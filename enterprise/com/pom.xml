@@ -14,6 +14,7 @@
   <properties>
     <short-name>com</short-name>
     <bundle.namespace>org.neo4j.com</bundle.namespace>
+    <neo4j.version>1.3-SNAPSHOT</neo4j.version>
   </properties>
 
   <licenses>
@@ -24,6 +25,14 @@
   </licenses>
 
   <build>
+  <plugins>
+     <plugin>
+       <artifactId>maven-surefire-plugin</artifactId>
+       <configuration>
+         <argLine>-Xmx300m</argLine>
+       </configuration>
+     </plugin>
+    </plugins>
     <extensions>
       <extension>
         <groupId>org.apache.maven.wagon</groupId>
@@ -37,7 +46,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.3-SNAPSHOT</version>
+      <version>${neo4j.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.servicemix.bundles</groupId>
@@ -51,7 +60,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.3-SNAPSHOT</version>
+      <version>${neo4j.version}</version>
       <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>

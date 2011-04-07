@@ -37,7 +37,7 @@
     <webdriver.impl.class>org.openqa.selenium.firefox.FirefoxDriver</webdriver.impl.class>
 
     <neo4j.version>1.3-SNAPSHOT</neo4j.version>
-    <neo4js.version>0.6</neo4js.version>
+    <neo4js.version>0.7-SNAPSHOT</neo4js.version>
   </properties>
 
   <packaging>bundle</packaging>
@@ -64,18 +64,11 @@
       <artifactId>neo4j-server-advanced</artifactId>
       <version>${neo4j.version}</version>
     </dependency>
-    <!-- TODO: move com & ha to some neo4j-enterprise pom -->
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-com</artifactId>
+      <artifactId>neo4j-enterprise</artifactId>
       <version>1.3-SNAPSHOT</version>
     </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-ha</artifactId>
-      <version>1.3-SNAPSHOT</version>
-    </dependency>
-    <!-- /move -->
 
     <dependency>
       <groupId>org.neo4j.drivers</groupId>
@@ -97,7 +90,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-ha</artifactId>
-      <version>${neo4j.version}</version>
+      <version>1.3-SNAPSHOT</version>
       <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
