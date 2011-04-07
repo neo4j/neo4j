@@ -100,33 +100,8 @@ public class JmxAttributeRepresentation extends ObjectRepresentation
                     attrInfo.getName() );
             return representationDispatcher.dispatch( value, "" );
         }
-        catch ( AttributeNotFoundException e )
+        catch ( Exception e )
         {
-            e.printStackTrace();
-            return ValueRepresentation.string( "N/A" );
-        }
-        catch ( InstanceNotFoundException e )
-        {
-            e.printStackTrace();
-            return ValueRepresentation.string( "N/A" );
-        }
-        catch ( MBeanException e )
-        {
-            e.printStackTrace();
-            return ValueRepresentation.string( "N/A" );
-        }
-        catch ( ReflectionException e )
-        {
-            e.printStackTrace();
-            return ValueRepresentation.string( "N/A" );
-        }
-        catch ( RuntimeMBeanException e )
-        {
-            return ValueRepresentation.string( "N/A" );
-        }
-        catch ( ClassCastException e )
-        {
-            e.printStackTrace();
             return ValueRepresentation.string( "N/A" );
         }
     }
