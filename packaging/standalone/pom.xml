@@ -85,7 +85,7 @@
         <artifactId>maven-assembly-plugin</artifactId>
         <executions>
           <execution>
-            <id>unix-dist</id>
+            <id>community-unix-dist</id>
             <phase>package</phase>
             <goals>
               <goal>single</goal>
@@ -93,9 +93,37 @@
             <configuration>
               <attach>true</attach>
               <descriptors>
-                <descriptor>src/main/assemblies/unix-dist.xml</descriptor>
+                <descriptor>src/main/assemblies/community-unix-dist.xml</descriptor>
               </descriptors>
-              <finalName>${server.shortname}-${project.version}</finalName>
+              <finalName>${server.shortname}-community-${project.version}</finalName>
+            </configuration>
+          </execution>
+          <execution>
+            <id>advanced-unix-dist</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <attach>true</attach>
+              <descriptors>
+                <descriptor>src/main/assemblies/advanced-unix-dist.xml</descriptor>
+              </descriptors>
+              <finalName>${server.shortname}-advanced-${project.version}</finalName>
+            </configuration>
+          </execution>
+          <execution>
+            <id>enterprise-unix-dist</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <attach>true</attach>
+              <descriptors>
+                <descriptor>src/main/assemblies/enterprise-unix-dist.xml</descriptor>
+              </descriptors>
+              <finalName>${server.shortname}-enterprise-${project.version}</finalName>
             </configuration>
           </execution>
           <execution>
@@ -107,7 +135,7 @@
             <configuration>
               <attach>false</attach>
               <descriptors>
-                <descriptor>src/main/assemblies/windows-dist.xml</descriptor>
+                <descriptor>src/main/assemblies/community-windows-dist.xml</descriptor>
               </descriptors>
               <finalName>${server.shortname}-${project.version}</finalName>
               <appendAssemblyId>true</appendAssemblyId>
