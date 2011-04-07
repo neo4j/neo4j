@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.neo4j</groupId>
+    <artifactId>parent-central</artifactId>
+    <version>19</version>
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.neo4j.build</groupId>
+  <artifactId>packaging-build</artifactId>
+  <version>1.3-SNAPSHOT</version>
+  <name>Neo4j Packaging Build</name>
+  <packaging>pom</packaging>
+  <description>Project that builds Neo4j Packages.</description>
+  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+
+  <properties>
+    <short-name>packaging-build</short-name>
+  </properties>
+
+  <scm>
+    <connection>scm:git:git://github.com/neo4j/packaging.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/packaging.git</developerConnection>
+    <url>https://github.com/neo4j/packaging</url>
+  </scm>
+
+  <modules>
+    <module>standalone</module>
+    <module>qa</module>
+  </modules>
+
+  <build>
+    <extensions>
+      <extension>
+        <groupId>org.apache.maven.wagon</groupId>
+         <artifactId>wagon-ssh-external</artifactId>
+         <version>1.0-beta-7</version>
+      </extension>
+    </extensions>
+  </build>
+
+  <licenses>
+    <license>
+      <name>GNU Affero General Public License, Version 3</name>
+      <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
+    </license>
+  </licenses>
+
+  <issueManagement>
+    <system>Trac</system>
+    <url>https://trac.neo4j.org/query?status=assigned&amp;status=new&amp;status=reopened&amp;component=${short-name}</url>
+  </issueManagement>
+
+  <distributionManagement>
+    <site>
+      <id>neo4j-site</id>
+      <url>scpexe://components.neo4j.org/home/neo/components/${project.artifactId}/${project.version}</url>
+    </site>
+  </distributionManagement>
+
+</project>
+
