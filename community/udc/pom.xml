@@ -16,6 +16,7 @@
   <properties>
     <bundle.namespace>org.neo4j.ext.udc</bundle.namespace>
     <short-name>udc</short-name>
+    <license-text.header>GPL-3-header.txt</license-text.header>
   </properties>
   
   <packaging>jar</packaging>

@@ -19,6 +19,7 @@
   <properties>
     <short-name>server-api</short-name>
     <bundle.namespace>org.neo4j.server</bundle.namespace>
+    <license-text.header>GPL-3-header.txt</license-text.header>
   </properties>
 
   <scm>
@@ -27,8 +28,8 @@
 
   <licenses>
     <license>
-      <name>GNU Affero General Public License, Version 3</name>
-      <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
+      <name>GNU General Public License, Version 3</name>
+      <url>http://www.gnu.org/licenses/gpl-3.0-standalone.html</url>
     </license>
   </licenses>
 

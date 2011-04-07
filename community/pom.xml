@@ -17,6 +17,7 @@
 
   <properties>
     <short-name>community-build</short-name>
+    <license-text.header>GPL-3-header.txt</license-text.header>
   </properties>
 
   <scm>

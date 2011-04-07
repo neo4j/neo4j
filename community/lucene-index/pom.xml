@@ -21,14 +21,15 @@ Integration layer between Neo4j and Lucene, providing one possible implementatio
     <lucene.main.version>3.0.1</lucene.main.version>
     <bundle.namespace>org.neo4j.index</bundle.namespace>
     <short-name>lucene-index</short-name>
+    <license-text.header>GPL-3-header.txt</license-text.header>
   </properties>
 
   <packaging>jar</packaging>
 
   <licenses>
     <license>
-      <name>GNU Affero General Public License, Version 3</name>
-      <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
+      <name>GNU General Public License, Version 3</name>
+      <url>http://www.gnu.org/licenses/gpl-3.0-standalone.html</url>
     </license>
   </licenses>
 
