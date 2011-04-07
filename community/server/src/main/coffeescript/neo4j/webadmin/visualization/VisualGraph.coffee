@@ -94,7 +94,7 @@ define(
     
               if (--fetchCountdown) == 0
                 @sys.merge @dataModel.getVisualGraph()
-                @reflow()
+                @start()
     
       nodeClicked : (visualNode) =>
         if visualNode.data.type?

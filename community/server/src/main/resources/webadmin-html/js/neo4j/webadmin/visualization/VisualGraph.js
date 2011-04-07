@@ -101,7 +101,7 @@
               this.dataModel.addNode(node, rels, relatedNodes);
               if ((--fetchCountdown) === 0) {
                 this.sys.merge(this.dataModel.getVisualGraph());
-                return this.reflow();
+                return this.start();
               }
             }, this));
           }, this)(node));
