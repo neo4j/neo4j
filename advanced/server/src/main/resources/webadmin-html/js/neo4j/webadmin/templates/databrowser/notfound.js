@@ -1,1 +1,0 @@
-define(function(){return function(vars){ with(vars||{}) { return "<div class=\"pad\"><h1>Not found</h1><p>There was no result returned for your query.</p></div>";}}; });
