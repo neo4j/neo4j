@@ -44,6 +44,7 @@ public class GremlinPluginTest {
 			firstNode=curGraphDBServiceObj.createNode();
 			if (firstNode!=null)
 			{
+				firstNode.setProperty("name","firstNode");
 				firstNode.setProperty("x", 10.23245);
 				firstNode.setProperty("y", -112.346);
 				firstNode.setProperty("altitude",12.34456);
@@ -52,6 +53,7 @@ public class GremlinPluginTest {
 			secondNode=curGraphDBServiceObj.createNode();
 			if (secondNode!=null)
 			{
+				secondNode.setProperty("name","secondNode");
 				secondNode.setProperty("x", 1.23245);
 				secondNode.setProperty("y", -12.346);
 				secondNode.setProperty("altitude",100.34456);
@@ -61,6 +63,7 @@ public class GremlinPluginTest {
 			thirdNode=curGraphDBServiceObj.createNode();
 			if (thirdNode!=null)
 			{
+				thirdNode.setProperty("name","thirdNode");
 				thirdNode.setProperty("x", 11.23245);
 				thirdNode.setProperty("y", -112.346);
 				thirdNode.setProperty("altitude",40.34456);
@@ -93,7 +96,7 @@ public class GremlinPluginTest {
 	*/
 	@Test
 	public void testGetVertices() {
-		String script="results.add(g.v(0))";
+		String script="results.add(g.V)";
 		Transaction tx= null;
 		Representation curRepresentationObj = null;
 		try

@@ -7,6 +7,7 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.server.plugins.Description;
 import org.neo4j.server.plugins.Name;
@@ -14,7 +15,11 @@ import org.neo4j.server.plugins.Parameter;
 import org.neo4j.server.plugins.PluginTarget;
 import org.neo4j.server.plugins.ServerPlugin;
 import org.neo4j.server.plugins.Source;
+import org.neo4j.server.rest.repr.EdgeRepresentation;
+import org.neo4j.server.rest.repr.ListRepresentation;
+import org.neo4j.server.rest.repr.PipeRepresentation;
 import org.neo4j.server.rest.repr.Representation;
+import org.neo4j.server.rest.repr.RepresentationType;
 import org.neo4j.server.rest.repr.VertexRepresentation;
 
 import com.tinkerpop.blueprints.pgm.Vertex;
@@ -71,4 +76,79 @@ public class GremlinPlugin extends ServerPlugin
         }
         return new VertexRepresentation((Vertex) results.get( 0 ));
     }
+    
+    
+    
+    /**
+     * This will give a plugin of type
+     * curl -d 'script=g.E' http://localhost:7474/db/data/ext/GremlinPlugin/graphDb/get_all_edges
+     * which should return an arrayList consisting of all the edges of the current graph
+     * @param startNode
+     * @param script
+     * @return
+     */
+    @Name( "get_all_edges" )
+    @Description( "execute a Gremlin script with variables 'start' set to the start node 'g' set to the Neo4jGraph and 'results' containing a resulting vertex" )
+    @PluginTarget( GraphDatabaseService.class )
+    public Representation getEdges(
+            @Description( "The Gremlin script" ) @Parameter( name = "script", optional=true ) String script ,@Source GraphDatabaseService graphDb)
+    {
+        ScriptEngineManager manager = new ScriptEngineManager();
+        ScriptEngine engine = manager.getEngineByName( "gremlin" );
+        ArrayList<EdgeRepresentation> results = new ArrayList<EdgeRepresentation>();
+        Neo4jGraph graph = new Neo4jGraph( graphDb );
+        engine.getBindings( ScriptContext.ENGINE_SCOPE ).put( "g",
+                graph );
+        engine.getBindings( ScriptContext.GLOBAL_SCOPE ).put( "results",
+                results );
+        try
+        {
+            engine.eval( script );
+        }
+        catch ( ScriptException e )
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return new ListRepresentation( RepresentationType.RELATIONSHIP, results );
+    }
+    
+    
+    
+    
+    /**
+     * This will give a plugin of type
+     * curl -d 'script=g.V' http://localhost:7474/db/data/ext/GremlinPlugin/graphDb/get_all_vertexes
+     * which should return an arrayList consisting of all the vertexes of the current graph
+     * @param startNode
+     * @param script
+     * @return
+     */
+    @Name( "get_all_vertexes" )
+    @Description( "execute a Gremlin script with variables 'start' set to the start node 'g' set to the Neo4jGraph and 'results' containing the set of resulting vertices" )
+    @PluginTarget( GraphDatabaseService.class )
+    public Representation getVertices(
+            @Description( "The Gremlin script" ) @Parameter( name = "script", optional=true ) String script ,@Source GraphDatabaseService graphDb)
+    {
+        ScriptEngineManager manager = new ScriptEngineManager();
+        ScriptEngine engine = manager.getEngineByName( "gremlin" );
+        ArrayList<Vertex> results = new ArrayList<Vertex>();
+        Neo4jGraph graph = new Neo4jGraph( graphDb );
+        engine.getBindings( ScriptContext.ENGINE_SCOPE ).put( "g",
+                graph );
+        engine.getBindings( ScriptContext.GLOBAL_SCOPE ).put( "results",
+                results );
+        try
+        {
+            engine.eval( script );
+        }
+        catch ( ScriptException e )
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        Representation resultRep = new PipeRepresentation( results );
+        return resultRep;
+    }
+    
 }
