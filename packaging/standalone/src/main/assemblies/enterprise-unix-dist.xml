@@ -101,6 +101,9 @@
         <exclude>*:pom:*</exclude>
         <exclude>org.neo4j:neo4j:jar</exclude>
         <exclude>org.neo4j:neo4j-udc:jar:neo4j</exclude>
+        
+        <exclude>org.neo4j:neo4j-advanced</exclude>
+        <exclude>org.neo4j:neo4j-community</exclude>
       </excludes>
     </dependencySet>
     <dependencySet>
