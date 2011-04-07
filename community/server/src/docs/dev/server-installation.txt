@@ -10,17 +10,24 @@ Neo4j can be installed as a server, running either as a headless application or 
    * refer to the top-level extracted directory as +NEO4J-HOME+
 3. Use the scripts in the +bin+ directory
    * for Linux/MacOS, run `$NEO4J_HOME/bin/neo4j start`
-   * for Windows, double-click on `%NEO4J_HOME%\bin\Neo4j`
+   * for Windows, double-click on `%NEO4J_HOME%\bin\Neo4j.bat`
 4. Refer to the packaged information in the +doc+ directory for details
 
 == As a Windows service ==
 
 With administrative rights, Neo4j can be installed as a Windows service.
 
-1. Right-click on `%NEO4J_HOME%\bin\InstallNeo4j`
-2. Choose `Run as administrator`
+1. Click Start -> All Programs -> Accessories
+2. Right click Command Prompt -> Run as Administrator
+3. Provide authorization and/or the Administrator password
+4. Navigate to `%NEO4J_HOME%`
+5. Run `bin\Neo4j.bat install`
 
-To uninstall, run `UninstallNeo4j` as ad administrator.
+To uninstall, run `bin\Neo4j.bat remove` as Administrator.
+
+To query the status of the service, run `bin\Neo4j.bat query`
+
+To start/stop the service from the command prompt, run `bin\Neo4j.bat +action+`
 
 == Linux Service ==
 
@@ -79,4 +86,3 @@ org.neo4j.server.webadmin.data.uri=http://localhost:7475/db/data/
 
 org.neo4j.server.webadmin.management.uri=http://localhost:7475/db/manage/
 ----
-
