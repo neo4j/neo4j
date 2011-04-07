@@ -127,7 +127,7 @@
             </configuration>
           </execution>
           <execution>
-            <id>windows-dist</id>
+            <id>community-windows-dist</id>
             <phase>package</phase>
             <goals>
               <goal>single</goal>
@@ -137,10 +137,40 @@
               <descriptors>
                 <descriptor>src/main/assemblies/community-windows-dist.xml</descriptor>
               </descriptors>
-              <finalName>${server.shortname}-${project.version}</finalName>
+              <finalName>${server.shortname}-community-${project.version}</finalName>
               <appendAssemblyId>true</appendAssemblyId>
             </configuration>
           </execution>
+ 		  <execution>
+            <id>advanced-windows-dist</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <attach>false</attach>
+              <descriptors>
+                <descriptor>src/main/assemblies/advanced-windows-dist.xml</descriptor>
+              </descriptors>
+              <finalName>${server.shortname}-advanced-${project.version}</finalName>
+              <appendAssemblyId>true</appendAssemblyId>
+            </configuration>
+          </execution>
+           <execution>
+            <id>enterprise-windows-dist</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <attach>false</attach>
+              <descriptors>
+                <descriptor>src/main/assemblies/enterprise-windows-dist.xml</descriptor>
+              </descriptors>
+              <finalName>${server.shortname}-enterprise-${project.version}</finalName>
+              <appendAssemblyId>true</appendAssemblyId>
+            </configuration>
+          </execution>         
         </executions>
       </plugin>
       <plugin>
