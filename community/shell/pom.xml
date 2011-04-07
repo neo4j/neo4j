@@ -24,7 +24,6 @@
 
   <properties>
     <sun.jta.version>1.1</sun.jta.version>
-    <neo4j.version>1.3-SNAPSHOT</neo4j.version>
     <lucene.groupId>org.apache.servicemix.bundles</lucene.groupId>
     <lucene.artifactId>org.apache.servicemix.bundles.lucene</lucene.artifactId>
     <lucene.version>3.0.1_2</lucene.version>
@@ -84,7 +83,7 @@
             </manifest>
             <manifestEntries>
               <url>http://neo4j.org</url>
-              <Class-Path>neo4j-kernel-${neo4j.version}.jar neo4j-index-${neo4j.version}.jar lucene-core-${lucene.main.version}.jar ${lucene.artifactId}-${lucene.version}.jar jta-${sun.jta.version}.jar ${jta.artifactId}-${jta.version}.jar jline-${jline.main.version}.jar ${jline.artifactId}-${jline.version}.jar</Class-Path>
+              <Class-Path>neo4j-kernel-${project.version}.jar neo4j-index-${project.version}.jar lucene-core-${lucene.main.version}.jar ${lucene.artifactId}-${lucene.version}.jar jta-${sun.jta.version}.jar ${jta.artifactId}-${jta.version}.jar jline-${jline.main.version}.jar ${jline.artifactId}-${jline.version}.jar</Class-Path>
               <Agent-Class>org.neo4j.shell.StartClient</Agent-Class>
             </manifestEntries>
           </archive>
@@ -113,32 +112,32 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>${neo4j.version}</version>
+      <version>1.3-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>${neo4j.version}</version>
+      <version>1.3-SNAPSHOT</version>
       <scope>test</scope>
       <type>test-jar</type>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-jmx</artifactId>
-      <version>${neo4j.version}</version>
+      <version>1.3-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-ha</artifactId>
-      <version>${neo4j.version}</version>
+      <version>1.3-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-graph-algo</artifactId>
-      <version>${neo4j.version}</version>
+      <version>1.3-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>

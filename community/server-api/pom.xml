@@ -19,7 +19,6 @@
   <properties>
     <short-name>server-api</short-name>
     <bundle.namespace>org.neo4j.server</bundle.namespace>
-    <neo4j.version>1.3-SNAPSHOT</neo4j.version>
   </properties>
 
   <scm>
@@ -37,7 +36,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>${neo4j.version}</version>
+      <version>1.3-SNAPSHOT</version>
     </dependency>
 
     <dependency>
