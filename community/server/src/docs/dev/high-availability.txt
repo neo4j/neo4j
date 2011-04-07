@@ -2,6 +2,8 @@
 Starting the Neo4j server in high availability mode
 ===================================================
 
+NOTE: The High Availability features are only available in the Neo4j Enterprise Edition.
+
 To run the Neo4j server in high availability mode there are two things you need to do.
 You have to configure the server to start up the database in high availability mode and you have to configure the Neo4j database for operating in high availability mode.
 
