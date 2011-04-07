@@ -8,34 +8,29 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.build</groupId>
-  <artifactId>embedded-build</artifactId>
+  <artifactId>enterprise-build</artifactId>
   <version>1.3-SNAPSHOT</version>
-  <name>Neo4j Embedded Build</name>
+  <name>Neo4j Enterprise Build</name>
   <packaging>pom</packaging>
-  <description>Project that builds the Neo4j Embedded distribution.</description>
+  <description>Project that builds the Neo4j Enterprise distribution.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <short-name>embedded-build</short-name>
+    <short-name>enterprise-build</short-name>
   </properties>
 
   <scm>
-    <connection>scm:git:git://github.com/neo4j/graphdb.git</connection>
-    <developerConnection>scm:git:git@github.com:neo4j/graphdb.git</developerConnection>
-    <url>https://github.com/neo4j/graphdb</url>
+    <connection>scm:git:git://github.com/neo4j/enterprise.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/enterprise.git</developerConnection>
+    <url>https://github.com/neo4j/enterprise</url>
   </scm>
 
   <modules>
-    <module>kernel</module>
-    <module>jmx</module>
-    <module>management</module>
     <module>com</module>
     <module>backup</module>
-    <module>udc</module>
-    <module>lucene-index</module>
-    <module>graph-algo</module>
     <module>ha</module>
-    <module>neo4j</module>
+    <module>neo4j-enterprise</module>
+    <module>server-enterprise</module>
   </modules>
 
   <build>
@@ -43,7 +38,7 @@
       <extension>
         <groupId>org.apache.maven.wagon</groupId>
          <artifactId>wagon-ssh-external</artifactId>
-         <version>1.0-beta-6</version>
+         <version>1.0-beta-7</version>
       </extension>
     </extensions>
   </build>
@@ -68,3 +63,4 @@
   </distributionManagement>
 
 </project>
+
