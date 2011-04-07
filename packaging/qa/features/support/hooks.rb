@@ -12,7 +12,9 @@ After do |scenario|
   end
 
   if neo4j.home && current_platform.windows?
-    `#{neo4j.home}\\bin\\wrapper-windows-x86-32.exe -r ..\\conf\\neo4j-wrapper.conf`
+     IO.popen("#{neo4j.home}\\bin\\Neo4j.bat stop")
+     sleep 12
+     IO.popen("#{neo4j.home}\\bin\\Neo4j.bat remove")
   end
 end
 
