@@ -42,11 +42,11 @@ define(
       
         @settings = @appState.getVisualizationSettings()
         @settings.bind("change", @settingsChanged)
+        @dataModel.bind("change:data", @render)
 
       render : =>
         if @browserHasRequiredFeatures()
           if @vizEl? then @getViz().detach()
-          
           $(@el).html(template())
 
           @vizEl = $("#visualization", @el)

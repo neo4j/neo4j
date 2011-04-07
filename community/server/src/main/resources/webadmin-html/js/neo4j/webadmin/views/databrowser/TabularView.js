@@ -38,7 +38,7 @@
         this.relationshipView = new RelationshipView;
         this.relationshipListView = new RelationshipListView;
         this.dataModel = options.dataModel;
-        return this.dataModel.bind("change", this.render);
+        return this.dataModel.bind("change:data", this.render);
       };
       SimpleView.prototype.render = function() {
         var type, view;

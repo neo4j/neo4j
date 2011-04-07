@@ -87,7 +87,7 @@
       VisualGraph.prototype.addNodes = function(nodes) {
         var fetchCountdown, node, _i, _len, _results;
         fetchCountdown = nodes.length;
-        this.sys.stop();
+        this.stop();
         _results = [];
         for (_i = 0, _len = nodes.length; _i < _len; _i++) {
           node = nodes[_i];
@@ -96,12 +96,12 @@
             relPromise = node.getRelationships();
             relatedNodesPromise = node.traverse({});
             return neo4j.Promise.join(relPromise, relatedNodesPromise).then(__bind(function(result) {
-              var rels;
-              rels = result[0], nodes = result[1];
-              this.dataModel.addNode(node, rels, nodes);
+              var relatedNodes, rels;
+              rels = result[0], relatedNodes = result[1];
+              this.dataModel.addNode(node, rels, relatedNodes);
               if ((--fetchCountdown) === 0) {
                 this.sys.merge(this.dataModel.getVisualGraph());
-                return this.sys.start();
+                return this.reflow();
               }
             }, this));
           }, this)(node));

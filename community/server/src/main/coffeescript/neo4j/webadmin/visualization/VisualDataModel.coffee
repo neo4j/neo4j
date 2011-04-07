@@ -40,6 +40,16 @@ define(
           groups : {}
 
       getVisualGraph : () ->
+        # XXX
+        # Arbor.js borks if given a graph with no relationships to render.
+        # Add a "secret" hack node and relationship if there are no real
+        # relationships.
+        # (2011-04-07)
+        if _(@visualGraph.edges).keys().length == 0
+          for key, node of @visualGraph.nodes
+            @visualGraph.nodes["#{key}-SECRET-HACK-NODE"] = { hidden : true }
+            @visualGraph.edges[key] ?= {}
+            @visualGraph.edges[key]["#{key}-SECRET-HACK-NODE"] = { hidden : true }
         @visualGraph
         
       addNode : (node, relationships, relatedNodes) =>

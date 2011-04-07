@@ -81,9 +81,7 @@
         return this.server.node({}).then(__bind(function(node) {
           var id;
           id = this.urlResolver.extractNodeId(node.getSelf());
-          this.dataModel.setData(node, true, {
-            silent: true
-          });
+          this.dataModel.setData(node, true);
           return this.dataModel.setQuery(id, true);
         }, this));
       };

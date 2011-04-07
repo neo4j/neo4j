@@ -29,7 +29,6 @@ define(
         @cookies = new CookieStorage
 
       hasBeenShownForThisSession : ->
-        console.log @cookies.get("splashShown")
         @cookies.get("splashShown") != null
 
       show : ->

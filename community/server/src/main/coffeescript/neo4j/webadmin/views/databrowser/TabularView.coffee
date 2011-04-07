@@ -36,7 +36,7 @@ define(
         @relationshipListView = new RelationshipListView
 
         @dataModel = options.dataModel
-        @dataModel.bind("change", @render)
+        @dataModel.bind("change:data", @render)
 
       render : =>
         type = @dataModel.get("type")

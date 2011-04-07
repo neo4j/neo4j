@@ -43,6 +43,9 @@ define(
         # node: {mass:#, p:{x,y}, name:"", data:{}}
         # pt:   {x:#, y:#}  node position in screen coords
 
+        if node.data.hidden is true
+          return
+
         style = @nodeStyler.getStyleFor(node)
         label = style.labelText
 
@@ -77,6 +80,9 @@ define(
         # pt2:  {x:#, y:#}  target position in screen coords
 
         if @stopped is true
+          return
+
+        if edge.data.hidden is true
           return
 
         style = @relationshipStyler.getStyleFor(edge)

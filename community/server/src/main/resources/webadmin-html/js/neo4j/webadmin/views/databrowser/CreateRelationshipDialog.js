@@ -83,9 +83,7 @@
       CreateRelationshipDialog.prototype.saveSuccessful = function(relationship) {
         var id;
         id = this.urlResolver.extractRelationshipId(relationship.getSelf());
-        this.dataModel.setData(relationship, true, {
-          silent: true
-        });
+        this.dataModel.setData(relationship, true);
         this.dataModel.setQuery("rel:" + id, true);
         return this.closeCallback();
       };

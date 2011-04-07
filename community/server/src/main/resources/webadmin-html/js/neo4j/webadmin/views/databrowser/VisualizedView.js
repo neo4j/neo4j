@@ -49,7 +49,8 @@
         this.appState = options.appState;
         this.dataModel = options.dataModel;
         this.settings = this.appState.getVisualizationSettings();
-        return this.settings.bind("change", this.settingsChanged);
+        this.settings.bind("change", this.settingsChanged);
+        return this.dataModel.bind("change:data", this.render);
       };
       VisualizedView.prototype.render = function() {
         if (this.browserHasRequiredFeatures()) {

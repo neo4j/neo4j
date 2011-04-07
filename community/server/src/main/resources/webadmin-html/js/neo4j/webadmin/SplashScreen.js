@@ -24,7 +24,6 @@
         this.cookies = new CookieStorage;
       }
       SplashScreen.prototype.hasBeenShownForThisSession = function() {
-        console.log(this.cookies.get("splashShown"));
         return this.cookies.get("splashShown") !== null;
       };
       SplashScreen.prototype.show = function() {

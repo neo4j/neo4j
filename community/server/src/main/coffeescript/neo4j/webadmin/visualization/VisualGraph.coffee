@@ -80,7 +80,7 @@ define(
       addNodes : (nodes) =>
           
         fetchCountdown = nodes.length
-        @sys.stop()
+        @stop()
         for node in nodes
           do (node) =>
             relPromise = node.getRelationships()
@@ -89,12 +89,12 @@ define(
 
             neo4j.Promise.join(relPromise, relatedNodesPromise).then (result) =>
               
-              [rels, nodes] = result
-              @dataModel.addNode node, rels, nodes
+              [rels, relatedNodes] = result
+              @dataModel.addNode node, rels, relatedNodes
     
               if (--fetchCountdown) == 0
                 @sys.merge @dataModel.getVisualGraph()
-                @sys.start()
+                @reflow()
     
       nodeClicked : (visualNode) =>
         if visualNode.data.type?

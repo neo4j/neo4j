@@ -39,6 +39,20 @@
         };
       };
       VisualDataModel.prototype.getVisualGraph = function() {
+        var key, node, _base, _ref, _ref2;
+        if (_(this.visualGraph.edges).keys().length === 0) {
+          _ref = this.visualGraph.nodes;
+          for (key in _ref) {
+            node = _ref[key];
+            this.visualGraph.nodes["" + key + "-SECRET-HACK-NODE"] = {
+              hidden: true
+            };
+            (_ref2 = (_base = this.visualGraph.edges)[key]) != null ? _ref2 : _base[key] = {};
+            this.visualGraph.edges[key]["" + key + "-SECRET-HACK-NODE"] = {
+              hidden: true
+            };
+          }
+        }
         return this.visualGraph;
       };
       VisualDataModel.prototype.addNode = function(node, relationships, relatedNodes) {

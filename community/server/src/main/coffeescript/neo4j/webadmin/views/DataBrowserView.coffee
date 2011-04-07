@@ -72,7 +72,7 @@ define(
       createNode : =>
         @server.node({}).then (node) =>
           id = @urlResolver.extractNodeId(node.getSelf())
-          @dataModel.setData( node, true, {silent:true} ) 
+          @dataModel.setData( node, true ) 
           @dataModel.setQuery( id, true) 
 
       createRelationship : =>

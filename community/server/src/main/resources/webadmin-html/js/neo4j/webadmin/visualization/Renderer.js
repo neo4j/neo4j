@@ -44,6 +44,9 @@
       };
       Renderer.prototype.renderNode = function(node, pt) {
         var label, style, w;
+        if (node.data.hidden === true) {
+          return;
+        }
         style = this.nodeStyler.getStyleFor(node);
         label = style.labelText;
         w = this.ctx.measureText("" + label).width + 10;
@@ -70,6 +73,9 @@
       Renderer.prototype.renderEdge = function(edge, pt1, pt2) {
         var arrowLength, arrowWidth, dx, head, style, tail, wt;
         if (this.stopped === true) {
+          return;
+        }
+        if (edge.data.hidden === true) {
           return;
         }
         style = this.relationshipStyler.getStyleFor(edge);

@@ -73,7 +73,7 @@ define(
 
       saveSuccessful : (relationship) =>
         id = @urlResolver.extractRelationshipId(relationship.getSelf())
-        @dataModel.setData( relationship, true, {silent:true} ) 
+        @dataModel.setData( relationship, true) 
         @dataModel.setQuery( "rel:#{id}", true)
         @closeCallback()
 
