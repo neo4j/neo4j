@@ -64,7 +64,8 @@ require(
       Backbone.history.start()
 
     # Show boot screen for flashiness
-    $("body").html(splashTemplate())
+    #$("body").html(splashTemplate())
 
+    launchApp()
     #setTimeout launchApp, 2000
 )
