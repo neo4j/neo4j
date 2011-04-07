@@ -1,5 +1,0 @@
-
-include::webadmin.txt[]
-
-include::{importdir}/neo4j-shell-docs-jar/dev/shell.txt[]
-
