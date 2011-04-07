@@ -14,3 +14,6 @@ build
 .DS_Store
 server/neo4j-home/data/
 server/neo4j-home/rrd
+server/src/main/resources/webadmin-html/js/neo4j/
+server/src/main/resources/webadmin-html/js/ribcage/
+server/src/main/resources/webadmin-html/js/webadmin.js
