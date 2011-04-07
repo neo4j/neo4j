@@ -30,7 +30,19 @@ body {
 
 #splash {
   margin: 15% auto;
-  width: 155px;
+  width: 152px;
+}
+
+#splash h1 {
+  background: url("../img/icons/glyphish/141-lamp.png") no-repeat scroll center top transparent;
+  color: #DDDDDD;
+  font-family: Georgia,serif;
+  font-size: 13px;
+  font-weight: bold;
+  margin-top: 5px;
+  padding: 35px 0 0;
+  text-align: center;
+  text-shadow: 1px 1px 5px #555555
 }
 
 

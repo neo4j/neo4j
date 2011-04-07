@@ -50,7 +50,6 @@
       $("body").empty().append(baseView.el);
       return Backbone.history.start();
     };
-    $("body").html(splashTemplate());
-    return setTimeout(launchApp, 2000);
+    return $("body").html(splashTemplate());
   });
 }).call(this);

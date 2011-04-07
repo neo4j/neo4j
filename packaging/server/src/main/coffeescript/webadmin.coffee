@@ -66,5 +66,5 @@ require(
     # Show boot screen for flashiness
     $("body").html(splashTemplate())
 
-    setTimeout launchApp, 2000
+    #setTimeout launchApp, 2000
 )
