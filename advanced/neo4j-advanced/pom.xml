@@ -8,47 +8,33 @@
   </parent>
 
   <groupId>org.neo4j</groupId>
-  <artifactId>neo4j</artifactId>
+  <artifactId>neo4j-advanced</artifactId>
   <version>1.3-SNAPSHOT</version>
-  <name>Neo4j</name>
+  <name>Neo4j Advanced</name>
   <packaging>jar</packaging>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
-  <description>A meta package containing the most used Neo4j libraries. Intended use: as a Maven dependency.</description>
+  <description>A meta package containing the most used Neo4j Advanced libraries. Intended use: as a Maven dependency.</description>
 
   <properties>
-    <short-name>neo4j</short-name>
+    <short-name>neo4j-advanced</short-name>
     <bundle.namespace>org.neo4j</bundle.namespace>
+    <neo4j.version>1.3-SNAPSHOT</neo4j.version>
   </properties>
 
   <scm>
-    <url>https://github.com/neo4j/graphdb</url>
+    <url>https://github.com/neo4j/advanced</url>
   </scm>
 
 
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-kernel</artifactId>
-      <version>1.3-SNAPSHOT</version>
+      <artifactId>neo4j-community</artifactId>
+      <version>${neo4j.version}</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-lucene-index</artifactId>
-      <version>1.3-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-graph-algo</artifactId>
-      <version>1.3-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-udc</artifactId>
-      <version>1.3-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-jmx</artifactId>
+      <artifactId>neo4j-management</artifactId>
       <version>1.3-SNAPSHOT</version>
     </dependency>
     <!-- Needed for the javadoc generation! -->
