@@ -18,6 +18,23 @@ body {
   overflow:hidden;
 }
 
+/* SPLASH */
+#splash-wrap {
+  background: none repeat scroll 0 0 #222222;
+  bottom: 0;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+#splash {
+  margin: 15% auto;
+  width: 155px;
+}
+
+
+
 /* CONTENTS */
 
 #contents { 
