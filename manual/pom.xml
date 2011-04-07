@@ -244,8 +244,7 @@
           </execution>
           <execution>
             <id>upgrade</id>
-            <!-- disable for now -->
-            <phase>none</phase>
+            <phase>package</phase>
             <goals>
               <goal>single</goal>
             </goals>
