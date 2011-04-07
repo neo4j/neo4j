@@ -1,9 +1,0 @@
-1.3 GA
-------
-o Removed dependency on HA. Now it is expected that resolving the master of a ZooKeeper cluster is the responsibility of the HA component, providing it as a @Service.
-o Removed the -from-ha argument, since it is not needed
-o Switched from explicit backup target implementation specification (ha or simple for the time being) to a URI format.
-
-1.3.M03 (2011-02-25)
---------------------
-o Initial release.
