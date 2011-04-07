@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.neo4j</groupId>
+    <artifactId>parent-central</artifactId>
+    <version>19</version>
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.neo4j</groupId>
+  <artifactId>neo4j-shell</artifactId>
+  <version>1.3-SNAPSHOT</version>
+  <name>Neo4j - Generic shell</name>
+  <description>
+		A generic command shell with a client and server part.
+  </description>
+  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+
+  <scm>
+    <connection>scm:git:git://github.com/neo4j/shell.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/shell.git</developerConnection>
+    <url>https://github.com/neo4j/shell</url>
+  </scm>
+
+  <properties>
+    <sun.jta.version>1.1</sun.jta.version>
+    <neo4j.version>1.3-SNAPSHOT</neo4j.version>
+    <lucene.groupId>org.apache.servicemix.bundles</lucene.groupId>
+    <lucene.artifactId>org.apache.servicemix.bundles.lucene</lucene.artifactId>
+    <lucene.version>3.0.1_2</lucene.version>
+    <lucene.main.version>3.0.1</lucene.main.version>
+    <jline.groupId>org.apache.servicemix.bundles</jline.groupId>
+    <jline.artifactId>org.apache.servicemix.bundles.jline</jline.artifactId>
+    <jline.version>0.9.94_1</jline.version>
+    <jline.main.version>0.9.94</jline.main.version>
+    <bundle.namespace>org.neo4j.shell</bundle.namespace>
+    <short-name>shell</short-name>
+  </properties>
+
+  <packaging>bundle</packaging>
+
+  <licenses>
+    <license>
+      <name>GNU Affero General Public License, Version 3</name>
+      <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
+    </license>
+  </licenses>
+
+  <issueManagement>
+    <system>Trac</system>
+    <url>https://trac.neo4j.org/query?status=assigned&amp;status=new&amp;status=reopened&amp;component=${short-name}</url>
+  </issueManagement>
+
+  <contributors>
+    <contributor>
+      <name>Peter Neubauer</name>
+      <email>peter [at] neotechnology.com</email>
+      <organization>Neo Technology</organization>
+      <organizationUrl>http://www.neotechnology.com</organizationUrl>
+      <timezone>+1</timezone>
+    </contributor>
+  </contributors>
+  <developers>
+    <developer>
+      <id>mattias</id>
+      <name>Mattias Persson</name>
+      <email>mattias [at] neotechnology.com</email>
+      <timezone>+1</timezone>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+  </developers>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifest>
+              <mainClass>org.neo4j.shell.StartClient</mainClass>
+              <packageName>org.neo4j.shell</packageName>
+            </manifest>
+            <manifestEntries>
+              <url>http://neo4j.org</url>
+              <Class-Path>neo4j-kernel-${neo4j.version}.jar neo4j-index-${neo4j.version}.jar lucene-core-${lucene.main.version}.jar ${lucene.artifactId}-${lucene.version}.jar jta-${sun.jta.version}.jar ${jta.artifactId}-${jta.version}.jar jline-${jline.main.version}.jar ${jline.artifactId}-${jline.version}.jar</Class-Path>
+              <Agent-Class>org.neo4j.shell.StartClient</Agent-Class>
+            </manifestEntries>
+          </archive>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.ops4j</groupId>
+        <artifactId>maven-pax-plugin</artifactId>
+        <configuration>
+          <framework>felix</framework>
+          <provision>
+            <param>mvn:${jta.groupId}/${jta.artifactId}/${jta.version}</param>
+            <param>mvn:${jline.groupId}/${jline.artifactId}/${jline.version}</param>
+          </provision>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <dependencies>
+    <!--
+      If you add the jLine library (at least version 0.9.94) to the
+      classpath of the client then you'll get enhanced prompt abilities.
+      Much like regular bash etc.
+    -->
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel</artifactId>
+      <version>${neo4j.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel</artifactId>
+      <version>${neo4j.version}</version>
+      <scope>test</scope>
+      <type>test-jar</type>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-jmx</artifactId>
+      <version>${neo4j.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-ha</artifactId>
+      <version>${neo4j.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-graph-algo</artifactId>
+      <version>${neo4j.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>${jline.groupId}</groupId>
+      <artifactId>${jline.artifactId}</artifactId>
+      <version>${jline.version}</version>
+      <!--scope>provided</scope-->
+      <exclusions>
+        <exclusion>
+          <groupId>junit</groupId>
+          <artifactId>junit</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+    </dependency>
+  </dependencies>
+
+  <reporting>
+    <plugins>
+      <plugin>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <excludePackageNames>*.impl.*</excludePackageNames>
+        </configuration>
+      </plugin>
+    </plugins>
+  </reporting>
+
+  <distributionManagement>
+    <site>
+      <id>neo4j-site</id>
+      <url>scpexe://components.neo4j.org/home/neo/components/${project.artifactId}/${project.version}</url>
+    </site>
+  </distributionManagement>
+
+</project>
