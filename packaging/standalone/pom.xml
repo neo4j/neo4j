@@ -244,12 +244,6 @@
       <type>tar.gz</type>
     </dependency>
 
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-backup</artifactId>
-      <version>${neo4j.version}</version>
-    </dependency>
-
     <!-- OSGi Bundles
     <dependency>
       <groupId>org.apache.felix</groupId>
