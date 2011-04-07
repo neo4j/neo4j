@@ -30,4 +30,4 @@ relationship.getPropertyByKey(key).getTruncatedHtmlValue(50)
 ); } } return __result__.join(""); }).call(this) + 
 "</tr>"
 ); } } return __result__.join(""); }).call(this) + 
-"</tbody></table>";}}; });
+"</tbody></table><div class=\"break\"></div>";}}; });

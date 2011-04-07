@@ -18,5 +18,5 @@ attribute.value +
 "</tbody></table>"
 );} else { return ""; } }).call(this) +
 (function () { if (typeof(bean) == "undefined") { return (
-"<h2>No bean found</h2>"
+"<div class=\"pad\"><h2>No information found</h2><p>Unable to locate any info for the specified JMX bean.</p></div>"
 );} else { return ""; } }).call(this);}}; });

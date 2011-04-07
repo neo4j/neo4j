@@ -39,6 +39,12 @@
       View.prototype.attach = function(parent) {
         return $(parent).append(this.el);
       };
+      View.prototype.height = function(val) {
+        return $(this.el).height(val);
+      };
+      View.prototype.width = function(val) {
+        return $(this.el).width(val);
+      };
       return View;
     })();
   });

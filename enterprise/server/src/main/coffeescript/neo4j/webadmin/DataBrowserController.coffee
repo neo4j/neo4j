@@ -44,7 +44,7 @@ define(
         @queryChanged()
 
       search : (query) =>
-        if query.substr(-1) is "/"
+        while query.charAt(query.length-1) == "/"
           query = query.substr(0, query.length - 1)
 
         @dataModel.setQuery query

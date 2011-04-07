@@ -1,19 +1,23 @@
 .workarea
   .controls.pad
-    %input#data-console(value="#{query}")
-    %button#data-execute-console.icon-button(title="Search")
+    .span-half.data-console-wrap
+      %input#data-console(value="#{query}")
+      %button#data-execute-console.icon-button(title="Search")
+      .helpbox.break
+        Search by: [node id], rel:[relationship id], rels:[node id]
     
-    %ul.data-toolbar.button-bar
-      %li
-        %button#data-create-node.text-icon-button(title="Create a node") Node
-      %li
-        %button#data-create-relationship.text-icon-button(title="Create a relationship") Relationship
-      :if viewType === "tabular"      
+    .span-half.last
+      %ul.data-toolbar.button-bar
         %li
-          %button#data-switch-view.icon-button(title="Switch view mode")
-      :if viewType !== "tabular"      
+          %button#data-create-node.text-icon-button(title="Create a node") Node
         %li
-          %button#data-switch-view.icon-button.tabular(title="Switch view mode")
+          %button#data-create-relationship.text-icon-button(title="Create a relationship") Relationship
+        :if viewType === "tabular"      
+          %li
+            %button#data-switch-view.icon-button(title="Switch view mode")
+        :if viewType !== "tabular"      
+          %li
+            %button#data-switch-view.icon-button.tabular(title="Switch view mode")
 
     .break
 

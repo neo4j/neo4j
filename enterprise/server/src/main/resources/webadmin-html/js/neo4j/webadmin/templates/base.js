@@ -1,4 +1,4 @@
-define(function(){return function(vars){ with(vars||{}) { return "<div id=\"header\"><div id=\"header_submenu\"><ul class=\"horizontal_menu\"><li><a href=\"http://docs.neo4j.org/\" class=\"micro-button dark-button\">Documentation</a></li></ul></div><img src=\"img/logo.png\" id=\"logo\" /><ul id=\"mainmenu\">" + 
+define(function(){return function(vars){ with(vars||{}) { return "<div id=\"header\"><div id=\"header_submenu\"><ul class=\"horizontal_menu\"><li><a href=\"http://docs.neo4j.org/\" class=\"micro-button\">Documentation</a></li></ul></div><img src=\"img/logo.png\" id=\"logo\" /><ul id=\"mainmenu\">" + 
 (function () { var __result__ = [], __key__, item; for (__key__ in mainmenu) { if (mainmenu.hasOwnProperty(__key__)) { item = mainmenu[__key__]; __result__.push(
 "<li class=\"title-button\">" + 
 (function () { if (item.current) { return (

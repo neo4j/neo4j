@@ -33,6 +33,7 @@
         this.detach = __bind(this.detach, this);;
         this.remove = __bind(this.remove, this);;
         this.hide = __bind(this.hide, this);;
+        this.wrapperClicked = __bind(this.wrapperClicked, this);;
         this.show = __bind(this.show, this);;        Dialog.__super__.constructor.apply(this, arguments);
       }
       __extends(Dialog, View);
@@ -48,6 +49,7 @@
           timeout = false;
         }
         this.overlay.show();
+        this.bind();
         if (!this.attachedToBody) {
           $("body").append(this.wrapper);
         }
@@ -57,11 +59,24 @@
           return setTimeout(this.hide, timeout);
         }
       };
+      Dialog.prototype.bind = function() {
+        return this.wrapper.bind("click", this.wrapperClicked);
+      };
+      Dialog.prototype.unbind = function() {
+        return this.wrapper.unbind("click", this.wrapperClicked);
+      };
+      Dialog.prototype.wrapperClicked = function(ev) {
+        if (ev.originalTarget === ev.currentTarget) {
+          return this.hide();
+        }
+      };
       Dialog.prototype.hide = function() {
+        this.unbind();
         this.wrapper.hide();
         return this.overlay.hide();
       };
       Dialog.prototype.remove = function() {
+        this.unbind();
         this.wrapper.remove();
         return this.overlay.hide();
       };

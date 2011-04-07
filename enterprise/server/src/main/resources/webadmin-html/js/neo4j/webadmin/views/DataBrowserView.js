@@ -145,8 +145,20 @@
         this.viewType = "tabular";
         return this.dataView = this.tabularView;
       };
+      DataBrowserView.prototype.unbind = function() {
+        return this.dataModel.unbind("change:query", this.queryChanged);
+      };
+      DataBrowserView.prototype.detach = function() {
+        this.unbind();
+        this.hideCreateRelationshipDialog();
+        if (this.dataView != null) {
+          this.dataView.detach();
+        }
+        return DataBrowserView.__super__.detach.call(this);
+      };
       DataBrowserView.prototype.remove = function() {
-        this.dataModel.unbind("change:query", this.queryChanged);
+        this.unbind();
+        this.hideCreateRelationshipDialog();
         return this.dataView.remove();
       };
       return DataBrowserView;

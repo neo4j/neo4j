@@ -108,9 +108,11 @@
         return this.propertyContainer.save();
       };
       PropertyContainerView.prototype.deleteItem = function(ev) {
-        return this.propertyContainer.getItem().remove().then(function() {
-          return window.location = "#/data/search/0";
-        });
+        if (confirm("Are you sure?")) {
+          return this.propertyContainer.getItem().remove().then(function() {
+            return window.location = "#/data/search/0";
+          });
+        }
       };
       PropertyContainerView.prototype.updateErrorMessages = function() {
         var id, keyError, prop, row, valueError, _i, _len, _ref, _results;

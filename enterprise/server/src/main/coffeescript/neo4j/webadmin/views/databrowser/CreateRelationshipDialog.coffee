@@ -22,20 +22,23 @@ define(
   ['neo4j/webadmin/data/ItemUrlResolver'
    'neo4j/webadmin/templates/databrowser/createRelationship',
    'neo4j/webadmin/views/View',
+   'neo4j/webadmin/ui/FormHelper',
    'lib/backbone'], 
-  (ItemUrlResolver, template, View) ->
+  (ItemUrlResolver, template, View, FormHelper) ->
   
     class CreateRelationshipDialog extends View
 
-      className: "create-relationship-dialog"
+      className: "popout"
 
       events : 
         "click #create-relationship" : "save"
         "change #create-relationship-types" : "pickedFromAvailableTypes"
 
       initialize : (opts) =>
+        $(@el).hide()
         $("body").append(@el)
 
+        @formHelper = new FormHelper(@el)
         @baseElement = opts.baseElement
         @server = opts.server
         @dataModel = opts.dataModel
@@ -53,8 +56,9 @@ define(
         
         @server.getAvailableRelationshipTypes().then (types) =>
           @types = types          
-          @render()
           @position()
+          @render()
+          $(@el).show()
 
       pickedFromAvailableTypes : =>
         type = $("#create-relationship-types").val()
@@ -63,27 +67,31 @@ define(
         $("#create-relationship-types").val("Types in use")
 
       save : =>
+        @formHelper.removeAllErrors()
         type = $("#create-relationship-type").val()
-        fromId = @urlResolver.extractNodeId($("#create-relationship-from").val())
-        toId = @urlResolver.extractNodeId($("#create-relationship-to").val())
+        @server.rel(@getFromUrl(), type, @getToUrl()).then @saveSuccessful, @saveFailed
 
-        fromUrl = @urlResolver.getNodeUrl(fromId)
-        toUrl = @urlResolver.getNodeUrl(toId)
+      saveSuccessful : (relationship) =>
+        id = @urlResolver.extractRelationshipId(relationship.getSelf())
+        @dataModel.setData( relationship, true, {silent:true} ) 
+        @dataModel.setQuery( "rel:#{id}", true)
+        @closeCallback()
 
-        successCallback = (relationship) =>
-          id = @urlResolver.extractRelationshipId(relationship.getSelf())
-          @dataModel.setData( relationship, true, {silent:true} ) 
-          @dataModel.setQuery( "rel:#{id}", true)
-          @closeCallback()
+      saveFailed : (error) =>
+        if error instanceof neo4j.exceptions.NotFoundException
+          if error.url is @getFromUrl()
+            @formHelper.addErrorTo("#create-relationship-from", "This node cannot be found.")
+          else
+            @formHelper.addErrorTo("#create-relationship-to", "This node cannot be found.")
+        else
+          @formHelper.addErrorTo("#create-relationship-from", "Unable to create relationship.")
 
-        failCallback = (error) =>
-          # TODO: Add proper error message here
-          #if error instanceof neo4j.exceptions.NotFoundException
-          #  console.log "AAA"
-          #else
-          #  console.log "Unknwo"
 
-        @server.rel(fromUrl, type, toUrl).then successCallback, failCallback
+      getFromUrl : ->
+        @urlResolver.getNodeUrl(@urlResolver.extractNodeId($("#create-relationship-from").val()))
+      
+      getToUrl : ->        
+        @urlResolver.getNodeUrl(@urlResolver.extractNodeId($("#create-relationship-to").val()))
 
       position : =>
         basePos = $(@baseElement).offset()

@@ -14,6 +14,6 @@ property.getValueError()
 );} else { return ""; } }).call(this) + 
 "</div><input type=\"text\" value=\"" +
 property.getValueAsHtml() +
-"\" class=\"property-value\" /></div></li><li class=\"property-actions-wrap\"><div class=\"property-input-wrap\"><button class=\"delete-property button\">Remove</button></div></li></ul><div class=\"break\"></div></li>"
+"\" class=\"property-value\" /></div></li><li class=\"property-actions-wrap\"><div class=\"property-input-wrap\"><button class=\"delete-property bad-button\">Remove</button></div></li></ul><div class=\"break\"></div></li>"
 ); } } return __result__.join(""); }).call(this) +
 "<li class=\"property-controls\"><button title=\"Add a new property\" class=\"add-property text-icon-button\">Add property</button><div class=\"break\"></div></li></ul>";}}; });
