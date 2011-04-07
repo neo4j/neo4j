@@ -1,0 +1,1 @@
+define(function(){return function(vars){ with(vars||{}) { return "<div id=\"splash-wrap\"><div id=\"splash\"><img src=\"img/logo.png\" id=\"splash-logo\" /></div></div>";}}; });
