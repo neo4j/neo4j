@@ -43,7 +43,7 @@ import org.neo4j.helpers.Service;
  * <p>
  * The URI is strictly expected to have a scheme component, matching the name of
  * the service implementation used to resolve it. The same holds for the default
- * case, with a scheme name of simple. The scheme specific fragment after that
+ * case, with a scheme name of "single". The scheme specific fragment after that
  * will be the responsibility of the plugin to resolve to a valid host. In any
  * case, the resolve method is expected to return a valid URI, with a scheme
  * which is the same as the one passed to it (ie the service's name).

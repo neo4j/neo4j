@@ -33,7 +33,7 @@ public class BackupTool
     private static final String FROM = "from";
     private static final String INCREMENTAL = "incremental";
     private static final String FULL = "full";
-    public static final String DEFAULT_SCHEME = "simple";
+    public static final String DEFAULT_SCHEME = "single";
 
     public static void main( String[] args )
     {
