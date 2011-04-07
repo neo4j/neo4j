@@ -1,0 +1,46 @@
+Neo4j
+Copyright (c) 2002-2010 "Neo Technology," Network Engine for Objects in Lund AB
+   [http://neotechnology.com]
+
+This product includes software developed by "Neo Technology,"
+Network Engine for Objects in Lund AB (http://neotechnology.com).
+
+The bundled graph database engine is copyright
+"Neo Technology," Network Engine for Objects in Lund AB
+and licensed under the GNU AFFERO GENERAL PUBLIC LICENSE
+Version 3 (http://www.fsf.org/licensing/licenses/agpl-3.0.html).
+
+
+Third party libraries
+---------------------
+
+Full license texts are found in LICENSES.txt.
+
+GNU General Public License Version 2 with classpath exception: MIME streaming plugin,
+ jersey-client, jersey-core, jersey-multipart, jersey-server, jsr311-api
+
+GNU Lesser General Public License (LGPL), Version 2.1: JAX-RS provider for JSON content type, CSS Parser
+
+Colt license: partially BSD-like, partially LGPL with military applications forbidden
+
+The Apache Software License, Version 2.0: Apache Log4j, Apache ServiceMix :: Bundles :: lucene-core,
+ Commons BeanUtils Core, Commons Codec, Commons Collections, Commons Configuration, Commons IO, 
+ Commons Lang, Commons Logging, Data Mapper for Jackson, Digester, JAX-RS provider for JSON content type, 
+ JSON.simple, Jackson, Neko HTML, XML Commons External Components XML APIs, Xalan Java, Xalan Java Serializer,
+ Xerces2 Java Parser, webdriver-chrome, webdriver-common, webdriver-firefox, webdriver-htmlunit,
+ webdriver-remote-client, webdriver-remote-common, webdriver-support, commons-beanutils:commons-beanutils,
+ Geronimo Java Transaction API, Quartz Enterprise Job Scheduler, larvalabs collections,
+ Servlet Specification API, ExplorerCanvas, ZooKeeper, Netty
+
+MIT License: SLF4J API Module, SLF4J LOG4J-12 Binding, Base64.js, jTemplates, jQuery, jQuery BBQ,
+ jQuery hashchange event, SimpleModal, jQuery flot including colorhelpers
+
+BSD licence: ANTLR Grammar Tool, ANTLR StringTemplate, Antlr 3 Runtime, ASM Core,
+ Blueprints: Data Models and their Implementations, Gremlin: A Graph-Based Programming Language,
+ Pipes: A Data Flow Framework using Process Graphs, jung-algorithms, jung-api, AntLR Parser Generator, JLine
+
+New BSD license: Protocol Buffer Java API
+
+provided without support or warranty: JSON (JavaScript Object Notation)
+
+Public domain, Sun Microsoystems: Dough Lea's util.concurrent package, JSON2.js

@@ -1,0 +1,26 @@
+
+label {
+  display: block;
+  float: left;
+  padding: 6px 0;
+  width: 100px;
+  font-weight:bold;
+}
+
+input {
+  outline:none;
+}
+
+button {
+  outline:none; 
+}
+
+.filter .filterText {
+  padding: 4px 3px;
+  width: 90%;
+}
+
+.filter .selectList {
+  height: 200px;
+  width: 450px;
+}

@@ -1,0 +1,40 @@
+[[server-ha]]
+Starting the Neo4j server in high availability mode
+===================================================
+
+To run the Neo4j server in high availability mode there are two things you need to do.
+You have to configure the server to start up the database in high availability mode and you have to configure the Neo4j database for operating in high availability mode.
+
+Instructing the server to start the database in high availability mode is as easy as setting the +org.neo4j.server.database.mode+ property in the server properties file (+neo-server.properties+) to +ha+.
+The default value for this parameter is +standalone+, which will start the database in standalone mode.
+
+Configuring the Neo4j database for operating in high availability mode requires sepcifying a few properties in +neo4j.properties+.
+First you need to specify +ha.machine_id+, this is a possitive integer id that uniquely identifies this server in the cluster.
+
+Example: +ha.machine_id = 1+
+
+Then you have to specify +ha.zoo_keeper_servers+, this is a comma separated list of hosts and ports for communicating with each member of the Neo4j Coordinator cluster.
+
+For example: +ha.zoo_keeper_servers = neo4j-manager-01:2180,neo4j-manager-02:2180,neo4j-manager-03:2180+.
+
+You can also, optionally, configure the +ha.cluster_name+.
+This is the name of the cluster this instance is supposed to join.
+Accepted characters are alphabetical, numerical, dot, dash, and underscore.
+This configuration is useful if you have multiple Neo4j HA clusters managed by the same Coordinator cluster.
+
+Example: +ha.cluster_name = my_neo4j_ha_cluster+
+
+Starting a Neo4j Coordinator
+----------------------------
+
+A Neo4j Coordinator cluster provides the Neo4j HA Data cluster with reliable coordination 
+of lifecycle activities, like electing the master.
+Neo4j Server includes everything needed for running a Neo4j Coordinator. 
+
+Configuration of a Coordinator is specified in these files:
+
+* +conf/coord.cfg+ - coordinator operational settings
+* +data/coordinator/myid+ - unqiue identification of the coordinator
+
+Once a Neo4j Coordinator instance has been configured, you can use the +bin/neo4j-coordinator+ command to run the server.
+
