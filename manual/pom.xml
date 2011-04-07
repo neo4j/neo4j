@@ -23,7 +23,7 @@
   </properties>
 
   <scm>
-    <url>https://github.com/neo4j/server/tree/master/manual</url>
+    <url>https://github.com/neo4j/manual</url>
   </scm>
 
   <licenses>
@@ -98,11 +98,10 @@
       <classifier>docs</classifier>
       <scope>provided</scope>
     </dependency>
-    <!-- Dependencies inside the server repo. -->
     <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
-      <version>1.3-SNAPSHOT</version>
+      <version>${neo4j.version}</version>
       <classifier>docs</classifier>
       <scope>provided</scope>
     </dependency>
