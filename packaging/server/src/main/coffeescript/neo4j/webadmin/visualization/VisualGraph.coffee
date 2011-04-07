@@ -62,8 +62,10 @@ define(
         @steadStateWorker = setInterval(@steadyStateCheck, 1000)
 
       steadyStateCheck : () =>
-        meanEnergy = @sys.energy().mean
-        if  meanEnergy < 0.01 then @sys.stop()
+        energy = @sys.energy()
+        if energy?
+          meanEnergy = energy.mean
+          if  meanEnergy < 0.01 then @sys.stop()
 
       setNode : (node) =>
         @setNodes([node])
@@ -123,16 +125,30 @@ define(
       getNodeStyler : () =>
         @nodeStyler
       
+      reflow : () =>
+        @sys.eachNode @floatNode
+        @sys.parameters({gravity:true})
+        @start()
+
+      floatNode : (node, pt) =>
+        node.fixed = false
+        #node.p.x = (pt.x / 2)
+        #node.p.y = (pt.y / 2)
 
       stop : () =>
+        if @sys.renderer?
+          @sys.renderer.stop()
+        @sys.parameters({gravity:false})
         @sys.stop()
 
       start : () =>
+        if @sys.renderer?
+          @sys.renderer.start()
         @sys.start()
 
       attach : (parent) =>
         @detach()
-        $(parent).append(@el)
+        $(parent).prepend(@el)
         @start()
 
       detach : () =>

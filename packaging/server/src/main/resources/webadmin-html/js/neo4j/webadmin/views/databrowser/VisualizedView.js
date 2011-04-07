@@ -32,6 +32,7 @@
         this.attach = __bind(this.attach, this);;
         this.detach = __bind(this.detach, this);;
         this.remove = __bind(this.remove, this);;
+        this.reflowGraphLayout = __bind(this.reflowGraphLayout, this);;
         this.hideSettingsDialog = __bind(this.hideSettingsDialog, this);;
         this.showSettingsDialog = __bind(this.showSettingsDialog, this);;
         this.getViz = __bind(this.getViz, this);;
@@ -40,31 +41,36 @@
       }
       __extends(VisualizedView, View);
       VisualizedView.prototype.events = {
-        'click #visualization-show-settings': "showSettingsDialog"
+        'click #visualization-show-settings': "showSettingsDialog",
+        'click #visualization-reflow': "reflowGraphLayout"
       };
       VisualizedView.prototype.initialize = function(options) {
         this.server = options.server;
         this.appState = options.appState;
-        this.settings = this.appState.getVisualizationSettings();
         this.dataModel = options.dataModel;
+        this.settings = this.appState.getVisualizationSettings();
         return this.settings.bind("change", this.settingsChanged);
       };
       VisualizedView.prototype.render = function() {
-        if (this.vizEl != null) {
-          this.getViz().detach();
-        }
-        $(this.el).html(template());
-        this.vizEl = $("#visualization", this.el);
-        this.getViz().attach(this.vizEl);
-        switch (this.dataModel.get("type")) {
-          case "node":
-            this.visualizeFromNode(this.dataModel.getData().getItem());
-            break;
-          case "relationship":
-            this.visualizeFromRelationships([this.dataModel.getData().getItem()]);
-            break;
-          case "relationshipList":
-            this.visualizeFromRelationships(this.dataModel.getData().getRawRelationships());
+        if (this.browserHasRequiredFeatures()) {
+          if (this.vizEl != null) {
+            this.getViz().detach();
+          }
+          $(this.el).html(template());
+          this.vizEl = $("#visualization", this.el);
+          this.getViz().attach(this.vizEl);
+          switch (this.dataModel.get("type")) {
+            case "node":
+              this.visualizeFromNode(this.dataModel.getData().getItem());
+              break;
+            case "relationship":
+              this.visualizeFromRelationships([this.dataModel.getData().getItem()]);
+              break;
+            case "relationshipList":
+              this.visualizeFromRelationships(this.dataModel.getData().getRawRelationships());
+          }
+        } else {
+          this.showBrowserNotSupportedMessage();
         }
         return this;
       };
@@ -130,22 +136,39 @@
           return $("#visualization-show-settings").removeClass("selected");
         }
       };
+      VisualizedView.prototype.browserHasRequiredFeatures = function() {
+        return Object.prototype.__defineGetter__ != null;
+      };
+      VisualizedView.prototype.showBrowserNotSupportedMessage = function() {
+        return $(this.el).html("<div class='pad'>          <h1>I currently do not support visualization in this browser :(</h1>          <p>I can't find the __defineGetter__ API method, which the visualization lib I use, Arbor.js, needs.</p>          <p>If you really want to use visualization (it's pretty awesome), please consider using Google Chrome, Firefox or Safari.</p>          </div>");
+      };
+      VisualizedView.prototype.reflowGraphLayout = function() {
+        if (this.viz !== null) {
+          return this.viz.reflow();
+        }
+      };
       VisualizedView.prototype.remove = function() {
-        this.dataModel.unbind("change:data", this.render);
-        this.getViz().stop();
+        if (this.browserHasRequiredFeatures()) {
+          this.dataModel.unbind("change:data", this.render);
+          this.hideSettingsDialog();
+          this.getViz().stop();
+        }
         return VisualizedView.__super__.remove.call(this);
       };
       VisualizedView.prototype.detach = function() {
-        this.dataModel.unbind("change:data", this.render);
-        this.getViz().stop();
+        if (this.browserHasRequiredFeatures()) {
+          this.dataModel.unbind("change:data", this.render);
+          this.hideSettingsDialog();
+          this.getViz().stop();
+        }
         return VisualizedView.__super__.detach.call(this);
       };
       VisualizedView.prototype.attach = function(parent) {
         VisualizedView.__super__.attach.call(this, parent);
-        if (this.vizEl != null) {
+        if (this.browserHasRequiredFeatures() && (this.vizEl != null)) {
           this.getViz().start();
+          return this.dataModel.bind("change:data", this.render);
         }
-        return this.dataModel.bind("change:data", this.render);
       };
       return VisualizedView;
     })();

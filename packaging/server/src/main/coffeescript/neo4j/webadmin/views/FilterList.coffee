@@ -50,6 +50,13 @@ define(
         @renderListSelector()
         $(".filterText",@el).focus()
 
+      height : (val) ->
+        if val?
+          $(".selectList", @el).height(val - 50)
+        else
+          super()
+        
+
       renderListSelector : () ->
         $('.selectWrap', @el).html(selectTemplate(items : @filteredItems))
 

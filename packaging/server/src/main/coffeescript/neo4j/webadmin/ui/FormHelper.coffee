@@ -17,18 +17,28 @@ GNU Affero General Public License for more details.
 You should have received a copy of the GNU Affero General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 ###
-define ['lib/backbone'], (template) ->
-  
-  class View extends Backbone.View
 
-    detach : =>
-      $(@el).detach()
+define(
+  ['lib/backbone', 'lib/jquery'], 
+  () ->
 
-    attach : (parent) =>
-      $(parent).append(@el)
-
-    height : (val) ->
-      $(@el).height(val)
+    class FormHelper
     
-    width : (val) ->
-      $(@el).width(val)
+      constructor : (context="body") ->
+        @context = $(context)
+
+      addErrorTo : (selector, errorMsg, wrapperSelector="p") ->
+        wrap = $(selector, @context).closest(wrapperSelector)
+        errorElement = wrap.find(".error")
+        if errorElement.length == 0
+          errorElement = $("<div class='error'></div>")
+          wrap.prepend errorElement
+        errorElement.html(errorMsg)
+
+      removeAllErrors : () ->
+        $(".error", @context).remove()
+
+      removeErrorsFrom : (selector, wrapperSelector="p") ->
+        $(selector, @context).closest(wrapperSelector).find(".error").remove()
+)
+

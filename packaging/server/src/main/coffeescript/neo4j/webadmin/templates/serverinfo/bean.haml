@@ -13,4 +13,6 @@
           %td.value= attribute.value
         
 :if typeof(bean) == "undefined"
-  %h2 No bean found
+  .pad
+    %h2 No information found
+    %p Unable to locate any info for the specified JMX bean.

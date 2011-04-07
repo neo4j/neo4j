@@ -27,7 +27,7 @@ define(
   
     class VisualizationSettingsDialog extends View
 
-      className: "visualization-settings-dialog"
+      className: "popout"
 
       events : 
         "click #save-visualization-settings" : "save"
@@ -39,8 +39,8 @@ define(
         @closeCallback = opts.closeCallback
         @settings = opts.appState.getVisualizationSettings()
 
-        @render()
         @position()
+        @render()
 
       save : =>
         keys = $("#visualization-label-properties").val().split(",")

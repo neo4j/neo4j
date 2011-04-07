@@ -34,6 +34,8 @@
         this.attach = __bind(this.attach, this);;
         this.start = __bind(this.start, this);;
         this.stop = __bind(this.stop, this);;
+        this.floatNode = __bind(this.floatNode, this);;
+        this.reflow = __bind(this.reflow, this);;
         this.getNodeStyler = __bind(this.getNodeStyler, this);;
         this.nodeClicked = __bind(this.nodeClicked, this);;
         this.addNodes = __bind(this.addNodes, this);;
@@ -63,10 +65,13 @@
         this.steadStateWorker = setInterval(this.steadyStateCheck, 1000);
       }
       VisualGraph.prototype.steadyStateCheck = function() {
-        var meanEnergy;
-        meanEnergy = this.sys.energy().mean;
-        if (meanEnergy < 0.01) {
-          return this.sys.stop();
+        var energy, meanEnergy;
+        energy = this.sys.energy();
+        if (energy != null) {
+          meanEnergy = energy.mean;
+          if (meanEnergy < 0.01) {
+            return this.sys.stop();
+          }
         }
       };
       VisualGraph.prototype.setNode = function(node) {
@@ -144,15 +149,34 @@
       VisualGraph.prototype.getNodeStyler = function() {
         return this.nodeStyler;
       };
+      VisualGraph.prototype.reflow = function() {
+        this.sys.eachNode(this.floatNode);
+        this.sys.parameters({
+          gravity: true
+        });
+        return this.start();
+      };
+      VisualGraph.prototype.floatNode = function(node, pt) {
+        return node.fixed = false;
+      };
       VisualGraph.prototype.stop = function() {
+        if (this.sys.renderer != null) {
+          this.sys.renderer.stop();
+        }
+        this.sys.parameters({
+          gravity: false
+        });
         return this.sys.stop();
       };
       VisualGraph.prototype.start = function() {
+        if (this.sys.renderer != null) {
+          this.sys.renderer.start();
+        }
         return this.sys.start();
       };
       VisualGraph.prototype.attach = function(parent) {
         this.detach();
-        $(parent).append(this.el);
+        $(parent).prepend(this.el);
         return this.start();
       };
       VisualGraph.prototype.detach = function() {
