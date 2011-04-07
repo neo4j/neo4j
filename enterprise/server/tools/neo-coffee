@@ -1,3 +1,0 @@
-#!/bin/sh
-
-coffee --watch -o src/main/resources/webadmin-html/js/ -c src/main/coffeescript/
