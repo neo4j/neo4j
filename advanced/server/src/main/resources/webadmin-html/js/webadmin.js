@@ -38,7 +38,6 @@
     baseView = new BaseView({
       appState: appState
     });
-    $("body").append(baseView.el);
     dashboardController = new DashboardController(appState);
     databrowserController = new DataBrowserController(appState);
     consoleController = new ConsoleController(appState);
@@ -47,6 +46,7 @@
     foldoutWatcher.init();
     shortcuts = new KeyboardShortcuts(dashboardController, databrowserController, consoleController, serverInfoController);
     shortcuts.init();
+    $("body").append(baseView.el);
     return Backbone.history.start();
   });
 }).call(this);

@@ -1,47 +1,37 @@
 .pad
-  :if primitives.isDataAvailable()
-    .span-third
-      %table.info-table(cellspacing=0)
-        %tbody
-          %tr
-            %th Nodes
-            %td= primitives.get("NumberOfNodeIdsInUse")
-          %tr
-            %th Properties
-            %td= primitives.get("NumberOfPropertyIdsInUse")
-          %tr 
-            %th Relationships
-            %td= primitives.get("NumberOfRelationshipIdsInUse")
-          %tr 
-            %th Relationship types
-            %td= primitives.get("NumberOfRelationshipTypeIdsInUse")
-  :if diskUsage.isDataAvailable()
-    .span-third
-      %table.info-table(cellspacing=0)
-        %tbody
-          %tr
-            %th Total disk usage
-            %td= Math.round(diskUsage.get("TotalStoreSize") / 1024) + " kB "
-          %tr
-            %th Database size
-            %td= Math.round( diskUsage.getDatabaseSize() / 1024) + " kB " + "(" + diskUsage.getDatabasePercentage() + "%)"
-          %tr 
-            %th Logical log size
-            %td= Math.round( diskUsage.getLogicalLogSize() / 1024) + " kB " + "(" + diskUsage.getLogicalLogPercentage() + "%)"
+  %table.info-table(cellspacing=0)
+    %tbody
+      :if primitives.isDataAvailable()
+        %tr
+          %td= primitives.get("NumberOfNodeIdsInUse")
+          %th nodes
+          %td= primitives.get("NumberOfPropertyIdsInUse")
+          %th properties
+          %td= primitives.get("NumberOfRelationshipIdsInUse")
+          %th relationships
+          %td= primitives.get("NumberOfRelationshipTypeIdsInUse")
+          %th relationship types
+      :if diskUsage.isDataAvailable()
+        %tr
+          %td= Math.round(diskUsage.get("TotalStoreSize") / 1024) + " kB "
+          %th total disk usage
+          %td= Math.round( diskUsage.getDatabaseSize() / 1024) + " kB " + "(" + diskUsage.getDatabasePercentage() + "%)"
+          %th database disk usage
+          %td= Math.round( diskUsage.getLogicalLogSize() / 1024) + " kB " + "(" + diskUsage.getLogicalLogPercentage() + "%)"
+          %th logical log disk usage
+          %td
+          %th
 
-  :if cacheUsage.isDataAvailable()
-    .span-third.last
-      %table.info-table(cellspacing=0)
-        %tbody
-          %tr
-            %th Cached nodes
-            %td= cacheUsage.get("NodeCacheSize")
-          %tr
-            %th Cached relationships
-            %td= cacheUsage.get("RelationshipCacheSize")
-          %tr 
-            %th Cache type
-            %td= cacheUsage.get("CacheType")
+      :if cacheUsage.isDataAvailable()
+        %tr
+          %td= cacheUsage.get("NodeCacheSize")
+          %th cached nodes
+          %td= cacheUsage.get("RelationshipCacheSize")
+          %th cached relationships
+          %td= cacheUsage.get("CacheType")
+          %th is the cache type
+          %td
+          %th
 
   .break
 

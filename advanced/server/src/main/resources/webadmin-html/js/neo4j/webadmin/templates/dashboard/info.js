@@ -1,31 +1,31 @@
-define(function(){return function(vars){ with(vars||{}) { return "<div class=\"pad\">" + 
+define(function(){return function(vars){ with(vars||{}) { return "<div class=\"pad\"><table cellspacing=\"0\" class=\"info-table\"><tbody>" + 
 (function () { if (primitives.isDataAvailable()) { return (
-"<div class=\"span-third\"><table cellspacing=\"0\" class=\"info-table\"><tbody><tr><th>Nodes</th><td>" + 
+"<tr><td>" + 
 primitives.get("NumberOfNodeIdsInUse") + 
-"</td></tr><tr><th>Properties</th><td>" + 
+"</td><th>nodes</th><td>" + 
 primitives.get("NumberOfPropertyIdsInUse") + 
-"</td></tr><tr><th>Relationships</th><td>" + 
+"</td><th>properties</th><td>" + 
 primitives.get("NumberOfRelationshipIdsInUse") + 
-"</td></tr><tr><th>Relationship types</th><td>" + 
+"</td><th>relationships</th><td>" + 
 primitives.get("NumberOfRelationshipTypeIdsInUse") + 
-"</td></tr></tbody></table></div>"
+"</td><th>relationship types</th></tr>"
 );} else { return ""; } }).call(this) +
 (function () { if (diskUsage.isDataAvailable()) { return (
-"<div class=\"span-third\"><table cellspacing=\"0\" class=\"info-table\"><tbody><tr><th>Total disk usage</th><td>" + 
+"<tr><td>" + 
 Math.round(diskUsage.get("TotalStoreSize") / 1024) + " kB " + 
-"</td></tr><tr><th>Database size</th><td>" + 
+"</td><th>total disk usage</th><td>" + 
 Math.round( diskUsage.getDatabaseSize() / 1024) + " kB " + "(" + diskUsage.getDatabasePercentage() + "%)" + 
-"</td></tr><tr><th>Logical log size</th><td>" + 
+"</td><th>database disk usage</th><td>" + 
 Math.round( diskUsage.getLogicalLogSize() / 1024) + " kB " + "(" + diskUsage.getLogicalLogPercentage() + "%)" + 
-"</td></tr></tbody></table></div>"
+"</td><th>logical log disk usage</th><td></td><th></th></tr>"
 );} else { return ""; } }).call(this) +
 (function () { if (cacheUsage.isDataAvailable()) { return (
-"<div class=\"span-third last\"><table cellspacing=\"0\" class=\"info-table\"><tbody><tr><th>Cached nodes</th><td>" + 
+"<tr><td>" + 
 cacheUsage.get("NodeCacheSize") + 
-"</td></tr><tr><th>Cached relationships</th><td>" + 
+"</td><th>cached nodes</th><td>" + 
 cacheUsage.get("RelationshipCacheSize") + 
-"</td></tr><tr><th>Cache type</th><td>" + 
+"</td><th>cached relationships</th><td>" + 
 cacheUsage.get("CacheType") + 
-"</td></tr></tbody></table></div>"
-);} else { return ""; } }).call(this) +
-"<div class=\"break\"></div></div>";}}; });
+"</td><th>is the cache type</th><td></td><th></th></tr>"
+);} else { return ""; } }).call(this) + 
+"</tbody></table><div class=\"break\"></div></div>";}}; });

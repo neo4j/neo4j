@@ -6,16 +6,17 @@
   %label(for="create-relationship-type") Type
   %input#create-relationship-type(type="text" value="#{type}")= type
 
-%p  
-  %label(for="create-relationship-types")  
+%p
   %select#create-relationship-types &nbsp;
     %option Types in use
     :each type in types
       %option=type
+  .break
 
 %p
   %label(for="create-relationship-to") To node
   %input#create-relationship-to(type="text" value="#{to}")
 
-%p
-  %button#create-relationship Create
+%ul.button-bar.popout-controls
+  %li
+    %button#create-relationship.button Create
