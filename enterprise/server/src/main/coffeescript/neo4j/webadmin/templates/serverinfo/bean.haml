@@ -1,0 +1,18 @@
+
+:if typeof(bean) != "undefined"
+  .pad
+    %h2=bean.getName()
+    %p.small= bean.description
+  %table.data-table(cellspacing="0")
+    %tbody
+      :each attribute in attributes
+        %tr
+          %td(style="padding-left:#{attribute.indent*10}px;")
+            %h3= attribute.name
+            %p.small= attribute.description
+          %td.value= attribute.value
+        
+:if typeof(bean) == "undefined"
+  .pad
+    %h2 No information found
+    %p Unable to locate any info for the specified JMX bean.

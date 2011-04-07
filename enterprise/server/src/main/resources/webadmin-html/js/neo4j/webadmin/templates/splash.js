@@ -1,0 +1,1 @@
+define(function(){return function(vars){ with(vars||{}) { return "<div id=\"splash-wrap\"><div id=\"splash\"><img src=\"img/logo.png\" id=\"splash-logo\" /><h1>1.3 Abisko Lampa</h1></div></div>";}}; });
