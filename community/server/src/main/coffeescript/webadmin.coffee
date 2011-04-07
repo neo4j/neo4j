@@ -35,14 +35,16 @@ require(
    "neo4j/webadmin/views/BaseView"
    "neo4j/webadmin/ui/FoldoutWatcher"
    "neo4j/webadmin/KeyboardShortcuts"
-   "neo4j/webadmin/templates/splash"
+   "neo4j/webadmin/SplashScreen"
    "lib/jquery"
    "lib/neo4js"
    "lib/backbone"]
-  (DashboardController, DataBrowserController, ConsoleController, ServerInfoController, ApplicationState, BaseView, FoldoutWatcher, KeyboardShortcuts, splashTemplate) ->
+  (DashboardController, DataBrowserController, ConsoleController, ServerInfoController, ApplicationState, BaseView, FoldoutWatcher, KeyboardShortcuts, SplashScreen) ->
 
     # WEBADMIN BOOT
 
+    splashScreen = new SplashScreen
+      
     appState = new ApplicationState
     appState.set server : new neo4j.GraphDatabase(location.protocol + "//" + location.host)
 
@@ -59,13 +61,10 @@ require(
     shortcuts = new KeyboardShortcuts(dashboardController, databrowserController, consoleController, serverInfoController)
     shortcuts.init()
 
-    launchApp = ->
-      $("body").empty().append(baseView.el)
-      Backbone.history.start()
+    $("body").append(baseView.el)
+    Backbone.history.start()
 
-    # Show boot screen for flashiness
-    #$("body").html(splashTemplate())
+    if not splashScreen.hasBeenShownForThisSession()
+      splashScreen.show()
 
-    launchApp()
-    #setTimeout launchApp, 2000
 )
