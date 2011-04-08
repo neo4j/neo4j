@@ -46,6 +46,8 @@ The Apache Software License, Version 2.0:
   Commons Configuration, Commons Digester, Commons Lang, Commons Logging,
  Apache Log4j,
  Apache Felix:   Felix FileInstall, Felix Framework, Felix Main,
+ Apache Verlocity,
+ Apache Jackrabbit WebDAV API,
  JSON.simple,
  RRD4J,
  Geronimo Java Transaction API,
@@ -53,6 +55,14 @@ The Apache Software License, Version 2.0:
  Jackson:   Jackson Core, Jackson JAX-RS, Data Mapper for Jackson,
  Jansi,
  Jetty:  Jetty, Jetty Util, Jetty Servlet Specification API,
+ Quartz enterprise job scheduler,
+ SNMP4J,
+ YodaTime,
+
+GNU Lesser General Public License (LGPL) 2.1:
+ JRexx Regular Expressions library,
+ Abeille Forms designer,
+ GlazedLists,
 
 MIT License:
  SLF4J API Module, SLF4J Log4j-12 Binding, SLF4J JDK1.4 Logging Binding,
@@ -70,7 +80,8 @@ BSD licence:
  Blueprints: Data Models and their Implementations,
  Gremlin: A Graph-Based Programming Language,
  Pipes: A Data Flow Framework using Process Graphs,
- JLine
+ JLine,
+ JGoodie Forms,
 
 provided without support or warranty: JSON (JavaScript Object Notation)
 
