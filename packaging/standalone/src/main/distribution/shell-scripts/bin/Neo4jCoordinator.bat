@@ -34,7 +34,7 @@ rem From the command prompt that will come up, navigate to the directory
 rem containing the unpacked distribution and issue the command you wish,
 rem for example
 rem
-rem bin\Neo4jCoord.bat install
+rem bin\Neo4jCoordinator.bat install
 rem
 rem to install Neo4j as a Windows Service.
 rem
