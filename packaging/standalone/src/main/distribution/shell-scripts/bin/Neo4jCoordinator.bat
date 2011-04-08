@@ -1,25 +1,24 @@
+@echo off
 rem Copyright (c) 2002-2011 "Neo Technology,"
 rem Network Engine for Objects in Lund AB [http://neotechnology.com]
 rem
 rem This file is part of Neo4j.
 rem
 rem Neo4j is free software: you can redistribute it and/or modify
-rem it under the terms of the GNU General Public License as published by
-rem the Free Software Foundation, either version 3 of the License, or
-rem (at your option) any later version.
+rem it under the terms of the GNU Affero General Public License as
+rem published by the Free Software Foundation, either version 3 of the
+rem License, or (at your option) any later version.
 rem
 rem This program is distributed in the hope that it will be useful,
 rem but WITHOUT ANY WARRANTY; without even the implied warranty of
 rem MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-rem GNU General Public License for more details.
+rem GNU Affero General Public License for more details.
 rem
-rem You should have received a copy of the GNU General Public License
-rem along with this program.  If not, see <http://www.gnu.org/licenses/>.
+rem You should have received a copy of the GNU Affero General Public License
+rem along with this program. If not, see <http://www.gnu.org/licenses/>.
 
- 
-@echo off
-
-rem This script is the main controller for the server
+rem
+rem This script is the main controller for the server coordinator
 rem There are commands to install, uninstall, start, stop 
 rem and restart the service on windows and also run it as
 rem a console process. For the first four operations however,
@@ -35,21 +34,23 @@ rem From the command prompt that will come up, navigate to the directory
 rem containing the unpacked distribution and issue the command you wish,
 rem for example
 rem
-rem bin\Neo4j.bat install
+rem bin\Neo4jCoordinator.bat install
 rem
 rem to install Neo4j as a Windows Service.
+rem
 
 setlocal
 call "%~dp0"setenv.bat
 
-set _WRAPPER_CONF_DEFAULT="..\conf\neo4j-wrapper.conf"
+set _WRAPPER_CONF_DEFAULT="..\conf\coord-wrapper.conf"
 set _WRAPPER_CONF=%_WRAPPER_CONF_DEFAULT%
 
 set _REALPATH=%~dp0
 
+
 set _WRAPPER_EXE="%_REALPATH%wrapper.bat"
 
-for /F %%v in ('echo %1^|findstr "^help$ ^console$ ^start$ ^stop$ ^query$ ^restart$ ^install$ ^remove$"') do call :exec set COMMAND=%%v
+for /F %%v in ('echo %1^|findstr "^help$ ^console$ ^start$ ^stop$ ^restart$ ^query$ ^install$ ^remove$"') do call :exec set COMMAND=%%v
 
 if "%COMMAND%" == "" (
     set COMMAND=console

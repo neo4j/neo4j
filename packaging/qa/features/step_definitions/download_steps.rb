@@ -5,9 +5,11 @@ Given /^a platform supported by Neo4j$/ do
   fail "unsupported platform #{current_platform}" unless current_platform.supported?
 end
 
-Given /^Neo4j version based on system property "([^"]*)"$/ do |env_name|
-  neo4j.version = ENV[env_name]
-  fail "missing property #{env_name}" if neo4j.version == nil
+Given /^Neo4j version based on system property "([^"]*)" and product based on system property "([^"]*)"$/ do |version_name, product_name|
+  neo4j.version = ENV[version_name]
+  neo4j.product = ENV[product_name]
+  fail "missing property #{version_name}" if neo4j.version == nil
+  fail "missing property #{product_name}" if neo4j.product == nil
 end
 
 Given /^set Neo4j Home to "([^"]*)"$/ do |home|

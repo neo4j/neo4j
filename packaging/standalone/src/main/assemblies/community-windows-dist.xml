@@ -21,9 +21,9 @@
 
 -->
 <assembly>
-  <id>unix</id>
+  <id>windows</id>
   <formats>
-    <format>tar.gz</format>
+    <format>zip</format>
   </formats>
   <fileSets>
 
@@ -31,7 +31,7 @@
     <fileSet>
       <directory>src/main/distribution/text</directory>
       <outputDirectory>/</outputDirectory>
-      <lineEnding>unix</lineEnding>
+      <lineEnding>dos</lineEnding>
       <filtered>true</filtered>
     </fileSet>
     <!-- non-maven jars -->
@@ -43,11 +43,9 @@
         <include>lib/*.jar</include>
       </includes>
     </fileSet>
-    <!-- chmod 755 for unix bins -->
     <fileSet>
       <directory>../tools/yajsw</directory>
       <outputDirectory>/bin</outputDirectory>
-      <fileMode>0755</fileMode>
       <includes>
         <include>wrapper.jar</include>
         <include>wrapperApp.jar</include>
@@ -56,16 +54,25 @@
     <fileSet>
       <directory>../tools/yajsw/lib</directory>
       <outputDirectory>/bin/lib</outputDirectory>
-      <fileMode>0755</fileMode>
     </fileSet>
-    <!-- filter and chmod 755 shell scripts -->
+    <fileSet>
+      <directory>src/main/distribution/binary</directory>
+      <outputDirectory>/</outputDirectory>
+      <includes>
+        <include>bin/lib/wrapper-*</include>
+        <include>bin/wrapper*.exe</include>
+      </includes>
+    </fileSet>
     <fileSet>
       <directory>src/main/distribution/shell-scripts</directory>
       <outputDirectory>/</outputDirectory>
-      <lineEnding>unix</lineEnding>
-      <fileMode>0755</fileMode>
+      <lineEnding>dos</lineEnding>
+      <includes>
+        <include>**/*.bat</include>
+      </includes>
       <excludes>
-        <exclude>**/*.bat</exclude>
+        <exclude>**/Neo4jBackup*</exclude>
+        <exclude>**/Neo4jCoord*</exclude>
       </excludes>
       <filtered>true</filtered>
     </fileSet>
@@ -74,6 +81,7 @@
       <directory>../manual/target/upgrade</directory>
       <outputDirectory>/</outputDirectory>
       <fileMode>0644</fileMode>
+      <lineEnding>dos</lineEnding>
       <includes>
         <include>UPGRADE.txt</include>
       </includes>
@@ -92,7 +100,7 @@
         <include>org.apache.servicemix.bundles:org.apache.servicemix.bundles.lucene</include>
         <include>org.jboss.netty:netty</include>
         <include>org.apache.zookeeper:zookeeper</include>
-        <!-- include>log4j:log4j</include -->
+        <include>log4j:log4j</include>
       </includes>
       <excludes>
         <exclude>*:javadoc:*</exclude>
@@ -101,6 +109,14 @@
         <exclude>*:pom:*</exclude>
         <exclude>org.neo4j:neo4j:jar</exclude>
         <exclude>org.neo4j:neo4j-udc:jar:neo4j</exclude>
+        
+        <exclude>org.neo4j:neo4j-advanced</exclude>
+        <exclude>org.neo4j:neo4j-backup</exclude>
+        <exclude>org.neo4j:neo4j-com</exclude>
+        <exclude>org.neo4j:neo4j-enterprise</exclude>
+        <exclude>org.neo4j:neo4j-ha</exclude>
+        <exclude>org.neo4j:neo4j-management</exclude>
+        <exclude>org.apache.zookeeper:zookeeper</exclude>
       </excludes>
     </dependencySet>
     <dependencySet>
@@ -120,14 +136,6 @@
         <exclude>org.apache.zookeeper:zookeeper</exclude>
         <exclude>log4j:log4j</exclude>
       </excludes>
-    </dependencySet>
-    <dependencySet>
-      <outputDirectory>system/coordinator/lib</outputDirectory>
-      <unpack>false</unpack>
-      <useProjectArtifact>false</useProjectArtifact>
-      <includes>
-        <include>log4j:log4j</include>
-      </includes>
     </dependencySet>
     <!-- java examples -->
     <dependencySet>
@@ -194,6 +202,6 @@
       </includes>
     </dependencySet>
 
- </dependencySets>
+  </dependencySets>
 
 </assembly>

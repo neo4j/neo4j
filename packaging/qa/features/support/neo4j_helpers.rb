@@ -10,10 +10,11 @@ module Neo4JHelpers
   end
 
   def archive_name
-    "neo4j-" + @neo4j.version + "-" + current_platform.type + "."+current_platform.extension
+    "neo4j-" + @neo4j.product + "-" + @neo4j.version + "-" + current_platform.type + "."+current_platform.extension
   end
 
   class Neo4jEnvironment
-    attr_accessor :version, :download_location, :home
+    attr_accessor :version, :download_location, :home, :product
+    attr_accessor :version, :download_host, :home, :product
   end
 end
