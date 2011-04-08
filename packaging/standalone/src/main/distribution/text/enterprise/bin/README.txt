@@ -5,11 +5,14 @@ This directory has scripts for running the applications
 distributed with ${server.fullname}.
 
 For details about using these scripts, please see the related
-documentation in the `../doc` directory.
+documentation in the ../doc directory.
 
 References
 ----------
 
-* [Neo4j Server Usage](/doc/neo4j-server.txt)
-* [Neo4j Shell Usage](/doc/neo4j-shell.txt)
+* Neo4j Server Usage: ../doc/neo4j.txt
+* Neo4j Shell Usage: ../doc/neo4j-shell.txt
+* Neo4j Coordinator Usage ../doc/neo4j-coordinator.txt
+* Neo4j Coordinator Shell Usage ../doc/neo4j-coordinator-shell.txt
+* Neo4j Backup Usage: see the manual, included in ../doc/manual
 
