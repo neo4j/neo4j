@@ -10,8 +10,8 @@ For licensing information, see COPYRIGHT.txt and LICENSE.txt.
 
 The bundled graph database engine is copyright
 "Neo Technology," Network Engine for Objects in Lund AB
-and licensed under the GNU GENERAL PUBLIC LICENSE
-Version 3 (http://www.fsf.org/licensing/licenses/gpl-3.0.html).
+and licensed under the GNU AFFERO GENERAL PUBLIC LICENSE
+Version 3 (http://www.fsf.org/licensing/licenses/agpl-3.0.html).
 
 
 Third party libraries
