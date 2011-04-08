@@ -1,8 +1,19 @@
 Neo4j
-Copyright (c) 2002-2009 "Neo Technology," Network Engine for Objects in Lund AB
+
+Copyright (c) 2002-2011 "Neo Technology," Network Engine for Objects in Lund AB
    [http://neotechnology.com]
 
 This product includes software developed by "Neo Technology,"
 Network Engine for Objects in Lund AB (http://neotechnology.com).
 
 For licensing information, see COPYRIGHT.txt and LICENSE.txt.
+
+For more information, contact info@neotechnology.com.
+
+
+Third party libraries
+---------------------
+
+The bundled Apache Geronimo JTA library is copyright
+The Apache Software Foundation  (http://www.apache.org/)
+under the Apache License version 2.0.

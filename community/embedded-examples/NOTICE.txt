@@ -1,10 +1,13 @@
 Neo4j examples
 
-Copyright (c) 2010 "Neo Technology," Network Engine for Objects in Lund AB
+Copyright (c) 2010-2011 "Neo Technology," Network Engine for Objects in Lund AB
+   [http://neotechnology.com]
 
 This package includes software developed at
 "Neo Technology," Network Engine for Objects in Lund AB
 (http://neotechnology.com).
+
+For licensing information, see COPYRIGHT.txt and LICENSE.txt.
 
 The included example code is copyright "Neo Technology,"
 Network Engine for Objects in Lund AB and licensed
@@ -21,6 +24,7 @@ Third party libraries
 
 Full license texts are found in LICENSES.txt.
 
+
 The bundled Apache Geronimo JTA library is copyright
 The Apache Software Foundation  (http://www.apache.org/)
 under the Apache License version 2.0.
@@ -31,4 +35,3 @@ under the Apache License version 2.0.
 
 The bundled JLine library is copyright under the
 BSD License  (http://www.opensource.org/licenses/bsd-license.php).
-
