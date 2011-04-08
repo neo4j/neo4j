@@ -18,25 +18,44 @@ Given /^set Neo4j Home to "([^"]*)"$/ do |home|
   Dir.mkdir(neo4j.home) unless File.exists?(neo4j.home)
 end
 
-Given /^a web site at host "([^"]*)"$/ do |host|
-  Net::HTTP.get(URI.parse("http://#{host}"))
-  neo4j.download_host=host
+Given /^a web site at host "([^"]*)" or system property "([^"]*)"$/ do |host, env_location|
+  if ENV[env_location]
+    neo4j.download_location = URI.parse(ENV[env_location])
+  else
+    Net::HTTP.get(URI.parse("http://#{host}"))
+    neo4j.download_location = URI.parse("http://#{host}/#{archive_name}")
+  end
 end
 
 When /^I download Neo4j \(if I haven't already\)$/ do
-  server = Net::HTTP.new(neo4j.download_host, 80)
-  head = server.head("/"+archive_name)
-  server_time = Time.httpdate(head['last-modified'])
-  if (!File.exists?(archive_name) || server_time != File.mtime(archive_name))
-    puts archive_name+" missing or newer version on server - downloading"
-    server.get2("/"+archive_name) do |res|
+  if (neo4j.download_location.scheme == "http") then
+    server = Net::HTTP.new(neo4j.download_location.host, 80)
+    head = server.head(neo4j.download_location.path)
+    server_time = Time.httpdate(head['last-modified'])
+    if (!File.exists?(archive_name) || server_time != File.mtime(archive_name))
+      puts archive_name+" missing or newer version on server - downloading"
+      server.request_get(neo4j.download_location.path) do |res|
+        open(archive_name, "wb") do |file|
+          res.read_body do |segment|
+            file.write(segment)
+          end
+        end
+      end
+      File.utime(0, server_time, archive_name)
+    else
+      puts archive_name+" not modified - download skipped"
+    end
+  elsif (neo4j.download_location.scheme == "file") then
+    File.open(neo4j.download_location.path, "r") do |src|
       open(archive_name, "wb") do |file|
-        file.write(res.body)
+        while buf = src.read (2048)
+          file.write(buf)
+        end
       end
     end
-    File.utime(0, server_time, archive_name)
+
   else
-    puts archive_name+" not modified - download skipped"
+    fail 'unsupported schema-location '+ download_location
   end
 end
 

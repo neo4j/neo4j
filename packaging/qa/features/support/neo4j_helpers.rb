@@ -14,6 +14,6 @@ module Neo4JHelpers
   end
 
   class Neo4jEnvironment
-    attr_accessor :version, :download_host, :home
+    attr_accessor :version, :download_location, :home
   end
 end
