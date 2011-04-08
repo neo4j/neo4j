@@ -74,13 +74,13 @@ table.info-table tr td, table.info-table tr th {
 
 table.info-table tr th {
   text-align:left;
-  padding: 8px 5px 2px !important;
-  font-size:16px;
+  padding: 6px 5px 2px !important;
+  font-size:14px;
   font-weight:normal;
 }
 
 table.info-table tr td {
-  font-size:24px;
+  font-size:22px;
   text-align:right;
 }
 

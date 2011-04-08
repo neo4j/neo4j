@@ -46,7 +46,7 @@ define ['lib/backbone'], () ->
         @jmx.getBean def.domain, def.name, @parseBean
 
     parseBean : (bean) =>
-      if bean?
+      if bean? and bean.attributes?
         @dataAvailable = true
         values = {}
         for attribute in bean.attributes

@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2002-2011 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 (function(){var s=this;
 var q=s._;
 var b={};
@@ -948,14 +967,13 @@ b++){c.push(new neo4j.models.JMXBean(d.beans[b]))
 }d.beans=c;
 e(d)
 }});
-neo4j.services.JmxService.prototype.getBean=neo4j.Service.resourceFactory({resource:"bean",method:"GET",urlArgs:["domain","objectName"],before:function(c,a){if(a[0]==="neo4j"){var b=this;
-this.kernelInstance(function(d){a[0]="org.neo4j";
-a[1]=escape(d+",name="+a[1]);
-c.apply(this,a)
+neo4j.services.JmxService.prototype.getBean=neo4j.Service.resourceFactory({resource:"bean",method:"GET",urlArgs:["domain","objectName"],before:function(e,b){if(b[0]==="neo4j"){var c=this,a=b[1],d=b[2];
+this.kernelInstance(function(f){var g=["org.neo4j",escape(f+",name="+a),d];
+e.apply(this,g)
 })
-}else{a[0]=escape(a[0]);
-a[1]=escape(a[1]);
-c.apply(this,a)
+}else{b[0]=escape(b[0]);
+b[1]=escape(b[1]);
+e.apply(this,b)
 }},after:function(a,b){if(a.length>0){b(new neo4j.models.JMXBean(a[0]))
 }else{b(null)
 }}});

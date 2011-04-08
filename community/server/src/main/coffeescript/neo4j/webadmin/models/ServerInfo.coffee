@@ -41,7 +41,13 @@ define ['lib/backbone'], () ->
       beans = beans.sort (a,b) ->
         aName = if a.domain is NEO4J_DOMAIN then "000" + a.getName() else a.jmxName
         bName = if b.domain is NEO4J_DOMAIN then "000" + b.getName() else b.jmxName
-        return aName.toLowerCase() > bName.toLowerCase()
+        aGreaterThanB = aName.toLowerCase() > bName.toLowerCase()
+        if aGreaterThanB == true
+          return 1
+        else if aGreaterThanB == false
+          return -1
+        else
+          return aGreaterThanB
 
       domains = []
       currentDomainName = null
