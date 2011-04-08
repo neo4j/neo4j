@@ -97,6 +97,7 @@
       <excludes>
         <exclude>*:javadoc:*</exclude>
         <exclude>*:manpages:*</exclude>
+        <exclude>*:manpagesenterprise:*</exclude>
         <exclude>*:docs:*</exclude>
         <exclude>*:pom:*</exclude>
         <exclude>org.neo4j:neo4j:jar</exclude>
@@ -184,6 +185,7 @@
       </includes>
       <excludes>
         <exclude>org.neo4j.doc:neo4j-manual:*:manpages</exclude>
+        <exclude>org.neo4j.doc:neo4j-manual:*:manpagesenterprise</exclude>
       </excludes>
     </dependencySet>
     <!-- die manpages -->
@@ -193,7 +195,7 @@
       <fileMode>0444</fileMode>
       <directoryMode>0777</directoryMode>
       <includes>
-        <include>org.neo4j.doc:neo4j-manual:*:manpages</include>
+        <include>org.neo4j.doc:neo4j-manual:*:manpagesenterprise</include>
       </includes>
     </dependencySet>
 
