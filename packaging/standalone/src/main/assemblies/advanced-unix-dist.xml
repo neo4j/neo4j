@@ -73,11 +73,20 @@
     </fileSet>
     <!-- upgrade text file -->
     <fileSet>
-      <directory>../manual/target/upgrade</directory>
+      <directory>target/upgrade</directory>
       <outputDirectory>/</outputDirectory>
       <fileMode>0644</fileMode>
       <includes>
         <include>UPGRADE.txt</include>
+      </includes>
+    </fileSet>
+    <!-- die manpages -->
+    <fileSet>
+      <directory>target/manpages</directory>
+      <outputDirectory>/doc</outputDirectory>
+      <fileMode>0644</fileMode>
+      <includes>
+        <include>*.txt</include>
       </includes>
     </fileSet>
   </fileSets>
@@ -183,17 +192,6 @@
         <exclude>org.neo4j.doc:neo4j-manual:*:manpagesenterprise</exclude>
       </excludes>
     </dependencySet>
-    <!-- die manpages -->
-    <dependencySet>
-      <outputDirectory>doc/</outputDirectory>
-      <unpack>true</unpack>
-      <fileMode>0444</fileMode>
-      <directoryMode>0777</directoryMode>
-      <includes>
-        <include>org.neo4j.doc:neo4j-manual:*:manpages</include>
-      </includes>
-    </dependencySet>
-
  </dependencySets>
 
 </assembly>
