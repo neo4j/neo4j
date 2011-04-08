@@ -1,3 +1,4 @@
+@echo off
 rem Copyright (c) 2002-2011 "Neo Technology,"
 rem Network Engine for Objects in Lund AB [http://neotechnology.com]
 rem
@@ -15,9 +16,6 @@ rem GNU General Public License for more details.
 rem
 rem You should have received a copy of the GNU General Public License
 rem along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
- 
-@echo off
 
 rem This script is the main controller for the server
 rem There are commands to install, uninstall, start, stop 
