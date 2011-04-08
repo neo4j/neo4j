@@ -43,7 +43,6 @@ define ['lib/backbone'], () ->
     fetch : =>
       parseBean = @parseBean
       for key, def of @beans
-        console.log def.domain, def.name
         @jmx.getBean def.domain, def.name, @parseBean
 
     parseBean : (bean) =>
