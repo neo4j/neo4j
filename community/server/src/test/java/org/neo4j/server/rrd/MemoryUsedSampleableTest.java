@@ -30,22 +30,24 @@ import javax.management.MalformedObjectNameException;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.Ignore;
 
 public class MemoryUsedSampleableTest {
 
 	MemoryUsedSampleable sampleable;
-	
+
 	@Before
     public void setUp() throws Exception
     {
         sampleable = new MemoryUsedSampleable();
     }
-	
+
+	@Ignore
 	@Test
     public void memoryUsageIsBetweenZeroAndOneHundred() throws IOException, MalformedObjectNameException
     {
         assertThat( sampleable.getValue(), greaterThan( 0l ) );
         assertThat( sampleable.getValue(), lessThan( 100l ) );
     }
-	
+
 }
