@@ -106,6 +106,8 @@
         <include>org.apache.servicemix.bundles:org.apache.servicemix.bundles.lucene</include>
         <include>org.apache.servicemix.bundles:org.apache.servicemix.bundles.netty</include>
         <include>org.apache.zookeeper:zookeeper</include>
+        <include>org.slf4j:slf4j-api</include>
+        <include>org.slf4j:log4j-over-slf4j</include>
       </includes>
       <excludes>
         <exclude>*:javadoc:*</exclude>
@@ -136,6 +138,8 @@
         <exclude>org.apache.servicemix.bundles:org.apache.servicemix.bundles.netty</exclude>
         <exclude>org.apache.zookeeper:zookeeper</exclude>
         <exclude>log4j:log4j</exclude>
+        <exclude>org.slf4j:slf4j-api</exclude>
+        <exclude>org.slf4j:log4j-over-slf4j</exclude>
       </excludes>
     </dependencySet>
     <dependencySet>
