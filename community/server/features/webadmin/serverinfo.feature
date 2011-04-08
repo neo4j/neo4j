@@ -8,9 +8,9 @@ Feature: Webadmin provides a JMX browser for looking at detailed server informat
 
     When I look at webadmin in a web browser
     And I click on the Server info tab in webadmin
-    And I click on the Store file sizes link in webadmin
+    And I click on the Primitive count link in webadmin
 
-    Then An element should appear that can be found by the xpath //h3[contains(.,"NodeStoreSize")]
+    Then An element should appear that can be found by the xpath //h2[contains(.,"Primitive count")]
 
 
   
