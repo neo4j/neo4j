@@ -21,7 +21,7 @@
 
 -->
 <assembly>
-  <id>manpages</id>
+  <id>manpagesenterprise</id>
   <includeBaseDirectory>false</includeBaseDirectory>
   <formats>
     <format>jar</format>
@@ -35,6 +35,8 @@
       <includes>
         <include>neo4j.txt</include>
         <include>neo4j-shell.txt</include>
+        <include>neo4j-coordinator.txt</include>
+        <include>neo4j-coordinator-shell.txt</include>
       </includes>
     </fileSet>
   </fileSets>
