@@ -19,6 +19,7 @@
  */
 package org.neo4j.com;
 
+import static java.lang.System.currentTimeMillis;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -52,6 +53,7 @@ public class TestCommunication
         int value1 = 10;
         int value2 = 5;
         Response<Integer> response = client.multiply( 10, 5 );
+        waitUntilResponseHasBeenWritten( server, 1000 );
         assertEquals( (Integer) (value1*value2), response.response() );
         assertTrue( serverImplementation.gotCalled() );
         assertTrue( server.responseHasBeenWritten() );
@@ -59,6 +61,15 @@ public class TestCommunication
         server.shutdown();
     }
     
+    private void waitUntilResponseHasBeenWritten( MadeUpServer server, int maxTime ) throws Exception
+    {
+        long time = currentTimeMillis();
+        while ( !server.responseHasBeenWritten() && currentTimeMillis()-time < maxTime )
+        {
+            Thread.sleep( 50 );
+        }
+    }
+
     @Test
     public void makeSureClientStoreIdsMustMatch() throws Exception
     {
@@ -127,7 +138,7 @@ public class TestCommunication
         MadeUpClient client = new MadeUpClient( MadeUpServerProcess.PORT, storeIdToUse );
         
         assertEquals( (Integer)(9*5), client.multiply( 9, 5 ).response() );
-        client.streamSomeData( new ToAssertionWriter(), 1024*1024*50 /*50 Mb*/ );
+        client.streamSomeData( new ToAssertionWriter(), 1024*1024*10 );
         
         client.shutdown();
         server.shutdown();

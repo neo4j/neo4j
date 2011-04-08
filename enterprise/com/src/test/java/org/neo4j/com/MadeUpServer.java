@@ -27,7 +27,7 @@ import org.neo4j.com.MadeUpClient.DumbRequestType;
 
 public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
 {
-    private boolean responseWritten;
+    private volatile boolean responseWritten;
 
     public MadeUpServer( MadeUpCommunicationInterface realMaster, int port )
     {
