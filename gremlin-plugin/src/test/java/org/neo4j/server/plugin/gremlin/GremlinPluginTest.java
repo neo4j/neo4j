@@ -10,7 +10,9 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.server.plugin.gremlin.GremlinPlugin;
@@ -58,7 +60,10 @@ public class GremlinPluginTest {
 				secondNode.setProperty("y", -12.346);
 				secondNode.setProperty("altitude",100.34456);
 			}
-		
+			
+			Relationship curRelObj=firstNode.createRelationshipTo(secondNode, DynamicRelationshipType.withName("KNOWS"));
+			curRelObj.setProperty("NAME", "FirstKnowsSecond");
+			
 		
 			thirdNode=curGraphDBServiceObj.createNode();
 			if (thirdNode!=null)
@@ -68,6 +73,13 @@ public class GremlinPluginTest {
 				thirdNode.setProperty("y", -112.346);
 				thirdNode.setProperty("altitude",40.34456);
 			}
+			
+			curRelObj=secondNode.createRelationshipTo(thirdNode, DynamicRelationshipType.withName("KNOWS"));
+			curRelObj.setProperty("NAME", "SecondKnowsThird");
+			
+			curRelObj=thirdNode.createRelationshipTo(firstNode, DynamicRelationshipType.withName("KNOWS"));
+			curRelObj.setProperty("NAME", "ThirdKnowsFirst");
+			
 			tx.success();
 		}
 		catch (Exception graphEx)
@@ -113,7 +125,7 @@ public class GremlinPluginTest {
 		{
 			tx.finish();
 		}
-		System.out.println(json.format( curRepresentationObj ));
+		System.out.println("Results of testGetVertices"+json.format( curRepresentationObj ));
 	}
 	
 	
@@ -135,8 +147,6 @@ public class GremlinPluginTest {
 			curRepresentationObj=(Representation)curGremlinPluginObj.getEdges(script, curGraphDBServiceObj);
 			assertNotNull(curRepresentationObj);
 			tx.success();
-			
-			System.err.println("GremlinPluginTest::testGetEdges the contents of the representation object="+curRepresentationObj.toString());
 		}
 		catch (Throwable t) {
 			t.printStackTrace ();
@@ -145,7 +155,7 @@ public class GremlinPluginTest {
 		{
 			tx.finish();
 		}
-		
+		System.out.println("Results of testGetEdges"+json.format( curRepresentationObj ));
 	}
 
 }

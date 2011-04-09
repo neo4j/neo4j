@@ -17,11 +17,13 @@ import org.neo4j.server.plugins.ServerPlugin;
 import org.neo4j.server.plugins.Source;
 import org.neo4j.server.rest.repr.EdgeRepresentation;
 import org.neo4j.server.rest.repr.ListRepresentation;
+import org.neo4j.server.rest.repr.PipeEdgeRepresentation;
 import org.neo4j.server.rest.repr.PipeRepresentation;
 import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.RepresentationType;
 import org.neo4j.server.rest.repr.VertexRepresentation;
 
+import com.tinkerpop.blueprints.pgm.Edge;
 import com.tinkerpop.blueprints.pgm.Vertex;
 import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
 
@@ -95,7 +97,7 @@ public class GremlinPlugin extends ServerPlugin
     {
         ScriptEngineManager manager = new ScriptEngineManager();
         ScriptEngine engine = manager.getEngineByName( "gremlin" );
-        ArrayList<EdgeRepresentation> results = new ArrayList<EdgeRepresentation>();
+        ArrayList<Edge> results = new ArrayList<Edge>();
         Neo4jGraph graph = new Neo4jGraph( graphDb );
         engine.getBindings( ScriptContext.ENGINE_SCOPE ).put( "g",
                 graph );
@@ -110,7 +112,7 @@ public class GremlinPlugin extends ServerPlugin
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        return new ListRepresentation( RepresentationType.RELATIONSHIP, results );
+        return new PipeEdgeRepresentation(  results );
     }
     
     

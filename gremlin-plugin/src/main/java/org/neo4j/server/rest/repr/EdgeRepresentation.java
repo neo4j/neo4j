@@ -8,7 +8,7 @@ public class EdgeRepresentation extends ObjectRepresentation {
 
     public EdgeRepresentation( Edge edge )
     {
-        super( RepresentationType.NODE );
+        super( RepresentationType.RELATIONSHIP );
         this.edge = edge;
     }
 
