@@ -1,11 +1,12 @@
 This file contains the full license text of the included third party
 libraries. For an overview of the licenses see the NOTICE.txt file.
 
+
+
 -----------------------------
 Apache License 2.0:
-Geronimo Java Transaction API
-Log4j
-Netty
+ Geronimo Java Transaction API,
+ Netty
 -----------------------------
 
                                  Apache License
@@ -209,3 +210,4 @@ Netty
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
+
