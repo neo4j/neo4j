@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>19</version>
+    <version>21</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -51,6 +51,19 @@
     <license>
       <name>GNU General Public License, Version 3</name>
       <url>http://www.gnu.org/licenses/gpl-3.0-standalone.html</url>
+      <comments>The software ("Software") developed and owned by Network Engine for
+Objects in Lund AB (referred to in this notice as "Neo Technology") is
+licensed under the GNU GENERAL PUBLIC LICENSE Version 3 to all third
+parties and that license is included below.
+
+However, if you have executed an End User Software License and Services
+Agreement or an OEM Software License and Support Services Agreement, or
+another commercial license agreement with Neo Technology or one of its
+affiliates (each, a "Commercial Agreement"), the terms of the license in
+such Commercial Agreement will supersede the GNU GENERAL PUBLIC LICENSE
+Version 3 and you may use the Software solely pursuant to the terms of
+the relevant Commercial Agreement.
+      </comments>
     </license>
   </licenses>
 
@@ -576,11 +589,6 @@
         </executions>
       </plugin>
       <plugin>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <!-- fix issue with appassembler -->
-        <version>2.4</version>
-      </plugin>
-      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>2.6</version>
@@ -887,20 +895,20 @@
       <url>http://selenium.googlecode.com/svn/repository</url>
     </repository>
     <repository>
-      <id>neo4j-releases</id>
-      <name>Neo4j non-maven-central releases</name>
-      <url>http://m2.neo4j.org/releases/</url>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
+      <id>neo4j-release-repository</id>
+      <name>Neo4j Maven 2 release repository</name>
+      <url>http://m2.neo4j.org/releases</url>
       <releases>
         <enabled>true</enabled>
       </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
     </repository>
     <repository>
-      <id>neo4j-snapshots</id>
-      <name>Neo4j non-maven-central snapshots</name>
-      <url>http://m2.neo4j.org/snapshots/</url>
+      <id>neo4j-snapshot-repository</id>
+      <name>Neo4j Maven 2 snapshot repository</name>
+      <url>http://m2.neo4j.org/snapshots</url>
       <snapshots>
         <enabled>true</enabled>
       </snapshots>

@@ -9,13 +9,11 @@
   <parent>
     <groupId>org.neo4j.examples</groupId>
     <artifactId>examples-pom</artifactId>
-    <version>19</version>
+    <version>21</version>
   </parent>
   
   <scm>
-    <connection>scm:git:git://github.com/neo4j/examples.git</connection>
-    <developerConnection>scm:git:git@github.com:neo4j/examples.git</developerConnection>
-    <url>https://github.com/neo4j/examples</url>
+    <url>https://github.com/neo4j/community</url>
   </scm>
 
   <properties>
@@ -326,4 +324,30 @@
     </site>
   </distributionManagement>
 
+  <repositories>
+    <repository>
+      <id>neo4j-release-repository</id>
+      <name>Neo4j Maven 2 release repository</name>
+      <url>http://m2.neo4j.org/releases</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+    <repository>
+      <id>neo4j-snapshot-repository</id>
+      <name>Neo4j Maven 2 snapshot repository</name>
+      <url>http://m2.neo4j.org/snapshots</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+    </repository>
+  </repositories>
+
 </project>
+

@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-central</artifactId>
-    <version>19</version>
+    <version>21</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -43,6 +43,19 @@
     <license>
       <name>GNU General Public License, Version 3</name>
       <url>http://www.gnu.org/licenses/gpl-3.0-standalone.html</url>
+      <comments>The software ("Software") developed and owned by Network Engine for
+Objects in Lund AB (referred to in this notice as "Neo Technology") is
+licensed under the GNU GENERAL PUBLIC LICENSE Version 3 to all third
+parties and that license is included below.
+
+However, if you have executed an End User Software License and Services
+Agreement or an OEM Software License and Support Services Agreement, or
+another commercial license agreement with Neo Technology or one of its
+affiliates (each, a "Commercial Agreement"), the terms of the license in
+such Commercial Agreement will supersede the GNU GENERAL PUBLIC LICENSE
+Version 3 and you may use the Software solely pursuant to the terms of
+the relevant Commercial Agreement.
+      </comments>
     </license>
   </licenses>
 
