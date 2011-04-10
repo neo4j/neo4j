@@ -35,17 +35,18 @@ public class PipeRepresentation extends ObjectRepresentation {
         {
         	curVertex=(Neo4jVertex) curItr.next();
         	Iterator<String> curKeySet=curVertex.getPropertyKeys().iterator();
+        	Object curValue=null;
+        	LinkedHashMap<String,Object> individualVertexMap = new LinkedHashMap<String,Object>();
+        	String nameOfVertex="";
         	while (curKeySet.hasNext())
         	{
         		curKey=curKeySet.next();
+        		curValue=curVertex.getProperty(curKey);
         		if (curKey.equalsIgnoreCase("name"))
-        		{
-        			curVertexName=(String) curVertex.getProperty(curKey);
-        			curVertexMap.put(curVertexName, curVertex);
-        			break;
-        		}
+        			nameOfVertex=(String)curValue;
+        		individualVertexMap.put(curKey, curValue);
         	}
-        	
+        	curVertexMap.put(nameOfVertex, individualVertexMap);
         }
 
         return ValueRepresentation.string( "vertices: " + curVertexMap );
