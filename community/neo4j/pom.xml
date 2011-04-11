@@ -22,9 +22,8 @@
   </properties>
 
   <scm>
-    <url>https://github.com/neo4j/graphdb</url>
+    <url>https://github.com/neo4j/community/tree/master/neo4j</url>
   </scm>
-
 
   <dependencies>
     <dependency>

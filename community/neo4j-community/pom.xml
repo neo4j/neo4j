@@ -22,7 +22,7 @@
   </properties>
 
   <scm>
-    <url>https://github.com/neo4j/community</url>
+    <url>https://github.com/neo4j/community/tree/master/neo4j-community</url>
   </scm>
 
 

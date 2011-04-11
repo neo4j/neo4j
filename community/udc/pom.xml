@@ -21,6 +21,10 @@
   
   <packaging>jar</packaging>
 
+  <scm>
+    <url>https://github.com/neo4j/community/tree/master/udc</url>
+  </scm>
+
   <licenses>
     <license>
       <name>GNU General Public License, Version 3</name>

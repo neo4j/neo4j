@@ -23,7 +23,7 @@
   </properties>
 
   <scm>
-    <url>https://github.com/neo4j/server/tree/master/server-api</url>
+    <url>https://github.com/neo4j/community/tree/master/server-api</url>
   </scm>
 
   <licenses>

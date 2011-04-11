@@ -17,9 +17,7 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
-    <connection>scm:git:git://github.com/neo4j/shell.git</connection>
-    <developerConnection>scm:git:git@github.com:neo4j/shell.git</developerConnection>
-    <url>https://github.com/neo4j/shell</url>
+    <url>https://github.com/neo4j/community/tree/master/shell</url>
   </scm>
 
   <properties>

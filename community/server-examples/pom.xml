@@ -19,7 +19,7 @@
   </properties>
 
   <scm>
-    <url>https://github.com/neo4j/server/tree/master/examples</url>
+    <url>https://github.com/community/tree/master/server-examples</url>
   </scm>
 
   <dependencies>

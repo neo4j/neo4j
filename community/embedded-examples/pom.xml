@@ -13,7 +13,7 @@
   </parent>
   
   <scm>
-    <url>https://github.com/neo4j/community</url>
+    <url>https://github.com/neo4j/community/tree/master/embedded-examples</url>
   </scm>
 
   <properties>
