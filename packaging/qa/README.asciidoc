@@ -28,6 +28,7 @@ With maven (first time):
 
 With maven (subequent times):
 
+  `export DOWNLOAD_LOCATION=file:///path/to/neo4j-enterprise-1.3-SNAPSHOT-unix.tar.gz && export NEO4J_VERSION=1.3-SNAPSHOT && mvn clean integration-test`
   `mvn integration-test`
 
 To run only a particular feature:
