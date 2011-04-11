@@ -706,7 +706,7 @@ console() {
         trap '' 3
         # The string passed to eval must handles spaces in paths correctly.
         #COMMAND_LINE="$REALDIR/runConsole.sh"
-        COMMAND_LINE="$java_exe $yajsw_java_options -jar $yajsw_jar -c $WRAPPER_CONF"
+        COMMAND_LINE="'$java_exe' '$yajsw_java_options' -jar '$yajsw_jar' -c '$WRAPPER_CONF'"
         eval $COMMAND_LINE
     else
         eval echo  '$APP_LONG_NAME is already running.'
@@ -807,7 +807,7 @@ start() {
     if [ "X$pid" = "X" ]
     then
       #COMMAND_LINE="$WRAPPER_CMD -c $WRAPPER_CONF &"
-      COMMAND_LINE="$java_exe $yajsw_java_options -jar $yajsw_jar -c $WRAPPER_CONF &"
+      COMMAND_LINE="'$java_exe' '$yajsw_java_options' -jar '$yajsw_jar' -c '$WRAPPER_CONF' &"
       eval $COMMAND_LINE
     else
         eval echo  '$APP_LONG_NAME is already running.'
@@ -900,7 +900,7 @@ status() {
             getstatus
             eval echo  '$APP_LONG_NAME is running' 
             eval echo  'PID : $pid'
-            COMMAND_LINE="$java_exe $yajsw_java_options -jar $yajsw_jar -q $WRAPPER_CONF"
+            COMMAND_LINE="'$java_exe' '$yajsw_java_options' -jar '$yajsw_jar' -q '$WRAPPER_CONF'"
             eval $COMMAND_LINE
             #eval echo  '$APP_LONG_NAME is running: PID:$pid, Wrapper:$STATUS, Java:$JAVASTATUS'
         fi
@@ -913,7 +913,7 @@ installdaemon() {
         eval echo  'Must be root to perform this action.'
         exit 1
     else
-      COMMAND_LINE="$java_exe $yajsw_java_options -jar $yajsw_jar -i $WRAPPER_CONF"
+      COMMAND_LINE="'$java_exe' '$yajsw_java_options' -jar '$yajsw_jar' -i '$WRAPPER_CONF'"
       eval $COMMAND_LINE
     fi
 }
@@ -925,7 +925,7 @@ removedaemon() {
     else
         stopit "0"
 
-        COMMAND_LINE="$java_exe $yajsw_java_options -jar $yajsw_jar -r $WRAPPER_CONF"
+        COMMAND_LINE="'$java_exe' '$yajsw_java_options' -jar '$yajsw_jar' -r '$WRAPPER_CONF'"
         eval $COMMAND_LINE
     fi
 }

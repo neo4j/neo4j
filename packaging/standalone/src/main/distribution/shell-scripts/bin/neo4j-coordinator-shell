@@ -18,10 +18,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-BASEDIR=`dirname $0`/..
+BASEDIR=`dirname '$0'`/..
 BASEDIR=`(cd "$BASEDIR"; pwd)`
-
-
 
 # OS specific support.  $var _must_ be set to either true or false.
 cygwin=false;
@@ -78,15 +76,15 @@ then
 fi
 
 LIBRARY_JARS=""
-for jar in ${REPO}/*.jar
+for jar in "$REPO"/*.jar
 do
-  LIBRARY_JARS=${LIBRARY_JARS}:$jar
+  LIBRARY_JARS="$LIBRARY_JARS":$jar
 done
-for jar in ${BASEDIR}/system/coordinator/lib/*.jar
+for jar in "$BASEDIR/system/coordinator/lib/*.jar"
 do
-  LIBRARY_JARS=${LIBRARY_JARS}:$jar
+  LIBRARY_JARS="$LIBRARY_JARS":$jar
 done
-echo $LIBRARY_JARS
+# echo "$LIBRARY_JARS"
 
 CLASSPATH=$CLASSPATH_PREFIX${LIBRARY_JARS}
 
