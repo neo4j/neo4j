@@ -35,6 +35,29 @@ To run only a particular feature:
 
   `mvn integration-test -Dcucumber.features=features/download-and-unpack.feature`
 
+Pragmatic guide
+---------------
+
+  `mvn clean package`
+
+<copy to local web server> or “sudo python -m SimpleHTTPServer 80” in the target /directory
+OR set an environmentnt variable to point at a built tarball/zip
+
+  `export DOWNLOAD_LOCATION=file:///home/user/pointing/to/local/neo4j.tgz`
+  `export NEO4J_VERSION=1.3-SNAPSHOT`
+  `export NEO4J_PRODUCT={community|advanced|enterprise}`
+
+cd ../qa
+
+If you haven’t installed a bunch of JRuby gems that Cucumber needs, then this magic is necessary:
+mvn -Dcucumber.installGems=true clean integration-test
+
+Otherwise just”
+mvn clean integration-test
+
+after the above, there should be 6 artifacts in the the target/ directory of the standalone project, one for each of {unix,windows}x{community,advanced,enterprise}
+Pick your poison and check.
+
 
 References
 ----------
