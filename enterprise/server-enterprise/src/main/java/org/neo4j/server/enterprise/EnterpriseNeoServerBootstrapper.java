@@ -23,19 +23,43 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
+import org.apache.commons.configuration.Configuration;
 import org.neo4j.helpers.collection.CombiningIterable;
 import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.server.advanced.AdvancedNeoServerBootstrapper;
+import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.database.GraphDatabaseFactory;
 import org.neo4j.server.startup.healthcheck.Neo4jHAPropertiesMustExistRule;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
 
 public class EnterpriseNeoServerBootstrapper extends AdvancedNeoServerBootstrapper
 {
-    @Override
-    public AbstractGraphDatabase createDatabase( String databaseStoreDirectory, Map<String, String> databaseProperties )
+    private enum DatabaseMode implements GraphDatabaseFactory
     {
-        return new HighlyAvailableGraphDatabase( databaseStoreDirectory, databaseProperties );
+        SINGLE
+        {
+            @Override
+            public AbstractGraphDatabase createDatabase( String databaseStoreDirectory,
+                    Map<String, String> databaseProperties )
+            {
+                return new EmbeddedGraphDatabase( databaseStoreDirectory, databaseProperties );
+            }
+        },
+        HA
+        {
+            @Override
+            public AbstractGraphDatabase createDatabase( String databaseStoreDirectory,
+                    Map<String, String> databaseProperties )
+            {
+                return new HighlyAvailableGraphDatabase( databaseStoreDirectory, databaseProperties );
+            }
+        };
+
+        @Override
+        public abstract AbstractGraphDatabase createDatabase( String databaseStoreDirectory,
+                Map<String, String> databaseProperties );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -44,5 +68,11 @@ public class EnterpriseNeoServerBootstrapper extends AdvancedNeoServerBootstrapp
     {
         return new CombiningIterable<StartupHealthCheckRule>( Arrays.asList( super.getHealthCheckRules(),
                 Collections.<StartupHealthCheckRule>singleton( new Neo4jHAPropertiesMustExistRule() ) ) );
+    }
+
+    @Override
+    protected GraphDatabaseFactory getGraphDatabaseFactory( Configuration configuration )
+    {
+        return DatabaseMode.valueOf( configuration.getString( Configurator.DB_MODE_KEY, DatabaseMode.SINGLE.name() ).toUpperCase() );
     }
 }
