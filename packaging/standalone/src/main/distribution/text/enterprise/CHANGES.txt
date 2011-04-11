@@ -1,3 +1,29 @@
+1.3 (2011-04-11)
+----------------
+o Neo4j Community now licensed under GPL
+o All known Windows problems in Neo4j fixed.
+o rewritten Webadmin interface with graph visualization support
+o Short string support in kernel for better
+o 256 Billion database primitives
+o support for Gremlin 0.9 and related Tinkerpop projects
+o Better JMX and monitoring support (Neo4j Advanced)
+o New backup solution with support
+
+1.3.M05 (2011-03-24)
+--------------------
+o New look and feel of the webadmin
+o New visual data browser
+o Updated to Gremlin 0.8
+o Added docs for server plugin initialization.
+
+1.3.M04 (2011-03-10)
+--------------------
+o All manpages are included in the manual.
+o Some fixes to be more Windows friendly.
+o Added Dijkstra to the list of graph algorithms to be used when finding paths.
+o Support for advanced index queries through REST.
+
+
 1.3.M03 (2011-02-24)
 --------------------
 
