@@ -22,9 +22,8 @@
   </properties>
 
   <scm>
-    <url>https://github.com/neo4j/advanced</url>
+    <url>https://github.com/neo4j/advanced/tree/master/neo4j-advanced</url>
   </scm>
-
 
   <dependencies>
     <dependency>

@@ -43,7 +43,7 @@
   <packaging>bundle</packaging>
 
   <scm>
-    <url>https://github.com/neo4j/server/tree/master/server-advanced</url>
+    <url>https://github.com/neo4j/advanced/tree/master/server-advanced</url>
   </scm>
 
   <licenses>
