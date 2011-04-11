@@ -21,6 +21,7 @@ package org.neo4j.server;
 
 import java.io.File;
 
+import org.apache.commons.configuration.Configuration;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -61,7 +62,7 @@ public abstract class Bootstrapper
         {
             StartupHealthCheck startupHealthCheck = new StartupHealthCheck( rules() );
             Jetty6WebServer webServer = new Jetty6WebServer();
-            server = new NeoServerWithEmbeddedWebServer( getGraphDatabaseFactory(), new AddressResolver(),
+            server = new NeoServerWithEmbeddedWebServer( this, new AddressResolver(),
                     startupHealthCheck, getConfigFile(), webServer, getServerModules() );
             server.start();
             log.info( "Server started on [%s]", server.baseUri() );
@@ -96,7 +97,7 @@ public abstract class Bootstrapper
         }
     }
 
-    protected abstract GraphDatabaseFactory getGraphDatabaseFactory();
+    protected abstract GraphDatabaseFactory getGraphDatabaseFactory( Configuration configuration );
 
     private StartupHealthCheckRule[] rules()
     {

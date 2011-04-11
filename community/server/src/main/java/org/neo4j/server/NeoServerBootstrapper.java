@@ -22,6 +22,7 @@ package org.neo4j.server;
 import java.util.Arrays;
 import java.util.Map;
 
+import org.apache.commons.configuration.Configuration;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.server.database.GraphDatabaseFactory;
@@ -35,7 +36,7 @@ import org.neo4j.server.startup.healthcheck.ConfigFileMustBePresentRule;
 import org.neo4j.server.startup.healthcheck.Neo4jPropertiesMustExistRule;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
 
-public class NeoServerBootstrapper extends Bootstrapper implements GraphDatabaseFactory
+public class NeoServerBootstrapper extends Bootstrapper
 {
     @Override
     public Iterable<StartupHealthCheckRule> getHealthCheckRules()
@@ -52,14 +53,16 @@ public class NeoServerBootstrapper extends Bootstrapper implements GraphDatabase
     }
 
     @Override
-    public AbstractGraphDatabase createDatabase( String databaseStoreDirectory, Map<String, String> databaseProperties )
+    protected GraphDatabaseFactory getGraphDatabaseFactory( Configuration configuration )
     {
-        return new EmbeddedGraphDatabase( databaseStoreDirectory, databaseProperties );
-    }
-
-    @Override
-    protected GraphDatabaseFactory getGraphDatabaseFactory()
-    {
-        return this;
+        return new GraphDatabaseFactory()
+        {
+            @Override
+            public AbstractGraphDatabase createDatabase( String databaseStoreDirectory,
+                    Map<String, String> databaseProperties )
+            {
+                return new EmbeddedGraphDatabase( databaseStoreDirectory, databaseProperties );
+            }
+        };
     }
 }

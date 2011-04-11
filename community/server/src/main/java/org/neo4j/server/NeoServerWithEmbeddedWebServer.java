@@ -58,13 +58,16 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
 
     private final List<ServerModule> serverModules = new ArrayList<ServerModule>();
     private PluginInitializer pluginInitializer;
-    private final GraphDatabaseFactory dbFactory;
+    // Perhaps this shouldn't reference (an instance of) the Bootstrapper class,
+    // but we need to provide configuration parameters to load the appropriate
+    // GraphDatabaseFactory implementation
+    private final Bootstrapper bootstrapper;
 
-    public NeoServerWithEmbeddedWebServer( GraphDatabaseFactory dbFactory, AddressResolver addressResolver,
+    public NeoServerWithEmbeddedWebServer( Bootstrapper bootstrapper, AddressResolver addressResolver,
             StartupHealthCheck startupHealthCheck, File configFile, WebServer webServer,
             Iterable<Class<? extends ServerModule>> moduleClasses )
     {
-        this.dbFactory = dbFactory;
+        this.bootstrapper = bootstrapper;
         this.addressResolver = addressResolver;
         this.startupHealthCheck = startupHealthCheck;
         this.configFile = configFile;
@@ -76,10 +79,10 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
         }
     }
 
-    public NeoServerWithEmbeddedWebServer( GraphDatabaseFactory dbFactory, StartupHealthCheck startupHealthCheck,
+    public NeoServerWithEmbeddedWebServer( Bootstrapper bootstrapper, StartupHealthCheck startupHealthCheck,
             File configFile, WebServer ws, Iterable<Class<? extends ServerModule>> mc )
     {
-        this( dbFactory, new AddressResolver(), startupHealthCheck, configFile, ws, mc );
+        this( bootstrapper, new AddressResolver(), startupHealthCheck, configFile, ws, mc );
     }
 
     @Override
@@ -148,6 +151,7 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
 
     private void startDatabase() {
         String dbLocation = new File(configurator.configuration().getString(Configurator.DATABASE_LOCATION_PROPERTY_KEY)).getAbsolutePath();
+        GraphDatabaseFactory dbFactory = bootstrapper.getGraphDatabaseFactory( configurator.configuration() );
         Map<String, String> databaseTuningProperties = configurator.getDatabaseTuningProperties();
         if (databaseTuningProperties != null) {
             this.database = new Database( dbFactory, dbLocation, databaseTuningProperties );
