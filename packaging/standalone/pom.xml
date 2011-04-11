@@ -21,7 +21,7 @@
 
 
   <scm>
-    <url>https://github.com/neo4j/packaing/tree/master/standalone</url>
+    <url>https://github.com/neo4j/packaging/tree/master/standalone</url>
   </scm>
 
   <properties>
