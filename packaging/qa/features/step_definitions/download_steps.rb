@@ -21,11 +21,16 @@ Given /^set Neo4j Home to "([^"]*)"$/ do |home|
 end
 
 Given /^a web site at host "([^"]*)" or system property "([^"]*)"$/ do |host, env_location|
+  puts "host = #{host}"
+  puts "env_location = #{env_location}"
+  puts "env = #{ENV[env_location]}"
   if ENV[env_location]
     neo4j.download_location = URI.parse(ENV[env_location])
+    puts "downloading from " + neo4j.download_location.to_s
   else
     Net::HTTP.get(URI.parse("http://#{host}"))
     neo4j.download_location = URI.parse("http://#{host}/#{archive_name}")
+    puts "downloading from " + neo4j.download_location
   end
 end
 
@@ -70,6 +75,7 @@ When /^I unpack the archive into Neo4j Home$/ do
   pushd neo4j.home
 
   if (current_platform.unix?)
+    puts "unpacking with tar xzf #{full_archive_name} --strip-components 1"
     `tar xzf #{full_archive_name} --strip-components 1`
     fail "unpacking failed (#{$?})" unless $?.to_i == 0
   elsif  current_platform.windows?
