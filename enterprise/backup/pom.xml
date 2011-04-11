@@ -19,6 +19,10 @@
     <short-name>backup</short-name>
   </properties>
 
+  <scm>
+    <url>https://github.com/neo4j/enterprise/tree/master/backup</url>
+  </scm>
+
   <licenses>
     <license>
       <name>GNU Affero General Public License, Version 3</name>
