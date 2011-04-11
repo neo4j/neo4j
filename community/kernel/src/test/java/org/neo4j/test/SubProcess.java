@@ -21,6 +21,7 @@ package org.neo4j.test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
@@ -50,6 +51,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.helpers.Predicate;
+
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.event.EventQueue;
 import com.sun.jdi.event.LocatableEvent;
@@ -64,9 +67,10 @@ public abstract class SubProcess<T, P> implements Serializable
     }
 
     private final Class<T> t;
+    private final transient Predicate<String> classPathFilter;
 
     @SuppressWarnings( { "unchecked", "rawtypes" } )
-    public SubProcess()
+    public SubProcess( Predicate<String> classPathFilter )
     {
         if ( getClass().getSuperclass() != SubProcess.class )
         {
@@ -104,6 +108,12 @@ public abstract class SubProcess<T, P> implements Serializable
         {
             throw new ClassCastException( getClass().getName() + " must implement declared interface " + t );
         }
+        this.classPathFilter = classPathFilter;
+    }
+
+    public SubProcess()
+    {
+        this( null );
     }
 
     public T start( P parameter, SubProcessBreakPoint... breakpoints )
@@ -125,14 +135,14 @@ public abstract class SubProcess<T, P> implements Serializable
         {
             if ( debugger != null )
             {
-                process = start( "java", debugger.listen(), "-cp", System.getProperty( "java.class.path" ),
-                        SubProcess.class.getName(),
+                process = start( "java", debugger.listen(), "-cp",
+                        classPath( System.getProperty( "java.class.path" ) ), SubProcess.class.getName(),
                         serialize( callback ) );
             }
             else
             {
-                process = start( "java", "-cp", System.getProperty( "java.class.path" ), SubProcess.class.getName(),
-                        serialize( callback ) );
+                process = start( "java", "-cp", classPath( System.getProperty( "java.class.path" ) ),
+                        SubProcess.class.getName(), serialize( callback ) );
             }
             pid = getPid( process );
             pipe( "[" + toString() + ":" + pid + "] ", process.getErrorStream(), System.err );
@@ -146,6 +156,20 @@ public abstract class SubProcess<T, P> implements Serializable
         if ( dispatcher == null ) throw new IllegalStateException( "failed to start sub process" );
         return t.cast( Proxy.newProxyInstance( t.getClassLoader(), new Class[] { t },//
                 live( new Handler( t, dispatcher, process, "<" + toString() + ":" + pid + ">" ) ) ) );
+    }
+
+    private String classPath( String parentClasspath )
+    {
+        if ( classPathFilter == null ) return parentClasspath;
+        StringBuilder result = new StringBuilder();
+        for ( String part : parentClasspath.split( File.pathSeparator ) )
+        {
+            if ( classPathFilter.accept( part ) )
+            {
+                result.append( result.length() > 0 ? File.pathSeparator : "" ).append( part );
+            }
+        }
+        return result.toString();
     }
 
     private static Process start( String... args )
