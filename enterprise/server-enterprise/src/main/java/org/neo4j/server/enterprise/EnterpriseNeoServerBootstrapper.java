@@ -31,12 +31,11 @@ import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.server.advanced.AdvancedNeoServerBootstrapper;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.GraphDatabaseFactory;
-import org.neo4j.server.startup.healthcheck.Neo4jHAPropertiesMustExistRule;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
 
 public class EnterpriseNeoServerBootstrapper extends AdvancedNeoServerBootstrapper
 {
-    private enum DatabaseMode implements GraphDatabaseFactory
+    enum DatabaseMode implements GraphDatabaseFactory
     {
         SINGLE
         {

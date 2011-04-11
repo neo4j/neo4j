@@ -40,7 +40,6 @@ import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.management.HighAvailability;
 import org.neo4j.server.Bootstrapper;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.enterprise.EnterpriseNeoServerBootstrapper;
 import org.neo4j.test.SubProcess;
 import org.neo4j.test.TargetDirectory;
 
@@ -162,6 +161,7 @@ public final class ServerCluster
 
         // Server configuration
         config( serverConfig,//
+                Pair.of( Configurator.DB_MODE_KEY, "ha" ),//
                 Pair.of( Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir.getAbsolutePath() ),//
                 Pair.of( Configurator.WEBSERVER_PORT_PROPERTY_KEY, ports.other().toString() ),//
                 Pair.of( Configurator.DB_TUNING_PROPERTY_FILE_KEY, dbConfig.getAbsolutePath() ) );
