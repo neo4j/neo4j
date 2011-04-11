@@ -5,7 +5,7 @@ in this notice as “Neo Technology”)
 
 This product includes software ("Software") developed by Neo Technology.
 
-The copyright in the bundled Neo4j bundled graph database (including the
+The copyright in the bundled Neo4j graph database (including the
 Software) is owned by Neo Technology. The Software developed and owned
 by Neo Technology is licensed under the GNU GENERAL PUBLIC LICENSE
 Version 3 (http://www.fsf.org/licensing/licenses/gpl-3.0.html) ("GPL")
