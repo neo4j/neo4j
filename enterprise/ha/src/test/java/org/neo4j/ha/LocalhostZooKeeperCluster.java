@@ -38,6 +38,7 @@ import org.apache.zookeeper.server.quorum.QuorumMXBean;
 import org.apache.zookeeper.server.quorum.QuorumPeerMain;
 import org.jboss.netty.handler.timeout.TimeoutException;
 import org.junit.Ignore;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.ha.zookeeper.ClusterManager;
 import org.neo4j.test.SubProcess;
 import org.neo4j.test.TargetDirectory;
@@ -231,6 +232,16 @@ public final class LocalhostZooKeeperCluster
 
         ZooKeeperProcess( String name )
         {
+            super( new Predicate<String>()
+            {
+                @Override
+                public boolean accept( String item )
+                {
+                    // ZooKeeper needs log4j proper,
+                    // make sure slf4j doesn't get in the way
+                    return !item.contains( "slf4j" );
+                }
+            } );
             this.name = name;
         }
 
