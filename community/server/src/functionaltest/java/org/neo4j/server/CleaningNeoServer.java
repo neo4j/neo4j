@@ -38,7 +38,7 @@ public class CleaningNeoServer extends NeoServerWithEmbeddedWebServer {
 
     public CleaningNeoServer(final AddressResolver addressResolver, final StartupHealthCheck startupHealthCheck, final File configFile,
             final Jetty6WebServer jetty6WebServer, final String dir, Class<? extends ServerModule>... serverModules) {
-        super( ServerTestUtils.EMBEDDED_GRAPH_DATABASE_FACTORY, addressResolver, startupHealthCheck, configFile,
+        super( new NeoServerBootstrapper(), addressResolver, startupHealthCheck, configFile,
                 jetty6WebServer, serverModulesOrDefault( serverModules ) );
         this.configFile = configFile;
 
