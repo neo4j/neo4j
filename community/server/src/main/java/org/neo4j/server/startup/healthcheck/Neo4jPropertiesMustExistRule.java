@@ -30,7 +30,7 @@ public class Neo4jPropertiesMustExistRule implements StartupHealthCheckRule
     private static final String EMPTY_STRING = "";
     private boolean passed = false;
     private boolean ran = false;
-    String failureMessage = EMPTY_STRING;
+    protected String failureMessage = EMPTY_STRING;
 
     public boolean execute(Properties properties) {
         ran = true;
