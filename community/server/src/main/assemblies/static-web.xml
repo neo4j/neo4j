@@ -31,6 +31,14 @@
       <directory>${project.build.outputDirectory}/webadmin-html</directory>
       <outputDirectory>/webadmin-html</outputDirectory>
     </fileSet>
+    <fileSet>
+      <directory>${project.basedir}</directory>
+      <outputDirectory>/META-INF/</outputDirectory>
+      <includes>
+        <include>LICENSE.txt</include>
+        <include>NOTICE.txt</include>
+      </includes>
+    </fileSet>
   </fileSets>
   
   <dependencySets>
