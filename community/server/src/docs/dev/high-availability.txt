@@ -7,11 +7,11 @@ NOTE: The High Availability features are only available in the Neo4j Enterprise 
 To run the Neo4j server in high availability mode there are two things you need to do.
 You have to configure the server to start up the database in high availability mode and you have to configure the Neo4j database for operating in high availability mode.
 
-Instructing the server to start the database in high availability mode is as easy as setting the +org.neo4j.server.database.mode+ property in the server properties file (+neo-server.properties+) to +ha+.
-The default value for this parameter is +standalone+, which will start the database in standalone mode.
+Instructing the server to start the database in high availability mode is as easy as setting the +org.neo4j.server.database.mode+ property in the server properties file (+conf/neo-server.properties+) to +ha+.
+The default value for this parameter is +single+, which will start the database in standalone mode without participating in a cluster, still giving you Online Backup.
 
-Configuring the Neo4j database for operating in high availability mode requires sepcifying a few properties in +neo4j.properties+.
-First you need to specify +ha.machine_id+, this is a possitive integer id that uniquely identifies this server in the cluster.
+Configuring the Neo4j database for operating in high availability mode requires specifying a few properties in +conf/neo4j.properties+.
+First you need to specify +ha.machine_id+, this is a positive integer id that uniquely identifies this server in the cluster.
 
 Example: +ha.machine_id = 1+
 
@@ -38,5 +38,19 @@ Configuration of a Coordinator is specified in these files:
 * +conf/coord.cfg+ - coordinator operational settings
 * +data/coordinator/myid+ - unqiue identification of the coordinator
 
-Once a Neo4j Coordinator instance has been configured, you can use the +bin/neo4j-coordinator+ command to run the server.
+Once a Neo4j Coordinator instance has been configured, you can use the +bin/neo4j-coordinator+ command to start the Neo4j Coordinator server on all desired servers with the same configuration, just changing the +data/coordinator/myid+ to unique numbers. You can check that the coordinator is up by running +jconsole+ , attaching to the JVM and check for org.apache.zookeeper MBeans.
 
+.Neo4j Coordinator MBeans View
+image::jconsole_coordinator.png[scaledwidth="50%",alt="Neo4j Coordinator MBeans view"]
+
+Starting the Neo4j Server
+-------------------------
+
+Once the desired neo4j Coordinators are up and running, you are ready to start your Neo4j HA instance using +bin/neo4j start+. The details of the HA logs are available in the +messages.log+ of the graph database data directory, normally +data/graph.db/mesages.log+. You should see an entry like
+
+[source,shell]
+----
+Tue Apr 12 09:25:58 CEST 2011: MasterServer communication server started and bound to 6361
+Tue Apr 12 09:25:58 CEST 2011: Started as master
+Tue Apr 12 09:25:58 CEST 2011: master-rebound set to 1
+----
