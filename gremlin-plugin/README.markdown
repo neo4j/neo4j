@@ -1,27 +1,29 @@
 This is a beginning of providing Gremlin backend scripting to the Neo4j server. to deploy, please do the following
 
  `mvn clean package`
+
   `cp target/gremlin-translator-plugin-0.1-SNAPSHOT.jar $NEO4J_HOME/plugins`
+
   `cd $NEO4J_HOME`
+
   `bin/neo4j restart`
   
 access the plugin
 
-```
     curl localhost:7474/db/data/
     {
-      "relationship_index" : "http://localhost:7474/db/data/index/relationship",
-      "node" : "http://localhost:7474/db/data/node",
-      "relationship_types" : "http://localhost:7474/db/data/relationship/types",
-      "extensions_info" : "http://localhost:7474/db/data/ext",
-      "node_index" : "http://localhost:7474/db/data/index/node",
-      "reference_node" : "http://localhost:7474/db/data/node/0",
-      "extensions" : {
-        "GremlinPlugin" : {
-          "execute_script" : "http://localhost:7474/db/data/ext/GremlinPlugin/graphdb/execute_script"
-        }
-      }
-```
+    "relationship_index" : "http://localhost:7474/db/data/index/relationship",
+    "node" : "http://localhost:7474/db/data/node",`
+    "relationship_types" : "http://localhost:7474/db/data/relationship/types",`
+    "extensions_info" : "http://localhost:7474/db/data/ext",`
+    "node_index" : "http://localhost:7474/db/data/index/node",`
+    "reference_node" : "http://localhost:7474/db/data/node/0",`
+    "extensions" : {`
+      "GremlinPlugin" : {`
+        "execute_script" : "http://localhost:7474/db/data/ext/GremlinPlugin/graphdb/execute_script"`
+      }`
+    }`
+
 
 submit a Gremlin script:
 
