@@ -1,6 +1,6 @@
 This is a beginning of providing Gremlin backend scripting to the Neo4j server. to deploy, please do the following
 
-  mvn clean package
+ `mvn clean package`
   
   cp target/gremlin-translator-plugin-0.1-SNAPSHOT.jar $NEO4J_HOME/plugins
   cd $NEO4J_HOME
