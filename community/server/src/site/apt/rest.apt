@@ -732,7 +732,7 @@ curl -H Accept:application/json http://localhost:7474/db/data/index/relationship
 
 ** POST /node/123/traverse/\{returnType\}
 
-    Where <returnType> is one if <node, relationship, path>
+    Where <returnType> is one if <node, relationship, path, fullpath>
     and specifies which kind of objects to return in the response.
     
     The <<position>> object in the body of the prune evaluator is a
@@ -838,6 +838,47 @@ curl -H Accept:application/json -H Content-Type:application/json -X POST -d '{"o
     "end": "http://localhost:7474/db/data/node/635",
     "length": 3
   },
+]
+---
+
+    If <returnType>=<fullpath>:
+
+---
+[
+  { "nodes": [
+  { "self": "http://localhost:7474/db/data/node/64",
+    "data": { "name": "Thomas Anderson" },
+    ...
+  },
+  { "self": "http://localhost:7474/db/data/node/635",
+    "data": { "name": "Agent Smith" },
+    ...
+  }],
+    "relationships": [
+  { "self": "http://localhost:7474/db/data/relationship/48",
+    "data": { "date", 1270559208258 },
+    ...
+  },
+  { "self": "http://localhost:7474/db/data/relationship/75",
+    "data": { "date", 1270559209483 },
+    ...
+  }],
+    "start": 
+  { "self": "http://localhost:7474/db/data/node/64",
+    "data": { "name": "Thomas Anderson" },
+    ...
+  },
+    "end": 
+	{ "self": "http://localhost:7474/db/data/node/635",
+	    "data": { "name": "Agent Smith" },
+	    ...
+	  },
+    "length": 3
+  },
+  { "nodes": [
+....
+    "length": 3
+  }
 ]
 ---
 

@@ -102,8 +102,10 @@ the relevant Commercial Agreement.
     </dependency>
 
     <dependency>
+      <!-- needed by test/org.neo4j.server.logging.InMemoryAppender -->
       <groupId>log4j</groupId>
       <artifactId>log4j</artifactId>
+      <scope>test</scope>
     </dependency>
 	<!-- 
     <dependency>
