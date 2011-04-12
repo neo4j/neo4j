@@ -217,6 +217,8 @@ terms of the relevant Commercial Agreement.
         <includes>
           <include>NOTICE.txt</include>
           <include>LICENSE.txt</include>
+          <include>CHANGES.txt</include>
+          <include>LICENSES.txt</include>
         </includes>
       </resource>
     </resources>
