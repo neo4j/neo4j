@@ -38,7 +38,7 @@
     <webdriver.version>2.0b1</webdriver.version>
     <webdriver.impl.class>org.openqa.selenium.firefox.FirefoxDriver</webdriver.impl.class>
 
-    <neo4js.version>0.7-SNAPSHOT</neo4js.version>
+    <neo4js.version>0.7</neo4js.version>
   </properties>
 
   <packaging>bundle</packaging>
