@@ -8,6 +8,7 @@ This is a beginning of providing Gremlin backend scripting to the Neo4j server. 
   
 access the plugin
 
+```text
   curl localhost:7474/db/data/
   {
     "relationship_index" : "http://localhost:7474/db/data/index/relationship",
@@ -21,8 +22,11 @@ access the plugin
         "execute_script" : "http://localhost:7474/db/data/ext/GremlinPlugin/graphdb/execute_script"
       }
     }
-    
+```
+
 submit a Gremlin script:
+
+```text
 
   curl -d "script=g.V" http://localhost:7474/db/data/ext/GremlinPlugin/graphdb/execute_script
   [ {
@@ -42,3 +46,4 @@ submit a Gremlin script:
     "all_relationships" : "http://localhost:7474/db/data/node/0/relationships/all",
     "incoming_typed_relationships" : "http://localhost:7474/db/data/node/0/relationships/in/{-list|&|types}"
   } ]
+```
