@@ -351,6 +351,7 @@ terms of the relevant Commercial Agreement.
           <systemPropertyVariables>
             <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
           </systemPropertyVariables>
+          <useManifestOnlyJar>false</useManifestOnlyJar>
           <argLine>-Xmx1024m</argLine>
         </configuration>
       </plugin>
