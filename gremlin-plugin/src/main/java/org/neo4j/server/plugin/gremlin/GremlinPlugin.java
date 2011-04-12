@@ -50,7 +50,7 @@ public class GremlinPlugin extends ServerPlugin {
      * @return
      */
     @Name("execute_script")
-    @Description("execute a Gremlin script with 'g' set to the Neo4jGraph and 'results' containing a resulting vertex")
+    @Description("execute a Gremlin script with 'g' set to the Neo4jGraph and 'results' containing the results. Only results of one type at a time (Vertex, Edge, Graph) supported with now.")
     @PluginTarget(GraphDatabaseService.class)
     public Representation executeScript(@Source final GraphDatabaseService neo4j, @Description("The Gremlin script") @Parameter(name = "script", optional = true) final String script) {
         ScriptEngineManager manager = new ScriptEngineManager();
