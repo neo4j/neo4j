@@ -22,7 +22,7 @@ access the plugin
     }
 
 
-submit a Gremlin script `g.V` returning a list of nodes:
+submit (HTTP POST) a Gremlin script `g.V` returning a list of nodes:
 
     curl -d "script=g.V" http://localhost:7474/db/data/ext/GremlinPlugin/graphdb/execute_script
     [ {
