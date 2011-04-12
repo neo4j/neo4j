@@ -1,4 +1,4 @@
-This is a beginning of providing Gremlin backend scripting to the Neo4j server. to deploy, please do the following
+This is a beginning of providing [Gremlin](http://gremlin.tinkerpop.com) backend scripting to the Neo4j server. to deploy, please do the following
 
     mvn clean package
     cp target/gremlin-translator-plugin-0.1-SNAPSHOT.jar $NEO4J_HOME/plugins
@@ -22,7 +22,7 @@ access the plugin
     }
 
 
-submit a Gremlin script:
+submit a Gremlin script `g.V` returning a list of nodes:
 
     curl -d "script=g.V" http://localhost:7474/db/data/ext/GremlinPlugin/graphdb/execute_script
     [ {
