@@ -1,4 +1,4 @@
-This is a beginning of providing [Gremlin](http://gremlin.tinkerpop.com) backend scripting to the Neo4j server. to deploy, please do the following
+This is a beginning of providing [Gremlin](http://gremlin.tinkerpop.com) backend scripting to the [Neo4j Server](http://neo4j.org). to deploy, please do the following
 
     mvn clean package
     cp target/gremlin-translator-plugin-0.1-SNAPSHOT.jar $NEO4J_HOME/plugins
