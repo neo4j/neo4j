@@ -60,7 +60,8 @@ public final class OSGiActivator implements BundleActivator
      */
     public void stop( BundleContext bc ) throws Exception
     {
-        bc.removeBundleListener( osgiExtensionLoader );
+        // TODO: implement proper OSGi activation for Kernel
+        // bc.removeBundleListener( osgiExtensionLoader );
         osgiExtensionLoader = null;
     }
 }
