@@ -392,6 +392,16 @@ the relevant Commercial Agreement.
       <resource>
         <directory>${project.build.directory}/generated-sources</directory>
       </resource>
+      <resource>
+        <directory>${basedir}</directory>
+        <targetPath>META-INF</targetPath>
+        <includes>
+          <include>NOTICE.txt</include>
+          <include>LICENSE.txt</include>
+          <include>CHANGES.txt</include>
+          <include>LICENSES.txt</include>
+        </includes>
+      </resource>
     </resources>
 
 
