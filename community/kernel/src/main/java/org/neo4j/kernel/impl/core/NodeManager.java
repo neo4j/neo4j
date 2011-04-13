@@ -45,7 +45,7 @@ import org.neo4j.kernel.impl.cache.WeakLruCache;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipData;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
@@ -486,13 +486,12 @@ public class NodeManager
             {
                 return new RelationshipProxy( relId, this );
             }
-            RelationshipData data = persistenceManager.loadLightRelationship(
-                relId );
+            RelationshipRecord data = persistenceManager.loadLightRelationship( relId );
             if ( data == null )
             {
                 throw new NotFoundException( "Relationship[" + relId + "]" );
             }
-            int typeId = data.relationshipType();
+            int typeId = data.getType();
             RelationshipType type = getRelationshipTypeById( typeId );
             if ( type == null )
             {
@@ -500,8 +499,8 @@ public class NodeManager
                     + "] exist but relationship type[" + typeId
                     + "] not found." );
             }
-            final long startNodeId = data.firstNode();
-            final long endNodeId = data.secondNode();
+            final long startNodeId = data.getFirstNode();
+            final long endNodeId = data.getSecondNode();
             relationship = new RelationshipImpl( relId, startNodeId, endNodeId, type, false );
             relCache.put( relId, relationship );
             return new RelationshipProxy( relId, this );
@@ -532,14 +531,13 @@ public class NodeManager
             {
                 return relationship;
             }
-            RelationshipData data = persistenceManager.loadLightRelationship(
-                relId );
+            RelationshipRecord data = persistenceManager.loadLightRelationship( relId );
             if ( data == null )
             {
                 throw new NotFoundException( "Relationship[" + relId
                     + "] not found." );
             }
-            int typeId = data.relationshipType();
+            int typeId = data.getType();
             RelationshipType type = getRelationshipTypeById( typeId );
             if ( type == null )
             {
@@ -547,8 +545,8 @@ public class NodeManager
                     + "] exist but relationship type[" + typeId
                     + "] not found." );
             }
-            relationship = new RelationshipImpl( relId, data.firstNode(), data.secondNode(), type,
-                    false );
+            relationship = new RelationshipImpl( relId, data.getFirstNode(), data.getSecondNode(),
+                    type, false );
             relCache.put( relId, relationship );
             return relationship;
         }
@@ -582,21 +580,21 @@ public class NodeManager
     {
         long nodeId = node.getId();
         RelationshipChainPosition position = node.getRelChainPosition();
-        Iterable<RelationshipData> rels =
+        Iterable<RelationshipRecord> rels =
             persistenceManager.getMoreRelationships( nodeId, position );
         ArrayMap<String,RelIdArray> newRelationshipMap =
             new ArrayMap<String,RelIdArray>();
         Map<Long,RelationshipImpl> relsMap = new HashMap<Long,RelationshipImpl>( 150 );
-        for ( RelationshipData rel : rels )
+        for ( RelationshipRecord rel : rels )
         {
             long relId = rel.getId();
             RelationshipImpl relImpl = relCache.get( relId );
             RelationshipType type = null;
             if ( relImpl == null )
             {
-                type = getRelationshipTypeById( rel.relationshipType() );
+                type = getRelationshipTypeById( rel.getType() );
                 assert type != null;
-                relImpl = new RelationshipImpl( relId, rel.firstNode(), rel.secondNode(), type,
+                relImpl = new RelationshipImpl( relId, rel.getFirstNode(), rel.getSecondNode(), type,
                         false );
                 relsMap.put( relId, relImpl );
                 // relCache.put( relId, relImpl );

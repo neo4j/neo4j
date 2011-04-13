@@ -25,7 +25,7 @@ import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipData;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
@@ -82,7 +82,7 @@ public interface ResourceConnection
     public ArrayMap<Integer,PropertyData> relLoadProperties( long relId,
             boolean light);
 
-    public RelationshipData relLoadLight( long id );
+    public RelationshipRecord relLoadLight( long id );
 
     public RelationshipTypeData[] loadRelationshipTypes();
 
@@ -92,7 +92,7 @@ public interface ResourceConnection
 
     public RelationshipChainPosition getRelationshipChainPosition( long nodeId );
 
-    public Iterable<RelationshipData> getMoreRelationships( long nodeId,
+    public Iterable<RelationshipRecord> getMoreRelationships( long nodeId,
         RelationshipChainPosition position );
 
     public RelIdArray getCreatedNodes();

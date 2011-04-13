@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class SubProcessTest
 {
     private static final String MESSAGE = "message";

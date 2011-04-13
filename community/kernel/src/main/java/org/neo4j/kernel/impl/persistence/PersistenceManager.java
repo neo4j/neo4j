@@ -37,9 +37,11 @@ import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipData;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaConnection;
 import org.neo4j.kernel.impl.nioneo.xa.NioNeoDbPersistenceSource;
+import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 
@@ -94,7 +96,7 @@ public class PersistenceManager
         return getReadOnlyResource().getRelationshipChainPosition( nodeId );
     }
     
-    public Iterable<RelationshipData> getMoreRelationships( long nodeId,
+    public Iterable<RelationshipRecord> getMoreRelationships( long nodeId,
         RelationshipChainPosition position )
     {
         return getReadOnlyResource().getMoreRelationships( nodeId, position );
@@ -112,7 +114,7 @@ public class PersistenceManager
         return getReadOnlyResource().relLoadProperties( relId, light );
     }
 
-    public RelationshipData loadLightRelationship( long id )
+    public RelationshipRecord loadLightRelationship( long id )
     {
         return getReadOnlyResource().relLoadLight( id );
     }
@@ -186,6 +188,12 @@ public class PersistenceManager
     private ResourceConnection getReadOnlyResource()
     {
         Transaction tx = this.getCurrentTransaction();
+//        if ( tx == null )
+//        {
+//            return ((NioNeoDbPersistenceSource) 
+//                    persistenceSource ).createReadOnlyResourceConnection();
+//        }
+        
         ResourceConnection con = txConnectionMap.get( tx );
         if ( con == null )
         {
@@ -212,13 +220,15 @@ public class PersistenceManager
         {
             try
             {
-                con = persistenceSource.createResourceConnection();
-                if ( !tx.enlistResource( con.getXAResource() ) )
+                XaConnection xaConnection = (NeoStoreXaConnection)
+                        persistenceSource.getXaDataSource().getXaConnection();
+                XAResource xaResource = xaConnection.getXaResource();
+                if ( !tx.enlistResource( xaResource ) )
                 {
                     throw new ResourceAcquisitionFailedException(
-                        "Unable to enlist '" + con.getXAResource() + "' in "
-                            + "transaction" );
+                        "Unable to enlist '" + xaResource + "' in " + "transaction" );
                 }
+                con = persistenceSource.createResourceConnection( xaConnection );
                 
                 tx.registerSynchronization( new TxCommitHook( tx ) );
                 registerTransactionEventHookIfNeeded();

@@ -22,6 +22,9 @@ package org.neo4j.kernel.impl.nioneo.xa;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.transaction.xa.XAResource;
+
+import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -34,12 +37,14 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
+import org.neo4j.kernel.impl.persistence.ResourceConnection;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.RelIdArray;
 
-class ReadTransaction
+class ReadTransaction implements ResourceConnection
 {
     private final NeoStore neoStore;
     
@@ -73,15 +78,9 @@ class ReadTransaction
         return getNodeStore().loadLightNode( nodeId );
     }
 
-    public RelationshipData relationshipLoad( long id )
+    public RelationshipRecord relLoadLight( long id )
     {
-        RelationshipRecord relRecord = getRelationshipStore().getLightRel( id );
-        if ( relRecord != null )
-        {
-            return new RelationshipData( id, relRecord.getFirstNode(),
-                relRecord.getSecondNode(), relRecord.getType() );
-        }
-        return null;
+        return getRelationshipStore().getLightRel( id );
     }
 
     public RelationshipChainPosition getRelationshipChainPosition( long nodeId )
@@ -91,11 +90,11 @@ class ReadTransaction
         return new RelationshipChainPosition( nextRel );
     }
 
-    public Iterable<RelationshipData> getMoreRelationships( long nodeId,
+    public Iterable<RelationshipRecord> getMoreRelationships( long nodeId,
         RelationshipChainPosition position )
     {
         long nextRel = position.getNextRecord();
-        List<RelationshipData> rels = new ArrayList<RelationshipData>();
+        List<RelationshipRecord> rels = new ArrayList<RelationshipRecord>();
         for ( int i = 0; i < getRelGrabSize() && 
             nextRel != Record.NO_NEXT_RELATIONSHIP.intValue(); i++ )
         {
@@ -111,8 +110,7 @@ class ReadTransaction
             long secondNode = relRecord.getSecondNode();
             if ( relRecord.inUse() )
             {
-                rels.add( new RelationshipData( relRecord.getId(), firstNode, 
-                    secondNode, relRecord.getType() ) );
+                rels.add( relRecord );
             }
             else
             {
@@ -138,7 +136,7 @@ class ReadTransaction
         return rels;
     }
     
-    public ArrayMap<Integer,PropertyData> relGetProperties( long relId )
+    public ArrayMap<Integer,PropertyData> relLoadProperties( long relId, boolean light )
     {
         RelationshipRecord relRecord = getRelationshipStore().getRecord( relId );
         if ( !relRecord.inUse() )
@@ -161,7 +159,7 @@ class ReadTransaction
         return propertyMap;
     }
 
-    ArrayMap<Integer,PropertyData> nodeGetProperties( long nodeId )
+    public ArrayMap<Integer,PropertyData> nodeLoadProperties( long nodeId, boolean light )
     {
         NodeRecord nodeRecord = getNodeStore().getRecord( nodeId );
             
@@ -185,7 +183,7 @@ class ReadTransaction
         return propertyRecord.getType().getValue( propertyRecord, null );
     }
 
-    public Object propertyGetValue( long id )
+    public Object loadPropertyValue( long id )
     {
         PropertyRecord propertyRecord = getPropertyStore().getRecord( id );
         if ( propertyRecord.isLight() )
@@ -195,7 +193,7 @@ class ReadTransaction
         return propertyRecord.getType().getValue( propertyRecord, getPropertyStore() );
     }
 
-    String getPropertyIndex( int id )
+    public String loadIndex( int id )
     {
         PropertyIndexStore indexStore = getPropertyStore().getIndexStore();
         PropertyIndexRecord index = indexStore.getRecord( id );
@@ -206,7 +204,7 @@ class ReadTransaction
         return indexStore.getStringFor( index );
     }
 
-    PropertyIndexData[] getPropertyIndexes( int count )
+    public PropertyIndexData[] loadPropertyIndexes( int count )
     {
         PropertyIndexStore indexStore = getPropertyStore().getIndexStore();
         return indexStore.getPropertyIndexes( count );
@@ -217,5 +215,129 @@ class ReadTransaction
         PropertyRecord propRecord = 
             getPropertyStore().getLightRecord( propertyId );
         return propRecord.getKeyIndexId();
+    }
+
+    @Override
+    public XAResource getXAResource()
+    {
+        throw readOnlyException();
+    }
+
+    private IllegalStateException readOnlyException()
+    {
+        return new IllegalStateException( 
+                "This is a read only transaction, " + 
+                "this method should never be invoked" );
+    }
+
+    @Override
+    public void destroy()
+    {
+        throw readOnlyException();
+    }
+
+    @Override
+    public ArrayMap<Integer, PropertyData> nodeDelete( long nodeId )
+    {
+        throw readOnlyException();
+    }
+
+    @Override
+    public long nodeAddProperty( long nodeId, PropertyIndex index, Object value )
+    {
+        throw readOnlyException();
+    }
+
+    @Override
+    public void nodeChangeProperty( long nodeId, long propertyId, Object value )
+    {
+        throw readOnlyException();
+    }
+
+    @Override
+    public void nodeRemoveProperty( long nodeId, long propertyId )
+    {
+        throw readOnlyException();
+    }
+
+    @Override
+    public void nodeCreate( long id )
+    {
+        throw readOnlyException();
+    }
+
+    @Override
+    public void relationshipCreate( long id, int typeId, long startNodeId, long endNodeId )
+    {
+        throw readOnlyException();
+    }
+
+    @Override
+    public ArrayMap<Integer, PropertyData> relDelete( long relId )
+    {
+        throw readOnlyException();
+    }
+
+    @Override
+    public long relAddProperty( long relId, PropertyIndex index, Object value )
+    {
+        throw readOnlyException();
+    }
+
+    @Override
+    public void relChangeProperty( long relId, long propertyId, Object value )
+    {
+        throw readOnlyException();
+    }
+
+    @Override
+    public void relRemoveProperty( long relId, long propertyId )
+    {
+        throw readOnlyException();
+    }
+
+    @Override
+    public RelationshipTypeData[] loadRelationshipTypes()
+    {
+        RelationshipTypeData relTypeData[] = 
+            neoStore.getRelationshipTypeStore().getRelationshipTypes();
+        RelationshipTypeData rawRelTypeData[] = 
+            new RelationshipTypeData[relTypeData.length];
+        for ( int i = 0; i < relTypeData.length; i++ )
+        {
+            rawRelTypeData[i] = new RelationshipTypeData( 
+                relTypeData[i].getId(), relTypeData[i].getName() );
+        }
+        return rawRelTypeData;
+    }
+
+    @Override
+    public void createPropertyIndex( String key, int id )
+    {
+        throw readOnlyException();
+    }
+
+    @Override
+    public void createRelationshipType( int id, String name )
+    {
+        throw readOnlyException();
+    }
+
+    @Override
+    public RelIdArray getCreatedNodes()
+    {
+        return RelIdArray.EMPTY;
+    }
+
+    @Override
+    public boolean isNodeCreated( long nodeId )
+    {
+        return false;
+    }
+
+    @Override
+    public boolean isRelationshipCreated( long relId )
+    {
+        return false;
     }
 }
