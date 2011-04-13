@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.nioneo.xa;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -91,34 +92,52 @@ class ReadTransaction
         return new RelationshipChainPosition( nextRel );
     }
 
-    public Iterable<RelationshipData> getMoreRelationships( long nodeId,
-        RelationshipChainPosition position )
+    public Pair<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>> getMoreRelationships( long nodeId,
+            RelationshipChainPosition position )
+    {
+        return getMoreRelationships( nodeId, position, getRelGrabSize(), getRelationshipStore() );
+    }
+    
+    static Pair<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>> getMoreRelationships( long nodeId,
+        RelationshipChainPosition position, int grabSize, RelationshipStore relStore )
     {
         long nextRel = position.getNextRecord();
-        List<RelationshipData> rels = new ArrayList<RelationshipData>();
-        for ( int i = 0; i < getRelGrabSize() && 
+        List<RelationshipRecord> out = new ArrayList<RelationshipRecord>();
+        List<RelationshipRecord> in = new ArrayList<RelationshipRecord>();
+        Pair<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>> result =
+                Pair.<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>>of( out, in );
+        for ( int i = 0; i < grabSize && 
             nextRel != Record.NO_NEXT_RELATIONSHIP.intValue(); i++ )
         {
-            RelationshipRecord relRecord = 
-                getRelationshipStore().getChainRecord( nextRel );
+            RelationshipRecord relRecord = relStore.getChainRecord( nextRel );
             if ( relRecord == null )
             {
                 // return what we got so far
                 position.setNextRecord( Record.NO_NEXT_RELATIONSHIP.intValue() );
-                return rels;
+                return result;
             }
             long firstNode = relRecord.getFirstNode();
             long secondNode = relRecord.getSecondNode();
+            boolean isOutgoing = firstNode == nodeId;
             if ( relRecord.inUse() )
             {
-                rels.add( new RelationshipData( relRecord.getId(), firstNode, 
-                    secondNode, relRecord.getType() ) );
+//                RelationshipData relationshipData = new RelationshipData( relRecord.getId(), firstNode, 
+//                    secondNode, relRecord.getType() );
+                if ( isOutgoing )
+                {
+                    out.add( relRecord );
+                }
+                else
+                {
+                    in.add( relRecord );
+                }
             }
             else
             {
                 i--;
             }
-            if ( firstNode == nodeId )
+            
+            if ( isOutgoing )
             {
                 nextRel = relRecord.getFirstNextRel();
             }
@@ -135,7 +154,7 @@ class ReadTransaction
             }
         }
         position.setNextRecord( nextRel );
-        return rels;
+        return result;
     }
     
     public ArrayMap<Integer,PropertyData> relGetProperties( long relId )

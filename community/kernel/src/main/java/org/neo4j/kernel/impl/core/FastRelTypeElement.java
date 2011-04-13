@@ -25,7 +25,6 @@ import org.neo4j.kernel.impl.util.RelIdArray.RelIdIterator;
 class FastRelTypeElement extends RelTypeElementIterator
 {
     private final RelIdArray src;
-
     private final RelIdIterator iterator;
 
     FastRelTypeElement( String type, NodeImpl node, RelIdArray src )

@@ -40,11 +40,13 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.DirectionedRelIdArray;
+import org.neo4j.kernel.impl.util.DirectionedRelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdArray;
 
 class NodeImpl extends Primitive
 {
-    private volatile ArrayMap<String,RelIdArray> relationshipMap = null;
+    private volatile ArrayMap<String,DirectionedRelIdArray> relationshipMap = null;
     // private RelationshipGrabber relationshipGrabber = null;
     private RelationshipChainPosition relChainPosition = null;
 
@@ -59,7 +61,7 @@ class NodeImpl extends Primitive
         super( id, newNode );
         if ( newNode )
         {
-            relationshipMap = new ArrayMap<String,RelIdArray>();
+            relationshipMap = new ArrayMap<String,DirectionedRelIdArray>();
             relChainPosition = new RelationshipChainPosition(
                 Record.NO_NEXT_RELATIONSHIP.intValue() );
         }
@@ -101,22 +103,23 @@ class NodeImpl extends Primitive
         return nodeManager.loadProperties( this, light );
     }
 
-    List<RelTypeElementIterator> getAllRelationships( NodeManager nodeManager )
+    List<RelTypeElementIterator> getAllRelationships( NodeManager nodeManager, Direction direction )
     {
+        DirectionWrapper dir = DirectionedRelIdArray.wrap( direction );
         ensureRelationshipMapNotNull( nodeManager );
         List<RelTypeElementIterator> relTypeList =
             new LinkedList<RelTypeElementIterator>();
         boolean hasModifications = nodeManager.getLockReleaser().hasRelationshipModifications( this );
-        ArrayMap<String,RelIdArray> addMap = null;
+        ArrayMap<String,DirectionedRelIdArray> addMap = null;
         if ( hasModifications )
         {
             addMap = nodeManager.getCowRelationshipAddMap( this );
         }
         for ( String type : relationshipMap.keySet() )
         {
-            RelIdArray src = relationshipMap.get( type );
+            DirectionedRelIdArray src = relationshipMap.get( type );
             RelIdArray remove = null;
-            RelIdArray add = null;
+            DirectionedRelIdArray add = null;
             if ( hasModifications )
             {
                 remove = nodeManager.getCowRelationshipRemoveMap( this, type );
@@ -125,10 +128,8 @@ class NodeImpl extends Primitive
                     add = addMap.get( type );
                 }
             }
-//            if ( src != null || add != null )
-//            {
-                relTypeList.add( RelTypeElement.create( type, this, src, add, remove ) );
-//            }
+            relTypeList.add( RelTypeElement.create( type, this, src != null ? dir.get( src ) : null,
+                    add != null ? dir.get( add ) : null, remove ) );
         }
         if ( addMap != null )
         {
@@ -137,8 +138,9 @@ class NodeImpl extends Primitive
                 if ( relationshipMap.get( type ) == null )
                 {
                     RelIdArray remove = nodeManager.getCowRelationshipRemoveMap( this, type );
-                    RelIdArray add = addMap.get( type );
-                    relTypeList.add( RelTypeElement.create( type, this, null, add, remove ) );
+                    DirectionedRelIdArray add = addMap.get( type );
+                    relTypeList.add( RelTypeElement.create( type, this, null,
+                            add != null ? dir.get( add ) : null, remove ) );
                 }
             }
         }
@@ -146,53 +148,53 @@ class NodeImpl extends Primitive
     }
 
     List<RelTypeElementIterator> getAllRelationshipsOfType( NodeManager nodeManager,
-        RelationshipType... types)
+        Direction direction, RelationshipType... types)
     {
+        DirectionWrapper dir = DirectionedRelIdArray.wrap( direction );
         ensureRelationshipMapNotNull( nodeManager );
         List<RelTypeElementIterator> relTypeList =
             new LinkedList<RelTypeElementIterator>();
         boolean hasModifications = nodeManager.getLockReleaser().hasRelationshipModifications( this );
         for ( RelationshipType type : types )
         {
-            RelIdArray src = relationshipMap.get( type.name() );
+            DirectionedRelIdArray src = relationshipMap.get( type.name() );
             RelIdArray remove = null;
-            RelIdArray add = null;
+            DirectionedRelIdArray add = null;
             if ( hasModifications )
             {
                 remove = nodeManager.getCowRelationshipRemoveMap( this, type.name() );
                 add = nodeManager.getCowRelationshipAddMap( this, type.name() );
             }
-//            if ( src != null || add != null )
-//            {
-                relTypeList.add( RelTypeElement.create( type.name(), this, src, add, remove ) );
-//            }
+            relTypeList.add( RelTypeElement.create( type.name(), this,
+                    src != null ? dir.get( src ) : null,
+                    add != null ? dir.get( add ) : null, remove ) );
         }
         return relTypeList;
     }
 
     public Iterable<Relationship> getRelationships( NodeManager nodeManager )
     {
-        return new IntArrayIterator( getAllRelationships( nodeManager ), this,
+        return new IntArrayIterator( getAllRelationships( nodeManager, Direction.BOTH ), this,
             Direction.BOTH, nodeManager, new RelationshipType[0] );
     }
 
     public Iterable<Relationship> getRelationships( NodeManager nodeManager, Direction dir )
     {
-        return new IntArrayIterator( getAllRelationships( nodeManager ), this, dir,
+        return new IntArrayIterator( getAllRelationships( nodeManager, dir ), this, dir,
             nodeManager, new RelationshipType[0] );
     }
 
     public Iterable<Relationship> getRelationships( NodeManager nodeManager, RelationshipType type )
     {
         RelationshipType types[] = new RelationshipType[] { type };
-        return new IntArrayIterator( getAllRelationshipsOfType( nodeManager, types ),
+        return new IntArrayIterator( getAllRelationshipsOfType( nodeManager, Direction.BOTH, types ),
             this, Direction.BOTH, nodeManager, types );
     }
 
     public Iterable<Relationship> getRelationships( NodeManager nodeManager,
             RelationshipType... types )
     {
-        return new IntArrayIterator( getAllRelationshipsOfType( nodeManager, types ),
+        return new IntArrayIterator( getAllRelationshipsOfType( nodeManager, Direction.BOTH, types ),
             this, Direction.BOTH, nodeManager, types );
     }
 
@@ -201,7 +203,7 @@ class NodeImpl extends Primitive
     {
         RelationshipType types[] = new RelationshipType[] { type };
         Iterator<Relationship> rels = new IntArrayIterator( getAllRelationshipsOfType( nodeManager,
-                types ),
+                dir, types ),
             this, dir, nodeManager, types );
         if ( !rels.hasNext() )
         {
@@ -220,7 +222,7 @@ class NodeImpl extends Primitive
         Direction dir )
     {
         RelationshipType types[] = new RelationshipType[] { type };
-        return new IntArrayIterator( getAllRelationshipsOfType( nodeManager, types ),
+        return new IntArrayIterator( getAllRelationshipsOfType( nodeManager, dir, types ),
             this, dir, nodeManager, types );
     }
 
@@ -267,11 +269,12 @@ class NodeImpl extends Primitive
     // caller is responsible for acquiring lock
     // this method is only called when a relationship is created or
     // a relationship delete is undone or when the full node is loaded
-    void addRelationship( NodeManager nodeManager, RelationshipType type, long relId )
+    void addRelationship( NodeManager nodeManager, RelationshipType type, long relId,
+            DirectionWrapper dir )
     {
-        RelIdArray relationshipSet = nodeManager.getCowRelationshipAddMap(
+        DirectionedRelIdArray relationshipSet = nodeManager.getCowRelationshipAddMap(
             this, type.name(), true );
-        relationshipSet.add( relId );
+        dir.add( relationshipSet, relId );
     }
 
     // caller is responsible for acquiring lock
@@ -301,7 +304,7 @@ class NodeImpl extends Primitive
             {
                 this.relChainPosition =
                     nodeManager.getRelationshipChainPosition( this );
-                ArrayMap<String,RelIdArray> tmpRelMap = new ArrayMap<String,RelIdArray>();
+                ArrayMap<String,DirectionedRelIdArray> tmpRelMap = new ArrayMap<String,DirectionedRelIdArray>();
                 map = getMoreRelationships( nodeManager, tmpRelMap );
                 this.relationshipMap = tmpRelMap;
             }
@@ -313,23 +316,23 @@ class NodeImpl extends Primitive
     }
 
     private Map<Long,RelationshipImpl> getMoreRelationships( NodeManager nodeManager, 
-            ArrayMap<String,RelIdArray> tmpRelMap )
+            ArrayMap<String,DirectionedRelIdArray> tmpRelMap )
     {
         if ( !relChainPosition.hasMore() )
         {
             return null;
         }
-        Pair<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>> pair = 
+        Pair<ArrayMap<String,DirectionedRelIdArray>,Map<Long,RelationshipImpl>> pair = 
             nodeManager.getMoreRelationships( this );
-        ArrayMap<String,RelIdArray> addMap = pair.first();
+        ArrayMap<String,DirectionedRelIdArray> addMap = pair.first();
         if ( addMap.size() == 0 )
         {
             return null;
         }
         for ( String type : addMap.keySet() )
         {
-            RelIdArray addRels = addMap.get( type );
-            RelIdArray srcRels = tmpRelMap.get( type );
+            DirectionedRelIdArray addRels = addMap.get( type );
+            DirectionedRelIdArray srcRels = tmpRelMap.get( type );
             if ( srcRels == null )
             {
                 tmpRelMap.put( type, addRels );
@@ -346,7 +349,7 @@ class NodeImpl extends Primitive
     boolean getMoreRelationships( NodeManager nodeManager )
     {
         // ArrayMap<String, IntArray> tmpRelMap = relationshipMap;
-        Pair<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>> pair;
+        Pair<ArrayMap<String,DirectionedRelIdArray>,Map<Long,RelationshipImpl>> pair;
         synchronized ( this )
         {
             if ( !relChainPosition.hasMore() )
@@ -355,16 +358,16 @@ class NodeImpl extends Primitive
             }
             
             pair = nodeManager.getMoreRelationships( this );
-            ArrayMap<String,RelIdArray> addMap = pair.first();
+            ArrayMap<String,DirectionedRelIdArray> addMap = pair.first();
             if ( addMap.size() == 0 )
             {
                 return false;
             }
             for ( String type : addMap.keySet() )
             {
-                RelIdArray addRels = addMap.get( type );
+                DirectionedRelIdArray addRels = addMap.get( type );
                 // IntArray srcRels = tmpRelMap.get( type );
-                RelIdArray srcRels = relationshipMap.get( type );
+                DirectionedRelIdArray srcRels = relationshipMap.get( type );
                 if ( srcRels == null )
                 {
                     relationshipMap.put( type, addRels );
@@ -465,7 +468,7 @@ class NodeImpl extends Primitive
     }
 
     protected void commitRelationshipMaps(
-        ArrayMap<String,RelIdArray> cowRelationshipAddMap,
+        ArrayMap<String,DirectionedRelIdArray> cowRelationshipAddMap,
         ArrayMap<String,RelIdArray> cowRelationshipRemoveMap )
     {
         if ( relationshipMap == null )
@@ -477,14 +480,14 @@ class NodeImpl extends Primitive
         {
             for ( String type : cowRelationshipAddMap.keySet() )
             {
-                RelIdArray add = cowRelationshipAddMap.get( type );
+                DirectionedRelIdArray add = cowRelationshipAddMap.get( type );
                 RelIdArray remove = null;
                 if ( cowRelationshipRemoveMap != null )
                 {
                     remove = cowRelationshipRemoveMap.get( type );
                 }
-                RelIdArray src = relationshipMap.get( type );
-                relationshipMap.put( type, RelIdArray.from( src, add, remove ) );
+                DirectionedRelIdArray src = relationshipMap.get( type );
+                relationshipMap.put( type, DirectionedRelIdArray.from( src, add, remove ) );
             }
         }
         if ( cowRelationshipRemoveMap != null )
@@ -496,9 +499,9 @@ class NodeImpl extends Primitive
                 {
                     continue;
                 }
-                RelIdArray src = relationshipMap.get( type );
+                DirectionedRelIdArray src = relationshipMap.get( type );
                 RelIdArray remove = cowRelationshipRemoveMap.get( type );
-                relationshipMap.put( type, RelIdArray.from( src, null, remove ) );
+                relationshipMap.put( type, DirectionedRelIdArray.from( src, null, remove ) );
             }
         }
     }
@@ -508,12 +511,18 @@ class NodeImpl extends Primitive
         return relChainPosition;
     }
 
-    RelIdArray getRelationshipIds( String type )
+    DirectionedRelIdArray getRelationshipIds( String type )
     {
         return relationshipMap.get( type );
     }
     
-    ArrayMap<String, RelIdArray> getRelationshipIds()
+    RelIdArray getRelationshipIds( String type, DirectionWrapper dir )
+    {
+        DirectionedRelIdArray ids = getRelationshipIds( type );
+        return ids != null ? dir.get( ids ) : null;
+    }
+    
+    ArrayMap<String, DirectionedRelIdArray> getRelationshipIds()
     {
         return relationshipMap;
     }

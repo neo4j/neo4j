@@ -36,8 +36,7 @@ public class RelationshipTypeHolder
 {
     private ArrayMap<String,Integer> relTypes = 
         new ArrayMap<String,Integer>( 5, true, true );
-    private Map<Integer,RelationshipTypeImpl> relTranslation = 
-        new ConcurrentHashMap<Integer,RelationshipTypeImpl>();
+    private Map<Integer, RelationshipTypeImpl> relTranslation = new ConcurrentHashMap<Integer, RelationshipTypeImpl>();
 
     private final TransactionManager transactionManager;
     private final PersistenceManager persistenceManager;
@@ -193,6 +192,6 @@ public class RelationshipTypeHolder
     void clear()
     {
         relTypes = new ArrayMap<String,Integer>();
-        relTranslation = new ConcurrentHashMap<Integer,RelationshipTypeImpl>();
+        relTranslation = new ConcurrentHashMap<Integer, RelationshipTypeImpl>();
     }
 }

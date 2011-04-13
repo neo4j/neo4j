@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.nioneo.xa;
 
 import javax.transaction.xa.XAResource;
 
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
@@ -28,6 +29,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipData;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeStore;
 import org.neo4j.kernel.impl.persistence.PersistenceSource;
@@ -274,7 +276,7 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
             return readTransaction.getRelationshipChainPosition( nodeId );
         }
 
-        public Iterable<RelationshipData> getMoreRelationships( long nodeId,
+        public Pair<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>> getMoreRelationships( long nodeId,
             RelationshipChainPosition position )
         {
             return readTransaction.getMoreRelationships( nodeId, position );
@@ -459,7 +461,7 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
             return relConsumer.getRelationshipChainPosition( nodeId );
         }
 
-        public Iterable<RelationshipData> getMoreRelationships( long nodeId,
+        public Pair<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>> getMoreRelationships( long nodeId,
             RelationshipChainPosition position )
         {
             return relConsumer.getMoreRelationships( nodeId, position );

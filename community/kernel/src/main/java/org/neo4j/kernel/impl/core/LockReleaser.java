@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.DirectionedRelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.RelIdIterator;
 
@@ -81,7 +82,7 @@ public class LockReleaser
 
         boolean deleted = false;
         
-        ArrayMap<String,RelIdArray> relationshipAddMap = null;
+        ArrayMap<String,DirectionedRelIdArray> relationshipAddMap = null;
         ArrayMap<String,RelIdArray> relationshipRemoveMap = null;
         ArrayMap<Integer,PropertyData> propertyAddMap = null;
         ArrayMap<Integer,PropertyData> propertyRemoveMap = null;
@@ -241,7 +242,7 @@ public class LockReleaser
         return set;
     }
 
-    public ArrayMap<String,RelIdArray> getCowRelationshipAddMap( NodeImpl node )
+    public ArrayMap<String,DirectionedRelIdArray> getCowRelationshipAddMap( NodeImpl node )
     {
         PrimitiveElement primitiveElement = cowMap.get( getTransaction() );
         if ( primitiveElement != null )
@@ -257,7 +258,7 @@ public class LockReleaser
         return null;
     }
 
-    public RelIdArray getCowRelationshipAddMap( NodeImpl node, String type )
+    public DirectionedRelIdArray getCowRelationshipAddMap( NodeImpl node, String type )
     {
         PrimitiveElement primitiveElement = cowMap.get( getTransaction() );
         if ( primitiveElement != null )
@@ -273,13 +274,9 @@ public class LockReleaser
         return null;
     }
 
-    public RelIdArray getCowRelationshipAddMap( NodeImpl node, String type,
+    public DirectionedRelIdArray getCowRelationshipAddMap( NodeImpl node, String type,
         boolean create )
     {
-        if ( !create )
-        {
-            return getCowRelationshipRemoveMap( node, type );
-        }
         PrimitiveElement primitiveElement = getAndSetupPrimitiveElement();
         ArrayMap<Long,CowNodeElement> cowElements =
             primitiveElement.nodes;
@@ -291,12 +288,12 @@ public class LockReleaser
         }
         if ( element.relationshipAddMap == null )
         {
-            element.relationshipAddMap = new ArrayMap<String,RelIdArray>();
+            element.relationshipAddMap = new ArrayMap<String,DirectionedRelIdArray>();
         }
-        RelIdArray set = element.relationshipAddMap.get( type );
+        DirectionedRelIdArray set = element.relationshipAddMap.get( type );
         if ( set == null )
         {
-            set = new RelIdArray();
+            set = new DirectionedRelIdArray();
             element.relationshipAddMap.put( type, set );
         }
         return set;
@@ -817,23 +814,10 @@ public class LockReleaser
             {
                 for ( String type : nodeElement.relationshipAddMap.keySet() )
                 {
-                    RelIdArray createdRels = 
+                    DirectionedRelIdArray createdRels = 
                         nodeElement.relationshipAddMap.get( type );
-                    for ( RelIdIterator iterator = createdRels.iterator(); iterator.hasNext(); )
-                    {
-                        long relId = iterator.next();
-                        CowRelElement relElement = 
-                            element.relationships.get( relId );
-                        if ( relElement != null && relElement.deleted )
-                        {
-                            continue;
-                        }
-                        RelationshipProxy rel = new RelationshipProxy( relId, nodeManager );
-                        if ( rel.getStartNode().getId() == nodeId )
-                        {
-                            result.created( new RelationshipProxy( relId, nodeManager ) );
-                        }
-                    }
+                    populateNodeRelEvent( element, result, nodeId, createdRels.getOut() );
+                    populateNodeRelEvent( element, result, nodeId, createdRels.getIn() );
                 }
             }
             if ( nodeElement.relationshipRemoveMap != null )
@@ -879,6 +863,25 @@ public class LockReleaser
                     }
                     result.removedProperty( node, key, oldValue );
                 }
+            }
+        }
+    }
+
+    private void populateNodeRelEvent( PrimitiveElement element, TransactionDataImpl result,
+            long nodeId, RelIdArray createdRels )
+    {
+        for ( RelIdIterator iterator = createdRels.iterator(); iterator.hasNext(); )
+        {
+            long relId = iterator.next();
+            CowRelElement relElement = element.relationships.get( relId );
+            if ( relElement != null && relElement.deleted )
+            {
+                continue;
+            }
+            RelationshipProxy rel = new RelationshipProxy( relId, nodeManager );
+            if ( rel.getStartNode().getId() == nodeId )
+            {
+                result.created( new RelationshipProxy( relId, nodeManager ) );
             }
         }
     }

@@ -33,7 +33,8 @@ class RelTypeElement extends RelTypeElementIterator
     private final RelIdIterator srcIterator;
     private final RelIdIterator addIterator;
     private RelIdIterator currentIterator;
-    private Long nextElement = null;
+    private long nextElement;
+    private boolean nextElementDetermined;
 
     static RelTypeElementIterator create( String type, NodeImpl node,
             RelIdArray src, RelIdArray add, RelIdArray remove )
@@ -68,9 +69,9 @@ class RelTypeElement extends RelTypeElementIterator
 
     public boolean hasNext( NodeManager nodeManager )
     {
-        if ( nextElement != null )
+        if ( nextElementDetermined )
         {
-            return true;
+            return nextElement != -1;
         }
         
         while ( currentIterator.hasNext() || currentIterator == srcIterator )
@@ -81,24 +82,25 @@ class RelTypeElement extends RelTypeElementIterator
                 if ( !remove.contains( value ) )
                 {
                     nextElement = value;
+                    nextElementDetermined = true;
                     return true;
                 }
             }
             currentIterator = addIterator;
         }
+        nextElementDetermined = true;
+        nextElement = -1;
         return false;
     }
 
     public long next( NodeManager nodeManager )
     {
-        hasNext( nodeManager );
-        if ( nextElement != null )
+        if ( !hasNext( nodeManager ) )
         {
-            Long elementToReturn = nextElement;
-            nextElement = null;
-            return elementToReturn;
+            throw new NoSuchElementException();
         }
-        throw new NoSuchElementException();
+        nextElementDetermined = false;
+        return nextElement;
     }
 
     public void remove()

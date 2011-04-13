@@ -19,10 +19,14 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import java.io.IOException;
+
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipData;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
 /**
@@ -125,7 +129,7 @@ public interface RelationshipEventConsumer
 
     public RelationshipChainPosition getRelationshipChainPosition( long nodeId );
 
-    public Iterable<RelationshipData> getMoreRelationships( long nodeId,
+    public Pair<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>> getMoreRelationships( long nodeId,
         RelationshipChainPosition position );
 
     public boolean isRelationshipCreated( long relId );

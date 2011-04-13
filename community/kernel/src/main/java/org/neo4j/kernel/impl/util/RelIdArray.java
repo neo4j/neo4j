@@ -52,6 +52,11 @@ public class RelIdArray
     {
     }
     
+    protected void addBlocks( RelIdArray ids )
+    {
+        blocks.addAll( ids.blocks );
+    }
+    
     public void add( long id )
     {
         long highBits = id&0xFFFFFFFF00000000L;
@@ -77,7 +82,7 @@ public class RelIdArray
         }
     }
     
-    public int length()
+    private int length()
     {
         int length = 0;
         for ( IdBlock block : blocks )
@@ -169,13 +174,14 @@ public class RelIdArray
         private IdBlock currentBlock = isEmpty() ? EMPTY_BLOCK : blocks.get( 0 );
         private int relativePosition;
         private int absolutePosition;
-        private Long nextElement;
+        private long nextElement;
+        private boolean nextElementDetermined;
         
         public boolean hasNext()
         {
-            if ( nextElement != null )
+            if ( nextElementDetermined )
             {
-                return true;
+                return nextElement != -1;
             }
             
             while ( true )
@@ -184,6 +190,7 @@ public class RelIdArray
                 if ( relativePosition < blockLength )
                 {
                     nextElement = currentBlock.get( relativePosition++ );
+                    nextElementDetermined = true;
                     return true;
                 }
                 else
@@ -198,6 +205,8 @@ public class RelIdArray
                     }
                 }
             }
+            nextElementDetermined = false;
+            nextElement = -1;
             return false;
         }
         
@@ -207,9 +216,8 @@ public class RelIdArray
             {
                 throw new NoSuchElementException();
             }
-            long result = nextElement;
-            nextElement = null;
-            return result;
+            nextElementDetermined = false;
+            return nextElement;
         }
         
         public void fastForwardTo( int position )

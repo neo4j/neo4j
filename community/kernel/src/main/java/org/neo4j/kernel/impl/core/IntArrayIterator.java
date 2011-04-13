@@ -29,7 +29,9 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.kernel.impl.util.DirectionedRelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray;
+import org.neo4j.kernel.impl.util.DirectionedRelIdArray.DirectionWrapper;
 
 class IntArrayIterator implements Iterable<Relationship>,
     Iterator<Relationship>
@@ -37,7 +39,7 @@ class IntArrayIterator implements Iterable<Relationship>,
     private Iterator<RelTypeElementIterator> typeIterator;
     private RelTypeElementIterator currentTypeIterator = null;
     private final NodeImpl fromNode;
-    private final Direction direction;
+    private final DirectionWrapper direction;
     private Relationship nextElement = null;
     private final NodeManager nodeManager;
     private final RelationshipType types[];
@@ -58,7 +60,7 @@ class IntArrayIterator implements Iterable<Relationship>,
             currentTypeIterator = RelTypeElementIterator.EMPTY;
         }
         this.fromNode = fromNode;
-        this.direction = direction;
+        this.direction = DirectionedRelIdArray.wrap( direction );
         this.nodeManager = nodeManager;
         this.types = types;
     }
@@ -81,25 +83,8 @@ class IntArrayIterator implements Iterable<Relationship>,
                 long nextId = currentTypeIterator.next( nodeManager );
                 try
                 {
-                    if ( direction == Direction.BOTH )
-                    {
-                        nextElement = new RelationshipProxy( nextId, nodeManager );
-                        return true;
-                    }
-                    RelationshipImpl possibleElement = nodeManager.getRelForProxy( nextId );
-                    if ( direction == Direction.INCOMING 
-                         && possibleElement.getEndNodeId() == fromNode.id )
-                    {
-                        nextElement = new RelationshipProxy( nextId, nodeManager );
-                        return true;
-                    }
-                    else if ( direction == Direction.OUTGOING
-                              && possibleElement.getStartNodeId() == fromNode.id )
-                    {
-                        nextElement = new RelationshipProxy( nextId, nodeManager );
-                        return true;
-                    }
-                    // No match
+                    nextElement = new RelationshipProxy( nextId, nodeManager );
+                    return true;
                 }
                 catch ( NotFoundException e )
                 { // ok deleted 
@@ -120,24 +105,25 @@ class IntArrayIterator implements Iterable<Relationship>,
                         RelTypeElementIterator newItr = itr;
                         if ( itr.isSrcEmpty() )
                         {
-                            RelIdArray newSrc = fromNode.getRelationshipIds( itr.getType() );
+                            DirectionedRelIdArray newSrc = fromNode.getRelationshipIds( itr.getType() );
                             if ( newSrc != null )
                             {
-                                newItr = itr.setSrc( newSrc );
+                                newItr = itr.setSrc( direction.get( newSrc ) );
                             }
                         }
                         newRels.put( newItr.getType(), newItr );
                     }
                     if ( types.length == 0 )
                     {
-                        for ( Map.Entry<String, RelIdArray> entry : fromNode.getRelationshipIds().entrySet() )
+                        for ( Map.Entry<String, DirectionedRelIdArray> entry : fromNode.getRelationshipIds().entrySet() )
                         {
                             String type = entry.getKey();
                             RelTypeElementIterator itr = newRels.get( type );
                             if ( itr == null || itr.isSrcEmpty() )
                             {
-                                itr = itr == null ? new FastRelTypeElement( type, fromNode, entry.getValue() ) :
-                                        itr.setSrc( entry.getValue() );
+                                RelIdArray ids = direction.get( entry.getValue() );
+                                itr = itr == null ? new FastRelTypeElement( type, fromNode, ids ) :
+                                        itr.setSrc( ids );
                                 newRels.put( type, itr );
                             }
                         }

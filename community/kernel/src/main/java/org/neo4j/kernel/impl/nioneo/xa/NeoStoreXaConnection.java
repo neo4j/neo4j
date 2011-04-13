@@ -23,6 +23,7 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -32,6 +33,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipData;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeStore;
@@ -300,11 +302,10 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
                 nodeId );
         }
 
-        public Iterable<RelationshipData> getMoreRelationships( long nodeId,
+        public Pair<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>> getMoreRelationships( long nodeId,
             RelationshipChainPosition position )
         {
-            return xaCon.getWriteTransaction().getMoreRelationships( nodeId, 
-                position );
+            return xaCon.getWriteTransaction().getMoreRelationships( nodeId, position );
         }
 
         public boolean isRelationshipCreated( long relId )

@@ -21,11 +21,13 @@ package org.neo4j.kernel.impl.persistence;
 
 import javax.transaction.xa.XAResource;
 
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipData;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
@@ -92,7 +94,7 @@ public interface ResourceConnection
 
     public RelationshipChainPosition getRelationshipChainPosition( long nodeId );
 
-    public Iterable<RelationshipData> getMoreRelationships( long nodeId,
+    public Pair<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>> getMoreRelationships( long nodeId,
         RelationshipChainPosition position );
 
     public RelIdArray getCreatedNodes();

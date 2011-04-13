@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import javax.transaction.xa.XAException;
@@ -33,6 +32,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
@@ -870,49 +870,10 @@ class WriteTransaction extends XaTransaction
         return new RelationshipChainPosition( nextRel );
     }
     
-    public Iterable<RelationshipData> getMoreRelationships( long nodeId,
+    public Pair<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>> getMoreRelationships( long nodeId,
         RelationshipChainPosition position )
     {
-        long nextRel = position.getNextRecord();
-        List<RelationshipData> rels = new ArrayList<RelationshipData>();
-        for ( int i = 0; i < getRelGrabSize() && 
-            nextRel != Record.NO_NEXT_RELATIONSHIP.intValue(); i++ )
-        {
-            RelationshipRecord relRecord = getRelationshipStore().getChainRecord( nextRel );
-            if ( relRecord == null )
-            {
-                // return what we got so far
-                position.setNextRecord( Record.NO_NEXT_RELATIONSHIP.intValue() );
-                return rels;
-            }
-            long firstNode = relRecord.getFirstNode();
-            long secondNode = relRecord.getSecondNode();
-            if ( relRecord.inUse() ) // && !relRecord.isCreated() )
-            {
-                rels.add( new RelationshipData( relRecord.getId(), firstNode, 
-                    secondNode, relRecord.getType() ) );
-            }
-            else
-            {
-                i--;
-            }
-            if ( firstNode == nodeId )
-            {
-                nextRel = relRecord.getFirstNextRel();
-            }
-            else if ( secondNode == nodeId )
-            {
-                nextRel = relRecord.getSecondNextRel();
-            }
-            else
-            {
-                throw new InvalidRecordException( "Node[" + nodeId + 
-                        "] is neither firstNode[" + firstNode + 
-                        "] nor secondNode[" + secondNode + "] for Relationship[" + relRecord.getId() + "]" );
-            }
-        }
-        position.setNextRecord( nextRel );
-        return rels;
+        return ReadTransaction.getMoreRelationships( nodeId, position, getRelGrabSize(), getRelationshipStore() );
     }
     
     private void updateNodes( RelationshipRecord rel )
