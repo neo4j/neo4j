@@ -153,4 +153,42 @@ public class GremlinPlugin extends ServerPlugin
         return resultRep;
     }
     
+    
+    
+    
+    /**
+     * This will return the vertex thats associated with the name
+     * curl -d 'script=g.V{name:'thename'}' http://localhost:7474/db/data/ext/GremlinPlugin/graphDb/get_all_vertexes
+     * which should return an arrayList consisting of all the vertexes of the current graph
+     * @param startNode
+     * @param script
+     * @return
+     */
+    @Name( "get_vertex_by_name" )
+    @Description( "execute a Gremlin script with variables 'start' set to the start node 'g' set to the Neo4jGraph and 'results' containing the set of resulting vertices" )
+    @PluginTarget( GraphDatabaseService.class )
+    public Representation getVertexByName(
+            @Description( "The Gremlin script" ) @Parameter( name = "script", optional=true ) String script ,@Source GraphDatabaseService graphDb)
+    {
+        ScriptEngineManager manager = new ScriptEngineManager();
+        ScriptEngine engine = manager.getEngineByName( "gremlin" );
+        ArrayList<Vertex> results = new ArrayList<Vertex>();
+        Neo4jGraph graph = new Neo4jGraph( graphDb );
+        engine.getBindings( ScriptContext.ENGINE_SCOPE ).put( "g",
+                graph );
+        engine.getBindings( ScriptContext.GLOBAL_SCOPE ).put( "results",
+                results );
+        try
+        {
+            engine.eval( script );
+        }
+        catch ( ScriptException e )
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        Representation resultRep = new PipeRepresentation( results );
+        return resultRep;
+    }
+    
 }
