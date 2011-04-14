@@ -49,10 +49,15 @@
             <artifactId>server-api</artifactId>
             <version>${neo4j.version}</version>
         </dependency>
-         <dependency>
-            <groupId>com.tinkerpop.blueprints</groupId>
-            <artifactId>blueprints-neo4j-graph</artifactId>
-            <version>0.6</version>
+        <dependency>
+            <groupId>com.tinkerpop</groupId>
+            <artifactId>blueprints</artifactId>
+            <version>0.4</version>
+        </dependency>
+        <dependency>
+            <groupId>com.tinkerpop</groupId>
+            <artifactId>pipes</artifactId>
+            <version>0.3</version>
         </dependency>
         <dependency>
             <groupId>com.tinkerpop</groupId>
