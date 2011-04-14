@@ -1,11 +1,15 @@
 package org.neo4j.server.plugin.gremlin;
 
 
+import com.tinkerpop.blueprints.pgm.Graph;
+import com.tinkerpop.blueprints.pgm.Vertex;
+import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
+import junit.framework.Assert;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.ImpermanentGraphDatabase;
 import org.neo4j.server.rest.repr.OutputFormat;
@@ -14,63 +18,53 @@ import org.neo4j.server.rest.repr.formats.JsonFormat;
 
 import java.net.URI;
 
-import static org.junit.Assert.assertNotNull;
-
 
 public class GremlinPluginTest {
 
     private static ImpermanentGraphDatabase neo4j = null;
     private static GremlinPlugin plugin = null;
-    private static String directory = "target/db";
-    private static Node firstNode = null;
-    private static Node secondNode = null;
-    private static Node thirdNode = null;
     private static OutputFormat json = null;
-
+    private static JSONParser parser = new JSONParser();
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
         json = new OutputFormat(new JsonFormat(), new URI("http://localhost/"), null);
-        Transaction tx = null;
-        try {
-            plugin = new GremlinPlugin();
-            neo4j = new ImpermanentGraphDatabase(directory);
-            tx = neo4j.beginTx();
-            firstNode = neo4j.createNode();
-            if (firstNode != null) {
-                firstNode.setProperty("name", "firstNode");
-                firstNode.setProperty("x", 10.23245);
-                firstNode.setProperty("y", -112.346);
-                firstNode.setProperty("altitude", 12.34456);
-            }
+        neo4j = new ImpermanentGraphDatabase("target/db");
+        plugin = new GremlinPlugin();
+        Graph graph = new Neo4jGraph(neo4j);
+        Vertex marko = graph.addVertex("1");
+        marko.setProperty("name", "marko");
+        marko.setProperty("age", 29);
 
-            secondNode = neo4j.createNode();
-            if (secondNode != null) {
-                secondNode.setProperty("name", "secondNode");
-                secondNode.setProperty("x", 1.23245);
-                secondNode.setProperty("y", -12.346);
-                secondNode.setProperty("altitude", 100.34456);
-            }
+        Vertex vadas = graph.addVertex("2");
+        vadas.setProperty("name", "vadas");
+        vadas.setProperty("age", 27);
 
+        Vertex lop = graph.addVertex("3");
+        lop.setProperty("name", "lop");
+        lop.setProperty("lang", "java");
 
-            thirdNode = neo4j.createNode();
-            if (thirdNode != null) {
-                thirdNode.setProperty("name", "thirdNode");
-                thirdNode.setProperty("x", 11.23245);
-                thirdNode.setProperty("y", -112.346);
-                thirdNode.setProperty("altitude", 40.34456);
-            }
-            firstNode.createRelationshipTo(secondNode, DynamicRelationshipType.withName("nextTo")).setProperty("weight", 2.0d);
-            firstNode.createRelationshipTo(thirdNode, DynamicRelationshipType.withName("nextTo"));
-            tx.success();
-        } catch (Exception graphEx) {
-            System.err.println("Caught a graph exception with message " + graphEx.getMessage());
-        } finally {
-            tx.finish();
-        }
+        Vertex josh = graph.addVertex("4");
+        josh.setProperty("name", "josh");
+        josh.setProperty("age", 32);
 
+        Vertex ripple = graph.addVertex("5");
+        ripple.setProperty("name", "ripple");
+        ripple.setProperty("lang", "java");
+
+        Vertex peter = graph.addVertex("6");
+        peter.setProperty("name", "peter");
+        peter.setProperty("age", 35);
+
+        graph.addEdge("7", marko, vadas, "knows").setProperty("weight", 0.5f);
+        graph.addEdge("8", marko, josh, "knows").setProperty("weight", 1.0f);
+        graph.addEdge("9", marko, lop, "created").setProperty("weight", 0.4f);
+
+        graph.addEdge("10", josh, ripple, "created").setProperty("weight", 1.0f);
+        graph.addEdge("11", josh, lop, "created").setProperty("weight", 0.4f);
+
+        graph.addEdge("12", peter, lop, "created").setProperty("weight", 0.2f);
     }
-
 
     @After
     public void tearDown() throws Exception {
@@ -78,82 +72,58 @@ public class GremlinPluginTest {
 
 
     @Test
-    public void testExecuteScriptVertices() {
-        String script = "g.V";
-        Transaction tx = null;
-        try {
-            tx = neo4j.beginTx();
-            Representation representation = plugin.executeScript(neo4j, script);
-            System.out.println(json.format(representation));
-            assertNotNull(representation);
-            tx.success();
+    public void testExecuteScriptVertex() throws Exception {
+        JSONObject object = (JSONObject) parser.parse(json.format(GremlinPluginTest.executeTestScript("g.v(1)")));
+        Assert.assertEquals(29l, ((JSONObject) object.get("data")).get("age"));
+        Assert.assertEquals("marko", ((JSONObject) object.get("data")).get("name"));
+    }
 
-            System.err.println("GremlinPluginTest::executeScript the contents of the representation object=" + representation.toString());
-        } catch (Throwable t) {
-            t.printStackTrace();
-        } finally {
-            tx.finish();
-        }
+    @Test
+    public void testExecuteScriptVertices() {
+        System.out.println(json.format(GremlinPluginTest.executeTestScript("g.V")));
     }
 
     @Test
     public void testExecuteScriptEdges() {
-        String script = "g.E";
-        Transaction tx = null;
-        try {
-            tx = neo4j.beginTx();
-            Representation representation = plugin.executeScript(neo4j, script);
-            System.out.println(json.format(representation));
-            assertNotNull(representation);
-            tx.success();
-
-            System.err.println("GremlinPluginTest::executeScript the contents of the representation object=" + representation.toString());
-        } catch (Throwable t) {
-            t.printStackTrace();
-        } finally {
-            tx.finish();
-        }
-
+        System.out.println(json.format(GremlinPluginTest.executeTestScript("g.E")));
     }
 
-     @Test
+    @Test
     public void testExecuteScriptGraph() {
-        String script = "[g]";
-        Transaction tx = null;
-        try {
-            tx = neo4j.beginTx();
-            Representation representation = plugin.executeScript(neo4j, script);
-            System.out.println(json.format(representation));
-            assertNotNull(representation);
-            tx.success();
+        System.out.println(json.format(GremlinPluginTest.executeTestScript("[g]")));
+    }
 
-            System.err.println("GremlinPluginTest::executeScript the contents of the representation object=" + representation.toString());
-        } catch (Throwable t) {
-            t.printStackTrace();
-        } finally {
-            tx.finish();
-        }
-
+    @Test
+    public void testExecuteScriptLong() throws Exception {
+        Assert.assertEquals(1l, parser.parse(json.format(GremlinPluginTest.executeTestScript("1"))));
     }
 
     @Test
     public void testExecuteScriptLongs() {
-        String script = "[1,2,5,6,8]";
+        Assert.assertEquals("[ 1, 2, 5, 6, 8 ]", json.format(GremlinPluginTest.executeTestScript("[1,2,5,6,8]")));
+    }
+
+    @Test
+    public void testMultiThread() {
+        for (int i = 0; i < 250; i++) {
+            final int x = i;
+            new Thread() {
+                public void run() {
+                    Assert.assertEquals(x + "", json.format(GremlinPluginTest.executeTestScript("x=" + x + "; x")));
+                }
+            }.start();
+        }
+    }
+
+    private static Representation executeTestScript(final String script) {
         Transaction tx = null;
         try {
             tx = neo4j.beginTx();
-            Representation representation = plugin.executeScript(neo4j, script);
-            System.out.println(json.format(representation));
-            assertNotNull(representation);
-            tx.success();
-
-            System.err.println("GremlinPluginTest::executeScript the contents of the representation object=" + representation.toString());
-        } catch (Throwable t) {
-            t.printStackTrace();
+            return plugin.executeScript(neo4j, script);
         } finally {
+            tx.success();
             tx.finish();
         }
-
     }
 
 }
