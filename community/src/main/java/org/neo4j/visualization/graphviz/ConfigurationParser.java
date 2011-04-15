@@ -154,6 +154,16 @@ public class ConfigurationParser
         } );
     }
 
+    public void nodePropertyFilter( String nodeProperties )
+    {
+        final String nodePropertiesString = nodeProperties;
+        styles.add( new StyleParameter.NodePropertyFilter() {
+          public boolean acceptProperty(String key) {
+            return Arrays.asList(nodePropertiesString.split(",")).contains(key);
+          }
+        });
+    }
+
     public void reverseOrder( String... typeNames )
     {
         if (typeNames== null || typeNames.length == 0) return;
