@@ -67,7 +67,7 @@ Will return a list of paths.
 
 
 
-Select all relationships three steps out from a start node. Keeps following the same type as the first outgoing relationship all the way
+Select all relationships three steps out from a start node, following the same reltype. 
 --
 	FROM start = NODE(1)
 	WHERE 
@@ -75,3 +75,12 @@ Select all relationships three steps out from a start node. Keeps following the 
 		v.LENGTH = 3 AND
 		v.r[FIRST].TYPE = v.r[ALL].TYPE
 	SELECT v
+	
+
+
+
+Select nodes from index hits
+--
+	FROM node = NODE_IDX(name, "Kevin Bacon")
+	SELECT node
+
