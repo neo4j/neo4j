@@ -1,8 +1,8 @@
 Select single node by id
 --
-FROM node = NODE(17)
-SELECT node
---
+>FROM node = NODE(17)
+>SELECT node
+
 Returns a list of nodes with the length 1
 
 
