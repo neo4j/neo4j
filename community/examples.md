@@ -1,3 +1,26 @@
+Introduction
+==
+Cypher has a few syntaxes that should be explained before we jump into the examples.
+
+Relationships are shown like this: -->, or <--, or even --- when you don't care about the direction of the relationship.
+If you want a specific type, you write like this: -KNOWS>, <FRIEND- , or -RELATED-
+Note that these are all uppercase. If you write them lowercase, it's a variable name instead, that can be used for further filtering or outputting.
+
+A traversal can be constructed using regexp-like syntax. Examples:
+
+Follow all relationships from z, and then follow KNOWS relationships from x
+	z --> x -KNOWS> y
+
+Follow all KNOWS relationships. v will contain paths	
+	z ( -KNOWS> x )*.v
+	
+	
+
+
+
+Examples
+==
+
 Select single node by id
 --
 	FROM node = NODE(17)
