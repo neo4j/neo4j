@@ -6,9 +6,6 @@ case class Query(select: Select, from: List[VariableAssignment] = Nil, where: Op
 
 case class Select(selectItems: SelectItem*)
 
-abstract sealed class SelectItem
-
-case class VariableOutput(name: String) extends SelectItem
 
 case class VariableAssignment(variable: String, fromitem: FromItem)
 
