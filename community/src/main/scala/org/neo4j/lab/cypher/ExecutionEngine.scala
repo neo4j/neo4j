@@ -8,18 +8,27 @@ import org.neo4j.graphdb.{Node, GraphDatabaseService}
  * Time: 09:44
  */
 class ExecutionEngine(val graph: GraphDatabaseService) {
+
+
   def execute[T](query: Query): List[T] = query match {
     case Query(select, List(VariableAssignment(variable, from)), where) => {
+
       val inputNodes = getStuffFrom(from)
-      val selectItem = select.selectItems.head
+      val filter: (Node) => Boolean = createFilterFrom(where)
 
-      val transformer: (Node) => T = selectItem match {
-        case NodeOutput(variable) => (n) => n.asInstanceOf[T]
-        case NodePropertyOutput(nodeName, propName) => (n) => n.getProperty(propName).asInstanceOf[T]
-      }
-
-      inputNodes.map(transformer).toList
+      createSelectOutput(select, inputNodes.filter(filter))
     }
+  }
+
+  private def createSelectOutput[T](select: Select, inputNodes: scala.Seq[Node]): List[T] = {
+    val selectItem = select.selectItems.head
+
+    val transformer: (Node) => T = selectItem match {
+      case NodeOutput(variable) => (n) => n.asInstanceOf[T]
+      case NodePropertyOutput(nodeName, propName) => (n) => n.getProperty(propName).asInstanceOf[T]
+    }
+
+    inputNodes.map(transformer).toList
   }
 
   private def getStuffFrom(fromItems: FromItem*): Seq[Node] = {
@@ -28,14 +37,12 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
     }
   }
 
-
-  //
-  //  class ResultPump[T]()
-  //
-  //  class ExecutionResult(columnNames: List[String], pumps: List[ResultPump]) {
-  //    def getResult(): List[Any] = {
-  //
-  //    }
-  //  }
-
+  private def createFilterFrom(where: Option[Where]): (Node) => Boolean = where match {
+    case None => (x: Node) => true
+    case Some(w) => {
+      w.clauses.head match {
+        case StringEquals(variable, propName, expectedValue) => (n) => n.getProperty(propName) == expectedValue
+      }
+    }
+  }
 }

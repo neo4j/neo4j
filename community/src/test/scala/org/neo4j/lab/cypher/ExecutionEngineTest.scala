@@ -80,6 +80,25 @@ class ExecutionEngineTest {
     assertEquals(List(name), result)
   }
 
+  @Test def shouldFilterOutBasedOnName() {
+    //    FROM node = NODE(1,2)
+    //    WHERE node.name = "Andres"
+    //    SELECT node
+
+    val name = "Andres"
+    val node1: Node = createNode(Map("name" -> name))
+    val node2: Node = createNode(Map("name" -> "Someone Else"))
+
+    val query = Query(
+      Select(NodeOutput("node")),
+      List(VariableAssignment("node", NodeById(List(node1.getId, node2.getId)))),
+      Some(Where(StringEquals("node", "name", name)))
+    )
+
+    val result = execute[String](query)
+    assertEquals(List(node1), result)
+  }
+
   def execute[T](query: Query) = {
     val result = engine.execute[T](query)
     println(query)
