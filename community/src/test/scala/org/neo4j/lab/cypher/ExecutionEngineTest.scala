@@ -1,5 +1,6 @@
 package org.neo4j.lab.cypher
 
+import commands._
 import org.junit.Assert._
 
 import org.junit.{After, Before, Test}
@@ -31,7 +32,8 @@ class ExecutionEngineTest {
     )
 
     val result = execute(query)
-    assertEquals(List(refNode), result)
+    assertEquals("node", result.columnNames.head)
+    assertEquals(List(refNode), result.column("node").toList )
   }
 
   @Test def shouldGetOtherNode() {
@@ -45,8 +47,8 @@ class ExecutionEngineTest {
       List(VariableAssignment("node", NodeById(List(node.getId))))
     )
 
-    val result = execute[Node](query)
-    assertEquals(List(node), result)
+    val result = execute(query)
+    assertEquals(List(node), result.column("node").toList)
   }
 
   @Test def shouldGetTwoNodes() {
@@ -61,7 +63,7 @@ class ExecutionEngineTest {
     )
 
     val result = execute(query)
-    assertEquals(List(refNode, node), result)
+    assertEquals(List(refNode, node), result.column("node").toList)
   }
 
   @Test def shouldGetNodeProperty() {
@@ -76,8 +78,8 @@ class ExecutionEngineTest {
       List(VariableAssignment("node", NodeById(List(node.getId))))
     )
 
-    val result = execute[String](query)
-    assertEquals(List(name), result)
+    val result = execute(query)
+    assertEquals(List(name), result.column("node.name").toList)
   }
 
   @Test def shouldFilterOutBasedOnName() {
@@ -95,12 +97,31 @@ class ExecutionEngineTest {
       Some(Where(StringEquals("node", "name", name)))
     )
 
-    val result = execute[String](query)
-    assertEquals(List(node1), result)
+    val result = execute(query)
+    assertEquals(List(node1), result.column("node").toList)
   }
 
-  def execute[T](query: Query) = {
-    val result = engine.execute[T](query)
+  @Test def shouldOutputTheCartesianProductOfTwoNodes() {
+    //    FROM n1 = NODE(1), n2 = NODE(2)
+    //    SELECT n1, n2
+
+    val node1: Node = createNode()
+    val node2: Node = createNode()
+
+    val query = Query(
+      Select(NodeOutput("n1"), NodeOutput("n2")),
+      List(
+        VariableAssignment("n1", NodeById(List(node1.getId))),
+        VariableAssignment("n2", NodeById(List(node2.getId)))
+      )
+    )
+
+    val result = execute(query)
+//    assertEquals(List(node1), result)
+  }
+
+  def execute(query: Query):ExecutionResult = {
+    val result = engine.execute(query)
     println(query)
     result
   }

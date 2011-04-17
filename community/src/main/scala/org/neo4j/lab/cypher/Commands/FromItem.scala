@@ -1,4 +1,4 @@
-package org.neo4j.lab.cypher
+package org.neo4j.lab.cypher.commands
 
 abstract sealed class FromItem
 

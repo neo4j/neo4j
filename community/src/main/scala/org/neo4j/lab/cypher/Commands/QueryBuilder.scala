@@ -1,4 +1,4 @@
-package org.neo4j.lab.cypher
+package org.neo4j.lab.cypher.commands
 
 case class Query(select: Select, from: List[VariableAssignment] = Nil, where: Option[Where] = None)
 

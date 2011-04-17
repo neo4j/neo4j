@@ -50,6 +50,22 @@ Returns a list of string
 
 
 
+Filter on a node property
+--
+	FROM node = NODE(1,2)
+	WHERE node.name = "Andres"
+	SELECT node
+
+Returns a list of nodes with a property name that matches "Andres"
+
+
+Returns the cartesian product
+--
+	FROM n1 = NODE(1), n2 = NODE(2)
+	SELECT n1, n2
+	
+Returns both nodes in a single row. Cartesian products are the size n*m, and since both n and m are one, the is one.
+
 
 Select all nodes that are KNOWN by the start node
 --

@@ -1,4 +1,4 @@
-package org.neo4j.lab.cypher
+package org.neo4j.lab.cypher.commands
 
 /**
  * Created by Andres Taylor
