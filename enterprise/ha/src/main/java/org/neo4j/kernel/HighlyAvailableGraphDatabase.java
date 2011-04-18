@@ -128,7 +128,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         this.machineId = getMachineIdFromConfig( config );
         this.broker = this.brokerFactory.create( this, config );
         this.msgLog = StringLogger.getLogger( storeDir );
-        
+
         boolean allowInitFromConfig = getAllowInitFromConfig( config );
         startUp( allowInitFromConfig );
     }
@@ -137,7 +137,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     {
         master = master != null ? master : broker.getMasterReally();
         // Assume it's shut down at this point
-        
+
         moveAwayCurrentDatabase();
 
         Exception exception = null;
@@ -165,7 +165,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         // maybe <dbPath>/broken-<date> since we it may be the case that the current user
         // only has got permissions on the dbPath, not the parent.
         this.msgLog.logMessage( "Cleaning database " + storeDir + " to make way for new db from master" );
-        
+
         File oldDir = new File( storeDir, "broken-" + System.currentTimeMillis() );
         oldDir.mkdirs();
         for ( File file : new File( storeDir ).listFiles() )
@@ -180,7 +180,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             }
         }
     }
-    
+
     public static Map<String,String> loadConfigurations( String file )
     {
         return EmbeddedGraphDatabase.loadConfigurations( file );
@@ -194,7 +194,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             long endTime = System.currentTimeMillis()+10000;
             Exception exception = null;
             while ( System.currentTimeMillis() < endTime )
-            {                
+            {
                 // Check if the cluster is up
                 Pair<Master, Machine> master = broker.getMaster();
                 master = master.first() != null ? master : broker.getMasterReally();
@@ -228,7 +228,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 // wait for other machine(s) to join.
                 sleepWithoutInterruption( 300, "Startup interrupted" );
             }
-            
+
             if ( exception != null )
             {
                 throw new RuntimeException( "Tried to join the cluster, but was unable to", exception );
@@ -332,13 +332,14 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             }
             catch ( UnknownHostException hostBecomesNull )
             {
+                // handled by null check
             }
             if ( host == null )
             {
                 throw new IllegalStateException(
                         "Could not auto configure host name, please supply " + CONFIG_KEY_HA_SERVER );
             }
-            haServer = host + ":" + CONFIG_DEFAULT_PORT;
+            haServer = host.getHostAddress() + ":" + CONFIG_DEFAULT_PORT;
         }
         return haServer;
     }

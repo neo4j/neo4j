@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.management.NotCompliantMBeanException;
+import javax.management.remote.JMXServiceURL;
 
 import org.neo4j.com.SlaveContext;
 import org.neo4j.helpers.Pair;
@@ -94,7 +95,8 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
             for ( int i = 0; i < result.length; i++ )
             {
                 ConnectionInformation connection = connections[i];
-                result[i] = new InstanceInfo( connection.getJMXServiceURL().toString(),
+                JMXServiceURL jmxServiceURL = connection.getJMXServiceURL();
+                result[i] = new InstanceInfo( jmxServiceURL == null ? null : jmxServiceURL.toString(),
                         connection.getInstanceId(), connection.getMachineId(),
                         connection.isMaster(), connection.getLastCommitedTransactionId() );
             }
@@ -151,7 +153,8 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
                 txInfo.add( new SlaveTransaction( context.getEventIdentifier(), lastTransactions ) );
             }
             ConnectionInformation connection = db.getBroker().getConnectionInformation( machineId );
-            return new SlaveInfo( connection.getJMXServiceURL().toString(),
+            JMXServiceURL jmxServiceURL = connection.getJMXServiceURL();
+            return new SlaveInfo( jmxServiceURL == null ? null : jmxServiceURL.toString(),
                     connection.getInstanceId(), machineId, false,
                     connection.getLastCommitedTransactionId(),
                     txInfo.toArray( new SlaveTransaction[txInfo.size()] ) );
