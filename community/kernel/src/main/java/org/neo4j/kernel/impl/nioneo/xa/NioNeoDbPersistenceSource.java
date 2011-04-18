@@ -86,7 +86,13 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
         {
             throw new ReadOnlyDbException();
         }
-        return ((NeoStoreXaConnection) connection).getWriteTransaction();
+        ResourceConnection result = ((NeoStoreXaConnection) connection).getWriteTransaction();
+        
+        // This is not a very good solution. The XaConnection is only used when
+        // delisting/releasing the nioneo xa resource. Maybe it should be stored
+        // outside the ResourceConnection interface?
+        result.setXaConnection( connection );
+        return result;
     }
     
     public ResourceConnection createReadOnlyResourceConnection()

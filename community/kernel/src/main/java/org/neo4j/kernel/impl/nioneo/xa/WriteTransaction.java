@@ -100,9 +100,9 @@ public class WriteTransaction extends XaTransaction implements ResourceConnectio
 
     private final LockReleaser lockReleaser;
     private final LockManager lockManager;
-    private final XaConnection xaConnection;
+    private XaConnection xaConnection;
 
-    WriteTransaction( XaConnection xaConnection, int identifier, XaLogicalLog log, NeoStore neoStore,
+    WriteTransaction( int identifier, XaLogicalLog log, NeoStore neoStore,
         LockReleaser lockReleaser, LockManager lockManager )
     {
         super( identifier, log );
@@ -1767,6 +1767,12 @@ public class WriteTransaction extends XaTransaction implements ResourceConnectio
     public void destroy()
     {
         xaConnection.destroy();
+    }
+    
+    @Override
+    public void setXaConnection( XaConnection connection )
+    {
+        this.xaConnection = connection;
     }
 
     @Override

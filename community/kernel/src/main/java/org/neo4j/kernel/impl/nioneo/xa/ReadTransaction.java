@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.kernel.impl.persistence.ResourceConnection;
+import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 
@@ -215,6 +216,11 @@ class ReadTransaction implements ResourceConnection
         PropertyRecord propRecord = 
             getPropertyStore().getLightRecord( propertyId );
         return propRecord.getKeyIndexId();
+    }
+    
+    @Override
+    public void setXaConnection( XaConnection connection )
+    {
     }
 
     @Override

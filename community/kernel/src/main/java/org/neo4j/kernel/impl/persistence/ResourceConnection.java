@@ -27,6 +27,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
+import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 
@@ -38,6 +39,8 @@ import org.neo4j.kernel.impl.util.RelIdArray;
  */
 public interface ResourceConnection
 {
+    public void setXaConnection( XaConnection connection );
+    
     /**
      * Returns the {@link javax.transaction.xa.XAResource} that represents this
      * connection.

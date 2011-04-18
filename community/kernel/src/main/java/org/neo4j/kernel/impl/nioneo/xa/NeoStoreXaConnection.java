@@ -47,8 +47,6 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
     private final NeoStoreXaResource xaResource;
     private final NeoStore neoStore;
 
-    private WriteTransaction neoTransaction;
-
     NeoStoreXaConnection( NeoStore neoStore, XaResourceManager xaRm,
         byte branchId[] )
     {
@@ -86,23 +84,26 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
     {
         return this.xaResource;
     }
-
+    
     public WriteTransaction getWriteTransaction()
     {
-        if ( neoTransaction != null )
-        {
-            return neoTransaction;
-        }
+        // Is only called once per write transaction so no need
+        // to cache the transaction here.
         try
         {
-            neoTransaction = (WriteTransaction) getTransaction();
-            return neoTransaction;
+            return (WriteTransaction) getTransaction();
         }
         catch ( XAException e )
         {
             throw new TransactionFailureException( 
                 "Unable to get transaction.", e );
         }
+    }
+    
+    @Override
+    public void destroy()
+    {
+        super.destroy();
     }
 
     private static class NeoStoreXaResource extends XaResourceHelpImpl
