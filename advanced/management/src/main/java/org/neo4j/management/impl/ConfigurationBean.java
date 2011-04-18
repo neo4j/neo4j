@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.management.Attribute;
 import javax.management.AttributeList;
 import javax.management.AttributeNotFoundException;
 import javax.management.DynamicMBean;
@@ -167,7 +168,6 @@ public final class ConfigurationBean extends ManagementBeanProvider
             return config.get( attribute );
         }
 
-        //TODO make sure we are not returning Strings but real Attributes
         @Override
         public AttributeList getAttributes( String[] attributes )
         {
@@ -176,7 +176,7 @@ public final class ConfigurationBean extends ManagementBeanProvider
             {
                 try
                 {
-                    result.add( getAttribute( attribute ) );
+                    result.add( new Attribute( attribute, getAttribute( attribute ) ) );
                 }
                 catch ( Exception e )
                 {
