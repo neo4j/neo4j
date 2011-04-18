@@ -41,6 +41,22 @@ The following procedure should work on most popular Linux distributions:
    * should indicate that the server is not running
 4. `service neo4jd start`
    * will start the server
+
+== Macintosh Service ==
+
+Neo4j can be installed as a Mac launchd job:
+
+1. `cd $NEO4J_HOME`
+2. `sudo ./bin/neo4j install`
+   * if asked, enter your password to gain super-user privileges
+3. `launchctl load ~/Library/LaunchAgents/wrapper.neo4jd.plist`
+   * needed to tell launchd about the "job"
+4. `launchctl list | grep neo`
+   * should reveal the launchd "wrapper.neo4jd" job for running the Neo4j Server
+5. `launchctl start wrapper.neo4jd`
+   * to start the Neo4j Server under launchd control
+6. `./bin/neo4j status`
+   * should indicate that the server is running
    
    
 == Multiple Server instances on one machine ==
