@@ -6,6 +6,8 @@ import org.junit.Assert._
 import org.junit.{After, Before, Test}
 import org.neo4j.kernel.{AbstractGraphDatabase, ImpermanentGraphDatabase}
 import org.neo4j.graphdb.Node
+import pipes.Pipe
+import projections.Projection
 
 class ExecutionEngineTest {
   var graph: AbstractGraphDatabase = null
@@ -32,8 +34,8 @@ class ExecutionEngineTest {
     )
 
     val result = execute(query)
-    assertEquals("node", result.columnNames.head)
-    assertEquals(List(refNode), result.column("node").toList )
+//    assertEquals("node", result.columnNames.head)
+    assertEquals(List(refNode), result.columnAs[Node]("node").toList )
   }
 
   @Test def shouldGetOtherNode() {
@@ -48,7 +50,7 @@ class ExecutionEngineTest {
     )
 
     val result = execute(query)
-    assertEquals(List(node), result.column("node").toList)
+    assertEquals(List(node), result.columnAs[Node]("node").toList)
   }
 
   @Test def shouldGetTwoNodes() {
@@ -63,7 +65,7 @@ class ExecutionEngineTest {
     )
 
     val result = execute(query)
-    assertEquals(List(refNode, node), result.column("node").toList)
+    assertEquals(List(refNode, node), result.columnAs[Node]("node").toList)
   }
 
   @Test def shouldGetNodeProperty() {
@@ -79,7 +81,8 @@ class ExecutionEngineTest {
     )
 
     val result = execute(query)
-    assertEquals(List(name), result.column("node.name").toList)
+    var list = result.columnAs[String]("node.name").toList
+    assertEquals(List(name), list)
   }
 
   @Test def shouldFilterOutBasedOnName() {
@@ -98,7 +101,7 @@ class ExecutionEngineTest {
     )
 
     val result = execute(query)
-    assertEquals(List(node1), result.column("node").toList)
+    assertEquals(List(node1), result.columnAs[Node]("node").toList)
   }
 
   @Test def shouldOutputTheCartesianProductOfTwoNodes() {
@@ -117,10 +120,13 @@ class ExecutionEngineTest {
     )
 
     val result = execute(query)
-//    assertEquals(List(node1), result)
+    val n1 = result.columnAs[Node]("n1").toList
+    val n2 = result.columnAs[Node]("n2").toList
+    assertEquals(List(node1), n1)
+    assertEquals(List(node2), n2)
   }
 
-  def execute(query: Query):ExecutionResult = {
+  def execute(query: Query) = {
     val result = engine.execute(query)
     println(query)
     result
