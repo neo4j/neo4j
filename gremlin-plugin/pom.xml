@@ -49,6 +49,11 @@
             <artifactId>server-api</artifactId>
             <version>${neo4j.version}</version>
         </dependency>
+        <!--<dependency>
+            <groupId>com.tinkerpop.blueprints</groupId>
+            <artifactId>blueprints-neo4j-graph</artifactId>
+            <version>0.6</version>
+        </dependency>-->
         <dependency>
             <groupId>com.tinkerpop</groupId>
             <artifactId>blueprints</artifactId>
@@ -63,6 +68,16 @@
             <groupId>com.tinkerpop</groupId>
             <artifactId>gremlin</artifactId>
             <version>0.9</version>
+        </dependency>
+        <dependency>
+            <groupId>org.codehaus.groovy</groupId>
+            <artifactId>groovy</artifactId>
+            <version>1.7.5</version>
+        </dependency>
+        <dependency>
+            <groupId>javax.script</groupId>
+            <artifactId>script-api</artifactId>
+            <version>1.0</version>
         </dependency>
         <!--end neo4j -->
 
