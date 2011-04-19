@@ -6,6 +6,9 @@ import com.tinkerpop.blueprints.pgm.Vertex;
 import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jEdge;
 import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
 import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jVertex;
+import com.tinkerpop.gremlin.jsr223.GremlinScriptEngine;
+import com.tinkerpop.gremlin.jsr223.GremlinScriptEngineFactory;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.server.plugins.Description;
 import org.neo4j.server.plugins.Name;
@@ -20,7 +23,7 @@ import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.RepresentationType;
 import org.neo4j.server.rest.repr.ValueRepresentation;
 
-import javax.script.ScriptContext;
+import javax.script.Bindings;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
@@ -43,24 +46,19 @@ import java.util.List;
 @Description("A server side gremlin plugin for the neo4j REST server that will perform various node traversals and searches")
 public class GremlinPlugin extends ServerPlugin {
 
+    private final String g = "g";
     private final ScriptEngine engine = new ScriptEngineManager().getEngineByName("gremlin");
-
-    /**
-     * This will give a plugin of type
-     * curl -d 'script=g.v(0).outE' http://localhost:7474/db/data/ext/GremlinPlugin/node/0/execute_from_node
-     *
-     * @param script
-     * @return
-     */
+    
     @Name("execute_script")
-    @Description("execute a Gremlin script with 'g' set to the Neo4jGraph and 'results' containing the results. Only results of one type at a time (Vertex, Edge, Graph) supported with now.")
+    @Description("execute a Gremlin script with 'g' set to the Neo4jGraph and 'results' containing the results. Only results of one object type is supported.")
     @PluginTarget(GraphDatabaseService.class)
     public Representation executeScript(@Source final GraphDatabaseService neo4j, @Description("The Gremlin script") @Parameter(name = "script", optional = false) final String script) {
-        Neo4jGraph graph = new Neo4jGraph(neo4j);
-        this.engine.getBindings(ScriptContext.ENGINE_SCOPE).put("g", graph);
+        final Neo4jGraph graph = new Neo4jGraph(neo4j);
+        final Bindings bindings = new SimpleBindings();
+        bindings.put(g, graph);
 
         try {
-            final Object result = engine.eval(script);
+            final Object result = this.engine.eval(script, bindings);
             if (result instanceof Iterable) {
                 RepresentationType type = RepresentationType.STRING;
                 final List<Representation> results = new ArrayList<Representation>();
@@ -87,12 +85,22 @@ public class GremlinPlugin extends ServerPlugin {
                 }
                 return new ListRepresentation(type, results);
             } else {
-                return ValueRepresentation.string(result.toString());
+                if (result instanceof Vertex) {
+                    return new NodeRepresentation(((Neo4jVertex) result).getRawVertex());
+                } else if (result instanceof Edge) {
+                    return new RelationshipRepresentation(((Neo4jEdge) result).getRawEdge());
+                } else if (result instanceof Graph) {
+                    return ValueRepresentation.string(graph.getRawGraph().toString());
+                } else if (result instanceof Double || result instanceof Float) {
+                    return ValueRepresentation.number(((Number) result).doubleValue());
+                } else if (result instanceof Long || result instanceof Integer) {
+                    return ValueRepresentation.number(((Number) result).longValue());
+                } else {
+                    return ValueRepresentation.string(result.toString());
+                }
             }
         } catch (final ScriptException e) {
             return ValueRepresentation.string(e.getMessage());
-        } finally {
-            this.engine.setBindings(new SimpleBindings(), ScriptContext.ENGINE_SCOPE);
         }
     }
 }

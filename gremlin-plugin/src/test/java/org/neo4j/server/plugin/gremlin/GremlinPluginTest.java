@@ -155,5 +155,27 @@ public class GremlinPluginTest {
         }
 
     }
+    
+    
+    
+    @Test
+    public void testExecuteScriptGetVerticesBySpecifiedName() {
+        String script = "g.V{name:'firstNode'}";
+        Transaction tx = null;
+        try {
+            tx = neo4j.beginTx();
+            Representation representation = plugin.executeScript(neo4j, script);
+            System.out.println(json.format(representation));
+            assertNotNull(representation);
+            tx.success();
+
+            System.err.println("GremlinPluginTest::executeScript testExecuteScriptGetVerticesBySpecifiedName the contents of the representation object=" + representation.toString());
+        } catch (Throwable t) {
+            t.printStackTrace();
+        } finally {
+            tx.finish();
+        }
+
+    }
 
 }
