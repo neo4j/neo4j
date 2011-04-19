@@ -1,7 +1,7 @@
-package org.neo4j.lab.cypher.projections
+package org.neo4j.lab.cypher
 
 import org.neo4j.lab.cypher.pipes.Pipe
-import org.neo4j.graphdb.{Node, NotFoundException}
+import org.neo4j.graphdb.NotFoundException
 
 /**
  * Created by Andres Taylor

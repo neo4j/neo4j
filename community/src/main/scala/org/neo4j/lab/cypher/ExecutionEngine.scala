@@ -3,7 +3,7 @@ package org.neo4j.lab.cypher
 import commands._
 import pipes.{FilteringPipe, Pipe, FromPump}
 import org.neo4j.graphdb.{NotFoundException, Node, GraphDatabaseService}
-import projections.Projection
+
 
 /**
  * Created by Andres Taylor

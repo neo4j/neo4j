@@ -6,8 +6,6 @@ import org.junit.Assert._
 import org.junit.{After, Before, Test}
 import org.neo4j.kernel.{AbstractGraphDatabase, ImpermanentGraphDatabase}
 import org.neo4j.graphdb.Node
-import pipes.Pipe
-import projections.Projection
 
 class ExecutionEngineTest {
   var graph: AbstractGraphDatabase = null
