@@ -11,6 +11,16 @@ import org.neo4j.graphdb.{NotFoundException, Node, GraphDatabaseService}
  * Time: 09:44
  */
 class ExecutionEngine(val graph: GraphDatabaseService) {
+  def execute(query: Query): Projection = query match {
+    case Query(select, from, where) => {
+
+      val sources: Pipe = createSourcePump(from)
+      val filteredSources: Pipe = createFilteredSources(where, sources)
+      val transformers: Seq[(Map[String, Any]) => Map[String, Any]] = createProjectionTransformers(select)
+
+      new Projection(filteredSources, transformers)
+    }
+  }
 
   def createProjectionTransformers(select: Select): Seq[(Map[String, Any]) => Map[String, Any]] = {
     val transformers = select.selectItems.map((selectItem) => {
@@ -22,32 +32,22 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
     transformers
   }
 
-  def execute(query: Query): Projection = query match {
-    case Query(select, from, where) => {
-
-      val sources: Pipe = createSourcePump(from)
-
-      val filteredSources = where match {
-        case None => sources
-        case Some(w) => {
-          w.clauses.head match {
-            case StringEquals(variable, propName, expectedValue) => {
-              new FilteringPipe(sources, (map) => {
-                val value = map.getOrElse(variable, throw new NotFoundException()).asInstanceOf[Node]
-                value.getProperty(propName) == expectedValue
-              })
-            }
+  def createFilteredSources(where: Option[Where], sources: Pipe): Pipe = {
+    val filteredSources = where match {
+      case None => sources
+      case Some(w) => {
+        w.clauses.head match {
+          case StringEquals(variable, propName, expectedValue) => {
+            new FilteringPipe(sources, (map) => {
+              val value = map.getOrElse(variable, throw new NotFoundException()).asInstanceOf[Node]
+              value.getProperty(propName) == expectedValue
+            })
           }
         }
       }
-
-      val transformers: Seq[(Map[String, Any]) => Map[String, Any]] = createProjectionTransformers(select)
-
-
-      new Projection(filteredSources, transformers)
     }
+    filteredSources
   }
-
 
   def nodeOutput(column: String)(m: Map[String, Any]): Map[String, Any] = Map(column -> m.getOrElse(column, throw new NotFoundException))
 
