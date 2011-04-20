@@ -131,8 +131,9 @@ public class NeoServerFunctionalTest {
         server = ServerBuilder.server().withPassingStartupHealthcheck().onPort(contestedPort).withRandomDatabaseDir().build();
         server.start();
 
+        // Don't include the SEVERE string since it's OS-regional-settings-specific
         assertThat( appender.toString(), containsString( String.format(
-                "SEVERE: Failed to start Neo Server on port [%s]",
+                ": Failed to start Neo Server on port [%s]",
                 server.getWebServerPort() ) ) );
         socket.close();
     }

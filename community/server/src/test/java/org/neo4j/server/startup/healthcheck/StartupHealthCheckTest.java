@@ -57,7 +57,9 @@ public class StartupHealthCheckTest {
         InMemoryAppender appender = new InMemoryAppender(StartupHealthCheck.log);
         check.run();
         
-        assertThat( appender.toString(), containsString( "SEVERE: blah blah" ) );
+        // Previously we tested on "SEVERE: blah blah" but that's a string depending
+        // on the regional settings of the OS.
+        assertThat( appender.toString(), containsString( ": blah blah" ) );
     }
     
     @Test

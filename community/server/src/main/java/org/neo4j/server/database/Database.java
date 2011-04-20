@@ -28,6 +28,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.Config;
 import org.neo4j.server.logging.Logger;
 import org.rrd4j.core.RrdDb;
 
@@ -68,13 +69,22 @@ public class Database
             databaseProperties = new HashMap<String, String>();
         }
 
-        databaseProperties.put( org.neo4j.kernel.Config.ENABLE_REMOTE_SHELL, "true" );
-        databaseProperties.put( org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS, "true" );
+        putIfAbsent( databaseProperties, Config.ENABLE_REMOTE_SHELL, "true" );
+        databaseProperties.put( Config.KEEP_LOGICAL_LOGS, "true" );
         databaseProperties.put( UdcProperties.UDC_SOURCE_KEY, "server" );
 
         return factory.createDatabase( databaseStoreDirectory, databaseProperties );
     }
 
+
+    private static void putIfAbsent( Map<String, String> databaseProperties,
+            String configKey, String configValue )
+    {
+        if ( databaseProperties.get( configKey ) == null )
+        {
+            databaseProperties.put( configKey, configValue );
+        }
+    }
 
     public void startup()
     {
