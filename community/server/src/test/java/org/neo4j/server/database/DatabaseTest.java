@@ -37,7 +37,6 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellLobby;
-import org.neo4j.shell.impl.AbstractServer;
 
 public class DatabaseTest {
 
@@ -100,7 +99,7 @@ public class DatabaseTest {
     @Test
     public void connectWithShellOnDefaultPortWhenNoShellConfigSupplied() throws Exception
     {
-        ShellLobby.newClient( AbstractServer.DEFAULT_PORT, AbstractServer.DEFAULT_NAME ).shutdown();
+        ShellLobby.newClient().shutdown();
     }
     
     @Test
@@ -114,7 +113,7 @@ public class DatabaseTest {
         
         // Try to connect with a shell client to that custom port.
         // Throws exception if unable to connect
-        ShellLobby.newClient( customPort, AbstractServer.DEFAULT_NAME ).shutdown();
+        ShellLobby.newClient( customPort ).shutdown();
         
         otherDb.shutdown();
         FileUtils.forceDelete( tempDir );
@@ -127,7 +126,7 @@ public class DatabaseTest {
         {
             try
             {
-                ShellLobby.newClient( startingPort, AbstractServer.DEFAULT_NAME ).shutdown();
+                ShellLobby.newClient( startingPort ).shutdown();
                 startingPort++;
             }
             catch ( ShellException e )
