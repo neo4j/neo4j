@@ -22,7 +22,6 @@ package org.neo4j.server.webdriver;
 import java.util.Date;
 
 import org.hamcrest.Matcher;
-import org.openqa.selenium.TimeoutException;
 
 public class Condition<T>
 {
@@ -59,12 +58,12 @@ public class Condition<T>
           {
              throw new RuntimeException(e);
           }
-          if (matcher.matches( state )) {
+          if ( isFulfilled() ) {
               return;
           }
         }
         
-        throw new TimeoutException( errorMessage );
+        throw new ConditionTimeoutException( errorMessage );
     }
     
 }
