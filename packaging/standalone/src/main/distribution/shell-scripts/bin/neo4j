@@ -747,6 +747,7 @@ waitforjavastartup() {
     if [ "X$ECHOOPT" != "X" ] ; then
         echo ""
     fi
+    rm -f $JAVASTATUSFILE
 }
  
 startwait() {
@@ -839,7 +840,7 @@ stopit() {
             exit 1
         fi
     else
-        eval echo '\tpid: $pid'
+        #eval echo '\tpid: $pid'
         if [ "X$IGNORE_SIGNALS" = "X" ]
         then
             # Running so try to stop it.
