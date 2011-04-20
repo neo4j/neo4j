@@ -121,14 +121,15 @@ public class Jetty6WebServer implements WebServer
         ServletHolder servletHolder = new ServletHolder(container);
         servletHolder.setInitParameter("com.sun.jersey.config.property.packages", toCommaSeparatedList(packageNames));
         servletHolder.setInitParameter(ResourceConfig.PROPERTY_CONTAINER_RESPONSE_FILTERS, AllowAjaxFilter.class.getName());
-        log.info("Adding JAXRS package %s at [%s]", packageNames, mountPoint);
+        log.debug( "Adding JAXRS package %s at [%s]", packageNames, mountPoint );
         jaxRSPackages.put(mountPoint, servletHolder);
     }
 
     @Override
     public void addServlet( Servlet unmanagedServlet, String mountPoint )
     {
-        log.info("adding Servlet [%s] at [%s]", unmanagedServlet.getClass().getName(), mountPoint);
+        log.debug( "adding Servlet [%s] at [%s]",
+                unmanagedServlet.getClass().getName(), mountPoint );
         Context servletContext = new Context(jetty, mountPoint);
         SessionManager sm = new HashSessionManager();
         SessionHandler sh = new SessionHandler(sm);
@@ -177,11 +178,12 @@ public class Jetty6WebServer implements WebServer
                 staticContext.setContextPath(mountPoint);
                 URL resourceLoc = getClass().getClassLoader().getResource(contentLocation);
                 if(resourceLoc != null) {
-                    log.info("Found [%s]", resourceLoc);
+                    log.debug( "Found [%s]", resourceLoc );
                     URL url = resourceLoc.toURI().toURL();
                     final Resource resource = Resource.newResource(url);
                     staticContext.setBaseResource(resource);
-                    log.info("Mounting static content from [%s] at [%s]", url, mountPoint);
+                    log.debug( "Mounting static content from [%s] at [%s]",
+                            url, mountPoint );
                     jetty.addHandler(staticContext);
                 } else {
                     log.error("No static content available for Neo Server at port [%d], management console may not be available.", jettyPort);
@@ -198,7 +200,7 @@ public class Jetty6WebServer implements WebServer
         for (String mountPoint : jaxRSPackages.keySet()) {
 
             ServletHolder servletHolder = jaxRSPackages.get(mountPoint);
-            log.info("Mounting servlet at [%s]", mountPoint);
+            log.debug( "Mounting servlet at [%s]", mountPoint );
             Context jerseyContext = new Context(jetty, mountPoint);
             SessionManager sm = new HashSessionManager();
             SessionHandler sh = new SessionHandler(sm);

@@ -33,8 +33,6 @@ import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
 import org.neo4j.server.web.Jetty6WebServer;
 
-import uk.org.lidalia.sysoutslf4j.context.SysOutOverSLF4J;
-
 public abstract class Bootstrapper
 {
     public static final Integer OK = 0;
@@ -65,7 +63,6 @@ public abstract class Bootstrapper
             server = new NeoServerWithEmbeddedWebServer( this, new AddressResolver(),
                     startupHealthCheck, getConfigFile(), webServer, getServerModules() );
             server.start();
-            log.info( "Server started on [%s]", server.baseUri() );
 
             Runtime.getRuntime().addShutdownHook( new Thread()
             {
@@ -165,6 +162,6 @@ public abstract class Bootstrapper
 
     private static void configureLogging()
     {
-        SysOutOverSLF4J.sendSystemOutAndErrToSLF4J();
+        // SysOutOverSLF4J.sendSystemOutAndErrToSLF4J();
     }
 }
