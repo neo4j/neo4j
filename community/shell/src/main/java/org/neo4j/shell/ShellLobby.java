@@ -19,6 +19,7 @@
  */
 package org.neo4j.shell;
 
+import org.neo4j.shell.impl.AbstractServer;
 import org.neo4j.shell.impl.RemoteClient;
 import org.neo4j.shell.impl.RmiLocation;
 import org.neo4j.shell.impl.SameJvmClient;
@@ -73,9 +74,22 @@ public abstract class ShellLobby
         return newClient( "localhost", port, name );
     }
     
+    /**
+     * Creates a client and "starts" it, i.e. grabs the console prompt.
+     * It will try to find a remote server on "localhost" and default RMI name.
+     * @param port the RMI port.
+     * @throws ShellException if no server was found at the RMI location.
+     * @return the new shell client.
+     */
+    public static ShellClient newClient( int port )
+            throws ShellException
+    {
+        return newClient( "localhost", port );
+    }
+    
 	/**
 	 * Creates a client and "starts" it, i.e. grabs the console prompt.
-	 * It will try to find a remote server on "localhost".
+	 * It will try to find a remote server to connect to.
      * @param host the host (IP or domain name).
 	 * @param port the RMI port.
 	 * @param name the RMI name.
@@ -88,6 +102,20 @@ public abstract class ShellLobby
 		return newClient( RmiLocation.location( host, port, name ) );
 	}
 
+    /**
+     * Creates a client and "starts" it, i.e. grabs the console prompt.
+     * It will try to find a remote server to connect to. Uses default RMI name.
+     * @param host the host (IP or domain name).
+     * @param port the RMI port.
+     * @throws ShellException if no server was found at the RMI location.
+     * @return the new shell client.
+     */
+    public static ShellClient newClient( String host, int port )
+        throws ShellException
+    {
+        return newClient( host, port, AbstractServer.DEFAULT_NAME );
+    }
+    
 	/**
 	 * Creates a client and "starts" it, i.e. grabs the console prompt.
 	 * It will try to find a remote server specified by {@code serverLocation}.
@@ -99,5 +127,30 @@ public abstract class ShellLobby
 		throws ShellException
 	{
 		return new RemoteClient( serverLocation );
+	}
+	
+    /**
+     * Creates a client and "starts" it, i.e. grabs the console prompt.
+     * It will try to find a remote server on {@code host} with default
+     * port and name.
+     * @param host host to connect to.
+     * @throws ShellException if no server was found at the RMI location.
+     * @return the new shell client.
+     */
+	public static ShellClient newClient( String host ) throws ShellException
+	{
+	    return newClient( host, AbstractServer.DEFAULT_PORT, AbstractServer.DEFAULT_NAME );
+	}
+	
+    /**
+     * Creates a client and "starts" it, i.e. grabs the console prompt.
+     * It will try to find a remote server on localhost with default
+     * port and name.
+     * @throws ShellException if no server was found at the RMI location.
+     * @return the new shell client.
+     */
+	public static ShellClient newClient() throws ShellException
+	{
+        return newClient( "localhost", AbstractServer.DEFAULT_PORT, AbstractServer.DEFAULT_NAME );
 	}
 }
