@@ -11,16 +11,16 @@
         %h3 End node
       :each key in relationshipList.getPropertyKeys()
         %th
-          %h3= key
+          %h3= htmlEscape(key)
     :each relationship in relationshipList.getRelationships()
       %tr
         %td
-          %a.micro-button(href="#/data/search/rel:#{relationship.getId()}/")= "Relationship " + relationship.getId()
+          %a.micro-button(href="#/data/search/rel:#{htmlEscape(relationship.getId())}/")= "Relationship " + htmlEscape(relationship.getId())
         %td
-          %a.micro-button(href="#/data/search/#{relationship.getStartId()}/")= "Node " +relationship.getStartId()
-        %td.small= relationship.getItem().getType()
+          %a.micro-button(href="#/data/search/#{htmlEscape(relationship.getStartId())}/")= "Node " + htmlEscape(relationship.getStartId())
+        %td.small= htmlEscape(relationship.getItem().getType())
         %td
-          %a.micro-button(href="#/data/search/#{relationship.getEndId()}/")= "Node " + relationship.getEndId()
+          %a.micro-button(href="#/data/search/#{htmlEscape(relationship.getEndId())}/")= "Node " + htmlEscape(relationship.getEndId())
         
         :each key in relationshipList.getPropertyKeys()
           %td.small

@@ -1,8 +1,8 @@
 %ul
   :each line in lines
-    %li = line
+    %li = htmlEscape(line)
 
   %li 
     :if showPrompt
       gremlin> 
-      %input#console-input(type="text" value="#{prompt}")
+      %input#console-input(type="text" value="#{htmlEscape(prompt)}")
