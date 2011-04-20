@@ -96,9 +96,9 @@ define(
         state = @propertyContainer.getSaveState()
         switch state
           when "saved" then @setSaveState "Saved", true
-          when "notSaved" then @setSaveState "Not saved", false
+          when "notSaved" then @setSaveState "Save", false
           when "saving" then @setSaveState "Saving..", true
-          when "cantSave" then @setSaveState "Can't save", true
+          when "cantSave" then @setSaveState "Save", true
 
       setSaveState : (text, disabled) =>
         button = $("button.data-save-properties", @el)

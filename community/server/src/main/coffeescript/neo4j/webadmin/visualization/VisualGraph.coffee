@@ -41,7 +41,7 @@ define(
         @relationshipStyler = new RelationshipStyler()
 
         @dataModel = new VisualDataModel()
-        #@sys = arbor.ParticleSystem(600, 100, 0.8, false, 30, 0.03)
+
         @sys = arbor.ParticleSystem()
         @sys.parameters({
           repulsion:10, 
