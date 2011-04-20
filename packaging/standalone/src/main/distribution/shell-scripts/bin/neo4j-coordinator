@@ -34,7 +34,7 @@ PRIORITY=
 # Location of the pid file.
 PIDDIR="../data"
 
-WAIT_AFTER_STARTUP=0
+WAIT_AFTER_STARTUP=5
 
 # If set, wait for the wrapper to report that the daemon has started
 WAIT_FOR_STARTED_STATUS=true
@@ -741,6 +741,7 @@ waitforjavastartup() {
     if [ "X$ECHOOPT" != "X" ] ; then
         echo ""
     fi
+    rm -f $JAVASTATUSFILE
 }
  
 startwait() {
