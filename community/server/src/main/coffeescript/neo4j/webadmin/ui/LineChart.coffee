@@ -21,8 +21,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 define(
   ['lib/DateFormat'
    'neo4j/webadmin/ui/Tooltip'
+   'ribcage/security/HtmlEscaper'
    'lib/jquery.flot','lib/backbone']
-  (DateFormat, Tooltip) ->
+  (DateFormat, Tooltip,HtmlEscaper) ->
+
     class LineChart
       
       timezoneOffset = (new Date()).getTimezoneOffset()  * 60 * 1000
@@ -49,6 +51,8 @@ define(
       constructor : (el) ->
         @el = $(el)
         @settings = @defaultSettings
+        
+        @htmlEscaper = new HtmlEscaper
 
         @tooltip = new Tooltip({ closeButton : false })
         
@@ -62,7 +66,7 @@ define(
             x = @settings.tooltipXFormatter(item.datapoint[0])
             y = @settings.tooltipYFormatter(item.datapoint[1])
 
-            @tooltip.show("<b>" + item.series.label + "</b><span class='chart-y'>" + y + "</span><span class='chart-x'>" + x + "</span>", [item.pageX, item.pageY])
+            @tooltip.show("<b>" + @htmlEscaper.escape(item.series.label) + "</b><span class='chart-y'>" + @htmlEscaper.escape(y) + "</span><span class='chart-x'>" + @htmlEscaper.escape(x) + "</span>", [item.pageX, item.pageY])
 
         else
           @tooltip.hide()
