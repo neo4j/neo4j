@@ -756,7 +756,7 @@ startwait() {
     while [ $i -lt $WAIT_AFTER_STARTUP ]
     do
         sleep 1
-        echo $ECHOOPT"."
+        #echo $ECHOOPT"."
         i=`expr $i + 1`
     done
     if [ $WAIT_AFTER_STARTUP -gt 0 -o $WAIT_FOR_STARTED_STATUS = true ]
