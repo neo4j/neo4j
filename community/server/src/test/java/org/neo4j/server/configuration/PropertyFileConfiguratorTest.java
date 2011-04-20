@@ -42,7 +42,7 @@ public class PropertyFileConfiguratorTest {
         assertNotNull(configurator.getDatabaseTuningProperties().get("neostore.nodestore.db.mapped_memory"));
         assertEquals("25M", configurator.getDatabaseTuningProperties().get("neostore.nodestore.db.mapped_memory"));
     }
-    
+
     @Test
     public void whenDatabaseTuningFilePresentInDefaultLocationShouldNotLoadIfAnotherSpecified() throws IOException {
         int unlikelyDefaultMemoryMappedValue = 8351;
@@ -56,7 +56,7 @@ public class PropertyFileConfiguratorTest {
         assertNotNull(configurator.getDatabaseTuningProperties().get("neostore.nodestore.db.mapped_memory"));
         assertEquals(String.valueOf(unlikelyDefaultMemoryMappedValue) + "M", configurator.getDatabaseTuningProperties().get("neostore.nodestore.db.mapped_memory"));
     }
-    
+
     @Test
     public void shouldLogInfoWhenDefaultingToTuningPropertiesFileInTheSameDirectoryAsTheNeoServerPropertiesFile() throws IOException {
         File emptyPropertyFile = PropertyFileBuilder.builder().build();
@@ -65,6 +65,6 @@ public class PropertyFileConfiguratorTest {
         InMemoryAppender appender = new InMemoryAppender(PropertyFileConfigurator.log);
         PropertyFileConfigurator configurator = new PropertyFileConfigurator(emptyPropertyFile);
         
-        assertThat(appender.toString(), containsString(String.format("INFO - No database tuning file explicitly set, defaulting to [%s]",tuningPropertiesFile.getAbsolutePath())));
+        assertThat(appender.toString(), containsString(String.format("INFO: No database tuning file explicitly set, defaulting to [%s]",tuningPropertiesFile.getAbsolutePath())));
     }
 }

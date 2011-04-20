@@ -117,7 +117,9 @@ public class NeoServerFunctionalTest {
         server.start();
         server.stop();
         server = null; // Need this to prevent the server being stopped twice
-        assertThat(appender.toString(), containsString("INFO - Successfully shutdown Neo Server on port [7474], database ["));
+        assertThat(
+                appender.toString(),
+                containsString( "INFO: Successfully shutdown Neo Server on port [7474], database [" ) );
     }
 
     @Test
@@ -129,7 +131,9 @@ public class NeoServerFunctionalTest {
         server = ServerBuilder.server().withPassingStartupHealthcheck().onPort(contestedPort).withRandomDatabaseDir().build();
         server.start();
 
-        assertThat(appender.toString(), containsString(String.format("ERROR - Failed to start Neo Server on port [%s]", server.getWebServerPort())));
+        assertThat( appender.toString(), containsString( String.format(
+                "SEVERE: Failed to start Neo Server on port [%s]",
+                server.getWebServerPort() ) ) );
         socket.close();
     }
 
