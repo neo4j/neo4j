@@ -57,7 +57,9 @@ public class StartupHealthCheckTest {
         InMemoryAppender appender = new InMemoryAppender(StartupHealthCheck.log);
         check.run();
         
-        assertThat(appender.toString(), containsString("ERROR - blah blah"));
+        // Previously we tested on "SEVERE: blah blah" but that's a string depending
+        // on the regional settings of the OS.
+        assertThat( appender.toString(), containsString( ": blah blah" ) );
     }
     
     @Test
@@ -72,20 +74,24 @@ public class StartupHealthCheckTest {
         
         for(int i = 0; i < rules.length; i++) {
             rules[i] = new StartupHealthCheckRule() {
+                @Override
                 public boolean execute(Properties properties) {
                     return true;
                 }
 
+                @Override
                 public String getFailureMessage() {
                     return "blah blah";
                 }};
         }
         
         rules[rules.length / 2] = new StartupHealthCheckRule() {
+            @Override
             public boolean execute(Properties properties) {
                 return false;
             }
 
+            @Override
             public String getFailureMessage() {
                 return "blah blah";
             }};
@@ -98,10 +104,12 @@ public class StartupHealthCheckTest {
         
         for(int i = 0; i < rules.length; i++) {
             rules[i] = new StartupHealthCheckRule() {
+                @Override
                 public boolean execute(Properties properties) {
                     return true;
                 }
 
+                @Override
                 public String getFailureMessage() {
                     return "blah blah";
                 }};

@@ -85,17 +85,13 @@ public class Jetty6WebServer implements WebServer
     {
         try
         {
+            jetty.setStopAtShutdown( false );
             jetty.stop();
             jetty.join();
         }
         catch ( Exception e )
         {
             throw new RuntimeException(e);
-        }
-        finally
-        {
-            // Jetty doesn't remove its shutdown hook automatically on stop()
-            jetty.setStopAtShutdown( false );
         }
     }
 
