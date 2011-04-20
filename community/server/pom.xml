@@ -34,7 +34,7 @@
     <pico.version>2.11.2</pico.version>
     <cukeArgs />
 
-    <webdriver.version>2.0b1</webdriver.version>
+    <webdriver.version>2.0b3</webdriver.version>
     <webdriver.impl.class>org.openqa.selenium.firefox.FirefoxDriver</webdriver.impl.class>
 
     <neo4js.version>0.7</neo4js.version>
