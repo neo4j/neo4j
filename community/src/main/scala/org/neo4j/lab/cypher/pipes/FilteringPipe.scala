@@ -6,8 +6,10 @@ package org.neo4j.lab.cypher.pipes
  * Time: 22:14 
  */
 
-class FilteringPipe(from: Pipe, filter: (Map[String, Any]) => Boolean) extends Pipe {
+class FilteringPipe(val dependsOn: List[String], filter: (Map[String, Any]) => Boolean) extends Pipe {
+  def columnNames: List[String] = getInput.columnNames
+
   def foreach[U](f: (Map[String, Any]) => U) {
-    from.filter(filter).foreach((map) => f.apply(map))
+    getInput.filter(filter).foreach((map) => f.apply(map))
   }
 }

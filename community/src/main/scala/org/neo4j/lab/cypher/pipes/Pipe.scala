@@ -6,9 +6,21 @@ package org.neo4j.lab.cypher.pipes
  * Time: 21:00 
  */
 
-trait Pipe extends Traversable[Map[String, Any]] {
-  def join(other: Pipe): Pipe = new JoinPipe(this, other)
+abstract class Pipe extends Traversable[Map[String, Any]] {
+  var input: Option[Pipe] = None
 
+  protected def getInput: Pipe = input match {
+    case None => throw new RuntimeException("No input defined yet")
+    case Some(x) => x
+  }
 
+  def dependsOn: List[String]
 
+  def ++(other: Pipe): Pipe = new JoinPipe(this, other)
+
+  def setInput(pipe: Pipe) {
+    input = Some(pipe)
+  }
+
+  def columnNames: List[String]
 }

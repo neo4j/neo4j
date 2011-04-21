@@ -5,7 +5,7 @@ import org.junit.Assert._
 
 import org.junit.{After, Before, Test}
 import org.neo4j.kernel.{AbstractGraphDatabase, ImpermanentGraphDatabase}
-import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.{Direction, DynamicRelationshipType, Node}
 
 class ExecutionEngineTest {
   var graph: AbstractGraphDatabase = null
@@ -32,8 +32,8 @@ class ExecutionEngineTest {
     )
 
     val result = execute(query)
-//    assertEquals("node", result.columnNames.head)
-    assertEquals(List(refNode), result.columnAs[Node]("node").toList )
+    //    assertEquals("node", result.columnNames.head)
+    assertEquals(List(refNode), result.columnAs[Node]("node").toList)
   }
 
   @Test def shouldGetOtherNode() {
@@ -106,22 +106,42 @@ class ExecutionEngineTest {
     //    FROM n1 = NODE(1), n2 = NODE(2)
     //    SELECT n1, n2
 
-    val node1: Node = createNode()
-    val node2: Node = createNode()
+    val n1: Node = createNode()
+    val n2: Node = createNode()
 
     val query = Query(
       Select(NodeOutput("n1"), NodeOutput("n2")),
       List(
-        VariableAssignment("n1", NodeById(List(node1.getId))),
-        VariableAssignment("n2", NodeById(List(node2.getId)))
+        VariableAssignment("n1", NodeById(List(n1.getId))),
+        VariableAssignment("n2", NodeById(List(n2.getId)))
       )
     )
 
     val result = execute(query)
-    val n1 = result.columnAs[Node]("n1").toList
-    val n2 = result.columnAs[Node]("n2").toList
-    assertEquals(List(node1), n1)
-    assertEquals(List(node2), n2)
+
+    assertEquals(List(Map("n1" -> n1, "n2" -> n2)), result.toList)
+  }
+
+  @Test def shouldGetNeighbours() {
+    //    FROM n1 = NODE(1),
+    //      n1 -KNOWS-> n2
+    //    SELECT n1, n2
+
+    val n1: Node = createNode()
+    val n2: Node = createNode()
+    relate(n1, n2, "KNOWS")
+
+    val query = Query(
+      Select(NodeOutput("n1"), NodeOutput("n2")),
+      List(
+        VariableAssignment("n1", NodeById(List(n1.getId))),
+        VariableAssignment("n2", RelatedTo("n1", "KNOWS", Direction.OUTGOING )
+      )
+    ))
+
+    val result = execute(query)
+
+    assertEquals(List(Map("n1" -> n1, "n2" -> n2)), result.toList)
   }
 
   def execute(query: Query) = {
@@ -132,14 +152,30 @@ class ExecutionEngineTest {
 
   def createNode(): Node = createNode(Map[String, Any]())
 
-  def createNode(props: Map[String, Any]): Node = {
+  def inTx[T](f: () => T): T = {
     val tx = graph.beginTx
-    val node = graph.createNode()
 
-    props.foreach((kv) => node.setProperty(kv._1, kv._2))
+    val result = f.apply()
 
     tx.success()
     tx.finish()
-    node
+
+    result
+  }
+
+
+  def relate(n1: Node, n2: Node, relType: String) {
+    inTx(() => {
+      n1.createRelationshipTo(n2, DynamicRelationshipType.withName(relType))
+    })
+  }
+
+  def createNode(props: Map[String, Any]): Node = {
+    inTx(() => {
+      val node = graph.createNode()
+
+      props.foreach((kv) => node.setProperty(kv._1, kv._2))
+      node
+    }).asInstanceOf[Node]
   }
 }
