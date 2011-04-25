@@ -32,6 +32,9 @@ set wrapper_jar="%wrapper_home%\wrapper.jar"
 rem setting java options for wrapper process. depending on the scripts used, the wrapper may require more memory.
 set wrapper_java_options=-Xmx30m
 
+rem the location of the java.util.logging properties file to funnel all wrapper carried libs logging to a safe place
+set wrapper_log_options="-Djava.util.logging.config.file=%wrapper_home%..\conf\wrapper-logging.properties"
+
 rem wrapper bat file for running the wrapper
 set wrapper_bat="%wrapper_home%\wrapper.bat"
 

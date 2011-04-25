@@ -17,5 +17,5 @@ rem
 rem You should have received a copy of the GNU General Public License
 rem along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-echo %java_exe% %wrapper_java_options% -jar %wrapper_jar% %1 %2 %3 %4 %5 %6 %7 %8 %9
-%java_exe% %wrapper_java_options% -jar %wrapper_jar% %1 %2 %3 %4 %5 %6 %7 %8 %9
+echo %java_exe% %wrapper_java_options% %wrapper_log_options% -jar %wrapper_jar% %1 %2 %3 %4 %5 %6 %7 %8 %9
+%java_exe% %wrapper_java_options% %wrapper_log_options% -jar %wrapper_jar% %1 %2 %3 %4 %5 %6 %7 %8 %9
