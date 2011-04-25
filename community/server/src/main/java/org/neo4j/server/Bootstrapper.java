@@ -38,7 +38,9 @@ public abstract class Bootstrapper
     public static final Integer OK = 0;
     public static final Integer WEB_SERVER_STARTUP_ERROR_CODE = 1;
     public static final Integer GRAPH_DATABASE_STARTUP_ERROR_CODE = 2;
-    public static final String KEY_LOG4J_CONFIG_XML_PATH = "log4j.config.xml.path";
+    /*
+        public static final String KEY_LOG4J_CONFIG_XML_PATH = "log4j.config.xml.path";
+    */
 
     private static Logger log = Logger.getLogger( NeoServerBootstrapper.class );
 

@@ -22,7 +22,7 @@ package org.neo4j.server.configuration.validation;
 import java.util.ArrayList;
 
 import org.apache.commons.configuration.Configuration;
-import org.apache.log4j.Logger;
+import org.neo4j.server.logging.Logger;
 
 public class Validator {
 
