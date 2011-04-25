@@ -15,6 +15,7 @@ WHERE
     neo4j/store/dir   is the path to where the neo4j graph store is located.
                This is the only mandatory parameter, and must be first,
                other options may be specified in any order.
+               Be sure to stop the Neo4j instance using this location.
     --rebuild  ensures that the program is compiled from scratch first.
     --help     display this message and exit.
     <file>     is the output file to generate (default is graph.dot).
@@ -26,6 +27,16 @@ WHERE
     <format>   are graph output formatting configurations, these are structured
                as:  <optionParameter>=<value>[,<more>,<values>...]
                Example: relationshipTitle=\"@type [@id]\"
+
+               Currently supported options are:
+
+               - nodeTitle=VAL
+               - relationshipTitle=VAL
+                 Sets the title of a node/relationship. VAL is a string.
+
+               - nodePropertyFilter=FIELDS
+                 FIELDS is a comma-separated list of the fields that should be
+                 included in the result. E.g., nodePropertyFilter=id,name
 "
 }
 
