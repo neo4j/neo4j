@@ -65,7 +65,7 @@ define(
         energy = @sys.energy()
         if energy?
           meanEnergy = energy.mean
-          if  meanEnergy < 0.01 then @sys.stop()
+          if meanEnergy < 0.01 then @sys.stop()
 
       setNode : (node) =>
         @setNodes([node])
@@ -91,7 +91,6 @@ define(
               
               [rels, relatedNodes] = result
               @dataModel.addNode node, rels, relatedNodes
-    
               if (--fetchCountdown) == 0
                 @sys.merge @dataModel.getVisualGraph()
                 @start()
@@ -145,6 +144,9 @@ define(
         if @sys.renderer?
           @sys.renderer.start()
         @sys.start()
+        
+        # Force a redraw
+        @sys.renderer.redraw()
 
       attach : (parent) =>
         @detach()
