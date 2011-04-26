@@ -120,7 +120,7 @@ public class ConfigurationParser
         }
     }
 
-    private List<StyleParameter> styles = new ArrayList<StyleParameter>();
+    private final List<StyleParameter> styles = new ArrayList<StyleParameter>();
 
     public final StyleParameter[] styles( StyleParameter... params )
     {
@@ -227,7 +227,7 @@ public class ConfigurationParser
         private String untilNonAlfa( int start )
         {
             int end = start;
-            while ( Character.isLetter( pattern.charAt( end ) ) )
+            while ( end < pattern.length() && Character.isLetter( pattern.charAt( end ) ) )
             {
                 end++;
             }
