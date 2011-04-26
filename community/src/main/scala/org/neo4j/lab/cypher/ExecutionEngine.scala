@@ -1,8 +1,8 @@
 package org.neo4j.lab.cypher
 
 import commands._
-import pipes.{FilteringPipe, Pipe, FromPump}
 import org.neo4j.graphdb.{NotFoundException, Node, GraphDatabaseService}
+import pipes.{RelatedToPipe, FilteringPipe, Pipe, FromPump}
 
 
 /**
@@ -79,7 +79,7 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
   private def createSourcePumps(from: List[VariableAssignment]): List[Pipe] = {
     val roots = from.map((va) => va.fromitem match {
       case NodeById(ids) => new FromPump(va.variable, ids.map(graph.getNodeById))
-//      case RelatedTo(column, relType, direction) =
+      case RelatedTo(column, relType, direction) => new RelatedToPipe(column, va.variable, relType, direction)
       //        case NodeByIndex(idx, value) => graph.index.forNodes("idx").get()
     }
 
