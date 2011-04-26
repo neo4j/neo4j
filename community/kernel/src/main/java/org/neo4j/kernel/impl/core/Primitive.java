@@ -439,8 +439,10 @@ abstract class Primitive
             PropertyData property = null;
             ArrayMap<Integer,PropertyData> addMap = 
                 nodeManager.getCowPropertyAddMap( this );
-            ArrayMap<Integer,PropertyData> removeMap =
-                nodeManager.getCowPropertyRemoveMap( this, true );
+            
+            // Don't create the map if it doesn't exist here... but instead when (and if)
+            // the property is found below.
+            ArrayMap<Integer,PropertyData> removeMap = nodeManager.getCowPropertyRemoveMap( this, false );
             for ( PropertyIndex cachedIndex : nodeManager.index( key ) )
             {
                 if ( addMap != null )
@@ -448,11 +450,12 @@ abstract class Primitive
                     property = addMap.remove( cachedIndex.getKeyId() );
                     if ( property != null )
                     {
+                        removeMap = removeMap != null ? removeMap : nodeManager.getCowPropertyRemoveMap( this, true );
                         removeMap.put( cachedIndex.getKeyId(), property );
                         break;
                     }
                 }
-                if ( removeMap.get( cachedIndex.getKeyId() ) != null )
+                if ( removeMap != null && removeMap.get( cachedIndex.getKeyId() ) != null )
                 {
                     success = true;
                     return null;
@@ -460,6 +463,7 @@ abstract class Primitive
                 property = propertyMap.get( cachedIndex.getKeyId() );
                 if ( property != null )
                 {
+                    removeMap = removeMap != null ? removeMap : nodeManager.getCowPropertyRemoveMap( this, true );
                     removeMap.put( cachedIndex.getKeyId(), property );
                     break;
                 }
@@ -480,6 +484,7 @@ abstract class Primitive
                                     .getKeyId() );
                                 if ( property != null )
                                 {
+                                    removeMap = removeMap != null ? removeMap : nodeManager.getCowPropertyRemoveMap( this, true );
                                     removeMap.put( indexToCheck.getKeyId(),
                                         property );
                                     break;
@@ -501,6 +506,7 @@ abstract class Primitive
                                         .getKeyId() );
                                     if ( property != null )
                                     {
+                                        removeMap = removeMap != null ? removeMap : nodeManager.getCowPropertyRemoveMap( this, true );
                                         removeMap.put( indexToCheck.getKeyId(),
                                             property );
                                         break;
