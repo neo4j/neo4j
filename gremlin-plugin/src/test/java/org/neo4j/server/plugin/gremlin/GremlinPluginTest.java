@@ -10,6 +10,8 @@ import org.json.simple.parser.JSONParser;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.ImpermanentGraphDatabase;
 import org.neo4j.server.rest.repr.OutputFormat;
@@ -18,6 +20,8 @@ import org.neo4j.server.rest.repr.formats.JsonFormat;
 
 import java.net.URI;
 
+import static org.junit.Assert.assertNotNull;
+
 
 public class GremlinPluginTest {
 
@@ -25,6 +29,10 @@ public class GremlinPluginTest {
     private static GremlinPlugin plugin = null;
     private static OutputFormat json = null;
     private static JSONParser parser = new JSONParser();
+    private static String directory = "target/db";
+    private static Node firstNode = null;
+    private static Node secondNode = null;
+    private static Node thirdNode = null;
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
@@ -124,6 +132,52 @@ public class GremlinPluginTest {
             tx.success();
             tx.finish();
         }
+      }
+
+
+    
+    
+
+    @Test
+    public void testExecuteScriptGetVerticesBySpecifiedName() {
+        String script = "g.V[[name:'firstNode']]";
+        Transaction tx = null;
+        try {
+        	System.err.println("GremlinPluginTest::executeScript testExecuteScriptGetVerticesBySpecifiedName the contents of the representation object");
+            tx = neo4j.beginTx();
+            Representation representation = plugin.executeScript(neo4j, script);
+            System.out.println(json.format(representation));
+            assertNotNull(representation);
+            tx.success();
+        } catch (Throwable t) {
+            t.printStackTrace();
+        } finally {
+            tx.finish();
+        }
+
+    }
+    
+    
+    
+    @Test
+    public void testExecuteScriptGetVerticesBySpecifiedNodeType() {
+        String script = "g.V[[nodeType:'type 1']]";
+        Transaction tx = null;
+        try {
+        	System.err.println("GremlinPluginTest::executeScript testExecuteScriptGetVerticesBySpecifiedNodeType the contents of the representation object");
+            tx = neo4j.beginTx();
+            Representation representation = plugin.executeScript(neo4j, script);
+            System.out.println(json.format(representation));
+            assertNotNull(representation);
+            tx.success();
+
+            
+        } catch (Throwable t) {
+            t.printStackTrace();
+        } finally {
+            tx.finish();
+        }
+
     }
 
 }

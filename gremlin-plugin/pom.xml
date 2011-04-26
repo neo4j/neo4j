@@ -62,6 +62,23 @@
         <!--end neo4j -->
 
 
+        <dependency>
+  			<groupId>com.tinkerpop</groupId>
+  			<artifactId>pipes</artifactId>
+  			<version>0.4</version>
+		</dependency>
+        <dependency>
+            <groupId>org.codehaus.groovy</groupId>
+            <artifactId>groovy</artifactId>
+            <version>1.7.5</version>
+        </dependency>
+        <dependency>
+            <groupId>javax.script</groupId>
+            <artifactId>script-api</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <!--end neo4j -->
+
         <!-- Jackson Dependencies -->
         <dependency>
             <groupId>org.codehaus.jackson</groupId>
@@ -147,7 +164,11 @@
             <url>http://download.java.net/maven/1</url>
             <layout>legacy</layout>
         </repository>
-
+        <repository>
+          <id>jasig-3rd-party</id>
+          <name>Jasig 3rd Party Repository</name>
+          <url>http://developer.jasig.org/repo/content/repositories/3rd-party</url>
+        </repository>
     </repositories>
 
 </project>
