@@ -20,9 +20,9 @@
 package org.neo4j.server.plugins;
 
 import org.apache.commons.configuration.Configuration;
-import org.apache.log4j.Logger;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.ExtensionInjector;
 import org.neo4j.server.rest.repr.ExtensionPointRepresentation;
