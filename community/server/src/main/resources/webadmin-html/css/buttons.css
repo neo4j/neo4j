@@ -46,6 +46,12 @@
   background-color: #8bc760 !important;
 }
 
+.button[disabled], .text-icon-button[disabled], .icon-button[disabled], .micro-button[disabled], .bad-button[disabled] {
+  background-color: #BBBBBB !important;
+  border-color: #AAAAAA;
+  color: #888888;
+}
+
 a.button {
   padding-top:9px;
   height: 23px;

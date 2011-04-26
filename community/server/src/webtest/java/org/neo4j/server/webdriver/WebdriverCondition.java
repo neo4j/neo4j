@@ -39,9 +39,11 @@ public class WebdriverCondition<T> extends Condition<T>
     public void waitUntilFulfilled(long timeout, String errorMessage) {
         try {
             super.waitUntilFulfilled( timeout, errorMessage );
+        } catch(WebdriverConditionTimeoutException e) {
+            throw e;
         } catch(Exception e) {
-            throw new RuntimeException("Webdriver condition failed, see nested exception. HTML dump follows:\n\n" + d.getPageSource() + "\n\n");
+            e.printStackTrace();
+            throw new WebdriverConditionTimeoutException("Webdriver condition failed ("+ e.getMessage() +"), see nested exception. HTML dump follows:\n\n" + d.getPageSource() + "\n\n", d.getPageSource(), e);
         }
     }
-    
 }

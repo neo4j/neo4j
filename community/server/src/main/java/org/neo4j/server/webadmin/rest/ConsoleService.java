@@ -29,8 +29,8 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-import org.apache.log4j.Logger;
 import org.neo4j.server.database.Database;
+import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.OutputFormat;
@@ -64,11 +64,13 @@ public class ConsoleService implements AdvertisableService
 
     Logger log = Logger.getLogger( ConsoleService.class );
 
+    @Override
     public String getName()
     {
         return SERVICE_NAME;
     }
 
+    @Override
     public String getServerPath()
     {
         return SERVICE_PATH;
@@ -103,7 +105,7 @@ public class ConsoleService implements AdvertisableService
         }
 
         ScriptSession scriptSession = getSession( args );
-        log.info( scriptSession.toString() );
+        log.trace( scriptSession.toString() );
 
         String result = scriptSession.evaluate( (String)args.get( "command" ) );
 

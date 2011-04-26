@@ -36,10 +36,15 @@ require(
    "neo4j/webadmin/ui/FoldoutWatcher"
    "neo4j/webadmin/KeyboardShortcuts"
    "neo4j/webadmin/SplashScreen"
+   "ribcage/security/HtmlEscaper"
    "lib/jquery"
    "lib/neo4js"
    "lib/backbone"]
-  (DashboardController, DataBrowserController, ConsoleController, ServerInfoController, ApplicationState, BaseView, FoldoutWatcher, KeyboardShortcuts, SplashScreen) ->
+  (DashboardController, DataBrowserController, ConsoleController, ServerInfoController, ApplicationState, BaseView, FoldoutWatcher, KeyboardShortcuts, SplashScreen, HtmlEscaper) ->
+
+    # Global html escaper, used by the pre-compiled templates. Should be replaced by writing a haml template plugin.
+    htmlEscaper = new HtmlEscaper()
+    window.htmlEscape = htmlEscaper.escape
 
     # WEBADMIN BOOT
 

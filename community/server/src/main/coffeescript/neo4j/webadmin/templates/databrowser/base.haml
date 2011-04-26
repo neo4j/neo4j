@@ -1,7 +1,7 @@
 .workarea
   .controls.pad
     .span-half.data-console-wrap
-      %input#data-console(value="#{query}")
+      %input#data-console(value="#{htmlEscape(query)}")
       %button#data-execute-console.icon-button(title="Search")
       .helpbox.break
         Search by: [node id], rel:[relationship id], rels:[node id]

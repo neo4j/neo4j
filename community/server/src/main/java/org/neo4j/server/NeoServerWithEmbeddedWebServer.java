@@ -175,6 +175,7 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
 
         try {
             webServer.start();
+            log.info( "Server started on [%s]", baseUri() );
         } catch (Exception e) {
             e.printStackTrace();
             log.error("Failed to start Neo Server on port [%d], reason [%s]", getWebServerPort(), e.getMessage());
@@ -225,6 +226,7 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
     }
 
 
+    @Override
     public URI baseUri() {
         StringBuilder sb = new StringBuilder();
         sb.append("http");
