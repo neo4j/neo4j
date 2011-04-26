@@ -21,41 +21,35 @@ package org.neo4j.server.logging;
 
 import java.io.StringWriter;
 import java.lang.reflect.Field;
-
-import org.apache.log4j.Layout;
-import org.apache.log4j.Level;
-import org.apache.log4j.SimpleLayout;
-import org.apache.log4j.WriterAppender;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.SimpleFormatter;
 
 public class InMemoryAppender {
     private StringWriter stringWriter = new StringWriter();
-    private WriterAppender appender = new WriterAppender(new SimpleLayout(), stringWriter);
-    private final org.apache.log4j.Logger log4jLogger;
+    private Handler stringHandler;
+    private final java.util.logging.Logger julLogger;
     private final Level level;
-    private Layout layout;
 
-    public InMemoryAppender(Logger logger) {
-        this(logger, new SimpleLayout());
+    public InMemoryAppender( Logger logger )
+    {
+        this( logger, Level.ALL );
     }
 
-    public InMemoryAppender(Logger logger, Layout layout) {
-        this(logger, Level.ALL, layout);
-    }
-
-    private InMemoryAppender(Logger logger, Level level, Layout layout) {
+    private InMemoryAppender( Logger logger, Level level )
+    {
         this.level = level;
-        this.layout = layout;
-        log4jLogger = org.apache.log4j.Logger.getLogger(this.getClass());
-        changeLogger(logger, log4jLogger);
+        julLogger = java.util.logging.Logger.getLogger( this.getClass().toString() );
+        changeLogger( logger, julLogger );
         reset();
-
     }
 
-    private void changeLogger(Logger logger, org.apache.log4j.Logger log4jLogger) {
+    private void changeLogger( Logger logger, java.util.logging.Logger julLogger )
+    {
         Field loggerField = findLoggerField(logger);
         try {
             loggerField.setAccessible(true);
-            loggerField.set(logger, log4jLogger);
+            loggerField.set( logger, julLogger );
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -69,19 +63,32 @@ public class InMemoryAppender {
         }
     }
 
-    public void removeAppender() {
-        org.apache.log4j.Logger log4jLogger = org.apache.log4j.Logger.getLogger(this.getClass());
-        log4jLogger.removeAppender(appender);
-    }
-
+    @Override
     public String toString() {
         return stringWriter.toString();
     }
 
     public void reset() {
         stringWriter = new StringWriter();
-        appender = new WriterAppender(layout, stringWriter);
-        log4jLogger.addAppender(appender);
-        log4jLogger.setLevel(level);
+        stringHandler = new Handler() {
+            @Override
+            public void publish(java.util.logging.LogRecord record) {
+                stringWriter.append( getFormatter().format( record ) );
+            };
+
+            @Override
+            public void close() throws SecurityException
+            {
+            }
+
+            @Override
+            public void flush()
+            {
+            }
+        };
+        stringHandler.setFormatter( new SimpleFormatter() );
+        julLogger.addHandler( stringHandler );
+
+        julLogger.setLevel( level );
     }
 }

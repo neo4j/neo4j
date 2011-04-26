@@ -47,7 +47,8 @@ define(
         @initMouseHandling()
 
       redraw : () =>
-        if not @particleSystem then return
+        if not @particleSystem or @stopped is true 
+          return
 
         @gfx.clear()
 
@@ -98,9 +99,6 @@ define(
         # edge: {source:Node, target:Node, length:#, data:{}}
         # pt1:  {x:#, y:#}  source position in screen coords
         # pt2:  {x:#, y:#}  target position in screen coords
-
-        if @stopped is true
-          return
 
         if edge.data.hidden is true
           return
@@ -181,10 +179,10 @@ define(
 
         $(@canvas).mousedown(@clicked)
 
-      start : ->
+      start : =>
         @stopped = false
 
-      stop : ->
+      stop : =>
         @stopped = true
         
       clicked: (e) =>

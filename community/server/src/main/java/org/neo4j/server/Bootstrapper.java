@@ -33,14 +33,14 @@ import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
 import org.neo4j.server.web.Jetty6WebServer;
 
-import uk.org.lidalia.sysoutslf4j.context.SysOutOverSLF4J;
-
 public abstract class Bootstrapper
 {
     public static final Integer OK = 0;
     public static final Integer WEB_SERVER_STARTUP_ERROR_CODE = 1;
     public static final Integer GRAPH_DATABASE_STARTUP_ERROR_CODE = 2;
-    public static final String KEY_LOG4J_CONFIG_XML_PATH = "log4j.config.xml.path";
+    /*
+        public static final String KEY_LOG4J_CONFIG_XML_PATH = "log4j.config.xml.path";
+    */
 
     private static Logger log = Logger.getLogger( NeoServerBootstrapper.class );
 
@@ -65,7 +65,6 @@ public abstract class Bootstrapper
             server = new NeoServerWithEmbeddedWebServer( this, new AddressResolver(),
                     startupHealthCheck, getConfigFile(), webServer, getServerModules() );
             server.start();
-            log.info( "Server started on [%s]", server.baseUri() );
 
             Runtime.getRuntime().addShutdownHook( new Thread()
             {
@@ -165,6 +164,6 @@ public abstract class Bootstrapper
 
     private static void configureLogging()
     {
-        SysOutOverSLF4J.sendSystemOutAndErrToSLF4J();
+        // SysOutOverSLF4J.sendSystemOutAndErrToSLF4J();
     }
 }

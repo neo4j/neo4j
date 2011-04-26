@@ -72,7 +72,7 @@ public class LockReleaser
         final ArrayMap<Long,CowRelElement> relationships =
             new ArrayMap<Long,CowRelElement>();
     }
-
+    
     private static class CowNodeElement
     {
         CowNodeElement()

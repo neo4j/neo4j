@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-define ['neo4j/webadmin/security/HtmlEscaper','lib/backbone'], (HtmlEscaper) ->
+define ['lib/backbone'], () ->
   
   class Console extends Backbone.Model
     
@@ -32,7 +32,6 @@ define ['neo4j/webadmin/security/HtmlEscaper','lib/backbone'], (HtmlEscaper) ->
     initialize : (opts) =>
       @server = opts.server
       @eval("init()", false, false)
-      @htmlEscaper = new HtmlEscaper
 
     eval : (statement, showStatement=true, includeInHistory=true) =>
       @set {"showPrompt":false, prompt:""}, {silent:true}
@@ -85,6 +84,6 @@ define ['neo4j/webadmin/security/HtmlEscaper','lib/backbone'], (HtmlEscaper) ->
     pushLines : (lines, prepend="==> ") =>
 
       lines = for line in lines
-        @htmlEscaper.escape(prepend + line)
+        prepend + line
 
       @set("lines" : @get("lines").concat(lines))

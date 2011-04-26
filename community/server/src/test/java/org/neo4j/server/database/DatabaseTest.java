@@ -21,6 +21,10 @@ package org.neo4j.server.database;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.Config.ENABLE_REMOTE_SHELL;
+import static org.neo4j.server.ServerTestUtils.EMBEDDED_GRAPH_DATABASE_FACTORY;
+import static org.neo4j.server.ServerTestUtils.createTempDir;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,8 +34,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.logging.InMemoryAppender;
+import org.neo4j.shell.ShellException;
+import org.neo4j.shell.ShellLobby;
 
 public class DatabaseTest {
 
@@ -41,8 +46,8 @@ public class DatabaseTest {
 
     @Before
     public void setup() throws Exception {
-        databaseDirectory = ServerTestUtils.createTempDir();
-        theDatabase = new Database( ServerTestUtils.EMBEDDED_GRAPH_DATABASE_FACTORY,
+        databaseDirectory = createTempDir();
+        theDatabase = new Database( EMBEDDED_GRAPH_DATABASE_FACTORY,
                 databaseDirectory.getAbsolutePath() );
     }
 
@@ -88,6 +93,46 @@ public class DatabaseTest {
     @Test(expected = TransactionFailureException.class)
     public void shouldComplainIfDatabaseLocationIsAlreadyInUse() {
         deletionFailureOk = true;
-        new Database( ServerTestUtils.EMBEDDED_GRAPH_DATABASE_FACTORY, theDatabase.getLocation() );
+        new Database( EMBEDDED_GRAPH_DATABASE_FACTORY, theDatabase.getLocation() );
+    }
+    
+    @Test
+    public void connectWithShellOnDefaultPortWhenNoShellConfigSupplied() throws Exception
+    {
+        ShellLobby.newClient().shutdown();
+    }
+    
+    @Test
+    public void shouldBeAbleToOverrideShellConfig() throws Exception
+    {
+        int customPort = findFreeShellPortToUse( 8881 );
+        File tempDir = createTempDir();
+        Database otherDb = new Database( EMBEDDED_GRAPH_DATABASE_FACTORY,
+                tempDir.getAbsolutePath(), stringMap( ENABLE_REMOTE_SHELL, "port=" + customPort ) );
+        otherDb.startup();
+        
+        // Try to connect with a shell client to that custom port.
+        // Throws exception if unable to connect
+        ShellLobby.newClient( customPort ).shutdown();
+        
+        otherDb.shutdown();
+        FileUtils.forceDelete( tempDir );
+    }
+
+    private int findFreeShellPortToUse( int startingPort )
+    {
+        // Make sure there's no other random stuff on that port
+        while ( true )
+        {
+            try
+            {
+                ShellLobby.newClient( startingPort ).shutdown();
+                startingPort++;
+            }
+            catch ( ShellException e )
+            { // Good
+                return startingPort;
+            }
+        }
     }
 }

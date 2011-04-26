@@ -3,32 +3,32 @@
     %tbody
       :if primitives.isDataAvailable()
         %tr
-          %td= primitives.get("NumberOfNodeIdsInUse")
+          %td= htmlEscape(primitives.get("NumberOfNodeIdsInUse"))
           %th nodes
-          %td= primitives.get("NumberOfPropertyIdsInUse")
+          %td= htmlEscape(primitives.get("NumberOfPropertyIdsInUse"))
           %th properties
-          %td= primitives.get("NumberOfRelationshipIdsInUse")
+          %td= htmlEscape(primitives.get("NumberOfRelationshipIdsInUse"))
           %th relationships
-          %td= primitives.get("NumberOfRelationshipTypeIdsInUse")
+          %td= htmlEscape(primitives.get("NumberOfRelationshipTypeIdsInUse"))
           %th relationship types
       :if diskUsage.isDataAvailable()
         %tr
-          %td= Math.round(diskUsage.get("TotalStoreSize") / 1024) + " kB "
+          %td= htmlEscape(Math.round(diskUsage.get("TotalStoreSize") / 1024) + " kB ")
           %th total disk usage
-          %td= Math.round( diskUsage.getDatabaseSize() / 1024) + " kB " + "(" + diskUsage.getDatabasePercentage() + "%)"
+          %td= htmlEscape(Math.round( diskUsage.getDatabaseSize() / 1024) + " kB " + "(" + diskUsage.getDatabasePercentage() + "%)")
           %th database disk usage
-          %td= Math.round( diskUsage.getLogicalLogSize() / 1024) + " kB " + "(" + diskUsage.getLogicalLogPercentage() + "%)"
+          %td= htmlEscape(Math.round( diskUsage.getLogicalLogSize() / 1024) + " kB " + "(" + diskUsage.getLogicalLogPercentage() + "%)")
           %th logical log disk usage
           %td
           %th
 
       :if cacheUsage.isDataAvailable()
         %tr
-          %td= cacheUsage.get("NodeCacheSize")
+          %td= htmlEscape(cacheUsage.get("NodeCacheSize"))
           %th cached nodes
-          %td= cacheUsage.get("RelationshipCacheSize")
+          %td= htmlEscape(cacheUsage.get("RelationshipCacheSize"))
           %th cached relationships
-          %td= cacheUsage.get("CacheType")
+          %td= htmlEscape(cacheUsage.get("CacheType"))
           %th is the cache type
           %td
           %th
