@@ -26,13 +26,15 @@ WHERE
     <graphviz> are the graphviz command line options.
     <format>   are graph output formatting configurations, these are structured
                as:  <optionParameter>=<value>[,<more>,<values>...]
-               Example: relationshipTitle=\"@type [@id]\"
 
                Currently supported options are:
 
                - nodeTitle=VAL
                - relationshipTitle=VAL
                  Sets the title of a node/relationship. VAL is a string.
+                 Placeholders for attributes can be used by prefixing the
+                 attribute name with an @.
+                 Example: relationshipTitle=\"@type [@id]\"
 
                - nodePropertyFilter=FIELDS
                  FIELDS is a comma-separated list of the fields that should be
