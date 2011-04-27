@@ -23,6 +23,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.MapUtil.map;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,6 +49,8 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.BrokerFactory;
+import org.neo4j.kernel.impl.batchinsert.BatchInserter;
+import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
 
 public abstract class AbstractHaTest
 {
@@ -584,11 +587,24 @@ public abstract class AbstractHaTest
     @Test
     public void makeSureSlaveCanCopyLargeInitialDatabase() throws Exception
     {
+        createBigMasterStore();
+        
         startUpMaster( MapUtil.stringMap() );
-        executeJobOnMaster( new CommonJobs.LargeTransactionJob( 1, 60 ) );
         addDb( MapUtil.stringMap() );
         awaitAllStarted();
         executeJob( new CommonJobs.CreateSubRefNodeJob( "whatever", "my_key", "my_value" ), 0 );
+    }
+
+    private void createBigMasterStore()
+    {
+        // Will result in a 500Mb store
+        BatchInserter inserter = new BatchInserterImpl( dbPath( 0 ).getAbsolutePath() );
+        byte[] array = new byte[100000];
+        for ( int i = 0; i < 5000; i++ )
+        {
+            inserter.createNode( map( "array", array ) );
+        }
+        inserter.shutdown();
     }
 
     @Test

@@ -201,13 +201,12 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
 
             bufferToWriteTo.clear();
             final ChunkingChannelBuffer chunkingBuffer = new ChunkingChannelBuffer( bufferToWriteTo, channel, MAX_FRAME_LENGTH );
-            Response<R> response = type.getMasterCaller().callMaster( realMaster, context, bufferToReadFrom, chunkingBuffer );
-            executor.submit( responseWriter( type, channel, context, chunkingBuffer, targetBuffers.other(), response ) );
+            executor.submit( responseWriter( type, channel, context, chunkingBuffer, bufferToReadFrom, targetBuffers.other() ) );
         }
     }
 
     private Runnable responseWriter( final RequestType<M> type, final Channel channel, final SlaveContext context,
-            final ChunkingChannelBuffer targetBuffer, final ByteBuffer targetByteBuffer, final Response<R> response )
+            final ChunkingChannelBuffer targetBuffer, final ChannelBuffer bufferToReadFrom, final ByteBuffer targetByteBuffer )
     {
         return new Runnable()
         {
@@ -216,6 +215,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
             {
                 try
                 {
+                    Response<R> response = type.getMasterCaller().callMaster( realMaster, context, bufferToReadFrom, targetBuffer );
                     type.getObjectSerializer().write( response.response(), targetBuffer );
                     writeStoreId( response.getStoreId(), targetBuffer );
                     writeTransactionStreams( response.transactions(), targetBuffer, targetByteBuffer );
