@@ -19,8 +19,14 @@
  */
 package org.neo4j.server.web;
 
-import com.sun.jersey.api.core.ResourceConfig;
-import com.sun.jersey.spi.container.servlet.ServletContainer;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.List;
+
+import javax.servlet.Servlet;
+
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.SessionManager;
 import org.mortbay.jetty.handler.MovedContextHandler;
@@ -35,13 +41,8 @@ import org.neo4j.server.NeoServer;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rest.web.AllowAjaxFilter;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.HashMap;
-import java.util.List;
-
-import javax.servlet.Servlet;
+import com.sun.jersey.api.core.ResourceConfig;
+import com.sun.jersey.spi.container.servlet.ServletContainer;
 
 public class Jetty6WebServer implements WebServer
 {
@@ -65,13 +66,13 @@ public class Jetty6WebServer implements WebServer
     @Override
     public void start() {
         jetty = new Server(jettyPort);
-        jetty.setStopAtShutdown(true);
         MovedContextHandler redirector = new MovedContextHandler();
 
         jetty.addHandler( redirector );
 
-        loadStaticContent();
-        loadJAXRSPackages();
+        SessionManager sm = new HashSessionManager();
+        loadStaticContent( sm );
+        loadJAXRSPackages( sm );
 
         try {
             jetty.start();
@@ -85,7 +86,6 @@ public class Jetty6WebServer implements WebServer
     {
         try
         {
-            // jetty.setStopAtShutdown( false );
             jetty.stop();
             jetty.join();
         }
@@ -164,12 +164,13 @@ public class Jetty6WebServer implements WebServer
         staticContent.put(serverMountPoint, contentLocation);
     }
 
-    private void loadStaticContent() {
+    protected void loadStaticContent( SessionManager sm )
+    {
         for (String mountPoint : staticContent.keySet()) {
             String contentLocation = staticContent.get(mountPoint);
             log.info("Mounting static content at [%s] from [%s]", mountPoint, contentLocation);
             try {
-                final WebAppContext staticContext = new WebAppContext();
+                final WebAppContext staticContext = new WebAppContext( null, new SessionHandler( sm ), null, null );
                 staticContext.setServer(jetty);
                 staticContext.setContextPath(mountPoint);
                 URL resourceLoc = getClass().getClassLoader().getResource(contentLocation);
@@ -192,13 +193,13 @@ public class Jetty6WebServer implements WebServer
         }
     }
 
-    private void loadJAXRSPackages() {
+    protected void loadJAXRSPackages( SessionManager sm )
+    {
         for (String mountPoint : jaxRSPackages.keySet()) {
 
             ServletHolder servletHolder = jaxRSPackages.get(mountPoint);
             log.debug( "Mounting servlet at [%s]", mountPoint );
             Context jerseyContext = new Context(jetty, mountPoint);
-            SessionManager sm = new HashSessionManager();
             SessionHandler sh = new SessionHandler(sm);
             jerseyContext.addServlet(servletHolder, "/*");
             jerseyContext.setSessionHandler(sh);

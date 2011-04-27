@@ -71,7 +71,7 @@ public class UdcExtensionImpl extends KernelExtension<UdcTimerTask> implements U
         super( KEY );
     }
 
-    private static Timer timer = new Timer( /*isDeamon=*/true );
+    private static Timer timer = new Timer( "Neo4j UDC Timer", /*isDeamon=*/true );
 
     @Override
     protected UdcTimerTask load( KernelData kernel )
