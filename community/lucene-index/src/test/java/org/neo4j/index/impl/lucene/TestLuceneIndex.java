@@ -1201,4 +1201,19 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
             restartTx();
         }
     }
+    
+    @Test
+    public void notAbleToIndexWithNullKey() throws Exception
+    {
+        Index<Node> index = graphDb.index().forNodes( "check-for-null" );
+        Node node = graphDb.createNode();
+        try
+        {
+            index.add( node, null, "not allowed" );
+            fail( "Shouldn't be able to index something with null key" );
+        }
+        catch ( IllegalArgumentException e )
+        { // OK
+        }
+    }
 }
