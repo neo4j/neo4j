@@ -278,14 +278,14 @@ public class MasterImpl implements Master
             XaDataSource dataSource = graphDbConfig.getTxModule().getXaDataSourceManager()
                     .getXaDataSource( resource );
             final long txId = dataSource.applyPreparedTransaction( txGetter.extract() );
-            Predicate<Long> notThisTx = new Predicate<Long>()
+            Predicate<Long> upUntilThisTx = new Predicate<Long>()
             {
                 public boolean accept( Long item )
                 {
-                    return item != txId;
+                    return item < txId;
                 }
             };
-            return packResponse( context, txId, notThisTx );
+            return packResponse( context, txId, upUntilThisTx );
         }
         catch ( IOException e )
         {
