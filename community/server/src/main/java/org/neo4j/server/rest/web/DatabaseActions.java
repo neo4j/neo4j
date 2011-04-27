@@ -344,6 +344,32 @@ public class DatabaseActions
         graphDb.index().forRelationships( indexName );
         return new RelationshipIndexRepresentation( indexName, Collections.<String, String>emptyMap() );
     }
+    
+    public void removeNodeIndex(String indexName) {
+        Index<Node> index = graphDb.index().forNodes( indexName );
+        Transaction tx = graphDb.beginTx();
+        try
+        {
+            index.delete();
+            tx.success();
+        } finally
+        {
+            tx.finish();
+        }
+    }
+    
+    public void removeRelationshipIndex(String indexName) {
+        Index<Relationship> index = graphDb.index().forRelationships( indexName );
+        Transaction tx = graphDb.beginTx();
+        try
+        {
+            index.delete();
+            tx.success();
+        } finally
+        {
+            tx.finish();
+        }
+    }
 
     public boolean nodeIsIndexed( String indexName, String key, Object value, long nodeId ) throws DatabaseBlockedException
     {

@@ -37,7 +37,6 @@ import junit.framework.Assert;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
@@ -186,8 +185,6 @@ public class IndexNodeFunctionalTest
 
         assertEquals( Status.CREATED.getStatusCode(), response.getStatus() );
         String indexUri = response.getHeaders().getFirst( "Location" );
-        
-        System.out.println(indexUri);
 
         response = Client.create().resource( indexUri ).accept( MediaType.APPLICATION_JSON ).get( ClientResponse.class );
         assertEquals( 200, response.getStatus() );
@@ -273,23 +270,47 @@ public class IndexNodeFunctionalTest
     }
 
     @Test
-    @Ignore("Unclear contract: remove the index itself? That is unsupported in the new index api")
-    public void shouldGet200AndBeAbleToRemoveIndexing() throws DatabaseBlockedException, JsonParseException
+    public void shouldReturn204WhenRemovingNodeIndexes() throws DatabaseBlockedException, JsonParseException
     {
-        ClientResponse response = Client.create().resource( functionalTestHelper.nodeUri() ).type( MediaType.APPLICATION_FORM_URLENCODED ).accept(
-                MediaType.APPLICATION_JSON ).post( ClientResponse.class );
-        String nodeUri = response.getHeaders().getFirst( HttpHeaders.LOCATION );
-        String key = "key_remove";
-        String value = "value";
-        String indexUri = Client.create().resource( functionalTestHelper.indexUri() + "/node/" + key + "/" + value ).entity( JsonHelper.createJsonFrom( nodeUri ),
-                MediaType.APPLICATION_JSON ).post( ClientResponse.class ).getHeaders().getFirst( HttpHeaders.LOCATION );
-        assertEquals( 1, helper.getIndexedNodes( "node", key, value ).size() );
-        response = Client.create().resource( indexUri ).delete( ClientResponse.class );
-        assertEquals( Status.NO_CONTENT.getStatusCode(), response.getStatus() );
-        assertEquals( 0, helper.getIndexedNodes( "node", key, value ).size() );
-
-        response = Client.create().resource( indexUri ).delete( ClientResponse.class );
-        assertEquals( Status.NOT_FOUND.getStatusCode(), response.getStatus() );
+        String key = "kvkey1";
+        String value = "value1";
+        String indexName = "kvnode";
+        
+        assertEquals(0,helper.getNodeIndexes().length);
+        
+        long node = helper.createNode( MapUtil.map( key, value ) );
+        helper.addNodeToIndex( indexName, key, value, node );
+        
+        assertEquals(1,helper.getNodeIndexes().length);
+        
+        // Remove the index
+        ClientResponse response = Client.create().resource( functionalTestHelper.indexNodeUri( indexName ) ).accept(
+                MediaType.APPLICATION_JSON ).delete( ClientResponse.class );
+        
+        assertEquals(204, response.getStatus());
+        assertEquals( 0, helper.getNodeIndexes().length );
+    }
+    
+    @Test
+    public void shouldReturn204WhenRemovingRelationshipIndexes() throws DatabaseBlockedException, JsonParseException
+    {
+        String key = "kvkey1";
+        String value = "value1";
+        String indexName = "kvnode";
+        
+        assertEquals(0,helper.getRelationshipIndexes().length);
+        
+        long relationship = helper.createRelationship( "A_RELATIONSHIP" );
+        helper.addRelationshipToIndex( indexName, key, value, relationship );
+        
+        assertEquals(1,helper.getRelationshipIndexes().length);
+        
+        // Remove the index
+        ClientResponse response = Client.create().resource( functionalTestHelper.indexRelationshipUri( indexName ) ).accept(
+                MediaType.APPLICATION_JSON ).delete( ClientResponse.class );
+        
+        assertEquals(204, response.getStatus());
+        assertEquals( 0, helper.getRelationshipIndexes().length );
     }
 
     @Test
