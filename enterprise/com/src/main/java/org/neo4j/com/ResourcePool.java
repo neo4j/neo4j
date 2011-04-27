@@ -120,22 +120,28 @@ public abstract class ResourcePool<R>
     {
         Thread thread = Thread.currentThread();
         R resource = current.remove( thread );
-        if ( resource != null )
+        try
         {
-            boolean dead = false;
-            synchronized ( unused )
+            if ( resource != null )
             {
-                if ( unused.size() < maxUnused )
+                boolean dead = false;
+                synchronized ( unused )
                 {
-                    unused.add( resource );
+                    if ( unused.size() < maxUnused )
+                    {
+                        unused.add( resource );
+                    }
+                    else
+                    {
+                        dead = true;
+                    }
                 }
-                else
-                {
-                    dead = true;
-                }
+                if ( dead ) dispose( resource );
             }
+        }
+        finally
+        {
             resources.release();
-            if ( dead ) dispose( resource );
         }
     }
 
