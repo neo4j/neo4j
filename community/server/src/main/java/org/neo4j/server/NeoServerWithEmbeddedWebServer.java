@@ -189,10 +189,10 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
     @Override
     public void stop() {
         try {
+            stopWebServer();
             stopModules();
             stopExtensionInitializers();
             stopDatabase();
-            stopWebServer();
             log.info("Successfully shutdown Neo Server on port [%d], database [%s]", getWebServerPort(), getDatabase().getLocation());
         } catch (Exception e) {
             log.warn("Failed to cleanly shutdown Neo Server on port [%d], database [%s]. Reason: %s", getWebServerPort(), getDatabase().getLocation(),
