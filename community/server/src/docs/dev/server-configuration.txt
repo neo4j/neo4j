@@ -66,16 +66,6 @@ configuration directory, then the server will log a warning. Subsequently at run
 database engine will attempt tune itself based on the prevailing conditions.
 
 
-The default log4j.properties file uses a rolling appender and outputs logs by default to the
-data/log directory. Most deployments will choose to use their own configuration here to meet 
-local standards. During development, much useful information can be found in the logs so some
-form of logging to disk is well worth keeping.  
-
-[source,shell]
-----
-conf/log4j.properties
-----
-
 The fine-tuning of the low-level Neo4j graph database engine is specified in a separate
 properties file.
 [source,shell]
@@ -88,4 +78,42 @@ The graph database engine has a range of performance tuning options which are en
 when performance tuning a server, including general server load, memory and file contention, 
 and even garbage collection penalties on the JVM, though such considerations are beyond the scope
 of this configuration document.
+
+The logging framework in use by the Neo4j server is java.util.logging and is configured in
+
+[source,shell]
+----
+conf/logging.properties
+----
+
+By default it is setup to print +INFO+ level messages both on screen and
+in a rolling file in +data/log+. Most deployments will choose to use their own configuration here to meet 
+local standards. During development, much useful information can be found in the logs so some
+form of logging to disk is well worth keeping.
+On the other hand, if you want to completely silence the console output, set 
+----
+java.util.logging.ConsoleHandler.level=OFF
+----
+
+Apart from log statements originating from the Neo4j server, other libraries report their messages
+through various frameworks.
+
+Zookeeper is hardwired to use the log4j logging framework. The bundled 
+
+[source,shell]
+----
+conf/log4j.properties
+----
+applies for this use only and uses a rolling appender and outputs logs by default to the
++data/log+ directory. 
+
+YAJSW, the wrapper implementation used for managing the neo4j service, utilizes a variety of
+libraries that log output and it also does its own logging. This set of messages is configured
+in
+[source,shell]
+----
+conf/wrapper-logging.properties
+----
+following the standard java.util.logging conventions. By default nothing is outputted but in case
+debugging is needed here you can set things up to see where any trouble may be.
 
