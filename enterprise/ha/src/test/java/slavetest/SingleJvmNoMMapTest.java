@@ -33,10 +33,10 @@ import org.neo4j.kernel.Config;
 public class SingleJvmNoMMapTest extends SingleJvmTest
 {
     @Override
-    protected void addDb( Map<String, String> config )
+    protected int addDb( Map<String, String> config, boolean awaitStarted )
     {
         config.put( Config.USE_MEMORY_MAPPED_BUFFERS, "false" );
-        super.addDb( config );
+        return super.addDb( config, awaitStarted );
     }
 
     @BeforeClass

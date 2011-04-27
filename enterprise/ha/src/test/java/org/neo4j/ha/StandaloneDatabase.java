@@ -102,7 +102,7 @@ public class StandaloneDatabase
                 return db;
             }
         } );
-        standalone.awaitStarted();
+//        standalone.awaitStarted();
         return standalone;
     }
 
@@ -175,6 +175,11 @@ public class StandaloneDatabase
         SubProcess.stop( process );
     }
 
+    public void kill()
+    {
+        SubProcess.kill( process );
+    }
+    
     // <IMPLEMENTATION>
 
     public interface Controller

@@ -66,6 +66,7 @@ public abstract class AbstractHaTest
     private int relPropCount;
     private int nodeIndexServicePropCount;
     private int nodeIndexProviderPropCount;
+    private boolean doVerificationAfterTest;
 
     public @Rule
     TestName testName = new TestName()
@@ -95,16 +96,27 @@ public abstract class AbstractHaTest
     {
         return new File( DBS_PATH, "" + num );
     }
+    
+    protected boolean shouldDoVerificationAfterTests()
+    {
+        return doVerificationAfterTest;
+    }
 
     @Before
     public void clearExpectedResults() throws Exception
     {
         clearDbs();
+        doVerificationAfterTest = true;
         expectsResults = false;
     }
 
     public void verify( GraphDatabaseService refDb, GraphDatabaseService... dbs )
     {
+        if ( !shouldDoVerificationAfterTests() )
+        {
+            return;
+        }
+        
         for ( GraphDatabaseService otherDb : dbs )
         {
             int vNodeCount = 0;
@@ -337,13 +349,15 @@ public abstract class AbstractHaTest
         startUpMaster( config );
         for ( int i = 0; i < numSlaves; i++ )
         {
-            addDb( config );
+            addDb( config, true );
         }
     }
 
     protected abstract void awaitAllStarted() throws Exception;
 
-    protected abstract void addDb( Map<String, String> config ) throws Exception;
+    protected abstract int addDb( Map<String, String> config, boolean awaitStarted ) throws Exception;
+    
+    protected abstract void startDb( int machineId, Map<String, String> config, boolean awaitStarted ) throws Exception;
 
     protected abstract void pullUpdates( int... slaves ) throws Exception;
 
@@ -356,6 +370,8 @@ public abstract class AbstractHaTest
     protected abstract CommonJobs.ShutdownDispatcher getMasterShutdownDispatcher();
 
     protected abstract void shutdownDbs() throws Exception;
+    
+    protected abstract void shutdownDb( int machineId );
 
     protected abstract Fetcher<DoubleLatch> getDoubleLatch() throws Exception;
 
@@ -587,20 +603,20 @@ public abstract class AbstractHaTest
     @Test
     public void makeSureSlaveCanCopyLargeInitialDatabase() throws Exception
     {
-        createBigMasterStore();
-        
+        disableVerificationAfterTest();
+        createBigMasterStore( 500 );
         startUpMaster( MapUtil.stringMap() );
-        addDb( MapUtil.stringMap() );
+        addDb( MapUtil.stringMap(), true );
         awaitAllStarted();
         executeJob( new CommonJobs.CreateSubRefNodeJob( "whatever", "my_key", "my_value" ), 0 );
     }
 
-    private void createBigMasterStore()
+    protected void createBigMasterStore( int numberOfMegabytes )
     {
         // Will result in a 500Mb store
         BatchInserter inserter = new BatchInserterImpl( dbPath( 0 ).getAbsolutePath() );
         byte[] array = new byte[100000];
-        for ( int i = 0; i < 5000; i++ )
+        for ( int i = 0; i < numberOfMegabytes*10; i++ )
         {
             inserter.createNode( map( "array", array ) );
         }
@@ -619,7 +635,25 @@ public abstract class AbstractHaTest
                     "the key " + i, "the best value",
                     "a key " + i, "the worst value" ) );
         }
-        addDb( MapUtil.stringMap() );
+        addDb( MapUtil.stringMap(), true );
         awaitAllStarted();
+    }
+    
+    protected void disableVerificationAfterTest()
+    {
+        doVerificationAfterTest = false;
+    }
+    
+    protected void sleeep( int i )
+    {
+        try
+        {
+            Thread.sleep( i );
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.interrupted();
+            throw new RuntimeException( e );
+        }
     }
 }

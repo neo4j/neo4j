@@ -19,31 +19,47 @@
  */
 package slavetest;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.File;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.After;
+import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.ha.StandaloneDatabase;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 public class MultiJvmTest extends AbstractHaTest
 {
-    private static final int MASTER_PORT = 8990;
-
     private final List<StandaloneDatabase> jvms = new ArrayList<StandaloneDatabase>();
 
     @Override
-    protected void addDb( Map<String, String> config ) throws Exception
+    protected int addDb( Map<String, String> config, boolean awaitStarted ) throws Exception
     {
         int machineId = jvms.size();
+        jvms.add( null );
+        startDb( machineId, config, awaitStarted );
+        return machineId;
+    }
+    
+    @Override
+    protected void startDb( int machineId, Map<String, String> config, boolean awaitStarted ) throws Exception
+    {
         File slavePath = dbPath( machineId );
         StandaloneDatabase slaveJvm = spawnJvm( slavePath, machineId, buildExtraArgs( config ) );
-        jvms.add( slaveJvm );
+        if ( awaitStarted )
+        {
+            slaveJvm.awaitStarted();
+        }
+        jvms.set( machineId, slaveJvm );
     }
 
     @Override
@@ -63,12 +79,23 @@ public class MultiJvmTest extends AbstractHaTest
         }
         return list.toArray( new String[list.size()] );
     }
+    
+    @Override
+    protected void shutdownDb( int machineId )
+    {
+        jvms.get( machineId ).kill();
+    }
 
     @After
     public void shutdownDbsAndVerify() throws Exception
     {
         shutdownDbs();
 
+        if ( !shouldDoVerificationAfterTests() )
+        {
+            return;
+        }
+        
         GraphDatabaseService masterDb = new EmbeddedGraphDatabase( dbPath( 0 ).getAbsolutePath() );
         try
         {
@@ -171,5 +198,84 @@ public class MultiJvmTest extends AbstractHaTest
     protected Fetcher<DoubleLatch> getDoubleLatch() throws Exception
     {
         return new MultiJvmDLFetcher();
+    }
+
+    @Test
+    public void testCancelledCopyWithSuccessfulRetry() throws Exception
+    {
+        createBigMasterStore( 200 );
+        startUpMaster( MapUtil.stringMap() );
+        AtomicBoolean called = new AtomicBoolean();
+        Thread shutdownThread = startThreadWhichWillShutdownDb( called, 1, 100 );
+        int slaveMachineId = addDb( MapUtil.stringMap(), false );
+        
+        // This will be interrupted when the db is shutdown in the middle of the copying
+        try
+        {
+            awaitAllStarted();
+        }
+        catch ( Exception e )
+        {
+            // Will be thrown because the db is shut down in the middle of the copying
+        }
+        shutdownThread.join();
+        assertTrue( called.get() );
+        
+        int otherNeostoreFilesCount = 0;
+        for ( File dbFile : dbPath( slaveMachineId ).listFiles() )
+        {
+            if ( dbFile.getName().equals( "neostore" ) )
+            {
+                fail( "The neostore file shouldn't have been copied at a cancelled copying" );
+            }
+            else if ( dbFile.getName().startsWith( "neostore." ) )
+            {
+                otherNeostoreFilesCount++;
+            }
+        }
+        assertTrue( otherNeostoreFilesCount > 0 );
+        
+        startDb( slaveMachineId, MapUtil.stringMap(), true );
+        awaitAllStarted();
+    }
+
+    private Thread startThreadWhichWillShutdownDb( final AtomicBoolean called, final int machineId,
+            final int atLeastDbSizeMb )
+    {
+        Thread thread = new Thread()
+        {
+            @Override
+            public void run()
+            {
+                File path = dbPath( machineId );
+                while ( true )
+                {
+                    int size = directorySizeMb( path );
+                    if ( size >= atLeastDbSizeMb )
+                    {
+                        called.set( true );
+                        shutdownDb( machineId );
+                        break;
+                    }
+                    sleeep( 10 );
+                }
+            }
+
+            private int directorySizeMb( File path )
+            {
+                if ( !path.exists() )
+                {
+                    return 0;
+                }
+                int totalBytes = 0;
+                for ( File file : path.listFiles() )
+                {
+                    totalBytes += file.length();
+                }
+                return totalBytes / (1024*1024);
+            }
+        };
+        thread.start();
+        return thread;
     }
 }

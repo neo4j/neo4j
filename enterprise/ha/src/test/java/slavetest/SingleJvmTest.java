@@ -54,10 +54,19 @@ public class SingleJvmTest extends AbstractHaTest
     }
 
     @Override
-    protected void addDb( Map<String, String> config )
+    protected int addDb( Map<String, String> config, boolean awaitStarted )
     {
         haDbs = haDbs != null ? haDbs : new ArrayList<GraphDatabaseService>();
         int machineId = haDbs.size()+1;
+        haDbs.add( null );
+        startDb( machineId, config, awaitStarted );
+        return machineId;
+    }
+    
+    @Override
+    protected void startDb( int machineId, Map<String, String> config, boolean awaitStarted )
+    {
+        haDbs = haDbs != null ? haDbs : new ArrayList<GraphDatabaseService>();
         File slavePath = dbPath( machineId );
         PlaceHolderGraphDatabaseService placeHolderDb = new PlaceHolderGraphDatabaseService( slavePath.getAbsolutePath() );
         Broker broker = makeSlaveBroker( master, 0, machineId, placeHolderDb );
@@ -67,12 +76,18 @@ public class SingleJvmTest extends AbstractHaTest
         HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase(
                 slavePath.getAbsolutePath(), cfg, wrapBrokerAndSetPlaceHolderDb( placeHolderDb, broker ) );
         placeHolderDb.setDb( db );
-        haDbs.add( db );
+        haDbs.set( machineId-1, db );
     }
 
     @Override
     protected void awaitAllStarted() throws Exception
     {
+    }
+    
+    @Override
+    protected void shutdownDb( int machineId )
+    {
+        haDbs.get( machineId-1 ).shutdown();
     }
 
     @Override
@@ -128,6 +143,11 @@ public class SingleJvmTest extends AbstractHaTest
             shutdownDbs();
         }
 
+        if ( !shouldDoVerificationAfterTests() )
+        {
+            return;
+        }
+        
         GraphDatabaseService masterOfflineDb =
                 new EmbeddedGraphDatabase( dbPath( 0 ).getAbsolutePath() );
         GraphDatabaseService[] slaveOfflineDbs = new GraphDatabaseService[haDbs.size()];
