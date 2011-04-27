@@ -123,9 +123,18 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
     public void add( T entity, String key, Object value )
     {
         LuceneXaConnection connection = getConnection();
+        assertKeyNotNull( key );
         for ( Object oneValue : IoPrimitiveUtils.asArray( value ) )
         {
             connection.add( this, entity, key, oneValue );
+        }
+    }
+
+    private void assertKeyNotNull( String key )
+    {
+        if ( key == null )
+        {
+            throw new IllegalArgumentException( "Key can't be null" );
         }
     }
 
@@ -148,6 +157,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
     public void remove( T entity, String key, Object value )
     {
         LuceneXaConnection connection = getConnection();
+        assertKeyNotNull( key );
         for ( Object oneValue : IoPrimitiveUtils.asArray( value ) )
         {
             connection.remove( this, entity, key, oneValue );
@@ -157,6 +167,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
     public void remove( T entity, String key )
     {
         LuceneXaConnection connection = getConnection();
+        assertKeyNotNull( key );
         connection.remove( this, entity, key );
     }
     
