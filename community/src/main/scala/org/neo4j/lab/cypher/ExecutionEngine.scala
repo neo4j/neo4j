@@ -76,17 +76,11 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
   }
 
 
-  private def createSourcePumps(from: List[VariableAssignment]): List[Pipe] = {
-    val roots = from.map((va) => va.fromitem match {
-      case NodeById(ids) => new FromPump(va.variable, ids.map(graph.getNodeById))
-      case RelatedTo(column, relType, direction) => new RelatedToPipe(column, va.variable, relType, direction)
-      //        case NodeByIndex(idx, value) => graph.index.forNodes("idx").get()
-    }
-
-    )
-
-    roots
-  }
+  private def createSourcePumps(from: List[VariableAssignment]): List[Pipe] = from.map((va) => va.fromitem match {
+    case NodeById(ids) => new FromPump(va.variable, ids.map(graph.getNodeById))
+    case RelatedTo(column, relType, direction) => new RelatedToPipe(column, va.variable, relType, direction)
+    //        case NodeByIndex(idx, value) => graph.index.forNodes("idx").get()
+  })
 
 
   private def createSelectOutput[T](select: Select, inputNodes: scala.Seq[Node]): List[T] = {

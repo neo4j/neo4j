@@ -32,7 +32,6 @@ class ExecutionEngineTest {
     )
 
     val result = execute(query)
-    //    assertEquals("node", result.columnNames.head)
     assertEquals(List(refNode), result.columnAs[Node]("node").toList)
   }
 
@@ -135,14 +134,63 @@ class ExecutionEngineTest {
       Select(NodeOutput("n1"), NodeOutput("n2")),
       List(
         VariableAssignment("n1", NodeById(List(n1.getId))),
-        VariableAssignment("n2", RelatedTo("n1", "KNOWS", Direction.OUTGOING )
-      )
-    ))
+        VariableAssignment("n2", RelatedTo("n1", "KNOWS", Direction.OUTGOING)
+        )
+      ))
 
     val result = execute(query)
 
     assertEquals(List(Map("n1" -> n1, "n2" -> n2)), result.toList)
   }
+
+  @Test def shouldGetTwoRelatedNodes() {
+    //    FROM start = NODE(1),
+    //      start -KNOWS-> x
+    //    SELECT x
+
+    val n1: Node = createNode()
+    val n2: Node = createNode()
+    val n3: Node = createNode()
+    relate(n1, n2, "KNOWS")
+    relate(n1, n3, "KNOWS")
+
+    val query = Query(
+      Select(NodeOutput("x")),
+      List(
+        VariableAssignment("start", NodeById(List(n1.getId))),
+        VariableAssignment("x", RelatedTo("start", "KNOWS", Direction.OUTGOING))
+      ))
+
+    val result = execute(query)
+
+    assertEquals(List(Map("x" -> n2), Map("x" -> n3)), result.toList)
+  }
+
+  @Test def shouldGetRelatedToRelatedTo() {
+    //    FROM start = NODE(1),
+    //      start -KNOWS-> a,
+    //      a -FRIEND- b
+    //    SELECT n3
+
+    val n1: Node = createNode()
+    val n2: Node = createNode()
+    val n3: Node = createNode()
+    relate(n1, n2, "KNOWS")
+    relate(n2, n3, "FRIEND")
+
+    val query = Query(
+      Select(NodeOutput("b")),
+      List(
+        VariableAssignment("start", NodeById(List(n1.getId))),
+        VariableAssignment("a", RelatedTo("start", "KNOWS", Direction.OUTGOING)),
+        VariableAssignment("b", RelatedTo("a", "FRIEND", Direction.OUTGOING))
+      ))
+
+    val result = execute(query)
+
+    assertEquals(List(Map("b" -> n3)), result.toList)
+  }
+
 
   def execute(query: Query) = {
     val result = engine.execute(query)
