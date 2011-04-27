@@ -6,6 +6,7 @@ import org.junit.Assert._
 import org.junit.{After, Before, Test}
 import org.neo4j.kernel.{AbstractGraphDatabase, ImpermanentGraphDatabase}
 import org.neo4j.graphdb.{Direction, DynamicRelationshipType, Node}
+import java.lang.String
 
 class ExecutionEngineTest {
   var graph: AbstractGraphDatabase = null
@@ -191,11 +192,36 @@ class ExecutionEngineTest {
     assertEquals(List(Map("b" -> n3)), result.toList)
   }
 
+  @Test def shouldFindNodesByIndex() {
+    //    FROM n = NODE("idxName", "key", "andres"),
+    //    SELECT n
+
+    val n: Node = createNode()
+    val idxName: String = "idxName"
+    val key: String = "key"
+    val value: String = "andres"
+    indexNode(n, idxName, key, value)
+
+    val query = Query(
+      Select(NodeOutput("n")),
+      List(
+        VariableAssignment("n", NodeByIndex(idxName, key, value))
+      ))
+
+    val result = execute(query)
+
+    assertEquals(List(Map("n" -> n)), result.toList)
+  }
+
 
   def execute(query: Query) = {
     val result = engine.execute(query)
     println(query)
     result
+  }
+
+  def indexNode(n:Node, idxName:String, key:String, value:String) {
+    inTx(() => n.getGraphDatabase.index.forNodes(idxName).add(n, key, value) )
   }
 
   def createNode(): Node = createNode(Map[String, Any]())
