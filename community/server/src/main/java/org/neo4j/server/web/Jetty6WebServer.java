@@ -85,6 +85,7 @@ public class Jetty6WebServer implements WebServer
     {
         try
         {
+            jetty.setStopAtShutdown( false );
             jetty.stop();
             jetty.join();
         }
