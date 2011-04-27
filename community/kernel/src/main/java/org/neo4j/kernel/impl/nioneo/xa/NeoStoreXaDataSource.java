@@ -472,16 +472,25 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     public ClosableIterable<File> listStoreFiles()
     {
         final Collection<File> files = new ArrayList<File>();
-        for ( File neostoreFile : new File( storeDir ).listFiles() )
+        File neostoreFile = null;
+        for ( File dbFile : new File( storeDir ).listFiles() )
         {
-            String name = neostoreFile.getName();
+            String name = dbFile.getName();
             // To filter for "neostore" is quite future proof, but the "index.db" file
             // maybe should be 
-            if ( neostoreFile.isFile() && (name.startsWith( "neostore" ) || name.equals( IndexStore.INDEX_DB_FILE_NAME )) && !name.endsWith( ".id" ) )
+            if ( dbFile.isFile() )
             {
-                files.add( neostoreFile );
+                if ( name.equals( "neostore" ) )
+                {
+                    neostoreFile = dbFile;
+                }
+                else if ( (name.startsWith( "neostore" ) || name.equals( IndexStore.INDEX_DB_FILE_NAME )) && !name.endsWith( ".id" ) )
+                {
+                    files.add( dbFile );
+                }
             }
         }
+        files.add( neostoreFile );
         
         return new ClosableIterable<File>()
         {
