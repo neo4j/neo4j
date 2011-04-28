@@ -1,4 +1,4 @@
-1.4.M01
+1.4.M01 (2011-04-28)
 --------------------
 o Removed dependency on log4j, logging now done via j.u.l
 
