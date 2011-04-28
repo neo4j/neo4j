@@ -663,6 +663,8 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             msgLog.logMessage( "Internal shutdown localGraph DONE", true );
             this.localGraph = null;
         }
+        msgLog.flush();
+        StringLogger.close( storeDir );
     }
 
     private synchronized void shutdown( RuntimeException cause, boolean shutdownBroker )
