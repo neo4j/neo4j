@@ -9,7 +9,7 @@
 
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-advanced</artifactId>
-  <version>1.4-SNAPSHOT</version>
+  <version>1.4.M01</version>
   <name>Neo4j Advanced</name>
   <packaging>jar</packaging>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -34,7 +34,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-management</artifactId>
-      <version>1.4-SNAPSHOT</version>
+      <version>1.4.M01</version>
     </dependency>
     <!-- Needed for the javadoc generation! -->
     <dependency>
