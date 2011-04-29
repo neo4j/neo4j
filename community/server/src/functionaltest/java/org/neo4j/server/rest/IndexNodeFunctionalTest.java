@@ -260,6 +260,22 @@ public class IndexNodeFunctionalTest
     }
 
     @Test
+    public void shouldGet200WhenQueryingIndex() throws PropertyValueException
+    {
+        String indexName = "bobTheIndex";
+        String key = "bobsKey";
+        String value = "bobsValue";
+        long node = helper.createNode();
+        helper.addNodeToIndex( indexName, key, value, node );
+
+        ClientResponse response = Client.create().resource( functionalTestHelper.indexNodeUri( indexName ) + "?query="+key+":"+value ).accept( MediaType.APPLICATION_JSON )
+                .get( ClientResponse.class );
+        
+        assertEquals( 200, response.getStatus() );
+    }
+
+
+    @Test
     public void shouldGet200WhenGettingNodesFromIndexWithNoHits()
     {
         String indexName = "empty-index";
@@ -272,45 +288,28 @@ public class IndexNodeFunctionalTest
     @Test
     public void shouldReturn204WhenRemovingNodeIndexes() throws DatabaseBlockedException, JsonParseException
     {
-        String key = "kvkey1";
-        String value = "value1";
         String indexName = "kvnode";
-        
-        assertEquals(0,helper.getNodeIndexes().length);
-        
-        long node = helper.createNode( MapUtil.map( key, value ) );
-        helper.addNodeToIndex( indexName, key, value, node );
-        
-        assertEquals(1,helper.getNodeIndexes().length);
+        helper.createNodeIndex( indexName );
         
         // Remove the index
         ClientResponse response = Client.create().resource( functionalTestHelper.indexNodeUri( indexName ) ).accept(
                 MediaType.APPLICATION_JSON ).delete( ClientResponse.class );
         
         assertEquals(204, response.getStatus());
-        assertEquals( 0, helper.getNodeIndexes().length );
     }
     
     @Test
     public void shouldReturn204WhenRemovingRelationshipIndexes() throws DatabaseBlockedException, JsonParseException
     {
-        String key = "kvkey1";
-        String value = "value1";
-        String indexName = "kvnode";
         
-        assertEquals(0,helper.getRelationshipIndexes().length);
-        
-        long relationship = helper.createRelationship( "A_RELATIONSHIP" );
-        helper.addRelationshipToIndex( indexName, key, value, relationship );
-        
-        assertEquals(1,helper.getRelationshipIndexes().length);
+        String indexName = "blah";
+        helper.createRelationshipIndex( indexName );
         
         // Remove the index
         ClientResponse response = Client.create().resource( functionalTestHelper.indexRelationshipUri( indexName ) ).accept(
                 MediaType.APPLICATION_JSON ).delete( ClientResponse.class );
         
         assertEquals(204, response.getStatus());
-        assertEquals( 0, helper.getRelationshipIndexes().length );
     }
 
     @Test
