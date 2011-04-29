@@ -10,7 +10,7 @@ Server Configuration
 ***********
 
 The main configuration file for the server can be found:
-[source,shell]
+[source]
 ----
 conf/neo4j-server.properties
 ----
@@ -19,33 +19,33 @@ This file contains several important settings, and although the defaults are sen
 administrators might choose to make changes (especially to the port settings).
 
 Set the location on disk of the database directory 
-[source,shell]
+[source]
 ----
 org.neo4j.server.database.location=data/graph.db
 ----
 Note that on Windows systems, absolute locations including drive letters need to read "c:/data/db"
 
 Specifying the port for the HTTP server that supports data, administrative, and UI access:
-[source,shell]
+[source]
 ----
 org.neo4j.server.webserver.port=7474
 ----
 
 Set the location of the round-robin database directory which gathers metrics on the running 
 server instance.
-[source,shell]
+[source]
 ----
 org.neo4j.server.webadmin.rrdb.location=data/graph.db/../rrd
 ----
 
 Set the URI path for the REST data API through which the database is accessed. For non-local access, consider to put in the external hostname of your server instead of localhost, e.g. http://my.host:7474/db/data .
-[source,shell]
+[source]
 ----
 org.neo4j.server.webadmin.data.uri=http://localhost:7474/db/data/
 ----
 
 The management URI for the administration API that the  Webadmin tool uses. If you plan to connect to the Webadmin from other than localhost, put in the external hostname of your server instead of localhost, e.g. http://my.host:7474/db/manage .
-[source,shell]
+[source]
 ----
 org.neo4j.server.webadmin.management.uri=http://localhost:7474/db/manage
 ----
@@ -53,7 +53,7 @@ org.neo4j.server.webadmin.management.uri=http://localhost:7474/db/manage
 Low-level performance tuning parameters can be explicitly set by referring
 to the following property:
 
-[source,shell]
+[source]
 ----
 org.neo4j.server.db.tuning.properties=neo4j.properties
 ----
@@ -68,7 +68,7 @@ database engine will attempt tune itself based on the prevailing conditions.
 
 The fine-tuning of the low-level Neo4j graph database engine is specified in a separate
 properties file.
-[source,shell]
+[source]
 ----
 conf/neo4j.properties
 ----
@@ -81,7 +81,7 @@ of this configuration document.
 
 The logging framework in use by the Neo4j server is java.util.logging and is configured in
 
-[source,shell]
+[source]
 ----
 conf/logging.properties
 ----
@@ -91,6 +91,8 @@ in a rolling file in +data/log+. Most deployments will choose to use their own c
 local standards. During development, much useful information can be found in the logs so some
 form of logging to disk is well worth keeping.
 On the other hand, if you want to completely silence the console output, set 
+
+[source]
 ----
 java.util.logging.ConsoleHandler.level=OFF
 ----
@@ -99,8 +101,7 @@ Apart from log statements originating from the Neo4j server, other libraries rep
 through various frameworks.
 
 Zookeeper is hardwired to use the log4j logging framework. The bundled 
-
-[source,shell]
+[source]
 ----
 conf/log4j.properties
 ----
@@ -110,10 +111,10 @@ applies for this use only and uses a rolling appender and outputs logs by defaul
 YAJSW, the wrapper implementation used for managing the neo4j service, utilizes a variety of
 libraries that log output and it also does its own logging. This set of messages is configured
 in
-[source,shell]
+[source]
 ----
 conf/wrapper-logging.properties
 ----
-following the standard java.util.logging conventions. By default nothing is outputted but in case
+following the standard +java.util.logging+ conventions. By default nothing is outputted but in case
 debugging is needed here you can set things up to see where any trouble may be.
 
