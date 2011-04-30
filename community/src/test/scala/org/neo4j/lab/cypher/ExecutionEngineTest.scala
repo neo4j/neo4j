@@ -135,7 +135,7 @@ class ExecutionEngineTest {
       Select(NodeOutput("n1"), NodeOutput("n2")),
       List(
         NodeById("n1", List(n1.getId)),
-        RelatedTo("n1", "n2", "KNOWS", Direction.OUTGOING)
+        RelatedTo("n1", "n2", "x", "KNOWS", Direction.OUTGOING)
       ))
 
     val result = execute(query)
@@ -158,7 +158,7 @@ class ExecutionEngineTest {
       Select(NodeOutput("x")),
       List(
         NodeById("start", List(n1.getId)),
-        RelatedTo("start", "x", "KNOWS", Direction.OUTGOING)
+        RelatedTo("start", "x", "a", "KNOWS", Direction.OUTGOING)
       ))
 
     val result = execute(query)
@@ -182,8 +182,8 @@ class ExecutionEngineTest {
       Select(NodeOutput("b")),
       List(
         NodeById("start", List(n1.getId)),
-        RelatedTo("start", "a", "KNOWS", Direction.OUTGOING),
-        RelatedTo("a", "b", "FRIEND", Direction.OUTGOING)
+        RelatedTo("start", "a", "r", "KNOWS", Direction.OUTGOING),
+        RelatedTo("a", "b", "foo", "FRIEND", Direction.OUTGOING)
       ))
 
     val result = execute(query)
@@ -219,23 +219,23 @@ class ExecutionEngineTest {
     //    SELECT company.name
 
     val me = createNode()
-    val companyA = createNode(Map("name" -> "Microsoft"))
-    val companyB = createNode(Map("name" -> "Oracle"))
-    relate(me, companyA, "SHARE_OWNER", Map("amount" -> 500))
-    relate(me, companyB, "SHARE_OWNER", Map("amount" -> 1500))
+    val msft = createNode(Map("name" -> "Microsoft"))
+    val orcl = createNode(Map("name" -> "Oracle"))
+    relate(me, msft, "SHARE_OWNER", Map("amount" -> 500f))
+    relate(me, orcl, "SHARE_OWNER", Map("amount" -> 1500f))
 
     val query = Query(
       Select(NodePropertyOutput("company", "name")),
       List(
         NodeById("me", List(me.getId)),
-        RelatedTo("me", "company", "SHARE_OWNER", Direction.OUTGOING)
+        RelatedTo("me", "company", "r", "SHARE_OWNER", Direction.OUTGOING)
       ),
-      Some(Where(NumberLargerThan("r", "amount", 1000)))
+      Some(Where(NumberLargerThan("r", "amount", 1000f)))
     )
 
     val result = execute(query)
 
-    assertEquals(List(), result.toList)
+    assertEquals(List(Map("company.name" -> "Oracle")), result.toList)
   }
 
 
@@ -265,7 +265,9 @@ class ExecutionEngineTest {
 
   def relate(n1: Node, n2: Node, relType: String, props: Map[String, Any] = Map()) {
     inTx(() => {
-      n1.createRelationshipTo(n2, DynamicRelationshipType.withName(relType))
+      val r = n1.createRelationshipTo(n2, DynamicRelationshipType.withName(relType))
+
+      props.foreach((kv) => r.setProperty(kv._1, kv._2))
     })
   }
 

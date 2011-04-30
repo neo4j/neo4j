@@ -12,4 +12,4 @@ case class NodeByIndex(varName:String, idxName: String, key:String, value: Any) 
 
 case class RelationshipByIndex(varName:String, idxName: String, value: Any) extends FromItem(varName)
 
-case class RelatedTo(inputColumn:String, outputColumn:String, relationType:String, direction:Direction) extends FromItem(outputColumn)
+case class RelatedTo(inputColumn:String, outputNode:String, outputRel:String, relationType:String, direction:Direction) extends FromItem(outputNode, outputRel)

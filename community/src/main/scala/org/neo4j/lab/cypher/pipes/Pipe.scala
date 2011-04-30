@@ -1,5 +1,7 @@
 package org.neo4j.lab.cypher.pipes
 
+import java.lang.String
+
 /**
  * Created by Andres Taylor
  * Date: 4/18/11
@@ -23,4 +25,16 @@ abstract class Pipe extends Traversable[Map[String, Any]] {
   }
 
   def columnNames: List[String]
+
+
+  def childrenNames: String =
+    input match {
+      case None => ""
+      case Some(x) => ".." + x.toString
+    }
+
+
+  override def toString(): String =
+    this.getClass.getSimpleName + "(deps:" + dependsOn + " gives:" + columnNames + ")" + childrenNames
+
 }
