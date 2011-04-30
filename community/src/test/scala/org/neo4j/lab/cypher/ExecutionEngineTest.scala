@@ -29,7 +29,7 @@ class ExecutionEngineTest {
 
     val query = Query(
       Select(NodeOutput("node")),
-      List(VariableAssignment("node", NodeById(List[Long](0))))
+      List(NodeById("node", List[Long](0)))
     )
 
     val result = execute(query)
@@ -44,7 +44,7 @@ class ExecutionEngineTest {
 
     val query = Query(
       Select(NodeOutput("node")),
-      List(VariableAssignment("node", NodeById(List(node.getId))))
+      List(NodeById("node", List(node.getId)))
     )
 
     val result = execute(query)
@@ -59,7 +59,7 @@ class ExecutionEngineTest {
 
     val query = Query(
       Select(NodeOutput("node")),
-      List(VariableAssignment("node", NodeById(List(refNode.getId, node.getId))))
+      List(NodeById("node", List(refNode.getId, node.getId)))
     )
 
     val result = execute(query)
@@ -75,11 +75,11 @@ class ExecutionEngineTest {
 
     val query = Query(
       Select(NodePropertyOutput("node", "name")),
-      List(VariableAssignment("node", NodeById(List(node.getId))))
+      List(NodeById("node", List(node.getId)))
     )
 
     val result = execute(query)
-    var list = result.columnAs[String]("node.name").toList
+    val list = result.columnAs[String]("node.name").toList
     assertEquals(List(name), list)
   }
 
@@ -94,7 +94,7 @@ class ExecutionEngineTest {
 
     val query = Query(
       Select(NodeOutput("node")),
-      List(VariableAssignment("node", NodeById(List(node1.getId, node2.getId)))),
+      List(NodeById("node", List(node1.getId, node2.getId))),
       Some(Where(StringEquals("node", "name", name)))
     )
 
@@ -112,8 +112,8 @@ class ExecutionEngineTest {
     val query = Query(
       Select(NodeOutput("n1"), NodeOutput("n2")),
       List(
-        VariableAssignment("n1", NodeById(List(n1.getId))),
-        VariableAssignment("n2", NodeById(List(n2.getId)))
+        NodeById("n1", List(n1.getId)),
+        NodeById("n2", List(n2.getId))
       )
     )
 
@@ -134,9 +134,8 @@ class ExecutionEngineTest {
     val query = Query(
       Select(NodeOutput("n1"), NodeOutput("n2")),
       List(
-        VariableAssignment("n1", NodeById(List(n1.getId))),
-        VariableAssignment("n2", RelatedTo("n1", "KNOWS", Direction.OUTGOING)
-        )
+        NodeById("n1", List(n1.getId)),
+        RelatedTo("n1", "n2", "KNOWS", Direction.OUTGOING)
       ))
 
     val result = execute(query)
@@ -158,8 +157,8 @@ class ExecutionEngineTest {
     val query = Query(
       Select(NodeOutput("x")),
       List(
-        VariableAssignment("start", NodeById(List(n1.getId))),
-        VariableAssignment("x", RelatedTo("start", "KNOWS", Direction.OUTGOING))
+        NodeById("start", List(n1.getId)),
+        RelatedTo("start", "x", "KNOWS", Direction.OUTGOING)
       ))
 
     val result = execute(query)
@@ -182,9 +181,9 @@ class ExecutionEngineTest {
     val query = Query(
       Select(NodeOutput("b")),
       List(
-        VariableAssignment("start", NodeById(List(n1.getId))),
-        VariableAssignment("a", RelatedTo("start", "KNOWS", Direction.OUTGOING)),
-        VariableAssignment("b", RelatedTo("a", "FRIEND", Direction.OUTGOING))
+        NodeById("start", List(n1.getId)),
+        RelatedTo("start", "a", "KNOWS", Direction.OUTGOING),
+        RelatedTo("a", "b", "FRIEND", Direction.OUTGOING)
       ))
 
     val result = execute(query)
@@ -205,12 +204,38 @@ class ExecutionEngineTest {
     val query = Query(
       Select(NodeOutput("n")),
       List(
-        VariableAssignment("n", NodeByIndex(idxName, key, value))
+        NodeByIndex("n", idxName, key, value)
       ))
 
     val result = execute(query)
 
     assertEquals(List(Map("n" -> n)), result.toList)
+  }
+
+  @Test def shouldBeAbleToFilterOnRelationProps() {
+    //    FROM me = NODE(1),
+    //      (me) -[r,'SHARE_OWNER']- (company)
+    //    WHERE r.amount > 1000
+    //    SELECT company.name
+
+    val me = createNode()
+    val companyA = createNode(Map("name" -> "Microsoft"))
+    val companyB = createNode(Map("name" -> "Oracle"))
+    relate(me, companyA, "SHARE_OWNER", Map("amount" -> 500))
+    relate(me, companyB, "SHARE_OWNER", Map("amount" -> 1500))
+
+    val query = Query(
+      Select(NodePropertyOutput("company", "name")),
+      List(
+        NodeById("me", List(me.getId)),
+        RelatedTo("me", "company", "SHARE_OWNER", Direction.OUTGOING)
+      ),
+      Some(Where(NumberLargerThan("r", "amount", 1000)))
+    )
+
+    val result = execute(query)
+
+    assertEquals(List(), result.toList)
   }
 
 
@@ -220,8 +245,8 @@ class ExecutionEngineTest {
     result
   }
 
-  def indexNode(n:Node, idxName:String, key:String, value:String) {
-    inTx(() => n.getGraphDatabase.index.forNodes(idxName).add(n, key, value) )
+  def indexNode(n: Node, idxName: String, key: String, value: String) {
+    inTx(() => n.getGraphDatabase.index.forNodes(idxName).add(n, key, value))
   }
 
   def createNode(): Node = createNode(Map[String, Any]())
@@ -238,7 +263,7 @@ class ExecutionEngineTest {
   }
 
 
-  def relate(n1: Node, n2: Node, relType: String) {
+  def relate(n1: Node, n2: Node, relType: String, props: Map[String, Any] = Map()) {
     inTx(() => {
       n1.createRelationshipTo(n2, DynamicRelationshipType.withName(relType))
     })

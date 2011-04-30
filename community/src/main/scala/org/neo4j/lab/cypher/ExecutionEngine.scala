@@ -78,16 +78,20 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
   }
 
 
-  private def createSourcePumps(from: List[VariableAssignment]): List[Pipe] = from.map((va) => va.fromitem match {
-    case NodeById(ids) => new FromPump(va.variable, ids.map(graph.getNodeById))
-    case RelatedTo(column, relType, direction) => new RelatedToPipe(column, va.variable, relType, direction)
-    case NodeByIndex(idxName, key, value) => {
+  private def createSourcePumps(fromList: List[FromItem]): List[Pipe] = fromList.map( (from)=>from match {
+    case NodeById(varName, ids) => new FromPump(varName, ids.map(graph.getNodeById))
+    case RelatedTo(column, varName, relType, direction) => new RelatedToPipe(column, varName, relType, direction)
+    case NodeByIndex(varName, idxName, key, value) => {
       val indexHits:java.lang.Iterable[Node] = graph.index.forNodes(idxName).get(key, value)
       val list: List[Node] = indexHits.asScala.toList
-      new FromPump(va.variable, list)
+      new FromPump(varName, list)
     }
-    //        case NodeByIndex(idx, value) => graph.index.forNodes("idx").get()
   })
+
+//  = from.map((va) => va.fromitem match {
+//    case NodeById(ids) => new FromPump(va.variable, ids.map(graph.getNodeById))
+//    //        case NodeByIndex(idx, value) => graph.index.forNodes("idx").get()
+//  })
 
 
   private def createSelectOutput[T](select: Select, inputNodes: scala.Seq[Node]): List[T] = {

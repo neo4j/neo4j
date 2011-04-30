@@ -15,6 +15,8 @@ abstract sealed class Clause {
 
 case class StringEquals(variable:String, propName: String, value: String) extends Clause
 
+case class NumberLargerThan(variable:String, propName:String, value:Number) extends Clause
+
 //case class NumberEquals(variable:String, propName: String, value: Number) extends Clause
 //
 //case class BooleanEquals(f: String, value: Boolean) extends Clause
