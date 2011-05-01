@@ -12,15 +12,22 @@ import org.junit.Assert._
  */
 
 class CypherParserTest {
-  @Test def shouldParseEasiestPossibleQuery() {
-    val query =
-      "from (start) = NODE(1) select start"
-
-    val expectedQuery = Query(Select(NodeOutput("start")), From(NodeById("start", 1)))
-
+  def testQuery(query: String, expectedQuery: Query) {
     val parser = new CypherParser()
     val executionTree = parser.parse(query).get
 
     assertEquals(expectedQuery, executionTree)
+  }
+
+  @Test def shouldParseEasiestPossibleQuery() {
+    testQuery(
+      "from (start) = NODE(1) select start",
+      Query(Select(NodeOutput("start")), From(NodeById("start", 1))))
+  }
+
+    @Test def shouldParseMultipleNodes() {
+    testQuery(
+      "from (start) = NODE(1,2,3) select start",
+      Query(Select(NodeOutput("start")), From(NodeById("start", 1,2,3))))
   }
 }

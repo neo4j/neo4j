@@ -18,8 +18,8 @@ class CypherParser extends JavaTokenParsers {
   //
   def from: Parser[From] = "from" ~> repsep(fromItem, ",") ^^ (From(_:_*))
 
-  def fromItem: Parser[FromItem] = "(" ~ ident ~ ")" ~ "=" ~ "node" ~ "(" ~ wholeNumber ~ ")" ^^ {
-    case "(" ~ varName ~ ")" ~ "=" ~ "node" ~ "(" ~ id ~ ")" => NodeById(varName, id.toLong)
+  def fromItem: Parser[FromItem] = "(" ~ ident ~ ")" ~ "=" ~ "node" ~ "(" ~ repsep(wholeNumber, ",") ~ ")" ^^ {
+    case "(" ~ varName ~ ")" ~ "=" ~ "node" ~ "(" ~ id ~ ")" => NodeById(varName, id.map(_.toLong).toSeq:_*)
   }
 
   def select: Parser[Select] = "select" ~ ident ^^ {
