@@ -47,8 +47,8 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
 
   def createProjectionTransformers(select: Select): Seq[MapTransformer] = select.selectItems.map((selectItem) => {
     selectItem match {
-      case NodePropertyOutput(nodeName, propName) => nodePropertyOutput(nodeName, propName) _
-      case NodeOutput(nodeName) => nodeOutput(nodeName) _
+      case PropertyOutput(nodeName, propName) => nodePropertyOutput(nodeName, propName) _
+      case EntityOutput(nodeName) => nodeOutput(nodeName) _
     }
   })
 
@@ -97,8 +97,8 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
     val selectItem = select.selectItems.head
 
     val transformer: (Node) => T = selectItem match {
-      case NodeOutput(variable) => (n) => n.asInstanceOf[T]
-      case NodePropertyOutput(nodeName, propName) => (n) => n.getProperty(propName).asInstanceOf[T]
+      case EntityOutput(variable) => (n) => n.asInstanceOf[T]
+      case PropertyOutput(nodeName, propName) => (n) => n.getProperty(propName).asInstanceOf[T]
     }
 
     inputNodes.map(transformer).toList

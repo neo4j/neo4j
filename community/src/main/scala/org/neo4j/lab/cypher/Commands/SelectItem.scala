@@ -8,5 +8,5 @@ package org.neo4j.lab.cypher.commands
 
 abstract sealed class SelectItem
 
-case class NodeOutput(name: String) extends SelectItem
-case class NodePropertyOutput(nodeName:String, propName:String) extends SelectItem
+case class EntityOutput(name: String) extends SelectItem
+case class PropertyOutput(entityName:String, propName:String) extends SelectItem

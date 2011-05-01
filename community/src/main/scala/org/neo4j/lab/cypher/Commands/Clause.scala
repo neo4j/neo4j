@@ -8,14 +8,19 @@ package org.neo4j.lab.cypher.commands
 
 
 abstract sealed class Clause {
-//  def and(otherField: Clause): Clause = And(this, otherField)
-//
-//  def or(otherField: Clause): Clause = Or(this, otherField)
+  //  def and(otherField: Clause): Clause = And(this, otherField)
+  //
+  //  def or(otherField: Clause): Clause = Or(this, otherField)
 }
 
-case class StringEquals(variable:String, propName: String, value: String) extends Clause
+case class StringEquals(variable: String, propName: String, value: String) extends Clause
 
-case class NumberLargerThan(variable:String, propName:String, value:Float) extends Clause
+case class NumberLargerThan(variable: String, propName: String, value: Float) extends Clause
+
+case class And(a: Clause, b: Clause) extends Clause
+
+case class Or(a: Clause, b: Clause) extends Clause
+
 
 //case class NumberEquals(variable:String, propName: String, value: Number) extends Clause
 //

@@ -28,7 +28,7 @@ class ExecutionEngineTest {
     //    SELECT node
 
     val query = Query(
-      Select(NodeOutput("node")),
+      Select(EntityOutput("node")),
       From(NodeById("node", 0))
     )
 
@@ -43,7 +43,7 @@ class ExecutionEngineTest {
     val node: Node = createNode()
 
     val query = Query(
-      Select(NodeOutput("node")),
+      Select(EntityOutput("node")),
       From(NodeById("node", node.getId))
     )
 
@@ -58,7 +58,7 @@ class ExecutionEngineTest {
     val node: Node = createNode()
 
     val query = Query(
-      Select(NodeOutput("node")),
+      Select(EntityOutput("node")),
       From(NodeById("node", refNode.getId, node.getId))
     )
 
@@ -74,7 +74,7 @@ class ExecutionEngineTest {
     val node: Node = createNode(Map("name" -> name))
 
     val query = Query(
-      Select(NodePropertyOutput("node", "name")),
+      Select(PropertyOutput("node", "name")),
       From(NodeById("node", node.getId))
     )
 
@@ -93,7 +93,7 @@ class ExecutionEngineTest {
     val node2: Node = createNode(Map("name" -> "Someone Else"))
 
     val query = Query(
-      Select(NodeOutput("node")),
+      Select(EntityOutput("node")),
       From(NodeById("node", node1.getId, node2.getId)),
       Some(Where(StringEquals("node", "name", name)))
     )
@@ -110,7 +110,7 @@ class ExecutionEngineTest {
     val n2: Node = createNode()
 
     val query = Query(
-      Select(NodeOutput("n1"), NodeOutput("n2")),
+      Select(EntityOutput("n1"), EntityOutput("n2")),
       From(
         NodeById("n1", n1.getId),
         NodeById("n2", n2.getId)
@@ -132,7 +132,7 @@ class ExecutionEngineTest {
     relate(n1, n2, "KNOWS")
 
     val query = Query(
-      Select(NodeOutput("n1"), NodeOutput("n2")),
+      Select(EntityOutput("n1"), EntityOutput("n2")),
       From(
         NodeById("n1", n1.getId),
         RelatedTo("n1", "n2", "x", "KNOWS", Direction.OUTGOING)
@@ -155,7 +155,7 @@ class ExecutionEngineTest {
     relate(n1, n3, "KNOWS")
 
     val query = Query(
-      Select(NodeOutput("x")),
+      Select(EntityOutput("x")),
       From(
         NodeById("start", n1.getId),
         RelatedTo("start", "x", "a", "KNOWS", Direction.OUTGOING)
@@ -179,7 +179,7 @@ class ExecutionEngineTest {
     relate(n2, n3, "FRIEND")
 
     val query = Query(
-      Select(NodeOutput("b")),
+      Select(EntityOutput("b")),
       From(
         NodeById("start", n1.getId),
         RelatedTo("start", "a", "r", "KNOWS", Direction.OUTGOING),
@@ -202,7 +202,7 @@ class ExecutionEngineTest {
     indexNode(n, idxName, key, value)
 
     val query = Query(
-      Select(NodeOutput("n")),
+      Select(EntityOutput("n")),
       From(NodeByIndex("n", idxName, key, value))
     )
 
@@ -224,7 +224,7 @@ class ExecutionEngineTest {
     relate(me, orcl, "SHARE_OWNER", Map("amount" -> 1500f))
 
     val query = Query(
-      Select(NodePropertyOutput("company", "name")),
+      Select(PropertyOutput("company", "name")),
       From(
         NodeById("me", me.getId),
         RelatedTo("me", "company", "r", "SHARE_OWNER", Direction.OUTGOING)
