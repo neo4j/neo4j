@@ -166,6 +166,29 @@ class ExecutionEngineTest {
     assertEquals(List(Map("x" -> n2), Map("x" -> n3)), result.toList)
   }
 
+    @Test def toStringTest() {
+    //    FROM start = NODE(1),
+    //      start -KNOWS-> x
+    //    SELECT x
+
+    val n1: Node = createNode()
+    val n2: Node = createNode()
+    val n3: Node = createNode()
+    relate(n1, n2, "KNOWS")
+    relate(n1, n3, "KNOWS")
+
+    val query = Query(
+      Select(EntityOutput("x"),EntityOutput("start")),
+      From(
+        NodeById("start", n1.getId),
+        RelatedTo("start", "x", "a", "KNOWS", Direction.OUTGOING)
+      ))
+
+    val result = execute(query)
+
+    println(result)
+  }
+
   @Test def shouldGetRelatedToRelatedTo() {
     //    FROM start = NODE(1),
     //      start -KNOWS-> a,
