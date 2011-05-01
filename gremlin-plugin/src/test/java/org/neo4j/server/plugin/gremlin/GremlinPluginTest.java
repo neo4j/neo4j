@@ -5,13 +5,12 @@ import com.tinkerpop.blueprints.pgm.Graph;
 import com.tinkerpop.blueprints.pgm.Vertex;
 import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
 import junit.framework.Assert;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.ImpermanentGraphDatabase;
 import org.neo4j.server.rest.repr.OutputFormat;
@@ -19,8 +18,9 @@ import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 
 import java.net.URI;
-
-import static org.junit.Assert.assertNotNull;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 
 public class GremlinPluginTest {
@@ -29,10 +29,6 @@ public class GremlinPluginTest {
     private static GremlinPlugin plugin = null;
     private static OutputFormat json = null;
     private static JSONParser parser = new JSONParser();
-    private static String directory = "target/db";
-    private static Node firstNode = null;
-    private static Node secondNode = null;
-    private static Node thirdNode = null;
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
@@ -40,6 +36,7 @@ public class GremlinPluginTest {
         neo4j = new ImpermanentGraphDatabase("target/db");
         plugin = new GremlinPlugin();
         Graph graph = new Neo4jGraph(neo4j);
+        graph.removeVertex(graph.getVertex(0));
         Vertex marko = graph.addVertex("1");
         marko.setProperty("name", "marko");
         marko.setProperty("age", 29);
@@ -87,18 +84,55 @@ public class GremlinPluginTest {
     }
 
     @Test
-    public void testExecuteScriptVertices() {
-        System.out.println(json.format(GremlinPluginTest.executeTestScript("g.V")));
+    public void testExecuteScriptVertices() throws Exception {
+        JSONArray array = (JSONArray) parser.parse(json.format(GremlinPluginTest.executeTestScript("g.V")));
+        List<String> ids = new ArrayList<String>(Arrays.asList("1", "2", "3", "4", "5", "6"));
+        Assert.assertEquals(array.size(), 6);
+        for (Object object : array) {
+            String self = (String) ((JSONObject) object).get("self");
+            String id = self.substring(self.lastIndexOf("/") + 1);
+            ids.remove(id);
+            String name = (String) ((JSONObject) ((JSONObject) object).get("data")).get("name");
+            if (id.equals("1")) {
+                Assert.assertEquals(name, "marko");
+            } else if (id.equals("2")) {
+                Assert.assertEquals(name, "vadas");
+            } else if (id.equals("3")) {
+                Assert.assertEquals(name, "lop");
+            } else if (id.equals("4")) {
+                Assert.assertEquals(name, "josh");
+            } else if (id.equals("5")) {
+                Assert.assertEquals(name, "ripple");
+            } else if (id.equals("6")) {
+                Assert.assertEquals(name, "peter");
+            } else {
+                Assert.assertTrue(false);
+            }
+
+        }
+        Assert.assertEquals(ids.size(), 0);
     }
 
     @Test
-    public void testExecuteScriptEdges() {
-        System.out.println(json.format(GremlinPluginTest.executeTestScript("g.E")));
+    public void testExecuteScriptEdges() throws Exception {
+        JSONArray array = (JSONArray) parser.parse(json.format(GremlinPluginTest.executeTestScript("g.E")));
+        List<String> ids = new ArrayList<String>(Arrays.asList("0", "1", "2", "3", "4", "5"));
+        Assert.assertEquals(array.size(), 6);
+        for (Object object : array) {
+            String self = (String) ((JSONObject) object).get("self");
+            String id = self.substring(self.lastIndexOf("/") + 1);
+            ids.remove(id);
+            Double weight = (Double) ((JSONObject) ((JSONObject) object).get("data")).get("weight");
+            Assert.assertNotNull(weight);
+            Assert.assertTrue(weight > 0.1);
+        }
+        Assert.assertEquals(ids.size(), 0);
     }
 
     @Test
-    public void testExecuteScriptGraph() {
-        System.out.println(json.format(GremlinPluginTest.executeTestScript("[g]")));
+    public void testExecuteScriptGraph() throws Exception {
+        String ret = (String)parser.parse(json.format(GremlinPluginTest.executeTestScript("g")));
+        Assert.assertEquals(ret, "ImpermanentGraphDatabase [target/db]");
     }
 
     @Test
@@ -132,52 +166,16 @@ public class GremlinPluginTest {
             tx.success();
             tx.finish();
         }
-      }
-
-
-    
-    
-
-    @Test
-    public void testExecuteScriptGetVerticesBySpecifiedName() {
-        String script = "g.V[[name:'firstNode']]";
-        Transaction tx = null;
-        try {
-        	System.err.println("GremlinPluginTest::executeScript testExecuteScriptGetVerticesBySpecifiedName the contents of the representation object");
-            tx = neo4j.beginTx();
-            Representation representation = plugin.executeScript(neo4j, script);
-            System.out.println(json.format(representation));
-            assertNotNull(representation);
-            tx.success();
-        } catch (Throwable t) {
-            t.printStackTrace();
-        } finally {
-            tx.finish();
-        }
-
     }
-    
-    
-    
+
+
     @Test
-    public void testExecuteScriptGetVerticesBySpecifiedNodeType() {
-        String script = "g.V[[nodeType:'type 1']]";
-        Transaction tx = null;
-        try {
-        	System.err.println("GremlinPluginTest::executeScript testExecuteScriptGetVerticesBySpecifiedNodeType the contents of the representation object");
-            tx = neo4j.beginTx();
-            Representation representation = plugin.executeScript(neo4j, script);
-            System.out.println(json.format(representation));
-            assertNotNull(representation);
-            tx.success();
-
-            
-        } catch (Throwable t) {
-            t.printStackTrace();
-        } finally {
-            tx.finish();
-        }
-
+    public void testExecuteScriptGetVerticesBySpecifiedName() throws Exception {
+        JSONObject object = (JSONObject) parser.parse(json.format(GremlinPluginTest.executeTestScript("g.V[[name:'marko']] >> 1")));
+        Assert.assertEquals(((JSONObject) object.get("data")).get("name"), "marko");
+        Assert.assertEquals(((JSONObject) object.get("data")).get("age"), 29l);
+        String self = (String) ((JSONObject) object).get("self");
+        Assert.assertEquals(self.substring(self.lastIndexOf("/") + 1), "1");
     }
 
 }

@@ -6,8 +6,6 @@ import com.tinkerpop.blueprints.pgm.Vertex;
 import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jEdge;
 import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
 import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jVertex;
-import com.tinkerpop.gremlin.jsr223.GremlinScriptEngine;
-import com.tinkerpop.gremlin.jsr223.GremlinScriptEngineFactory;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.server.plugins.Description;
 import org.neo4j.server.plugins.Name;
@@ -42,11 +40,12 @@ import java.util.List;
  * and much, much more.
  */
 
-@Description("A server side gremlin plugin for the neo4j REST server that will perform various node traversals and searches")
+@Description("A server side Gremlin plugin for the Neo4j REST server")
 public class GremlinPlugin extends ServerPlugin {
 
     private final String g = "g";
-    private final ScriptEngine engine = new ScriptEngineManager().getEngineByName("gremlin");
+    private static final ScriptEngine engine = new ScriptEngineManager().getEngineByName("gremlin");
+
     @Name("execute_script")
     @Description("execute a Gremlin script with 'g' set to the Neo4jGraph and 'results' containing the results. Only results of one object type is supported.")
     @PluginTarget(GraphDatabaseService.class)
