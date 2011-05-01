@@ -22,7 +22,7 @@ class CypherParserTest {
 
   @Test def shouldParseEasiestPossibleQuery() {
     testQuery(
-      "from start = NODE(1) select start",
+      "from start = node(1) select start",
       Query(
         Select(EntityOutput("start")),
         From(NodeById("start", 1))))
@@ -30,7 +30,7 @@ class CypherParserTest {
 
   @Test def shouldParseMultipleNodes() {
     testQuery(
-      "from start = NODE(1,2,3) select start",
+      "from start = node(1,2,3) select start",
       Query(
         Select(EntityOutput("start")),
         From(NodeById("start", 1, 2, 3))))
@@ -38,7 +38,7 @@ class CypherParserTest {
 
   @Test def shouldParseMultipleInputs() {
     testQuery(
-      "from a = NODE(1), b = NODE(2) select a,b",
+      "from a = node(1), b = node(2) select a,b",
       Query(
         Select(EntityOutput("a"), EntityOutput("b")),
         From(NodeById("a", 1), NodeById("b", 2))))
@@ -46,7 +46,7 @@ class CypherParserTest {
 
   @Test def shouldFilterOnProp() {
     testQuery(
-      "from a = NODE(1) where a.name = \"andres\" select a",
+      "from a = node(1) where a.name = \"andres\" select a",
       Query(
         Select(EntityOutput("a")),
         From(NodeById("a", 1)),
@@ -56,7 +56,7 @@ class CypherParserTest {
 
   @Test def multipleFilters() {
     testQuery(
-      "from a = NODE(1) where a.name = \"andres\" OR a.name = \"mattias\" select a",
+      "from a = node(1) where a.name = \"andres\" or a.name = \"mattias\" select a",
       Query(
         Select(EntityOutput("a")),
         From(NodeById("a", 1)),
@@ -68,19 +68,19 @@ class CypherParserTest {
 
   @Test def relatedTo() {
     testQuery(
-      "from a = NODE(1), (a) -['knows']-> (b) select a, b",
+      "from a = node(1), (a) -['KNOWS']-> (b) select a, b",
       Query(
         Select(EntityOutput("a"), EntityOutput("b")),
-        From(NodeById("a", 1), RelatedTo("a", "b", "r", "knows", Direction.OUTGOING)))
+        From(NodeById("a", 1), RelatedTo("a", "b", "r", "KNOWS", Direction.OUTGOING)))
     )
   }
 
   @Test def relatedToWithRelationOutput() {
     testQuery(
-      "from a = NODE(1), (a) -[rel,'knows']-> (b) select rel",
+      "from a = node(1), (a) -[rel,'KNOWS']-> (b) select rel",
       Query(
         Select(EntityOutput("rel")),
-        From(NodeById("a", 1), RelatedTo("a", "b", "rel", "knows", Direction.OUTGOING)))
+        From(NodeById("a", 1), RelatedTo("a", "b", "rel", "KNOWS", Direction.OUTGOING)))
     )
   }
 }

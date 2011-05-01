@@ -7,4 +7,3 @@ case class Select(selectItems: SelectItem*)
 case class From(fromItems: FromItem*)
 
 case class Where(clauses: Clause*)
-
