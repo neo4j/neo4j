@@ -5,8 +5,8 @@ import scala.util.parsing.combinator._
 
 class CypherParser extends JavaTokenParsers {
 
-  def query: Parser[Query] = from ~ select ^^ {
-    case from ~ select => Query(select, from)
+  def query: Parser[Query] = from ~ opt(where) ~ select ^^ {
+    case from ~ where ~ select => Query(select, from, where)
   }
 
   //  def operation:Parser[Operation] = {
@@ -16,18 +16,20 @@ class CypherParser extends JavaTokenParsers {
   //    }
   //  }
   //
-  def from: Parser[From] = "from" ~> repsep(fromItem, ",") ^^ (From(_:_*))
+  def from: Parser[From] = "from" ~> repsep(fromItem, ",") ^^ (From(_: _*))
 
-  def fromItem: Parser[FromItem] = "(" ~ ident ~ ")" ~ "=" ~ "node" ~ "(" ~ repsep(wholeNumber, ",") ~ ")" ^^ {
-    case "(" ~ varName ~ ")" ~ "=" ~ "node" ~ "(" ~ id ~ ")" => NodeById(varName, id.map(_.toLong).toSeq:_*)
+  def fromItem: Parser[FromItem] = ident ~ "=" ~ "node" ~ "(" ~ repsep(wholeNumber, ",") ~ ")" ^^ {
+    case varName ~ "=" ~ "node" ~ "(" ~ id ~ ")" => NodeById(varName, id.map(_.toLong).toSeq: _*)
   }
 
-  def select: Parser[Select] = "select" ~ ident ^^ {
-    case "select" ~ columnName => Select(NodeOutput(columnName))
+  def select: Parser[Select] = "select" ~ repsep(ident, ",") ^^ {
+    case "select" ~ columnNames => Select(columnNames.map(NodeOutput(_)):_*)
   }
 
+  def where: Parser[Where] = "where" ~> ident ~ "." ~ ident  ~ "=" ~ stringLiteral ^^ {
+    case c ~ "." ~ p ~ "=" ~ v => Where(StringEquals(c,p,stripQuotes(v)))
+  }
 
-  //
   //  def where:Parser[Where] = "where" ~> rep(clause) ^^ (Where(_:_*))
   //
   //  def clause:Parser[Clause] = (predicate|parens) * (
@@ -53,7 +55,7 @@ class CypherParser extends JavaTokenParsers {
   //    }
   //  }
 
-  //  def stripQuotes(s:String) = s.substring(1, s.length-1)
+  def stripQuotes(s:String) = s.substring(1, s.length-1)
 
   def parse(sql: String): Option[Query] =
     parseAll(query, sql.toLowerCase) match {
