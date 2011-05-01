@@ -29,7 +29,7 @@ class ExecutionEngineTest {
 
     val query = Query(
       Select(NodeOutput("node")),
-      List(NodeById("node", List[Long](0)))
+      From(NodeById("node", 0))
     )
 
     val result = execute(query)
@@ -44,7 +44,7 @@ class ExecutionEngineTest {
 
     val query = Query(
       Select(NodeOutput("node")),
-      List(NodeById("node", List(node.getId)))
+      From(NodeById("node", node.getId))
     )
 
     val result = execute(query)
@@ -59,7 +59,7 @@ class ExecutionEngineTest {
 
     val query = Query(
       Select(NodeOutput("node")),
-      List(NodeById("node", List(refNode.getId, node.getId)))
+      From(NodeById("node", refNode.getId, node.getId))
     )
 
     val result = execute(query)
@@ -75,7 +75,7 @@ class ExecutionEngineTest {
 
     val query = Query(
       Select(NodePropertyOutput("node", "name")),
-      List(NodeById("node", List(node.getId)))
+      From(NodeById("node", node.getId))
     )
 
     val result = execute(query)
@@ -94,7 +94,7 @@ class ExecutionEngineTest {
 
     val query = Query(
       Select(NodeOutput("node")),
-      List(NodeById("node", List(node1.getId, node2.getId))),
+      From(NodeById("node", node1.getId, node2.getId)),
       Some(Where(StringEquals("node", "name", name)))
     )
 
@@ -111,9 +111,9 @@ class ExecutionEngineTest {
 
     val query = Query(
       Select(NodeOutput("n1"), NodeOutput("n2")),
-      List(
-        NodeById("n1", List(n1.getId)),
-        NodeById("n2", List(n2.getId))
+      From(
+        NodeById("n1", n1.getId),
+        NodeById("n2", n2.getId)
       )
     )
 
@@ -133,8 +133,8 @@ class ExecutionEngineTest {
 
     val query = Query(
       Select(NodeOutput("n1"), NodeOutput("n2")),
-      List(
-        NodeById("n1", List(n1.getId)),
+      From(
+        NodeById("n1", n1.getId),
         RelatedTo("n1", "n2", "x", "KNOWS", Direction.OUTGOING)
       ))
 
@@ -156,8 +156,8 @@ class ExecutionEngineTest {
 
     val query = Query(
       Select(NodeOutput("x")),
-      List(
-        NodeById("start", List(n1.getId)),
+      From(
+        NodeById("start", n1.getId),
         RelatedTo("start", "x", "a", "KNOWS", Direction.OUTGOING)
       ))
 
@@ -180,8 +180,8 @@ class ExecutionEngineTest {
 
     val query = Query(
       Select(NodeOutput("b")),
-      List(
-        NodeById("start", List(n1.getId)),
+      From(
+        NodeById("start", n1.getId),
         RelatedTo("start", "a", "r", "KNOWS", Direction.OUTGOING),
         RelatedTo("a", "b", "foo", "FRIEND", Direction.OUTGOING)
       ))
@@ -203,9 +203,8 @@ class ExecutionEngineTest {
 
     val query = Query(
       Select(NodeOutput("n")),
-      List(
-        NodeByIndex("n", idxName, key, value)
-      ))
+      From(NodeByIndex("n", idxName, key, value))
+    )
 
     val result = execute(query)
 
@@ -226,8 +225,8 @@ class ExecutionEngineTest {
 
     val query = Query(
       Select(NodePropertyOutput("company", "name")),
-      List(
-        NodeById("me", List(me.getId)),
+      From(
+        NodeById("me", me.getId),
         RelatedTo("me", "company", "r", "SHARE_OWNER", Direction.OUTGOING)
       ),
       Some(Where(NumberLargerThan("r", "amount", 1000f)))

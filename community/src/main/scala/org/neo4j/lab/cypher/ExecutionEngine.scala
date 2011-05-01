@@ -19,8 +19,8 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
   def execute(query: Query): Projection = query match {
     case Query(select, from, where) => {
 
-      var sourcePumps: List[Pipe] = createSourcePumps(from)
-      val filters: Option[Pipe] = createFilters(where)
+      var sourcePumps = createSourcePumps(from)
+      val filters = createFilters(where)
 
       val currentRow = new CurrentRow()
       while (sourcePumps.nonEmpty) {
@@ -31,7 +31,7 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
 
       if (filters.nonEmpty) {
         val pipe: Traversable[Pipe] = currentRow.addPipe(filters.get)
-        if(pipe.nonEmpty){
+        if (pipe.nonEmpty) {
           throw new RuntimeException("What?")
         }
       }
@@ -83,8 +83,8 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
   }
 
 
-  private def createSourcePumps(fromList: List[FromItem]): List[Pipe] = fromList.map(_ match {
-    case NodeById(varName, ids) => new FromPump(varName, ids.map(graph.getNodeById))
+  private def createSourcePumps(from: From): Seq[Pipe] = from.fromItems.map(_ match {
+    case NodeById(varName, ids@_*) => new FromPump(varName, ids.map(graph.getNodeById))
     case RelatedTo(column, outputNode, outputRel, relType, direction) => new RelatedToPipe(column, outputNode, outputRel, relType, direction)
     case NodeByIndex(varName, idxName, key, value) => {
       val indexHits: java.lang.Iterable[Node] = graph.index.forNodes(idxName).get(key, value)

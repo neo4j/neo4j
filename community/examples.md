@@ -3,6 +3,11 @@ Introduction
 Cypher has a few syntaxes that should be explained before we jump into the examples.
 
 
+FROM _from_expr_ [, _from_expr_ ...]
+[WHERE _where_cond_ [, _where_cond_ ...]]
+SELECT _select_expr_
+
+
 Queries are broken down into different parts:
 
 FROM

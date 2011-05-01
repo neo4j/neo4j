@@ -4,7 +4,7 @@ import org.neo4j.graphdb.Direction
 
 abstract sealed class FromItem(varNames:String*)
 
-case class NodeById(varName:String, id: List[Long]) extends FromItem(varName)
+case class NodeById(varName:String, id: Long*) extends FromItem(varName)
 
 case class RelationshipById(varName:String, id: Long*) extends FromItem(varName)
 
