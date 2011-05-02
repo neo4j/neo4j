@@ -24,9 +24,10 @@ class CypherParser extends JavaTokenParsers {
     case varName ~ "=" ~ "node" ~ "(" ~ id ~ ")" => NodeById(varName, id.map(_.toLong).toSeq: _*)
   }
 
-  def select: Parser[Select] = "select" ~ repsep(ident, ",") ^^ {
-    case "select" ~ columnNames => Select(columnNames.map(EntityOutput(_)): _*)
-  }
+  def select: Parser[Select] = "select" ~> repsep((propertyOutput|nodeOutput), ",") ^^ ( Select(_:_*) )
+
+  def nodeOutput:Parser[SelectItem] = ident ^^ { EntityOutput(_) }
+  def propertyOutput:Parser[SelectItem] = ident ~ "." ~ ident ^^ { case c ~ "." ~ p => PropertyOutput(c,p) }
 
   def where: Parser[Where] = "where" ~> rep(clause) ^^ (Where(_: _*))
 

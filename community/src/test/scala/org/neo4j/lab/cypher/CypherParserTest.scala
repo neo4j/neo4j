@@ -75,6 +75,15 @@ class CypherParserTest {
     )
   }
 
+  @Test def shouldOutputVariables() {
+    testQuery(
+      "from a = node(1) select a.name",
+      Query(
+        Select(PropertyOutput("a", "name")),
+        From(NodeById("a", 1)))
+    )
+  }
+
   @Test def relatedToWithRelationOutput() {
     testQuery(
       "from a = node(1), (a) -[rel,'KNOWS']-> (b) select rel",
