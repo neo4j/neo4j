@@ -43,17 +43,17 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
-public class RetrieveNodeFunctionalTest {
+public class RetrieveNodeFunctionalTest extends DocumentationOutput {
     private URI nodeUri;
 
     private NeoServerWithEmbeddedWebServer server;
+
 
     @Before
     public void setupServer() throws IOException, DatabaseBlockedException, URISyntaxException {
         server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
         server.start();
         FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper(server);
-
         nodeUri = new URI(functionalTestHelper.nodeUri() + "/" + new GraphDbHelper(server.getDatabase()).createNode());
     }
 
@@ -61,11 +61,13 @@ public class RetrieveNodeFunctionalTest {
     public void stopServer() {
         server.stop();
         server = null;
+        document(  );
     }
 
     @Test
     public void shouldGet200WhenRetrievingNode() throws Exception {
-        ClientResponse response = retrieveNodeFromService(nodeUri.toString());
+        String uri = nodeUri.toString();
+        ClientResponse response = retrieveDocumentedNodeFromService("Retrieve Node", uri);
         assertEquals(200, response.getStatus());
     }
 
@@ -91,13 +93,24 @@ public class RetrieveNodeFunctionalTest {
 
     @Test
     public void shouldGet404WhenRetrievingNonExistentNode() throws Exception {
-        ClientResponse response = retrieveNodeFromService(nodeUri + "00000");
+        ClientResponse response = retrieveDocumentedNodeFromService("Asking for a non-existent Node", nodeUri + "00000");
         assertEquals(404, response.getStatus());
     }
 
     private ClientResponse retrieveNodeFromService(String uri) {
         WebResource resource = Client.create().resource(uri);
         ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
+        return response;
+    }
+    
+    private ClientResponse retrieveDocumentedNodeFromService(String title, String uri) {
+        WebResource resource = Client.create().resource(uri);
+        data.setTitle( title );
+        ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
+        data.setMethod("GET");
+        data.setUri(uri);
+        data.setResponse(response.getStatus());
+        data.setResponseBody(response.getEntity(String.class));
         return response;
     }
 }
