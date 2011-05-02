@@ -63,3 +63,10 @@ Useful links when configuring the docbook toolchain:
 * http://www.docbook.org/tdg/en/html/docbook.html
 * http://www.sagehill.net/docbookxsl/index.html
 
+=== With brew on OSX ===
+
+  brew install docbook
+  brew install asciidoc
+  brew install w3m
+  brew install fop
+
