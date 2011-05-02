@@ -53,7 +53,7 @@ When /^wait for Server (started|stopped) at "([^\"]*)"$/ do |state, uri|
       break if (state == "stopped")
       p e
     end
-    sleep 1
+    sleep 5
     i += 1
   end
 end
