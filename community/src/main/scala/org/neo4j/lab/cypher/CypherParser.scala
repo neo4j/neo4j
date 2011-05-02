@@ -15,17 +15,8 @@ class CypherParser extends JavaTokenParsers {
   def relatedToWithoutRelOut = "(" ~ ident ~ ")" ~ opt("<") ~ "-[" ~ "'" ~ ident ~ "'" ~ "]-" ~ opt(">") ~ "(" ~ ident ~ ")" ^^ {
     case "(" ~ start ~ ")" ~ back ~ "-[" ~ "'" ~ relType ~ "'" ~ "]-" ~ forward ~ "(" ~ end ~ ")" => RelatedTo(start, end, "r", relType,  getDirection(back, forward))}
 
-  private def getDirection(back:Option[String], forward:Option[String]):Direction =
-    (back.nonEmpty, forward.nonEmpty) match {
-      case (true,false) => Direction.INCOMING
-      case (false,true) => Direction.OUTGOING
-      case (false,false) => Direction.BOTH
-      case (true,true) => throw new RuntimeException("A relation can't point both ways")
-    }
-
-
-  def relatedToWithRelOut = "(" ~ ident ~ ")" ~ "-[" ~ ident ~ "," ~ "'" ~ ident ~ "'" ~ "]->" ~ "(" ~ ident ~ ")" ^^ {
-    case "(" ~ start ~ ")" ~ "-[" ~ relName ~ "," ~ "'" ~ relType ~ "'" ~ "]->" ~ "(" ~ end ~ ")" => RelatedTo(start, end, relName, relType, Direction.OUTGOING)
+  def relatedToWithRelOut = "(" ~ ident ~ ")" ~ opt("<") ~ "-[" ~ ident ~ "," ~ "'" ~ ident ~ "'" ~ "]-" ~ opt(">") ~ "(" ~ ident ~ ")" ^^ {
+    case "(" ~ start ~ ")" ~ back ~ "-[" ~ relName ~ "," ~ "'" ~ relType ~ "'" ~ "]-" ~ forward ~ "(" ~ end ~ ")" => RelatedTo(start, end, relName, relType, getDirection(back, forward))
   }
 
   def nodeByIds = ident ~ "=" ~ "node" ~ "(" ~ repsep(wholeNumber, ",") ~ ")" ^^ {
@@ -50,7 +41,15 @@ class CypherParser extends JavaTokenParsers {
       case c ~ "." ~ p ~ "=" ~ v => StringEquals(c, p, stripQuotes(v))
     })
 
-  def stripQuotes(s: String) = s.substring(1, s.length - 1)
+  private def stripQuotes(s: String) = s.substring(1, s.length - 1)
+
+  private def getDirection(back:Option[String], forward:Option[String]):Direction =
+    (back.nonEmpty, forward.nonEmpty) match {
+      case (true,false) => Direction.INCOMING
+      case (false,true) => Direction.OUTGOING
+      case (false,false) => Direction.BOTH
+      case (true,true) => throw new RuntimeException("A relation can't point both ways")
+    }
 
   def parse(sql: String): Option[Query] =
     parseAll(query, sql) match {
