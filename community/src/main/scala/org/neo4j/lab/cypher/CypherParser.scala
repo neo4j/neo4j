@@ -12,9 +12,17 @@ class CypherParser extends JavaTokenParsers {
 
   def from: Parser[From] = "from" ~> repsep((nodeByIds | relatedToWithoutRelOut | relatedToWithRelOut), ",") ^^ (From(_: _*))
 
-  def relatedToWithoutRelOut = "(" ~ ident ~ ")" ~ "-[" ~ "'" ~ ident ~ "'" ~ "]->" ~ "(" ~ ident ~ ")" ^^ {
-    case "(" ~ start ~ ")" ~ "-[" ~ "'" ~ relType ~ "'" ~ "]->" ~ "(" ~ end ~ ")" => RelatedTo(start, end, "r", relType, Direction.OUTGOING)
-  }
+  def relatedToWithoutRelOut = "(" ~ ident ~ ")" ~ opt("<") ~ "-[" ~ "'" ~ ident ~ "'" ~ "]-" ~ opt(">") ~ "(" ~ ident ~ ")" ^^ {
+    case "(" ~ start ~ ")" ~ back ~ "-[" ~ "'" ~ relType ~ "'" ~ "]-" ~ forward ~ "(" ~ end ~ ")" => RelatedTo(start, end, "r", relType,  getDirection(back, forward))}
+
+  private def getDirection(back:Option[String], forward:Option[String]):Direction =
+    (back.nonEmpty, forward.nonEmpty) match {
+      case (true,false) => Direction.INCOMING
+      case (false,true) => Direction.OUTGOING
+      case (false,false) => Direction.BOTH
+      case (true,true) => throw new RuntimeException("A relation can't point both ways")
+    }
+
 
   def relatedToWithRelOut = "(" ~ ident ~ ")" ~ "-[" ~ ident ~ "," ~ "'" ~ ident ~ "'" ~ "]->" ~ "(" ~ ident ~ ")" ^^ {
     case "(" ~ start ~ ")" ~ "-[" ~ relName ~ "," ~ "'" ~ relType ~ "'" ~ "]->" ~ "(" ~ end ~ ")" => RelatedTo(start, end, relName, relType, Direction.OUTGOING)

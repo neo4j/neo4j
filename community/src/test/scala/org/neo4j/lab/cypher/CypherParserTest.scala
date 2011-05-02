@@ -75,6 +75,15 @@ class CypherParserTest {
     )
   }
 
+  @Test def relatedToTheOtherWay() {
+    testQuery(
+      "from a = node(1), (a) <-['KNOWS']- (b) select a, b",
+      Query(
+        Select(EntityOutput("a"), EntityOutput("b")),
+        From(NodeById("a", 1), RelatedTo("a", "b", "r", "KNOWS", Direction.INCOMING)))
+    )
+  }
+
   @Test def shouldOutputVariables() {
     testQuery(
       "from a = node(1) select a.name",
