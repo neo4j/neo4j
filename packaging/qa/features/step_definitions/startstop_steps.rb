@@ -43,7 +43,7 @@ end
 
 When /^wait for Server (started|stopped) at "([^\"]*)"$/ do |state, uri|
   i = 0
-  while i<30 do
+  while i<60 do
     p i
     begin
       response = Net::HTTP.get_response(URI.parse(uri))
