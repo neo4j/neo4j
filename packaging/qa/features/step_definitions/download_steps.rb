@@ -36,7 +36,22 @@ end
 
 When /^I download Neo4j \(if I haven't already\)$/ do
   if (neo4j.download_location.scheme == "http") then
-	fail "You do the downloading, please? Then do: export DOWNLOAD_LOCATION=file:///Users/ata/dev/neo/packaging/qa/neo4j-community-1.4.M01-unix.tar.gz"
+    server = Net::HTTP.new(neo4j.download_location.host, 80)
+    head = server.head(neo4j.download_location.path)
+    server_time = Time.httpdate(head['last-modified'])
+    if (!File.exists?(archive_name) || server_time != File.mtime(archive_name))
+      puts archive_name+" missing or newer version on server - downloading"
+      server.request_get(neo4j.download_location.path) do |res|
+        open(archive_name, "wb") do |file|
+          res.read_body do |segment|
+            file.write(segment)
+          end
+        end
+      end
+      File.utime(0, server_time, archive_name)
+    else
+      puts archive_name+" not modified - download skipped"
+    end
   elsif (neo4j.download_location.scheme == "file") then
     File.open(neo4j.download_location.path, "r") do |src|
       open(archive_name, "wb") do |file|
