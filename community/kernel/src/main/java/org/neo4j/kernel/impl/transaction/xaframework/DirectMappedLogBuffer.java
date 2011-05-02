@@ -63,6 +63,13 @@ class DirectMappedLogBuffer implements LogBuffer
         return this;
     }
 
+    public LogBuffer putShort( short s ) throws IOException
+    {
+        ensureCapacity( 2 );
+        byteBuffer.putShort( s );
+        return this;
+    }
+    
     public LogBuffer putInt( int i ) throws IOException
     {
         ensureCapacity( 4 );
