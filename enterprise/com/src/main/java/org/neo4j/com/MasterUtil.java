@@ -60,10 +60,11 @@ public class MasterUtil
         }
     }
     
-    private static String relativePath( File baseDir, File storeFile ) throws FileNotFoundException
+    private static String relativePath( File baseDir, File storeFile )
+            throws IOException
     {
-        String prefix = baseDir.getAbsolutePath();
-        String path = storeFile.getAbsolutePath();
+        String prefix = baseDir.getCanonicalPath();
+        String path = storeFile.getCanonicalPath();
         if ( !path.startsWith( prefix ) )
             throw new FileNotFoundException();
         path = path.substring( prefix.length() );
@@ -71,7 +72,7 @@ public class MasterUtil
             return path.substring( 1 );
         return path;
     }
-    
+
     public static SlaveContext rotateLogsAndStreamStoreFiles( GraphDatabaseService graphDb, StoreWriter writer )
     {
         File baseDir = getBaseDir( graphDb );
@@ -201,6 +202,7 @@ public class MasterUtil
 
     public static final Predicate<Long> ALL = new Predicate<Long>()
     {
+        @Override
         public boolean accept( Long item )
         {
             return true;
@@ -234,6 +236,7 @@ public class MasterUtil
     
     public static final TxHandler NO_ACTION = new TxHandler()
     {
+        @Override
         public void accept( Triplet<String, Long, TxExtractor> tx, XaDataSource dataSource )
         {
             // Do nothing
@@ -246,6 +249,7 @@ public class MasterUtil
         {
             private final Set<String> visitedDataSources = new HashSet<String>();
             
+            @Override
             public void accept( Triplet<String, Long, TxExtractor> tx, XaDataSource dataSource )
             {
                 if ( visitedDataSources.add( tx.first() ) )
