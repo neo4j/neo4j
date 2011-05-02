@@ -68,6 +68,12 @@ public class BlockLogBuffer implements LogBuffer
         return checkFlush();
     }
 
+    public LogBuffer putShort( short s ) throws IOException
+    {
+        byteBuffer.putShort( s );
+        return checkFlush();
+    }
+
     public LogBuffer putInt( int i ) throws IOException
     {
         byteBuffer.putInt( i );
