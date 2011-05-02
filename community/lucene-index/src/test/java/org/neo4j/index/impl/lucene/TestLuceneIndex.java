@@ -33,6 +33,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
+import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
@@ -717,7 +718,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     {
         CustomAnalyzer.called = false;
         Index<Node> index = nodeIndex( "w-custom-analyzer", MapUtil.stringMap(
-                "provider", "lucene", "analyzer", org.neo4j.index.impl.lucene.CustomAnalyzer.class.getName(),
+                IndexManager.PROVIDER, "lucene", "analyzer", org.neo4j.index.impl.lucene.CustomAnalyzer.class.getName(),
                 "to_lower_case", "true" ) );
         Node node = graphDb.createNode();
         String key = "name";
@@ -733,7 +734,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     {
         CustomAnalyzer.called = false;
         Index<Node> index = nodeIndex( "w-custom-analyzer-2", MapUtil.stringMap(
-                "provider", "lucene", "analyzer", org.neo4j.index.impl.lucene.CustomAnalyzer.class.getName(),
+                IndexManager.PROVIDER, "lucene", "analyzer", org.neo4j.index.impl.lucene.CustomAnalyzer.class.getName(),
                 "to_lower_case", "true", "type", "fulltext" ) );
         Node node = graphDb.createNode();
         String key = "name";
@@ -849,8 +850,8 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     @Test
     public void makeSureYouCanGetEntityTypeFromIndex()
     {
-        Index<Node> nodeIndex = nodeIndex( "type-test", MapUtil.stringMap( "provider", "lucene", "type", "exact" ) );
-        Index<Relationship> relIndex = relationshipIndex( "type-test", MapUtil.stringMap( "provider", "lucene", "type", "exact" ) );
+        Index<Node> nodeIndex = nodeIndex( "type-test", MapUtil.stringMap( IndexManager.PROVIDER, "lucene", "type", "exact" ) );
+        Index<Relationship> relIndex = relationshipIndex( "type-test", MapUtil.stringMap( IndexManager.PROVIDER, "lucene", "type", "exact" ) );
         assertEquals( Node.class, nodeIndex.getEntityType() );
         assertEquals( Relationship.class, relIndex.getEntityType() );
     }
@@ -861,13 +862,13 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         Index<Node> index = nodeIndex( "conf-index", LuceneIndexImplementation.EXACT_CONFIG );
         try
         {
-            graphDb.index().setConfiguration( index, "provider", "something" );
+            graphDb.index().setConfiguration( index, IndexManager.PROVIDER, "something" );
             fail( "Shouldn't be able to modify provider" );
         }
         catch ( IllegalArgumentException e ) { /* Good*/ }
         try
         {
-            graphDb.index().removeConfiguration( index, "provider" );
+            graphDb.index().removeConfiguration( index, IndexManager.PROVIDER );
             fail( "Shouldn't be able to modify provider" );
         }
         catch ( IllegalArgumentException e ) { /* Good*/ }
@@ -886,7 +887,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     @Test
     public void makeSureSlightDifferencesInIndexConfigCanBeSupplied()
     {
-        Map<String, String> config = MapUtil.stringMap( "provider", "lucene", "type", "fulltext" );
+        Map<String, String> config = MapUtil.stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" );
         String name = "the-name";
         nodeIndex( name, config );
         nodeIndex( name, MapUtil.stringMap( new HashMap<String, String>( config ), "to_lower_case", "true" ) );
@@ -954,7 +955,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     @Test
     public void testSimilarity()
     {
-        Index<Node> index = nodeIndex( "similarity", MapUtil.stringMap( "provider", "lucene",
+        Index<Node> index = nodeIndex( "similarity", MapUtil.stringMap( IndexManager.PROVIDER, "lucene",
                 "type", "fulltext", "similarity", DefaultSimilarity.class.getName() ) );
         Node node = graphDb.createNode();
         index.add( node, "key", "value" );

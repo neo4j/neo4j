@@ -31,6 +31,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
+import org.neo4j.graphdb.index.IndexManager;
 
 public class LuceneTimeline<T extends PropertyContainer> implements TimelineIndex<T>
 {
@@ -46,7 +47,7 @@ public class LuceneTimeline<T extends PropertyContainer> implements TimelineInde
     private void assertIsLuceneIndex( GraphDatabaseService db, Index<T> index )
     {
         Map<String, String> config = db.index().getConfiguration( index );
-        if ( !config.get( "provider" ).equals( "lucene" ) ) // Not so hard coded please
+        if ( !config.get( IndexManager.PROVIDER ).equals( "lucene" ) ) // Not so hard coded please
         {
             throw new IllegalArgumentException( index + " isn't a Lucene index" );
         }

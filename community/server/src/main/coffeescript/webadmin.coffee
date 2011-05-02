@@ -69,7 +69,7 @@ require(
     $("body").append(baseView.el)
     Backbone.history.start()
 
-    if not splashScreen.hasBeenShownForThisSession()
-      splashScreen.show()
+    #if not splashScreen.hasBeenShownForThisSession()
+    #  splashScreen.show()
 
 )

@@ -49,6 +49,13 @@ class DirectLogBuffer implements LogBuffer
         return flipAndWrite();
     }
 
+    public LogBuffer putShort( short s ) throws IOException
+    {
+        buffer.clear();
+        buffer.putShort( s );
+        return flipAndWrite();
+    }
+    
     public LogBuffer putInt( int i ) throws IOException
     {
         buffer.clear();

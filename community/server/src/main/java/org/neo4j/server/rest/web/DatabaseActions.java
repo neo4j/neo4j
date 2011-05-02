@@ -794,6 +794,28 @@ public class DatabaseActions
         }
     }
 
+    public ListRepresentation getIndexedNodesByQuery( String indexName, String query )
+    {
+        if ( !graphDb.index().existsForNodes( indexName ) )
+            throw new NotFoundException();
+        Index<Node> index = graphDb.index().forNodes( indexName );
+        List<Representation> representations = new ArrayList<Representation>();
+
+        Transaction tx = graphDb.beginTx();
+        try
+        {
+            for ( Node node : index.query( query ) )
+            {
+                representations.add( new NodeRepresentation( node ));
+            }
+            tx.success();
+            return new ListRepresentation( RepresentationType.NODE, representations );
+        } finally
+        {
+            tx.finish();
+        }
+    }
+
     public ListRepresentation getIndexedNodesByQuery( String indexName, String key,
                                                String query )
     {
@@ -833,6 +855,28 @@ public class DatabaseActions
             for ( Relationship node : index.get( key, value ) )
             {
                 representations.add( new IndexedEntityRepresentation( node, key, value, indexRepresentation ) );
+            }
+            tx.success();
+            return new ListRepresentation( RepresentationType.RELATIONSHIP, representations );
+        } finally
+        {
+            tx.finish();
+        }
+    }
+
+    public ListRepresentation getIndexedRelationshipsByQuery( String indexName, String query )
+    {
+        if ( !graphDb.index().existsForRelationships( indexName ) )
+            throw new NotFoundException();
+        List<Representation> representations = new ArrayList<Representation>();
+        Index<Relationship> index = graphDb.index().forRelationships( indexName );
+
+        Transaction tx = graphDb.beginTx();
+        try
+        {
+            for ( Relationship rel : index.query( query ) )
+            {
+                representations.add( new RelationshipRepresentation( rel ));
             }
             tx.success();
             return new ListRepresentation( RepresentationType.RELATIONSHIP, representations );
