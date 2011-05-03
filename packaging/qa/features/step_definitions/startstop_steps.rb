@@ -1,4 +1,3 @@
-
 Given /^Neo4j Server is (not )?running$/ do |negate|
   if (current_platform.unix?)
     puts `#{neo4j.home}/bin/neo4j status`
@@ -16,41 +15,42 @@ end
 
 
 When /^I (start|stop) Neo4j Server$/ do |action|
+  puts "=====> stop/start "
   if (current_platform.unix?)
-    pipe = IO.popen("#{neo4j.home}/bin/neo4j #{action}", close_fds=1)
-    begin
-      exitCode = 0
-    rescue
-      exitCode = -1
-    end
+    IO.popen("#{neo4j.home}/bin/neo4j #{action}", close_fds=1)
   elsif (current_platform.windows?)
+    Dir.chdir("#{neo4j.home}\\bin")
     if (action == "start")
-     IO.popen("#{neo4j.home}\\bin\\Neo4j.bat install")
-     sleep 12
-     IO.popen("#{neo4j.home}\\bin\\Neo4j.bat start")
+      puts "---> install"
+      IO.popen("Neo4j.bat install", close_fds=1)
+      sleep 10
+      puts "---> start"
+      IO.popen("Neo4j.bat start", close_fds=1)
     else
-     IO.popen("#{neo4j.home}\\bin\\Neo4j.bat stop")
-     sleep 12
-     IO.popen("#{neo4j.home}\\bin\\Neo4j.bat remove")
+      puts "---> stop"
+      IO.popen("Neo4j.bat stop", close_fds=1)
+      sleep 10
+      puts "---> remove"
+      IO.popen("Neo4j.bat remove", close_fds=1)
     end
   else
     fail 'platform not supported'
   end
-  fail "failed #{exitCode} " if exitCode != 0
 end
 
 
 When /^wait for Server (started|stopped) at "([^\"]*)"$/ do |state, uri|
   i = 0
+  puts "====> wait"
   while i<60 do
-    p i
+    puts i
     begin
       response = Net::HTTP.get_response(URI.parse(uri))
-      p response
+      puts response.to_s
       break if (response.code.to_i == 200) && state == "started"
     rescue Exception=>e
+      puts e.to_s
       break if (state == "stopped")
-      p e
     end
     sleep 5
     i += 1
