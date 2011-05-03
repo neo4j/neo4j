@@ -55,7 +55,7 @@ When /^I download Neo4j \(if I haven't already\)$/ do
   elsif (neo4j.download_location.scheme == "file") then
     File.open(neo4j.download_location.path, "r") do |src|
       open(archive_name, "wb") do |file|
-        while buf = src.read (2048)
+        while buf = src.read(2048)
           file.write(buf)
         end
       end
