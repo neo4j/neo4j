@@ -16,6 +16,17 @@ If you want to have full control over your API, and are willing to put in the ef
 the risks, then Neo4j server also provides hooks for <<server-unmanaged-extensions,unmanaged extensions>>
 based on JAX-RS.   
 
+The needed classes reside in the +neo4j-server-api+ jars and can be pulled into the (maven) project adding the Server API dependencies in your pom.xml:
+
+[source]
+----
+<dependency>
+  <groupId>org.neo4j</groupId>
+  <artifactId>server-api</artifactId>
+  <version>1.4-SNAPSHOT</version>
+</dependency>
+----
+
 To create a plugin, your code must inherit from the ServerPlugin class, and ensure that it can produce 
 an (Iterable of) Node, Relationship or Path, specify parameters, a point of extension and of course 
 the application logic. An example of a plugin which augments the database (as opposed to nodes or

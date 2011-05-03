@@ -27,6 +27,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexImplementation;
+import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.Config;
@@ -36,7 +37,6 @@ import org.neo4j.kernel.impl.transaction.TxModule;
 
 public class LuceneIndexImplementation extends IndexImplementation
 {
-    static final String KEY_PROVIDER = "provider";
     static final String KEY_TYPE = "type";
     static final String KEY_ANALYZER = "analyzer";
     static final String KEY_TO_LOWER_CASE = "to_lower_case";
@@ -45,11 +45,11 @@ public class LuceneIndexImplementation extends IndexImplementation
 
     public static final Map<String, String> EXACT_CONFIG =
             Collections.unmodifiableMap( MapUtil.stringMap(
-                    KEY_PROVIDER, SERVICE_NAME, KEY_TYPE, "exact" ) );
+                    IndexManager.PROVIDER, SERVICE_NAME, KEY_TYPE, "exact" ) );
 
     public static final Map<String, String> FULLTEXT_CONFIG =
             Collections.unmodifiableMap( MapUtil.stringMap(
-                    KEY_PROVIDER, SERVICE_NAME, KEY_TYPE, "fulltext",
+                    IndexManager.PROVIDER, SERVICE_NAME, KEY_TYPE, "fulltext",
                     KEY_TO_LOWER_CASE, "true" ) );
 
     public static final int DEFAULT_LAZY_THRESHOLD = 100;
@@ -129,17 +129,22 @@ public class LuceneIndexImplementation extends IndexImplementation
     {
         Map<String, String> result = source != null ?
                 new HashMap<String, String>( source ) : new HashMap<String, String>();
-        String type = result.get( KEY_TYPE );
-        if ( type == null )
+        String analyzer = result.get( KEY_ANALYZER );
+        if ( analyzer == null )
         {
-            type = "exact";
-            result.put( KEY_TYPE, type );
-        }
-        if ( type.equals( "fulltext" ) )
-        {
-            if ( !result.containsKey( LuceneIndexImplementation.KEY_TO_LOWER_CASE ) )
+            // Type is only considered if "analyzer" isn't supplied
+            String type = result.get( KEY_TYPE );
+            if ( type == null )
             {
-                result.put( KEY_TO_LOWER_CASE, "true" );
+                type = "exact";
+                result.put( KEY_TYPE, type );
+            }
+            if ( type.equals( "fulltext" ) )
+            {
+                if ( !result.containsKey( LuceneIndexImplementation.KEY_TO_LOWER_CASE ) )
+                {
+                    result.put( KEY_TO_LOWER_CASE, "true" );
+                }
             }
         }
         return result;

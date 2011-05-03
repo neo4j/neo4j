@@ -35,6 +35,12 @@ import org.neo4j.graphdb.Relationship;
 public interface IndexManager
 {
     /**
+     * The configuration key to use for specifying which provider an index
+     * will have, i.e. which implementation will be used to back that index.
+     */
+    public static final String PROVIDER = "provider";
+    
+    /**
      * Returns whether or not there exists a node index with the name
      * {@code indexName}. Indexes are created when needed in calls to
      * {@link #forNodes(String)} and {@link #forNodes(String, Map)}.

@@ -522,7 +522,7 @@ public class ImdbExampleTest
         // START SNIPPET: fulltext
         IndexManager index = graphDb.index();
         Index<Node> fulltextMovies = index.forNodes( "movies-fulltext",
-                MapUtil.stringMap( "provider", "lucene", "type", "fulltext" ) );
+                MapUtil.stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" ) );
         // END SNIPPET: fulltext
 
         Index<Node> movies = index.forNodes( "movies" );

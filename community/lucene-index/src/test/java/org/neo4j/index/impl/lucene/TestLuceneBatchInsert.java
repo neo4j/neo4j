@@ -242,7 +242,7 @@ public class TestLuceneBatchInsert
         BatchInserterIndexProvider indexProvider = new LuceneBatchInserterIndexProvider(
                 inserter );
         BatchInserterIndex edgesIndex = indexProvider.relationshipIndex(
-                "edgeIndex", stringMap( "provider", "lucene", "type", "exact" ) );
+                "edgeIndex", stringMap( IndexManager.PROVIDER, "lucene", "type", "exact" ) );
 
         long nodeId1 = inserter.createNode( map( "ID", "1" ) );
         long nodeId2 = inserter.createNode( map( "ID", "2" ) );

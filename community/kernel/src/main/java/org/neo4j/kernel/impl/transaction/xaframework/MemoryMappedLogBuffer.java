@@ -105,6 +105,26 @@ class MemoryMappedLogBuffer implements LogBuffer
         return this;
     }
     
+    public LogBuffer putShort( short s ) throws IOException
+    {
+        if ( mappedBuffer == null || 
+                (MAPPED_SIZE - mappedBuffer.position()) < 2 )
+        {
+            getNewMappedBuffer();
+            if ( mappedBuffer == null )
+            {
+                fallbackBuffer.clear();
+                fallbackBuffer.putShort( s );
+                fallbackBuffer.flip();
+                fileChannel.write( fallbackBuffer, mappedStartPosition );
+                mappedStartPosition += 2;
+                return this;
+            }
+        }
+        mappedBuffer.putShort( s );
+        return this;
+    }
+    
     public LogBuffer putInt( int i ) throws IOException
     {
         if ( mappedBuffer == null || 
