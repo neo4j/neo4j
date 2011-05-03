@@ -785,8 +785,15 @@ the relevant Commercial Agreement.
     </profile>
 
     <profile>
-      <!-- Temporarily disconnected from the rest of the build
-      because "brew" is not in maven central. To use this, mvn install
+      <!-- Disconnected from the "normal" build pipeline, because the
+           artifact that this produces (webadmin.min.js) is checked into
+           the source tree.
+
+           I know, that's really awful, but the alternative is forcing 
+           everyone to run the webadmin build all the time, and its *really* slow.
+
+           The plan is to move webadmin into it's own project, where the
+           build can be sane without killing the build time for the server project.
        -->
       <id>webadmin-build</id>
       <build>
@@ -794,7 +801,7 @@ the relevant Commercial Agreement.
           <plugin>
             <groupId>com.voltvoodoo</groupId>
             <artifactId>brew</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <version>0.1</version>
             <executions>
               <execution>
               	<id>build-webadmin</id>
