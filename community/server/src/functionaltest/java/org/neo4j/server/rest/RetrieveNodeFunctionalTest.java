@@ -29,6 +29,7 @@ import java.net.URISyntaxException;
 import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.junit.After;
 import org.junit.Before;
@@ -48,12 +49,14 @@ public class RetrieveNodeFunctionalTest extends DocumentationOutput {
 
     private NeoServerWithEmbeddedWebServer server;
 
+    private FunctionalTestHelper functionalTestHelper;
+
 
     @Before
     public void setupServer() throws IOException, DatabaseBlockedException, URISyntaxException {
         server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
         server.start();
-        FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper(server);
+        functionalTestHelper = new FunctionalTestHelper(server);
         nodeUri = new URI(functionalTestHelper.nodeUri() + "/" + new GraphDbHelper(server.getDatabase()).createNode());
     }
 
@@ -67,8 +70,7 @@ public class RetrieveNodeFunctionalTest extends DocumentationOutput {
     @Test
     public void shouldGet200WhenRetrievingNode() throws Exception {
         String uri = nodeUri.toString();
-        ClientResponse response = retrieveDocumentedNodeFromService("Retrieve Node", uri);
-        assertEquals(200, response.getStatus());
+        retrieveDocumentedNodeFromService("Retrieve Node", uri, Response.Status.OK);
     }
 
     @Test
@@ -93,8 +95,8 @@ public class RetrieveNodeFunctionalTest extends DocumentationOutput {
 
     @Test
     public void shouldGet404WhenRetrievingNonExistentNode() throws Exception {
-        ClientResponse response = retrieveDocumentedNodeFromService("Asking for a non-existent Node", nodeUri + "00000");
-        assertEquals(404, response.getStatus());
+        ClientResponse response = retrieveDocumentedNodeFromService("Asking for a non-existent Node", nodeUri + "00000", Response.Status.NOT_FOUND);
+        
     }
 
     private ClientResponse retrieveNodeFromService(String uri) {
@@ -103,14 +105,16 @@ public class RetrieveNodeFunctionalTest extends DocumentationOutput {
         return response;
     }
     
-    private ClientResponse retrieveDocumentedNodeFromService(String title, String uri) {
+    private ClientResponse retrieveDocumentedNodeFromService(String title, String uri, Response.Status responseCode) {
         WebResource resource = Client.create().resource(uri);
         data.setTitle( title );
         ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
         data.setMethod("GET");
+        data.setRelUri(uri.substring( functionalTestHelper.dataUri().length() -1  ));
         data.setUri(uri);
-        data.setResponse(response.getStatus());
+        data.setResponse(responseCode);
         data.setResponseBody(response.getEntity(String.class));
+        assertEquals(responseCode, response.getStatus());
         return response;
     }
 }

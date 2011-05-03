@@ -25,6 +25,8 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 
+import javax.ws.rs.core.Response.Status;
+
 public class DocumentationOutput
 {
     protected DocuementationData data = new DocuementationData();
@@ -37,65 +39,77 @@ public class DocumentationOutput
         String title;
         String uri;
         String method;
-        private int status;
+        private Status status;
         private String entity;
+        private String relUri;
 
         public void setTitle( final String title )
         {
             this.title = title;
-            
+
         }
 
         public void setUri( String uri )
         {
             this.uri = uri;
-            
+
         }
 
         public void setMethod( String method )
         {
             this.method = method;
             // TODO Auto-generated method stub
-            
+
         }
 
-        public void setResponse( int status )
+        public void setResponse( Status responseCode )
         {
-            this.status = status;
-            
+            this.status = responseCode;
+
         }
 
         public void setResponseBody( String entity )
         {
             this.entity = entity;
             // TODO Auto-generated method stub
+
+        }
+
+        public void setRelUri( String relUri )
+        {
+            this.relUri = relUri;
             
         }
 
     }
-    private File out = new File("target/rest.txt");
+
+    private File out = new File( "target/rest-api.txt" );
 
     private FileWriter fw;
+
     public DocumentationOutput()
     {
         data = new DocuementationData();
-        
-        openFile(out);
+
+        openFile( out );
     }
+
     private void openFile( File out2 )
     {
         try
         {
-            if(!out.exists()) {
+            if ( !out.exists() )
+            {
                 out.createNewFile();
             }
-            BufferedReader is = new BufferedReader( new FileReader(out) );
+            BufferedReader is = new BufferedReader( new FileReader( out ) );
             String line = is.readLine();
-            if(line==null || !line.equals( START )) {
+            if ( line == null || !line.equals( START ) )
+            {
                 is.close();
-                fw = new FileWriter(out, false) ;
-                line( START);
-                line("REST API\n========" );
+                fw = new FileWriter( out, false );
+                line( START );
+                line( "REST API\n========" );
                 fw.close();
             }
         }
@@ -103,46 +117,51 @@ public class DocumentationOutput
         {
             e.printStackTrace();
         }
-        
+
     }
-    protected void document() {
-       try
+
+    protected void document()
     {
-           if(data.title==null) {
-               return;
-           }
-        fw = new FileWriter(out, true) ;
-        line("");
-        line( "== " + data.title  + " ==");
-        line("");
-        line("*+"+data.method+"+*");
-        line("");
-        line("_Example using curl_");
-        line("");
-        line("[source,bash]");
-        line("----");
-        line("curl -H Accept:application/json " + data.uri);
-        line("----");
-        line("");
-        line("_Response_");
-        line("");
-        line("*+"+data.status+"+*");
-        line("");
-        line("[source,javascript]");
-        line("----");
-        line(data.entity);
-        line("----");
-        line("");
-        fw.flush();
-        fw.close();
+        try
+        {
+            if ( data.title == null )
+            {
+                return;
+            }
+            fw = new FileWriter( out, true );
+            line( "" );
+            line( "== " + data.title + " ==" );
+            line( "" );
+            line( "*+" + data.method + " " + data.relUri + "+*" );
+            line( "" );
+//            line( "_Example using curl_" );
+//            line( "" );
+//            line( "[source,bash]" );
+//            line( "----" );
+//            line( "curl -H Accept:application/json " + data.uri );
+//            line( "----" );
+//            line( "" );
+            line( "_Example Response_" );
+            line( "" );
+            line( "*+" + data.status.getStatusCode() + ": "
+                  + data.status.name() + "+*" );
+            line( "" );
+            line( "[source,javascript]" );
+            line( "----" );
+            line( data.entity );
+            line( "----" );
+            line( "" );
+            fw.flush();
+            fw.close();
+        }
+        catch ( IOException e )
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
     }
-    catch ( IOException e )
-    {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
-    }
-       
-    }
+
     private void line( String string )
     {
         try
@@ -154,7 +173,7 @@ public class DocumentationOutput
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        
+
     }
 
 }
