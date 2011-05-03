@@ -17,7 +17,7 @@ end
 
 When /^I (start|stop) Neo4j Server$/ do |action|
   if (current_platform.unix?)
-    pipe = IO.popen("#{neo4j.home}/bin/neo4j #{action}", close_fds=1))
+    pipe = IO.popen("#{neo4j.home}/bin/neo4j #{action}", close_fds=1)
     begin
       Process.kill("CONT", pipe.pid)
       exitCode = 0
