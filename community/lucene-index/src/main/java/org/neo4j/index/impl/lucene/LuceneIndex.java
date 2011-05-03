@@ -27,12 +27,12 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.MultiSearcher;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
 import org.neo4j.graphdb.Node;
@@ -225,7 +225,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         LuceneXaConnection con = getReadOnlyConnection();
         LuceneTransaction luceneTx = con != null ? con.getLuceneTx() : null;
         Collection<Long> removedIds = Collections.emptySet();
-        Searcher additionsSearcher = null;
+        IndexSearcher additionsSearcher = null;
         if ( luceneTx != null )
         {
             if ( keyForDirectLookup != null )
@@ -268,7 +268,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
                     }
                     else
                     {
-                        Collection<IndexHits<Long>> iterators = new ArrayList<IndexHits<Long>>();
+                        Collection<IndexHits<Long>> iterators = new ArrayList<IndexHits<Long>>( searchedIds.size()+ids.size() );
                         iterators.add( searchedIds );
                         iterators.add( new ConstantScoreIterator<Long>( ids, Float.NaN ) );
                         idIterator = new CombinedIndexHits<Long>( iterators );
@@ -284,6 +284,11 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         }
 
         idIterator = idIterator == null ? new ConstantScoreIterator<Long>( ids, 0 ) : idIterator;
+        return newEntityIterator( idIterator );
+    }
+
+    private IndexHits<T> newEntityIterator( IndexHits<Long> idIterator )
+    {
         return new IdToEntityIterator<T>( idIterator )
         {
             @Override
@@ -313,8 +318,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
                 found = true;
                 for ( Long cachedNodeId : cachedNodes )
                 {
-                    if ( deletedNodes == null ||
-                            !deletedNodes.contains( cachedNodeId ) )
+                    if ( !deletedNodes.contains( cachedNodeId ) )
                     {
                         ids.add( cachedNodeId );
                     }
@@ -325,7 +329,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
     }
     
     private IndexHits<Document> search( IndexSearcherRef searcherRef, Query query,
-            QueryContext additionalParametersOrNull, Searcher additionsSearcher, Collection<Long> removed )
+            QueryContext additionalParametersOrNull, IndexSearcher additionsSearcher, Collection<Long> removed )
     {
         try
         {
@@ -334,8 +338,9 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
                 letThroughAdditions( additionsSearcher, query, removed );
             }
             
-            Searcher searcher = additionsSearcher == null ? searcherRef.getSearcher() :
-                    new MultiSearcher( searcherRef.getSearcher(), additionsSearcher );
+            IndexSearcher searcher = additionsSearcher == null ? searcherRef.getSearcher() :
+                    new IndexSearcher( new MultiReader( searcherRef.getSearcher().getIndexReader(),
+                            additionsSearcher.getIndexReader() ) );
             IndexHits<Document> result = null;
             if ( additionalParametersOrNull != null && additionalParametersOrNull.getTop() > 0 )
             {
@@ -359,7 +364,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         }
     }
     
-    private void letThroughAdditions( Searcher additionsSearcher, Query query, Collection<Long> removed )
+    private void letThroughAdditions( IndexSearcher additionsSearcher, Query query, Collection<Long> removed )
             throws IOException
     {
         Hits hits = new Hits( additionsSearcher, query, null );
@@ -367,7 +372,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         while ( iterator.hasNext() )
         {
             String idString = iterator.next().getField( KEY_DOC_ID ).stringValue();
-            removed.remove( Long.parseLong( idString ) );
+            removed.remove( Long.valueOf( idString ) );
         }
     }
 

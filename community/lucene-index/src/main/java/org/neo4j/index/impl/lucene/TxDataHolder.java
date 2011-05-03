@@ -21,9 +21,8 @@ package org.neo4j.index.impl.lucene;
 
 import java.util.Collection;
 
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Searcher;
-import org.neo4j.helpers.Pair;
 import org.neo4j.index.lucene.QueryContext;
 
 class TxDataHolder
@@ -39,26 +38,22 @@ class TxDataHolder
 
     void add( Object entityId, String key, Object value )
     {
-        this.data = this.data.add( entityId, key, value );
+        this.data.add( this, entityId, key, value );
     }
     
     void remove( Object entityId, String key, Object value )
     {
-        this.data = this.data.remove( entityId, key, value );
+        this.data.remove( this, entityId, key, value );
     }
 
     Collection<Long> query( Query query, QueryContext contextOrNull )
     {
-        Pair<Collection<Long>, TxData> entry = this.data.query( query, contextOrNull );
-        this.data = entry.other();
-        return entry.first();
+        return this.data.query( this, query, contextOrNull );
     }
 
     Collection<Long> get( String key, Object value )
     {
-        Pair<Collection<Long>, TxData> entry = this.data.get( key, value );
-        this.data = entry.other();
-        return entry.first();
+        return this.data.get( this, key, value );
     }
     
     Collection<Long> getOrphans( String key )
@@ -71,10 +66,13 @@ class TxDataHolder
         this.data.close();
     }
 
-    Searcher asSearcher( QueryContext context )
+    IndexSearcher asSearcher( QueryContext context )
     {
-        Pair<Searcher, TxData> entry = this.data.asSearcher( context );
-        this.data = entry.other();
-        return entry.first();
+        return this.data.asSearcher( this, context );
+    }
+
+    void set( TxData newData )
+    {
+        this.data = newData;
     }
 }
