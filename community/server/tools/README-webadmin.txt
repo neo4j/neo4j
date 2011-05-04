@@ -14,7 +14,7 @@ that is used in production. These tools simply compile coffeescript and haml 1 t
 to javascript. To use the compiled files like these, use "dev.html" (eg. go to http://localhost:7474/webadmin/dev.html)
 
 To produce the webadmin-min.js file, run the server build like this:
-mvn package -Pwebadmin-build
+mvn package -P webadmin-build
 
 Which will include the brew javascript build plugin in the build process.
 
@@ -33,7 +33,10 @@ neo-coffee     - Bash script for executing coffeescript with args matching the n
                  folder structure.
 
 
-Prequisites
+START HERE
+----------
+
+Prequisites - install these first.
 -----------
 
 Node.js (http://nodejs.org/#download)
