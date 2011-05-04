@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>19</version>
+    <version>21</version>
   </parent>
   <groupId>org.neo4j.doc</groupId>
   <artifactId>neo4j-manual</artifactId>
@@ -17,6 +17,7 @@
   <properties>
     <short-name>manual</short-name>
     <docs.sources>${project.build.directory}/docs</docs.sources>
+    <docs.sourcecode>${project.build.directory}/sources</docs.sourcecode>
     <docs.test-sources>${project.build.directory}/test-sources</docs.test-sources>
     <docs.images>${project.build.outputDirectory}/images</docs.images>
     <neo4j.version>1.4-SNAPSHOT</neo4j.version>
@@ -36,7 +37,6 @@
   </licenses>
 
   <dependencies>
-    <!-- Dependencies outside of the server repo. -->
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j</artifactId>
@@ -107,6 +107,13 @@
       <classifier>docs</classifier>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>org.neo4j.examples</groupId>
+      <artifactId>neo4j-server-examples</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>sources</classifier>
+      <scope>provided</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -173,6 +180,23 @@
               <excludes>META-INF,META-INF/**</excludes>
               <type>jar</type>
               <outputDirectory>${docs.test-sources}</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>unpack-sources</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>unpack-dependencies</goal>
+            </goals>
+            <configuration>
+              <classifier>sources</classifier>
+              <includeClassifiers>sources</includeClassifiers>
+              <excludeTransitive>true</excludeTransitive>
+              <useSubDirectoryPerArtifact>true</useSubDirectoryPerArtifact>
+              <stripVersion>true</stripVersion>
+              <excludes>META-INF,META-INF/**</excludes>
+              <type>jar</type>
+              <outputDirectory>${docs.sourcecode}</outputDirectory>
             </configuration>
           </execution>
         </executions>

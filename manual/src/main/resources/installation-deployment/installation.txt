@@ -22,7 +22,7 @@ Neo4j library jars in your build. Either take the jar files from the +lib+ direc
 	<dependency>
    	<groupId>org.neo4j</groupId>
    	<artifactId>neo4j</artifactId>
-   	<version>{neo4j-version}</version>
+   	<version>${neo4j-version}</version>
     <packaging>pom</packaging>
 	</dependency>
 	...
@@ -31,7 +31,7 @@ Neo4j library jars in your build. Either take the jar files from the +lib+ direc
 </project>
 --------------------------------------------
 
-_Where \{neo4j-version} is for example {neo4j-version}._
+_Where $\{neo4j-version} is for example {neo4j-version}._
                                                                               
 NOTE: Stable and milestone releases are available at Maven Central Repository.
                                                                               
