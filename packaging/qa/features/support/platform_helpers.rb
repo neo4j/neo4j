@@ -2,8 +2,6 @@ module PlatformHelpers
 
   require 'rbconfig'
 
-
-  ## TODO use better enum-pattern in ruby
   class Platform
     attr_reader :type, :extension
 
@@ -12,36 +10,31 @@ module PlatformHelpers
       @extension = extension
     end
 
-    WINDOWS = Platform.new('windows', 'zip')
-    UNIX = Platform.new('unix', 'tar.gz')
-    UNKNOWN = Platform.new('unknown', nil)
-
     def supported?
       @extension != nil
     end
 
     def windows?
-      @type == WINDOWS.type
+      @type == "windows"
     end
 
     def unix?
-      @type == UNIX.type
+      @type == "unix"
     end
 
     def unknown?
-      @type == UNKNOWN.type
+      @type == "unknown"
     end
   end
-
 
   def current_platform
     platform = RbConfig::CONFIG['target_os']
     if platform =~ /win32/
-      Platform::WINDOWS
+      Platform.new('windows', 'zip')
     elsif platform =~ /linux/ || platform =~ /darwin/ || platform =~ /freebsd/
-      Platform::UNIX
+      Platform.new('unix', 'tar.gz')
     else
-      Platform::UNKNOWN
+      Platform.new('unknown', nil)
     end
   end
 

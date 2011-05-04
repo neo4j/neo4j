@@ -7,7 +7,8 @@ Feature: Download and unpack Neo4j Server
     Given a platform supported by Neo4j
     And a working directory at relative path "target"
     And set Neo4j Home to "neo4j_home"
-    And Neo4j version based on system property "NEO4J_VERSION" and product based on system property "NEO4J_PRODUCT"
+    And Neo4j version based on system property "NEO4J_VERSION"
+    And Neo4j product based on system property "NEO4J_PRODUCT"
     And a web site at host "dist.neo4j.org" or system property "DOWNLOAD_LOCATION"
 
   Scenario: Download Neo4j

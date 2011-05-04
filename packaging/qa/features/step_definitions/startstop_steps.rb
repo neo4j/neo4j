@@ -21,16 +21,12 @@ When /^I (start|stop) Neo4j Server$/ do |action|
   elsif (current_platform.windows?)
     Dir.chdir("#{neo4j.home}\\bin")
     if (action == "start")
-      puts "---> install"
       IO.popen("Neo4j.bat install", close_fds=1)
       sleep 10
-      puts "---> start"
       IO.popen("Neo4j.bat start", close_fds=1)
     else
-      puts "---> stop"
       IO.popen("Neo4j.bat stop", close_fds=1)
       sleep 10
-      puts "---> remove"
       IO.popen("Neo4j.bat remove", close_fds=1)
     end
   else

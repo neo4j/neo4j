@@ -5,10 +5,13 @@ Given /^a platform supported by Neo4j$/ do
   fail "unsupported platform #{current_platform}" unless current_platform.supported?
 end
 
-Given /^Neo4j version based on system property "([^"]*)" and product based on system property "([^"]*)"$/ do |version_name, product_name|
+Given /^Neo4j version based on system property "([^"]*)"$/ do |version_name|
   neo4j.version = ENV[version_name]
-  neo4j.product = ENV[product_name]
   fail "missing property #{version_name}" if neo4j.version == nil
+end
+
+Given /^Neo4j product based on system property "([^"]*)"$/ do |product_name|
+  neo4j.product = ENV[product_name]
   fail "missing property #{product_name}" if neo4j.product == nil
 end
 
@@ -35,35 +38,7 @@ Given /^a web site at host "([^"]*)" or system property "([^"]*)"$/ do |host, en
 end
 
 When /^I download Neo4j \(if I haven't already\)$/ do
-  if (neo4j.download_location.scheme == "http") then
-    server = Net::HTTP.new(neo4j.download_location.host, 80)
-    head = server.head(neo4j.download_location.path)
-    server_time = Time.httpdate(head['last-modified'])
-    if (!File.exists?(archive_name) || server_time != File.mtime(archive_name))
-      puts archive_name+" missing or newer version on server - downloading"
-      server.request_get(neo4j.download_location.path) do |res|
-        open(archive_name, "wb") do |file|
-          res.read_body do |segment|
-            file.write(segment)
-          end
-        end
-      end
-      File.utime(0, server_time, archive_name)
-    else
-      puts archive_name+" not modified - download skipped"
-    end
-  elsif (neo4j.download_location.scheme == "file") then
-    File.open(neo4j.download_location.path, "r") do |src|
-      open(archive_name, "wb") do |file|
-        while buf = src.read(2048)
-          file.write(buf)
-        end
-      end
-    end
-
-  else
-    fail 'unsupported schema-location '+ download_location
-  end
+  transfer_if_newer(neo4j.download_location, archive_name)
 end
 
 Then /^the working directory should contain a Neo4j archive$/ do
@@ -71,24 +46,13 @@ Then /^the working directory should contain a Neo4j archive$/ do
 end
 
 When /^I unpack the archive into Neo4j Home$/ do
-  full_archive_name= File.expand_path(archive_name)
-  pushd neo4j.home
-
   if (current_platform.unix?)
-    puts "unpacking with tar xzf #{full_archive_name} --strip-components 1"
-    `tar xzf #{full_archive_name} --strip-components 1`
-    fail "unpacking failed (#{$?})" unless $?.to_i == 0
+    untar(File.expand_path(archive_name), neo4j.home)
   elsif  current_platform.windows?
-    unzip = File.expand_path("../../support/unzip.vbs", __FILE__).tr('/', '\\')
-    full_archive_name = full_archive_name.tr('/', '\\')
-    cmd = "cmd /c #{unzip} #{full_archive_name} #{neo4j.home}"
-    puts cmd
-    puts `#{cmd}`
-    fail "unpacking failed (#{$?})" unless $?.to_i == 0
+    unzip(File.expand_path(archive_name), neo4j.home)
   else
     fail 'platform not supported'
   end
-  popd
 end
 
 Then /^Neo4j Home should contain a Neo4j Server installation$/ do
