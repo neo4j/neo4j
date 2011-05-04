@@ -21,6 +21,8 @@ package org.neo4j.index.lucene;
 
 import org.apache.lucene.queryParser.QueryParser.Operator;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.neo4j.graphdb.index.Index;
@@ -97,6 +99,41 @@ public class QueryContext
     public QueryContext sortByScore()
     {
         return sort( Sort.RELEVANCE );
+    }
+
+    /**
+     * Sort the results of a numeric range query,
+     * see {@link #numericRange(String, Number, Number)}.
+     * 
+     * @param key the key to sort on.
+     * @param reversed if the sort order should be reversed or not. {@code true}
+     * for lowest first (ascending), {@code false} for highest first (descending)
+     * @return a QueryContext with sorting by numeric value.
+     */
+    public QueryContext sortNumeric( String key, boolean reversed )
+    {
+        if ( !( queryOrQueryObject instanceof NumericRangeQuery ) )
+        {
+            throw new IllegalStateException( "Not a numeric range query" );
+        }
+        
+        Number number = ((NumericRangeQuery)queryOrQueryObject).getMin();
+        number = number != null ? number : ((NumericRangeQuery)queryOrQueryObject).getMax();
+        int fieldType = SortField.INT;
+        if ( number instanceof Long )
+        {
+            fieldType = SortField.LONG;
+        }
+        else if ( number instanceof Float )
+        {
+            fieldType = SortField.FLOAT;
+        }
+        else if ( number instanceof Double )
+        {
+            fieldType = SortField.DOUBLE;
+        }
+        sort( new Sort( new SortField( key, fieldType, reversed ) ) );
+        return this;
     }
     
     /**
@@ -179,5 +216,40 @@ public class QueryContext
     public int getTop()
     {
         return this.topHits;
+    }
+    
+    /**
+     * Will create a {@link QueryContext} with a query for numeric ranges, i.e.
+     * values that have been indexed using {@link ValueContext#indexNumeric()}.
+     * 
+     * @param key the property key to query.
+     * @param from the low end of the range (inclusive)
+     * @param to the high end of the range (inclusive)
+     * @return a {@link QueryContext} to do numeric range queries with.
+     */
+    public static QueryContext numericRange( String key, Number from, Number to )
+    {
+        Query query = null;
+        if ( from instanceof Long )
+        {
+            query = NumericRangeQuery.newLongRange( key, from != null ? from.longValue() : 0,
+                    to != null ? to.longValue() : Long.MAX_VALUE, true, true );
+        }
+        else if ( from instanceof Double )
+        {
+            query = NumericRangeQuery.newDoubleRange( key, from != null ? from.doubleValue() : 0,
+                    to != null ? to.doubleValue() : Double.MAX_VALUE, true, true );
+        }
+        else if ( from instanceof Float )
+        {
+            query = NumericRangeQuery.newFloatRange( key, from != null ? from.floatValue() : 0,
+                    to != null ? to.floatValue() : Float.MAX_VALUE, true, true );
+        }
+        else
+        {
+            query = NumericRangeQuery.newIntRange( key, from != null ? from.intValue() : 0,
+                    to != null ? to.intValue() : Integer.MAX_VALUE, true, true );
+        }
+        return new QueryContext( query );
     }
 }
