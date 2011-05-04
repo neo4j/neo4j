@@ -18,25 +18,23 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-define [], () ->
-  
-  class HtmlEscaper
-    
-    escape : (text, addNbsp=false) =>
-      text = @replaceAll(text, [
-        [/&/g,"&amp;"]
-        [/</g,"&lt;"]
-        [/>/g,"&gt;"]
-        [/"/g,"&quot;"]
-        [/'/g,"&#x27;"]
-        [/\//g,"&#x2F;"]])
+define(
+  ['neo4j/webadmin/models/LocallyStoredModel'], 
+  (LocallyStoredModel) ->
 
-      return if addNbsp then @replaceAll(text, [[/\ /g, "&nbsp;"]]) else text
-
-    replaceAll : (text, replacements) =>
+    class VisualizationSettings extends LocallyStoredModel
       
-      text += ""
-      for replacement in replacements
-        text = text.replace replacement[0], replacement[1]
-      return text
+      defaults :
+        labelProperties : ['name']
 
+      getStorageKey : () ->
+        "visualization-settings"
+
+      getLabelProperties : () ->
+        @get("labelProperties") or []
+      
+      setLabelProperties : (labelProps) ->
+        @set("labelProperties" : labelProps)
+
+
+)
