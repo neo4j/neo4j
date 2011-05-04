@@ -55,6 +55,7 @@ import static org.neo4j.index.Neo4jTestCase.assertContains;
 import static org.neo4j.index.Neo4jTestCase.assertContainsInOrder;
 import static org.neo4j.index.impl.lucene.Contains.contains;
 import static org.neo4j.index.impl.lucene.IsEmpty.isEmpty;
+import static org.neo4j.index.lucene.QueryContext.numericRange;
 import static org.neo4j.index.lucene.ValueContext.numeric;
 
 public class TestLuceneIndex extends AbstractLuceneIndexTest
@@ -639,6 +640,22 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
 
         restartTx();
         assertThat( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ), contains( node2 ) );
+    }
+    
+    @Test
+    public void sortNumericValues() throws Exception
+    {
+        Index<Node> index = nodeIndex( "numeric3", LuceneIndexImplementation.EXACT_CONFIG );
+        Node node1 = graphDb.createNode();
+        Node node2 = graphDb.createNode();
+        Node node3 = graphDb.createNode();
+        String key = "key";
+        index.add( node1, key, numeric( 5 ) );
+        index.add( node2, key, numeric( 15 ) );
+        index.add( node3, key, numeric( 10 ) );
+        restartTx();
+        
+        assertContainsInOrder( index.query( numericRange( key, 5, 15 ).sortNumeric( key, false ) ), node1, node3, node2 );
     }
 
     @Test
