@@ -103,7 +103,7 @@ terms of the relevant Commercial Agreement.
               <goal>single</goal>
             </goals>
             <configuration>
-              <attach>true</attach>
+              <attach>false</attach>
               <descriptors>
                 <descriptor>src/main/assemblies/community-unix-dist.xml</descriptor>
               </descriptors>
@@ -117,7 +117,7 @@ terms of the relevant Commercial Agreement.
               <goal>single</goal>
             </goals>
             <configuration>
-              <attach>true</attach>
+              <attach>false</attach>
               <descriptors>
                 <descriptor>src/main/assemblies/advanced-unix-dist.xml</descriptor>
               </descriptors>
@@ -131,7 +131,7 @@ terms of the relevant Commercial Agreement.
               <goal>single</goal>
             </goals>
             <configuration>
-              <attach>true</attach>
+              <attach>false</attach>
               <descriptors>
                 <descriptor>src/main/assemblies/enterprise-unix-dist.xml</descriptor>
               </descriptors>
