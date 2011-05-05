@@ -5,22 +5,24 @@ tcrepo=http://builder.neo4j.org/guestAuth/repository/download/bt18/lastSuccessfu
 mvnrepo=http://repo.neo4j.org/content/repositories/snapshots
 
 function work {
-    deploy_tarball neo4j-server-examples
-    deploy_tarball neo4j-examples
-    deploy_jar neo4j docs javadoc sources test-sources
-    deploy_jar neo4j-community docs javadoc sources test-sources
+    deploy_defaults neo4j-graph-algo jmx neo4j-kernel neo4j-lucene-index neo4j-shell neo4j-udc server-api
+
+    deploy neo4j docs javadoc sources test-sources
+    deploy neo4j-community docs javadoc sources test-sources
     
-### todo http://builder.neo4j.org/repository/download/bt18/3307:id/neo4j-examples/neo4j-1.3-SNAPSHOT-site.jar
-    deploy_jar neo4j-examples docs sources test-sources tests
-    deploy_jar neo4j-graph-algo docs javadoc sources test-sources tests
-    deploy_jar neo4j-jmx docs javadoc sources test-sources tests
-    deploy_jar neo4j-kernel docs javadoc sources test-sources tests
-    deploy_jar neo4j-lucene-index docs javadoc sources test-sources tests
-    deploy_jar neo4j-server docs javadoc site sources static-web test-sources tests
-    deploy_jar neo4j-server-examples docs site sources test-sources tests
-    deploy_jar neo4j-shell docs javadoc sources test-sources tests
-    deploy_jar neo4j-udc docs javadoc neo4j sources test-sources tests
-    deploy_jar server-api docs javadoc sources test-sources tests
+    deploy neo4j-server site static-web docs javadoc sources test-sources tests
+
+    deploy_tarball neo4j-examples download
+    deploy neo4j-examples docs sources test-sources tests site
+
+    deploy_tarball neo4j-server-examples download
+    deploy neo4j-server-examples docs site sources test-sources tests
+}
+
+function deploy_defaults {
+    for artifact in $@  ; do
+        deploy $artifact docs javadoc sources test-sources tests
+    done
 }
 
 function repeat_command {
@@ -35,89 +37,58 @@ function repeat_command {
     done
 }
 
-function deploy_maven {
-    artifactandversion=$1
-    curlcommand="curl -f -s -O $tcrepo/$artifact/$artifactandversion$filesuffix.$extension"
+function deploy_maven_jar {
+    artifact=$1
+    version=$2
+    filename=$artifact-$version.jar
+    curlcommand="curl -f -s -O $tcrepo/$artifact/$filename"
     echo $curlcommand
     $curlcommand
-    deploycommand="mvn deploy:deploy-file -Durl=$mvnrepo -DrepositoryId=snapshots -DuniqueVersion=false -Dfile=$artifactandversion$filesuffix.$extension -Dpackaging=$extension -DpomFile=pom.xml"
+    deploycommand="mvn deploy:deploy-file -Durl=$mvnrepo -DrepositoryId=snapshots -DuniqueVersion=false -Dfile=$filename -Dpackaging=jar -DpomFile=pom.xml"
     echo $deploycommand
     repeat_command "$deploycommand"
 }
 
-#function deploy_maven_jar {
-#    artifact=$1
-#    version=$2
-#    filename=$artifact-$version.jar
-#    curlcommand="curl -f -s -O $tcrepo/$artifact/$filename"
-#    echo $curlcommand
-#    $curlcommand
-#    deploycommand="mvn deploy:deploy-file -Durl=$mvnrepo -DrepositoryId=snapshots -DuniqueVersion=false -Dfile=$filename -Dpackaging=jar -DpomFile=pom.xml"
-#    echo $deploycommand
-#    repeat_command $deploycommand
-#}
-
-#function deploy_maven_type_classifier {
-#    artifact=$1
-#    version=$2
-#    type=$3
-#    classifier=
-#    if [ "$" -eq 4 ]
-#    then
-#      classifier=-$4
-#    fi
-#    filename=$artifact-$version$classifier.$type
-#    curlcommand="curl -f -s -O $tcrepo/$artifact/$filename"
-#    echo $curlcommand
-#    $curlcommand
-#    deploycommand="mvn deploy:deploy-file -Durl=$mvnrepo -DrepositoryId=snapshots -DuniqueVersion=false -Dfile=$filename -Dpackaging=$type  -DpomFile=pom.xml"
-#    echo $deploycommand
-#    repeat_command $deploycommand
-#}
-
-function deploy_maven_classifier {
-    artifactandversion=$1
-    classifier=$2
-    curlcommand="curl -f -s -O $tcrepo/$artifact/$artifactandversion-$classifier$filesuffix.$extension"
+function deploy_maven_type_classifier {
+    artifact=$1
+    version=$2
+    type=$3
+    classifier=$4
+    filename=$artifact-$version-$classifier.$type
+    curlcommand="curl -f -s -O $tcrepo/$artifact/$filename"
     echo $curlcommand
     $curlcommand
-    deploycommand="mvn deploy:deploy-file -Durl=$mvnrepo -DrepositoryId=snapshots -DuniqueVersion=false -Dfile=$artifactandversion-$classifier$filesuffix.$extension -Dpackaging=$extension -DpomFile=pom.xml -Dclassifier=$classifier"
+    deploycommand="mvn deploy:deploy-file -Durl=$mvnrepo -DrepositoryId=snapshots -DuniqueVersion=false -Dfile=$filename -Dpackaging=$type -Dclassifier=$classifier -DpomFile=pom.xml"
     echo $deploycommand
     repeat_command "$deploycommand"
+}
+
+# uses the global $artifact as input
+function get_version {
+    curlcommand="curl -f -s -O $tcrepo/$artifact/pom.xml"
+    echo $curlcommand
+    $curlcommand
+    version=$( ./xmlgrep pom.xml )
+    echo "**************************************************************"
+    echo "artifact:$artifact  version:$version"
 }
 
 function deploy_tarball {
     artifact=$1
-    extension=tar.gz
-    filesuffix=
-    c=download
-    curl -f -s -O $tcrepo/$artifact/pom.xml
-    echo curl -f -s -O $tcrepo/$artifact/pom.xml
-    version=$( ./xmlgrep pom.xml )
-    echo "**************************************************************"
-    echo "artifact:$artifact  version:$version"
-    deploy_maven_classifier $artifact-$version $c
-}
-
-function deploy_jar {
-	filesuffix=
-	extension=jar
-	deploy $*
+    classifier=$2
+    type=tar.gz
+    get_version
+    deploy_maven_type_classifier $artifact $version $type $classifier
 }
 
 function deploy {
     artifact=$1
-    curl -f -s -O $tcrepo/$artifact/pom.xml
-    echo curl -f -s -O $tcrepo/$artifact/pom.xml
-    version=$( ./xmlgrep pom.xml )
-    echo "**************************************************************"
-    echo "artifact:$artifact  version:$version"
-
-    deploy_maven $artifact-$version
+    get_version
+    deploy_maven_jar $artifact $version
     first=1
-    for c in $@  ; do
+    for classifier in $@  ; do
         if [ -z $first ] ; then
-            deploy_maven_classifier $artifact-$version $c
+            deploy_maven_type_classifier $artifact $version jar $classifier
         fi
         unset first
     done
