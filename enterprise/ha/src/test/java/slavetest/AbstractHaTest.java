@@ -32,10 +32,12 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.io.FileUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -53,6 +55,7 @@ import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.BrokerFactory;
 import org.neo4j.kernel.impl.batchinsert.BatchInserter;
 import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
+import org.neo4j.kernel.impl.util.FileUtils;
 
 public abstract class AbstractHaTest
 {
@@ -70,6 +73,9 @@ public abstract class AbstractHaTest
     private int nodeIndexProviderPropCount;
     private boolean doVerificationAfterTest;
 
+    private long storePrefix;
+    private int maxNum;
+
     public @Rule
     TestName testName = new TestName()
     {
@@ -79,7 +85,7 @@ public abstract class AbstractHaTest
             return AbstractHaTest.this.getClass().getName() + "." + super.getMethodName();
         }
     };
-    
+
     public static BrokerFactory wrapBrokerAndSetPlaceHolderDb(
             final PlaceHolderGraphDatabaseService placeHolderDb, final Broker broker )
     {
@@ -91,23 +97,70 @@ public abstract class AbstractHaTest
                 placeHolderDb.setDb( graphDb );
                 return broker;
             }
-        };        
+        };
     }
 
-    protected static File dbPath( int num )
+
+    protected String getStorePrefix()
     {
-        return new File( DBS_PATH, "" + num );
+        return Long.toString( storePrefix ) + "-";
     }
-    
+
+
+    protected File dbPath( int num )
+    {
+        maxNum = Math.max( maxNum, num );
+        return new File( DBS_PATH, getStorePrefix() + num );
+    }
+
     protected boolean shouldDoVerificationAfterTests()
     {
         return doVerificationAfterTest;
     }
 
+    /**
+     * Here we do a best effort to remove all files from the test. In windows
+     * this occasionally fails and this is not a reason to fail the test. So we
+     * simply spawn off a thread that tries to delete what we created and if it
+     * actually succeeds so much the better. Otherwise, each test runs in its
+     * own directory, so no one will be stepping on anyone else's toes.
+     */
+    @After
+    public void clearDb()
+    {
+        // Keep a local copy for the main thread to delete this
+        final List<File> toDelete = new LinkedList<File>();
+        for ( int i = 0; i <= maxNum; i++ )
+        {
+            toDelete.add( dbPath( i ) );
+        }
+
+        new Thread( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                for ( File deleteMe : toDelete )
+                {
+                    try
+                    {
+                        FileUtils.deleteRecursively( deleteMe );
+                    }
+                    catch ( IOException e )
+                    {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
+            }
+        } ).start();
+    }
+
     @Before
     public void clearExpectedResults() throws Exception
     {
-        clearDbs();
+        maxNum = 0;
+        storePrefix = System.currentTimeMillis();
         doVerificationAfterTest = true;
         expectsResults = false;
     }
@@ -118,7 +171,7 @@ public abstract class AbstractHaTest
         {
             return;
         }
-        
+
         for ( GraphDatabaseService otherDb : dbs )
         {
             int vNodeCount = 0;
@@ -160,7 +213,7 @@ public abstract class AbstractHaTest
             GraphDatabaseService refDb, GraphDatabaseService otherDb )
     {
         int vNodePropCount = verifyProperties( node, otherNode );
-//        int vNodeIndexServicePropCount = verifyIndexService( node, otherNode, refDb, otherDb );
+        //        int vNodeIndexServicePropCount = verifyIndexService( node, otherNode, refDb, otherDb );
         int vNodeIndexProviderProCount = verifyIndexProvider( node, otherNode, refDb, otherDb );
         Set<Long> otherRelIds = new HashSet<Long>();
         for ( Relationship otherRel : otherNode.getRelationships( Direction.OUTGOING ) )
@@ -197,7 +250,7 @@ public abstract class AbstractHaTest
         return new int[] { vRelCount, vNodePropCount, vRelPropCount, -1, vNodeIndexProviderProCount };
     }
 
-/*    private static int verifyIndexService( Node node, Node otherNode, VerifyDbContext refDb,
+    /*    private static int verifyIndexService( Node node, Node otherNode, VerifyDbContext refDb,
             VerifyDbContext otherDb )
     {
         return 0;
@@ -232,11 +285,11 @@ public abstract class AbstractHaTest
         return count;
     }*/
 
-//    private static boolean isIndexedWithIndexService( Node node, VerifyDbContext db, String key )
-//    {
-//        return false;
-//        // return db.indexService.getSingleNode( key, node.getProperty( key ) ) != null;
-//    }
+    //    private static boolean isIndexedWithIndexService( Node node, VerifyDbContext db, String key )
+    //    {
+    //        return false;
+    //        // return db.indexService.getSingleNode( key, node.getProperty( key ) ) != null;
+    //    }
 
     /**
      * This method is bogus... it really needs to ask all indexes, not the "users" index :)
@@ -328,19 +381,6 @@ public abstract class AbstractHaTest
         return buffer.toString();
     }
 
-    private void clearDbs() throws IOException
-    {
-        try
-        {
-            Thread.sleep( 1500 );
-        }
-        catch (InterruptedException e)
-        {
-            e.printStackTrace();
-        }
-        FileUtils.deleteDirectory( PARENT_PATH );
-    }
-
     protected void initializeDbs( int numSlaves ) throws Exception
     {
         initializeDbs( numSlaves, MapUtil.stringMap() );
@@ -358,7 +398,7 @@ public abstract class AbstractHaTest
     protected abstract void awaitAllStarted() throws Exception;
 
     protected abstract int addDb( Map<String, String> config, boolean awaitStarted ) throws Exception;
-    
+
     protected abstract void startDb( int machineId, Map<String, String> config, boolean awaitStarted ) throws Exception;
 
     protected abstract void pullUpdates( int... slaves ) throws Exception;
@@ -372,7 +412,7 @@ public abstract class AbstractHaTest
     protected abstract CommonJobs.ShutdownDispatcher getMasterShutdownDispatcher();
 
     protected abstract void shutdownDbs() throws Exception;
-    
+
     protected abstract void shutdownDb( int machineId );
 
     protected abstract Fetcher<DoubleLatch> getDoubleLatch() throws Exception;
@@ -517,7 +557,7 @@ public abstract class AbstractHaTest
         assertTrue( executeJobOnMaster( new CommonJobs.DeleteNodeJob(
                 nodeId.longValue(), false ) ).booleanValue() );
         assertFalse( executeJob( new CommonJobs.SetNodePropertyJob( nodeId.longValue(), "something",
-                "some thing" ), 0 ) );
+        "some thing" ), 0 ) );
     }
 
     @Test
@@ -656,7 +696,7 @@ public abstract class AbstractHaTest
     {
         doVerificationAfterTest = false;
     }
-    
+
     protected void sleeep( int i )
     {
         try
