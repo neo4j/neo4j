@@ -41,7 +41,7 @@ function deploy_maven_jar {
     artifact=$1
     version=$2
     filename=$artifact-$version.jar
-    curlcommand="curl -f -s -O $tcrepo/$artifact/$filename"
+    curlcommand="curl -f -O $tcrepo/$artifact/$filename"
     echo $curlcommand
     $curlcommand
     deploycommand="mvn deploy:deploy-file -Durl=$mvnrepo -DrepositoryId=snapshots -DuniqueVersion=false -Dfile=$filename -Dpackaging=jar -DpomFile=pom.xml"
@@ -55,7 +55,7 @@ function deploy_maven_type_classifier {
     type=$3
     classifier=$4
     filename=$artifact-$version-$classifier.$type
-    curlcommand="curl -f -s -O $tcrepo/$artifact/$filename"
+    curlcommand="curl -f -O $tcrepo/$artifact/$filename"
     echo $curlcommand
     $curlcommand
     deploycommand="mvn deploy:deploy-file -Durl=$mvnrepo -DrepositoryId=snapshots -DuniqueVersion=false -Dfile=$filename -Dpackaging=$type -Dclassifier=$classifier -DpomFile=pom.xml"
