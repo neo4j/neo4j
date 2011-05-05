@@ -1,6 +1,6 @@
 %ul
   :each line in lines
-    %li = htmlEscape(line)
+    %li = htmlEscape(line, true)
 
   %li 
     :if showPrompt

@@ -18,25 +18,24 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-define [], () ->
+define(
+  [], 
+  () ->
   
-  class HtmlEscaper
-    
-    escape : (text, addNbsp=false) =>
-      text = @replaceAll(text, [
-        [/&/g,"&amp;"]
-        [/</g,"&lt;"]
-        [/>/g,"&gt;"]
-        [/"/g,"&quot;"]
-        [/'/g,"&#x27;"]
-        [/\//g,"&#x2F;"]])
+    class LoadingIndicator
 
-      return if addNbsp then @replaceAll(text, [[/\ /g, "&nbsp;"]]) else text
+      constructor : () ->
+        @el = $("<div class='loading-spinner'></div>")
+        @el.hide()
 
-    replaceAll : (text, replacements) =>
-      
-      text += ""
-      for replacement in replacements
-        text = text.replace replacement[0], replacement[1]
-      return text
+      show : (text="Loading") =>
+        @el.html text
+        @el.show()
 
+      hide : =>
+        @el.hide()
+
+      destroy : =>
+        @el.remove()
+
+)
