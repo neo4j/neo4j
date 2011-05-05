@@ -27,6 +27,7 @@ function deploy_defaults {
 
 function repeat_command {
     thecommand=$1
+    echo $thecommand
     for counter in 1 2 3
     do
         if $thecommand
@@ -37,15 +38,19 @@ function repeat_command {
     done
 }
 
+function fetch_artifact {
+    artifact=$1
+    filename=$2
+    curlcommand="curl -f -O $tcrepo/$artifact/$filename"
+    repeat_command "$curlcommand"
+}
+
 function deploy_maven_jar {
     artifact=$1
     version=$2
     filename=$artifact-$version.jar
-    curlcommand="curl -f -O $tcrepo/$artifact/$filename"
-    echo $curlcommand
-    $curlcommand
+    fetch_artifact $artifact $filename
     deploycommand="mvn deploy:deploy-file -Durl=$mvnrepo -DrepositoryId=snapshots -DuniqueVersion=false -Dfile=$filename -Dpackaging=jar -DpomFile=pom.xml"
-    echo $deploycommand
     repeat_command "$deploycommand"
 }
 
@@ -55,19 +60,15 @@ function deploy_maven_type_classifier {
     type=$3
     classifier=$4
     filename=$artifact-$version-$classifier.$type
-    curlcommand="curl -f -O $tcrepo/$artifact/$filename"
-    echo $curlcommand
-    $curlcommand
+    fetch_artifact $artifact $filename
     deploycommand="mvn deploy:deploy-file -Durl=$mvnrepo -DrepositoryId=snapshots -DuniqueVersion=false -Dfile=$filename -Dpackaging=$type -Dclassifier=$classifier -DpomFile=pom.xml"
-    echo $deploycommand
     repeat_command "$deploycommand"
 }
 
+
 # uses the global $artifact as input
 function get_version {
-    curlcommand="curl -f -s -O $tcrepo/$artifact/pom.xml"
-    echo $curlcommand
-    $curlcommand
+    fetch_artifact $artifact pom.xml
     version=$( ./xmlgrep pom.xml )
     echo "**************************************************************"
     echo "artifact:$artifact  version:$version"
