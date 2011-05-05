@@ -42,16 +42,35 @@ function deploy_maven {
     $curlcommand
     deploycommand="mvn deploy:deploy-file -Durl=$mvnrepo -DrepositoryId=snapshots -DuniqueVersion=false -Dfile=$artifactandversion$filesuffix.$extension -Dpackaging=$extension -DpomFile=pom.xml"
     echo $deploycommand
-    repeat_command $deploycommand
+    repeat_command "$deploycommand"
 }
 
 #function deploy_maven_jar {
 #    artifact=$1
 #    version=$2
-#    curlcommand="curl -f -s -O $tcrepo/$artifact/$artifact-version.jar"
+#    filename=$artifact-$version.jar
+#    curlcommand="curl -f -s -O $tcrepo/$artifact/$filename"
 #    echo $curlcommand
 #    $curlcommand
-#    deploycommand="mvn deploy:deploy-file -Durl=$mvnrepo -DrepositoryId=snapshots -DuniqueVersion=false -Dfile=$artifactandversion$filesuffix.$extension -Dpackaging=$extension -DpomFile=pom.xml"
+#    deploycommand="mvn deploy:deploy-file -Durl=$mvnrepo -DrepositoryId=snapshots -DuniqueVersion=false -Dfile=$filename -Dpackaging=jar -DpomFile=pom.xml"
+#    echo $deploycommand
+#    repeat_command $deploycommand
+#}
+
+#function deploy_maven_type_classifier {
+#    artifact=$1
+#    version=$2
+#    type=$3
+#    classifier=
+#    if [ "$" -eq 4 ]
+#    then
+#      classifier=-$4
+#    fi
+#    filename=$artifact-$version$classifier.$type
+#    curlcommand="curl -f -s -O $tcrepo/$artifact/$filename"
+#    echo $curlcommand
+#    $curlcommand
+#    deploycommand="mvn deploy:deploy-file -Durl=$mvnrepo -DrepositoryId=snapshots -DuniqueVersion=false -Dfile=$filename -Dpackaging=$type  -DpomFile=pom.xml"
 #    echo $deploycommand
 #    repeat_command $deploycommand
 #}
@@ -64,7 +83,7 @@ function deploy_maven_classifier {
     $curlcommand
     deploycommand="mvn deploy:deploy-file -Durl=$mvnrepo -DrepositoryId=snapshots -DuniqueVersion=false -Dfile=$artifactandversion-$classifier$filesuffix.$extension -Dpackaging=$extension -DpomFile=pom.xml -Dclassifier=$classifier"
     echo $deploycommand
-    repeat_command $deploycommand
+    repeat_command "$deploycommand"
 }
 
 function deploy_tarball {
