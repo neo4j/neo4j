@@ -16,6 +16,8 @@ You should also set the header +Content-Type:application/json+ if your request s
 
 == Get root ==
 
+_Request_
+
 *+GET /+*
 
 _Example using curl_
@@ -42,45 +44,54 @@ _Response_
 }
 ----
 
-////
+== Create empty node ==
 
-* {Create empty node}
+_Request_
 
-** POST /node
+*+POST /node+*
 
-** Example using curl
+_Example using curl_
 
----
+[source,bash]
+----
 curl -H Accept:application/json -X POST http://localhost:7474/db/data/node
----
+----
 
-** Response
+_Response_
 
-*** 201: OK, a node was created
+*+201 OK, a node was created+*
 
-    <<Location>>: http://localhost:7474/db/data/node/123
+*+Location:+* +http://localhost:7474/db/data/node/123+
 
-* {Create node with properties}
 
-** POST /node
+== Create node with properties ==
 
----
+_Request_
+
+*+POST /node+*
+
+[source,javascript]
+----
 { "name": "Thomas Anderson",
   "profession": "Hacker"
 }
----
+----
 
-** Example using curl
+_Example using curl_
 
----
+[source,bash]
+----
 curl -H Accept:application/json -H Content-Type:application/json -X POST -d '{"name": "Thomas Anderson", "profession": "Hacker"}' http://localhost:7474/db/data/node
----
+----
 
-** Response
+_Response_
 
-*** 201: OK, a node was created
+*+201 OK, a node was created+*
 
-    <<Location>>: http://localhost:7474/db/data/node/123
+*+Location:+* +http://localhost:7474/db/data/node/123+
+
+////
+
 
 *** 400: Invalid data sent
 

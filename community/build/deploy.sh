@@ -23,18 +23,37 @@ function work {
     deploy_jar server-api docs javadoc sources test-sources tests
 }
 
+function repeat_command {
+    thecommand=$1
+    for counter in 1 2 3
+    do
+        if ( $thecommand )
+        then
+            break
+        fi
+        echo "Command failed ($counter): $thecommand"
+    done
+}
+
 function deploy_maven {
-    echo curl -f -s -O $tcrepo/$artifact/$1$filesuffix.$extension
-    curl -f -s -O $tcrepo/$artifact/$1$filesuffix.$extension
-    echo deploy:deploy-file -Durl=$mvnrepo -DrepositoryId=snapshots -DuniqueVersion=false -Dfile=$1$filesuffix.$extension -Dpackaging=$extension -DpomFile=pom.xml || mvn deploy:deploy-file -Durl=$mvnrepo -DrepositoryId=snapshots -DuniqueVersion=false -Dfile=$1$filesuffix.$extension -Dpackaging=$extension -DpomFile=pom.xml || mvn deploy:deploy-file -Durl=$mvnrepo -DrepositoryId=snapshots -DuniqueVersion=false -Dfile=$1$filesuffix.$extension -Dpackaging=$extension -DpomFile=pom.xml
-    mvn deploy:deploy-file -Durl=$mvnrepo -DrepositoryId=snapshots -DuniqueVersion=false -Dfile=$1$filesuffix.$extension -Dpackaging=$extension -DpomFile=pom.xml || mvn deploy:deploy-file -Durl=$mvnrepo -DrepositoryId=snapshots -DuniqueVersion=false -Dfile=$1$filesuffix.$extension -Dpackaging=$extension -DpomFile=pom.xml || mvn deploy:deploy-file -Durl=$mvnrepo -DrepositoryId=snapshots -DuniqueVersion=false -Dfile=$1$filesuffix.$extension -Dpackaging=$extension -DpomFile=pom.xml
+    artifactandversion=$1
+    curlcommand="curl -f -s -O $tcrepo/$artifact/$artifactandversion$filesuffix.$extension"
+    echo $curlcommand
+    $curlcommand
+    deploycommand="mvn deploy:deploy-file -Durl=$mvnrepo -DrepositoryId=snapshots -DuniqueVersion=false -Dfile=$artifactandversion$filesuffix.$extension -Dpackaging=$extension -DpomFile=pom.xml"
+    echo $deploycommand
+    repeat_command $deploycommand
 }
 
 function deploy_maven_classifier {
-    echo curl -f -s -O $tcrepo/$artifact/$1-$2$filesuffix.$extension
-    curl -f -s -O $tcrepo/$artifact/$1-$2$filesuffix.$extension
-    echo mvn deploy:deploy-file -Durl=$mvnrepo -DrepositoryId=snapshots -DuniqueVersion=false -Dfile=$1-$2$filesuffix.$extension -Dpackaging=$extension -DpomFile=pom.xml -Dclassifier=$2 || mvn deploy:deploy-file -Durl=$mvnrepo -DrepositoryId=snapshots -DuniqueVersion=false -Dfile=$1-$2$filesuffix.$extension -Dpackaging=$extension -DpomFile=pom.xml -Dclassifier=$2 || mvn deploy:deploy-file -Durl=$mvnrepo -DrepositoryId=snapshots -DuniqueVersion=false -Dfile=$1-$2$filesuffix.$extension -Dpackaging=$extension -DpomFile=pom.xml -Dclassifier=$2
-    mvn deploy:deploy-file -Durl=$mvnrepo -DrepositoryId=snapshots -DuniqueVersion=false -Dfile=$1-$2$filesuffix.$extension -Dpackaging=$extension -DpomFile=pom.xml -Dclassifier=$2 || mvn deploy:deploy-file -Durl=$mvnrepo -DrepositoryId=snapshots -DuniqueVersion=false -Dfile=$1-$2$filesuffix.$extension -Dpackaging=$extension -DpomFile=pom.xml -Dclassifier=$2 || mvn deploy:deploy-file -Durl=$mvnrepo -DrepositoryId=snapshots -DuniqueVersion=false -Dfile=$1-$2$filesuffix.$extension -Dpackaging=$extension -DpomFile=pom.xml -Dclassifier=$2
+    artifactandversion=$1
+    classifier=$2
+    curlcommand="curl -f -s -O $tcrepo/$artifact/$artifactandversion-$classifier$filesuffix.$extension"
+    echo $curlcommand
+    $curlcommand
+    deploycommand="mvn deploy:deploy-file -Durl=$mvnrepo -DrepositoryId=snapshots -DuniqueVersion=false -Dfile=$artifactandversion-$classifier$filesuffix.$extension -Dpackaging=$extension -DpomFile=pom.xml -Dclassifier=$classifier"
+    echo $deploycommand
+    repeat_command $deploycommand
 }
 
 function deploy_tarball {

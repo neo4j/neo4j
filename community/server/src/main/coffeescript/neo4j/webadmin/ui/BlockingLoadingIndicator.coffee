@@ -18,25 +18,34 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-define [], () ->
+define(
+  ['lib/backbone'], 
+  () ->
   
-  class HtmlEscaper
-    
-    escape : (text, addNbsp=false) =>
-      text = @replaceAll(text, [
-        [/&/g,"&amp;"]
-        [/</g,"&lt;"]
-        [/>/g,"&gt;"]
-        [/"/g,"&quot;"]
-        [/'/g,"&#x27;"]
-        [/\//g,"&#x2F;"]])
+    class BlockingLoadingIndicator
 
-      return if addNbsp then @replaceAll(text, [[/\ /g, "&nbsp;"]]) else text
+      constructor : (@baseElement) ->
+        @el = $("<div class='loading-spinner-overlay'><div class='inner'></div></div>")
+        @el.hide()        
+        $("body").append(@el)
+        @position()
 
-    replaceAll : (text, replacements) =>
-      
-      text += ""
-      for replacement in replacements
-        text = text.replace replacement[0], replacement[1]
-      return text
+      show : =>
+        @el.show()
 
+      hide : =>
+        @el.hide()
+
+      destroy : =>
+        @el.remove()
+
+      position : =>
+        basePos = $(@baseElement).offset()
+        $(@el).css(
+          position:"absolute"
+          top:basePos.top+"px"
+          left:basePos.left+"px"
+          width:$(@baseElement).outerWidth() + "px"
+          height:$(@baseElement).outerHeight() + "px")
+
+)

@@ -19,33 +19,30 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['lib/backbone'], 
-  () ->
+  ['neo4j/webadmin/data/ItemUrlResolver'
+   'neo4j/webadmin/templates/databrowser/visualizationSettings',
+   'neo4j/webadmin/views/View',
+   'lib/backbone'], 
+  (ItemUrlResolver, template, View) ->
   
-    class LoadingSpinner
+    class VisualizationSettingsView extends View
 
-      constructor : (@baseElement) ->
-        @el = $("<div class='loading-spinner'><div class='inner'></div></div>")
-        @el.hide()        
-        $("body").append(@el)
-        @position()
+      #events : 
+      #  "click #save-visualization-settings" : "save"
 
-      show : =>
-        @el.show()
+      initialize : (opts) =>
+        
+        @settings = opts.appState.getVisualizationSettings()
 
-      hide : =>
-        @el.hide()
+      save : =>
+        keys = $("#visualization-label-properties").val().split(",")
+        @settings.setLabelProperties(keys)
+        @settings.save()
+        @closeCallback()
 
-      destroy : =>
-        @el.remove()
-
-      position : =>
-        basePos = $(@baseElement).offset()
-        $(@el).css(
-          position:"absolute"
-          top:basePos.top+"px"
-          left:basePos.left+"px"
-          width:$(@baseElement).outerWidth() + "px"
-          height:$(@baseElement).outerHeight() + "px")
+      
+      render : () =>
+        $(@el).html(template( labels : @settings.getLabelProperties().join(",") ))
+        return this
 
 )
