@@ -577,7 +577,7 @@ public class ZooClient extends AbstractZooKeeperManager
 
     public synchronized void setCommittedTx( long tx )
     {
-        msgLog.logMessage( "ZooClient setting txId=" + tx + " for machine=" + machineId, true );
+//        msgLog.logMessage( "ZooClient setting txId=" + tx + " for machine=" + machineId, true );
         waitForSyncConnected();
         this.committedTx = tx;
         String root = getRoot();

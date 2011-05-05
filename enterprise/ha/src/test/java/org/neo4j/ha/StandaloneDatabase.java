@@ -19,13 +19,17 @@
  */
 package org.neo4j.ha;
 
+import static java.util.Arrays.asList;
+
 import java.io.File;
 import java.io.PrintStream;
 import java.io.Serializable;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.Ignore;
@@ -52,14 +56,20 @@ public class StandaloneDatabase
             int machineId, final LocalhostZooKeeperCluster zooKeeper, String haServer,
             String[] extraArgs )
     {
+        List<String> args = new ArrayList<String>();
+        args.add( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVER );
+        args.add( haServer );
+        args.add( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS );
+        args.add( zooKeeper.getConnectionString() );
+        args.addAll( asList( extraArgs ) );
+        
         return new StandaloneDatabase( testMethodName, new Bootstrap( path, machineId,//
-                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVER, haServer,//
-                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS,
-                zooKeeper.getConnectionString() )
+                args.toArray( new String[args.size()] ) )
         {
             @Override
             HighlyAvailableGraphDatabase start( String storeDir, Map<String, String> config )
             {
+                config = removeDashes( config );
                 HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase( storeDir,
                         config );
                 System.out.println( "Started HA db (w/ zoo keeper)" );
@@ -75,11 +85,23 @@ public class StandaloneDatabase
         };
     }
 
+    protected static Map<String, String> removeDashes( Map<String, String> config )
+    {
+        Map<String, String> result = new HashMap<String, String>();
+        for ( Map.Entry<String, String> entry : config.entrySet() )
+        {
+            String key = entry.getKey();
+            key = key.startsWith( "-" ) ? key.substring( 1 ) : key;
+            result.put( key, entry.getValue() );
+        }
+        return result;
+    }
+
     public static StandaloneDatabase withFakeBroker( String testMethodName, final File path,
             int machineId, final int masterId, String[] extraArgs )
     {
         StandaloneDatabase standalone = new StandaloneDatabase( testMethodName, new Bootstrap(
-                path, machineId )
+                path, machineId, extraArgs )
         {
             @Override
             HighlyAvailableGraphDatabase start( String storeDir, Map<String, String> config )
@@ -95,6 +117,7 @@ public class StandaloneDatabase
                     broker = new FakeSlaveBroker( new MasterClient( "localhost",
                             Protocol.PORT, placeHolderGraphDb ), masterId, machineId, placeHolderGraphDb );
                 }
+                config = removeDashes( config );
                 HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase( storeDir, config,
                         AbstractHaTest.wrapBrokerAndSetPlaceHolderDb( placeHolderGraphDb, broker ) );
                 placeHolderGraphDb.setDb( db );
@@ -102,7 +125,6 @@ public class StandaloneDatabase
                 return db;
             }
         } );
-//        standalone.awaitStarted();
         return standalone;
     }
 
