@@ -93,6 +93,7 @@ public class XaLogicalLog
 //    private boolean slave = false;
     private final String storeDir;
     private final LogBufferFactory logBufferFactory;
+    private boolean doingRecovery;
 
     private final StringLogger msgLog;
 
@@ -258,7 +259,15 @@ public class XaLogicalLog
         if ( fileChannel.size() != 0 )
         {
             nonCleanShutdown = true;
-            doInternalRecovery( fileToOpen );
+            doingRecovery = true;
+            try
+            {
+                doInternalRecovery( fileToOpen );
+            }
+            finally
+            {
+                doingRecovery = false;
+            }
         }
         else
         {
@@ -508,12 +517,20 @@ public class XaLogicalLog
             XaTransaction xaTx = xaRm.getXaTransaction( xid );
             xaTx.setCommitTxId( txId );
             xaRm.injectOnePhaseCommit( xid );
-            msgLog.logMessage( "Injected one phase commit, txId=" + commit.getTxId(), true );
+            logRecoveryMessage( "Injected one phase commit, txId=" + commit.getTxId() );
         }
         catch ( XAException e )
         {
             e.printStackTrace();
             throw new IOException( e.getMessage() );
+        }
+    }
+
+    private void logRecoveryMessage( String string )
+    {
+        if ( doingRecovery )
+        {
+            msgLog.logMessage( string, true );
         }
     }
 
@@ -551,7 +568,7 @@ public class XaLogicalLog
             XaTransaction xaTx = xaRm.getXaTransaction( xid );
             xaTx.setCommitTxId( txId );
             xaRm.injectTwoPhaseCommit( xid );
-            msgLog.logMessage( "Injected two phase commit, txId=" + commit.getTxId(), true );
+            logRecoveryMessage( "Injected two phase commit, txId=" + commit.getTxId() );
         }
         catch ( XAException e )
         {
@@ -1175,7 +1192,7 @@ public class XaLogicalLog
                 if ( entry instanceof LogEntry.Commit )
                 {
                     commitEntry = (LogEntry.Commit) entry;
-                    msgLog.logMessage( "Applying external tx: " + ((LogEntry.Commit) entry).getTxId(), true );
+//                    msgLog.logMessage( "Applying external tx: " + ((LogEntry.Commit) entry).getTxId(), true );
                 }
                 else if ( entry instanceof LogEntry.Start )
                 {
