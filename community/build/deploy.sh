@@ -5,7 +5,7 @@ tcrepo=http://builder.neo4j.org/guestAuth/repository/download/bt18/lastSuccessfu
 mvnrepo=http://repo.neo4j.org/content/repositories/snapshots
 
 function work {
-    deploy_defaults neo4j-graph-algo neo4j-jmx neo4j-kernel neo4j-lucene-index neo4j-shell neo4j-udc server-api
+    deploy_defaults eo4j-graph-algo neo4j-jmx neo4j-kernel neo4j-lucene-index neo4j-shell neo4j-udc server-api
 
     deploy neo4j docs javadoc sources test-sources
     deploy neo4j-community docs javadoc sources test-sources
@@ -28,14 +28,21 @@ function deploy_defaults {
 function repeat_command {
     thecommand=$1
     echo $thecommand
+    success=0
     for counter in 1 2 3
     do
         if $thecommand
         then
-            break
+            success=1
+            break            
         fi
         echo "Command failed ($counter): $thecommand"
     done
+    if [ $success == 0 ]
+    then
+        echo "Fatal command failure: $thecommand"
+        exit 1
+    fi
 }
 
 function fetch_artifact {
