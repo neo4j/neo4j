@@ -102,10 +102,9 @@ public class QueryContext
     }
 
     /**
-     * Sort the results of a numeric range query,
-     * see {@link #numericRange(String, Number, Number)}.
-     * An {@link IllegalStateException} will be thrown if the query for this
-     * context isn't a numeric range query, {@link NumericRangeQuery}.
+     * Sort the results of a numeric range query if the query in this context
+     * is a {@link NumericRangeQuery}, see {@link #numericRange(String, Number, Number)},
+     * Otherwise an {@link IllegalStateException} will be thrown.
      * 
      * @param key the key to sort on.
      * @param reversed if the sort order should be reversed or not. {@code true}
@@ -139,6 +138,8 @@ public class QueryContext
     }
     
     /**
+     * Returns the sorting setting for this context.
+     * 
      * @return the sorting set with one of the sort methods, f.ex
      * {@link #sort(Sort)} or {@link #sortByScore()}
      */
@@ -148,8 +149,8 @@ public class QueryContext
     }
     
     /**
-     * Lucenes default operator is OR. Using this method, the default operator
-     * can be changed for the query.
+     * Changes the the default operator used between terms in compound queries,
+     * default is OR.
      *
      * @param defaultOperator The new operator to use.
      * @return A QueryContext with the new default operator applied.
@@ -161,6 +162,8 @@ public class QueryContext
     }
     
     /**
+     * Returns the default operator used between terms in compound queries.
+     * 
      * @return the default {@link Operator} specified with {@link #defaultOperator(Operator)}
      * or "OR" if none specified.
      */
@@ -189,6 +192,8 @@ public class QueryContext
     }
     
     /**
+     * Returns {@code true} if this context is set to prioritize speed over
+     * the inclusion of transactional state in the results.
      * @return whether or not {@link #tradeCorrectnessForSpeed()} has been called.
      */
     public boolean getTradeCorrectnessForSpeed()
@@ -198,7 +203,7 @@ public class QueryContext
     
     /**
      * Makes use of {@link IndexSearcher#search(org.apache.lucene.search.Query, int)},
-     * alt. {@link IndexSearcher#search(org.apache.lucene.search.Query, org.apache.lucene.search.Filter, int, Sort)}
+     * alternatively {@link IndexSearcher#search(org.apache.lucene.search.Query, org.apache.lucene.search.Filter, int, Sort)}
      * where only the top {@code numberOfTopHits} hits are returned. Default
      * behavior is to return all hits, although lazily retrieved from lucene all
      * the way up to the {@link IndexHits} iterator.
@@ -213,6 +218,8 @@ public class QueryContext
     }
     
     /**
+     * Return the max number of results to be returned.
+     * 
      * @return the top hits set with {@link #top(int)}.
      */
     public int getTop()
@@ -221,7 +228,7 @@ public class QueryContext
     }
     
     /**
-     * Will create a {@link QueryContext} with a query for numeric ranges, i.e.
+     * Will create a {@link QueryContext} with a query for numeric ranges, that is
      * values that have been indexed using {@link ValueContext#indexNumeric()}.
      * {@code from} (lower) and {@code to} (higher) bounds are inclusive.
      * It will match the type of numbers supplied to the type of values that
@@ -240,7 +247,7 @@ public class QueryContext
     }
     
     /**
-     * Will create a {@link QueryContext} with a query for numeric ranges, i.e.
+     * Will create a {@link QueryContext} with a query for numeric ranges, that is
      * values that have been indexed using {@link ValueContext#indexNumeric()}.
      * It will match the type of numbers supplied to the type of values that
      * are indexed in the index, f.ex. long, int, float and double.
