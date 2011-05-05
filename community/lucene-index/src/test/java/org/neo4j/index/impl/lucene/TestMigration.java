@@ -20,14 +20,19 @@
 package org.neo4j.index.impl.lucene;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -63,6 +68,43 @@ public class TestMigration
         Index<Relationship> indexThree = db.index().forRelationships( "indexThree" );
         verifyConfiguration( db, indexThree, LuceneIndexImplementation.EXACT_CONFIG );
         db.shutdown();
+    }
+    
+    @Test
+    public void canUpgradeFromPreviousVersion() throws Exception
+    {
+        GraphDatabaseService db = unpackDbFrom( "db-with-v3.0.1.zip" );
+        Index<Node> index = db.index().forNodes( "v3.0.1" );
+        Node node = index.get( "key", "value" ).getSingle();
+        assertNotNull( node );
+        db.shutdown();
+    }
+
+    private GraphDatabaseService unpackDbFrom( String file ) throws IOException
+    {
+        File path = new File( "target/var/zipup" );
+        ZipInputStream zip = new ZipInputStream( getClass().getClassLoader().getResourceAsStream( file ) );
+        ZipEntry entry = null;
+        byte[] buffer = new byte[2048];
+        while ( (entry = zip.getNextEntry()) != null )
+        {
+            if ( entry.isDirectory() )
+            {
+                new File( path, entry.getName() ).mkdirs();
+                continue;
+            }
+            FileOutputStream fos = new FileOutputStream( new File( path, entry.getName() ) );
+            BufferedOutputStream bos = new BufferedOutputStream( fos, buffer.length );
+
+            int size;
+            while ( (size = zip.read( buffer, 0, buffer.length )) != -1 )
+            {
+                bos.write( buffer, 0, size );
+            }
+            bos.flush();
+            bos.close();
+        }
+        return new EmbeddedGraphDatabase( path.getAbsolutePath() );
     }
 
     private void verifyConfiguration( GraphDatabaseService db, Index<? extends PropertyContainer> index, Map<String, String> config )

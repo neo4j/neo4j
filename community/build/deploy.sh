@@ -27,7 +27,7 @@ function repeat_command {
     thecommand=$1
     for counter in 1 2 3
     do
-        if ( $thecommand )
+        if $thecommand
         then
             break
         fi
@@ -44,6 +44,17 @@ function deploy_maven {
     echo $deploycommand
     repeat_command $deploycommand
 }
+
+#function deploy_maven_jar {
+#    artifact=$1
+#    version=$2
+#    curlcommand="curl -f -s -O $tcrepo/$artifact/$artifact-version.jar"
+#    echo $curlcommand
+#    $curlcommand
+#    deploycommand="mvn deploy:deploy-file -Durl=$mvnrepo -DrepositoryId=snapshots -DuniqueVersion=false -Dfile=$artifactandversion$filesuffix.$extension -Dpackaging=$extension -DpomFile=pom.xml"
+#    echo $deploycommand
+#    repeat_command $deploycommand
+#}
 
 function deploy_maven_classifier {
     artifactandversion=$1
