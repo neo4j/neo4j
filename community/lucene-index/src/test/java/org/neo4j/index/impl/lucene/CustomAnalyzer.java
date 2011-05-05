@@ -28,7 +28,7 @@ import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 
-class CustomAnalyzer extends Analyzer
+final class CustomAnalyzer extends Analyzer
 {
     static boolean called;
     
