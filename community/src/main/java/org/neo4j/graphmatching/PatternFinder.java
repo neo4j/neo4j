@@ -351,7 +351,7 @@ class PatternFinder implements Iterable<PatternMatch>, Iterator<PatternMatch>
         {
             String key = matchers.getKey();
             Object propertyValue = object.getProperty( key, null );
-            for ( @SuppressWarnings( "hiding" ) ValueMatcher matcher : matchers.getValue() )
+            for (ValueMatcher matcher : matchers.getValue() )
             {
                 if ( !matcher.matches( propertyValue ) )
                 {
