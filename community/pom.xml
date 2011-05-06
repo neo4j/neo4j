@@ -3,11 +3,12 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.neo4j</groupId>
-    <artifactId>parent-pom</artifactId>
-    <version>7-SNAPSHOT</version>
+    <artifactId>parent-central</artifactId>
+    <version>21</version>
   </parent>
-
+  
   <properties>
+    <bundle.namespace>org.neo4j.management</bundle.namespace>
     <short-name>graph-matching</short-name>
   </properties>
 
@@ -20,18 +21,26 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
-    <connection>
-            scm:svn:https://svn.neo4j.org/components/${short-name}/trunk/
-        </connection>
-    <url>https://trac.neo4j.org/browser/components/${short-name}
-        </url>
+    <url>https://github.com/neo4j/advanced/tree/master/management</url>
   </scm>
 
   <licenses>
     <license>
       <name>GNU Affero General Public License, Version 3</name>
-      <url>https://svn.neo4j.org/components/${short-name}/trunk/LICENSE.txt
-            </url>
+      <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
+      <comments>The software ("Software") developed and owned by Network Engine for
+Objects in Lund AB (referred to in this notice as "Neo Technology") is
+licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3 to all
+third parties and that license is included below.
+
+However, if you have executed an End User Software License and Services
+Agreement or an OEM Software License and Support Services Agreement, or
+another commercial license agreement with Neo Technology or one of its
+affiliates (each, a "Commercial Agreement"), the terms of the license in
+such Commercial Agreement will supersede the GNU AFFERO GENERAL PUBLIC
+LICENSE Version 3 and you may use the Software solely pursuant to the
+terms of the relevant Commercial Agreement.
+      </comments>
     </license>
   </licenses>
 
@@ -69,7 +78,11 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.1-SNAPSHOT</version>
+      <version>1.4-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
     </dependency>
   </dependencies>
 
