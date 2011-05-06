@@ -227,7 +227,7 @@
               <goal>exec</goal>
             </goals>
             <configuration>
-              <executable>${project.build.directory}/../upload.sh</executable>
+              <executable>${project.build.directory}/../src/build/upload.sh</executable>
             </configuration>
           </execution>
         </executions>

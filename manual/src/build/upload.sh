@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-DIR=$(cd `dirname $0` && pwd)
+DIR=$(cd `dirname $0` && cd ../../ && pwd)
 
 # Deploys build artifacts to relevant servers
 
