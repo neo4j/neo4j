@@ -2,7 +2,7 @@
 # depends libxml-simple-perl
 
 tcrepo=http://builder.neo4j.org/guestAuth/repository/download/bt58/lastSuccessful
-mvnrepo=http://repo.neo4j.org/content/repositories/snapshots
+mvnrepo=https://repo.neo4j.org/content/repositories/snapshots
 
 function work {
     deploy_defaults neo4j-management
