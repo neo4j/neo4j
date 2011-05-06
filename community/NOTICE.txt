@@ -20,9 +20,3 @@ such Commercial Agreement will supersede the AGPL and you may use the
 software solely pursuant to the terms of the relevant Commercial
 Agreement.
 
-Third party libraries
----------------------
-
-See the NOTICE.txt and LICENSES.txt files in the subdirectories for
-information on included third party software.
-
