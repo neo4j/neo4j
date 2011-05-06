@@ -12,7 +12,7 @@ import org.apache.commons.lang.StringUtils
  * Time: 19:18 
  */
 
-class Projection(source: Pipe, transformers: Seq[(Map[String, Any]) => (Map[String, Any])]) extends Traversable[Map[String, Any]] {
+class Projection(source: Pipe, transformers: Seq[Map[String, Any] => Map[String, Any]]) extends Traversable[Map[String, Any]] {
   def foreach[U](f: (Map[String, Any]) => U) {
     source.foreach((m) => {
       val result = transformers.map((transformer) => transformer.apply(m)).reduceLeft(_ ++ _)

@@ -1,11 +1,10 @@
 package org.neo4j.lab.cypher
 
 import commands._
-import pipes.{RelatedToPipe, FilteringPipe, Pipe, FromPump}
+import fsm.{PropertyEquals, FSM}
+import pipes.{Pipe, FromPump}
 import scala.collection.JavaConverters._
-import org.neo4j.graphdb.{PropertyContainer, NotFoundException, Node, GraphDatabaseService}
-
-
+import org.neo4j.graphdb.{NotFoundException, Node, GraphDatabaseService}
 /**
  * Created by Andres Taylor
  * Date: 4/16/11
@@ -19,31 +18,27 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
   def execute(query: Query): Projection = query match {
     case Query(select, from, where) => {
 
-      var sourcePumps = createSourcePumps(from)
-      val filters = createFilters(where)
+      val sourcePump = createSourcePumps(from).reduceLeft(_ ++ _)
+      val projections = createProjectionTransformers(select)
+      val executionPlan = new FSM(sourcePump)
 
-      val currentRow = new CurrentRow()
-      while (sourcePumps.nonEmpty) {
-        sourcePumps = sourcePumps.flatten(currentRow.addPipe)
+      where match {
+        case Some(w) => w.clauses.foreach((c) => {
+          c match {
+            case StringEquals(variable, propName, value) => {
+              val patternNode = executionPlan.bindNode(variable)
+              patternNode.addRule(new PropertyEquals(patternNode, propName, value))
+              patternNode
+            }
+
+          }
+        })
+        case _ =>
       }
 
-
-
-      if (filters.nonEmpty) {
-        val pipe: Traversable[Pipe] = currentRow.addPipe(filters.get)
-        if (pipe.nonEmpty) {
-          throw new RuntimeException("What?")
-        }
-      }
-
-      val transformers: Seq[MapTransformer] = createProjectionTransformers(select)
-
-      val constructPipe: Pipe = currentRow.constructPipe()
-
-      new Projection(constructPipe, transformers)
+      new Projection(executionPlan, projections)
     }
   }
-
 
   def createProjectionTransformers(select: Select): Seq[MapTransformer] = select.selectItems.map((selectItem) => {
     selectItem match {
@@ -52,29 +47,6 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
     }
   })
 
-  def createFilters(where: Option[Where]): Option[Pipe] = {
-    where match {
-      case None => None
-      case Some(w) => {
-        w.clauses.head match {
-          case StringEquals(variable, propName, expectedValue) => {
-            Some(new FilteringPipe(List(variable), (map) => {
-              val value = map.getOrElse(variable, throw new NotFoundException()).asInstanceOf[PropertyContainer]
-              value.getProperty(propName) == expectedValue
-            }))
-
-          }
-          case NumberLargerThan(variable, propName, comparator) =>
-            Some(new FilteringPipe(List(variable), (map) => {
-              val entity = map.getOrElse(variable, throw new NotFoundException()).asInstanceOf[PropertyContainer]
-              val propValue: Float = entity.getProperty(propName).asInstanceOf[Float]
-              propValue > comparator
-            }))
-        }
-      }
-    }
-  }
-
   def nodeOutput(column: String)(m: Map[String, Any]): Map[String, Any] = Map(column -> m.getOrElse(column, throw new NotFoundException))
 
   def nodePropertyOutput(column: String, propName: String)(m: Map[String, Any]): Map[String, Any] = {
@@ -82,25 +54,12 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
     Map(column + "." + propName -> node.getProperty(propName))
   }
 
-
   private def createSourcePumps(from: From): Seq[Pipe] = from.fromItems.map(_ match {
-    case NodeById(varName, ids@_*) => new FromPump(varName, ids.map(graph.getNodeById))
-    case RelatedTo(column, outputNode, outputRel, relType, direction) => new RelatedToPipe(column, outputNode, outputRel, relType, direction)
     case NodeByIndex(varName, idxName, key, value) => {
       val indexHits: java.lang.Iterable[Node] = graph.index.forNodes(idxName).get(key, value)
       val list: List[Node] = indexHits.asScala.toList
       new FromPump(varName, list)
     }
+    case NodeById(varName, ids@_*) => new FromPump(varName, ids.map(graph.getNodeById))
   })
-
-  private def createSelectOutput[T](select: Select, inputNodes: scala.Seq[Node]): List[T] = {
-    val selectItem = select.selectItems.head
-
-    val transformer: (Node) => T = selectItem match {
-      case EntityOutput(variable) => (n) => n.asInstanceOf[T]
-      case PropertyOutput(nodeName, propName) => (n) => n.getProperty(propName).asInstanceOf[T]
-    }
-
-    inputNodes.map(transformer).toList
-  }
 }
