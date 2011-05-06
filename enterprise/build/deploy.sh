@@ -1,7 +1,7 @@
 #!/bin/bash -e
 # depends libxml-simple-perl
 
-tcrepo=http://builder.neo4j.org/guestAuth/repository/download/bt58/lastSuccessful
+tcrepo=http://builder.neo4j.org/guestAuth/repository/download/bt61/lastSuccessful
 mvnrepo=https://repo.neo4j.org/content/repositories/snapshots
 
 function work {
