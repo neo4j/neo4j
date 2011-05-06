@@ -20,8 +20,10 @@
   <description>A graph pattern matcher for Neo4j.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
-  <scm>
-    <url>https://github.com/neo4j/advanced/tree/master/management</url>
+ <scm>
+    <connection>scm:git:git://github.com/neo4j/graph-matching.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/graph-matching.git</developerConnection>
+    <url>https://github.com/neo4j/graph-matching</url>
   </scm>
 
   <licenses>
