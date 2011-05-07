@@ -19,16 +19,43 @@
  */
 package org.neo4j.server.rest;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-public class DocumentationOutput
+import org.junit.rules.MethodRule;
+import org.junit.runners.model.FrameworkMethod;
+import org.junit.runners.model.Statement;
+
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.WebResource;
+
+public class DocumentationOutput implements MethodRule
 {
+    
+    public ClientResponse get(String title, String uri, Response.Status responseCode) {
+        WebResource resource = Client.create().resource(uri);
+        ClientResponse response = resource.accept(applicationJsonType).get(ClientResponse.class);
+        assertEquals(responseCode.getStatusCode(), response.getStatus());
+        data.setTitle( title );
+        data.setMethod("GET");
+        data.setRelUri(uri.substring( functionalTestHelper.dataUri().length() -1  ));
+        data.setUri(uri);
+        data.setResponse(responseCode);
+        data.setResponseBody(response.getEntity(String.class));
+        document();
+        return response;
+    }
+    
     protected DocuementationData data = new DocuementationData();
 
     private String START = "[[server-rest-api]]";
@@ -87,8 +114,14 @@ public class DocumentationOutput
 
     private FileWriter fw;
 
-    public DocumentationOutput()
+    private final FunctionalTestHelper functionalTestHelper;
+
+    private final MediaType applicationJsonType;
+
+    public DocumentationOutput(FunctionalTestHelper functionalTestHelper, MediaType applicationJsonType)
     {
+        this.functionalTestHelper = functionalTestHelper;
+        this.applicationJsonType = applicationJsonType;
         data = new DocuementationData();
 
         openFile( out );
@@ -120,6 +153,8 @@ public class DocumentationOutput
 
     }
 
+    
+    
     protected void document()
     {
         try
@@ -174,6 +209,23 @@ public class DocumentationOutput
             e.printStackTrace();
         }
 
+    }
+
+    @Override
+    public Statement apply( Statement base, FrameworkMethod method,
+            Object target )
+    {
+        System.out.println(String.format( "%s %s %s", base, method.getName(), target ));
+        return new Statement()
+        {
+            
+            @Override
+            public void evaluate() throws Throwable
+            {
+                // TODO Auto-generated method stub
+                
+            }
+        };
     }
 
 }
