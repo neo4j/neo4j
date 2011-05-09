@@ -394,26 +394,27 @@ public abstract class IndexCommand extends XaCommand
         case DELETE_COMMAND:
             return new DeleteCommand( indexNameId, entityType );
         case ADD_COMMAND: case REMOVE_COMMAND: case ADD_RELATIONSHIP_COMMAND:
-            Long entityId = entityIdNeedsLong ? readLong( channel, buffer ) : readInt( channel, buffer );
+            Number entityId = entityIdNeedsLong ? (Number)readLong( channel, buffer ) : (Number)readInt( channel, buffer );
             if ( entityId == null ) return null;
             Object value = readValue( valueType, channel, buffer );
+            if ( valueType != VALUE_TYPE_NULL && value == null ) return null;
             if ( commandType == ADD_COMMAND )
             {
-                return new AddCommand( indexNameId, entityType, entityId, keyId, value );
+                return new AddCommand( indexNameId, entityType, entityId.longValue(), keyId, value );
             }
             else if ( commandType == REMOVE_COMMAND )
             {
-                return new RemoveCommand( indexNameId, entityType, entityId, keyId, value );
+                return new RemoveCommand( indexNameId, entityType, entityId.longValue(), keyId, value );
             }
             else
             {
                 boolean startNodeNeedsLong = (headerBytes[1] & 0x8) > 0;
                 boolean endNodeNeedsLong = (headerBytes[1] & 0x40) > 0;
-                Long startNode = startNodeNeedsLong ? readLong( channel, buffer ) : readInt( channel, buffer );
-                Long endNode = endNodeNeedsLong ? readLong( channel, buffer ) : readInt( channel, buffer );
+                Number startNode = startNodeNeedsLong ? (Number)readLong( channel, buffer ) : (Number)readInt( channel, buffer );
+                Number endNode = endNodeNeedsLong ? (Number)readLong( channel, buffer ) : (Number)readInt( channel, buffer );
                 if ( startNode == null || endNode == null ) return null;
-                return new AddRelationshipCommand( indexNameId, entityType, entityId, keyId, value,
-                        startNode, endNode );
+                return new AddRelationshipCommand( indexNameId, entityType, entityId.longValue(),
+                        keyId, value, startNode.longValue(), endNode.longValue() );
             }
         default: throw new RuntimeException( "Unknown command type " + commandType );
         }

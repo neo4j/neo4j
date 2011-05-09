@@ -121,21 +121,23 @@ public class IndexDefineCommand extends XaCommand
     
     private byte indexNameId( String indexName )
     {
-        return id( indexName, indexNameIdRange, nextIndexNameId );
+        return id( indexName, indexNameIdRange, nextIndexNameId, idToIndexName );
     }
     
     private byte keyId( String key )
     {
-        return id( key, keyIdRange, nextKeyId );
+        return id( key, keyIdRange, nextKeyId, idToKey );
     }
 
-    private byte id( String key, Map<String, Byte> idRange, AtomicInteger nextId )
+    private byte id( String key, Map<String, Byte> idRange, AtomicInteger nextId,
+            Map<Byte, String> reverse )
     {
         Byte id = idRange.get( key );
         if ( id == null )
         {
             id = Byte.valueOf( (byte) nextId.incrementAndGet() );
             idRange.put( key, id );
+            reverse.put( id, key );
         }
         return id;
     }

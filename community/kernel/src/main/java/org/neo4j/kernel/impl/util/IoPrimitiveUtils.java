@@ -184,7 +184,8 @@ public abstract class IoPrimitiveUtils
     
     public static Map<String, String> read2bMap( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException
     {
-        int size = readShort( channel, buffer );
+        Short size = readShort( channel, buffer );
+        if ( size == null ) return null;
         Map<String, String> map = new HashMap<String, String>();
         for ( int i = 0; i < size; i++ )
         {
