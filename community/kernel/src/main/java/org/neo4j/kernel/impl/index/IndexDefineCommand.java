@@ -17,6 +17,16 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 
+/**
+ * A command which have to be first in the transaction. It will map index names
+ * and keys to ids so that all other commands in that transaction only refer
+ * to ids instead of names. This reduced the number of bytes needed for commands
+ * roughly 50% for transaction with more than a couple of commands in it,
+ * depending on the size of the value.
+ * 
+ * After this command has been created it will act as a factory for other
+ * commands so that it can spit out correct index name and key ids.
+ */
 public class IndexDefineCommand extends XaCommand
 {
     private final AtomicInteger nextIndexNameId = new AtomicInteger();

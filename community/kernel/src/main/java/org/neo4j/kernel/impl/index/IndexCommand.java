@@ -35,9 +35,15 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Map;
 
+import org.neo4j.graphdb.index.Index;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 
+/**
+ * Created from {@link IndexDefineCommand} or read from a logical log.
+ * Contains all the different types of commands that an {@link Index} need
+ * to support.
+ */
 public abstract class IndexCommand extends XaCommand
 {
     static final byte DEFINE_COMMAND = (byte) 0;
