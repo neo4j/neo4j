@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.TermQuery;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -43,8 +44,8 @@ import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.index.lucene.QueryContext;
 
-//@Ignore( "These are performance and sanity tests which can't really be executed as automated tests " +
-//        "for example a long running test which checks so that files aren't kept open" )
+@Ignore( "These are performance and sanity tests which can't really be executed as automated tests " +
+        "for example a long running test which checks so that files aren't kept open" )
 public class TestPerformanceAndSanity extends AbstractLuceneIndexTest
 {
     @Test
