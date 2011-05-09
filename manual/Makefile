@@ -89,6 +89,7 @@ ifndef KEEP
 	rm -f $(DOCBOOKFILEPDF)
 	rm -f $(DOCBOOKSHORTINFOFILE)
 	rm -f $(BUILDDIR)/*.xml
+	rm -f $(ANNOTATEDDIR)/*.xml
 	rm -f $(FOPDIR)/images
 	rm -f $(UPGRADE)/*.xml
 	rm -f $(UPGRADE)/*.html
@@ -247,6 +248,8 @@ manpages:
 	a2x -k -f text -d  manpage -D $(MANPAGES) $(IMPORTDIR)/neo4j-server-docs-jar/man/neo4j-coordinator-shell.1.txt
 	mv $(MANPAGES)/neo4j-coordinator-shell.1.text $(MANPAGES)/neo4j-coordinator-shell.txt
 	# clean up
+	mkdir -p $(ANNOTATEDDIR)
+	cp $(MANPAGES)/*.xml $(ANNOTATEDDIR)
 	mv $(MANPAGES)/*.xml $(BUILDDIR)
 	rm -rf $(MANPAGES)/*.html
 	# gzip -q $(MANPAGES)/*

@@ -61,29 +61,6 @@
   <holder>Neo Technology</holder>
 </copyright>
 
-<revhistory>
-  <revision>
-    <revnumber>1.2</revnumber>
-    <date>December 30, 2010</date>
-    <revremark>
-    </revremark>
-  </revision>
-  <revision>
-    <revnumber>1.2.M06</revnumber>
-    <date>December 21, 2010</date>
-    <revremark>
-      Added sercurity section and more configuration information.
-    </revremark>
-  </revision>
-  <revision>
-    <revnumber>1.2.M05</revnumber>
-    <date>December 3, 2010</date>
-    <revremark>
-      First release.
-    </revremark>
-  </revision>
-</revhistory>
-
 <legalnotice>
   <title>License</title>
   <simpara>This book is presented in open source and licensed through
