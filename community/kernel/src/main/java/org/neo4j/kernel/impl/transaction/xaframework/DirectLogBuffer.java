@@ -23,12 +23,12 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-public class DirectLogBuffer implements LogBuffer
+class DirectLogBuffer implements LogBuffer
 {
     private final FileChannel fileChannel;
     private final ByteBuffer buffer;
 
-    public DirectLogBuffer( FileChannel fileChannel, ByteBuffer buffer )
+    DirectLogBuffer( FileChannel fileChannel, ByteBuffer buffer )
     {
         if ( fileChannel == null || buffer == null )
         {
