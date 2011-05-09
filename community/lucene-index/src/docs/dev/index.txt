@@ -144,7 +144,7 @@ tag=update
 [[indexing-search]]
 == Search ==
 
-An index can be searched in two ways, http://components.neo4j.org/neo4j{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html#get%28java.lang.String,%20java.lang.Object%29[get] and http://components.neo4j.org/neo4j{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html#query%28java.lang.String,%20java.lang.Object%29[query].
+An index can be searched in two ways, http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html#get%28java.lang.String,%20java.lang.Object%29[get] and http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html#query%28java.lang.String,%20java.lang.Object%29[query].
 The +get+ method will return exact matches to the given key-value pair, whereas +query+ exposes querying capabilities directly from the backend used by the index.
 For example the http://lucene.apache.org/java/{lucene-version}/queryparsersyntax.html[Lucene query syntax] can be used directly with the default indexing backend.
 
@@ -180,7 +180,7 @@ source=examples/ImdbExampleTest.java
 tag=getRelationships
 ----
 
-IMPORTANT: In you don't iterate through all the hits, http://components.neo4j.org/neo4j{neo4j-version}/apidocs/org/neo4j/graphdb/index/IndexHits.html#close%28%29[IndexHits.close()] must be called explicitly.
+IMPORTANT: In you don't iterate through all the hits, http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/IndexHits.html#close%28%29[IndexHits.close()] must be called explicitly.
 
 [[indexing-search-query]]
 === Query ===
