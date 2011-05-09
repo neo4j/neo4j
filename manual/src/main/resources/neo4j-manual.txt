@@ -1,10 +1,8 @@
-The Neo4j Manual v{revnumber}
-=============================
+The Neo4j Manual
+================
 
 :neo4j-version: {revnumber}
-:neo4j-index-version: {revnumber}
-:neo4j-shell-version: {revnumber}
-
+:neo4j-buildnumber: {revnumber}
 
 include::introduction/introduction.txt[]
 
