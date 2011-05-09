@@ -115,6 +115,11 @@ public class TestPerformanceAndSanity extends AbstractLuceneIndexTest
         out.println( "get(" + resultCount + "):" + (double)( currentTimeMillis() - t ) / (double)count );
     }
 
+    /**
+     * Starts multiple threads which updates and queries an index concurrently
+     * during a long period of time just to make sure that number of file handles doesn't grow.
+     * @throws Exception
+     */
     @Test
     public void makeSureFilesAreClosedProperly() throws Exception
     {
@@ -124,11 +129,12 @@ public class TestPerformanceAndSanity extends AbstractLuceneIndexTest
         final CountDownLatch latch = new CountDownLatch( 30 );
         for ( int t = 0; t < latch.getCount(); t++ ) 
         {
+            final int thread = t;
             new Thread()
             {
                 public void run()
                 {
-                    for ( int i = 0; System.currentTimeMillis() - time < 100*1000; i++ )
+                    for ( int i = 0; System.currentTimeMillis() - time < 60*1000*10; i++ )
                     {
                         if ( i%10 == 0 )
                         {
@@ -144,8 +150,7 @@ public class TestPerformanceAndSanity extends AbstractLuceneIndexTest
                                         itr.getSingle();
                                     }
                                     catch ( NoSuchElementException e )
-                                    {
-            
+                                    { // For when there are multiple hits
                                     }
                                     size = 99;
                                 }
@@ -168,12 +173,15 @@ public class TestPerformanceAndSanity extends AbstractLuceneIndexTest
                                     }
                                 }
                                 
-                                System.out.println( "C iterated " + size + " only" );
+//                                System.out.println( "C iterated " + size + " only" );
                             }
                             else
                             {
                                 int size = IteratorUtil.count( (Iterator<Node>) index.get( "key", "value5" ) );
-                                System.out.println( "hit size:" + size );
+                                if ( thread == 0 )
+                                {
+                                    System.out.println( "hit size:" + size );
+                                }
                             }
                         }
                         else

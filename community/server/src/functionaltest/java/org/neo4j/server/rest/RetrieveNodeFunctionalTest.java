@@ -44,7 +44,7 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
-public class RetrieveNodeFunctionalTest extends DocumentationOutput {
+public class RetrieveNodeFunctionalTest extends BaseDocTest{
     private URI nodeUri;
 
     private NeoServerWithEmbeddedWebServer server;
@@ -52,11 +52,13 @@ public class RetrieveNodeFunctionalTest extends DocumentationOutput {
     private FunctionalTestHelper functionalTestHelper;
 
 
+
     @Before
     public void setupServer() throws IOException, DatabaseBlockedException, URISyntaxException {
         server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper(server);
+        doc = new DocumentationOutput(functionalTestHelper, MediaType.APPLICATION_JSON_TYPE);
         nodeUri = new URI(functionalTestHelper.nodeUri() + "/" + new GraphDbHelper(server.getDatabase()).createNode());
     }
 
@@ -64,13 +66,12 @@ public class RetrieveNodeFunctionalTest extends DocumentationOutput {
     public void stopServer() {
         server.stop();
         server = null;
-        document(  );
     }
 
     @Test
     public void shouldGet200WhenRetrievingNode() throws Exception {
         String uri = nodeUri.toString();
-        retrieveDocumentedNodeFromService("Retrieve Node", uri, Response.Status.OK);
+        doc.get("Retrieve Node", uri, Response.Status.OK);
     }
 
     @Test
@@ -95,7 +96,7 @@ public class RetrieveNodeFunctionalTest extends DocumentationOutput {
 
     @Test
     public void shouldGet404WhenRetrievingNonExistentNode() throws Exception {
-        ClientResponse response = retrieveDocumentedNodeFromService("Asking for a non-existent Node", nodeUri + "00000", Response.Status.NOT_FOUND);
+        doc.get("Asking for a non-existent Node", nodeUri + "00000", Response.Status.NOT_FOUND);
         
     }
 
@@ -105,16 +106,5 @@ public class RetrieveNodeFunctionalTest extends DocumentationOutput {
         return response;
     }
     
-    private ClientResponse retrieveDocumentedNodeFromService(String title, String uri, Response.Status responseCode) {
-        WebResource resource = Client.create().resource(uri);
-        data.setTitle( title );
-        ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
-        data.setMethod("GET");
-        data.setRelUri(uri.substring( functionalTestHelper.dataUri().length() -1  ));
-        data.setUri(uri);
-        data.setResponse(responseCode);
-        data.setResponseBody(response.getEntity(String.class));
-        assertEquals(responseCode, response.getStatus());
-        return response;
-    }
+    
 }
