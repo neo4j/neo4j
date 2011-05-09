@@ -221,7 +221,7 @@ public abstract class IndexCommand extends XaCommand
         return true;
     }
     
-    static class AddCommand extends IndexCommand
+    public static class AddCommand extends IndexCommand
     {
         AddCommand( byte indexNameId, byte entityType, long entityId, byte keyId, Object value )
         {
@@ -229,7 +229,7 @@ public abstract class IndexCommand extends XaCommand
         }
     }
     
-    static class AddRelationshipCommand extends IndexCommand
+    public static class AddRelationshipCommand extends IndexCommand
     {
         private final long startNode;
         private final long endNode;
@@ -284,7 +284,7 @@ public abstract class IndexCommand extends XaCommand
         }
     }
     
-    static class RemoveCommand extends IndexCommand
+    public static class RemoveCommand extends IndexCommand
     {
         RemoveCommand( byte indexNameId, byte entityType, long entityId, byte keyId, Object value )
         {
@@ -292,7 +292,7 @@ public abstract class IndexCommand extends XaCommand
         }
     }
 
-    static class DeleteCommand extends IndexCommand
+    public static class DeleteCommand extends IndexCommand
     {
         DeleteCommand( byte indexNameId, byte entityType )
         {
@@ -312,7 +312,7 @@ public abstract class IndexCommand extends XaCommand
         }
     }
     
-    static class CreateCommand extends IndexCommand
+    public static class CreateCommand extends IndexCommand
     {
         private final Map<String, String> config;
 
@@ -368,7 +368,7 @@ public abstract class IndexCommand extends XaCommand
         }
     }
     
-    static XaCommand readCommand( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException
+    public static XaCommand readCommand( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException
     {
         byte[] headerBytes = readBytes( channel, new byte[3] );
         if ( headerBytes == null ) return null;
