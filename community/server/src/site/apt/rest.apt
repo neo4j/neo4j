@@ -549,7 +549,7 @@ curl-X POST -H Accept:application/json -HContent-Type:application/json -d '{"nam
 
 ** Response
 
-*** 200: OK
+*** 201: OK, the index was created (or was already created)
 
 ---
 {
