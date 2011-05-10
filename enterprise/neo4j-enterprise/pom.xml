@@ -127,7 +127,7 @@ terms of the relevant Commercial Agreement.
               <goal>unpack-dependencies</goal>
             </goals>
             <configuration>
-              <excludeTransitive>true</excludeTransitive>
+              <excludeTransitive>false</excludeTransitive>
               <classifier>sources</classifier>
               <outputDirectory>${project.build.directory}/sources</outputDirectory>
               <includeGroupIds>org.neo4j</includeGroupIds>
@@ -139,7 +139,7 @@ terms of the relevant Commercial Agreement.
               <goal>unpack-dependencies</goal>
             </goals>
             <configuration>
-              <excludeTransitive>true</excludeTransitive>
+              <excludeTransitive>false</excludeTransitive>
               <classifier>sources</classifier>
               <outputDirectory>${project.build.directory}/javadoc-sources</outputDirectory>
               <includeGroupIds>org.neo4j</includeGroupIds>
@@ -170,7 +170,6 @@ terms of the relevant Commercial Agreement.
               <goal>javadoc</goal>
             </goals>
             <configuration>
-              <doctitle>Neo4j ${project.version} API</doctitle>
               <outputDirectory>${project.build.directory}/site/apidocs</outputDirectory>
               <sourcepath>${project.build.directory}/javadoc-sources</sourcepath>
             </configuration>
@@ -228,7 +227,10 @@ terms of the relevant Commercial Agreement.
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
         <configuration>
-          <excludePackageNames>*.impl.*:org.neo4j.ext.udc:org.neo4j.kernel.ha:org.neo4j.kernel.ha.*:org.neo4j.com:org.neo4j.com.*</excludePackageNames>
+          <header>${project.name}</header>
+          <doctitle>${project.name} API</doctitle>
+          <windowtitle>${project.name} API</windowtitle>
+           <excludePackageNames>*.impl.*:org.neo4j.ext.udc:org.neo4j.kernel.ha:org.neo4j.kernel.ha.*:org.neo4j.com:org.neo4j.com.*:org.neo4j.backup:org.neo4j.backup.*</excludePackageNames>
           <groups>
             <group>
               <title>Graph database</title>
@@ -246,7 +248,7 @@ terms of the relevant Commercial Agreement.
             </group>
             <group>
               <title>Management</title>
-              <packages>org.neo4j.management:org.neo4j.management.*</packages>
+              <packages>org.neo4j.management:org.neo4j.management.*:org.neo4j.jmx:org.neo4j.jmx.*</packages>
             </group>
             <group>
               <title>Helpers</title>
