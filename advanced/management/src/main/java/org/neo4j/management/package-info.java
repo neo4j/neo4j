@@ -18,6 +18,6 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 /**
- * Management support using JMX.
+ * Advanced management support using JMX.
  */
 package org.neo4j.management;
