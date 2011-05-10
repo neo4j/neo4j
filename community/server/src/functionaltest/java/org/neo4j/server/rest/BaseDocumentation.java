@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.rest;
 
-public class BaseDocTest
+public class BaseDocumentation
 {
 
     protected DocumentationOutput doc;

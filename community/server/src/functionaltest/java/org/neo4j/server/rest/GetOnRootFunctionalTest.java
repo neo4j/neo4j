@@ -38,7 +38,7 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
-public class GetOnRootFunctionalTest extends BaseDocTest {
+public class GetOnRootFunctionalTest extends BaseDocumentation {
 
     private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
