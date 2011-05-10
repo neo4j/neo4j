@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 import static java.lang.Boolean.parseBoolean;
-import static org.neo4j.kernel.Config.USE_MEMORY_MAPPED_BUFFERS;
+import static org.neo4j.kernel.Config.USE_MEMORY_MAPPED_LOG;
 import static org.neo4j.kernel.Config.osIsWindows;
 
 import java.io.IOException;
@@ -32,7 +32,7 @@ public abstract class DefaultLogBufferFactory implements LogBufferFactory
     public static LogBufferFactory create( Map<?, ?> config )
     {
         String configValue = config != null ?
-                (String) config.get( USE_MEMORY_MAPPED_BUFFERS ) : null;
+                (String) config.get( USE_MEMORY_MAPPED_LOG ) : null;
         boolean memoryMapped = parseBoolean( configValue );
         if ( !memoryMapped || osIsWindows() )
         {
