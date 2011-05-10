@@ -10,7 +10,7 @@
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j</artifactId>
   <version>1.4-SNAPSHOT</version>
-  <name>Neo4j</name>
+  <name>Neo4j Community</name>
   <packaging>jar</packaging>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
   <description>A meta package containing the most used Neo4j libraries. Intended use: as a Maven dependency.</description>
@@ -174,7 +174,6 @@ the relevant Commercial Agreement.
               <goal>javadoc</goal>
             </goals>
             <configuration>
-              <doctitle>Neo4j ${project.version} API</doctitle>
               <outputDirectory>${project.build.directory}/site/apidocs</outputDirectory>
               <sourcepath>${project.build.directory}/javadoc-sources</sourcepath>
             </configuration>
@@ -232,7 +231,10 @@ the relevant Commercial Agreement.
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
         <configuration>
-          <excludePackageNames>*.impl.*:org.neo4j.ext.udc:org.neo4j.kernel.ha:org.neo4j.kernel.ha.*:org.neo4j.com:org.neo4j.com.*</excludePackageNames>
+          <header>${project.name}</header>
+          <doctitle>${project.name} API</doctitle>
+          <windowtitle>${project.name} API</windowtitle>
+           <excludePackageNames>*.impl.*:org.neo4j.ext.udc:org.neo4j.kernel.ha:org.neo4j.kernel.ha.*:org.neo4j.com:org.neo4j.com.*</excludePackageNames>
           <groups>
             <group>
               <title>Graph database</title>
@@ -250,7 +252,7 @@ the relevant Commercial Agreement.
             </group>
             <group>
               <title>Management</title>
-              <packages>org.neo4j.management:org.neo4j.management.*</packages>
+              <packages>org.neo4j.management:org.neo4j.management.*:org.neo4j.jmx:org.neo4j.jmx.*</packages>
             </group>
             <group>
               <title>Helpers</title>
