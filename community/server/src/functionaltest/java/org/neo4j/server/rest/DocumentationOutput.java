@@ -63,12 +63,24 @@ public class DocumentationOutput implements MethodRule
                 ClientResponse.class );
         assertEquals( responseCode.getStatusCode(), response.getStatus() );
         assertEquals( applicationJsonType, response.getType() );
+        retrieveResponse( title, uri, "GET", responseCode, headerField,
+                response );
+
+        document();
+        return response;
+    }
+
+    private void retrieveResponse( final String title, final String uri,
+            final String method,
+            final Response.Status responseCode, final String headerField,
+            final ClientResponse response )
+    {
         if ( headerField != null )
         {
             assertNotNull( response.getHeaders().get( headerField ) );
         }
         data.setTitle( title );
-        data.setMethod( "GET" );
+        data.setMethod( method );
         data.setRelUri( uri.substring( functionalTestHelper.dataUri().length() - 9 ) );
         data.setUri( uri );
         data.setResponse( responseCode );
@@ -76,9 +88,6 @@ public class DocumentationOutput implements MethodRule
         data.headers = response.getHeaders();
         data.headerField = headerField;
         getResponseHeaders( response.getHeaders() );
-
-        document();
-        return response;
     }
 
     private void getResponseHeaders( final MultivaluedMap<String, String> headers )

@@ -14,9 +14,18 @@ You should also set the header +Content-Type:application/json+ if your request s
 
 include::retrieving-the-data-root-endpoint.txt[]
 
-include::retrieve-node.txt[]
+include::create-a-node.txt[]
 
-include::asking-for-a-non-existent-node.txt[]
+include::create-node-with-properties.txt[]
+
+include::get-node.txt[]
+
+include::get-non-existent-node.txt[]
+
+include::update-node-properties.txt[]
+
+include::delete-all-properties-from-node.txt[]]
 
 include::create-a-named-node-index.txt[]
+
 
