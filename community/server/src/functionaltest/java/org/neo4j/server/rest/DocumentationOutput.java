@@ -26,6 +26,9 @@ import static org.junit.Assert.fail;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map.Entry;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
@@ -35,6 +38,7 @@ import javax.ws.rs.core.Response.Status;
 import org.junit.rules.MethodRule;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.Statement;
+import org.neo4j.helpers.Pair;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
@@ -42,9 +46,17 @@ import com.sun.jersey.api.client.WebResource;
 
 public class DocumentationOutput implements MethodRule
 {
+    @SuppressWarnings( "serial" )
+    private static final List<String> RESPONSE_HEADERS = new ArrayList<String>()
+    {
+        {
+            add( "Content-Type" );
+            add( "Location" );
+        }
+    };
 
     public ClientResponse get( final String title, final String uri,
-            final Response.Status responseCode, String headerField )
+            final Response.Status responseCode, final String headerField )
     {
         WebResource resource = Client.create().resource( uri );
         ClientResponse response = resource.accept( applicationJsonType ).get(
@@ -63,9 +75,30 @@ public class DocumentationOutput implements MethodRule
         data.setResponseBody( response.getEntity( String.class ) );
         data.headers = response.getHeaders();
         data.headerField = headerField;
+        getResponseHeaders( response.getHeaders() );
 
         document();
         return response;
+    }
+
+    private void getResponseHeaders( final MultivaluedMap<String, String> headers )
+    {
+        for ( Entry<String, List<String>> header : headers.entrySet() )
+        {
+            if ( RESPONSE_HEADERS.contains( header.getKey() ) )
+            {
+                String values = "";
+                for ( String value : header.getValue() )
+                {
+                    if ( !values.isEmpty() )
+                    {
+                        values += ", ";
+                    }
+                    values += value;
+                }
+                data.addResponseHeader( header.getKey(), values );
+            }
+        }
     }
 
     // public ClientResponse post( final String title, final Map parameters,
@@ -76,12 +109,13 @@ public class DocumentationOutput implements MethodRule
     //
     // }
 
-    public ClientResponse post( String title, String payload, String uri,
-            Status responseCode, String headerField )
+    public ClientResponse post( final String title, final String payload,
+            final String uri, final Status responseCode,
+            final String headerField )
     {
         ClientResponse response = Client.create().resource( uri ).type(
                 applicationJsonType ).accept( applicationJsonType ).entity(
-                payload ).post( ClientResponse.class );
+                        payload ).post( ClientResponse.class );
         assertEquals( responseCode.getStatusCode(), response.getStatus() );
         assertEquals( applicationJsonType, response.getType() );
         if ( headerField != null )
@@ -98,16 +132,17 @@ public class DocumentationOutput implements MethodRule
         data.payloadencoding = applicationJsonType;
         data.headers = response.getHeaders();
         data.headerField = headerField;
+        getResponseHeaders( response.getHeaders() );
         document();
         return response;
     }
 
-    public ClientResponse put( String title, String payload, String uri,
-            Status responseCode, String headerField )
+    public ClientResponse put( final String title, final String payload, final String uri,
+            final Status responseCode, final String headerField )
     {
         ClientResponse response = Client.create().resource( uri ).type(
                 applicationJsonType ).accept( applicationJsonType ).entity(
-                payload ).put( ClientResponse.class );
+                        payload ).put( ClientResponse.class );
         assertEquals( responseCode.getStatusCode(), response.getStatus() );
         if ( headerField != null )
         {
@@ -123,17 +158,18 @@ public class DocumentationOutput implements MethodRule
         data.payloadencoding = applicationJsonType;
         data.headers = response.getHeaders();
         data.headerField = headerField;
+        getResponseHeaders( response.getHeaders() );
         document();
         return response;
     }
 
-    
-    public ClientResponse delete( String title, String payload, String uri,
-            Status responseCode, String headerField )
+
+    public ClientResponse delete( final String title, final String payload, final String uri,
+            final Status responseCode, final String headerField )
     {
         ClientResponse response = Client.create().resource( uri ).type(
                 applicationJsonType ).accept( applicationJsonType ).entity(
-                payload ).delete( ClientResponse.class );
+                        payload ).delete( ClientResponse.class );
         assertEquals( responseCode.getStatusCode(), response.getStatus() );
         if ( headerField != null )
         {
@@ -149,9 +185,11 @@ public class DocumentationOutput implements MethodRule
         data.payloadencoding = applicationJsonType;
         data.headers = response.getHeaders();
         data.headerField = headerField;
+        getResponseHeaders( response.getHeaders() );
         document();
         return response;
     }
+
     protected DocuementationData data = new DocuementationData();
 
     public class DocuementationData
@@ -167,11 +205,11 @@ public class DocumentationOutput implements MethodRule
         public Status status;
         public String entity;
         public String relUri;
+        private final List<Pair<String, String>> responseHeaders = new ArrayList<Pair<String, String>>();
 
         public void setTitle( final String title )
         {
             this.title = title;
-
         }
 
         public void setUri( final String uri )
@@ -183,8 +221,6 @@ public class DocumentationOutput implements MethodRule
         public void setMethod( final String method )
         {
             this.method = method;
-            // TODO Auto-generated method stub
-
         }
 
         public void setResponse( final Status responseCode )
@@ -196,7 +232,6 @@ public class DocumentationOutput implements MethodRule
         public void setResponseBody( final String entity )
         {
             this.entity = entity;
-
         }
 
         public void setRelUri( final String relUri )
@@ -205,6 +240,10 @@ public class DocumentationOutput implements MethodRule
 
         }
 
+        public void addResponseHeader( final String header, final String value )
+        {
+            responseHeaders.add( Pair.of( header, value ) );
+        }
     }
 
     private FileWriter fw;
@@ -222,11 +261,11 @@ public class DocumentationOutput implements MethodRule
         data = new DocuementationData();
 
     }
+
     public DocumentationOutput(
             final FunctionalTestHelper functionalTestHelper)
     {
         this(functionalTestHelper, MediaType.APPLICATION_JSON_TYPE);
-
     }
 
     protected void document()
@@ -251,36 +290,26 @@ public class DocumentationOutput implements MethodRule
             line( "[[rest-api-" + name + "]]" );
             line( "== " + data.title + " ==" );
             line( "" );
-            line( "*+" + data.method + " " + data.relUri + "+*" );
+            line( "_Example request_" );
             line( "" );
-            line( "_Example request URI_" );
-            line( "" );
-            line( data.uri );
-            line( "" );
+            line( "* *+" + data.method + "+*  +" + data.uri + "+" );
             if ( data.payload != null && !data.payload.equals( "null" ) )
             {
-                line( "_Example request payload (payload encoding = \""
-                      + data.payloadencoding + "\")_" );
-                line( "" );
+                line( "* *+Content-Type:+* +" + data.payloadencoding + "+" );
                 line( "[source,javascript]" );
                 line( "----" );
                 line( data.payload );
                 line( "----" );
-                line( "" );
             }
+            line( "" );
             line( "_Example response_" );
             line( "" );
-            line( "*+" + data.status.getStatusCode() + ": "
-                  + data.status.name() + "+*" );
-            line( "" );
-            if ( data.headerField != null )
+            line( "* *+" + data.status.getStatusCode() + ":+* +"
+                    + data.status.name() + "+" );
+            for ( Pair<String, String> header : data.responseHeaders )
             {
-                line( "" );
-                line( "+Header field : " + data.headerField + ": "
-                      + data.headers.get( data.headerField ) + "+" );
-
+                line( "* *+" + header.first() + ":+* +" + header.other() + "+" );
             }
-            line( "" );
             if ( data.entity != null )
             {
                 line( "[source,javascript]" );
@@ -331,5 +360,4 @@ public class DocumentationOutput implements MethodRule
             }
         };
     }
-
 }

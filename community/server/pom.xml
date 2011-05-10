@@ -915,6 +915,13 @@ the relevant Commercial Agreement.
           </groups>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>clirr-maven-plugin</artifactId>
+        <reportSets>
+          <reportSet />
+        </reportSets>
+      </plugin>
     </plugins>
   </reporting>
 

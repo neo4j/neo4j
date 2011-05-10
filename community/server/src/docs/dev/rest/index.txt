@@ -12,7 +12,11 @@ You can also see a (at runtime) generated description of the API be pointing you
 To interact with the JSON interface you must explicitly set the request header +Accept:application/json+ for those requests that responds with data.
 You should also set the header +Content-Type:application/json+ if your request sends data, for example when you're creating a relationship.
 
+include::retrieving-the-data-root-endpoint.txt[]
 
-:leveloffset: 3
+include::retrieve-node.txt[]
 
-include::Create_a_named_node_index.txt[]
+include::asking-for-a-non-existent-node.txt[]
+
+include::create-a-named-node-index.txt[]
+
