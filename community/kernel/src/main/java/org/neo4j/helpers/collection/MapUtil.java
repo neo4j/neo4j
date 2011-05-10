@@ -238,4 +238,25 @@ public abstract class MapUtil
             throw new RuntimeException( e );
         }
     }
+    
+    /**
+     * Reversed a map, making the key value and the value key.
+     * @param <K> the type of key in the map to reverse. These will be the
+     * values in the returned map.
+     * @param <V> the type of values in the map to revert. These will be the
+     * keys in the returned map.
+     * @param map the {@link Map} to reverse.
+     * @return the reverse of {@code map}. A new {@link Map} will be returned
+     * where the keys from {@code map} will be the values and the values will
+     * be the keys.
+     */
+    public static <K, V> Map<V, K> reverse( Map<K, V> map )
+    {
+        Map<V, K> reversedMap = new HashMap<V, K>();
+        for ( Map.Entry<K, V> entry : map.entrySet() )
+        {
+            reversedMap.put( entry.getValue(), entry.getKey() );
+        }
+        return reversedMap;
+    }
 }

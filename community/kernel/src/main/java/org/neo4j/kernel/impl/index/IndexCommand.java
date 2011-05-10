@@ -122,16 +122,17 @@ public abstract class IndexCommand extends XaCommand
          * k: keyId
          * i: entityId
          * v: value type
+         * u: value
          * x: 0=entityId needs 4b, 1=entityId needs 8b
          * y: 0=startNode needs 4b, 1=startNode needs 8b
          * z: 0=endNode needs 4b, 1=endNode needs 8b
          * 
          * [cccv,vvex][yznn,nnnn][kkkk,kkkk]
-         * [i...4/8 b]
-         * string value
+         * [iiii,iiii] x 4 or 8
+         * (either string value)
          * [llll,llll][llll,llll][llll,llll][string chars...]
-         * other
-         * [value 2-8 b]
+         * (numeric value)
+         * [uuuu,uuuu] x 2-8 (depending on value type)
          */
         
         writeHeader( buffer );

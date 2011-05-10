@@ -45,7 +45,7 @@ public class TestIndexCommand
     private static final byte[] BUFFER = new byte[5000];
     
     @Test
-    public void testWriteThenRead() throws Exception
+    public void testWriteReadTruncate() throws Exception
     {
         List<XaCommand> commands = createSomeCommands();
         Pair<File, List<Long>> writtenCommands = writeCommandsToFile( commands );

@@ -1,5 +1,6 @@
 package org.neo4j.kernel.impl.index;
 
+import static org.neo4j.helpers.collection.MapUtil.reverse;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bLengthAndString;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readByte;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.write2bLengthAndString;
@@ -48,18 +49,8 @@ public class IndexDefineCommand extends XaCommand
     {
         this.indexNameIdRange = indexNames;
         this.keyIdRange = keys;
-        idToIndexName = reversedMap( indexNames );
-        idToKey = reversedMap( keys );
-    }
-    
-    private static Map<Byte, String> reversedMap( Map<String, Byte> map )
-    {
-        Map<Byte, String> result = new HashMap<Byte, String>();
-        for ( Map.Entry<String, Byte> entry : map.entrySet() )
-        {
-            result.put( entry.getValue(), entry.getKey() );
-        }
-        return result;
+        idToIndexName = reverse( indexNames );
+        idToKey = reverse( keys );
     }
     
     private static String getFromMap( Map<Byte, String> map, byte id )
