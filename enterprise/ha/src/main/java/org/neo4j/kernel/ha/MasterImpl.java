@@ -57,6 +57,7 @@ import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * This is the real master code that executes on a master. The actual
@@ -69,6 +70,7 @@ public class MasterImpl implements Master
 
     private final GraphDatabaseService graphDb;
     private final Config graphDbConfig;
+    private final StringLogger msgLog;
 
     private final Map<SlaveContext, Transaction> transactions = Collections
             .synchronizedMap( new HashMap<SlaveContext, Transaction>() );
@@ -77,6 +79,7 @@ public class MasterImpl implements Master
     {
         this.graphDb = db;
         this.graphDbConfig = ((AbstractGraphDatabase) db).getConfig();
+        this.msgLog = StringLogger.getLogger( ((AbstractGraphDatabase) db ).getStoreDir() );
     }
 
     public GraphDatabaseService getGraphDb()
@@ -331,18 +334,18 @@ public class MasterImpl implements Master
 
     public Response<Integer> getMasterIdForCommittedTx( long txId )
     {
+        XaDataSource nioneoDataSource = graphDbConfig.getTxModule().getXaDataSourceManager()
+                .getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
+        int masterId = XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER;
         try
         {
-            XaDataSource nioneoDataSource = graphDbConfig.getTxModule().getXaDataSourceManager()
-                    .getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
-            return MasterUtil.packResponseWithoutTransactionStream( graphDb, SlaveContext.EMPTY,
-                    nioneoDataSource.getMasterForCommittedTx( txId ) );
+            masterId = nioneoDataSource.getMasterForCommittedTx( txId );
         }
         catch ( IOException e )
         {
-            return MasterUtil.packResponseWithoutTransactionStream( graphDb, SlaveContext.EMPTY,
-                    XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER );
+            msgLog.logMessage( "Couldn't get master ID for " + txId, e );
         }
+        return MasterUtil.packResponseWithoutTransactionStream( graphDb, SlaveContext.EMPTY, masterId );
     }
 
     public Response<Void> copyStore( SlaveContext context, StoreWriter writer )
