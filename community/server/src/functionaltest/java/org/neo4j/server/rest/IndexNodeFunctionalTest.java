@@ -53,7 +53,7 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
 
-public class IndexNodeFunctionalTest extends BaseDocTest
+public class IndexNodeFunctionalTest extends BaseDocumentation
 {
     private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
