@@ -19,7 +19,8 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -34,6 +35,7 @@ import org.junit.rules.MethodRule;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.Statement;
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.FunctionalTestHelper;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
@@ -42,8 +44,8 @@ import com.sun.jersey.api.client.WebResource;
 public class DocumentationOutput implements MethodRule
 {
 
-    public ClientResponse get( String title, String uri,
-            Response.Status responseCode )
+    public ClientResponse get( final String title, final String uri,
+            final Response.Status responseCode )
     {
         WebResource resource = Client.create().resource( uri );
         ClientResponse response = resource.accept( applicationJsonType ).get(
@@ -59,13 +61,13 @@ public class DocumentationOutput implements MethodRule
         return response;
     }
 
-    public ClientResponse post( String title, Map parameters, String uri,
-            Response.Status responseCode )
+    public ClientResponse post( final String title, final Map parameters, final String uri,
+            final Response.Status responseCode )
     {
         String payload = JsonHelper.createJsonFrom( parameters );
         ClientResponse response = Client.create().resource( uri ).type(
                 applicationJsonType ).accept( applicationJsonType ).entity(
-                payload ).post( ClientResponse.class );
+                        payload ).post( ClientResponse.class );
         data.setTitle( title );
         data.setMethod( "POST" );
         data.setRelUri( uri.substring( functionalTestHelper.dataUri().length() - 1 ) );
@@ -98,33 +100,33 @@ public class DocumentationOutput implements MethodRule
 
         }
 
-        public void setUri( String uri )
+        public void setUri( final String uri )
         {
             this.uri = uri;
 
         }
 
-        public void setMethod( String method )
+        public void setMethod( final String method )
         {
             this.method = method;
             // TODO Auto-generated method stub
 
         }
 
-        public void setResponse( Status responseCode )
+        public void setResponse( final Status responseCode )
         {
             this.status = responseCode;
 
         }
 
-        public void setResponseBody( String entity )
+        public void setResponseBody( final String entity )
         {
             this.entity = entity;
             // TODO Auto-generated method stub
 
         }
 
-        public void setRelUri( String relUri )
+        public void setRelUri( final String relUri )
         {
             this.relUri = relUri;
 
@@ -138,8 +140,8 @@ public class DocumentationOutput implements MethodRule
 
     private final MediaType applicationJsonType;
 
-    public DocumentationOutput( FunctionalTestHelper functionalTestHelper,
-            MediaType applicationJsonType )
+    public DocumentationOutput( final FunctionalTestHelper functionalTestHelper,
+            final MediaType applicationJsonType )
     {
         this.functionalTestHelper = functionalTestHelper;
         this.applicationJsonType = applicationJsonType;
@@ -155,34 +157,43 @@ public class DocumentationOutput implements MethodRule
             {
                 return;
             }
-            File dirs = new File("target/rest-api");
-            if(!dirs.exists()) dirs.mkdirs();
-            File out = new File( dirs, data.title.replace( " ", "_" )
-                                           + ".txt" );
+            File dirs = new File( "target/rest-api" );
+            if ( !dirs.exists() )
+            {
+                dirs.mkdirs();
+            }
+            String name = data.title.replace( " ", "-" ).toLowerCase();
+            File out = new File( dirs, name + ".txt" );
             out.createNewFile();
-            
+
             fw = new FileWriter( out, false );
 
-            line( "[[" + data.title + "]]" );
+            line( "[[rest-api-" + name + "]]" );
             line( "== " + data.title + " ==" );
             line( "" );
-            if ( data.payload != null )
+            if ( data.payload == null )
             {
-                
-                line( "_Example request (payload encoding = \"" + data.payloadencoding
-                        + "\")_" );
-                line( "" );
-                line( data.payload );
-            } else {
                 line( "_Example request_" );
+            }
+            else
+            {
+                line( "_Example request (payload encoding = \""
+                        + data.payloadencoding + "\")_" );
             }
             line( "" );
             line( "*+" + data.method + " " + data.relUri + "+*" );
+            if ( data.payload != null )
+            {
+                line( "[source,javascript]" );
+                line( "----" );
+                line( data.payload );
+                line( "----" );
+            }
             line( "" );
-            line( "_Example Response_" );
+            line( "_Example response_" );
             line( "" );
             line( "*+" + data.status.getStatusCode() + ": "
-                  + data.status.name() + "+*" );
+                    + data.status.name() + "+*" );
             line( "" );
             line( "[source,javascript]" );
             line( "----" );
@@ -200,7 +211,7 @@ public class DocumentationOutput implements MethodRule
 
     }
 
-    private void line( String string )
+    private void line( final String string )
     {
         try
         {
@@ -215,8 +226,8 @@ public class DocumentationOutput implements MethodRule
     }
 
     @Override
-    public Statement apply( Statement base, FrameworkMethod method,
-            Object target )
+    public Statement apply( final Statement base, final FrameworkMethod method,
+            final Object target )
     {
         System.out.println( String.format( "%s %s %s", base, method.getName(),
                 target ) );
