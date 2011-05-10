@@ -31,6 +31,7 @@ import java.util.Map;
 
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import junit.framework.Assert;
@@ -52,7 +53,7 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
 
-public class IndexNodeFunctionalTest
+public class IndexNodeFunctionalTest extends BaseDocTest
 {
     private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
@@ -64,6 +65,7 @@ public class IndexNodeFunctionalTest
         server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper( server );
+        doc = new DocumentationOutput(functionalTestHelper, MediaType.APPLICATION_JSON_TYPE);
         helper = functionalTestHelper.getGraphDbHelper();
     }
 
@@ -97,11 +99,8 @@ public class IndexNodeFunctionalTest
         String indexName = "favorites";
         Map<String, String> indexSpecification = new HashMap<String, String>();
         indexSpecification.put( "name", indexName );
-        ClientResponse response = Client.create().resource( functionalTestHelper.nodeIndexUri() )
-                .type( MediaType.APPLICATION_JSON )
-                .accept( MediaType.APPLICATION_JSON )
-                .entity( JsonHelper.createJsonFrom( indexSpecification ) ).post( ClientResponse.class );
-        assertEquals( 201, response.getStatus() );
+        ClientResponse response = doc.post("Create a named node index", indexSpecification, functionalTestHelper.nodeIndexUri(), Response.Status.CREATED);
+
         assertNotNull( response.getHeaders().getFirst( "Location" ) );
         assertEquals( 1, helper.getNodeIndexes().length );
         assertNotNull( helper.getNodeIndex( indexName ) );
