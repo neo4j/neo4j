@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.junit.After;
 import org.junit.Before;
@@ -46,7 +47,7 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
-public class ManageNodeFunctionalTest
+public class ManageNodeFunctionalTest extends BaseDocumentation
 {
     private static final long NON_EXISTENT_NODE_ID = 999999;
     private static String NODE_URI_PATTERN = "^.*/node/[0-9]+$";
@@ -61,6 +62,8 @@ public class ManageNodeFunctionalTest
         server.start();
         functionalTestHelper = new FunctionalTestHelper(server);
         helper = functionalTestHelper.getGraphDbHelper();
+        doc = new DocumentationOutput(functionalTestHelper, MediaType.APPLICATION_JSON_TYPE);
+        
     }
 
     @After
@@ -71,24 +74,20 @@ public class ManageNodeFunctionalTest
     @Test
     public void shouldGet201WhenCreatingNode() throws Exception
     {
-        ClientResponse response = sendCreateRequestToServer();
-        assertEquals( 201, response.getStatus() );
-        assertEquals( 201, response.getStatus() );
+        ClientResponse response = doc.post( "Create a node", null, functionalTestHelper.nodeUri(), Response.Status.CREATED, "Location" );
         assertTrue( response.getLocation().toString().matches( NODE_URI_PATTERN ) );
         assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
-        assertProperNodeRepresentation( JsonHelper.jsonToMap( response.getEntity( String.class ) ) );
+        assertProperNodeRepresentation( JsonHelper.jsonToMap( doc.data.entity ) );
     }
 
     @Test
     public void shouldGet201WhenCreatingNodeWithProperties() throws Exception
     {
-        ClientResponse response = sendCreateRequestToServer( "{\"foo\" : \"bar\"}" );
-        assertEquals( 201, response.getStatus() );
+        ClientResponse response = doc.post( "Create node with properties", "{\"foo\" : \"bar\"}", functionalTestHelper.nodeUri(), Response.Status.CREATED, "Location" );
+        //ClientResponse response = sendCreateRequestToServer(  );
         assertNotNull( response.getHeaders().get( "Content-Length" ) );
-        assertEquals( 201, response.getStatus() );
         assertTrue( response.getLocation().toString().matches( NODE_URI_PATTERN ) );
-        assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
-        assertProperNodeRepresentation( JsonHelper.jsonToMap( response.getEntity( String.class ) ) );
+        assertProperNodeRepresentation( JsonHelper.jsonToMap( doc.data.entity ) );
     }
 
     @Test

@@ -31,6 +31,7 @@ import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -38,7 +39,7 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
-public class RemoveNodePropertiesFunctionalTest
+public class RemoveNodePropertiesFunctionalTest extends BaseDocumentation
 {
     private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
@@ -49,6 +50,7 @@ public class RemoveNodePropertiesFunctionalTest
         server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper(server);
+        doc  = new DocumentationOutput( functionalTestHelper );
         helper = functionalTestHelper.getGraphDbHelper();
     }
 
@@ -72,6 +74,18 @@ public class RemoveNodePropertiesFunctionalTest
         helper.setNodeProperties( nodeId, map );
         ClientResponse response = removeNodePropertiesOnServer( nodeId );
         assertEquals( 204, response.getStatus() );
+    }
+
+    @Test
+    public void shouldReturn204WhenAllPropertiesAreRemoved() throws DatabaseBlockedException
+    {
+        long nodeId = helper.createNode();
+        Map<String, Object> map = new HashMap<String, Object>();
+        map.put( "jim", "tobias" );
+        helper.setNodeProperties( nodeId, map );
+        ClientResponse response = removeNodePropertiesOnServer( nodeId );
+        assertEquals( 204, response.getStatus() );
+        doc.delete("Delete all properties from node", null, functionalTestHelper.nodePropertiesUri( nodeId ), Response.Status.NO_CONTENT, null);
     }
 
     @Test

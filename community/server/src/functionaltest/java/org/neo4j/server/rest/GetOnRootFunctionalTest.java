@@ -60,7 +60,7 @@ public class GetOnRootFunctionalTest extends BaseDocumentation {
 
     @Test
     public void assert200OkFromGet() throws Exception {
-        doc.get( "Retrieving the data root endpoint", functionalTestHelper.dataUri(), Response.Status.OK);
+        doc.get( "Retrieving the data root endpoint", functionalTestHelper.dataUri(), Response.Status.OK, null);
     }
 
     @Test

@@ -20,22 +20,21 @@
 package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import org.junit.rules.MethodRule;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.Statement;
-import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.FunctionalTestHelper;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
@@ -45,54 +44,129 @@ public class DocumentationOutput implements MethodRule
 {
 
     public ClientResponse get( final String title, final String uri,
-            final Response.Status responseCode )
+            final Response.Status responseCode, String headerField )
     {
         WebResource resource = Client.create().resource( uri );
         ClientResponse response = resource.accept( applicationJsonType ).get(
                 ClientResponse.class );
         assertEquals( responseCode.getStatusCode(), response.getStatus() );
+        assertEquals( applicationJsonType, response.getType() );
+        if ( headerField != null )
+        {
+            assertNotNull( response.getHeaders().get( headerField ) );
+        }
         data.setTitle( title );
         data.setMethod( "GET" );
         data.setRelUri( uri.substring( functionalTestHelper.dataUri().length() - 9 ) );
         data.setUri( uri );
         data.setResponse( responseCode );
         data.setResponseBody( response.getEntity( String.class ) );
+        data.headers = response.getHeaders();
+        data.headerField = headerField;
+
         document();
         return response;
     }
 
-    public ClientResponse post( final String title, final Map parameters, final String uri,
-            final Response.Status responseCode )
+    // public ClientResponse post( final String title, final Map parameters,
+    // final String uri, final Response.Status responseCode )
+    // {
+    // String payload = JsonHelper.createJsonFrom( parameters );
+    // return post(title, payload, uri, responseCode);
+    //
+    // }
+
+    public ClientResponse post( String title, String payload, String uri,
+            Status responseCode, String headerField )
     {
-        String payload = JsonHelper.createJsonFrom( parameters );
         ClientResponse response = Client.create().resource( uri ).type(
                 applicationJsonType ).accept( applicationJsonType ).entity(
-                        payload ).post( ClientResponse.class );
+                payload ).post( ClientResponse.class );
+        assertEquals( responseCode.getStatusCode(), response.getStatus() );
+        assertEquals( applicationJsonType, response.getType() );
+        if ( headerField != null )
+        {
+            assertNotNull( response.getHeaders().get( headerField ) );
+        }
         data.setTitle( title );
         data.setMethod( "POST" );
-        data.setRelUri( uri.substring( functionalTestHelper.dataUri().length() - 1 ) );
+        data.setRelUri( uri.substring( functionalTestHelper.dataUri().length() - 9 ) );
         data.setUri( uri );
         data.setResponse( responseCode );
         data.setResponseBody( response.getEntity( String.class ) );
         data.payload = payload;
         data.payloadencoding = applicationJsonType;
+        data.headers = response.getHeaders();
+        data.headerField = headerField;
         document();
         return response;
     }
 
+    public ClientResponse put( String title, String payload, String uri,
+            Status responseCode, String headerField )
+    {
+        ClientResponse response = Client.create().resource( uri ).type(
+                applicationJsonType ).accept( applicationJsonType ).entity(
+                payload ).put( ClientResponse.class );
+        assertEquals( responseCode.getStatusCode(), response.getStatus() );
+        if ( headerField != null )
+        {
+            assertNotNull( response.getHeaders().get( headerField ) );
+        }
+        data.setTitle( title );
+        data.setMethod( "PUT" );
+        data.setRelUri( uri.substring( functionalTestHelper.dataUri().length() - 9 ) );
+        data.setUri( uri );
+        data.setResponse( responseCode );
+        // data.setResponseBody( response.getEntity( String.class ) );
+        data.payload = payload;
+        data.payloadencoding = applicationJsonType;
+        data.headers = response.getHeaders();
+        data.headerField = headerField;
+        document();
+        return response;
+    }
+
+    
+    public ClientResponse delete( String title, String payload, String uri,
+            Status responseCode, String headerField )
+    {
+        ClientResponse response = Client.create().resource( uri ).type(
+                applicationJsonType ).accept( applicationJsonType ).entity(
+                payload ).delete( ClientResponse.class );
+        assertEquals( responseCode.getStatusCode(), response.getStatus() );
+        if ( headerField != null )
+        {
+            assertNotNull( response.getHeaders().get( headerField ) );
+        }
+        data.setTitle( title );
+        data.setMethod( "DELETE" );
+        data.setRelUri( uri.substring( functionalTestHelper.dataUri().length() - 9 ) );
+        data.setUri( uri );
+        data.setResponse( responseCode );
+        // data.setResponseBody( response.getEntity( String.class ) );
+        data.payload = payload;
+        data.payloadencoding = applicationJsonType;
+        data.headers = response.getHeaders();
+        data.headerField = headerField;
+        document();
+        return response;
+    }
     protected DocuementationData data = new DocuementationData();
 
     public class DocuementationData
     {
 
+        public String headerField;
+        public MultivaluedMap<String, String> headers;
         public MediaType payloadencoding;
         public String payload;
-        String title;
-        String uri;
-        String method;
-        private Status status;
-        private String entity;
-        private String relUri;
+        public String title;
+        public String uri;
+        public String method;
+        public Status status;
+        public String entity;
+        public String relUri;
 
         public void setTitle( final String title )
         {
@@ -122,7 +196,6 @@ public class DocumentationOutput implements MethodRule
         public void setResponseBody( final String entity )
         {
             this.entity = entity;
-            // TODO Auto-generated method stub
 
         }
 
@@ -140,12 +213,19 @@ public class DocumentationOutput implements MethodRule
 
     private final MediaType applicationJsonType;
 
-    public DocumentationOutput( final FunctionalTestHelper functionalTestHelper,
+    public DocumentationOutput(
+            final FunctionalTestHelper functionalTestHelper,
             final MediaType applicationJsonType )
     {
         this.functionalTestHelper = functionalTestHelper;
         this.applicationJsonType = applicationJsonType;
         data = new DocuementationData();
+
+    }
+    public DocumentationOutput(
+            final FunctionalTestHelper functionalTestHelper)
+    {
+        this(functionalTestHelper, MediaType.APPLICATION_JSON_TYPE);
 
     }
 
@@ -171,35 +251,44 @@ public class DocumentationOutput implements MethodRule
             line( "[[rest-api-" + name + "]]" );
             line( "== " + data.title + " ==" );
             line( "" );
-            if ( data.payload == null )
-            {
-                line( "_Example request_" );
-            }
-            else
-            {
-                line( "_Example request (payload encoding = \""
-                        + data.payloadencoding + "\")_" );
-            }
-            line( "" );
             line( "*+" + data.method + " " + data.relUri + "+*" );
-            if ( data.payload != null )
+            line( "" );
+            line( "_Example request URI_" );
+            line( "" );
+            line( data.uri );
+            line( "" );
+            if ( data.payload != null && !data.payload.equals( "null" ) )
             {
+                line( "_Example request payload (payload encoding = \""
+                      + data.payloadencoding + "\")_" );
+                line( "" );
                 line( "[source,javascript]" );
                 line( "----" );
                 line( data.payload );
                 line( "----" );
+                line( "" );
             }
-            line( "" );
             line( "_Example response_" );
             line( "" );
             line( "*+" + data.status.getStatusCode() + ": "
-                    + data.status.name() + "+*" );
+                  + data.status.name() + "+*" );
             line( "" );
-            line( "[source,javascript]" );
-            line( "----" );
-            line( data.entity );
-            line( "----" );
+            if ( data.headerField != null )
+            {
+                line( "" );
+                line( "+Header field : " + data.headerField + ": "
+                      + data.headers.get( data.headerField ) + "+" );
+
+            }
             line( "" );
+            if ( data.entity != null )
+            {
+                line( "[source,javascript]" );
+                line( "----" );
+                line( data.entity );
+                line( "----" );
+                line( "" );
+            }
             fw.flush();
             fw.close();
         }

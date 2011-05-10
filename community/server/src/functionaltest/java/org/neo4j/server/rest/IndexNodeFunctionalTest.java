@@ -99,7 +99,7 @@ public class IndexNodeFunctionalTest extends BaseDocumentation
         String indexName = "favorites";
         Map<String, String> indexSpecification = new HashMap<String, String>();
         indexSpecification.put( "name", indexName );
-        ClientResponse response = doc.post("Create a named node index", indexSpecification, functionalTestHelper.nodeIndexUri(), Response.Status.CREATED);
+        ClientResponse response = doc.post("Create a named node index", JsonHelper.createJsonFrom( indexSpecification ), functionalTestHelper.nodeIndexUri(), Response.Status.CREATED, "Location");
 
         assertNotNull( response.getHeaders().getFirst( "Location" ) );
         assertEquals( 1, helper.getNodeIndexes().length );
