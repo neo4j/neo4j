@@ -230,7 +230,7 @@ terms of the relevant Commercial Agreement.
           <header>${project.name}</header>
           <doctitle>${project.name} API</doctitle>
           <windowtitle>${project.name} API</windowtitle>
-           <excludePackageNames>*.impl.*:org.neo4j.ext.udc:org.neo4j.kernel.ha:org.neo4j.kernel.ha.*:org.neo4j.com:org.neo4j.com.*:org.neo4j.backup:org.neo4j.backup.*</excludePackageNames>
+           <excludePackageNames>*.impl.*:org.neo4j.ext.udc:org.neo4j.kernel.ha:org.neo4j.kernel.ha.*:org.neo4j.com:org.neo4j.com.*</excludePackageNames>
           <groups>
             <group>
               <title>Graph database</title>
@@ -249,6 +249,10 @@ terms of the relevant Commercial Agreement.
             <group>
               <title>Management</title>
               <packages>org.neo4j.management:org.neo4j.management.*:org.neo4j.jmx:org.neo4j.jmx.*</packages>
+            </group>
+            <group>
+              <title>Backup</title>
+              <packages>org.neo4j.backup:org.neo4j.backup.*</packages>
             </group>
             <group>
               <title>Helpers</title>
