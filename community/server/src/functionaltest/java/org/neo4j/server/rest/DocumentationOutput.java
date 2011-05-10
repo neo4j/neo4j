@@ -58,8 +58,6 @@ public class DocumentationOutput implements MethodRule
     
     protected DocuementationData data = new DocuementationData();
 
-    private String START = "[[server-rest-api]]";
-
     public class DocuementationData
     {
 
@@ -110,7 +108,6 @@ public class DocumentationOutput implements MethodRule
 
     }
 
-    private File out = new File( "target/rest-api.txt" );
 
     private FileWriter fw;
 
@@ -124,34 +121,8 @@ public class DocumentationOutput implements MethodRule
         this.applicationJsonType = applicationJsonType;
         data = new DocuementationData();
 
-        openFile( out );
     }
 
-    private void openFile( File out2 )
-    {
-        try
-        {
-            if ( !out.exists() )
-            {
-                out.createNewFile();
-            }
-            BufferedReader is = new BufferedReader( new FileReader( out ) );
-            String line = is.readLine();
-            if ( line == null || !line.equals( START ) )
-            {
-                is.close();
-                fw = new FileWriter( out, false );
-                line( START );
-                line( "REST API\n========" );
-                fw.close();
-            }
-        }
-        catch ( Exception e )
-        {
-            e.printStackTrace();
-        }
-
-    }
 
     
     
@@ -163,8 +134,11 @@ public class DocumentationOutput implements MethodRule
             {
                 return;
             }
+            File out = new File("target", data.title.replace( " ", "_" )+".txt");
+            out.createNewFile();
             fw = new FileWriter( out, true );
-            line( "" );
+            
+            line("[["+data.title+"]]");
             line( "== " + data.title + " ==" );
             line( "" );
             line( "*+" + data.method + " " + data.relUri + "+*" );

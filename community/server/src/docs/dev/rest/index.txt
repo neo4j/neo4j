@@ -1,0 +1,7 @@
+[[REST API]]
+The Neo4j REST API
+==================
+
+:leveloffset: 3
+
+include::server-installation.txt[]
