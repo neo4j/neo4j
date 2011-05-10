@@ -29,7 +29,7 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
 
-public class NotYetExistingGraphDatabase extends AbstractGraphDatabase
+class NotYetExistingGraphDatabase extends AbstractGraphDatabase
 {
     private final String storeDir;
 
