@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -51,7 +51,7 @@ public class DocumentationOutput implements MethodRule
         assertEquals( responseCode.getStatusCode(), response.getStatus() );
         data.setTitle( title );
         data.setMethod( "GET" );
-        data.setRelUri( uri.substring( functionalTestHelper.dataUri().length() - 1 ) );
+        data.setRelUri( uri.substring( functionalTestHelper.dataUri().length() - 9 ) );
         data.setUri( uri );
         data.setResponse( responseCode );
         data.setResponseBody( response.getEntity( String.class ) );
@@ -155,25 +155,30 @@ public class DocumentationOutput implements MethodRule
             {
                 return;
             }
-            File out = new File( "target", data.title.replace( " ", "_" )
+            File dirs = new File("target/rest-api");
+            if(!dirs.exists()) dirs.mkdirs();
+            File out = new File( dirs, data.title.replace( " ", "_" )
                                            + ".txt" );
             out.createNewFile();
+            
             fw = new FileWriter( out, false );
 
             line( "[[" + data.title + "]]" );
             line( "== " + data.title + " ==" );
             line( "" );
-            line( "*+" + data.method + " " + data.relUri + "+*" );
-            line( "" );
             if ( data.payload != null )
             {
-
-                line( "_Example parameters (payload encoding = \"" + data.payloadencoding
-                      + "\")_" );
+                
+                line( "_Example request (payload encoding = \"" + data.payloadencoding
+                        + "\")_" );
                 line( "" );
                 line( data.payload );
-                line( "" );
+            } else {
+                line( "_Example request_" );
             }
+            line( "" );
+            line( "*+" + data.method + " " + data.relUri + "+*" );
+            line( "" );
             line( "_Example Response_" );
             line( "" );
             line( "*+" + data.status.getStatusCode() + ": "
@@ -189,7 +194,7 @@ public class DocumentationOutput implements MethodRule
         }
         catch ( IOException e )
         {
-            // TODO Auto-generated catch block
+            fail();
             e.printStackTrace();
         }
 
