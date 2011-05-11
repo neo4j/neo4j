@@ -15,10 +15,10 @@ Integration layer between Neo4j and Lucene, providing one possible implementatio
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
   
   <properties>
-    <lucene.groupId>org.apache.servicemix.bundles</lucene.groupId>
-    <lucene.artifactId>org.apache.servicemix.bundles.lucene</lucene.artifactId>
-    <lucene.version>3.0.1_2</lucene.version>
-    <lucene.main.version>3.0.1</lucene.main.version>
+    <lucene.groupId>org.apache.lucene</lucene.groupId>
+    <lucene.artifactId>lucene-core</lucene.artifactId>
+    <lucene.version>3.1.0</lucene.version>
+    <lucene.main.version>3.1.0</lucene.main.version>
     <bundle.namespace>org.neo4j.index</bundle.namespace>
     <short-name>lucene-index</short-name>
     <license-text.header>GPL-3-header.txt</license-text.header>

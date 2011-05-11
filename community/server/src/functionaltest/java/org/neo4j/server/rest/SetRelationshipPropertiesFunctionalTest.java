@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.junit.After;
 import org.junit.Before;
@@ -36,12 +37,12 @@ import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.domain.JsonParseException;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
-import org.neo4j.server.rest.domain.JsonParseException;
 
-public class SetRelationshipPropertiesFunctionalTest {
+public class SetRelationshipPropertiesFunctionalTest extends BaseDocumentation{
 
     private URI propertiesUri;
     private URI badUri;
@@ -53,7 +54,7 @@ public class SetRelationshipPropertiesFunctionalTest {
         server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
         server.start();
         FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper(server);
-        
+        doc = new DocumentationOutput(functionalTestHelper, MediaType.APPLICATION_JSON_TYPE);
         long relationshipId = new GraphDbHelper(server.getDatabase()).createRelationship("KNOWS");
         propertiesUri = new URI(functionalTestHelper.relationshipPropertiesUri(relationshipId));
         badUri = new URI(functionalTestHelper.relationshipPropertiesUri(relationshipId + 1 * 99999));
@@ -70,6 +71,9 @@ public class SetRelationshipPropertiesFunctionalTest {
     {
         Map<String, Object> map = new HashMap<String, Object>();
         map.put("jim", "tobias");
+        doc.doRequest( "Update node properties", "PUT",
+                propertiesUri.toString(), JsonHelper.createJsonFrom( map ),
+                Response.Status.NO_CONTENT );
         ClientResponse response = updatePropertiesOnServer(map);
         assertEquals(204, response.getStatus());
     }

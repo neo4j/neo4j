@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-class DirectMappedLogBuffer implements LogBuffer
+public class DirectMappedLogBuffer implements LogBuffer
 {
     private static final int BUFFER_SIZE = 1024 * 1024 * 2;
 
@@ -32,7 +32,7 @@ class DirectMappedLogBuffer implements LogBuffer
     private CloseableByteBuffer byteBuffer = null;
     private long bufferStartPosition;
 
-    DirectMappedLogBuffer( FileChannel fileChannel ) throws IOException
+    public DirectMappedLogBuffer( FileChannel fileChannel ) throws IOException
     {
         this.fileChannel = fileChannel;
         bufferStartPosition = fileChannel.position();
@@ -63,6 +63,13 @@ class DirectMappedLogBuffer implements LogBuffer
         return this;
     }
 
+    public LogBuffer putShort( short s ) throws IOException
+    {
+        ensureCapacity( 2 );
+        byteBuffer.putShort( s );
+        return this;
+    }
+    
     public LogBuffer putInt( int i ) throws IOException
     {
         ensureCapacity( 4 );

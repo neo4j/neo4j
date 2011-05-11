@@ -26,6 +26,8 @@ public interface LogBuffer
 {
     public LogBuffer put( byte b ) throws IOException;
 
+    public LogBuffer putShort( short b ) throws IOException;
+    
     public LogBuffer putInt( int i ) throws IOException;
 
     public LogBuffer putLong( long l ) throws IOException;

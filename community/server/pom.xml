@@ -628,6 +628,7 @@ the relevant Commercial Agreement.
     <profile>
       <id>functional-tests</id>
       <activation>
+        <activeByDefault>true</activeByDefault>
         <property>
           <name>tests</name>
           <value>functional</value>
@@ -674,6 +675,35 @@ the relevant Commercial Agreement.
               <argLine>-Xmx1024m</argLine>
               <forkMode>perTest</forkMode>
             </configuration>
+          </plugin>
+          <plugin>
+            <artifactId>maven-jar-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>attach-docs</id>
+                <phase>none</phase>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>docs</id>
+                <phase>package</phase>
+                <configuration>
+                  <attach>true</attach>
+                  <appendAssemblyId>true</appendAssemblyId>
+                  <descriptors>
+                    <descriptor>src/main/assemblies/docs-assembly.xml</descriptor>
+                  </descriptors>
+                </configuration>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+              </execution>
+            </executions>
           </plugin>
         </plugins>
       </build>
@@ -785,8 +815,15 @@ the relevant Commercial Agreement.
     </profile>
 
     <profile>
-      <!-- Temporarily disconnected from the rest of the build
-      because "brew" is not in maven central. To use this, mvn install
+      <!-- Disconnected from the "normal" build pipeline, because the
+           artifact that this produces (webadmin.min.js) is checked into
+           the source tree.
+
+           I know, that's really awful, but the alternative is forcing 
+           everyone to run the webadmin build all the time, and its *really* slow.
+
+           The plan is to move webadmin into it's own project, where the
+           build can be sane without killing the build time for the server project.
        -->
       <id>webadmin-build</id>
       <build>
@@ -794,13 +831,12 @@ the relevant Commercial Agreement.
           <plugin>
             <groupId>com.voltvoodoo</groupId>
             <artifactId>brew</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <version>0.2.1</version>
             <executions>
               <execution>
               	<id>build-webadmin</id>
                 <goals>
-                  <goal>compile-haml</goal>
-                  <goal>compile-coffeescript</goal>
+                  <goal>compile</goal>
                   <goal>optimize</goal>
                 </goals>
               </execution>
@@ -879,6 +915,13 @@ the relevant Commercial Agreement.
             </group>
           </groups>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>clirr-maven-plugin</artifactId>
+        <reportSets>
+          <reportSet />
+        </reportSets>
       </plugin>
     </plugins>
   </reporting>

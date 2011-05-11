@@ -31,6 +31,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
+import org.neo4j.graphdb.index.IndexManager;
 
 public class LuceneTimeline<T extends PropertyContainer> implements TimelineIndex<T>
 {
@@ -46,7 +47,7 @@ public class LuceneTimeline<T extends PropertyContainer> implements TimelineInde
     private void assertIsLuceneIndex( GraphDatabaseService db, Index<T> index )
     {
         Map<String, String> config = db.index().getConfiguration( index );
-        if ( !config.get( "provider" ).equals( "lucene" ) ) // Not so hard coded please
+        if ( !config.get( IndexManager.PROVIDER ).equals( "lucene" ) ) // Not so hard coded please
         {
             throw new IllegalArgumentException( index + " isn't a Lucene index" );
         }
@@ -67,7 +68,7 @@ public class LuceneTimeline<T extends PropertyContainer> implements TimelineInde
     {
         long start = startTimestampOrNull != null ? startTimestampOrNull : 0L;
         long end = endTimestampOrNull != null ? endTimestampOrNull : MAX_VALUE;
-        return new QueryContext( newLongRange( FIELD, start, end, false, false ) );
+        return new QueryContext( newLongRange( FIELD, start, end, true, true ) );
     }
     
     private QueryContext sort( QueryContext query, boolean reversed )

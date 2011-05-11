@@ -30,8 +30,8 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.IndexImplementation;
+import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
@@ -41,8 +41,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
 class IndexManagerImpl implements IndexManager
 {
-    private static final String KEY_INDEX_PROVIDER = "provider";
-
     private final IndexStore indexStore;
     private final Map<String, IndexImplementation> indexProviders = new HashMap<String, IndexImplementation>();
 
@@ -101,15 +99,15 @@ class IndexManagerImpl implements IndexManager
         if ( configToUse == null )
         {
             provider = getDefaultProvider( indexName, dbConfig );
-            indexProvider = getIndexProvider( provider );
-            configToUse = indexProvider.fillInDefaults( MapUtil.stringMap( KEY_INDEX_PROVIDER, provider ) );
+            configToUse = MapUtil.stringMap( PROVIDER, provider );
         }
         else
         {
-            provider = configToUse.get( KEY_INDEX_PROVIDER );
+            provider = configToUse.get( PROVIDER );
             provider = provider == null ? getDefaultProvider( indexName, dbConfig ) : provider;
-            indexProvider = getIndexProvider( provider );
         }
+        indexProvider = getIndexProvider( provider );
+        configToUse = indexProvider.fillInDefaults( configToUse );
         configToUse = injectDefaultProviderIfMissing( cls, indexName, dbConfig, configToUse );
 
         // Do they match (stored vs. supplied)?
@@ -138,11 +136,11 @@ class IndexManagerImpl implements IndexManager
             Class<? extends PropertyContainer> cls, String indexName, Map<?, ?> dbConfig,
             Map<String, String> config )
     {
-        String provider = config.get( KEY_INDEX_PROVIDER );
+        String provider = config.get( PROVIDER );
         if ( provider == null )
         {
             config = new HashMap<String, String>( config );
-            config.put( KEY_INDEX_PROVIDER, getDefaultProvider( indexName, dbConfig ) );
+            config.put( PROVIDER, getDefaultProvider( indexName, dbConfig ) );
         }
         return config;
     }
@@ -211,7 +209,7 @@ class IndexManagerImpl implements IndexManager
         @Override
         public void run()
         {
-            String provider = config.get( KEY_INDEX_PROVIDER );
+            String provider = config.get( PROVIDER );
             String dataSourceName = getIndexProvider( provider ).getDataSourceName();
             XaDataSource dataSource = graphDbImpl.getConfig().getTxModule().getXaDataSourceManager().getXaDataSource( dataSourceName );
             IndexXaConnection connection = (IndexXaConnection) dataSource.getXaConnection();
@@ -242,14 +240,14 @@ class IndexManagerImpl implements IndexManager
     public Index<Node> forNodes( String indexName )
     {
         Map<String, String> config = getOrCreateIndexConfig( Node.class, indexName, null );
-        return getIndexProvider( config.get( KEY_INDEX_PROVIDER ) ).nodeIndex( indexName, config );
+        return getIndexProvider( config.get( PROVIDER ) ).nodeIndex( indexName, config );
     }
 
     public Index<Node> forNodes( String indexName, Map<String, String> customConfiguration )
     {
         Map<String, String> config = getOrCreateIndexConfig( Node.class, indexName,
                 customConfiguration );
-        return getIndexProvider( config.get( KEY_INDEX_PROVIDER ) ).nodeIndex( indexName, config );
+        return getIndexProvider( config.get( PROVIDER ) ).nodeIndex( indexName, config );
     }
 
     public String[] nodeIndexNames()
@@ -265,7 +263,7 @@ class IndexManagerImpl implements IndexManager
     public RelationshipIndex forRelationships( String indexName )
     {
         Map<String, String> config = getOrCreateIndexConfig( Relationship.class, indexName, null );
-        return getIndexProvider( config.get( KEY_INDEX_PROVIDER ) ).relationshipIndex( indexName,
+        return getIndexProvider( config.get( PROVIDER ) ).relationshipIndex( indexName,
                 config );
     }
 
@@ -274,7 +272,7 @@ class IndexManagerImpl implements IndexManager
     {
         Map<String, String> config = getOrCreateIndexConfig( Relationship.class, indexName,
                 customConfiguration );
-        return getIndexProvider( config.get( KEY_INDEX_PROVIDER ) ).relationshipIndex( indexName,
+        return getIndexProvider( config.get( PROVIDER ) ).relationshipIndex( indexName,
                 config );
     }
 
@@ -305,7 +303,7 @@ class IndexManagerImpl implements IndexManager
 
     private void assertLegalConfigKey( String key )
     {
-        if ( key.equals( KEY_INDEX_PROVIDER ) )
+        if ( key.equals( PROVIDER ) )
         {
             throw new IllegalArgumentException( "'" + key + "' cannot be modified" );
         }

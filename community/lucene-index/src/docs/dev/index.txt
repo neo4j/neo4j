@@ -35,19 +35,19 @@ NOTE: All modifying index operations must be performed inside a transaction, as 
 An index is created if it doesn't exist when you ask for it.
 Unless you give it a custom configuration, it will be created with default configuration and backend.
 
-To set the stage for our examples, let's create some indices to begin with:
+To set the stage for our examples, let's create some indexes to begin with:
 
 [snippet,java]
 ----
 component=neo4j-lucene-index
 source=examples/ImdbExampleTest.java
-tag=createIndices
+tag=createIndexes
 ----
 
-This will create two node indices and one relationship index with default configuration.
-See <<indexing-relationships>> for more information specific to relationship indices.
+This will create two node indexes and one relationship index with default configuration.
+See <<indexing-relationships>> for more information specific to relationship indexes.
 
-See <<indexing-create-advanced>> for how to create _fulltext_ indices.
+See <<indexing-create-advanced>> for how to create _fulltext_ indexes.
 
 You can also check if an index exists like this:
 
@@ -62,7 +62,7 @@ tag=checkIfExists
 [[indexing-delete]]
 == Delete ==
 
-Indices can be deleted.
+Indexes can be deleted.
 When deleting, the entire contents of the index will be removed as well as its associated configuration.
 A new index can be created with the same name at a later point in time.
 
@@ -81,7 +81,7 @@ Calls made to such an index instance after http://components.neo4j.org/neo4j/{ne
 == Add ==
 
 Each index supports associating any number of key-value pairs with any number of entities (nodes or relationships), where each association between entity and key-value pair is performed individually.
-To begin with, let's add a few nodes to the indices:
+To begin with, let's add a few nodes to the indexes:
 
 [snippet,java]
 ----
@@ -144,7 +144,7 @@ tag=update
 [[indexing-search]]
 == Search ==
 
-An index can be searched in two ways, http://components.neo4j.org/neo4j{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html#get%28java.lang.String,%20java.lang.Object%29[get] and http://components.neo4j.org/neo4j{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html#query%28java.lang.String,%20java.lang.Object%29[query].
+An index can be searched in two ways, http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html#get%28java.lang.String,%20java.lang.Object%29[get] and http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html#query%28java.lang.String,%20java.lang.Object%29[query].
 The +get+ method will return exact matches to the given key-value pair, whereas +query+ exposes querying capabilities directly from the backend used by the index.
 For example the http://lucene.apache.org/java/{lucene-version}/queryparsersyntax.html[Lucene query syntax] can be used directly with the default indexing backend.
 
@@ -180,7 +180,7 @@ source=examples/ImdbExampleTest.java
 tag=getRelationships
 ----
 
-IMPORTANT: In you don't iterate through all the hits, http://components.neo4j.org/neo4j{neo4j-version}/apidocs/org/neo4j/graphdb/index/IndexHits.html#close%28%29[IndexHits.close()] must be called explicitly.
+IMPORTANT: In you don't iterate through all the hits, http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/IndexHits.html#close%28%29[IndexHits.close()] must be called explicitly.
 
 [[indexing-search-query]]
 === Query ===
@@ -213,7 +213,7 @@ CAUTION: You can't have _any whitespace_ in the search term with this syntax.
 
 
 [[indexing-relationships]]
-== Relationship indices ==
+== Relationship indexes ==
 
 An index for relationships is just like an index for nodes, extended by providing support to constrain a search to relationships with a specific start and/or end nodes
 These extra methods reside in the http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/RelationshipIndex.html[RelationshipIndex] interface which extends http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html[Index<Relationship>].
@@ -256,7 +256,7 @@ tag=queryWithScore
 
 
 [[indexing-create-advanced]]
-== Configuration and fulltext indices ==
+== Configuration and fulltext indexes ==
 
 At the time of creation extra configuration can be specified to control the behavior of the index and which backend to use.
 For example to create a Lucene fulltext index:
@@ -289,7 +289,7 @@ The +provider+ configuration key is interpreted by Neo4j, but any other configur
 
 
 [[indexing-lucene-extras]]
-== Extra features for Lucene indices ==
+== Extra features for Lucene indexes ==
 
 [[indexing-lucene-numeric-ranges]]
 === Numeric ranges ===
@@ -304,19 +304,28 @@ source=examples/ImdbExampleTest.java
 tag=numericRange
 ----
 
-NOTE: Values that are indexed numerically must be queried using http://lucene.apache.org/java/{lucene-version}/api/core/org/apache/lucene/search/NumericRangeQuery.html[NumericRangeQuery].
+[NOTE]
+The same type must be used for indexing and querying.
+That is, you can't index a value as a Long and then query the index using an Integer.
 
-////
-// example using dates
-Index<Relationship> dateIndex = graphDb.index().forRelationships( "friendships" );
-index.add( myRelationship, "date", new ValueContext( (Long) myRelationship.getProperty( "date" ) ).indexNumeric() );
-index.add( myOtherRelationship, "date", new ValueContext( (Long) myOtherRelationship.getProperty( "date" ) ).indexNumeric() );
- 
-// Query for range
-long startDate = ...;
-long endDate = ...;
-index.query( NumericRangeQuery.newLongRange( "date", startDate, endDate, true, true ) );
-////
+By giving +null+ as from/to argument, an open ended query is created.
+In the following example we are doing that, and have added sorting to the query as well:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=sortedNumericRange
+----
+
+From/to in the ranges defaults to be _inclusive_, but you can change this behavior by using two extra parameters:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=exclusiveRange
+----
 
 
 [[indexing-lucene-sort]]
@@ -395,7 +404,7 @@ tag=defaultOperator
 [[indexing-lucene-caching]]
 === Caching ===
 
-If your index lookups becomes a performance bottle neck, caching can be enabled for certain keys in certain indices (key locations) to speed up get requests.
+If your index lookups becomes a performance bottle neck, caching can be enabled for certain keys in certain indexes (key locations) to speed up get requests.
 The caching is implemented with an http://en.wikipedia.org/wiki/Cache_algorithms#Least_Recently_Used[LRU] cache so that only the most recently accessed results are cached (with "results" meaning a query result of a get request, not a single entity).
 You can control the size of the cache (the maximum number of results) per index key.
 

@@ -413,6 +413,8 @@ curl -X DELETE http://localhost:7474/db/data/relationship/456/properties/foo
 
 *** 404: Relationship or property not found
 
+
+
 * {Delete relationship}
 
 ** DELETE /relationship/456
@@ -428,6 +430,8 @@ curl -X DELETE http://localhost:7474/db/data/relationship/456
 *** 204: OK, no content returned
 
 *** 404: Relationship not found
+
+
 
 * {Get relationships on node}
 
@@ -476,6 +480,8 @@ curl -H Accept:application/json http://localhost:7474/db/data/node/123/relations
 
 *** 404: Node not found
 
+
+
 * {Get relationships types}
 
 ** GET /relationship/types
@@ -496,6 +502,80 @@ curl -H Accept:application/json http://localhost:7474/db/data/relationship/types
   "LOVES"
 ]
 ---
+
+
+
+* {Create an index, with configuration parameters}
+
+    This is only necessary if you want to divert from the default index settings. If you
+    are happy with defaults, you can just start indexing nodes and relationships, as non-existant
+    indexes will automatically be created as you do.
+
+** POST /index/node
+
+---
+{ 
+  "name":"A unique index name", 
+  "config":{
+    "provider":"An index provider", // For instance, "lucene", which is the default
+    
+    // Other provider-specific configuration can be provided here
+    
+    "type" : "fulltext" // Lucene-specific, use to create a fulltext index. 
+  }
+}
+---
+
+** POST /index/relationship
+
+---
+{ 
+  "name":"A unique index name", 
+  "config":{
+    "provider":"An index provider", // For instance, "lucene", which is the default
+    
+    // Other provider-specific configuration can be provided here
+    
+    "type" : "fulltext" // Lucene-specific, use to create a fulltext index. 
+  }
+}
+---
+
+** Example using curl
+
+---
+curl-X POST -H Accept:application/json -HContent-Type:application/json -d '{"name":"fulltext", "config":{"type":"fulltext","provider":"lucene"}}' http://localhost:7474/db/data/index/node
+---
+
+** Response
+
+*** 201: OK, the index was created (or was already created)
+
+---
+{
+  "template" : "http://localhost:7474/db/data/index/node/testing-fulltext/{key}/{value}",
+  "provider" : "lucene",
+  "type" : "fulltext"
+}
+---
+
+
+
+* {Deleting an index}
+
+** DELETE /index/node/index_name
+
+** DELETE /index/relationship/index_name
+
+** Example using curl
+
+---
+curl -X DELETE http://localhost:7474/db/data/index/node/index_name
+---
+
+** Response
+
+*** 204: OK, No content returned
 
 
 
@@ -523,27 +603,7 @@ curl -H Accept:application/json http://localhost:7474/db/data/index/node
 }
 ---
 
-* {Add indices with provided configuration parameters}
 
-** POST /index/node
-
-** Example using curl
-
----
-curl-X POST -H Accept:application/json -HContent-Type:application/json -d '{"name":"fulltext", "config":{"type":"fulltext","provider":"lucene"}}' http://localhost:7474/db/data/index/node
----
-
-** Response
-
-*** 200: OK
-
----
-{
-  "template" : "http://localhost:7474/db/data/index/node/testing-fulltext/{key}/{value}",
-  "provider" : "lucene",
-  "type" : "fulltext"
-}
----
 
 * {Listing relationship indexes}
 
@@ -569,10 +629,22 @@ curl -H Accept:application/json http://localhost:7474/db/data/index/relationship
 }
 ---
 
-* {Add to index}
 
+
+* {Index a node or a relationship}
+
+    Note: If the index you are adding a node or relationship to does not exist, one will be created
+    with default configuration.
+    
+    What "default" configuration means depends on how you have configured your database, if you haven't
+    changed any indexing configuration, it means using Lucene. 
+    
+    If you want to divert from the default index settings, see "Create an index" above.
+    
 ** POST /index/node/my_nodes/the_key/the_value
 
+	Associates a node with the given key/value pair in the given index.
+     
 ---
 "http://localhost:7474/db/data/node/123"
 ---
@@ -591,6 +663,8 @@ curl -HContent-Type:application/json -X POST -d '"http://localhost:7474/db/data/
 
 ** POST /index/relationship/my_relationships/the_key/the_value
 
+	Associates a relationship with the given key/value pair in the given index.
+
 ---
 "http://localhost:7474/db/data/relationship/456"
 ---
@@ -607,16 +681,21 @@ curl -HContent-Type:application/json -X POST -d '"http://localhost:7474/db/data/
 
     <<Location>>: http://localhost:7474/db/data/index/relationships/my_relationships/the_key/the_value/456
 
-* {Remove from index}
 
+
+* {Remove items from an index}
+
+    The URIs used here can be found either in the response to a query to an index, where URIs like this
+    will be included in each node/relationship representation returned. They are also returned (as Location in response
+    header) when adding to an index.
+    
 ** DELETE /index/node/my_nodes/the_key/the_value/123
 
-    Such a URI is gotten from either a query to an index, where they
-    will be included in the node/relationship returned
-    representation. They are also returned (as Location in response
-    header) when adding to an index.
+	Will remove the index entry for node 123 with the specified key and value.
 
-    Similarly for relationship indexes.
+** DELETE /index/relationship/my_relationship/the_key/the_value/123
+
+	Will remove the index entry for relationship 123 with the specified key and value.
     
 ** Example using curl
 
@@ -630,12 +709,17 @@ curl -X DELETE http://localhost:7474/db/data/index/node/my_nodes/the_key/the_val
 
 *** 404: Index entry not found
 
-* {Remove from index without supplying value}
+
+
+* {Remove items from an index without supplying value}
 
 ** DELETE /index/node/my_nodes/the_key/123
 
-	Will remove all indexing for node 123 and the specified key irregardless of value.
-    Similarly for relationship indexes.
+	Will remove all indexing for node 123 and the specified key, regardless of value.
+
+** DELETE /index/relationship/my_relationships/the_key/123
+
+	Will remove all indexing for relationship 123 and the specified key, regardless of value.
     
 ** Example using curl
 
@@ -647,12 +731,17 @@ curl -X DELETE http://localhost:7474/db/data/index/node/my_nodes/the_key/123
 
 *** 204: OK, no content returned
 
-* {Remove from index with supplying neither key nor value}
+
+
+* {Remove items from an from index completely}
 
 ** DELETE /index/node/my_nodes/123
 
-	Will remove all indexing for node 123 irregardless of key and value.
-    Similarly for relationship indexes.
+	Will remove all mentions of node 123 in the entire index.
+
+** DELETE /index/relationship/my_relationships/123
+
+	Will remove all mentions of relationship 123 in the entire index.
     
 ** Example using curl
 
@@ -664,13 +753,17 @@ curl -X DELETE http://localhost:7474/db/data/index/node/my_nodes/123
 
 *** 204: OK, no content returned
 
-* {Query index -- Exact}
 
-    There are two ways to query an index - using the get method, or
-    the more advanced query method. Use the first for exact matches,
-    and the second for advanced index querying. 
+
+
+* {Index search - Exact key/value lookup}
+	
+	Please note: Searching in indexes is only one of the two primary ways to search your data in neo4j, 
+	for advanced graph-based queries, see the traversal API, listed below.
+
+    There are two ways to use your indexes - exact key/value lookup, or using a query language. 
     
-    This is the simple, exact matching get operation.
+    This is the simple, exact lookup operation.
  
 ** GET /index/node/my_nodes/the_key/the_value
 
@@ -701,32 +794,70 @@ curl -H Accept:application/json http://localhost:7474/db/data/index/relationship
     "indexed": "http://localhost:7474/db/data/index/node/the_key/the_value%20with%20space/325"
   }
 ]
-
 ---
 
     The response is an ordered list of node or relationship
     representations, with one new property added: indexed. This
     property can be used to remove the indexed entity at a later point. 
 
-* {Query index -- Advanced}
+
+
+
+* {Index search - Using a query language}
 	
-	This is the advanced query operation for an index.
+	Please note: Searching in indexes is only one of the two primary ways to search your data in neo4j, 
+	for advanced graph-based queries, see the traversal API, listed below.
+	
+	This is the advanced query operation for an index. The query syntax used here
+	depends on what index provider you chose when you created the index.
+	
+	The most common provider is Lucene, in which case you will want to use the Lucene
+	query language, documented here: 
+	
+	http://lucene.apache.org/java/3_1_0/queryparsersyntax.html
+	
+	If you are using another index provider, please refer to the documentation it provides for 
+	its #query(String query) method.
+	
+	The examples below are using the Lucene query syntax.
  
 
-** GET /index/node/my_nodes/the_key?query=the_value
+** GET /index/node/my_nodes?query=the_key:the_* AND the_other_key:[1 TO 100]
 
-** GET /index/relationship/my_rels/the_key?query=the_value
+** GET /index/relationship/my_rels?query=the_key:the_* AND the_other_key:[1 TO 100]
 
 
 ** Example using curl
 
 ---
-curl -H Accept:application/json http://localhost:7474/db/data/index/node/my_nodes/the_key?query=the_value%20with%20space
-curl -H Accept:application/json http://localhost:7474/db/data/index/relationship/my_rels/the_key?query=the_value%20with%20space
+curl -H Accept:application/json http://localhost:7474/db/data/index/node/my_nodes?query=the_key:the_*%20AND%20the_other_key:[1%20TO%20100]
+curl -H Accept:application/json http://localhost:7474/db/data/index/relationship/my_rels?query=the_key:the_*%20AND%20the_other_key:[1%20TO%20100]
 ---
 
-    The response is an ordered list of node/relationship
+** Response
+
+*** 200: OK
+
+---
+[
+  { "self": "http://localhost:7474/db/data/node/5",
+    "data": { "name": "Thomas Anderson" },
+    ...
+    "indexed": "http://localhost:7474/db/data/index/node/the_key/the_value/5"
+  },
+  { "self": "http://localhost:7474/db/data/node/325",
+    "data": { "name": "Agent Smith" },
+    ...
+    "indexed": "http://localhost:7474/db/data/index/node/the_key/the_value%20with%20space/325"
+  }
+]
+---
+
+    The response is an ordered list of node or relationship
     representations.
+
+
+
 
 * {Traverse}
 
@@ -883,6 +1014,9 @@ curl -H Accept:application/json -H Content-Type:application/json -X POST -d '{"o
 ---
 
 *** 404: Node not found
+
+
+
 
 * {Finding a path between two nodes}
 

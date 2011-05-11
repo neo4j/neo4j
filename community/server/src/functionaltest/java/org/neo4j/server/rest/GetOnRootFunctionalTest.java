@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.junit.After;
 import org.junit.Before;
@@ -37,7 +38,7 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
-public class GetOnRootFunctionalTest {
+public class GetOnRootFunctionalTest extends BaseDocumentation {
 
     private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
@@ -47,6 +48,8 @@ public class GetOnRootFunctionalTest {
         server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper(server);
+        doc = new DocumentationOutput(functionalTestHelper, MediaType.APPLICATION_JSON_TYPE);
+
     }
 
     @After
@@ -57,13 +60,13 @@ public class GetOnRootFunctionalTest {
 
     @Test
     public void assert200OkFromGet() throws Exception {
-        ClientResponse response = Client.create().resource(functionalTestHelper.dataUri()).accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
-        assertEquals(200, response.getStatus());
+        doc.doRequest( "Retrieving the data root endpoint", "GET",
+                functionalTestHelper.dataUri(), Response.Status.OK );
     }
 
     @Test
     public void assertResponseHaveCorrectContentFromGet() throws Exception {
-        ClientResponse response = Client.create().resource(functionalTestHelper.dataUri()).accept(MediaType.APPLICATION_JSON_TYPE).get(ClientResponse.class);
+        ClientResponse response = Client.create().resource(functionalTestHelper.dataUri()).accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
         String body = response.getEntity(String.class);
         Map<String, Object> map = JsonHelper.jsonToMap(body);
         assertEquals(functionalTestHelper.nodeUri(), map.get("node"));

@@ -30,6 +30,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.server.database.Database;
@@ -323,7 +324,7 @@ public class GraphDbHelper
 
     public Index<Node> createNodeFullTextIndex( String named )
     {
-        return database.getIndexManager().forNodes( named, MapUtil.stringMap( "provider", "lucene", "type", "fulltext" ) );
+        return database.getIndexManager().forNodes( named, MapUtil.stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" ) );
     }
 
     public Index<Node> createNodeIndex( String named )
@@ -348,7 +349,7 @@ public class GraphDbHelper
 
     public Index<Relationship> createRelationshipFullTextIndex( String named )
     {
-        return database.getIndexManager().forRelationships( named, MapUtil.stringMap( "provider", "lucene", "type", "fulltext" ) );
+        return database.getIndexManager().forRelationships( named, MapUtil.stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" ) );
     }
 
     public Index<Relationship> createRelationshipIndex( String named )

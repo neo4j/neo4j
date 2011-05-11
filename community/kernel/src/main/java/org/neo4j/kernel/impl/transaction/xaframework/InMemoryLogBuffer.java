@@ -61,6 +61,12 @@ public class InMemoryLogBuffer implements LogBuffer, ReadableByteChannel
         return this;
     }
 
+    public LogBuffer putShort( short s ) throws IOException
+    {
+        ((ByteBuffer) bufferForConversions.clear()).putShort( s );
+        return flipAndPut();
+    }
+    
     public LogBuffer putInt( int i ) throws IOException
     {
         ((ByteBuffer) bufferForConversions.clear()).putInt( i );

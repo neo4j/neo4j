@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.util.Collections;
 
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.junit.After;
 import org.junit.Before;
@@ -39,7 +40,7 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
-public class GetNodePropertiesFunctionalTest {
+public class GetNodePropertiesFunctionalTest extends BaseDocumentation {
     
     private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
@@ -50,6 +51,7 @@ public class GetNodePropertiesFunctionalTest {
         server.start();
         
         functionalTestHelper = new FunctionalTestHelper(server);
+        doc = new DocumentationOutput( functionalTestHelper );
     }
 
     @After
@@ -76,9 +78,9 @@ public class GetNodePropertiesFunctionalTest {
         String entity = JsonHelper.createJsonFrom(Collections.singletonMap("foo", "bar"));
         ClientResponse createResponse = createResource.type(MediaType.APPLICATION_JSON).entity(entity).accept(MediaType.APPLICATION_JSON).post(
                 ClientResponse.class);
-        WebResource resource = client.resource(createResponse.getLocation().toString() + "/properties");
-        ClientResponse response = resource.type(MediaType.APPLICATION_FORM_URLENCODED).accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
-        assertEquals(200, response.getStatus());
+        doc.doRequest( "Get properties for Node", "GET",
+                createResponse.getLocation().toString() + "/properties",
+                Response.Status.OK );
     }
 
     @Test

@@ -16,15 +16,16 @@ It includes algorithms like:
 
 The graph algorithms are found in the +neo4j-graph-algo+ component, which is included in the standard Neo4j download.
 
-* Javadocs: http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphalgo/package-summary.html
-* Separate download: http://repo1.maven.org/maven2/org/neo4j/neo4j-graph-algo/
-* Source code: https://github.com/neo4j/graphdb/tree/master/graph-algo
+* http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphalgo/package-summary.html[Javadocs]
+* http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22org.neo4j%22%20AND%20a%3A%22neo4j-graph-algo%22[Download]
+* https://github.com/neo4j/community/tree/master/graph-algo[Source code]
 
-For Maven users, the component has the coordinates +org.neo4j:neo4j-graph-algo+ and should be used with the same version of +org.neo4j:neo4j-kernel+.
+For information on how to use neo4j-graph-algo as a dependency with Maven and other dependency management tools, see +http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22org.neo4j%22%20AND%20a%3A%22neo4j-graph-algo%22[org.neo4j:neo4j-graph-algo]+
+Note that it should be used with the same version of +http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22org.neo4j%22%20AND%20a%3A%22neo4j-kernel%22[org.neo4j:neo4j-kernel]+.
 Different versions of the graph-algo and kernel components are not compatible in the general case.
-Both components are included transitively by the +org.neo4j:neo4j:pom+ artifact which makes it simple to keep the versions in sync.
+Both components are included transitively by the +http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22org.neo4j%22%20AND%20a%3A%22neo4j%22[org.neo4j:neo4j]+ artifact which makes it simple to keep the versions in sync.
 
-The starting point to find and use graph algorithms is http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphalgo/GraphAlgoFactory.html[GraphAlgoFactory].
+The starting point to find and use graph algorithms is +http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphalgo/GraphAlgoFactory.html[GraphAlgoFactory]+.
 
 [[graph-algo-path-finding]]
 == Path finding examples ==

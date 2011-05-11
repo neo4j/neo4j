@@ -60,16 +60,23 @@ require(
     consoleController     = new ConsoleController appState
     serverInfoController  = new ServerInfoController appState
 
+    # Remnant from the old webadmin. Handles opening and
+    # closing of the more-info foldout menues seen in the 
+    # left sidebar.
     foldoutWatcher = new FoldoutWatcher
     foldoutWatcher.init()
 
-    shortcuts = new KeyboardShortcuts(dashboardController, databrowserController, consoleController, serverInfoController)
+    shortcuts = new KeyboardShortcuts(
+      dashboardController, 
+      databrowserController, 
+      consoleController, 
+      serverInfoController)
     shortcuts.init()
 
     $("body").append(baseView.el)
     Backbone.history.start()
 
-    if not splashScreen.hasBeenShownForThisSession()
-      splashScreen.show()
+    #if not splashScreen.hasBeenShownForThisSession()
+    #  splashScreen.show()
 
 )

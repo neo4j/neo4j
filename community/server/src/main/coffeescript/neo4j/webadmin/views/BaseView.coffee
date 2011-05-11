@@ -21,8 +21,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 define(
   ['neo4j/webadmin/templates/base',
    'neo4j/webadmin/views/View',
+   "neo4j/webadmin/ui/LoadingIndicator"
    'lib/backbone'], 
-  (template, View) ->
+  (template, View, LoadingIndicator) ->
   
     class BaseView extends View
       
@@ -31,6 +32,22 @@ define(
       initialize : (options) =>
         @appState = options.appState
         @appState.bind 'change:mainView', @mainViewChanged
+
+        $(window).bind("ajaxStart", @ajaxStart)
+        $(window).bind("ajaxStop", @ajaxStop)
+
+      ajaxStart : =>
+        # Avoid showing loader for fast requests
+        @loadingTimeout = setTimeout @showLoading, 300
+        
+      showLoading : =>
+        if @loadingIndicator?
+          @loadingIndicator.show()
+
+      ajaxStop : =>
+        clearTimeout @loadingTimeout
+        if @loadingIndicator?
+          @loadingIndicator.hide()
 
       mainViewChanged : (event) =>
         if @mainView?
@@ -48,6 +65,10 @@ define(
         if @mainView?
           @mainView.attach($("#contents"))
           @mainView.render()
+
+        @loadingIndicator = new LoadingIndicator
+        $("#global-loading-indicator").append(@loadingIndicator.el)
+
         return this
 
       remove : =>

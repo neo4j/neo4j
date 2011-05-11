@@ -35,6 +35,8 @@ import java.util.Map;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.UTF8;
+import org.neo4j.kernel.impl.transaction.xaframework.DirectMappedLogBuffer;
+import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 
 // TODO: fixed sized logs (pre-initialize them)
 // keep dangling records in memory for log switch
@@ -49,8 +51,7 @@ import org.neo4j.helpers.UTF8;
 public class TxLog
 {
     private String name = null;
-    private FileChannel fileChannel = null;
-    private ByteBuffer buffer = null;
+    private LogBuffer logBuffer;
     private int recordCount = 0;
 
     public static final byte TX_START = 1;
@@ -74,10 +75,9 @@ public class TxLog
         {
             throw new IllegalArgumentException( "Null filename" );
         }
-        fileChannel = new RandomAccessFile( fileName, "rw" ).getChannel();
+        FileChannel fileChannel = new RandomAccessFile( fileName, "rw" ).getChannel();
         fileChannel.position( fileChannel.size() );
-        buffer = ByteBuffer.allocateDirect( 
-            (3 + Xid.MAXGTRIDSIZE + Xid.MAXBQUALSIZE) * 1000 );
+        logBuffer = new DirectMappedLogBuffer( fileChannel );
         this.name = fileName;
     }
 
@@ -103,7 +103,7 @@ public class TxLog
      */
     public void close() throws IOException
     {
-        fileChannel.close();
+        logBuffer.getFileChannel().close();
     }
 
     /**
@@ -111,7 +111,7 @@ public class TxLog
      */
     public void force() throws IOException
     {
-        fileChannel.force( true );
+        logBuffer.force();
     }
 
     /**
@@ -119,9 +119,11 @@ public class TxLog
      */
     public synchronized void truncate() throws IOException
     {
+        FileChannel fileChannel = logBuffer.getFileChannel();
         fileChannel.position( 0 );
         fileChannel.truncate( 0 );
         recordCount = 0;
+        logBuffer = new DirectMappedLogBuffer( fileChannel );
     }
 
     /**
@@ -135,15 +137,17 @@ public class TxLog
     // tx_start(byte)|gid_length(byte)|globalId
     public synchronized void txStart( byte globalId[] ) throws IOException
     {
+        assertNotNull( globalId, "global id" );
+        logBuffer.put( TX_START ).put( (byte) globalId.length ).put( globalId );
+        recordCount++;
+    }
+
+    private void assertNotNull( Object globalId, String name )
+    {
         if ( globalId == null )
         {
-            throw new IllegalArgumentException( "Null parameter" );
+            throw new IllegalArgumentException( "Null " + name );
         }
-        buffer.clear();
-        buffer.put( TX_START ).put( (byte) globalId.length ).put( globalId );
-        buffer.flip();
-        fileChannel.write( buffer );
-        recordCount++;
     }
 
     /**
@@ -160,19 +164,10 @@ public class TxLog
     public synchronized void addBranch( byte globalId[], byte branchId[] )
         throws IOException
     {
-        if ( globalId == null )
-        {
-            throw new IllegalArgumentException( "Null global id" );
-        }
-        if ( branchId == null )
-        {
-            throw new IllegalArgumentException( "Null branch id" );
-        }
-        buffer.clear();
-        buffer.put( BRANCH_ADD ).put( (byte) globalId.length ).put(
+        assertNotNull( globalId, "global id" );
+        assertNotNull( branchId, "branch id" );
+        logBuffer.put( BRANCH_ADD ).put( (byte) globalId.length ).put(
             (byte) branchId.length ).put( globalId ).put( branchId );
-        buffer.flip();
-        fileChannel.write( buffer );
         recordCount++;
     }
 
@@ -190,15 +185,9 @@ public class TxLog
     public synchronized void markAsCommitting( byte globalId[] )
         throws IOException
     {
-        if ( globalId == null )
-        {
-            throw new IllegalArgumentException( "Null parameter" );
-        }
-        buffer.clear();
-        buffer.put( MARK_COMMIT ).put( (byte) globalId.length ).put( globalId );
-        buffer.flip();
-        fileChannel.write( buffer );
-        fileChannel.force( false );
+        assertNotNull( globalId, "global id" );
+        logBuffer.put( MARK_COMMIT ).put( (byte) globalId.length ).put( globalId );
+        logBuffer.force();
         recordCount++;
     }
 
@@ -213,14 +202,8 @@ public class TxLog
     // tx_done(byte)|gid_length(byte)|globalId
     public synchronized void txDone( byte globalId[] ) throws IOException
     {
-        if ( globalId == null )
-        {
-            throw new IllegalArgumentException( "Null parameter" );
-        }
-        buffer.clear();
-        buffer.put( TX_DONE ).put( (byte) globalId.length ).put( globalId );
-        buffer.flip();
-        fileChannel.write( buffer );
+        assertNotNull( globalId, "global id" );
+        logBuffer.put( TX_DONE ).put( (byte) globalId.length ).put( globalId );
         recordCount++;
     }
 
@@ -306,6 +289,9 @@ public class TxLog
     public synchronized Iterator<List<Record>> getDanglingRecords()
         throws IOException
     {
+        FileChannel fileChannel = logBuffer.getFileChannel();
+        ByteBuffer buffer = ByteBuffer
+                .allocateDirect( (3 + Xid.MAXGTRIDSIZE + Xid.MAXBQUALSIZE) * 1000 );
         fileChannel.position( 0 );
         buffer.clear();
         fileChannel.read( buffer );
@@ -467,8 +453,9 @@ public class TxLog
             }
         } );
         Iterator<Record> recordItr = records.iterator();
-        fileChannel = new RandomAccessFile( newFile, "rw" ).getChannel();
+        FileChannel fileChannel = new RandomAccessFile( newFile, "rw" ).getChannel();
         fileChannel.position( fileChannel.size() );
+        logBuffer = new DirectMappedLogBuffer( fileChannel );
         name = newFile;
         truncate();
         while ( recordItr.hasNext() )

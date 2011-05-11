@@ -21,6 +21,8 @@ package org.neo4j.index.lucene;
 
 import org.apache.lucene.queryParser.QueryParser.Operator;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.neo4j.graphdb.index.Index;
@@ -98,8 +100,46 @@ public class QueryContext
     {
         return sort( Sort.RELEVANCE );
     }
+
+    /**
+     * Sort the results of a numeric range query if the query in this context
+     * is a {@link NumericRangeQuery}, see {@link #numericRange(String, Number, Number)},
+     * Otherwise an {@link IllegalStateException} will be thrown.
+     * 
+     * @param key the key to sort on.
+     * @param reversed if the sort order should be reversed or not. {@code true}
+     * for lowest first (ascending), {@code false} for highest first (descending)
+     * @return a QueryContext with sorting by numeric value.
+     */
+    public QueryContext sortNumeric( String key, boolean reversed )
+    {
+        if ( !( queryOrQueryObject instanceof NumericRangeQuery ) )
+        {
+            throw new IllegalStateException( "Not a numeric range query" );
+        }
+        
+        Number number = ((NumericRangeQuery)queryOrQueryObject).getMin();
+        number = number != null ? number : ((NumericRangeQuery)queryOrQueryObject).getMax();
+        int fieldType = SortField.INT;
+        if ( number instanceof Long )
+        {
+            fieldType = SortField.LONG;
+        }
+        else if ( number instanceof Float )
+        {
+            fieldType = SortField.FLOAT;
+        }
+        else if ( number instanceof Double )
+        {
+            fieldType = SortField.DOUBLE;
+        }
+        sort( new Sort( new SortField( key, fieldType, reversed ) ) );
+        return this;
+    }
     
     /**
+     * Returns the sorting setting for this context.
+     * 
      * @return the sorting set with one of the sort methods, f.ex
      * {@link #sort(Sort)} or {@link #sortByScore()}
      */
@@ -109,8 +149,8 @@ public class QueryContext
     }
     
     /**
-     * Lucenes default operator is OR. Using this method, the default operator
-     * can be changed for the query.
+     * Changes the the default operator used between terms in compound queries,
+     * default is OR.
      *
      * @param defaultOperator The new operator to use.
      * @return A QueryContext with the new default operator applied.
@@ -122,6 +162,8 @@ public class QueryContext
     }
     
     /**
+     * Returns the default operator used between terms in compound queries.
+     * 
      * @return the default {@link Operator} specified with {@link #defaultOperator(Operator)}
      * or "OR" if none specified.
      */
@@ -150,6 +192,8 @@ public class QueryContext
     }
     
     /**
+     * Returns {@code true} if this context is set to prioritize speed over
+     * the inclusion of transactional state in the results.
      * @return whether or not {@link #tradeCorrectnessForSpeed()} has been called.
      */
     public boolean getTradeCorrectnessForSpeed()
@@ -159,7 +203,7 @@ public class QueryContext
     
     /**
      * Makes use of {@link IndexSearcher#search(org.apache.lucene.search.Query, int)},
-     * alt. {@link IndexSearcher#search(org.apache.lucene.search.Query, org.apache.lucene.search.Filter, int, Sort)}
+     * alternatively {@link IndexSearcher#search(org.apache.lucene.search.Query, org.apache.lucene.search.Filter, int, Sort)}
      * where only the top {@code numberOfTopHits} hits are returned. Default
      * behavior is to return all hits, although lazily retrieved from lucene all
      * the way up to the {@link IndexHits} iterator.
@@ -174,10 +218,75 @@ public class QueryContext
     }
     
     /**
+     * Return the max number of results to be returned.
+     * 
      * @return the top hits set with {@link #top(int)}.
      */
     public int getTop()
     {
         return this.topHits;
+    }
+    
+    /**
+     * Will create a {@link QueryContext} with a query for numeric ranges, that is
+     * values that have been indexed using {@link ValueContext#indexNumeric()}.
+     * {@code from} (lower) and {@code to} (higher) bounds are inclusive.
+     * It will match the type of numbers supplied to the type of values that
+     * are indexed in the index, f.ex. long, int, float and double.
+     * If both {@code from} and {@code to} is {@code null} then it will default
+     * to int.
+     * 
+     * @param key the property key to query.
+     * @param from the low end of the range (inclusive)
+     * @param to the high end of the range (inclusive)
+     * @return a {@link QueryContext} to do numeric range queries with.
+     */
+    public static QueryContext numericRange( String key, Number from, Number to )
+    {
+        return numericRange( key, from, to, true, true );
+    }
+    
+    /**
+     * Will create a {@link QueryContext} with a query for numeric ranges, that is
+     * values that have been indexed using {@link ValueContext#indexNumeric()}.
+     * It will match the type of numbers supplied to the type of values that
+     * are indexed in the index, f.ex. long, int, float and double.
+     * If both {@code from} and {@code to} is {@code null} then it will default
+     * to int.
+     * 
+     * @param key the property key to query.
+     * @param from the low end of the range (inclusive)
+     * @param to the high end of the range (inclusive)
+     * @param includeFrom whether or not {@code from} (the lower bound) is inclusive
+     * or not.
+     * @param includeTo whether or not {@code to} (the higher bound) is inclusive
+     * or not.
+     * @return a {@link QueryContext} to do numeric range queries with.
+     */
+    public static QueryContext numericRange( String key, Number from, Number to,
+            boolean includeFrom, boolean includeTo )
+    {
+        Query query = null;
+        if ( from instanceof Long )
+        {
+            query = NumericRangeQuery.newLongRange( key, from != null ? from.longValue() : 0,
+                    to != null ? to.longValue() : Long.MAX_VALUE, includeFrom, includeTo );
+        }
+        else if ( from instanceof Double )
+        {
+            query = NumericRangeQuery.newDoubleRange( key, from != null ? from.doubleValue() : 0,
+                    to != null ? to.doubleValue() : Double.MAX_VALUE, includeFrom, includeTo );
+        }
+        else if ( from instanceof Float )
+        {
+            query = NumericRangeQuery.newFloatRange( key, from != null ? from.floatValue() : 0,
+                    to != null ? to.floatValue() : Float.MAX_VALUE, includeFrom, includeTo );
+        }
+        else
+        {
+            query = NumericRangeQuery.newIntRange( key, from != null ? from.intValue() : 0,
+                    to != null ? to.intValue() : Integer.MAX_VALUE, includeFrom, includeTo );
+        }
+        return new QueryContext( query );
     }
 }

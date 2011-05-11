@@ -116,6 +116,8 @@ body {
   #header_submenu ul {
     margin: 14px 0 0;
     list-style:none;
+    float:left;
+    padding: 0 0 0 10px;
   }
 
 /* FOOTER */
@@ -641,14 +643,29 @@ ol lh {
 /**
  * LOADER
  */
-.loading-spinner {
+.loading-spinner-overlay {
   background: url(../img/transparent-bg.png) repeat scroll 0 0 transparent;
 }
 
-.loading-spinner .inner {
+.loading-spinner-overlay .inner {
   background: url(../img/spinner.gif) no-repeat center center transparent;
   width:100%;
   height:100%;
+} 
+
+#global-loading-indicator {
+  float:left;
+}
+
+.loading-spinner {
+  background: url("../img/spinner.gif") no-repeat scroll left center transparent;
+  color: #CCCCCC;
+  float: left;
+  font-size: 10px;
+  height: 30px;
+  line-height: 30px;
+  margin: 8px 0;
+  padding-left: 20px;
 } 
 
 /**
