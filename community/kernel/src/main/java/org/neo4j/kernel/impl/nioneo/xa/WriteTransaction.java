@@ -56,7 +56,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeStore;
 import org.neo4j.kernel.impl.nioneo.xa.Command.PropertyCommand;
-import org.neo4j.kernel.impl.persistence.ResourceConnection;
+import org.neo4j.kernel.impl.persistence.NeoStoreTransaction;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
@@ -70,7 +70,7 @@ import org.neo4j.kernel.impl.util.RelIdArray;
  * Transaction containing {@link Command commands} reflecting the operations
  * performed in the transaction.
  */
-public class WriteTransaction extends XaTransaction implements ResourceConnection
+public class WriteTransaction extends XaTransaction implements NeoStoreTransaction
 {
     private final Map<Long,NodeRecord> nodeRecords =
         new HashMap<Long,NodeRecord>();

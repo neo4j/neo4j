@@ -37,7 +37,7 @@ import org.neo4j.kernel.impl.util.RelIdArray;
  * for this connection and to close the connection, optionally returning it to a
  * connection pool.
  */
-public interface ResourceConnection
+public interface NeoStoreTransaction
 {
     public void setXaConnection( XaConnection connection );
     

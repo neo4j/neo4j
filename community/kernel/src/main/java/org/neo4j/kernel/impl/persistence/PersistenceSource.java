@@ -32,10 +32,10 @@ public interface PersistenceSource
     /**
      * Creates a resource connection to this persistence source.
      * @param connection the {@link XaConnection} to use.
-     * @return a newly opened {@link ResourceConnection} to this
+     * @return a newly opened {@link NeoStoreTransaction} to this
      *         PersistenceSource
      */
-    public ResourceConnection createResourceConnection( XaConnection connection );
+    public NeoStoreTransaction createTransaction( XaConnection connection );
 
     /**
      * If the persistence source is responsible for id generation it must

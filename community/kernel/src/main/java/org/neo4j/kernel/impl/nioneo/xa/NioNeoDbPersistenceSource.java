@@ -23,7 +23,7 @@ import javax.transaction.xa.XAResource;
 
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.persistence.PersistenceSource;
-import org.neo4j.kernel.impl.persistence.ResourceConnection;
+import org.neo4j.kernel.impl.persistence.NeoStoreTransaction;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
@@ -31,7 +31,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 /**
  * The NioNeo persistence source implementation. If this class is registered as
  * persistence source for Neo4j kernel operations that are performed on the node space
- * will be forwarded to this class {@link ResourceConnection} implementation.
+ * will be forwarded to this class {@link NeoStoreTransaction} implementation.
  */
 public class NioNeoDbPersistenceSource implements PersistenceSource
 {
@@ -39,7 +39,7 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 
     private NeoStoreXaDataSource xaDs = null;
     private String dataSourceName = null;
-    private ResourceConnection readOnlyResourceConnection; 
+    private NeoStoreTransaction readOnlyResourceConnection; 
 
     public synchronized void init()
     {
@@ -80,13 +80,13 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
         return MODULE_NAME;
     }
 
-    public ResourceConnection createResourceConnection( XaConnection connection )
+    public NeoStoreTransaction createTransaction( XaConnection connection )
     {
         if ( xaDs.isReadOnly() )
         {
             throw new ReadOnlyDbException();
         }
-        ResourceConnection result = ((NeoStoreXaConnection) connection).getWriteTransaction();
+        NeoStoreTransaction result = ((NeoStoreXaConnection) connection).getWriteTransaction();
         
         // This is not a very good solution. The XaConnection is only used when
         // delisting/releasing the nioneo xa resource. Maybe it should be stored
@@ -95,7 +95,7 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
         return result;
     }
     
-    public ResourceConnection createReadOnlyResourceConnection()
+    public NeoStoreTransaction createReadOnlyResourceConnection()
     {
         return readOnlyResourceConnection; 
     }

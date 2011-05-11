@@ -53,8 +53,8 @@ public class PersistenceManager
     private final PersistenceSource persistenceSource;
     private final TransactionManager transactionManager;
     
-    private final ArrayMap<Transaction,ResourceConnection> txConnectionMap = 
-        new ArrayMap<Transaction,ResourceConnection>( 5, true, true );
+    private final ArrayMap<Transaction,NeoStoreTransaction> txConnectionMap = 
+        new ArrayMap<Transaction,NeoStoreTransaction>( 5, true, true );
 
     private final TxEventSyncHookFactory syncHookFactory;
 
@@ -185,7 +185,7 @@ public class PersistenceManager
         getResource().createRelationshipType( id, name );
     }
 
-    private ResourceConnection getReadOnlyResource()
+    private NeoStoreTransaction getReadOnlyResource()
     {
         Transaction tx = this.getCurrentTransaction();
 //        if ( tx == null )
@@ -194,7 +194,7 @@ public class PersistenceManager
 //                    persistenceSource ).createReadOnlyResourceConnection();
 //        }
         
-        ResourceConnection con = txConnectionMap.get( tx );
+        NeoStoreTransaction con = txConnectionMap.get( tx );
         if ( con == null )
         {
             // con is put in map on write operation, see getResoure()
@@ -206,9 +206,9 @@ public class PersistenceManager
         return con;
     }
     
-    private ResourceConnection getResource()
+    private NeoStoreTransaction getResource()
     {
-        ResourceConnection con = null;
+        NeoStoreTransaction con = null;
 
         Transaction tx = this.getCurrentTransaction();
         if ( tx == null )
@@ -228,7 +228,7 @@ public class PersistenceManager
                     throw new ResourceAcquisitionFailedException(
                         "Unable to enlist '" + xaResource + "' in " + "transaction" );
                 }
-                con = persistenceSource.createResourceConnection( xaConnection );
+                con = persistenceSource.createTransaction( xaConnection );
                 
                 tx.registerSynchronization( new TxCommitHook( tx ) );
                 registerTransactionEventHookIfNeeded();
@@ -329,7 +329,7 @@ public class PersistenceManager
         {
             throw new NotInTransactionException();
         }
-        ResourceConnection con = txConnectionMap.get( tx );
+        NeoStoreTransaction con = txConnectionMap.get( tx );
         if ( con != null )
         {
             try
@@ -348,7 +348,7 @@ public class PersistenceManager
     void releaseResourceConnectionsForTransaction( Transaction tx )
         throws NotInTransactionException
     {
-        ResourceConnection con = txConnectionMap.remove( tx );
+        NeoStoreTransaction con = txConnectionMap.remove( tx );
         if ( con != null )
         {
             con.destroy();
