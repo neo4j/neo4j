@@ -37,10 +37,10 @@ import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.domain.JsonParseException;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
-import org.neo4j.server.rest.domain.JsonParseException;
 
 public class SetRelationshipPropertiesFunctionalTest extends BaseDocumentation{
 
@@ -71,7 +71,9 @@ public class SetRelationshipPropertiesFunctionalTest extends BaseDocumentation{
     {
         Map<String, Object> map = new HashMap<String, Object>();
         map.put("jim", "tobias");
-        doc.put( "Update node properties", JsonHelper.createJsonFrom( map ), propertiesUri.toString(), Response.Status.NO_CONTENT, null );
+        doc.doRequest( "Update node properties", "PUT",
+                propertiesUri.toString(), JsonHelper.createJsonFrom( map ),
+                Response.Status.NO_CONTENT );
         ClientResponse response = updatePropertiesOnServer(map);
         assertEquals(204, response.getStatus());
     }

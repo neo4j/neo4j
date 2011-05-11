@@ -78,7 +78,9 @@ public class GetNodePropertiesFunctionalTest extends BaseDocumentation {
         String entity = JsonHelper.createJsonFrom(Collections.singletonMap("foo", "bar"));
         ClientResponse createResponse = createResource.type(MediaType.APPLICATION_JSON).entity(entity).accept(MediaType.APPLICATION_JSON).post(
                 ClientResponse.class);
-        doc.get("Get properties for Node", createResponse.getLocation().toString() + "/properties", Response.Status.OK, null);
+        doc.doRequest( "Get properties for Node", "GET",
+                createResponse.getLocation().toString() + "/properties",
+                Response.Status.OK );
     }
 
     @Test

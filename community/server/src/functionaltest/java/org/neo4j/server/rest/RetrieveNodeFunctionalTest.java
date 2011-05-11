@@ -71,7 +71,7 @@ public class RetrieveNodeFunctionalTest extends BaseDocumentation{
     @Test
     public void shouldGet200WhenRetrievingNode() throws Exception {
         String uri = nodeUri.toString();
-        doc.get("Get Node", uri, Response.Status.OK, null);
+        doc.doRequest( "Get Node", "GET", uri, Response.Status.OK, null );
     }
 
     @Test
@@ -96,8 +96,8 @@ public class RetrieveNodeFunctionalTest extends BaseDocumentation{
 
     @Test
     public void shouldGet404WhenRetrievingNonExistentNode() throws Exception {
-        doc.get("Get non-existent Node", nodeUri + "00000", Response.Status.NOT_FOUND, null);
-        
+        doc.doRequest( "Get non-existent Node", "GET", nodeUri + "00000",
+                Response.Status.NOT_FOUND );
     }
 
     private ClientResponse retrieveNodeFromService(String uri) {

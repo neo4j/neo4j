@@ -26,9 +26,15 @@ import static org.junit.Assert.fail;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.TreeMap;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
@@ -38,12 +44,15 @@ import javax.ws.rs.core.Response.Status;
 import org.junit.rules.MethodRule;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.Statement;
-import org.neo4j.helpers.Pair;
 
 import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
 
+/**
+ * Performs requests and retrieves the responses to create asciidoc-based
+ * documentation.
+ */
 public class DocumentationOutput implements MethodRule
 {
     @SuppressWarnings( "serial" )
@@ -55,148 +64,168 @@ public class DocumentationOutput implements MethodRule
         }
     };
 
-    public ClientResponse get( final String title, final String uri,
-            final Response.Status responseCode, final String headerField )
+    @SuppressWarnings( "serial" )
+    private static final List<String> REQUEST_HEADERS = new ArrayList<String>()
     {
-        WebResource resource = Client.create().resource( uri );
-        ClientResponse response = resource.accept( applicationJsonType ).get(
-                ClientResponse.class );
-        assertEquals( responseCode.getStatusCode(), response.getStatus() );
-        assertEquals( applicationJsonType, response.getType() );
-        retrieveResponse( title, uri, "GET", responseCode, headerField,
-                response );
+        {
+            add( "Accept" );
+            add( "Content-Type" );
+        }
+    };
 
-        document();
-        return response;
+    public ClientResponse doRequest( final String title, final String method,
+            final String uri, final Response.Status responseCode,
+            final String headerField )
+    {
+        return retrieveResponseFromRequest( title, method, uri, responseCode,
+                headerField );
     }
 
-    private void retrieveResponse( final String title, final String uri,
-            final String method,
-            final Response.Status responseCode, final String headerField,
-            final ClientResponse response )
+    public ClientResponse doRequest( final String title, final String method,
+            final String uri, final Response.Status responseCode )
     {
+        return retrieveResponseFromRequest( title, method, uri, responseCode,
+                null );
+    }
+
+    public ClientResponse doRequest( final String title, final String method,
+            final String uri, final String payload,
+            final Response.Status responseCode, final String headerField )
+    {
+        return retrieveResponseFromRequest( title, method, uri, payload,
+                responseCode, headerField );
+    }
+
+    public ClientResponse doRequest( final String title, final String method,
+            final String uri, final String payload,
+            final Response.Status responseCode )
+    {
+        return retrieveResponseFromRequest( title, method, uri, payload,
+                responseCode, null );
+    }
+
+    private ClientResponse retrieveResponseFromRequest( final String title,
+            String method, final String uri, final Status responseCode,
+            final String headerField )
+    {
+        ClientRequest request;
+        try
+        {
+            System.out.println( "URI syntax exception: '" + uri + "'" );
+            request = ClientRequest.create().accept( applicationJsonType ).build(
+                    new URI( uri ), method );
+        }
+        catch ( URISyntaxException e )
+        {
+            throw new RuntimeException( e );
+        }
+        return retrieveResponse( title, uri, responseCode, applicationJsonType,
+                headerField, request );
+    }
+
+    private ClientResponse retrieveResponseFromRequest( final String title,
+            String method, final String uri, final String payload,
+            final Status responseCode, final String headerField )
+    {
+        ClientRequest request;
+        try
+        {
+            request = ClientRequest.create().type( applicationJsonType ).accept(
+                    applicationJsonType ).entity( payload ).build(
+                    new URI( uri ), method );
+        }
+        catch ( URISyntaxException e )
+        {
+            System.out.println( "URI syntax exception: '" + uri + "'" );
+            throw new RuntimeException( e );
+        }
+        return retrieveResponse( title, uri, responseCode, applicationJsonType,
+                headerField, request );
+    }
+
+    private ClientResponse retrieveResponse( final String title,
+            final String uri, final Response.Status responseCode,
+            MediaType type, final String headerField,
+            final ClientRequest request )
+    {
+        System.out.println( uri );
+        getRequestHeaders( request.getHeaders() );
+        if ( request.getEntity() != null )
+        {
+            data.payload = String.valueOf( request.getEntity() );
+        }
+        Client client = new Client();
+        ClientResponse response = client.handle( request );
+        assertEquals( responseCode.getStatusCode(), response.getStatus() );
+        if ( response.getType() != null )
+        {
+            assertEquals( type, response.getType() );
+        }
         if ( headerField != null )
         {
             assertNotNull( response.getHeaders().get( headerField ) );
         }
         data.setTitle( title );
-        data.setMethod( method );
+        data.setMethod( request.getMethod() );
         data.setRelUri( uri.substring( functionalTestHelper.dataUri().length() - 9 ) );
         data.setUri( uri );
         data.setResponse( responseCode );
-        data.setResponseBody( response.getEntity( String.class ) );
-        data.headers = response.getHeaders();
+        if ( response.hasEntity() && response.getStatus() != 204 )
+        {
+            data.setResponseBody( response.getEntity( String.class ) );
+        }
         data.headerField = headerField;
-        getResponseHeaders( response.getHeaders() );
+        if ( headerField != null )
+        {
+            getResponseHeaders( response.getHeaders(),
+                    Arrays.asList( new String[] { headerField } ) );
+        }
+        else
+        {
+            getResponseHeaders( response.getHeaders(),
+                    Collections.<String>emptyList() );
+        }
+        document();
+        return response;
     }
 
-    private void getResponseHeaders( final MultivaluedMap<String, String> headers )
+    private void getResponseHeaders(
+            final MultivaluedMap<String, String> headers,
+            List<String> additionalFilter )
     {
-        for ( Entry<String, List<String>> header : headers.entrySet() )
+        data.setResponseHeaders( getHeaders( headers, RESPONSE_HEADERS,
+                additionalFilter ) );
+    }
+
+    private void getRequestHeaders( final MultivaluedMap<String, Object> headers )
+    {
+        data.setRequestHeaders( getHeaders( headers, REQUEST_HEADERS,
+                Collections.<String>emptyList() ) );
+    }
+
+    private <T> Map<String, String> getHeaders(
+            final MultivaluedMap<String, T> headers, List<String> filter,
+            List<String> additionalFilter )
+    {
+        Map<String, String> filteredHeaders = new TreeMap<String, String>();
+        for ( Entry<String, List<T>> header : headers.entrySet() )
         {
-            if ( RESPONSE_HEADERS.contains( header.getKey() ) )
+            if ( filter.contains( header.getKey() )
+                 || additionalFilter.contains( header.getKey() ) )
             {
                 String values = "";
-                for ( String value : header.getValue() )
+                for ( T value : header.getValue() )
                 {
                     if ( !values.isEmpty() )
                     {
                         values += ", ";
                     }
-                    values += value;
+                    values += String.valueOf( value );
                 }
-                data.addResponseHeader( header.getKey(), values );
+                filteredHeaders.put( header.getKey(), values );
             }
         }
-    }
-
-    // public ClientResponse post( final String title, final Map parameters,
-    // final String uri, final Response.Status responseCode )
-    // {
-    // String payload = JsonHelper.createJsonFrom( parameters );
-    // return post(title, payload, uri, responseCode);
-    //
-    // }
-
-    public ClientResponse post( final String title, final String payload,
-            final String uri, final Status responseCode,
-            final String headerField )
-    {
-        ClientResponse response = Client.create().resource( uri ).type(
-                applicationJsonType ).accept( applicationJsonType ).entity(
-                        payload ).post( ClientResponse.class );
-        assertEquals( responseCode.getStatusCode(), response.getStatus() );
-        assertEquals( applicationJsonType, response.getType() );
-        if ( headerField != null )
-        {
-            assertNotNull( response.getHeaders().get( headerField ) );
-        }
-        data.setTitle( title );
-        data.setMethod( "POST" );
-        data.setRelUri( uri.substring( functionalTestHelper.dataUri().length() - 9 ) );
-        data.setUri( uri );
-        data.setResponse( responseCode );
-        data.setResponseBody( response.getEntity( String.class ) );
-        data.payload = payload;
-        data.payloadencoding = applicationJsonType;
-        data.headers = response.getHeaders();
-        data.headerField = headerField;
-        getResponseHeaders( response.getHeaders() );
-        document();
-        return response;
-    }
-
-    public ClientResponse put( final String title, final String payload, final String uri,
-            final Status responseCode, final String headerField )
-    {
-        ClientResponse response = Client.create().resource( uri ).type(
-                applicationJsonType ).accept( applicationJsonType ).entity(
-                        payload ).put( ClientResponse.class );
-        assertEquals( responseCode.getStatusCode(), response.getStatus() );
-        if ( headerField != null )
-        {
-            assertNotNull( response.getHeaders().get( headerField ) );
-        }
-        data.setTitle( title );
-        data.setMethod( "PUT" );
-        data.setRelUri( uri.substring( functionalTestHelper.dataUri().length() - 9 ) );
-        data.setUri( uri );
-        data.setResponse( responseCode );
-        // data.setResponseBody( response.getEntity( String.class ) );
-        data.payload = payload;
-        data.payloadencoding = applicationJsonType;
-        data.headers = response.getHeaders();
-        data.headerField = headerField;
-        getResponseHeaders( response.getHeaders() );
-        document();
-        return response;
-    }
-
-
-    public ClientResponse delete( final String title, final String payload, final String uri,
-            final Status responseCode, final String headerField )
-    {
-        ClientResponse response = Client.create().resource( uri ).type(
-                applicationJsonType ).accept( applicationJsonType ).entity(
-                        payload ).delete( ClientResponse.class );
-        assertEquals( responseCode.getStatusCode(), response.getStatus() );
-        if ( headerField != null )
-        {
-            assertNotNull( response.getHeaders().get( headerField ) );
-        }
-        data.setTitle( title );
-        data.setMethod( "DELETE" );
-        data.setRelUri( uri.substring( functionalTestHelper.dataUri().length() - 9 ) );
-        data.setUri( uri );
-        data.setResponse( responseCode );
-        // data.setResponseBody( response.getEntity( String.class ) );
-        data.payload = payload;
-        data.payloadencoding = applicationJsonType;
-        data.headers = response.getHeaders();
-        data.headerField = headerField;
-        getResponseHeaders( response.getHeaders() );
-        document();
-        return response;
+        return filteredHeaders;
     }
 
     protected DocuementationData data = new DocuementationData();
@@ -206,7 +235,6 @@ public class DocumentationOutput implements MethodRule
 
         public String headerField;
         public MultivaluedMap<String, String> headers;
-        public MediaType payloadencoding;
         public String payload;
         public String title;
         public String uri;
@@ -214,7 +242,8 @@ public class DocumentationOutput implements MethodRule
         public Status status;
         public String entity;
         public String relUri;
-        private final List<Pair<String, String>> responseHeaders = new ArrayList<Pair<String, String>>();
+        public Map<String, String> requestHeaders;
+        public Map<String, String> responseHeaders;
 
         public void setTitle( final String title )
         {
@@ -249,9 +278,14 @@ public class DocumentationOutput implements MethodRule
 
         }
 
-        public void addResponseHeader( final String header, final String value )
+        public void setResponseHeaders( Map<String, String> response )
         {
-            responseHeaders.add( Pair.of( header, value ) );
+            responseHeaders = response;
+        }
+
+        public void setRequestHeaders( Map<String, String> request )
+        {
+            requestHeaders = request;
         }
     }
 
@@ -271,10 +305,9 @@ public class DocumentationOutput implements MethodRule
 
     }
 
-    public DocumentationOutput(
-            final FunctionalTestHelper functionalTestHelper)
+    public DocumentationOutput( final FunctionalTestHelper functionalTestHelper )
     {
-        this(functionalTestHelper, MediaType.APPLICATION_JSON_TYPE);
+        this( functionalTestHelper, MediaType.APPLICATION_JSON_TYPE );
     }
 
     protected void document()
@@ -302,9 +335,16 @@ public class DocumentationOutput implements MethodRule
             line( "_Example request_" );
             line( "" );
             line( "* *+" + data.method + "+*  +" + data.uri + "+" );
+            if ( data.requestHeaders != null )
+            {
+                for ( Entry<String, String> header : data.requestHeaders.entrySet() )
+                {
+                    line( "* *+" + header.getKey() + ":+* +"
+                          + header.getValue() + "+" );
+                }
+            }
             if ( data.payload != null && !data.payload.equals( "null" ) )
             {
-                line( "* *+Content-Type:+* +" + data.payloadencoding + "+" );
                 line( "[source,javascript]" );
                 line( "----" );
                 line( data.payload );
@@ -314,10 +354,14 @@ public class DocumentationOutput implements MethodRule
             line( "_Example response_" );
             line( "" );
             line( "* *+" + data.status.getStatusCode() + ":+* +"
-                    + data.status.name() + "+" );
-            for ( Pair<String, String> header : data.responseHeaders )
+                  + data.status.name() + "+" );
+            if ( data.responseHeaders != null )
             {
-                line( "* *+" + header.first() + ":+* +" + header.other() + "+" );
+                for ( Entry<String, String> header : data.responseHeaders.entrySet() )
+                {
+                    line( "* *+" + header.getKey() + ":+* +"
+                          + header.getValue() + "+" );
+                }
             }
             if ( data.entity != null )
             {

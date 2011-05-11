@@ -19,8 +19,14 @@
  */
 package org.neo4j.server.rest;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
+import static org.junit.Assert.assertEquals;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.junit.After;
 import org.junit.Before;
@@ -30,14 +36,8 @@ import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
 
 public class RemoveNodePropertiesFunctionalTest extends BaseDocumentation
 {
@@ -85,7 +85,9 @@ public class RemoveNodePropertiesFunctionalTest extends BaseDocumentation
         helper.setNodeProperties( nodeId, map );
         ClientResponse response = removeNodePropertiesOnServer( nodeId );
         assertEquals( 204, response.getStatus() );
-        doc.delete("Delete all properties from node", null, functionalTestHelper.nodePropertiesUri( nodeId ), Response.Status.NO_CONTENT, null);
+        doc.doRequest( "Delete all properties from node", "DELETE",
+                functionalTestHelper.nodePropertiesUri( nodeId ),
+                Response.Status.NO_CONTENT );
     }
 
     @Test

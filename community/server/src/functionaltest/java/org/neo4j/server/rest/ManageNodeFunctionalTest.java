@@ -74,7 +74,9 @@ public class ManageNodeFunctionalTest extends BaseDocumentation
     @Test
     public void shouldGet201WhenCreatingNode() throws Exception
     {
-        ClientResponse response = doc.post( "Create a node", null, functionalTestHelper.nodeUri(), Response.Status.CREATED, "Location" );
+        ClientResponse response = doc.doRequest( "Create a node", "POST",
+                functionalTestHelper.nodeUri(), Response.Status.CREATED,
+                "Location" );
         assertTrue( response.getLocation().toString().matches( NODE_URI_PATTERN ) );
         assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
         assertProperNodeRepresentation( JsonHelper.jsonToMap( doc.data.entity ) );
@@ -83,7 +85,9 @@ public class ManageNodeFunctionalTest extends BaseDocumentation
     @Test
     public void shouldGet201WhenCreatingNodeWithProperties() throws Exception
     {
-        ClientResponse response = doc.post( "Create node with properties", "{\"foo\" : \"bar\"}", functionalTestHelper.nodeUri(), Response.Status.CREATED, "Location" );
+        ClientResponse response = doc.doRequest( "Create node with properties",
+                "POST", functionalTestHelper.nodeUri(), "{\"foo\" : \"bar\"}",
+                Response.Status.CREATED, "Location" );
         //ClientResponse response = sendCreateRequestToServer(  );
         assertNotNull( response.getHeaders().get( "Content-Length" ) );
         assertTrue( response.getLocation().toString().matches( NODE_URI_PATTERN ) );
