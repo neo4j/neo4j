@@ -33,7 +33,6 @@ import java.util.Set;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser.Operator;
-import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.junit.After;
@@ -75,12 +74,12 @@ public class ImdbExampleTest
         Transaction transaction = graphDb.beginTx();
         try
         {
-            // START SNIPPET: createIndices
+            // START SNIPPET: createIndexes
             IndexManager index = graphDb.index();
             Index<Node> actors = index.forNodes( "actors" );
             Index<Node> movies = index.forNodes( "movies" );
             RelationshipIndex roles = index.forRelationships( "roles" );
-            // END SNIPPET: createIndices
+            // END SNIPPET: createIndexes
 
             // START SNIPPET: createNodes
             // Actors
@@ -405,6 +404,7 @@ public class ImdbExampleTest
 
         Node theMatrix = movies.get( "title", "The Matrix" ).getSingle();
         Node theMatrixReloaded = movies.get( "title", "The Matrix Reloaded" ).getSingle();
+        Node malena = movies.get( "title", "Malèna" ).getSingle();
 
         // START SNIPPET: wildcardTermQuery
         hits = movies.query( new WildcardQuery( new Term( "title", "The Matrix*" ) ) );
@@ -419,15 +419,50 @@ public class ImdbExampleTest
         assertEquals( 2, hits.size() );
 
         // START SNIPPET: numericRange
-        movies.add( theMatrix, "year-numeric", new ValueContext( 1999L ).indexNumeric() );
-        movies.add( theMatrixReloaded, "year-numeric", new ValueContext( 2003L ).indexNumeric() );
+        movies.add( theMatrix, "year-numeric", new ValueContext( 1999 ).indexNumeric() );
+        movies.add( theMatrixReloaded, "year-numeric", new ValueContext( 2003 ).indexNumeric() );
+        movies.add( malena, "year-numeric",  new ValueContext( 2000 ).indexNumeric() );
 
-        // Query for range
-        long startYear = 1997;
-        long endYear = 2001;
-        hits = movies.query( NumericRangeQuery.newLongRange( "year-numeric", startYear, endYear, true, true ) );
+        int from = 1997;
+        int to = 1999;
+        hits = movies.query( QueryContext.numericRange( "year-numeric", from, to ) );
         // END SNIPPET: numericRange
         assertEquals( theMatrix, hits.getSingle() );
+
+        // START SNIPPET: sortedNumericRange
+        hits = movies.query(
+                QueryContext.numericRange( "year-numeric", from, null )
+                  .sortNumeric( "year-numeric", false ) );
+        // END SNIPPET: sortedNumericRange
+        List<String> sortedMovies = new ArrayList<String>();
+        @SuppressWarnings( "serial" ) List<String> expectedSortedMovies = new ArrayList<String>()
+        {
+            {
+                add( "The Matrix" );
+                add( "Malèna" );
+                add( "The Matrix Reloaded" );
+            }
+        };
+        for ( Node hit : hits )
+        {
+            sortedMovies.add( (String) hit.getProperty( "title" ) );
+        }
+        assertEquals( expectedSortedMovies, sortedMovies );
+        
+        // START SNIPPET: exclusiveRange
+        movies.add( theMatrix, "score", new ValueContext( 8.7 ).indexNumeric() );
+        movies.add( theMatrixReloaded, "score", new ValueContext( 7.1 ).indexNumeric() );
+        movies.add( malena, "score", new ValueContext( 7.4 ).indexNumeric() );
+        
+        // include 8.0, exclude 9.0
+        hits = movies.query( QueryContext.numericRange( "score", 8.0, 9.0, true, false ) );
+        // END SNIPPET: exclusiveRange
+        found.clear();
+        for ( Node hit : hits )
+        {
+            found.add( (String) hit.getProperty( "title" ) );
+        }
+        assertEquals( expectedMovies, found );        
 
         // START SNIPPET: compoundQueries
         hits = movies.query( "title:*Matrix* AND year:1999" );
@@ -522,7 +557,7 @@ public class ImdbExampleTest
         // START SNIPPET: fulltext
         IndexManager index = graphDb.index();
         Index<Node> fulltextMovies = index.forNodes( "movies-fulltext",
-                MapUtil.stringMap( "provider", "lucene", "type", "fulltext" ) );
+                MapUtil.stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" ) );
         // END SNIPPET: fulltext
 
         Index<Node> movies = index.forNodes( "movies" );

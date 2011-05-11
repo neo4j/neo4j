@@ -23,7 +23,14 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Map;
 
-import javax.ws.rs.*;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -71,7 +78,7 @@ public class RestfulGraphDatabase {
     protected static final String PATH_NODE_INDEX = "index/node";
     protected static final String PATH_NAMED_NODE_INDEX = PATH_NODE_INDEX + "/{indexName}";
     protected static final String PATH_NODE_INDEX_GET = PATH_NAMED_NODE_INDEX + "/{key}/{value}";
-    protected static final String PATH_NODE_INDEX_QUERY = PATH_NAMED_NODE_INDEX + "/{key}"; // http://localhost/db/data/index/node/foo?query=somelucenestuff
+    protected static final String PATH_NODE_INDEX_QUERY_WITH_KEY = PATH_NAMED_NODE_INDEX + "/{key}"; // http://localhost/db/data/index/node/foo?query=somelucenestuff
     protected static final String PATH_NODE_INDEX_ID = PATH_NODE_INDEX_GET + "/{id}";
     protected static final String PATH_NODE_INDEX_REMOVE_KEY = PATH_NAMED_NODE_INDEX + "/{key}/{id}";
     protected static final String PATH_NODE_INDEX_REMOVE = PATH_NAMED_NODE_INDEX + "/{id}";
@@ -79,7 +86,7 @@ public class RestfulGraphDatabase {
     protected static final String PATH_RELATIONSHIP_INDEX = "index/relationship";
     protected static final String PATH_NAMED_RELATIONSHIP_INDEX = PATH_RELATIONSHIP_INDEX + "/{indexName}";
     protected static final String PATH_RELATIONSHIP_INDEX_GET = PATH_NAMED_RELATIONSHIP_INDEX + "/{key}/{value}";
-    protected static final String PATH_RELATIONSHIP_INDEX_QUERY = PATH_NAMED_RELATIONSHIP_INDEX + "/{key}";
+    protected static final String PATH_RELATIONSHIP_INDEX_QUERY_WITH_KEY = PATH_NAMED_RELATIONSHIP_INDEX + "/{key}";
     protected static final String PATH_RELATIONSHIP_INDEX_ID = PATH_RELATIONSHIP_INDEX_GET + "/{id}";
     protected static final String PATH_RELATIONSHIP_INDEX_REMOVE_KEY = PATH_NAMED_RELATIONSHIP_INDEX + "/{key}/{id}";
     protected static final String PATH_RELATIONSHIP_INDEX_REMOVE = PATH_NAMED_RELATIONSHIP_INDEX + "/{id}";
@@ -438,6 +445,32 @@ public class RestfulGraphDatabase {
             return output.badRequest(e);
         }
     }
+    
+    @GET
+    @Path(PATH_NAMED_NODE_INDEX)
+    public Response getIndexedNodesByQuery(@PathParam("indexName") String indexName, @QueryParam("query") String query) {
+        try {
+            return output.ok(server.getIndexedNodesByQuery(indexName, query));
+        } catch (NotFoundException nfe) {
+            return output.notFound(nfe);
+        }
+    }
+
+    @DELETE
+    @Path(PATH_NAMED_NODE_INDEX)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response deleteNodeIndex(@PathParam("indexName") String indexName) {
+        server.removeNodeIndex(indexName);
+        return output.noContent();
+    }
+
+    @DELETE
+    @Path(PATH_NAMED_RELATIONSHIP_INDEX)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response deleteRelationshipIndex(@PathParam("indexName") String indexName) {
+        server.removeRelationshipIndex(indexName);
+        return output.noContent();
+    }
 
     @POST
     @Path(PATH_NODE_INDEX_GET)
@@ -490,7 +523,7 @@ public class RestfulGraphDatabase {
     }
 
     @GET
-    @Path(PATH_NODE_INDEX_QUERY)
+    @Path(PATH_NODE_INDEX_QUERY_WITH_KEY)
     public Response getIndexedNodesByQuery(@PathParam("indexName") String indexName, @PathParam("key") String key, @QueryParam("query") String query) {
         try {
             return output.ok(server.getIndexedNodesByQuery(indexName, key, query));
@@ -510,7 +543,17 @@ public class RestfulGraphDatabase {
     }
 
     @GET
-    @Path(PATH_RELATIONSHIP_INDEX_QUERY)
+    @Path(PATH_NAMED_RELATIONSHIP_INDEX)
+    public Response getIndexedRelationshipsByQuery(@PathParam("indexName") String indexName, @QueryParam("query") String query) {
+        try {
+            return output.ok(server.getIndexedRelationshipsByQuery(indexName, query));
+        } catch (NotFoundException nfe) {
+            return output.notFound(nfe);
+        }
+    }
+
+    @GET
+    @Path(PATH_RELATIONSHIP_INDEX_QUERY_WITH_KEY)
     public Response getIndexedRelationshipsByQuery(@PathParam("indexName") String indexName, @PathParam("key") String key, @QueryParam("query") String query) {
         try {
             return output.ok(server.getIndexedRelationshipsByQuery(indexName, key, query));

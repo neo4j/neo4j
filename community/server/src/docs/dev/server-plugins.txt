@@ -4,107 +4,89 @@ Server Plugins
 
 .Quick info
 ***********
-* The server's functionality can be extended by adding plugins. Plugins are user-specified code which extend the capabilities of the database, nodes, or relations. The neo4j server will then advertise the plugin functionality within representations as clients interact via HTTP.
+* The server's functionality can be extended by adding plugins.
+  Plugins are user-specified code which extend the capabilities of the database, nodes, or relationships. 
+  The neo4j server will then advertise the plugin functionality within representations as clients interact via HTTP.
 ***********
 
 Plugins provide an easy way to extend the Neo4j REST API with new functionality, without the need to
-invent your own API. Think of plugins as server-side scripts that can add functions for retrieving and
-manipulating nodes, relationships, paths or properties.
+invent your own API.
+Think of plugins as server-side scripts that can add functions for retrieving and manipulating nodes, relationships, paths or properties.
 
-[WARNING]
-If you want to have full control over your API, and are willing to put in the effort, and understand
-the risks, then Neo4j server also provides hooks for <<server-unmanaged-extensions,unmanaged extensions>>
-based on JAX-RS.   
+[TIP]
+If you want to have full control over your API, and are willing to put in the effort, and understand the risks, then Neo4j server also provides hooks for <<server-unmanaged-extensions,unmanaged extensions>> based on JAX-RS.
 
-To create a plugin, your code must inherit from the ServerPlugin class, and ensure that it can produce 
-an (Iterable of) Node, Relationship or Path, specify parameters, a point of extension and of course 
-the application logic. An example of a plugin which augments the database (as opposed to nodes or
-relations) follows:
+The needed classes reside in the http://search.maven.org/#search|gav|1|g%3A%22org.neo4j%22%20AND%20a%3A%22server-api%22[org.neo4j:server-api] jar file.
+See the linked page for downloads and instructions on how to include it using dependency management.
+For Maven projects, add the Server API dependencies in your +pom.xml+ like this:
 
-[source,java]
+[source,xml]
 ----
-@Description( "An extension to the Neo4j Server for getting all nodes or relationships" )
-public class GetAll extends ServerPlugin
-{
-  @Name( "get_all_nodes" )
-  @Description( "Get all nodes from the Neo4j graph database" )
-  @PluginTarget( GraphDatabaseService.class )
-  public Iterable<Node> getAllNodes( @Source GraphDatabaseService graphDb )
-  {
-      return graphDb.getAllNodes();
-  }
- 
+<dependency>
+  <groupId>org.neo4j</groupId>
+  <artifactId>server-api</artifactId>
+  <version>${neo4j-version}</version>
+</dependency>
+----
 
-  @Description( "Get all relationships from the Neo4j graph database" )
-  @PluginTarget( GraphDatabaseService.class )
-  public Iterable<Relationship> getAllRelationships( @Source GraphDatabaseService graphDb )
-  {
-      return new NestingIterable<Relationship, Node>( graphDb.getAllNodes() )
-      {
-          @Override
-          protected Iterator<Relationship> createNestedIterator( Node item )
-          {
-              return item.getRelationships( Direction.OUTGOING ).iterator();
-          }
-      };
-  }
+_Where $\{neo4j-version} is the intended version._
 
-  @Description( "Find the shortest path between two nodes." )
-  @PluginTarget( Node.class )
-  public Iterable<Path> shortestPath(
-            @Source Node source,
-            @Description( "The node to find the shortest path to." ) @Parameter( name = "target" ) Node target,
-            @Description( "The relationship types to follow when searching for the shortest path(s). Order is insignificant, if omitted all types are followed." ) @Parameter( name = "types", optional = true ) String[] types,
-            @Description( "The maximum path length to search for, default value (if omitted) is 4." ) @Parameter( name = "depth", optional = true ) Integer depth )
-  {
-        Expander expander;
-        if ( types == null )
-        {
-            expander = Traversal.expanderForAllTypes();
-        }
-        else
-        {
-            expander = Traversal.emptyExpander();
-            for ( int i = 0; i < types.length; i++ )
-            {
-                expander = expander.add( DynamicRelationshipType.withName( types[i] ) );
-            }
-        }
-        PathFinder<Path> shortestPath = GraphAlgoFactory.shortestPath( expander, depth == null ? 4
-                : depth.intValue() );
-        return shortestPath.findAllPaths( source, target );
-  }
-}
+To create a plugin, your code must inherit from the http://components.neo4j.org/server-api/{neo4j-version}/apidocs/org/neo4j/server/plugins/ServerPlugin.html[ServerPlugin] class.
+Your plugin should also:
+
+* ensure that it can produce an (Iterable of) Node, Relationship or Path,
+* specify parameters,
+* specify a point of extension and of course 
+* contain the application logic.
+
+An example of a plugin which augments the database (as opposed to nodes or relationships) follows:
+
+.Get all nodes or relationships plugin
+[snippet,java]
+----
+component=neo4j-server-examples
+source=org/neo4j/examples/server/plugins/GetAll.java
+tag=GetAll
+classifier=sources
+----
+
+.Find the shortest path between two nodes plugin
+[snippet,java]
+----
+component=neo4j-server-examples
+source=org/neo4j/examples/server/plugins/ShortestPath.java
+tag=ShortestPath
+classifier=sources
 ----
 
 To deploy the code, simply compile it into a .jar file and place it onto the server classpath (which by
-convention is the plugins directory under the neo4j server home directory). The .jar file must include the file 
-META-INF/services/org.neo4j.server.plugins.ServerPlugin with the fully qualified name of the implementation
-class. In this case, we'd have only a single entry in our config file, though multiple entries are allowed, 
-each on a separate line:
+convention is the plugins directory under the Neo4j server home directory).
+The .jar file must include the file META-INF/services/org.neo4j.server.plugins.ServerPlugin with the fully qualified name of the implementation class.
+In this case, we'd have only a single entry in our config file, though multiple entries are allowed, each on a separate line:
 
-[source,java]
+[source]
 ----
 org.neo4j.server.examples.GetAll
 # Any other plugins in the same jar file must be listed here 
 ---- 
 
 The code above makes an extension visible in the database representation (via the @PluginTarget annotation)
-whenever it is served from the Neo4j Server. Simply changing the @PluginTarget parameter to Node.class or
-Relationship.class allows us to target those parts of the datamodel should we wish. The functionality 
-extensions provided by the plugin are automatically advertised in representations on the wire. For example,
-clients can discover the extension implemented by the above plugin easily by examining the representations
-they receive as responses from the server, e.g. by performing a GET on the default database URI:
-
+whenever it is served from the Neo4j Server.
+Simply changing the @PluginTarget parameter to Node.class or Relationship.class allows us to target those parts of the data model should we wish.
+The functionality extensions provided by the plugin are automatically advertised in representations on the wire.
+For example, clients can discover the extension implemented by the above plugin easily by examining the representations
+they receive as responses from the server, e.g. by performing a +GET+ on the default database URI:
  
 [source, shell]
 ----
 curl -v http://localhost:7474/db/data/
----- 
+----
 
-The response to the GET request will contain (by default) a JSON container that itself contains a container
-called "extensions" where the available plugins are listed. In the following case, we only have the GetAll
-plugin registered with the server, so only its extension functionality is available:
+// test the above!
+
+The response to the +GET+ request will contain (by default) a JSON container that itself contains a container
+called "extensions" where the available plugins are listed.
+In the following case, we only have the +GetAll+ plugin registered with the server, so only its extension functionality is available:
 
 [source, javascript]
 ----
@@ -123,12 +105,14 @@ plugin registered with the server, so only its extension functionality is availa
 }
 ----
  
-Performing a GET on one of the two extension URIs gives back the meta information about the service:
+Performing a +GET+ on one of the two extension URIs gives back the meta information about the service:
 
 [source, shell]
 ----
 curl http://localhost:7474/db/data/ext/GetAll/graphdb/get_all_nodes
 ----
+
+// try this one as well!
 
 [source, javascript]
 ----
@@ -140,7 +124,7 @@ curl http://localhost:7474/db/data/ext/GetAll/graphdb/get_all_nodes
 }
 ----
 
-To use it, just POST to this URL, with parameters as specified in the description (though there are none in this case).
+To use it, just +POST+ to this URL, with parameters as specified in the description (though there are none in this case).
 
 Through this model, any plugin can naturally fit into the general hypermedia scheme that Neo4j espouses - meaning that
 clients can still take advantage of abstractions like  Nodes, Relationships and Paths with a straightforward upgrade

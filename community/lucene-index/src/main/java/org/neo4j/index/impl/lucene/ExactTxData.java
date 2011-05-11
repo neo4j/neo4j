@@ -27,9 +27,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Searcher;
-import org.neo4j.helpers.Pair;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
 
@@ -44,10 +43,9 @@ public class ExactTxData extends TxData
     }
 
     @Override
-    TxData add( Object entityId, String key, Object value )
+    void add( TxDataHolder holder, Object entityId, String key, Object value )
     {
         idCollection( key, value, true ).add( entityId );
-        return this;
     }
 
     private Set<Object> idCollection( String key, Object value, boolean create )
@@ -111,7 +109,7 @@ public class ExactTxData extends TxData
                     Object value = valueEntry.getKey();
                     for ( Object id : valueEntry.getValue() )
                     {
-                        data.add( id, key, value );
+                        data.add( null, id, key, value );
                     }
                 }
             }
@@ -125,41 +123,42 @@ public class ExactTxData extends TxData
     }
 
     @Override
-    Pair<Collection<Long>, TxData> query( Query query, QueryContext contextOrNull )
+    Collection<Long> query( TxDataHolder holder, Query query, QueryContext contextOrNull )
     {
         if ( contextOrNull != null && contextOrNull.getTradeCorrectnessForSpeed() )
         {
-            return Pair.<Collection<Long>, TxData>of( Collections.<Long>emptyList(), this );
+            return Collections.<Long>emptyList();
         }
 
-        return toFullTxData().query( query, contextOrNull );
+        TxData fullTxData = toFullTxData();
+        holder.set( fullTxData );
+        return fullTxData.query( holder, query, contextOrNull );
     }
 
     @Override
-    TxData remove( Object entityId, String key, Object value )
+    void remove( TxDataHolder holder, Object entityId, String key, Object value )
     {
         if ( data == null )
         {
-            return this;
+            return;
         }
         Collection<Object> ids = idCollection( key, value, false );
         if ( ids != null )
         {
             ids.remove( entityId );
         }
-        return this;
     }
 
     @Override
-    Pair<Collection<Long>, TxData> get( String key, Object value )
+    Collection<Long> get( TxDataHolder holder, String key, Object value )
     {
         value = value instanceof ValueContext ? ((ValueContext) value).getCorrectValue() : value.toString();
         Set<Object> ids = idCollection( key, value, false );
         if ( ids == null || ids.isEmpty() )
         {
-            return Pair.<Collection<Long>, TxData>of( Collections.<Long>emptySet(), this );
+            return Collections.<Long>emptySet();
         }
-        return Pair.<Collection<Long>, TxData>of( toLongs( ids ), this );
+        return toLongs( ids );
     }
     
     @Override
@@ -177,6 +176,7 @@ public class ExactTxData extends TxData
         return LuceneTransaction.merge( orphanLongs, keyOrphanLongs );
     }
 
+    @SuppressWarnings( { "unchecked", "rawtypes" } )
     private Collection<Long> toLongs( Set<Object> ids )
     {
         if ( ids.iterator().next() instanceof Long )
@@ -195,12 +195,14 @@ public class ExactTxData extends TxData
     }
     
     @Override
-    Pair<Searcher, TxData> asSearcher( QueryContext context )
+    IndexSearcher asSearcher( TxDataHolder holder, QueryContext context )
     {
         if ( context != null && context.getTradeCorrectnessForSpeed() )
         {
-            return Pair.<Searcher, TxData>of( null, this );
+            return null;
         }
-        return toFullTxData().asSearcher( context );
+        TxData fullTxData = toFullTxData();
+        holder.set( fullTxData );
+        return fullTxData.asSearcher( holder, context );
     }
 }

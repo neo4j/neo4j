@@ -31,13 +31,13 @@ import java.util.Map;
 
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import junit.framework.Assert;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
@@ -53,7 +53,7 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
 
-public class IndexNodeFunctionalTest
+public class IndexNodeFunctionalTest extends BaseDocumentation
 {
     private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
@@ -65,6 +65,7 @@ public class IndexNodeFunctionalTest
         server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper( server );
+        doc = new DocumentationOutput(functionalTestHelper, MediaType.APPLICATION_JSON_TYPE);
         helper = functionalTestHelper.getGraphDbHelper();
     }
 
@@ -98,11 +99,8 @@ public class IndexNodeFunctionalTest
         String indexName = "favorites";
         Map<String, String> indexSpecification = new HashMap<String, String>();
         indexSpecification.put( "name", indexName );
-        ClientResponse response = Client.create().resource( functionalTestHelper.nodeIndexUri() )
-                .type( MediaType.APPLICATION_JSON )
-                .accept( MediaType.APPLICATION_JSON )
-                .entity( JsonHelper.createJsonFrom( indexSpecification ) ).post( ClientResponse.class );
-        assertEquals( 201, response.getStatus() );
+        ClientResponse response = doc.post("Create a named node index", JsonHelper.createJsonFrom( indexSpecification ), functionalTestHelper.nodeIndexUri(), Response.Status.CREATED, "Location");
+
         assertNotNull( response.getHeaders().getFirst( "Location" ) );
         assertEquals( 1, helper.getNodeIndexes().length );
         assertNotNull( helper.getNodeIndex( indexName ) );
@@ -186,8 +184,6 @@ public class IndexNodeFunctionalTest
 
         assertEquals( Status.CREATED.getStatusCode(), response.getStatus() );
         String indexUri = response.getHeaders().getFirst( "Location" );
-        
-        System.out.println(indexUri);
 
         response = Client.create().resource( indexUri ).accept( MediaType.APPLICATION_JSON ).get( ClientResponse.class );
         assertEquals( 200, response.getStatus() );
@@ -263,6 +259,22 @@ public class IndexNodeFunctionalTest
     }
 
     @Test
+    public void shouldGet200WhenQueryingIndex() throws PropertyValueException
+    {
+        String indexName = "bobTheIndex";
+        String key = "bobsKey";
+        String value = "bobsValue";
+        long node = helper.createNode();
+        helper.addNodeToIndex( indexName, key, value, node );
+
+        ClientResponse response = Client.create().resource( functionalTestHelper.indexNodeUri( indexName ) + "?query="+key+":"+value ).accept( MediaType.APPLICATION_JSON )
+                .get( ClientResponse.class );
+        
+        assertEquals( 200, response.getStatus() );
+    }
+
+
+    @Test
     public void shouldGet200WhenGettingNodesFromIndexWithNoHits()
     {
         String indexName = "empty-index";
@@ -273,23 +285,30 @@ public class IndexNodeFunctionalTest
     }
 
     @Test
-    @Ignore("Unclear contract: remove the index itself? That is unsupported in the new index api")
-    public void shouldGet200AndBeAbleToRemoveIndexing() throws DatabaseBlockedException, JsonParseException
+    public void shouldReturn204WhenRemovingNodeIndexes() throws DatabaseBlockedException, JsonParseException
     {
-        ClientResponse response = Client.create().resource( functionalTestHelper.nodeUri() ).type( MediaType.APPLICATION_FORM_URLENCODED ).accept(
-                MediaType.APPLICATION_JSON ).post( ClientResponse.class );
-        String nodeUri = response.getHeaders().getFirst( HttpHeaders.LOCATION );
-        String key = "key_remove";
-        String value = "value";
-        String indexUri = Client.create().resource( functionalTestHelper.indexUri() + "/node/" + key + "/" + value ).entity( JsonHelper.createJsonFrom( nodeUri ),
-                MediaType.APPLICATION_JSON ).post( ClientResponse.class ).getHeaders().getFirst( HttpHeaders.LOCATION );
-        assertEquals( 1, helper.getIndexedNodes( "node", key, value ).size() );
-        response = Client.create().resource( indexUri ).delete( ClientResponse.class );
-        assertEquals( Status.NO_CONTENT.getStatusCode(), response.getStatus() );
-        assertEquals( 0, helper.getIndexedNodes( "node", key, value ).size() );
-
-        response = Client.create().resource( indexUri ).delete( ClientResponse.class );
-        assertEquals( Status.NOT_FOUND.getStatusCode(), response.getStatus() );
+        String indexName = "kvnode";
+        helper.createNodeIndex( indexName );
+        
+        // Remove the index
+        ClientResponse response = Client.create().resource( functionalTestHelper.indexNodeUri( indexName ) ).accept(
+                MediaType.APPLICATION_JSON ).delete( ClientResponse.class );
+        
+        assertEquals(204, response.getStatus());
+    }
+    
+    @Test
+    public void shouldReturn204WhenRemovingRelationshipIndexes() throws DatabaseBlockedException, JsonParseException
+    {
+        
+        String indexName = "blah";
+        helper.createRelationshipIndex( indexName );
+        
+        // Remove the index
+        ClientResponse response = Client.create().resource( functionalTestHelper.indexRelationshipUri( indexName ) ).accept(
+                MediaType.APPLICATION_JSON ).delete( ClientResponse.class );
+        
+        assertEquals(204, response.getStatus());
     }
 
     @Test

@@ -29,7 +29,6 @@ import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldCollector;
@@ -66,7 +65,7 @@ import org.apache.lucene.search.Weight;
 // top docs.
 public final class Hits {
   private Weight weight;
-  private Searcher searcher;
+  private IndexSearcher searcher;
   private Filter filter = null;
   private Sort sort = null;
 
@@ -85,7 +84,7 @@ public final class Hits {
   boolean debugCheckedForDeletions = false; // for test purposes.
   private final boolean score;
 
-  public Hits(Searcher s, Query q, Filter f) throws IOException
+  public Hits(IndexSearcher s, Query q, Filter f) throws IOException
   {
     score = false;
     weight = q.weight(s);
@@ -96,7 +95,7 @@ public final class Hits {
     lengthAtStart = length;
   }
 
-  public Hits(Searcher s, Query q, Filter f, Sort o, boolean score) throws IOException {
+  public Hits(IndexSearcher s, Query q, Filter f, Sort o, boolean score) throws IOException {
     this.score = score;
     weight = q.weight(s);
     searcher = s;
@@ -108,7 +107,7 @@ public final class Hits {
   }
 
   // count # deletions, return -1 if unknown.
-  private int countDeletions(Searcher s) throws IOException {
+  private int countDeletions(IndexSearcher s) throws IOException {
     int cnt = -1;
     if (s instanceof IndexSearcher) {
       cnt = s.maxDoc() - ((IndexSearcher) s).getIndexReader().numDocs();

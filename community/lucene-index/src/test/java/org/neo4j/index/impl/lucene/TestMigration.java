@@ -20,14 +20,19 @@
 package org.neo4j.index.impl.lucene;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -35,6 +40,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
@@ -63,6 +69,43 @@ public class TestMigration
         verifyConfiguration( db, indexThree, LuceneIndexImplementation.EXACT_CONFIG );
         db.shutdown();
     }
+    
+    @Test
+    public void canUpgradeFromPreviousVersion() throws Exception
+    {
+        GraphDatabaseService db = unpackDbFrom( "db-with-v3.0.1.zip" );
+        Index<Node> index = db.index().forNodes( "v3.0.1" );
+        Node node = index.get( "key", "value" ).getSingle();
+        assertNotNull( node );
+        db.shutdown();
+    }
+
+    private GraphDatabaseService unpackDbFrom( String file ) throws IOException
+    {
+        File path = new File( "target/var/zipup" );
+        ZipInputStream zip = new ZipInputStream( getClass().getClassLoader().getResourceAsStream( file ) );
+        ZipEntry entry = null;
+        byte[] buffer = new byte[2048];
+        while ( (entry = zip.getNextEntry()) != null )
+        {
+            if ( entry.isDirectory() )
+            {
+                new File( path, entry.getName() ).mkdirs();
+                continue;
+            }
+            FileOutputStream fos = new FileOutputStream( new File( path, entry.getName() ) );
+            BufferedOutputStream bos = new BufferedOutputStream( fos, buffer.length );
+
+            int size;
+            while ( (size = zip.read( buffer, 0, buffer.length )) != -1 )
+            {
+                bos.write( buffer, 0, size );
+            }
+            bos.flush();
+            bos.close();
+        }
+        return new EmbeddedGraphDatabase( path.getAbsolutePath() );
+    }
 
     private void verifyConfiguration( GraphDatabaseService db, Index<? extends PropertyContainer> index, Map<String, String> config )
     {
@@ -85,16 +128,16 @@ public class TestMigration
     @Test
     public void providerGetsFilledInAutomatically()
     {
-        Map<String, String> correctConfig = MapUtil.stringMap( "type", "exact", "provider", "lucene" );
+        Map<String, String> correctConfig = MapUtil.stringMap( "type", "exact", IndexManager.PROVIDER, "lucene" );
         File storeDir = new File( "target/var/index" );
         Neo4jTestCase.deleteFileOrDirectory( storeDir );
         GraphDatabaseService graphDb = new EmbeddedGraphDatabase( storeDir.getPath() );
         assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "default" ) ) );
         assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "wo-provider", MapUtil.stringMap( "type", "exact" ) ) ) );
-        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "w-provider", MapUtil.stringMap( "type", "exact", "provider", "lucene" ) ) ) );
+        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "w-provider", MapUtil.stringMap( "type", "exact", IndexManager.PROVIDER, "lucene" ) ) ) );
         assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "default" ) ) );
         assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "wo-provider", MapUtil.stringMap( "type", "exact" ) ) ) );
-        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "w-provider", MapUtil.stringMap( "type", "exact", "provider", "lucene" ) ) ) );
+        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "w-provider", MapUtil.stringMap( "type", "exact", IndexManager.PROVIDER, "lucene" ) ) ) );
         graphDb.shutdown();
         
         removeProvidersFromIndexDbFile( storeDir );
@@ -102,10 +145,10 @@ public class TestMigration
         // Getting the index w/o exception means that the provider has been reinstated
         assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "default" ) ) );
         assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "wo-provider", MapUtil.stringMap( "type", "exact" ) ) ) );
-        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "w-provider", MapUtil.stringMap( "type", "exact", "provider", "lucene" ) ) ) );
+        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "w-provider", MapUtil.stringMap( "type", "exact", IndexManager.PROVIDER, "lucene" ) ) ) );
         assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "default" ) ) );
         assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "wo-provider", MapUtil.stringMap( "type", "exact" ) ) ) );
-        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "w-provider", MapUtil.stringMap( "type", "exact", "provider", "lucene" ) ) ) );
+        assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "w-provider", MapUtil.stringMap( "type", "exact", IndexManager.PROVIDER, "lucene" ) ) ) );
         graphDb.shutdown();
         
         removeProvidersFromIndexDbFile( storeDir );
@@ -129,7 +172,7 @@ public class TestMigration
             {
                 Map<String, String> config = indexStore.get( cls, name );
                 config = new HashMap<String, String>( config );
-                config.remove( "provider" );
+                config.remove( IndexManager.PROVIDER );
                 indexStore.set( Node.class, name, config );
             }
         }

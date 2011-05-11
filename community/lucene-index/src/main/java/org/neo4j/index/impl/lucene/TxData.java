@@ -21,9 +21,8 @@ package org.neo4j.index.impl.lucene;
 
 import java.util.Collection;
 
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Searcher;
-import org.neo4j.helpers.Pair;
 import org.neo4j.index.lucene.QueryContext;
 
 abstract class TxData
@@ -35,17 +34,17 @@ abstract class TxData
         this.index = index;
     }
 
-    abstract TxData add( Object entityId, String key, Object value );
+    abstract void add( TxDataHolder holder, Object entityId, String key, Object value );
     
-    abstract TxData remove( Object entityId, String key, Object value );
+    abstract void remove( TxDataHolder holder, Object entityId, String key, Object value );
 
-    abstract Pair<Collection<Long>, TxData> query( Query query, QueryContext contextOrNull );
+    abstract Collection<Long> query( TxDataHolder holder, Query query, QueryContext contextOrNull );
 
-    abstract Pair<Collection<Long>, TxData> get( String key, Object value );
+    abstract Collection<Long> get( TxDataHolder holder, String key, Object value );
     
     abstract Collection<Long> getOrphans( String key );
     
     abstract void close();
 
-    abstract Pair<Searcher, TxData> asSearcher( QueryContext context );
+    abstract IndexSearcher asSearcher( TxDataHolder holder, QueryContext context );
 }

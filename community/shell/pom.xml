@@ -22,10 +22,10 @@
 
   <properties>
     <sun.jta.version>1.1</sun.jta.version>
-    <lucene.groupId>org.apache.servicemix.bundles</lucene.groupId>
-    <lucene.artifactId>org.apache.servicemix.bundles.lucene</lucene.artifactId>
-    <lucene.version>3.0.1_2</lucene.version>
-    <lucene.main.version>3.0.1</lucene.main.version>
+    <lucene.groupId>org.apache.lucene</lucene.groupId>
+    <lucene.artifactId>lucene-core</lucene.artifactId>
+    <lucene.version>3.1.0</lucene.version>
+    <lucene.main.version>3.1.0</lucene.main.version>
     <jline.groupId>org.apache.servicemix.bundles</jline.groupId>
     <jline.artifactId>org.apache.servicemix.bundles.jline</jline.artifactId>
     <jline.version>0.9.94_1</jline.version>

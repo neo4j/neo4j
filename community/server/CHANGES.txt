@@ -1,3 +1,7 @@
+1.4.M01 (2011-04-28)
+--------------------
+o Removed dependency on log4j, logging now done via j.u.l
+
 1.3.M05 (2011-03-24)
 --------------------
 o New look and feel of the webadmin

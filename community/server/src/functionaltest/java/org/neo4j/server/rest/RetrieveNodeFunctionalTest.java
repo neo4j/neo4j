@@ -29,6 +29,7 @@ import java.net.URISyntaxException;
 import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.junit.After;
 import org.junit.Before;
@@ -43,17 +44,21 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
-public class RetrieveNodeFunctionalTest {
+public class RetrieveNodeFunctionalTest extends BaseDocumentation{
     private URI nodeUri;
 
     private NeoServerWithEmbeddedWebServer server;
+
+    private FunctionalTestHelper functionalTestHelper;
+
+
 
     @Before
     public void setupServer() throws IOException, DatabaseBlockedException, URISyntaxException {
         server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
         server.start();
-        FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper(server);
-
+        functionalTestHelper = new FunctionalTestHelper(server);
+        doc = new DocumentationOutput(functionalTestHelper, MediaType.APPLICATION_JSON_TYPE);
         nodeUri = new URI(functionalTestHelper.nodeUri() + "/" + new GraphDbHelper(server.getDatabase()).createNode());
     }
 
@@ -65,8 +70,8 @@ public class RetrieveNodeFunctionalTest {
 
     @Test
     public void shouldGet200WhenRetrievingNode() throws Exception {
-        ClientResponse response = retrieveNodeFromService(nodeUri.toString());
-        assertEquals(200, response.getStatus());
+        String uri = nodeUri.toString();
+        doc.get("Get Node", uri, Response.Status.OK, null);
     }
 
     @Test
@@ -91,8 +96,8 @@ public class RetrieveNodeFunctionalTest {
 
     @Test
     public void shouldGet404WhenRetrievingNonExistentNode() throws Exception {
-        ClientResponse response = retrieveNodeFromService(nodeUri + "00000");
-        assertEquals(404, response.getStatus());
+        doc.get("Get non-existent Node", nodeUri + "00000", Response.Status.NOT_FOUND, null);
+        
     }
 
     private ClientResponse retrieveNodeFromService(String uri) {
@@ -100,4 +105,6 @@ public class RetrieveNodeFunctionalTest {
         ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
         return response;
     }
+    
+    
 }

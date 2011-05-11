@@ -29,8 +29,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Searcher;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -487,7 +487,8 @@ class LuceneTransaction extends XaTransaction
         queueCommand( new CreateIndexCommand( entityTypeByte, name, config ) );
     }
 
-    <T extends PropertyContainer> Searcher getAdditionsAsSearcher( LuceneIndex<T> index, QueryContext context )
+    <T extends PropertyContainer> IndexSearcher getAdditionsAsSearcher( LuceneIndex<T> index,
+            QueryContext context )
     {
         TxDataHolder data = addedTxDataOrNull( index );
         return data != null ? data.asSearcher( context ) : null;

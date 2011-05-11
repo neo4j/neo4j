@@ -19,6 +19,9 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import static org.neo4j.index.impl.lucene.LuceneDataSource.LUCENE_VERSION;
+import static org.neo4j.index.impl.lucene.LuceneIndex.KEY_DOC_ID;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,19 +37,17 @@ import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-import org.neo4j.helpers.Pair;
 import org.neo4j.index.lucene.QueryContext;
 
 class FullTxData extends ExactTxData
@@ -68,9 +69,9 @@ class FullTxData extends ExactTxData
     }
 
     @Override
-    TxData add( Object entityId, String key, Object value )
+    void add( TxDataHolder holder, Object entityId, String key, Object value )
     {
-        super.add( entityId, key, value );
+        super.add( holder, entityId, key, value );
         try
         {
             ensureLuceneDataInstantiated();
@@ -110,7 +111,6 @@ class FullTxData extends ExactTxData
                 writer.updateDocument( index.type.idTerm( id ), document );
             }
             invalidateSearcher();
-            return this;
         }
         catch ( IOException e )
         {
@@ -139,8 +139,8 @@ class FullTxData extends ExactTxData
             try
             {
                 this.directory = new RAMDirectory();
-                this.writer = new IndexWriter( directory, index.type.analyzer,
-                        MaxFieldLength.UNLIMITED );
+                IndexWriterConfig writerConfig = new IndexWriterConfig( LUCENE_VERSION, index.type.analyzer );
+                this.writer = new IndexWriter( directory, writerConfig );
             }
             catch ( IOException e )
             {
@@ -150,9 +150,9 @@ class FullTxData extends ExactTxData
     }
 
     @Override
-    TxData remove( Object entityId, String key, Object value )
+    void remove( TxDataHolder holder, Object entityId, String key, Object value )
     {
-        super.remove( entityId, key, value );
+        super.remove( holder, entityId, key, value );
         try
         {
             ensureLuceneDataInstantiated();
@@ -171,7 +171,6 @@ class FullTxData extends ExactTxData
                 }
             }
             invalidateSearcher();
-            return this;
         }
         catch ( IOException e )
         {
@@ -180,16 +179,16 @@ class FullTxData extends ExactTxData
     }
 
     @Override
-    Pair<Collection<Long>, TxData> query( Query query, QueryContext contextOrNull )
+    Collection<Long> query( TxDataHolder holder, Query query, QueryContext contextOrNull )
     {
         return internalQuery( query, contextOrNull );
     }
 
-    private Pair<Collection<Long>, TxData> internalQuery( Query query, QueryContext contextOrNull )
+    private Collection<Long> internalQuery( Query query, QueryContext contextOrNull )
     {
         if ( this.directory == null )
         {
-            return Pair.<Collection<Long>, TxData>of( Collections.<Long>emptySet(), this );
+            return Collections.<Long>emptySet();
         }
 
         try
@@ -201,10 +200,9 @@ class FullTxData extends ExactTxData
             Collection<Long> result = new ArrayList<Long>();
             for ( int i = 0; i < hits.length(); i++ )
             {
-                result.add( Long.parseLong( hits.doc( i ).getField(
-                    LuceneIndex.KEY_DOC_ID ).stringValue() ) );
+                result.add( Long.valueOf( hits.doc( i ).get( KEY_DOC_ID ) ) );
             }
-            return Pair.<Collection<Long>, TxData>of( result, this );
+            return result;
         }
         catch ( IOException e )
         {
@@ -274,7 +272,7 @@ class FullTxData extends ExactTxData
 
         try
         {
-            IndexReader newReader = this.reader == null ? this.writer.getReader() : this.reader.reopen();
+            IndexReader newReader = this.reader == null ? IndexReader.open( this.writer, true ) : this.reader.reopen();
             if ( newReader == this.reader )
             {
                 return this.searcher;
@@ -327,9 +325,9 @@ class FullTxData extends ExactTxData
     }
     
     @Override
-    Pair<Searcher, TxData> asSearcher( QueryContext context )
+    IndexSearcher asSearcher( TxDataHolder holder, QueryContext context )
     {
         boolean refresh = context == null || !context.getTradeCorrectnessForSpeed();
-        return Pair.of( (Searcher) searcher( refresh ), (TxData) this );
+        return searcher( refresh );
     }
 }

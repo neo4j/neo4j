@@ -19,12 +19,16 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import java.io.IOException;
+
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
 
 class MultipleBackupDeletionPolicy extends SnapshotDeletionPolicy
 {
+    static final String SNAPSHOT_ID = "backup";
+    
     private IndexCommit snapshot;
     private int snapshotUsers;
 
@@ -34,20 +38,20 @@ class MultipleBackupDeletionPolicy extends SnapshotDeletionPolicy
     }
 
     @Override
-    public synchronized IndexCommit snapshot()
+    public synchronized IndexCommit snapshot( String id ) throws IOException
     {
         if ( (snapshotUsers++) == 0 )
         {
-            snapshot = super.snapshot();
+            snapshot = super.snapshot( id );
         }
         return snapshot;
     }
 
     @Override
-    public synchronized void release()
+    public synchronized void release( String id ) throws IOException
     {
         if ( (--snapshotUsers) > 0 ) return;
-        super.release();
+        super.release( id );
         snapshot = null;
         if ( snapshotUsers < 0 )
         {

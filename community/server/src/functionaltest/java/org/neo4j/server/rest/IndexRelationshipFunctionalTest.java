@@ -35,7 +35,6 @@ import javax.ws.rs.core.Response.Status;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
@@ -285,30 +284,22 @@ public class IndexRelationshipFunctionalTest
                 MediaType.APPLICATION_JSON ).get( ClientResponse.class );
         assertEquals( 200, response.getStatus() );
     }
+    
 
-    /**
-     * FIXME: this is a duplicate of
-     * {@link IndexNodeFunctionalTest#shouldGet200AndBeAbleToRemoveIndexing()}
-     * it should at least be adapted for relationships
-     */
+
     @Test
-    @Ignore("Unclear contract: remove the index itself? That is unsupported in the new index api")
-    public void shouldGet200AndBeAbleToRemoveIndexing() throws DatabaseBlockedException, JsonParseException
+    public void shouldGet200WhenQueryingIndex() throws PropertyValueException
     {
-        ClientResponse response = Client.create().resource( functionalTestHelper.nodeUri() ).type( MediaType.APPLICATION_FORM_URLENCODED ).accept(
-                MediaType.APPLICATION_JSON ).post( ClientResponse.class );
-        String nodeUri = response.getHeaders().getFirst( HttpHeaders.LOCATION );
-        String key = "key_remove";
-        String value = "value";
-        String indexUri = Client.create().resource( functionalTestHelper.indexUri() + "/node/" + key + "/" + value ).entity( JsonHelper.createJsonFrom( nodeUri ),
-                MediaType.APPLICATION_JSON ).post( ClientResponse.class ).getHeaders().getFirst( HttpHeaders.LOCATION );
-        assertEquals( 1, helper.getIndexedNodes( "node", key, value ).size() );
-        response = Client.create().resource( indexUri ).delete( ClientResponse.class );
-        assertEquals( Status.NO_CONTENT.getStatusCode(), response.getStatus() );
-        assertEquals( 0, helper.getIndexedNodes( "node", key, value ).size() );
+        String indexName = "bobTheIndex";
+        String key = "bobsKey";
+        String value = "bobsValue";
+        long relationship = helper.createRelationship("TYPE");
+        helper.addRelationshipToIndex( indexName, key, value, relationship );
 
-        response = Client.create().resource( indexUri ).delete( ClientResponse.class );
-        assertEquals( Status.NOT_FOUND.getStatusCode(), response.getStatus() );
+        ClientResponse response = Client.create().resource( functionalTestHelper.indexRelationshipUri( indexName ) + "?query="+key+":"+value ).accept( MediaType.APPLICATION_JSON )
+                .get( ClientResponse.class );
+        
+        assertEquals( 200, response.getStatus() );
     }
 
     @Test

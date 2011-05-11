@@ -19,6 +19,11 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import static java.lang.System.currentTimeMillis;
+import static java.lang.System.out;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.IteratorUtil.lastOrNull;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -68,46 +73,53 @@ public class TestPerformanceAndSanity extends AbstractLuceneIndexTest
             Index<T> index,
             EntityCreator<T> creator )
     {
-        long t = System.currentTimeMillis();
-        for ( int i = 0; i < 300000; i++ )
+        long t = currentTimeMillis();
+        int max = 500000;
+        for ( int i = 0; i < max; i++ )
         {
             T entity = creator.create();
             if ( i % 5000 == 5 )
             {
                 index.query( new TermQuery( new Term( "name", "The name " + i ) ) );
             }
-            IteratorUtil.lastOrNull( (Iterable<T>) index.query( new QueryContext( new TermQuery( new Term( "name", "The name " + i ) ) ).tradeCorrectnessForSpeed() ) );
-            IteratorUtil.lastOrNull( (Iterable<T>) index.get( "name", "The name " + i ) );
+            lastOrNull( (Iterable<T>) index.query( new QueryContext( new TermQuery( new Term( "name", "The name " + i ) ) ).tradeCorrectnessForSpeed() ) );
+            lastOrNull( (Iterable<T>) index.get( "name", "The name " + i ) );
             index.add( entity, "name", "The name " + i );
             index.add( entity, "title", "Some title " + i );
             index.add( entity, "something", i + "Nothing" );
             index.add( entity, "else", i + "kdfjkdjf" + i );
-            if ( i % 10000 == 0 )
+            if ( i % 30000 == 0 )
             {
                 restartTx();
                 System.out.println( i );
             }
         }
-        System.out.println( "insert:" + ( System.currentTimeMillis() - t ) );
+        finishTx( true );
+        out.println( "insert:" + ( currentTimeMillis() - t ) );
 
-        t = System.currentTimeMillis();
-        int count = 1000;
+        t = currentTimeMillis();
+        int count = 2000000;
         int resultCount = 0;
         for ( int i = 0; i < count; i++ )
         {
-            resultCount += IteratorUtil.count( (Iterator<T>) index.get( "name", "The name " + i*900 ) );
+            resultCount += count( (Iterator<T>) index.get( "name", "The name " + i%max ) );
         }
-        System.out.println( "get(" + resultCount + "):" + (double)( System.currentTimeMillis() - t ) / (double)count );
+        out.println( "get(" + resultCount + "):" + (double)( currentTimeMillis() - t ) / (double)count );
 
-        t = System.currentTimeMillis();
+        t = currentTimeMillis();
         resultCount = 0;
         for ( int i = 0; i < count; i++ )
         {
-            resultCount += IteratorUtil.count( (Iterator<T>) index.get( "something", i*900 + "Nothing" ) );
+            resultCount += count( (Iterator<T>) index.get( "something", i%max + "Nothing" ) );
         }
-        System.out.println( "get(" + resultCount + "):" + (double)( System.currentTimeMillis() - t ) / (double)count );
+        out.println( "get(" + resultCount + "):" + (double)( currentTimeMillis() - t ) / (double)count );
     }
 
+    /**
+     * Starts multiple threads which updates and queries an index concurrently
+     * during a long period of time just to make sure that number of file handles doesn't grow.
+     * @throws Exception
+     */
     @Test
     public void makeSureFilesAreClosedProperly() throws Exception
     {
@@ -117,11 +129,12 @@ public class TestPerformanceAndSanity extends AbstractLuceneIndexTest
         final CountDownLatch latch = new CountDownLatch( 30 );
         for ( int t = 0; t < latch.getCount(); t++ ) 
         {
+            final int thread = t;
             new Thread()
             {
                 public void run()
                 {
-                    for ( int i = 0; System.currentTimeMillis() - time < 100*1000; i++ )
+                    for ( int i = 0; System.currentTimeMillis() - time < 60*1000*10; i++ )
                     {
                         if ( i%10 == 0 )
                         {
@@ -137,8 +150,7 @@ public class TestPerformanceAndSanity extends AbstractLuceneIndexTest
                                         itr.getSingle();
                                     }
                                     catch ( NoSuchElementException e )
-                                    {
-            
+                                    { // For when there are multiple hits
                                     }
                                     size = 99;
                                 }
@@ -161,12 +173,15 @@ public class TestPerformanceAndSanity extends AbstractLuceneIndexTest
                                     }
                                 }
                                 
-                                System.out.println( "C iterated " + size + " only" );
+//                                System.out.println( "C iterated " + size + " only" );
                             }
                             else
                             {
                                 int size = IteratorUtil.count( (Iterator<Node>) index.get( "key", "value5" ) );
-                                System.out.println( "hit size:" + size );
+                                if ( thread == 0 )
+                                {
+                                    System.out.println( "hit size:" + size );
+                                }
                             }
                         }
                         else

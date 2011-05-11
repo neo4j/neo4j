@@ -19,9 +19,13 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import static org.neo4j.index.impl.lucene.LuceneDataSource.LUCENE_VERSION;
+import static org.neo4j.index.impl.lucene.LuceneDataSource.getDirectory;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -31,7 +35,7 @@ import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TopDocs;
@@ -208,9 +212,9 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
     {
         try
         {
-            IndexWriter writer = new IndexWriter( LuceneDataSource.getDirectory( directory, identifier ),
-                    type.analyzer, MaxFieldLength.UNLIMITED );
-            writer.setRAMBufferSizeMB( determineGoodBufferSize( writer.getRAMBufferSizeMB() ) );
+            IndexWriterConfig writerConfig = new IndexWriterConfig( LUCENE_VERSION, type.analyzer );
+            writerConfig.setRAMBufferSizeMB( determineGoodBufferSize( writerConfig.getRAMBufferSizeMB() ) );
+            IndexWriter writer = new IndexWriter( getDirectory( directory, identifier ), writerConfig );
             return writer;
         }
         catch ( IOException e )
@@ -250,7 +254,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
                     result.getIndexReader().close();
                     result.close();
                 }
-                IndexReader newReader = writer.getReader();
+                IndexReader newReader = IndexReader.open( writer, true );
                 result = new IndexSearcher( newReader );
                 writerModified = false;
             }
@@ -294,11 +298,11 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
             HitsIterator result = new HitsIterator( hits );
             if ( key == null || this.cache == null || !this.cache.containsKey( key ) )
             {
-                return new DocToIdIterator( result, null, null );
+                return new DocToIdIterator( result, Collections.<Long>emptyList(), null );
             }
             else
             {
-                return new DocToIdIterator( result, null, null )
+                return new DocToIdIterator( result, Collections.<Long>emptyList(), null )
                 {
                     private final Collection<Long> ids = new ArrayList<Long>();
                     

@@ -905,6 +905,42 @@ public class RestfulGraphDatabaseTest
         assertEquals( 201, response.getStatus() );
         assertNotNull( response.getMetadata().getFirst( "Location" ) );
     }
+    
+    @Test
+    public void shouldBeAbleToRemoveNodeIndex() throws DatabaseBlockedException, JsonParseException
+    {
+
+        String indexName = "myFancyIndex";
+        
+        assertEquals(0,helper.getNodeIndexes().length);
+
+        helper.createNodeIndex( indexName );
+        
+        assertEquals(1,helper.getNodeIndexes().length);
+        
+        Response response = service.deleteNodeIndex( indexName );
+
+        assertEquals( 204, response.getStatus() );
+        assertEquals(0,helper.getNodeIndexes().length);
+    }
+    
+    @Test
+    public void shouldBeAbleToRemoveRelationshipIndex() throws DatabaseBlockedException, JsonParseException
+    {
+
+        String indexName = "myFancyIndex";
+        
+        assertEquals(0,helper.getRelationshipIndexes().length);
+
+        helper.createRelationshipIndex( indexName );
+        
+        assertEquals(1,helper.getRelationshipIndexes().length);
+        
+        Response response = service.deleteRelationshipIndex( indexName );
+
+        assertEquals( 204, response.getStatus() );
+        assertEquals(0,helper.getRelationshipIndexes().length);
+    }
 
     @Test
     public void shouldBeAbleToGetNodeRepresentationFromIndexUri() throws DatabaseBlockedException, JsonParseException
@@ -974,6 +1010,31 @@ public class RestfulGraphDatabaseTest
 
         Map.Entry<String, String> indexedKeyValue = matrixers.indexedNodeKeyValues.entrySet().iterator().next();
         // query for the first letter with which the nodes were indexed.
+        Response response = service.getIndexedNodesByQuery( matrixers.nodeIndexName, indexedKeyValue.getKey() + ":" + indexedKeyValue.getValue().substring( 0, 1 ) + "*" );
+        assertEquals( Status.OK.getStatusCode(), response.getStatus() );
+        Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( entityAsString( response ) );
+        int counter = 0;
+        for ( Object item : items )
+        {
+            Map<?, ?> map = (Map<?, ?>) item;
+            Map<?, ?> properties = (Map<?, ?>) map.get( "data" );
+            String indexedUri = (String) map.get( "indexed" ); // unlike exact match, a query can not return a sensible index uri for the result
+            assertNull(indexedUri);
+            String selfUri = (String) map.get("self");
+            assertNotNull( selfUri );
+            assertEquals( matrixers.nodeUriToEntityMap.get( new URI(selfUri) ).properties.get("name"), properties.get( "name" ) );
+            counter++;
+        }
+        assertThat( counter, is( greaterThanOrEqualTo(2)) );
+    }
+
+    @Test
+    public void shouldBeAbleToGetListOfNodeRepresentationsFromIndexQueryWithDefaultKey() throws DatabaseBlockedException, PropertyValueException, URISyntaxException
+    {
+        RestfulModelHelper.DomainModel matrixers = RestfulModelHelper.generateMatrix( service );
+
+        Map.Entry<String, String> indexedKeyValue = matrixers.indexedNodeKeyValues.entrySet().iterator().next();
+        // query for the first letter with which the nodes were indexed.
         Response response = service.getIndexedNodesByQuery( matrixers.nodeIndexName, indexedKeyValue.getKey(), indexedKeyValue.getValue().substring( 0, 1 ) + "*" );
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
         Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( entityAsString( response ) );
@@ -1032,6 +1093,43 @@ public class RestfulGraphDatabaseTest
 
     @Test
     public void shouldBeAbleToGetListOfRelationshipRepresentationsFromIndexQuery() throws DatabaseBlockedException, PropertyValueException
+    {
+        String key = "key_get";
+        String value = "value";
+
+        long startNodeId = helper.createNode();
+        long endNodeId = helper.createNode();
+
+        String relationshipType1 = "KNOWS";
+        long relationshipId1 = helper.createRelationship( relationshipType1, startNodeId, endNodeId );
+        String relationshipType2 = "PLAYS-NICE-WITH";
+        long relationshipId2 = helper.createRelationship( relationshipType2, startNodeId, endNodeId );
+
+        String indexName = "matrixal-relationships";
+        helper.createRelationshipIndex( indexName );
+        helper.addRelationshipToIndex( indexName, key, value, relationshipId1 );
+        helper.addRelationshipToIndex( indexName, key, value, relationshipId2 );
+
+        Response response = service.getIndexedRelationshipsByQuery( indexName, key + ":" + value.substring( 0,1 ) + "*" );
+        assertEquals( Status.OK.getStatusCode(), response.getStatus() );
+        Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( entityAsString( response ) );
+        int counter = 0;
+        for ( Object item : items )
+        {
+            Map<?, ?> map = (Map<?, ?>) item;
+            String indexedUri = (String) map.get( "indexed" );
+            assertNull( indexedUri ); // queries can not return a sensible index uri
+            String selfUri = (String) map.get("self");
+            assertNotNull( selfUri );
+            assertTrue( selfUri.endsWith( Long.toString( relationshipId1 ) ) ||
+                    selfUri.endsWith( Long.toString( relationshipId2 ) ) );
+            counter++;
+        }
+        assertThat( counter, is(greaterThanOrEqualTo( 2 )));
+    }
+
+    @Test
+    public void shouldBeAbleToGetListOfRelationshipRepresentationsFromIndexQueryWithDefaultKey() throws DatabaseBlockedException, PropertyValueException
     {
         String key = "key_get";
         String value = "value";

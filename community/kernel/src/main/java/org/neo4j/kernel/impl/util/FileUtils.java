@@ -22,12 +22,55 @@ package org.neo4j.kernel.impl.util;
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Stack;
 
 import org.neo4j.graphdb.NotFoundException;
 
 public class FileUtils
 {
     private static int WINDOWS_RETRY_COUNT = 3;
+
+    public static void deleteRecursively( File directory )
+    throws IOException
+    {
+        Stack<File> stack = new Stack<File>();
+        List<File> temp = new LinkedList<File>();
+        stack.push(directory.getAbsoluteFile());
+        while(!stack.isEmpty())
+        {
+            File top = stack.pop();
+            if (top.listFiles() != null)
+            {
+                for (File child : top.listFiles()) {
+                    if (child.isFile()) {
+                        if ( !deleteFile( child ) )
+                        {
+                            throw new IOException( "Failed to delete "
+                                    + child.getCanonicalPath() );
+                        }
+                    } else {
+                        temp.add(child);
+                    }
+                }
+            }
+            if (top.listFiles() == null || top.listFiles().length == 0) {
+                if ( !deleteFile( top ) )
+                {
+                    throw new IOException( "Failed to delete "
+                            + top.getCanonicalPath() );
+                }
+            } else {
+                stack.push(top);
+                for (File f : temp)
+                {
+                    stack.push(f);
+                }
+            }
+            temp.clear();
+        }
+    }
 
     public static boolean deleteFile( File file )
     {
@@ -49,18 +92,18 @@ public class FileUtils
         while ( !deleted && count <= WINDOWS_RETRY_COUNT );
         return deleted;
     }
-    
+
     public static boolean renameFile( File srcFile, File renameToFile )
     {
         if ( !srcFile.exists() )
         {
             throw new NotFoundException( "Source file[" + srcFile.getName()
-                + "] not found" );
+                    + "] not found" );
         }
         if ( renameToFile.exists() )
         {
             throw new NotFoundException( "Target file[" + renameToFile.getName()
-                + "] already exists" );
+                    + "] already exists" );
         }
         int count = 0;
         boolean renamed = false;
@@ -78,7 +121,7 @@ public class FileUtils
     }
 
     public static void truncateFile( FileChannel fileChannel, long position )
-        throws IOException
+    throws IOException
     {
         int count = 0;
         boolean success = false;
@@ -116,7 +159,7 @@ public class FileUtils
         } // ok
         System.gc();
     }
-    
+
     public static String fixSeparatorsInPath( String path )
     {
         String fileSeparator = System.getProperty( "file.separator" );

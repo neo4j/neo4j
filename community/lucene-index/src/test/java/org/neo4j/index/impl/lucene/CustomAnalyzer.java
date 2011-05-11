@@ -19,6 +19,8 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import static org.neo4j.index.impl.lucene.LuceneDataSource.LUCENE_VERSION;
+
 import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -26,14 +28,14 @@ import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 
-class CustomAnalyzer extends Analyzer
+final class CustomAnalyzer extends Analyzer
 {
     static boolean called;
     
     @Override
-    public TokenStream tokenStream( String fieldName, Reader reader )
+    public final TokenStream tokenStream( String fieldName, Reader reader )
     {
         called = true;
-        return new LowerCaseFilter( new WhitespaceTokenizer( reader ) );
+        return new LowerCaseFilter( LUCENE_VERSION, new WhitespaceTokenizer( LUCENE_VERSION, reader ) );
     }
 }

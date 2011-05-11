@@ -22,20 +22,20 @@ define [], () ->
   
   class HtmlEscaper
     
-    escape : (text) =>
-      return @replaceAll(text, [
+    escape : (text, addNbsp=false) =>
+      text = @replaceAll(text, [
         [/&/g,"&amp;"]
         [/</g,"&lt;"]
         [/>/g,"&gt;"]
         [/"/g,"&quot;"]
-        [/\ /g,"&nbsp;"]
         [/'/g,"&#x27;"]
         [/\//g,"&#x2F;"]])
+
+      return if addNbsp then @replaceAll(text, [[/\ /g, "&nbsp;"]]) else text
 
     replaceAll : (text, replacements) =>
       
       text += ""
-
       for replacement in replacements
         text = text.replace replacement[0], replacement[1]
       return text

@@ -63,7 +63,7 @@ public class WebdriverLibrary
     }
     
     public void waitForElementToAppear(By by) {
-        waitUntil( elementVisible( by ), "Element did not appear within a reasonable time." );
+        waitUntil( elementVisible( by ), "Element ("+by.toString()+") did not appear within a reasonable time." );
     }
     
     public void waitForElementToDisappear(By by) {
@@ -84,7 +84,7 @@ public class WebdriverLibrary
     public void waitUntil(Matcher<WebDriver> matcher, String errorMessage, long timeout) {
         try {
             Condition<WebDriver> cond = new WebdriverCondition<WebDriver>( getWebDriver(), matcher, d);
-            cond.waitUntilFulfilled(timeout);
+            cond.waitUntilFulfilled(timeout, errorMessage);
         } catch( TimeoutException e) {
             fail(errorMessage);
         }
