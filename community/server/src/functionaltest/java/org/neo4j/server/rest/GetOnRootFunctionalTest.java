@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 
 import org.junit.After;
 import org.junit.Before;
@@ -60,8 +59,8 @@ public class GetOnRootFunctionalTest extends BaseDocumentation {
 
     @Test
     public void assert200OkFromGet() throws Exception {
-        doc.doRequest( "Retrieving the data root endpoint", "GET",
-                functionalTestHelper.dataUri(), Response.Status.OK );
+        doc.builder( "Retrieving the data root endpoint" ).get(
+                functionalTestHelper.dataUri() );
     }
 
     @Test

@@ -73,39 +73,94 @@ public class DocumentationOutput implements MethodRule
         }
     };
 
-    public ClientResponse doRequest( final String title, final String method,
-            final String uri, final Response.Status responseCode,
-            final String headerField )
+    public DocsBuilder builder( final String title )
     {
-        return retrieveResponseFromRequest( title, method, uri, responseCode,
-                headerField );
+        return new DocsBuilder( title );
     }
 
-    public ClientResponse doRequest( final String title, final String method,
-            final String uri, final Response.Status responseCode )
+    public DocsBuilder builder( final String title, final String description )
     {
-        return retrieveResponseFromRequest( title, method, uri, responseCode,
-                null );
+        return new DocsBuilder( title, description );
     }
 
-    public ClientResponse doRequest( final String title, final String method,
-            final String uri, final String payload,
-            final Response.Status responseCode, final String headerField )
+    public class DocsBuilder
     {
-        return retrieveResponseFromRequest( title, method, uri, payload,
-                responseCode, headerField );
-    }
+        private final String title;
+        private Response.Status expectedResponseStatus = Response.Status.OK;
+        private MediaType expectedMediaType = MediaType.APPLICATION_JSON_TYPE;
+        private String description;
+        private String expectedHeaderField;
+        private String payload;
 
-    public ClientResponse doRequest( final String title, final String method,
-            final String uri, final String payload,
-            final Response.Status responseCode )
-    {
-        return retrieveResponseFromRequest( title, method, uri, payload,
-                responseCode, null );
+        private DocsBuilder( final String title )
+        {
+            this.title = title;
+        }
+
+        private DocsBuilder( final String title, final String description )
+        {
+            this.title = title;
+            this.description = description;
+        }
+
+        public DocsBuilder status( final Response.Status expectedResponseStatus )
+        {
+            this.expectedResponseStatus = expectedResponseStatus;
+            return this;
+        }
+
+        public DocsBuilder type( final MediaType expectedMediaType )
+        {
+            this.expectedMediaType = expectedMediaType;
+            return this;
+        }
+
+        public DocsBuilder payload( final String payload )
+        {
+            this.payload = payload;
+            return this;
+        }
+
+        public DocsBuilder header( final String exppectedHeaderField )
+        {
+            this.expectedHeaderField = exppectedHeaderField;
+            return this;
+        }
+
+        public ClientResponse request( final ClientRequest request )
+        {
+            return retrieveResponse( title, request.getURI().toString(),
+                    expectedResponseStatus, expectedMediaType,
+                    expectedHeaderField, request );
+        }
+
+        public ClientResponse get( final String uri )
+        {
+            return retrieveResponseFromRequest( title, "GET", uri, expectedResponseStatus,
+                    expectedHeaderField );
+        }
+
+        public ClientResponse post( final String uri )
+        {
+            return retrieveResponseFromRequest( title, "POST", uri, payload,
+                    expectedResponseStatus, expectedHeaderField );
+        }
+
+        public ClientResponse put( final String uri )
+        {
+            return retrieveResponseFromRequest( title, "PUT", uri, payload,
+                    expectedResponseStatus, expectedHeaderField );
+        }
+
+        public ClientResponse delete( final String uri )
+        {
+            return retrieveResponseFromRequest( title, "DELETE", uri, payload,
+                    expectedResponseStatus, expectedHeaderField );
+        }
     }
 
     private ClientResponse retrieveResponseFromRequest( final String title,
-            String method, final String uri, final Status responseCode,
+            final String method, final String uri, final Status responseCode,
             final String headerField )
     {
         ClientRequest request;
@@ -124,7 +179,7 @@ public class DocumentationOutput implements MethodRule
     }
 
     private ClientResponse retrieveResponseFromRequest( final String title,
-            String method, final String uri, final String payload,
+            final String method, final String uri, final String payload,
             final Status responseCode, final String headerField )
     {
         ClientRequest request;
@@ -132,7 +187,7 @@ public class DocumentationOutput implements MethodRule
         {
             request = ClientRequest.create().type( applicationJsonType ).accept(
                     applicationJsonType ).entity( payload ).build(
-                    new URI( uri ), method );
+                            new URI( uri ), method );
         }
         catch ( URISyntaxException e )
         {
@@ -145,7 +200,7 @@ public class DocumentationOutput implements MethodRule
 
     private ClientResponse retrieveResponse( final String title,
             final String uri, final Response.Status responseCode,
-            MediaType type, final String headerField,
+            final MediaType type, final String headerField,
             final ClientRequest request )
     {
         System.out.println( uri );
@@ -191,7 +246,7 @@ public class DocumentationOutput implements MethodRule
 
     private void getResponseHeaders(
             final MultivaluedMap<String, String> headers,
-            List<String> additionalFilter )
+            final List<String> additionalFilter )
     {
         data.setResponseHeaders( getHeaders( headers, RESPONSE_HEADERS,
                 additionalFilter ) );
@@ -204,14 +259,14 @@ public class DocumentationOutput implements MethodRule
     }
 
     private <T> Map<String, String> getHeaders(
-            final MultivaluedMap<String, T> headers, List<String> filter,
-            List<String> additionalFilter )
-    {
+            final MultivaluedMap<String, T> headers, final List<String> filter,
+            final List<String> additionalFilter )
+            {
         Map<String, String> filteredHeaders = new TreeMap<String, String>();
         for ( Entry<String, List<T>> header : headers.entrySet() )
         {
             if ( filter.contains( header.getKey() )
-                 || additionalFilter.contains( header.getKey() ) )
+                    || additionalFilter.contains( header.getKey() ) )
             {
                 String values = "";
                 for ( T value : header.getValue() )
@@ -226,7 +281,7 @@ public class DocumentationOutput implements MethodRule
             }
         }
         return filteredHeaders;
-    }
+            }
 
     protected DocuementationData data = new DocuementationData();
 
@@ -278,12 +333,12 @@ public class DocumentationOutput implements MethodRule
 
         }
 
-        public void setResponseHeaders( Map<String, String> response )
+        public void setResponseHeaders( final Map<String, String> response )
         {
             responseHeaders = response;
         }
 
-        public void setRequestHeaders( Map<String, String> request )
+        public void setRequestHeaders( final Map<String, String> request )
         {
             requestHeaders = request;
         }
@@ -302,7 +357,6 @@ public class DocumentationOutput implements MethodRule
         this.functionalTestHelper = functionalTestHelper;
         this.applicationJsonType = applicationJsonType;
         data = new DocuementationData();
-
     }
 
     public DocumentationOutput( final FunctionalTestHelper functionalTestHelper )
@@ -340,7 +394,7 @@ public class DocumentationOutput implements MethodRule
                 for ( Entry<String, String> header : data.requestHeaders.entrySet() )
                 {
                     line( "* *+" + header.getKey() + ":+* +"
-                          + header.getValue() + "+" );
+                            + header.getValue() + "+" );
                 }
             }
             if ( data.payload != null && !data.payload.equals( "null" ) )
@@ -354,13 +408,13 @@ public class DocumentationOutput implements MethodRule
             line( "_Example response_" );
             line( "" );
             line( "* *+" + data.status.getStatusCode() + ":+* +"
-                  + data.status.name() + "+" );
+                    + data.status.name() + "+" );
             if ( data.responseHeaders != null )
             {
                 for ( Entry<String, String> header : data.responseHeaders.entrySet() )
                 {
                     line( "* *+" + header.getKey() + ":+* +"
-                          + header.getValue() + "+" );
+                            + header.getValue() + "+" );
                 }
             }
             if ( data.entity != null )

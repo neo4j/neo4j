@@ -59,12 +59,12 @@ public class RemoveNodePropertiesFunctionalTest extends BaseDocumentation
         server.stop();
         server = null;
     }
-    
-    private String getPropertiesUri( long nodeId )
+
+    private String getPropertiesUri( final long nodeId )
     {
         return functionalTestHelper.nodePropertiesUri(nodeId);
     }
-    
+
     @Test
     public void shouldReturn204WhenPropertiesAreRemoved() throws DatabaseBlockedException
     {
@@ -85,20 +85,20 @@ public class RemoveNodePropertiesFunctionalTest extends BaseDocumentation
         helper.setNodeProperties( nodeId, map );
         ClientResponse response = removeNodePropertiesOnServer( nodeId );
         assertEquals( 204, response.getStatus() );
-        doc.doRequest( "Delete all properties from node", "DELETE",
-                functionalTestHelper.nodePropertiesUri( nodeId ),
-                Response.Status.NO_CONTENT );
+        doc.builder( "Delete all properties from node" ).status(
+                Response.Status.NO_CONTENT ).delete(
+                functionalTestHelper.nodePropertiesUri( nodeId ) );
     }
 
     @Test
     public void shouldReturn404WhenPropertiesSentToANodeWhichDoesNotExist()
     {
         ClientResponse response = Client.create().resource( getPropertiesUri( 999999 ) ).type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON )
-                .delete( ClientResponse.class );
+        .delete( ClientResponse.class );
         assertEquals( 404, response.getStatus() );
     }
 
-    private ClientResponse removeNodePropertiesOnServer( long nodeId )
+    private ClientResponse removeNodePropertiesOnServer( final long nodeId )
     {
         return Client.create().resource( getPropertiesUri( nodeId ) ).delete( ClientResponse.class );
     }
@@ -129,16 +129,16 @@ public class RemoveNodePropertiesFunctionalTest extends BaseDocumentation
     public void shouldReturn404WhenPropertySentToANodeWhichDoesNotExist()
     {
         ClientResponse response = Client.create().resource( getPropertyUri( 999999, "foo" ) ).type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON )
-                .delete( ClientResponse.class );
+        .delete( ClientResponse.class );
         assertEquals( 404, response.getStatus() );
     }
 
-    private String getPropertyUri( long nodeId, String key )
+    private String getPropertyUri( final long nodeId, final String key )
     {
         return functionalTestHelper.nodePropertyUri(nodeId, key);
     }
 
-    private ClientResponse removeNodePropertyOnServer( long nodeId, String key )
+    private ClientResponse removeNodePropertyOnServer( final long nodeId, final String key )
     {
         return Client.create().resource( getPropertyUri( nodeId, key ) ).delete( ClientResponse.class );
     }
