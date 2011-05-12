@@ -544,7 +544,7 @@ curl -H Accept:application/json http://localhost:7474/db/data/relationship/types
 ** Example using curl
 
 ---
-curl-X POST -H Accept:application/json -HContent-Type:application/json -d '{"name":"fulltext", "config":{"type":"fulltext","provider":"lucene"}}' http://localhost:7474/db/data/index/node
+curl -X POST -H Accept:application/json -HContent-Type:application/json -d '{"name":"fulltext", "config":{"type":"fulltext","provider":"lucene"}}' http://localhost:7474/db/data/index/node
 ---
 
 ** Response
