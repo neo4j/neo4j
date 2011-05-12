@@ -641,6 +641,11 @@ curl -H Accept:application/json http://localhost:7474/db/data/index/relationship
     
     If you want to divert from the default index settings, see "Create an index" above.
     
+    
+    Also: This does *not* overwrite previous entries. If you index the same key/value/item combination twice,
+    two index entries are created. To do update-type operations, you need to delete the old entry before
+    adding a new one.
+    
 ** POST /index/node/my_nodes/the_key/the_value
 
 	Associates a node with the given key/value pair in the given index.
