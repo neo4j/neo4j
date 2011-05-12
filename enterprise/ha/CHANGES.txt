@@ -1,3 +1,8 @@
+1.4.M02 (2011-05-12)
+--------------------
+o At startup, the Config.USE_MEMORY_MAPPED_LOG parameter is set to 'true' since HA member will benefit performance wise from memory mapping since they
+  continuously scan the log.
+
 1.3.M05 (2011-03-24)
 --------------------
 o Now possible to copy full store on Windows.
