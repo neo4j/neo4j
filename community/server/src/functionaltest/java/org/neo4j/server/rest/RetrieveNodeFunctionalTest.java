@@ -58,7 +58,7 @@ public class RetrieveNodeFunctionalTest extends BaseDocumentation{
         server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper(server);
-        doc = new DocumentationOutput(functionalTestHelper, MediaType.APPLICATION_JSON_TYPE);
+        doc = new DocumentationOutput( functionalTestHelper );
         nodeUri = new URI(functionalTestHelper.nodeUri() + "/" + new GraphDbHelper(server.getDatabase()).createNode());
     }
 
@@ -71,7 +71,7 @@ public class RetrieveNodeFunctionalTest extends BaseDocumentation{
     @Test
     public void shouldGet200WhenRetrievingNode() throws Exception {
         String uri = nodeUri.toString();
-        doc.doRequest( "Get Node", "GET", uri, Response.Status.OK, null );
+        doc.builder( "Get Node" ).get( uri );
     }
 
     @Test
@@ -96,15 +96,15 @@ public class RetrieveNodeFunctionalTest extends BaseDocumentation{
 
     @Test
     public void shouldGet404WhenRetrievingNonExistentNode() throws Exception {
-        doc.doRequest( "Get non-existent Node", "GET", nodeUri + "00000",
-                Response.Status.NOT_FOUND );
+        doc.builder( "Get non-existent Node" ).status(
+                Response.Status.NOT_FOUND ).get( nodeUri + "00000" );
     }
 
-    private ClientResponse retrieveNodeFromService(String uri) {
+    private ClientResponse retrieveNodeFromService(final String uri) {
         WebResource resource = Client.create().resource(uri);
         ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
         return response;
     }
-    
-    
+
+
 }

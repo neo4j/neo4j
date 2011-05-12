@@ -1,3 +1,7 @@
+1.4.M02 (2011-05-12)
+--------------------
+o Exposed all neo4j index operations via the REST interface
+
 1.4.M01 (2011-04-28)
 --------------------
 o Removed dependency on log4j, logging now done via j.u.l
