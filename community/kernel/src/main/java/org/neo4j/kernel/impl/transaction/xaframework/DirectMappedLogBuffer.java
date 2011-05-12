@@ -26,7 +26,7 @@ import java.nio.channels.FileChannel;
 public class DirectMappedLogBuffer implements LogBuffer
 {
     // 500k
-    private static final int BUFFER_SIZE = 1024 * 512;
+    static final int BUFFER_SIZE = 1024 * 512;
 
     private final FileChannel fileChannel;
 
@@ -51,7 +51,7 @@ public class DirectMappedLogBuffer implements LogBuffer
     private void ensureCapacity( int plusSize ) throws IOException
     {
         if ( byteBuffer == null
-             || ( BUFFER_SIZE - byteBuffer.position() ) < plusSize )
+                || ( BUFFER_SIZE - byteBuffer.position() ) < plusSize )
         {
             getNewDirectBuffer();
         }
@@ -70,7 +70,7 @@ public class DirectMappedLogBuffer implements LogBuffer
         byteBuffer.putShort( s );
         return this;
     }
-    
+
     public LogBuffer putInt( int i ) throws IOException
     {
         ensureCapacity( 4 );

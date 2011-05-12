@@ -111,7 +111,7 @@ public class TestLogBufferDuplication
     {
         // Making sure the DMLB is used
         Map<String, String> props = new HashMap<String, String>();
-        props.put( Config.USE_MEMORY_MAPPED_BUFFERS, "false" );
+        props.put( Config.USE_MEMORY_MAPPED_LOG, "false" );
 
         LogBufferFactory fac = CommonFactories.defaultLogBufferFactory( props );
 
@@ -155,7 +155,7 @@ public class TestLogBufferDuplication
     public void testBigWrite() throws Exception
     {
         Map<String, String> props = new HashMap<String, String>();
-        props.put( Config.USE_MEMORY_MAPPED_BUFFERS, "false" );
+        props.put( Config.USE_MEMORY_MAPPED_LOG, "false" );
 
         LogBufferFactory fac = CommonFactories.defaultLogBufferFactory( props );
 
@@ -164,7 +164,8 @@ public class TestLogBufferDuplication
         LogBuffer buffer = fac.create( channel );
         assertEquals( DirectMappedLogBuffer.class, buffer.getClass() );
 
-        int writesAtFirst = ( 1024 * 1024 * 2 )/4; // Max size
+        int writesAtFirst = DirectMappedLogBuffer.BUFFER_SIZE / 4; // Max
+        // size
         for ( int i = 0; i < writesAtFirst; i++ )
         {
             buffer.putInt( i );
