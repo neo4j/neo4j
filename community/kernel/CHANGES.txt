@@ -1,3 +1,10 @@
+1.4.M02 (2011-05-12)
+--------------------
+o Changed the default implementation of the logical log to a DirectMappedLogBuffer.
+o Changed the TxLog to use a DirectMappedLogBuffer instead of its ad hoc implementation.
+o Added a configuration parameter (Config.USE_MEMORY_MAPPED_LOG) for controlling the log implementation (mmapped vs buffered)
+  separately from the store files with a default value of 'false'.
+  
 1.3.M05 (2011-03-24)
 --------------------
 o Added support for HA and backup on Windows.
