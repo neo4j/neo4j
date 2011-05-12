@@ -54,7 +54,7 @@ public class SetRelationshipPropertiesFunctionalTest extends BaseDocumentation{
         server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
         server.start();
         FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper(server);
-        doc = new DocumentationOutput(functionalTestHelper, MediaType.APPLICATION_JSON_TYPE);
+        doc = new DocumentationOutput( functionalTestHelper );
         long relationshipId = new GraphDbHelper(server.getDatabase()).createRelationship("KNOWS");
         propertiesUri = new URI(functionalTestHelper.relationshipPropertiesUri(relationshipId));
         badUri = new URI(functionalTestHelper.relationshipPropertiesUri(relationshipId + 1 * 99999));

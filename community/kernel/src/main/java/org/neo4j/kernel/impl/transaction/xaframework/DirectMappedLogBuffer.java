@@ -25,7 +25,8 @@ import java.nio.channels.FileChannel;
 
 public class DirectMappedLogBuffer implements LogBuffer
 {
-    private static final int BUFFER_SIZE = 1024 * 1024 * 2;
+    // 500k
+    private static final int BUFFER_SIZE = 1024 * 512;
 
     private final FileChannel fileChannel;
 
