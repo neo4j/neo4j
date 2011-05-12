@@ -62,7 +62,7 @@ public class ManageNodeFunctionalTest extends BaseDocumentation
         server.start();
         functionalTestHelper = new FunctionalTestHelper(server);
         helper = functionalTestHelper.getGraphDbHelper();
-        doc = new DocumentationOutput(functionalTestHelper, MediaType.APPLICATION_JSON_TYPE);
+        doc = new DocumentationOutput( functionalTestHelper );
 
     }
 
@@ -79,19 +79,17 @@ public class ManageNodeFunctionalTest extends BaseDocumentation
                         functionalTestHelper.nodeUri() );
         assertTrue( response.getLocation().toString().matches( NODE_URI_PATTERN ) );
         assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
-        assertProperNodeRepresentation( JsonHelper.jsonToMap( doc.data.entity ) );
     }
 
     @Test
     public void shouldGet201WhenCreatingNodeWithProperties() throws Exception
     {
-        ClientResponse response = doc.builder( "Create a node" ).payload(
-                "{\"foo\" : \"bar\"}" ).status( Response.Status.CREATED ).header(
-                "Location" ).post( functionalTestHelper.nodeUri() );
+        ClientResponse response = doc.builder( "Create a node with properties" ).payload(
+        "{\"foo\" : \"bar\"}" ).status( Response.Status.CREATED ).header(
+        "Location" ).post( functionalTestHelper.nodeUri() );
         //ClientResponse response = sendCreateRequestToServer(  );
         assertNotNull( response.getHeaders().get( "Content-Length" ) );
         assertTrue( response.getLocation().toString().matches( NODE_URI_PATTERN ) );
-        assertProperNodeRepresentation( JsonHelper.jsonToMap( doc.data.entity ) );
     }
 
     @Test

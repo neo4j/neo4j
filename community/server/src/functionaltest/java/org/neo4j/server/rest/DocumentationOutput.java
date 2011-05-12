@@ -28,7 +28,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -55,23 +54,11 @@ import com.sun.jersey.api.client.ClientResponse;
  */
 public class DocumentationOutput implements MethodRule
 {
-    @SuppressWarnings( "serial" )
-    private static final List<String> RESPONSE_HEADERS = new ArrayList<String>()
-    {
-        {
-            add( "Content-Type" );
-            add( "Location" );
-        }
-    };
+    private static final List<String> RESPONSE_HEADERS = Arrays.asList( new String[] {
+            "Content-Type", "Location" } );
 
-    @SuppressWarnings( "serial" )
-    private static final List<String> REQUEST_HEADERS = new ArrayList<String>()
-    {
-        {
-            add( "Accept" );
-            add( "Content-Type" );
-        }
-    };
+    private static final List<String> REQUEST_HEADERS = Arrays.asList( new String[] {
+            "Content-Type", "Accept" } );
 
     public DocsBuilder builder( final String title )
     {
@@ -86,9 +73,10 @@ public class DocumentationOutput implements MethodRule
     public class DocsBuilder
     {
         private final String title;
+        private String description;
         private Response.Status expectedResponseStatus = Response.Status.OK;
         private MediaType expectedMediaType = MediaType.APPLICATION_JSON_TYPE;
-        private String description;
+        private MediaType payloadMediaType = MediaType.APPLICATION_JSON_TYPE;
         private String expectedHeaderField;
         private String payload;
 
@@ -103,6 +91,12 @@ public class DocumentationOutput implements MethodRule
             this.description = description;
         }
 
+        public DocsBuilder description( final String description )
+        {
+            this.description = description;
+            return this;
+        }
+
         public DocsBuilder status( final Response.Status expectedResponseStatus )
         {
             this.expectedResponseStatus = expectedResponseStatus;
@@ -112,6 +106,12 @@ public class DocumentationOutput implements MethodRule
         public DocsBuilder type( final MediaType expectedMediaType )
         {
             this.expectedMediaType = expectedMediaType;
+            return this;
+        }
+
+        public DocsBuilder payloadType( final MediaType payloadMediaType )
+        {
+            this.payloadMediaType = payloadMediaType;
             return this;
         }
 
@@ -129,85 +129,91 @@ public class DocumentationOutput implements MethodRule
 
         public ClientResponse request( final ClientRequest request )
         {
-            return retrieveResponse( title, request.getURI().toString(),
-                    expectedResponseStatus, expectedMediaType,
-                    expectedHeaderField, request );
+            return retrieveResponse( title, description,
+                    request.getURI().toString(), expectedResponseStatus,
+                    expectedMediaType, expectedHeaderField, request );
         }
 
         public ClientResponse get( final String uri )
         {
-            return retrieveResponseFromRequest( title, "GET", uri, expectedResponseStatus,
-                    expectedHeaderField );
+            return retrieveResponseFromRequest( title, null, "GET",
+                    uri, expectedResponseStatus,
+                    expectedMediaType, expectedHeaderField );
         }
 
         public ClientResponse post( final String uri )
         {
-            return retrieveResponseFromRequest( title, "POST", uri, payload,
-                    expectedResponseStatus, expectedHeaderField );
+            return retrieveResponseFromRequest( title, description, "POST",
+                    uri,
+                    payload, payloadMediaType,
+                    expectedResponseStatus, expectedMediaType, expectedHeaderField );
         }
 
         public ClientResponse put( final String uri )
         {
-            return retrieveResponseFromRequest( title, "PUT", uri, payload,
-                    expectedResponseStatus, expectedHeaderField );
+            return retrieveResponseFromRequest( title, description, "PUT", uri,
+                    payload, payloadMediaType,
+                    expectedResponseStatus, expectedMediaType, expectedHeaderField );
         }
 
         public ClientResponse delete( final String uri )
         {
-            return retrieveResponseFromRequest( title, "DELETE", uri, payload,
-                    expectedResponseStatus, expectedHeaderField );
+            return retrieveResponseFromRequest( title, description, "DELETE",
+                    uri,
+                    payload, payloadMediaType,
+                    expectedResponseStatus, expectedMediaType, expectedHeaderField );
         }
     }
 
     private ClientResponse retrieveResponseFromRequest( final String title,
-            final String method, final String uri, final Status responseCode,
-            final String headerField )
+            final String description, final String method, final String uri,
+            final Status responseCode, final MediaType accept, final String headerField )
     {
         ClientRequest request;
         try
         {
             System.out.println( "URI syntax exception: '" + uri + "'" );
-            request = ClientRequest.create().accept( applicationJsonType ).build(
+            request = ClientRequest.create().accept( accept ).build(
                     new URI( uri ), method );
         }
         catch ( URISyntaxException e )
         {
             throw new RuntimeException( e );
         }
-        return retrieveResponse( title, uri, responseCode, applicationJsonType,
+        return retrieveResponse( title, description, uri, responseCode, accept,
                 headerField, request );
     }
 
     private ClientResponse retrieveResponseFromRequest( final String title,
-            final String method, final String uri, final String payload,
-            final Status responseCode, final String headerField )
+            final String description, final String method, final String uri,
+            final String payload, final MediaType payloadType,
+            final Status responseCode, final MediaType accept, final String headerField )
     {
         ClientRequest request;
         try
         {
-            request = ClientRequest.create().type( applicationJsonType ).accept(
-                    applicationJsonType ).entity( payload ).build(
-                            new URI( uri ), method );
+            request = ClientRequest.create().type( payloadType ).accept( accept ).entity(
+                    payload ).build( new URI( uri ), method );
         }
         catch ( URISyntaxException e )
         {
             System.out.println( "URI syntax exception: '" + uri + "'" );
             throw new RuntimeException( e );
         }
-        return retrieveResponse( title, uri, responseCode, applicationJsonType,
+        return retrieveResponse( title, description, uri, responseCode, accept,
                 headerField, request );
     }
 
     private ClientResponse retrieveResponse( final String title,
-            final String uri, final Response.Status responseCode,
-            final MediaType type, final String headerField,
-            final ClientRequest request )
+            final String description, final String uri,
+            final Response.Status responseCode, final MediaType type,
+            final String headerField, final ClientRequest request )
     {
-        System.out.println( uri );
-        getRequestHeaders( request.getHeaders() );
+        DocumentationData data = new DocumentationData();
+        getRequestHeaders( data, request.getHeaders() );
         if ( request.getEntity() != null )
         {
-            data.payload = String.valueOf( request.getEntity() );
+            data.setPayload( String.valueOf( request.getEntity() ) );
         }
         Client client = new Client();
         ClientResponse response = client.handle( request );
@@ -221,30 +227,31 @@ public class DocumentationOutput implements MethodRule
             assertNotNull( response.getHeaders().get( headerField ) );
         }
         data.setTitle( title );
+        data.setDescription( description );
         data.setMethod( request.getMethod() );
         data.setRelUri( uri.substring( functionalTestHelper.dataUri().length() - 9 ) );
         data.setUri( uri );
-        data.setResponse( responseCode );
+        data.setStatus( responseCode );
         if ( response.hasEntity() && response.getStatus() != 204 )
         {
-            data.setResponseBody( response.getEntity( String.class ) );
+            data.setEntity( response.getEntity( String.class ) );
         }
-        data.headerField = headerField;
+        data.setHeaderField( headerField );
         if ( headerField != null )
         {
-            getResponseHeaders( response.getHeaders(),
+            getResponseHeaders( data, response.getHeaders(),
                     Arrays.asList( new String[] { headerField } ) );
         }
         else
         {
-            getResponseHeaders( response.getHeaders(),
+            getResponseHeaders( data, response.getHeaders(),
                     Collections.<String>emptyList() );
         }
-        document();
+        document( data );
         return response;
     }
 
-    private void getResponseHeaders(
+    private void getResponseHeaders( final DocumentationData data,
             final MultivaluedMap<String, String> headers,
             final List<String> additionalFilter )
     {
@@ -252,7 +259,8 @@ public class DocumentationOutput implements MethodRule
                 additionalFilter ) );
     }
 
-    private void getRequestHeaders( final MultivaluedMap<String, Object> headers )
+    private void getRequestHeaders( final DocumentationData data,
+            final MultivaluedMap<String, Object> headers )
     {
         data.setRequestHeaders( getHeaders( headers, REQUEST_HEADERS,
                 Collections.<String>emptyList() ) );
@@ -283,15 +291,12 @@ public class DocumentationOutput implements MethodRule
         return filteredHeaders;
             }
 
-    protected DocuementationData data = new DocuementationData();
-
-    public class DocuementationData
+    private class DocumentationData
     {
-
         public String headerField;
-        public MultivaluedMap<String, String> headers;
         public String payload;
         public String title;
+        public String description;
         public String uri;
         public String method;
         public Status status;
@@ -299,6 +304,21 @@ public class DocumentationOutput implements MethodRule
         public String relUri;
         public Map<String, String> requestHeaders;
         public Map<String, String> responseHeaders;
+
+        public void setHeaderField( final String headerField )
+        {
+            this.headerField = headerField;
+        }
+
+        public void setPayload( final String payload )
+        {
+            this.payload = payload;
+        }
+
+        public void setDescription( final String description )
+        {
+            this.description = description;
+        }
 
         public void setTitle( final String title )
         {
@@ -308,7 +328,6 @@ public class DocumentationOutput implements MethodRule
         public void setUri( final String uri )
         {
             this.uri = uri;
-
         }
 
         public void setMethod( final String method )
@@ -316,13 +335,13 @@ public class DocumentationOutput implements MethodRule
             this.method = method;
         }
 
-        public void setResponse( final Status responseCode )
+        public void setStatus( final Status responseCode )
         {
             this.status = responseCode;
 
         }
 
-        public void setResponseBody( final String entity )
+        public void setEntity( final String entity )
         {
             this.entity = entity;
         }
@@ -348,23 +367,12 @@ public class DocumentationOutput implements MethodRule
 
     private final FunctionalTestHelper functionalTestHelper;
 
-    private final MediaType applicationJsonType;
-
-    public DocumentationOutput(
-            final FunctionalTestHelper functionalTestHelper,
-            final MediaType applicationJsonType )
-    {
-        this.functionalTestHelper = functionalTestHelper;
-        this.applicationJsonType = applicationJsonType;
-        data = new DocuementationData();
-    }
-
     public DocumentationOutput( final FunctionalTestHelper functionalTestHelper )
     {
-        this( functionalTestHelper, MediaType.APPLICATION_JSON_TYPE );
+        this.functionalTestHelper = functionalTestHelper;
     }
 
-    protected void document()
+    protected void document( final DocumentationData data )
     {
         try
         {
