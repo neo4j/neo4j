@@ -68,7 +68,7 @@ class CypherParserTest {
 
   @Test def relatedTo() {
     testQuery(
-      "from a = node(1), (a) -['KNOWS']-> (b) select a, b",
+      "from a = node(1) where (a) -['KNOWS']-> (b) select a, b",
       Query(
         Select(EntityOutput("a"), EntityOutput("b")),
         From(NodeById("a", 1)),
@@ -79,7 +79,7 @@ class CypherParserTest {
 
   @Test def relatedToTheOtherWay() {
     testQuery(
-      "from a = node(1), (a) <-['KNOWS']- (b) select a, b",
+      "from a = node(1) where (a) <-['KNOWS']- (b) select a, b",
       Query(
         Select(EntityOutput("a"), EntityOutput("b")),
         From(NodeById("a", 1)),
@@ -97,9 +97,20 @@ class CypherParserTest {
     )
   }
 
+  @Test def shouldHandleAndClauses() {
+    testQuery(
+      "from a = node(1) where a.name = \"andres\" and a.lastname = \"taylor\" select a.name",
+      Query(
+        Select(PropertyOutput("a", "name")),
+        From(NodeById("a", 1)),
+        Some(Where(And(StringEquals("a", "name", "andres"), StringEquals("a", "lastname", "taylor"))))
+      )
+    )
+  }
+
   @Test def relatedToWithRelationOutput() {
     testQuery(
-      "from a = node(1), (a) -[rel,'KNOWS']-> (b) select rel",
+      "from a = node(1) where (a) -[rel,'KNOWS']-> (b) select rel",
       Query(
         Select(EntityOutput("rel")),
         From(NodeById("a", 1)),

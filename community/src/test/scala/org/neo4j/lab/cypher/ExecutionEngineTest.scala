@@ -286,7 +286,7 @@ class ExecutionEngineTest {
   }
 
   @Test def shouldBeAbleToFilterOnRelationProps() {
-    //    FROM me = NODE(1),
+    //    FROM me = NodeByIdx(1,3,4,5,6),
     //      (me) -[r,'SHARE_OWNER']- (company)
     //    WHERE r.amount > 1000
     //    SELECT company.name

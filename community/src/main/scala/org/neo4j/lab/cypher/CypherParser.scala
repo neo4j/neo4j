@@ -30,7 +30,7 @@ class CypherParser extends JavaTokenParsers {
 
   def where: Parser[Where] = "where" ~> rep(clause) ^^ (Where(_: _*))
 
-  def clause: Parser[Clause] = (predicate | parens) * (
+  def clause: Parser[Clause] = (predicate | parens | relatedToWithoutRelOut | relatedToWithRelOut) * (
     "and" ^^^ { (a: Clause, b: Clause) => And(a, b) } |
     "or" ^^^ {  (a: Clause, b: Clause) => Or(a, b) })
 

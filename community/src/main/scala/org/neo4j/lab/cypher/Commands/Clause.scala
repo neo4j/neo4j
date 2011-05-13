@@ -23,7 +23,7 @@ case class And(a: Clause, b: Clause) extends Clause
 
 case class Or(a: Clause, b: Clause) extends Clause
 
-case class RelatedTo(inputColumn:String, outputNode:String, outputRel:String, relationType:String, direction:Direction) extends Clause
+case class RelatedTo(left:String, right:String, rel:String, relType:String, direction:Direction) extends Clause
 
 
 //case class NumberEquals(variable:String, propName: String, value: Number) extends Clause
