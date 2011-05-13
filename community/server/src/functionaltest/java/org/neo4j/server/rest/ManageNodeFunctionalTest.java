@@ -62,8 +62,8 @@ public class ManageNodeFunctionalTest extends BaseDocumentation
         server.start();
         functionalTestHelper = new FunctionalTestHelper(server);
         helper = functionalTestHelper.getGraphDbHelper();
-        doc = new DocumentationOutput(functionalTestHelper, MediaType.APPLICATION_JSON_TYPE);
-        
+        doc = new DocumentationOutput( functionalTestHelper );
+
     }
 
     @After
@@ -74,20 +74,22 @@ public class ManageNodeFunctionalTest extends BaseDocumentation
     @Test
     public void shouldGet201WhenCreatingNode() throws Exception
     {
-        ClientResponse response = doc.post( "Create a node", null, functionalTestHelper.nodeUri(), Response.Status.CREATED, "Location" );
+        ClientResponse response = doc.builder( "Create a node" ).status(
+                Response.Status.CREATED ).header( "Location" ).post(
+                        functionalTestHelper.nodeUri() );
         assertTrue( response.getLocation().toString().matches( NODE_URI_PATTERN ) );
         assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
-        assertProperNodeRepresentation( JsonHelper.jsonToMap( doc.data.entity ) );
     }
 
     @Test
     public void shouldGet201WhenCreatingNodeWithProperties() throws Exception
     {
-        ClientResponse response = doc.post( "Create node with properties", "{\"foo\" : \"bar\"}", functionalTestHelper.nodeUri(), Response.Status.CREATED, "Location" );
+        ClientResponse response = doc.builder( "Create a node with properties" ).payload(
+        "{\"foo\" : \"bar\"}" ).status( Response.Status.CREATED ).header(
+        "Location" ).post( functionalTestHelper.nodeUri() );
         //ClientResponse response = sendCreateRequestToServer(  );
         assertNotNull( response.getHeaders().get( "Content-Length" ) );
         assertTrue( response.getLocation().toString().matches( NODE_URI_PATTERN ) );
-        assertProperNodeRepresentation( JsonHelper.jsonToMap( doc.data.entity ) );
     }
 
     @Test
@@ -111,7 +113,7 @@ public class ManageNodeFunctionalTest extends BaseDocumentation
         assertEquals( 400, response.getStatus() );
     }
 
-    private ClientResponse sendCreateRequestToServer( String json )
+    private ClientResponse sendCreateRequestToServer( final String json )
     {
         Client client = Client.create();
         WebResource resource = client.resource( functionalTestHelper.dataUri() + "node/" );
@@ -164,7 +166,7 @@ public class ManageNodeFunctionalTest extends BaseDocumentation
 
     }
 
-    private void assertProperNodeRepresentation( Map<String, Object> noderep )
+    private void assertProperNodeRepresentation( final Map<String, Object> noderep )
     {
         NodeRepresentationTest.verifySerialisation( noderep );
     }
@@ -191,7 +193,7 @@ public class ManageNodeFunctionalTest extends BaseDocumentation
         ClientResponse response = sendDeleteRequestToServer( id );
         assertEquals( 409, response.getStatus() );
     }
-    
+
     @Test
     public void shouldRespondWith400IfInvalidJsonSentAsNodePropertiesDuringNodeCreation() throws URISyntaxException {
         String mangledJsonArray = "{\"myprop\":[1,2,\"three\"]}";
@@ -204,18 +206,18 @@ public class ManageNodeFunctionalTest extends BaseDocumentation
     @Test
     public void shouldRespondWith400IfInvalidJsonSentAsNodeProperty() throws URISyntaxException {
         URI nodeLocation = sendCreateRequestToServer().getLocation();
-        
+
         String mangledJsonArray = "[1,2,\"three\"]";
         ClientResponse response = Client.create().resource(new URI(nodeLocation.toString() + "/properties/myprop")).type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(mangledJsonArray).put(ClientResponse.class);
         assertEquals(400, response.getStatus());
         assertEquals("text/plain", response.getType().toString());
         assertThat(response.getEntity(String.class), containsString(mangledJsonArray));
     }
-    
+
     @Test
     public void shouldRespondWith400IfInvalidJsonSentAsNodeProperties() throws URISyntaxException {
         URI nodeLocation = sendCreateRequestToServer().getLocation();
-        
+
         String mangledJsonProperties = "{\"a\":\"b\", \"c\":[1,2,\"three\"]}";
         ClientResponse response = Client.create().resource(new URI(nodeLocation.toString() + "/properties")).type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(mangledJsonProperties).put(ClientResponse.class);
         assertEquals(400, response.getStatus());
@@ -223,13 +225,13 @@ public class ManageNodeFunctionalTest extends BaseDocumentation
         assertThat(response.getEntity(String.class), containsString(mangledJsonProperties));
     }
 
-    
-    private ClientResponse sendDeleteRequestToServer( long id ) throws Exception
+
+    private ClientResponse sendDeleteRequestToServer( final long id ) throws Exception
     {
         return Client.
-                create().
-                resource( new URI( functionalTestHelper.dataUri() + "node/" + id ) ).
-                accept( MediaType.APPLICATION_JSON_TYPE ).
-                delete( ClientResponse.class );
+        create().
+        resource( new URI( functionalTestHelper.dataUri() + "node/" + id ) ).
+        accept( MediaType.APPLICATION_JSON_TYPE ).
+        delete( ClientResponse.class );
     }
 }

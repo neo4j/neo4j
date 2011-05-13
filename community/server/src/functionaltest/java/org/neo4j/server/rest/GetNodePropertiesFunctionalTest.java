@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.util.Collections;
 
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 
 import org.junit.After;
 import org.junit.Before;
@@ -41,7 +40,7 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
 public class GetNodePropertiesFunctionalTest extends BaseDocumentation {
-    
+
     private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
 
@@ -49,7 +48,7 @@ public class GetNodePropertiesFunctionalTest extends BaseDocumentation {
     public void setupServer() throws IOException {
         server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
         server.start();
-        
+
         functionalTestHelper = new FunctionalTestHelper(server);
         doc = new DocumentationOutput( functionalTestHelper );
     }
@@ -78,7 +77,8 @@ public class GetNodePropertiesFunctionalTest extends BaseDocumentation {
         String entity = JsonHelper.createJsonFrom(Collections.singletonMap("foo", "bar"));
         ClientResponse createResponse = createResource.type(MediaType.APPLICATION_JSON).entity(entity).accept(MediaType.APPLICATION_JSON).post(
                 ClientResponse.class);
-        doc.get("Get properties for Node", createResponse.getLocation().toString() + "/properties", Response.Status.OK, null);
+        doc.builder( "Get properties for Node" ).get(
+                createResponse.getLocation().toString() + "/properties" );
     }
 
     @Test
@@ -120,7 +120,7 @@ public class GetNodePropertiesFunctionalTest extends BaseDocumentation {
         Client client = Client.create();
         WebResource createResource = client.resource(functionalTestHelper.dataUri() + "node/");
         ClientResponse createResponse = createResource.type(MediaType.APPLICATION_FORM_URLENCODED).accept(MediaType.APPLICATION_JSON)
-                .post(ClientResponse.class);
+        .post(ClientResponse.class);
         WebResource resource = client.resource(getPropertyUri(createResponse.getLocation().toString(), "foo"));
         ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
         assertEquals(404, response.getStatus());
@@ -161,7 +161,7 @@ public class GetNodePropertiesFunctionalTest extends BaseDocumentation {
         assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
     }
 
-    private String getPropertyUri(String baseUri, String key) {
+    private String getPropertyUri(final String baseUri, final String key) {
         return baseUri.toString() + "/properties/" + key;
     }
 }

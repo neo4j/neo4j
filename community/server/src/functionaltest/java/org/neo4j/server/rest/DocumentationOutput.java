@@ -26,9 +26,14 @@ import static org.junit.Assert.fail;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.TreeMap;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
@@ -38,183 +43,282 @@ import javax.ws.rs.core.Response.Status;
 import org.junit.rules.MethodRule;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.Statement;
-import org.neo4j.helpers.Pair;
 
 import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
 
+/**
+ * Performs requests and retrieves the responses to create asciidoc-based
+ * documentation.
+ */
 public class DocumentationOutput implements MethodRule
 {
-    @SuppressWarnings( "serial" )
-    private static final List<String> RESPONSE_HEADERS = new ArrayList<String>()
-    {
-        {
-            add( "Content-Type" );
-            add( "Location" );
-        }
-    };
+    private static final List<String> RESPONSE_HEADERS = Arrays.asList( new String[] {
+            "Content-Type", "Location" } );
 
-    public ClientResponse get( final String title, final String uri,
-            final Response.Status responseCode, final String headerField )
-    {
-        WebResource resource = Client.create().resource( uri );
-        ClientResponse response = resource.accept( applicationJsonType ).get(
-                ClientResponse.class );
-        assertEquals( responseCode.getStatusCode(), response.getStatus() );
-        assertEquals( applicationJsonType, response.getType() );
-        retrieveResponse( title, uri, "GET", responseCode, headerField,
-                response );
+    private static final List<String> REQUEST_HEADERS = Arrays.asList( new String[] {
+            "Content-Type", "Accept" } );
 
-        document();
-        return response;
+    public DocsBuilder builder( final String title )
+    {
+        return new DocsBuilder( title );
     }
 
-    private void retrieveResponse( final String title, final String uri,
-            final String method,
-            final Response.Status responseCode, final String headerField,
-            final ClientResponse response )
+    public DocsBuilder builder( final String title, final String description )
     {
+        return new DocsBuilder( title, description );
+    }
+
+    public class DocsBuilder
+    {
+        private final String title;
+        private String description;
+        private Response.Status expectedResponseStatus = Response.Status.OK;
+        private MediaType expectedMediaType = MediaType.APPLICATION_JSON_TYPE;
+        private MediaType payloadMediaType = MediaType.APPLICATION_JSON_TYPE;
+        private String expectedHeaderField;
+        private String payload;
+
+        private DocsBuilder( final String title )
+        {
+            this.title = title;
+        }
+
+        private DocsBuilder( final String title, final String description )
+        {
+            this.title = title;
+            this.description = description;
+        }
+
+        public DocsBuilder description( final String description )
+        {
+            this.description = description;
+            return this;
+        }
+
+        public DocsBuilder status( final Response.Status expectedResponseStatus )
+        {
+            this.expectedResponseStatus = expectedResponseStatus;
+            return this;
+        }
+
+        public DocsBuilder type( final MediaType expectedMediaType )
+        {
+            this.expectedMediaType = expectedMediaType;
+            return this;
+        }
+
+        public DocsBuilder payloadType( final MediaType payloadMediaType )
+        {
+            this.payloadMediaType = payloadMediaType;
+            return this;
+        }
+
+        public DocsBuilder payload( final String payload )
+        {
+            this.payload = payload;
+            return this;
+        }
+
+        public DocsBuilder header( final String exppectedHeaderField )
+        {
+            this.expectedHeaderField = exppectedHeaderField;
+            return this;
+        }
+
+        public ClientResponse request( final ClientRequest request )
+        {
+            return retrieveResponse( title, description,
+                    request.getURI().toString(), expectedResponseStatus,
+                    expectedMediaType, expectedHeaderField, request );
+        }
+
+        public ClientResponse get( final String uri )
+        {
+            return retrieveResponseFromRequest( title, null, "GET",
+                    uri, expectedResponseStatus,
+                    expectedMediaType, expectedHeaderField );
+        }
+
+        public ClientResponse post( final String uri )
+        {
+            return retrieveResponseFromRequest( title, description, "POST",
+                    uri,
+                    payload, payloadMediaType,
+                    expectedResponseStatus, expectedMediaType, expectedHeaderField );
+        }
+
+        public ClientResponse put( final String uri )
+        {
+            return retrieveResponseFromRequest( title, description, "PUT", uri,
+                    payload, payloadMediaType,
+                    expectedResponseStatus, expectedMediaType, expectedHeaderField );
+        }
+
+        public ClientResponse delete( final String uri )
+        {
+            return retrieveResponseFromRequest( title, description, "DELETE",
+                    uri,
+                    payload, payloadMediaType,
+                    expectedResponseStatus, expectedMediaType, expectedHeaderField );
+        }
+    }
+
+    private ClientResponse retrieveResponseFromRequest( final String title,
+            final String description, final String method, final String uri,
+            final Status responseCode, final MediaType accept, final String headerField )
+    {
+        ClientRequest request;
+        try
+        {
+            System.out.println( "URI syntax exception: '" + uri + "'" );
+            request = ClientRequest.create().accept( accept ).build(
+                    new URI( uri ), method );
+        }
+        catch ( URISyntaxException e )
+        {
+            throw new RuntimeException( e );
+        }
+        return retrieveResponse( title, description, uri, responseCode, accept,
+                headerField, request );
+    }
+
+    private ClientResponse retrieveResponseFromRequest( final String title,
+            final String description, final String method, final String uri,
+            final String payload, final MediaType payloadType,
+            final Status responseCode, final MediaType accept, final String headerField )
+    {
+        ClientRequest request;
+        try
+        {
+            request = ClientRequest.create().type( payloadType ).accept( accept ).entity(
+                    payload ).build( new URI( uri ), method );
+        }
+        catch ( URISyntaxException e )
+        {
+            System.out.println( "URI syntax exception: '" + uri + "'" );
+            throw new RuntimeException( e );
+        }
+        return retrieveResponse( title, description, uri, responseCode, accept,
+                headerField, request );
+    }
+
+    private ClientResponse retrieveResponse( final String title,
+            final String description, final String uri,
+            final Response.Status responseCode, final MediaType type,
+            final String headerField, final ClientRequest request )
+    {
+        DocumentationData data = new DocumentationData();
+        getRequestHeaders( data, request.getHeaders() );
+        if ( request.getEntity() != null )
+        {
+            data.setPayload( String.valueOf( request.getEntity() ) );
+        }
+        Client client = new Client();
+        ClientResponse response = client.handle( request );
+        assertEquals( responseCode.getStatusCode(), response.getStatus() );
+        if ( response.getType() != null )
+        {
+            assertEquals( type, response.getType() );
+        }
         if ( headerField != null )
         {
             assertNotNull( response.getHeaders().get( headerField ) );
         }
         data.setTitle( title );
-        data.setMethod( method );
+        data.setDescription( description );
+        data.setMethod( request.getMethod() );
         data.setRelUri( uri.substring( functionalTestHelper.dataUri().length() - 9 ) );
         data.setUri( uri );
-        data.setResponse( responseCode );
-        data.setResponseBody( response.getEntity( String.class ) );
-        data.headers = response.getHeaders();
-        data.headerField = headerField;
-        getResponseHeaders( response.getHeaders() );
+        data.setStatus( responseCode );
+        if ( response.hasEntity() && response.getStatus() != 204 )
+        {
+            data.setEntity( response.getEntity( String.class ) );
+        }
+        data.setHeaderField( headerField );
+        if ( headerField != null )
+        {
+            getResponseHeaders( data, response.getHeaders(),
+                    Arrays.asList( new String[] { headerField } ) );
+        }
+        else
+        {
+            getResponseHeaders( data, response.getHeaders(),
+                    Collections.<String>emptyList() );
+        }
+        document( data );
+        return response;
     }
 
-    private void getResponseHeaders( final MultivaluedMap<String, String> headers )
+    private void getResponseHeaders( final DocumentationData data,
+            final MultivaluedMap<String, String> headers,
+            final List<String> additionalFilter )
     {
-        for ( Entry<String, List<String>> header : headers.entrySet() )
+        data.setResponseHeaders( getHeaders( headers, RESPONSE_HEADERS,
+                additionalFilter ) );
+    }
+
+    private void getRequestHeaders( final DocumentationData data,
+            final MultivaluedMap<String, Object> headers )
+    {
+        data.setRequestHeaders( getHeaders( headers, REQUEST_HEADERS,
+                Collections.<String>emptyList() ) );
+    }
+
+    private <T> Map<String, String> getHeaders(
+            final MultivaluedMap<String, T> headers, final List<String> filter,
+            final List<String> additionalFilter )
+            {
+        Map<String, String> filteredHeaders = new TreeMap<String, String>();
+        for ( Entry<String, List<T>> header : headers.entrySet() )
         {
-            if ( RESPONSE_HEADERS.contains( header.getKey() ) )
+            if ( filter.contains( header.getKey() )
+                    || additionalFilter.contains( header.getKey() ) )
             {
                 String values = "";
-                for ( String value : header.getValue() )
+                for ( T value : header.getValue() )
                 {
                     if ( !values.isEmpty() )
                     {
                         values += ", ";
                     }
-                    values += value;
+                    values += String.valueOf( value );
                 }
-                data.addResponseHeader( header.getKey(), values );
+                filteredHeaders.put( header.getKey(), values );
             }
         }
-    }
+        return filteredHeaders;
+            }
 
-    // public ClientResponse post( final String title, final Map parameters,
-    // final String uri, final Response.Status responseCode )
-    // {
-    // String payload = JsonHelper.createJsonFrom( parameters );
-    // return post(title, payload, uri, responseCode);
-    //
-    // }
-
-    public ClientResponse post( final String title, final String payload,
-            final String uri, final Status responseCode,
-            final String headerField )
+    private class DocumentationData
     {
-        ClientResponse response = Client.create().resource( uri ).type(
-                applicationJsonType ).accept( applicationJsonType ).entity(
-                        payload ).post( ClientResponse.class );
-        assertEquals( responseCode.getStatusCode(), response.getStatus() );
-        assertEquals( applicationJsonType, response.getType() );
-        if ( headerField != null )
-        {
-            assertNotNull( response.getHeaders().get( headerField ) );
-        }
-        data.setTitle( title );
-        data.setMethod( "POST" );
-        data.setRelUri( uri.substring( functionalTestHelper.dataUri().length() - 9 ) );
-        data.setUri( uri );
-        data.setResponse( responseCode );
-        data.setResponseBody( response.getEntity( String.class ) );
-        data.payload = payload;
-        data.payloadencoding = applicationJsonType;
-        data.headers = response.getHeaders();
-        data.headerField = headerField;
-        getResponseHeaders( response.getHeaders() );
-        document();
-        return response;
-    }
-
-    public ClientResponse put( final String title, final String payload, final String uri,
-            final Status responseCode, final String headerField )
-    {
-        ClientResponse response = Client.create().resource( uri ).type(
-                applicationJsonType ).accept( applicationJsonType ).entity(
-                        payload ).put( ClientResponse.class );
-        assertEquals( responseCode.getStatusCode(), response.getStatus() );
-        if ( headerField != null )
-        {
-            assertNotNull( response.getHeaders().get( headerField ) );
-        }
-        data.setTitle( title );
-        data.setMethod( "PUT" );
-        data.setRelUri( uri.substring( functionalTestHelper.dataUri().length() - 9 ) );
-        data.setUri( uri );
-        data.setResponse( responseCode );
-        // data.setResponseBody( response.getEntity( String.class ) );
-        data.payload = payload;
-        data.payloadencoding = applicationJsonType;
-        data.headers = response.getHeaders();
-        data.headerField = headerField;
-        getResponseHeaders( response.getHeaders() );
-        document();
-        return response;
-    }
-
-
-    public ClientResponse delete( final String title, final String payload, final String uri,
-            final Status responseCode, final String headerField )
-    {
-        ClientResponse response = Client.create().resource( uri ).type(
-                applicationJsonType ).accept( applicationJsonType ).entity(
-                        payload ).delete( ClientResponse.class );
-        assertEquals( responseCode.getStatusCode(), response.getStatus() );
-        if ( headerField != null )
-        {
-            assertNotNull( response.getHeaders().get( headerField ) );
-        }
-        data.setTitle( title );
-        data.setMethod( "DELETE" );
-        data.setRelUri( uri.substring( functionalTestHelper.dataUri().length() - 9 ) );
-        data.setUri( uri );
-        data.setResponse( responseCode );
-        // data.setResponseBody( response.getEntity( String.class ) );
-        data.payload = payload;
-        data.payloadencoding = applicationJsonType;
-        data.headers = response.getHeaders();
-        data.headerField = headerField;
-        getResponseHeaders( response.getHeaders() );
-        document();
-        return response;
-    }
-
-    protected DocuementationData data = new DocuementationData();
-
-    public class DocuementationData
-    {
-
         public String headerField;
-        public MultivaluedMap<String, String> headers;
-        public MediaType payloadencoding;
         public String payload;
         public String title;
+        public String description;
         public String uri;
         public String method;
         public Status status;
         public String entity;
         public String relUri;
-        private final List<Pair<String, String>> responseHeaders = new ArrayList<Pair<String, String>>();
+        public Map<String, String> requestHeaders;
+        public Map<String, String> responseHeaders;
+
+        public void setHeaderField( final String headerField )
+        {
+            this.headerField = headerField;
+        }
+
+        public void setPayload( final String payload )
+        {
+            this.payload = payload;
+        }
+
+        public void setDescription( final String description )
+        {
+            this.description = description;
+        }
 
         public void setTitle( final String title )
         {
@@ -224,7 +328,6 @@ public class DocumentationOutput implements MethodRule
         public void setUri( final String uri )
         {
             this.uri = uri;
-
         }
 
         public void setMethod( final String method )
@@ -232,13 +335,13 @@ public class DocumentationOutput implements MethodRule
             this.method = method;
         }
 
-        public void setResponse( final Status responseCode )
+        public void setStatus( final Status responseCode )
         {
             this.status = responseCode;
 
         }
 
-        public void setResponseBody( final String entity )
+        public void setEntity( final String entity )
         {
             this.entity = entity;
         }
@@ -249,36 +352,27 @@ public class DocumentationOutput implements MethodRule
 
         }
 
-        public void addResponseHeader( final String header, final String value )
+        public void setResponseHeaders( final Map<String, String> response )
         {
-            responseHeaders.add( Pair.of( header, value ) );
+            responseHeaders = response;
+        }
+
+        public void setRequestHeaders( final Map<String, String> request )
+        {
+            requestHeaders = request;
         }
     }
 
-    private FileWriter fw;
-
     private final FunctionalTestHelper functionalTestHelper;
 
-    private final MediaType applicationJsonType;
-
-    public DocumentationOutput(
-            final FunctionalTestHelper functionalTestHelper,
-            final MediaType applicationJsonType )
+    public DocumentationOutput( final FunctionalTestHelper functionalTestHelper )
     {
         this.functionalTestHelper = functionalTestHelper;
-        this.applicationJsonType = applicationJsonType;
-        data = new DocuementationData();
-
     }
 
-    public DocumentationOutput(
-            final FunctionalTestHelper functionalTestHelper)
+    protected void document( final DocumentationData data )
     {
-        this(functionalTestHelper, MediaType.APPLICATION_JSON_TYPE);
-    }
-
-    protected void document()
-    {
+        FileWriter fw = null;
         try
         {
             if ( data.title == null )
@@ -292,53 +386,78 @@ public class DocumentationOutput implements MethodRule
             }
             String name = data.title.replace( " ", "-" ).toLowerCase();
             File out = new File( dirs, name + ".txt" );
-            out.createNewFile();
+            if ( !out.createNewFile() )
+            {
+                throw new RuntimeException( "File exists: "
+                        + out.getAbsolutePath() );
+            }
 
             fw = new FileWriter( out, false );
 
-            line( "[[rest-api-" + name + "]]" );
-            line( "== " + data.title + " ==" );
-            line( "" );
-            line( "_Example request_" );
-            line( "" );
-            line( "* *+" + data.method + "+*  +" + data.uri + "+" );
+            line( fw, "[[rest-api-" + name + "]]" );
+            line( fw, "== " + data.title + " ==" );
+            line( fw, "" );
+            line( fw, "_Example request_" );
+            line( fw, "" );
+            line( fw, "* *+" + data.method + "+*  +" + data.uri + "+" );
+            if ( data.requestHeaders != null )
+            {
+                for ( Entry<String, String> header : data.requestHeaders.entrySet() )
+                {
+                    line( fw, "* *+" + header.getKey() + ":+* +"
+                            + header.getValue() + "+" );
+                }
+            }
             if ( data.payload != null && !data.payload.equals( "null" ) )
             {
-                line( "* *+Content-Type:+* +" + data.payloadencoding + "+" );
-                line( "[source,javascript]" );
-                line( "----" );
-                line( data.payload );
-                line( "----" );
+                line( fw, "[source,javascript]" );
+                line( fw, "----" );
+                line( fw, data.payload );
+                line( fw, "----" );
             }
-            line( "" );
-            line( "_Example response_" );
-            line( "" );
-            line( "* *+" + data.status.getStatusCode() + ":+* +"
+            line( fw, "" );
+            line( fw, "_Example response_" );
+            line( fw, "" );
+            line( fw, "* *+" + data.status.getStatusCode() + ":+* +"
                     + data.status.name() + "+" );
-            for ( Pair<String, String> header : data.responseHeaders )
+            if ( data.responseHeaders != null )
             {
-                line( "* *+" + header.first() + ":+* +" + header.other() + "+" );
+                for ( Entry<String, String> header : data.responseHeaders.entrySet() )
+                {
+                    line( fw, "* *+" + header.getKey() + ":+* +"
+                            + header.getValue() + "+" );
+                }
             }
             if ( data.entity != null )
             {
-                line( "[source,javascript]" );
-                line( "----" );
-                line( data.entity );
-                line( "----" );
-                line( "" );
+                line( fw, "[source,javascript]" );
+                line( fw, "----" );
+                line( fw, data.entity );
+                line( fw, "----" );
+                line( fw, "" );
             }
-            fw.flush();
-            fw.close();
         }
         catch ( IOException e )
         {
             fail();
             e.printStackTrace();
         }
-
+        finally
+        {
+            if ( fw != null )
+            {
+                try
+                {
+                    fw.close();
+                }
+                catch ( IOException e )
+                {
+                }
+            }
+        }
     }
 
-    private void line( final String string )
+    private void line( FileWriter fw, final String string )
     {
         try
         {
