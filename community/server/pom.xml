@@ -628,7 +628,7 @@ the relevant Commercial Agreement.
     <profile>
       <id>functional-tests</id>
       <activation>
-        <activeByDefault>true</activeByDefault>
+        <activeByDefault>false</activeByDefault>
         <property>
           <name>tests</name>
           <value>functional</value>

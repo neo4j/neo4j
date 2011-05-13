@@ -363,8 +363,6 @@ public class DocumentationOutput implements MethodRule
         }
     }
 
-    private FileWriter fw;
-
     private final FunctionalTestHelper functionalTestHelper;
 
     public DocumentationOutput( final FunctionalTestHelper functionalTestHelper )
@@ -374,6 +372,7 @@ public class DocumentationOutput implements MethodRule
 
     protected void document( final DocumentationData data )
     {
+        FileWriter fw = null;
         try
         {
             if ( data.title == null )
@@ -387,64 +386,78 @@ public class DocumentationOutput implements MethodRule
             }
             String name = data.title.replace( " ", "-" ).toLowerCase();
             File out = new File( dirs, name + ".txt" );
-            out.createNewFile();
+            if ( !out.createNewFile() )
+            {
+                throw new RuntimeException( "File exists: "
+                        + out.getAbsolutePath() );
+            }
 
             fw = new FileWriter( out, false );
 
-            line( "[[rest-api-" + name + "]]" );
-            line( "== " + data.title + " ==" );
-            line( "" );
-            line( "_Example request_" );
-            line( "" );
-            line( "* *+" + data.method + "+*  +" + data.uri + "+" );
+            line( fw, "[[rest-api-" + name + "]]" );
+            line( fw, "== " + data.title + " ==" );
+            line( fw, "" );
+            line( fw, "_Example request_" );
+            line( fw, "" );
+            line( fw, "* *+" + data.method + "+*  +" + data.uri + "+" );
             if ( data.requestHeaders != null )
             {
                 for ( Entry<String, String> header : data.requestHeaders.entrySet() )
                 {
-                    line( "* *+" + header.getKey() + ":+* +"
+                    line( fw, "* *+" + header.getKey() + ":+* +"
                             + header.getValue() + "+" );
                 }
             }
             if ( data.payload != null && !data.payload.equals( "null" ) )
             {
-                line( "[source,javascript]" );
-                line( "----" );
-                line( data.payload );
-                line( "----" );
+                line( fw, "[source,javascript]" );
+                line( fw, "----" );
+                line( fw, data.payload );
+                line( fw, "----" );
             }
-            line( "" );
-            line( "_Example response_" );
-            line( "" );
-            line( "* *+" + data.status.getStatusCode() + ":+* +"
+            line( fw, "" );
+            line( fw, "_Example response_" );
+            line( fw, "" );
+            line( fw, "* *+" + data.status.getStatusCode() + ":+* +"
                     + data.status.name() + "+" );
             if ( data.responseHeaders != null )
             {
                 for ( Entry<String, String> header : data.responseHeaders.entrySet() )
                 {
-                    line( "* *+" + header.getKey() + ":+* +"
+                    line( fw, "* *+" + header.getKey() + ":+* +"
                             + header.getValue() + "+" );
                 }
             }
             if ( data.entity != null )
             {
-                line( "[source,javascript]" );
-                line( "----" );
-                line( data.entity );
-                line( "----" );
-                line( "" );
+                line( fw, "[source,javascript]" );
+                line( fw, "----" );
+                line( fw, data.entity );
+                line( fw, "----" );
+                line( fw, "" );
             }
-            fw.flush();
-            fw.close();
         }
         catch ( IOException e )
         {
             fail();
             e.printStackTrace();
         }
-
+        finally
+        {
+            if ( fw != null )
+            {
+                try
+                {
+                    fw.close();
+                }
+                catch ( IOException e )
+                {
+                }
+            }
+        }
     }
 
-    private void line( final String string )
+    private void line( FileWriter fw, final String string )
     {
         try
         {

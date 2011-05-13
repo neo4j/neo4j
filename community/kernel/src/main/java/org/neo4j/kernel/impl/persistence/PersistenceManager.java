@@ -38,10 +38,11 @@ import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaConnection;
 import org.neo4j.kernel.impl.nioneo.xa.NioNeoDbPersistenceSource;
+import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 
@@ -53,8 +54,8 @@ public class PersistenceManager
     private final PersistenceSource persistenceSource;
     private final TransactionManager transactionManager;
     
-    private final ArrayMap<Transaction,ResourceConnection> txConnectionMap = 
-        new ArrayMap<Transaction,ResourceConnection>( 5, true, true );
+    private final ArrayMap<Transaction,NeoStoreTransaction> txConnectionMap = 
+        new ArrayMap<Transaction,NeoStoreTransaction>( 5, true, true );
 
     private final TxEventSyncHookFactory syncHookFactory;
 
@@ -114,7 +115,7 @@ public class PersistenceManager
         return getReadOnlyResource().relLoadProperties( relId, light );
     }
 
-    public RelationshipData loadLightRelationship( long id )
+    public RelationshipRecord loadLightRelationship( long id )
     {
         return getReadOnlyResource().relLoadLight( id );
     }
@@ -185,10 +186,16 @@ public class PersistenceManager
         getResource().createRelationshipType( id, name );
     }
 
-    private ResourceConnection getReadOnlyResource()
+    private NeoStoreTransaction getReadOnlyResource()
     {
         Transaction tx = this.getCurrentTransaction();
-        ResourceConnection con = txConnectionMap.get( tx );
+//        if ( tx == null )
+//        {
+//            return ((NioNeoDbPersistenceSource) 
+//                    persistenceSource ).createReadOnlyResourceConnection();
+//        }
+        
+        NeoStoreTransaction con = txConnectionMap.get( tx );
         if ( con == null )
         {
             // con is put in map on write operation, see getResoure()
@@ -200,9 +207,9 @@ public class PersistenceManager
         return con;
     }
     
-    private ResourceConnection getResource()
+    private NeoStoreTransaction getResource()
     {
-        ResourceConnection con = null;
+        NeoStoreTransaction con = null;
 
         Transaction tx = this.getCurrentTransaction();
         if ( tx == null )
@@ -214,13 +221,15 @@ public class PersistenceManager
         {
             try
             {
-                con = persistenceSource.createResourceConnection();
-                if ( !tx.enlistResource( con.getXAResource() ) )
+                XaConnection xaConnection = (NeoStoreXaConnection)
+                        persistenceSource.getXaDataSource().getXaConnection();
+                XAResource xaResource = xaConnection.getXaResource();
+                if ( !tx.enlistResource( xaResource ) )
                 {
                     throw new ResourceAcquisitionFailedException(
-                        "Unable to enlist '" + con.getXAResource() + "' in "
-                            + "transaction" );
+                        "Unable to enlist '" + xaResource + "' in " + "transaction" );
                 }
+                con = persistenceSource.createTransaction( xaConnection );
                 
                 tx.registerSynchronization( new TxCommitHook( tx ) );
                 registerTransactionEventHookIfNeeded();
@@ -321,7 +330,7 @@ public class PersistenceManager
         {
             throw new NotInTransactionException();
         }
-        ResourceConnection con = txConnectionMap.get( tx );
+        NeoStoreTransaction con = txConnectionMap.get( tx );
         if ( con != null )
         {
             try
@@ -340,7 +349,7 @@ public class PersistenceManager
     void releaseResourceConnectionsForTransaction( Transaction tx )
         throws NotInTransactionException
     {
-        ResourceConnection con = txConnectionMap.remove( tx );
+        NeoStoreTransaction con = txConnectionMap.remove( tx );
         if ( con != null )
         {
             con.destroy();

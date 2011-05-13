@@ -26,9 +26,9 @@ import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
+import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 
@@ -38,8 +38,10 @@ import org.neo4j.kernel.impl.util.RelIdArray;
  * for this connection and to close the connection, optionally returning it to a
  * connection pool.
  */
-public interface ResourceConnection
+public interface NeoStoreTransaction
 {
+    public void setXaConnection( XaConnection connection );
+    
     /**
      * Returns the {@link javax.transaction.xa.XAResource} that represents this
      * connection.
@@ -84,7 +86,7 @@ public interface ResourceConnection
     public ArrayMap<Integer,PropertyData> relLoadProperties( long relId,
             boolean light);
 
-    public RelationshipData relLoadLight( long id );
+    public RelationshipRecord relLoadLight( long id );
 
     public RelationshipTypeData[] loadRelationshipTypes();
 

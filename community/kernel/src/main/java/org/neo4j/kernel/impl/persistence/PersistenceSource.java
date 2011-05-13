@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.persistence;
 
+import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
 /**
@@ -30,10 +31,11 @@ public interface PersistenceSource
 {
     /**
      * Creates a resource connection to this persistence source.
-     * @return a newly opened {@link ResourceConnection} to this
+     * @param connection the {@link XaConnection} to use.
+     * @return a newly opened {@link NeoStoreTransaction} to this
      *         PersistenceSource
      */
-    public ResourceConnection createResourceConnection();
+    public NeoStoreTransaction createTransaction( XaConnection connection );
 
     /**
      * If the persistence source is responsible for id generation it must
