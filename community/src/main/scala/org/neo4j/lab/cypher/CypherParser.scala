@@ -10,7 +10,7 @@ class CypherParser extends JavaTokenParsers {
     case from ~ where ~ select => Query(select, from, where)
   }
 
-  def from: Parser[From] = "from" ~> repsep((nodeByIds | relatedToWithoutRelOut | relatedToWithRelOut), ",") ^^ (From(_: _*))
+  def from: Parser[From] = "from" ~> repsep(nodeByIds, ",") ^^ (From(_: _*))
 
   def relatedToWithoutRelOut = "(" ~ ident ~ ")" ~ opt("<") ~ "-[" ~ "'" ~ ident ~ "'" ~ "]-" ~ opt(">") ~ "(" ~ ident ~ ")" ^^ {
     case "(" ~ start ~ ")" ~ back ~ "-[" ~ "'" ~ relType ~ "'" ~ "]-" ~ forward ~ "(" ~ end ~ ")" => RelatedTo(start, end, "r", relType,  getDirection(back, forward))}

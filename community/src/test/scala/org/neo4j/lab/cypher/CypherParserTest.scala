@@ -71,7 +71,9 @@ class CypherParserTest {
       "from a = node(1), (a) -['KNOWS']-> (b) select a, b",
       Query(
         Select(EntityOutput("a"), EntityOutput("b")),
-        From(NodeById("a", 1), RelatedTo("a", "b", "r", "KNOWS", Direction.OUTGOING)))
+        From(NodeById("a", 1)),
+        Some(Where(RelatedTo("a", "b", "r", "KNOWS", Direction.OUTGOING)))
+      )
     )
   }
 
@@ -80,7 +82,9 @@ class CypherParserTest {
       "from a = node(1), (a) <-['KNOWS']- (b) select a, b",
       Query(
         Select(EntityOutput("a"), EntityOutput("b")),
-        From(NodeById("a", 1), RelatedTo("a", "b", "r", "KNOWS", Direction.INCOMING)))
+        From(NodeById("a", 1)),
+        Some(Where(RelatedTo("a", "b", "r", "KNOWS", Direction.INCOMING)))
+      )
     )
   }
 
@@ -98,7 +102,9 @@ class CypherParserTest {
       "from a = node(1), (a) -[rel,'KNOWS']-> (b) select rel",
       Query(
         Select(EntityOutput("rel")),
-        From(NodeById("a", 1), RelatedTo("a", "b", "rel", "KNOWS", Direction.OUTGOING)))
+        From(NodeById("a", 1)),
+        Some(Where(RelatedTo("a", "b", "rel", "KNOWS", Direction.OUTGOING)))
+      )
     )
   }
 }

@@ -1,10 +1,11 @@
 package org.neo4j.lab.cypher
 
 import commands._
-import fsm.{PropertyEquals, FSM}
 import pipes.{Pipe, FromPump}
 import scala.collection.JavaConverters._
-import org.neo4j.graphdb.{NotFoundException, Node, GraphDatabaseService}
+import org.neo4j.graphmatching.PatternNode
+import org.neo4j.graphdb.{DynamicRelationshipType, NotFoundException, Node, GraphDatabaseService}
+
 /**
  * Created by Andres Taylor
  * Date: 4/16/11
@@ -18,25 +19,32 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
   def execute(query: Query): Projection = query match {
     case Query(select, from, where) => {
 
-      val sourcePump = createSourcePumps(from).reduceLeft(_ ++ _)
+      val sourcePump: Pipe = createSourcePumps(from).reduceLeft(_ ++ _)
+
       val projections = createProjectionTransformers(select)
-      val executionPlan = new FSM(sourcePump)
+      val patterns = scala.collection.mutable.Map[String,PatternNode]()
+      def getOrCreate(name:String):PatternNode = patterns.getOrElse(name, {
+        val pNode = new PatternNode(name)
+        patterns(name) = pNode
+        pNode
+      })
+
+//      val executionPlan = new FSM(sourcePump)
 
       where match {
         case Some(w) => w.clauses.foreach((c) => {
           c match {
-            case StringEquals(variable, propName, value) => {
-              val patternNode = executionPlan.bindNode(variable)
-              patternNode.addRule(new PropertyEquals(patternNode, propName, value))
-              patternNode
+            case RelatedTo(left, right, x, relationType, direction) => {
+              val leftPattern = getOrCreate(left)
+              val rightPattern = getOrCreate(right)
+              leftPattern.createRelationshipTo(rightPattern, DynamicRelationshipType.withName(relationType), direction)
             }
-
           }
         })
         case _ =>
       }
 
-      new Projection(executionPlan, projections)
+      new Projection(patterns.toMap, sourcePump, projections)
     }
   }
 
@@ -57,8 +65,7 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
   private def createSourcePumps(from: From): Seq[Pipe] = from.fromItems.map(_ match {
     case NodeByIndex(varName, idxName, key, value) => {
       val indexHits: java.lang.Iterable[Node] = graph.index.forNodes(idxName).get(key, value)
-      val list: List[Node] = indexHits.asScala.toList
-      new FromPump(varName, list)
+      new FromPump(varName, indexHits.asScala)
     }
     case NodeById(varName, ids@_*) => new FromPump(varName, ids.map(graph.getNodeById))
   })

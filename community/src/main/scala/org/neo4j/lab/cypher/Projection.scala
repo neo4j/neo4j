@@ -1,9 +1,11 @@
 package org.neo4j.lab.cypher
 
-import org.neo4j.lab.cypher.pipes.Pipe
 import org.neo4j.graphdb.NotFoundException
+import org.neo4j.graphdb.Node
 import scala.collection.JavaConverters._
 import org.apache.commons.lang.StringUtils
+import pipes.Pipe
+import org.neo4j.graphmatching.{PatternMatch, PatternNode, PatternMatcher}
 
 
 /**
@@ -12,11 +14,24 @@ import org.apache.commons.lang.StringUtils
  * Time: 19:18 
  */
 
-class Projection(source: Pipe, transformers: Seq[Map[String, Any] => Map[String, Any]]) extends Traversable[Map[String, Any]] {
+class Projection(where: Map[String, PatternNode], from: Pipe, select: Seq[Map[String, Any] => Map[String, Any]]) extends Traversable[Map[String, Any]] {
   def foreach[U](f: (Map[String, Any]) => U) {
-    source.foreach((m) => {
-      val result = transformers.map((transformer) => transformer.apply(m)).reduceLeft(_ ++ _)
-      f.apply(result)
+    from.foreach((sourceRow) => {
+
+      sourceRow.foreach((x) => {
+        where(x._1).setAssociation(x._2.asInstanceOf[Node])
+      })
+
+      val startKey = where.keys.head
+      val startPNode = where(startKey)
+      val startNode = sourceRow(startKey).asInstanceOf[Node]
+      val patternMatches:java.lang.Iterable[PatternMatch] = PatternMatcher.getMatcher.`match`(startPNode, startNode)
+      patternMatches.asScala.map((aMatch)=>{
+        val realResult = where.map( (kv) =>  kv._1 -> aMatch.getNodeFor(kv._2))
+        val r = select.map((transformer) => transformer.apply(realResult)).reduceLeft(_ ++ _)
+        f.apply(r)
+      })
+
     })
   }
 
@@ -50,16 +65,16 @@ class Projection(source: Pipe, transformers: Seq[Map[String, Any] => Map[String,
     val builder = new StringBuilder()
 
     val headers = columns.map((c) => Map[String, Any](c -> c)).reduceLeft(_ ++ _)
-    builder.append( "| " + createString(columns, columnSizes, headers) + " |"+"\r\n")
+    builder.append("| " + createString(columns, columnSizes, headers) + " |" + "\r\n")
     val wholeLine = StringUtils.repeat("-", builder.length - 2)
-    builder.append(wholeLine+"\r\n")
-    builder.insert(0,wholeLine+"\r\n")
+    builder.append(wholeLine + "\r\n")
+    builder.insert(0, wholeLine + "\r\n")
 
-    foreach( (m) => {
-      builder.append( "| " + createString(columns, columnSizes, m) + " |"+"\r\n")
+    foreach((m) => {
+      builder.append("| " + createString(columns, columnSizes, m) + " |" + "\r\n")
     })
 
-    builder.append(wholeLine+"\r\n")
+    builder.append(wholeLine + "\r\n")
 
     builder.toString()
   }
