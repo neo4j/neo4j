@@ -100,7 +100,7 @@ class ExecutionEngineTest {
       From(NodeById("start", start.getId)),
       Some(Where(
         StringEquals("a", "name", name),
-        RelatedTo("start", "a", "monkey", "x", Direction.BOTH)
+        RelatedTo("start", "a", None, "x", Direction.BOTH)
         ))
     )
 
@@ -123,10 +123,10 @@ class ExecutionEngineTest {
 
     val query = Query(
       Select(EntityOutput("a")),
-      From(NodeById("start", start.getId())),
+      From(NodeById("start", start.getId)),
       Some(Where(
          StringEquals("r", "name", "monkey"),
-         RelatedTo("start", "a", "r", "KNOWS", Direction.BOTH)
+         RelatedTo("start", "a", None, "KNOWS", Direction.BOTH)
       ))
     )
 
@@ -166,7 +166,7 @@ class ExecutionEngineTest {
     val query = Query(
       Select(EntityOutput("n1"), EntityOutput("n2")),
       From(NodeById("n1", n1.getId)),
-      Some(Where(RelatedTo("n1", "n2", "x", "KNOWS", Direction.OUTGOING)))
+      Some(Where(RelatedTo("n1", "n2", None, "KNOWS", Direction.OUTGOING)))
     )
 
     val result = execute(query)
@@ -188,7 +188,7 @@ class ExecutionEngineTest {
     val query = Query(
       Select(EntityOutput("x")),
       From(NodeById("start", n1.getId)),
-      Some(Where(RelatedTo("start", "x", "a", "KNOWS", Direction.OUTGOING))))
+      Some(Where(RelatedTo("start", "x", None, "KNOWS", Direction.OUTGOING))))
 
     val result = execute(query)
 
@@ -209,7 +209,7 @@ class ExecutionEngineTest {
     val query = Query(
       Select(EntityOutput("x"), EntityOutput("start")),
       From(NodeById("start", n1.getId)),
-      Some(Where(RelatedTo("start", "x", "a", "KNOWS", Direction.OUTGOING)))
+      Some(Where(RelatedTo("start", "x", None, "KNOWS", Direction.OUTGOING)))
     )
 
     val result = execute(query)
@@ -233,8 +233,8 @@ class ExecutionEngineTest {
       Select(EntityOutput("b")),
       From(NodeById("start", n1.getId)),
       Some(Where(
-        RelatedTo("start", "a", "r", "KNOWS", Direction.OUTGOING),
-        RelatedTo("a", "b", "foo", "FRIEND", Direction.OUTGOING)))
+        RelatedTo("start", "a", None, "KNOWS", Direction.OUTGOING),
+        RelatedTo("a", "b", None, "FRIEND", Direction.OUTGOING)))
     )
 
     val result = execute(query)
@@ -256,8 +256,8 @@ class ExecutionEngineTest {
       Select(EntityOutput("a")),
       From(NodeById("start", start.getId)),
       Some(Where(
-        Or(RelatedTo("start", "a", "r", "KNOWS", Direction.OUTGOING),
-          RelatedTo("start", "a", "r2", "FRIEND", Direction.OUTGOING))))
+        Or(RelatedTo("start", "a", None, "KNOWS", Direction.OUTGOING),
+          RelatedTo("start", "a", None, "FRIEND", Direction.OUTGOING))))
     )
 
     val result = execute(query)
@@ -300,7 +300,10 @@ class ExecutionEngineTest {
     val query = Query(
       Select(PropertyOutput("company", "name")),
       From(NodeById("me", me.getId)),
-      Some(Where(RelatedTo("me", "company", "r", "SHARE_OWNER", Direction.OUTGOING), NumberLargerThan("r", "amount", 1000f)))
+      Some(Where(
+        And(
+          RelatedTo("me", "company", Some("r"), "SHARE_OWNER", Direction.OUTGOING),
+          NumberLargerThan("r", "amount", 1000f))))
     )
 
     val result = execute(query)

@@ -12,11 +12,11 @@ class CypherParser extends JavaTokenParsers {
 
   def from: Parser[From] = "from" ~> repsep(nodeByIds, ",") ^^ (From(_: _*))
 
-  def relatedToWithoutRelOut = "(" ~ ident ~ ")" ~ opt("<") ~ "-[" ~ "'" ~ ident ~ "'" ~ "]-" ~ opt(">") ~ "(" ~ ident ~ ")" ^^ {
-    case "(" ~ start ~ ")" ~ back ~ "-[" ~ "'" ~ relType ~ "'" ~ "]-" ~ forward ~ "(" ~ end ~ ")" => RelatedTo(start, end, "r", relType,  getDirection(back, forward))}
+//  def relatedToWithoutRelOut = "(" ~ ident ~ ")" ~ opt("<") ~ "-[" ~ "'" ~ ident ~ "'" ~ "]-" ~ opt(">") ~ "(" ~ ident ~ ")" ^^ {
+//    case "(" ~ start ~ ")" ~ back ~ "-[" ~ "'" ~ relType ~ "'" ~ "]-" ~ forward ~ "(" ~ end ~ ")" => RelatedTo(start, end, "r", relType,  getDirection(back, forward))}
 
-  def relatedToWithRelOut = "(" ~ ident ~ ")" ~ opt("<") ~ "-[" ~ ident ~ "," ~ "'" ~ ident ~ "'" ~ "]-" ~ opt(">") ~ "(" ~ ident ~ ")" ^^ {
-    case "(" ~ start ~ ")" ~ back ~ "-[" ~ relName ~ "," ~ "'" ~ relType ~ "'" ~ "]-" ~ forward ~ "(" ~ end ~ ")" => RelatedTo(start, end, relName, relType, getDirection(back, forward))
+  def relatedToWithRelOut = "(" ~ ident ~ ")" ~ opt("<") ~ "-[" ~ opt(ident <~ ",") ~ "'" ~ ident ~ "'" ~ "]-" ~ opt(">") ~ "(" ~ ident ~ ")" ^^ {
+    case "(" ~ start ~ ")" ~ back ~ "-[" ~ relName ~ "'" ~ relType ~ "'" ~ "]-" ~ forward ~ "(" ~ end ~ ")" => RelatedTo(start, end, relName, relType, getDirection(back, forward))
   }
 
   def nodeByIds = ident ~ "=" ~ "node" ~ "(" ~ repsep(wholeNumber, ",") ~ ")" ^^ {
@@ -30,7 +30,7 @@ class CypherParser extends JavaTokenParsers {
 
   def where: Parser[Where] = "where" ~> rep(clause) ^^ (Where(_: _*))
 
-  def clause: Parser[Clause] = (predicate | parens | relatedToWithoutRelOut | relatedToWithRelOut) * (
+  def clause: Parser[Clause] = (predicate | parens | relatedToWithRelOut) * (
     "and" ^^^ { (a: Clause, b: Clause) => And(a, b) } |
     "or" ^^^ {  (a: Clause, b: Clause) => Or(a, b) })
 
