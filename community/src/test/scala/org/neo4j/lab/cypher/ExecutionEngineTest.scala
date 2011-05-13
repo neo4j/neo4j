@@ -83,23 +83,55 @@ class ExecutionEngineTest {
     assertEquals(List(name), list)
   }
 
-  @Test def shouldFilterOutBasedOnName() {
-    //    FROM node = NODE(1,2)
-    //    WHERE node.name = "Andres"
-    //    SELECT node
+  @Test def shouldFilterOutBasedOnNodePropName() {
+    //    FROM start = NODE(1)
+    //    WHERE a.name = "Andres" AND (start) -['x']-> (a)
+    //    SELECT a
 
     val name = "Andres"
-    val node1: Node = createNode(Map("name" -> name))
-    val node2: Node = createNode(Map("name" -> "Someone Else"))
+    val start: Node = createNode()
+    val a1: Node = createNode(Map("name" -> "Someone Else"))
+    val a2: Node = createNode(Map("name" -> name))
+    relate(start, a1, "x")
+    relate(start, a2, "x")
 
     val query = Query(
-      Select(EntityOutput("node")),
-      From(NodeById("node", node1.getId, node2.getId)),
-      Some(Where(StringEquals("node", "name", name)))
+      Select(EntityOutput("a")),
+      From(NodeById("start", start.getId)),
+      Some(Where(
+        StringEquals("a", "name", name),
+        RelatedTo("start", "a", "monkey", "x", Direction.BOTH)
+        ))
     )
 
     val result = execute(query)
-    assertEquals(List(node1), result.columnAs[Node]("node").toList)
+    assertEquals(List(a2), result.columnAs[Node]("a").toList)
+  }
+
+  @Test def shouldFilterBasedOnRelPropName()
+  {
+    // FROM start = Node(1)
+    // WHERE r.name = "monkey" AND start -[r, 'KNOWS']-> (a)
+    // SELECT a
+
+    val name = "Andres"
+    val start : Node = createNode()
+    val a : Node = createNode()
+    val b : Node = createNode()
+    relate(start, a, "KNOWS", Map("name" -> "monkey"))
+    relate(start, b, "KNOWS")
+
+    val query = Query(
+      Select(EntityOutput("a")),
+      From(NodeById("start", start.getId())),
+      Some(Where(
+         StringEquals("r", "name", "monkey"),
+         RelatedTo("start", "a", "r", "KNOWS", Direction.BOTH)
+      ))
+    )
+
+    val result = execute(query)
+    assertEquals(List(a), result.columnAs[Node]("a").toList)
   }
 
   @Test def shouldOutputTheCartesianProductOfTwoNodes() {
@@ -208,6 +240,29 @@ class ExecutionEngineTest {
     val result = execute(query)
 
     assertEquals(List(Map("b" -> n3)), result.toList)
+  }
+
+  @Test def shouldHandleOrRelationships() {
+    //    FROM start = NODE(1),
+    //    WHERE  (start) -['KNOWS']-> (a) OR (start) -['FRIEND']-> (a)
+    //    SELECT a
+
+    val start: Node = createNode()
+    val a: Node = createNode()
+    relate(start, a, "KNOWS")
+    relate(start, a, "FRIEND")
+
+    val query = Query(
+      Select(EntityOutput("a")),
+      From(NodeById("start", start.getId)),
+      Some(Where(
+        Or(RelatedTo("start", "a", "r", "KNOWS", Direction.OUTGOING),
+          RelatedTo("start", "a", "r2", "FRIEND", Direction.OUTGOING))))
+    )
+
+    val result = execute(query)
+
+    assertEquals(List(Map("a" -> a), Map("a" -> a)), result.toList)
   }
 
   @Test def shouldFindNodesByIndex() {

@@ -16,15 +16,15 @@ import org.neo4j.graphmatching.{PatternMatch, PatternNode, PatternMatcher}
 
 class Projection(where: Map[String, PatternNode], from: Pipe, select: Seq[Map[String, Any] => Map[String, Any]]) extends Traversable[Map[String, Any]] {
   def foreach[U](f: (Map[String, Any]) => U) {
-    from.foreach((sourceRow) => {
+    from.foreach((fromRow) => {
 
-      sourceRow.foreach((x) => {
+      fromRow.foreach((x) => {
         where(x._1).setAssociation(x._2.asInstanceOf[Node])
       })
 
       val startKey = where.keys.head
       val startPNode = where(startKey)
-      val startNode = sourceRow(startKey).asInstanceOf[Node]
+      val startNode = fromRow(startKey).asInstanceOf[Node]
       val patternMatches:java.lang.Iterable[PatternMatch] = PatternMatcher.getMatcher.`match`(startPNode, startNode)
       patternMatches.asScala.map((aMatch)=>{
         val realResult = where.map( (kv) =>  kv._1 -> aMatch.getNodeFor(kv._2))

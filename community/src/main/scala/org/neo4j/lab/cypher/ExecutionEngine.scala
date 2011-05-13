@@ -3,8 +3,8 @@ package org.neo4j.lab.cypher
 import commands._
 import pipes.{Pipe, FromPump}
 import scala.collection.JavaConverters._
-import org.neo4j.graphmatching.PatternNode
 import org.neo4j.graphdb.{DynamicRelationshipType, NotFoundException, Node, GraphDatabaseService}
+import org.neo4j.graphmatching.{CommonValueMatchers, PatternNode}
 
 /**
  * Created by Andres Taylor
@@ -18,16 +18,20 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
 
   def execute(query: Query): Projection = query match {
     case Query(select, from, where) => {
-
-      val sourcePump: Pipe = createSourcePumps(from).reduceLeft(_ ++ _)
-
-      val projections = createProjectionTransformers(select)
       val patterns = scala.collection.mutable.Map[String,PatternNode]()
       def getOrCreate(name:String):PatternNode = patterns.getOrElse(name, {
         val pNode = new PatternNode(name)
         patterns(name) = pNode
         pNode
       })
+
+      val sourcePump: Pipe = createSourcePumps(from).reduceLeft(_ ++ _)
+
+      from.fromItems.foreach( (item) => {getOrCreate(item.placeholderName)})
+
+
+      val projections = createProjectionTransformers(select)
+
 
 //      val executionPlan = new FSM(sourcePump)
 
@@ -38,6 +42,11 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
               val leftPattern = getOrCreate(left)
               val rightPattern = getOrCreate(right)
               leftPattern.createRelationshipTo(rightPattern, DynamicRelationshipType.withName(relationType), direction)
+            }
+
+            case StringEquals(variable, propName, value) => {
+              val node = getOrCreate(variable)
+              node.addPropertyConstraint(propName, CommonValueMatchers.exact(value) )
             }
           }
         })
