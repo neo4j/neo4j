@@ -19,50 +19,57 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
+
+import org.neo4j.graphdb.Direction;
 
 public class RelIdArray
 {
     public static final RelIdArray EMPTY = new RelIdArray()
     {
-        private RelIdIterator emptyIterator = new RelIdIterator()
+        private RelIdIterator emptyIterator = new RelIdIterator( null )
         {
             @Override
             public boolean hasNext()
             {
                 return false;
             }
+
+            @Override
+            protected IdBlock selectNextBlock( IdBlock currentBlock )
+            {
+                return null;
+            }
         };
         
         @Override
-        public RelIdIterator iterator()
+        public RelIdIterator iterator( DirectionWrapper direction )
         {
             return emptyIterator;
         }
     };
     
-    private final List<IdBlock> blocks = new ArrayList<IdBlock>();
-    private IdBlock lastBlock;
+    private IdBlock lastOutBlock;
+    private IdBlock lastInBlock;
     
     public RelIdArray()
     {
     }
     
-    protected void addBlocks( RelIdArray ids )
+    public void add( long id, Direction direction )
     {
-        blocks.addAll( ids.blocks );
-    }
-    
-    public void add( long id )
-    {
+        // TODO Optimize
+        IdBlock lastBlock = direction == Direction.OUTGOING ? lastOutBlock : lastInBlock;
         long highBits = id&0xFFFFFFFF00000000L;
         if ( lastBlock == null || lastBlock.highBits != highBits )
         {
-            addBlock( highBits );
+            IdBlock newLastBlock = new IdBlock( highBits );
+            newLastBlock.prev = lastBlock;
+            if ( direction == Direction.OUTGOING ) lastOutBlock = newLastBlock;
+            else lastInBlock = newLastBlock;
+            lastBlock = newLastBlock;
         }
         lastBlock.add( (int) id );
     }
@@ -74,41 +81,62 @@ public class RelIdArray
             return;
         }
         
-        for ( IdBlock block : source.blocks )
+        if ( source.lastOutBlock != null )
         {
-            IdBlock copy = block.copy();
-            blocks.add( copy );
-            lastBlock = copy;
+            if ( lastOutBlock == null )
+            {
+                lastOutBlock = source.lastOutBlock.copy();
+            }
+            else if ( lastOutBlock.highBits == source.lastOutBlock.highBits )
+            {
+                lastOutBlock.addAll( source.lastOutBlock );
+                if ( source.lastOutBlock.prev != null )
+                {
+                    last( lastOutBlock ).prev = source.lastOutBlock.prev.copy();
+                }
+            }
+            else
+            {
+                last( lastOutBlock ).prev = source.lastOutBlock.copy();
+            }
+        }
+        if ( source.lastInBlock != null )
+        {
+            if ( lastInBlock == null )
+            {
+                lastInBlock = source.lastInBlock.copy();
+            }
+            else if ( lastInBlock.highBits == source.lastInBlock.highBits )
+            {
+                lastInBlock.addAll( source.lastInBlock );
+            }
+            else
+            {
+                last( lastInBlock ).prev = source.lastInBlock.copy();
+            }
         }
     }
     
-    private int length()
+    private static IdBlock last( IdBlock block )
     {
-        int length = 0;
-        for ( IdBlock block : blocks )
+        while ( block.prev != null )
         {
-            length += block.length;
+            block = block.prev;
         }
-        return length;
+        return block;
     }
     
     public boolean isEmpty()
     {
-        return blocks.isEmpty();
-    }
-
-    private void addBlock( long highBits )
-    {
-        lastBlock = new IdBlock( highBits );
-        blocks.add( lastBlock );
+        return lastOutBlock == null && lastInBlock == null;
     }
     
-    public RelIdIterator iterator()
+    public RelIdIterator iterator( DirectionWrapper direction )
     {
-        return new RelIdIterator();
+        return direction.iterator( this );
     }
     
-    public static final IdBlock EMPTY_BLOCK = new IdBlock( 0 )
+    public static final IdBlock EMPTY_BLOCK = new IdBlock( -1 )
     {
         @Override
         int length()
@@ -117,16 +145,83 @@ public class RelIdArray
         }
     };
     
+    public static enum DirectionWrapper
+    {
+        OUTGOING( Direction.OUTGOING )
+        {
+            @Override
+            RelIdIterator iterator( RelIdArray ids )
+            {
+                return new OneDirectionRelIdIterator( ids.lastOutBlock );
+            }
+        },
+        INCOMING( Direction.INCOMING )
+        {
+            @Override
+            RelIdIterator iterator( RelIdArray ids )
+            {
+                return new OneDirectionRelIdIterator( ids.lastInBlock );
+            }
+        },
+        BOTH( Direction.BOTH )
+        {
+            @Override
+            RelIdIterator iterator( RelIdArray ids )
+            {
+                return new BothDirectionsRelIdIterator( ids.lastOutBlock, ids.lastInBlock );
+            }
+        };
+        
+        private final Direction direction;
+
+        private DirectionWrapper( Direction direction )
+        {
+            this.direction = direction;
+        }
+        
+        abstract RelIdIterator iterator( RelIdArray ids );
+        
+        public Direction direction()
+        {
+            return this.direction;
+        }
+    }
+    
+    public static DirectionWrapper wrap( Direction direction )
+    {
+        switch ( direction )
+        {
+        case OUTGOING: return DirectionWrapper.OUTGOING;
+        case INCOMING: return DirectionWrapper.INCOMING;
+        case BOTH: return DirectionWrapper.BOTH;
+        }
+        throw new IllegalArgumentException( "" + direction );
+    }
+    
     public static class IdBlock
     {
         private final long highBits;
         private int[] ids;
         private int length;
+        private IdBlock prev;
         
         IdBlock( long highBits )
         {
             this.highBits = highBits;
             this.ids = new int[2];
+        }
+        
+        IdBlock copy()
+        {
+            IdBlock copy = new IdBlock( highBits );
+            copy.ids = new int[ids.length];
+            System.arraycopy( ids, 0, copy.ids, 0, length );
+            copy.length = length;
+            if ( prev != null )
+            {
+                copy.prev = prev.copy();
+            }
+            return copy;
         }
         
         int length()
@@ -146,6 +241,19 @@ public class RelIdArray
             ids[length++] = id;
         }
         
+        void addAll( IdBlock block )
+        {
+            int newLength = length + block.length;
+            if ( newLength >= ids.length )
+            {
+                int[] newIds = new int[newLength];
+                System.arraycopy( ids, 0, newIds, 0, length );
+                ids = newIds;
+            }
+            System.arraycopy( block.ids, 0, ids, length, block.length );
+            length = newLength;
+        }
+        
         long get( int index )
         {
             assert index >= 0 && index < length;
@@ -157,25 +265,20 @@ public class RelIdArray
             // Assume same high bits
             ids[index] = (int) id;
         }
-        
-        IdBlock copy()
-        {
-            IdBlock copy = new IdBlock( highBits );
-            copy.ids = new int[ids.length];
-            System.arraycopy( ids, 0, copy.ids, 0, length );
-            copy.length = length;
-            return copy;
-        }
     }
     
-    public class RelIdIterator
+    public static abstract class RelIdIterator
     {
-        private int blockIndex = 1;
-        private IdBlock currentBlock = isEmpty() ? EMPTY_BLOCK : blocks.get( 0 );
+        protected IdBlock currentBlock;
         private int relativePosition;
         private int absolutePosition;
         private long nextElement;
         private boolean nextElementDetermined;
+        
+        RelIdIterator( IdBlock startBlock )
+        {
+            currentBlock = startBlock;
+        }
         
         public boolean hasNext()
         {
@@ -184,10 +287,9 @@ public class RelIdArray
                 return nextElement != -1;
             }
             
-            while ( true )
+            while ( currentBlock != null )
             {
-                int blockLength = currentBlock.length();
-                if ( relativePosition < blockLength )
+                if ( relativePosition < currentBlock.length() )
                 {
                     nextElement = currentBlock.get( relativePosition++ );
                     nextElementDetermined = true;
@@ -195,21 +297,27 @@ public class RelIdArray
                 }
                 else
                 {
-                    if ( blockIndex < blocks.size() )
-                    {
-                        goToNextBlock();
-                    }
-                    else
+                    IdBlock nextBlock = selectNextBlock( currentBlock );
+                    if ( nextBlock == null )
                     {
                         break;
                     }
+                    int leftInBlock = currentBlock.length-relativePosition;
+                    currentBlock = nextBlock;
+                    relativePosition = 0;
+                    absolutePosition += leftInBlock;
                 }
             }
+            
+            // Keep this false since the next call could come after we've loaded
+            // some more relationships
             nextElementDetermined = false;
             nextElement = -1;
             return false;
         }
         
+        protected abstract IdBlock selectNextBlock( IdBlock currentBlock );
+
         public long next()
         {
             if ( !hasNext() )
@@ -224,22 +332,56 @@ public class RelIdArray
         {
             while ( this.absolutePosition < position )
             {
-                goToNextBlock();
+                int leftInBlock = currentBlock.length-relativePosition;
+                currentBlock = selectNextBlock( currentBlock );
+                relativePosition = 0;
+                absolutePosition += leftInBlock;
             }
             this.absolutePosition = position;
-        }
-
-        private void goToNextBlock()
-        {
-            int leftInBlock = currentBlock.length-relativePosition;
-            absolutePosition += leftInBlock;
-            currentBlock = blocks.get( blockIndex++ );
-            relativePosition = 0;
         }
         
         public int position()
         {
             return absolutePosition;
+        }
+    }
+    
+    private static class OneDirectionRelIdIterator extends RelIdIterator
+    {
+        OneDirectionRelIdIterator( IdBlock startBlock )
+        {
+            super( startBlock );
+        }
+        
+        @Override
+        protected IdBlock selectNextBlock( IdBlock currentBlock )
+        {
+            return currentBlock.prev;
+        }
+    }
+    
+    private static class BothDirectionsRelIdIterator extends RelIdIterator
+    {
+        private boolean in;
+        private final IdBlock inBlock;
+        
+        BothDirectionsRelIdIterator( IdBlock outBlock, IdBlock inBlock )
+        {
+            super( outBlock != null ? outBlock : (inBlock != null ? inBlock : EMPTY_BLOCK) );
+            this.inBlock = inBlock;
+            in = currentBlock == inBlock;
+        }
+        
+        @Override
+        protected IdBlock selectNextBlock( IdBlock currentBlock )
+        {
+            IdBlock result = currentBlock.prev;
+            if ( !in && result == null )
+            {
+                in = true;
+                result = inBlock;
+            }
+            return result;
         }
     }
     
@@ -272,22 +414,29 @@ public class RelIdArray
             evictExcluded( newArray, removedSet );
             if ( add != null )
             {
-                for ( RelIdIterator iterator = add.iterator(); iterator.hasNext(); )
-                {
-                    long value = iterator.next();
-                    if ( !removedSet.contains( value ) )
-                    {
-                        newArray.add( value );
-                    }
-                }
+                addOneDirection( add, newArray, removedSet, DirectionWrapper.OUTGOING );
+                addOneDirection( add, newArray, removedSet, DirectionWrapper.INCOMING );
             }
             return newArray;
         }
     }
 
+    private static void addOneDirection( RelIdArray add, RelIdArray newArray, Set<Long> removedSet,
+            DirectionWrapper direction )
+    {
+        for ( RelIdIterator iterator = direction.iterator( add ); iterator.hasNext(); )
+        {
+            long value = iterator.next();
+            if ( !removedSet.contains( value ) )
+            {
+                newArray.add( value, direction.direction() );
+            }
+        }
+    }
+
     private static void evictExcluded( RelIdArray ids, Set<Long> excluded )
     {
-        for ( RelIdIterator iterator = ids.iterator(); iterator.hasNext(); )
+        for ( RelIdIterator iterator = DirectionWrapper.BOTH.iterator( ids ); iterator.hasNext(); )
         {
             long value = iterator.next();
             if ( excluded.contains( value ) )
@@ -315,8 +464,8 @@ public class RelIdArray
     
     private Set<Long> asSet()
     {
-        Set<Long> set = new HashSet<Long>( length() + 1, 1.0f );
-        for ( RelIdIterator iterator = iterator(); iterator.hasNext(); )
+        Set<Long> set = new HashSet<Long>();
+        for ( RelIdIterator iterator = DirectionWrapper.BOTH.iterator( this ); iterator.hasNext(); )
         {
             set.add( iterator.next() );
         }

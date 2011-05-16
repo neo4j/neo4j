@@ -19,19 +19,19 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.neo4j.kernel.impl.core.RelTypeElementIterator.EMPTY;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
-import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.impl.util.DirectionedRelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray;
-import org.neo4j.kernel.impl.util.DirectionedRelIdArray.DirectionWrapper;
+import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
 class IntArrayIterator implements Iterable<Relationship>,
     Iterator<Relationship>
@@ -47,20 +47,13 @@ class IntArrayIterator implements Iterable<Relationship>,
     private final List<RelTypeElementIterator> rels;
 
     IntArrayIterator( List<RelTypeElementIterator> rels, NodeImpl fromNode,
-        Direction direction, NodeManager nodeManager, RelationshipType[] types )
+        DirectionWrapper direction, NodeManager nodeManager, RelationshipType[] types )
     {
         this.rels = rels;
         this.typeIterator = rels.iterator();
-        if ( typeIterator.hasNext() )
-        {
-            currentTypeIterator = typeIterator.next();
-        }
-        else
-        {
-            currentTypeIterator = RelTypeElementIterator.EMPTY;
-        }
+        this.currentTypeIterator = typeIterator.hasNext() ? typeIterator.next() : EMPTY;
         this.fromNode = fromNode;
-        this.direction = DirectionedRelIdArray.wrap( direction );
+        this.direction = direction;
         this.nodeManager = nodeManager;
         this.types = types;
     }
@@ -105,24 +98,24 @@ class IntArrayIterator implements Iterable<Relationship>,
                         RelTypeElementIterator newItr = itr;
                         if ( itr.isSrcEmpty() )
                         {
-                            DirectionedRelIdArray newSrc = fromNode.getRelationshipIds( itr.getType() );
+                            RelIdArray newSrc = fromNode.getRelationshipIds( itr.getType() );
                             if ( newSrc != null )
                             {
-                                newItr = itr.setSrc( direction.get( newSrc ) );
+                                newItr = itr.setSrc( newSrc );
                             }
                         }
                         newRels.put( newItr.getType(), newItr );
                     }
                     if ( types.length == 0 )
                     {
-                        for ( Map.Entry<String, DirectionedRelIdArray> entry : fromNode.getRelationshipIds().entrySet() )
+                        for ( Map.Entry<String, RelIdArray> entry : fromNode.getRelationshipIds().entrySet() )
                         {
                             String type = entry.getKey();
                             RelTypeElementIterator itr = newRels.get( type );
                             if ( itr == null || itr.isSrcEmpty() )
                             {
-                                RelIdArray ids = direction.get( entry.getValue() );
-                                itr = itr == null ? new FastRelTypeElement( type, fromNode, ids ) :
+                                RelIdArray ids = entry.getValue();
+                                itr = itr == null ? new FastRelTypeElement( type, fromNode, ids, direction ) :
                                         itr.setSrc( ids );
                                 newRels.put( type, itr );
                             }

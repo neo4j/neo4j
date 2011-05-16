@@ -24,6 +24,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 import org.neo4j.kernel.impl.util.RelIdArray;
+import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdArray.RelIdIterator;
 
 class RelTypeElement extends RelTypeElementIterator
@@ -35,31 +36,33 @@ class RelTypeElement extends RelTypeElementIterator
     private RelIdIterator currentIterator;
     private long nextElement;
     private boolean nextElementDetermined;
+    private final DirectionWrapper direction;
 
     static RelTypeElementIterator create( String type, NodeImpl node,
-            RelIdArray src, RelIdArray add, RelIdArray remove )
+            RelIdArray src, RelIdArray add, RelIdArray remove, DirectionWrapper direction )
     {
         if ( add == null && remove == null )
         {
-            return new FastRelTypeElement( type, node, src );
+            return new FastRelTypeElement( type, node, src, direction );
         }
-        return new RelTypeElement( type, node, src, add, remove );
+        return new RelTypeElement( type, node, src, add, remove, direction );
     }
 
     private RelTypeElement( String type, NodeImpl node, RelIdArray src,
-            RelIdArray add, RelIdArray remove )
+            RelIdArray add, RelIdArray remove, DirectionWrapper direction )
     {
         super( type, node );
+        this.direction = direction;
         if ( src == null )
         {
             src = RelIdArray.EMPTY;
         }
         this.src = src;
-        this.srcIterator = src.iterator();
-        this.addIterator = add == null ? RelIdArray.EMPTY.iterator() : add.iterator();
+        this.srcIterator = src.iterator( direction );
+        this.addIterator = add == null ? RelIdArray.EMPTY.iterator( direction ) : add.iterator( direction );
         if ( remove != null )
         {
-            for ( RelIdIterator iterator = remove.iterator(); iterator.hasNext(); )
+            for ( RelIdIterator iterator = remove.iterator( DirectionWrapper.BOTH ); iterator.hasNext(); )
             {
                 this.remove.add( iterator.next() );
             }
@@ -74,7 +77,7 @@ class RelTypeElement extends RelTypeElementIterator
             return nextElement != -1;
         }
         
-        while ( currentIterator.hasNext() || currentIterator == srcIterator )
+        while ( currentIterator.hasNext() || currentIterator != addIterator )
         {
             while ( currentIterator.hasNext() )
             {
@@ -116,6 +119,6 @@ class RelTypeElement extends RelTypeElementIterator
     @Override
     public RelTypeElementIterator setSrc( RelIdArray newSrc )
     {
-        return new FastRelTypeElement( getType(), getNode(), newSrc, srcIterator.position() );
+        return new FastRelTypeElement( getType(), getNode(), newSrc, direction, srcIterator.position() );
     }
 }

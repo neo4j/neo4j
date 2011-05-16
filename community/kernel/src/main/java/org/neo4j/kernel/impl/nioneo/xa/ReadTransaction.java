@@ -107,14 +107,6 @@ class ReadTransaction implements NeoStoreTransaction
         Pair<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>> result =
                 Pair.<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>>of( out, in );
         for ( int i = 0; i < grabSize && 
-//=======
-//    public Iterable<RelationshipRecord> getMoreRelationships( long nodeId,
-//        RelationshipChainPosition position )
-//    {
-//        long nextRel = position.getNextRecord();
-//        List<RelationshipRecord> rels = new ArrayList<RelationshipRecord>();
-//        for ( int i = 0; i < getRelGrabSize() && 
-//>>>>>>> master
             nextRel != Record.NO_NEXT_RELATIONSHIP.intValue(); i++ )
         {
             RelationshipRecord relRecord = relStore.getChainRecord( nextRel );

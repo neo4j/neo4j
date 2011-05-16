@@ -29,6 +29,7 @@ import java.util.Map;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -1683,7 +1684,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         {
             if ( record.isCreated() )
             {
-                createdNodes.add( record.getId() );
+                // TODO Direction doesn't matter... misuse of RelIdArray?
+                createdNodes.add( record.getId(), Direction.OUTGOING );
             }
         }
         return createdNodes;

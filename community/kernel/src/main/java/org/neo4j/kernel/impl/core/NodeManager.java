@@ -27,6 +27,7 @@ import java.util.logging.Logger;
 
 import javax.transaction.TransactionManager;
 
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -53,8 +54,6 @@ import org.neo4j.kernel.impl.transaction.LockException;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.util.ArrayMap;
-import org.neo4j.kernel.impl.util.DirectionedRelIdArray;
-import org.neo4j.kernel.impl.util.DirectionedRelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdArray;
 
 public class NodeManager
@@ -310,8 +309,8 @@ public class NodeManager
             int typeId = getRelationshipTypeIdFor( type );
             persistenceManager.relationshipCreate( id, typeId, startNodeId,
                 endNodeId );
-            firstNode.addRelationship( this, type, id, DirectionWrapper.OUT );
-            secondNode.addRelationship( this, type, id, DirectionWrapper.IN );
+            firstNode.addRelationship( this, type, id, Direction.OUTGOING );
+            secondNode.addRelationship( this, type, id, Direction.INCOMING );
             relCache.put( rel.getId(), rel );
             success = true;
             return new RelationshipProxy( id, this );
@@ -578,24 +577,24 @@ public class NodeManager
         return persistenceManager.getRelationshipChainPosition( node.getId() );
     }
 
-    Pair<ArrayMap<String,DirectionedRelIdArray>,Map<Long,RelationshipImpl>> getMoreRelationships( NodeImpl node )
+    Pair<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>> getMoreRelationships( NodeImpl node )
     {
         long nodeId = node.getId();
         RelationshipChainPosition position = node.getRelChainPosition();
         Pair<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>> rels =
             persistenceManager.getMoreRelationships( nodeId, position );
-        ArrayMap<String,DirectionedRelIdArray> newRelationshipMap =
-            new ArrayMap<String,DirectionedRelIdArray>();
+        ArrayMap<String,RelIdArray> newRelationshipMap =
+            new ArrayMap<String,RelIdArray>();
         Map<Long,RelationshipImpl> relsMap = new HashMap<Long,RelationshipImpl>( 150 );
-        receiveRelationships( rels.first(), newRelationshipMap, relsMap, DirectionWrapper.OUT );
-        receiveRelationships( rels.other(), newRelationshipMap, relsMap, DirectionWrapper.IN );
+        receiveRelationships( rels.first(), newRelationshipMap, relsMap, Direction.OUTGOING );
+        receiveRelationships( rels.other(), newRelationshipMap, relsMap, Direction.INCOMING );
         // relCache.putAll( relsMap );
         return Pair.of( newRelationshipMap, relsMap );
     }
 
     private void receiveRelationships(
-            Iterable<RelationshipRecord> rels, ArrayMap<String, DirectionedRelIdArray> newRelationshipMap,
-            Map<Long, RelationshipImpl> relsMap, DirectionWrapper dir )
+            Iterable<RelationshipRecord> rels, ArrayMap<String, RelIdArray> newRelationshipMap,
+            Map<Long, RelationshipImpl> relsMap, Direction dir )
     {
         for ( RelationshipRecord rel : rels )
         {
@@ -615,13 +614,13 @@ public class NodeManager
             {
                 type = relImpl.getType();
             }
-            DirectionedRelIdArray relationshipSet = newRelationshipMap.get( type.name() );
+            RelIdArray relationshipSet = newRelationshipMap.get( type.name() );
             if ( relationshipSet == null )
             {
-                relationshipSet = new DirectionedRelIdArray();
+                relationshipSet = new RelIdArray();
                 newRelationshipMap.put( type.name(), relationshipSet );
             }
-            dir.add( relationshipSet, relId );
+            relationshipSet.add( relId, dir );
         }
     }
 
@@ -863,17 +862,17 @@ public class NodeManager
         return lockReleaser.getCowRelationshipRemoveMap( node, type, create );
     }
 
-    public ArrayMap<String,DirectionedRelIdArray> getCowRelationshipAddMap( NodeImpl node )
+    public ArrayMap<String,RelIdArray> getCowRelationshipAddMap( NodeImpl node )
     {
         return lockReleaser.getCowRelationshipAddMap( node );
     }
 
-    public DirectionedRelIdArray getCowRelationshipAddMap( NodeImpl node, String string )
+    public RelIdArray getCowRelationshipAddMap( NodeImpl node, String string )
     {
         return lockReleaser.getCowRelationshipAddMap( node, string );
     }
 
-    public DirectionedRelIdArray getCowRelationshipAddMap( NodeImpl node, String string,
+    public RelIdArray getCowRelationshipAddMap( NodeImpl node, String string,
         boolean create )
     {
         return lockReleaser.getCowRelationshipAddMap( node, string, create );
