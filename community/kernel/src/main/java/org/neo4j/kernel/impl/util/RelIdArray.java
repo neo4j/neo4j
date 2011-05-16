@@ -63,9 +63,9 @@ public class RelIdArray
         // TODO Optimize
         IdBlock lastBlock = direction == Direction.OUTGOING ? lastOutBlock : lastInBlock;
         long highBits = id&0xFFFFFFFF00000000L;
-        if ( lastBlock == null || lastBlock.highBits != highBits )
+        if ( lastBlock == null || lastBlock.getHighBits() != highBits )
         {
-            IdBlock newLastBlock = new IdBlock( highBits );
+            IdBlock newLastBlock = highBits == 0 ? new LowIdBlock() : new HighIdBlock( highBits );
             newLastBlock.prev = lastBlock;
             if ( direction == Direction.OUTGOING ) lastOutBlock = newLastBlock;
             else lastInBlock = newLastBlock;
@@ -87,7 +87,7 @@ public class RelIdArray
             {
                 lastOutBlock = source.lastOutBlock.copy();
             }
-            else if ( lastOutBlock.highBits == source.lastOutBlock.highBits )
+            else if ( lastOutBlock.getHighBits() == source.lastOutBlock.getHighBits() )
             {
                 lastOutBlock.addAll( source.lastOutBlock );
                 if ( source.lastOutBlock.prev != null )
@@ -106,7 +106,7 @@ public class RelIdArray
             {
                 lastInBlock = source.lastInBlock.copy();
             }
-            else if ( lastInBlock.highBits == source.lastInBlock.highBits )
+            else if ( lastInBlock.getHighBits() == source.lastInBlock.getHighBits() )
             {
                 lastInBlock.addAll( source.lastInBlock );
             }
@@ -136,7 +136,7 @@ public class RelIdArray
         return direction.iterator( this );
     }
     
-    public static final IdBlock EMPTY_BLOCK = new IdBlock( -1 )
+    public static final IdBlock EMPTY_BLOCK = new LowIdBlock()
     {
         @Override
         int length()
@@ -198,22 +198,15 @@ public class RelIdArray
         throw new IllegalArgumentException( "" + direction );
     }
     
-    public static class IdBlock
+    public static abstract class IdBlock
     {
-        private final long highBits;
-        private int[] ids;
+        private int[] ids = new int[2];
         private int length;
         private IdBlock prev;
         
-        IdBlock( long highBits )
-        {
-            this.highBits = highBits;
-            this.ids = new int[2];
-        }
-        
         IdBlock copy()
         {
-            IdBlock copy = new IdBlock( highBits );
+            IdBlock copy = copyInstance();
             copy.ids = new int[ids.length];
             System.arraycopy( ids, 0, copy.ids, 0, length );
             copy.length = length;
@@ -224,6 +217,8 @@ public class RelIdArray
             return copy;
         }
         
+        protected abstract IdBlock copyInstance();
+
         int length()
         {
             return length;
@@ -257,13 +252,66 @@ public class RelIdArray
         long get( int index )
         {
             assert index >= 0 && index < length;
-            return (((long)(ids[index]&0xFFFFFFFFL))|highBits);
+            return transform( ids[index] );
         }
+        
+        abstract long transform( int id );
         
         void set( long id, int index )
         {
             // Assume same high bits
             ids[index] = (int) id;
+        }
+        
+        abstract long getHighBits();
+    }
+    
+    private static class LowIdBlock extends IdBlock
+    {
+        @Override
+        long transform( int id )
+        {
+            return (long)(id&0xFFFFFFFFL);
+        }
+        
+        @Override
+        protected IdBlock copyInstance()
+        {
+            return new LowIdBlock();
+        }
+        
+        @Override
+        long getHighBits()
+        {
+            return 0;
+        }
+    }
+    
+    private static class HighIdBlock extends IdBlock
+    {
+        private final long highBits;
+
+        HighIdBlock( long highBits )
+        {
+            this.highBits = highBits;
+        }
+        
+        @Override
+        long transform( int id )
+        {
+            return (((long)(id&0xFFFFFFFFL))|(highBits));
+        }
+        
+        @Override
+        protected IdBlock copyInstance()
+        {
+            return new HighIdBlock( highBits );
+        }
+        
+        @Override
+        long getHighBits()
+        {
+            return highBits;
         }
     }
     
