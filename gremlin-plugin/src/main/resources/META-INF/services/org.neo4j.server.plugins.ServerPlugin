@@ -1,1 +1,1 @@
-com.tinkerpop.gremlin.GremlinScriptEngineFactory
+org.neo4j.server.plugin.gremlin.GremlinPlugin
