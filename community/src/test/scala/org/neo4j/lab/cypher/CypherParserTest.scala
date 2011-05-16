@@ -118,4 +118,19 @@ class CypherParserTest {
       )
     )
   }
+
+  @Test def relatedInTwoSteps() {
+    testQuery(
+      "from a = node(1) where (a) -['KNOWS']-> (b) -['FRIEND']-> (c) select c",
+      Query(
+        Select(EntityOutput("c")),
+        From(NodeById("a", 1)),
+        Some(Where(
+          And(
+            RelatedTo("a", "b", None, "KNOWS", Direction.OUTGOING),
+            RelatedTo("b", "c", None, "FRIEND", Direction.OUTGOING)
+          )))
+      )
+    )
+  }
 }

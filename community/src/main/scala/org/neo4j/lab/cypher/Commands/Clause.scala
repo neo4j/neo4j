@@ -10,7 +10,7 @@ import org.neo4j.graphdb.Direction
 
 
 abstract sealed class Clause {
-  //  def and(otherField: Clause): Clause = And(this, otherField)
+  def ++(other: Clause): Clause = And(this, other)
   //
   //  def or(otherField: Clause): Clause = Or(this, otherField)
 }
