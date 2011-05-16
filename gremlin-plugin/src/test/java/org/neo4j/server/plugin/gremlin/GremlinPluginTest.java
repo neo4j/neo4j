@@ -146,6 +146,17 @@ public class GremlinPluginTest {
     }
 
     @Test
+    public void testExecuteScriptNull() {
+        Assert.assertEquals("\"null\"", json.format(GremlinPluginTest.executeTestScript("for(i in 1..2){g.v(0)}")));
+    }
+
+    @Test
+    public void testMultilineScriptWithLinebreaks() {
+        Assert.assertEquals("2", json.format(GremlinPluginTest.executeTestScript("1;\n2")));
+    }
+
+    
+    @Test
     public void testMultiThread() {
         for (int i = 0; i < 250; i++) {
             final int x = i;

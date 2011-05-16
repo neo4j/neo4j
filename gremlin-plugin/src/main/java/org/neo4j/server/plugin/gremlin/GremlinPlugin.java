@@ -93,7 +93,7 @@ public class GremlinPlugin extends ServerPlugin {
                 } else if (result instanceof Long || result instanceof Integer) {
                     return ValueRepresentation.number(((Number) result).longValue());
                 } else {
-                    return ValueRepresentation.string(result.toString());
+                    return ValueRepresentation.string(result+"");
                 }
             }
         } catch (final ScriptException e) {
