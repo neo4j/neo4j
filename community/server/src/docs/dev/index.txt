@@ -18,5 +18,5 @@ include::server-performance.txt[]
 
 include::server-unmanaged-extensions.txt[]
 
-// include::rest/index.txt[]
+include::rest/index.txt[]
 
