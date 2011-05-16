@@ -47,7 +47,7 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
-public class ManageNodeFunctionalTest extends BaseDocumentation
+public class ManageNodeFunctionalTest
 {
     private static final long NON_EXISTENT_NODE_ID = 999999;
     private static String NODE_URI_PATTERN = "^.*/node/[0-9]+$";
@@ -62,8 +62,6 @@ public class ManageNodeFunctionalTest extends BaseDocumentation
         server.start();
         functionalTestHelper = new FunctionalTestHelper(server);
         helper = functionalTestHelper.getGraphDbHelper();
-        doc = new DocumentationOutput( functionalTestHelper );
-
     }
 
     @After
@@ -74,7 +72,7 @@ public class ManageNodeFunctionalTest extends BaseDocumentation
     @Test
     public void shouldGet201WhenCreatingNode() throws Exception
     {
-        ClientResponse response = doc.builder( "Create a node" ).status(
+        ClientResponse response = DocsGenerator.create( "Create a node" ).status(
                 Response.Status.CREATED ).header( "Location" ).post(
                         functionalTestHelper.nodeUri() );
         assertTrue( response.getLocation().toString().matches( NODE_URI_PATTERN ) );
@@ -84,9 +82,11 @@ public class ManageNodeFunctionalTest extends BaseDocumentation
     @Test
     public void shouldGet201WhenCreatingNodeWithProperties() throws Exception
     {
-        ClientResponse response = doc.builder( "Create a node with properties" ).payload(
+        ClientResponse response = DocsGenerator.create(
+        "Create a node with properties" ).payload(
         "{\"foo\" : \"bar\"}" ).status( Response.Status.CREATED ).header(
-        "Location" ).post( functionalTestHelper.nodeUri() );
+        "Location" ).header( "Content-Length" ).post(
+                functionalTestHelper.nodeUri() );
         //ClientResponse response = sendCreateRequestToServer(  );
         assertNotNull( response.getHeaders().get( "Content-Length" ) );
         assertTrue( response.getLocation().toString().matches( NODE_URI_PATTERN ) );
@@ -95,8 +95,12 @@ public class ManageNodeFunctionalTest extends BaseDocumentation
     @Test
     public void shouldGet400WhenSupplyingNullValueForAProperty() throws Exception
     {
-        ClientResponse response = sendCreateRequestToServer( "{\"foo\":null}" );
-        assertEquals( 400, response.getStatus() );
+        DocsGenerator.create(
+                "Property values can not be null",
+                "This example shows the response you get "
+                + "when trying to set a property to null." ).payload(
+                "{\"foo\":null}" ).status( Response.Status.BAD_REQUEST ).post(
+                        functionalTestHelper.nodeUri() );
     }
 
     @Test

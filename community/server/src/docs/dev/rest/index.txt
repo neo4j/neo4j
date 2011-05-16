@@ -20,11 +20,15 @@ include::create-node-with-properties.txt[]
 
 include::get-node.txt[]
 
+include::get-properties-for-node.txt[]
+
 include::get-non-existent-node.txt[]
 
 include::update-node-properties.txt[]
 
-include::delete-all-properties-from-node.txt[]]
+include::property-values-can-not-be-null.txt[]
+
+include::delete-all-properties-from-node.txt[]
 
 include::create-a-named-node-index.txt[]
 

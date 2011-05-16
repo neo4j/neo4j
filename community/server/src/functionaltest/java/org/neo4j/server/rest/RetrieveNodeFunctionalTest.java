@@ -44,7 +44,8 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
-public class RetrieveNodeFunctionalTest extends BaseDocumentation{
+public class RetrieveNodeFunctionalTest
+{
     private URI nodeUri;
 
     private NeoServerWithEmbeddedWebServer server;
@@ -58,7 +59,6 @@ public class RetrieveNodeFunctionalTest extends BaseDocumentation{
         server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper(server);
-        doc = new DocumentationOutput( functionalTestHelper );
         nodeUri = new URI(functionalTestHelper.nodeUri() + "/" + new GraphDbHelper(server.getDatabase()).createNode());
     }
 
@@ -71,7 +71,7 @@ public class RetrieveNodeFunctionalTest extends BaseDocumentation{
     @Test
     public void shouldGet200WhenRetrievingNode() throws Exception {
         String uri = nodeUri.toString();
-        doc.builder( "Get Node" ).get( uri );
+        DocsGenerator.create( "Get Node" ).get( uri );
     }
 
     @Test
@@ -96,7 +96,7 @@ public class RetrieveNodeFunctionalTest extends BaseDocumentation{
 
     @Test
     public void shouldGet404WhenRetrievingNonExistentNode() throws Exception {
-        doc.builder( "Get non-existent Node" ).status(
+        DocsGenerator.create( "Get non-existent Node" ).status(
                 Response.Status.NOT_FOUND ).get( nodeUri + "00000" );
     }
 

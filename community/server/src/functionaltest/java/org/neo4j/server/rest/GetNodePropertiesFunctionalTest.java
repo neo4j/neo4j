@@ -39,7 +39,8 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
-public class GetNodePropertiesFunctionalTest extends BaseDocumentation {
+public class GetNodePropertiesFunctionalTest
+{
 
     private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
@@ -50,7 +51,6 @@ public class GetNodePropertiesFunctionalTest extends BaseDocumentation {
         server.start();
 
         functionalTestHelper = new FunctionalTestHelper(server);
-        doc = new DocumentationOutput( functionalTestHelper );
     }
 
     @After
@@ -77,7 +77,7 @@ public class GetNodePropertiesFunctionalTest extends BaseDocumentation {
         String entity = JsonHelper.createJsonFrom(Collections.singletonMap("foo", "bar"));
         ClientResponse createResponse = createResource.type(MediaType.APPLICATION_JSON).entity(entity).accept(MediaType.APPLICATION_JSON).post(
                 ClientResponse.class);
-        doc.builder( "Get properties for Node" ).get(
+        DocsGenerator.create( "Get properties for Node" ).get(
                 createResponse.getLocation().toString() + "/properties" );
     }
 

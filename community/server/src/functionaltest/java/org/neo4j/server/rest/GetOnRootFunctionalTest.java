@@ -37,7 +37,8 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
-public class GetOnRootFunctionalTest extends BaseDocumentation {
+public class GetOnRootFunctionalTest
+{
 
     private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
@@ -47,7 +48,6 @@ public class GetOnRootFunctionalTest extends BaseDocumentation {
         server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper(server);
-        doc = new DocumentationOutput( functionalTestHelper );
 
     }
 
@@ -59,7 +59,7 @@ public class GetOnRootFunctionalTest extends BaseDocumentation {
 
     @Test
     public void assert200OkFromGet() throws Exception {
-        doc.builder( "Retrieving the data root endpoint" ).get(
+        DocsGenerator.create( "Retrieving the data root endpoint" ).get(
                 functionalTestHelper.dataUri() );
     }
 

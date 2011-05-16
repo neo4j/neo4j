@@ -42,7 +42,8 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
-public class SetRelationshipPropertiesFunctionalTest extends BaseDocumentation{
+public class SetRelationshipPropertiesFunctionalTest
+{
 
     private URI propertiesUri;
     private URI badUri;
@@ -54,7 +55,6 @@ public class SetRelationshipPropertiesFunctionalTest extends BaseDocumentation{
         server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
         server.start();
         FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper(server);
-        doc = new DocumentationOutput( functionalTestHelper );
         long relationshipId = new GraphDbHelper(server.getDatabase()).createRelationship("KNOWS");
         propertiesUri = new URI(functionalTestHelper.relationshipPropertiesUri(relationshipId));
         badUri = new URI(functionalTestHelper.relationshipPropertiesUri(relationshipId + 1 * 99999));
@@ -71,9 +71,9 @@ public class SetRelationshipPropertiesFunctionalTest extends BaseDocumentation{
     {
         Map<String, Object> map = new HashMap<String, Object>();
         map.put("jim", "tobias");
-        doc.builder( "Update node properties" ).payload(
+        DocsGenerator.create( "Update node properties" ).payload(
                 JsonHelper.createJsonFrom( map ) ).status(
-                Response.Status.NO_CONTENT ).put( propertiesUri.toString() );
+                        Response.Status.NO_CONTENT ).put( propertiesUri.toString() );
         ClientResponse response = updatePropertiesOnServer(map);
         assertEquals(204, response.getStatus());
     }

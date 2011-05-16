@@ -53,7 +53,7 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
 
-public class IndexNodeFunctionalTest extends BaseDocumentation
+public class IndexNodeFunctionalTest
 {
     private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
@@ -65,7 +65,6 @@ public class IndexNodeFunctionalTest extends BaseDocumentation
         server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper( server );
-        doc = new DocumentationOutput( functionalTestHelper );
         helper = functionalTestHelper.getGraphDbHelper();
     }
 
@@ -99,7 +98,8 @@ public class IndexNodeFunctionalTest extends BaseDocumentation
         String indexName = "favorites";
         Map<String, String> indexSpecification = new HashMap<String, String>();
         indexSpecification.put( "name", indexName );
-        ClientResponse response = doc.builder( "Create a named node index" ).payload(
+        ClientResponse response = DocsGenerator.create(
+        "Create a named node index" ).payload(
                 JsonHelper.createJsonFrom( indexSpecification ) ).status(
                         Response.Status.CREATED ).header( "Location" ).post(
                                 functionalTestHelper.nodeIndexUri() );

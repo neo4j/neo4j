@@ -39,7 +39,7 @@ import org.neo4j.server.rest.domain.GraphDbHelper;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
-public class RemoveNodePropertiesFunctionalTest extends BaseDocumentation
+public class RemoveNodePropertiesFunctionalTest
 {
     private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
@@ -50,7 +50,6 @@ public class RemoveNodePropertiesFunctionalTest extends BaseDocumentation
         server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper(server);
-        doc  = new DocumentationOutput( functionalTestHelper );
         helper = functionalTestHelper.getGraphDbHelper();
     }
 
@@ -83,11 +82,9 @@ public class RemoveNodePropertiesFunctionalTest extends BaseDocumentation
         Map<String, Object> map = new HashMap<String, Object>();
         map.put( "jim", "tobias" );
         helper.setNodeProperties( nodeId, map );
-        ClientResponse response = removeNodePropertiesOnServer( nodeId );
-        assertEquals( 204, response.getStatus() );
-        doc.builder( "Delete all properties from node" ).status(
+        DocsGenerator.create( "Delete all properties from node" ).status(
                 Response.Status.NO_CONTENT ).delete(
-                functionalTestHelper.nodePropertiesUri( nodeId ) );
+                        functionalTestHelper.nodePropertiesUri( nodeId ) );
     }
 
     @Test
