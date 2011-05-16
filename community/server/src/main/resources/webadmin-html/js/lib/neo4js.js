@@ -1090,7 +1090,7 @@ _.extend(neo4j.index.Indexes.prototype,{getAllNodeIndexes:function(){return this
 },removeNodeIndex:function(a){return this._removeIndex("node_index",a)
 },removeRelationshipIndex:function(a){return this._removeIndex("relationship_index",a)
 },_listAllIndexes:function(c){var a=this.db,b=this;
-return this.db.getServiceDefinition().then(function(f,e,d){a.web.get(f[c],function(m){var j=[],h=_(m).keys();
+return this.db.getServiceDefinition().then(function(f,e,d){a.web.get(f[c],function(m){var j=[],h=m===null?[]:_(m).keys();
 for(var k=0,g=h.length;
 k<g;
 k++){j.push(b._getOrCreateLocalIndexObject(c,h[k]))
