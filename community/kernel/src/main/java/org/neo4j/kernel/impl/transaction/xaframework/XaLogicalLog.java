@@ -37,6 +37,7 @@ import javax.transaction.xa.Xid;
 
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.BufferedFileChannel;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -774,6 +775,7 @@ public class XaLogicalLog
                 " with committed tx=" + lastCommittedTx, true );
         long logEntriesFound = 0;
         long lastEntryPos = fileChannel.position();
+        fileChannel = new BufferedFileChannel( fileChannel );
         LogEntry entry;
         while ( (entry = readEntry()) != null )
         {
@@ -782,6 +784,7 @@ public class XaLogicalLog
             lastEntryPos = fileChannel.position();
         }
         // make sure we overwrite any broken records
+        fileChannel = ((BufferedFileChannel)fileChannel).getSource();
         fileChannel.position( lastEntryPos );
 
         msgLog.logMessage( "[" + logFileName + "] entries found=" + logEntriesFound +
@@ -893,6 +896,7 @@ public class XaLogicalLog
         }
         FileChannel channel = new RandomAccessFile( name, "r" ).getChannel();
         channel.position( position );
+//        return new BufferedFileChannel( channel );
         return channel;
     }
 
@@ -1095,6 +1099,7 @@ public class XaLogicalLog
         {
             String currentLogName = getCurrentLogFileName();
             FileChannel channel = new RandomAccessFile( currentLogName, "r" ).getChannel();
+//            channel = new BufferedFileChannel( channel );
             
             // Combined with the writeBuffer in cases where a DirectMappedLogBuffer
             // is used, on Windows or when memory mapping is turned off.
