@@ -94,7 +94,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         NeoStore.createStore( file( "neo" ), MapUtil.map(
                 IdGeneratorFactory.class, ID_GENERATOR_FACTORY,
                 FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction(),
-                LogBufferFactory.class, CommonFactories.defaultLogBufferFactory( MapUtil.stringMap() ) ) );
+                LogBufferFactory.class, CommonFactories.defaultLogBufferFactory() ) );
     }
 
     private static class MyPropertyIndex extends
@@ -152,7 +152,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
                     LockReleaser.class, lockReleaser,
                     IdGeneratorFactory.class, ID_GENERATOR_FACTORY,
                     FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction(),
-                    LogBufferFactory.class, CommonFactories.defaultLogBufferFactory( MapUtil.stringMap() ),
+                    LogBufferFactory.class, CommonFactories.defaultLogBufferFactory(),
                     TxIdGenerator.class, TxIdGenerator.DEFAULT,
                     "store_dir", path(),
                     "neo_store", file( "neo" ),

@@ -57,7 +57,6 @@ public class Config
     static final String LUCENE_FULLTEXT_DS_CLASS = "org.neo4j.index.lucene.LuceneFulltextDataSource";
 
     public static final String USE_MEMORY_MAPPED_BUFFERS = "use_memory_mapped_buffers";
-    public static final String USE_MEMORY_MAPPED_LOG = "use_memory_mapped_log";
     public static final String DUMP_CONFIGURATION = "dump_configuration";
     public static final String KEEP_LOGICAL_LOGS = "keep_logical_logs";
     public static final String ENABLE_REMOTE_SHELL = "enable_remote_shell";
@@ -168,7 +167,6 @@ public class Config
             // If not on win, default use memory mapping
             params.put( Config.USE_MEMORY_MAPPED_BUFFERS, "true" );
         }
-        params.put( Config.USE_MEMORY_MAPPED_LOG, "false" );
         return params;
     }
 

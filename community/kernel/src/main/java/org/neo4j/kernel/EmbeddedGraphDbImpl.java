@@ -119,7 +119,7 @@ class EmbeddedGraphDbImpl
          *  user supplied configurations are consolidated
          */
         config.getParams().put( LogBufferFactory.class,
-                CommonFactories.defaultLogBufferFactory( config.getParams() ) );
+                CommonFactories.defaultLogBufferFactory() );
         graphDbInstance = new GraphDbInstance( storeDir, true, config );
         this.msgLog = StringLogger.getLogger( storeDir );
         this.graphDbService = graphDbService;
