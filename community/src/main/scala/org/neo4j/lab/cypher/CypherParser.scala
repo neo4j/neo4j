@@ -10,7 +10,7 @@ class CypherParser extends JavaTokenParsers {
     case from ~ where ~ select => Query(select, from, where)
   }
 
-  def from: Parser[From] = "from" ~> repsep(nodeByIds, ",") ^^ (From(_: _*))
+  def from: Parser[From] = "from" ~> repsep(nodeByIds | nodeByIndex, ",") ^^ (From(_: _*))
 
   def relatedTo: Parser[Clause] = relatedHead ~ rep1(relatedTail) ^^ {
     case head ~ tails => {
@@ -54,6 +54,11 @@ class CypherParser extends JavaTokenParsers {
 
   def nodeByIds = ident ~ "=" ~ "node" ~ "(" ~ repsep(wholeNumber, ",") ~ ")" ^^ {
     case varName ~ "=" ~ "node" ~ "(" ~ id ~ ")" => NodeById(varName, id.map(_.toLong).toSeq: _*)
+  }
+
+  def nodeByIndex = ident ~ "=" ~ "node_index" ~ "(" ~ stringLiteral ~ "," ~ stringLiteral ~ "," ~ stringLiteral ~ ")" ^^ {
+    case varName ~ "=" ~ "node_index" ~ "(" ~ index ~ "," ~ key ~ "," ~ value ~ ")" =>
+      NodeByIndex(varName, stripQuotes(index), stripQuotes(key), stripQuotes(value))
   }
 
   def select: Parser[Select] = "select" ~> repsep((propertyOutput|nodeOutput), ",") ^^ ( Select(_:_*) )

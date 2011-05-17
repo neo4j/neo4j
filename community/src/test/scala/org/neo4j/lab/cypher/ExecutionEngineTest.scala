@@ -311,7 +311,6 @@ class ExecutionEngineTest {
     assertEquals(List(Map("company.name" -> "Oracle")), result.toList)
   }
 
-
   def execute(query: Query) = {
     val result = engine.execute(query)
     println(query)

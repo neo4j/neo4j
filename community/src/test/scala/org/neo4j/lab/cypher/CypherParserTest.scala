@@ -144,4 +144,14 @@ class CypherParserTest {
       )
     )
   }
+
+  @Test def sourceIsAnIndex() {
+    testQuery(
+      "from a = node_index(\"index\", \"key\", \"value\") select a",
+      Query(
+        Select(EntityOutput("a")),
+        From(NodeByIndex("a", "index", "key", "value"))
+      )
+    )
+  }
 }
