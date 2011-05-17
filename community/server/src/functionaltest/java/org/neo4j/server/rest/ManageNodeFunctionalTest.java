@@ -170,11 +170,6 @@ public class ManageNodeFunctionalTest
 
     }
 
-    private void assertProperNodeRepresentation( final Map<String, Object> noderep )
-    {
-        NodeRepresentationTest.verifySerialisation( noderep );
-    }
-
     @Test
     public void shouldRespondWith204WhenNodeDeleted() throws Exception
     {
@@ -183,7 +178,7 @@ public class ManageNodeFunctionalTest
     }
 
     @Test
-    public void shouldRespondWith404WhenNodeToBeDeletedCannotBeFound() throws Exception
+    public void shouldRespondWith404AndSensibleEntityBodyWhenNodeToBeDeletedCannotBeFound() throws Exception
     {
         ClientResponse response = sendDeleteRequestToServer( NON_EXISTENT_NODE_ID );
         assertEquals( 404, response.getStatus() );
