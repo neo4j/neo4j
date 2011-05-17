@@ -3,7 +3,6 @@ package org.neo4j.lab.cypher
 import commands._
 import scala.util.parsing.combinator._
 import org.neo4j.graphdb.Direction
-import collection.immutable.List
 
 class CypherParser extends JavaTokenParsers {
 
@@ -15,13 +14,14 @@ class CypherParser extends JavaTokenParsers {
 
   def relatedTo: Parser[Clause] = relatedHead ~ rep1(relatedTail) ^^ {
     case head ~ tails => {
-      var last = head
+      val namer = new NodeNamer
+      var last = namer.name(head)
       val list = tails.map((item) => {
         val back = item._1
         val relName = item._2
         val relType = item._3
         val forward = item._4
-        val end = item._5
+        val end = namer.name(item._5)
 
         val result: Clause = RelatedTo(last, end, relName, relType, getDirection(back, forward))
 
@@ -34,9 +34,21 @@ class CypherParser extends JavaTokenParsers {
     }
   }
 
+  class NodeNamer {
+    var lastNodeNumber = 0
 
-  def relatedHead:Parser[String] = "(" ~> ident <~ ")" ^^ { case name => name }
-  def relatedTail = opt("<") ~ "-[" ~ opt(ident <~ ",") ~ "'" ~ ident ~ "'" ~ "]-" ~ opt(">") ~ "(" ~ ident ~ ")" ^^ {
+    def name(s:Option[String]):String = s match {
+      case None => {
+        lastNodeNumber += 1
+        "___NODE" + lastNodeNumber
+      }
+      case Some(x) => x
+    }
+  }
+
+
+  def relatedHead:Parser[Option[String]] = "(" ~> opt(ident) <~ ")" ^^ { case name => name }
+  def relatedTail = opt("<") ~ "-[" ~ opt(ident <~ ",") ~ "'" ~ ident ~ "'" ~ "]-" ~ opt(">") ~ "(" ~ opt(ident) ~ ")" ^^ {
     case back ~ "-[" ~ relName ~ "'" ~ relType ~ "'" ~ "]-" ~ forward ~ "(" ~ end ~ ")" => (back, relName, relType, forward, end)
   }
 

@@ -32,9 +32,6 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
 
       val projections = createProjectionTransformers(select)
 
-
-//      val executionPlan = new FSM(sourcePump)
-
       where match {
         case Some(w) => w.clauses.foreach((c) => {
           c match {

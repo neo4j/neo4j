@@ -119,6 +119,17 @@ class CypherParserTest {
     )
   }
 
+  @Test def relatedToWithoutEndName() {
+    testQuery(
+      "from a = node(1) where (a) -['MARRIED']-> () select a",
+      Query(
+        Select(EntityOutput("a")),
+        From(NodeById("a", 1)),
+        Some(Where(RelatedTo("a", "___NODE1", None, "MARRIED", Direction.OUTGOING)))
+      )
+    )
+  }
+
   @Test def relatedInTwoSteps() {
     testQuery(
       "from a = node(1) where (a) -['KNOWS']-> (b) -['FRIEND']-> (c) select c",
