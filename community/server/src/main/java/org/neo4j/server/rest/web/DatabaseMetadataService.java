@@ -29,32 +29,40 @@ import javax.ws.rs.core.Response;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.server.database.Database;
 
-@Path("/relationship/types")
-public class DatabaseMetadataService {
+@Path( "/relationship/types" )
+public class DatabaseMetadataService
+{
 
     private final Database database;
 
-    public DatabaseMetadataService(@Context Database database) {
+    public DatabaseMetadataService( @Context Database database )
+    {
         this.database = database;
     }
 
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response getRelationshipTypes() {
+    @Produces( MediaType.APPLICATION_JSON )
+    public Response getRelationshipTypes()
+    {
         Iterable<RelationshipType> relationshipTypes = database.graph.getRelationshipTypes();
-        return Response.ok().type(MediaType.APPLICATION_JSON).entity(generateJsonRepresentation(relationshipTypes)).build();
+        return Response.ok()
+                .type( MediaType.APPLICATION_JSON )
+                .entity( generateJsonRepresentation( relationshipTypes ) )
+                .build();
     }
 
-    private String generateJsonRepresentation(Iterable<RelationshipType> relationshipTypes) {
+    private String generateJsonRepresentation( Iterable<RelationshipType> relationshipTypes )
+    {
         StringBuilder sb = new StringBuilder();
-        sb.append("[");
-        for(RelationshipType rt : relationshipTypes) {
-            sb.append("\"");
-            sb.append(rt.name());
-            sb.append("\",");
+        sb.append( "[" );
+        for ( RelationshipType rt : relationshipTypes )
+        {
+            sb.append( "\"" );
+            sb.append( rt.name() );
+            sb.append( "\"," );
         }
-        sb.append("]");
-        return sb.toString().replaceAll(",]", "]");
+        sb.append( "]" );
+        return sb.toString()
+                .replaceAll( ",]", "]" );
     }
 }
-
