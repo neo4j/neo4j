@@ -23,7 +23,6 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
-import java.io.File;
 import java.io.IOException;
 
 import org.junit.After;
@@ -35,35 +34,43 @@ import org.neo4j.server.web.Jetty6WebServer;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
-public class NeoServerStartupLoggingFunctionalTest {
+public class NeoServerStartupLoggingFunctionalTest
+{
 
     private NeoServerWithEmbeddedWebServer server;
 
     private InMemoryAppender appender;
 
     @Before
-    public void setupServer() throws IOException {
-        appender = new InMemoryAppender(Jetty6WebServer.log);
-        server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
+    public void setupServer() throws IOException
+    {
+        appender = new InMemoryAppender( Jetty6WebServer.log );
+        server = ServerBuilder.server()
+                .withRandomDatabaseDir()
+                .withPassingStartupHealthcheck()
+                .build();
         server.start();
     }
 
     @After
-    public void stopServer() throws IOException {
+    public void stopServer() throws IOException
+    {
         server.stop();
     }
 
     @Test
-    public void shouldLogStartup() throws IOException, ServerStartupException {
+    public void shouldLogStartup() throws IOException, ServerStartupException
+    {
 
         // Check the logs
-        assertThat(appender.toString().length(), is(greaterThan(0)));
+        assertThat( appender.toString().length(), is( greaterThan( 0 ) ) );
 
         // Check the server is alive
         Client client = Client.create();
-        client.setFollowRedirects(false);
-        ClientResponse response = client.resource("http://localhost:" + server.getWebServerPort() + "/").get(ClientResponse.class);
-        assertThat(response.getStatus(), is(greaterThan(199)));
+        client.setFollowRedirects( false );
+        ClientResponse response = client.resource( "http://localhost:" + server.getWebServerPort() + "/" )
+                .get( ClientResponse.class );
+        assertThat( response.getStatus(), is( greaterThan( 199 ) ) );
 
     }
 }
