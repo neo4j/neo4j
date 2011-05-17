@@ -36,7 +36,6 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class NeoServerStartupLoggingFunctionalTest {
-    private File tempDir;
 
     private NeoServerWithEmbeddedWebServer server;
 
@@ -44,12 +43,9 @@ public class NeoServerStartupLoggingFunctionalTest {
 
     @Before
     public void setupServer() throws IOException {
-        tempDir = new File(ServerTestUtils.createTempDir().getAbsolutePath() + File.separator + "html");
-
         appender = new InMemoryAppender(Jetty6WebServer.log);
         server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
         server.start();
-
     }
 
     @After
