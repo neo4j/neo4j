@@ -82,9 +82,9 @@ public class RemoveNodePropertiesFunctionalTest
         Map<String, Object> map = new HashMap<String, Object>();
         map.put( "jim", "tobias" );
         helper.setNodeProperties( nodeId, map );
-        DocsGenerator.create( "Delete all properties from node" ).status(
-                Response.Status.NO_CONTENT ).delete(
-                        functionalTestHelper.nodePropertiesUri( nodeId ) );
+        DocsGenerator.create( "Delete all properties from node" )
+                .expectedStatus( Response.Status.NO_CONTENT )
+                .delete( functionalTestHelper.nodePropertiesUri( nodeId ) );
     }
 
     @Test

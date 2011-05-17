@@ -92,10 +92,15 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     @Test
     public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingAllRelationshipsForANode() throws JsonParseException
     {
-        ClientResponse response = sendRetrieveRequestToServer(nodeWithRelationships, "/all");
+        String path = "/all";
+        ClientResponse response = sendRetrieveRequestToServer(
+                nodeWithRelationships, path );
         assertEquals(200, response.getStatus());
         assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
         verifyRelReps(3, response.getEntity(String.class));
+        DocsGenerator.create( "Get all relationships" )
+                .get( functionalTestHelper.nodeUri() + "/"
+                      + nodeWithRelationships + "/relationships" + path );
     }
 
     @Test

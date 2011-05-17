@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.junit.After;
 import org.junit.Before;
@@ -36,10 +37,10 @@ import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.domain.JsonParseException;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
-import org.neo4j.server.rest.domain.JsonParseException;
 
 public class SetNodePropertiesFunctionalTest {
 
@@ -73,6 +74,10 @@ public class SetNodePropertiesFunctionalTest {
     {
         Map<String, Object> map = new HashMap<String, Object>();
         map.put("jim", "tobias");
+        DocsGenerator.create( "Update node properties" )
+                .payload( JsonHelper.createJsonFrom( map ) )
+                .expectedStatus( Response.Status.NO_CONTENT )
+                .put( propertiesUri.toString() );
         ClientResponse response = updateNodePropertiesOnServer(map);
         assertEquals(204, response.getStatus());
     }
@@ -115,12 +120,23 @@ public class SetNodePropertiesFunctionalTest {
 
     @Test
     public void shouldReturn204WhenPropertyIsSet() throws Exception {
+        DocsGenerator.create( "Set property on node" )
+                .payload( JsonHelper.createJsonFrom( "bar" ) )
+                .expectedStatus( Response.Status.NO_CONTENT )
+                .put( getPropertyUri( "foo" ).toString() );
         ClientResponse response = setNodePropertyOnServer("foo", "bar");
         assertEquals(204, response.getStatus());
     }
 
     @Test
     public void shouldReturn400WhenSendinIncompatibleJsonProperty() throws Exception {
+        DocsGenerator.create(
+                "Property values can not be nested",
+                "Nesting properties is not supported. "
+                        + "You could store the json as a string instead." )
+                .payload( "{\"foo\" : {\"bar\" : \"baz\"}}" )
+                .expectedStatus( Response.Status.BAD_REQUEST )
+                .post( functionalTestHelper.nodeUri() );
         ClientResponse response = setNodePropertyOnServer("jim", new HashMap<String, Object>());
         assertEquals(400, response.getStatus());
     }

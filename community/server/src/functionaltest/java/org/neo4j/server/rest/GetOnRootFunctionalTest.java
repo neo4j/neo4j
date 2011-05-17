@@ -59,8 +59,8 @@ public class GetOnRootFunctionalTest
 
     @Test
     public void assert200OkFromGet() throws Exception {
-        DocsGenerator.create( "Retrieving the data root endpoint" ).get(
-                functionalTestHelper.dataUri() );
+        DocsGenerator.create( "Retrieving the data root endpoint" )
+                .get( functionalTestHelper.dataUri() );
     }
 
     @Test

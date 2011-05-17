@@ -99,10 +99,12 @@ public class IndexNodeFunctionalTest
         Map<String, String> indexSpecification = new HashMap<String, String>();
         indexSpecification.put( "name", indexName );
         ClientResponse response = DocsGenerator.create(
-        "Create a named node index" ).payload(
-                JsonHelper.createJsonFrom( indexSpecification ) ).status(
-                        Response.Status.CREATED ).header( "Location" ).post(
-                                functionalTestHelper.nodeIndexUri() );
+                "Create a named node index" )
+                .payload( JsonHelper.createJsonFrom( indexSpecification ) )
+                .expectedStatus( Response.Status.CREATED )
+                .expectedHeader( "Location" )
+                .post( functionalTestHelper.nodeIndexUri() )
+                .response();
 
         assertNotNull( response.getHeaders().getFirst( "Location" ) );
         assertEquals( 1, helper.getNodeIndexes().length );
