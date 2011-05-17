@@ -59,7 +59,8 @@ public class GetOnRootFunctionalTest
 
     @Test
     public void assert200OkFromGet() throws Exception {
-        DocsGenerator.create( "Retrieving the data root endpoint" )
+        DocsGenerator.create( "Get service root",
+                "The service root is your starting point to discover the REST API." )
                 .get( functionalTestHelper.dataUri() );
     }
 

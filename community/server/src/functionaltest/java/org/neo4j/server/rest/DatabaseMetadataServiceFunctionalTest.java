@@ -64,6 +64,8 @@ public class DatabaseMetadataServiceFunctionalTest {
         ClientResponse response = Client.create().resource(functionalTestHelper.dataUri() + "relationship/types").accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
         assertEquals(200, response.getStatus());
         
+        DocsGenerator.create( "Get relationship types" )
+                .get( functionalTestHelper.dataUri() + "relationship/types" );
     }
 }
 
