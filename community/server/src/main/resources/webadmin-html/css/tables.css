@@ -23,7 +23,7 @@ table.data-table tr th {
 }
 
 table.data-table tr > *:first-child {
-  padding-left:10px !important;
+  padding-left:10px;
 }
 
 table.data-table tr > *:last-child {
