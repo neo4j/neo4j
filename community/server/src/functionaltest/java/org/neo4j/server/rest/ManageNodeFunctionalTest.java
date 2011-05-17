@@ -19,7 +19,8 @@
  */
 package org.neo4j.server.rest;
 
-import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
@@ -41,7 +42,6 @@ import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.repr.NodeRepresentationTest;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
@@ -181,16 +181,19 @@ public class ManageNodeFunctionalTest
     public void shouldRespondWith404AndSensibleEntityBodyWhenNodeToBeDeletedCannotBeFound() throws Exception
     {
         ClientResponse response = sendDeleteRequestToServer( NON_EXISTENT_NODE_ID );
-        assertEquals( 404, response.getStatus() );
+        assertEquals( 404, response.getStatus() );        
+        assertThat(JsonHelper.jsonToMap( response.getEntity( String.class ) ), not(hasKey("message")));
     }
 
     @Test
-    public void shouldRespondWith409WhenNodeCannotBeDeleted() throws Exception
+    public void shouldRespondWith409AndSensibleEntityBodyWhenNodeCannotBeDeleted() throws Exception
     {
         long id = helper.createNode();
         helper.createRelationship( "LOVES", id, helper.createNode() );
         ClientResponse response = sendDeleteRequestToServer( id );
         assertEquals( 409, response.getStatus() );
+        
+        assertThat(JsonHelper.jsonToMap( response.getEntity( String.class ) ), not(hasKey("message")));
     }
 
     @Test
