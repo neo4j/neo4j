@@ -12,7 +12,11 @@ You can also see a (at runtime) generated description of the API be pointing you
 To interact with the JSON interface you must explicitly set the request header +Accept:application/json+ for those requests that responds with data.
 You should also set the header +Content-Type:application/json+ if your request sends data, for example when you're creating a relationship.
 
+== Root ==
+
 include::retrieving-the-data-root-endpoint.txt[]
+
+== Nodes ==
 
 include::create-a-node.txt[]
 
@@ -20,15 +24,35 @@ include::create-node-with-properties.txt[]
 
 include::get-node.txt[]
 
-include::get-properties-for-node.txt[]
-
 include::get-non-existent-node.txt[]
+
+include::delete-node.txt[]
+
+include::nodes-with-relationships-can-not-be-deleted.txt[]
+
+== Properties ==
+
+include::set-property-on-node.txt[]
 
 include::update-node-properties.txt[]
 
+include::get-properties-for-node.txt[]
+
+include::get-empty-properties-for-node.txt[]
+
 include::property-values-can-not-be-null.txt[]
 
+include::property-values-can-not-be-nested.txt[]
+
 include::delete-all-properties-from-node.txt[]
+
+== Relationships ==
+
+include::create-relationship.txt[]
+
+include::update-relationship-properties.txt[]
+
+== Indexes ==
 
 include::create-a-named-node-index.txt[]
 

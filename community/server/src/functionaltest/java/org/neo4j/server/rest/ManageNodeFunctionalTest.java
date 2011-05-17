@@ -72,23 +72,25 @@ public class ManageNodeFunctionalTest
     @Test
     public void shouldGet201WhenCreatingNode() throws Exception
     {
-        ClientResponse response = DocsGenerator.create( "Create a node" ).status(
-                Response.Status.CREATED ).header( "Location" ).post(
-                        functionalTestHelper.nodeUri() );
+        ClientResponse response = DocsGenerator.create( "Create a node" )
+                .expectedStatus( Response.Status.CREATED )
+                .expectedHeader( "Location" )
+                .post( functionalTestHelper.nodeUri() )
+                .response();
         assertTrue( response.getLocation().toString().matches( NODE_URI_PATTERN ) );
-        assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
     }
 
     @Test
     public void shouldGet201WhenCreatingNodeWithProperties() throws Exception
     {
         ClientResponse response = DocsGenerator.create(
-        "Create a node with properties" ).payload(
-        "{\"foo\" : \"bar\"}" ).status( Response.Status.CREATED ).header(
-        "Location" ).header( "Content-Length" ).post(
-                functionalTestHelper.nodeUri() );
-        //ClientResponse response = sendCreateRequestToServer(  );
-        assertNotNull( response.getHeaders().get( "Content-Length" ) );
+                "Create a node with properties" )
+                .payload( "{\"foo\" : \"bar\"}" )
+                .expectedStatus( Response.Status.CREATED )
+                .expectedHeader( "Location" )
+                .expectedHeader( "Content-Length" )
+                .post( functionalTestHelper.nodeUri() )
+                .response();
         assertTrue( response.getLocation().toString().matches( NODE_URI_PATTERN ) );
     }
 
@@ -98,9 +100,10 @@ public class ManageNodeFunctionalTest
         DocsGenerator.create(
                 "Property values can not be null",
                 "This example shows the response you get "
-                + "when trying to set a property to null." ).payload(
-                "{\"foo\":null}" ).status( Response.Status.BAD_REQUEST ).post(
-                        functionalTestHelper.nodeUri() );
+                        + "when trying to set a property to null." )
+                .payload( "{\"foo\":null}" )
+                .expectedStatus( Response.Status.BAD_REQUEST )
+                .post( functionalTestHelper.nodeUri() );
     }
 
     @Test
@@ -111,7 +114,7 @@ public class ManageNodeFunctionalTest
     }
 
     @Test
-    public void shouldGet400WhenCreatingNodeUnsupportedPropertyValues() throws Exception
+    public void shouldGet400WhenCreatingNodeUnsupportedNestedPropertyValues() throws Exception
     {
         ClientResponse response = sendCreateRequestToServer( "{\"foo\" : {\"bar\" : \"baz\"}}" );
         assertEquals( 400, response.getStatus() );
@@ -178,8 +181,11 @@ public class ManageNodeFunctionalTest
     @Test
     public void shouldRespondWith204WhenNodeDeleted() throws Exception
     {
-        ClientResponse response = sendDeleteRequestToServer( helper.createNode() );
-        assertEquals( 204, response.getStatus() );
+        DocsGenerator.create( "Delete node" )
+                .expectedStatus( Response.Status.NO_CONTENT )
+                .delete(
+                        functionalTestHelper.dataUri() + "node/"
+                                + helper.createNode() );
     }
 
     @Test
@@ -196,6 +202,13 @@ public class ManageNodeFunctionalTest
         helper.createRelationship( "LOVES", id, helper.createNode() );
         ClientResponse response = sendDeleteRequestToServer( id );
         assertEquals( 409, response.getStatus() );
+
+        DocsGenerator.create(
+                "Nodes with relationships can not be deleted",
+                "The relationships on a node has to be deleted "
+                        + "before the node can be deleted." )
+                .expectedStatus( Response.Status.CONFLICT )
+                .delete( functionalTestHelper.dataUri() + "node/" + id );
     }
 
     @Test
