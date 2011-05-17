@@ -92,37 +92,45 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     @Test
     public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingAllRelationshipsForANode() throws JsonParseException
     {
-        ClientResponse response = sendRetrieveRequestToServer(nodeWithRelationships, "/all");
-        assertEquals(200, response.getStatus());
-        assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
-        verifyRelReps(3, response.getEntity(String.class));
+        String entity = DocsGenerator.create( "Get all relationships" )
+                .get( functionalTestHelper.nodeUri() + "/"
+                      + nodeWithRelationships + "/relationships" + "/all" )
+                .entity();
+        verifyRelReps( 3, entity );
     }
 
     @Test
     public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingIncomingRelationshipsForANode() throws JsonParseException
     {
-        ClientResponse response = sendRetrieveRequestToServer(nodeWithRelationships, "/in");
-        assertEquals(200, response.getStatus());
-        assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
-        verifyRelReps(1, response.getEntity(String.class));
+        String entity = DocsGenerator.create( "Get incoming relationships" )
+                .get( functionalTestHelper.nodeUri() + "/"
+                      + nodeWithRelationships + "/relationships" + "/in" )
+                .entity();
+        verifyRelReps( 1, entity );
     }
 
     @Test
     public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingOutgoingRelationshipsForANode() throws JsonParseException
     {
-        ClientResponse response = sendRetrieveRequestToServer(nodeWithRelationships, "/out");
-        assertEquals(200, response.getStatus());
-        assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
-        verifyRelReps(2, response.getEntity(String.class));
+        String entity = DocsGenerator.create( "Get outgoing relationships" )
+                .get( functionalTestHelper.nodeUri() + "/"
+                      + nodeWithRelationships + "/relationships" + "/out" )
+                .entity();
+        verifyRelReps( 2, entity );
     }
 
     @Test
     public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingAllTypedRelationshipsForANode() throws JsonParseException
     {
-        ClientResponse response = sendRetrieveRequestToServer(nodeWithRelationships, "/all/LIKES&HATES");
-        assertEquals(200, response.getStatus());
-        assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
-        verifyRelReps(3, response.getEntity(String.class));
+        String entity = DocsGenerator.create(
+                "Get typed relationships",
+                "Note that the \"+&+\" escaped for example when using "
+                        + "http://curl.haxx.se/[cURL] from the terminal." )
+                .get( functionalTestHelper.nodeUri() + "/"
+                      + nodeWithRelationships + "/relationships"
+                      + "/all/LIKES&HATES" )
+                .entity();
+        verifyRelReps( 3, entity );
     }
 
     @Test
@@ -146,10 +154,12 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     @Test
     public void shouldRespondWith200AndEmptyListOfRelationshipRepresentationsWhenGettingAllRelationshipsForANodeWithoutRelationships() throws JsonParseException
     {
-        ClientResponse response = sendRetrieveRequestToServer(nodeWithoutRelationships, "/all");
-        assertEquals(200, response.getStatus());
-        assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
-        verifyRelReps(0, response.getEntity(String.class));
+        String entity = DocsGenerator.create(
+                "Get relationships on a node without relationships" )
+                .get( functionalTestHelper.nodeUri() + "/"
+                      + nodeWithoutRelationships + "/relationships" + "/all" )
+                .entity();
+        verifyRelReps( 0, entity );
     }
 
     @Test

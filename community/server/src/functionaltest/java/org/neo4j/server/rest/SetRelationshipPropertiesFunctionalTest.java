@@ -71,9 +71,10 @@ public class SetRelationshipPropertiesFunctionalTest
     {
         Map<String, Object> map = new HashMap<String, Object>();
         map.put("jim", "tobias");
-        DocsGenerator.create( "Update node properties" ).payload(
-                JsonHelper.createJsonFrom( map ) ).status(
-                        Response.Status.NO_CONTENT ).put( propertiesUri.toString() );
+        DocsGenerator.create( "Update relationship properties" )
+                .payload( JsonHelper.createJsonFrom( map ) )
+                .expectedStatus( Response.Status.NO_CONTENT )
+                .put( propertiesUri.toString() );
         ClientResponse response = updatePropertiesOnServer(map);
         assertEquals(204, response.getStatus());
     }
