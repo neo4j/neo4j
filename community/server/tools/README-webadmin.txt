@@ -42,20 +42,20 @@ Prequisites - install these first.
 Node.js (http://nodejs.org/#download)
 Node package manager (http://npmjs.org/)
 
-coffeescript (command: npm install coffee-script)
-haml-js (command: npm install haml)
+coffeescript (command: npm install -g coffee-script)
+haml-js (command: npm install -g haml)
 
 
 Move files into place
 ---------------------
 
-ln -s server/tools/neo-haml /usr/local/sbin/
-ln -s server/tools/neo-coffee /usr/local/sbin/
-ln -s server/tools/requirehaml /usr/local/sbin/
+ln -s server/tools/neo-haml ~/bin/
+ln -s server/tools/neo-coffee ~/bin/
+ln -s server/tools/requirehaml ~/bin/
 
-chmod +x /usr/local/sbin/neo-haml
-chmod +x /usr/local/sbin/neo-coffee
-chmod +x /usr/local/sbin/requirehaml
+chmod +x ~/bin/neo-haml
+chmod +x ~/bin/neo-coffee
+chmod +x ~/bin/requirehaml
 
 
 Start up build environment

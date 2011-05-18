@@ -71,7 +71,10 @@ public class RetrieveNodeFunctionalTest
     @Test
     public void shouldGet200WhenRetrievingNode() throws Exception {
         String uri = nodeUri.toString();
-        DocsGenerator.create( "Get node" )
+        DocsGenerator.create(
+                "Get node",
+                "Note that the response contains URI/templates for "
+                        + "the available operations for getting properties and relationships." )
                 .get( uri );
     }
 

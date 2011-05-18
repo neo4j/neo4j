@@ -35,35 +35,45 @@ import org.neo4j.server.rest.domain.GraphDbHelper;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
+public class DatabaseMetadataServiceFunctionalTest
+{
 
-public class DatabaseMetadataServiceFunctionalTest {
-    
     private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
     private GraphDbHelper helper;
 
     @Before
-    public void setupServer() throws IOException {
-        server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
+    public void setupServer() throws IOException
+    {
+        server = ServerBuilder.server()
+                .withRandomDatabaseDir()
+                .withPassingStartupHealthcheck()
+                .build();
         server.start();
-        functionalTestHelper = new FunctionalTestHelper(server);
+        functionalTestHelper = new FunctionalTestHelper( server );
         helper = functionalTestHelper.getGraphDbHelper();
     }
 
     @After
-    public void stopServer() {
+    public void stopServer()
+    {
         server.stop();
         server = null;
     }
-    
+
     @Test
-    public void shouldReturn200OnGet() {
-        helper.createRelationship("foo");
-        helper.createRelationship("bar");
-        
-        ClientResponse response = Client.create().resource(functionalTestHelper.dataUri() + "relationship/types").accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
-        assertEquals(200, response.getStatus());
-        
+    public void shouldReturn200OnGet()
+    {
+        helper.createRelationship( "foo" );
+        helper.createRelationship( "bar" );
+
+        ClientResponse response = Client.create()
+                .resource( functionalTestHelper.dataUri() + "relationship/types" )
+                .accept( MediaType.APPLICATION_JSON )
+                .get( ClientResponse.class );
+        assertEquals( 200, response.getStatus() );
+
+        DocsGenerator.create( "Get relationship types" )
+                .get( functionalTestHelper.dataUri() + "relationship/types" );
     }
 }
-

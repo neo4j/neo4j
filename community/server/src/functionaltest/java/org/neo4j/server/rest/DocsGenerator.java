@@ -47,6 +47,7 @@ import com.sun.jersey.api.client.ClientResponse;
 
 /**
  * Generate asciidoc-formatted documentation from HTTP requests and responses.
+ * The status and media type of all responses is checked.
  */
 public class DocsGenerator
 {
@@ -125,7 +126,7 @@ public class DocsGenerator
         if ( description == null )
         {
             throw new IllegalArgumentException(
-            "The description can not be null" );
+                    "The description can not be null" );
         }
         if ( this.description == null )
         {
@@ -144,16 +145,16 @@ public class DocsGenerator
      * 
      * @param expectedResponseStatus the expected response status
      */
-    public DocsGenerator expectedStatus( final Response.Status expectedResponseStatus )
+    public DocsGenerator expectedStatus(
+            final Response.Status expectedResponseStatus )
     {
         this.expectedResponseStatus = expectedResponseStatus;
         return this;
     }
 
     /**
-     * Set the expected media type of the response. The test will fail if
-     * the response has a different media type. Defaults to
-     * application/json.
+     * Set the expected media type of the response. The test will fail if the
+     * response has a different media type. Defaults to application/json.
      * 
      * @param expectedMediaType the expected media tyupe
      */
@@ -205,9 +206,9 @@ public class DocsGenerator
      */
     public ResponseEntity request( final ClientRequest request )
     {
-        return retrieveResponse( title, description,
-                request.getURI().toString(), expectedResponseStatus,
-                expectedMediaType, expectedHeaderFields, request );
+        return retrieveResponse( title, description, request.getURI()
+                .toString(), expectedResponseStatus, expectedMediaType,
+                expectedHeaderFields, request );
     }
 
     /**
@@ -218,8 +219,7 @@ public class DocsGenerator
     public ResponseEntity get( final String uri )
     {
         return retrieveResponseFromRequest( title, null, "GET", uri,
-                expectedResponseStatus, expectedMediaType,
-                expectedHeaderFields );
+                expectedResponseStatus, expectedMediaType, expectedHeaderFields );
     }
 
     /**
@@ -229,8 +229,8 @@ public class DocsGenerator
      */
     public ResponseEntity post( final String uri )
     {
-        return retrieveResponseFromRequest( title, description, "POST",
-                uri, payload, payloadMediaType, expectedResponseStatus,
+        return retrieveResponseFromRequest( title, description, "POST", uri,
+                payload, payloadMediaType, expectedResponseStatus,
                 expectedMediaType, expectedHeaderFields );
     }
 
@@ -253,8 +253,8 @@ public class DocsGenerator
      */
     public ResponseEntity delete( final String uri )
     {
-        return retrieveResponseFromRequest( title, description, "DELETE",
-                uri, payload, payloadMediaType, expectedResponseStatus,
+        return retrieveResponseFromRequest( title, description, "DELETE", uri,
+                payload, payloadMediaType, expectedResponseStatus,
                 expectedMediaType, expectedHeaderFields );
     }
 
@@ -262,47 +262,51 @@ public class DocsGenerator
      * Send a request with no payload.
      */
     private ResponseEntity retrieveResponseFromRequest( final String title,
-            final String description, final String method,
-            final String uri, final Status responseCode,
-            final MediaType accept, final List<String> headerFields )
+            final String description, final String method, final String uri,
+            final Status responseCode, final MediaType accept,
+            final List<String> headerFields )
     {
         ClientRequest request;
         try
         {
-            request = ClientRequest.create().accept( accept ).build(
-                    new URI( uri ), method );
+            request = ClientRequest.create()
+                    .accept( accept )
+                    .build( new URI( uri ), method );
         }
         catch ( URISyntaxException e )
         {
             System.out.println( "URI syntax exception: '" + uri + "'" );
             throw new RuntimeException( e );
         }
-        return retrieveResponse( title, description, uri, responseCode,
-                accept, headerFields, request );
+        return retrieveResponse( title, description, uri, responseCode, accept,
+                headerFields, request );
     }
 
     /**
      * Send a request with payload.
      */
     private ResponseEntity retrieveResponseFromRequest( final String title,
-            final String description, final String method,
-            final String uri, final String payload,
-            final MediaType payloadType, final Status responseCode,
-            final MediaType accept, final List<String> headerFields )
+            final String description, final String method, final String uri,
+            final String payload, final MediaType payloadType,
+            final Status responseCode, final MediaType accept,
+            final List<String> headerFields )
     {
         ClientRequest request;
         try
         {
             if ( payload != null )
             {
-                request = ClientRequest.create().type( payloadType ).accept(
-                        accept ).entity( payload ).build( new URI( uri ),
-                                method );
+                request = ClientRequest.create()
+                        .type( payloadType )
+                        .accept( accept )
+                        .entity( payload )
+                        .build( new URI( uri ), method );
             }
             else
             {
-                request = ClientRequest.create().accept( accept ).build(
-                        new URI( uri ), method );
+                request = ClientRequest.create()
+                        .accept( accept )
+                        .build( new URI( uri ), method );
             }
         }
         catch ( URISyntaxException e )
@@ -310,8 +314,8 @@ public class DocsGenerator
             System.out.println( "URI syntax exception: '" + uri + "'" );
             throw new RuntimeException( e );
         }
-        return retrieveResponse( title, description, uri, responseCode,
-                accept, headerFields, request );
+        return retrieveResponse( title, description, uri, responseCode, accept,
+                headerFields, request );
     }
 
     /**
@@ -338,7 +342,8 @@ public class DocsGenerator
         }
         for ( String headerField : headerFields )
         {
-            assertNotNull( response.getHeaders().get( headerField ) );
+            assertNotNull( response.getHeaders()
+                    .get( headerField ) );
         }
         data.setTitle( title );
         data.setDescription( description );
@@ -370,14 +375,14 @@ public class DocsGenerator
     }
 
     private <T> Map<String, String> getHeaders(
-            final MultivaluedMap<String, T> headers,
-            final List<String> filter, final List<String> additionalFilter )
-            {
+            final MultivaluedMap<String, T> headers, final List<String> filter,
+            final List<String> additionalFilter )
+    {
         Map<String, String> filteredHeaders = new TreeMap<String, String>();
         for ( Entry<String, List<T>> header : headers.entrySet() )
         {
             if ( filter.contains( header.getKey() )
-                    || additionalFilter.contains( header.getKey() ) )
+                 || additionalFilter.contains( header.getKey() ) )
             {
                 String values = "";
                 for ( T value : header.getValue() )
@@ -392,7 +397,7 @@ public class DocsGenerator
             }
         }
         return filteredHeaders;
-            }
+    }
 
     /**
      * Wraps a response, to give access to the response entity as well.
@@ -488,10 +493,10 @@ public class DocsGenerator
         public String toString()
         {
             return "DocumentationData [payload=" + payload + ", title=" + title
-            + ", description=" + description + ", uri=" + uri
-            + ", method=" + method + ", status=" + status + ", entity="
-            + entity + ", requestHeaders=" + requestHeaders
-            + ", responseHeaders=" + responseHeaders + "]";
+                   + ", description=" + description + ", uri=" + uri
+                   + ", method=" + method + ", status=" + status + ", entity="
+                   + entity + ", requestHeaders=" + requestHeaders
+                   + ", responseHeaders=" + responseHeaders + "]";
         }
     }
 
@@ -505,7 +510,8 @@ public class DocsGenerator
             {
                 dirs.mkdirs();
             }
-            String name = data.title.replace( " ", "-" ).toLowerCase();
+            String name = data.title.replace( " ", "-" )
+                    .toLowerCase();
             File out = new File( dirs, name + ".txt" );
             if ( out.exists() )
             {
@@ -514,7 +520,7 @@ public class DocsGenerator
             if ( !out.createNewFile() )
             {
                 throw new RuntimeException( "File exists: "
-                        + out.getAbsolutePath() );
+                                            + out.getAbsolutePath() );
             }
 
             fw = new FileWriter( out, false );
@@ -536,7 +542,7 @@ public class DocsGenerator
                 {
                     line( fw,
                             "* *+" + header.getKey() + ":+* +"
-                            + header.getValue() + "+" );
+                                    + header.getValue() + "+" );
                 }
             }
             writeEntity( fw, data.payload );
@@ -544,14 +550,15 @@ public class DocsGenerator
             line( fw, "_Example response_" );
             line( fw, "" );
             line( fw, "* *+" + data.status.getStatusCode() + ":+* +"
-                    + data.status.name().replace( '_', ' ' ) + "+" );
+                      + data.status.name()
+                              .replace( '_', ' ' ) + "+" );
             if ( data.responseHeaders != null )
             {
                 for ( Entry<String, String> header : data.responseHeaders.entrySet() )
                 {
                     line( fw,
                             "* *+" + header.getKey() + ":+* +"
-                            + header.getValue() + "+" );
+                                    + header.getValue() + "+" );
                 }
             }
             writeEntity( fw, data.entity );
@@ -579,7 +586,7 @@ public class DocsGenerator
     }
 
     private void writeEntity( final FileWriter fw, final String entity )
-    throws IOException
+            throws IOException
     {
         if ( entity != null )
         {
@@ -592,7 +599,7 @@ public class DocsGenerator
     }
 
     private void line( final FileWriter fw, final String string )
-    throws IOException
+            throws IOException
     {
         fw.append( string );
         fw.append( "\n" );

@@ -31,6 +31,7 @@ require(
    "neo4j/webadmin/DataBrowserController"
    "neo4j/webadmin/ConsoleController"
    "neo4j/webadmin/ServerInfoController"
+   "neo4j/webadmin/IndexManagerController"
    "neo4j/webadmin/models/ApplicationState"
    "neo4j/webadmin/views/BaseView"
    "neo4j/webadmin/ui/FoldoutWatcher"
@@ -40,7 +41,7 @@ require(
    "lib/jquery"
    "lib/neo4js"
    "lib/backbone"]
-  (DashboardController, DataBrowserController, ConsoleController, ServerInfoController, ApplicationState, BaseView, FoldoutWatcher, KeyboardShortcuts, SplashScreen, HtmlEscaper) ->
+  (DashboardController, DataBrowserController, ConsoleController, ServerInfoController, IndexManagerController, ApplicationState, BaseView, FoldoutWatcher, KeyboardShortcuts, SplashScreen, HtmlEscaper) ->
 
     # Global html escaper, used by the pre-compiled templates. Should be replaced by writing a haml template plugin.
     htmlEscaper = new HtmlEscaper()
@@ -59,6 +60,7 @@ require(
     databrowserController = new DataBrowserController appState
     consoleController     = new ConsoleController appState
     serverInfoController  = new ServerInfoController appState
+    indexManagerController = new IndexManagerController appState
 
     # Remnant from the old webadmin. Handles opening and
     # closing of the more-info foldout menues seen in the 
