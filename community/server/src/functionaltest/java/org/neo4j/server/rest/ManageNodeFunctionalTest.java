@@ -20,6 +20,8 @@
 package org.neo4j.server.rest;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
@@ -41,7 +43,6 @@ import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.repr.NodeRepresentationTest;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
@@ -73,10 +74,10 @@ public class ManageNodeFunctionalTest
     public void shouldGet201WhenCreatingNode() throws Exception
     {
         ClientResponse response = DocsGenerator.create( "Create a node" )
-                .expectedStatus( Response.Status.CREATED )
-                .expectedHeader( "Location" )
-                .post( functionalTestHelper.nodeUri() )
-                .response();
+        .expectedStatus( Response.Status.CREATED )
+        .expectedHeader( "Location" )
+        .post( functionalTestHelper.nodeUri() )
+        .response();
         assertTrue( response.getLocation().toString().matches( NODE_URI_PATTERN ) );
     }
 
@@ -84,13 +85,13 @@ public class ManageNodeFunctionalTest
     public void shouldGet201WhenCreatingNodeWithProperties() throws Exception
     {
         ClientResponse response = DocsGenerator.create(
-                "Create a node with properties" )
-                .payload( "{\"foo\" : \"bar\"}" )
-                .expectedStatus( Response.Status.CREATED )
-                .expectedHeader( "Location" )
-                .expectedHeader( "Content-Length" )
-                .post( functionalTestHelper.nodeUri() )
-                .response();
+        "Create a node with properties" )
+        .payload( "{\"foo\" : \"bar\"}" )
+        .expectedStatus( Response.Status.CREATED )
+        .expectedHeader( "Location" )
+        .expectedHeader( "Content-Length" )
+        .post( functionalTestHelper.nodeUri() )
+        .response();
         assertTrue( response.getLocation().toString().matches( NODE_URI_PATTERN ) );
     }
 
@@ -100,7 +101,7 @@ public class ManageNodeFunctionalTest
         DocsGenerator.create(
                 "Property values can not be null",
                 "This example shows the response you get "
-                        + "when trying to set a property to null." )
+                + "when trying to set a property to null." )
                 .payload( "{\"foo\":null}" )
                 .expectedStatus( Response.Status.BAD_REQUEST )
                 .post( functionalTestHelper.nodeUri() );
@@ -173,40 +174,37 @@ public class ManageNodeFunctionalTest
 
     }
 
-    private void assertProperNodeRepresentation( final Map<String, Object> noderep )
-    {
-        NodeRepresentationTest.verifySerialisation( noderep );
-    }
-
     @Test
     public void shouldRespondWith204WhenNodeDeleted() throws Exception
     {
         DocsGenerator.create( "Delete node" )
-                .expectedStatus( Response.Status.NO_CONTENT )
-                .delete(
-                        functionalTestHelper.dataUri() + "node/"
-                                + helper.createNode() );
+        .expectedStatus( Response.Status.NO_CONTENT )
+        .delete(
+                functionalTestHelper.dataUri() + "node/"
+                + helper.createNode() );
     }
 
     @Test
-    public void shouldRespondWith404WhenNodeToBeDeletedCannotBeFound() throws Exception
+    public void shouldRespondWith404AndSensibleEntityBodyWhenNodeToBeDeletedCannotBeFound() throws Exception
     {
         ClientResponse response = sendDeleteRequestToServer( NON_EXISTENT_NODE_ID );
         assertEquals( 404, response.getStatus() );
+        assertThat(JsonHelper.jsonToMap( response.getEntity( String.class ) ), not(hasKey("message")));
     }
 
     @Test
-    public void shouldRespondWith409WhenNodeCannotBeDeleted() throws Exception
+    public void shouldRespondWith409AndSensibleEntityBodyWhenNodeCannotBeDeleted() throws Exception
     {
         long id = helper.createNode();
         helper.createRelationship( "LOVES", id, helper.createNode() );
         ClientResponse response = sendDeleteRequestToServer( id );
         assertEquals( 409, response.getStatus() );
+        assertThat(JsonHelper.jsonToMap( response.getEntity( String.class ) ), not(hasKey("message")));
 
         DocsGenerator.create(
                 "Nodes with relationships can not be deleted",
                 "The relationships on a node has to be deleted "
-                        + "before the node can be deleted." )
+                + "before the node can be deleted." )
                 .expectedStatus( Response.Status.CONFLICT )
                 .delete( functionalTestHelper.dataUri() + "node/" + id );
     }
