@@ -18,13 +18,27 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-define ['lib/backbone'], () ->
-  
-  class IndexManager extends Backbone.Model
-    
-    defaults : 
-      indexes : []
-    
-    initialize : (opts) =>
-      @server = opts.server
-      @server.index.getAllNodeIndexes().then (res) => @set {"indexes" : res}
+define( 
+  ['neo4j/webadmin/templates/indexmanager/index',
+   'neo4j/webadmin/views/View',
+   'lib/backbone'], 
+  (template, View) ->
+
+    class IndexView extends View
+      
+      template : template
+      
+      events : 
+        "click .delete-index" : "deleteIndex"
+     
+      initialize : (opts) =>
+        @index = opts.index
+        @idxMgr = opts.idxMgr
+
+      render : =>
+        $(@el).html(template(index : @index))
+        return this
+      
+      deleteIndex : =>
+        alert("oh noes!")
+)

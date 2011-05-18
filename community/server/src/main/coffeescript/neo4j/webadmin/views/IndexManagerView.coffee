@@ -21,19 +21,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 define( 
   ['neo4j/webadmin/templates/indexmanager/base',
    'neo4j/webadmin/templates/indexmanager/indexes',
+   'neo4j/webadmin/views/indexmanager/IndexView'
    'neo4j/webadmin/views/View',
    'lib/backbone'], 
-  (template, indexTemplate, View) ->
+  (template, indexTemplate, IndexView, View) ->
 
     class IndexManagerView extends View
       
       template : template
+      
+      events : 
+        "click .create-index" : "createIndex"
      
       initialize : (opts) =>
         @appState = opts.state
         @server = @appState.getServer()
         @idxMgr = opts.idxMgr
         @idxMgr.bind("change", @renderIndexList)
+      
+      
 
       render : =>
         $(@el).html(template())
@@ -41,13 +47,10 @@ define(
         return this
         
       renderIndexList : =>
-        $("#indexes", @el).html indexTemplate(
-          indexes  : @idxMgr.get "indexes" 
-        )
-
-      remove : =>
-        super()
-
-      detach : =>
-        super()
+        indexList = $("#indexes", @el)
+        for index in @idxMgr.get "indexes" 
+          indexList.append( new IndexView({index : index, idxMgr : @idxMgr}).render().el )
+      
+      createIndex : => 
+        alert("apa")
 )
