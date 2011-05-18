@@ -31,7 +31,7 @@ define ["lib/backbone"], () ->
     getRelationshipUrl : (id) =>
       @server.url + "/db/data/relationship/" + id
       
-    getNodeIndexHits: (index,key,value) =>
+    getNodeIndexHitsUrl: (index,key,value) =>
       @server.url + "/db/data/index" + index + "/" + key + "/" + value
  
     extractNodeId : (url) =>

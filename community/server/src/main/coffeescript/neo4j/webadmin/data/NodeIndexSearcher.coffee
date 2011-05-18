@@ -31,13 +31,14 @@ define ["./ItemUrlResolver","lib/backbone"], (ItemUrlResolver) ->
       @pattern.test(statement)
       
     exec : (statement) =>
-      data = extractData(statement)
-      @server.node( @urlResolver.getNodeIndexHits(data.index, data.key, data.value) )
+      data = @extractData(statement)
+      hits = @server.index.getNodeIndex(data.index).exactQuery(data.key, data.value)
+      console.log(hits)
 
     extractData : (statement) =>
       match = @pattern.exec(statement)
-      index = match[2]
-      key = match[3]
-      value = match[4]
+      index = match[1]
+      key = match[2]
+      value = match[3]
       return { index : index, key: key, value: value }
  
