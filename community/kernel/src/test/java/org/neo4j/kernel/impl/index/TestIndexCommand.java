@@ -132,7 +132,7 @@ public class TestIndexCommand
     {
         File file = createTempFile( "index", "command" );
         FileChannel fileChannel = new RandomAccessFile( file, "rw" ).getChannel();
-        LogBuffer writeBuffer = defaultLogBufferFactory( stringMap() ).create( fileChannel );
+        LogBuffer writeBuffer = defaultLogBufferFactory().create( fileChannel );
         List<Long> startPositions = new ArrayList<Long>();
         for ( XaCommand command : commands )
         {
