@@ -40,5 +40,5 @@ define(
         return this
       
       deleteIndex : =>
-        alert("oh noes!")
+        @idxMgr.deleteIndex({name : @index.name})
 )

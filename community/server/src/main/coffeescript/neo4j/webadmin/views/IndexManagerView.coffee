@@ -38,8 +38,6 @@ define(
         @server = @appState.getServer()
         @idxMgr = opts.idxMgr
         @idxMgr.bind("change", @renderIndexList)
-      
-      
 
       render : =>
         $(@el).html(template())
@@ -52,5 +50,6 @@ define(
           indexList.append( new IndexView({index : index, idxMgr : @idxMgr}).render().el )
       
       createIndex : => 
-        alert("apa")
+        alert($("#create-index-name").val())
+        @idxMgr.createIndex({name : $("#create-index-name").val()})
 )
