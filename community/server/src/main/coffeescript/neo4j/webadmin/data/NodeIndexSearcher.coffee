@@ -18,27 +18,27 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-define( 
-  ['neo4j/webadmin/templates/indexmanager/index',
-   'neo4j/webadmin/views/View',
-   'lib/backbone'], 
-  (template, View) ->
+define ["./ItemUrlResolver","lib/backbone"], (ItemUrlResolver) ->
 
-    class IndexView extends View
-      
-      template : template
-      
-      events : 
-        "click .delete-index" : "deleteIndex"
-     
-      initialize : (opts) =>
-        @index = opts.index
-        @idxMgr = opts.idxMgr
+  class NodeIndexSearcher
 
-      render : =>
-        $(@el).html(template(index : @index))
-        return this
+    constructor : (server) ->
+      @server = server
+      @urlResolver = new ItemUrlResolver(server)
+      @pattern = /^node:index:"?(\w+)"?:"?(\w+)"?:"?([\w|\s]+)"?$/i
+
+    match : (statement) =>
+      @pattern.test(statement)
       
-      deleteIndex : =>
-        @idxMgr.deleteIndex({name : @index.name})
-)
+    exec : (statement) =>
+      data = @extractData(statement)
+      hits = @server.index.getNodeIndex(data.index).exactQuery(data.key, data.value)
+      console.log(hits)
+
+    extractData : (statement) =>
+      match = @pattern.exec(statement)
+      index = match[1]
+      key = match[2]
+      value = match[3]
+      return { index : index, key: key, value: value }
+ 

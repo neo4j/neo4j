@@ -28,3 +28,11 @@ define ['lib/backbone'], () ->
     initialize : (opts) =>
       @server = opts.server
       @server.index.getAllNodeIndexes().then (res) => @set {"indexes" : res}
+    
+    createIndex: (opts) =>
+      name = opts.name
+      @server.index.createNodeIndex(name, {}).then (res) => console.log(res)
+    
+    deleteIndex: (opts) =>
+      name = opts.name
+      @server.index.removeNodeIndex(name).then (res) => console.log(res)
