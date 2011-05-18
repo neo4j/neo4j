@@ -34,6 +34,5 @@ define ['lib/backbone'], () ->
       @server.index.createNodeIndex(name, {}).then (res) => console.log(res)
     
     deleteIndex: (opts) =>
-      alert(opts.name)
       name = opts.name
       @server.index.removeNodeIndex(name).then (res) => console.log(res)

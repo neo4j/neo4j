@@ -18,30 +18,26 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-define ["lib/backbone"], () ->
+define ["./ItemUrlResolver","lib/backbone"], (ItemUrlResolver) ->
 
-  class ItemUrlResolver
+  class NodeIndexSearcher
 
     constructor : (server) ->
       @server = server
+      @urlResolver = new ItemUrlResolver(server)
+      @pattern = /^node:index:"?(\w+)"?:"?(\w+)"?:"?([\w|\s]+)"?$/i
 
-    getNodeUrl : (id) =>
-      @server.url + "/db/data/node/" + id
-
-    getRelationshipUrl : (id) =>
-      @server.url + "/db/data/relationship/" + id
+    match : (statement) =>
+      @pattern.test(statement)
       
-    getNodeIndexHits: (index,key,value) =>
-      @server.url + "/db/data/index" + index + "/" + key + "/" + value
+    exec : (statement) =>
+      data = extractData(statement)
+      @server.node( @urlResolver.getNodeIndexHits(data.index, data.key, data.value) )
+
+    extractData : (statement) =>
+      match = @pattern.exec(statement)
+      index = match[2]
+      key = match[3]
+      value = match[4]
+      return { index : index, key: key, value: value }
  
-    extractNodeId : (url) =>
-      @extractLastUrlSegment(url)
-
-    extractRelationshipId : (url) =>
-      @extractLastUrlSegment(url)
-
-    extractLastUrlSegment : (url) =>
-      if url.substr(-1) is "/"
-        url = url.substr(0, url.length - 1)
-
-      url.substr(url.lastIndexOf("/") + 1)
