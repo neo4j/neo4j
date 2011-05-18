@@ -107,12 +107,12 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         LockReleaser lockReleaser, LockManager lockManager )
     {
         super( identifier, log );
-        this.xaConnection = xaConnection;
         this.neoStore = neoStore;
         this.lockReleaser = lockReleaser;
         this.lockManager = lockManager;
     }
 
+    @Override
     public boolean isReadOnly()
     {
         if ( isRecovered() )
@@ -134,6 +134,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         return false;
     }
 
+    @Override
     public void doAddCommand( XaCommand command )
     {
         // override
@@ -237,6 +238,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
     }
 
+    @Override
     public void doRollback() throws XAException
     {
         if ( committed )
@@ -404,6 +406,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         lockReleaser.addPropertyIndex( index );
     }
     
+    @Override
     public void doCommit() throws XAException
     {
         if ( !isRecovered() && !prepared )
@@ -1506,6 +1509,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             }
         }
 
+        @Override
         public boolean equals( Object o )
         {
             if ( o instanceof CommandSorter )
@@ -1515,6 +1519,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             return false;
         }
 
+        @Override
         public int hashCode()
         {
             return 3217;
@@ -1655,6 +1660,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             throw new UnsupportedOperationException( "Lockable rel" );
         }
 
+        @Override
         public boolean equals( Object o )
         {
             if ( !(o instanceof Relationship) )

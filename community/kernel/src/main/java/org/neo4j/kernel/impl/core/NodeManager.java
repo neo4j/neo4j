@@ -327,8 +327,7 @@ public class NodeManager
                 catch ( Exception e )
                 {
                     releaseFailed = true;
-                    e.printStackTrace();
-                    log.severe( "Failed to release lock" );
+                    log.log( Level.SEVERE, "Failed to release lock", e );
                 }
             }
             if ( secondNodeTaken )
@@ -340,8 +339,7 @@ public class NodeManager
                 catch ( Exception e )
                 {
                     releaseFailed = true;
-                    e.printStackTrace();
-                    log.severe( "Failed to release lock" );
+                    log.log( Level.SEVERE, "Failed to release lock", e );
                 }
             }
             releaseLock( rel, LockType.WRITE );

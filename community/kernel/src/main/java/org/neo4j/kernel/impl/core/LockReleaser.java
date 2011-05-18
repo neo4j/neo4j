@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.transaction.Status;
@@ -51,16 +52,16 @@ public class LockReleaser
 {
     private static Logger log = Logger.getLogger( LockReleaser.class.getName() );
 
-    private final ArrayMap<Transaction,List<LockElement>> lockMap = 
+    private final ArrayMap<Transaction,List<LockElement>> lockMap =
         new ArrayMap<Transaction,List<LockElement>>( 5, true, true );
-    private final ArrayMap<Transaction,PrimitiveElement> cowMap = 
+    private final ArrayMap<Transaction,PrimitiveElement> cowMap =
         new ArrayMap<Transaction,PrimitiveElement>( 5, true, true );
 
     private NodeManager nodeManager;
     private final LockManager lockManager;
     private final TransactionManager transactionManager;
     private PropertyIndexManager propertyIndexManager;
-    
+
     private static class PrimitiveElement
     {
         PrimitiveElement()
@@ -72,7 +73,7 @@ public class LockReleaser
         final ArrayMap<Long,CowRelElement> relationships =
             new ArrayMap<Long,CowRelElement>();
     }
-    
+
     private static class CowNodeElement
     {
         CowNodeElement()
@@ -81,7 +82,7 @@ public class LockReleaser
         }
 
         boolean deleted = false;
-        
+
         ArrayMap<String,RelIdArray> relationshipAddMap = null;
         ArrayMap<String,RelIdArray> relationshipRemoveMap = null;
         ArrayMap<Integer,PropertyData> propertyAddMap = null;
@@ -96,7 +97,7 @@ public class LockReleaser
         }
 
         boolean deleted = false;
-        
+
         ArrayMap<Integer,PropertyData> propertyAddMap = null;
         ArrayMap<Integer,PropertyData> propertyRemoveMap = null;
     }
@@ -107,12 +108,12 @@ public class LockReleaser
         this.lockManager = lockManager;
         this.transactionManager = transactionManager;
     }
-    
+
     void setNodeManager( NodeManager nodeManager )
     {
         this.nodeManager = nodeManager;
     }
-    
+
     void setPropertyIndexManager( PropertyIndexManager propertyIndexManager )
     {
         this.propertyIndexManager = propertyIndexManager;
@@ -131,9 +132,9 @@ public class LockReleaser
     }
 
     /**
-     * Invoking this method with no transaction running will cause the lock to 
+     * Invoking this method with no transaction running will cause the lock to
      * be released right away.
-     * 
+     *
      * @param resource
      *            the resource on which the lock is taken
      * @param type
@@ -168,9 +169,9 @@ public class LockReleaser
             lockMap.put( tx, lockElements );
             lockElements.add( new LockElement( resource, type ) );
             // we have to have a synchronization hook for read only transaction,
-            // write locks can be taken in read only transactions (ex: 
+            // write locks can be taken in read only transactions (ex:
             // transactions that perform write operations that cancel each other
-            // out). This sync hook will only release locks if they exist and 
+            // out). This sync hook will only release locks if they exist and
             // tx was read only
             try
             {
@@ -178,7 +179,7 @@ public class LockReleaser
             }
             catch ( Exception e )
             {
-                throw new TransactionFailureException( 
+                throw new TransactionFailureException(
                     "Failed to register lock release synchronization hook", e );
             }
         }
@@ -192,7 +193,7 @@ public class LockReleaser
         }
         catch ( SystemException e )
         {
-            throw new TransactionFailureException( 
+            throw new TransactionFailureException(
                 "Failed to get current transaction.", e );
         }
     }
@@ -307,7 +308,7 @@ public class LockReleaser
         releaseCows( tx, Status.STATUS_COMMITTED );
         releaseLocks( tx );
     }
-    
+
     public void rollback()
     {
         Transaction tx = getTransaction();
@@ -316,13 +317,13 @@ public class LockReleaser
         releaseCows( tx, Status.STATUS_ROLLEDBACK );
         releaseLocks( tx );
     }
-    
+
     public boolean hasLocks( Transaction tx )
     {
         List<LockElement> lockElements = lockMap.get( tx );
         return lockElements != null && !lockElements.isEmpty();
     }
-    
+
     void releaseLocks( Transaction tx )
     {
         List<LockElement> lockElements = lockMap.remove( tx );
@@ -343,10 +344,8 @@ public class LockReleaser
                 }
                 catch ( Exception e )
                 {
-                    e.printStackTrace();
-                    log.severe( "Unable to release lock[" + 
-                        lockElement.lockType + "] on resource[" + 
-                        lockElement.resource + "]" );
+                    log.log( Level.SEVERE, "Unable to release lock[" + lockElement.lockType + "] on resource["
+                                           + lockElement.resource + "]", e );
                 }
             }
         }
@@ -372,12 +371,12 @@ public class LockReleaser
                 {
                     node.commitRelationshipMaps( nodeElement.relationshipAddMap,
                         nodeElement.relationshipRemoveMap );
-                    node.commitPropertyMaps( nodeElement.propertyAddMap, 
+                    node.commitPropertyMaps( nodeElement.propertyAddMap,
                         nodeElement.propertyRemoveMap );
                 }
                 else if ( param != Status.STATUS_ROLLEDBACK )
                 {
-                    throw new TransactionFailureException( 
+                    throw new TransactionFailureException(
                         "Unknown transaction status: " + param );
                 }
             }
@@ -393,12 +392,12 @@ public class LockReleaser
                 CowRelElement relElement = entry.getValue();
                 if ( param == Status.STATUS_COMMITTED )
                 {
-                    rel.commitPropertyMaps( relElement.propertyAddMap, 
+                    rel.commitPropertyMaps( relElement.propertyAddMap,
                         relElement.propertyRemoveMap );
                 }
                 else if ( param != Status.STATUS_ROLLEDBACK )
                 {
-                    throw new TransactionFailureException( 
+                    throw new TransactionFailureException(
                         "Unknown transaction status: " + param );
                 }
             }
@@ -422,7 +421,7 @@ public class LockReleaser
         while ( itr.hasNext() )
         {
             Transaction transaction = (Transaction) itr.next();
-            System.out.println( "" + transaction + "->" + 
+            System.out.println( "" + transaction + "->" +
                 lockMap.get( transaction ).size() );
         }
     }
@@ -440,13 +439,13 @@ public class LockReleaser
             {
                 if ( element.deleted )
                 {
-                    throw new IllegalStateException( "Node[" + 
+                    throw new IllegalStateException( "Node[" +
                             primitive.id + "] has been deleted in this tx" );
                 }
                 return element.propertyRemoveMap;
             }
         }
-        else if ( primitiveElement != null && 
+        else if ( primitiveElement != null &&
             primitive instanceof RelationshipImpl )
         {
             ArrayMap<Long,CowRelElement> cowElements =
@@ -456,7 +455,7 @@ public class LockReleaser
             {
                 if ( element.deleted )
                 {
-                    throw new IllegalStateException( "Relationship[" + 
+                    throw new IllegalStateException( "Relationship[" +
                             primitive.id + "] has been deleted in this tx" );
                 }
                 return element.propertyRemoveMap;
@@ -472,29 +471,29 @@ public class LockReleaser
         if ( primitiveElement != null && primitive instanceof NodeImpl )
         {
             ArrayMap<Long,CowNodeElement> cowElements =
-                primitiveElement.nodes; 
+                primitiveElement.nodes;
             CowNodeElement element = cowElements.get( primitive.id );
             if ( element != null )
             {
                 if ( element.deleted )
                 {
-                    throw new IllegalStateException( "Node[" + 
+                    throw new IllegalStateException( "Node[" +
                             primitive.id + "] has been deleted in this tx" );
                 }
                 return element.propertyAddMap;
             }
         }
-        else if ( primitiveElement != null && 
+        else if ( primitiveElement != null &&
             primitive instanceof RelationshipImpl )
         {
             ArrayMap<Long,CowRelElement> cowElements =
-                primitiveElement.relationships; 
+                primitiveElement.relationships;
             CowRelElement element = cowElements.get( primitive.id );
             if ( element != null )
             {
                 if ( element.deleted )
                 {
-                    throw new IllegalStateException( "Relationship[" + 
+                    throw new IllegalStateException( "Relationship[" +
                             primitive.id + "] has been deleted in this tx" );
                 }
                 return element.propertyAddMap;
@@ -518,7 +517,7 @@ public class LockReleaser
         }
         return primitiveElement;
     }
-    
+
     public ArrayMap<Integer,PropertyData> getCowPropertyAddMap(
         Primitive primitive, boolean create )
     {
@@ -534,7 +533,7 @@ public class LockReleaser
             CowNodeElement element = cowElements.get( primitive.id );
             if ( element != null && element.deleted )
             {
-                throw new IllegalStateException( "Node[" + 
+                throw new IllegalStateException( "Node[" +
                         primitive.id + "] has been deleted in this tx" );
             }
             if ( element == null )
@@ -555,7 +554,7 @@ public class LockReleaser
             CowRelElement element = cowElements.get( primitive.id );
             if ( element != null && element.deleted )
             {
-                throw new IllegalStateException( "Relationship[" + 
+                throw new IllegalStateException( "Relationship[" +
                         primitive.id + "] has been deleted in this tx" );
             }
             if ( element == null )
@@ -587,7 +586,7 @@ public class LockReleaser
             CowNodeElement element = cowElements.get( primitive.id );
             if ( element != null && element.deleted )
             {
-                throw new IllegalStateException( "Node[" + 
+                throw new IllegalStateException( "Node[" +
                         primitive.id + "] has been deleted in this tx" );
             }
             if ( element == null )
@@ -608,7 +607,7 @@ public class LockReleaser
             CowRelElement element = cowElements.get( primitive.id );
             if ( element != null && element.deleted )
             {
-                throw new IllegalStateException( "Relationship[" + 
+                throw new IllegalStateException( "Relationship[" +
                         primitive.id + "] has been deleted in this tx" );
             }
             if ( element == null )
@@ -635,7 +634,7 @@ public class LockReleaser
             CowNodeElement element = cowElements.get( primitive.id );
             if ( element != null && element.deleted )
             {
-                throw new IllegalStateException( "Node[" + 
+                throw new IllegalStateException( "Node[" +
                         primitive.id + "] has already been deleted in this tx" );
             }
             if ( element == null )
@@ -652,7 +651,7 @@ public class LockReleaser
             CowRelElement element = cowElements.get( primitive.id );
             if ( element != null && element.deleted )
             {
-                throw new IllegalStateException( "Relationship[" + 
+                throw new IllegalStateException( "Relationship[" +
                         primitive.id + "] has already been deleted in this tx" );
             }
             if ( element == null )
@@ -663,7 +662,7 @@ public class LockReleaser
             element.deleted = true;
         }
     }
-    
+
     public void removeNodeFromCache( long nodeId )
     {
         if ( nodeManager != null )
@@ -687,7 +686,7 @@ public class LockReleaser
             nodeManager.addPropertyIndex( index );
         }
     }
-    
+
     public void removeRelationshipFromCache( long id )
     {
         if ( nodeManager != null )
@@ -695,7 +694,7 @@ public class LockReleaser
             nodeManager.removeRelationshipFromCache( id );
         }
     }
-    
+
     public void removeRelationshipTypeFromCache( int id )
     {
         if ( nodeManager != null )
@@ -703,16 +702,16 @@ public class LockReleaser
             nodeManager.removeRelationshipTypeFromCache( id );
         }
     }
-    
-    private class ReadOnlyTxReleaser implements Synchronization 
+
+    private class ReadOnlyTxReleaser implements Synchronization
     {
         private final Transaction tx;
-        
+
         ReadOnlyTxReleaser( Transaction tx )
         {
             this.tx = tx;
         }
-        
+
         public void afterCompletion( int status )
         {
             releaseLocks( tx );
@@ -730,7 +729,7 @@ public class LockReleaser
             nodeManager.clearCache();
         }
     }
-    
+
     public TransactionData getTransactionData()
     {
         TransactionDataImpl result = new TransactionDataImpl();
@@ -784,7 +783,7 @@ public class LockReleaser
                 {
                     String key = nodeManager.getKeyForProperty( data.getId() );
                     Object oldValue = data.getValue();
-                    if ( oldValue != null && !relElement.deleted ) 
+                    if ( oldValue != null && !relElement.deleted )
                     {
                         relImpl.getCommittedPropertyValue( nodeManager, key );
                     }
@@ -822,7 +821,7 @@ public class LockReleaser
             {
                 for ( String type : nodeElement.relationshipRemoveMap.keySet() )
                 {
-                    RelIdArray deletedRels = 
+                    RelIdArray deletedRels =
                         nodeElement.relationshipRemoveMap.get( type );
                     for ( RelIdIterator iterator = deletedRels.iterator( DirectionWrapper.BOTH ); iterator.hasNext(); )
                     {
@@ -855,7 +854,7 @@ public class LockReleaser
                 {
                     String key = nodeManager.getKeyForProperty( data.getId() );
                     Object oldValue = data.getValue();
-                    if ( oldValue == null && !nodeElement.deleted ) 
+                    if ( oldValue == null && !nodeElement.deleted )
                     {
                         nodeImpl.getCommittedPropertyValue( nodeManager, key );
                     }
@@ -884,7 +883,7 @@ public class LockReleaser
         }
     }
 
-    private void populateCreatedNodes( PrimitiveElement element, 
+    private void populateCreatedNodes( PrimitiveElement element,
             TransactionDataImpl result )
     {
         RelIdArray createdNodes = nodeManager.getCreatedNodes();
