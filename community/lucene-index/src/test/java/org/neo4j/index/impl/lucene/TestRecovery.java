@@ -209,7 +209,7 @@ public class TestRecovery
         Map<Object, Object> params = MapUtil.genericMap(
                 "store_dir", getDbPath(),
                 IndexStore.class, new IndexStore( getDbPath() ),
-                LogBufferFactory.class, CommonFactories.defaultLogBufferFactory( MapUtil.stringMap() ) );
+                LogBufferFactory.class, CommonFactories.defaultLogBufferFactory() );
         LuceneDataSource ds = new LuceneDataSource( params );
         ds.close();
     }

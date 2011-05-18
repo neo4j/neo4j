@@ -20,24 +20,26 @@
 package org.neo4j.kernel.impl.core;
 
 import org.neo4j.kernel.impl.util.RelIdArray;
+import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdArray.RelIdIterator;
 
 class FastRelTypeElement extends RelTypeElementIterator
 {
     private final RelIdArray src;
-
     private final RelIdIterator iterator;
+    private final DirectionWrapper direction;
 
-    FastRelTypeElement( String type, NodeImpl node, RelIdArray src )
+    FastRelTypeElement( String type, NodeImpl node, RelIdArray src, DirectionWrapper direction )
     {
         super( type, node );
+        this.direction = direction;
         this.src = src == null ? RelIdArray.EMPTY : src;
-        this.iterator = this.src.iterator();
+        this.iterator = this.src.iterator( direction );
     }
     
-    FastRelTypeElement( String type, NodeImpl node, RelIdArray src, int position )
+    FastRelTypeElement( String type, NodeImpl node, RelIdArray src, DirectionWrapper direction, int position )
     {
-        this( type, node, src );
+        this( type, node, src, direction );
         this.iterator.fastForwardTo( position );
     }
 
@@ -63,6 +65,6 @@ class FastRelTypeElement extends RelTypeElementIterator
     public RelTypeElementIterator setSrc( RelIdArray newSrc )
     {
         int position = iterator.position();
-        return new FastRelTypeElement( getType(), getNode(), newSrc, position );
+        return new FastRelTypeElement( getType(), getNode(), newSrc, direction, position );
     }
 }

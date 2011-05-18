@@ -11,7 +11,3 @@ Feature: Webadmin provides a JMX browser for looking at detailed server informat
     And I click on the Primitive count link in webadmin
 
     Then An element should appear that can be found by the xpath //h2[contains(.,"Primitive count")]
-
-
-  
-    

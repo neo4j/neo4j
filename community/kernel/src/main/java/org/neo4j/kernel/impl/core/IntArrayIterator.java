@@ -19,17 +19,19 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.neo4j.kernel.impl.core.RelTypeElementIterator.EMPTY;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
-import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.impl.util.RelIdArray;
+import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
 class IntArrayIterator implements Iterable<Relationship>,
     Iterator<Relationship>
@@ -37,7 +39,7 @@ class IntArrayIterator implements Iterable<Relationship>,
     private Iterator<RelTypeElementIterator> typeIterator;
     private RelTypeElementIterator currentTypeIterator = null;
     private final NodeImpl fromNode;
-    private final Direction direction;
+    private final DirectionWrapper direction;
     private Relationship nextElement = null;
     private final NodeManager nodeManager;
     private final RelationshipType types[];
@@ -45,18 +47,11 @@ class IntArrayIterator implements Iterable<Relationship>,
     private final List<RelTypeElementIterator> rels;
 
     IntArrayIterator( List<RelTypeElementIterator> rels, NodeImpl fromNode,
-        Direction direction, NodeManager nodeManager, RelationshipType[] types )
+        DirectionWrapper direction, NodeManager nodeManager, RelationshipType[] types )
     {
         this.rels = rels;
         this.typeIterator = rels.iterator();
-        if ( typeIterator.hasNext() )
-        {
-            currentTypeIterator = typeIterator.next();
-        }
-        else
-        {
-            currentTypeIterator = RelTypeElementIterator.EMPTY;
-        }
+        this.currentTypeIterator = typeIterator.hasNext() ? typeIterator.next() : EMPTY;
         this.fromNode = fromNode;
         this.direction = direction;
         this.nodeManager = nodeManager;
@@ -81,25 +76,8 @@ class IntArrayIterator implements Iterable<Relationship>,
                 long nextId = currentTypeIterator.next( nodeManager );
                 try
                 {
-                    if ( direction == Direction.BOTH )
-                    {
-                        nextElement = new RelationshipProxy( nextId, nodeManager );
-                        return true;
-                    }
-                    RelationshipImpl possibleElement = nodeManager.getRelForProxy( nextId );
-                    if ( direction == Direction.INCOMING 
-                         && possibleElement.getEndNodeId() == fromNode.id )
-                    {
-                        nextElement = new RelationshipProxy( nextId, nodeManager );
-                        return true;
-                    }
-                    else if ( direction == Direction.OUTGOING
-                              && possibleElement.getStartNodeId() == fromNode.id )
-                    {
-                        nextElement = new RelationshipProxy( nextId, nodeManager );
-                        return true;
-                    }
-                    // No match
+                    nextElement = new RelationshipProxy( nextId, nodeManager );
+                    return true;
                 }
                 catch ( NotFoundException e )
                 { // ok deleted 
@@ -136,8 +114,9 @@ class IntArrayIterator implements Iterable<Relationship>,
                             RelTypeElementIterator itr = newRels.get( type );
                             if ( itr == null || itr.isSrcEmpty() )
                             {
-                                itr = itr == null ? new FastRelTypeElement( type, fromNode, entry.getValue() ) :
-                                        itr.setSrc( entry.getValue() );
+                                RelIdArray ids = entry.getValue();
+                                itr = itr == null ? new FastRelTypeElement( type, fromNode, ids, direction ) :
+                                        itr.setSrc( ids );
                                 newRels.put( type, itr );
                             }
                         }

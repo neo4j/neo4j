@@ -19,17 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.junit.Test;
 import org.neo4j.kernel.CommonFactories;
-import org.neo4j.kernel.Config;
 
 public class TestLogBufferDuplication
 {
@@ -109,11 +106,7 @@ public class TestLogBufferDuplication
     @Test
     public void testThroughLogBuffer() throws Exception
     {
-        // Making sure the DMLB is used
-        Map<String, String> props = new HashMap<String, String>();
-        props.put( Config.USE_MEMORY_MAPPED_BUFFERS, "false" );
-
-        LogBufferFactory fac = CommonFactories.defaultLogBufferFactory( props );
+        LogBufferFactory fac = CommonFactories.defaultLogBufferFactory();
 
         FileChannel channel = new RandomAccessFile( "target/var/foobar2", "rw" ).getChannel();
 
@@ -154,17 +147,15 @@ public class TestLogBufferDuplication
     @Test
     public void testBigWrite() throws Exception
     {
-        Map<String, String> props = new HashMap<String, String>();
-        props.put( Config.USE_MEMORY_MAPPED_BUFFERS, "false" );
-
-        LogBufferFactory fac = CommonFactories.defaultLogBufferFactory( props );
+        LogBufferFactory fac = CommonFactories.defaultLogBufferFactory();
 
         FileChannel channel = new RandomAccessFile( "target/var/foobar4", "rw" ).getChannel();
 
         LogBuffer buffer = fac.create( channel );
         assertEquals( DirectMappedLogBuffer.class, buffer.getClass() );
 
-        int writesAtFirst = ( 1024 * 1024 * 2 )/4; // Max size
+        int writesAtFirst = DirectMappedLogBuffer.BUFFER_SIZE / 4; // Max
+        // size
         for ( int i = 0; i < writesAtFirst; i++ )
         {
             buffer.putInt( i );

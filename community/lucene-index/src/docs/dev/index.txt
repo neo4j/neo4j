@@ -2,7 +2,7 @@
 Indexing
 ========
 
-:lucene-version: 3_0_1
+:lucene-version: 3_1_0
 
 Indexing in Neo4j can be done in two different ways:
 

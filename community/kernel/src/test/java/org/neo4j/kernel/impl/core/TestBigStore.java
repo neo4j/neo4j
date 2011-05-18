@@ -157,6 +157,7 @@ public class TestBigStore implements RelationshipType
                 tx.finish();
                 tx = db.beginTx();
             }
+            System.out.println( "rel " + rel + " added to refnode" );
         }
         tx.success();
         tx.finish();
@@ -165,6 +166,7 @@ public class TestBigStore implements RelationshipType
         db = new EmbeddedGraphDatabase( PATH );
         
         // Verify the data
+        System.out.println( "sdsd" );
         int verified = 0;
         for ( Relationship rel : db.getReferenceNode().getRelationships( Direction.OUTGOING ) )
         {

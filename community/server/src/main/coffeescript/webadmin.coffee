@@ -64,19 +64,22 @@ require(
     # closing of the more-info foldout menues seen in the 
     # left sidebar.
     foldoutWatcher = new FoldoutWatcher
-    foldoutWatcher.init()
 
     shortcuts = new KeyboardShortcuts(
       dashboardController, 
       databrowserController, 
       consoleController, 
       serverInfoController)
-    shortcuts.init()
 
-    $("body").append(baseView.el)
-    Backbone.history.start()
 
-    #if not splashScreen.hasBeenShownForThisSession()
-    #  splashScreen.show()
+    jQuery () ->
+
+      $("body").append(baseView.el)
+      foldoutWatcher.init()
+      Backbone.history.start()
+      shortcuts.init()
+
+      #if not splashScreen.hasBeenShownForThisSession()
+      #  splashScreen.show()
 
 )

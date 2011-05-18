@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
+import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
 class NodeImpl extends Primitive
 {
@@ -101,7 +102,7 @@ class NodeImpl extends Primitive
         return nodeManager.loadProperties( this, light );
     }
 
-    List<RelTypeElementIterator> getAllRelationships( NodeManager nodeManager )
+    List<RelTypeElementIterator> getAllRelationships( NodeManager nodeManager, DirectionWrapper direction )
     {
         ensureRelationshipMapNotNull( nodeManager );
         List<RelTypeElementIterator> relTypeList =
@@ -125,10 +126,7 @@ class NodeImpl extends Primitive
                     add = addMap.get( type );
                 }
             }
-//            if ( src != null || add != null )
-//            {
-                relTypeList.add( RelTypeElement.create( type, this, src, add, remove ) );
-//            }
+            relTypeList.add( RelTypeElement.create( type, this, src, add, remove, direction ) );
         }
         if ( addMap != null )
         {
@@ -138,7 +136,7 @@ class NodeImpl extends Primitive
                 {
                     RelIdArray remove = nodeManager.getCowRelationshipRemoveMap( this, type );
                     RelIdArray add = addMap.get( type );
-                    relTypeList.add( RelTypeElement.create( type, this, null, add, remove ) );
+                    relTypeList.add( RelTypeElement.create( type, this, null, add, remove, direction ) );
                 }
             }
         }
@@ -146,7 +144,7 @@ class NodeImpl extends Primitive
     }
 
     List<RelTypeElementIterator> getAllRelationshipsOfType( NodeManager nodeManager,
-        RelationshipType... types)
+        DirectionWrapper direction, RelationshipType... types)
     {
         ensureRelationshipMapNotNull( nodeManager );
         List<RelTypeElementIterator> relTypeList =
@@ -162,47 +160,46 @@ class NodeImpl extends Primitive
                 remove = nodeManager.getCowRelationshipRemoveMap( this, type.name() );
                 add = nodeManager.getCowRelationshipAddMap( this, type.name() );
             }
-//            if ( src != null || add != null )
-//            {
-                relTypeList.add( RelTypeElement.create( type.name(), this, src, add, remove ) );
-//            }
+            relTypeList.add( RelTypeElement.create( type.name(), this,
+                    src, add, remove, direction ) );
         }
         return relTypeList;
     }
 
     public Iterable<Relationship> getRelationships( NodeManager nodeManager )
     {
-        return new IntArrayIterator( getAllRelationships( nodeManager ), this,
-            Direction.BOTH, nodeManager, new RelationshipType[0] );
+        return new IntArrayIterator( getAllRelationships( nodeManager, DirectionWrapper.BOTH ), this,
+            DirectionWrapper.BOTH, nodeManager, new RelationshipType[0] );
     }
 
     public Iterable<Relationship> getRelationships( NodeManager nodeManager, Direction dir )
     {
-        return new IntArrayIterator( getAllRelationships( nodeManager ), this, dir,
+        DirectionWrapper direction = RelIdArray.wrap( dir );
+        return new IntArrayIterator( getAllRelationships( nodeManager, direction ), this, direction,
             nodeManager, new RelationshipType[0] );
     }
 
     public Iterable<Relationship> getRelationships( NodeManager nodeManager, RelationshipType type )
     {
         RelationshipType types[] = new RelationshipType[] { type };
-        return new IntArrayIterator( getAllRelationshipsOfType( nodeManager, types ),
-            this, Direction.BOTH, nodeManager, types );
+        return new IntArrayIterator( getAllRelationshipsOfType( nodeManager, DirectionWrapper.BOTH, types ),
+            this, DirectionWrapper.BOTH, nodeManager, types );
     }
 
     public Iterable<Relationship> getRelationships( NodeManager nodeManager,
             RelationshipType... types )
     {
-        return new IntArrayIterator( getAllRelationshipsOfType( nodeManager, types ),
-            this, Direction.BOTH, nodeManager, types );
+        return new IntArrayIterator( getAllRelationshipsOfType( nodeManager, DirectionWrapper.BOTH, types ),
+            this, DirectionWrapper.BOTH, nodeManager, types );
     }
 
     public Relationship getSingleRelationship( NodeManager nodeManager, RelationshipType type,
         Direction dir )
     {
+        DirectionWrapper direction = RelIdArray.wrap( dir );
         RelationshipType types[] = new RelationshipType[] { type };
         Iterator<Relationship> rels = new IntArrayIterator( getAllRelationshipsOfType( nodeManager,
-                types ),
-            this, dir, nodeManager, types );
+                direction, types ), this, direction, nodeManager, types );
         if ( !rels.hasNext() )
         {
             return null;
@@ -220,8 +217,9 @@ class NodeImpl extends Primitive
         Direction dir )
     {
         RelationshipType types[] = new RelationshipType[] { type };
-        return new IntArrayIterator( getAllRelationshipsOfType( nodeManager, types ),
-            this, dir, nodeManager, types );
+        DirectionWrapper direction = RelIdArray.wrap( dir );
+        return new IntArrayIterator( getAllRelationshipsOfType( nodeManager, direction, types ),
+            this, direction, nodeManager, types );
     }
 
     public void delete( NodeManager nodeManager )
@@ -267,11 +265,12 @@ class NodeImpl extends Primitive
     // caller is responsible for acquiring lock
     // this method is only called when a relationship is created or
     // a relationship delete is undone or when the full node is loaded
-    void addRelationship( NodeManager nodeManager, RelationshipType type, long relId )
+    void addRelationship( NodeManager nodeManager, RelationshipType type, long relId,
+            Direction dir )
     {
         RelIdArray relationshipSet = nodeManager.getCowRelationshipAddMap(
             this, type.name(), true );
-        relationshipSet.add( relId );
+        relationshipSet.add( relId, dir );
     }
 
     // caller is responsible for acquiring lock
@@ -281,7 +280,7 @@ class NodeImpl extends Primitive
     {
         RelIdArray relationshipSet = nodeManager.getCowRelationshipRemoveMap(
             this, type.name(), true );
-        relationshipSet.add( relId );
+        relationshipSet.add( relId, Direction.OUTGOING );
     }
 
     private void ensureRelationshipMapNotNull( NodeManager nodeManager )
@@ -345,7 +344,6 @@ class NodeImpl extends Primitive
     
     boolean getMoreRelationships( NodeManager nodeManager )
     {
-        // ArrayMap<String, IntArray> tmpRelMap = relationshipMap;
         Pair<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>> pair;
         synchronized ( this )
         {

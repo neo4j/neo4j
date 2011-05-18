@@ -32,7 +32,10 @@ class ExceptionRepresentation extends MappingRepresentation
     @Override
     protected void serialize( MappingSerializer serializer )
     {
-        serializer.putString( "message", exception.getMessage() );
+        String message = exception.getMessage();
+        if(message != null) {
+            serializer.putString( "message", message );
+        } 
         serializer.putString( "exception", exception.toString() );
         StackTraceElement[] trace = exception.getStackTrace();
         if ( trace != null )

@@ -44,7 +44,8 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
-public class RetrieveNodeFunctionalTest extends BaseDocTest{
+public class RetrieveNodeFunctionalTest
+{
     private URI nodeUri;
 
     private NeoServerWithEmbeddedWebServer server;
@@ -58,7 +59,6 @@ public class RetrieveNodeFunctionalTest extends BaseDocTest{
         server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper(server);
-        doc = new DocumentationOutput(functionalTestHelper, MediaType.APPLICATION_JSON_TYPE);
         nodeUri = new URI(functionalTestHelper.nodeUri() + "/" + new GraphDbHelper(server.getDatabase()).createNode());
     }
 
@@ -71,7 +71,11 @@ public class RetrieveNodeFunctionalTest extends BaseDocTest{
     @Test
     public void shouldGet200WhenRetrievingNode() throws Exception {
         String uri = nodeUri.toString();
-        doc.get("Retrieve Node", uri, Response.Status.OK);
+        DocsGenerator.create(
+                "Get node",
+                "Note that the response contains URI/templates for "
+                        + "the available operations for getting properties and relationships." )
+                .get( uri );
     }
 
     @Test
@@ -96,15 +100,16 @@ public class RetrieveNodeFunctionalTest extends BaseDocTest{
 
     @Test
     public void shouldGet404WhenRetrievingNonExistentNode() throws Exception {
-        doc.get("Asking for a non-existent Node", nodeUri + "00000", Response.Status.NOT_FOUND);
-        
+        DocsGenerator.create( "Get non-existent node" )
+                .expectedStatus( Response.Status.NOT_FOUND )
+                .get( nodeUri + "00000" );
     }
 
-    private ClientResponse retrieveNodeFromService(String uri) {
+    private ClientResponse retrieveNodeFromService(final String uri) {
         WebResource resource = Client.create().resource(uri);
         ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
         return response;
     }
-    
-    
+
+
 }

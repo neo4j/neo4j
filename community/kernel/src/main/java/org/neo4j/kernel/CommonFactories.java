@@ -151,8 +151,8 @@ public class CommonFactories
         };
     }
     
-    public static LogBufferFactory defaultLogBufferFactory( Map<?, ?> config )
+    public static LogBufferFactory defaultLogBufferFactory()
     {
-        return DefaultLogBufferFactory.create( config );
+        return new DefaultLogBufferFactory();
     }
 }

@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.junit.After;
 import org.junit.Before;
@@ -36,29 +37,29 @@ import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.domain.JsonParseException;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
-import org.neo4j.server.rest.domain.JsonParseException;
 
-public class SetRelationshipPropertiesFunctionalTest {
+public class SetRelationshipPropertiesFunctionalTest
+{
 
     private URI propertiesUri;
     private URI badUri;
 
     private NeoServerWithEmbeddedWebServer server;
-    
+
     @Before
     public void setupServer() throws IOException, URISyntaxException {
         server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
         server.start();
         FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper(server);
-        
         long relationshipId = new GraphDbHelper(server.getDatabase()).createRelationship("KNOWS");
         propertiesUri = new URI(functionalTestHelper.relationshipPropertiesUri(relationshipId));
         badUri = new URI(functionalTestHelper.relationshipPropertiesUri(relationshipId + 1 * 99999));
     }
-    
+
     @After
     public void stopServer() {
         server.stop();
@@ -70,6 +71,10 @@ public class SetRelationshipPropertiesFunctionalTest {
     {
         Map<String, Object> map = new HashMap<String, Object>();
         map.put("jim", "tobias");
+        DocsGenerator.create( "Update relationship properties" )
+                .payload( JsonHelper.createJsonFrom( map ) )
+                .expectedStatus( Response.Status.NO_CONTENT )
+                .put( propertiesUri.toString() );
         ClientResponse response = updatePropertiesOnServer(map);
         assertEquals(204, response.getStatus());
     }
@@ -86,7 +91,7 @@ public class SetRelationshipPropertiesFunctionalTest {
     @Test
     public void shouldReturn400WhenSendingCorruptJsonProperties() {
         ClientResponse response = Client.create().resource(propertiesUri).type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(
-                "this:::Is::notJSON}").put(ClientResponse.class);
+        "this:::Is::notJSON}").put(ClientResponse.class);
         assertEquals(400, response.getStatus());
     }
 
@@ -95,19 +100,19 @@ public class SetRelationshipPropertiesFunctionalTest {
     {
         Map<String, Object> map = new HashMap<String, Object>();
         map.put("jim", "tobias");
-        
+
         ClientResponse response = Client.create().resource(badUri).type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(
                 JsonHelper.createJsonFrom(map)).put(ClientResponse.class);
         assertEquals(404, response.getStatus());
     }
 
-    private ClientResponse updatePropertiesOnServer(Map<String, Object> map) throws JsonParseException
+    private ClientResponse updatePropertiesOnServer(final Map<String, Object> map) throws JsonParseException
     {
         return Client.create().resource(propertiesUri).type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(
                 JsonHelper.createJsonFrom(map)).put(ClientResponse.class);
     }
 
-    private URI getPropertyUri(String key) throws Exception {
+    private URI getPropertyUri(final String key) throws Exception {
         return new URI(propertiesUri.toString() + "/" + key);
     }
 
@@ -126,18 +131,18 @@ public class SetRelationshipPropertiesFunctionalTest {
     @Test
     public void shouldReturn400WhenSendingCorruptJsonProperty() throws Exception {
         ClientResponse response = Client.create().resource(getPropertyUri("foo")).type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(
-                "this:::Is::notJSON}").put(ClientResponse.class);
+        "this:::Is::notJSON}").put(ClientResponse.class);
         assertEquals(400, response.getStatus());
     }
 
     @Test
     public void shouldReturn404WhenPropertySentToANodeWhichDoesNotExist() throws Exception {
         ClientResponse response = Client.create().resource(badUri.toString() + "/foo").type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
-                .entity(JsonHelper.createJsonFrom("bar")).put(ClientResponse.class);
+        .entity(JsonHelper.createJsonFrom("bar")).put(ClientResponse.class);
         assertEquals(404, response.getStatus());
     }
 
-    private ClientResponse setPropertyOnServer(String key, Object value) throws Exception {
+    private ClientResponse setPropertyOnServer(final String key, final Object value) throws Exception {
         return Client.create().resource(getPropertyUri(key)).type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(
                 JsonHelper.createJsonFrom(value)).put(ClientResponse.class);
     }

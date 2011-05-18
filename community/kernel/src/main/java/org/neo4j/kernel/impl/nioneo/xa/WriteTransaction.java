@@ -24,15 +24,17 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import javax.transaction.xa.XAException;
+import javax.transaction.xa.XAResource;
 
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
@@ -49,16 +51,17 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeStore;
 import org.neo4j.kernel.impl.nioneo.xa.Command.PropertyCommand;
+import org.neo4j.kernel.impl.persistence.NeoStoreTransaction;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
+import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -68,7 +71,7 @@ import org.neo4j.kernel.impl.util.RelIdArray;
  * Transaction containing {@link Command commands} reflecting the operations
  * performed in the transaction.
  */
-class WriteTransaction extends XaTransaction
+public class WriteTransaction extends XaTransaction implements NeoStoreTransaction
 {
     private final Map<Long,NodeRecord> nodeRecords =
         new HashMap<Long,NodeRecord>();
@@ -98,11 +101,13 @@ class WriteTransaction extends XaTransaction
 
     private final LockReleaser lockReleaser;
     private final LockManager lockManager;
+    private XaConnection xaConnection;
 
     WriteTransaction( int identifier, XaLogicalLog log, NeoStore neoStore,
         LockReleaser lockReleaser, LockManager lockManager )
     {
         super( identifier, log );
+        this.xaConnection = xaConnection;
         this.neoStore = neoStore;
         this.lockReleaser = lockReleaser;
         this.lockManager = lockManager;
@@ -595,7 +600,7 @@ class WriteTransaction extends XaTransaction
         return getNodeStore().loadLightNode( nodeId );
     }
 
-    public RelationshipData relationshipLoad( long id )
+    public RelationshipRecord relLoadLight( long id )
     {
         RelationshipRecord relRecord = getRelationshipRecord( id );
         if ( relRecord != null )
@@ -605,19 +610,17 @@ class WriteTransaction extends XaTransaction
 //            {
 //                return null;
 //            }
-            return new RelationshipData( id, relRecord.getFirstNode(),
-                relRecord.getSecondNode(), relRecord.getType() );
+            return relRecord;
         }
         relRecord = getRelationshipStore().getLightRel( id );
         if ( relRecord != null )
         {
-            return new RelationshipData( id, relRecord.getFirstNode(),
-                relRecord.getSecondNode(), relRecord.getType() );
+            return relRecord;
         }
         return null;
     }
 
-    ArrayMap<Integer,PropertyData> nodeDelete( long nodeId )
+    public ArrayMap<Integer,PropertyData> nodeDelete( long nodeId )
     {
         NodeRecord nodeRecord = getNodeRecord( nodeId );
         if ( nodeRecord == null )
@@ -675,7 +678,7 @@ class WriteTransaction extends XaTransaction
         return propertyMap;
     }
 
-    ArrayMap<Integer,PropertyData> relDelete( long id )
+    public ArrayMap<Integer,PropertyData> relDelete( long id )
     {
         RelationshipRecord record = getRelationshipRecord( id );
         if ( record == null )
@@ -870,49 +873,10 @@ class WriteTransaction extends XaTransaction
         return new RelationshipChainPosition( nextRel );
     }
     
-    public Iterable<RelationshipData> getMoreRelationships( long nodeId,
+    public Pair<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>> getMoreRelationships( long nodeId,
         RelationshipChainPosition position )
     {
-        long nextRel = position.getNextRecord();
-        List<RelationshipData> rels = new ArrayList<RelationshipData>();
-        for ( int i = 0; i < getRelGrabSize() && 
-            nextRel != Record.NO_NEXT_RELATIONSHIP.intValue(); i++ )
-        {
-            RelationshipRecord relRecord = getRelationshipStore().getChainRecord( nextRel );
-            if ( relRecord == null )
-            {
-                // return what we got so far
-                position.setNextRecord( Record.NO_NEXT_RELATIONSHIP.intValue() );
-                return rels;
-            }
-            long firstNode = relRecord.getFirstNode();
-            long secondNode = relRecord.getSecondNode();
-            if ( relRecord.inUse() ) // && !relRecord.isCreated() )
-            {
-                rels.add( new RelationshipData( relRecord.getId(), firstNode, 
-                    secondNode, relRecord.getType() ) );
-            }
-            else
-            {
-                i--;
-            }
-            if ( firstNode == nodeId )
-            {
-                nextRel = relRecord.getFirstNextRel();
-            }
-            else if ( secondNode == nodeId )
-            {
-                nextRel = relRecord.getSecondNextRel();
-            }
-            else
-            {
-                throw new InvalidRecordException( "Node[" + nodeId + 
-                        "] is neither firstNode[" + firstNode + 
-                        "] nor secondNode[" + secondNode + "] for Relationship[" + relRecord.getId() + "]" );
-            }
-        }
-        position.setNextRecord( nextRel );
-        return rels;
+        return ReadTransaction.getMoreRelationships( nodeId, position, getRelGrabSize(), getRelationshipStore() );
     }
     
     private void updateNodes( RelationshipRecord rel )
@@ -939,7 +903,7 @@ class WriteTransaction extends XaTransaction
         }
     }
 
-    void relRemoveProperty( long relId, long propertyId )
+    public void relRemoveProperty( long relId, long propertyId )
     {
         RelationshipRecord relRecord = getRelationshipRecord( relId );
         if ( relRecord == null )
@@ -1009,7 +973,7 @@ class WriteTransaction extends XaTransaction
         }
     }
 
-    public ArrayMap<Integer,PropertyData> relGetProperties( long relId,
+    public ArrayMap<Integer,PropertyData> relLoadProperties( long relId,
             boolean light )
     {
         ArrayMap<Integer,PropertyData> propertyMap = 
@@ -1045,7 +1009,7 @@ class WriteTransaction extends XaTransaction
         return propertyMap;
     }
 
-    ArrayMap<Integer,PropertyData> nodeGetProperties( long nodeId, boolean light )
+    public ArrayMap<Integer,PropertyData> nodeLoadProperties( long nodeId, boolean light )
     {
         ArrayMap<Integer,PropertyData> propertyMap = 
             new ArrayMap<Integer,PropertyData>( 9, false, true );
@@ -1086,7 +1050,7 @@ class WriteTransaction extends XaTransaction
         return propertyRecord.getType().getValue( propertyRecord, propertyRecord.isLight() ? null : getPropertyStore() );
     }
 
-    public Object propertyGetValue( long id )
+    public Object loadPropertyValue( long id )
     {
         PropertyRecord propertyRecord = getPropertyStore().getRecord( id );
         if ( propertyRecord.isLight() )
@@ -1096,7 +1060,7 @@ class WriteTransaction extends XaTransaction
         return propertyRecord.getType().getValue( propertyRecord, getPropertyStore() );
     }
 
-    void nodeRemoveProperty( long nodeId, long propertyId )
+    public void nodeRemoveProperty( long nodeId, long propertyId )
     {
         NodeRecord nodeRecord = getNodeRecord( nodeId );
         if ( nodeRecord == null )
@@ -1166,7 +1130,7 @@ class WriteTransaction extends XaTransaction
         }
     }
 
-    void relChangeProperty( long relId, long propertyId, Object value )
+    public void relChangeProperty( long relId, long propertyId, Object value )
     {
         RelationshipRecord relRecord = getRelationshipRecord( relId );
         if ( relRecord == null )
@@ -1219,7 +1183,7 @@ class WriteTransaction extends XaTransaction
         addPropertyRecord( propertyRecord );
     }
 
-    void nodeChangeProperty( long nodeId, long propertyId, Object value )
+    public void nodeChangeProperty( long nodeId, long propertyId, Object value )
     {
         NodeRecord nodeRecord = getNodeRecord( nodeId );
         if ( nodeRecord == null )
@@ -1272,7 +1236,7 @@ class WriteTransaction extends XaTransaction
         addPropertyRecord( propertyRecord );
     }
 
-    void relAddProperty( long relId, long propertyId, PropertyIndex index,
+    public void relAddProperty( long relId, long propertyId, PropertyIndex index,
         Object value )
     {
         RelationshipRecord relRecord = getRelationshipRecord( relId );
@@ -1312,7 +1276,7 @@ class WriteTransaction extends XaTransaction
         addPropertyRecord( propertyRecord );
     }
 
-    void nodeAddProperty( long nodeId, long propertyId, PropertyIndex index,
+    public void nodeAddProperty( long nodeId, long propertyId, PropertyIndex index,
         Object value )
     {
         NodeRecord nodeRecord = getNodeRecord( nodeId );
@@ -1356,8 +1320,7 @@ class WriteTransaction extends XaTransaction
         addPropertyRecord( propertyRecord );
     }
 
-    void relationshipCreate( long id, long firstNodeId, long secondNodeId,
-        int type )
+    public void relationshipCreate( long id, int type, long firstNodeId, long secondNodeId )
     {
         NodeRecord firstNode = getNodeRecord( firstNodeId );
         if ( firstNode == null )
@@ -1454,7 +1417,7 @@ class WriteTransaction extends XaTransaction
         secondNode.setNextRel( rel.getId() );
     }
 
-    void nodeCreate( long nodeId )
+    public void nodeCreate( long nodeId )
     {
         NodeRecord nodeRecord = new NodeRecord( nodeId );
         nodeRecord.setInUse( true );
@@ -1462,7 +1425,7 @@ class WriteTransaction extends XaTransaction
         addNodeRecord( nodeRecord );
     }
 
-    String getPropertyIndex( int id )
+    public String loadIndex( int id )
     {
         PropertyIndexStore indexStore = getPropertyStore().getIndexStore();
         PropertyIndexRecord index = getPropertyIndexRecord( id );
@@ -1477,13 +1440,13 @@ class WriteTransaction extends XaTransaction
         return indexStore.getStringFor( index );
     }
 
-    PropertyIndexData[] getPropertyIndexes( int count )
+    public PropertyIndexData[] loadPropertyIndexes( int count )
     {
         PropertyIndexStore indexStore = getPropertyStore().getIndexStore();
         return indexStore.getPropertyIndexes( count );
     }
 
-    void createPropertyIndex( int id, String key )
+    public void createPropertyIndex( String key, int id )
     {
         PropertyIndexRecord record = new PropertyIndexRecord( id );
         record.setInUse( true );
@@ -1503,7 +1466,7 @@ class WriteTransaction extends XaTransaction
         addPropertyIndexRecord( record );
     }
 
-    void relationshipTypeAdd( int id, String name )
+    public void createRelationshipType( int id, String name )
     {
         RelationshipTypeRecord record = new RelationshipTypeRecord( id );
         record.setInUse( true );
@@ -1721,13 +1684,14 @@ class WriteTransaction extends XaTransaction
         {
             if ( record.isCreated() )
             {
-                createdNodes.add( record.getId() );
+                // TODO Direction doesn't matter... misuse of RelIdArray?
+                createdNodes.add( record.getId(), Direction.OUTGOING );
             }
         }
         return createdNodes;
     }
     
-    public boolean nodeCreated( long nodeId )
+    public boolean isNodeCreated( long nodeId )
     {
         NodeRecord record = nodeRecords.get( nodeId );
         if ( record != null )
@@ -1737,7 +1701,7 @@ class WriteTransaction extends XaTransaction
         return false;
     }
 
-    public boolean relCreated( long relId )
+    public boolean isRelationshipCreated( long relId )
     {
         RelationshipRecord record = relRecords.get( relId );
         if ( record != null )
@@ -1755,5 +1719,52 @@ class WriteTransaction extends XaTransaction
             propRecord = getPropertyStore().getLightRecord( propertyId );
         }
         return propRecord.getKeyIndexId();
+    }
+
+    @Override
+    public XAResource getXAResource()
+    {
+        return xaConnection.getXaResource();
+    }
+
+    @Override
+    public void destroy()
+    {
+        xaConnection.destroy();
+    }
+    
+    @Override
+    public void setXaConnection( XaConnection connection )
+    {
+        this.xaConnection = connection;
+    }
+
+    @Override
+    public long nodeAddProperty( long nodeId, PropertyIndex index, Object value )
+    {
+        long propertyId = neoStore.getPropertyStore().nextId();
+        nodeAddProperty( nodeId, propertyId, index, value );
+        return propertyId;
+    }
+
+    @Override
+    public long relAddProperty( long relId, PropertyIndex index, Object value )
+    {
+        long propertyId = neoStore.getPropertyStore().nextId();
+        relAddProperty( relId, propertyId, index, value );
+        return propertyId;
+    }
+
+    @Override
+    public RelationshipTypeData[] loadRelationshipTypes()
+    {
+        RelationshipTypeData relTypeData[] = neoStore.getRelationshipTypeStore().getRelationshipTypes();;
+        RelationshipTypeData rawRelTypeData[] = new RelationshipTypeData[relTypeData.length];
+        for ( int i = 0; i < relTypeData.length; i++ )
+        {
+            rawRelTypeData[i] = new RelationshipTypeData( 
+                relTypeData[i].getId(), relTypeData[i].getName() );
+        }
+        return rawRelTypeData;
     }
 }

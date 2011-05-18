@@ -628,6 +628,7 @@ the relevant Commercial Agreement.
     <profile>
       <id>functional-tests</id>
       <activation>
+        <activeByDefault>true</activeByDefault>
         <property>
           <name>tests</name>
           <value>functional</value>
@@ -674,6 +675,35 @@ the relevant Commercial Agreement.
               <argLine>-Xmx1024m</argLine>
               <forkMode>perTest</forkMode>
             </configuration>
+          </plugin>
+          <plugin>
+            <artifactId>maven-jar-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>attach-docs</id>
+                <phase>none</phase>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>docs</id>
+                <phase>package</phase>
+                <configuration>
+                  <attach>true</attach>
+                  <appendAssemblyId>true</appendAssemblyId>
+                  <descriptors>
+                    <descriptor>src/main/assemblies/docs-assembly.xml</descriptor>
+                  </descriptors>
+                </configuration>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+              </execution>
+            </executions>
           </plugin>
         </plugins>
       </build>
@@ -885,6 +915,13 @@ the relevant Commercial Agreement.
             </group>
           </groups>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>clirr-maven-plugin</artifactId>
+        <reportSets>
+          <reportSet />
+        </reportSets>
       </plugin>
     </plugins>
   </reporting>

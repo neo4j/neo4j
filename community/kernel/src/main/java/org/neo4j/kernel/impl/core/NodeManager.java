@@ -27,6 +27,7 @@ import java.util.logging.Logger;
 
 import javax.transaction.TransactionManager;
 
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -45,7 +46,7 @@ import org.neo4j.kernel.impl.cache.WeakLruCache;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipData;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
@@ -308,8 +309,8 @@ public class NodeManager
             int typeId = getRelationshipTypeIdFor( type );
             persistenceManager.relationshipCreate( id, typeId, startNodeId,
                 endNodeId );
-            firstNode.addRelationship( this, type, id );
-            secondNode.addRelationship( this, type, id );
+            firstNode.addRelationship( this, type, id, Direction.OUTGOING );
+            secondNode.addRelationship( this, type, id, Direction.INCOMING );
             relCache.put( rel.getId(), rel );
             success = true;
             return new RelationshipProxy( id, this );
@@ -486,13 +487,12 @@ public class NodeManager
             {
                 return new RelationshipProxy( relId, this );
             }
-            RelationshipData data = persistenceManager.loadLightRelationship(
-                relId );
+            RelationshipRecord data = persistenceManager.loadLightRelationship( relId );
             if ( data == null )
             {
                 throw new NotFoundException( "Relationship[" + relId + "]" );
             }
-            int typeId = data.relationshipType();
+            int typeId = data.getType();
             RelationshipType type = getRelationshipTypeById( typeId );
             if ( type == null )
             {
@@ -500,8 +500,8 @@ public class NodeManager
                     + "] exist but relationship type[" + typeId
                     + "] not found." );
             }
-            final long startNodeId = data.firstNode();
-            final long endNodeId = data.secondNode();
+            final long startNodeId = data.getFirstNode();
+            final long endNodeId = data.getSecondNode();
             relationship = new RelationshipImpl( relId, startNodeId, endNodeId, type, false );
             relCache.put( relId, relationship );
             return new RelationshipProxy( relId, this );
@@ -532,14 +532,13 @@ public class NodeManager
             {
                 return relationship;
             }
-            RelationshipData data = persistenceManager.loadLightRelationship(
-                relId );
+            RelationshipRecord data = persistenceManager.loadLightRelationship( relId );
             if ( data == null )
             {
                 throw new NotFoundException( "Relationship[" + relId
                     + "] not found." );
             }
-            int typeId = data.relationshipType();
+            int typeId = data.getType();
             RelationshipType type = getRelationshipTypeById( typeId );
             if ( type == null )
             {
@@ -547,8 +546,8 @@ public class NodeManager
                     + "] exist but relationship type[" + typeId
                     + "] not found." );
             }
-            relationship = new RelationshipImpl( relId, data.firstNode(), data.secondNode(), type,
-                    false );
+            relationship = new RelationshipImpl( relId, data.getFirstNode(), data.getSecondNode(),
+                    type, false );
             relCache.put( relId, relationship );
             return relationship;
         }
@@ -582,21 +581,31 @@ public class NodeManager
     {
         long nodeId = node.getId();
         RelationshipChainPosition position = node.getRelChainPosition();
-        Iterable<RelationshipData> rels =
+        Pair<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>> rels =
             persistenceManager.getMoreRelationships( nodeId, position );
         ArrayMap<String,RelIdArray> newRelationshipMap =
             new ArrayMap<String,RelIdArray>();
         Map<Long,RelationshipImpl> relsMap = new HashMap<Long,RelationshipImpl>( 150 );
-        for ( RelationshipData rel : rels )
+        receiveRelationships( rels.first(), newRelationshipMap, relsMap, Direction.OUTGOING );
+        receiveRelationships( rels.other(), newRelationshipMap, relsMap, Direction.INCOMING );
+        // relCache.putAll( relsMap );
+        return Pair.of( newRelationshipMap, relsMap );
+    }
+
+    private void receiveRelationships(
+            Iterable<RelationshipRecord> rels, ArrayMap<String, RelIdArray> newRelationshipMap,
+            Map<Long, RelationshipImpl> relsMap, Direction dir )
+    {
+        for ( RelationshipRecord rel : rels )
         {
             long relId = rel.getId();
             RelationshipImpl relImpl = relCache.get( relId );
             RelationshipType type = null;
             if ( relImpl == null )
             {
-                type = getRelationshipTypeById( rel.relationshipType() );
+                type = getRelationshipTypeById( rel.getType() );
                 assert type != null;
-                relImpl = new RelationshipImpl( relId, rel.firstNode(), rel.secondNode(), type,
+                relImpl = new RelationshipImpl( relId, rel.getFirstNode(), rel.getSecondNode(), type,
                         false );
                 relsMap.put( relId, relImpl );
                 // relCache.put( relId, relImpl );
@@ -605,17 +614,14 @@ public class NodeManager
             {
                 type = relImpl.getType();
             }
-            RelIdArray relationshipSet = newRelationshipMap.get(
-                type.name() );
+            RelIdArray relationshipSet = newRelationshipMap.get( type.name() );
             if ( relationshipSet == null )
             {
                 relationshipSet = new RelIdArray();
                 newRelationshipMap.put( type.name(), relationshipSet );
             }
-            relationshipSet.add( relId );
+            relationshipSet.add( relId, dir );
         }
-        // relCache.putAll( relsMap );
-        return Pair.of( newRelationshipMap, relsMap );
     }
 
     void putAllInRelCache( Map<Long,RelationshipImpl> map )

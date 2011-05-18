@@ -19,8 +19,14 @@
  */
 package org.neo4j.server.rest;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
+import static org.junit.Assert.assertEquals;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.junit.After;
 import org.junit.Before;
@@ -30,13 +36,8 @@ import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 
-import javax.ws.rs.core.MediaType;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
 
 public class RemoveNodePropertiesFunctionalTest
 {
@@ -57,12 +58,12 @@ public class RemoveNodePropertiesFunctionalTest
         server.stop();
         server = null;
     }
-    
-    private String getPropertiesUri( long nodeId )
+
+    private String getPropertiesUri( final long nodeId )
     {
         return functionalTestHelper.nodePropertiesUri(nodeId);
     }
-    
+
     @Test
     public void shouldReturn204WhenPropertiesAreRemoved() throws DatabaseBlockedException
     {
@@ -75,14 +76,26 @@ public class RemoveNodePropertiesFunctionalTest
     }
 
     @Test
+    public void shouldReturn204WhenAllPropertiesAreRemoved() throws DatabaseBlockedException
+    {
+        long nodeId = helper.createNode();
+        Map<String, Object> map = new HashMap<String, Object>();
+        map.put( "jim", "tobias" );
+        helper.setNodeProperties( nodeId, map );
+        DocsGenerator.create( "Delete all properties from node" )
+                .expectedStatus( Response.Status.NO_CONTENT )
+                .delete( functionalTestHelper.nodePropertiesUri( nodeId ) );
+    }
+
+    @Test
     public void shouldReturn404WhenPropertiesSentToANodeWhichDoesNotExist()
     {
         ClientResponse response = Client.create().resource( getPropertiesUri( 999999 ) ).type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON )
-                .delete( ClientResponse.class );
+        .delete( ClientResponse.class );
         assertEquals( 404, response.getStatus() );
     }
 
-    private ClientResponse removeNodePropertiesOnServer( long nodeId )
+    private ClientResponse removeNodePropertiesOnServer( final long nodeId )
     {
         return Client.create().resource( getPropertiesUri( nodeId ) ).delete( ClientResponse.class );
     }
@@ -113,16 +126,16 @@ public class RemoveNodePropertiesFunctionalTest
     public void shouldReturn404WhenPropertySentToANodeWhichDoesNotExist()
     {
         ClientResponse response = Client.create().resource( getPropertyUri( 999999, "foo" ) ).type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON )
-                .delete( ClientResponse.class );
+        .delete( ClientResponse.class );
         assertEquals( 404, response.getStatus() );
     }
 
-    private String getPropertyUri( long nodeId, String key )
+    private String getPropertyUri( final long nodeId, final String key )
     {
         return functionalTestHelper.nodePropertyUri(nodeId, key);
     }
 
-    private ClientResponse removeNodePropertyOnServer( long nodeId, String key )
+    private ClientResponse removeNodePropertyOnServer( final long nodeId, final String key )
     {
         return Client.create().resource( getPropertyUri( nodeId, key ) ).delete( ClientResponse.class );
     }

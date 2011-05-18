@@ -327,7 +327,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
     {
         Map<Object,Object> config = new HashMap<Object,Object>();
         config.put( "store_dir", "target/var" );
-        config.put( LogBufferFactory.class, CommonFactories.defaultLogBufferFactory( config ) );
+        config.put( LogBufferFactory.class, CommonFactories.defaultLogBufferFactory() );
         xaDsMgr.registerDataSource( "dummy_datasource", new DummyXaDataSource(
                 config ), UTF8.encode( "DDDDDD" ) );
         XaDataSource xaDs = xaDsMgr.getXaDataSource( "dummy_datasource" );
@@ -390,7 +390,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         {
             Map<Object,Object> config = new HashMap<Object,Object>();
             config.put( "store_dir", "target/var" );
-            config.put( LogBufferFactory.class, CommonFactories.defaultLogBufferFactory( config ) );
+            config.put( LogBufferFactory.class, CommonFactories.defaultLogBufferFactory() );
             xaDsMgr.registerDataSource( "dummy_datasource1",
                     new DummyXaDataSource( config ), UTF8.encode( "DDDDDD" ) );
             xaDs1 = (DummyXaDataSource) xaDsMgr

@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.util.Collections;
 
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.junit.After;
 import org.junit.Before;
@@ -39,8 +40,9 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
-public class GetNodePropertiesFunctionalTest {
-    
+public class GetNodePropertiesFunctionalTest
+{
+
     private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
 
@@ -48,7 +50,7 @@ public class GetNodePropertiesFunctionalTest {
     public void setupServer() throws IOException {
         server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
         server.start();
-        
+
         functionalTestHelper = new FunctionalTestHelper(server);
     }
 
@@ -64,6 +66,11 @@ public class GetNodePropertiesFunctionalTest {
         WebResource createResource = client.resource(functionalTestHelper.dataUri() + "node/");
         ClientResponse createResponse = createResource.accept(MediaType.APPLICATION_JSON).entity("").post(ClientResponse.class);
         WebResource resource = client.resource(createResponse.getLocation().toString() + "/properties");
+        DocsGenerator.create( "Get empty properties for node",
+                "If there are no properties, there will be an HTTP 204 response." )
+                .expectedStatus( Response.Status.NO_CONTENT )
+                .get( createResponse.getLocation()
+                        .toString() + "/properties" );
         ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
         assertEquals(204, response.getStatus());
     }
@@ -76,9 +83,9 @@ public class GetNodePropertiesFunctionalTest {
         String entity = JsonHelper.createJsonFrom(Collections.singletonMap("foo", "bar"));
         ClientResponse createResponse = createResource.type(MediaType.APPLICATION_JSON).entity(entity).accept(MediaType.APPLICATION_JSON).post(
                 ClientResponse.class);
-        WebResource resource = client.resource(createResponse.getLocation().toString() + "/properties");
-        ClientResponse response = resource.type(MediaType.APPLICATION_FORM_URLENCODED).accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
-        assertEquals(200, response.getStatus());
+        DocsGenerator.create( "Get properties for node" )
+                .get( createResponse.getLocation()
+                        .toString() + "/properties" );
     }
 
     @Test
@@ -120,7 +127,7 @@ public class GetNodePropertiesFunctionalTest {
         Client client = Client.create();
         WebResource createResource = client.resource(functionalTestHelper.dataUri() + "node/");
         ClientResponse createResponse = createResource.type(MediaType.APPLICATION_FORM_URLENCODED).accept(MediaType.APPLICATION_JSON)
-                .post(ClientResponse.class);
+        .post(ClientResponse.class);
         WebResource resource = client.resource(getPropertyUri(createResponse.getLocation().toString(), "foo"));
         ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
         assertEquals(404, response.getStatus());
@@ -135,8 +142,14 @@ public class GetNodePropertiesFunctionalTest {
         ClientResponse createResponse = createResource.type(MediaType.APPLICATION_JSON).entity(entity).accept(MediaType.APPLICATION_JSON).post(
                 ClientResponse.class);
         WebResource resource = client.resource(getPropertyUri(createResponse.getLocation().toString(), "foo"));
-        ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
-        assertEquals(200, response.getStatus());
+        ClientResponse response = resource.accept( MediaType.APPLICATION_JSON ).get(
+                ClientResponse.class );
+        assertEquals( 200, response.getStatus() );
+        DocsGenerator.create( "Get property for node",
+                "Get a single node property from a node." )
+                .expectedStatus( Response.Status.OK )
+                .get( getPropertyUri( createResponse.getLocation()
+                        .toString(), "foo" ).toString() );
     }
 
     @Test
@@ -161,7 +174,7 @@ public class GetNodePropertiesFunctionalTest {
         assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
     }
 
-    private String getPropertyUri(String baseUri, String key) {
+    private String getPropertyUri(final String baseUri, final String key) {
         return baseUri.toString() + "/properties/" + key;
     }
 }

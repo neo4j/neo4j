@@ -78,6 +78,8 @@ public class TestTxLog
             txLog.txStart( globalId );
             txLog.addBranch( globalId, branchId );
             assertEquals( 2, txLog.getRecordCount() );
+            // Force here because we're using DirectMappedLogBuffer
+            txLog.force();
             // List lists[] = txLog.getDanglingRecords();
             List<?> lists[] = getRecordLists( txLog.getDanglingRecords() );
             assertEquals( 1, lists.length );
@@ -113,6 +115,8 @@ public class TestTxLog
             assertEqualByteArray( globalId, record.getGlobalId() );
             assertTrue( null == record.getBranchId() );
             txLog.txDone( globalId );
+            // Force here because we're using DirectMappedLogBuffer
+            txLog.force();
             assertEquals( 1, txLog.getRecordCount() );
             assertEquals( 0,
                 getRecordLists( txLog.getDanglingRecords() ).length );

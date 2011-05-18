@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.junit.After;
 import org.junit.Before;
@@ -91,12 +92,17 @@ public class CreateRelationshipFunctionalTest
         long startNode = helper.createNode();
         long endNode = helper.createNode();
         String jsonString = "{\"to\" : \"" + functionalTestHelper.dataUri() + "node/" + endNode + "\", \"type\" : \"LOVES\"}";
-        ClientResponse response = Client.create().resource( functionalTestHelper.dataUri() + "node/" + startNode + "/relationships" ).type(
+        String uri = functionalTestHelper.dataUri() + "node/" + startNode + "/relationships";
+        ClientResponse response = Client.create().resource( uri ).type(
                 MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( jsonString ).post( ClientResponse.class );
         assertEquals( 201, response.getStatus() );
         assertTrue( response.getLocation().toString().matches( RELATIONSHIP_URI_PATTERN ) );
         assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
         assertProperRelationshipRepresentation( JsonHelper.jsonToMap( response.getEntity( String.class ) ) );
+        DocsGenerator.create( "Create relationship" )
+                .payload( jsonString )
+                .expectedStatus( Response.Status.CREATED )
+                .post( uri );
     }
 
     @Test

@@ -390,7 +390,7 @@ public class TestXa extends AbstractNeo4jTestCase
         {
             int id = (int) ds.nextId( PropertyIndex.class );
             PropertyIndex index = createDummyIndex( id, key );
-            xaCon.getPropertyIndexConsumer().createPropertyIndex( id, key );
+            xaCon.getWriteTransaction().createPropertyIndex( key, id );
             return index;
         }
         return itr.next();
@@ -403,30 +403,28 @@ public class TestXa extends AbstractNeo4jTestCase
         XAResource xaRes = xaCon.getXaResource();
         xaRes.start( xid, XAResource.TMNOFLAGS );
         long node1 = ds.nextId( Node.class );
-        xaCon.getNodeConsumer().createNode( node1 );
+        xaCon.getWriteTransaction().nodeCreate( node1 );
         long node2 = ds.nextId( Node.class );
-        xaCon.getNodeConsumer().createNode( node2 );
+        xaCon.getWriteTransaction().nodeCreate( node2 );
         long n1prop1 = ds.nextId( PropertyStore.class );
-        xaCon.getNodeConsumer().addProperty( node1, n1prop1,
+        xaCon.getWriteTransaction().nodeAddProperty( node1, n1prop1,
             index( "prop1" ), "string1" );
-        xaCon.getNodeConsumer().getProperties( node1, false );
+        xaCon.getWriteTransaction().nodeLoadProperties( node1, false );
         int relType1 = (int) ds.nextId( RelationshipType.class );
-        xaCon.getRelationshipTypeConsumer().addRelationshipType( relType1,
+        xaCon.getWriteTransaction().createRelationshipType( relType1,
             "relationshiptype1" );
         long rel1 = ds.nextId( Relationship.class );
-        xaCon.getRelationshipConsumer().createRelationship( rel1, node1,
-            node2, relType1 );
+        xaCon.getWriteTransaction().relationshipCreate( rel1, relType1, node1, node2 );
         long r1prop1 = ds.nextId( PropertyStore.class );
-        xaCon.getRelationshipConsumer().addProperty( rel1, r1prop1,
+        xaCon.getWriteTransaction().relAddProperty( rel1, r1prop1,
             index( "prop1" ), "string1" );
-        xaCon.getNodeConsumer().changeProperty( node1, n1prop1, "string2" );
-        xaCon.getRelationshipConsumer().changeProperty( rel1, r1prop1,
-            "string2" );
-        xaCon.getNodeConsumer().removeProperty( node1, n1prop1 );
-        xaCon.getRelationshipConsumer().removeProperty( rel1, r1prop1 );
-        xaCon.getRelationshipConsumer().deleteRelationship( rel1 );
-        xaCon.getNodeConsumer().deleteNode( node1 );
-        xaCon.getNodeConsumer().deleteNode( node2 );
+        xaCon.getWriteTransaction().nodeChangeProperty( node1, n1prop1, "string2" );
+        xaCon.getWriteTransaction().relChangeProperty( rel1, r1prop1, "string2" );
+        xaCon.getWriteTransaction().nodeRemoveProperty( node1, n1prop1 );
+        xaCon.getWriteTransaction().relRemoveProperty( rel1, r1prop1 );
+        xaCon.getWriteTransaction().relDelete( rel1 );
+        xaCon.getWriteTransaction().nodeDelete( node1 );
+        xaCon.getWriteTransaction().nodeDelete( node2 );
         xaRes.end( xid, XAResource.TMSUCCESS );
         xaRes.commit( xid, true );
         copyLogicalLog( path() );
@@ -453,7 +451,7 @@ public class TestXa extends AbstractNeo4jTestCase
             LockReleaser.class, lockReleaser,
             IdGeneratorFactory.class, ID_GENERATOR_FACTORY,
             FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction(),
-            LogBufferFactory.class, CommonFactories.defaultLogBufferFactory( config ),
+            LogBufferFactory.class, CommonFactories.defaultLogBufferFactory(),
             TxIdGenerator.class, TxIdGenerator.DEFAULT,
             "store_dir", path(),
             "neo_store", file( "neo" ),
@@ -468,23 +466,22 @@ public class TestXa extends AbstractNeo4jTestCase
         XAResource xaRes = xaCon.getXaResource();
         xaRes.start( xid, XAResource.TMNOFLAGS );
         long node1 = ds.nextId( Node.class );
-        xaCon.getNodeConsumer().createNode( node1 );
+        xaCon.getWriteTransaction().nodeCreate( node1 );
         long node2 = ds.nextId( Node.class );
-        xaCon.getNodeConsumer().createNode( node2 );
+        xaCon.getWriteTransaction().nodeCreate( node2 );
         long n1prop1 = ds.nextId( PropertyStore.class );
-        xaCon.getNodeConsumer().addProperty( node1, n1prop1,
+        xaCon.getWriteTransaction().nodeAddProperty( node1, n1prop1,
             index( "prop1" ), "string1" );
         int relType1 = (int) ds.nextId( RelationshipType.class );
-        xaCon.getRelationshipTypeConsumer().addRelationshipType( relType1,
+        xaCon.getWriteTransaction().createRelationshipType( relType1,
             "relationshiptype1" );
         long rel1 = ds.nextId( Relationship.class );
-        xaCon.getRelationshipConsumer().createRelationship( rel1, node1,
-            node2, relType1 );
+        xaCon.getWriteTransaction().relationshipCreate( rel1, relType1, node1, node2 );
         long r1prop1 = ds.nextId( PropertyStore.class );
-        xaCon.getRelationshipConsumer().addProperty( rel1, r1prop1,
+        xaCon.getWriteTransaction().relAddProperty( rel1, r1prop1,
             index( "prop1" ), "string1" );
-        xaCon.getNodeConsumer().changeProperty( node1, n1prop1, "string2" );
-        xaCon.getRelationshipConsumer().changeProperty( rel1, r1prop1,
+        xaCon.getWriteTransaction().nodeChangeProperty( node1, n1prop1, "string2" );
+        xaCon.getWriteTransaction().relChangeProperty( rel1, r1prop1,
             "string2" );
         xaRes.end( xid, XAResource.TMSUCCESS );
         xaRes.prepare( xid );
@@ -511,23 +508,22 @@ public class TestXa extends AbstractNeo4jTestCase
         XAResource xaRes = xaCon.getXaResource();
         xaRes.start( xid, XAResource.TMNOFLAGS );
         long node1 = ds.nextId( Node.class );
-        xaCon.getNodeConsumer().createNode( node1 );
+        xaCon.getWriteTransaction().nodeCreate( node1 );
         long node2 = ds.nextId( Node.class );
-        xaCon.getNodeConsumer().createNode( node2 );
+        xaCon.getWriteTransaction().nodeCreate( node2 );
         long n1prop1 = ds.nextId( PropertyStore.class );
-        xaCon.getNodeConsumer().addProperty( node1, n1prop1,
+        xaCon.getWriteTransaction().nodeAddProperty( node1, n1prop1,
             index( "prop1" ), "string1" );
         int relType1 = (int) ds.nextId( RelationshipType.class );
-        xaCon.getRelationshipTypeConsumer().addRelationshipType( relType1,
+        xaCon.getWriteTransaction().createRelationshipType( relType1,
             "relationshiptype1" );
         long rel1 = ds.nextId( Relationship.class );
-        xaCon.getRelationshipConsumer().createRelationship( rel1, node1,
-            node2, relType1 );
+        xaCon.getWriteTransaction().relationshipCreate( rel1, relType1, node1, node2 );
         long r1prop1 = ds.nextId( PropertyStore.class );
-        xaCon.getRelationshipConsumer().addProperty( rel1, r1prop1,
+        xaCon.getWriteTransaction().relAddProperty( rel1, r1prop1,
             index( "prop1" ), "string1" );
-        xaCon.getNodeConsumer().changeProperty( node1, n1prop1, "string2" );
-        xaCon.getRelationshipConsumer().changeProperty( rel1, r1prop1,
+        xaCon.getWriteTransaction().nodeChangeProperty( node1, n1prop1, "string2" );
+        xaCon.getWriteTransaction().relChangeProperty( rel1, r1prop1,
             "string2" );
         xaRes.end( xid, XAResource.TMSUCCESS );
         xaCon.clearAllTransactions();
@@ -550,7 +546,7 @@ public class TestXa extends AbstractNeo4jTestCase
         XAResource xaRes = xaCon.getXaResource();
         xaRes.start( xid, XAResource.TMNOFLAGS );
         long node1 = ds.nextId( Node.class );
-        xaCon.getNodeConsumer().createNode( node1 );
+        xaCon.getWriteTransaction().nodeCreate( node1 );
         xaRes.end( xid, XAResource.TMSUCCESS );
         xaRes.prepare( xid );
         xaCon.clearAllTransactions();
@@ -576,7 +572,7 @@ public class TestXa extends AbstractNeo4jTestCase
         XAResource xaRes = xaCon.getXaResource();
         xaRes.start( xid, XAResource.TMNOFLAGS );
         long node1 = ds.nextId( Node.class );
-        xaCon.getNodeConsumer().createNode( node1 );
+        xaCon.getWriteTransaction().nodeCreate( node1 );
         xaRes.end( xid, XAResource.TMSUCCESS );
         xaRes.prepare( xid );
         xaCon.clearAllTransactions();
@@ -602,11 +598,11 @@ public class TestXa extends AbstractNeo4jTestCase
         XAResource xaRes = xaCon.getXaResource();
         xaRes.start( xid, XAResource.TMNOFLAGS );
         long node1 = ds.nextId( Node.class );
-        xaCon.getNodeConsumer().createNode( node1 );
+        xaCon.getWriteTransaction().nodeCreate( node1 );
         long node2 = ds.nextId( Node.class );
-        xaCon.getNodeConsumer().createNode( node2 );
+        xaCon.getWriteTransaction().nodeCreate( node2 );
         long n1prop1 = ds.nextId( PropertyStore.class );
-        xaCon.getNodeConsumer().addProperty( node1, n1prop1,
+        xaCon.getWriteTransaction().nodeAddProperty( node1, n1prop1,
             index( "prop1" ), "string value 1" );
         xaRes.end( xid, XAResource.TMSUCCESS );
         xaRes.prepare( xid );
@@ -632,11 +628,11 @@ public class TestXa extends AbstractNeo4jTestCase
         XAResource xaRes = xaCon.getXaResource();
         xaRes.start( xid, XAResource.TMNOFLAGS );
         long node1 = ds.nextId( Node.class );
-        xaCon.getNodeConsumer().createNode( node1 );
+        xaCon.getWriteTransaction().nodeCreate( node1 );
         long node2 = ds.nextId( Node.class );
-        xaCon.getNodeConsumer().createNode( node2 );
+        xaCon.getWriteTransaction().nodeCreate( node2 );
         long n1prop1 = ds.nextId( PropertyStore.class );
-        xaCon.getNodeConsumer().addProperty( node1, n1prop1,
+        xaCon.getWriteTransaction().nodeAddProperty( node1, n1prop1,
             index( "prop1" ), "string value 1" );
         xaRes.end( xid, XAResource.TMSUCCESS );
         xaRes.prepare( xid );
@@ -675,30 +671,28 @@ public class TestXa extends AbstractNeo4jTestCase
         XAResource xaRes = xaCon.getXaResource();
         xaRes.start( xid, XAResource.TMNOFLAGS );
         long node1 = ds.nextId( Node.class );
-        xaCon.getNodeConsumer().createNode( node1 );
+        xaCon.getWriteTransaction().nodeCreate( node1 );
         long node2 = ds.nextId( Node.class );
-        xaCon.getNodeConsumer().createNode( node2 );
+        xaCon.getWriteTransaction().nodeCreate( node2 );
         long n1prop1 = ds.nextId( PropertyStore.class );
-        xaCon.getNodeConsumer().addProperty( node1, n1prop1,
+        xaCon.getWriteTransaction().nodeAddProperty( node1, n1prop1,
             index( "prop1" ), "string1" );
-        xaCon.getNodeConsumer().getProperties( node1, false );
+        xaCon.getWriteTransaction().nodeLoadProperties( node1, false );
         int relType1 = (int) ds.nextId( RelationshipType.class );
-        xaCon.getRelationshipTypeConsumer().addRelationshipType( relType1,
-            "relationshiptype1" );
+        xaCon.getWriteTransaction().createRelationshipType( relType1, "relationshiptype1" );
         long rel1 = ds.nextId( Relationship.class );
-        xaCon.getRelationshipConsumer().createRelationship( rel1, node1,
-            node2, relType1 );
+        xaCon.getWriteTransaction().relationshipCreate( rel1, relType1, node1, node2 );
         long r1prop1 = ds.nextId( PropertyStore.class );
-        xaCon.getRelationshipConsumer().addProperty( rel1, r1prop1,
+        xaCon.getWriteTransaction().relAddProperty( rel1, r1prop1,
             index( "prop1" ), "string1" );
-        xaCon.getNodeConsumer().changeProperty( node1, n1prop1, "string2" );
-        xaCon.getRelationshipConsumer().changeProperty( rel1, r1prop1,
+        xaCon.getWriteTransaction().nodeChangeProperty( node1, n1prop1, "string2" );
+        xaCon.getWriteTransaction().relChangeProperty( rel1, r1prop1,
             "string2" );
-        xaCon.getNodeConsumer().removeProperty( node1, n1prop1 );
-        xaCon.getRelationshipConsumer().removeProperty( rel1, r1prop1 );
-        xaCon.getRelationshipConsumer().deleteRelationship( rel1 );
-        xaCon.getNodeConsumer().deleteNode( node1 );
-        xaCon.getNodeConsumer().deleteNode( node2 );
+        xaCon.getWriteTransaction().nodeRemoveProperty( node1, n1prop1 );
+        xaCon.getWriteTransaction().relRemoveProperty( rel1, r1prop1 );
+        xaCon.getWriteTransaction().relDelete( rel1 );
+        xaCon.getWriteTransaction().nodeDelete( node1 );
+        xaCon.getWriteTransaction().nodeDelete( node2 );
         xaRes.end( xid, XAResource.TMSUCCESS );
         xaRes.commit( xid, true );
         long currentVersion = ds.getCurrentLogVersion();
@@ -730,30 +724,29 @@ public class TestXa extends AbstractNeo4jTestCase
         XAResource xaRes = xaCon.getXaResource();
         xaRes.start( xid, XAResource.TMNOFLAGS );
         long node1 = ds.nextId( Node.class );
-        xaCon.getNodeConsumer().createNode( node1 );
+        xaCon.getWriteTransaction().nodeCreate( node1 );
         long node2 = ds.nextId( Node.class );
-        xaCon.getNodeConsumer().createNode( node2 );
+        xaCon.getWriteTransaction().nodeCreate( node2 );
         long n1prop1 = ds.nextId( PropertyStore.class );
-        xaCon.getNodeConsumer().addProperty( node1, n1prop1,
+        xaCon.getWriteTransaction().nodeAddProperty( node1, n1prop1,
             index( "prop1" ), "string1" );
-        xaCon.getNodeConsumer().getProperties( node1, false );
+        xaCon.getWriteTransaction().nodeLoadProperties( node1, false );
         int relType1 = (int) ds.nextId( RelationshipType.class );
-        xaCon.getRelationshipTypeConsumer().addRelationshipType( relType1,
+        xaCon.getWriteTransaction().createRelationshipType( relType1,
             "relationshiptype1" );
         long rel1 = ds.nextId( Relationship.class );
-        xaCon.getRelationshipConsumer().createRelationship( rel1, node1,
-            node2, relType1 );
+        xaCon.getWriteTransaction().relationshipCreate( rel1, relType1, node1, node2 );
         long r1prop1 = ds.nextId( PropertyStore.class );
-        xaCon.getRelationshipConsumer().addProperty( rel1, r1prop1,
+        xaCon.getWriteTransaction().relAddProperty( rel1, r1prop1,
             index( "prop1" ), "string1" );
-        xaCon.getNodeConsumer().changeProperty( node1, n1prop1, "string2" );
-        xaCon.getRelationshipConsumer().changeProperty( rel1, r1prop1,
+        xaCon.getWriteTransaction().nodeChangeProperty( node1, n1prop1, "string2" );
+        xaCon.getWriteTransaction().relChangeProperty( rel1, r1prop1,
             "string2" );
-        xaCon.getNodeConsumer().removeProperty( node1, n1prop1 );
-        xaCon.getRelationshipConsumer().removeProperty( rel1, r1prop1 );
-        xaCon.getRelationshipConsumer().deleteRelationship( rel1 );
-        xaCon.getNodeConsumer().deleteNode( node1 );
-        xaCon.getNodeConsumer().deleteNode( node2 );
+        xaCon.getWriteTransaction().nodeRemoveProperty( node1, n1prop1 );
+        xaCon.getWriteTransaction().relRemoveProperty( rel1, r1prop1 );
+        xaCon.getWriteTransaction().relDelete( rel1 );
+        xaCon.getWriteTransaction().nodeDelete( node1 );
+        xaCon.getWriteTransaction().nodeDelete( node2 );
         xaRes.end( xid, XAResource.TMSUCCESS );
         xaRes.commit( xid, true );
         long currentVersion = ds.getCurrentLogVersion();

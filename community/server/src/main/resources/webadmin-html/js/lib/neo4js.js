@@ -749,6 +749,8 @@ neo4j.models.PropertyContainer=function(){_.bindAll(this,"getSelf","exists","get
 this._data=this._data||{}
 };
 _.extend(neo4j.models.PropertyContainer.prototype,{getSelf:function(){return typeof(this._self)!="undefined"?this._self:null
+},getId:function(){var a=this.getSelf();
+return a==null?null:a.substr(a.lastIndexOf("/")+1)
 },exists:function(){return this.getSelf()!==null
 },hasProperty:function(a){return a in this._data
 },getProperty:function(a){return this._data[a]||null
@@ -1003,6 +1005,111 @@ _.extend(neo4j.services.MonitorService.prototype,neo4j.Service.prototype);
 neo4j.services.MonitorService.prototype.getData=neo4j.Service.resourceFactory({resource:"latest_data",method:"GET"});
 neo4j.services.MonitorService.prototype.getDataFrom=neo4j.Service.resourceFactory({resource:"data_from",method:"GET",urlArgs:["start"]});
 neo4j.services.MonitorService.prototype.getDataBetween=neo4j.Service.resourceFactory({resource:"data_period",method:"GET",urlArgs:["start","stop"]});
+neo4j.index=neo4j.index||{};
+neo4j.index.Index=function(a,b){this.db=a;
+this.name=b;
+_.bindAll(this,"query","exactQuery","index","unindex")
+};
+_.extend(neo4j.index.Index.prototype,{getUriFor:function(a){return""
+},getObjectFor:function(a){return""
+},getType:function(){return""
+},createObjectFromDefinition:function(a){},getIdFor:function(a){return a.then(function(c,b){b(c.getId())
+})
+},query:function(b){var a=this;
+return this.db.getServiceDefinition().then(function(e,d,c){a.db.web.get(e[a.getType()]+"/"+a.name,{query:b},function(f){var h=[];
+for(var j=0,g=f.length;
+j<g;
+j++){h.push(a.createObjectFromDefinition(f[j]))
+}d(h)
+},c)
+})
+},exactQuery:function(b,c){var a=this;
+return this.db.getServiceDefinition().then(function(f,e,d){a.db.web.get(f[a.getType()]+"/"+a.name+"/"+b+"/"+c,function(g){var j=[];
+for(var k=0,h=g.length;
+k<h;
+k++){j.push(a.createObjectFromDefinition(g[k]))
+}e(j)
+},d)
+})
+},index:function(i,g,f){var j=neo4j.Promise.wrap(i),e=neo4j.Promise.wrap(g),c=this.getUriFor(j),h=this.db.getServiceDefinition(),b=this;
+if(typeof(f)==="undefined"){var d=this.getObjectFor(j).then(function(l,k){k(l.getProperty(g))
+})
+}else{var d=neo4j.Promise.wrap(f)
+}var a=neo4j.Promise.join.apply(this,[c,e,d,h]);
+return a.then(function(l,o,k){var m=l[0],n=l[1],p=l[2],q=l[3];
+b.db.web.post(q[b.getType()]+"/"+b.name+"/"+n+"/"+p,m,function(r){o(true)
+},k)
+})
+},unindex:function(e,d,f){var a=neo4j.Promise.wrap(e),g=this.getIdFor(a),h=this.db.getServiceDefinition(),c=this;
+var b=neo4j.Promise.join.apply(this,[g,h]);
+return b.then(function(j,l,i){var n=j[0],m=j[1];
+var k=m[c.getType()]+"/"+c.name;
+if(d){k+="/"+d
+}if(f){k+="/"+f
+}k+="/"+n;
+c.db.web.del(k,function(o){l(true)
+},i)
+})
+}});
+neo4j.index.NodeIndex=function(a,b){neo4j.index.Index.call(this,a,b)
+};
+_.extend(neo4j.index.NodeIndex.prototype,neo4j.index.Index.prototype,{getType:function(){return"node_index"
+},getUriFor:function(a){var b=this.db;
+return a.then(function(d,c){b.nodeUri(d).then(c)
+})
+},getObjectFor:function(b){var a=this.db;
+return b.then(function(d,c){if(typeof(d.getSelf)!="undefined"){c(d)
+}else{a.node(d).then(function(e){c(e)
+})
+}})
+},createObjectFromDefinition:function(a){return new neo4j.models.Node(a,this.db)
+}});
+neo4j.index.RelationshipIndex=function(a,b){neo4j.index.Index.call(this,a,b)
+};
+_.extend(neo4j.index.RelationshipIndex.prototype,neo4j.index.Index.prototype,{getType:function(){return"relationship_index"
+},getUriFor:function(a){var b=this.db;
+return a.then(function(d,c){b.relUri(d).then(c)
+})
+},getObjectFor:function(b){var a=this.db;
+return b.then(function(d,c){if(typeof(d.getSelf)!="undefined"){c(d)
+}else{a.rel(d).then(function(e){c(e)
+})
+}})
+},createObjectFromDefinition:function(a){return new neo4j.models.Relationship(a,this.db)
+}});
+neo4j.index.Indexes=function(a){this.db=a;
+this._cache={};
+_.bindAll(this,"getNodeIndex","getRelationshipIndex","createNodeIndex","createRelationshipIndex","removeNodeIndex","removeRelationshipIndex")
+};
+_.extend(neo4j.index.Indexes.prototype,{getAllNodeIndexes:function(){return this._listAllIndexes("node_index")
+},getAllRelationshipIndexes:function(){return this._listAllIndexes("relationship_index")
+},getNodeIndex:function(a){return this._getOrCreateLocalIndexObject("node_index",a)
+},getRelationshipIndex:function(a){return this._getOrCreateLocalIndexObject("relationship_index",a)
+},createNodeIndex:function(b,a){return this._createIndex("node_index",b,a)
+},createRelationshipIndex:function(b,a){return this._createIndex("relationship_index",b,a)
+},removeNodeIndex:function(a){return this._removeIndex("node_index",a)
+},removeRelationshipIndex:function(a){return this._removeIndex("relationship_index",a)
+},_listAllIndexes:function(c){var a=this.db,b=this;
+return this.db.getServiceDefinition().then(function(f,e,d){a.web.get(f[c],function(m){var j=[],h=m===null?[]:_(m).keys();
+for(var k=0,g=h.length;
+k<g;
+k++){j.push(b._getOrCreateLocalIndexObject(c,h[k]))
+}e(j)
+},d)
+})
+},_createIndex:function(e,d,c){var c=c||{},a=this.db,b=this;
+return this.db.getServiceDefinition().then(function(h,g,f){a.web.post(h[e],{name:d,config:c},function(i){g(b._getOrCreateLocalIndexObject(e,d))
+},f)
+})
+},_removeIndex:function(c,b){var a=this.db;
+return this.db.getServiceDefinition().then(function(f,e,d){a.web.del(f[c]+"/"+b,e,d)
+})
+},_getOrCreateLocalIndexObject:function(c,b){if(typeof(this._cache[c])=="undefined"){this._cache[c]={}
+}if(typeof(this._cache[c][b])=="undefined"){if(c==="relationship_index"){var a=new neo4j.index.RelationshipIndex(this.db,b)
+}else{var a=new neo4j.index.NodeIndex(this.db,b)
+}this._cache[c][b]=a
+}return this._cache[c][b]
+}});
 neo4j.GraphDatabaseManager=function(a){_.bindAll(this,"discoverServices");
 this.db=a;
 this.backup=new neo4j.services.BackupService(a);
@@ -1033,6 +1140,7 @@ this.events=new neo4j.Events({db:this});
 this.bind=neo4j.proxy(this.events.bind,this.events);
 this.web=a||new neo4j.Web();
 this.trigger=neo4j.proxy(this.events.trigger,this.events);
+this.index=new neo4j.index.Indexes(this);
 this.manage=new neo4j.GraphDatabaseManager(this);
 this.heartbeat=new neo4j.GraphDatabaseHeartbeat(this);
 this.rel=this.relationship;
@@ -1040,22 +1148,24 @@ this.referenceNode=this.getReferenceNode;
 _.bindAll(this,"getServiceDefinition","getReferenceNode","node","relationship","getReferenceNodeUrl","getAvailableRelationshipTypes","get","put","post","del","forceRediscovery")
 };
 _.extend(neo4j.GraphDatabase.prototype,{node:function(a){var b=this,c=neo4j.Promise.wrap(a);
-return c.then(function(d,f,e){if(typeof(d)==="object"){var g=new neo4j.models.Node({data:d},b);
-g.save().then(function(h){f(h)
+return c.then(function(d,f,e){if(typeof(d)==="object"){var h=new neo4j.models.Node({data:d},b);
+h.save().then(function(i){f(i)
 },e)
-}else{var g=new neo4j.models.Node({self:d},b);
-g.fetch().then(function(h){f(h)
-},function(){e(new neo4j.exceptions.NotFoundException(d))
+}else{var g=b.promiseNodeOrNodeUrl(d);
+g.then(function(i){var j=new neo4j.models.Node({self:i},b);
+j.fetch().then(function(k){f(k)
+},function(){e(new neo4j.exceptions.NotFoundException(i))
+})
 })
 }})
 },relationship:function(i,h,e,c){var k=this;
-if(typeof(h)=="undefined"){var g=neo4j.Promise.wrap(i);
+if(typeof(h)=="undefined"){var g=this.promiseRelationshipOrRelationshipUrl(i);
 return g.then(function(m,n,l){var o=new neo4j.models.Relationship({self:m},k);
 o.fetch().then(function(p){n(p)
 },function(){l(new neo4j.exceptions.NotFoundException(m))
 })
 })
-}else{var a=neo4j.Promise.wrap(c||{}),d=neo4j.Promise.wrap(h),b=neo4j.Promise.wrap(i),f=neo4j.Promise.wrap(e);
+}else{var a=neo4j.Promise.wrap(c||{}),d=neo4j.Promise.wrap(h),b=this.promiseNodeOrNodeUrl(i),f=this.promiseNodeOrNodeUrl(e);
 var j=neo4j.Promise.join(b,f,d,a);
 return j.then(function(n,m,l){var o=new neo4j.models.Relationship({start:n[0],end:n[1],type:n[2],data:n[3]},k);
 o.save().then(function(p){m(p)
@@ -1075,7 +1185,12 @@ return this.getServiceDefinition().then(function(b,d,c){a.web.get(b.relationship
 },getReferenceNodeUrl:function(){return this.getServiceDefinition().then(function(c,b,a){if(typeof(c.reference_node)!=="undefined"){b(c.reference_node)
 }else{a()
 }})
-},nodeUri:function(a){return this.getServiceDefinition().then(function(c,b){if(/^[0-9]+$/i.test(a)){b(c.node+"/"+a)
+},nodeUri:function(a){if(typeof(a.getSelf)!="undefined"){return neo4j.Promise.wrap(a.getSelf())
+}return this.getServiceDefinition().then(function(c,b){if(/^[0-9]+$/i.test(a)){b(c.node+"/"+a)
+}else{b(a)
+}})
+},relUri:function(a){if(typeof(a.getSelf)!="undefined"){return neo4j.Promise.wrap(a.getSelf())
+}return this.getDiscoveryDocument().then(function(c,b){if(/^[0-9]+$/i.test(a)){b(c.data+"relationship/"+a)
 }else{b(a)
 }})
 },getServiceDefinition:function(){if(typeof(this._serviceDefinitionPromise)==="undefined"){var a=this;
@@ -1098,7 +1213,14 @@ this._discoveryDocumentPromise=new neo4j.Promise(function(c,b){a.web.get(a.url,f
 }else{return a.substring(a.indexOf("/",8))
 }}},isNodeUrl:function(a){return this.getServiceDefinition().then(function(c,b){b(a.indexOf(c.node)===0)
 })
-},toJSONString:function(){return{url:this.url,manageUrl:this.manageUrl}
+},promiseNodeOrNodeUrl:function(a){if(typeof(a)==="object"||this.isUrl(a)){return neo4j.Promise.wrap(a)
+}else{return this.nodeUri(a)
+}},promiseRelationshipOrRelationshipUrl:function(a){if(typeof(a)==="object"||this.isUrl(a)){return neo4j.Promise.wrap(a)
+}else{return this.relUri(a)
+}},isUrl:function(a){if(typeof(a)==="object"){return false
+}a+="";
+return a.indexOf("://")!==-1
+},toJSONString:function(){return{url:this.url}
 },forceRediscovery:function(){delete this._discoveryDocumentPromise;
 delete this._serviceDefinitionPromise
 }});

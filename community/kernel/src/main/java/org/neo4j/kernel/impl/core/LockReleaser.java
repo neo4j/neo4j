@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
+import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdArray.RelIdIterator;
 
 /**
@@ -276,10 +277,6 @@ public class LockReleaser
     public RelIdArray getCowRelationshipAddMap( NodeImpl node, String type,
         boolean create )
     {
-        if ( !create )
-        {
-            return getCowRelationshipRemoveMap( node, type );
-        }
         PrimitiveElement primitiveElement = getAndSetupPrimitiveElement();
         ArrayMap<Long,CowNodeElement> cowElements =
             primitiveElement.nodes;
@@ -817,23 +814,8 @@ public class LockReleaser
             {
                 for ( String type : nodeElement.relationshipAddMap.keySet() )
                 {
-                    RelIdArray createdRels = 
-                        nodeElement.relationshipAddMap.get( type );
-                    for ( RelIdIterator iterator = createdRels.iterator(); iterator.hasNext(); )
-                    {
-                        long relId = iterator.next();
-                        CowRelElement relElement = 
-                            element.relationships.get( relId );
-                        if ( relElement != null && relElement.deleted )
-                        {
-                            continue;
-                        }
-                        RelationshipProxy rel = new RelationshipProxy( relId, nodeManager );
-                        if ( rel.getStartNode().getId() == nodeId )
-                        {
-                            result.created( new RelationshipProxy( relId, nodeManager ) );
-                        }
-                    }
+                    RelIdArray createdRels = nodeElement.relationshipAddMap.get( type );
+                    populateNodeRelEvent( element, result, nodeId, createdRels );
                 }
             }
             if ( nodeElement.relationshipRemoveMap != null )
@@ -842,7 +824,7 @@ public class LockReleaser
                 {
                     RelIdArray deletedRels = 
                         nodeElement.relationshipRemoveMap.get( type );
-                    for ( RelIdIterator iterator = deletedRels.iterator(); iterator.hasNext(); )
+                    for ( RelIdIterator iterator = deletedRels.iterator( DirectionWrapper.BOTH ); iterator.hasNext(); )
                     {
                         long relId = iterator.next();
                         if ( nodeManager.relCreated( relId ) )
@@ -883,11 +865,30 @@ public class LockReleaser
         }
     }
 
+    private void populateNodeRelEvent( PrimitiveElement element, TransactionDataImpl result,
+            long nodeId, RelIdArray createdRels )
+    {
+        for ( RelIdIterator iterator = createdRels.iterator( DirectionWrapper.BOTH ); iterator.hasNext(); )
+        {
+            long relId = iterator.next();
+            CowRelElement relElement = element.relationships.get( relId );
+            if ( relElement != null && relElement.deleted )
+            {
+                continue;
+            }
+            RelationshipProxy rel = new RelationshipProxy( relId, nodeManager );
+            if ( rel.getStartNode().getId() == nodeId )
+            {
+                result.created( new RelationshipProxy( relId, nodeManager ) );
+            }
+        }
+    }
+
     private void populateCreatedNodes( PrimitiveElement element, 
             TransactionDataImpl result )
     {
         RelIdArray createdNodes = nodeManager.getCreatedNodes();
-        for ( RelIdIterator iterator = createdNodes.iterator(); iterator.hasNext(); )
+        for ( RelIdIterator iterator = createdNodes.iterator( DirectionWrapper.BOTH ); iterator.hasNext(); )
         {
             long nodeId = iterator.next();
             if ( element != null && element.nodes != null )

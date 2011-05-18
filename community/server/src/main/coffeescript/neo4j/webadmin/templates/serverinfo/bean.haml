@@ -7,7 +7,7 @@
     %tbody
       :each attribute in attributes
         %tr
-          %td(style="padding-left:#{attribute.indent*10}px;")
+          %td(style="padding-left:#{attribute.indent*20}px;")
             %h3= htmlEscape(attribute.name)
             %p.small= htmlEscape(attribute.description)
           %td.value= htmlEscape(attribute.value)

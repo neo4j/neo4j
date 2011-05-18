@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 
 import org.junit.After;
 import org.junit.Before;
@@ -38,7 +37,8 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
-public class GetOnRootFunctionalTest extends BaseDocTest {
+public class GetOnRootFunctionalTest
+{
 
     private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
@@ -48,7 +48,6 @@ public class GetOnRootFunctionalTest extends BaseDocTest {
         server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper(server);
-        doc = new DocumentationOutput(functionalTestHelper, MediaType.APPLICATION_JSON_TYPE);
 
     }
 
@@ -60,7 +59,9 @@ public class GetOnRootFunctionalTest extends BaseDocTest {
 
     @Test
     public void assert200OkFromGet() throws Exception {
-        doc.get( "Retrieving the data root endpoint", functionalTestHelper.dataUri(), Response.Status.OK);
+        DocsGenerator.create( "Get service root",
+                "The service root is your starting point to discover the REST API." )
+                .get( functionalTestHelper.dataUri() );
     }
 
     @Test

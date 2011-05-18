@@ -19,61 +19,31 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static java.lang.Boolean.parseBoolean;
-import static org.neo4j.kernel.Config.USE_MEMORY_MAPPED_BUFFERS;
-import static org.neo4j.kernel.Config.osIsWindows;
-
 import java.io.IOException;
 import java.nio.channels.FileChannel;
-import java.util.Map;
 
-public abstract class DefaultLogBufferFactory implements LogBufferFactory
+public class DefaultLogBufferFactory implements LogBufferFactory
 {
-    public static LogBufferFactory create( Map<?, ?> config )
+    public LogBuffer create( FileChannel fileChannel )
+        throws IOException
     {
-        String configValue = config != null ?
-                (String) config.get( USE_MEMORY_MAPPED_BUFFERS ) : null;
-        boolean memoryMapped = parseBoolean( configValue );
-        if ( !memoryMapped || osIsWindows() )
-        {
-            // If on Windows or memory mapping is turned off the DirectMappedLogBuffer
-            // is used and opening up another FileChannel to an already opened
-            // file with such a buffer won't be able see the latest changes so
-            // it needs to be wrapped in a FileChannel temporarily combining those two
-            // (the opened FileChannel and the write buffer).
-            return new LogBufferFactory()
-            {
-                public LogBuffer create( FileChannel fileChannel )
-                    throws IOException
-                {
-                    return new DirectMappedLogBuffer( fileChannel );
-                }
-                
-                public FileChannel combine( FileChannel fileChannel, LogBuffer logBuffer ) throws IOException
-                {
-                    // We don't need synchronization on the ByteBuffer here because
-                    // this thread which will read from it won't have to see changes
-                    // (appends) made to it and its underlying byte array is final anyway
-                    // (HeapByteBuffer). Maybe a bad assumption? But nice to skip
-                    // synchronization.
-                    CloseableByteBuffer byteBuffer = ((DirectMappedLogBuffer)logBuffer).getBuffer();
-                    byteBuffer.flip();
-                    return new BufferedReadableByteChannel( fileChannel, byteBuffer );
-                }
-            };
-        }
-        return new DefaultLogBufferFactory() {};
+        return new DirectMappedLogBuffer( fileChannel );
     }
     
-    @Override
-    public LogBuffer create( FileChannel fileChannel ) throws IOException
-    {
-        return new MemoryMappedLogBuffer( fileChannel );
-    }
-
-    @Override
     public FileChannel combine( FileChannel fileChannel, LogBuffer logBuffer ) throws IOException
     {
-        return fileChannel;
+        // Opening up another FileChannel to an already opened
+        // file with such a buffer won't be able see the latest changes so
+        // it needs to be wrapped in a FileChannel temporarily combining those two
+        // (the opened FileChannel and the write buffer).
+        
+        // We don't need synchronization on the ByteBuffer here because
+        // this thread which will read from it won't have to see changes
+        // (appends) made to it and its underlying byte array is final anyway
+        // (HeapByteBuffer). Maybe a bad assumption? But nice to skip
+        // synchronization.
+        CloseableByteBuffer byteBuffer = ((DirectMappedLogBuffer)logBuffer).getBuffer();
+        byteBuffer.flip();
+        return new BufferedReadableByteChannel( fileChannel, byteBuffer );
     }
 }
