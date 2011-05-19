@@ -25,6 +25,7 @@ import java.util.List;
 import javax.transaction.xa.XAResource;
 
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -37,7 +38,6 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyIndexStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.Record;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
@@ -85,36 +85,33 @@ class ReadTransaction implements NeoStoreTransaction
         return getRelationshipStore().getLightRel( id );
     }
 
-    public RelationshipChainPosition getRelationshipChainPosition( long nodeId )
+    public long getRelationshipChainPosition( long nodeId )
     {
-        NodeRecord nodeRecord = getNodeStore().getRecord( nodeId );
-        long nextRel = nodeRecord.getNextRel();
-        return new RelationshipChainPosition( nextRel );
+        return getNodeStore().getRecord( nodeId ).getNextRel();
     }
 
-    public Pair<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>> getMoreRelationships( long nodeId,
-            RelationshipChainPosition position )
+    public Triplet<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>, Long> getMoreRelationships(
+            long nodeId, long position )
     {
         return getMoreRelationships( nodeId, position, getRelGrabSize(), getRelationshipStore() );
     }
     
-    static Pair<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>> getMoreRelationships( long nodeId,
-        RelationshipChainPosition position, int grabSize, RelationshipStore relStore )
+    static Triplet<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>, Long> getMoreRelationships(
+            long nodeId, long position, int grabSize, RelationshipStore relStore )
     {
-        long nextRel = position.getNextRecord();
         List<RelationshipRecord> out = new ArrayList<RelationshipRecord>();
         List<RelationshipRecord> in = new ArrayList<RelationshipRecord>();
         Pair<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>> result =
                 Pair.<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>>of( out, in );
         for ( int i = 0; i < grabSize && 
-            nextRel != Record.NO_NEXT_RELATIONSHIP.intValue(); i++ )
+            position != Record.NO_NEXT_RELATIONSHIP.intValue(); i++ )
         {
-            RelationshipRecord relRecord = relStore.getChainRecord( nextRel );
+            RelationshipRecord relRecord = relStore.getChainRecord( position );
             if ( relRecord == null )
             {
                 // return what we got so far
-                position.setNextRecord( Record.NO_NEXT_RELATIONSHIP.intValue() );
-                return result;
+                return Triplet.<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>, Long>of(
+                        out, in, position );
             }
             long firstNode = relRecord.getFirstNode();
             long secondNode = relRecord.getSecondNode();
@@ -137,11 +134,11 @@ class ReadTransaction implements NeoStoreTransaction
             
             if ( isOutgoing )
             {
-                nextRel = relRecord.getFirstNextRel();
+                position = relRecord.getFirstNextRel();
             }
             else if ( secondNode == nodeId )
             {
-                nextRel = relRecord.getSecondNextRel();
+                position = relRecord.getSecondNextRel();
             }
             else
             {
@@ -151,8 +148,8 @@ class ReadTransaction implements NeoStoreTransaction
                     "] nor secondNode[" + secondNode + "] for Relationship[" + relRecord.getId() + "]" );
             }
         }
-        position.setNextRecord( nextRel );
-        return result;
+        return Triplet.<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>, Long>of(
+                out, in, position );
     }
     
     public ArrayMap<Integer,PropertyData> relLoadProperties( long relId, boolean light )

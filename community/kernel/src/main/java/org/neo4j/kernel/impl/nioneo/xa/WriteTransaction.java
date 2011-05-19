@@ -34,7 +34,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
@@ -50,7 +50,6 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.Record;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
@@ -865,21 +864,18 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         lockReleaser.addLockToTransaction( lockableRel, LockType.WRITE );
     }
 
-    public RelationshipChainPosition getRelationshipChainPosition( long nodeId )
+    public long getRelationshipChainPosition( long nodeId )
     {
         NodeRecord nodeRecord = getNodeRecord( nodeId );
         if ( nodeRecord != null && nodeRecord.isCreated() )
         {
-            return new RelationshipChainPosition(
-                  Record.NO_NEXT_RELATIONSHIP.intValue() );
+            return Record.NO_NEXT_RELATIONSHIP.intValue();
         }
-        nodeRecord = getNodeStore().getRecord( nodeId );
-        long nextRel = nodeRecord.getNextRel();
-        return new RelationshipChainPosition( nextRel );
+        return getNodeStore().getRecord( nodeId ).getNextRel();
     }
-
-    public Pair<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>> getMoreRelationships( long nodeId,
-        RelationshipChainPosition position )
+    
+    public Triplet<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>, Long> getMoreRelationships( long nodeId,
+        long position )
     {
         return ReadTransaction.getMoreRelationships( nodeId, position, getRelGrabSize(), getRelationshipStore() );
     }
