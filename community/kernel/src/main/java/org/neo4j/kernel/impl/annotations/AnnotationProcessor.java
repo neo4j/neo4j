@@ -78,7 +78,15 @@ abstract class AnnotationProcessor extends AbstractProcessor
     {
         FileObject fo = processingEnv.getFiler().getResource( StandardLocation.CLASS_OUTPUT, "", path( path ) );
         URI uri = fo.toUri();
-        File file = new File( uri.toString() );
+        File file;
+        try
+        {
+            file = new File( uri );
+        }
+        catch ( Exception e )
+        {
+            file = new File( uri.toString() );
+        }
         if ( file.exists() )
         {
             for ( String previous : nl.split( fo.getCharContent( true ), 0 ) )
