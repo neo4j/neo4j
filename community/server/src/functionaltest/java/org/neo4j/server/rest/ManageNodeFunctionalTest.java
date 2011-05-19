@@ -73,11 +73,11 @@ public class ManageNodeFunctionalTest
     @Test
     public void shouldGet201WhenCreatingNode() throws Exception
     {
-        ClientResponse response = DocsGenerator.create( "Create a node" )
-        .expectedStatus( Response.Status.CREATED )
-        .expectedHeader( "Location" )
-        .post( functionalTestHelper.nodeUri() )
-        .response();
+        ClientResponse response = DocsGenerator.create( "Create node" )
+                .expectedStatus( Response.Status.CREATED )
+                .expectedHeader( "Location" )
+                .post( functionalTestHelper.nodeUri() )
+                .response();
         assertTrue( response.getLocation().toString().matches( NODE_URI_PATTERN ) );
     }
 
@@ -85,13 +85,13 @@ public class ManageNodeFunctionalTest
     public void shouldGet201WhenCreatingNodeWithProperties() throws Exception
     {
         ClientResponse response = DocsGenerator.create(
-        "Create a node with properties" )
-        .payload( "{\"foo\" : \"bar\"}" )
-        .expectedStatus( Response.Status.CREATED )
-        .expectedHeader( "Location" )
-        .expectedHeader( "Content-Length" )
-        .post( functionalTestHelper.nodeUri() )
-        .response();
+                "Create node with properties" )
+                .payload( "{\"foo\" : \"bar\"}" )
+                .expectedStatus( Response.Status.CREATED )
+                .expectedHeader( "Location" )
+                .expectedHeader( "Content-Length" )
+                .post( functionalTestHelper.nodeUri() )
+                .response();
         assertTrue( response.getLocation().toString().matches( NODE_URI_PATTERN ) );
     }
 
