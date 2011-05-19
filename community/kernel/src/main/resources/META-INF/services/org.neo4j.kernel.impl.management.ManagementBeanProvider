@@ -1,8 +1,0 @@
-org.neo4j.kernel.impl.management.CacheBean
-org.neo4j.kernel.impl.management.ConfigurationBean
-org.neo4j.kernel.impl.management.LockManagerBean
-org.neo4j.kernel.impl.management.MemoryMappingBean
-org.neo4j.kernel.impl.management.PrimitivesBean
-org.neo4j.kernel.impl.management.StoreFileBean
-org.neo4j.kernel.impl.management.TransactionManagerBean
-org.neo4j.kernel.impl.management.XaManagerBean

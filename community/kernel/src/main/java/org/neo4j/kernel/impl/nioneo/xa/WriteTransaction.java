@@ -512,8 +512,11 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             {
                 command.execute();
                 removeRelationshipFromCache( command.getKey() );
-                removeNodeFromCache( command.getFirstNode() );
-                removeNodeFromCache( command.getSecondNode() );
+                if ( true /* doesn't work: command.isRemove(), the log doesn't contain the nodes */)
+                {
+                    removeNodeFromCache( command.getFirstNode() );
+                    removeNodeFromCache( command.getSecondNode() );
+                }
             }
             // nodes
             java.util.Collections.sort( nodeCommands, sorter );
