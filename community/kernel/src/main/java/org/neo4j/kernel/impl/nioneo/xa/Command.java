@@ -286,6 +286,11 @@ abstract class Command extends XaCommand
             return record.getSecondNode();
         }
 
+        boolean isRemove()
+        {
+            return !record.inUse();
+        }
+
         @Override
         public void execute()
         {
