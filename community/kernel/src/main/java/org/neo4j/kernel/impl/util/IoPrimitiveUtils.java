@@ -27,6 +27,8 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
+
 public abstract class IoPrimitiveUtils
 {
     public static String readLengthAndString( ReadableByteChannel channel,
@@ -45,6 +47,38 @@ public abstract class IoPrimitiveUtils
         return chars == null ? null : new String( chars );
     }
 
+    public static void write3bLengthAndString( LogBuffer buffer, String string ) throws IOException
+    {
+        char[] chars = string.toCharArray();
+        // 3 bytes to represent the length (4 is a bit overkill)... maybe
+        // this space optimization is a bit overkill also :)
+        buffer.putShort( (short)chars.length );
+        buffer.put( (byte)((chars.length >> 16)) );
+        buffer.put( chars );
+    }
+    
+    public static String read3bLengthAndString( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException
+    {
+        Short lengthShort = readShort( channel, buffer );
+        Byte lengthByte = readByte( channel, buffer );
+        if ( lengthShort == null || lengthByte == null ) return null;
+        int length = (lengthByte << 16) | lengthShort;
+        return readString( channel, buffer, length );
+    }
+    
+    public static void write2bLengthAndString( LogBuffer buffer, String string ) throws IOException
+    {
+        char[] chars = string.toCharArray();
+        buffer.putShort( (short)chars.length );
+        buffer.put( chars );
+    }
+    
+    public static String read2bLengthAndString( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException
+    {
+        Short length = readShort( channel, buffer );
+        return length == null ? null : readString( channel, buffer, length );
+    }
+    
     private static char[] readCharArray( ReadableByteChannel channel,
             ByteBuffer buffer, char[] charArray ) throws IOException
     {
@@ -91,6 +125,16 @@ public abstract class IoPrimitiveUtils
         return true;
     }
 
+    public static Byte readByte( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException
+    {
+        return readAndFlip( channel, buffer, 1 ) ? buffer.get() : null;
+    }
+    
+    public static Short readShort( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException
+    {
+        return readAndFlip( channel, buffer, 2 ) ? buffer.getShort() : null;
+    }
+    
     public static Integer readInt( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException
     {
         return readAndFlip( channel, buffer, 4 ) ? buffer.getInt() : null;
@@ -129,6 +173,24 @@ public abstract class IoPrimitiveUtils
         {
             String key = readLengthAndString( channel, buffer );
             String value = readLengthAndString( channel, buffer );
+            if ( key == null || value == null )
+            {
+                return null;
+            }
+            map.put( key, value );
+        }
+        return map;
+    }
+    
+    public static Map<String, String> read2bMap( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException
+    {
+        Short size = readShort( channel, buffer );
+        if ( size == null ) return null;
+        Map<String, String> map = new HashMap<String, String>();
+        for ( int i = 0; i < size; i++ )
+        {
+            String key = read2bLengthAndString( channel, buffer );
+            String value = read2bLengthAndString( channel, buffer );
             if ( key == null || value == null )
             {
                 return null;

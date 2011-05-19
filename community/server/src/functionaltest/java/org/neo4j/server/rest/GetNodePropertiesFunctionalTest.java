@@ -66,7 +66,7 @@ public class GetNodePropertiesFunctionalTest
         WebResource createResource = client.resource(functionalTestHelper.dataUri() + "node/");
         ClientResponse createResponse = createResource.accept(MediaType.APPLICATION_JSON).entity("").post(ClientResponse.class);
         WebResource resource = client.resource(createResponse.getLocation().toString() + "/properties");
-        DocsGenerator.create( "Get empty properties for node",
+        DocsGenerator.create( "Get properties for node (empty result)",
                 "If there are no properties, there will be an HTTP 204 response." )
                 .expectedStatus( Response.Status.NO_CONTENT )
                 .get( createResponse.getLocation()

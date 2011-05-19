@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction;
 
 import java.util.Iterator;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.transaction.HeuristicMixedException;
@@ -31,6 +32,7 @@ import javax.transaction.Transaction;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResource;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -54,10 +56,12 @@ class ReadOnlyTxManager extends AbstractTransactionManager
         return eventIdentifierCounter++;
     }
 
+    @Override
     public void stop()
     {
     }
 
+    @Override
     public void init( XaDataSourceManager xaDsManagerToUse )
     {
         this.xaDsManager = xaDsManagerToUse;
@@ -76,7 +80,7 @@ class ReadOnlyTxManager extends AbstractTransactionManager
         tx = new ReadOnlyTransactionImpl( this );
         txThreadMap.put( thread, tx );
     }
-    
+
     public void commit() throws RollbackException, HeuristicMixedException,
         IllegalStateException
     {
@@ -107,7 +111,7 @@ class ReadOnlyTxManager extends AbstractTransactionManager
                 + getTxStatusAsString( tx.getStatus() ) );
         }
     }
-    
+
     private void commit( Thread thread, ReadOnlyTransactionImpl tx )
     {
         if ( tx.getResourceCount() == 0 )
@@ -132,19 +136,19 @@ class ReadOnlyTxManager extends AbstractTransactionManager
         }
         catch ( XAException e )
         {
-            e.printStackTrace();
-            log.severe( "Unable to rollback marked transaction. "
+            log.log( Level.SEVERE, "Unable to rollback marked transaction. "
                 + "Some resources may be commited others not. "
                 + "Neo4j kernel should be SHUTDOWN for "
-                + "resource maintance and transaction recovery ---->" );
-            throw new HeuristicMixedException( "Unable to rollback "
-                + " ---> error code for rollback: " + e.errorCode );
+                                   + "resource maintance and transaction recovery ---->", e );
+            throw Exceptions.withCause(
+                    new HeuristicMixedException( "Unable to rollback " + " ---> error code for rollback: "
+                                                 + e.errorCode ), e );
         }
 
         tx.doAfterCompletion();
         txThreadMap.remove( thread );
         tx.setStatus( Status.STATUS_NO_TRANSACTION );
-        throw new RollbackException( 
+        throw new RollbackException(
             "Failed to commit, transaction rolledback" );
     }
 
@@ -157,7 +161,7 @@ class ReadOnlyTxManager extends AbstractTransactionManager
             throw new IllegalStateException( "Not in transaction" );
         }
         if ( tx.getStatus() == Status.STATUS_ACTIVE ||
-            tx.getStatus() == Status.STATUS_MARKED_ROLLBACK || 
+            tx.getStatus() == Status.STATUS_MARKED_ROLLBACK ||
             tx.getStatus() == Status.STATUS_PREPARING )
         {
             tx.doBeforeCompletion();
@@ -167,13 +171,12 @@ class ReadOnlyTxManager extends AbstractTransactionManager
             }
             catch ( XAException e )
             {
-                e.printStackTrace();
-                log.severe( "Unable to rollback marked or active transaction. "
+                log.log( Level.SEVERE, "Unable to rollback marked or active transaction. "
                     + "Some resources may be commited others not. "
                     + "Neo4j kernel should be SHUTDOWN for "
-                    + "resource maintance and transaction recovery ---->" );
-                throw new SystemException( "Unable to rollback "
-                    + " ---> error code for rollback: " + e.errorCode );
+                                       + "resource maintance and transaction recovery ---->", e );
+                throw Exceptions.withCause( new SystemException( "Unable to rollback "
+                                                                 + " ---> error code for rollback: " + e.errorCode ), e );
             }
             tx.doAfterCompletion();
             txThreadMap.remove( thread );

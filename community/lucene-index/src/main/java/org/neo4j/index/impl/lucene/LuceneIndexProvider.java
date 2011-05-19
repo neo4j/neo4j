@@ -33,14 +33,6 @@ public class LuceneIndexProvider extends IndexProvider
     @Override
     public IndexImplementation load( KernelData kernel )
     {
-        try
-        {
-            return new LuceneIndexImplementation( kernel.graphDatabase(), kernel.getConfig() );
-        }
-        catch ( RuntimeException e )
-        {
-            e.printStackTrace();
-            throw e;
-        }
+        return new LuceneIndexImplementation( kernel.graphDatabase(), kernel.getConfig() );
     }
 }
