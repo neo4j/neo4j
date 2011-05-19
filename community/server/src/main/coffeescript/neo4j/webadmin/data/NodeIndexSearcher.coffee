@@ -25,19 +25,23 @@ define ["./ItemUrlResolver","lib/backbone"], (ItemUrlResolver) ->
     constructor : (server) ->
       @server = server
       @urlResolver = new ItemUrlResolver(server)
-      @pattern = /^node:index:"?(\w+)"?:"?(\w+)"?:"?([\w|\s]+)"?$/i
+      @pattern = /// ^ 
+                    node:index:  # Start with node:index
+                    "?(\w+)"?:   # Index name, optionally in quotes
+                    (.+)           # Query
+                    $
+                 ///i
 
     match : (statement) =>
       @pattern.test(statement)
       
     exec : (statement) =>
       data = @extractData(statement)
-      @server.index.getNodeIndex(data.index).exactQuery(data.key, data.value)
+      @server.index.getNodeIndex(data.index).query(data.query)
 
     extractData : (statement) =>
       match = @pattern.exec(statement)
       index = match[1]
-      key = match[2]
-      value = match[3]
-      return { index : index, key: key, value: value }
+      query = match[2]
+      return { index : index, query:query }
  

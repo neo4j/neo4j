@@ -24,6 +24,7 @@ define(
         @queryChanged()
 
       search : (query) =>
+        query = decodeURIComponent query
         while query.charAt(query.length-1) == "/"
           query = query.substr(0, query.length - 1)
 
@@ -35,7 +36,7 @@ define(
         if query == null
           return @search("0")
 
-        url = "#/data/search/#{query}/"
+        url = "#/data/search/#{encodeURIComponent(query)}/"
 
         if location.hash != url
           location.hash = url

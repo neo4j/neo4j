@@ -503,21 +503,21 @@ a++){neo4j.setTimeout((function(g){return function(){try{g(c)
 })(e[a]),0)
 }}};
 neo4j.events=new neo4j.Events();
-neo4j.jqueryWebProvider={ajax:function(e){var g=e.timeout||5000,a=e.method,b=e.url,d=e.data,i=e.success,c=e.failure,f=function(k){try{if(k.status===200){return i(null)
-}}catch(l){}try{if(k.status===0){c(new neo4j.exceptions.ConnectionLostException())
-}else{var j=JSON.parse(k.responseText);
-c(new neo4j.exceptions.HttpException(k.status,j,k))
-}}catch(l){c(new neo4j.exceptions.HttpException(-1,{},k))
+neo4j.jqueryWebProvider={ajax:function(f){var h=f.timeout||5000,a=f.method,c=f.url,e=f.data,j=f.success,d=f.failure,b=a==="GET",g=function(l){try{if(l.status===200){return j(null)
+}}catch(m){}try{if(l.status===0){d(new neo4j.exceptions.ConnectionLostException())
+}else{var k=JSON.parse(l.responseText);
+d(new neo4j.exceptions.HttpException(l.status,k,l))
+}}catch(m){d(new neo4j.exceptions.HttpException(-1,{},l))
 }};
-var h=this.isCrossDomain;
-setTimeout((function(n,k,l,m,j){if(l===null||l==="null"){l=""
-}else{l=JSON.stringify(l)
-}return function(){if(h(k)&&window.XDomainRequest){if(typeof(j)==="function"){j(new neo4j.exceptions.HttpException(-1,null,null,"Cross-domain requests are available in IE, but are not yet implemented in neo4js."))
-}}else{var p=false,o=$.ajax({url:k,type:n,data:l,timeout:g,cache:false,processData:false,success:function(r,q,s){if(s.status===0){f(s)
-}else{m.apply(this,arguments)
-}},contentType:"application/json",error:f,dataType:"json"})
+var i=this.isCrossDomain;
+setTimeout((function(o,l,m,n,k){if(m===null||m==="null"){m=""
+}else{if(!b){m=JSON.stringify(m)
+}}return function(){if(i(l)&&window.XDomainRequest){if(typeof(k)==="function"){k(new neo4j.exceptions.HttpException(-1,null,null,"Cross-domain requests are available in IE, but are not yet implemented in neo4js."))
+}}else{var q=false,p=$.ajax({url:l,type:o,data:m,timeout:h,cache:false,processData:b,success:function(s,r,t){if(t.status===0){g(t)
+}else{n.apply(this,arguments)
+}},contentType:"application/json",error:g,dataType:"json"})
 }}
-})(a,b,d,i,c),0)
+})(a,c,e,j,d),0)
 },isCrossDomain:function(b){if(b){var a=b.indexOf("://");
 if(a===-1||a>7){return false
 }else{return b.substring(a+3).split("/",1)[0]!==window.location.host

@@ -796,24 +796,7 @@ public class DatabaseActions
 
     public ListRepresentation getIndexedNodesByQuery( String indexName, String query )
     {
-        if ( !graphDb.index().existsForNodes( indexName ) )
-            throw new NotFoundException();
-        Index<Node> index = graphDb.index().forNodes( indexName );
-        List<Representation> representations = new ArrayList<Representation>();
-
-        Transaction tx = graphDb.beginTx();
-        try
-        {
-            for ( Node node : index.query( query ) )
-            {
-                representations.add( new NodeRepresentation( node ));
-            }
-            tx.success();
-            return new ListRepresentation( RepresentationType.NODE, representations );
-        } finally
-        {
-            tx.finish();
-        }
+        return getIndexedNodesByQuery( indexName, null, query);
     }
 
     public ListRepresentation getIndexedNodesByQuery( String indexName, String key,
@@ -827,9 +810,11 @@ public class DatabaseActions
         Transaction tx = graphDb.beginTx();
         try
         {
-            for ( Node node : index.query( key, query ) )
-            {
-                representations.add( new NodeRepresentation( node ));
+            if(query != null) {
+                for ( Node node : index.query( key, query ) )
+                {
+                    representations.add( new NodeRepresentation( node ));
+                }
             }
             tx.success();
             return new ListRepresentation( RepresentationType.NODE, representations );
@@ -866,24 +851,7 @@ public class DatabaseActions
 
     public ListRepresentation getIndexedRelationshipsByQuery( String indexName, String query )
     {
-        if ( !graphDb.index().existsForRelationships( indexName ) )
-            throw new NotFoundException();
-        List<Representation> representations = new ArrayList<Representation>();
-        Index<Relationship> index = graphDb.index().forRelationships( indexName );
-
-        Transaction tx = graphDb.beginTx();
-        try
-        {
-            for ( Relationship rel : index.query( query ) )
-            {
-                representations.add( new RelationshipRepresentation( rel ));
-            }
-            tx.success();
-            return new ListRepresentation( RepresentationType.RELATIONSHIP, representations );
-        } finally
-        {
-            tx.finish();
-        }
+        return getIndexedRelationshipsByQuery(indexName, null, query);
     }
 
     public ListRepresentation getIndexedRelationshipsByQuery( String indexName, String key,

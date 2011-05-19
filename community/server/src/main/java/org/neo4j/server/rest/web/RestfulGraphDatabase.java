@@ -443,6 +443,8 @@ public class RestfulGraphDatabase {
             return output.created(server.createRelationshipIndex(input.readMap(json)));
         } catch (BadInputException e) {
             return output.badRequest(e);
+        } catch( Exception e) {
+            return output.serverError( e );
         }
     }
     
@@ -453,6 +455,8 @@ public class RestfulGraphDatabase {
             return output.ok(server.getIndexedNodesByQuery(indexName, query));
         } catch (NotFoundException nfe) {
             return output.notFound(nfe);
+        } catch( Exception e) {
+            return output.serverError( e );
         }
     }
 
@@ -480,6 +484,8 @@ public class RestfulGraphDatabase {
             return output.created(server.addToNodeIndex(indexName, key, value, extractNodeId(input.readUri(objectUri).toString())));
         } catch (BadInputException e) {
             return output.badRequest(e);
+        } catch( Exception e) {
+            return output.serverError( e );
         }
     }
 
@@ -491,6 +497,8 @@ public class RestfulGraphDatabase {
             return output.created(server.addToRelationshipIndex(indexName, key, value, extractNodeId(input.readUri(objectUri).toString())));
         } catch (BadInputException e) {
             return output.badRequest(e);
+        } catch( Exception e) {
+            return output.serverError( e );
         }
     }
 
@@ -502,6 +510,8 @@ public class RestfulGraphDatabase {
             return output.ok(server.getIndexedNode(indexName, key, value, id));
         } catch (NotFoundException nfe) {
             return output.notFound(nfe);
+        } catch( Exception e) {
+            return output.serverError( e );
         }
     }
 
@@ -519,6 +529,8 @@ public class RestfulGraphDatabase {
             return output.ok(server.getIndexedNodesByExactMatch(indexName, key, value));
         } catch (NotFoundException nfe) {
             return output.notFound(nfe);
+        } catch( Exception e) {
+            return output.serverError( e );
         }
     }
 
@@ -529,6 +541,8 @@ public class RestfulGraphDatabase {
             return output.ok(server.getIndexedNodesByQuery(indexName, key, query));
         } catch (NotFoundException nfe) {
             return output.notFound(nfe);
+        } catch( Exception e) {
+            return output.serverError( e );
         }
     }
 
@@ -539,6 +553,8 @@ public class RestfulGraphDatabase {
             return output.ok(server.getIndexedRelationships(indexName, key, value));
         } catch (NotFoundException nfe) {
             return output.notFound(nfe);
+        } catch( Exception e) {
+            return output.serverError( e );
         }
     }
 
@@ -549,6 +565,8 @@ public class RestfulGraphDatabase {
             return output.ok(server.getIndexedRelationshipsByQuery(indexName, query));
         } catch (NotFoundException nfe) {
             return output.notFound(nfe);
+        } catch( Exception e) {
+            return output.serverError( e );
         }
     }
 
@@ -559,6 +577,8 @@ public class RestfulGraphDatabase {
             return output.ok(server.getIndexedRelationshipsByQuery(indexName, key, query));
         } catch (NotFoundException nfe) {
             return output.notFound(nfe);
+        } catch( Exception e) {
+            return output.serverError( e );
         }
     }
 
@@ -571,6 +591,8 @@ public class RestfulGraphDatabase {
             return nothing();
         } catch (NotFoundException nfe) {
             return output.notFound(nfe);
+        } catch( Exception e) {
+            return output.serverError( e );
         }
     }
 
@@ -582,6 +604,8 @@ public class RestfulGraphDatabase {
             return nothing();
         } catch (NotFoundException nfe) {
             return output.notFound(nfe);
+        } catch( Exception e) {
+            return output.serverError( e );
         }
     }
     
@@ -593,6 +617,8 @@ public class RestfulGraphDatabase {
             return nothing();
         } catch (NotFoundException nfe) {
             return output.notFound(nfe);
+        } catch( Exception e) {
+            return output.serverError( e );
         }
     }
     
@@ -605,6 +631,8 @@ public class RestfulGraphDatabase {
             return nothing();
         } catch (NotFoundException nfe) {
             return output.notFound(nfe);
+        } catch( Exception e) {
+            return output.serverError( e );
         }
     }
 
@@ -617,6 +645,8 @@ public class RestfulGraphDatabase {
             return nothing();
         } catch (NotFoundException nfe) {
             return output.notFound(nfe);
+        } catch( Exception e) {
+            return output.serverError( e );
         }
     }
     
@@ -629,6 +659,8 @@ public class RestfulGraphDatabase {
             return nothing();
         } catch (NotFoundException nfe) {
             return output.notFound(nfe);
+        } catch( Exception e) {
+            return output.serverError( e );
         }
     }
     
