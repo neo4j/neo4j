@@ -19,6 +19,7 @@
  */
 package slavetest;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import java.io.File;
@@ -33,6 +34,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.Config;
@@ -62,7 +64,7 @@ public class SingleJvmTest extends AbstractHaTest
         startDb( machineId, config, awaitStarted );
         return machineId;
     }
-    
+
     @Override
     protected void startDb( int machineId, Map<String, String> config, boolean awaitStarted )
     {
@@ -83,7 +85,7 @@ public class SingleJvmTest extends AbstractHaTest
     protected void awaitAllStarted() throws Exception
     {
     }
-    
+
     @Override
     protected void shutdownDb( int machineId )
     {
@@ -147,7 +149,7 @@ public class SingleJvmTest extends AbstractHaTest
         {
             return;
         }
-        
+
         GraphDatabaseService masterOfflineDb =
                 new EmbeddedGraphDatabase( dbPath( 0 ).getAbsolutePath() );
         GraphDatabaseService[] slaveOfflineDbs = new GraphDatabaseService[haDbs.size()];
@@ -303,5 +305,57 @@ public class SingleJvmTest extends AbstractHaTest
             {
             }
         };
+    }
+
+    @Test
+    public void slaveWriteThatOnlyModifyRelationshipRecordsCanUpdateCachedNodeOnMaster() throws Exception
+    {
+        initializeDbs( 1, MapUtil.stringMap( Config.CACHE_TYPE, "strong" ) );
+        HighlyAvailableGraphDatabase sDb = (HighlyAvailableGraphDatabase) haDbs.get( 0 );
+        HighlyAvailableGraphDatabase mDb = (HighlyAvailableGraphDatabase) master.getGraphDb();
+
+        long relId;
+        Node node;
+
+        Transaction tx = mDb.beginTx();
+        try
+        {
+            node = mDb.createNode();
+            // "pad" the relationship so that removing it doesn't update the node record
+            node.createRelationshipTo( mDb.createNode(), REL_TYPE );
+            relId = node.createRelationshipTo( mDb.createNode(), REL_TYPE ).getId();
+            node.createRelationshipTo( mDb.createNode(), REL_TYPE );
+
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+
+        // update the slave to make getRelationshipById() work
+        sDb.pullUpdates();
+
+        // remove the relationship on the slave
+        tx = sDb.beginTx();
+        try
+        {
+            sDb.getRelationshipById( relId ).delete();
+
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+
+        // verify that the removed relationship is gone from the master
+        int relCount = 0;
+        for ( Relationship rel : node.getRelationships() )
+        {
+            rel.getOtherNode( node );
+            relCount++;
+        }
+        assertEquals( "wrong number of relationships", 2, relCount );
     }
 }
