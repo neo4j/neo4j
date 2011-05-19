@@ -157,10 +157,10 @@ abstract class Command extends XaCommand
         return record;
     }
 
-    // means the first byte of the command record was only written but second 
+    // means the first byte of the command record was only written but second
     // (saying what type) did not get written but the file still got expanded
     private static final byte NONE = (byte) 0;
-    
+
     private static final byte NODE_COMMAND = (byte) 1;
     private static final byte PROP_COMMAND = (byte) 2;
     private static final byte REL_COMMAND = (byte) 3;
@@ -193,6 +193,7 @@ abstract class Command extends XaCommand
             }
         }
 
+        @Override
         public String toString()
         {
             return "NodeCommand[" + record + "]";
@@ -213,8 +214,8 @@ abstract class Command extends XaCommand
             }
         }
 
-        static Command readCommand( NeoStore neoStore, 
-            ReadableByteChannel byteChannel, ByteBuffer buffer ) 
+        static Command readCommand( NeoStore neoStore,
+            ReadableByteChannel byteChannel, ByteBuffer buffer )
             throws IOException
         {
             buffer.clear();
@@ -252,6 +253,7 @@ abstract class Command extends XaCommand
             return new NodeCommand( neoStore.getNodeStore(), record );
         }
 
+        @Override
         public boolean equals( Object o )
         {
             if ( !(o instanceof NodeCommand) )
@@ -272,6 +274,16 @@ abstract class Command extends XaCommand
             super( record.getId() );
             this.record = record;
             this.store = store;
+        }
+
+        long getFirstNode()
+        {
+            return record.getFirstNode();
+        }
+
+        long getSecondNode()
+        {
+            return record.getSecondNode();
         }
 
         @Override
@@ -313,9 +325,9 @@ abstract class Command extends XaCommand
                         record.getNextProp() );
             }
         }
-        
-        static Command readCommand( NeoStore neoStore, 
-            ReadableByteChannel byteChannel, ByteBuffer buffer ) 
+
+        static Command readCommand( NeoStore neoStore,
+            ReadableByteChannel byteChannel, ByteBuffer buffer )
             throws IOException
         {
             buffer.clear();
@@ -513,12 +525,12 @@ abstract class Command extends XaCommand
                 store.updateRecord( record );
             }
         }
-        
+
         public long getNodeId()
         {
             return record.getNodeId();
         }
-        
+
         public long getRelId()
         {
             return record.getRelId();
@@ -556,7 +568,7 @@ abstract class Command extends XaCommand
             }
             else
             {
-                // means this records value has not change, only place in 
+                // means this records value has not change, only place in
                 // prop chain
                 buffer.putLong( -1 );
             }
@@ -583,8 +595,8 @@ abstract class Command extends XaCommand
             }
         }
 
-        static Command readCommand( NeoStore neoStore, 
-            ReadableByteChannel byteChannel, ByteBuffer buffer ) 
+        static Command readCommand( NeoStore neoStore,
+            ReadableByteChannel byteChannel, ByteBuffer buffer )
             throws IOException
         {
             // id+in_use(byte)+type(int)+key_indexId(int)+prop_blockId(long)+
@@ -605,7 +617,7 @@ abstract class Command extends XaCommand
                 inUse = true;
             }
             boolean nodeProperty = true;
-            if ( (inUseFlag & Record.REL_PROPERTY.byteValue() ) == 
+            if ( (inUseFlag & Record.REL_PROPERTY.byteValue() ) ==
                 Record.REL_PROPERTY.byteValue() )
             {
                 nodeProperty = false;
@@ -728,8 +740,8 @@ abstract class Command extends XaCommand
             }
         }
 
-        static Command readCommand( NeoStore neoStore, 
-            ReadableByteChannel byteChannel, ByteBuffer buffer ) 
+        static Command readCommand( NeoStore neoStore,
+            ReadableByteChannel byteChannel, ByteBuffer buffer )
             throws IOException
         {
             // id+in_use(byte)+type_blockId(int)+nr_type_records(int)
@@ -743,7 +755,7 @@ abstract class Command extends XaCommand
             int id = buffer.getInt();
             byte inUseFlag = buffer.get();
             boolean inUse = false;
-            if ( (inUseFlag & Record.IN_USE.byteValue()) == 
+            if ( (inUseFlag & Record.IN_USE.byteValue()) ==
                 Record.IN_USE.byteValue() )
             {
                 inUse = true;
@@ -765,7 +777,7 @@ abstract class Command extends XaCommand
                 }
                 record.addTypeRecord( dr );
             }
-            return new RelationshipTypeCommand( 
+            return new RelationshipTypeCommand(
                 neoStore.getRelationshipTypeStore(), record );
         }
 
