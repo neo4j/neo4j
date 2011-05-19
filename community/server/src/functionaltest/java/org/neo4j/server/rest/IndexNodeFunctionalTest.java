@@ -34,8 +34,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-import junit.framework.Assert;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -87,13 +85,6 @@ public class IndexNodeFunctionalTest
                 "This is an example covering the case where no node index exists." )
                 .expectedStatus( Response.Status.NO_CONTENT )
                 .get( functionalTestHelper.nodeIndexUri() );
-
-        ClientResponse response = Client.create()
-                .resource( functionalTestHelper.nodeIndexUri() )
-                .accept( MediaType.APPLICATION_JSON )
-                .get( ClientResponse.class );
-
-        Assert.assertEquals( 204, response.getStatus() );
     }
 
     /**
@@ -182,14 +173,13 @@ public class IndexNodeFunctionalTest
                 "Add node to index",
                 "Associates a node with the given key/value pair in the given index. "
                         + "NOTE: Spaces in the URI have to be escaped.\n"
+                        + "\n"
                         + "[CAUTION]\n"
-                        + "----\n"
                         + "This does *not* overwrite previous entries.\n"
                         + "If you index the same key/value/item combination twice,"
                         + "two index entries are created.\n"
                         + "To do update-type operations,"
-                        + "you need to delete the old entry before adding a new one.\n"
-                        + "----\n" )
+                        + "you need to delete the old entry before adding a new one.\n" )
                 .expectedStatus( Response.Status.CREATED )
                 .payload(
                         JsonHelper.createJsonFrom( functionalTestHelper.nodeUri( 0 ) ) )
