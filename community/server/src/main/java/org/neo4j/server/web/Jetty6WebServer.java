@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.web;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -26,7 +27,11 @@ import java.util.HashMap;
 import java.util.List;
 
 import javax.servlet.Servlet;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
+import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.SessionManager;
 import org.mortbay.jetty.handler.MovedContextHandler;
@@ -162,6 +167,13 @@ public class Jetty6WebServer implements WebServer
     @Override
     public void addStaticContent(String contentLocation, String serverMountPoint) {
         staticContent.put(serverMountPoint, contentLocation);
+    }
+
+    @Override
+    public void handle( String target, HttpServletRequest request,
+            HttpServletResponse response ) throws IOException, ServletException
+    {
+        jetty.handle( target, request, response, Handler.DEFAULT );
     }
 
     protected void loadStaticContent( SessionManager sm )
