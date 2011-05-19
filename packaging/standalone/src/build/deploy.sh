@@ -2,7 +2,7 @@
 # depends libxml-simple-perl
 
 tcrepo=http://builder.neo4j.org/guestAuth/repository/download/bt65/lastSuccessful
-rootpathdist=public_html/dist/_
+rootpathdist=public_html/dist
 
 function work {
     upload_packages neo4j-community neo4j-advanced neo4j-enterprise
