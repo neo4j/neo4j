@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.annotations;
 
 import java.io.IOException;
-import java.io.Writer;
 import java.util.List;
 import java.util.Map;
 
@@ -42,15 +41,8 @@ public class ServiceProcessor extends AnnotationProcessor
         for ( AnnotationValue o : (List<? extends AnnotationValue>) values.values().iterator().next().getValue() )
         {
             TypeMirror service = (TypeMirror) o.getValue();
-            Writer writer = append( "META-INF", "services", service.toString() );
-            try
-            {
-                writer.append( ( (TypeElement) annotated ).getQualifiedName().toString() ).append( "\n" );
-            }
-            finally
-            {
-                writer.close();
-            }
+            addTo( ( (TypeElement) annotated ).getQualifiedName().toString(), "META-INF", "services",
+                    service.toString() );
         }
     }
 }

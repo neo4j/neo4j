@@ -26,6 +26,7 @@ import java.io.Writer;
 import java.net.URI;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.RoundEnvironment;
@@ -71,10 +72,26 @@ abstract class AnnotationProcessor extends AbstractProcessor
     abstract void process( TypeElement annotation, Element annotated,
             Map<? extends ExecutableElement, ? extends AnnotationValue> values ) throws IOException;
 
+    private static Pattern nl = Pattern.compile( "\n" );
+
+    void addTo( String line, String... path ) throws IOException
+    {
+        FileObject fo = processingEnv.getFiler().getResource( StandardLocation.CLASS_OUTPUT, "", path( path ) );
+        URI uri = fo.toUri();
+        File file = new File( uri.toString() );
+        if ( file.exists() )
+        {
+            for ( String previous : nl.split( fo.getCharContent( true ), 0 ) )
+            {
+                if ( line.equals( previous ) ) return;
+            }
+        }
+        new FileWriter( file, true ).append( line ).append( "\n" ).close();
+    }
+
     Writer append( String... path ) throws IOException
     {
-        FileObject file = this.processingEnv.getFiler()
-                .createResource( StandardLocation.CLASS_OUTPUT, "", path( path ) );
+        FileObject file = processingEnv.getFiler().getResource( StandardLocation.CLASS_OUTPUT, "", path( path ) );
         URI uri = file.toUri();
         return new FileWriter( new File( uri.toString() ), true );
     }
@@ -86,7 +103,7 @@ abstract class AnnotationProcessor extends AbstractProcessor
         for ( String part : path )
         {
             filename.append( sep ).append( part );
-            sep = File.separator;
+            sep = "/";
         }
         return filename.toString();
     }
