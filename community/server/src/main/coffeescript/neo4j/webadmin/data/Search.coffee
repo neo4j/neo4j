@@ -23,19 +23,21 @@ define(
    "./NodeSearcher", 
    "./NodeIndexSearcher", 
    "./RelationshipSearcher",
-   "./RelationshipsForNodeSearcher"], 
-  (UrlSearcher, NodeSearcher, NodeIndexSearcher, RelationshipSearcher, RelationshipsForNodeSearcher) ->
+   "./RelationshipsForNodeSearcher",
+   "./RelationshipIndexSearcher"], 
+  (UrlSearcher, NodeSearcher, NodeIndexSearcher, RelationshipSearcher, RelationshipsForNodeSearcher, RelationshipIndexSearcher) ->
 
     class Search
 
       constructor : (@server) ->
         
         @searchers = [
-          new UrlSearcher(server),
-          new NodeSearcher(server),
+          new UrlSearcher(server)
+          new NodeSearcher(server)
           new NodeIndexSearcher(server)
           new RelationshipSearcher(server)
-          new RelationshipsForNodeSearcher(server)          
+          new RelationshipsForNodeSearcher(server)        
+          new RelationshipIndexSearcher(server)  
         ]
       
 
