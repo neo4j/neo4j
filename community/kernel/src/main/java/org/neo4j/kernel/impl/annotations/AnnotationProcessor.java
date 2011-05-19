@@ -58,6 +58,7 @@ abstract class AnnotationProcessor extends AbstractProcessor
                         }
                         catch ( Exception e )
                         {
+                            e.printStackTrace();
                             processingEnv.getMessager().printMessage( Kind.ERROR, e.toString(), annotated, mirror );
                         }
                     }
