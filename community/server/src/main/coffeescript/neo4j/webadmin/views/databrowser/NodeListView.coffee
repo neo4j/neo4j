@@ -18,26 +18,21 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-define ["./ItemUrlResolver","lib/backbone"], (ItemUrlResolver) ->
+define(
+  ['neo4j/webadmin/templates/databrowser/nodeList',
+   'neo4j/webadmin/views/View',
+   'lib/backbone'], 
+  (template, View) ->
+  
+    class NodeListView extends View
 
-  class NodeIndexSearcher
-
-    constructor : (server) ->
-      @server = server
-      @urlResolver = new ItemUrlResolver(server)
-      @pattern = /^node:index:"?(\w+)"?:"?(\w+)"?:"?([\w|\s]+)"?$/i
-
-    match : (statement) =>
-      @pattern.test(statement)
+      render : =>
+        $(@el).html(template(
+          nodeList : @dataModel.getData()    
+        ))
+        return this
       
-    exec : (statement) =>
-      data = @extractData(statement)
-      @server.index.getNodeIndex(data.index).exactQuery(data.key, data.value)
+      setDataModel : (dataModel) =>
+        @dataModel = dataModel
 
-    extractData : (statement) =>
-      match = @pattern.exec(statement)
-      index = match[1]
-      key = match[2]
-      value = match[3]
-      return { index : index, key: key, value: value }
- 
+)

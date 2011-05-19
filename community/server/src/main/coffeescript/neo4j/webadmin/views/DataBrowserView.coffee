@@ -38,6 +38,7 @@ define(
         "click #data-create-node" : "createNode"
         "click #data-create-relationship" : "createRelationship"
         "click #data-switch-view" : "switchView"
+        "click #data-execute-console" : "forceSearch"
 
       initialize : (options)->
         @dataModel = options.dataModel
@@ -68,6 +69,10 @@ define(
 
       search : (ev) =>
         @dataModel.setQuery( $("#data-console",@el).val() )
+
+      forceSearch : (ev) =>
+        @dataModel.setQuery( $("#data-console",@el).val(), false, { force:true, silent:true})
+        @dataModel.trigger("change:query")
 
       createNode : =>
         @server.node({}).then (node) =>

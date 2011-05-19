@@ -39,7 +39,7 @@ define(
 
         if location.hash != url
           location.hash = url
-
+        
         if @dataModel.get "queryOutOfSyncWithData"
           @searcher.exec(@dataModel.get "query").then(@showResult, @showResult)
 
