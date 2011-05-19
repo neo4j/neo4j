@@ -107,57 +107,72 @@ public class LockableNode implements Node
         return "Lockable node #" + this.getId();
     }
 
+    private UnsupportedOperationException lockableNodeException()
+    {
+        return new UnsupportedOperationException( "Lockable node" );
+    }
+    
     public Relationship createRelationshipTo( Node otherNode,
             RelationshipType type )
     {
-        throw new UnsupportedOperationException( "Lockable node" );
+        throw lockableNodeException();
     }
 
     public Iterable<Relationship> getRelationships()
     {
-        throw new UnsupportedOperationException( "Lockable node" );
+        throw lockableNodeException();
     }
 
     public Iterable<Relationship> getRelationships( RelationshipType... types )
     {
-        throw new UnsupportedOperationException( "Lockable node" );
+        throw lockableNodeException();
+    }
+    
+    public Iterable<Relationship> getRelationships( Direction direction, RelationshipType... types )
+    {
+        throw lockableNodeException();
     }
 
     public Iterable<Relationship> getRelationships( Direction dir )
     {
-        throw new UnsupportedOperationException( "Lockable node" );
+        throw lockableNodeException();
     }
 
     public Iterable<Relationship> getRelationships( RelationshipType type,
             Direction dir )
     {
-        throw new UnsupportedOperationException( "Lockable node" );
+        throw lockableNodeException();
     }
 
     public Relationship getSingleRelationship( RelationshipType type,
             Direction dir )
     {
-        throw new UnsupportedOperationException( "Lockable node" );
+        throw lockableNodeException();
     }
 
     public boolean hasRelationship()
     {
-        throw new UnsupportedOperationException( "Lockable node" );
+        throw lockableNodeException();
     }
 
     public boolean hasRelationship( RelationshipType... types )
     {
-        throw new UnsupportedOperationException( "Lockable node" );
+        throw lockableNodeException();
+    }
+    
+    public boolean hasRelationship( Direction direction, RelationshipType... types )
+    {
+        throw lockableNodeException();
     }
 
     public boolean hasRelationship( Direction dir )
     {
-        throw new UnsupportedOperationException( "Lockable node" );
+        throw lockableNodeException();
     }
 
     public boolean hasRelationship( RelationshipType type, Direction dir )
     {
-        throw new UnsupportedOperationException( "Lockable node" );
+        throw lockableNodeException();
     }
 
     public Traverser traverse( Order traversalOrder,
@@ -165,7 +180,7 @@ public class LockableNode implements Node
             ReturnableEvaluator returnableEvaluator,
             RelationshipType relationshipType, Direction direction )
     {
-        throw new UnsupportedOperationException( "Lockable node" );
+        throw lockableNodeException();
     }
 
     public Traverser traverse( Order traversalOrder,
@@ -174,7 +189,7 @@ public class LockableNode implements Node
             RelationshipType firstRelationshipType, Direction firstDirection,
             RelationshipType secondRelationshipType, Direction secondDirection )
     {
-        throw new UnsupportedOperationException( "Lockable node" );
+        throw lockableNodeException();
     }
 
     public Traverser traverse( Order traversalOrder,
@@ -182,6 +197,6 @@ public class LockableNode implements Node
             ReturnableEvaluator returnableEvaluator,
             Object... relationshipTypesAndDirections )
     {
-        throw new UnsupportedOperationException( "Lockable node" );
+        throw lockableNodeException();
     }
 }
