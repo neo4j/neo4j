@@ -519,7 +519,7 @@ public class DocsGenerator
 
             fw = new FileWriter( out, false );
 
-            line( fw, "[[rest-api-" + name + "]]" );
+            line( fw, "[[rest-api-" + name.replaceAll( "\\(|\\)", "" ) + "]]" );
             line( fw, "=== " + data.title + " ===" );
             line( fw, "" );
             if ( data.description != null && !data.description.isEmpty() )
