@@ -11,7 +11,7 @@ Server Plugins
 
 Plugins provide an easy way to extend the Neo4j REST API with new functionality, without the need to
 invent your own API.
-Think of plugins as server-side scripts that can add functions for retrieving and manipulating nodes, relationships, paths or properties.
+Think of plugins as server-side scripts that can add functions for retrieving and manipulating nodes, relationships, paths, properties or indices.
 
 [TIP]
 If you want to have full control over your API, and are willing to put in the effort, and understand the risks, then Neo4j server also provides hooks for <<server-unmanaged-extensions,unmanaged extensions>> based on JAX-RS.
