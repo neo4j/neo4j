@@ -36,6 +36,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.LruCache;
@@ -45,7 +46,6 @@ import org.neo4j.kernel.impl.cache.StrongReferenceCache;
 import org.neo4j.kernel.impl.cache.WeakLruCache;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
@@ -295,7 +295,8 @@ public class NodeManager
                 + "] deleted" );
         }
         long id = idGenerator.nextId( Relationship.class );
-        RelationshipImpl rel = new RelationshipImpl( id, startNodeId, endNodeId, type, true );
+        int typeId = getRelationshipTypeIdFor( type );
+        RelationshipImpl rel = newRelationshipImpl( id, startNodeId, endNodeId, type, typeId, true );
         boolean firstNodeTaken = false;
         boolean secondNodeTaken = false;
         acquireLock( rel, LockType.WRITE );
@@ -306,7 +307,6 @@ public class NodeManager
             firstNodeTaken = true;
             acquireLock( secondNode, LockType.WRITE );
             secondNodeTaken = true;
-            int typeId = getRelationshipTypeIdFor( type );
             persistenceManager.relationshipCreate( id, typeId, startNodeId,
                 endNodeId );
             firstNode.addRelationship( this, type, id, Direction.OUTGOING );
@@ -327,8 +327,7 @@ public class NodeManager
                 catch ( Exception e )
                 {
                     releaseFailed = true;
-                    e.printStackTrace();
-                    log.severe( "Failed to release lock" );
+                    log.log( Level.SEVERE, "Failed to release lock", e );
                 }
             }
             if ( secondNodeTaken )
@@ -340,8 +339,7 @@ public class NodeManager
                 catch ( Exception e )
                 {
                     releaseFailed = true;
-                    e.printStackTrace();
-                    log.severe( "Failed to release lock" );
+                    log.log( Level.SEVERE, "Failed to release lock", e );
                 }
             }
             releaseLock( rel, LockType.WRITE );
@@ -356,6 +354,20 @@ public class NodeManager
                     + rel );
             }
         }
+    }
+
+    private RelationshipImpl newRelationshipImpl( long id, long startNodeId, long endNodeId,
+            RelationshipType type, int typeId, boolean newRel )
+    {
+//        int rest = (int)(((startNodeId|endNodeId)&0xFFFFC0000000L)>>30);
+//        if ( rest == 0 && typeId < 16 )
+//        {
+//            return new SuperLowRelationshipImpl( id, startNodeId, endNodeId, typeId, newRel );
+//        }
+//        return rest <= 3 ?
+//                new LowRelationshipImpl( id, startNodeId, endNodeId, type, newRel ) :
+//                new HighRelationshipImpl( id, startNodeId, endNodeId, type, newRel );
+        return new LowRelationshipImpl( id, startNodeId, endNodeId, typeId, newRel );
     }
 
     private ReentrantLock lockId( long id )
@@ -502,7 +514,7 @@ public class NodeManager
             }
             final long startNodeId = data.getFirstNode();
             final long endNodeId = data.getSecondNode();
-            relationship = new RelationshipImpl( relId, startNodeId, endNodeId, type, false );
+            relationship = newRelationshipImpl( relId, startNodeId, endNodeId, type, typeId, false );
             relCache.put( relId, relationship );
             return new RelationshipProxy( relId, this );
         }
@@ -546,8 +558,8 @@ public class NodeManager
                     + "] exist but relationship type[" + typeId
                     + "] not found." );
             }
-            relationship = new RelationshipImpl( relId, data.getFirstNode(), data.getSecondNode(),
-                    type, false );
+            relationship = newRelationshipImpl( relId, data.getFirstNode(), data.getSecondNode(),
+                    type, typeId, false );
             relCache.put( relId, relationship );
             return relationship;
         }
@@ -572,7 +584,7 @@ public class NodeManager
         return persistenceManager.loadPropertyValue( id );
     }
 
-    RelationshipChainPosition getRelationshipChainPosition( NodeImpl node )
+    long getRelationshipChainPosition( NodeImpl node )
     {
         return persistenceManager.getRelationshipChainPosition( node.getId() );
     }
@@ -580,14 +592,15 @@ public class NodeManager
     Pair<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>> getMoreRelationships( NodeImpl node )
     {
         long nodeId = node.getId();
-        RelationshipChainPosition position = node.getRelChainPosition();
-        Pair<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>> rels =
+        long position = node.getRelChainPosition();
+        Triplet<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>, Long> rels =
             persistenceManager.getMoreRelationships( nodeId, position );
+        node.setRelChainPosition( rels.third() );
         ArrayMap<String,RelIdArray> newRelationshipMap =
             new ArrayMap<String,RelIdArray>();
         Map<Long,RelationshipImpl> relsMap = new HashMap<Long,RelationshipImpl>( 150 );
         receiveRelationships( rels.first(), newRelationshipMap, relsMap, Direction.OUTGOING );
-        receiveRelationships( rels.other(), newRelationshipMap, relsMap, Direction.INCOMING );
+        receiveRelationships( rels.second(), newRelationshipMap, relsMap, Direction.INCOMING );
         // relCache.putAll( relsMap );
         return Pair.of( newRelationshipMap, relsMap );
     }
@@ -605,14 +618,14 @@ public class NodeManager
             {
                 type = getRelationshipTypeById( rel.getType() );
                 assert type != null;
-                relImpl = new RelationshipImpl( relId, rel.getFirstNode(), rel.getSecondNode(), type,
-                        false );
+                relImpl = newRelationshipImpl( relId, rel.getFirstNode(), rel.getSecondNode(), type,
+                        rel.getType(), false );
                 relsMap.put( relId, relImpl );
                 // relCache.put( relId, relImpl );
             }
             else
             {
-                type = relImpl.getType();
+                type = relImpl.getType( this );
             }
             RelIdArray relationshipSet = newRelationshipMap.get( type.name() );
             if ( relationshipSet == null )
@@ -683,11 +696,11 @@ public class NodeManager
         PropertyContainer container;
         if ( resource instanceof NodeImpl )
         {
-            container = new NodeProxy( resource.id, this );
+            container = new NodeProxy( resource.getId(), this );
         }
         else if ( resource instanceof RelationshipImpl )
         {
-            container = new RelationshipProxy( resource.id, this );
+            container = new RelationshipProxy( resource.getId(), this );
         }
         else
         {
@@ -712,11 +725,11 @@ public class NodeManager
         PropertyContainer container;
         if ( resource instanceof NodeImpl )
         {
-            container = new NodeProxy( resource.id, this );
+            container = new NodeProxy( resource.getId(), this );
         }
         else if ( resource instanceof RelationshipImpl )
         {
-            container = new RelationshipProxy( resource.id, this );
+            container = new RelationshipProxy( resource.getId(), this );
         }
         else
         {

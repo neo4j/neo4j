@@ -81,12 +81,23 @@ class NodeProxy implements Node
     {
         return nm.getNodeForProxy( nodeId ).getRelationships( nm, types );
     }
+    
+    @Override
+    public Iterable<Relationship> getRelationships( Direction direction, RelationshipType... types )
+    {
+        return nm.getNodeForProxy( nodeId ).getRelationships( nm, direction, types );
+    }
 
     public boolean hasRelationship( RelationshipType... types )
     {
         return nm.getNodeForProxy( nodeId ).hasRelationship( nm, types );
     }
 
+    public boolean hasRelationship( Direction direction, RelationshipType... types )
+    {
+        return nm.getNodeForProxy( nodeId ).hasRelationship( nm, direction, types );
+    }
+    
     public Iterable<Relationship> getRelationships( RelationshipType type,
         Direction dir )
     {

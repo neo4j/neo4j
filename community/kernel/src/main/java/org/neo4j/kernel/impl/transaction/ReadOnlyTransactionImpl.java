@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.transaction.HeuristicMixedException;
@@ -50,11 +51,11 @@ class ReadOnlyTransactionImpl implements Transaction
     private final byte globalId[];
     private int status = Status.STATUS_ACTIVE;
     private boolean active = true;
-    private boolean globalStartRecordWritten = false;
+    private final boolean globalStartRecordWritten = false;
 
-    private final LinkedList<ResourceElement> resourceList = 
+    private final LinkedList<ResourceElement> resourceList =
         new LinkedList<ResourceElement>();
-    private List<Synchronization> syncHooks = 
+    private List<Synchronization> syncHooks =
         new ArrayList<Synchronization>();
 
     private final int eventIdentifier;
@@ -78,6 +79,7 @@ class ReadOnlyTransactionImpl implements Transaction
         return globalId;
     }
 
+    @Override
     public synchronized String toString()
     {
         StringBuffer txString = new StringBuffer( "Transaction[Status="
@@ -100,7 +102,7 @@ class ReadOnlyTransactionImpl implements Transaction
         // make sure tx not suspended
         txManager.commit();
     }
-    
+
     boolean isGlobalStartRecordWritten()
     {
         return globalStartRecordWritten;
@@ -120,14 +122,14 @@ class ReadOnlyTransactionImpl implements Transaction
         {
             throw new IllegalArgumentException( "Null xa resource" );
         }
-        if ( status == Status.STATUS_ACTIVE || 
+        if ( status == Status.STATUS_ACTIVE ||
             status == Status.STATUS_PREPARING )
         {
             try
             {
                 if ( resourceList.size() == 0 )
                 {
-                    // 
+                    //
                     byte branchId[] = txManager.getBranchId( xaRes );
                     Xid xid = new XidImpl( globalId, branchId );
                     resourceList.add( new ResourceElement( xid, xaRes ) );
@@ -177,14 +179,13 @@ class ReadOnlyTransactionImpl implements Transaction
             }
             catch ( XAException e )
             {
-                e.printStackTrace();
-                log.severe( "Unable to enlist resource[" + xaRes + "]" );
+                log.log( Level.SEVERE, "Unable to enlist resource[" + xaRes + "]", e );
                 status = Status.STATUS_MARKED_ROLLBACK;
                 return false;
             }
         }
-        else if ( status == Status.STATUS_ROLLING_BACK || 
-            status == Status.STATUS_ROLLEDBACK || 
+        else if ( status == Status.STATUS_ROLLING_BACK ||
+            status == Status.STATUS_ROLLEDBACK ||
             status == Status.STATUS_MARKED_ROLLBACK )
         {
             throw new RollbackException( "Tx status is: "
@@ -201,7 +202,7 @@ class ReadOnlyTransactionImpl implements Transaction
         {
             throw new IllegalArgumentException( "Null xa resource" );
         }
-        if ( flag != XAResource.TMSUCCESS && flag != XAResource.TMSUSPEND && 
+        if ( flag != XAResource.TMSUCCESS && flag != XAResource.TMSUSPEND &&
             flag != XAResource.TMFAIL )
         {
             throw new IllegalArgumentException( "Illegal flag: " + flag );
@@ -221,7 +222,7 @@ class ReadOnlyTransactionImpl implements Transaction
         {
             return false;
         }
-        if ( status == Status.STATUS_ACTIVE || 
+        if ( status == Status.STATUS_ACTIVE ||
             status == Status.STATUS_MARKED_ROLLBACK )
         {
             try
@@ -239,8 +240,7 @@ class ReadOnlyTransactionImpl implements Transaction
             }
             catch ( XAException e )
             {
-                e.printStackTrace();
-                log.severe( "Unable to delist resource[" + xaRes + "]" );
+                log.log( Level.SEVERE, "Unable to delist resource[" + xaRes + "]", e );
                 status = Status.STATUS_MARKED_ROLLBACK;
                 return false;
             }
@@ -261,7 +261,7 @@ class ReadOnlyTransactionImpl implements Transaction
     }
 
     private boolean beforeCompletionRunning = false;
-    private List<Synchronization> syncHooksAdded = 
+    private List<Synchronization> syncHooksAdded =
         new ArrayList<Synchronization>();
 
     public synchronized void registerSynchronization( Synchronization s )
@@ -271,8 +271,8 @@ class ReadOnlyTransactionImpl implements Transaction
         {
             throw new IllegalArgumentException( "Null parameter" );
         }
-        if ( status == Status.STATUS_ACTIVE || 
-            status == Status.STATUS_PREPARING || 
+        if ( status == Status.STATUS_ACTIVE ||
+            status == Status.STATUS_PREPARING ||
             status == Status.STATUS_MARKED_ROLLBACK )
         {
             if ( !beforeCompletionRunning )
@@ -285,7 +285,7 @@ class ReadOnlyTransactionImpl implements Transaction
                 syncHooksAdded.add( s );
             }
         }
-        else if ( status == Status.STATUS_ROLLING_BACK || 
+        else if ( status == Status.STATUS_ROLLING_BACK ||
             status == Status.STATUS_ROLLEDBACK )
         {
             throw new RollbackException( "Tx status is: "
@@ -352,10 +352,10 @@ class ReadOnlyTransactionImpl implements Transaction
 
     public void setRollbackOnly() throws IllegalStateException
     {
-        if ( status == Status.STATUS_ACTIVE || 
-            status == Status.STATUS_PREPARING || 
-            status == Status.STATUS_PREPARED || 
-            status == Status.STATUS_MARKED_ROLLBACK || 
+        if ( status == Status.STATUS_ACTIVE ||
+            status == Status.STATUS_PREPARING ||
+            status == Status.STATUS_PREPARED ||
+            status == Status.STATUS_MARKED_ROLLBACK ||
             status == Status.STATUS_ROLLING_BACK )
         {
             status = Status.STATUS_MARKED_ROLLBACK;
@@ -367,6 +367,7 @@ class ReadOnlyTransactionImpl implements Transaction
         }
     }
 
+    @Override
     public boolean equals( Object o )
     {
         if ( !(o instanceof ReadOnlyTransactionImpl) )
@@ -379,6 +380,7 @@ class ReadOnlyTransactionImpl implements Transaction
 
     private volatile int hashCode = 0;
 
+    @Override
     public int hashCode()
     {
         if ( hashCode == 0 )
@@ -522,6 +524,7 @@ class ReadOnlyTransactionImpl implements Transaction
             this.status = status;
         }
 
+        @Override
         public String toString()
         {
             String statusString = null;

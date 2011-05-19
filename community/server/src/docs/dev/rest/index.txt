@@ -2,7 +2,7 @@
 REST API
 ========
 
-The Neo4j REST API is designed with discoverability in mind, so that you can start with a +GET+ on the <<rest-api-service-root,service root>> and from there discover URIs to perform other requests.
+The Neo4j REST API is designed with discoverability in mind, so that you can start with a +GET+ on the <<rest-api-service-root>> and from there discover URIs to perform other requests.
 The examples below uses URIs in the examples; they are subject to change in the future, so for future-proofness _discover URIs where possible_, instead of relying on the current layout.
 The default representation is http://www.json.org/[json], both for responses and for data sent with +POST+/+PUT+ requests.
 
@@ -18,6 +18,7 @@ The examples include the relevant request and response headers.
 
 include::get-service-root.txt[]
 
+[[rest-api-nodes]]
 == Nodes ==
 
 include::create-a-node.txt[]
@@ -32,21 +33,17 @@ include::delete-node.txt[]
 
 include::nodes-with-relationships-can-not-be-deleted.txt[]
 
+[[rest-api-relationships]]
 == Relationships ==
 
-////
-GET /node/123/relationships/{dir}/{-list|&|types}
+The general pattern to get relationships is:
+[source]
+GET http://localhost:7474/db/data/node/123/relationships/{dir}/{-list|&|types}
 
-Where dir is one of all,in,out and types is an ampersand-separated list of types. Some examples:
-
-* GET /node/123/relationships/out/KNOWS&LOVES -- outgoing relationships of types KNOWS and LOVES
-* GET /node/123/relationships/all/KNOWS -- relationships (both outgoing and incoming) of type LOVES
-* GET /node/123/relationships/in -- incoming relationships
-////
+Where +dir+ is one of +all+, +in+, +out+ and +types+ is an ampersand-separated list of types.
+See the examples below for more information.
 
 include::create-relationship.txt[]
-
-include::update-relationship-properties.txt[]
 
 include::get-all-relationships.txt[]
 
@@ -58,9 +55,13 @@ include::get-typed-relationships.txt[]
 
 include::get-relationships-on-a-node-without-relationships.txt[]
 
+[[rest-api-relationship-types]]
+== Relationship types ==
+
 include::get-relationship-types.txt[]
 
-== Properties ==
+[[rest-api-node-properties]]
+== Node properties ==
 
 include::set-property-on-node.txt[]
 
@@ -68,7 +69,7 @@ include::update-node-properties.txt[]
 
 include::get-properties-for-node.txt[]
 
-include::get-empty-properties-for-node.txt[]
+include::get-properties-for-node-(empty-result).txt[]
 
 include::property-values-can-not-be-null.txt[]
 
@@ -76,8 +77,35 @@ include::property-values-can-not-be-nested.txt[]
 
 include::delete-all-properties-from-node.txt[]
 
+[[rest-api-relationship-properties]]
+== Relationship properties ==
+
+include::update-relationship-properties.txt[]
+
+[[rest-api-indexes]]
 == Indexes ==
 
-include::create-a-named-node-index.txt[]
+An index can contain either nodes or relationships.
+
+NOTE: To create an index with default configuration, simply start using it by adding nodes/relationships to it. It will then be automatically created for you.
+
+What default configuration means depends on how you have configured your database.
+If you haven't changed any indexing configuration, it means the indexes will be using a Lucene-based backend.
+
+If you want to customize the index settings, see <<rest-api-create-node-index-with-configuration>>.
+
+include::create-node-index.txt[]
+
+include::create-node-index-with-configuration.txt[]
+
+include::delete-node-index.txt[]
+
+include::list-node-indexes.txt[]
+
+include::list-node-indexes-(empty-result).txt[]
+
+include::add-node-to-index.txt[]
+
+include::find-node-by-exact-match.txt[]
 
 

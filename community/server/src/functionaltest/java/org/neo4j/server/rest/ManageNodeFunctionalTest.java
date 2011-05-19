@@ -73,7 +73,7 @@ public class ManageNodeFunctionalTest
     @Test
     public void shouldGet201WhenCreatingNode() throws Exception
     {
-        ClientResponse response = DocsGenerator.create( "Create a node" )
+        ClientResponse response = DocsGenerator.create( "Create node" )
                 .expectedStatus( Response.Status.CREATED )
                 .expectedHeader( "Location" )
                 .post( functionalTestHelper.nodeUri() )
@@ -85,7 +85,7 @@ public class ManageNodeFunctionalTest
     public void shouldGet201WhenCreatingNodeWithProperties() throws Exception
     {
         ClientResponse response = DocsGenerator.create(
-                "Create a node with properties" )
+                "Create node with properties" )
                 .payload( "{\"foo\" : \"bar\"}" )
                 .expectedStatus( Response.Status.CREATED )
                 .expectedHeader( "Location" )
@@ -101,7 +101,7 @@ public class ManageNodeFunctionalTest
         DocsGenerator.create(
                 "Property values can not be null",
                 "This example shows the response you get "
-                        + "when trying to set a property to null." )
+                + "when trying to set a property to null." )
                 .payload( "{\"foo\":null}" )
                 .expectedStatus( Response.Status.BAD_REQUEST )
                 .post( functionalTestHelper.nodeUri() );
@@ -178,17 +178,17 @@ public class ManageNodeFunctionalTest
     public void shouldRespondWith204WhenNodeDeleted() throws Exception
     {
         DocsGenerator.create( "Delete node" )
-                .expectedStatus( Response.Status.NO_CONTENT )
-                .delete(
-                        functionalTestHelper.dataUri() + "node/"
-                                + helper.createNode() );
+        .expectedStatus( Response.Status.NO_CONTENT )
+        .delete(
+                functionalTestHelper.dataUri() + "node/"
+                + helper.createNode() );
     }
 
     @Test
     public void shouldRespondWith404AndSensibleEntityBodyWhenNodeToBeDeletedCannotBeFound() throws Exception
     {
         ClientResponse response = sendDeleteRequestToServer( NON_EXISTENT_NODE_ID );
-        assertEquals( 404, response.getStatus() );        
+        assertEquals( 404, response.getStatus() );
         assertThat(JsonHelper.jsonToMap( response.getEntity( String.class ) ), not(hasKey("message")));
     }
 
@@ -204,7 +204,7 @@ public class ManageNodeFunctionalTest
         DocsGenerator.create(
                 "Nodes with relationships can not be deleted",
                 "The relationships on a node has to be deleted "
-                        + "before the node can be deleted." )
+                + "before the node can be deleted." )
                 .expectedStatus( Response.Status.CONFLICT )
                 .delete( functionalTestHelper.dataUri() + "node/" + id );
     }

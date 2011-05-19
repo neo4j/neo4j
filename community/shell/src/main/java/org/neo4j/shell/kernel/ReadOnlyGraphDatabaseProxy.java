@@ -211,6 +211,12 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, IndexMa
             return relationships( actual.getRelationships( types ) );
         }
 
+        public Iterable<Relationship> getRelationships( Direction direction,
+                RelationshipType... types )
+        {
+            return relationships( actual.getRelationships( direction, types ) );
+        }
+        
         public Iterable<Relationship> getRelationships( Direction dir )
         {
             return relationships( actual.getRelationships( dir ) );
@@ -236,6 +242,11 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, IndexMa
             return actual.hasRelationship( types );
         }
 
+        public boolean hasRelationship( Direction direction, RelationshipType... types )
+        {
+            return actual.hasRelationship( direction, types );
+        }
+        
         public boolean hasRelationship( Direction dir )
         {
             return actual.hasRelationship( dir );

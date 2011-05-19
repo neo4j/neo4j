@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.OverlappingFileLockException;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.neo4j.helpers.UTF8;
@@ -41,7 +42,7 @@ public abstract class CommonAbstractStore
 {
     protected static final Logger logger = Logger
         .getLogger( CommonAbstractStore.class.getName() );
-    
+
     protected static long longFromIntAndMod( long base, long modifier )
     {
         return modifier == 0 && base == IdGeneratorImpl.INTEGER_MINUS_ONE ? -1 : base|modifier;
@@ -162,7 +163,7 @@ public abstract class CommonAbstractStore
         }
         this.idGeneratorFactory = (IdGeneratorFactory)
                 config.get( IdGeneratorFactory.class );
-        
+
 //        try
 //        {
             checkStorage();
@@ -217,7 +218,7 @@ public abstract class CommonAbstractStore
 //        loadStorage();
 //        initStorage();
 //    }
-    
+
     protected FileSystemAbstraction getFileSystem()
     {
         return (FileSystemAbstraction) config.get( FileSystemAbstraction.class );
@@ -492,7 +493,7 @@ public abstract class CommonAbstractStore
     {
         return config;
     }
-    
+
     /**
      * @return the store directory from config.
      */
@@ -583,20 +584,20 @@ public abstract class CommonAbstractStore
         idGenerator = openIdGenerator( storageFileName + ".id",
             DEFAULT_ID_GRAB_SIZE );
     }
-    
+
     protected IdGenerator openIdGenerator( String fileName, int grabSize )
     {
         return idGeneratorFactory.open( fileName, grabSize, getIdType(),
                 figureOutHighestIdInUse() );
     }
-    
+
     protected abstract long figureOutHighestIdInUse();
 
     protected void createIdGenerator( String fileName )
     {
         idGeneratorFactory.create( fileName );
     }
-    
+
     protected void openReadOnlyIdGenerator( int recordSize )
     {
         try
@@ -710,7 +711,7 @@ public abstract class CommonAbstractStore
             }
             catch ( IOException e )
             {
-                e.printStackTrace();
+                logger.log( Level.WARNING, "Could not close fileChannel [" + storageFileName + "]", e );
             }
         }
         if ( !success )
@@ -752,7 +753,7 @@ public abstract class CommonAbstractStore
     {
         return windowPool.getStats();
     }
-    
+
     public IdType getIdType()
     {
         return idType;
