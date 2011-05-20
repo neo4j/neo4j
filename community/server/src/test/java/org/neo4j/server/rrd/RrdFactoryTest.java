@@ -19,6 +19,14 @@
  */
 package org.neo4j.server.rrd;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertThat;
+
+import java.io.IOException;
+import java.util.HashMap;
+
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.MapConfiguration;
 import org.junit.After;
@@ -27,14 +35,6 @@ import org.junit.Test;
 import org.neo4j.kernel.ImpermanentGraphDatabase;
 import org.neo4j.server.configuration.Configurator;
 import org.rrd4j.core.RrdDb;
-
-import java.io.IOException;
-import java.util.HashMap;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertThat;
 
 public class RrdFactoryTest
 {
@@ -112,7 +112,7 @@ public class RrdFactoryTest
     private static class NullJobScheduler implements JobScheduler
     {
         @Override
-        public void scheduleToRunEveryXSeconds( Job job, int runEveryXSeconds )
+        public void scheduleToRunEveryXSeconds( Job job, String name, int runEveryXSeconds )
         {
 
         }
