@@ -1,9 +1,13 @@
 package org.neo4j.lab.cypher.commands
 
-case class Query(select: Select, from: From, where: Option[Where] = None)
+import scala.Some
+
+case class Query(select: Select, start: Start, matching:Option[Match], where: Option[Where])
 
 case class Select(selectItems: SelectItem*)
 
-case class From(fromItems: FromItem*)
+case class Start(startItems: StartItem*)
 
 case class Where(clauses: Clause*)
+
+case class Match(patterns: Pattern*)

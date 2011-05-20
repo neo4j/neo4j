@@ -17,7 +17,7 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
   def makeMutable(immutableSources: Map[String, Pipe]): collection.mutable.Map[String, Pipe] = scala.collection.mutable.Map(immutableSources.toSeq: _*)
 
   def execute(query: Query): Projection = query match {
-    case Query(select, from, where) => {
+    case Query(select, start, matching, where) => {
       val patterns = scala.collection.mutable.Map[String,PatternNode]()
       def getOrCreate(name:String):PatternNode = patterns.getOrElse(name, {
         val pNode = new PatternNode(name)
@@ -25,29 +25,36 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
         pNode
       })
 
-      val sourcePump: Pipe = createSourcePumps(from).reduceLeft(_ ++ _)
+      val sourcePump: Pipe = createSourcePumps(start).reduceLeft(_ ++ _)
 
-      from.fromItems.foreach( (item) => {getOrCreate(item.placeholderName)})
+      start.startItems.foreach( (item) => {getOrCreate(item.placeholderName)})
 
 
       val projections = createProjectionTransformers(select)
 
-      where match {
-        case Some(w) => w.clauses.foreach((c) => {
-          c match {
+      matching match {
+        case Some(m) => m.patterns.foreach((p)=>{
+          p match {
             case RelatedTo(left, right, x, relationType, direction) => {
               val leftPattern = getOrCreate(left)
               val rightPattern = getOrCreate(right)
               leftPattern.createRelationshipTo(rightPattern, DynamicRelationshipType.withName(relationType), direction)
             }
+          }
+        })
+        case None =>
+      }
 
+      where match {
+        case Some(w) => w.clauses.foreach((c) => {
+          c match {
             case StringEquals(variable, propName, value) => {
               val node = getOrCreate(variable)
               node.addPropertyConstraint(propName, CommonValueMatchers.exact(value) )
             }
           }
         })
-        case _ =>
+        case None =>
       }
 
       new Projection(patterns.toMap, sourcePump, projections)
@@ -68,7 +75,7 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
     Map(column + "." + propName -> node.getProperty(propName))
   }
 
-  private def createSourcePumps(from: From): Seq[Pipe] = from.fromItems.map(_ match {
+  private def createSourcePumps(from: Start): Seq[Pipe] = from.startItems.map(_ match {
     case NodeByIndex(varName, idxName, key, value) => {
       val indexHits: java.lang.Iterable[Node] = graph.index.forNodes(idxName).get(key, value)
       new FromPump(varName, indexHits.asScala)

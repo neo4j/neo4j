@@ -22,87 +22,105 @@ class CypherParserTest {
 
   @Test def shouldParseEasiestPossibleQuery() {
     testQuery(
-      "from start = node(1) select start",
+      "start start = node(1) select start",
       Query(
         Select(EntityOutput("start")),
-        From(NodeById("start", 1))))
+        Start(NodeById("start", 1)),
+        matching = None,
+        where = None
+      ))
   }
 
   @Test def shouldParseMultipleNodes() {
     testQuery(
-      "from start = node(1,2,3) select start",
+      "start start = node(1,2,3) select start",
       Query(
         Select(EntityOutput("start")),
-        From(NodeById("start", 1, 2, 3))))
+        Start(NodeById("start", 1, 2, 3)),
+        matching = None,
+        where = None
+      ))
   }
 
   @Test def shouldParseMultipleInputs() {
     testQuery(
-      "from a = node(1), b = node(2) select a,b",
+      "start a = node(1), b = node(2) select a,b",
       Query(
         Select(EntityOutput("a"), EntityOutput("b")),
-        From(NodeById("a", 1), NodeById("b", 2))))
+        Start(NodeById("a", 1), NodeById("b", 2)),
+        matching = None,
+        where = None
+      ))
   }
 
   @Test def shouldFilterOnProp() {
     testQuery(
-      "from a = node(1) where a.name = \"andres\" select a",
+      "start a = node(1) where a.name = \"andres\" select a",
       Query(
         Select(EntityOutput("a")),
-        From(NodeById("a", 1)),
+        Start(NodeById("a", 1)),
+        matching = None,
         Some(Where(StringEquals("a", "name", "andres"))))
     )
   }
 
   @Test def multipleFilters() {
     testQuery(
-      "from a = node(1) where a.name = \"andres\" or a.name = \"mattias\" select a",
+      "start a = node(1) where a.name = \"andres\" or a.name = \"mattias\" select a",
       Query(
         Select(EntityOutput("a")),
-        From(NodeById("a", 1)),
-        Some(Where(Or(
-          StringEquals("a", "name", "andres"), StringEquals("a", "name", "mattias")
-        ))))
+        Start(NodeById("a", 1)),
+        None,
+        Some(Where(
+          Or(
+            StringEquals("a", "name", "andres"),
+            StringEquals("a", "name", "mattias")
+          ))))
     )
   }
 
   @Test def relatedTo() {
     testQuery(
-      "from a = node(1) where (a) -['KNOWS']-> (b) select a, b",
+      "start a = node(1) match (a) -['KNOWS']-> (b) select a, b",
       Query(
         Select(EntityOutput("a"), EntityOutput("b")),
-        From(NodeById("a", 1)),
-        Some(Where(RelatedTo("a", "b", None, "KNOWS", Direction.OUTGOING)))
+        Start(NodeById("a", 1)),
+        Some(Match(RelatedTo("a", "b", None, "KNOWS", Direction.OUTGOING))),
+        None
       )
     )
   }
 
   @Test def relatedToTheOtherWay() {
     testQuery(
-      "from a = node(1) where (a) <-['KNOWS']- (b) select a, b",
+      "start a = node(1) match (a) <-['KNOWS']- (b) select a, b",
       Query(
         Select(EntityOutput("a"), EntityOutput("b")),
-        From(NodeById("a", 1)),
-        Some(Where(RelatedTo("a", "b", None, "KNOWS", Direction.INCOMING)))
+        Start(NodeById("a", 1)),
+        Some(Match(RelatedTo("a", "b", None, "KNOWS", Direction.INCOMING))),
+        None
       )
     )
   }
 
   @Test def shouldOutputVariables() {
     testQuery(
-      "from a = node(1) select a.name",
+      "start a = node(1) select a.name",
       Query(
         Select(PropertyOutput("a", "name")),
-        From(NodeById("a", 1)))
+        Start(NodeById("a", 1)),
+        None,
+        None)
     )
   }
 
   @Test def shouldHandleAndClauses() {
     testQuery(
-      "from a = node(1) where a.name = \"andres\" and a.lastname = \"taylor\" select a.name",
+      "start a = node(1) where a.name = \"andres\" and a.lastname = \"taylor\" select a.name",
       Query(
         Select(PropertyOutput("a", "name")),
-        From(NodeById("a", 1)),
+        Start(NodeById("a", 1)),
+        None,
         Some(Where(And(StringEquals("a", "name", "andres"), StringEquals("a", "lastname", "taylor"))))
       )
     )
@@ -110,47 +128,50 @@ class CypherParserTest {
 
   @Test def relatedToWithRelationOutput() {
     testQuery(
-      "from a = node(1) where (a) -[rel,'KNOWS']-> (b) select rel",
+      "start a = node(1) match (a) -[rel,'KNOWS']-> (b) select rel",
       Query(
         Select(EntityOutput("rel")),
-        From(NodeById("a", 1)),
-        Some(Where(RelatedTo("a", "b", Some("rel"), "KNOWS", Direction.OUTGOING)))
+        Start(NodeById("a", 1)),
+        Some(Match(RelatedTo("a", "b", Some("rel"), "KNOWS", Direction.OUTGOING))),
+        None
       )
     )
   }
 
   @Test def relatedToWithoutEndName() {
     testQuery(
-      "from a = node(1) where (a) -['MARRIED']-> () select a",
+      "start a = node(1) match (a) -['MARRIED']-> () select a",
       Query(
         Select(EntityOutput("a")),
-        From(NodeById("a", 1)),
-        Some(Where(RelatedTo("a", "___NODE1", None, "MARRIED", Direction.OUTGOING)))
+        Start(NodeById("a", 1)),
+        Some(Match(RelatedTo("a", "___NODE1", None, "MARRIED", Direction.OUTGOING))),
+        None
       )
     )
   }
 
   @Test def relatedInTwoSteps() {
     testQuery(
-      "from a = node(1) where (a) -['KNOWS']-> (b) -['FRIEND']-> (c) select c",
+      "start a = node(1) match (a) -['KNOWS']-> (b) -['FRIEND']-> (c) select c",
       Query(
         Select(EntityOutput("c")),
-        From(NodeById("a", 1)),
-        Some(Where(
-          And(
-            RelatedTo("a", "b", None, "KNOWS", Direction.OUTGOING),
-            RelatedTo("b", "c", None, "FRIEND", Direction.OUTGOING)
-          )))
+        Start(NodeById("a", 1)),
+        Some(Match(
+          RelatedTo("a", "b", None, "KNOWS", Direction.OUTGOING),
+          RelatedTo("b", "c", None, "FRIEND", Direction.OUTGOING))),
+        None
       )
     )
   }
 
   @Test def sourceIsAnIndex() {
     testQuery(
-      "from a = node_index(\"index\", \"key\", \"value\") select a",
+      "start a = node_index(\"index\", \"key\", \"value\") select a",
       Query(
         Select(EntityOutput("a")),
-        From(NodeByIndex("a", "index", "key", "value"))
+        Start(NodeByIndex("a", "index", "key", "value")),
+        None,
+        None
       )
     )
   }

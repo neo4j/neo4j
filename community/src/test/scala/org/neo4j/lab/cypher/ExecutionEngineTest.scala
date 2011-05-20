@@ -24,12 +24,14 @@ class ExecutionEngineTest {
   }
 
   @Test def shouldGetReferenceNode() {
-    //    FROM node = NODE(0)
+    //    START node = NODE(0)
     //    SELECT node
 
     val query = Query(
       Select(EntityOutput("node")),
-      From(NodeById("node", 0))
+      Start(NodeById("node", 0)),
+      None,
+      None
     )
 
     val result = execute(query)
@@ -37,14 +39,16 @@ class ExecutionEngineTest {
   }
 
   @Test def shouldGetOtherNode() {
-    //    FROM node = NODE(1)
+    //    START node = NODE(1)
     //    SELECT node
 
     val node: Node = createNode()
 
     val query = Query(
       Select(EntityOutput("node")),
-      From(NodeById("node", node.getId))
+      Start(NodeById("node", node.getId)),
+      None,
+      None
     )
 
     val result = execute(query)
@@ -52,14 +56,16 @@ class ExecutionEngineTest {
   }
 
   @Test def shouldGetTwoNodes() {
-    //    FROM node = NODE(0, 17)
+    //    START node = NODE(0, 17)
     //    SELECT node
 
     val node: Node = createNode()
 
     val query = Query(
       Select(EntityOutput("node")),
-      From(NodeById("node", refNode.getId, node.getId))
+      Start(NodeById("node", refNode.getId, node.getId)),
+      None,
+      None
     )
 
     val result = execute(query)
@@ -67,7 +73,7 @@ class ExecutionEngineTest {
   }
 
   @Test def shouldGetNodeProperty() {
-    //    FROM node = NODE(17)
+    //    START node = NODE(17)
     //    SELECT node.name
 
     val name = "Andres"
@@ -75,7 +81,9 @@ class ExecutionEngineTest {
 
     val query = Query(
       Select(PropertyOutput("node", "name")),
-      From(NodeById("node", node.getId))
+      Start(NodeById("node", node.getId)),
+      None,
+      None
     )
 
     val result = execute(query)
@@ -84,7 +92,7 @@ class ExecutionEngineTest {
   }
 
   @Test def shouldFilterOutBasedOnNodePropName() {
-    //    FROM start = NODE(1)
+    //    STARTstart = NODE(1)
     //    WHERE a.name = "Andres" AND (start) -['x']-> (a)
     //    SELECT a
 
@@ -97,37 +105,33 @@ class ExecutionEngineTest {
 
     val query = Query(
       Select(EntityOutput("a")),
-      From(NodeById("start", start.getId)),
-      Some(Where(
-        StringEquals("a", "name", name),
-        RelatedTo("start", "a", None, "x", Direction.BOTH)
-        ))
+      Start(NodeById("start", start.getId)),
+      Some(Match(RelatedTo("start", "a", None, "x", Direction.BOTH))),
+      Some(Where(StringEquals("a", "name", name)
+      ))
     )
 
     val result = execute(query)
     assertEquals(List(a2), result.columnAs[Node]("a").toList)
   }
 
-  @Test def shouldFilterBasedOnRelPropName()
-  {
-    // FROM start = Node(1)
+  @Test def shouldFilterBasedOnRelPropName() {
+    // START start = Node(1)
     // WHERE r.name = "monkey" AND start -[r, 'KNOWS']-> (a)
     // SELECT a
 
     val name = "Andres"
-    val start : Node = createNode()
-    val a : Node = createNode()
-    val b : Node = createNode()
+    val start: Node = createNode()
+    val a: Node = createNode()
+    val b: Node = createNode()
     relate(start, a, "KNOWS", Map("name" -> "monkey"))
     relate(start, b, "KNOWS")
 
     val query = Query(
       Select(EntityOutput("a")),
-      From(NodeById("start", start.getId)),
-      Some(Where(
-         StringEquals("r", "name", "monkey"),
-         RelatedTo("start", "a", None, "KNOWS", Direction.BOTH)
-      ))
+      Start(NodeById("start", start.getId)),
+      Some(Match(RelatedTo("start", "a", None, "KNOWS", Direction.BOTH))),
+      Some(Where(StringEquals("r", "name", "monkey")))
     )
 
     val result = execute(query)
@@ -135,7 +139,7 @@ class ExecutionEngineTest {
   }
 
   @Test def shouldOutputTheCartesianProductOfTwoNodes() {
-    //    FROM n1 = NODE(1), n2 = NODE(2)
+    //    START n1 = NODE(1), n2 = NODE(2)
     //    SELECT n1, n2
 
     val n1: Node = createNode()
@@ -143,10 +147,12 @@ class ExecutionEngineTest {
 
     val query = Query(
       Select(EntityOutput("n1"), EntityOutput("n2")),
-      From(
+      Start(
         NodeById("n1", n1.getId),
         NodeById("n2", n2.getId)
-      )
+      ),
+      None,
+      None
     )
 
     val result = execute(query)
@@ -155,7 +161,7 @@ class ExecutionEngineTest {
   }
 
   @Test def shouldGetNeighbours() {
-    //    FROM n1 = NODE(1),
+    //    START n1 = NODE(1),
     //      n1 -['KNOWS']-> n2
     //    SELECT n1, n2
 
@@ -165,8 +171,9 @@ class ExecutionEngineTest {
 
     val query = Query(
       Select(EntityOutput("n1"), EntityOutput("n2")),
-      From(NodeById("n1", n1.getId)),
-      Some(Where(RelatedTo("n1", "n2", None, "KNOWS", Direction.OUTGOING)))
+      Start(NodeById("n1", n1.getId)),
+      Some(Match(RelatedTo("n1", "n2", None, "KNOWS", Direction.OUTGOING))),
+      None
     )
 
     val result = execute(query)
@@ -175,7 +182,7 @@ class ExecutionEngineTest {
   }
 
   @Test def shouldGetTwoRelatedNodes() {
-    //    FROM start = NODE(1),
+    //    START start = NODE(1),
     //      start -KNOWS-> x
     //    SELECT x
 
@@ -187,8 +194,10 @@ class ExecutionEngineTest {
 
     val query = Query(
       Select(EntityOutput("x")),
-      From(NodeById("start", n1.getId)),
-      Some(Where(RelatedTo("start", "x", None, "KNOWS", Direction.OUTGOING))))
+      Start(NodeById("start", n1.getId)),
+      Some(Match(RelatedTo("start", "x", None, "KNOWS", Direction.OUTGOING))),
+      None
+    )
 
     val result = execute(query)
 
@@ -196,7 +205,7 @@ class ExecutionEngineTest {
   }
 
   @Test def toStringTest() {
-    //    FROM start = NODE(1),
+    //    START start = NODE(1),
     //      start -KNOWS-> x
     //    SELECT x
 
@@ -208,8 +217,9 @@ class ExecutionEngineTest {
 
     val query = Query(
       Select(EntityOutput("x"), EntityOutput("start")),
-      From(NodeById("start", n1.getId)),
-      Some(Where(RelatedTo("start", "x", None, "KNOWS", Direction.OUTGOING)))
+      Start(NodeById("start", n1.getId)),
+      Some(Match(RelatedTo("start", "x", None, "KNOWS", Direction.OUTGOING))),
+      None
     )
 
     val result = execute(query)
@@ -218,7 +228,7 @@ class ExecutionEngineTest {
   }
 
   @Test def shouldGetRelatedToRelatedTo() {
-    //    FROM start = NODE(1),
+    //    START start = NODE(1),
     //      start -KNOWS-> a,
     //      a -FRIEND- b
     //    SELECT n3
@@ -231,10 +241,11 @@ class ExecutionEngineTest {
 
     val query = Query(
       Select(EntityOutput("b")),
-      From(NodeById("start", n1.getId)),
-      Some(Where(
+      Start(NodeById("start", n1.getId)),
+      Some(Match(
         RelatedTo("start", "a", None, "KNOWS", Direction.OUTGOING),
-        RelatedTo("a", "b", None, "FRIEND", Direction.OUTGOING)))
+        RelatedTo("a", "b", None, "FRIEND", Direction.OUTGOING))),
+      None
     )
 
     val result = execute(query)
@@ -242,31 +253,8 @@ class ExecutionEngineTest {
     assertEquals(List(Map("b" -> n3)), result.toList)
   }
 
-  @Test def shouldHandleOrRelationships() {
-    //    FROM start = NODE(1),
-    //    WHERE  (start) -['KNOWS']-> (a) OR (start) -['FRIEND']-> (a)
-    //    SELECT a
-
-    val start: Node = createNode()
-    val a: Node = createNode()
-    relate(start, a, "KNOWS")
-    relate(start, a, "FRIEND")
-
-    val query = Query(
-      Select(EntityOutput("a")),
-      From(NodeById("start", start.getId)),
-      Some(Where(
-        Or(RelatedTo("start", "a", None, "KNOWS", Direction.OUTGOING),
-          RelatedTo("start", "a", None, "FRIEND", Direction.OUTGOING))))
-    )
-
-    val result = execute(query)
-
-    assertEquals(List(Map("a" -> a), Map("a" -> a)), result.toList)
-  }
-
   @Test def shouldFindNodesByIndex() {
-    //    FROM n = NODE("idxName", "key", "andres"),
+    //    START n = NODE("idxName", "key", "andres"),
     //    SELECT n
 
     val n: Node = createNode()
@@ -277,7 +265,9 @@ class ExecutionEngineTest {
 
     val query = Query(
       Select(EntityOutput("n")),
-      From(NodeByIndex("n", idxName, key, value))
+      Start(NodeByIndex("n", idxName, key, value)),
+      None,
+      None
     )
 
     val result = execute(query)
@@ -286,7 +276,7 @@ class ExecutionEngineTest {
   }
 
   @Test def shouldBeAbleToFilterOnRelationProps() {
-    //    FROM me = NodeByIdx(1,3,4,5,6),
+    //    START me = NodeByIdx(1,3,4,5,6),
     //      (me) -[r,'SHARE_OWNER']- (company)
     //    WHERE r.amount > 1000
     //    SELECT company.name
@@ -299,11 +289,9 @@ class ExecutionEngineTest {
 
     val query = Query(
       Select(PropertyOutput("company", "name")),
-      From(NodeById("me", me.getId)),
-      Some(Where(
-        And(
-          RelatedTo("me", "company", Some("r"), "SHARE_OWNER", Direction.OUTGOING),
-          NumberLargerThan("r", "amount", 1000f))))
+      Start(NodeById("me", me.getId)),
+      Some(Match(RelatedTo("me", "company", Some("r"), "SHARE_OWNER", Direction.OUTGOING))),
+      Some(Where(NumberLargerThan("r", "amount", 1000f)))
     )
 
     val result = execute(query)

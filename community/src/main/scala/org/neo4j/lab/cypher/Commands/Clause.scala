@@ -11,8 +11,6 @@ import org.neo4j.graphdb.Direction
 
 abstract sealed class Clause {
   def ++(other: Clause): Clause = And(this, other)
-  //
-  //  def or(otherField: Clause): Clause = Or(this, otherField)
 }
 
 case class StringEquals(variable: String, propName: String, value: String) extends Clause
@@ -22,16 +20,3 @@ case class NumberLargerThan(variable: String, propName: String, value: Float) ex
 case class And(a: Clause, b: Clause) extends Clause
 
 case class Or(a: Clause, b: Clause) extends Clause
-
-case class RelatedTo(left:String, right:String, rel:Option[String], relType:String, direction:Direction) extends Clause
-
-
-//case class NumberEquals(variable:String, propName: String, value: Number) extends Clause
-//
-//case class BooleanEquals(f: String, value: Boolean) extends Clause
-//
-//case class In(field: String, values: String*) extends Clause
-//
-//case class And(lClause: Clause, rClause: Clause) extends Clause
-//
-//case class Or(lClause: Clause, rClause: Clause) extends Clause

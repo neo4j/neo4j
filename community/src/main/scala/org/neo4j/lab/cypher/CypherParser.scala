@@ -6,13 +6,16 @@ import org.neo4j.graphdb.Direction
 
 class CypherParser extends JavaTokenParsers {
 
-  def query: Parser[Query] = from ~ opt(where) ~ select ^^ {
-    case from ~ where ~ select => Query(select, from, where)
+  def query: Parser[Query] = start ~ opt(matching) ~ opt(where) ~ select ^^ {
+    case start ~ matching ~ where ~ select => Query(select, start, matching, where)
   }
 
-  def from: Parser[From] = "from" ~> repsep(nodeByIds | nodeByIndex, ",") ^^ (From(_: _*))
+  def start: Parser[Start] = "start" ~> repsep(nodeByIds | nodeByIndex, ",") ^^ (Start(_: _*))
 
-  def relatedTo: Parser[Clause] = relatedHead ~ rep1(relatedTail) ^^ {
+
+  def matching: Parser[Match] = "match" ~> rep1sep(relatedTo, ",") ^^ { case matching:List[List[Pattern]] => Match(matching.flatten: _*) }
+
+  def relatedTo: Parser[List[Pattern]] = relatedHead ~ rep1(relatedTail) ^^ {
     case head ~ tails => {
       val namer = new NodeNamer
       var last = namer.name(head)
@@ -23,14 +26,14 @@ class CypherParser extends JavaTokenParsers {
         val forward = item._4
         val end = namer.name(item._5)
 
-        val result: Clause = RelatedTo(last, end, relName, relType, getDirection(back, forward))
+        val result: Pattern = RelatedTo(last, end, relName, relType, getDirection(back, forward))
 
         last = end
 
         result
       })
 
-      list.reduceLeft(_ ++ _)
+      list
     }
   }
 
@@ -48,6 +51,7 @@ class CypherParser extends JavaTokenParsers {
 
 
   def relatedHead:Parser[Option[String]] = "(" ~> opt(ident) <~ ")" ^^ { case name => name }
+
   def relatedTail = opt("<") ~ "-[" ~ opt(ident <~ ",") ~ "'" ~ ident ~ "'" ~ "]-" ~ opt(">") ~ "(" ~ opt(ident) ~ ")" ^^ {
     case back ~ "-[" ~ relName ~ "'" ~ relType ~ "'" ~ "]-" ~ forward ~ "(" ~ end ~ ")" => (back, relName, relType, forward, end)
   }
@@ -68,7 +72,7 @@ class CypherParser extends JavaTokenParsers {
 
   def where: Parser[Where] = "where" ~> rep(clause) ^^ (Where(_: _*))
 
-  def clause: Parser[Clause] = (predicate | parens | relatedTo) * (
+  def clause: Parser[Clause] = (predicate | parens ) * (
     "and" ^^^ { (a: Clause, b: Clause) => And(a, b) } |
     "or" ^^^ {  (a: Clause, b: Clause) => Or(a, b) })
 
