@@ -108,4 +108,10 @@ include::add-node-to-index.txt[]
 
 include::find-node-by-exact-match.txt[]
 
+[[rest-api-traverse]]
+== Built-in Traversals ==
+
+include::traverse-from-a-start-node.txt[]
+
+
 

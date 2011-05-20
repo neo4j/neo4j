@@ -23,12 +23,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.server.WebTestUtils.CLIENT;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import org.junit.After;
@@ -39,6 +41,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
+import org.neo4j.server.rest.DocsGenerator.ResponseEntity;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
@@ -138,12 +141,28 @@ public class TraverserFunctionalTest {
     @Test
     public void shouldGetExpectedHitsWhenTraversingWithDescription() throws PropertyValueException
     {
-        String description = JsonHelper.createJsonFrom(MapUtil.map("prune evaluator", MapUtil.map("language", "builtin", "name", "none"), "return filter",
-                MapUtil.map("language", "javascript", "body", "position.endNode().getProperty('name').toLowerCase().contains('t')")));
-        ClientResponse response = traverse(startNode, description);
-        String entity = response.getEntity(String.class);
-        expectNodes(entity, startNode, child1_l1, child1_l3, child2_l3);
-        response.close();
+        ArrayList rels = new ArrayList<Map>();
+        rels.add( MapUtil.map( "type","knows","direction","all") );
+        rels.add( MapUtil.map( "type","loves","direction","all") );
+        String description = JsonHelper.createJsonFrom(MapUtil.map("order", "breadth first","uniqueness","node global","prune evaluator", MapUtil.map("language", "builtin", "name", "none"), "return filter",
+                MapUtil.map("language", "javascript", "body", "position.endNode().getProperty('name').toLowerCase().contains('t')"), "relationships",rels,"max depth", 3));
+        
+        ResponseEntity entity = DocsGenerator.create( "Traverse from a start node", 
+                "In this example, no prune evaluator and a return filter are supplied. " +
+        		"The result is to be returned as nodes, as indicated by `traverse/{returnTyoe}` in the URL with returnType" +
+        		"being one of `node`, `relationship`, `path` or `fullpath`.\n" +
+        		"The _position_ object in the body of the return and prune evaluators is an `org.neo4j.graphdb.Path` object " +
+        		"representing the path from the start node to the current traversal position. `max depth` is a short-hand way" +
+        		" of specifying a prune evaluator which prunes after a certain depth. " +
+        		"If not specified a max depth of 1 is used and if a \"prune evaluator\" is specified instead of a max depth, " +
+        		"no max depth limit is set.\n\n" +
+        		"Built-in prune evaluators: `none`\n\n" +
+        		"Built-in return filters: `all`, `all but start node`\n\n" +
+                "Uniqueness: `node global`, `none`, `relationship global`, `node path`, `relationship path`\n\n" +
+        		"Order values: `breadth frist`, `depth first`\n\n")
+        .expectedStatus( Response.Status.OK ).payload( description )
+        .post( functionalTestHelper.nodeUri( startNode ) + "/traverse/node" );
+        expectNodes(entity.entity(), startNode, child1_l1, child1_l3, child2_l3);
     }
 
     @Test
