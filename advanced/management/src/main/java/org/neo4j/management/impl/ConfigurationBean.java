@@ -44,49 +44,12 @@ import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
 import org.neo4j.kernel.Config;
+import org.neo4j.kernel.impl.annotations.Documented;
 
 @Service.Implementation( ManagementBeanProvider.class )
 public final class ConfigurationBean extends ManagementBeanProvider
 {
     public static final String CONFIGURATION_MBEAN_NAME = "Configuration";
-
-    @Description( "Tell Neo4j to use memory mapped buffers for accessing the native storage layer" )
-    public static final String USE_MEMORY_MAPPED_BUFFERS = Config.USE_MEMORY_MAPPED_BUFFERS;
-    @Description( "Print out the effective Neo4j configuration after startup" )
-    public static final String DUMP_CONFIGURATION = Config.DUMP_CONFIGURATION;
-    @Description( "Make Neo4j keep the logical transaction logs for being able to backup the database" )
-    public static final String KEEP_LOGICAL_LOGS = Config.KEEP_LOGICAL_LOGS;
-    @Description( "Enable a remote shell server which shell clients can log in to" )
-    public static final String ENABLE_REMOTE_SHELL = Config.ENABLE_REMOTE_SHELL;
-    @Description( "<TODO: document this>" )
-    public static final String BACKUP_SLAVE = Config.BACKUP_SLAVE;
-    @Description( "Only allow read operations from this Neo4j instance" )
-    public static final String READ_ONLY = Config.READ_ONLY;
-    @Description( "Relative path for where the Neo4j storage directory is located" )
-    public static final String STORAGE_DIRECTORY = Config.STORAGE_DIRECTORY;
-    @Description( "Use a quick approach for rebuilding the ID generators. "
-                  + "This give quicker recovery time, but will limit the ability to reuse the space of deleted entities." )
-    public static final String REBUILD_IDGENERATORS_FAST = Config.REBUILD_IDGENERATORS_FAST;
-    @Description( "The size to allocate for memory mapping the node store" )
-    public static final String NODE_STORE_MMAP_SIZE = Config.NODE_STORE_MMAP_SIZE;
-    @Description( "The size to allocate for memory mapping the array property store" )
-    public static final String ARRAY_PROPERTY_STORE_MMAP_SIZE = Config.ARRAY_PROPERTY_STORE_MMAP_SIZE;
-    @Description( "The size to allocate for memory mapping the store for property key strings" )
-    public static final String PROPERTY_INDEX_KEY_STORE_MMAP_SIZE = Config.PROPERTY_INDEX_KEY_STORE_MMAP_SIZE;
-    @Description( "The size to allocate for memory mapping the store for property key indexes" )
-    public static final String PROPERTY_INDEX_STORE_MMAP_SIZE = Config.PROPERTY_INDEX_STORE_MMAP_SIZE;
-    @Description( "The size to allocate for memory mapping the property value store" )
-    public static final String PROPERTY_STORE_MMAP_SIZE = Config.PROPERTY_STORE_MMAP_SIZE;
-    @Description( "The size to allocate for memory mapping the string property store" )
-    public static final String STRING_PROPERTY_STORE_MMAP_SIZE = Config.STRING_PROPERTY_STORE_MMAP_SIZE;
-    @Description( "The size to allocate for memory mapping the relationship store" )
-    public static final String RELATIONSHIP_STORE_MMAP_SIZE = Config.RELATIONSHIP_STORE_MMAP_SIZE;
-    @Description( "Relative path for where the Neo4j logical log is located" )
-    public static final String LOGICAL_LOG = Config.LOGICAL_LOG;
-    @Description( "Relative path for where the Neo4j storage information file is located" )
-    public static final String NEO_STORE = Config.NEO_STORE;
-    @Description( "The type of cache to use for nodes and relationships, one of [weak, soft, none]" )
-    public static final String CACHE_TYPE = Config.CACHE_TYPE;
 
     public ConfigurationBean()
     {
@@ -112,17 +75,17 @@ public final class ConfigurationBean extends ManagementBeanProvider
         static
         {
             final Map<String, String> descriptions = new HashMap<String, String>();
-            for ( final Field field : ConfigurationBean.class.getFields() )
+            for ( final Field field : Config.class.getFields() )
             {
                 if ( Modifier.isStatic( field.getModifiers() )
                      && Modifier.isFinal( field.getModifiers() ) )
                 {
-                    final Description descr = field.getAnnotation( Description.class );
-                    if ( descr == null || field.getType() != String.class ) continue;
+                    final Documented documentation = field.getAnnotation( Documented.class );
+                    if ( documentation == null || field.getType() != String.class ) continue;
                     try
                     {
                         if ( !field.isAccessible() ) field.setAccessible( true );
-                        descriptions.put( (String) field.get( null ), descr.value() );
+                        descriptions.put( (String) field.get( null ), documentation.value() );
                     }
                     catch ( Exception e )
                     {
