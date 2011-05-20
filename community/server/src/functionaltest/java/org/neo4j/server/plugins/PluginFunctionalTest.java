@@ -25,6 +25,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.server.WebTestUtils.CLIENT;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,7 +42,6 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.NodeRepresentationTest;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 @SuppressWarnings("unchecked")
@@ -359,9 +359,10 @@ public class PluginFunctionalTest extends PluginFunctionalAbstractBase
 
         String url = getPluginMethodUri( functionalTestHelper.nodeUri( n ), "pathToReference" );
 
-        ClientResponse response = Client.create().resource( url ).accept( MediaType.APPLICATION_JSON_TYPE ).post( ClientResponse.class );
+        ClientResponse response = CLIENT.resource( url ).accept( MediaType.APPLICATION_JSON_TYPE ).post( ClientResponse.class );
 
         assertThat( response.getStatus(), is(204) );
+        response.close();
     }
 
 

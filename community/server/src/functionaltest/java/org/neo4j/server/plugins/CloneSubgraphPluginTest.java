@@ -19,10 +19,19 @@
  */
 package org.neo4j.server.plugins;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientHandlerException;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.UniformInterfaceException;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.server.WebTestUtils.CLIENT;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
+import javax.ws.rs.core.MediaType;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,13 +46,9 @@ import org.neo4j.server.rest.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 
-import javax.ws.rs.core.MediaType;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-
-import static org.junit.Assert.*;
+import com.sun.jersey.api.client.ClientHandlerException;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.UniformInterfaceException;
 
 public class CloneSubgraphPluginTest {
 
@@ -140,7 +145,7 @@ public class CloneSubgraphPluginTest {
         originalCount--; // Don't count the reference node
 
         // Find the start node URI from the server
-        ClientResponse response = Client.create().resource(functionalTestHelper.dataUri() + "node/1").accept(MediaType.APPLICATION_JSON)
+        ClientResponse response = CLIENT.resource(functionalTestHelper.dataUri() + "node/1").accept(MediaType.APPLICATION_JSON)
                 .get(ClientResponse.class);
 
         String entity = response.getEntity(String.class);
@@ -161,13 +166,15 @@ public class CloneSubgraphPluginTest {
         assertNotNull(clonedSubgraphUri);
         
         final String CLONE_DEPTH_MUCH_LARGER_THAN_THE_GRAPH = "99";
-        response = Client.create().resource(clonedSubgraphUri).type(MediaType.APPLICATION_FORM_URLENCODED).entity("depth=" + CLONE_DEPTH_MUCH_LARGER_THAN_THE_GRAPH).post(ClientResponse.class);
+        response.close();
+        response = CLIENT.resource(clonedSubgraphUri).type(MediaType.APPLICATION_FORM_URLENCODED).entity("depth=" + CLONE_DEPTH_MUCH_LARGER_THAN_THE_GRAPH).post(ClientResponse.class);
         
         assertEquals(200, response.getStatus());
         
 
         int doubleTheNumberOfNodes = (originalCount * 2) + 1;
         assertEquals(doubleTheNumberOfNodes, eagerlyCount(server.getDatabase().graph.getAllNodes()));
+        response.close();
     }
 
     private int eagerlyCount(Iterable<?> items) {

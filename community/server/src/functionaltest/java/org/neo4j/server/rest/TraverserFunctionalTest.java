@@ -21,6 +21,7 @@ package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.server.WebTestUtils.CLIENT;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -40,10 +41,9 @@ import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
-
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
 import org.neo4j.server.rest.web.PropertyValueException;
+
+import com.sun.jersey.api.client.ClientResponse;
 
 public class TraverserFunctionalTest {
     private long startNode;
@@ -91,7 +91,7 @@ public class TraverserFunctionalTest {
     }
 
     private ClientResponse traverse(long node, String description) {
-        return Client.create().resource(functionalTestHelper.nodeUri(node) + "/traverse/node").accept(MediaType.APPLICATION_JSON_TYPE).entity(description,
+        return CLIENT.resource(functionalTestHelper.nodeUri(node) + "/traverse/node").accept(MediaType.APPLICATION_JSON_TYPE).entity(description,
                 MediaType.APPLICATION_JSON_TYPE).post(ClientResponse.class);
     }
 
@@ -99,6 +99,7 @@ public class TraverserFunctionalTest {
     public void shouldGet404WhenTraversingFromNonExistentNode() {
         ClientResponse response = traverse(99999, "{}");
         assertEquals(Status.NOT_FOUND.getStatusCode(), response.getStatus());
+        response.close();
     }
 
     @Test
@@ -106,6 +107,7 @@ public class TraverserFunctionalTest {
         long node = helper.createNode();
         ClientResponse response = traverse(node, "{}");
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
+        response.close();
     }
 
     @Test
@@ -115,6 +117,7 @@ public class TraverserFunctionalTest {
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
         String entity = response.getEntity(String.class);
         expectNodes(entity, child1_l1, child2_l1);
+        response.close();
     }
 
     private void expectNodes(String entity, long... nodes) throws PropertyValueException
@@ -140,6 +143,7 @@ public class TraverserFunctionalTest {
         ClientResponse response = traverse(startNode, description);
         String entity = response.getEntity(String.class);
         expectNodes(entity, startNode, child1_l1, child1_l3, child2_l3);
+        response.close();
     }
 
     @Test
@@ -147,5 +151,6 @@ public class TraverserFunctionalTest {
         long node = helper.createNode();
         ClientResponse response = traverse(node, "::not JSON{[ at all");
         assertEquals(Status.BAD_REQUEST.getStatusCode(), response.getStatus());
+        response.close();
     }
 }

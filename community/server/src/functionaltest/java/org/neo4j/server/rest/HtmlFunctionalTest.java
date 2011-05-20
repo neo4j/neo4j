@@ -22,6 +22,7 @@ package org.neo4j.server.rest;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.server.WebTestUtils.CLIENT;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -38,7 +39,6 @@ import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.RelationshipDirection;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class HtmlFunctionalTest {
@@ -92,71 +92,79 @@ public class HtmlFunctionalTest {
 
     @Test
     public void shouldGetRoot() {
-        ClientResponse response = Client.create().resource(functionalTestHelper.dataUri()).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
+        ClientResponse response = CLIENT.resource(functionalTestHelper.dataUri()).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
         assertValidHtml(response.getEntity(String.class));
+        response.close();
     }
 
     @Test
     public void shouldGetNodeIndexRoot() {
-        ClientResponse response = Client.create().resource(functionalTestHelper.nodeIndexUri()).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
+        ClientResponse response = CLIENT.resource(functionalTestHelper.nodeIndexUri()).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
         assertValidHtml(response.getEntity(String.class));
+        response.close();
     }
 
     @Test
     public void shouldGetRelationshipIndexRoot() {
-        ClientResponse response = Client.create().resource(functionalTestHelper.relationshipIndexUri()).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
+        ClientResponse response = CLIENT.resource(functionalTestHelper.relationshipIndexUri()).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
         assertValidHtml(response.getEntity(String.class));
+        response.close();
     }
 
     @Test
     public void shouldGetTrinityWhenSearchingForHer() {
-        ClientResponse response = Client.create().resource(functionalTestHelper.indexNodeUri("node", "name", "Trinity" )).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
+        ClientResponse response = CLIENT.resource(functionalTestHelper.indexNodeUri("node", "name", "Trinity" )).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
         String entity = response.getEntity(String.class);
         assertTrue(entity.contains("Trinity"));
         assertValidHtml(entity);
+        response.close();
     }
 
     @Test
     public void shouldGetThomasAndersonDirectly() {
-        ClientResponse response = Client.create().resource(functionalTestHelper.nodeUri(thomasAnderson)).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
+        ClientResponse response = CLIENT.resource(functionalTestHelper.nodeUri(thomasAnderson)).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
         String entity = response.getEntity(String.class);
         assertTrue(entity.contains("Thomas Anderson"));
         assertValidHtml(entity);
+        response.close();
     }
 
     @Test
     public void shouldGetSomeRelationships() {
-        ClientResponse response = Client.create().resource(functionalTestHelper.relationshipsUri(thomasAnderson, RelationshipDirection.all.name(), "KNOWS")).accept(
+        ClientResponse response = CLIENT.resource(functionalTestHelper.relationshipsUri(thomasAnderson, RelationshipDirection.all.name(), "KNOWS")).accept(
                 MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
         String entity = response.getEntity(String.class);
         assertTrue(entity.contains("KNOWS"));
         assertFalse(entity.contains("LOVES"));
         assertValidHtml(entity);
+        response.close();
 
-        response = Client.create().resource(functionalTestHelper.relationshipsUri(thomasAnderson, RelationshipDirection.all.name(), "LOVES")).accept(MediaType.TEXT_HTML_TYPE).get(
+        response = CLIENT.resource(functionalTestHelper.relationshipsUri(thomasAnderson, RelationshipDirection.all.name(), "LOVES")).accept(MediaType.TEXT_HTML_TYPE).get(
                 ClientResponse.class);
         entity = response.getEntity(String.class);
         assertFalse(entity.contains("KNOWS"));
         assertTrue(entity.contains("LOVES"));
         assertValidHtml(entity);
+        response.close();
 
-        response = Client.create().resource(functionalTestHelper.relationshipsUri(thomasAnderson, RelationshipDirection.all.name(), "LOVES", "KNOWS")).accept(
+        response = CLIENT.resource(functionalTestHelper.relationshipsUri(thomasAnderson, RelationshipDirection.all.name(), "LOVES", "KNOWS")).accept(
                 MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
         entity = response.getEntity(String.class);
         assertTrue(entity.contains("KNOWS"));
         assertTrue(entity.contains("LOVES"));
         assertValidHtml(entity);
+        response.close();
     }
 
     @Test
     public void shouldGetThomasAndersonLovesTrinityRelationship() {
-        ClientResponse response = Client.create().resource(functionalTestHelper.relationshipUri(thomasAndersonLovesTrinity)).accept(MediaType.TEXT_HTML_TYPE).get(
+        ClientResponse response = CLIENT.resource(functionalTestHelper.relationshipUri(thomasAndersonLovesTrinity)).accept(MediaType.TEXT_HTML_TYPE).get(
                 ClientResponse.class);
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
         String entity = response.getEntity(String.class);
@@ -164,6 +172,7 @@ public class HtmlFunctionalTest {
         assertTrue(entity.contains("100"));
         assertTrue(entity.contains("LOVES"));
         assertValidHtml(entity);
+        response.close();
     }
 
     private void assertValidHtml(String entity) {

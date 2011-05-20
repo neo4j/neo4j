@@ -22,6 +22,7 @@ package org.neo4j.server.rest;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.server.WebTestUtils.CLIENT;
 
 import java.io.IOException;
 import java.net.URI;
@@ -40,7 +41,6 @@ import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
@@ -82,12 +82,14 @@ public class RetrieveNodeFunctionalTest
     public void shouldGetContentLengthHeaderWhenRetrievingNode() throws Exception {
         ClientResponse response = retrieveNodeFromService(nodeUri.toString());
         assertNotNull(response.getHeaders().get("Content-Length"));
+        response.close();
     }
 
     @Test
     public void shouldHaveJsonMediaTypeOnResponse() {
         ClientResponse response = retrieveNodeFromService(nodeUri.toString());
         assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
+        response.close();
     }
 
     @Test
@@ -96,6 +98,7 @@ public class RetrieveNodeFunctionalTest
 
         Map<String, Object> map = JsonHelper.jsonToMap(response.getEntity(String.class));
         assertTrue(map.containsKey("self"));
+        response.close();
     }
 
     @Test
@@ -106,7 +109,7 @@ public class RetrieveNodeFunctionalTest
     }
 
     private ClientResponse retrieveNodeFromService(final String uri) {
-        WebResource resource = Client.create().resource(uri);
+        WebResource resource = CLIENT.resource(uri);
         ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
         return response;
     }

@@ -20,9 +20,12 @@
 package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.server.WebTestUtils.CLIENT;
 
 import java.io.IOException;
 import java.net.URI;
+
+import javax.ws.rs.core.MediaType;
 
 import org.junit.After;
 import org.junit.Before;
@@ -31,11 +34,8 @@ import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
-
-import javax.ws.rs.core.MediaType;
 
 public class RemoveRelationshipFunctionalTest {
 
@@ -64,6 +64,7 @@ public class RemoveRelationshipFunctionalTest {
         ClientResponse response = sendDeleteRequest(new URI(functionalTestHelper.relationshipUri(relationshipId)));
 
         assertEquals(204, response.getStatus());
+        response.close();
     }
 
     @Test
@@ -73,11 +74,11 @@ public class RemoveRelationshipFunctionalTest {
         ClientResponse response = sendDeleteRequest(new URI(functionalTestHelper.relationshipUri((relationshipId + 1) * 9999)));
 
         assertEquals(404, response.getStatus());
+        response.close();
     }
 
     private ClientResponse sendDeleteRequest(URI requestUri) {
-        Client client = Client.create();
-        WebResource.Builder resource = client.resource(requestUri).accept( MediaType.APPLICATION_JSON );
+        WebResource.Builder resource = CLIENT.resource(requestUri).accept( MediaType.APPLICATION_JSON );
         ClientResponse response = resource.delete( ClientResponse.class );
         return response;
     }

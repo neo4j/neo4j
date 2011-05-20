@@ -21,6 +21,7 @@ package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.neo4j.server.WebTestUtils.CLIENT;
 
 import java.io.IOException;
 import java.net.URI;
@@ -47,7 +48,6 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.domain.URIHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
 
@@ -208,7 +208,7 @@ public class IndexNodeFunctionalTest
         String indexName = "testy";
         helper.createNodeIndex( indexName );
         String entity = JsonHelper.createJsonFrom( functionalTestHelper.nodeUri( nodeId ) );
-        ClientResponse response = Client.create()
+        ClientResponse response = CLIENT
                 .resource(
                         functionalTestHelper.indexNodeUri( indexName, key,
                                 value ) )
@@ -233,7 +233,7 @@ public class IndexNodeFunctionalTest
 
         String indexName = "mindex";
         helper.createNodeIndex( indexName );
-        ClientResponse response = Client.create()
+        ClientResponse response = CLIENT
                 .resource(
                         functionalTestHelper.indexNodeUri( indexName, key,
                                 value ) )
@@ -247,7 +247,7 @@ public class IndexNodeFunctionalTest
         String indexUri = response.getHeaders()
                 .getFirst( "Location" );
 
-        response = Client.create()
+        response = CLIENT
                 .resource( indexUri )
                 .accept( MediaType.APPLICATION_JSON )
                 .get( ClientResponse.class );
@@ -268,7 +268,7 @@ public class IndexNodeFunctionalTest
         String indexName = "nosuchindex";
         String indexUri = functionalTestHelper.nodeIndexUri() + indexName + "/"
                           + key + "/" + value;
-        ClientResponse response = Client.create()
+        ClientResponse response = CLIENT
                 .resource( indexUri )
                 .accept( MediaType.APPLICATION_JSON )
                 .get( ClientResponse.class );
@@ -286,7 +286,7 @@ public class IndexNodeFunctionalTest
         String name2 = "Agent Smith";
 
         String indexName = "matrix";
-        ClientResponse responseToPost = Client.create()
+        ClientResponse responseToPost = CLIENT
                 .resource( functionalTestHelper.nodeUri() )
                 .accept( MediaType.APPLICATION_JSON )
                 .entity( "{\"name\":\"" + name1 + "\"}",
@@ -295,7 +295,8 @@ public class IndexNodeFunctionalTest
         assertEquals( 201, responseToPost.getStatus() );
         String location1 = responseToPost.getHeaders()
                 .getFirst( HttpHeaders.LOCATION );
-        responseToPost = Client.create()
+        responseToPost.close();
+        responseToPost = CLIENT
                 .resource( functionalTestHelper.nodeUri() )
                 .accept( MediaType.APPLICATION_JSON )
                 .entity( "{\"name\":\"" + name2 + "\"}",
@@ -304,7 +305,8 @@ public class IndexNodeFunctionalTest
         assertEquals( 201, responseToPost.getStatus() );
         String location2 = responseToPost.getHeaders()
                 .getFirst( HttpHeaders.LOCATION );
-        responseToPost = Client.create()
+        responseToPost.close();
+        responseToPost = CLIENT
                 .resource(
                         functionalTestHelper.indexNodeUri( indexName, key,
                                 value ) )
@@ -315,7 +317,8 @@ public class IndexNodeFunctionalTest
         assertEquals( 201, responseToPost.getStatus() );
         String indexLocation1 = responseToPost.getHeaders()
                 .getFirst( HttpHeaders.LOCATION );
-        responseToPost = Client.create()
+        responseToPost.close();
+        responseToPost = CLIENT
                 .resource(
                         functionalTestHelper.indexNodeUri( indexName, key,
                                 value ) )
@@ -329,8 +332,9 @@ public class IndexNodeFunctionalTest
         Map<String, String> uriToName = new HashMap<String, String>();
         uriToName.put( indexLocation1.toString(), name1 );
         uriToName.put( indexLocation2.toString(), name2 );
+        responseToPost.close();
 
-        ClientResponse response = Client.create()
+        ClientResponse response = CLIENT
                 .resource(
                         functionalTestHelper.indexNodeUri( indexName, key,
                                 value ) )
@@ -349,6 +353,7 @@ public class IndexNodeFunctionalTest
             counter++;
         }
         assertEquals( 2, counter );
+        response.close();
     }
 
     @Test
@@ -360,7 +365,7 @@ public class IndexNodeFunctionalTest
         long node = helper.createNode();
         helper.addNodeToIndex( indexName, key, value, node );
 
-        ClientResponse response = Client.create()
+        ClientResponse response = CLIENT
                 .resource(
                         functionalTestHelper.indexNodeUri( indexName )
                                 + "?query=" + key + ":" + value )
@@ -368,6 +373,7 @@ public class IndexNodeFunctionalTest
                 .get( ClientResponse.class );
 
         assertEquals( 200, response.getStatus() );
+        response.close();
     }
 
     @Test
@@ -375,13 +381,14 @@ public class IndexNodeFunctionalTest
     {
         String indexName = "empty-index";
         helper.createNodeIndex( indexName );
-        ClientResponse response = Client.create()
+        ClientResponse response = CLIENT
                 .resource(
                         functionalTestHelper.indexNodeUri( indexName,
                                 "non-existent-key", "non-existent-value" ) )
                 .accept( MediaType.APPLICATION_JSON )
                 .get( ClientResponse.class );
         assertEquals( 200, response.getStatus() );
+        response.close();
     }
 
     @Test
@@ -405,13 +412,14 @@ public class IndexNodeFunctionalTest
         helper.createRelationshipIndex( indexName );
 
         // Remove the index
-        ClientResponse response = Client.create()
+        ClientResponse response = CLIENT
                 .resource(
                         functionalTestHelper.indexRelationshipUri( indexName ) )
                 .accept( MediaType.APPLICATION_JSON )
                 .delete( ClientResponse.class );
 
         assertEquals( 204, response.getStatus() );
+        response.close();
     }
 
     @Test
@@ -437,7 +445,7 @@ public class IndexNodeFunctionalTest
                 .size() );
         assertEquals( 1, helper.getIndexedNodes( indexName, key2, value2 )
                 .size() );
-        Client.create()
+        CLIENT
                 .resource(
                         functionalTestHelper.nodeIndexUri() + indexName + "/"
                                 + key1 + "/" + value1 + "/" + node )
@@ -450,7 +458,7 @@ public class IndexNodeFunctionalTest
                 .size() );
         assertEquals( 1, helper.getIndexedNodes( indexName, key2, value2 )
                 .size() );
-        Client.create()
+        CLIENT
                 .resource(
                         functionalTestHelper.nodeIndexUri() + indexName + "/"
                                 + key2 + "/" + node )
@@ -463,7 +471,7 @@ public class IndexNodeFunctionalTest
                 .size() );
         assertEquals( 0, helper.getIndexedNodes( indexName, key2, value2 )
                 .size() );
-        Client.create()
+        CLIENT
                 .resource(
                         functionalTestHelper.nodeIndexUri() + indexName + "/"
                                 + node )
@@ -487,7 +495,7 @@ public class IndexNodeFunctionalTest
         value = URIHelper.encode( value );
         String indexName = "spacey-values";
         helper.createNodeIndex( indexName );
-        ClientResponse response = Client.create()
+        ClientResponse response = CLIENT
                 .resource(
                         functionalTestHelper.indexNodeUri( indexName, key,
                                 value ) )
@@ -498,7 +506,8 @@ public class IndexNodeFunctionalTest
                 .post( ClientResponse.class );
         assertEquals( Status.CREATED.getStatusCode(), response.getStatus() );
         URI location = response.getLocation();
-        response = Client.create()
+        response.close();
+        response = CLIENT
                 .resource(
                         functionalTestHelper.indexNodeUri( indexName, key,
                                 value ) )
@@ -507,11 +516,12 @@ public class IndexNodeFunctionalTest
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
         Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue( response.getEntity( String.class ) );
         assertEquals( 1, hits.size() );
+        response.close();
 
-        Client.create()
+        CLIENT
                 .resource( location )
                 .delete();
-        response = Client.create()
+        response = CLIENT
                 .resource(
                         functionalTestHelper.indexNodeUri( indexName, key,
                                 value ) )
@@ -519,6 +529,7 @@ public class IndexNodeFunctionalTest
                 .get( ClientResponse.class );
         hits = (Collection<?>) JsonHelper.jsonToSingleValue( response.getEntity( String.class ) );
         assertEquals( 0, hits.size() );
+        response.close();
     }
 
     @Test
@@ -529,7 +540,7 @@ public class IndexNodeFunctionalTest
         String value = "value";
         String indexName = "botherable-index";
         helper.createNodeIndex( indexName );
-        ClientResponse response = Client.create()
+        ClientResponse response = CLIENT
                 .resource(
                         functionalTestHelper.indexNodeUri( indexName, key,
                                 value ) )
@@ -538,5 +549,6 @@ public class IndexNodeFunctionalTest
                 .entity( functionalTestHelper.nodeUri( nodeId ) )
                 .post( ClientResponse.class );
         assertEquals( 400, response.getStatus() );
+        response.close();
     }
 }
