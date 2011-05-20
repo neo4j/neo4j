@@ -24,18 +24,22 @@ import java.util.List;
 import java.util.Map;
 
 import javax.annotation.processing.SupportedAnnotationTypes;
+import javax.annotation.processing.SupportedSourceVersion;
+import javax.lang.model.SourceVersion;
+import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
 
+@SupportedSourceVersion( SourceVersion.RELEASE_6 )
 @SupportedAnnotationTypes( "org.neo4j.helpers.Service.Implementation" )
 public class ServiceProcessor extends AnnotationProcessor
 {
     @SuppressWarnings( "unchecked" )
     @Override
-    void process( TypeElement annotation, Element annotated,
+    void process( TypeElement annotationType, Element annotated, AnnotationMirror annotation,
             Map<? extends ExecutableElement, ? extends AnnotationValue> values ) throws IOException
     {
         for ( AnnotationValue o : (List<? extends AnnotationValue>) values.values().iterator().next().getValue() )
