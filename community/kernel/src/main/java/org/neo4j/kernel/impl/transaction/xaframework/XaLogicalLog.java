@@ -35,6 +35,7 @@ import java.util.logging.Logger;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.BufferedFileChannel;
@@ -317,8 +318,7 @@ public class XaLogicalLog
         }
         catch ( IOException e )
         {
-            throw new XAException( "Logical log couldn't start transaction: "
-                + e );
+            throw Exceptions.withCause( new XAException( "Logical log couldn't start transaction: " + e ), e );
         }
         return xidIdent;
     }
@@ -334,8 +334,8 @@ public class XaLogicalLog
         }
         catch ( IOException e )
         {
-            throw new XAException( "Logical log unable to mark prepare ["
-                + identifier + "] " + e );
+            throw Exceptions.withCause( new XAException( "Logical log unable to mark prepare [" + identifier + "] " ),
+                    e );
         }
     }
 
@@ -354,8 +354,8 @@ public class XaLogicalLog
         }
         catch ( IOException e )
         {
-            throw new XAException( "Logical log unable to mark 1P-commit ["
-                + identifier + "] " + e );
+            throw Exceptions.withCause(
+                    new XAException( "Logical log unable to mark 1P-commit [" + identifier + "] " ), e );
         }
     }
 
@@ -385,8 +385,8 @@ public class XaLogicalLog
         }
         catch ( IOException e )
         {
-            throw new XAException( "Logical log unable to mark as done ["
-                + identifier + "] " + e );
+            throw Exceptions.withCause( new XAException( "Logical log unable to mark as done [" + identifier + "] " ),
+                    e );
         }
     }
 
@@ -418,8 +418,7 @@ public class XaLogicalLog
         }
         catch ( IOException e )
         {
-            throw new XAException( "Logical log unable to mark 2PC ["
-                + identifier + "] " + e );
+            throw Exceptions.withCause( new XAException( "Logical log unable to mark 2PC [" + identifier + "] " ), e );
         }
     }
 
@@ -522,8 +521,7 @@ public class XaLogicalLog
         }
         catch ( XAException e )
         {
-            e.printStackTrace();
-            throw new IOException( e.getMessage() );
+            throw new IOException( e );
         }
     }
 
@@ -573,8 +571,7 @@ public class XaLogicalLog
         }
         catch ( XAException e )
         {
-            e.printStackTrace();
-            throw new IOException( e.getMessage() );
+            throw new IOException( e );
         }
     }
 
@@ -1100,7 +1097,7 @@ public class XaLogicalLog
             String currentLogName = getCurrentLogFileName();
             FileChannel channel = new RandomAccessFile( currentLogName, "r" ).getChannel();
 //            channel = new BufferedFileChannel( channel );
-            
+
             // Combined with the writeBuffer in cases where a DirectMappedLogBuffer
             // is used, on Windows or when memory mapping is turned off.
             // Otherwise the channel is returned directly.
@@ -1211,7 +1208,7 @@ public class XaLogicalLog
         }
 
     }
-    
+
     private long[] readLogHeader( ReadableByteChannel source, String message ) throws IOException
     {
         try
@@ -1313,8 +1310,7 @@ public class XaLogicalLog
         }
         catch ( XAException e )
         {
-            e.printStackTrace();
-            throw new IOException( e.getMessage() );
+            throw new IOException( e );
         }
 
 //        LogEntry.Done done = new LogEntry.Done( entry.getIdentifier() );

@@ -17,29 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.nioneo.store;
+package org.neo4j.kernel.impl.annotations;
 
-public class RelationshipChainPosition
+// Not ready for use yet
+@interface Documented
 {
-    private long nextRecord;
-    
-    public RelationshipChainPosition( long startRecord )
-    {
-        nextRecord = startRecord;
-    }
-    
-    public long getNextRecord()
-    {
-        return nextRecord;
-    }
-    
-    public void setNextRecord( long record )
-    {
-        nextRecord = record;
-    }
-
-    public boolean hasMore()
-    {
-        return nextRecord != Record.NO_NEXT_RELATIONSHIP.intValue();
-    }
+    // Used by annotation processing and runtime tooling
 }

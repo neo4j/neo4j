@@ -85,4 +85,9 @@ public class JaxRsResponse extends Response
     {
         return new URI(getHeaders().get( HttpHeaders.LOCATION).get(0));
     }
+    
+    public void close()
+    {
+        jettyResponse.close();
+    }
 }

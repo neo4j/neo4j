@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -98,7 +99,7 @@ public class NeoStore extends AbstractStore
         nodeStore = new NodeStore( getStorageFileName() + ".nodestore.db",
             getConfig() );
     }
-    
+
     /**
      * Closes the node,relationship,property and relationship type stores.
      */
@@ -265,7 +266,7 @@ public class NeoStore extends AbstractStore
             }
             catch ( RuntimeException e )
             {
-                e.printStackTrace();
+                logger.log( Level.WARNING, "Could not set last committed tx id", e );
             }
         }
         lastCommittedTx = txId;

@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -45,7 +46,7 @@ class PersistenceWindowPool
     // == recordSize
     private final int blockSize;
     private FileChannel fileChannel;
-    private final Map<Integer,PersistenceRow> activeRowWindows = 
+    private final Map<Integer,PersistenceRow> activeRowWindows =
         new HashMap<Integer,PersistenceRow>();
     private long availableMem = 0;
     private long memUsed = 0;
@@ -66,10 +67,10 @@ class PersistenceWindowPool
     private boolean useMemoryMapped = true;
 
     private final boolean readOnly;
-    
+
     /**
      * Create new pool for a store.
-     * 
+     *
      * @param storeName
      *            Name of store that use this pool
      * @param blockSize
@@ -82,7 +83,7 @@ class PersistenceWindowPool
      *             If unable to create pool
      */
     PersistenceWindowPool( String storeName, int blockSize,
-        FileChannel fileChannel, long mappedMem, 
+        FileChannel fileChannel, long mappedMem,
         boolean useMemoryMappedBuffers, boolean readOnly )
     {
         this.storeName = storeName;
@@ -106,7 +107,7 @@ class PersistenceWindowPool
     /**
      * Acquires a windows for <CODE>position</CODE> and <CODE>operationType</CODE>
      * locking the window preventing other threads from using it.
-     * 
+     *
      * @param position
      *            The position the needs to be encapsulated by the window
      * @param operationType
@@ -154,12 +155,12 @@ class PersistenceWindowPool
                 {
                     miss++;
                     brickMiss++;
-                    
-                    PersistenceRow dpw = activeRowWindows.get( (int) position ); 
-                    
+
+                    PersistenceRow dpw = activeRowWindows.get( (int) position );
+
                     if ( dpw == null )
                     {
-                        dpw = new PersistenceRow( position, blockSize, 
+                        dpw = new PersistenceRow( position, blockSize,
                             fileChannel );
                     }
                     if ( operationType == OperationType.READ )
@@ -194,7 +195,7 @@ class PersistenceWindowPool
     /**
      * Releases a window used for an operation back to the pool and unlocks it
      * so other threads may use it.
-     * 
+     *
      * @param window
      *            The window to be released
      * @throws IOException
@@ -263,14 +264,14 @@ class PersistenceWindowPool
         }
         catch ( IOException e )
         {
-            throw new UnderlyingStorageException( 
+            throw new UnderlyingStorageException(
                 "Failed to flush file channel " + storeName, e );
         }
     }
 
     private static class BrickElement
     {
-        private int index;
+        private final int index;
         private int hitCount;
         private LockableWindow window = null;
 
@@ -320,6 +321,7 @@ class PersistenceWindowPool
             }
         }
 
+        @Override
         public String toString()
         {
             return "" + hitCount + (window == null ? "x" : "o");
@@ -335,7 +337,7 @@ class PersistenceWindowPool
         }
         catch ( IOException e )
         {
-            throw new UnderlyingStorageException( 
+            throw new UnderlyingStorageException(
                 "Unable to get file size for " + storeName, e );
         }
         if ( blockSize == 0 )
@@ -453,7 +455,7 @@ class PersistenceWindowPool
             }
         }
     }
-    
+
     private synchronized void refreshBricks()
     {
         if ( brickMiss < REFRESH_BRICK_COUNT )
@@ -488,7 +490,7 @@ class PersistenceWindowPool
         // fill up unused memory
         while ( memUsed + brickSize <= availableMem && nonMappedIndex >= 0 )
         {
-            BrickElement nonMappedBrick = nonMappedBricks.get( 
+            BrickElement nonMappedBrick = nonMappedBricks.get(
                 nonMappedIndex-- );
             if ( nonMappedBrick.getHit() == 0 )
             {
@@ -496,24 +498,22 @@ class PersistenceWindowPool
             }
             try
             {
-                nonMappedBrick.setWindow( 
-                    allocateNewWindow( nonMappedBrick.index() ) ); 
+                nonMappedBrick.setWindow(
+                    allocateNewWindow( nonMappedBrick.index() ) );
                 memUsed += brickSize;
             }
             catch ( MappedMemException e )
             {
-                e.printStackTrace();
                 ooe++;
-                logWarn( "Unable to memory map" );
+                logWarn( "Unable to memory map", e );
             }
             catch ( OutOfMemoryError e )
             {
-                e.printStackTrace();
                 ooe++;
-                logWarn( "Unable to allocate direct buffer" );
+                logWarn( "Unable to allocate direct buffer", e );
             }
         }
-        
+
         // switch bad mappings
         while ( nonMappedIndex >= 0 && mappedIndex < mappedBricks.size() )
         {
@@ -539,7 +539,7 @@ class PersistenceWindowPool
                 memUsed -= brickSize;
                 try
                 {
-                    nonMappedBrick.setWindow( 
+                    nonMappedBrick.setWindow(
                         allocateNewWindow( nonMappedBrick.index() ) );
                     memUsed += brickSize;
                     switches++;
@@ -600,18 +600,18 @@ class PersistenceWindowPool
     {
         if ( useMemoryMapped )
         {
-             return new MappedPersistenceWindow( 
-                brick * brickSize / blockSize, blockSize, 
+             return new MappedPersistenceWindow(
+                brick * brickSize / blockSize, blockSize,
                 brickSize, fileChannel, mapMode );
         }
-        PlainPersistenceWindow dpw = 
-            new PlainPersistenceWindow( 
-                brick * brickSize / blockSize, 
+        PlainPersistenceWindow dpw =
+            new PlainPersistenceWindow(
+                brick * brickSize / blockSize,
                 blockSize, brickSize, fileChannel );
         dpw.readPosition();
         return dpw;
     }
-    
+
     static class BrickSorter implements Comparator<BrickElement>, Serializable
     {
         public int compare( BrickElement o1, BrickElement o2 )
@@ -619,6 +619,7 @@ class PersistenceWindowPool
             return o1.getHit() - o2.getHit();
         }
 
+        @Override
         public boolean equals( Object o )
         {
             if ( o instanceof BrickSorter )
@@ -628,6 +629,7 @@ class PersistenceWindowPool
             return false;
         }
 
+        @Override
         public int hashCode()
         {
             return 7371;
@@ -644,7 +646,7 @@ class PersistenceWindowPool
         }
         catch ( IOException e )
         {
-            throw new UnderlyingStorageException( 
+            throw new UnderlyingStorageException(
                 "Unable to get file size for " + storeName, e );
         }
     }
@@ -653,10 +655,15 @@ class PersistenceWindowPool
     {
         log.warning( "[" + storeName + "] " + logMessage );
     }
-    
+
+    private void logWarn( String logMessage, Throwable cause )
+    {
+        log.log( Level.WARNING, "[" + storeName + "] " + logMessage, cause );
+    }
+
     WindowPoolStats getStats()
     {
-        return new WindowPoolStats( storeName, availableMem, memUsed, brickCount, 
+        return new WindowPoolStats( storeName, availableMem, memUsed, brickCount,
                 brickSize, hit, miss, ooe );
     }
 }

@@ -17,22 +17,42 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.index.impl.lucene;
+package org.neo4j.kernel.impl.util;
 
-import org.neo4j.graphdb.index.IndexImplementation;
-import org.neo4j.graphdb.index.IndexProvider;
-import org.neo4j.kernel.KernelData;
+import static java.lang.System.arraycopy;
 
-public class LuceneIndexProvider extends IndexProvider
+public class DirectArrayMap<V>
 {
-    public LuceneIndexProvider()
+    private volatile V[] array;
+    
+    public DirectArrayMap( int maxSize )
     {
-        super( LuceneIndexImplementation.SERVICE_NAME );
+        array = (V[])new Object[maxSize];
+    }
+    
+    public void put( int key, V value )
+    {
+        V[] newArray = copyArray();
+        newArray[key] = value;
+        array = newArray;
+    }
+    
+    private synchronized V[] copyArray()
+    {
+        V[] newArray = (V[])new Object[array.length];
+        arraycopy( array, 0, newArray, 0, array.length );
+        return newArray;
     }
 
-    @Override
-    public IndexImplementation load( KernelData kernel )
+    public void remove( int key )
     {
-        return new LuceneIndexImplementation( kernel.graphDatabase(), kernel.getConfig() );
+        V[] newArray = copyArray();
+        newArray[key] = null;
+        array = newArray;
+    }
+    
+    public V get( int key )
+    {
+        return array[key];
     }
 }

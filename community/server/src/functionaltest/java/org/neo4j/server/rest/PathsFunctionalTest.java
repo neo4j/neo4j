@@ -19,9 +19,17 @@
  */
 package org.neo4j.server.rest;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.server.WebTestUtils.CLIENT;
+
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Map;
+
+import javax.ws.rs.core.MediaType;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -33,14 +41,8 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.web.PropertyValueException;
 
-import javax.ws.rs.core.MediaType;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.MapUtil.map;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.WebResource;
 
 public class PathsFunctionalTest
 {
@@ -83,6 +85,7 @@ public class PathsFunctionalTest
             assertThatPathEndsWith( path, nodes[ 1 ] );
             assertThatPathHasLength( path, 2 );
         }
+        response.close();
     }
 
     @Test
@@ -99,6 +102,7 @@ public class PathsFunctionalTest
         assertThatPathStartsWith( path, nodes[ 0 ] );
         assertThatPathEndsWith( path, nodes[ 1 ] );
         assertThatPathHasLength( path, 2 );
+        response.close();
     }
 
     private void assertThatPathStartsWith( Map<?, ?> path, long start )
@@ -135,12 +139,12 @@ public class PathsFunctionalTest
         assertThatPathEndsWith( path, nodes[ 1 ] );
         assertThatPathHasLength( path, 6 );
         assertEquals( 6.0, path.get( "weight" ) );
+        response.close();
     }
 
     private ClientResponse postPathQuery( long[] nodes, String query, String functionToCall )
     {
-        Client client = Client.create();
-        WebResource resource = client.resource( functionalTestHelper.nodeUri( nodes[ 0 ] ) + functionToCall );
+        WebResource resource = CLIENT.resource( functionalTestHelper.nodeUri( nodes[ 0 ] ) + functionToCall );
         ClientResponse response = resource.type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( query ).post( ClientResponse.class );
 
         return response;
@@ -161,6 +165,7 @@ public class PathsFunctionalTest
         assertThatPathEndsWith( path, nodes[ 1 ] );
         assertThatPathHasLength( path, 6 );
         assertEquals( 6.0, path.get( "weight" ) );
+        response.close();
     }
 
     @Test
@@ -174,6 +179,7 @@ public class PathsFunctionalTest
 
         ClientResponse response = postPathQuery( nodes, noHitsJson, "/path" );
         assertEquals( 404, response.getStatus() );
+        response.close();
     }
 
     private long[] createMoreComplexGraph() throws DatabaseBlockedException

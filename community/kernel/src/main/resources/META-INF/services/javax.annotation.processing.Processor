@@ -1,0 +1,2 @@
+org.neo4j.kernel.impl.annotations.ServiceProcessor
+org.neo4j.kernel.impl.annotations.DocumentationProcessor

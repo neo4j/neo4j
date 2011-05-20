@@ -20,6 +20,7 @@
 package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.server.WebTestUtils.CLIENT;
 
 import java.io.IOException;
 
@@ -32,7 +33,6 @@ import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class DatabaseMetadataServiceFunctionalTest
@@ -67,7 +67,7 @@ public class DatabaseMetadataServiceFunctionalTest
         helper.createRelationship( "foo" );
         helper.createRelationship( "bar" );
 
-        ClientResponse response = Client.create()
+        ClientResponse response = CLIENT
                 .resource( functionalTestHelper.dataUri() + "relationship/types" )
                 .accept( MediaType.APPLICATION_JSON )
                 .get( ClientResponse.class );
@@ -75,5 +75,6 @@ public class DatabaseMetadataServiceFunctionalTest
 
         DocsGenerator.create( "Get relationship types" )
                 .get( functionalTestHelper.dataUri() + "relationship/types" );
+        response.close();
     }
 }

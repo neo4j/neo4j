@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -29,6 +30,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
@@ -40,7 +42,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.CombiningIterable;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.CommonFactories;
@@ -61,11 +63,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
     private static final IdGeneratorFactory ID_GENERATOR_FACTORY =
             CommonFactories.defaultIdGeneratorFactory();
     
-//    private NodeEventConsumer nStore;
     private PropertyStore pStore;
     private RelationshipTypeStore rtStore;
-//    private RelationshipTypeEventConsumer relTypeStore;
-//    private RelationshipEventConsumer rStore;
 
     private NeoStoreXaDataSource ds;
     private NeoStoreXaConnection xaCon;
@@ -157,20 +156,14 @@ public class TestNeoStore extends AbstractNeo4jTestCase
                     "store_dir", path(),
                     "neo_store", file( "neo" ),
                     "logical_log", file( "nioneo_logical.log" ) ) );
-            
-//            ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
-//                lockManager, lockReleaser );
         }
         catch ( InstantiationException e )
         {
             throw new IOException( "" + e );
         }
         xaCon = (NeoStoreXaConnection) ds.getXaConnection();
-//        nStore = xaCon.getNodeConsumer();
         pStore = xaCon.getPropertyStore();
         rtStore = xaCon.getRelationshipTypeStore();
-//        relTypeStore = xaCon.getRelationshipTypeConsumer();
-//        rStore = xaCon.getRelationshipConsumer();
     }
 
     private Xid dummyXid;
@@ -359,10 +352,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         }
         for ( int i = 0; i < 3; i++ )
         {
-            RelationshipChainPosition pos = 
-                xaCon.getWriteTransaction().getRelationshipChainPosition( nodeIds[i] );
-            for ( RelationshipRecord rel : 
-                both( xaCon.getWriteTransaction().getMoreRelationships( nodeIds[i], pos ) ) )
+            AtomicLong pos = getPosition( xaCon, nodeIds[i] );
+            for ( RelationshipRecord rel : getMore( xaCon, nodeIds[i], pos ) )
             {
                 xaCon.getWriteTransaction().relDelete( rel.getId() );
             }
@@ -371,12 +362,19 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         commitTx();
         ds.close();
     }
-
-    @SuppressWarnings( "unchecked" )
-    private Iterable<RelationshipRecord> both(
-            Pair<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>> rels )
+    
+    private AtomicLong getPosition( NeoStoreXaConnection xaCon, long node )
     {
-        return new CombiningIterable<RelationshipRecord>( Arrays.asList( rels.first(), rels.other() ) );
+        return new AtomicLong( xaCon.getWriteTransaction().getRelationshipChainPosition( node ) );
+    }
+    
+    @SuppressWarnings( "unchecked" )
+    private Iterable<RelationshipRecord> getMore( NeoStoreXaConnection xaCon, long node, AtomicLong pos )
+    {
+        Triplet<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>, Long> result =
+                xaCon.getWriteTransaction().getMoreRelationships( node, pos.get() );
+        pos.set( result.third() );
+        return new CombiningIterable<RelationshipRecord>( asList( result.first(), result.second() ) );
     }
 
     private Object getValue( PropertyRecord propertyRecord ) throws IOException
@@ -432,10 +430,10 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         }
         assertEquals( 3, count );
         count = 0;
-        RelationshipChainPosition pos = xaCon.getWriteTransaction().getRelationshipChainPosition( node );
+        AtomicLong pos = getPosition( xaCon, node );
         while ( true )
         {
-            Iterable<RelationshipRecord> relData = both( xaCon.getWriteTransaction().getMoreRelationships( node, pos ) );
+            Iterable<RelationshipRecord> relData = getMore( xaCon, node, pos );
             if ( !relData.iterator().hasNext() )
             {
                 break;
@@ -504,10 +502,10 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         assertEquals( 3, count );
         count = 0;
         
-        RelationshipChainPosition pos = xaCon.getWriteTransaction().getRelationshipChainPosition( node );
+        AtomicLong pos = getPosition( xaCon, node );
         while ( true )
         {
-            Iterable<RelationshipRecord> relData = both( xaCon.getWriteTransaction().getMoreRelationships( node, pos ) );
+            Iterable<RelationshipRecord> relData = getMore( xaCon, node, pos );
             if ( !relData.iterator().hasNext() )
             {
                 break;
@@ -697,15 +695,11 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         assertEquals( secondNode, relData.getSecondNode() );
         assertEquals( relType, relData.getType() );
         xaCon.getWriteTransaction().relDelete( rel );
-        RelationshipChainPosition firstPos = 
-            xaCon.getWriteTransaction().getRelationshipChainPosition( firstNode );
-        Iterator<RelationshipRecord> first = 
-            both( xaCon.getWriteTransaction().getMoreRelationships( firstNode, firstPos ) ).iterator();
+        AtomicLong firstPos = getPosition( xaCon, firstNode );
+        Iterator<RelationshipRecord> first = getMore( xaCon, firstNode, firstPos ).iterator();
         first.next();
-        RelationshipChainPosition secondPos = 
-            xaCon.getWriteTransaction().getRelationshipChainPosition( secondNode );
-        Iterator<RelationshipRecord> second = 
-            both( xaCon.getWriteTransaction().getMoreRelationships( secondNode, secondPos ) ).iterator();
+        AtomicLong secondPos = getPosition( xaCon, secondNode ); 
+        Iterator<RelationshipRecord> second = getMore( xaCon, secondNode, secondPos ).iterator();
         second.next();
         assertTrue( first.hasNext() );
         assertTrue( second.hasNext() );
@@ -754,14 +748,10 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         assertEquals( secondNode, relData.getSecondNode() );
         assertEquals( relType, relData.getType() );
         xaCon.getWriteTransaction().relDelete( rel );
-        RelationshipChainPosition firstPos = 
-            xaCon.getWriteTransaction().getRelationshipChainPosition( firstNode );
-        Iterator<RelationshipRecord> first = 
-            both( xaCon.getWriteTransaction().getMoreRelationships( firstNode, firstPos ) ).iterator();
-        RelationshipChainPosition secondPos = 
-            xaCon.getWriteTransaction().getRelationshipChainPosition( secondNode );
-        Iterator<RelationshipRecord> second = 
-            both( xaCon.getWriteTransaction().getMoreRelationships( secondNode, secondPos ) ).iterator();
+        AtomicLong firstPos = getPosition( xaCon, firstNode );
+        Iterator<RelationshipRecord> first = getMore( xaCon, firstNode, firstPos ).iterator();
+        AtomicLong secondPos = getPosition( xaCon, secondNode );
+        Iterator<RelationshipRecord> second = getMore( xaCon, secondNode, secondPos ).iterator();
         assertTrue( first.hasNext() );
         assertTrue( second.hasNext() );
     }
@@ -804,10 +794,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         }
         assertEquals( 3, count );
         assertEquals( 3, xaCon.getWriteTransaction().nodeLoadProperties( node, false ).size() );
-        RelationshipChainPosition pos = 
-            xaCon.getWriteTransaction().getRelationshipChainPosition( node );
-        Iterator<RelationshipRecord> rels = 
-            both( xaCon.getWriteTransaction().getMoreRelationships( node, pos ) ).iterator();
+        AtomicLong pos = getPosition( xaCon, node );
+        Iterator<RelationshipRecord> rels = getMore( xaCon, node, pos ).iterator(); 
         assertTrue( rels.hasNext() );
         xaCon.getWriteTransaction().nodeDelete( node );
     }
@@ -850,10 +838,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         }
         assertEquals( 3, count );        
         assertEquals( 3, xaCon.getWriteTransaction().nodeLoadProperties( node, false ).size() );
-        RelationshipChainPosition pos = 
-            xaCon.getWriteTransaction().getRelationshipChainPosition( node );
-        Iterator<RelationshipRecord> rels = 
-            both( xaCon.getWriteTransaction().getMoreRelationships( node, pos ) ).iterator();
+        AtomicLong pos = getPosition( xaCon, node );
+        Iterator<RelationshipRecord> rels = getMore( xaCon, node, pos ).iterator();
         assertTrue( rels.hasNext() );
         xaCon.getWriteTransaction().nodeDelete( node );
     }
@@ -890,10 +876,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         startTx();
         for ( int i = 0; i < 3; i+=2 )
         {
-            RelationshipChainPosition pos = 
-                xaCon.getWriteTransaction().getRelationshipChainPosition( nodeIds[i] );
-            for ( RelationshipRecord rel : 
-                both( xaCon.getWriteTransaction().getMoreRelationships( nodeIds[i], pos ) ) )
+            AtomicLong pos = getPosition( xaCon, nodeIds[i] );
+            for ( RelationshipRecord rel : getMore( xaCon, nodeIds[i], pos ) )
             {
                 xaCon.getWriteTransaction().relDelete( rel.getId() );
             }
@@ -928,10 +912,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         startTx();
         for ( int i = 0; i < 3; i++ )
         {
-            RelationshipChainPosition pos = 
-                xaCon.getWriteTransaction().getRelationshipChainPosition( nodeIds[i] );
-            for ( RelationshipRecord rel : 
-                both( xaCon.getWriteTransaction().getMoreRelationships( nodeIds[i], pos ) ) )
+            AtomicLong pos = getPosition( xaCon, nodeIds[i] );
+            for ( RelationshipRecord rel : getMore( xaCon, nodeIds[i], pos ) )
             {
                 xaCon.getWriteTransaction().relDelete( rel.getId() );
             }

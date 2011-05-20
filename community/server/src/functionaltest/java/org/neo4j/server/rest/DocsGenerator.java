@@ -109,12 +109,6 @@ public class DocsGenerator
         this.title = title;
     }
 
-    private DocsGenerator( final String title, final String description )
-    {
-        this( title );
-        this.description = description;
-    }
-
     /**
      * Add a description to the test (in asciidoc format). Adding multiple
      * descriptions will yield one paragraph per description.
@@ -218,7 +212,7 @@ public class DocsGenerator
      */
     public ResponseEntity get( final String uri )
     {
-        return retrieveResponseFromRequest( title, null, "GET", uri,
+        return retrieveResponseFromRequest( title, description, "GET", uri,
                 expectedResponseStatus, expectedMediaType, expectedHeaderFields );
     }
 
@@ -525,7 +519,7 @@ public class DocsGenerator
 
             fw = new FileWriter( out, false );
 
-            line( fw, "[[rest-api-" + name + "]]" );
+            line( fw, "[[rest-api-" + name.replaceAll( "\\(|\\)", "" ) + "]]" );
             line( fw, "=== " + data.title + " ===" );
             line( fw, "" );
             if ( data.description != null && !data.description.isEmpty() )
@@ -562,6 +556,7 @@ public class DocsGenerator
                 }
             }
             writeEntity( fw, data.entity );
+            line( fw, "" );
         }
         catch ( IOException e )
         {
