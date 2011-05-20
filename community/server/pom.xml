@@ -762,12 +762,6 @@ the relevant Commercial Agreement.
               <target>
                 <property name="classpath" refid="maven.runtime.classpath" />
                 <exec executable="java">
-                  
-                  <!-- Uncomment to do profiling -->
-                  <!-- arg line="-green" />
-                  <arg line="-Xrunhprof:cpu=samples,depth=6,thread=y" /-->
-                  <!-- End profiling params -->
-                  
                   <arg line="-Dorg.neo4j.server.properties=${basedir}/neo4j-home/conf/neo4j-server.properties" />
                   <arg line="-classpath" />
                   <arg line="${basedir}/src/main/resources:${classpath}" />
