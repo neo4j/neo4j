@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
-import org.neo4j.server.rest.DocsGenerator.ResponseEntity;
 import org.neo4j.server.rest.DocumentationGenerator.Title;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -145,42 +144,55 @@ public class TraverserFunctionalTest {
     }
 
     /**
-     * Traverse from a start node In this example, no prune evaluator and a
+     * In this example, no prune evaluator and a
      * return filter are supplied. The result is to be returned as nodes, as
-     * indicated by `traverse/{returnTyoe}` in the URL with returnType being one
-     * of `node`, `relationship`, `path` or `fullpath`.
+     * indicated by 'traverse/\{returnType}' in the URL with +returnType+ being one
+     * of +node+, +relationship+, +path+ or +fullpath+.
      * 
-     * The _position_ object in the body of the return and prune evaluators is
-     * an `org.neo4j.graphdb.Path` object representing the path from the start
-     * node to the current traversal position. `max depth` is a short-hand way
+     * The _position_ object in the body of the return and prune evaluators is a
+     * +http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Path.html[Path]+
+     * object representing the path from the start node to the current traversal position.
+     * +max depth+ is a short-hand way
      * of specifying a prune evaluator which prunes after a certain depth. If
-     * not specified a max depth of 1 is used and if a \"prune evaluator\" is
-     * specified instead of a max depth, no max depth limit is set.
+     * not specified a max depth of 1 is used and if a +prune evaluator+ is
+     * specified instead of a +max depth+, no max depth limit is set.
      * 
-     * Built-in prune evaluators: `none`
+     * Built-in prune evaluators: +none+
      * 
-     * Built-in return filters: `all`, `all but start node`
+     * Built-in return filters: +all+, +all but start node+
      * 
-     * Uniqueness: `node global`, `none`, `relationship global`, `node path`,
-     * `relationship path`
+     * Uniqueness: +node global+, +none+, +relationship global+, +node path+,
+     * +relationship path+
      * 
-     * Order values: `breadth first`, `depth first`
+     * Order values: +breadth first+, +depth first+
      */
     @Documented
     @Title( "Traverse from a start node" )
     @Test
     public void shouldGetExpectedHitsWhenTraversingWithDescription() throws PropertyValueException
     {
-        ArrayList rels = new ArrayList<Map>();
+        ArrayList<Map<String,Object>> rels = new ArrayList<Map<String,Object>>();
         rels.add( MapUtil.map( "type","knows","direction","all") );
         rels.add( MapUtil.map( "type","loves","direction","all") );
-        String description = JsonHelper.createJsonFrom(MapUtil.map("order", "breadth first","uniqueness","node global","prune evaluator", MapUtil.map("language", "builtin", "name", "none"), "return filter",
-                MapUtil.map("language", "javascript", "body", "position.endNode().getProperty('name').toLowerCase().contains('t')"), "relationships",rels,"max depth", 3));
-
-        ResponseEntity entity = gen.create()
-        .expectedStatus( Response.Status.OK ).payload( description )
-        .post( functionalTestHelper.nodeUri( startNode ) + "/traverse/node" );
-        expectNodes(entity.entity(), startNode, child1_l1, child1_l3, child2_l3);
+        String description = JsonHelper.createJsonFrom( MapUtil.map(
+                "order",
+                "breadth first",
+                "uniqueness",
+                "node global",
+                "prune evaluator",
+                MapUtil.map( "language", "builtin", "name", "none" ),
+                "return filter",
+                MapUtil.map( "language", "javascript", "body",
+                        "position.endNode().getProperty('name').toLowerCase().contains('t')" ),
+                "relationships", rels, "max depth", 3 ) );
+        String entity = gen.create()
+                .expectedStatus( Response.Status.OK )
+                .payload( description )
+                .post( functionalTestHelper.nodeUri( startNode )
+                       + "/traverse/node" )
+                .entity();
+        expectNodes( entity, startNode, child1_l1, child1_l3,
+                child2_l3 );
     }
 
     @Test
