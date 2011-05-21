@@ -3,6 +3,7 @@ package org.neo4j.lab.cypher
 import commands._
 import scala.util.parsing.combinator._
 import org.neo4j.graphdb.Direction
+import scala.Some
 
 class CypherParser extends JavaTokenParsers {
 
@@ -11,7 +12,6 @@ class CypherParser extends JavaTokenParsers {
   }
 
   def start: Parser[Start] = "start" ~> repsep(nodeByIds | nodeByIndex, ",") ^^ (Start(_: _*))
-
 
   def matching: Parser[Match] = "match" ~> rep1sep(relatedTo, ",") ^^ { case matching:List[List[Pattern]] => Match(matching.flatten: _*) }
 
@@ -37,23 +37,18 @@ class CypherParser extends JavaTokenParsers {
     }
   }
 
-  class NodeNamer {
-    var lastNodeNumber = 0
-
-    def name(s:Option[String]):String = s match {
-      case None => {
-        lastNodeNumber += 1
-        "___NODE" + lastNodeNumber
-      }
-      case Some(x) => x
-    }
-  }
-
-
   def relatedHead:Parser[Option[String]] = "(" ~> opt(ident) <~ ")" ^^ { case name => name }
 
-  def relatedTail = opt("<") ~ "-[" ~ opt(ident <~ ",") ~ "'" ~ ident ~ "'" ~ "]-" ~ opt(">") ~ "(" ~ opt(ident) ~ ")" ^^ {
-    case back ~ "-[" ~ relName ~ "'" ~ relType ~ "'" ~ "]-" ~ forward ~ "(" ~ end ~ ")" => (back, relName, relType, forward, end)
+  def relatedTail = opt("<") ~ "-" ~ opt("[" ~> relationshipInfo <~ "]") ~ "-" ~ opt(">") ~ "(" ~ opt(ident) ~ ")" ^^ {
+    case back ~ "-" ~ relInfo ~ "-" ~ forward ~ "(" ~ end ~ ")" => relInfo match {
+      case Some(x) => (back, x._1, Some(x._2), forward, end)
+      case None => (back, None, None, forward, end)
+    }
+
+  }
+
+  def relationshipInfo = opt(ident <~ ",") ~ ":" ~ ident ^^ {
+    case relName ~ ":" ~ relType => (relName, relType)
   }
 
   def nodeByIds = ident ~ "=" ~ "node" ~ "(" ~ repsep(wholeNumber, ",") ~ ")" ^^ {
@@ -98,4 +93,16 @@ class CypherParser extends JavaTokenParsers {
       case Success(r, q) => Option(r)
       case x => println(x); None
     }
+
+  class NodeNamer {
+    var lastNodeNumber = 0
+
+    def name(s:Option[String]):String = s match {
+      case None => {
+        lastNodeNumber += 1
+        "___NODE" + lastNodeNumber
+      }
+      case Some(x) => x
+    }
+  }
 }

@@ -4,7 +4,7 @@ import commands._
 import pipes.{Pipe, FromPump}
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb.{DynamicRelationshipType, NotFoundException, Node, GraphDatabaseService}
-import org.neo4j.graphmatching.{CommonValueMatchers, PatternNode}
+import org.neo4j.graphmatching.{PatternRelationship, CommonValueMatchers, PatternNode}
 
 /**
  * Created by Andres Taylor
@@ -14,20 +14,12 @@ import org.neo4j.graphmatching.{CommonValueMatchers, PatternNode}
 class ExecutionEngine(val graph: GraphDatabaseService) {
   type MapTransformer = (Map[String, Any]) => Map[String, Any]
 
-  def makeMutable(immutableSources: Map[String, Pipe]): collection.mutable.Map[String, Pipe] = scala.collection.mutable.Map(immutableSources.toSeq: _*)
-
   def execute(query: Query): Projection = query match {
     case Query(select, start, matching, where) => {
-      val patterns = scala.collection.mutable.Map[String,PatternNode]()
-      def getOrCreate(name:String):PatternNode = patterns.getOrElse(name, {
-        val pNode = new PatternNode(name)
-        patterns(name) = pNode
-        pNode
-      })
-
+      val variables = new VariableKeeper
       val sourcePump: Pipe = createSourcePumps(start).reduceLeft(_ ++ _)
 
-      start.startItems.foreach( (item) => {getOrCreate(item.placeholderName)})
+      start.startItems.foreach( (item) => {variables.getOrCreateNode(item.placeholderName)})
 
 
       val projections = createProjectionTransformers(select)
@@ -35,10 +27,19 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
       matching match {
         case Some(m) => m.patterns.foreach((p)=>{
           p match {
-            case RelatedTo(left, right, x, relationType, direction) => {
-              val leftPattern = getOrCreate(left)
-              val rightPattern = getOrCreate(right)
-              leftPattern.createRelationshipTo(rightPattern, DynamicRelationshipType.withName(relationType), direction)
+            case RelatedTo(left, right, relName, relationType, direction) => {
+              val leftPattern =  variables.getOrCreateNode(left)
+              val rightPattern = variables.getOrCreateNode(right)
+              val rel: PatternRelationship = relationType match {
+                case Some(relType) => leftPattern.createRelationshipTo(rightPattern, DynamicRelationshipType.withName(relType), direction)
+                case None => leftPattern.createRelationshipTo(rightPattern, direction)
+              }
+
+
+              relName match {
+                case None =>
+                case Some(name) => variables.addRelationship(name, rel)
+              }
             }
           }
         })
@@ -49,15 +50,15 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
         case Some(w) => w.clauses.foreach((c) => {
           c match {
             case StringEquals(variable, propName, value) => {
-              val node = getOrCreate(variable)
-              node.addPropertyConstraint(propName, CommonValueMatchers.exact(value) )
+              val patternPart = variables.getOrThrow(variable)
+              patternPart.addPropertyConstraint(propName, CommonValueMatchers.exact(value) )
             }
           }
         })
         case None =>
       }
 
-      new Projection(patterns.toMap, sourcePump, projections)
+      new Projection(variables.toMap, sourcePump, projections)
     }
   }
 

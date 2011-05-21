@@ -106,7 +106,7 @@ class ExecutionEngineTest {
     val query = Query(
       Select(EntityOutput("a")),
       Start(NodeById("start", start.getId)),
-      Some(Match(RelatedTo("start", "a", None, "x", Direction.BOTH))),
+      Some(Match(RelatedTo("start", "a", None, Some("x"), Direction.BOTH))),
       Some(Where(StringEquals("a", "name", name)
       ))
     )
@@ -130,7 +130,7 @@ class ExecutionEngineTest {
     val query = Query(
       Select(EntityOutput("a")),
       Start(NodeById("start", start.getId)),
-      Some(Match(RelatedTo("start", "a", None, "KNOWS", Direction.BOTH))),
+      Some(Match(RelatedTo("start", "a", Some("r"), Some("KNOWS"), Direction.BOTH))),
       Some(Where(StringEquals("r", "name", "monkey")))
     )
 
@@ -172,7 +172,7 @@ class ExecutionEngineTest {
     val query = Query(
       Select(EntityOutput("n1"), EntityOutput("n2")),
       Start(NodeById("n1", n1.getId)),
-      Some(Match(RelatedTo("n1", "n2", None, "KNOWS", Direction.OUTGOING))),
+      Some(Match(RelatedTo("n1", "n2", None, Some("KNOWS"), Direction.OUTGOING))),
       None
     )
 
@@ -195,7 +195,7 @@ class ExecutionEngineTest {
     val query = Query(
       Select(EntityOutput("x")),
       Start(NodeById("start", n1.getId)),
-      Some(Match(RelatedTo("start", "x", None, "KNOWS", Direction.OUTGOING))),
+      Some(Match(RelatedTo("start", "x", None, Some("KNOWS"), Direction.OUTGOING))),
       None
     )
 
@@ -218,7 +218,7 @@ class ExecutionEngineTest {
     val query = Query(
       Select(EntityOutput("x"), EntityOutput("start")),
       Start(NodeById("start", n1.getId)),
-      Some(Match(RelatedTo("start", "x", None, "KNOWS", Direction.OUTGOING))),
+      Some(Match(RelatedTo("start", "x", None, Some("KNOWS"), Direction.OUTGOING))),
       None
     )
 
@@ -243,8 +243,8 @@ class ExecutionEngineTest {
       Select(EntityOutput("b")),
       Start(NodeById("start", n1.getId)),
       Some(Match(
-        RelatedTo("start", "a", None, "KNOWS", Direction.OUTGOING),
-        RelatedTo("a", "b", None, "FRIEND", Direction.OUTGOING))),
+        RelatedTo("start", "a", None, Some("KNOWS"), Direction.OUTGOING),
+        RelatedTo("a", "b", None, Some("FRIEND"), Direction.OUTGOING))),
       None
     )
 
@@ -273,30 +273,6 @@ class ExecutionEngineTest {
     val result = execute(query)
 
     assertEquals(List(Map("n" -> n)), result.toList)
-  }
-
-  @Test def shouldBeAbleToFilterOnRelationProps() {
-    //    START me = NodeByIdx(1,3,4,5,6),
-    //      (me) -[r,'SHARE_OWNER']- (company)
-    //    WHERE r.amount > 1000
-    //    SELECT company.name
-
-    val me = createNode()
-    val msft = createNode(Map("name" -> "Microsoft"))
-    val orcl = createNode(Map("name" -> "Oracle"))
-    relate(me, msft, "SHARE_OWNER", Map("amount" -> 500f))
-    relate(me, orcl, "SHARE_OWNER", Map("amount" -> 1500f))
-
-    val query = Query(
-      Select(PropertyOutput("company", "name")),
-      Start(NodeById("me", me.getId)),
-      Some(Match(RelatedTo("me", "company", Some("r"), "SHARE_OWNER", Direction.OUTGOING))),
-      Some(Where(NumberLargerThan("r", "amount", 1000f)))
-    )
-
-    val result = execute(query)
-
-    assertEquals(List(Map("company.name" -> "Oracle")), result.toList)
   }
 
   def execute(query: Query) = {

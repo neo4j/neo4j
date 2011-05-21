@@ -81,11 +81,23 @@ class CypherParserTest {
 
   @Test def relatedTo() {
     testQuery(
-      "start a = node(1) match (a) -['KNOWS']-> (b) select a, b",
+      "start a = node(1) match (a) -[:KNOWS]-> (b) select a, b",
       Query(
         Select(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
-        Some(Match(RelatedTo("a", "b", None, "KNOWS", Direction.OUTGOING))),
+        Some(Match(RelatedTo("a", "b", None, Some("KNOWS"), Direction.OUTGOING))),
+        None
+      )
+    )
+  }
+
+  @Test def relatedToWithoutRelType() {
+    testQuery(
+      "start a = node(1) match (a) --> (b) select a, b",
+      Query(
+        Select(EntityOutput("a"), EntityOutput("b")),
+        Start(NodeById("a", 1)),
+        Some(Match(RelatedTo("a", "b", None, None, Direction.OUTGOING))),
         None
       )
     )
@@ -93,11 +105,11 @@ class CypherParserTest {
 
   @Test def relatedToTheOtherWay() {
     testQuery(
-      "start a = node(1) match (a) <-['KNOWS']- (b) select a, b",
+      "start a = node(1) match (a) <-[:KNOWS]- (b) select a, b",
       Query(
         Select(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
-        Some(Match(RelatedTo("a", "b", None, "KNOWS", Direction.INCOMING))),
+        Some(Match(RelatedTo("a", "b", None, Some("KNOWS"), Direction.INCOMING))),
         None
       )
     )
@@ -128,11 +140,11 @@ class CypherParserTest {
 
   @Test def relatedToWithRelationOutput() {
     testQuery(
-      "start a = node(1) match (a) -[rel,'KNOWS']-> (b) select rel",
+      "start a = node(1) match (a) -[rel,:KNOWS]-> (b) select rel",
       Query(
         Select(EntityOutput("rel")),
         Start(NodeById("a", 1)),
-        Some(Match(RelatedTo("a", "b", Some("rel"), "KNOWS", Direction.OUTGOING))),
+        Some(Match(RelatedTo("a", "b", Some("rel"), Some("KNOWS"), Direction.OUTGOING))),
         None
       )
     )
@@ -140,11 +152,11 @@ class CypherParserTest {
 
   @Test def relatedToWithoutEndName() {
     testQuery(
-      "start a = node(1) match (a) -['MARRIED']-> () select a",
+      "start a = node(1) match (a) -[:MARRIED]-> () select a",
       Query(
         Select(EntityOutput("a")),
         Start(NodeById("a", 1)),
-        Some(Match(RelatedTo("a", "___NODE1", None, "MARRIED", Direction.OUTGOING))),
+        Some(Match(RelatedTo("a", "___NODE1", None, Some("MARRIED"), Direction.OUTGOING))),
         None
       )
     )
@@ -152,13 +164,13 @@ class CypherParserTest {
 
   @Test def relatedInTwoSteps() {
     testQuery(
-      "start a = node(1) match (a) -['KNOWS']-> (b) -['FRIEND']-> (c) select c",
+      "start a = node(1) match (a) -[:KNOWS]-> (b) -[:FRIEND]-> (c) select c",
       Query(
         Select(EntityOutput("c")),
         Start(NodeById("a", 1)),
         Some(Match(
-          RelatedTo("a", "b", None, "KNOWS", Direction.OUTGOING),
-          RelatedTo("b", "c", None, "FRIEND", Direction.OUTGOING))),
+          RelatedTo("a", "b", None, Some("KNOWS"), Direction.OUTGOING),
+          RelatedTo("b", "c", None, Some("FRIEND"), Direction.OUTGOING))),
         None
       )
     )
