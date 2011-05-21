@@ -39,16 +39,19 @@ class CypherParser extends JavaTokenParsers {
 
   def relatedHead:Parser[Option[String]] = "(" ~> opt(ident) <~ ")" ^^ { case name => name }
 
-  def relatedTail = opt("<") ~ "-" ~ opt("[" ~> relationshipInfo <~ "]") ~ "-" ~ opt(">") ~ "(" ~ opt(ident) ~ ")" ^^ {
+  def relatedTail = opt("<") ~ "-" ~ opt("[" ~> (relationshipInfo1 | relationshipInfo2) <~ "]") ~ "-" ~ opt(">") ~ "(" ~ opt(ident) ~ ")" ^^ {
     case back ~ "-" ~ relInfo ~ "-" ~ forward ~ "(" ~ end ~ ")" => relInfo match {
-      case Some(x) => (back, x._1, Some(x._2), forward, end)
+      case Some(x) => (back, x._1, x._2, forward, end)
       case None => (back, None, None, forward, end)
     }
-
   }
 
-  def relationshipInfo = opt(ident <~ ",") ~ ":" ~ ident ^^ {
-    case relName ~ ":" ~ relType => (relName, relType)
+  def relationshipInfo1 = opt(ident <~ ",") ~ ":" ~ ident ^^ {
+    case relName ~ ":" ~ relType => (relName, Some(relType))
+  }
+
+  def relationshipInfo2 = ident ^^ {
+    case relName => (Some(relName), None)
   }
 
   def nodeByIds = ident ~ "=" ~ "node" ~ "(" ~ repsep(wholeNumber, ",") ~ ")" ^^ {

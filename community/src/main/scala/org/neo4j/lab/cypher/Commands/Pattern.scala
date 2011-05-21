@@ -10,4 +10,4 @@ import org.neo4j.graphdb.Direction
 
 abstract class Pattern
 
-case class RelatedTo(left:String, right:String, rel:Option[String], relType:Option[String], direction:Direction) extends Pattern
+case class RelatedTo(left:String, right:String, relName:Option[String], relType:Option[String], direction:Direction) extends Pattern

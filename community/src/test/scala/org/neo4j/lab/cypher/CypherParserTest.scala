@@ -103,6 +103,18 @@ class CypherParserTest {
     )
   }
 
+  @Test def relatedToWithoutRelTypeButWithRelVariable() {
+    testQuery(
+      "start a = node(1) match (a) -[r]-> (b) select r",
+      Query(
+        Select(EntityOutput("r")),
+        Start(NodeById("a", 1)),
+        Some(Match(RelatedTo("a", "b", Some("r"), None, Direction.OUTGOING))),
+        None
+      )
+    )
+  }
+
   @Test def relatedToTheOtherWay() {
     testQuery(
       "start a = node(1) match (a) <-[:KNOWS]- (b) select a, b",
