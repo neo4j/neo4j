@@ -26,6 +26,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.server.WebTestUtils.CLIENT;
 
 import java.io.IOException;
 import java.net.URI;
@@ -123,16 +124,14 @@ public class ManageNodeFunctionalTest
 
     private ClientResponse sendCreateRequestToServer( final String json )
     {
-        Client client = Client.create();
-        WebResource resource = client.resource( functionalTestHelper.dataUri() + "node/" );
+        WebResource resource = CLIENT.resource( functionalTestHelper.dataUri() + "node/" );
         ClientResponse response = resource.type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( json ).post( ClientResponse.class );
         return response;
     }
 
     private ClientResponse sendCreateRequestToServer()
     {
-        Client client = Client.create();
-        WebResource resource = client.resource( functionalTestHelper.dataUri() + "node/" );
+        WebResource resource = CLIENT.resource( functionalTestHelper.dataUri() + "node/" );
         ClientResponse response = resource.type( MediaType.APPLICATION_FORM_URLENCODED ).accept( MediaType.APPLICATION_JSON ).post( ClientResponse.class );
         return response;
     }
@@ -223,10 +222,11 @@ public class ManageNodeFunctionalTest
         URI nodeLocation = sendCreateRequestToServer().getLocation();
 
         String mangledJsonArray = "[1,2,\"three\"]";
-        ClientResponse response = Client.create().resource(new URI(nodeLocation.toString() + "/properties/myprop")).type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(mangledJsonArray).put(ClientResponse.class);
+        ClientResponse response = CLIENT.resource(new URI(nodeLocation.toString() + "/properties/myprop")).type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(mangledJsonArray).put(ClientResponse.class);
         assertEquals(400, response.getStatus());
         assertEquals("text/plain", response.getType().toString());
         assertThat(response.getEntity(String.class), containsString(mangledJsonArray));
+        response.close();
     }
 
     @Test
@@ -234,10 +234,11 @@ public class ManageNodeFunctionalTest
         URI nodeLocation = sendCreateRequestToServer().getLocation();
 
         String mangledJsonProperties = "{\"a\":\"b\", \"c\":[1,2,\"three\"]}";
-        ClientResponse response = Client.create().resource(new URI(nodeLocation.toString() + "/properties")).type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(mangledJsonProperties).put(ClientResponse.class);
+        ClientResponse response = CLIENT.resource(new URI(nodeLocation.toString() + "/properties")).type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(mangledJsonProperties).put(ClientResponse.class);
         assertEquals(400, response.getStatus());
         assertEquals("text/plain", response.getType().toString());
         assertThat(response.getEntity(String.class), containsString(mangledJsonProperties));
+        response.close();
     }
 
 

@@ -24,9 +24,9 @@
     <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
     <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
 
-    <!-- Run integration tests against a server that is started elsewhere This is used in ServerIntegrationTestFacade, 
-      which currently assumes external servers to be running at http://localhost:7474/ -->
-
+    <!-- Run integration tests against a server that is started elsewhere.
+      This is used in ServerIntegrationTestFacade, which currently assumes external 
+      servers to be running at http://localhost:7474/ -->
     <testWithExternalServer>false</testWithExternalServer>
 
     <!-- For cucumber "feature" tests -->
@@ -37,7 +37,6 @@
     <webdriver.version>2.0b3</webdriver.version>
     <webdriver.impl.class>org.openqa.selenium.firefox.FirefoxDriver</webdriver.impl.class>
 
-    <neo4js.version>0.7</neo4js.version>
   </properties>
 
   <packaging>bundle</packaging>
@@ -258,19 +257,6 @@ the relevant Commercial Agreement.
       <version>2.0.5</version>
     </dependency>
 
-    <dependency>
-      <groupId>org.neo4j.drivers</groupId>
-      <artifactId>neo4js</artifactId>
-      <version>${neo4js.version}</version>
-      <type>jar</type>
-      <scope>provided</scope>
-      <optional>true</optional>
-    </dependency>
-
-    <!-- Neo4j manual to be exposed via the web. NOTE: no more. now points to online doc site otherwise, 
-      users can look for local docs on the filesystem. <dependency> <groupId>org.neo4j.doc</groupId> <artifactId>neo4j-manual</artifactId> 
-      <classifier>html</classifier> <version>1.3-SNAPSHOT</version> <optional>true</optional> </dependency> -->
-
     <!-- File uploads -->
     <dependency>
       <groupId>com.sun.jersey.contribs</groupId>
@@ -423,30 +409,6 @@ the relevant Commercial Agreement.
             </systemProperty>
           </systemProperties>
         </configuration>
-      </plugin>
-
-      <plugin>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>unpack</id>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>unpack</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.neo4j.drivers</groupId>
-                  <artifactId>neo4js</artifactId>
-                  <type>jar</type>
-                  <outputDirectory>${project.build.outputDirectory}/lib</outputDirectory>
-                  <includes>*.js</includes>
-                </artifactItem>
-              </artifactItems>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
 
       <plugin>
@@ -776,9 +738,7 @@ the relevant Commercial Agreement.
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
-              <includes>
-                <include>**/*WebTest.java</include>
-              </includes>
+              <skip>true</skip>
             </configuration>
           </plugin>
 
@@ -802,6 +762,12 @@ the relevant Commercial Agreement.
               <target>
                 <property name="classpath" refid="maven.runtime.classpath" />
                 <exec executable="java">
+                  
+                  <!-- Uncomment to do profiling -->
+                  <!-- arg line="-green" />
+                  <arg line="-Xrunhprof:cpu=samples,depth=6,thread=y" /-->
+                  <!-- End profiling params -->
+                  
                   <arg line="-Dorg.neo4j.server.properties=${basedir}/neo4j-home/conf/neo4j-server.properties" />
                   <arg line="-classpath" />
                   <arg line="${basedir}/src/main/resources:${classpath}" />
@@ -891,7 +857,6 @@ the relevant Commercial Agreement.
         </repository>
       </repositories>
     </profile>
-
   </profiles>
 
 

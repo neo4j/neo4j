@@ -43,6 +43,7 @@ import javax.ws.rs.core.Response.Status;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientRequest;
+import com.sun.jersey.api.client.ClientRequest.Builder;
 import com.sun.jersey.api.client.ClientResponse;
 
 /**
@@ -51,6 +52,8 @@ import com.sun.jersey.api.client.ClientResponse;
  */
 public class DocsGenerator
 {
+    private static final Builder REQUEST_BUILDER = ClientRequest.create();
+
     private static final List<String> RESPONSE_HEADERS = Arrays.asList( new String[] {
             "Content-Type", "Location" } );
 
@@ -263,8 +266,7 @@ public class DocsGenerator
         ClientRequest request;
         try
         {
-            request = ClientRequest.create()
-                    .accept( accept )
+            request = REQUEST_BUILDER.accept( accept )
                     .build( new URI( uri ), method );
         }
         catch ( URISyntaxException e )
@@ -290,16 +292,14 @@ public class DocsGenerator
         {
             if ( payload != null )
             {
-                request = ClientRequest.create()
-                        .type( payloadType )
+                request = REQUEST_BUILDER.type( payloadType )
                         .accept( accept )
                         .entity( payload )
                         .build( new URI( uri ), method );
             }
             else
             {
-                request = ClientRequest.create()
-                        .accept( accept )
+                request = REQUEST_BUILDER.accept( accept )
                         .build( new URI( uri ), method );
             }
         }
@@ -348,6 +348,7 @@ public class DocsGenerator
         {
             data.setEntity( response.getEntity( String.class ) );
         }
+        response.close();
         getResponseHeaders( data, response.getHeaders(), headerFields );
         document( data );
         return new ResponseEntity( response, data.entity );

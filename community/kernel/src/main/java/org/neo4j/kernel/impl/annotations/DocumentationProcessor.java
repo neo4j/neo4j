@@ -20,43 +20,72 @@
 package org.neo4j.kernel.impl.annotations;
 
 import java.io.IOException;
-import java.io.Writer;
-import java.util.Arrays;
 import java.util.Map;
-import java.util.Properties;
 
+import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
+import javax.annotation.processing.SupportedSourceVersion;
+import javax.lang.model.SourceVersion;
+import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 
+@SupportedSourceVersion( SourceVersion.RELEASE_6 )
 @SupportedAnnotationTypes( "org.neo4j.kernel.impl.annotations.Documented" )
 public class DocumentationProcessor extends AnnotationProcessor
 {
+    private static final String DEFAULT_VALUE;
+    static
+    {
+        String defaultValue = "";
+        try
+        {
+            defaultValue = (String) Documented.class.getMethod( "value" ).getDefaultValue();
+        }
+        catch ( Exception e )
+        {
+            // OK
+        }
+        DEFAULT_VALUE = defaultValue;
+    }
+    private CompilationManipulator manipulator = null;
+
     @Override
-    void process( TypeElement annotation, Element annotated,
+    public synchronized void init( ProcessingEnvironment processingEnv )
+    {
+        super.init( processingEnv );
+        manipulator = CompilationManipulator.load( processingEnv );
+    }
+
+    @Override
+    void process( TypeElement annotationType, Element annotated, AnnotationMirror annotation,
             Map<? extends ExecutableElement, ? extends AnnotationValue> values ) throws IOException
     {
-        Element enclosing = annotated.getEnclosingElement();
-        if ( enclosing instanceof TypeElement )
+        if ( values.size() != 1 )
         {
-            TypeElement type = (TypeElement) enclosing;
-            System.out.println( Arrays.toString( annotated.getClass().getInterfaces() ) );
-            System.out.println( "CLASS DOC: " + processingEnv.getElementUtils().getDocComment( type ) );
+            warn( annotated, annotation, "Annotation values don't match the expectation" );
+            return;
+        }
+        String value = (String) values.values().iterator().next().getValue();
+        if ( DEFAULT_VALUE.equals( value ) || value == null )
+        {
+            if ( manipulator == null )
+            {
+                warn( annotated, annotation, "Cannot update annotation values for this compiler" );
+                return;
+            }
             String javadoc = processingEnv.getElementUtils().getDocComment( annotated );
             if ( javadoc == null )
-                throw new IllegalStateException( "The field \"" + annotated + "\" should be documented." );
-            Properties props = new Properties();
-            props.setProperty( annotated.getSimpleName().toString(), javadoc );
-            Writer writer = append( "META-INF", "documentation", type.getQualifiedName().toString() );
-            try
             {
-                props.store( writer, null );
+                warn( annotated, annotation, "Cannot extract JavaDoc documentation comment for " + annotated );
+                // return;
+                javadoc = "blurb";
             }
-            finally
+            if ( !manipulator.updateAnnotationValue( annotated, annotation, "value", javadoc ) )
             {
-                writer.close();
+                warn( annotated, annotation, "Failed to update annotation value" );
             }
         }
     }
