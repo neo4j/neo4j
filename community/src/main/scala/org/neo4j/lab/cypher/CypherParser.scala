@@ -6,14 +6,15 @@ import org.neo4j.graphdb.Direction
 import scala.Some
 
 class CypherParser extends JavaTokenParsers {
+  def ignoreCase(str:String): Parser[String] = ("""(?i)\Q""" + str + """\E""").r
 
   def query: Parser[Query] = start ~ opt(matching) ~ opt(where) ~ select ^^ {
     case start ~ matching ~ where ~ select => Query(select, start, matching, where)
   }
 
-  def start: Parser[Start] = "start" ~> repsep(nodeByIds | nodeByIndex, ",") ^^ (Start(_: _*))
+  def start: Parser[Start] = ignoreCase("start") ~> repsep(nodeByIds | nodeByIndex, ",") ^^ (Start(_: _*))
 
-  def matching: Parser[Match] = "match" ~> rep1sep(relatedTo, ",") ^^ { case matching:List[List[Pattern]] => Match(matching.flatten: _*) }
+  def matching: Parser[Match] = ignoreCase("match") ~> rep1sep(relatedTo, ",") ^^ { case matching:List[List[Pattern]] => Match(matching.flatten: _*) }
 
   def relatedTo: Parser[List[Pattern]] = relatedHead ~ rep1(relatedTail) ^^ {
     case head ~ tails => {
@@ -54,21 +55,21 @@ class CypherParser extends JavaTokenParsers {
     case relName => (Some(relName), None)
   }
 
-  def nodeByIds = ident ~ "=" ~ "node" ~ "(" ~ repsep(wholeNumber, ",") ~ ")" ^^ {
-    case varName ~ "=" ~ "node" ~ "(" ~ id ~ ")" => NodeById(varName, id.map(_.toLong).toSeq: _*)
+  def nodeByIds = ident ~ "=" ~ ignoreCase("node") ~ "(" ~ repsep(wholeNumber, ",") ~ ")" ^^ {
+    case varName ~ "=" ~ node ~ "(" ~ id ~ ")" => NodeById(varName, id.map(_.toLong).toSeq: _*)
   }
 
-  def nodeByIndex = ident ~ "=" ~ "node_index" ~ "(" ~ stringLiteral ~ "," ~ stringLiteral ~ "," ~ stringLiteral ~ ")" ^^ {
-    case varName ~ "=" ~ "node_index" ~ "(" ~ index ~ "," ~ key ~ "," ~ value ~ ")" =>
+  def nodeByIndex = ident ~ "=" ~ ignoreCase("node_index") ~ "(" ~ stringLiteral ~ "," ~ stringLiteral ~ "," ~ stringLiteral ~ ")" ^^ {
+    case varName ~ "=" ~ node_index ~ "(" ~ index ~ "," ~ key ~ "," ~ value ~ ")" =>
       NodeByIndex(varName, stripQuotes(index), stripQuotes(key), stripQuotes(value))
   }
 
-  def select: Parser[Select] = "select" ~> repsep((propertyOutput|nodeOutput), ",") ^^ ( Select(_:_*) )
+  def select: Parser[Select] = ignoreCase("select") ~> repsep((propertyOutput|nodeOutput), ",") ^^ ( Select(_:_*) )
 
   def nodeOutput:Parser[SelectItem] = ident ^^ { EntityOutput(_) }
   def propertyOutput:Parser[SelectItem] = ident ~ "." ~ ident ^^ { case c ~ "." ~ p => PropertyOutput(c,p) }
 
-  def where: Parser[Where] = "where" ~> rep(clause) ^^ (Where(_: _*))
+  def where: Parser[Where] = ignoreCase("where") ~> rep(clause) ^^ (Where(_: _*))
 
   def clause: Parser[Clause] = (predicate | parens ) * (
     "and" ^^^ { (a: Clause, b: Clause) => And(a, b) } |

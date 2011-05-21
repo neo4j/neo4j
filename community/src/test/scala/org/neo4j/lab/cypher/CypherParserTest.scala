@@ -31,6 +31,17 @@ class CypherParserTest {
       ))
   }
 
+    @Test def keywordsShouldBeCaseInsensitive() {
+    testQuery(
+      "START start = NODE(1) SELECT start",
+      Query(
+        Select(EntityOutput("start")),
+        Start(NodeById("start", 1)),
+        matching = None,
+        where = None
+      ))
+  }
+
   @Test def shouldParseMultipleNodes() {
     testQuery(
       "start start = node(1,2,3) select start",
