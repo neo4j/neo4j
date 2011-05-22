@@ -1,11 +1,10 @@
 package org.neo4j.lab.cypher
 
-import org.neo4j.graphdb.NotFoundException
-import org.neo4j.graphdb.Node
 import scala.collection.JavaConverters._
 import org.apache.commons.lang.StringUtils
 import pipes.Pipe
-import org.neo4j.graphmatching.{PatternMatch, PatternNode, PatternMatcher}
+import org.neo4j.graphdb.{Relationship, NotFoundException, Node}
+import org.neo4j.graphmatching.{PatternRelationship, PatternMatch, PatternNode, PatternMatcher}
 
 
 /**
@@ -14,20 +13,26 @@ import org.neo4j.graphmatching.{PatternMatch, PatternNode, PatternMatcher}
  * Time: 19:18 
  */
 
-class Projection(where: Map[String, PatternNode], from: Pipe, select: Seq[Map[String, Any] => Map[String, Any]]) extends Traversable[Map[String, Any]] {
+class Projection(pNodes: Map[String, PatternNode], pRels:Map[String, PatternRelationship], from: Pipe, select: Seq[Map[String, Any] => Map[String, Any]]) extends Traversable[Map[String, Any]] {
   def foreach[U](f: (Map[String, Any]) => U) {
     from.foreach((fromRow) => {
 
       fromRow.foreach((x) => {
-        where(x._1).setAssociation(x._2.asInstanceOf[Node])
+        val variable: String = x._1
+        val thingie: Any = x._2
+        thingie match {
+          case node : Node => pNodes(variable).setAssociation(node)
+          case rel : Relationship => pRels(variable).setAssociation(rel)
+        }
+
       })
 
-      val startKey = where.keys.head
-      val startPNode = where(startKey)
+      val startKey = pNodes.keys.head
+      val startPNode = pNodes(startKey)
       val startNode = fromRow(startKey).asInstanceOf[Node]
       val patternMatches:java.lang.Iterable[PatternMatch] = PatternMatcher.getMatcher.`match`(startPNode, startNode)
       patternMatches.asScala.map((aMatch)=>{
-        val realResult = where.map( (kv) =>  kv._1 -> aMatch.getNodeFor(kv._2))
+        val realResult = pNodes.map( (kv) =>  kv._1 -> aMatch.getNodeFor(kv._2))
         val r = select.map((transformer) => transformer.apply(realResult)).reduceLeft(_ ++ _)
         f.apply(r)
       })

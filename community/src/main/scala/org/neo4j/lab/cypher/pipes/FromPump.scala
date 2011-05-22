@@ -1,6 +1,6 @@
 package org.neo4j.lab.cypher.pipes
 
-import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.{PropertyContainer, Node}
 
 /**
  * Created by Andres Taylor
@@ -8,17 +8,13 @@ import org.neo4j.graphdb.Node
  * Time: 21:00 
  */
 
-class FromPump(name: String, source: Iterable[Node]) extends Pipe {
+class FromPump[T <: PropertyContainer](name: String, source: Iterable[T]) extends Pipe {
   def columnNames: List[String] = List(name)
-  def dependsOn = List[String]()
+
   def foreach[U](f: (Map[String, Any]) => U) {
     source.foreach((x) => {
       val map = Map(name -> x)
       f.apply(map)
     })
-  }
-
-  override def setInput(input: Pipe) {
-    throw new RuntimeException("FromPumps have no input, silly...")
   }
 }

@@ -3,8 +3,8 @@ package org.neo4j.lab.cypher
 import commands._
 import pipes.{Pipe, FromPump}
 import scala.collection.JavaConverters._
-import org.neo4j.graphdb.{DynamicRelationshipType, NotFoundException, Node, GraphDatabaseService}
 import org.neo4j.graphmatching.{PatternRelationship, CommonValueMatchers, PatternNode}
+import org.neo4j.graphdb._
 
 /**
  * Created by Andres Taylor
@@ -16,10 +16,16 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
 
   def execute(query: Query): Projection = query match {
     case Query(select, start, matching, where) => {
-      val variables = new VariableKeeper
+      val patternKeeper = new PatternKeeper
       val sourcePump: Pipe = createSourcePumps(start).reduceLeft(_ ++ _)
 
-      start.startItems.foreach( (item) => {variables.getOrCreateNode(item.placeholderName)})
+      start.startItems.foreach( (item) => {
+        item match {
+          case relItem : RelationshipStartItem => patternKeeper.getOrCreateRelationship(item.placeholderName)
+          case nodeItem : NodeStartItem => patternKeeper.getOrCreateNode(item.placeholderName)
+        }
+        patternKeeper.getOrCreateNode(item.placeholderName)
+      })
 
 
       val projections = createProjectionTransformers(select)
@@ -28,8 +34,8 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
         case Some(m) => m.patterns.foreach((p)=>{
           p match {
             case RelatedTo(left, right, relName, relationType, direction) => {
-              val leftPattern =  variables.getOrCreateNode(left)
-              val rightPattern = variables.getOrCreateNode(right)
+              val leftPattern =  patternKeeper.getOrCreateNode(left)
+              val rightPattern = patternKeeper.getOrCreateNode(right)
               val rel: PatternRelationship = relationType match {
                 case Some(relType) => leftPattern.createRelationshipTo(rightPattern, DynamicRelationshipType.withName(relType), direction)
                 case None => leftPattern.createRelationshipTo(rightPattern, direction)
@@ -38,7 +44,7 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
 
               relName match {
                 case None =>
-                case Some(name) => variables.addRelationship(name, rel)
+                case Some(name) => patternKeeper.addRelationship(name, rel)
               }
             }
           }
@@ -50,7 +56,7 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
         case Some(w) => w.clauses.foreach((c) => {
           c match {
             case StringEquals(variable, propName, value) => {
-              val patternPart = variables.getOrThrow(variable)
+              val patternPart = patternKeeper.getOrThrow(variable)
               patternPart.addPropertyConstraint(propName, CommonValueMatchers.exact(value) )
             }
           }
@@ -58,7 +64,7 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
         case None =>
       }
 
-      new Projection(variables.toMap, sourcePump, projections)
+      new Projection(patternKeeper.nodesMap, patternKeeper.relationshipsMap, sourcePump, projections)
     }
   }
 
@@ -82,5 +88,6 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
       new FromPump(varName, indexHits.asScala)
     }
     case NodeById(varName, ids@_*) => new FromPump(varName, ids.map(graph.getNodeById))
+    case RelationshipById(varName, ids@_*) => new FromPump(varName, ids.map(graph.getRelationshipById))
   })
 }

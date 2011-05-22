@@ -12,11 +12,6 @@ class JoinPipe(a: Pipe, b: Pipe) extends Pipe {
 
   def columnNames: List[String] = a.columnNames ++ b.columnNames
 
-  override def setInput(input: Pipe) {
-    throw new RuntimeException("Oh when will the foolishness stop? I know who to input from...!")
-  }
-
-  def dependsOn = a.dependsOn ++ b.dependsOn
   def foreach[U](f: (Map[String, Any]) => U) {
     a.foreach((aMap) => {
       b.foreach((bMap) => {
@@ -24,6 +19,4 @@ class JoinPipe(a: Pipe, b: Pipe) extends Pipe {
       })
     })
   }
-
-  override def childrenNames: String = a.toString + ".." + b.toString
 }

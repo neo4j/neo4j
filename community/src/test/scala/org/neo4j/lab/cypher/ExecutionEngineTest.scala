@@ -4,9 +4,9 @@ import commands._
 import org.junit.Assert._
 
 import org.neo4j.kernel.{AbstractGraphDatabase, ImpermanentGraphDatabase}
-import org.neo4j.graphdb.{Direction, DynamicRelationshipType, Node}
 import java.lang.String
 import org.junit.{Ignore, After, Before, Test}
+import org.neo4j.graphdb.{Relationship, Direction, DynamicRelationshipType, Node}
 
 class ExecutionEngineTest {
   var graph: AbstractGraphDatabase = null
@@ -24,14 +24,9 @@ class ExecutionEngineTest {
   }
 
   @Test def shouldGetReferenceNode() {
-    //    START node = NODE(0)
-    //    SELECT node
-
     val query = Query(
       Select(EntityOutput("node")),
-      Start(NodeById("node", 0)),
-      None,
-      None
+      Start(NodeById("node", 0))
     )
 
     val result = execute(query)
@@ -39,33 +34,37 @@ class ExecutionEngineTest {
   }
 
   @Test def shouldGetOtherNode() {
-    //    START node = NODE(1)
-    //    SELECT node
-
     val node: Node = createNode()
 
     val query = Query(
       Select(EntityOutput("node")),
-      Start(NodeById("node", node.getId)),
-      None,
-      None
+      Start(NodeById("node", node.getId))
     )
 
     val result = execute(query)
     assertEquals(List(node), result.columnAs[Node]("node").toList)
   }
 
-  @Test def shouldGetTwoNodes() {
-    //    START node = NODE(0, 17)
-    //    SELECT node
+  @Ignore("graph-matching doesn't support using relationships as start points. revisit when it does.")
+  @Test def shouldGetRelationship() {
+    val node: Node = createNode()
+    val rel: Relationship = relate(refNode, node, "yo")
 
+    val query = Query(
+      Select(EntityOutput("rel")),
+      Start(RelationshipById("rel", rel.getId))
+    )
+
+    val result = execute(query)
+    assertEquals(List(rel), result.columnAs[Relationship]("rel").toList)
+  }
+
+  @Test def shouldGetTwoNodes() {
     val node: Node = createNode()
 
     val query = Query(
       Select(EntityOutput("node")),
-      Start(NodeById("node", refNode.getId, node.getId)),
-      None,
-      None
+      Start(NodeById("node", refNode.getId, node.getId))
     )
 
     val result = execute(query)
@@ -73,17 +72,12 @@ class ExecutionEngineTest {
   }
 
   @Test def shouldGetNodeProperty() {
-    //    START node = NODE(17)
-    //    SELECT node.name
-
     val name = "Andres"
     val node: Node = createNode(Map("name" -> name))
 
     val query = Query(
       Select(PropertyOutput("node", "name")),
-      Start(NodeById("node", node.getId)),
-      None,
-      None
+      Start(NodeById("node", node.getId))
     )
 
     val result = execute(query)
@@ -92,10 +86,6 @@ class ExecutionEngineTest {
   }
 
   @Test def shouldFilterOutBasedOnNodePropName() {
-    //    STARTstart = NODE(1)
-    //    WHERE a.name = "Andres" AND (start) -['x']-> (a)
-    //    SELECT a
-
     val name = "Andres"
     val start: Node = createNode()
     val a1: Node = createNode(Map("name" -> "Someone Else"))
@@ -106,9 +96,8 @@ class ExecutionEngineTest {
     val query = Query(
       Select(EntityOutput("a")),
       Start(NodeById("start", start.getId)),
-      Some(Match(RelatedTo("start", "a", None, Some("x"), Direction.BOTH))),
-      Some(Where(StringEquals("a", "name", name)
-      ))
+      Match(RelatedTo("start", "a", None, Some("x"), Direction.BOTH)),
+      Where(StringEquals("a", "name", name))
     )
 
     val result = execute(query)
@@ -116,11 +105,6 @@ class ExecutionEngineTest {
   }
 
   @Test def shouldFilterBasedOnRelPropName() {
-    // START start = Node(1)
-    // WHERE r.name = "monkey" AND start -[r, 'KNOWS']-> (a)
-    // SELECT a
-
-    val name = "Andres"
     val start: Node = createNode()
     val a: Node = createNode()
     val b: Node = createNode()
@@ -130,8 +114,8 @@ class ExecutionEngineTest {
     val query = Query(
       Select(EntityOutput("a")),
       Start(NodeById("start", start.getId)),
-      Some(Match(RelatedTo("start", "a", Some("r"), Some("KNOWS"), Direction.BOTH))),
-      Some(Where(StringEquals("r", "name", "monkey")))
+      Match(RelatedTo("start", "a", Some("r"), Some("KNOWS"), Direction.BOTH)),
+      Where(StringEquals("r", "name", "monkey"))
     )
 
     val result = execute(query)
@@ -140,9 +124,6 @@ class ExecutionEngineTest {
 
   @Ignore("Maybe later")
   @Test def shouldOutputTheCartesianProductOfTwoNodes() {
-    //    START n1 = NODE(1), n2 = NODE(2)
-    //    SELECT n1, n2
-
     val n1: Node = createNode()
     val n2: Node = createNode()
 
@@ -151,9 +132,7 @@ class ExecutionEngineTest {
       Start(
         NodeById("n1", n1.getId),
         NodeById("n2", n2.getId)
-      ),
-      None,
-      None
+      )
     )
 
     val result = execute(query)
@@ -162,10 +141,6 @@ class ExecutionEngineTest {
   }
 
   @Test def shouldGetNeighbours() {
-    //    START n1 = NODE(1),
-    //      n1 -['KNOWS']-> n2
-    //    SELECT n1, n2
-
     val n1: Node = createNode()
     val n2: Node = createNode()
     relate(n1, n2, "KNOWS")
@@ -173,8 +148,7 @@ class ExecutionEngineTest {
     val query = Query(
       Select(EntityOutput("n1"), EntityOutput("n2")),
       Start(NodeById("n1", n1.getId)),
-      Some(Match(RelatedTo("n1", "n2", None, Some("KNOWS"), Direction.OUTGOING))),
-      None
+      Match(RelatedTo("n1", "n2", None, Some("KNOWS"), Direction.OUTGOING))
     )
 
     val result = execute(query)
@@ -183,10 +157,6 @@ class ExecutionEngineTest {
   }
 
   @Test def shouldGetTwoRelatedNodes() {
-    //    START start = NODE(1),
-    //      start -KNOWS-> x
-    //    SELECT x
-
     val n1: Node = createNode()
     val n2: Node = createNode()
     val n3: Node = createNode()
@@ -196,8 +166,7 @@ class ExecutionEngineTest {
     val query = Query(
       Select(EntityOutput("x")),
       Start(NodeById("start", n1.getId)),
-      Some(Match(RelatedTo("start", "x", None, Some("KNOWS"), Direction.OUTGOING))),
-      None
+      Match(RelatedTo("start", "x", None, Some("KNOWS"), Direction.OUTGOING))
     )
 
     val result = execute(query)
@@ -206,10 +175,6 @@ class ExecutionEngineTest {
   }
 
   @Test def toStringTest() {
-    //    START start = NODE(1),
-    //      start -KNOWS-> x
-    //    SELECT x
-
     val n1: Node = createNode()
     val n2: Node = createNode()
     val n3: Node = createNode()
@@ -219,8 +184,7 @@ class ExecutionEngineTest {
     val query = Query(
       Select(EntityOutput("x"), EntityOutput("start")),
       Start(NodeById("start", n1.getId)),
-      Some(Match(RelatedTo("start", "x", None, Some("KNOWS"), Direction.OUTGOING))),
-      None
+      Match(RelatedTo("start", "x", None, Some("KNOWS"), Direction.OUTGOING))
     )
 
     val result = execute(query)
@@ -229,11 +193,6 @@ class ExecutionEngineTest {
   }
 
   @Test def shouldGetRelatedToRelatedTo() {
-    //    START start = NODE(1),
-    //      start -KNOWS-> a,
-    //      a -FRIEND- b
-    //    SELECT n3
-
     val n1: Node = createNode()
     val n2: Node = createNode()
     val n3: Node = createNode()
@@ -243,10 +202,9 @@ class ExecutionEngineTest {
     val query = Query(
       Select(EntityOutput("b")),
       Start(NodeById("start", n1.getId)),
-      Some(Match(
+      Match(
         RelatedTo("start", "a", None, Some("KNOWS"), Direction.OUTGOING),
-        RelatedTo("a", "b", None, Some("FRIEND"), Direction.OUTGOING))),
-      None
+        RelatedTo("a", "b", None, Some("FRIEND"), Direction.OUTGOING))
     )
 
     val result = execute(query)
@@ -255,9 +213,6 @@ class ExecutionEngineTest {
   }
 
   @Test def shouldFindNodesByIndex() {
-    //    START n = NODE("idxName", "key", "andres"),
-    //    SELECT n
-
     val n: Node = createNode()
     val idxName: String = "idxName"
     val key: String = "key"
@@ -266,9 +221,7 @@ class ExecutionEngineTest {
 
     val query = Query(
       Select(EntityOutput("n")),
-      Start(NodeByIndex("n", idxName, key, value)),
-      None,
-      None
+      Start(NodeByIndex("n", idxName, key, value))
     )
 
     val result = execute(query)
@@ -300,11 +253,12 @@ class ExecutionEngineTest {
   }
 
 
-  def relate(n1: Node, n2: Node, relType: String, props: Map[String, Any] = Map()) {
+  def relate(n1: Node, n2: Node, relType: String, props: Map[String, Any] = Map()):Relationship = {
     inTx(() => {
       val r = n1.createRelationshipTo(n2, DynamicRelationshipType.withName(relType))
 
       props.foreach((kv) => r.setProperty(kv._1, kv._2))
+      r
     })
   }
 

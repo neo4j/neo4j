@@ -4,6 +4,7 @@ import org.neo4j.graphdb.PropertyContainer
 import collection.immutable.Map
 import org.neo4j.graphmatching.{PatternRelationship, AbstractPatternObject, PatternNode}
 import scala.Some
+import org.apache.commons.lang.NotImplementedException
 
 /**
  * Created by Andres Taylor
@@ -11,20 +12,32 @@ import scala.Some
  * Time: 13:54 
  */
 
-class VariableKeeper {
+class PatternKeeper {
   val nodes = scala.collection.mutable.Map[String, PatternNode]()
   val rels = scala.collection.mutable.Map[String, PatternRelationship]()
 
   def getOrCreateNode(name: String): PatternNode = {
-    if (rels.contains(name))
-      throw new SyntaxError(name + " already defined as a relationship")
+     if (rels.contains(name))
+       throw new SyntaxError(name + " already defined as a relationship")
 
-    nodes.getOrElse(name, {
-      val pNode = new PatternNode(name)
-      nodes(name) = pNode
-      pNode
-    })
-  }
+     nodes.getOrElse(name, {
+       val pNode = new PatternNode(name)
+       nodes(name) = pNode
+       pNode
+     })
+   }
+
+  def getOrCreateRelationship(name: String): PatternRelationship = {
+    throw new NotImplementedException("graph-matching doesn't support this yet. Revisit when it does.")
+//     if (nodes.contains(name))
+//       throw new SyntaxError(name + " already defined as a node")
+//
+//     rels.getOrElse(name, {
+//       val pRel = new PatternRelationship(name)
+//       rels(name) = pRel
+//       pRel
+//     })
+   }
 
   def addRelationship(name: String, rel: PatternRelationship) {
     if (nodes.contains(name))
@@ -32,7 +45,6 @@ class VariableKeeper {
 
     rels(name) = rel
   }
-
 
   def getOrThrow(name: String): AbstractPatternObject[_ <: PropertyContainer] = nodes.get(name) match {
     case Some(x) => x.asInstanceOf[AbstractPatternObject[_ <: PropertyContainer]]
@@ -42,6 +54,7 @@ class VariableKeeper {
     }
   }
 
-  def toMap: Map[String, PatternNode] = nodes.toMap
+  def nodesMap: Map[String, PatternNode] = nodes.toMap
+  def relationshipsMap : Map[String, PatternRelationship] = rels.toMap
 
 }
