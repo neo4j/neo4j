@@ -10,3 +10,4 @@ abstract sealed class SelectItem
 
 case class EntityOutput(name: String) extends SelectItem
 case class PropertyOutput(entityName:String, propName:String) extends SelectItem
+case class Count(variable:String) extends SelectItem

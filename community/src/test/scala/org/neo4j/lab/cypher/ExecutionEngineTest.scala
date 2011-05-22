@@ -3,10 +3,10 @@ package org.neo4j.lab.cypher
 import commands._
 import org.junit.Assert._
 
-import org.junit.{After, Before, Test}
 import org.neo4j.kernel.{AbstractGraphDatabase, ImpermanentGraphDatabase}
 import org.neo4j.graphdb.{Direction, DynamicRelationshipType, Node}
 import java.lang.String
+import org.junit.{Ignore, After, Before, Test}
 
 class ExecutionEngineTest {
   var graph: AbstractGraphDatabase = null
@@ -138,6 +138,7 @@ class ExecutionEngineTest {
     assertEquals(List(a), result.columnAs[Node]("a").toList)
   }
 
+  @Ignore("Maybe later")
   @Test def shouldOutputTheCartesianProductOfTwoNodes() {
     //    START n1 = NODE(1), n2 = NODE(2)
     //    SELECT n1, n2

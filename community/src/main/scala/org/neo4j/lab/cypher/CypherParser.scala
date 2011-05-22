@@ -64,10 +64,15 @@ class CypherParser extends JavaTokenParsers {
       NodeByIndex(varName, stripQuotes(index), stripQuotes(key), stripQuotes(value))
   }
 
-  def select: Parser[Select] = ignoreCase("select") ~> repsep((propertyOutput|nodeOutput), ",") ^^ ( Select(_:_*) )
+  def select: Parser[Select] = ignoreCase("return") ~> rep1sep((count | propertyOutput | nodeOutput), ",") ^^ ( Select(_:_*) )
 
   def nodeOutput:Parser[SelectItem] = ident ^^ { EntityOutput(_) }
-  def propertyOutput:Parser[SelectItem] = ident ~ "." ~ ident ^^ { case c ~ "." ~ p => PropertyOutput(c,p) }
+
+  def propertyOutput:Parser[SelectItem] = ident ~ "." ~ ident ^^
+    { case c ~ "." ~ p => PropertyOutput(c,p) }
+
+  def count:Parser[SelectItem] = ignoreCase("count") ~ "(" ~ "*" ~ ")" ^^
+    { case count ~ "(" ~ "*" ~ ")" => Count("*") }
 
   def where: Parser[Where] = ignoreCase("where") ~> rep(clause) ^^ (Where(_: _*))
 
@@ -89,7 +94,7 @@ class CypherParser extends JavaTokenParsers {
       case (true,false) => Direction.INCOMING
       case (false,true) => Direction.OUTGOING
       case (false,false) => Direction.BOTH
-      case (true,true) => throw new RuntimeException("A relation can't point both ways")
+      case (true,true) => Direction.BOTH
     }
 
   def parse(sql: String): Option[Query] =

@@ -22,192 +22,182 @@ class CypherParserTest {
 
   @Test def shouldParseEasiestPossibleQuery() {
     testQuery(
-      "start start = node(1) select start",
+      "start s = node(1) return s",
       Query(
-        Select(EntityOutput("start")),
-        Start(NodeById("start", 1)),
-        matching = None,
-        where = None
+        Select(EntityOutput("s")),
+        Start(NodeById("s", 1))
       ))
   }
 
+  @Test def sourceIsAnIndex() {
+    testQuery(
+      "start a = node_index(\"index\", \"key\", \"value\") return a",
+      Query(
+        Select(EntityOutput("a")),
+        Start(NodeByIndex("a", "index", "key", "value"))
+      )
+    )
+  }
+
+
     @Test def keywordsShouldBeCaseInsensitive() {
     testQuery(
-      "START start = NODE(1) SELECT start",
+      "START start = NODE(1) RETURN start",
       Query(
         Select(EntityOutput("start")),
-        Start(NodeById("start", 1)),
-        matching = None,
-        where = None
+        Start(NodeById("start", 1))
       ))
   }
 
   @Test def shouldParseMultipleNodes() {
     testQuery(
-      "start start = node(1,2,3) select start",
+      "start s = node(1,2,3) return s",
       Query(
-        Select(EntityOutput("start")),
-        Start(NodeById("start", 1, 2, 3)),
-        matching = None,
-        where = None
+        Select(EntityOutput("s")),
+        Start(NodeById("s", 1, 2, 3))
       ))
   }
 
   @Test def shouldParseMultipleInputs() {
     testQuery(
-      "start a = node(1), b = node(2) select a,b",
+      "start a = node(1), b = node(2) return a,b",
       Query(
         Select(EntityOutput("a"), EntityOutput("b")),
-        Start(NodeById("a", 1), NodeById("b", 2)),
-        matching = None,
-        where = None
+        Start(NodeById("a", 1), NodeById("b", 2))
       ))
   }
 
   @Test def shouldFilterOnProp() {
     testQuery(
-      "start a = node(1) where a.name = \"andres\" select a",
+      "start a = node(1) where a.name = \"andres\" return a",
       Query(
         Select(EntityOutput("a")),
         Start(NodeById("a", 1)),
-        matching = None,
-        Some(Where(StringEquals("a", "name", "andres"))))
+        Where(StringEquals("a", "name", "andres")))
     )
   }
 
   @Test def multipleFilters() {
     testQuery(
-      "start a = node(1) where a.name = \"andres\" or a.name = \"mattias\" select a",
+      "start a = node(1) where a.name = \"andres\" or a.name = \"mattias\" return a",
       Query(
         Select(EntityOutput("a")),
         Start(NodeById("a", 1)),
-        None,
-        Some(Where(
+        Where(
           Or(
             StringEquals("a", "name", "andres"),
             StringEquals("a", "name", "mattias")
-          ))))
+          )))
     )
   }
 
   @Test def relatedTo() {
     testQuery(
-      "start a = node(1) match (a) -[:KNOWS]-> (b) select a, b",
+      "start a = node(1) match (a) -[:KNOWS]-> (b) return a, b",
       Query(
         Select(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
-        Some(Match(RelatedTo("a", "b", None, Some("KNOWS"), Direction.OUTGOING))),
-        None
+        Match(RelatedTo("a", "b", None, Some("KNOWS"), Direction.OUTGOING))
       )
     )
   }
 
   @Test def relatedToWithoutRelType() {
     testQuery(
-      "start a = node(1) match (a) --> (b) select a, b",
+      "start a = node(1) match (a) --> (b) return a, b",
       Query(
         Select(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
-        Some(Match(RelatedTo("a", "b", None, None, Direction.OUTGOING))),
-        None
+        Match(RelatedTo("a", "b", None, None, Direction.OUTGOING))
       )
     )
   }
 
   @Test def relatedToWithoutRelTypeButWithRelVariable() {
     testQuery(
-      "start a = node(1) match (a) -[r]-> (b) select r",
+      "start a = node(1) match (a) -[r]-> (b) return r",
       Query(
         Select(EntityOutput("r")),
         Start(NodeById("a", 1)),
-        Some(Match(RelatedTo("a", "b", Some("r"), None, Direction.OUTGOING))),
-        None
+        Match(RelatedTo("a", "b", Some("r"), None, Direction.OUTGOING))
       )
     )
   }
 
   @Test def relatedToTheOtherWay() {
     testQuery(
-      "start a = node(1) match (a) <-[:KNOWS]- (b) select a, b",
+      "start a = node(1) match (a) <-[:KNOWS]- (b) return a, b",
       Query(
         Select(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
-        Some(Match(RelatedTo("a", "b", None, Some("KNOWS"), Direction.INCOMING))),
-        None
+        Match(RelatedTo("a", "b", None, Some("KNOWS"), Direction.INCOMING))
       )
     )
   }
 
   @Test def shouldOutputVariables() {
     testQuery(
-      "start a = node(1) select a.name",
+      "start a = node(1) return a.name",
       Query(
         Select(PropertyOutput("a", "name")),
-        Start(NodeById("a", 1)),
-        None,
-        None)
+        Start(NodeById("a", 1)))
     )
   }
 
   @Test def shouldHandleAndClauses() {
     testQuery(
-      "start a = node(1) where a.name = \"andres\" and a.lastname = \"taylor\" select a.name",
+      "start a = node(1) where a.name = \"andres\" and a.lastname = \"taylor\" return a.name",
       Query(
         Select(PropertyOutput("a", "name")),
         Start(NodeById("a", 1)),
-        None,
-        Some(Where(And(StringEquals("a", "name", "andres"), StringEquals("a", "lastname", "taylor"))))
+        Where(And(StringEquals("a", "name", "andres"), StringEquals("a", "lastname", "taylor")))
       )
     )
   }
 
   @Test def relatedToWithRelationOutput() {
     testQuery(
-      "start a = node(1) match (a) -[rel,:KNOWS]-> (b) select rel",
+      "start a = node(1) match (a) -[rel,:KNOWS]-> (b) return rel",
       Query(
         Select(EntityOutput("rel")),
         Start(NodeById("a", 1)),
-        Some(Match(RelatedTo("a", "b", Some("rel"), Some("KNOWS"), Direction.OUTGOING))),
-        None
+        Match(RelatedTo("a", "b", "rel", "KNOWS", Direction.OUTGOING))
       )
     )
   }
 
   @Test def relatedToWithoutEndName() {
     testQuery(
-      "start a = node(1) match (a) -[:MARRIED]-> () select a",
+      "start a = node(1) match (a) -[:MARRIED]-> () return a",
       Query(
         Select(EntityOutput("a")),
         Start(NodeById("a", 1)),
-        Some(Match(RelatedTo("a", "___NODE1", None, Some("MARRIED"), Direction.OUTGOING))),
-        None
+        Match(RelatedTo("a", "___NODE1", None, Some("MARRIED"), Direction.OUTGOING))
       )
     )
   }
 
   @Test def relatedInTwoSteps() {
     testQuery(
-      "start a = node(1) match (a) -[:KNOWS]-> (b) -[:FRIEND]-> (c) select c",
+      "start a = node(1) match (a) -[:KNOWS]-> (b) -[:FRIEND]-> (c) return c",
       Query(
         Select(EntityOutput("c")),
         Start(NodeById("a", 1)),
-        Some(Match(
+        Match(
           RelatedTo("a", "b", None, Some("KNOWS"), Direction.OUTGOING),
-          RelatedTo("b", "c", None, Some("FRIEND"), Direction.OUTGOING))),
-        None
+          RelatedTo("b", "c", None, Some("FRIEND"), Direction.OUTGOING))
       )
     )
   }
 
-  @Test def sourceIsAnIndex() {
+  @Test def countTheNumberOfHits() {
     testQuery(
-      "start a = node_index(\"index\", \"key\", \"value\") select a",
+      "start a = node(1) match (a) --> (b) return a, b, count(*)",
       Query(
-        Select(EntityOutput("a")),
-        Start(NodeByIndex("a", "index", "key", "value")),
-        None,
-        None
-      )
+        Select(EntityOutput("a"), EntityOutput("b"), Count("*")),
+        Start(NodeById("a", 1)),
+        Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)))
     )
   }
+
 }
