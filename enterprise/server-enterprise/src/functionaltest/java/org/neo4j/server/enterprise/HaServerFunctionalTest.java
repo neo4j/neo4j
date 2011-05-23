@@ -20,6 +20,7 @@
 package org.neo4j.server.enterprise;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.server.WebTestUtils.CLIENT;
 
 import java.net.URI;
 import java.util.Map;
@@ -38,7 +39,6 @@ import org.neo4j.kernel.Config;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.test.TargetDirectory;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class HaServerFunctionalTest
@@ -130,7 +130,7 @@ public class HaServerFunctionalTest
 
     private static Object get( URI property )
     {
-        ClientResponse response = Client.create().resource( property ).accept(
+        ClientResponse response = CLIENT.resource( property ).accept(
                 MediaType.APPLICATION_JSON_TYPE ).type( MediaType.APPLICATION_JSON_TYPE ).get(
                 ClientResponse.class );
         try
@@ -153,7 +153,7 @@ public class HaServerFunctionalTest
 
     private static void put( URI property, Object value )
     {
-        Client.create().resource( property ).accept( MediaType.APPLICATION_JSON_TYPE ).type(
+        CLIENT.resource( property ).accept( MediaType.APPLICATION_JSON_TYPE ).type(
                 MediaType.APPLICATION_JSON_TYPE ).entity( JsonHelper.createJsonFrom( value ) ).put();
     }
 }
