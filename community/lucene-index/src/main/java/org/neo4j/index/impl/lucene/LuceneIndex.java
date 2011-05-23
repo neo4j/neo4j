@@ -268,7 +268,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
                     }
                     else
                     {
-                        Collection<IndexHits<Long>> iterators = new ArrayList<IndexHits<Long>>( searchedIds.size()+ids.size() );
+                        Collection<IndexHits<Long>> iterators = new ArrayList<IndexHits<Long>>();
                         iterators.add( searchedIds );
                         iterators.add( new ConstantScoreIterator<Long>( ids, Float.NaN ) );
                         idIterator = new CombinedIndexHits<Long>( iterators );
