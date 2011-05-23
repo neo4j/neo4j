@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+from __future__ import with_statement
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import subprocess
 
@@ -101,19 +102,19 @@ class Handler(BaseHTTPRequestHandler):
       feature_name = path
       scenarios = []
 
-      f = open(path)
-      line = f.readline()
-      lineno = 1
-      while (line != ""):
-        
-        if line.strip().startswith("Feature:"):
-          feature_name = line.strip()[9:].strip()
-
-        if line.strip().startswith("Scenario:"):
-          scenarios.append( (line.strip()[9:].strip(), lineno) )
-
-        lineno += 1
+      with open(path) as f:
         line = f.readline()
+        lineno = 1
+        while (line != ""):
+          
+          if line.strip().startswith("Feature:"):
+            feature_name = line.strip()[9:].strip()
+
+          if line.strip().startswith("Scenario:"):
+            scenarios.append( (line.strip()[9:].strip(), lineno) )
+
+          lineno += 1
+          line = f.readline()
 
       return (feature_name, path, sorted(scenarios, key=lambda f : f[0]))
 
