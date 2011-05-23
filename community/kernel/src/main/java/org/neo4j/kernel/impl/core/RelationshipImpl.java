@@ -32,10 +32,6 @@ abstract class RelationshipImpl extends Primitive
     RelationshipImpl( long startNodeId, long endNodeId, boolean newRel )
     {
         super( newRel );
-        if ( startNodeId == endNodeId )
-        {
-            throw new IllegalArgumentException( "Start node equals end node" );
-        }
     }
     
     protected RelationshipType assertTypeNotNull( RelationshipType type )
@@ -147,9 +143,9 @@ abstract class RelationshipImpl extends Primitive
             // no need to load full relationship, all properties will be
             // deleted when relationship is deleted
 
-            ArrayMap<Integer,PropertyData> skipMap = 
+            ArrayMap<Integer,PropertyData> skipMap =
                 nodeManager.getCowPropertyRemoveMap( this, true );
-            ArrayMap<Integer,PropertyData> removedProps = 
+            ArrayMap<Integer,PropertyData> removedProps =
                 nodeManager.deleteRelationship( this );
             if ( removedProps.size() > 0 )
             {

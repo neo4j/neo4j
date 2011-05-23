@@ -37,12 +37,6 @@ class FastRelTypeElement extends RelTypeElementIterator
         this.iterator = this.src.iterator( direction );
     }
     
-    FastRelTypeElement( String type, NodeImpl node, RelIdArray src, DirectionWrapper direction, int position )
-    {
-        this( type, node, src, direction );
-        this.iterator.fastForwardTo( position );
-    }
-
     @Override
     public boolean hasNext( NodeManager nodeManager )
     {
@@ -64,7 +58,12 @@ class FastRelTypeElement extends RelTypeElementIterator
     @Override
     public RelTypeElementIterator setSrc( RelIdArray newSrc )
     {
-        int position = iterator.position();
-        return new FastRelTypeElement( getType(), getNode(), newSrc, direction, position );
+        return new FastRelTypeElement( getType(), getNode(), newSrc, direction );
+    }
+    
+    @Override
+    public void notifyAboutMoreRelationships()
+    {
+        iterator.doAnotherRound();
     }
 }

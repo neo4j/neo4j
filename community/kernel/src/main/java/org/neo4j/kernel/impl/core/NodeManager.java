@@ -27,7 +27,6 @@ import java.util.logging.Logger;
 
 import javax.transaction.TransactionManager;
 
-import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -36,7 +35,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.LruCache;
@@ -55,6 +53,7 @@ import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
+import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
 public class NodeManager
 {
@@ -309,8 +308,15 @@ public class NodeManager
             secondNodeTaken = true;
             persistenceManager.relationshipCreate( id, typeId, startNodeId,
                 endNodeId );
-            firstNode.addRelationship( this, type, id, Direction.OUTGOING );
-            secondNode.addRelationship( this, type, id, Direction.INCOMING );
+            if ( startNodeId == endNodeId )
+            {
+                firstNode.addRelationship( this, type, id, DirectionWrapper.BOTH );
+            }
+            else
+            {
+                firstNode.addRelationship( this, type, id, DirectionWrapper.OUTGOING );
+                secondNode.addRelationship( this, type, id, DirectionWrapper.INCOMING );
+            }
             relCache.put( rel.getId(), rel );
             success = true;
             return new RelationshipProxy( id, this );
@@ -593,21 +599,23 @@ public class NodeManager
     {
         long nodeId = node.getId();
         long position = node.getRelChainPosition();
-        Triplet<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>, Long> rels =
+        Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, Long> rels =
             persistenceManager.getMoreRelationships( nodeId, position );
-        node.setRelChainPosition( rels.third() );
+        node.setRelChainPosition( rels.other() );
         ArrayMap<String,RelIdArray> newRelationshipMap =
             new ArrayMap<String,RelIdArray>();
         Map<Long,RelationshipImpl> relsMap = new HashMap<Long,RelationshipImpl>( 150 );
-        receiveRelationships( rels.first(), newRelationshipMap, relsMap, Direction.OUTGOING );
-        receiveRelationships( rels.second(), newRelationshipMap, relsMap, Direction.INCOMING );
+        for ( Map.Entry<DirectionWrapper, Iterable<RelationshipRecord>> entry : rels.first().entrySet() )
+        {
+            receiveRelationships( entry.getValue(), newRelationshipMap, relsMap, entry.getKey() );
+        }
         // relCache.putAll( relsMap );
         return Pair.of( newRelationshipMap, relsMap );
     }
 
     private void receiveRelationships(
             Iterable<RelationshipRecord> rels, ArrayMap<String, RelIdArray> newRelationshipMap,
-            Map<Long, RelationshipImpl> relsMap, Direction dir )
+            Map<Long, RelationshipImpl> relsMap, DirectionWrapper dir )
     {
         for ( RelationshipRecord rel : rels )
         {

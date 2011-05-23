@@ -20,12 +20,13 @@
 package org.neo4j.kernel.impl.nioneo.xa;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.transaction.xa.XAResource;
 
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -45,11 +46,12 @@ import org.neo4j.kernel.impl.persistence.NeoStoreTransaction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
+import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
 class ReadTransaction implements NeoStoreTransaction
 {
     private final NeoStore neoStore;
-    
+
     public ReadTransaction( NeoStore neoStore )
     {
         this.neoStore = neoStore;
@@ -64,7 +66,7 @@ class ReadTransaction implements NeoStoreTransaction
     {
         return neoStore.getRelationshipGrabSize();
     }
-    
+
     private RelationshipStore getRelationshipStore()
     {
         return neoStore.getRelationshipStore();
@@ -90,19 +92,24 @@ class ReadTransaction implements NeoStoreTransaction
         return getNodeStore().getRecord( nodeId ).getNextRel();
     }
 
-    public Triplet<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>, Long> getMoreRelationships(
+    public Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, Long> getMoreRelationships(
             long nodeId, long position )
     {
         return getMoreRelationships( nodeId, position, getRelGrabSize(), getRelationshipStore() );
     }
     
-    static Triplet<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>, Long> getMoreRelationships(
+    static Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, Long> getMoreRelationships(
             long nodeId, long position, int grabSize, RelationshipStore relStore )
     {
+        // initialCapacity=grabSize saves the lists the trouble of resizing
         List<RelationshipRecord> out = new ArrayList<RelationshipRecord>();
         List<RelationshipRecord> in = new ArrayList<RelationshipRecord>();
-        Pair<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>> result =
-                Pair.<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>>of( out, in );
+        // LOOPS-DISABLED
+//        List<RelationshipRecord> loop = null;
+        Map<DirectionWrapper, Iterable<RelationshipRecord>> result =
+            new EnumMap<DirectionWrapper, Iterable<RelationshipRecord>>( DirectionWrapper.class );
+        result.put( DirectionWrapper.OUTGOING, out );
+        result.put( DirectionWrapper.INCOMING, in );
         for ( int i = 0; i < grabSize && 
             position != Record.NO_NEXT_RELATIONSHIP.intValue(); i++ )
         {
@@ -110,19 +117,29 @@ class ReadTransaction implements NeoStoreTransaction
             if ( relRecord == null )
             {
                 // return what we got so far
-                return Triplet.<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>, Long>of(
-                        out, in, position );
+                return Pair.of( result, position );
             }
             long firstNode = relRecord.getFirstNode();
             long secondNode = relRecord.getSecondNode();
-            boolean isOutgoing = firstNode == nodeId;
             if ( relRecord.inUse() )
             {
-                if ( isOutgoing )
+                // LOOPS-DISABLED
+                /*if ( firstNode == secondNode )
+                {
+                    if ( loop == null )
+                    {
+                        // This is done lazily because loops are probably quite
+                        // rarely encountered
+                        loop = new ArrayList<RelationshipRecord>();
+                        result.put( DirectionWrapper.BOTH, loop );
+                    }
+                    loop.add( relRecord );
+                }
+                else */if ( firstNode == nodeId )
                 {
                     out.add( relRecord );
                 }
-                else
+                else if ( secondNode == nodeId )
                 {
                     in.add( relRecord );
                 }
@@ -131,8 +148,8 @@ class ReadTransaction implements NeoStoreTransaction
             {
                 i--;
             }
-            
-            if ( isOutgoing )
+
+            if ( firstNode == nodeId )
             {
                 position = relRecord.getFirstNextRel();
             }
@@ -142,14 +159,12 @@ class ReadTransaction implements NeoStoreTransaction
             }
             else
             {
-                System.out.println( relRecord );
                 throw new InvalidRecordException( "Node[" + nodeId + 
                     "] is neither firstNode[" + firstNode + 
                     "] nor secondNode[" + secondNode + "] for Relationship[" + relRecord.getId() + "]" );
             }
         }
-        return Triplet.<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>, Long>of(
-                out, in, position );
+        return Pair.of( result, position );
     }
     
     public ArrayMap<Integer,PropertyData> relLoadProperties( long relId, boolean light )
@@ -178,21 +193,21 @@ class ReadTransaction implements NeoStoreTransaction
     public ArrayMap<Integer,PropertyData> nodeLoadProperties( long nodeId, boolean light )
     {
         NodeRecord nodeRecord = getNodeStore().getRecord( nodeId );
-            
+
         long nextProp = nodeRecord.getNextProp();
-        ArrayMap<Integer,PropertyData> propertyMap = 
+        ArrayMap<Integer,PropertyData> propertyMap =
             new ArrayMap<Integer,PropertyData>( 9, false, true );
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
             PropertyRecord propRecord = getPropertyStore().getLightRecord( nextProp );
-            propertyMap.put( propRecord.getKeyIndexId(), 
-                new PropertyData( propRecord.getId(), 
+            propertyMap.put( propRecord.getKeyIndexId(),
+                new PropertyData( propRecord.getId(),
                     propertyGetValueOrNull( propRecord ) ) );
             nextProp = propRecord.getNextProp();
         }
         return propertyMap;
     }
-    
+
     // Duplicated code
     public Object propertyGetValueOrNull( PropertyRecord propertyRecord )
     {
@@ -228,11 +243,11 @@ class ReadTransaction implements NeoStoreTransaction
 
     public int getKeyIdForProperty( long propertyId )
     {
-        PropertyRecord propRecord = 
+        PropertyRecord propRecord =
             getPropertyStore().getLightRecord( propertyId );
         return propRecord.getKeyIndexId();
     }
-    
+
     @Override
     public void setXaConnection( XaConnection connection )
     {
@@ -246,8 +261,8 @@ class ReadTransaction implements NeoStoreTransaction
 
     private IllegalStateException readOnlyException()
     {
-        return new IllegalStateException( 
-                "This is a read only transaction, " + 
+        return new IllegalStateException(
+                "This is a read only transaction, " +
                 "this method should never be invoked" );
     }
 
@@ -320,13 +335,13 @@ class ReadTransaction implements NeoStoreTransaction
     @Override
     public RelationshipTypeData[] loadRelationshipTypes()
     {
-        RelationshipTypeData relTypeData[] = 
+        RelationshipTypeData relTypeData[] =
             neoStore.getRelationshipTypeStore().getRelationshipTypes();
-        RelationshipTypeData rawRelTypeData[] = 
+        RelationshipTypeData rawRelTypeData[] =
             new RelationshipTypeData[relTypeData.length];
         for ( int i = 0; i < relTypeData.length; i++ )
         {
-            rawRelTypeData[i] = new RelationshipTypeData( 
+            rawRelTypeData[i] = new RelationshipTypeData(
                 relTypeData[i].getId(), relTypeData[i].getName() );
         }
         return rawRelTypeData;
