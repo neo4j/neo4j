@@ -20,25 +20,17 @@
 package org.neo4j.server.rest.repr.formats;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.MappingRepresentation;
 import org.neo4j.server.rest.repr.MappingSerializer;
-import org.neo4j.server.rest.repr.NodeRepresentation;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.ValueRepresentation;
 
@@ -57,30 +49,6 @@ public class CompactJsonFormatTest
     {
         String entity = json.format( ValueRepresentation.string( "expected value" ) );
         assertEquals( entity, "\"expected value\"" );
-    }
-    
-    @Test
-    public void compactNdoeTest() {
-        System.out.println(json.format( noderep( 1234 ) ));
-    }
-
-    private NodeRepresentation noderep( long id )
-    {
-        return new NodeRepresentation( node( id ) );
-    }
-
-    private Node node( long id )
-    {
-        Map props = MapUtil.map( "hello", "world" );
-        GraphDatabaseService db = mock( GraphDatabaseService.class );
-        when(db.getRelationshipTypes() ).thenReturn( Collections.<RelationshipType>emptySet() );
-        Node node = mock( Node.class );
-        when( node.getId() ).thenReturn( id );
-        when( node.getPropertyKeys() ).thenReturn( Collections.<String>emptySet() );
-//        when( node.getPropertyKeys() ).thenReturn( props.keySet() );
-//        when( node.getProperty( anyString() ).thenReturn( props.keySet() );
-        when( node.getGraphDatabase() ).thenReturn( db );
-        return node;
     }
     
     @Test
