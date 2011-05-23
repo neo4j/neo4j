@@ -54,7 +54,7 @@ abstract class AnnotationProcessor extends AbstractProcessor
                     {
                         try
                         {
-                            process( type, annotated, this.processingEnv.getElementUtils()
+                            process( type, annotated, mirror, processingEnv.getElementUtils()
                                     .getElementValuesWithDefaults( mirror ) );
                         }
                         catch ( Exception e )
@@ -69,7 +69,18 @@ abstract class AnnotationProcessor extends AbstractProcessor
         return false;
     }
 
-    abstract void process( TypeElement annotation, Element annotated,
+    protected final void warn( Element element, String message )
+    {
+
+        processingEnv.getMessager().printMessage( Kind.WARNING, message, element );
+    }
+
+    protected final void warn( Element element, AnnotationMirror annotation, String message )
+    {
+        processingEnv.getMessager().printMessage( Kind.WARNING, message, element, annotation );
+    }
+
+    abstract void process( TypeElement annotationType, Element annotated, AnnotationMirror annotation,
             Map<? extends ExecutableElement, ? extends AnnotationValue> values ) throws IOException;
 
     private static Pattern nl = Pattern.compile( "\n" );

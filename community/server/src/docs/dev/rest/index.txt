@@ -113,5 +113,12 @@ include::find-node-by-exact-match.txt[]
 
 include::traverse-from-a-start-node.txt[]
 
+[[rest-api-compact]]
+REST API - compact mode
+=======================
 
+By setting the accept header of your HTTP requests to `application/json;compact=true`, a more compacted
+for of JSON can be requested from the Neo4j Server, resulting in much less metadata but better transport
+effectiveness.
 
+include::get-node---compact.txt[]

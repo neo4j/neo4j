@@ -124,8 +124,7 @@ public class IndexNodeFunctionalTest
                 .payload( JsonHelper.createJsonFrom( indexSpecification ) )
                 .expectedStatus( Response.Status.CREATED )
                 .expectedHeader( "Location" )
-                .post( functionalTestHelper.nodeIndexUri() )
-                .response();
+                .post( functionalTestHelper.nodeIndexUri() );
 
         assertEquals( 1, helper.getNodeIndexes().length );
         assertEquals( indexName, helper.getNodeIndexes()[0] );
