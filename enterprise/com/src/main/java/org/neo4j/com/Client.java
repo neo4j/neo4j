@@ -23,11 +23,9 @@ import static org.neo4j.com.Protocol.addLengthFieldPipes;
 import static org.neo4j.com.Protocol.readString;
 import static org.neo4j.com.Protocol.writeString;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.util.Arrays;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -179,21 +177,9 @@ public abstract class Client<M> implements ChannelPipelineFactory
             TransactionStream txStreams = readTransactionStreams( dechunkingBuffer );
             return new Response<R>( response, storeId, txStreams );
         }
-        catch ( ClosedChannelException e )
-        {
-            channelPool.dispose( channelContext );
-            throw new ComException( e );
-        }
-        catch ( IOException e )
-        {
-            throw new ComException( e );
-        }
-        catch ( InterruptedException e )
-        {
-            throw new ComException( e );
-        }
         catch ( Exception e )
         {
+            channelPool.dispose( channelContext );
             throw new ComException( e );
         }
         finally
