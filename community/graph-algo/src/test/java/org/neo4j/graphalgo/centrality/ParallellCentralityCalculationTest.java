@@ -93,11 +93,7 @@ public class ParallellCentralityCalculationTest extends Neo4jAlgoTestCase
         pcc.addCalculation( stressCentrality );
         pcc.addCalculation( closenessCentrality );
         pcc.calculate();
-        // for ( Node node : graph.getAllNodes() )
-        // {
-        // System.out.println( "Dependency: " + graph.getNodeId( node ) + " "
-        // + stressCentrality.getCentrality( node ) );
-        // }
+
         assertCentrality( betweennessCentrality, "a", 0.0 );
         assertCentrality( betweennessCentrality, "b", 6.0 );
         assertCentrality( betweennessCentrality, "c", 0.0 );
