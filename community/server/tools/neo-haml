@@ -1,3 +1,0 @@
-#!/bin/sh
-
-requirehaml src/main/coffeescript/ src/main/resources/webadmin-html/js/
