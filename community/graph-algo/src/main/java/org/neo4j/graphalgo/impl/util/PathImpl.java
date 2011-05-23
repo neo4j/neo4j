@@ -109,8 +109,6 @@ public final class PathImpl implements Path
 
     private PathImpl( Builder left, Builder right )
     {
-        // System.out.println( left );
-        // System.out.println( right );
         Node endNode = null;
         path = new Relationship[left.size + ( right == null ? 0 : right.size )];
         if ( right != null )
