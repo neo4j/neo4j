@@ -38,11 +38,14 @@ import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
+import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.domain.RelationshipDirection;
+import org.neo4j.server.rest.repr.formats.CompactJsonFormat;
 
 import com.sun.jersey.api.client.ClientResponse;
 
-public class HtmlFunctionalTest {
+public class CompactJsonFunctionalTest {
     private long thomasAnderson;
     private long trinity;
     private long thomasAndersonLovesTrinity;
@@ -90,12 +93,13 @@ public class HtmlFunctionalTest {
         helper.addNodeToIndex("node", "name", name, id);
         return id;
     }
-    @Ignore
+
     @Test
+    @Ignore
     public void shouldGetRoot() {
-        ClientResponse response = CLIENT.resource(functionalTestHelper.dataUri()).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
+        ClientResponse response = CLIENT.resource(functionalTestHelper.dataUri()).accept(CompactJsonFormat.MEDIA_TYPE).get(ClientResponse.class);
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
-        assertValidHtml(response.getEntity(String.class));
+        assertValidJson(response.getEntity(String.class));
         response.close();
     }
 
@@ -104,7 +108,7 @@ public class HtmlFunctionalTest {
     public void shouldGetNodeIndexRoot() {
         ClientResponse response = CLIENT.resource(functionalTestHelper.nodeIndexUri()).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
-        assertValidHtml(response.getEntity(String.class));
+        assertValidJson(response.getEntity(String.class));
         response.close();
     }
 
@@ -113,7 +117,7 @@ public class HtmlFunctionalTest {
     public void shouldGetRelationshipIndexRoot() {
         ClientResponse response = CLIENT.resource(functionalTestHelper.relationshipIndexUri()).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
-        assertValidHtml(response.getEntity(String.class));
+        assertValidJson(response.getEntity(String.class));
         response.close();
     }
 
@@ -124,17 +128,17 @@ public class HtmlFunctionalTest {
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
         String entity = response.getEntity(String.class);
         assertTrue(entity.contains("Trinity"));
-        assertValidHtml(entity);
+        assertValidJson(entity);
         response.close();
     }
 
     @Test
     public void shouldGetThomasAndersonDirectly() {
-        ClientResponse response = CLIENT.resource(functionalTestHelper.nodeUri(thomasAnderson)).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
+        ClientResponse response = CLIENT.resource(functionalTestHelper.nodeUri(thomasAnderson)).accept(CompactJsonFormat.MEDIA_TYPE).get(ClientResponse.class);
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
         String entity = response.getEntity(String.class);
         assertTrue(entity.contains("Thomas Anderson"));
-        assertValidHtml(entity);
+        assertValidJson(entity);
         response.close();
     }
 
@@ -147,7 +151,7 @@ public class HtmlFunctionalTest {
         String entity = response.getEntity(String.class);
         assertTrue(entity.contains("KNOWS"));
         assertFalse(entity.contains("LOVES"));
-        assertValidHtml(entity);
+        assertValidJson(entity);
         response.close();
 
         response = CLIENT.resource(functionalTestHelper.relationshipsUri(thomasAnderson, RelationshipDirection.all.name(), "LOVES")).accept(MediaType.TEXT_HTML_TYPE).get(
@@ -155,7 +159,7 @@ public class HtmlFunctionalTest {
         entity = response.getEntity(String.class);
         assertFalse(entity.contains("KNOWS"));
         assertTrue(entity.contains("LOVES"));
-        assertValidHtml(entity);
+        assertValidJson(entity);
         response.close();
 
         response = CLIENT.resource(functionalTestHelper.relationshipsUri(thomasAnderson, RelationshipDirection.all.name(), "LOVES", "KNOWS")).accept(
@@ -163,7 +167,7 @@ public class HtmlFunctionalTest {
         entity = response.getEntity(String.class);
         assertTrue(entity.contains("KNOWS"));
         assertTrue(entity.contains("LOVES"));
-        assertValidHtml(entity);
+        assertValidJson(entity);
         response.close();
     }
 
@@ -177,12 +181,21 @@ public class HtmlFunctionalTest {
         assertTrue(entity.contains("strength"));
         assertTrue(entity.contains("100"));
         assertTrue(entity.contains("LOVES"));
-        assertValidHtml(entity);
+        assertValidJson(entity);
         response.close();
     }
-
-    private void assertValidHtml(String entity) {
-        assertTrue(entity.contains("<html>"));
-        assertTrue(entity.contains("</html>"));
+ 
+    private void assertValidJson(String entity) {
+        System.out.println(entity);
+        try
+        {
+            assertTrue(JsonHelper.jsonToMap( entity ).containsKey( "self" ));
+            assertFalse(JsonHelper.jsonToMap( entity ).containsKey( "properties" ));
+        }
+        catch ( JsonParseException e )
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
     }
 }
