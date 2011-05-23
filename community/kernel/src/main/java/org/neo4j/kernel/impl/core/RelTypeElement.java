@@ -119,6 +119,11 @@ class RelTypeElement extends RelTypeElementIterator
     @Override
     public RelTypeElementIterator setSrc( RelIdArray newSrc )
     {
-        return new FastRelTypeElement( getType(), getNode(), newSrc, direction, srcIterator.position() );
+        return new FastRelTypeElement( getType(), getNode(), newSrc, direction );
+    }
+    
+    public void notifyAboutMoreRelationships()
+    {
+        srcIterator.doAnotherRound();
     }
 }
