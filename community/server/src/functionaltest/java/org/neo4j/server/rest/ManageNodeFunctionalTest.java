@@ -188,7 +188,10 @@ public class ManageNodeFunctionalTest
     {
         ClientResponse response = sendDeleteRequestToServer( NON_EXISTENT_NODE_ID );
         assertEquals( 404, response.getStatus() );
-        assertThat(JsonHelper.jsonToMap( response.getEntity( String.class ) ), not(hasKey("message")));
+        
+        Map<String, Object> jsonMap = JsonHelper.jsonToMap( response.getEntity( String.class ) );
+        assertThat(jsonMap, hasKey("message"));
+        assertNotNull(jsonMap.get( "message" ));
     }
 
     @Test

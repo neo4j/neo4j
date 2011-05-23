@@ -157,8 +157,7 @@ public class RestfulGraphDatabase {
         } catch (NodeNotFoundException e) {
             return output.notFound(e);
         } catch (OperationFailureException e) {
-            String message = String.format("The node with id %d cannot be deleted. Check that the node is orphaned before deletion.", nodeId);
-            return output.conflict(e, message);
+            return output.conflict(e);
         }
     }
 
