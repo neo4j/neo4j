@@ -99,12 +99,10 @@ public class ExtensionListingFunctionalTest
                 MediaType.APPLICATION_JSON_TYPE ).get( ClientResponse.class );
         String result = response.getEntity( String.class );
 
-        System.out.println(result);
 
         assertThat( response.getStatus(), equalTo( 200 ) );
 
         json = JsonHelper.jsonToMap( result );
-        System.out.println( json );
         json = (Map<String, Object>) json.get( "graphdb" );
         assertThat( json, hasKey( Plugin.GET_REFERENCE_NODE ) );
         response.close();

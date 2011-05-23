@@ -83,7 +83,7 @@ public class BaseWorker extends Thread
 
     private void log( String s )
     {
-//        System.out.println( Thread.currentThread().getId() + " - " + s );
+
     }
 
     protected void queueCommand( Command cmd )

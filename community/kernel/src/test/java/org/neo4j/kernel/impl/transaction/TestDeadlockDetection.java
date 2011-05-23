@@ -444,7 +444,7 @@ public class TestDeadlockDetection
                 }
                 catch ( DeadlockDetectedException e )
                 {
-                    // System.out.println( "Deadlock detected!" );
+
                 }
                 finally
                 {

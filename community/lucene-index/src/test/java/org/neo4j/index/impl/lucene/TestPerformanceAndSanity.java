@@ -172,8 +172,6 @@ public class TestPerformanceAndSanity extends AbstractLuceneIndexTest
                                         IteratorUtil.count( (Iterator<Node>) itr );
                                     }
                                 }
-                                
-//                                System.out.println( "C iterated " + size + " only" );
                             }
                             else
                             {

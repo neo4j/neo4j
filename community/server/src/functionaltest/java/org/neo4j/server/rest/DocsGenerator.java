@@ -271,7 +271,6 @@ public class DocsGenerator
         }
         catch ( URISyntaxException e )
         {
-            System.out.println( "URI syntax exception: '" + uri + "'" );
             throw new RuntimeException( e );
         }
         return retrieveResponse( title, description, uri, responseCode, accept,
@@ -305,7 +304,6 @@ public class DocsGenerator
         }
         catch ( URISyntaxException e )
         {
-            System.out.println( "URI syntax exception: '" + uri + "'" );
             throw new RuntimeException( e );
         }
         return retrieveResponse( title, description, uri, responseCode, accept,
@@ -320,7 +318,6 @@ public class DocsGenerator
             final Response.Status responseCode, final MediaType type,
             final List<String> headerFields, final ClientRequest request )
     {
-        System.out.println( "==== Documenting: " + title );
         DocumentationData data = new DocumentationData();
         getRequestHeaders( data, request.getHeaders() );
         if ( request.getEntity() != null )

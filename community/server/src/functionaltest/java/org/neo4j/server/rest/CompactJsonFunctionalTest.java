@@ -186,7 +186,6 @@ public class CompactJsonFunctionalTest {
     }
  
     private void assertValidJson(String entity) {
-        System.out.println(entity);
         try
         {
             assertTrue(JsonHelper.jsonToMap( entity ).containsKey( "self" ));

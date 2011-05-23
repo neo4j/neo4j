@@ -28,8 +28,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 
-import org.neo4j.server.rest.web.OperationFailureException;
-
 public class OutputFormat
 {
     private static final String UTF8 = "UTF-8";
