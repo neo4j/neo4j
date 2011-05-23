@@ -51,6 +51,7 @@ public class CreateRelationshipFunctionalTest
     private FunctionalTestHelper functionalTestHelper;
     private GraphDbHelper helper;
     
+    @SuppressWarnings( "unchecked" )
     @Before
     public void setupServer() throws IOException {
         server = ServerBuilder.server().withRandomDatabaseDir().withSpecificServerModules(RESTApiModule.class).withPassingStartupHealthcheck().build();
