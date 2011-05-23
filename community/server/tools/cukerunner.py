@@ -25,16 +25,71 @@ FEATURE_TEMPLATE = """
 PAGE_TEMPLATE = """
 <!DOCTYPE html>
 <html>
-  <head><title>Cucumber test runner</title></head>
+  <head>
+    <title>Cucumber test runner</title>
+    <style>
+      body {
+        color: #333;
+        font-size: 90%%;
+        font-family: sans-serif;
+      }
+
+      ul {
+        list-style:none;
+        padding-left:5px;
+        font-size:10px;
+        line-height:26px;
+      }
+
+      ul li {
+        display:block;
+        height:26px;
+        border-top:1px solid #eee;
+        clear:both;
+      }
+
+      ul.scenarios li:nth-child(2n+1) {
+        background:#eeffff;
+      }
+    
+      ul li input {
+        float:right;
+      }
+
+      #features > li {
+        height:50px; 
+      }
+
+      #feature-container {
+        width:50%%;
+        float:left;
+      }
+
+      #output-container {
+        width:45%%;
+        float:left;
+        margin-left:4%%;
+      }
+      #output-container textarea {
+        height: 400px;
+        width:100%%;
+      } 
+    </style>
+  </head>
   <body>
-    <form action="" method="POST">
-      <p><input type="checkbox" name="external-server" %(external_checkbox)s /> run with external server</p>
-      <p><input type="submit" name="action:%(features_folder)s" value="Run all" /></p>
-      <ul id="features">
-        %(features)s
-      </ul>
-    </form>
-    <textarea>%(console_output)s</textarea>
+    <div id="feature-container">
+      <h3>Features:</h3>
+      <form action="" method="POST">
+        <p><input type="checkbox" name="external-server" %(external_checkbox)s /> run with external server. <input type="submit" name="action:%(features_folder)s" value="Run all" style="float:right;"/></p>
+        <ul id="features">
+          %(features)s
+        </ul>
+      </form>
+    </div>
+    <div id="output-container">
+      <h3>Output:</h3>
+      <textarea>%(console_output)s</textarea>
+    </div>
   </body>
 </html>
 """

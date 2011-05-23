@@ -35,7 +35,7 @@ To run the webdriver-selenium-integration tests:
 
 `mvn clean integration-test -Dtests=web`
 
-You can also run them via a GUI:
+You can also run them one-by-one via a web GUI:
 
 `tools/cukerunner.py`
 
