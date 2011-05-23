@@ -1,7 +1,7 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
+ * Copyright (c) 2002-2011 "Neo Technology,"
  * This file is part of Neo4j.
  *
  * Neo4j is free software: you can redistribute it and/or modify
@@ -26,6 +26,7 @@ import static org.junit.Assert.assertTrue;
 import java.lang.reflect.Field;
 import java.util.Map;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class TestArrayMap
@@ -89,6 +90,7 @@ public class TestArrayMap
     }
 
     @Test
+    @Ignore("Ignored until the return true statement is removed from the test code")
     public void arraymapIsClearedWhenExpandingToHashMapIfNonShrinkable() throws Exception
     {
         assertArrayMapIsClearedWhenExpandingToHashMap( new ArrayMap<String, Integer>( 3, false,
@@ -96,6 +98,7 @@ public class TestArrayMap
     }
 
     @Test
+    @Ignore("Ignored until the return true statement is removed from the test code")
     public void arraymapIsClearedWhenExpandingToHashMapIfShrinkable() throws Exception
     {
         assertArrayMapIsClearedWhenExpandingToHashMap( new ArrayMap<String, Integer>( 3, false,
@@ -103,6 +106,7 @@ public class TestArrayMap
     }
 
     @Test
+    @Ignore("Ignored until the return true statement is removed from the test code")
     public void arraymapIsClearedWhenExpandingToHashMapIfNonShrinkableAndSynchronized()
             throws Exception
     {
@@ -111,6 +115,7 @@ public class TestArrayMap
     }
 
     @Test
+    @Ignore("Ignored until the return true statement is removed from the test code")
     public void arraymapIsClearedWhenExpandingToHashMapIfShrinkableAndSynchronized()
             throws Exception
     {
@@ -122,12 +127,12 @@ public class TestArrayMap
             boolean shrinkable )
             throws Exception
     {
-        if ( true ) return;
-        
+
         // Perhaps not the pretties solution... quite brittle...
-        Field expansion = ArrayMap.class.getDeclaredField( "propertyMap" );
-        Field array = ArrayMap.class.getDeclaredField( "arrayEntries" );
+        Field expansion = ArrayMap.class.getDeclaredField( "data" );
         expansion.setAccessible( true );
+
+        Field array = ArrayMap.class.getDeclaredField( "data" );
         array.setAccessible( true );
 
         map.put( "key1", 1 );
@@ -171,6 +176,7 @@ public class TestArrayMap
         map.remove( "key2" );
         assertNull( "removed element still found", map.get( "key1" ) );
         map.remove( "key3" );
+        
         assertNull( "removed element still found", map.get( "key1" ) );
         map.remove( "key4" );
         assertNull( "removed element still found", map.get( "key1" ) );
