@@ -58,6 +58,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
     private IndexSearcher searcher;
     private final boolean createdNow;
     private Map<String, LruCache<String, Collection<Long>>> cache;
+    private int updateCount;
 
     LuceneBatchInserterIndex( LuceneBatchInserterIndexProvider provider,
             BatchInserter inserter, IndexIdentifier identifier, Map<String, String> config )
@@ -95,6 +96,11 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
                 }
             }
             writer.addDocument( document );
+            if ( ++updateCount == 500000 )
+            {
+                writer.commit();
+                updateCount = 0;
+            }
         }
         catch ( IOException e )
         {
@@ -227,7 +233,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
     {
         double heapHint = (double)(Runtime.getRuntime().maxMemory()/(1024*1024*14));
         double result = Math.max( atLeast, heapHint );
-        return Math.max( result, 1500 );
+        return Math.min( result, 700 );
     }
 
     private void closeSearcher()
@@ -357,6 +363,14 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
     public void flush()
     {
         writerModified = true;
+        try
+        {
+            writer.commit();
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
     
     public void setCacheCapacity( String key, int size )

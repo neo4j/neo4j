@@ -176,6 +176,7 @@ public class BatchInserterImpl implements BatchInserter
     public long createRelationship( long node1, long node2, RelationshipType
         type, Map<String,Object> properties )
     {
+        // LOOPS-DISABLED
         if ( node1 == node2 )
         {
             throw new IllegalArgumentException( "Start node[" + node1 + 

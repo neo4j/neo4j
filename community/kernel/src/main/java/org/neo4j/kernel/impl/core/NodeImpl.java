@@ -278,7 +278,7 @@ class NodeImpl extends Primitive
     // this method is only called when a relationship is created or
     // a relationship delete is undone or when the full node is loaded
     void addRelationship( NodeManager nodeManager, RelationshipType type, long relId,
-            Direction dir )
+            DirectionWrapper dir )
     {
         RelIdArray relationshipSet = nodeManager.getCowRelationshipAddMap(
             this, type.name(), true );
@@ -292,7 +292,7 @@ class NodeImpl extends Primitive
     {
         RelIdArray relationshipSet = nodeManager.getCowRelationshipRemoveMap(
             this, type.name(), true );
-        relationshipSet.add( relId, Direction.OUTGOING );
+        relationshipSet.add( relId, DirectionWrapper.OUTGOING );
     }
 
     private void ensureRelationshipMapNotNull( NodeManager nodeManager )

@@ -19,16 +19,17 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -42,7 +43,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.helpers.Triplet;
+import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.CombiningIterable;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.CommonFactories;
@@ -57,6 +58,7 @@ import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
 public class TestNeoStore extends AbstractNeo4jTestCase
 {
@@ -371,10 +373,15 @@ public class TestNeoStore extends AbstractNeo4jTestCase
     @SuppressWarnings( "unchecked" )
     private Iterable<RelationshipRecord> getMore( NeoStoreXaConnection xaCon, long node, AtomicLong pos )
     {
-        Triplet<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>, Long> result =
+        Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, Long> rels =
                 xaCon.getWriteTransaction().getMoreRelationships( node, pos.get() );
-        pos.set( result.third() );
-        return new CombiningIterable<RelationshipRecord>( asList( result.first(), result.second() ) );
+        pos.set( rels.other() );
+        List<Iterable<RelationshipRecord>> list = new ArrayList<Iterable<RelationshipRecord>>();
+        for ( Map.Entry<DirectionWrapper, Iterable<RelationshipRecord>> entry : rels.first().entrySet() )
+        {
+            list.add( entry.getValue() );
+        }
+        return new CombiningIterable<RelationshipRecord>( list );
     }
 
     private Object getValue( PropertyRecord propertyRecord ) throws IOException

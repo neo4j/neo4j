@@ -14,6 +14,8 @@
   <description>Standalone Neo4j server application.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
+  <packaging>jar</packaging>
+
   <properties>
     <bundle.namespace>org.neo4j.server</bundle.namespace>
     <short-name>server</short-name>
@@ -36,10 +38,8 @@
 
     <webdriver.version>2.0b3</webdriver.version>
     <webdriver.impl.class>org.openqa.selenium.firefox.FirefoxDriver</webdriver.impl.class>
-
+	
   </properties>
-
-  <packaging>bundle</packaging>
 
   <scm>
     <url>https://github.com/neo4j/community/tree/master/server</url>
@@ -762,12 +762,6 @@ the relevant Commercial Agreement.
               <target>
                 <property name="classpath" refid="maven.runtime.classpath" />
                 <exec executable="java">
-                  
-                  <!-- Uncomment to do profiling -->
-                  <!-- arg line="-green" />
-                  <arg line="-Xrunhprof:cpu=samples,depth=6,thread=y" /-->
-                  <!-- End profiling params -->
-                  
                   <arg line="-Dorg.neo4j.server.properties=${basedir}/neo4j-home/conf/neo4j-server.properties" />
                   <arg line="-classpath" />
                   <arg line="${basedir}/src/main/resources:${classpath}" />
@@ -783,7 +777,7 @@ the relevant Commercial Agreement.
     <profile>
       <!-- Disconnected from the "normal" build pipeline, because the
            artifact that this produces (webadmin.min.js) is checked into
-           the source tree.
+           the source tree (and thus there is no reason to normally rebuild it).
 
            I know, that's really awful, but the alternative is forcing 
            everyone to run the webadmin build all the time, and its *really* slow.
@@ -807,7 +801,6 @@ the relevant Commercial Agreement.
                 </goals>
               </execution>
             </executions>
-            
             <configuration>
               <modules>
               	<module>
@@ -826,6 +819,49 @@ the relevant Commercial Agreement.
         </plugins>
       </build>
    </profile>
+   
+   <profile>
+      <id>neodev</id>
+      <!-- Expands the number of things skipped by the neodev
+           profile defined in parent-central pom. 
+
+           This is meant to be used by maven exec, it does not
+           guarantee producing working artifacts. -->
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.mycila.maven-license-plugin</groupId>
+            <artifactId>maven-license-plugin</artifactId>
+            <executions>
+              <execution><id>inject-license-in-js-files</id><phase>none</phase></execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>appassembler-maven-plugin</artifactId>
+            <version>1.0</version>
+            <executions>
+              <execution><id>generate-jsw-scripts</id><phase>none</phase></execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <version>2.2</version>
+            <executions>
+              <execution><id>static-web</id><phase>none</phase></execution>
+              <execution><id>site</id><phase>none</phase></execution>
+            </executions>
+          </plugin>
+          <plugin>
+	        <artifactId>maven-site-plugin</artifactId>
+	        <version>2.1.1</version>
+	        <executions>
+	          <execution><id>create-site</id><phase>none</phase></execution>
+	        </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
 
     <!-- Firefox is default implementation, set in properties at the top of this file. -->
     <profile>
