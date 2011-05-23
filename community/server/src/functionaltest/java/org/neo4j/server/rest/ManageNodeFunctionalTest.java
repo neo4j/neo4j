@@ -198,8 +198,10 @@ public class ManageNodeFunctionalTest
         helper.createRelationship( "LOVES", id, helper.createNode() );
         ClientResponse response = sendDeleteRequestToServer( id );
         assertEquals( 409, response.getStatus() );
-        assertThat(JsonHelper.jsonToMap( response.getEntity( String.class ) ), not(hasKey("message")));
-
+        Map<String, Object> jsonMap = JsonHelper.jsonToMap( response.getEntity( String.class ) );
+        assertThat(jsonMap, hasKey("message"));
+        assertNotNull(jsonMap.get( "message" ));
+        
         DocsGenerator.create(
                 "Nodes with relationships can not be deleted",
                 "The relationships on a node has to be deleted "

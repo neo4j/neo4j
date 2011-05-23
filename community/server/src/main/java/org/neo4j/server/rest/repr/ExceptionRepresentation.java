@@ -22,17 +22,33 @@ package org.neo4j.server.rest.repr;
 class ExceptionRepresentation extends MappingRepresentation
 {
     private final Throwable exception;
+    private String message;
 
+    /**
+     * @param exception The exception that caused the response. Contents will be rendered in the response body
+     * @param message A descriptive message for the response body that describes the reason for the fault.
+     */
     ExceptionRepresentation( Throwable exception )
     {
         super( RepresentationType.EXCEPTION );
         this.exception = exception;
+        this.message = exception.getMessage();
     }
 
+    /**
+     * @param exception The exception that caused the response. Contents will be rendered in the response body
+     * @param message A descriptive message for the response body that describes the reason for the fault.
+     */
+    ExceptionRepresentation( Throwable exception, String message )
+    {
+        this( exception );
+        this.message = message;
+    }
+
+    
     @Override
     protected void serialize( MappingSerializer serializer )
     {
-        String message = exception.getMessage();
         if(message != null) {
             serializer.putString( "message", message );
         } 
