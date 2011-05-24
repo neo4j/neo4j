@@ -20,6 +20,7 @@
 package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.server.WebTestUtils.CLIENT;
 
 import java.io.IOException;
 import java.net.URI;
@@ -39,7 +40,6 @@ import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class SetNodePropertiesFunctionalTest {
@@ -80,6 +80,7 @@ public class SetNodePropertiesFunctionalTest {
                 .put( propertiesUri.toString() );
         ClientResponse response = updateNodePropertiesOnServer(map);
         assertEquals(204, response.getStatus());
+        response.close();
     }
 
     @Test
@@ -89,13 +90,15 @@ public class SetNodePropertiesFunctionalTest {
         map.put("jim", new HashMap<String, Object>());
         ClientResponse response = updateNodePropertiesOnServer(map);
         assertEquals(400, response.getStatus());
+        response.close();
     }
 
     @Test
     public void shouldReturn400WhenSendingCorruptJsonProperties() {
-        ClientResponse response = Client.create().resource(propertiesUri).type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(
+        ClientResponse response = CLIENT.resource(propertiesUri).type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(
                 "this:::Is::notJSON}").put(ClientResponse.class);
         assertEquals(400, response.getStatus());
+        response.close();
     }
 
     @Test
@@ -103,14 +106,15 @@ public class SetNodePropertiesFunctionalTest {
     {
         Map<String, Object> map = new HashMap<String, Object>();
         map.put("jim", "tobias");
-        ClientResponse response = Client.create().resource(badUri).type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(
+        ClientResponse response = CLIENT.resource(badUri).type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(
                 JsonHelper.createJsonFrom(map)).put(ClientResponse.class);
         assertEquals(404, response.getStatus());
+        response.close();
     }
 
     private ClientResponse updateNodePropertiesOnServer(Map<String, Object> map) throws JsonParseException
     {
-        return Client.create().resource(propertiesUri).type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(
+        return CLIENT.resource(propertiesUri).type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(
                 JsonHelper.createJsonFrom(map)).put(ClientResponse.class);
     }
 
@@ -126,6 +130,7 @@ public class SetNodePropertiesFunctionalTest {
                 .put( getPropertyUri( "foo" ).toString() );
         ClientResponse response = setNodePropertyOnServer("foo", "bar");
         assertEquals(204, response.getStatus());
+        response.close();
     }
 
     @Test
@@ -139,24 +144,27 @@ public class SetNodePropertiesFunctionalTest {
                 .post( functionalTestHelper.nodeUri() );
         ClientResponse response = setNodePropertyOnServer("jim", new HashMap<String, Object>());
         assertEquals(400, response.getStatus());
+        response.close();
     }
 
     @Test
     public void shouldReturn400WhenSendingCorruptJsonProperty() throws Exception {
-        ClientResponse response = Client.create().resource(getPropertyUri("foo")).type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(
+        ClientResponse response = CLIENT.resource(getPropertyUri("foo")).type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(
                 "this:::Is::notJSON}").put(ClientResponse.class);
         assertEquals(400, response.getStatus());
+        response.close();
     }
 
     @Test
     public void shouldReturn404WhenPropertySentToANodeWhichDoesNotExist() throws Exception {
-        ClientResponse response = Client.create().resource(badUri.toString() + "/foo").type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
+        ClientResponse response = CLIENT.resource(badUri.toString() + "/foo").type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
                 .entity(JsonHelper.createJsonFrom("bar")).put(ClientResponse.class);
         assertEquals(404, response.getStatus());
+        response.close();
     }
 
     private ClientResponse setNodePropertyOnServer(String key, Object value) throws Exception {
-        return Client.create().resource(getPropertyUri(key)).type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(
+        return CLIENT.resource(getPropertyUri(key)).type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(
                 JsonHelper.createJsonFrom(value)).put(ClientResponse.class);
     }
 }

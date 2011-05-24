@@ -508,7 +508,7 @@ public class TestRWLock
                 }
                 catch ( DeadlockDetectedException e )
                 {
-                    // System.out.println( "#############Deadlock detected!" );
+                    
                 }
                 finally
                 {

@@ -93,8 +93,6 @@ public class WebadminConfigurationRuleTest {
         assertFalse(((String)config.getProperty(Configurator.MANAGEMENT_PATH_PROPERTY_KEY)).endsWith("//"));
         assertFalse(((String)config.getProperty(Configurator.MANAGEMENT_PATH_PROPERTY_KEY)).endsWith("/"));
         
-        System.out.println(config.getProperty(Configurator.DATA_API_PATH_PROPERTY_KEY));
-        
         assertThat((String)config.getProperty(Configurator.DATA_API_PATH_PROPERTY_KEY), not(containsString("///")));
         assertFalse(((String)config.getProperty(Configurator.DATA_API_PATH_PROPERTY_KEY)).endsWith("//"));
         assertFalse(((String)config.getProperty(Configurator.DATA_API_PATH_PROPERTY_KEY)).endsWith("/"));

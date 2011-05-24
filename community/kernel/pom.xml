@@ -158,6 +158,28 @@ the relevant Commercial Agreement.
         </configuration>
       </plugin>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>default-compile</id>
+            <configuration>
+              <compilerArgument>-proc:none</compilerArgument>
+              <includes>
+                <include>org/neo4j/kernel/impl/annotations/**</include>
+              </includes>
+            </configuration>
+          </execution>
+          <execution>
+            <id>compile-neo4j-kernel</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <artifactId>maven-antrun-plugin</artifactId>
         <executions>
           <execution>
@@ -227,13 +249,6 @@ public class ComponentVersion extends Version
   </build>
 
   <dependencies>
-    <!-- Create META-INF/services/*-files automatically -->
-    <!-- dependency>
-      <groupId>org.neo4j.build</groupId>
-      <artifactId>services-annotation</artifactId>
-      <version>1-SNAPSHOT</version>
-      <scope>provided</scope>
-    </dependency -->
     <dependency>
       <groupId>org.apache.geronimo.specs</groupId>
       <artifactId>geronimo-jta_1.1_spec</artifactId>

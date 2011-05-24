@@ -19,18 +19,20 @@
  */
 package org.neo4j.kernel.impl.persistence;
 
+import java.util.Map;
+
 import javax.transaction.xa.XAResource;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
+import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
 /**
  * A connection to a {@link PersistenceSource}. <CODE>ResourceConnection</CODE>
@@ -94,10 +96,19 @@ public interface NeoStoreTransaction
 
     public void createRelationshipType( int id, String name );
 
-    public RelationshipChainPosition getRelationshipChainPosition( long nodeId );
+    public long getRelationshipChainPosition( long nodeId );
 
-    public Pair<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>> getMoreRelationships( long nodeId,
-        RelationshipChainPosition position );
+    /*
+     * List<Iterable<RelationshipRecord>> is a list with three items:
+     * 0: outgoing relationships
+     * 1: incoming relationships
+     * 2: loop relationships
+     * 
+     * Long is the relationship chain position as it stands after this
+     * batch of relationships has been loaded.
+     */
+    public Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, Long> getMoreRelationships(
+            long nodeId, long position );
 
     public RelIdArray getCreatedNodes();
 

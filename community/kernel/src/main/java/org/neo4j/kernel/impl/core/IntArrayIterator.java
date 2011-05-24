@@ -105,6 +105,7 @@ class IntArrayIterator implements Iterable<Relationship>,
                             }
                         }
                         newRels.put( newItr.getType(), newItr );
+                        newItr.notifyAboutMoreRelationships();
                     }
                     if ( types.length == 0 )
                     {

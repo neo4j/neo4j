@@ -86,7 +86,8 @@ curl -v http://localhost:7474/db/data/
 
 The response to the +GET+ request will contain (by default) a JSON container that itself contains a container
 called "extensions" where the available plugins are listed.
-In the following case, we only have the +GetAll+ plugin registered with the server, so only its extension functionality is available:
+In the following case, we only have the +GetAll+ plugin registered with the server, so only its extension functionality is available.
+Extension names will be automatically assigned, based on method names, if not specifically specified using the +@Name+ annotation.
 
 [source, javascript]
 ----
@@ -124,7 +125,16 @@ curl http://localhost:7474/db/data/ext/GetAll/graphdb/get_all_nodes
 }
 ----
 
-To use it, just +POST+ to this URL, with parameters as specified in the description (though there are none in this case).
+To use it, just +POST+ to this URL, with parameters as specified in the description.
+F.ex for calling the +shortest path+ extension (URI gotten from a +GET+ to http://localhost:7474/db/data/node/123):
+----
+curl -X POST http://localhost:7474/db/data/ext/GetAll/node/123/shortestPath -d 'target=http://localhost:7474/db/data/node/456&depth=5'
+---- 
+If everything is OK a response code +200+ and a list of zero or more items will be returned.
+If nothing is returned (null returned from extension) an empty result and response code +204+ will be returned.
+If the extension throws an exception response code +500+ and a detailed error message is returned.
+
+Extensions that do any kind of write operation will have to manage their own transactions, i.e. transactions aren't managed automatically.
 
 Through this model, any plugin can naturally fit into the general hypermedia scheme that Neo4j espouses - meaning that
 clients can still take advantage of abstractions like  Nodes, Relationships and Paths with a straightforward upgrade

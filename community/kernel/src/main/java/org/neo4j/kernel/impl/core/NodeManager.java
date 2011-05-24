@@ -27,7 +27,6 @@ import java.util.logging.Logger;
 
 import javax.transaction.TransactionManager;
 
-import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -45,7 +44,6 @@ import org.neo4j.kernel.impl.cache.StrongReferenceCache;
 import org.neo4j.kernel.impl.cache.WeakLruCache;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
@@ -55,6 +53,7 @@ import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
+import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
 public class NodeManager
 {
@@ -295,7 +294,8 @@ public class NodeManager
                 + "] deleted" );
         }
         long id = idGenerator.nextId( Relationship.class );
-        RelationshipImpl rel = new RelationshipImpl( id, startNodeId, endNodeId, type, true );
+        int typeId = getRelationshipTypeIdFor( type );
+        RelationshipImpl rel = newRelationshipImpl( id, startNodeId, endNodeId, type, typeId, true );
         boolean firstNodeTaken = false;
         boolean secondNodeTaken = false;
         acquireLock( rel, LockType.WRITE );
@@ -306,11 +306,17 @@ public class NodeManager
             firstNodeTaken = true;
             acquireLock( secondNode, LockType.WRITE );
             secondNodeTaken = true;
-            int typeId = getRelationshipTypeIdFor( type );
             persistenceManager.relationshipCreate( id, typeId, startNodeId,
                 endNodeId );
-            firstNode.addRelationship( this, type, id, Direction.OUTGOING );
-            secondNode.addRelationship( this, type, id, Direction.INCOMING );
+            if ( startNodeId == endNodeId )
+            {
+                firstNode.addRelationship( this, type, id, DirectionWrapper.BOTH );
+            }
+            else
+            {
+                firstNode.addRelationship( this, type, id, DirectionWrapper.OUTGOING );
+                secondNode.addRelationship( this, type, id, DirectionWrapper.INCOMING );
+            }
             relCache.put( rel.getId(), rel );
             success = true;
             return new RelationshipProxy( id, this );
@@ -354,6 +360,20 @@ public class NodeManager
                     + rel );
             }
         }
+    }
+
+    private RelationshipImpl newRelationshipImpl( long id, long startNodeId, long endNodeId,
+            RelationshipType type, int typeId, boolean newRel )
+    {
+//        int rest = (int)(((startNodeId|endNodeId)&0xFFFFC0000000L)>>30);
+//        if ( rest == 0 && typeId < 16 )
+//        {
+//            return new SuperLowRelationshipImpl( id, startNodeId, endNodeId, typeId, newRel );
+//        }
+//        return rest <= 3 ?
+//                new LowRelationshipImpl( id, startNodeId, endNodeId, type, newRel ) :
+//                new HighRelationshipImpl( id, startNodeId, endNodeId, type, newRel );
+        return new LowRelationshipImpl( id, startNodeId, endNodeId, typeId, newRel );
     }
 
     private ReentrantLock lockId( long id )
@@ -500,7 +520,7 @@ public class NodeManager
             }
             final long startNodeId = data.getFirstNode();
             final long endNodeId = data.getSecondNode();
-            relationship = new RelationshipImpl( relId, startNodeId, endNodeId, type, false );
+            relationship = newRelationshipImpl( relId, startNodeId, endNodeId, type, typeId, false );
             relCache.put( relId, relationship );
             return new RelationshipProxy( relId, this );
         }
@@ -544,8 +564,8 @@ public class NodeManager
                     + "] exist but relationship type[" + typeId
                     + "] not found." );
             }
-            relationship = new RelationshipImpl( relId, data.getFirstNode(), data.getSecondNode(),
-                    type, false );
+            relationship = newRelationshipImpl( relId, data.getFirstNode(), data.getSecondNode(),
+                    type, typeId, false );
             relCache.put( relId, relationship );
             return relationship;
         }
@@ -570,7 +590,7 @@ public class NodeManager
         return persistenceManager.loadPropertyValue( id );
     }
 
-    RelationshipChainPosition getRelationshipChainPosition( NodeImpl node )
+    long getRelationshipChainPosition( NodeImpl node )
     {
         return persistenceManager.getRelationshipChainPosition( node.getId() );
     }
@@ -578,21 +598,24 @@ public class NodeManager
     Pair<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>> getMoreRelationships( NodeImpl node )
     {
         long nodeId = node.getId();
-        RelationshipChainPosition position = node.getRelChainPosition();
-        Pair<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>> rels =
+        long position = node.getRelChainPosition();
+        Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, Long> rels =
             persistenceManager.getMoreRelationships( nodeId, position );
+        node.setRelChainPosition( rels.other() );
         ArrayMap<String,RelIdArray> newRelationshipMap =
             new ArrayMap<String,RelIdArray>();
         Map<Long,RelationshipImpl> relsMap = new HashMap<Long,RelationshipImpl>( 150 );
-        receiveRelationships( rels.first(), newRelationshipMap, relsMap, Direction.OUTGOING );
-        receiveRelationships( rels.other(), newRelationshipMap, relsMap, Direction.INCOMING );
+        for ( Map.Entry<DirectionWrapper, Iterable<RelationshipRecord>> entry : rels.first().entrySet() )
+        {
+            receiveRelationships( entry.getValue(), newRelationshipMap, relsMap, entry.getKey() );
+        }
         // relCache.putAll( relsMap );
         return Pair.of( newRelationshipMap, relsMap );
     }
 
     private void receiveRelationships(
             Iterable<RelationshipRecord> rels, ArrayMap<String, RelIdArray> newRelationshipMap,
-            Map<Long, RelationshipImpl> relsMap, Direction dir )
+            Map<Long, RelationshipImpl> relsMap, DirectionWrapper dir )
     {
         for ( RelationshipRecord rel : rels )
         {
@@ -603,14 +626,14 @@ public class NodeManager
             {
                 type = getRelationshipTypeById( rel.getType() );
                 assert type != null;
-                relImpl = new RelationshipImpl( relId, rel.getFirstNode(), rel.getSecondNode(), type,
-                        false );
+                relImpl = newRelationshipImpl( relId, rel.getFirstNode(), rel.getSecondNode(), type,
+                        rel.getType(), false );
                 relsMap.put( relId, relImpl );
                 // relCache.put( relId, relImpl );
             }
             else
             {
-                type = relImpl.getType();
+                type = relImpl.getType( this );
             }
             RelIdArray relationshipSet = newRelationshipMap.get( type.name() );
             if ( relationshipSet == null )
@@ -681,11 +704,11 @@ public class NodeManager
         PropertyContainer container;
         if ( resource instanceof NodeImpl )
         {
-            container = new NodeProxy( resource.id, this );
+            container = new NodeProxy( resource.getId(), this );
         }
         else if ( resource instanceof RelationshipImpl )
         {
-            container = new RelationshipProxy( resource.id, this );
+            container = new RelationshipProxy( resource.getId(), this );
         }
         else
         {
@@ -710,11 +733,11 @@ public class NodeManager
         PropertyContainer container;
         if ( resource instanceof NodeImpl )
         {
-            container = new NodeProxy( resource.id, this );
+            container = new NodeProxy( resource.getId(), this );
         }
         else if ( resource instanceof RelationshipImpl )
         {
-            container = new RelationshipProxy( resource.id, this );
+            container = new RelationshipProxy( resource.getId(), this );
         }
         else
         {

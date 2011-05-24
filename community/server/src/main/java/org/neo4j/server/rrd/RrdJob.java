@@ -19,9 +19,14 @@
  */
 package org.neo4j.server.rrd;
 
+import java.util.Date;
+
 public class RrdJob implements Job
 {
+    private static final long MIN_STEP_TIME = 1000;
+    
     private RrdSampler sampler;
+    private long lastRun = 0;
 
     public RrdJob( RrdSampler sampler )
     {
@@ -30,6 +35,9 @@ public class RrdJob implements Job
 
     public void run()
     {
-        sampler.updateSample();
+        // Guard against getting run in too rapid succession.
+        if((new Date().getTime() - lastRun) >= MIN_STEP_TIME) {
+            sampler.updateSample();
+        }
     }
 }

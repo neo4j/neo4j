@@ -110,6 +110,19 @@ public interface Node extends PropertyContainer
      *         node
      */
     public Iterable<Relationship> getRelationships( RelationshipType... types );
+    
+    /**
+     * Returns all the relationships of any of the types in <code>types</code>
+     * that are attached to this node and have the given <code>direction</code>.
+     * If no relationships of the given types are attached to this node, an empty
+     * iterable will be returned.
+     *
+     * @param types the given relationship type(s)
+     * @param direction the direction of the relationships to return.
+     * @return all relationships of the given type(s) that are attached to this
+     *         node
+     */
+    public Iterable<Relationship> getRelationships( Direction direction, RelationshipType... types );
 
     /**
      * Returns <code>true</code> if there are any relationships of any of the
@@ -123,6 +136,19 @@ public interface Node extends PropertyContainer
      */
     public boolean hasRelationship( RelationshipType... types );
 
+    /**
+     * Returns <code>true</code> if there are any relationships of any of the
+     * types in <code>types</code> attached to this node (for the given
+     * <code>direction</code>), <code>false</code> otherwise.
+     *
+     * @param types the given relationship type(s)
+     * @param direction the direction to check relationships for
+     * @return <code>true</code> if there are any relationships of any of the
+     *         types in <code>types</code> attached to this node,
+     *         <code>false</code> otherwise
+     */
+    public boolean hasRelationship( Direction direction, RelationshipType... types );
+    
     /**
      * Returns all {@link Direction#OUTGOING OUTGOING} or
      * {@link Direction#INCOMING INCOMING} relationships from this node. If

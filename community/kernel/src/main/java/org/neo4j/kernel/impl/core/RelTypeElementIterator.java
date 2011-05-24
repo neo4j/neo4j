@@ -50,6 +50,10 @@ public abstract class RelTypeElementIterator
         {
             return false;
         }
+        
+        public void notifyAboutMoreRelationships()
+        {
+        }
     };
     
     private final String type;
@@ -78,4 +82,6 @@ public abstract class RelTypeElementIterator
     public abstract boolean isSrcEmpty();
 
     public abstract RelTypeElementIterator setSrc( RelIdArray newSrc );
+    
+    public abstract void notifyAboutMoreRelationships();
 }

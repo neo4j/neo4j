@@ -19,7 +19,10 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
@@ -27,9 +30,19 @@ import org.neo4j.graphdb.Direction;
 
 public class RelIdArray
 {
+    // LOOPS-DISABLED
+    private static final DirectionWrapper[] DIRECTIONS_FOR_OUTGOING =
+            new DirectionWrapper[] { DirectionWrapper.OUTGOING/*, DirectionWrapper.BOTH */};
+    // LOOPS-DISABLED
+    private static final DirectionWrapper[] DIRECTIONS_FOR_INCOMING =
+            new DirectionWrapper[] { DirectionWrapper.INCOMING/*, DirectionWrapper.BOTH */};
+    // LOOPS-DISABLED
+    private static final DirectionWrapper[] DIRECTIONS_FOR_BOTH =
+            new DirectionWrapper[] { DirectionWrapper.OUTGOING, DirectionWrapper.INCOMING/*, DirectionWrapper.BOTH */};
+    
     public static final RelIdArray EMPTY = new RelIdArray()
     {
-        private RelIdIterator emptyIterator = new RelIdIterator( null )
+        private RelIdIterator emptyIterator = new RelIdIterator( null, new DirectionWrapper[0] )
         {
             @Override
             public boolean hasNext()
@@ -38,9 +51,13 @@ public class RelIdArray
             }
 
             @Override
-            protected IdBlock selectNextBlock( IdBlock currentBlock )
+            protected boolean nextBlock()
             {
-                return null;
+                return false;
+            }
+            
+            public void doAnotherRound()
+            {
             }
         };
         
@@ -53,22 +70,25 @@ public class RelIdArray
     
     private IdBlock lastOutBlock;
     private IdBlock lastInBlock;
+    // LOOPS-DISABLED
+//    private IdBlock lastLoopBlock;
     
     public RelIdArray()
     {
     }
     
-    public void add( long id, Direction direction )
+    /*
+     * Adding an id with direction BOTH means that it's a loop
+     */
+    public void add( long id, DirectionWrapper direction )
     {
-        // TODO Optimize
-        IdBlock lastBlock = direction == Direction.OUTGOING ? lastOutBlock : lastInBlock;
+        IdBlock lastBlock = direction.lastBlock( this );
         long highBits = id&0xFFFFFFFF00000000L;
         if ( lastBlock == null || lastBlock.getHighBits() != highBits )
         {
-            IdBlock newLastBlock = highBits == 0 ? new LowIdBlock() : new HighIdBlock( highBits );
+            IdBlock newLastBlock = highBits == 0 ? new LowIdBlock( direction ) : new HighIdBlock( direction, highBits );
             newLastBlock.prev = lastBlock;
-            if ( direction == Direction.OUTGOING ) lastOutBlock = newLastBlock;
-            else lastInBlock = newLastBlock;
+            direction.assignTopLevelBlock( this, newLastBlock );
             lastBlock = newLastBlock;
         }
         lastBlock.add( (int) id );
@@ -81,6 +101,7 @@ public class RelIdArray
             return;
         }
         
+        // TODO cram into DirectionWrapper
         if ( source.lastOutBlock != null )
         {
             if ( lastOutBlock == null )
@@ -109,12 +130,36 @@ public class RelIdArray
             else if ( lastInBlock.getHighBits() == source.lastInBlock.getHighBits() )
             {
                 lastInBlock.addAll( source.lastInBlock );
+                if ( source.lastInBlock.prev != null )
+                {
+                    last( lastInBlock ).prev = source.lastInBlock.prev.copy();
+                }
             }
             else
             {
                 last( lastInBlock ).prev = source.lastInBlock.copy();
             }
         }
+        // LOOPS-DISABLED
+//        if ( source.lastLoopBlock != null )
+//        {
+//            if ( lastLoopBlock == null )
+//            {
+//                lastLoopBlock = source.lastLoopBlock.copy();
+//            }
+//            else if ( lastLoopBlock.getHighBits() == source.lastLoopBlock.getHighBits() )
+//            {
+//                lastLoopBlock.addAll( source.lastLoopBlock );
+//                if ( source.lastLoopBlock.prev != null )
+//                {
+//                    last( lastLoopBlock ).prev = source.lastLoopBlock.prev.copy();
+//                }
+//            }
+//            else
+//            {
+//                last( lastLoopBlock ).prev = source.lastLoopBlock.copy();
+//            }
+//        }
     }
     
     private static IdBlock last( IdBlock block )
@@ -128,7 +173,7 @@ public class RelIdArray
     
     public boolean isEmpty()
     {
-        return lastOutBlock == null && lastInBlock == null;
+        return lastOutBlock == null && lastInBlock == null/* && lastLoopBlock == null */;
     }
     
     public RelIdIterator iterator( DirectionWrapper direction )
@@ -136,7 +181,7 @@ public class RelIdArray
         return direction.iterator( this );
     }
     
-    public static final IdBlock EMPTY_BLOCK = new LowIdBlock()
+    public static final IdBlock EMPTY_BLOCK = new LowIdBlock( DirectionWrapper.BOTH )
     {
         @Override
         int length()
@@ -152,7 +197,20 @@ public class RelIdArray
             @Override
             RelIdIterator iterator( RelIdArray ids )
             {
-                return new OneDirectionRelIdIterator( ids.lastOutBlock );
+                // LOOPS-DISABLED
+                return new SingleBlockRelIdIterator( ids, DIRECTIONS_FOR_OUTGOING );
+            }
+
+            @Override
+            IdBlock lastBlock( RelIdArray ids )
+            {
+                return ids.lastOutBlock;
+            }
+
+            @Override
+            void assignTopLevelBlock( RelIdArray ids, IdBlock block )
+            {
+                ids.lastOutBlock = block;
             }
         },
         INCOMING( Direction.INCOMING )
@@ -160,7 +218,20 @@ public class RelIdArray
             @Override
             RelIdIterator iterator( RelIdArray ids )
             {
-                return new OneDirectionRelIdIterator( ids.lastInBlock );
+                // LOOPS-DISABLED
+                return new SingleBlockRelIdIterator( ids, DIRECTIONS_FOR_INCOMING );
+            }
+
+            @Override
+            IdBlock lastBlock( RelIdArray ids )
+            {
+                return ids.lastInBlock;
+            }
+
+            @Override
+            void assignTopLevelBlock( RelIdArray ids, IdBlock block )
+            {
+                ids.lastInBlock = block;
             }
         },
         BOTH( Direction.BOTH )
@@ -168,7 +239,23 @@ public class RelIdArray
             @Override
             RelIdIterator iterator( RelIdArray ids )
             {
-                return new BothDirectionsRelIdIterator( ids.lastOutBlock, ids.lastInBlock );
+                return new RelIdIterator( ids, DIRECTIONS_FOR_BOTH );
+            }
+
+            @Override
+            IdBlock lastBlock( RelIdArray ids )
+            {
+                throw new UnsupportedOperationException();
+                // LOOPS-DISABLED
+//                return ids.lastLoopBlock;
+            }
+
+            @Override
+            void assignTopLevelBlock( RelIdArray ids, IdBlock block )
+            {
+                throw new UnsupportedOperationException();
+                // LOOPS-DISABLED
+//                ids.lastLoopBlock = block;
             }
         };
         
@@ -180,6 +267,16 @@ public class RelIdArray
         }
         
         abstract RelIdIterator iterator( RelIdArray ids );
+        
+        /*
+         * Only used during add
+         */
+        abstract IdBlock lastBlock( RelIdArray ids );
+        
+        /*
+         * Only used during add
+         */
+        abstract void assignTopLevelBlock( RelIdArray ids, IdBlock block );
         
         public Direction direction()
         {
@@ -194,15 +291,21 @@ public class RelIdArray
         case OUTGOING: return DirectionWrapper.OUTGOING;
         case INCOMING: return DirectionWrapper.INCOMING;
         case BOTH: return DirectionWrapper.BOTH;
+        default: throw new IllegalArgumentException( "" + direction );
         }
-        throw new IllegalArgumentException( "" + direction );
     }
     
     public static abstract class IdBlock
     {
+        protected DirectionWrapper tempDirRemoveThisLater;
         private int[] ids = new int[2];
         private int length;
         private IdBlock prev;
+        
+        public IdBlock( DirectionWrapper dir )
+        {
+            this.tempDirRemoveThisLater = dir;
+        }
         
         IdBlock copy()
         {
@@ -264,10 +367,21 @@ public class RelIdArray
         }
         
         abstract long getHighBits();
+        
+        @Override
+        public String toString()
+        {
+            return tempDirRemoveThisLater.name() + ", " + this.hashCode();
+        }
     }
     
     private static class LowIdBlock extends IdBlock
     {
+        public LowIdBlock( DirectionWrapper dir )
+        {
+            super( dir );
+        }
+
         @Override
         long transform( int id )
         {
@@ -277,7 +391,7 @@ public class RelIdArray
         @Override
         protected IdBlock copyInstance()
         {
-            return new LowIdBlock();
+            return new LowIdBlock( tempDirRemoveThisLater );
         }
         
         @Override
@@ -291,8 +405,9 @@ public class RelIdArray
     {
         private final long highBits;
 
-        HighIdBlock( long highBits )
+        HighIdBlock( DirectionWrapper dir, long highBits )
         {
+            super( dir );
             this.highBits = highBits;
         }
         
@@ -305,7 +420,7 @@ public class RelIdArray
         @Override
         protected IdBlock copyInstance()
         {
-            return new HighIdBlock( highBits );
+            return new HighIdBlock( tempDirRemoveThisLater, highBits );
         }
         
         @Override
@@ -315,17 +430,77 @@ public class RelIdArray
         }
     }
     
-    public static abstract class RelIdIterator
+    private static class IteratorState
     {
-        protected IdBlock currentBlock;
+        private IdBlock block;
         private int relativePosition;
         private int absolutePosition;
+        
+        public IteratorState( IdBlock block, int relativePosition )
+        {
+            this.block = block;
+            this.relativePosition = relativePosition;
+        }
+        
+        boolean nextBlock()
+        {
+            if ( block.prev != null )
+            {
+                block = block.prev;
+                relativePosition = 0;
+                return true;
+            }
+            return false;
+        }
+        
+        boolean hasNext()
+        {
+            return relativePosition < block.length;
+        }
+        
+        /*
+         * Only called if hasNext returns true
+         */
+        long next()
+        {
+            absolutePosition++;
+            return block.get( relativePosition++ );
+        }
+    }
+    
+    public static class RelIdIterator
+    {
+        private final DirectionWrapper[] directions;
+        private int directionPosition = -1;
+        private DirectionWrapper currentDirection;
+        private IteratorState currentState;
+        private final IteratorState[] states;
+        
         private long nextElement;
         private boolean nextElementDetermined;
+        private final RelIdArray ids;
         
-        RelIdIterator( IdBlock startBlock )
+        RelIdIterator( RelIdArray ids, DirectionWrapper[] directions )
         {
-            currentBlock = startBlock;
+            this.ids = ids;
+            this.directions = directions;
+            this.states = new IteratorState[directions.length];
+            
+            // Find the initial block which isn't null. There can be directions
+            // which have a null block currently, but could potentially be set
+            // after the next getMoreRelationships.
+            IdBlock block = null;
+            while ( block == null && directionPosition+1 < directions.length )
+            {
+                currentDirection = directions[++directionPosition];
+                block = currentDirection.lastBlock( ids );
+            }
+            
+            if ( block != null )
+            {
+                currentState = new IteratorState( block, 0 );
+                states[directionPosition] = currentState;
+            }
         }
         
         public boolean hasNext()
@@ -335,25 +510,20 @@ public class RelIdArray
                 return nextElement != -1;
             }
             
-            while ( currentBlock != null )
+            while ( true )
             {
-                if ( relativePosition < currentBlock.length() )
+                if ( currentState != null && currentState.hasNext() )
                 {
-                    nextElement = currentBlock.get( relativePosition++ );
+                    nextElement = currentState.next();
                     nextElementDetermined = true;
                     return true;
                 }
                 else
                 {
-                    IdBlock nextBlock = selectNextBlock( currentBlock );
-                    if ( nextBlock == null )
+                    if ( !nextBlock() )
                     {
                         break;
                     }
-                    int leftInBlock = currentBlock.length-relativePosition;
-                    currentBlock = nextBlock;
-                    relativePosition = 0;
-                    absolutePosition += leftInBlock;
                 }
             }
             
@@ -363,9 +533,54 @@ public class RelIdArray
             nextElement = -1;
             return false;
         }
-        
-        protected abstract IdBlock selectNextBlock( IdBlock currentBlock );
 
+        protected boolean nextBlock()
+        {
+            // Try next block in the chain
+            if ( currentState != null && currentState.nextBlock() )
+            {
+                return true;
+            }
+            
+            // It's ok to return null here... which will result in hasNext
+            // returning false. IntArrayIterator will try to get more relationships
+            // and call hasNext again.
+            return findNextBlock();
+        }
+        
+        /**
+         * Tells this iterator to try another round with all its directions
+         * starting from each their previous states. Called from IntArrayIterator,
+         * when it finds out it has gotten more relationships of this type.
+         */
+        public void doAnotherRound()
+        {
+            directionPosition = -1;
+            findNextBlock();
+        }
+
+        protected boolean findNextBlock()
+        {
+            while ( directionPosition+1 < directions.length )
+            {
+                currentDirection = directions[++directionPosition];
+                IteratorState nextState = states[directionPosition];
+                if ( nextState != null )
+                {
+                    currentState = nextState;
+                    return true;
+                }
+                IdBlock block = currentDirection.lastBlock( ids );
+                if ( block != null )
+                {
+                    currentState = new IteratorState( block, 0 );
+                    states[directionPosition] = currentState;
+                    return true;
+                }
+            }
+            return false;
+        }
+        
         public long next()
         {
             if ( !hasNext() )
@@ -375,61 +590,19 @@ public class RelIdArray
             nextElementDetermined = false;
             return nextElement;
         }
-        
-        public void fastForwardTo( int position )
-        {
-            while ( this.absolutePosition < position )
-            {
-                int leftInBlock = currentBlock.length-relativePosition;
-                currentBlock = selectNextBlock( currentBlock );
-                relativePosition = 0;
-                absolutePosition += leftInBlock;
-            }
-            this.absolutePosition = position;
-        }
-        
-        public int position()
-        {
-            return absolutePosition;
-        }
     }
     
-    private static class OneDirectionRelIdIterator extends RelIdIterator
+    private static class SingleBlockRelIdIterator extends RelIdIterator
     {
-        OneDirectionRelIdIterator( IdBlock startBlock )
+        SingleBlockRelIdIterator( RelIdArray ids, DirectionWrapper[] directions )
         {
-            super( startBlock );
+            super( ids, directions );
         }
         
         @Override
-        protected IdBlock selectNextBlock( IdBlock currentBlock )
+        protected boolean findNextBlock()
         {
-            return currentBlock.prev;
-        }
-    }
-    
-    private static class BothDirectionsRelIdIterator extends RelIdIterator
-    {
-        private boolean in;
-        private final IdBlock inBlock;
-        
-        BothDirectionsRelIdIterator( IdBlock outBlock, IdBlock inBlock )
-        {
-            super( outBlock != null ? outBlock : (inBlock != null ? inBlock : EMPTY_BLOCK) );
-            this.inBlock = inBlock;
-            in = currentBlock == inBlock;
-        }
-        
-        @Override
-        protected IdBlock selectNextBlock( IdBlock currentBlock )
-        {
-            IdBlock result = currentBlock.prev;
-            if ( !in && result == null )
-            {
-                in = true;
-                result = inBlock;
-            }
-            return result;
+            return false;
         }
     }
     
@@ -462,22 +635,41 @@ public class RelIdArray
             evictExcluded( newArray, removedSet );
             if ( add != null )
             {
-                addOneDirection( add, newArray, removedSet, DirectionWrapper.OUTGOING );
-                addOneDirection( add, newArray, removedSet, DirectionWrapper.INCOMING );
+                for ( RelIdIterator fromIterator = add.iterator( DirectionWrapper.BOTH ); fromIterator.hasNext();)
+                {
+                    long value = fromIterator.next();
+                    if ( !removedSet.contains( value ) )
+                    {
+                        newArray.add( value, fromIterator.currentDirection );
+                    }
+                }
             }
             return newArray;
         }
     }
 
-    private static void addOneDirection( RelIdArray add, RelIdArray newArray, Set<Long> removedSet,
-            DirectionWrapper direction )
+    private static Iterator<IdBlock> iteratorOfThoseThatArentNull( IdBlock... blocks )
     {
-        for ( RelIdIterator iterator = direction.iterator( add ); iterator.hasNext(); )
+        List<IdBlock> list = new ArrayList<IdBlock>();
+        for ( IdBlock block : blocks )
         {
-            long value = iterator.next();
+            if ( block != null )
+            {
+                list.add( block );
+            }
+        }
+        return list.iterator();
+    }
+
+    private static void addOneDirection( RelIdIterator fromIterator, RelIdArray toArray,
+            Set<Long> removedSet, DirectionWrapper addDirection )
+    {
+        while ( fromIterator.hasNext() )
+        {
+            long value = fromIterator.next();
             if ( !removedSet.contains( value ) )
             {
-                newArray.add( value, direction.direction() );
+                toArray.add( value, addDirection );
             }
         }
     }
@@ -490,21 +682,22 @@ public class RelIdArray
             if ( excluded.contains( value ) )
             {
                 boolean swapSuccessful = false;
-                IdBlock block = iterator.currentBlock;
-                for ( int j = block.length - 1; j >= iterator.relativePosition; j--)
+                IteratorState state = iterator.currentState;
+                IdBlock block = state.block;
+                for ( int j = block.length - 1; j >= state.relativePosition; j--)
                 {
                     long backValue = block.get( j );
                     block.length--;
                     if ( !excluded.contains( backValue) )
                     {
-                        block.set( backValue, iterator.relativePosition-1 );
+                        block.set( backValue, state.relativePosition-1 );
                         swapSuccessful = true;
                         break;
                     }
                 }
                 if ( !swapSuccessful ) // all elements from pos in remove
                 {
-                    iterator.currentBlock.length--;
+                    block.length--;
                 }
             }
         }

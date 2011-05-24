@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.persistence;
 
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -37,7 +38,6 @@ import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaConnection;
@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.nioneo.xa.NioNeoDbPersistenceSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
+import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
 public class PersistenceManager
 {
@@ -92,13 +93,13 @@ public class PersistenceManager
         return getReadOnlyResource().loadPropertyIndexes( maxCount );
     }
 
-    public RelationshipChainPosition getRelationshipChainPosition( long nodeId )
+    public long getRelationshipChainPosition( long nodeId )
     {
         return getReadOnlyResource().getRelationshipChainPosition( nodeId );
     }
     
-    public Pair<Iterable<RelationshipRecord>, Iterable<RelationshipRecord>> getMoreRelationships(
-            long nodeId, RelationshipChainPosition position )
+    public Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, Long> getMoreRelationships(
+            long nodeId, long position )
     {
         return getReadOnlyResource().getMoreRelationships( nodeId, position );
     }

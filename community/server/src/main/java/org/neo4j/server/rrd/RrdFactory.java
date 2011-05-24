@@ -36,6 +36,8 @@ public class RrdFactory
 {
     public static final int STEP_SIZE = 3000;
     public static final int STEPS_PER_ARCHIVE = 750;
+    private static final String RRD_THREAD_NAME = "Statistics Gatherer";
+    
     private final Configuration config;
 
     public RrdFactory( Configuration config )
@@ -59,7 +61,7 @@ public class RrdFactory
 
         RrdSampler sampler = new RrdSampler( rrdb.createSample(), sampleables );
         RrdJob job = new RrdJob( sampler );
-        scheduler.scheduleToRunEveryXSeconds( job, 3 );
+        scheduler.scheduleToRunEveryXSeconds( job, RRD_THREAD_NAME, 3 );
         return rrdb;
     }
 

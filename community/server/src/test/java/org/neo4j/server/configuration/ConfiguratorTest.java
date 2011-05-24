@@ -77,9 +77,6 @@ public class ConfiguratorTest {
 
 
         File propertyFileWithDbTuningProperty = PropertyFileBuilder.builder().withDbTuningPropertyFile(databaseTuningPropertyFile).build();
-        
-        System.out.println(databaseTuningPropertyFile.getAbsolutePath());
-        System.out.println(propertyFileWithDbTuningProperty.getAbsolutePath());
 
         Configurator configurator = new PropertyFileConfigurator(propertyFileWithDbTuningProperty);
 

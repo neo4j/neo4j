@@ -19,7 +19,19 @@
  */
 package org.neo4j.server.rest.web;
 
+import org.neo4j.graphdb.NotFoundException;
+
 public class NodeNotFoundException extends Exception
 {
+    public NodeNotFoundException( String message )
+    {
+        super(message);
+    }
+
+    public NodeNotFoundException( NotFoundException e )
+    {
+        super(e);
+    }
+
     private static final long serialVersionUID = 7292603734007524712L;
 }

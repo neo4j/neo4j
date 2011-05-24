@@ -91,7 +91,7 @@ public class DatabaseActions
             return graphDb.getNodeById( id );
         } catch ( NotFoundException e )
         {
-            throw new NodeNotFoundException();
+            throw new NodeNotFoundException(String.format( "Cannot find node with id [%d] in database.", id ));
         }
     }
 
@@ -203,7 +203,7 @@ public class DatabaseActions
                 tx.finish();
             } catch ( TransactionFailureException e )
             {
-                throw new OperationFailureException();
+                throw new OperationFailureException(String.format("The node with id %d cannot be deleted. Check that the node is orphaned before deletion.", nodeId));
             }
         }
     }
