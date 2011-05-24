@@ -17,10 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.index.impl.lucene;
+package org.neo4j.index.lucene;
 
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexProvider;
+import org.neo4j.index.impl.lucene.LuceneIndexImplementation;
 import org.neo4j.kernel.KernelData;
 
 public class LuceneIndexProvider extends IndexProvider

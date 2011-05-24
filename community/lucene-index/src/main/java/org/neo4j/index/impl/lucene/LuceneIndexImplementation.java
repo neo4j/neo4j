@@ -61,7 +61,7 @@ public class LuceneIndexImplementation extends IndexImplementation
     final int lazynessThreshold;
 
 
-    LuceneIndexImplementation( GraphDatabaseService db, Config config )
+    public LuceneIndexImplementation( GraphDatabaseService db, Config config )
     {
         this.graphDb = db;
         this.lazynessThreshold = DEFAULT_LAZY_THRESHOLD;
