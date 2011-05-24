@@ -1,7 +1,7 @@
 /**
+ * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
- * Copyright (c) 2002-2011 "Neo Technology,"
  * This file is part of Neo4j.
  *
  * Neo4j is free software: you can redistribute it and/or modify
