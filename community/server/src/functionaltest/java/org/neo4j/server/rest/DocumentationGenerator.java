@@ -46,9 +46,21 @@ public class DocumentationGenerator implements MethodRule
     public Statement apply( Statement base, FrameworkMethod method, Object target )
     {
         Title title = method.getAnnotation( Title.class );
-        this.title = title != null ? title.value() : method.getName();
         Documented documentation = method.getAnnotation( Documented.class );
-        if ( documentation != null ) this.documentation = documentation.value();
+        if ( title == null && documentation != null )
+        {
+            String docString = documentation.value();
+            int pos = docString.indexOf( "." );
+            if ( pos > 1 )
+            {
+                this.title = docString.substring( 1, pos );
+                this.documentation = deIndent( docString.substring( pos + 1 ) );
+                return base;
+            }
+        }
+        this.title = title != null ? title.value() : method.getName();
+        if ( documentation != null )
+            this.documentation = documentation.value();
         return base;
     }
 

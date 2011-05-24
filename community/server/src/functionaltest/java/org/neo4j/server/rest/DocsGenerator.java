@@ -48,10 +48,13 @@ import com.sun.jersey.api.client.ClientResponse;
 
 /**
  * Generate asciidoc-formatted documentation from HTTP requests and responses.
- * The status and media type of all responses is checked.
+ * The status and media type of all responses is checked as well as the
+ * existence of any expected headers.
  */
 public class DocsGenerator
 {
+    private static final String DOCUMENTATION_END = "\n...\n";
+
     private static final Builder REQUEST_BUILDER = ClientRequest.create();
 
     private static final List<String> RESPONSE_HEADERS = Arrays.asList( new String[] {
@@ -125,13 +128,23 @@ public class DocsGenerator
             throw new IllegalArgumentException(
                     "The description can not be null" );
         }
-        if ( this.description == null )
+        String content;
+        int pos = description.indexOf( DOCUMENTATION_END );
+        if ( pos != -1 )
         {
-            this.description = description;
+            content = description.substring( 0, pos );
         }
         else
         {
-            this.description += "\n\n" + description;
+            content = description;
+        }
+        if ( this.description == null )
+        {
+            this.description = content;
+        }
+        else
+        {
+            this.description += "\n\n" + content;
         }
         return this;
     }

@@ -30,9 +30,12 @@ import javax.ws.rs.core.MediaType;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
+import org.neo4j.server.rest.DocumentationGenerator.Title;
 import org.neo4j.server.rest.domain.JsonHelper;
 
 import com.sun.jersey.api.client.ClientResponse;
@@ -42,6 +45,9 @@ public class GetOnRootFunctionalTest
 
     private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
+
+    public @Rule
+    DocumentationGenerator gen = new DocumentationGenerator();
 
     @Before
     public void setupServer() throws IOException {
@@ -57,10 +63,14 @@ public class GetOnRootFunctionalTest
         server = null;
     }
 
+    /**
+     * The service root is your starting point to discover the REST API.
+     */
+    @Documented
     @Test
+    @Title( "Get service root" )
     public void assert200OkFromGet() throws Exception {
-        DocsGenerator.create( "Get service root",
-                "The service root is your starting point to discover the REST API." )
+        gen.create()
                 .get( functionalTestHelper.dataUri() );
     }
 

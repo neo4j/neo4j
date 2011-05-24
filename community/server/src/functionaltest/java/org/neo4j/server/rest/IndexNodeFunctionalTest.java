@@ -37,11 +37,14 @@ import javax.ws.rs.core.Response.Status;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
+import org.neo4j.server.rest.DocumentationGenerator.Title;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
@@ -56,6 +59,9 @@ public class IndexNodeFunctionalTest
     private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
     private GraphDbHelper helper;
+
+    public @Rule
+    DocumentationGenerator gen = new DocumentationGenerator();
 
     @Before
     public void setupServer() throws IOException
@@ -76,29 +82,39 @@ public class IndexNodeFunctionalTest
     }
 
     /**
+     * List node indexes (empty result). This is an example covering the case
+     * where no node index exists.
+     * 
+     * ...
+     * 
      * GET ${org.neo4j.server.rest.web}/index/node/
      */
+    @Documented
     @Test
     public void shouldGetEmptyListOfNodeIndexesWhenNoneExist()
     {
-        DocsGenerator.create( "List node indexes (empty result)",
-                "This is an example covering the case where no node index exists." )
+        gen.create()
                 .expectedStatus( Response.Status.NO_CONTENT )
                 .get( functionalTestHelper.nodeIndexUri() );
     }
 
     /**
+     * List node indexes.
+     * 
+     * ...
+     * 
      * GET ${org.neo4j.server.rest.web}/index/node/
      * 
      * @throws PropertyValueException
      */
+    @Documented
     @Test
     public void shouldGetListOfNodeIndexesWhenOneExist()
             throws PropertyValueException
     {
         String indexName = "favorites";
         helper.createNodeIndex( indexName );
-        String entity = DocsGenerator.create( "List node indexes" )
+        String entity = gen.create()
                 .get( functionalTestHelper.nodeIndexUri() )
                 .entity();
         Map<String, Object> map = JsonHelper.jsonToMap( entity );
@@ -109,6 +125,10 @@ public class IndexNodeFunctionalTest
     /**
      * POST ${org.neo4j.server.rest.web}/index/node { "name":"index-name" }
      */
+    @Title( "Create node index" )
+    @Documented( "NOTE: Instead of creating the index this way, "
+                 + "you can simply start to use it, "
+                 + "and it will be created automatically." )
     @Test
     public void shouldCreateANamedNodeIndex() throws JsonParseException
     {
@@ -116,11 +136,7 @@ public class IndexNodeFunctionalTest
         Map<String, String> indexSpecification = new HashMap<String, String>();
         indexSpecification.put( "name", indexName );
 
-        DocsGenerator.create(
-                "Create node index",
-                "NOTE: Instead of creating the index this way, "
-                        + "you can simply start to use it, "
-                        + "and it will be created automatically." )
+        gen.create()
                 .payload( JsonHelper.createJsonFrom( indexSpecification ) )
                 .expectedStatus( Response.Status.CREATED )
                 .expectedHeader( "Location" )
@@ -131,6 +147,14 @@ public class IndexNodeFunctionalTest
     }
 
     /**
+     * Create node index with configuration. This request is only necessary if
+     * you want to customize the index settings. If you are happy with the
+     * defaults, you can just start indexing nodes/relationships, as
+     * non-existent indexes will automatically be created as you do. See
+     * <<indexing-create-advanced>> for more information on index configuration.
+     * 
+     * ...
+     * 
      * POST ${org.neo4j.server.rest.web}/index/node { "name":"index-name",
      * "config":{"type":"fulltext","provider":"lucene"} }
      * 
@@ -138,15 +162,11 @@ public class IndexNodeFunctionalTest
      * @throws ClientHandlerException
      * @throws PropertyValueException
      */
+    @Documented
     @Test
     public void shouldCreateANamedNodeIndexWithConfiguration() throws Exception
     {
-        DocsGenerator.create(
-                "Create node index with configuration",
-                "This is only necessary if you want to divert from the default index settings. "
-                        + "If you are happy with defaults, you can just start indexing nodes and relationships, "
-                        + "as non-existant indexes will automatically be created as you do. "
-                        + "See <<indexing-create-advanced>> for more information on index configuration." )
+        gen.create()
                 .payload(
                         "{\"name\":\"fulltext\", \"config\":{\"type\":\"fulltext\",\"provider\":\"lucene\"}}" )
                 .expectedStatus( Response.Status.CREATED )
