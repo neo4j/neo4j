@@ -181,6 +181,6 @@ public class OnlineBackup
         {
             txs.add( Pair.of( ds.getName(), ds.getLastCommittedTxId() ) ); 
         }
-        return new SlaveContext( 0, 0, txs.toArray( new Pair[0] ) );
+        return SlaveContext.anonymous( txs.toArray( new Pair[0] ) );
     }
 }

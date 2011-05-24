@@ -96,7 +96,7 @@ public class MasterUtil
                 throw new MasterFailureException( e );
             }
         }
-        SlaveContext context = new SlaveContext( -1, -1, appliedTransactions );
+        SlaveContext context = SlaveContext.anonymous( appliedTransactions );
         
         ByteBuffer temporaryBuffer = ByteBuffer.allocateDirect( 1024*1024 );
         for ( XaDataSource ds : sources )

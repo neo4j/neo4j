@@ -215,7 +215,8 @@ public class MasterClient extends Client<Master> implements Master
     @SuppressWarnings( "unchecked" )
     public Response<Void> copyStore( SlaveContext context, final StoreWriter writer )
     {
-        context = new SlaveContext( context.machineId(), context.getEventIdentifier(), new Pair[0] );
+        context = new SlaveContext( context.getSessionId(), context.machineId(),
+                context.getEventIdentifier(), new Pair[0] );
 
         return sendRequest( HaRequestType.COPY_STORE, context, EMPTY_SERIALIZER, new Protocol.FileStreamsDeserializer( writer ) );
     }

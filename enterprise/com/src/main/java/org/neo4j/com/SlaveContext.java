@@ -29,14 +29,20 @@ public final class SlaveContext
     private final Pair<String, Long>[] lastAppliedTransactions;
     private final int eventIdentifier;
     private final int hashCode;
+    private final long sessionId;
 
-    public SlaveContext( int machineId, int eventIdentifier,
+    public SlaveContext( long sessionId, int machineId, int eventIdentifier,
             Pair<String, Long>[] lastAppliedTransactions )
     {
+        this.sessionId = sessionId;
         this.machineId = machineId;
         this.eventIdentifier = eventIdentifier;
         this.lastAppliedTransactions = lastAppliedTransactions;
-        this.hashCode = 3*eventIdentifier*machineId;
+        
+        long hash = sessionId;
+        hash = (31 * hash) ^ eventIdentifier;
+        hash = (31 * hash) ^ machineId;
+        this.hashCode = (int) ((hash >>> 32) ^ hash);
     }
 
     public int machineId()
@@ -53,12 +59,17 @@ public final class SlaveContext
     {
         return eventIdentifier;
     }
+    
+    public long getSessionId()
+    {
+        return sessionId;
+    }
 
     @Override
     public String toString()
     {
-        return "SlaveContext[ID:" + machineId + ", eventIdentifier:" + eventIdentifier + ", " +
-                Arrays.asList( lastAppliedTransactions ) + "]";
+        return "SlaveContext[session: " + sessionId + ", ID:" + machineId + ", eventIdentifier:" +
+                eventIdentifier + ", " + Arrays.asList( lastAppliedTransactions ) + "]";
     }
     
     @Override
@@ -69,7 +80,7 @@ public final class SlaveContext
             return false;
         }
         SlaveContext o = (SlaveContext) obj;
-        return o.eventIdentifier == eventIdentifier && o.machineId == machineId;
+        return o.eventIdentifier == eventIdentifier && o.machineId == machineId && o.sessionId == sessionId;
     }
     
     @Override
@@ -79,5 +90,11 @@ public final class SlaveContext
     }
     
     @SuppressWarnings( "unchecked" )
-    public static SlaveContext EMPTY = new SlaveContext( -1, -1, new Pair[0] );
+    public static SlaveContext EMPTY = new SlaveContext( -1, -1, -1, new Pair[0] );
+    
+    public static SlaveContext anonymous( Pair<String, Long>[] lastAppliedTransactions )
+    {
+        return new SlaveContext( EMPTY.sessionId, EMPTY.machineId, EMPTY.eventIdentifier,
+                lastAppliedTransactions );
+    }
 }

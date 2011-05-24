@@ -94,6 +94,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     private ScheduledExecutorService updatePuller;
     private volatile long updateTime = 0;
     private volatile RuntimeException causeOfShutdown;
+    private long startupTime;
 
     private final List<KernelEventHandler> kernelEventHandlers =
             new CopyOnWriteArrayList<KernelEventHandler>();
@@ -120,6 +121,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         {
             throw new IllegalArgumentException( "null config, proper configuration required" );
         }
+        this.startupTime = System.currentTimeMillis();
         this.storeDir = storeDir;
         this.config = config;
         config.put( Config.KEEP_LOGICAL_LOGS, "true" );
@@ -253,7 +255,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     private void copyStoreFromMaster( Pair<Master, Machine> master ) throws Exception
     {
         msgLog.logMessage( "Copying store from master" );
-        Response<Void> response = master.first().copyStore( new SlaveContext( machineId, 0, new Pair[0] ),
+        Response<Void> response = master.first().copyStore( new SlaveContext( 0, machineId, 0, new Pair[0] ),
                 new ToFileStoreWriter( storeDir ) );
         EmbeddedGraphDatabase tempDb = new EmbeddedGraphDatabase( storeDir );
         try
@@ -715,7 +717,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         {
             txs[i++] = Pair.of( dataSource.getName(), dataSource.getLastCommittedTxId() );
         }
-        return new SlaveContext( machineId, eventIdentifier, txs );
+        return new SlaveContext( startupTime, machineId, eventIdentifier, txs );
     }
 
     @Override
@@ -810,5 +812,11 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     public IndexManager index()
     {
         return localGraph().index();
+    }
+    
+    // Only for testing purposes, simulates a network outage almost
+    public void shutdownBroker()
+    {
+        this.broker.shutdown();
     }
 }

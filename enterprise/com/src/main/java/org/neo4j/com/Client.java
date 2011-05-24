@@ -179,7 +179,10 @@ public abstract class Client<M> implements ChannelPipelineFactory
         }
         catch ( Exception e )
         {
-            channelPool.dispose( channelContext );
+            if ( channelContext != null )
+            {
+                channelPool.dispose( channelContext );
+            }
             throw new ComException( e );
         }
         finally
@@ -224,6 +227,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
 
     protected void writeContext( RequestType<M> type, SlaveContext context, ChannelBuffer targetBuffer )
     {
+        targetBuffer.writeLong( context.getSessionId() );
         targetBuffer.writeInt( context.machineId() );
         targetBuffer.writeInt( context.getEventIdentifier() );
         Pair<String, Long>[] txs = context.lastAppliedTransactions();

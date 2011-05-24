@@ -180,7 +180,6 @@ public class MasterImpl implements Master
         }
         catch ( Exception e )
         {
-            e.printStackTrace();
             throw new RuntimeException( e );
         }
     }
@@ -393,8 +392,8 @@ public class MasterImpl implements Master
                 txs.add( Pair.of( resourceName, dataSource.getLastCommittedTxId() ) );
             }
         }
-        return new SlaveContext( context.machineId(), context.getEventIdentifier(),
-                txs.toArray( new Pair[0] ) );
+        return new SlaveContext( context.getSessionId(), context.machineId(),
+                context.getEventIdentifier(), txs.toArray( new Pair[0] ) );
 
     }
 

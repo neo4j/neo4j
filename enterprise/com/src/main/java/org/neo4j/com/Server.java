@@ -222,14 +222,13 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
                     targetBuffer.done();
                     responseWritten( type, channel, context );
                 }
+                // TODO Use Exceptions class
                 catch ( IOException e )
                 {
-                    e.printStackTrace();
                     throw new RuntimeException( e );
                 }
                 catch ( RuntimeException e )
                 {
-                    e.printStackTrace();
                     throw e;
                 }
             }
@@ -275,6 +274,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
 
     protected SlaveContext readContext( ChannelBuffer buffer )
     {
+        long sessionId = buffer.readLong();
         int machineId = buffer.readInt();
         int eventIdentifier = buffer.readInt();
         int txsSize = buffer.readByte();
@@ -284,7 +284,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         {
             lastAppliedTransactions[i] = Pair.of( readString( buffer ), buffer.readLong() );
         }
-        return new SlaveContext( machineId, eventIdentifier, lastAppliedTransactions );
+        return new SlaveContext( sessionId, machineId, eventIdentifier, lastAppliedTransactions );
     }
 
     protected abstract RequestType<M> getRequestContext( byte id );
@@ -295,7 +295,9 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         Pair<ChannelBuffer, ByteBuffer> buffer = null;
         synchronized ( connectedSlaveChannels )
         {
-            if ( slave != null )
+            // Checking for machineId -1 excludes the "empty" slave contexts
+            // which some communication points pass in as context.
+            if ( slave != null && slave.machineId() != slave.EMPTY.machineId() )
             {
                 connectedSlaveChannels.put( channel, slave );
             }
@@ -344,7 +346,15 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
                 if ( !channelIsOpen( entry.getKey() ) )
                 {
                     msgLog.logMessage( "Found dead channel " + entry.getKey() + ", " + entry.getValue() );
-                    finishOffConnection( entry.getKey(), entry.getValue() );
+                    try
+                    {
+                        finishOffConnection( entry.getKey(), entry.getValue() );
+                    }
+                    catch ( Throwable failure )
+                    {
+                        msgLog.logMessage( "Could not finish off connection", failure );
+                        continue;
+                    }
                     msgLog.logMessage( "Removed " + entry.getKey() + ", " + entry.getValue() );
                     channelsToRemove.add( entry.getKey() );
                 }
