@@ -33,7 +33,9 @@ import javax.ws.rs.core.Response;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.rest.domain.GraphDbHelper;
@@ -50,6 +52,9 @@ public class SetNodePropertiesFunctionalTest {
     private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
     private GraphDbHelper helper;
+
+    public @Rule
+    DocumentationGenerator gen = new DocumentationGenerator();
 
     @Before
     public void setupServer() throws IOException, URISyntaxException {
@@ -69,12 +74,16 @@ public class SetNodePropertiesFunctionalTest {
         server = null;
     }
 
+    /**
+     * Update node properties.
+     */
+    @Documented
     @Test
     public void shouldReturn204WhenPropertiesAreUpdated() throws JsonParseException
     {
         Map<String, Object> map = new HashMap<String, Object>();
         map.put("jim", "tobias");
-        DocsGenerator.create( "Update node properties" )
+        gen.create()
                 .payload( JsonHelper.createJsonFrom( map ) )
                 .expectedStatus( Response.Status.NO_CONTENT )
                 .put( propertiesUri.toString() );
@@ -122,23 +131,28 @@ public class SetNodePropertiesFunctionalTest {
         return new URI(propertiesUri.toString() + "/" + key);
     }
 
+    /**
+     * Set property on node.
+     */
+    @Documented
     @Test
     public void shouldReturn204WhenPropertyIsSet() throws Exception {
-        DocsGenerator.create( "Set property on node" )
+        gen.create()
                 .payload( JsonHelper.createJsonFrom( "bar" ) )
                 .expectedStatus( Response.Status.NO_CONTENT )
                 .put( getPropertyUri( "foo" ).toString() );
-        ClientResponse response = setNodePropertyOnServer("foo", "bar");
-        assertEquals(204, response.getStatus());
-        response.close();
     }
 
+    /**
+     * Property values can not be nested.
+     * 
+     * Nesting properties is not supported. You could for example store the
+     * nested json as a string instead.
+     */
+    @Documented
     @Test
     public void shouldReturn400WhenSendinIncompatibleJsonProperty() throws Exception {
-        DocsGenerator.create(
-                "Property values can not be nested",
-                "Nesting properties is not supported. "
-                        + "You could store the json as a string instead." )
+        gen.create()
                 .payload( "{\"foo\" : {\"bar\" : \"baz\"}}" )
                 .expectedStatus( Response.Status.BAD_REQUEST )
                 .post( functionalTestHelper.nodeUri() );

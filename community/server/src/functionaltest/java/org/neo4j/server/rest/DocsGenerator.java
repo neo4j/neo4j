@@ -90,26 +90,6 @@ public class DocsGenerator
         return new DocsGenerator( title );
     }
 
-    /**
-     * Creates a documented test case with a description. Finish building by
-     * using one of these: {@link #get(String)}, {@link #post(String)},
-     * {@link #put(String)}, {@link #delete(String)},
-     * {@link #request(ClientRequest)}. To access the response, use
-     * {@link ResponseEntity#entity} to get the entity or
-     * {@link ResponseEntity#response} to get the rest of the response
-     * (excluding the entity).
-     * 
-     * @param title title of the test
-     * @param description description of the test (in asciidoc format)
-     */
-    public static DocsGenerator create( final String title,
-            final String description )
-    {
-        DocsGenerator instance = DocsGenerator.create( title );
-        instance.description( description );
-        return instance;
-    }
-
     private DocsGenerator( final String title )
     {
         this.title = title;

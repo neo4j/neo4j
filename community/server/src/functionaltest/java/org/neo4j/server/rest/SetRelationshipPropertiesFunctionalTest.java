@@ -33,7 +33,9 @@ import javax.ws.rs.core.Response;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.rest.domain.GraphDbHelper;
@@ -49,6 +51,9 @@ public class SetRelationshipPropertiesFunctionalTest
     private URI badUri;
 
     private NeoServerWithEmbeddedWebServer server;
+
+    public @Rule
+    DocumentationGenerator gen = new DocumentationGenerator();
 
     @Before
     public void setupServer() throws IOException, URISyntaxException {
@@ -66,12 +71,16 @@ public class SetRelationshipPropertiesFunctionalTest
         server = null;
     }
 
+    /**
+     * Update relationship properties.
+     */
+    @Documented
     @Test
     public void shouldReturn204WhenPropertiesAreUpdated() throws JsonParseException
     {
         Map<String, Object> map = new HashMap<String, Object>();
         map.put("jim", "tobias");
-        DocsGenerator.create( "Update relationship properties" )
+        gen.create()
                 .payload( JsonHelper.createJsonFrom( map ) )
                 .expectedStatus( Response.Status.NO_CONTENT )
                 .put( propertiesUri.toString() );

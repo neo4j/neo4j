@@ -38,7 +38,9 @@ import javax.ws.rs.core.Response;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.rest.domain.GraphDbHelper;
@@ -56,6 +58,9 @@ public class ManageNodeFunctionalTest
     private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
     private GraphDbHelper helper;
+
+    public @Rule
+    DocumentationGenerator gen = new DocumentationGenerator();
 
     @Before
     public void setupServer() throws IOException
@@ -75,10 +80,14 @@ public class ManageNodeFunctionalTest
         server.stop();
     }
 
+    /**
+     * Create node.
+     */
+    @Documented
     @Test
     public void shouldGet201WhenCreatingNode() throws Exception
     {
-        ClientResponse response = DocsGenerator.create( "Create node" )
+        ClientResponse response = gen.create()
                 .expectedStatus( Response.Status.CREATED )
                 .expectedHeader( "Location" )
                 .post( functionalTestHelper.nodeUri() )
@@ -88,10 +97,14 @@ public class ManageNodeFunctionalTest
                 .matches( NODE_URI_PATTERN ) );
     }
 
+    /**
+     * Create node with properties.
+     */
+    @Documented
     @Test
     public void shouldGet201WhenCreatingNodeWithProperties() throws Exception
     {
-        ClientResponse response = DocsGenerator.create( "Create node with properties" )
+        ClientResponse response = gen.create()
                 .payload( "{\"foo\" : \"bar\"}" )
                 .expectedStatus( Response.Status.CREATED )
                 .expectedHeader( "Location" )
@@ -103,11 +116,16 @@ public class ManageNodeFunctionalTest
                 .matches( NODE_URI_PATTERN ) );
     }
 
+    /**
+     * Property values can not be null.
+     * 
+     * This example shows the response you get when trying to set a property to null.
+     */
+    @Documented
     @Test
     public void shouldGet400WhenSupplyingNullValueForAProperty() throws Exception
     {
-        DocsGenerator.create( "Property values can not be null",
-                "This example shows the response you get " + "when trying to set a property to null." )
+        gen.create()
                 .payload( "{\"foo\":null}" )
                 .expectedStatus( Response.Status.BAD_REQUEST )
                 .post( functionalTestHelper.nodeUri() );
@@ -186,10 +204,14 @@ public class ManageNodeFunctionalTest
 
     }
 
+    /**
+     * Delete node.
+     */
+    @Documented
     @Test
     public void shouldRespondWith204WhenNodeDeleted() throws Exception
     {
-        DocsGenerator.create( "Delete node" )
+        gen.create()
                 .expectedStatus( Response.Status.NO_CONTENT )
                 .delete( functionalTestHelper.dataUri() + "node/" + helper.createNode() );
     }
@@ -205,6 +227,13 @@ public class ManageNodeFunctionalTest
         assertNotNull( jsonMap.get( "message" ) );
     }
 
+    /**
+     * Nodes with relationships can not be deleted.
+     * 
+     * The relationships on a node has to be deleted before the node can be
+     * deleted.
+     */
+    @Documented
     @Test
     public void shouldRespondWith409AndSensibleEntityBodyWhenNodeCannotBeDeleted() throws Exception
     {
@@ -216,8 +245,7 @@ public class ManageNodeFunctionalTest
         assertThat( jsonMap, hasKey( "message" ) );
         assertNotNull( jsonMap.get( "message" ) );
 
-        DocsGenerator.create( "Nodes with relationships can not be deleted",
-                "The relationships on a node has to be deleted " + "before the node can be deleted." )
+        gen.create()
                 .expectedStatus( Response.Status.CONFLICT )
                 .delete( functionalTestHelper.dataUri() + "node/" + id );
     }

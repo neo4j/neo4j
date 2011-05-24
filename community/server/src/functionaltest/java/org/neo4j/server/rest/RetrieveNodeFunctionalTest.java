@@ -34,6 +34,7 @@ import javax.ws.rs.core.Response;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
@@ -55,7 +56,8 @@ public class RetrieveNodeFunctionalTest
 
     private FunctionalTestHelper functionalTestHelper;
 
-
+    public @Rule
+    DocumentationGenerator gen = new DocumentationGenerator();
 
     @Before
     public void setupServer() throws IOException, DatabaseBlockedException, URISyntaxException {
@@ -71,29 +73,36 @@ public class RetrieveNodeFunctionalTest
         server = null;
     }
 
+    /**
+     * Get node.
+     * 
+     * Note that the response contains URI/templates for
+     * the available operations for getting properties and relationships.
+     */
+    @Documented
     @Test
     public void shouldGet200WhenRetrievingNode() throws Exception {
         String uri = nodeUri.toString();
-        DocsGenerator.create(
-                "Get node",
-                "Note that the response contains URI/templates for "
-                        + "the available operations for getting properties and relationships." )
+        gen.create()
                 .get( uri );
-        
     }
 
     /**
+     * Get node - compact.
+     * 
      * Specifying the subformat in the requests media type yields a more compact JSON response without metadata 
      * and templates.
      */
-    @Test
     @Documented
+    @Test
     public void shouldGet200WhenRetrievingNodeCompact() {
         String uri = nodeUri.toString();
-        ResponseEntity entity = DocsGenerator.create("Get node - compact")
-                .expectedType( CompactJsonFormat.MEDIA_TYPE ).get( uri );
+        ResponseEntity entity = gen.create()
+                .expectedType( CompactJsonFormat.MEDIA_TYPE )
+                .get( uri );
         assertTrue( entity.entity().contains( "self" ) ); 
     }
+
     @Test
     public void shouldGetContentLengthHeaderWhenRetrievingNode() throws Exception {
         ClientResponse response = retrieveNodeFromService(nodeUri.toString());
@@ -117,9 +126,13 @@ public class RetrieveNodeFunctionalTest
         response.close();
     }
 
+    /**
+     * Get non-existent node.
+     */
+    @Documented
     @Test
     public void shouldGet404WhenRetrievingNonExistentNode() throws Exception {
-        DocsGenerator.create( "Get non-existent node" )
+        gen.create()
                 .expectedStatus( Response.Status.NOT_FOUND )
                 .get( nodeUri + "00000" );
     }

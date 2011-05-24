@@ -31,7 +31,9 @@ import javax.ws.rs.core.Response;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -47,6 +49,9 @@ public class GetNodePropertiesFunctionalTest
     private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
 
+    public @Rule
+    DocumentationGenerator gen = new DocumentationGenerator();
+
     @Before
     public void setupServer() throws IOException {
         server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
@@ -61,21 +66,27 @@ public class GetNodePropertiesFunctionalTest
         server = null;
     }
 
+    /**
+     * Get properties for node (empty result).
+     * 
+     * If there are no properties, there will be an HTTP 204 response.
+     */
+    @Documented
     @Test
     public void shouldGet204ForNoProperties() {
         Client client = CLIENT;
         WebResource createResource = client.resource(functionalTestHelper.dataUri() + "node/");
         ClientResponse createResponse = createResource.accept(MediaType.APPLICATION_JSON).entity("").post(ClientResponse.class);
-        WebResource resource = client.resource(createResponse.getLocation().toString() + "/properties");
-        DocsGenerator.create( "Get properties for node (empty result)",
-                "If there are no properties, there will be an HTTP 204 response." )
+        gen.create()
                 .expectedStatus( Response.Status.NO_CONTENT )
                 .get( createResponse.getLocation()
                         .toString() + "/properties" );
-        ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
-        assertEquals(204, response.getStatus());
     }
 
+    /**
+     * Get properties for node.
+     */
+    @Documented
     @Test
     public void shouldGet200ForProperties() throws JsonParseException
     {
@@ -84,7 +95,7 @@ public class GetNodePropertiesFunctionalTest
         String entity = JsonHelper.createJsonFrom(Collections.singletonMap("foo", "bar"));
         ClientResponse createResponse = createResource.type(MediaType.APPLICATION_JSON).entity(entity).accept(MediaType.APPLICATION_JSON).post(
                 ClientResponse.class);
-        DocsGenerator.create( "Get properties for node" )
+        gen.create()
                 .get( createResponse.getLocation()
                         .toString() + "/properties" );
     }
@@ -139,6 +150,12 @@ public class GetNodePropertiesFunctionalTest
         response.close();
     }
 
+    /**
+     * Get property for node.
+     * 
+     * Get a single node property from a node.
+     */
+    @Documented
     @Test
     public void shouldGet200ForProperty() throws JsonParseException
     {
@@ -151,14 +168,14 @@ public class GetNodePropertiesFunctionalTest
         ClientResponse response = resource.accept( MediaType.APPLICATION_JSON ).get(
                 ClientResponse.class );
         assertEquals( 200, response.getStatus() );
-        DocsGenerator.create( "Get property for node",
-                "Get a single node property from a node." )
-                .expectedStatus( Response.Status.OK )
-                .get( getPropertyUri( createResponse.getLocation()
-                        .toString(), "foo" ).toString() );
 
         createResponse.close();
         response.close();
+
+        gen.create()
+                .expectedStatus( Response.Status.OK )
+                .get( getPropertyUri( createResponse.getLocation()
+                        .toString(), "foo" ).toString() );
     }
 
     @Test

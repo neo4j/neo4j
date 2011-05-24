@@ -31,7 +31,9 @@ import javax.ws.rs.core.Response;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
@@ -45,6 +47,9 @@ public class RemoveNodePropertiesFunctionalTest
     private FunctionalTestHelper functionalTestHelper;
     private GraphDbHelper helper;
 
+    public @Rule
+    DocumentationGenerator gen = new DocumentationGenerator();
+    
     @Before
     public void setupServer() throws IOException {
         server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
@@ -76,6 +81,10 @@ public class RemoveNodePropertiesFunctionalTest
         response.close();
     }
 
+    /**
+     * Delete all properties from node.
+     */
+    @Documented
     @Test
     public void shouldReturn204WhenAllPropertiesAreRemoved() throws DatabaseBlockedException
     {
@@ -83,7 +92,7 @@ public class RemoveNodePropertiesFunctionalTest
         Map<String, Object> map = new HashMap<String, Object>();
         map.put( "jim", "tobias" );
         helper.setNodeProperties( nodeId, map );
-        DocsGenerator.create( "Delete all properties from node" )
+        gen.create()
                 .expectedStatus( Response.Status.NO_CONTENT )
                 .delete( functionalTestHelper.nodePropertiesUri( nodeId ) );
     }

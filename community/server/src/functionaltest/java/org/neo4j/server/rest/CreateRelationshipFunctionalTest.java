@@ -31,8 +31,10 @@ import javax.ws.rs.core.Response;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
@@ -51,6 +53,9 @@ public class CreateRelationshipFunctionalTest
     private FunctionalTestHelper functionalTestHelper;
     private GraphDbHelper helper;
     
+    public @Rule
+    DocumentationGenerator gen = new DocumentationGenerator();
+
     @SuppressWarnings( "unchecked" )
     @Before
     public void setupServer() throws IOException {
@@ -88,6 +93,10 @@ public class CreateRelationshipFunctionalTest
         response.close();
     }
 
+    /**
+     * Create relationship.
+     */
+    @Documented
     @Test
     public void shouldRespondWith201WhenSuccessfullyCreatedRelationship() throws Exception
     {
@@ -101,7 +110,7 @@ public class CreateRelationshipFunctionalTest
         assertTrue( response.getLocation().toString().matches( RELATIONSHIP_URI_PATTERN ) );
         assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
         assertProperRelationshipRepresentation( JsonHelper.jsonToMap( response.getEntity( String.class ) ) );
-        DocsGenerator.create( "Create relationship" )
+        gen.create()
                 .payload( jsonString )
                 .expectedStatus( Response.Status.CREATED )
                 .post( uri );
