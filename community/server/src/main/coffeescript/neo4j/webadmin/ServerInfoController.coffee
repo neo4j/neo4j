@@ -40,7 +40,7 @@ define(
 
       bean : (domain, name) => 
         @appState.set( mainView : @getServerInfoView() )
-        @serverInfo.setCurrent(domain, name)
+        @serverInfo.setCurrent(decodeURIComponent(domain), decodeURIComponent(name))
 
       getServerInfoView : =>
         @view ?= new ServerInfoView
