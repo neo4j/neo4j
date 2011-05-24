@@ -46,9 +46,10 @@ define(
         return this
       
       deleteIndex : =>
-        if @type is @NODE_INDEX_TYPE
-          @idxMgr.deleteNodeIndex({name : @index.name})
-        else
-          @idxMgr.deleteRelationshipIndex({name : @index.name})
+        if confirm "Are you sure?"
+          if @type is @NODE_INDEX_TYPE
+            @idxMgr.deleteNodeIndex({name : @index.name})
+          else
+            @idxMgr.deleteRelationshipIndex({name : @index.name})
           
 )

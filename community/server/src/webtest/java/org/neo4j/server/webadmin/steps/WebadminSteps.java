@@ -92,6 +92,12 @@ public class WebadminSteps
         d.findElement( By.xpath( xpath ) ).sendKeys( Keys.RETURN );
     }
     
+    @When("^I click yes on all upcoming confirmation boxes$")
+    public void iClickYesonAllConfirmationBoxes() {
+        wl.confirmAll();
+    }
+    
+    
     @Then("^The browser should be re-directed to (.+)$")
     public void iShouldBeRedirectedTo(String redirectUrl) throws Exception
     {

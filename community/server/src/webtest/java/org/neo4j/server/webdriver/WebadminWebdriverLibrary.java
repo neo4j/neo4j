@@ -23,6 +23,9 @@ import java.lang.reflect.InvocationTargetException;
 
 import org.neo4j.server.steps.ServerIntegrationTestFacade;
 import org.openqa.selenium.By;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.ie.InternetExplorerDriver;
 
 public class WebadminWebdriverLibrary extends WebdriverLibrary
 {
@@ -117,6 +120,26 @@ public class WebadminWebdriverLibrary extends WebdriverLibrary
     private boolean isUsingDevDotHTML()
     {
         return System.getProperty( USE_DEV_HTML_FILE_KEY, "false" ).equals("true");
+    }
+
+    public void confirmAll()
+    {
+        executeScript( "window.confirm=function(){return true;}", "" );
+    }
+    
+    public Object executeScript(String script, Object ... args) {
+        if(d instanceof FirefoxDriver) {
+            FirefoxDriver fd = (FirefoxDriver)d;
+            return fd.executeScript( script, args);
+        } else if (d instanceof ChromeDriver) {
+            ChromeDriver cd = (ChromeDriver)d;
+            return cd.executeScript( script, args );
+        } else if(d instanceof InternetExplorerDriver) {
+            InternetExplorerDriver id = (InternetExplorerDriver)d;
+            return id.executeScript( script, args );
+        } else {
+            throw new RuntimeException("Arbitrary script execution is only available for chrome, ie and firefox.");
+        }
     }
     
 }

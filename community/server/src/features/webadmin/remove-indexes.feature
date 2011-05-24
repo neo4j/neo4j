@@ -13,10 +13,11 @@ Feature: Webadmin can remove node and relationship indexes
 
     Then A single element should appear that can be found by the xpath //*[@id="node-indexes"]//td[contains(.,'mynodeindex')]
   
-    When I click on the button found by the xpath //*[@id='node-indexes']//tr[contains(.,"mynodeindex")]//button[contains(.,"Delete")]
+    When I click yes on all upcoming confirmation boxes 
+    And I click on the button found by the xpath //*[@id='node-indexes']//tr[contains(.,"mynodeindex")]//button[contains(.,"Delete")]
     Then The element found by xpath //*[@id="node-indexes"]//td[contains(.,'mynodeindex')] should disappear
 
-  Scenario: Remve relationship index
+  Scenario: Remove relationship index
     Given I have a neo4j server running
 
     When I look at webadmin in a web browser
@@ -26,5 +27,6 @@ Feature: Webadmin can remove node and relationship indexes
 
     Then A single element should appear that can be found by the xpath //*[@id="rel-indexes"]//td[contains(.,'myrelindex')]
 
-    When I click on the button found by the xpath //*[@id='rel-indexes']//tr[contains(.,"myrelindex")]//button[contains(.,"Delete")]
+    When I click yes on all upcoming confirmation boxes 
+    And I click on the button found by the xpath //*[@id='rel-indexes']//tr[contains(.,"myrelindex")]//button[contains(.,"Delete")]
     Then The element found by xpath //*[@id="rel-indexes"]//td[contains(.,'myrelindex')] should disappear
