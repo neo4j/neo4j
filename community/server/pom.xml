@@ -712,6 +712,7 @@ the relevant Commercial Agreement.
                 <jvmArg>-Dlog4j.configuration=file:///${project.basedir}/target/test-classes/log4j.properties</jvmArg>
                 <jvmArg>-Dwebdriver.impl=${webdriver.impl.class}</jvmArg>
                 <jvmArg>-DtestWithExternalServer=${testWithExternalServer}</jvmArg>
+                <jvmArg>-DtestWithDevHtmlFile=${testWithDevHtmlFile}</jvmArg>
               </jvmArgs>
               <cucumberArgs>
                 <cucumberArg>--verbose</cucumberArg>

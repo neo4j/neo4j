@@ -1,11 +1,29 @@
 .sidebar
   %p.pad These are the indexes
-  %p
-    Create index
-    %label(for="create-index-name") Index name
-    %input#create-index-name(type="text" value="idxName")
-    %button.create-index.button Create
 	
 .workarea.with-sidebar
-  #indexes
+  .span-half    
+    .headline-bar.pad
+      %ul.button-bar
+        %li
+          %label(for="create-node-index-name") Index name
+        %li
+          %input#create-node-index-name.fat(type="text" value="idxName")
+        %li
+          %button.create-node-index.button Create
+      .break
+    %table#node-indexes.data-table(cellspacing="0")
+
+  .span-half.last
+    .headline-bar.pad
+      %ul.button-bar
+        %li
+          %label(for="create-rel-index-name") Index name
+        %li
+          %input#create-rel-index-name.fat(type="text" value="idxName")
+        %li
+          %button.create-rel-index.button Create
+      .break
+    %table#rel-indexes.data-table(cellspacing="0")
+
 

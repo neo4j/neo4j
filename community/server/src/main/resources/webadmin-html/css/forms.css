@@ -11,6 +11,11 @@ input {
   outline:none;
 }
 
+.fat {
+  font-size: 14px;
+  padding: 5px;
+}
+
 button {
   outline:none; 
 }

@@ -23,16 +23,42 @@ define ['lib/backbone'], () ->
   class IndexManager extends Backbone.Model
     
     defaults : 
-      indexes : []
+      nodeIndexes : []
+      relationshipIndexes : []
     
     initialize : (opts) =>
       @server = opts.server
-      @server.index.getAllNodeIndexes().then (res) => @set {"indexes" : res}
+      @server.index.getAllNodeIndexes().then (res) => @set {"nodeIndexes" : res}
+      @server.index.getAllRelationshipIndexes().then (res) => @set {"relationshipIndexes" : res}
     
-    createIndex: (opts) =>
+    createNodeIndex: (opts) =>
       name = opts.name
-      @server.index.createNodeIndex(name, {}).then (res) => console.log(res)
-    
-    deleteIndex: (opts) =>
+      @server.index.createNodeIndex(name, {}).then (index) => 
+        @get("nodeIndexes").push index
+        @trigger "change"
+
+    createRelationshipIndex : (opts) =>
       name = opts.name
-      @server.index.removeNodeIndex(name).then (res) => console.log(res)
+      @server.index.createRelationshipIndex(name, {}).then (index) => 
+        @get("relationshipIndexes").push index
+        @trigger "change"
+
+    deleteNodeIndex: (opts) =>
+      name = opts.name
+      @server.index.removeNodeIndex(name).then () =>
+        @set "nodeIndexes" : @_removeIndexFromList(@get("nodeIndexes"), name )
+        @trigger "change"
+
+    deleteRelationshipIndex: (opts) =>
+      name = opts.name
+      @server.index.removeRelationshipIndex(name).then () =>
+        @set "relationshipIndexes" : @_removeIndexFromList( @get("relationshipIndexes"), name )
+        @trigger "change"
+
+    _removeIndexFromList : (idxs, name) ->
+      for i in [idxs.length-1..0]
+        if idxs[i].name == name
+          idxs.splice(i,1)
+          break
+      return idxs
+

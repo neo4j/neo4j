@@ -31,7 +31,8 @@ define(
       template : template
       
       events : 
-        "click .create-index" : "createIndex"
+        "click .create-node-index" : "createNodeIndex"
+        "click .create-rel-index" : "createRelationshipIndex"
      
       initialize : (opts) =>
         @appState = opts.state
@@ -45,11 +46,17 @@ define(
         return this
         
       renderIndexList : =>
-        indexList = $("#indexes", @el)
-        for index in @idxMgr.get "indexes" 
-          indexList.append( new IndexView({index : index, idxMgr : @idxMgr}).render().el )
+        nodeIndexList = $("#node-indexes", @el).empty()
+        for index in @idxMgr.get "nodeIndexes" 
+          nodeIndexList.append( new IndexView({index : index, idxMgr : @idxMgr, type:IndexView.prototype.NODE_INDEX_TYPE}).render().el )
+        
+        relIndexList = $("#rel-indexes", @el).empty()
+        for index in @idxMgr.get "relationshipIndexes" 
+          relIndexList.append( new IndexView({index : index, idxMgr : @idxMgr, type:IndexView.prototype.REL_INDEX_TYPE}).render().el )
       
-      createIndex : => 
-        alert($("#create-index-name").val())
-        @idxMgr.createIndex({name : $("#create-index-name").val()})
+      createNodeIndex : => 
+        @idxMgr.createNodeIndex({name : $("#create-node-index-name").val()})
+
+      createRelationshipIndex : => 
+        @idxMgr.createRelationshipIndex({name : $("#create-rel-index-name").val()})
 )

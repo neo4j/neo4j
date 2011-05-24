@@ -27,6 +27,7 @@ import org.openqa.selenium.By;
 public class WebadminWebdriverLibrary extends WebdriverLibrary
 {
     
+    private static final String USE_DEV_HTML_FILE_KEY = "testWithDevHtmlFile";
     private String serverUrl;
     private final ElementReference dataBrowserSearchField;
     private final ElementReference dataBrowserItemSubtitle;
@@ -49,10 +50,14 @@ public class WebadminWebdriverLibrary extends WebdriverLibrary
     }
     
     public void goToWebadminStartPage() throws Exception {
-        goToServerRoot();
+        if(isUsingDevDotHTML()) {
+            d.get( serverUrl + "webadmin/dev.html" );
+        } else {
+            goToServerRoot();
+        }
         waitForTitleToBe( "Neo4j Monitoring and Management Tool" );
     }
-    
+
     public void clickOnTab(String tab) {
         getElement( By.xpath( "//ul[@id='mainmenu']//a[contains(.,'"+tab+"')]") ).click();
     }
@@ -93,6 +98,25 @@ public class WebadminWebdriverLibrary extends WebdriverLibrary
     
     public ElementReference getDataBrowserItemHeadline() {
         return dataBrowserItemSubtitle;
+    }
+
+    public void clickOnButtonByXpath( String xpath )
+    {
+        getElement( By.xpath( xpath ) ).click();
+    }
+
+    public void waitForSingleElementToAppear( By xpath )
+    {
+        waitForElementToAppear( xpath );
+        int numElems = d.findElements( xpath ).size();
+        if( numElems != 1) {
+            throw new ConditionFailedException("Expected single element, got " + numElems + " :(." , null);
+        }
+    }
+    
+    private boolean isUsingDevDotHTML()
+    {
+        return System.getProperty( USE_DEV_HTML_FILE_KEY, "false" ).equals("true");
     }
     
 }

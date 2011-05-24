@@ -81,7 +81,7 @@ PAGE_TEMPLATE = """
     <div id="feature-container">
       <h3>Features:</h3>
       <form action="" method="POST">
-        <p><input type="checkbox" name="external-server" %(external_checkbox)s /> run with external server. <input type="submit" name="action:%(features_folder)s" value="Run all" style="float:right;"/></p>
+        <p><input type="checkbox" name="external-server" %(external_checkbox)s /> run with external server. <input type="checkbox" name="use-dev-html" %(dev_html_checkbox)s /> use dev.html (faster roundtrip).  <input type="submit" name="action:%(features_folder)s" value="Run all" style="float:right;"/></p>
         <ul id="features">
           %(features)s
         </ul>
@@ -138,7 +138,7 @@ class Handler(BaseHTTPRequestHandler):
 
         return "".join(features_html)
 
-    def do_GET(self, console_output="", external_checkbox=""):
+    def do_GET(self, console_output="", external_checkbox="", dev_html_checkbox=""):
         
         self.send_response(200)
         self.send_header("Content-type", "text/html")
@@ -147,6 +147,7 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(PAGE_TEMPLATE % {"features":self.get_features_html(), 
                                           "console_output":console_output,
                                           "external_checkbox":external_checkbox,
+                                          "dev_html_checkbox":dev_html_checkbox,
                                           "features_folder":FEATURES_FOLDER,})
 
     def do_POST(self):
@@ -160,21 +161,31 @@ class Handler(BaseHTTPRequestHandler):
 
         feature = ""
         external_server = False
+        use_dev_html = False
         for field in form.keys():
             if field == "external-server":
               external_server = True
+
+            if field == "use-dev-html":
+              use_dev_html = True
+
             if field.strip().startswith("action:"):
               feature = field.strip()[7:]
 
         command = ["mvn", "integration-test", "-Pneodev", "-Dtests=web", "-DcukeArgs=%s" % feature]
         if external_server:
           command.append("-DtestWithExternalServer=true")
+        if use_dev_html:
+          command.append("-DtestWithDevHtmlFile=true")
         
+        print " ".join(command)
+
         p=subprocess.Popen(command, stdout=subprocess.PIPE)
         out, err=p.communicate()
 
         external_checkbox = "checked=\"checked\"" if external_server else ""
-        self.do_GET(out, external_checkbox = external_checkbox);
+        dev_html_checkbox = "checked=\"checked\"" if use_dev_html else ""
+        self.do_GET(out, external_checkbox = external_checkbox,dev_html_checkbox=dev_html_checkbox);
         
 if __name__ == "__main__":
     try:

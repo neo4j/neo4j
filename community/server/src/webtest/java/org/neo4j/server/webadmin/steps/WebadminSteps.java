@@ -71,6 +71,11 @@ public class WebadminSteps
         wl.clickOnButton( text );
     }
     
+    @When("^I click on the button found by the xpath (.+)$")
+    public void iClickOnButtonByXpath(String xpath) throws Exception {
+        wl.clickOnButtonByXpath(xpath);
+    }
+    
     @When("^I click on the (.+) link in webadmin$")
     public void iClickOnXLink(String text) throws Exception {
         wl.clickOnLink( text );
@@ -97,5 +102,17 @@ public class WebadminSteps
     public void anElementShouldAppearByXpath(String xpath) throws Exception
     {
         wl.waitForElementToAppear( By.xpath( xpath ) );
+    }
+    
+    @Then("^A single element should appear that can be found by the xpath (.+)$")
+    public void aSingleElementShouldAppearByXpath(String xpath) throws Exception
+    {
+        wl.waitForSingleElementToAppear( By.xpath( xpath ) );
+    }
+
+    @Then("^The element found by xpath (.+) should disappear$")
+    public void elementShouldDisappearByXpath(String xpath) throws Exception
+    {
+        wl.waitForElementToDisappear( By.xpath( xpath ) );
     }
 }
