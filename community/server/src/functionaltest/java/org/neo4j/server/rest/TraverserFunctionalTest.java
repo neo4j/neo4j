@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
-import org.neo4j.server.rest.DocumentationGenerator.Title;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
@@ -144,30 +143,13 @@ public class TraverserFunctionalTest {
     }
 
     /**
-     * In this example, no prune evaluator and a
-     * return filter are supplied. The result is to be returned as nodes, as
-     * indicated by 'traverse/\{returnType}' in the URL with +returnType+ being one
-     * of +node+, +relationship+, +path+ or +fullpath+.
+     * Traversal using a return filter.
      * 
-     * The _position_ object in the body of the return and prune evaluators is a
-     * +http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Path.html[Path]+
-     * object representing the path from the start node to the current traversal position.
-     * +max depth+ is a short-hand way
-     * of specifying a prune evaluator which prunes after a certain depth. If
-     * not specified a max depth of 1 is used and if a +prune evaluator+ is
-     * specified instead of a +max depth+, no max depth limit is set.
-     * 
-     * Built-in prune evaluators: +none+
-     * 
-     * Built-in return filters: +all+, +all but start node+
-     * 
-     * Uniqueness: +node global+, +none+, +relationship global+, +node path+,
-     * +relationship path+
-     * 
-     * Order values: +breadth first+, +depth first+
+     * In this example, the +none+ prune evaluator is used and a
+     * return filter is supplied. The result is to be returned as nodes
+     * and the max depth is set to 3.
      */
     @Documented
-    @Title( "Traverse from a start node" )
     @Test
     public void shouldGetExpectedHitsWhenTraversingWithDescription() throws PropertyValueException
     {

@@ -5,6 +5,7 @@ target
 .project
 .classpath
 .settings
+.factorypath
 *.iws
 *.ipr
 *.iml
