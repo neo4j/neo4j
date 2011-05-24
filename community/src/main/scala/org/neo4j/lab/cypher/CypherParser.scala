@@ -1,3 +1,22 @@
+/**
+ * Copyright (c) 2002-2011 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.lab.cypher
 
 import commands._
@@ -8,8 +27,8 @@ import scala.Some
 class CypherParser extends JavaTokenParsers {
   def ignoreCase(str:String): Parser[String] = ("""(?i)\Q""" + str + """\E""").r
 
-  def query: Parser[Query] = start ~ opt(matching) ~ opt(where) ~ select ^^ {
-    case start ~ matching ~ where ~ select => Query(select, start, matching, where)
+  def query: Parser[Query] = start ~ opt(matching) ~ opt(where) ~ returns ^^ {
+    case start ~ matching ~ where ~ returns => Query(returns._1, start, matching, where, returns._2)
   }
 
   def start: Parser[Start] = ignoreCase("start") ~> repsep(nodeByIds | nodeByIndex, ",") ^^ (Start(_: _*))
@@ -64,17 +83,28 @@ class CypherParser extends JavaTokenParsers {
       NodeByIndex(varName, stripQuotes(index), stripQuotes(key), stripQuotes(value))
   }
 
-  def select: Parser[Select] = ignoreCase("return") ~> rep1sep((count | propertyOutput | nodeOutput), ",") ^^ ( Select(_:_*) )
+  def returns: Parser[(Return, Option[Aggregation])] = ignoreCase("return") ~> rep1sep((count | propertyOutput | nodeOutput), ",") ^^
+    { case items => {
+      val list = items.filter(_.isInstanceOf[AggregationItem]).map(_.asInstanceOf[AggregationItem])
 
-  def nodeOutput:Parser[SelectItem] = ident ^^ { EntityOutput(_) }
+      (
+        Return(items.filter(!_.isInstanceOf[AggregationItem]): _*),
+        list match {
+          case List() => None
+          case _ => Some(Aggregation(list : _*))
+        }
+      )
+    }}
 
-  def propertyOutput:Parser[SelectItem] = ident ~ "." ~ ident ^^
+  def nodeOutput:Parser[ReturnItem] = ident ^^ { EntityOutput(_) }
+
+  def propertyOutput:Parser[ReturnItem] = ident ~ "." ~ ident ^^
     { case c ~ "." ~ p => PropertyOutput(c,p) }
 
-  def count:Parser[SelectItem] = ignoreCase("count") ~ "(" ~ "*" ~ ")" ^^
+  def count:Parser[ReturnItem] = ignoreCase("count") ~ "(" ~ "*" ~ ")" ^^
     { case count ~ "(" ~ "*" ~ ")" => Count("*") }
 
-  def where: Parser[Where] = ignoreCase("where") ~> rep(clause) ^^ (Where(_: _*))
+  def where: Parser[Clause] = ignoreCase("where") ~> clause ^^ { case klas => klas }
 
   def clause: Parser[Clause] = (predicate | parens ) * (
     "and" ^^^ { (a: Clause, b: Clause) => And(a, b) } |

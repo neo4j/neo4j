@@ -1,3 +1,22 @@
+/**
+ * Copyright (c) 2002-2011 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.lab.cypher
 
 import commands._
@@ -24,7 +43,7 @@ class CypherParserTest {
     testQuery(
       "start s = node(1) return s",
       Query(
-        Select(EntityOutput("s")),
+        Return(EntityOutput("s")),
         Start(NodeById("s", 1))
       ))
   }
@@ -33,18 +52,18 @@ class CypherParserTest {
     testQuery(
       "start a = node_index(\"index\", \"key\", \"value\") return a",
       Query(
-        Select(EntityOutput("a")),
+        Return(EntityOutput("a")),
         Start(NodeByIndex("a", "index", "key", "value"))
       )
     )
   }
 
 
-    @Test def keywordsShouldBeCaseInsensitive() {
+  @Test def keywordsShouldBeCaseInsensitive() {
     testQuery(
       "START start = NODE(1) RETURN start",
       Query(
-        Select(EntityOutput("start")),
+        Return(EntityOutput("start")),
         Start(NodeById("start", 1))
       ))
   }
@@ -53,7 +72,7 @@ class CypherParserTest {
     testQuery(
       "start s = node(1,2,3) return s",
       Query(
-        Select(EntityOutput("s")),
+        Return(EntityOutput("s")),
         Start(NodeById("s", 1, 2, 3))
       ))
   }
@@ -62,7 +81,7 @@ class CypherParserTest {
     testQuery(
       "start a = node(1), b = node(2) return a,b",
       Query(
-        Select(EntityOutput("a"), EntityOutput("b")),
+        Return(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1), NodeById("b", 2))
       ))
   }
@@ -71,9 +90,9 @@ class CypherParserTest {
     testQuery(
       "start a = node(1) where a.name = \"andres\" return a",
       Query(
-        Select(EntityOutput("a")),
+        Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
-        Where(StringEquals("a", "name", "andres")))
+        StringEquals("a", "name", "andres"))
     )
   }
 
@@ -81,13 +100,12 @@ class CypherParserTest {
     testQuery(
       "start a = node(1) where a.name = \"andres\" or a.name = \"mattias\" return a",
       Query(
-        Select(EntityOutput("a")),
+        Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
-        Where(
-          Or(
-            StringEquals("a", "name", "andres"),
-            StringEquals("a", "name", "mattias")
-          )))
+        Or(
+          StringEquals("a", "name", "andres"),
+          StringEquals("a", "name", "mattias")
+        ))
     )
   }
 
@@ -95,7 +113,7 @@ class CypherParserTest {
     testQuery(
       "start a = node(1) match (a) -[:KNOWS]-> (b) return a, b",
       Query(
-        Select(EntityOutput("a"), EntityOutput("b")),
+        Return(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
         Match(RelatedTo("a", "b", None, Some("KNOWS"), Direction.OUTGOING))
       )
@@ -106,7 +124,7 @@ class CypherParserTest {
     testQuery(
       "start a = node(1) match (a) --> (b) return a, b",
       Query(
-        Select(EntityOutput("a"), EntityOutput("b")),
+        Return(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
         Match(RelatedTo("a", "b", None, None, Direction.OUTGOING))
       )
@@ -117,7 +135,7 @@ class CypherParserTest {
     testQuery(
       "start a = node(1) match (a) -[r]-> (b) return r",
       Query(
-        Select(EntityOutput("r")),
+        Return(EntityOutput("r")),
         Start(NodeById("a", 1)),
         Match(RelatedTo("a", "b", Some("r"), None, Direction.OUTGOING))
       )
@@ -128,7 +146,7 @@ class CypherParserTest {
     testQuery(
       "start a = node(1) match (a) <-[:KNOWS]- (b) return a, b",
       Query(
-        Select(EntityOutput("a"), EntityOutput("b")),
+        Return(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
         Match(RelatedTo("a", "b", None, Some("KNOWS"), Direction.INCOMING))
       )
@@ -139,7 +157,7 @@ class CypherParserTest {
     testQuery(
       "start a = node(1) return a.name",
       Query(
-        Select(PropertyOutput("a", "name")),
+        Return(PropertyOutput("a", "name")),
         Start(NodeById("a", 1)))
     )
   }
@@ -148,9 +166,9 @@ class CypherParserTest {
     testQuery(
       "start a = node(1) where a.name = \"andres\" and a.lastname = \"taylor\" return a.name",
       Query(
-        Select(PropertyOutput("a", "name")),
+        Return(PropertyOutput("a", "name")),
         Start(NodeById("a", 1)),
-        Where(And(StringEquals("a", "name", "andres"), StringEquals("a", "lastname", "taylor")))
+        And(StringEquals("a", "name", "andres"), StringEquals("a", "lastname", "taylor"))
       )
     )
   }
@@ -159,7 +177,7 @@ class CypherParserTest {
     testQuery(
       "start a = node(1) match (a) -[rel,:KNOWS]-> (b) return rel",
       Query(
-        Select(EntityOutput("rel")),
+        Return(EntityOutput("rel")),
         Start(NodeById("a", 1)),
         Match(RelatedTo("a", "b", "rel", "KNOWS", Direction.OUTGOING))
       )
@@ -170,7 +188,7 @@ class CypherParserTest {
     testQuery(
       "start a = node(1) match (a) -[:MARRIED]-> () return a",
       Query(
-        Select(EntityOutput("a")),
+        Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
         Match(RelatedTo("a", "___NODE1", None, Some("MARRIED"), Direction.OUTGOING))
       )
@@ -181,7 +199,7 @@ class CypherParserTest {
     testQuery(
       "start a = node(1) match (a) -[:KNOWS]-> (b) -[:FRIEND]-> (c) return c",
       Query(
-        Select(EntityOutput("c")),
+        Return(EntityOutput("c")),
         Start(NodeById("a", 1)),
         Match(
           RelatedTo("a", "b", None, Some("KNOWS"), Direction.OUTGOING),
@@ -194,9 +212,10 @@ class CypherParserTest {
     testQuery(
       "start a = node(1) match (a) --> (b) return a, b, count(*)",
       Query(
-        Select(EntityOutput("a"), EntityOutput("b"), Count("*")),
+        Return(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
-        Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)))
+        Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
+        Aggregation(Count("*")))
     )
   }
 

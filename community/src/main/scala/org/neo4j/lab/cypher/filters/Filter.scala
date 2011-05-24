@@ -17,20 +17,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.lab.cypher.commands
+package org.neo4j.lab.cypher.filters
 
-import org.neo4j.graphdb.{Node, Relationship, Direction}
+import org.neo4j.graphdb.PropertyContainer
 
-abstract sealed class StartItem(val placeholderName:String)
+abstract class Filter {
+  def isMatch(result: Map[String, Any]):Boolean
+}
 
-abstract class RelationshipStartItem(varName:String) extends StartItem(varName)
+class AndFilter(a:Filter, b:Filter) extends Filter {
+  def isMatch(result: Map[String, Any]): Boolean = a.isMatch(result) && b.isMatch(result)
+}
 
-abstract class NodeStartItem(varName:String) extends StartItem(varName)
+class OrFilter(a:Filter, b:Filter) extends Filter {
+  def isMatch(result: Map[String, Any]): Boolean = a.isMatch(result) || b.isMatch(result)
+}
 
-case class RelationshipById(varName:String, id: Long*) extends RelationshipStartItem(varName)
+class TrueFilter extends Filter {
+  def isMatch(result: Map[String, Any]): Boolean = true
+}
 
-case class NodeByIndex(varName:String, idxName: String, key:String, value: Any) extends NodeStartItem(varName)
-
-case class RelationshipByIndex(varName:String, idxName: String, value: Any) extends RelationshipStartItem(varName)
-
-case class NodeById(varName:String, id: Long*) extends NodeStartItem(varName)
+class EqualsFilter(variable: String, propName: String, value: String) extends Filter {
+  def isMatch(result: Map[String, Any]): Boolean = result(variable).asInstanceOf[PropertyContainer].getProperty(propName) == value
+}

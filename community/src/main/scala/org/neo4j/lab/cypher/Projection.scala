@@ -1,10 +1,31 @@
+/**
+ * Copyright (c) 2002-2011 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.lab.cypher
 
+import filters.Filter
 import scala.collection.JavaConverters._
 import org.apache.commons.lang.StringUtils
 import pipes.Pipe
 import org.neo4j.graphdb.{Relationship, NotFoundException, Node}
 import org.neo4j.graphmatching.{PatternRelationship, PatternMatch, PatternNode, PatternMatcher}
+import collection.immutable.Map
 
 
 /**
@@ -13,16 +34,16 @@ import org.neo4j.graphmatching.{PatternRelationship, PatternMatch, PatternNode, 
  * Time: 19:18 
  */
 
-class Projection(pNodes: Map[String, PatternNode], pRels:Map[String, PatternRelationship], from: Pipe, select: Seq[Map[String, Any] => Map[String, Any]]) extends Traversable[Map[String, Any]] {
-  def foreach[U](f: (Map[String, Any]) => U) {
+class Projection(pNodes: Map[String, PatternNode], pRels: Map[String, PatternRelationship], from: Pipe, select: Seq[Map[String, Any] => Map[String, Any]], filter: Filter) extends Traversable[Map[String, Any]] {
+  def foreach[U](f: Map[String, Any] => U) {
     from.foreach((fromRow) => {
 
       fromRow.foreach((x) => {
         val variable: String = x._1
         val thingie: Any = x._2
         thingie match {
-          case node : Node => pNodes(variable).setAssociation(node)
-          case rel : Relationship => pRels(variable).setAssociation(rel)
+          case node: Node => pNodes(variable).setAssociation(node)
+          case rel: Relationship => pRels(variable).setAssociation(rel)
         }
 
       })
@@ -30,11 +51,18 @@ class Projection(pNodes: Map[String, PatternNode], pRels:Map[String, PatternRela
       val startKey = pNodes.keys.head
       val startPNode = pNodes(startKey)
       val startNode = fromRow(startKey).asInstanceOf[Node]
-      val patternMatches:java.lang.Iterable[PatternMatch] = PatternMatcher.getMatcher.`match`(startPNode, startNode)
-      patternMatches.asScala.map((aMatch)=>{
-        val realResult = pNodes.map( (kv) =>  kv._1 -> aMatch.getNodeFor(kv._2))
-        val r = select.map((transformer) => transformer.apply(realResult)).reduceLeft(_ ++ _)
-        f.apply(r)
+      val patternMatches: java.lang.Iterable[PatternMatch] = PatternMatcher.getMatcher.`match`(startPNode, startNode)
+
+      patternMatches.asScala.map((aMatch) => {
+        val realResult: Map[String, Any] =
+          pNodes.map((kv) => kv._1 -> aMatch.getNodeFor(kv._2)) ++
+          pRels.map((kv) => kv._1 -> aMatch.getRelationshipFor(kv._2))
+
+        if (filter.isMatch(realResult)) {
+          val r = select.map((transformer) => transformer.apply(realResult)).reduceLeft(_ ++ _)
+
+          f.apply(r)
+        }
       })
 
     })

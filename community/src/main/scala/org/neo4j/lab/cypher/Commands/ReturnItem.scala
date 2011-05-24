@@ -19,18 +19,17 @@
  */
 package org.neo4j.lab.cypher.commands
 
-import org.neo4j.graphdb.{Node, Relationship, Direction}
+/**
+ * Created by Andres Taylor
+ * Date: 4/16/11
+ * Time: 19:08 
+ */
 
-abstract sealed class StartItem(val placeholderName:String)
+abstract sealed class ReturnItem
 
-abstract class RelationshipStartItem(varName:String) extends StartItem(varName)
+case class EntityOutput(name: String) extends ReturnItem
+case class PropertyOutput(entityName:String, propName:String) extends ReturnItem
 
-abstract class NodeStartItem(varName:String) extends StartItem(varName)
+abstract sealed class AggregationItem extends ReturnItem
 
-case class RelationshipById(varName:String, id: Long*) extends RelationshipStartItem(varName)
-
-case class NodeByIndex(varName:String, idxName: String, key:String, value: Any) extends NodeStartItem(varName)
-
-case class RelationshipByIndex(varName:String, idxName: String, value: Any) extends RelationshipStartItem(varName)
-
-case class NodeById(varName:String, id: Long*) extends NodeStartItem(varName)
+case class Count(variable:String) extends AggregationItem
