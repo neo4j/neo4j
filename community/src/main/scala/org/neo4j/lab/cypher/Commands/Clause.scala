@@ -30,12 +30,17 @@ import org.neo4j.graphdb.Direction
 
 abstract sealed class Clause {
   def ++(other: Clause): Clause = And(this, other)
+  def hasOrs : Boolean = false
 }
 
 case class StringEquals(variable: String, propName: String, value: String) extends Clause
 
 case class NumberLargerThan(variable: String, propName: String, value: Float) extends Clause
 
-case class And(a: Clause, b: Clause) extends Clause
+case class And(a: Clause, b: Clause) extends Clause {
+  override def hasOrs = a.hasOrs || b.hasOrs
+}
 
-case class Or(a: Clause, b: Clause) extends Clause
+case class Or(a: Clause, b: Clause) extends Clause {
+  override def hasOrs = true
+}

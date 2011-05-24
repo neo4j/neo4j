@@ -22,9 +22,9 @@ package org.neo4j.lab.cypher
 import commands._
 import pipes.{Pipe, FromPump}
 import scala.collection.JavaConverters._
-import org.neo4j.graphmatching.PatternRelationship
 import org.neo4j.graphdb._
 import org.neo4j.lab.cypher.filters._
+import org.neo4j.graphmatching.{CommonValueMatchers, PatternRelationship}
 
 /**
  * Created by Andres Taylor
@@ -42,22 +42,31 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
       case StringEquals(variable, property, value) => new EqualsFilter(variable, property, value)
     }
 
-    where match {
-      case None => new TrueFilter()
-      case Some(clause) => createFilter(clause)
+    def addFiltersToPattern(clause: Clause, patternKeeper: PatternKeeper) {
+      clause match {
+
+        case And(a, b) => {
+          addFiltersToPattern(a, patternKeeper)
+          addFiltersToPattern(b, patternKeeper)
+        }
+
+        case StringEquals(variable, property, value) => {
+          val patternPart = patternKeeper.getOrThrow(variable)
+          patternPart.addPropertyConstraint(property, CommonValueMatchers.exact(value))
+        }
+      }
     }
 
-    //    where match {
-    //      case Some(w) => w.clauses.foreach((c) => {
-    //        c match {
-    //          case StringEquals(variable, propName, value) => {
-    //            val patternPart = patternKeeper.getOrThrow(variable)
-    //            patternPart.addPropertyConstraint(propName, CommonValueMatchers.exact(value))
-    //          }
-    //        }
-    //      })
-    //      case None =>
-    //    }
+    where match {
+      case None => new TrueFilter()
+
+      case Some(clause) => if (clause.hasOrs) {   //OR is not handled by the graph-matcher. If we have at least one
+        createFilter(clause)                      //OR, just create a filter. Otherwise, let the matcher filter
+      } else {
+        addFiltersToPattern(clause, patternKeeper)
+        new TrueFilter()
+      }
+    }
   }
 
   def execute(query: Query): Projection = query match {
