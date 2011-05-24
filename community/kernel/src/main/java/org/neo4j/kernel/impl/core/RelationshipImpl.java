@@ -27,40 +27,27 @@ import org.neo4j.kernel.impl.transaction.LockException;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
-class RelationshipImpl extends Primitive
+abstract class RelationshipImpl extends Primitive
 {
-    private final long startNodeId;
-    private final long endNodeId;
-    private final RelationshipType type;
-
-    RelationshipImpl( long id, long startNodeId, long endNodeId, RelationshipType type, boolean newRel )
+    RelationshipImpl( long startNodeId, long endNodeId, boolean newRel )
     {
-        super( id, newRel );
+        super( newRel );
+    }
+    
+    protected RelationshipType assertTypeNotNull( RelationshipType type )
+    {
         if ( type == null )
         {
             throw new IllegalArgumentException( "Null type" );
         }
-        if ( startNodeId == endNodeId )
-        {
-            throw new IllegalArgumentException( "Start node equals end node" );
-        }
-
-        this.startNodeId = startNodeId;
-        this.endNodeId = endNodeId;
-        this.type = type;
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return (int) (( id >>> 32 ) ^ id );
+        return type;
     }
 
     @Override
     public boolean equals( Object obj )
     {
         return this == obj
-               || ( obj instanceof RelationshipImpl && ( (RelationshipImpl) obj ).id == id );
+               || ( obj instanceof RelationshipImpl && ( (RelationshipImpl) obj ).getId() == getId() );
     }
 
     @Override
@@ -86,22 +73,22 @@ class RelationshipImpl extends Primitive
     {
         return nodeManager.loadProperties( this, light );
     }
-
+    
     public Node[] getNodes( NodeManager nodeManager )
     {
-        return new Node[] { new NodeProxy( startNodeId, nodeManager ),
-            new NodeProxy( endNodeId, nodeManager ) };
+        return new Node[] { new NodeProxy( getStartNodeId(), nodeManager ),
+            new NodeProxy( getEndNodeId(), nodeManager ) };
     }
 
     public Node getOtherNode( NodeManager nodeManager, Node node )
     {
-        if ( startNodeId == node.getId() )
+        if ( getStartNodeId() == node.getId() )
         {
-            return new NodeProxy( endNodeId, nodeManager );
+            return new NodeProxy( getEndNodeId(), nodeManager );
         }
-        if ( endNodeId == node.getId() )
+        if ( getEndNodeId() == node.getId() )
         {
-            return new NodeProxy( startNodeId, nodeManager );
+            return new NodeProxy( getStartNodeId(), nodeManager );
         }
         throw new NotFoundException( "Node[" + node.getId()
             + "] not connected to this relationship[" + getId() + "]" );
@@ -109,33 +96,24 @@ class RelationshipImpl extends Primitive
 
     public Node getStartNode( NodeManager nodeManager )
     {
-        return new NodeProxy( startNodeId, nodeManager );
+        return new NodeProxy( getStartNodeId(), nodeManager );
     }
 
-    long getStartNodeId()
-    {
-        return startNodeId;
-    }
+    abstract long getStartNodeId();
 
     public Node getEndNode( NodeManager nodeManager )
     {
-        return new NodeProxy( endNodeId, nodeManager );
+        return new NodeProxy( getEndNodeId(), nodeManager );
     }
 
-    long getEndNodeId()
-    {
-        return endNodeId;
-    }
+    abstract long getEndNodeId();
 
-    public RelationshipType getType()
-    {
-        return type;
-    }
+    public abstract RelationshipType getType( NodeManager nodeManager );
 
-    public boolean isType( RelationshipType otherType )
+    public boolean isType( NodeManager nodeManager, RelationshipType otherType )
     {
         return otherType != null
-            && otherType.name().equals( this.getType().name() );
+            && otherType.name().equals( this.getType( nodeManager ).name() );
     }
 
     public void delete( NodeManager nodeManager )
@@ -148,13 +126,13 @@ class RelationshipImpl extends Primitive
         boolean success = false;
         try
         {
-            startNode = nodeManager.getLightNode( startNodeId );
+            startNode = nodeManager.getLightNode( getStartNodeId() );
             if ( startNode != null )
             {
                 nodeManager.acquireLock( startNode, LockType.WRITE );
                 startNodeLocked = true;
             }
-            endNode = nodeManager.getLightNode( endNodeId );
+            endNode = nodeManager.getLightNode( getEndNodeId() );
             if ( endNode != null )
             {
                 nodeManager.acquireLock( endNode, LockType.WRITE );
@@ -165,9 +143,9 @@ class RelationshipImpl extends Primitive
             // no need to load full relationship, all properties will be
             // deleted when relationship is deleted
 
-            ArrayMap<Integer,PropertyData> skipMap = 
+            ArrayMap<Integer,PropertyData> skipMap =
                 nodeManager.getCowPropertyRemoveMap( this, true );
-            ArrayMap<Integer,PropertyData> removedProps = 
+            ArrayMap<Integer,PropertyData> removedProps =
                 nodeManager.deleteRelationship( this );
             if ( removedProps.size() > 0 )
             {
@@ -177,6 +155,8 @@ class RelationshipImpl extends Primitive
                 }
             }
             success = true;
+            RelationshipType type = getType( nodeManager );
+            long id = getId();
             if ( startNode != null )
             {
                 startNode.removeRelationship( nodeManager, type, id );
@@ -242,7 +222,7 @@ class RelationshipImpl extends Primitive
     @Override
     public String toString()
     {
-        return "RelationshipImpl #" + this.getId() + " of type " + type
-            + " between Node[" + startNodeId + "] and Node[" + endNodeId + "]";
+        return "RelationshipImpl #" + this.getId() + " of type " + getType( null )
+            + " between Node[" + getStartNodeId() + "] and Node[" + getEndNodeId() + "]";
     }
 }

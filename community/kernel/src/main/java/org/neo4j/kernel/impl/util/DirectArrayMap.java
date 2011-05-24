@@ -17,29 +17,42 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.nioneo.store;
+package org.neo4j.kernel.impl.util;
 
-public class RelationshipChainPosition
+import static java.lang.System.arraycopy;
+
+public class DirectArrayMap<V>
 {
-    private long nextRecord;
+    private volatile V[] array;
     
-    public RelationshipChainPosition( long startRecord )
+    public DirectArrayMap( int maxSize )
     {
-        nextRecord = startRecord;
+        array = (V[])new Object[maxSize];
     }
     
-    public long getNextRecord()
+    public void put( int key, V value )
     {
-        return nextRecord;
+        V[] newArray = copyArray();
+        newArray[key] = value;
+        array = newArray;
     }
     
-    public void setNextRecord( long record )
+    private synchronized V[] copyArray()
     {
-        nextRecord = record;
+        V[] newArray = (V[])new Object[array.length];
+        arraycopy( array, 0, newArray, 0, array.length );
+        return newArray;
     }
 
-    public boolean hasMore()
+    public void remove( int key )
     {
-        return nextRecord != Record.NO_NEXT_RELATIONSHIP.intValue();
+        V[] newArray = copyArray();
+        newArray[key] = null;
+        array = newArray;
+    }
+    
+    public V get( int key )
+    {
+        return array[key];
     }
 }

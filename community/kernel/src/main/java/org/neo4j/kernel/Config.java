@@ -27,6 +27,7 @@ import java.util.Map;
 import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
 import org.neo4j.kernel.impl.core.GraphDbModule;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
@@ -56,32 +57,87 @@ public class Config
     static final String LUCENE_DS_CLASS = "org.neo4j.index.lucene.LuceneDataSource";
     static final String LUCENE_FULLTEXT_DS_CLASS = "org.neo4j.index.lucene.LuceneFulltextDataSource";
 
+    /**
+     * Tell Neo4j to use memory mapped buffers for accessing the native storage
+     * layer
+     */
+    @Documented
     public static final String USE_MEMORY_MAPPED_BUFFERS = "use_memory_mapped_buffers";
+    /** Print out the effective Neo4j configuration after startup */
+    @Documented
     public static final String DUMP_CONFIGURATION = "dump_configuration";
+    /**
+     * Make Neo4j keep the logical transaction logs for being able to backup the
+     * database
+     */
+    @Documented
     public static final String KEEP_LOGICAL_LOGS = "keep_logical_logs";
+    /** Enable a remote shell server which shell clients can log in to */
+    @Documented
     public static final String ENABLE_REMOTE_SHELL = "enable_remote_shell";
+    @Documented
     public static final String ENABLE_ONLINE_BACKUP = "enable_online_backup";
 
+    @Documented
     public static final String BACKUP_SLAVE = "backup_slave";
 
+    /** Only allow read operations from this Neo4j instance. */
+    @Documented
     public static final String READ_ONLY = "read_only";
+    /** Relative path for where the Neo4j storage directory is located */
+    @Documented
     public static final String STORAGE_DIRECTORY = "store_dir";
+    /**
+     * Use a quick approach for rebuilding the ID generators. This give quicker
+     * recovery time, but will limit the ability to reuse the space of deleted
+     * entities.
+     */
+    @Documented
     public static final String REBUILD_IDGENERATORS_FAST = "rebuild_idgenerators_fast";
+    /** The size to allocate for memory mapping the node store */
+    @Documented
     public static final String NODE_STORE_MMAP_SIZE = "neostore.nodestore.db.mapped_memory";
+    /** The size to allocate for memory mapping the array property store */
+    @Documented
     public static final String ARRAY_PROPERTY_STORE_MMAP_SIZE = "neostore.propertystore.db.arrays.mapped_memory";
+    /**
+     * The size to allocate for memory mapping the store for property key
+     * strings
+     */
+    @Documented
     public static final String PROPERTY_INDEX_KEY_STORE_MMAP_SIZE = "neostore.propertystore.db.index.keys.mapped_memory";
+    /**
+     * The size to allocate for memory mapping the store for property key
+     * indexes
+     */
+    @Documented
     public static final String PROPERTY_INDEX_STORE_MMAP_SIZE = "neostore.propertystore.db.index.mapped_memory";
+    /** The size to allocate for memory mapping the property value store */
+    @Documented
     public static final String PROPERTY_STORE_MMAP_SIZE = "neostore.propertystore.db.mapped_memory";
+    /** The size to allocate for memory mapping the string property store */
+    @Documented
     public static final String STRING_PROPERTY_STORE_MMAP_SIZE = "neostore.propertystore.db.strings.mapped_memory";
+    /** The size to allocate for memory mapping the relationship store */
+    @Documented
     public static final String RELATIONSHIP_STORE_MMAP_SIZE = "neostore.relationshipstore.db.mapped_memory";
+    /** Relative path for where the Neo4j logical log is located */
+    @Documented
     public static final String LOGICAL_LOG = "logical_log";
+    /** Relative path for where the Neo4j storage information file is located */
+    @Documented
     public static final String NEO_STORE = "neo_store";
+    /**
+     * The type of cache to use for nodes and relationships, one of [weak, soft,
+     * none]
+     */
+    @Documented
     public static final String CACHE_TYPE = "cache_type";
     public static final String TXMANAGER_IMPLEMENTATION = "tx_manager_impl";
     public static final String ALLOW_STORE_UPGRADE = "allow_store_upgrade";
     public static final String STRING_BLOCK_SIZE = "string_block_size";
     public static final String ARRAY_BLOCK_SIZE = "array_block_size";
-    
+
     static final String LOAD_EXTENSIONS = "load_kernel_extensions";
 
     private final AdaptiveCacheManager cacheManager;

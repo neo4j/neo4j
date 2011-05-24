@@ -29,6 +29,7 @@ class ExceptionRepresentation extends MappingRepresentation
         this.exception = exception;
     }
 
+    
     @Override
     protected void serialize( MappingSerializer serializer )
     {

@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.server.ServerBuilder.server;
+import static org.neo4j.server.WebTestUtils.CLIENT;
 
 import java.io.IOException;
 
@@ -31,7 +32,6 @@ import javax.ws.rs.core.MediaType;
 import org.junit.After;
 import org.junit.Test;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class ServerConfigTest {
@@ -55,10 +55,10 @@ public class ServerConfigTest {
 
         assertEquals(NON_DEFAULT_PORT, server.getWebServerPort());
 
-        Client client = Client.create();
-        ClientResponse response = client.resource(server.baseUri()).get(ClientResponse.class);
+        ClientResponse response = CLIENT.resource(server.baseUri()).get(ClientResponse.class);
 
         assertThat(response.getStatus(), is(200));
+        response.close();
     }
 
     @Test
@@ -70,12 +70,12 @@ public class ServerConfigTest {
                 webAdminManagementUri ).withPassingStartupHealthcheck().build();
         server.start();
 
-        Client client = Client.create();
-        ClientResponse response = client.resource("http://localhost:7474" + webAdminDataUri).accept(MediaType.TEXT_HTML).get(ClientResponse.class);
+        ClientResponse response = CLIENT.resource("http://localhost:7474" + webAdminDataUri).accept(MediaType.TEXT_HTML).get(ClientResponse.class);
         assertEquals(200, response.getStatus());
 
-        response = client.resource("http://localhost:7474" + webAdminManagementUri).accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
+        response = CLIENT.resource("http://localhost:7474" + webAdminManagementUri).accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
         assertEquals(200, response.getStatus());
+        response.close();
     }
 
     @Test

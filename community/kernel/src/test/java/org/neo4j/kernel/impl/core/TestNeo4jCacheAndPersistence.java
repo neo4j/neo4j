@@ -21,8 +21,10 @@ package org.neo4j.kernel.impl.core;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -521,6 +523,126 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         }
         assertEquals( 2, rels.size() );
         
+        tx.success();
+        tx.finish();
+        graphDb.shutdown();
+    }
+
+    @Test
+    public void testLowGrabSizeWithLoops()
+    {
+        Map<String, String> config = new HashMap<String, String>();
+        config.put( "relationship_grab_size", "2" );
+        String storePath = getStorePath( "neo2" );
+        deleteFileOrDirectory( storePath );
+        EmbeddedGraphDatabase graphDb = new EmbeddedGraphDatabase( storePath, config );
+        Transaction tx = graphDb.beginTx();
+        Node node1 = graphDb.createNode();
+        Node node2 = graphDb.createNode();
+        Node node3 = graphDb.createNode();
+
+        // These are expected relationships for node2
+        Collection<Relationship> outgoingOriginal = new HashSet<Relationship>();
+        Collection<Relationship> incomingOriginal = new HashSet<Relationship>();
+        Collection<Relationship> loopsOriginal = new HashSet<Relationship>();
+        
+        for ( int i = 0; i < 33; i++ )
+        {
+            if ( i % 2 == 0 )
+            {
+                incomingOriginal.add( node1.createRelationshipTo( node2, MyRelTypes.TEST ) );
+                outgoingOriginal.add( node2.createRelationshipTo( node3, MyRelTypes.TEST ) );
+            }
+            else
+            {
+                outgoingOriginal.add( node2.createRelationshipTo( node1, MyRelTypes.TEST ) );
+                incomingOriginal.add( node3.createRelationshipTo( node2, MyRelTypes.TEST ) );
+            }
+            // loopsOriginal.add( node2.createRelationshipTo( node2, MyRelTypes.TEST )
+            // );
+        }
+        tx.success();
+        tx.finish();
+
+        tx = graphDb.beginTx();
+        Set<Relationship> rels = new HashSet<Relationship>();
+        graphDb.getConfig().getGraphDbModule().getNodeManager().clearCache();
+
+        Collection<Relationship> outgoing = new HashSet<Relationship>( outgoingOriginal );
+        Collection<Relationship> incoming = new HashSet<Relationship>( incomingOriginal );
+        Collection<Relationship> loops = new HashSet<Relationship>( loopsOriginal );
+        for ( Relationship rel : node2.getRelationships( MyRelTypes.TEST ) )
+        {
+            assertTrue( rels.add( rel ) );
+            if ( rel.getStartNode().equals( node2 ) && rel.getEndNode().equals( node2 ) )
+            {
+                assertTrue( loops.remove( rel ) );
+            }
+            else if ( rel.getStartNode().equals( node2 ) )
+            {
+                assertTrue( outgoing.remove( rel ) );
+            }
+            else
+            {
+                assertTrue( incoming.remove( rel ) );
+            }
+        }
+        assertEquals( 66 /* 99 for loops */, rels.size() );
+        assertEquals( 0, loops.size() );
+        assertEquals( 0, incoming.size() );
+        assertEquals( 0, outgoing.size() );
+        rels.clear();
+
+        graphDb.getConfig().getGraphDbModule().getNodeManager().clearCache();
+        outgoing = new HashSet<Relationship>( outgoingOriginal );
+        incoming = new HashSet<Relationship>( incomingOriginal );
+        loops = new HashSet<Relationship>( loopsOriginal );
+        for ( Relationship rel : node2.getRelationships( Direction.OUTGOING ) )
+        {
+            assertTrue( rels.add( rel ) );
+            if ( rel.getStartNode().equals( node2 ) && rel.getEndNode().equals( node2 ) )
+            {
+                assertTrue( loops.remove( rel ) );
+            }
+            else if ( rel.getStartNode().equals( node2 ) )
+            {
+                assertTrue( outgoing.remove( rel ) );
+            }
+            else
+            {
+                fail( "There should be no incomming relationships " + rel );
+            }
+        }
+        assertEquals( 33 /* 66 for loops */, rels.size() );
+        assertEquals( 0, loops.size() );
+        assertEquals( 0, outgoing.size() );
+        rels.clear();
+
+        graphDb.getConfig().getGraphDbModule().getNodeManager().clearCache();
+        outgoing = new HashSet<Relationship>( outgoingOriginal );
+        incoming = new HashSet<Relationship>( incomingOriginal );
+        loops = new HashSet<Relationship>( loopsOriginal );
+        for ( Relationship rel : node2.getRelationships( Direction.INCOMING ) )
+        {
+            assertTrue( rels.add( rel ) );
+            if ( rel.getStartNode().equals( node2 ) && rel.getEndNode().equals( node2 ) )
+            {
+                assertTrue( loops.remove( rel ) );
+            }
+            else if ( rel.getEndNode().equals( node2 ) )
+            {
+                assertTrue( incoming.remove( rel ) );
+            }
+            else
+            {
+                fail( "There should be no outgoing relationships " + rel );
+            }
+        }
+        assertEquals( 33 /* 66 for loops */, rels.size() );
+        assertEquals( 0, loops.size() );
+        assertEquals( 0, incoming.size() );
+        rels.clear();
+
         tx.success();
         tx.finish();
         graphDb.shutdown();

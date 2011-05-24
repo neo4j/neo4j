@@ -24,6 +24,7 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.server.WebTestUtils.CLIENT;
 
 import java.util.List;
 import java.util.Map;
@@ -42,7 +43,6 @@ import org.neo4j.server.rest.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class PluginFunctionalAbstractBase
@@ -68,10 +68,11 @@ public class PluginFunctionalAbstractBase
     }
     protected Map<String, Object> makeGet( String url ) throws JsonParseException
     {
-        ClientResponse response = Client.create().resource( url ).accept(
+        ClientResponse response = CLIENT.resource( url ).accept(
                 MediaType.APPLICATION_JSON_TYPE ).get( ClientResponse.class );
 
         String body = getResponseText( response );
+        response.close();
 
         return deserializeMap( body );
     }
@@ -102,10 +103,11 @@ public class PluginFunctionalAbstractBase
 
     protected Map<String, Object> makePostMap( String url ) throws JsonParseException
     {
-        ClientResponse response = Client.create().resource( url ).accept(
+        ClientResponse response = CLIENT.resource( url ).accept(
                 MediaType.APPLICATION_JSON_TYPE ).post( ClientResponse.class );
 
         String body = getResponseText( response );
+        response.close();
 
         return deserializeMap( body );
     }
@@ -113,20 +115,22 @@ public class PluginFunctionalAbstractBase
     protected Map<String, Object> makePostMap( String url, Map<String, Object> params ) throws JsonParseException
     {
         String json = JsonHelper.createJsonFrom( params );
-        ClientResponse response = Client.create().resource( url ).accept(
+        ClientResponse response = CLIENT.resource( url ).accept(
                 MediaType.APPLICATION_JSON_TYPE ).entity( json, MediaType.APPLICATION_JSON_TYPE ).post( ClientResponse.class );
 
         String body = getResponseText( response );
+        response.close();
 
         return deserializeMap( body );
     }
 
     protected List<Map<String, Object>> makePostList( String url ) throws JsonParseException
     {
-        ClientResponse response = Client.create().resource( url ).accept(
+        ClientResponse response = CLIENT.resource( url ).accept(
                 MediaType.APPLICATION_JSON_TYPE ).post( ClientResponse.class );
 
         String body = getResponseText( response );
+        response.close();
 
         return deserializeList( body );
     }
@@ -134,10 +138,11 @@ public class PluginFunctionalAbstractBase
     protected List<Map<String, Object>> makePostList( String url, Map<String, Object> params ) throws JsonParseException
     {
         String json = JsonHelper.createJsonFrom( params );
-        ClientResponse response = Client.create().resource( url ).accept(
+        ClientResponse response = CLIENT.resource( url ).accept(
                 MediaType.APPLICATION_JSON_TYPE ).entity( json, MediaType.APPLICATION_JSON_TYPE ).post( ClientResponse.class );
 
         String body = getResponseText( response );
+        response.close();
 
         return deserializeList( body );
     }

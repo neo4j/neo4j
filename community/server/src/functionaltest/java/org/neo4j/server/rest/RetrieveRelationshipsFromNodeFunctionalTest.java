@@ -21,6 +21,7 @@ package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.neo4j.server.WebTestUtils.CLIENT;
 
 import java.io.IOException;
 import java.util.List;
@@ -39,7 +40,6 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
@@ -76,7 +76,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     }
 
     private ClientResponse sendRetrieveRequestToServer(long nodeId, String path) {
-        WebResource resource = Client.create().resource(functionalTestHelper.nodeUri() + "/" + nodeId + "/relationships" + path);
+        WebResource resource = CLIENT.resource(functionalTestHelper.nodeUri() + "/" + nodeId + "/relationships" + path);
         return resource.accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
     }
 
@@ -140,6 +140,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
         assertEquals(200, response.getStatus());
         assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
         verifyRelReps(1, response.getEntity(String.class));
+        response.close();
     }
 
     @Test
@@ -149,6 +150,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
         assertEquals(200, response.getStatus());
         assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
         verifyRelReps(1, response.getEntity(String.class));
+        response.close();
     }
 
     @Test
@@ -169,6 +171,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
         assertEquals(200, response.getStatus());
         assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
         verifyRelReps(0, response.getEntity(String.class));
+        response.close();
     }
 
     @Test
@@ -178,45 +181,51 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
         assertEquals(200, response.getStatus());
         assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
         verifyRelReps(0, response.getEntity(String.class));
+        response.close();
     }
 
     @Test
     public void shouldRespondWith404WhenGettingAllRelationshipsForNonExistingNode() {
         ClientResponse response = sendRetrieveRequestToServer(nonExistingNode, "/all");
         assertEquals(404, response.getStatus());
+        response.close();
     }
 
     @Test
     public void shouldRespondWith404WhenGettingIncomingRelationshipsForNonExistingNode() {
         ClientResponse response = sendRetrieveRequestToServer(nonExistingNode, "/in");
         assertEquals(404, response.getStatus());
+        response.close();
     }
 
     @Test
     public void shouldRespondWith404WhenGettingOutgoingRelationshipsForNonExistingNode() {
         ClientResponse response = sendRetrieveRequestToServer(nonExistingNode, "/out");
         assertEquals(404, response.getStatus());
+        response.close();
     }
 
     @Test
     public void shouldGet200WhenRetrievingValidRelationship() throws DatabaseBlockedException {
         long relationshipId = helper.createRelationship("LIKES");
 
-        ClientResponse response = Client.create().resource( functionalTestHelper.relationshipUri(relationshipId) ).accept( MediaType.APPLICATION_JSON_TYPE ).get(ClientResponse.class);
+        ClientResponse response = CLIENT.resource( functionalTestHelper.relationshipUri(relationshipId) ).accept( MediaType.APPLICATION_JSON_TYPE ).get(ClientResponse.class);
 
         assertEquals(200, response.getStatus());
+        response.close();
     }
 
     @Test
     public void shouldGetARelationshipRepresentationInJsonWhenRetrievingValidRelationship() throws Exception {
         long relationshipId = helper.createRelationship("LIKES");
 
-        ClientResponse response = Client.create().resource(functionalTestHelper.relationshipUri(relationshipId)).accept(MediaType.APPLICATION_JSON_TYPE).get(
+        ClientResponse response = CLIENT.resource(functionalTestHelper.relationshipUri(relationshipId)).accept(MediaType.APPLICATION_JSON_TYPE).get(
                 ClientResponse.class);
 
         String entity = response.getEntity(String.class);
         assertNotNull(entity);
         isLegalJson(entity);
+        response.close();
     }
 
     private void isLegalJson(String entity) throws IOException, JsonParseException

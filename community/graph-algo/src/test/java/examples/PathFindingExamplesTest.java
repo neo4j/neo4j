@@ -195,6 +195,5 @@ public class PathFindingExamplesTest
                 CommonEvaluators.doubleCostEvaluator( "length" ), estimateEvaluator );
         WeightedPath path = astar.findSinglePath( nodeA, nodeB );
         // END SNIPPET: astarUsage
-        System.out.println( path.weight() );
     }
 }

@@ -22,41 +22,36 @@ package org.neo4j.server.rrd;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import org.neo4j.server.logging.Logger;
+
 public class ScheduledJob
 {
     private Job job;
-    private boolean running = true;
-    public Timer timer;
+    private Timer timer;
+    private Logger logger = Logger.getLogger( ScheduledJob.class );
 
-    public ScheduledJob( Job job, int runEvery_seconds )
+    public ScheduledJob( Job job, String name, int intervalInSeconds )
     {
         this.job = job;
 
-        timer = new Timer( "rrd" );
-        timer.scheduleAtFixedRate( runJob, 0, runEvery_seconds * 1000 );
+        timer = new Timer( name );
+        timer.scheduleAtFixedRate( runJob, 0, intervalInSeconds * 1000 );
     }
 
     private TimerTask runJob = new TimerTask()
     {
         public void run()
         {
-            if ( !running )
-            {
-                this.cancel();
-            } else
-            {
+            try {
                 job.run();
+            } catch(Exception e) {
+                logger.warn( e );
             }
         }
     };
 
-    public void runEveryXSeconds( int seconds )
+    public void kill()
     {
-    }
-
-    public void stop()
-    {
-        running = false;
         timer.cancel();
     }
 }

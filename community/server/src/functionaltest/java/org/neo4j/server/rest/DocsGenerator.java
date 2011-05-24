@@ -43,6 +43,7 @@ import javax.ws.rs.core.Response.Status;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientRequest;
+import com.sun.jersey.api.client.ClientRequest.Builder;
 import com.sun.jersey.api.client.ClientResponse;
 
 /**
@@ -51,6 +52,8 @@ import com.sun.jersey.api.client.ClientResponse;
  */
 public class DocsGenerator
 {
+    private static final Builder REQUEST_BUILDER = ClientRequest.create();
+
     private static final List<String> RESPONSE_HEADERS = Arrays.asList( new String[] {
             "Content-Type", "Location" } );
 
@@ -263,13 +266,11 @@ public class DocsGenerator
         ClientRequest request;
         try
         {
-            request = ClientRequest.create()
-                    .accept( accept )
+            request = REQUEST_BUILDER.accept( accept )
                     .build( new URI( uri ), method );
         }
         catch ( URISyntaxException e )
         {
-            System.out.println( "URI syntax exception: '" + uri + "'" );
             throw new RuntimeException( e );
         }
         return retrieveResponse( title, description, uri, responseCode, accept,
@@ -290,22 +291,19 @@ public class DocsGenerator
         {
             if ( payload != null )
             {
-                request = ClientRequest.create()
-                        .type( payloadType )
+                request = REQUEST_BUILDER.type( payloadType )
                         .accept( accept )
                         .entity( payload )
                         .build( new URI( uri ), method );
             }
             else
             {
-                request = ClientRequest.create()
-                        .accept( accept )
+                request = REQUEST_BUILDER.accept( accept )
                         .build( new URI( uri ), method );
             }
         }
         catch ( URISyntaxException e )
         {
-            System.out.println( "URI syntax exception: '" + uri + "'" );
             throw new RuntimeException( e );
         }
         return retrieveResponse( title, description, uri, responseCode, accept,
@@ -320,7 +318,6 @@ public class DocsGenerator
             final Response.Status responseCode, final MediaType type,
             final List<String> headerFields, final ClientRequest request )
     {
-        System.out.println( "==== Documenting: " + title );
         DocumentationData data = new DocumentationData();
         getRequestHeaders( data, request.getHeaders() );
         if ( request.getEntity() != null )
@@ -348,6 +345,7 @@ public class DocsGenerator
         {
             data.setEntity( response.getEntity( String.class ) );
         }
+        response.close();
         getResponseHeaders( data, response.getHeaders(), headerFields );
         document( data );
         return new ResponseEntity( response, data.entity );
@@ -519,7 +517,7 @@ public class DocsGenerator
 
             fw = new FileWriter( out, false );
 
-            line( fw, "[[rest-api-" + name + "]]" );
+            line( fw, "[[rest-api-" + name.replaceAll( "\\(|\\)", "" ) + "]]" );
             line( fw, "=== " + data.title + " ===" );
             line( fw, "" );
             if ( data.description != null && !data.description.isEmpty() )

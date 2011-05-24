@@ -76,7 +76,7 @@ public class ExtensionService
         }
         catch ( NotFoundException e )
         {
-            throw new NodeNotFoundException();
+            throw new NodeNotFoundException(e);
         }
     }
 
