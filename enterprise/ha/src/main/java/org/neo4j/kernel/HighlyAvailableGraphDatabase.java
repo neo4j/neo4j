@@ -526,7 +526,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         int masterForMyHighestCommonTxId = -1;
         try
         {
-            masterForMyHighestCommonTxId = nioneoDataSource.getMasterForCommittedTx( highestCommonTxId );;
+            masterForMyHighestCommonTxId = nioneoDataSource.getMasterForCommittedTx( highestCommonTxId );
         }
         catch ( IOException e )
         {

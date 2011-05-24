@@ -19,22 +19,27 @@
  */
 package org.neo4j.kernel.ha.zookeeper;
 
+import org.neo4j.com.SlaveContext;
 import org.neo4j.helpers.Pair;
 
 public class Machine
 {
-    public static final Machine NO_MACHINE = new Machine( -1, -1, 1, null );
+    public static final Machine NO_MACHINE = new Machine( -1, -1, 1, SlaveContext.EMPTY.machineId(), null );
 
     private final int machineId;
     private final int sequenceId;
     private final long lastCommittedTxId;
     private final Pair<String, Integer> server;
 
-    public Machine( int machineId, int sequenceId, long lastCommittedTxId, String server )
+    private final int masterForCommittedTxId;
+
+    public Machine( int machineId, int sequenceId, long lastCommittedTxId,
+            int masterForCommittedTxId, String server )
     {
         this.machineId = machineId;
         this.sequenceId = sequenceId;
         this.lastCommittedTxId = lastCommittedTxId;
+        this.masterForCommittedTxId = masterForCommittedTxId;
         this.server = server != null ? splitIpAndPort( server ) : null;
     }
 
@@ -46,6 +51,16 @@ public class Machine
     public long getLastCommittedTxId()
     {
         return lastCommittedTxId;
+    }
+
+    public boolean wasCommittingMaster()
+    {
+        return masterForCommittedTxId == machineId;
+    }
+    
+    public int getMasterForCommittedTxId()
+    {
+        return masterForCommittedTxId;
     }
 
     public int getSequenceId()

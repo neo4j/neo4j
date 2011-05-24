@@ -96,7 +96,7 @@ terms of the relevant Commercial Agreement.
     <dependency>
       <groupId>org.apache.zookeeper</groupId>
       <artifactId>zookeeper</artifactId>
-      <version>3.3.3</version>
+      <version>3.3.2</version>
       <exclusions>
         <exclusion>
           <groupId>log4j</groupId>

@@ -105,11 +105,11 @@ public abstract class AbstractZooKeeperManager implements Watcher
         return Pair.of( id, seq );
     }
 
-    protected long readDataAsLong( String path ) throws InterruptedException, KeeperException
+    protected Pair<Long, Integer> readDataRepresentingInstance( String path ) throws InterruptedException, KeeperException
     {
         byte[] data = getZooKeeper().getData( path, false, null );
         ByteBuffer buf = ByteBuffer.wrap( data );
-        return buf.getLong();
+        return Pair.of( buf.getLong(), buf.getInt() );
     }
 
     private void invalidateMaster()
@@ -161,7 +161,9 @@ public abstract class AbstractZooKeeperManager implements Watcher
                     info.getLastCommittedTxId(), info.getSequenceId() ) );
             if ( info.getLastCommittedTxId() >= highestTxId )
             {
-                if ( info.getLastCommittedTxId() > highestTxId || info.getSequenceId() < lowestSeq )
+                if ( info.getLastCommittedTxId() > highestTxId
+                        || info.wasCommittingMaster()
+                        || (!master.wasCommittingMaster() && info.getSequenceId() < lowestSeq ) )
                 {
                     master = info;
                     lowestSeq = info.getSequenceId();
@@ -197,10 +199,11 @@ public abstract class AbstractZooKeeperManager implements Watcher
                 {
                     int id = parsedChild.first();
                     int seq = parsedChild.other();
-                    long tx = readDataAsLong( root + "/" + child );
+                    Pair<Long, Integer> instanceData = readDataRepresentingInstance( root + "/" + child );
                     if ( !result.containsKey( id ) || seq > result.get( id ).getSequenceId() )
                     {
-                        result.put( id, new Machine( id, seq, tx, getHaServer( id, wait ) ) );
+                        result.put( id, new Machine( id, seq, instanceData.first(), instanceData.other(),
+                                getHaServer( id, wait ) ) );
                     }
                 }
                 catch ( KeeperException inner )

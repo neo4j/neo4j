@@ -32,7 +32,7 @@ public class FakeSlaveBroker extends AbstractBroker
     {
         super( myMachineId, graphDb );
         this.master = master;
-        this.masterMachine = new Machine( masterMachineId, 0, 1, null );
+        this.masterMachine = new Machine( masterMachineId, 0, 1, -1, null );
     }
 
     public Pair<Master, Machine> getMaster()

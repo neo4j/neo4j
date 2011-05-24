@@ -40,6 +40,7 @@ import org.neo4j.kernel.ha.ConnectionInformation;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.ResponseReceiver;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public class ZooClient extends AbstractZooKeeperManager
@@ -151,6 +152,10 @@ public class ZooClient extends AbstractZooKeeperManager
                 if ( path.contains( MASTER_NOTIFY_CHILD ) )
                 {
                     setDataChangeWatcher( MASTER_NOTIFY_CHILD, -1 );
+                    
+                    // This event is for the masters eyes only so it should only
+                    // be the (by zookeeper spoken) master which should make sure
+                    // it really is master.
                     if ( currentMaster.other().getMachineId() == machineId )
                     {
                         receiver.newMaster( currentMaster, new Exception() );
@@ -159,6 +164,10 @@ public class ZooClient extends AbstractZooKeeperManager
                 else if ( path.contains( MASTER_REBOUND_CHILD ) )
                 {
                     setDataChangeWatcher( MASTER_REBOUND_CHILD, -1 );
+                    
+                    // This event is for all the others after the master got the
+                    // MASTER_NOTIFY_CHILD which then shouts out to the others to
+                    // become slaves if they don't already are.
                     if ( currentMaster.other().getMachineId() != machineId )
                     {
                         receiver.newMaster( currentMaster, new Exception() );
@@ -387,12 +396,27 @@ public class ZooClient extends AbstractZooKeeperManager
             throw new ZooKeeperException( "Interrupted.", e );
         }
     }
+    
+    private int getCurrentMasterId()
+    {
+        try
+        {
+            TxIdGenerator generator = (TxIdGenerator) ((AbstractGraphDatabase)this.getGraphDb()).getConfig().getParams().get( TxIdGenerator.class );
+            return generator.getCurrentMasterId();
+        }
+        catch ( Exception e )
+        {
+            // This will happen if the graph database hasn't started yet
+            return -1;
+        }
+    }
 
     private byte[] dataRepresentingMe( long txId )
     {
-        byte[] array = new byte[8];
+        byte[] array = new byte[12];
         ByteBuffer buffer = ByteBuffer.wrap( array );
         buffer.putLong( txId );
+        buffer.putInt( getCurrentMasterId() );
         return array;
     }
 

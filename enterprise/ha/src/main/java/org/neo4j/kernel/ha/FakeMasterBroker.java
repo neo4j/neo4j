@@ -40,18 +40,18 @@ public class FakeMasterBroker extends AbstractBroker
 
     public Machine getMasterMachine()
     {
-        return new Machine( getMyMachineId(), 0, 1, null );
+        return new Machine( getMyMachineId(), 0, 1, -1, null );
     }
 
     public Pair<Master, Machine> getMaster()
     {
-        return Pair.<Master, Machine>of( null, new Machine( getMyMachineId(), 0, 1, null ) );
+        return Pair.<Master, Machine>of( null, new Machine( getMyMachineId(), 0, 1, -1, null ) );
         // throw new UnsupportedOperationException( "I am master" );
     }
 
     public Pair<Master, Machine> getMasterReally()
     {
-        return Pair.<Master, Machine>of( null, new Machine( getMyMachineId(), 0, 1, null ) );
+        return Pair.<Master, Machine>of( null, new Machine( getMyMachineId(), 0, 1, -1, null ) );
     }
 
     public boolean iAmMaster()
