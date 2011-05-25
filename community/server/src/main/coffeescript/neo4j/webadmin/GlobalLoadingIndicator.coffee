@@ -18,30 +18,17 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-define ["lib/backbone"], () ->
-
-  class ItemUrlResolver
-
-    constructor : (server) ->
-      @server = server
-
-    getNodeUrl : (id) =>
-      @server.url + "/db/data/node/" + id
-
-    getRelationshipUrl : (id) =>
-      @server.url + "/db/data/relationship/" + id
+define( 
+  [],
+  () ->
+  
+    class GlobalLoadingIndicator
       
-    getNodeIndexHitsUrl: (index,key,value) =>
-      @server.url + "/db/data/index" + index + "/" + key + "/" + value
- 
-    extractNodeId : (url) =>
-      @extractLastUrlSegment(url)
+      constructor : (@target) ->
+        
 
-    extractRelationshipId : (url) =>
-      @extractLastUrlSegment(url)
+      init : ->
+        $(window).ajaxStart () => $(@target).show()
+        $(window).ajaxStop () => $(@target).hide()
 
-    extractLastUrlSegment : (url) =>
-      if url.substr(-1) is "/"
-        url = url.substr(0, url.length - 1)
-
-      url.substr(url.lastIndexOf("/") + 1)
+)

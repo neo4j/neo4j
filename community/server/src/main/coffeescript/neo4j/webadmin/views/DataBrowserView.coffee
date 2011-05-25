@@ -21,13 +21,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 define(
   ['neo4j/webadmin/data/Search',
    'neo4j/webadmin/data/ItemUrlResolver',
-   'neo4j/webadmin/security/HtmlEscaper',
    './databrowser/TabularView',
    './databrowser/VisualizedView',
    './databrowser/CreateRelationshipDialog',
    'neo4j/webadmin/views/View',
    'neo4j/webadmin/templates/databrowser/base','lib/backbone'], 
-  (Search, ItemUrlResolver, HtmlEscaper, TabularView, VisualizedView, CreateRelationshipDialog, View, template) ->
+  (Search, ItemUrlResolver, TabularView, VisualizedView, CreateRelationshipDialog, View, template) ->
 
     class DataBrowserView extends View
       
@@ -38,13 +37,12 @@ define(
         "click #data-create-node" : "createNode"
         "click #data-create-relationship" : "createRelationship"
         "click #data-switch-view" : "switchView"
+        "click #data-execute-console" : "forceSearch"
 
       initialize : (options)->
         @dataModel = options.dataModel
         @appState = options.state
         @server = options.state.getServer()
-
-        @htmlEscaper = new HtmlEscaper
 
         @urlResolver = new ItemUrlResolver(@server)
         
@@ -53,7 +51,7 @@ define(
 
       render : =>
         $(@el).html @template( 
-          query : @htmlEscaper.escape(@dataModel.getQuery())
+          query : @dataModel.getQuery()
           viewType : @viewType
           dataType : @dataModel.getDataType() )
         @renderDataView()
@@ -68,6 +66,10 @@ define(
 
       search : (ev) =>
         @dataModel.setQuery( $("#data-console",@el).val() )
+
+      forceSearch : (ev) =>
+        @dataModel.setQuery( $("#data-console",@el).val(), false, { force:true, silent:true})
+        @dataModel.trigger("change:query")
 
       createNode : =>
         @server.node({}).then (node) =>

@@ -21,9 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 define(
   ['neo4j/webadmin/templates/base',
    'neo4j/webadmin/views/View',
-   "neo4j/webadmin/ui/LoadingIndicator"
    'lib/backbone'], 
-  (template, View, LoadingIndicator) ->
+  (template, View) ->
   
     class BaseView extends View
       
@@ -32,22 +31,6 @@ define(
       initialize : (options) =>
         @appState = options.appState
         @appState.bind 'change:mainView', @mainViewChanged
-
-        $(window).bind("ajaxStart", @ajaxStart)
-        $(window).bind("ajaxStop", @ajaxStop)
-
-      ajaxStart : =>
-        # Avoid showing loader for fast requests
-        @loadingTimeout = setTimeout @showLoading, 300
-        
-      showLoading : =>
-        if @loadingIndicator?
-          @loadingIndicator.show()
-
-      ajaxStop : =>
-        clearTimeout @loadingTimeout
-        if @loadingIndicator?
-          @loadingIndicator.hide()
 
       mainViewChanged : (event) =>
         if @mainView?
@@ -60,15 +43,12 @@ define(
           { label : "Dashboard",   subtitle:"Overview",url : "#",           current: location.hash is "" }
           { label : "Data browser",subtitle:"Explore and edit",url : "#/data/" ,    current: location.hash.indexOf("#/data/") is 0 }
           { label : "Console",     subtitle:"Power tool",url : "#/console/" , current: location.hash is "#/console/" }
-          { label : "Server info", subtitle:"Details",url : "#/info/" ,    current: location.hash is "#/info/" } ] )
+          { label : "Server info", subtitle:"Details",url : "#/info/" ,    current: location.hash is "#/info/" } 
+          { label : "Index manager", subtitle:"Indexing overview",url : "#/index/" ,    current: location.hash is "#/index/" } ] )
 
         if @mainView?
           @mainView.attach($("#contents"))
           @mainView.render()
-
-        @loadingIndicator = new LoadingIndicator
-        $("#global-loading-indicator").append(@loadingIndicator.el)
-
         return this
 
       remove : =>

@@ -18,22 +18,21 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-define ['lib/backbone'], () ->
+define(
+  ['neo4j/webadmin/templates/databrowser/nodeList',
+   'neo4j/webadmin/views/View',
+   'lib/backbone'], 
+  (template, View) ->
   
-  class HtmlEscaper
-    
-    escape : (text) =>
-      return @replaceAll(text, [
-        [/&/g,"&amp;"]
-        [/</g,"&lt;"]
-        [/>/g,"&gt;"]
-        [/"/g,"&quot;"]
-        [/\ /g,"&nbsp;"]
-        [/'/g,"&#x27;"]
-        [/\//g,"&#x2F;"]])
+    class NodeListView extends View
 
-    replaceAll : (text, replacements) =>
-      for replacement in replacements
-        text = text.replace replacement[0], replacement[1]
-      return text
+      render : =>
+        $(@el).html(template(
+          nodeList : @dataModel.getData()    
+        ))
+        return this
+      
+      setDataModel : (dataModel) =>
+        @dataModel = dataModel
 
+)
