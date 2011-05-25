@@ -17,18 +17,37 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.lab.cypher.commands
+package org.neo4j.lab.cypher
 
-abstract sealed class StartItem(val variable:String)
+import commands._
+import org.junit.Test
+import org.neo4j.graphdb.Node
+import org.junit.Assert._
 
-abstract class RelationshipStartItem(varName:String) extends StartItem(varName)
+/**
+ * Created by Andres Taylor
+ * Date: 5/24/11
+ * Time: 16:53 
+ */
 
-abstract class NodeStartItem(varName:String) extends StartItem(varName)
+class SyntaxErrorTests extends ExecutionEngineTestBase {
+  @Test def returnNodeThatsNotThere() {
+    val node: Node = createNode()
 
-case class RelationshipById(varName:String, id: Long*) extends RelationshipStartItem(varName)
+    val query = Query(
+      Return(EntityOutput("bar")),
+      Start(NodeById("foo", node.getId)))
 
-case class NodeByIndex(varName:String, idxName: String, key:String, value: Any) extends NodeStartItem(varName)
+    expectedError(query, """Unknown variable "bar".""")
+  }
 
-case class RelationshipByIndex(varName:String, idxName: String, value: Any) extends RelationshipStartItem(varName)
 
-case class NodeById(varName:String, id: Long*) extends NodeStartItem(varName)
+  def expectedError(query: Query, message: String) {
+    try {
+      execute(query).toList
+      fail("Did not get the expected syntax error")
+    } catch {
+      case x: SyntaxError => assertEquals(x.getMessage, message)
+    }
+  }
+}

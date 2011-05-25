@@ -27,20 +27,7 @@ import java.lang.String
 import org.junit.{Ignore, After, Before, Test}
 import org.neo4j.graphdb.{Relationship, Direction, DynamicRelationshipType, Node}
 
-class ExecutionEngineTest {
-  var graph: AbstractGraphDatabase = null
-  var engine: ExecutionEngine = null
-  var refNode: Node = null
-
-  @Before def init() {
-    graph = new ImpermanentGraphDatabase()
-    engine = new ExecutionEngine(graph)
-    refNode = graph.getReferenceNode
-  }
-
-  @After def cleanUp() {
-    graph.shutdown()
-  }
+class ExecutionEngineTest extends ExecutionEngineTestBase {
 
   @Test def shouldGetReferenceNode() {
     val query = Query(
@@ -307,47 +294,5 @@ class ExecutionEngineTest {
     val result = execute(query)
 
     assertEquals(List(Map("a" -> refNode, "count(*)" -> 2)), result.toList)
-  }
-
-  def execute(query: Query) = {
-    val result = engine.execute(query)
-    println(query)
-    result
-  }
-
-  def indexNode(n: Node, idxName: String, key: String, value: String) {
-    inTx(() => n.getGraphDatabase.index.forNodes(idxName).add(n, key, value))
-  }
-
-  def createNode(): Node = createNode(Map[String, Any]())
-
-  def inTx[T](f: () => T): T = {
-    val tx = graph.beginTx
-
-    val result = f.apply()
-
-    tx.success()
-    tx.finish()
-
-    result
-  }
-
-
-  def relate(n1: Node, n2: Node, relType: String, props: Map[String, Any] = Map()): Relationship = {
-    inTx(() => {
-      val r = n1.createRelationshipTo(n2, DynamicRelationshipType.withName(relType))
-
-      props.foreach((kv) => r.setProperty(kv._1, kv._2))
-      r
-    })
-  }
-
-  def createNode(props: Map[String, Any]): Node = {
-    inTx(() => {
-      val node = graph.createNode()
-
-      props.foreach((kv) => node.setProperty(kv._1, kv._2))
-      node
-    }).asInstanceOf[Node]
   }
 }

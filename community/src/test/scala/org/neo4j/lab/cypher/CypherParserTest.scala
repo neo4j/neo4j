@@ -219,4 +219,22 @@ class CypherParserTest {
     )
   }
 
+  @Test def nestedBooleanOperatorsAndParentesis() {
+    testQuery(
+      """start n = node(1,2,3) where (n.animal = "monkey" and n.food = "banana") or (n.animal = "cow" and n.food="grass") return n""",
+      Query(
+        Return(EntityOutput("n")),
+        Start(NodeById("n", 1,2,3)),
+        Or(
+          And(
+            StringEquals("n", "animal", "monkey"),
+            StringEquals("n", "food", "banana")),
+          And(
+            StringEquals("n", "animal", "cow"),
+            StringEquals("n", "food", "grass"))
+        )
+      )
+    )
+  }
+
 }

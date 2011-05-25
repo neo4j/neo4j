@@ -26,48 +26,8 @@ import org.neo4j.graphdb._
 import org.neo4j.lab.cypher.filters._
 import org.neo4j.graphmatching.{CommonValueMatchers, PatternRelationship}
 
-/**
- * Created by Andres Taylor
- * Date: 4/16/11
- * Time: 09:44
- */
 class ExecutionEngine(val graph: GraphDatabaseService) {
   type MapTransformer = (Map[String, Any]) => Map[String, Any]
-
-  def createFilters(where: Option[Clause], patternKeeper: PatternKeeper): Filter = {
-
-    def createFilter(clause: Clause): Filter = clause match {
-      case And(a, b) => new AndFilter(createFilter(a), createFilter(b))
-      case Or(a, b) => new OrFilter(createFilter(a), createFilter(b))
-      case StringEquals(variable, property, value) => new EqualsFilter(variable, property, value)
-    }
-
-    def addFiltersToPattern(clause: Clause, patternKeeper: PatternKeeper) {
-      clause match {
-
-        case And(a, b) => {
-          addFiltersToPattern(a, patternKeeper)
-          addFiltersToPattern(b, patternKeeper)
-        }
-
-        case StringEquals(variable, property, value) => {
-          val patternPart = patternKeeper.getOrThrow(variable)
-          patternPart.addPropertyConstraint(property, CommonValueMatchers.exact(value))
-        }
-      }
-    }
-
-    where match {
-      case None => new TrueFilter()
-
-      case Some(clause) => if (clause.hasOrs) {   //OR is not handled by the graph-matcher. If we have at least one
-        createFilter(clause)                      //OR, just create a filter. Otherwise, let the matcher filter
-      } else {
-        addFiltersToPattern(clause, patternKeeper)
-        new TrueFilter()
-      }
-    }
-  }
 
   def execute(query: Query): Projection = query match {
     case Query(select, start, matching, where, aggregation) => {
@@ -76,23 +36,64 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
 
       addStartItemVariables(start, patternKeeper)
 
-      val projections = createProjectionTransformers(select)
-
       createPattern(matching, patternKeeper)
 
       val filter = createFilters(where, patternKeeper)
 
+      val projections = createProjectionTransformers(select, patternKeeper)
+
       new Projection(patternKeeper.nodesMap, patternKeeper.relationshipsMap, sourcePump, projections, filter)
+    }
+  }
+
+  def createFilters(where: Option[Clause], patternKeeper: PatternKeeper): Filter = {
+
+
+    where match {
+      case None => new TrueFilter()
+
+      /*
+       Boolean OR is not handled by the graph-matcher. If we have at least one
+       OR, just create a filter. Otherwise, let the matcher filter the results for us (faster)
+      */
+      case Some(clause) => if (clause.hasOrs) {
+        //
+        createFilter(clause)
+      } else {
+        addFiltersToPattern(clause, patternKeeper)
+        new TrueFilter()
+      }
+    }
+  }
+
+  def createFilter(clause: Clause): Filter = clause match {
+    case And(a, b) => new AndFilter(createFilter(a), createFilter(b))
+    case Or(a, b) => new OrFilter(createFilter(a), createFilter(b))
+    case StringEquals(variable, property, value) => new EqualsFilter(variable, property, value)
+  }
+
+  def addFiltersToPattern(clause: Clause, patternKeeper: PatternKeeper) {
+    clause match {
+
+      case And(a, b) => {
+        addFiltersToPattern(a, patternKeeper)
+        addFiltersToPattern(b, patternKeeper)
+      }
+
+      case StringEquals(variable, property, value) => {
+        val patternPart = patternKeeper.getOrThrow(variable)
+        patternPart.addPropertyConstraint(property, CommonValueMatchers.exact(value))
+      }
     }
   }
 
   def addStartItemVariables(start: Start, patternKeeper: PatternKeeper) {
     start.startItems.foreach((item) => {
       item match {
-        case relItem: RelationshipStartItem => patternKeeper.getOrCreateRelationship(item.placeholderName)
-        case nodeItem: NodeStartItem => patternKeeper.getOrCreateNode(item.placeholderName)
+        case relItem: RelationshipStartItem => patternKeeper.getOrCreateRelationship(item.variable)
+        case nodeItem: NodeStartItem => patternKeeper.getOrCreateNode(item.variable)
       }
-      patternKeeper.getOrCreateNode(item.placeholderName)
+      patternKeeper.getOrCreateNode(item.variable)
     })
   }
 
@@ -120,12 +121,21 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
     }
   }
 
-  def createProjectionTransformers(select: Return): Seq[MapTransformer] = select.returnItems.map((selectItem) => {
-    selectItem match {
-      case PropertyOutput(nodeName, propName) => nodePropertyOutput(nodeName, propName) _
-      case EntityOutput(nodeName) => nodeOutput(nodeName) _
-    }
-  })
+  def createProjectionTransformers(select: Return, patternKeeper: PatternKeeper): Seq[MapTransformer] = {
+
+    select.returnItems.map((selectItem) => {
+      selectItem match {
+        case PropertyOutput(nodeName, propName) => {
+          patternKeeper.assertHas(nodeName)
+          nodePropertyOutput(nodeName, propName) _
+        }
+        case EntityOutput(nodeName) => {
+          patternKeeper.assertHas(nodeName)
+          nodeOutput(nodeName) _
+        }
+      }
+    })
+  }
 
   def nodeOutput(column: String)(m: Map[String, Any]): Map[String, Any] = Map(column -> m.getOrElse(column, throw new NotFoundException))
 

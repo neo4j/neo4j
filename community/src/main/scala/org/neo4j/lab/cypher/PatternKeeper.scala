@@ -24,6 +24,7 @@ import collection.immutable.Map
 import org.neo4j.graphmatching.{PatternRelationship, AbstractPatternObject, PatternNode}
 import scala.Some
 import org.apache.commons.lang.NotImplementedException
+import java.lang.Boolean
 
 /**
  * Created by Andres Taylor
@@ -75,5 +76,7 @@ class PatternKeeper {
 
   def nodesMap: Map[String, PatternNode] = nodes.toMap
   def relationshipsMap : Map[String, PatternRelationship] = rels.toMap
+
+  def assertHas(variable:String) { if (!(nodes.contains(variable) || rels.contains(variable))) throw new SyntaxError("Unknown variable \""+ variable +"\".") }
 
 }
