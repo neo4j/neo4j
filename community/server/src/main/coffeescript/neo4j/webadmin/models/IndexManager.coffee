@@ -33,13 +33,13 @@ define ['lib/backbone'], () ->
     
     createNodeIndex: (opts) =>
       name = opts.name
-      @server.index.createNodeIndex(name, {}).then (index) => 
+      @server.index.createNodeIndex(name).then (index) => 
         @get("nodeIndexes").push index
         @trigger "change"
 
     createRelationshipIndex : (opts) =>
       name = opts.name
-      @server.index.createRelationshipIndex(name, {}).then (index) => 
+      @server.index.createRelationshipIndex(name).then (index) => 
         @get("relationshipIndexes").push index
         @trigger "change"
 

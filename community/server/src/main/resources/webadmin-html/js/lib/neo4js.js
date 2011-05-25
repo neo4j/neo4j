@@ -1008,6 +1008,8 @@ neo4j.services.MonitorService.prototype.getDataBetween=neo4j.Service.resourceFac
 neo4j.index=neo4j.index||{};
 neo4j.index.Index=function(a,b){this.db=a;
 this.name=b;
+this.config=null;
+this.provider="N/A";
 _.bindAll(this,"query","exactQuery","index","unindex")
 };
 _.extend(neo4j.index.Index.prototype,{getUriFor:function(a){return""
@@ -1015,6 +1017,9 @@ _.extend(neo4j.index.Index.prototype,{getUriFor:function(a){return""
 },getType:function(){return""
 },createObjectFromDefinition:function(a){},getIdFor:function(a){return a.then(function(c,b){b(c.getId())
 })
+},setConfig:function(a){this.config=a
+},configAvailable:function(){return this.config!==null
+},getConfig:function(){return this.config
 },query:function(b){var a=this;
 return this.db.getServiceDefinition().then(function(e,d,c){a.db.web.get(e[a.getType()]+"/"+a.name,{query:b},function(f){var h=[];
 for(var j=0,g=f.length;
@@ -1093,22 +1098,27 @@ _.extend(neo4j.index.Indexes.prototype,{getAllNodeIndexes:function(){return this
 return this.db.getServiceDefinition().then(function(f,e,d){a.web.get(f[c],function(m){var j=[],h=m===null?[]:_(m).keys();
 for(var k=0,g=h.length;
 k<g;
-k++){j.push(b._getOrCreateLocalIndexObject(c,h[k]))
+k++){j.push(b._getOrCreateLocalIndexObject(c,h[k],m[h[k]]))
 }e(j)
 },d)
 })
-},_createIndex:function(e,d,c){var c=c||{},a=this.db,b=this;
-return this.db.getServiceDefinition().then(function(h,g,f){a.web.post(h[e],{name:d,config:c},function(i){g(b._getOrCreateLocalIndexObject(e,d))
+},_createIndex:function(e,d,c){var c=c||{provider:"lucene",type:"exact"},a=this.db,b=this;
+return this.db.getServiceDefinition().then(function(h,g,f){a.web.post(h[e],{name:d,config:c},function(i){g(b._getOrCreateLocalIndexObject(e,d,c))
 },f)
 })
 },_removeIndex:function(c,b){var a=this.db;
 return this.db.getServiceDefinition().then(function(f,e,d){a.web.del(f[c]+"/"+b,e,d)
 })
-},_getOrCreateLocalIndexObject:function(c,b){if(typeof(this._cache[c])=="undefined"){this._cache[c]={}
-}if(typeof(this._cache[c][b])=="undefined"){if(c==="relationship_index"){var a=new neo4j.index.RelationshipIndex(this.db,b)
-}else{var a=new neo4j.index.NodeIndex(this.db,b)
-}this._cache[c][b]=a
-}return this._cache[c][b]
+},_getOrCreateLocalIndexObject:function(d,c,b){var b=b||null;
+if(typeof(this._cache[d])=="undefined"){this._cache[d]={}
+}if(typeof(this._cache[d][c])=="undefined"){if(d==="relationship_index"){var a=new neo4j.index.RelationshipIndex(this.db,c)
+}else{var a=new neo4j.index.NodeIndex(this.db,c)
+}this._cache[d][c]=a
+}if(b!=null){if(b.provider){this._cache[d][c].provider=b.provider;
+delete (b.provider)
+}if(b.template){delete (b.template)
+}this._cache[d][c].setConfig(b)
+}return this._cache[d][c]
 }});
 neo4j.GraphDatabaseManager=function(a){_.bindAll(this,"discoverServices");
 this.db=a;

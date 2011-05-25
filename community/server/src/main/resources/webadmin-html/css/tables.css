@@ -49,10 +49,13 @@ table.data-table h3 {
   text-shadow: 1px -1px 0 #ddd;
 }
 
+
+
 table.data-table tr td.value {
   font-size: 14px;
   padding: 10px 5px;
   font-weight:bold;
+  line-height: 25px;
 }
 
 table.data-table .small {
