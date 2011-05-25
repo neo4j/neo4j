@@ -53,6 +53,7 @@ public class ZooClient extends AbstractZooKeeperManager
 
     private long committedTx;
 
+    private final Object keeperStateMonitor = new Object();
     private volatile KeeperState keeperState = KeeperState.Disconnected;
     private volatile boolean shutdown = false;
     private final RootPathGetter rootPathGetter;
@@ -194,13 +195,13 @@ public class ZooClient extends AbstractZooKeeperManager
         }
         long startTime = System.currentTimeMillis();
         long currentTime = startTime;
-        synchronized ( keeperState )
+        synchronized ( keeperStateMonitor )
         {
             do
             {
                 try
                 {
-                    keeperState.wait( 250 );
+                    keeperStateMonitor.wait( 250 );
                 }
                 catch ( InterruptedException e )
                 {
@@ -422,7 +423,6 @@ public class ZooClient extends AbstractZooKeeperManager
         }
         catch ( Throwable t )
         {
-            t.printStackTrace();
             throw new ZooKeeperException( "Unknown setup error", t );
         }
     }
