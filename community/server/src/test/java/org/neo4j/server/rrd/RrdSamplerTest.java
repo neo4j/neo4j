@@ -21,7 +21,7 @@ package org.neo4j.server.rrd;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.never;;
+import static org.mockito.Mockito.never;
 
 import javax.management.MalformedObjectNameException;
 
