@@ -69,6 +69,7 @@ public class DatabaseMetadataServiceFunctionalTest
         helper.createRelationship( "bar" );
 
         gen.create()
+                .expectedStatus( 200 )
                 .get( functionalTestHelper.dataUri() + "relationship/types" );
     }
 }

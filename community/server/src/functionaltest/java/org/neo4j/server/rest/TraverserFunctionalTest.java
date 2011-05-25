@@ -168,7 +168,7 @@ public class TraverserFunctionalTest {
                         "position.endNode().getProperty('name').toLowerCase().contains('t')" ),
                 "relationships", rels, "max depth", 3 ) );
         String entity = gen.create()
-                .expectedStatus( Response.Status.OK )
+                .expectedStatus( 200 )
                 .payload( description )
                 .post( functionalTestHelper.nodeUri( startNode )
                        + "/traverse/node" )

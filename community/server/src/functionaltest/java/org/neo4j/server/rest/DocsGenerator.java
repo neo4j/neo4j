@@ -65,7 +65,7 @@ public class DocsGenerator
 
     private final String title;
     private String description = null;
-    private Response.Status expectedResponseStatus = Response.Status.OK;
+    private int expectedResponseStatus = -1;
     private MediaType expectedMediaType = MediaType.APPLICATION_JSON_TYPE;
     private MediaType payloadMediaType = MediaType.APPLICATION_JSON_TYPE;
     private final List<String> expectedHeaderFields = new ArrayList<String>();
@@ -136,7 +136,7 @@ public class DocsGenerator
      * @param expectedResponseStatus the expected response status
      */
     public DocsGenerator expectedStatus(
-            final Response.Status expectedResponseStatus )
+            final int expectedResponseStatus )
     {
         this.expectedResponseStatus = expectedResponseStatus;
         return this;
@@ -253,7 +253,7 @@ public class DocsGenerator
      */
     private ResponseEntity retrieveResponseFromRequest( final String title,
             final String description, final String method, final String uri,
-            final Status responseCode, final MediaType accept,
+            final int responseCode, final MediaType accept,
             final List<String> headerFields )
     {
         ClientRequest request;
@@ -276,7 +276,7 @@ public class DocsGenerator
     private ResponseEntity retrieveResponseFromRequest( final String title,
             final String description, final String method, final String uri,
             final String payload, final MediaType payloadType,
-            final Status responseCode, final MediaType accept,
+            final int responseCode, final MediaType accept,
             final List<String> headerFields )
     {
         ClientRequest request;
@@ -308,7 +308,7 @@ public class DocsGenerator
      */
     private ResponseEntity retrieveResponse( final String title,
             final String description, final String uri,
-            final Response.Status responseCode, final MediaType type,
+            final int responseCode, final MediaType type,
             final List<String> headerFields, final ClientRequest request )
     {
         DocumentationData data = new DocumentationData();
@@ -319,7 +319,7 @@ public class DocsGenerator
         }
         Client client = new Client();
         ClientResponse response = client.handle( request );
-        assertEquals( responseCode.getStatusCode(), response.getStatus() );
+        assertEquals( responseCode, response.getStatus() );
         if ( response.getType() != null )
         {
             assertEquals( type, response.getType() );
@@ -423,7 +423,7 @@ public class DocsGenerator
         public String description;
         public String uri;
         public String method;
-        public Status status;
+        public int status;
         public String entity;
         public Map<String, String> requestHeaders;
         public Map<String, String> responseHeaders;
@@ -453,7 +453,7 @@ public class DocsGenerator
             this.method = method;
         }
 
-        public void setStatus( final Status responseCode )
+        public void setStatus( final int responseCode )
         {
             this.status = responseCode;
 
@@ -534,9 +534,8 @@ public class DocsGenerator
             line( fw, "" );
             line( fw, "_Example response_" );
             line( fw, "" );
-            line( fw, "* *+" + data.status.getStatusCode() + ":+* +"
-                      + data.status.name()
-                              .replace( '_', ' ' ) + "+" );
+            line( fw, "* *+" + data.status + ":+* +"
+                      + Response.Status.fromStatusCode( data.status ).toString());
             if ( data.responseHeaders != null )
             {
                 for ( Entry<String, String> header : data.responseHeaders.entrySet() )

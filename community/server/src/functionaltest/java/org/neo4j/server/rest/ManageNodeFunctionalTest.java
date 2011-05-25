@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 
 import org.junit.After;
 import org.junit.Before;
@@ -88,7 +87,7 @@ public class ManageNodeFunctionalTest
     public void shouldGet201WhenCreatingNode() throws Exception
     {
         ClientResponse response = gen.create()
-                .expectedStatus( Response.Status.CREATED )
+                .expectedStatus( 201 )
                 .expectedHeader( "Location" )
                 .post( functionalTestHelper.nodeUri() )
                 .response();
@@ -106,7 +105,7 @@ public class ManageNodeFunctionalTest
     {
         ClientResponse response = gen.create()
                 .payload( "{\"foo\" : \"bar\"}" )
-                .expectedStatus( Response.Status.CREATED )
+                .expectedStatus( 201 )
                 .expectedHeader( "Location" )
                 .expectedHeader( "Content-Length" )
                 .post( functionalTestHelper.nodeUri() )
@@ -127,7 +126,7 @@ public class ManageNodeFunctionalTest
     {
         gen.create()
                 .payload( "{\"foo\":null}" )
-                .expectedStatus( Response.Status.BAD_REQUEST )
+                .expectedStatus( 400 )
                 .post( functionalTestHelper.nodeUri() );
     }
 
@@ -212,7 +211,7 @@ public class ManageNodeFunctionalTest
     public void shouldRespondWith204WhenNodeDeleted() throws Exception
     {
         gen.create()
-                .expectedStatus( Response.Status.NO_CONTENT )
+                .expectedStatus( 204 )
                 .delete( functionalTestHelper.dataUri() + "node/" + helper.createNode() );
     }
 
@@ -246,7 +245,7 @@ public class ManageNodeFunctionalTest
         assertNotNull( jsonMap.get( "message" ) );
 
         gen.create()
-                .expectedStatus( Response.Status.CONFLICT )
+                .expectedStatus( 409 )
                 .delete( functionalTestHelper.dataUri() + "node/" + id );
     }
 

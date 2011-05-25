@@ -49,24 +49,29 @@ public class RemoveNodePropertiesFunctionalTest
 
     public @Rule
     DocumentationGenerator gen = new DocumentationGenerator();
-    
+
     @Before
-    public void setupServer() throws IOException {
-        server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
+    public void setupServer() throws IOException
+    {
+        server = ServerBuilder.server()
+                .withRandomDatabaseDir()
+                .withPassingStartupHealthcheck()
+                .build();
         server.start();
-        functionalTestHelper = new FunctionalTestHelper(server);
+        functionalTestHelper = new FunctionalTestHelper( server );
         helper = functionalTestHelper.getGraphDbHelper();
     }
 
     @After
-    public void stopServer() {
+    public void stopServer()
+    {
         server.stop();
         server = null;
     }
 
     private String getPropertiesUri( final long nodeId )
     {
-        return functionalTestHelper.nodePropertiesUri(nodeId);
+        return functionalTestHelper.nodePropertiesUri( nodeId );
     }
 
     @Test
@@ -93,22 +98,25 @@ public class RemoveNodePropertiesFunctionalTest
         map.put( "jim", "tobias" );
         helper.setNodeProperties( nodeId, map );
         gen.create()
-                .expectedStatus( Response.Status.NO_CONTENT )
+                .expectedStatus( 204 )
                 .delete( functionalTestHelper.nodePropertiesUri( nodeId ) );
     }
 
     @Test
     public void shouldReturn404WhenPropertiesSentToANodeWhichDoesNotExist()
     {
-        ClientResponse response = CLIENT.resource( getPropertiesUri( 999999 ) ).type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON )
-        .delete( ClientResponse.class );
+        ClientResponse response = CLIENT.resource( getPropertiesUri( 999999 ) )
+                .type( MediaType.APPLICATION_JSON )
+                .accept( MediaType.APPLICATION_JSON )
+                .delete( ClientResponse.class );
         assertEquals( 404, response.getStatus() );
         response.close();
     }
 
     private ClientResponse removeNodePropertiesOnServer( final long nodeId )
     {
-        return CLIENT.resource( getPropertiesUri( nodeId ) ).delete( ClientResponse.class );
+        return CLIENT.resource( getPropertiesUri( nodeId ) )
+                .delete( ClientResponse.class );
     }
 
     @Test
@@ -138,19 +146,22 @@ public class RemoveNodePropertiesFunctionalTest
     @Test
     public void shouldReturn404WhenPropertySentToANodeWhichDoesNotExist()
     {
-        ClientResponse response = CLIENT.resource( getPropertyUri( 999999, "foo" ) ).type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON )
-        .delete( ClientResponse.class );
+        ClientResponse response = CLIENT.resource( getPropertyUri( 999999, "foo" ) )
+                .type( MediaType.APPLICATION_JSON )
+                .accept( MediaType.APPLICATION_JSON )
+                .delete( ClientResponse.class );
         assertEquals( 404, response.getStatus() );
         response.close();
     }
 
     private String getPropertyUri( final long nodeId, final String key )
     {
-        return functionalTestHelper.nodePropertyUri(nodeId, key);
+        return functionalTestHelper.nodePropertyUri( nodeId, key );
     }
 
     private ClientResponse removeNodePropertyOnServer( final long nodeId, final String key )
     {
-        return CLIENT.resource( getPropertyUri( nodeId, key ) ).delete( ClientResponse.class );
+        return CLIENT.resource( getPropertyUri( nodeId, key ) )
+                .delete( ClientResponse.class );
     }
 }

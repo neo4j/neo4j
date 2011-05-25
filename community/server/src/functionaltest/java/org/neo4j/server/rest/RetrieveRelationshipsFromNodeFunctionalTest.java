@@ -102,6 +102,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingAllRelationshipsForANode() throws JsonParseException
     {
         String entity = gen.create()
+                .expectedStatus( 200 )
                 .get( functionalTestHelper.nodeUri() + "/"
                       + nodeWithRelationships + "/relationships" + "/all" )
                 .entity();
@@ -116,6 +117,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingIncomingRelationshipsForANode() throws JsonParseException
     {
         String entity = gen.create()
+                .expectedStatus( 200 )
                 .get( functionalTestHelper.nodeUri() + "/"
                       + nodeWithRelationships + "/relationships" + "/in" )
                 .entity();
@@ -130,6 +132,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingOutgoingRelationshipsForANode() throws JsonParseException
     {
         String entity = gen.create()
+                .expectedStatus( 200 )
                 .get( functionalTestHelper.nodeUri() + "/"
                       + nodeWithRelationships + "/relationships" + "/out" )
                 .entity();
@@ -147,6 +150,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingAllTypedRelationshipsForANode() throws JsonParseException
     {
         String entity = gen.create()
+                .expectedStatus( 200 )
                 .get( functionalTestHelper.nodeUri() + "/"
                       + nodeWithRelationships + "/relationships"
                       + "/all/LIKES&HATES" )
@@ -182,6 +186,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     public void shouldRespondWith200AndEmptyListOfRelationshipRepresentationsWhenGettingAllRelationshipsForANodeWithoutRelationships() throws JsonParseException
     {
         String entity = gen.create()
+                .expectedStatus( 200 )
                 .get( functionalTestHelper.nodeUri() + "/"
                       + nodeWithoutRelationships + "/relationships" + "/all" )
                 .entity();
