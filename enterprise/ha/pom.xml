@@ -58,16 +58,6 @@ terms of the relevant Commercial Agreement.
     </plugins>
   </build>
 
-  <repositories>
-    <repository>
-      <id>repository.jboss.org</id>
-      <url>http://repository.jboss.org/nexus/content/groups/public/</url>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
-
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
@@ -98,7 +88,6 @@ terms of the relevant Commercial Agreement.
       <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
-    <!--dependency> <groupId>org.neo4j</groupId> <artifactId>neo4j-index</artifactId> <version>1.2-SNAPSHOT</version> </dependency -->
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-lucene-index</artifactId>
