@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.transaction.XidImpl;
 
 public class LogIoUtils
 {
-    private static final short CURRENT_FORMAT_VERSION = ( (short) LogEntry.CURRENT_VERSION ) & 0xFF;
+    private static final short CURRENT_FORMAT_VERSION = ( LogEntry.CURRENT_VERSION ) & 0xFF;
 
     public static long[] readLogHeader( ByteBuffer buffer, ReadableByteChannel channel,
             boolean strict ) throws IOException
@@ -72,30 +72,36 @@ public class LogIoUtils
     {
         try
         {
-            byte entry = readNextByte( buffer, channel );
-            switch ( entry )
-            {
-                case LogEntry.TX_START:
-                    return readTxStartEntry( buffer, channel );
-                case LogEntry.TX_PREPARE:
-                    return readTxPrepareEntry( buffer, channel );
-                case LogEntry.TX_1P_COMMIT:
-                    return readTxOnePhaseCommitEntry( buffer, channel );
-                case LogEntry.TX_2P_COMMIT:
-                    return readTxTwoPhaseCommitEntry( buffer, channel );
-                case LogEntry.COMMAND:
-                    return readTxCommandEntry( buffer, channel, cf );
-                case LogEntry.DONE:
-                    return readTxDoneEntry( buffer, channel );
-                case LogEntry.EMPTY:
-                    return null;
-                default:
-                    throw new IOException( "Unknown entry[" + entry + "]" );
-            }
+            return readLogEntry( buffer, channel, cf );
         }
         catch ( ReadPastEndException e )
         {
             return null;
+        }
+    }
+
+    public static LogEntry readLogEntry( ByteBuffer buffer, ReadableByteChannel channel, XaCommandFactory cf )
+            throws IOException, ReadPastEndException
+    {
+        byte entry = readNextByte( buffer, channel );
+        switch ( entry )
+        {
+            case LogEntry.TX_START:
+                return readTxStartEntry( buffer, channel );
+            case LogEntry.TX_PREPARE:
+                return readTxPrepareEntry( buffer, channel );
+            case LogEntry.TX_1P_COMMIT:
+                return readTxOnePhaseCommitEntry( buffer, channel );
+            case LogEntry.TX_2P_COMMIT:
+                return readTxTwoPhaseCommitEntry( buffer, channel );
+            case LogEntry.COMMAND:
+                return readTxCommandEntry( buffer, channel, cf );
+            case LogEntry.DONE:
+                return readTxDoneEntry( buffer, channel );
+            case LogEntry.EMPTY:
+                return null;
+            default:
+                throw new IOException( "Unknown entry[" + entry + "]" );
         }
     }
 
@@ -240,7 +246,7 @@ public class LogIoUtils
         return readIntoBufferAndFlip( buf, channel, 8 ).getLong();
     }
 
-    private static byte readNextByte( ByteBuffer buf, ReadableByteChannel channel )
+    public static byte readNextByte( ByteBuffer buf, ReadableByteChannel channel )
             throws IOException, ReadPastEndException
     {
         return readIntoBufferAndFlip( buf, channel, 1 ).get();
@@ -258,7 +264,7 @@ public class LogIoUtils
         buf.flip();
         return buf;
     }
-    
+
     public static void moveAllLogicalLogs( File storeDir, String subDirectoryName )
     {
         File subdir = new File( storeDir, subDirectoryName );
