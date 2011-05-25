@@ -219,12 +219,20 @@ class CypherParserTest {
     )
   }
 
+  @Test def nullableProperty() {
+    testQuery(
+      "start a = node(1) return a.name?",
+      Query(
+        Return(NullablePropertyOutput("a", "name")),
+        Start(NodeById("a", 1))))
+  }
+
   @Test def nestedBooleanOperatorsAndParentesis() {
     testQuery(
       """start n = node(1,2,3) where (n.animal = "monkey" and n.food = "banana") or (n.animal = "cow" and n.food="grass") return n""",
       Query(
         Return(EntityOutput("n")),
-        Start(NodeById("n", 1,2,3)),
+        Start(NodeById("n", 1, 2, 3)),
         Or(
           And(
             PropertyEquals("n", "animal", "monkey"),

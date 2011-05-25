@@ -257,10 +257,17 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     assertEquals(List(n1, n2), result.columnAs[Node]("n").toList)
   }
 
+  @Test def shouldBeAbleToOutputNullForMissingProperties() {
+    val query = Query(
+      Return(NullablePropertyOutput("node", "name")),
+      Start(NodeById("node", 0)))
+
+    val result = execute(query)
+    assertEquals(List(Map("node.name" -> null)), result.toList)
+  }
+
   @Test def shouldHandleComparisonBetweenNodeProperties() {
     //start n = node(1,4) match (n) --> (x) where n.animal = x.animal return n,x
-
-
     val n1 = createNode(Map("animal" -> "monkey"))
     val n2 = createNode(Map("animal" -> "cow"))
     val n3 = createNode(Map("animal" -> "monkey"))

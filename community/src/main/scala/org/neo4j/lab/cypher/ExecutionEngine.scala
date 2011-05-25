@@ -102,6 +102,12 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
           patternKeeper.assertHas(nodeName)
           nodePropertyOutput(nodeName, propName) _
         }
+
+        case NullablePropertyOutput(nodeName, propName) => {
+          patternKeeper.assertHas(nodeName)
+          nullableNodePropertyOutput(nodeName, propName) _
+        }
+
         case EntityOutput(nodeName) => {
           patternKeeper.assertHas(nodeName)
           nodeOutput(nodeName) _
@@ -113,8 +119,20 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
   def nodeOutput(column: String)(m: Map[String, Any]): Map[String, Any] = Map(column -> m.getOrElse(column, throw new NotFoundException))
 
   def nodePropertyOutput(column: String, propName: String)(m: Map[String, Any]): Map[String, Any] = {
-    val node = m.getOrElse(column, throw new NotFoundException).asInstanceOf[Node]
+    val node = m.getOrElse(column, throw new NotFoundException).asInstanceOf[PropertyContainer]
     Map(column + "." + propName -> node.getProperty(propName))
+  }
+
+  def nullableNodePropertyOutput(column: String, propName: String)(m: Map[String, Any]): Map[String, Any] = {
+    val node = m.getOrElse(column, throw new NotFoundException).asInstanceOf[PropertyContainer]
+
+    val property = try {
+      node.getProperty(propName)
+    } catch {
+      case x: NotFoundException => null
+    }
+
+    Map(column + "." + propName -> property)
   }
 
   private def createSourcePumps(from: Start): Seq[Pipe] = from.startItems.map(_ match {

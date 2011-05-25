@@ -83,7 +83,7 @@ class CypherParser extends JavaTokenParsers {
       NodeByIndex(varName, stripQuotes(index), stripQuotes(key), stripQuotes(value))
   }
 
-  def returns: Parser[(Return, Option[Aggregation])] = ignoreCase("return") ~> rep1sep((count | propertyOutput | nodeOutput), ",") ^^
+  def returns: Parser[(Return, Option[Aggregation])] = ignoreCase("return") ~> rep1sep((count | nullablePropertyOutput | propertyOutput | nodeOutput), ",") ^^
     { case items => {
       val list = items.filter(_.isInstanceOf[AggregationItem]).map(_.asInstanceOf[AggregationItem])
 
@@ -100,6 +100,9 @@ class CypherParser extends JavaTokenParsers {
 
   def propertyOutput:Parser[ReturnItem] = ident ~ "." ~ ident ^^
     { case c ~ "." ~ p => PropertyOutput(c,p) }
+
+  def nullablePropertyOutput:Parser[ReturnItem] = ident ~ "." ~ ident ~ "?" ^^
+    { case c ~ "." ~ p ~ "?" => NullablePropertyOutput(c,p) }
 
   def count:Parser[ReturnItem] = ignoreCase("count") ~ "(" ~ "*" ~ ")" ^^
     { case count ~ "(" ~ "*" ~ ")" => Count("*") }

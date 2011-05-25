@@ -29,6 +29,7 @@ abstract sealed class ReturnItem
 
 case class EntityOutput(name: String) extends ReturnItem
 case class PropertyOutput(entityName:String, propName:String) extends ReturnItem
+case class NullablePropertyOutput(entityName:String, propName:String) extends ReturnItem
 
 abstract sealed class AggregationItem extends ReturnItem
 
