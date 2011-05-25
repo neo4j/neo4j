@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 
 import java.util.Arrays;
@@ -28,16 +30,15 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
-// LOOPS-DISABLED
-@Ignore( "Due to loops diabled for the moment" )
 public class TestLoopRelationships extends AbstractNeo4jTestCase
 {
     @Test
@@ -75,7 +76,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
 
         commit();
     }
-
+    
     private void txCreateRel( Node node )
     {
         node.createRelationshipTo( getGraphDb().createNode(), TEST );
@@ -168,6 +169,61 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
         testAddAndRemoveLoopRelationshipAndOtherRelationships( 2 );
         testAddAndRemoveLoopRelationshipAndOtherRelationships( 3 );
         testAddAndRemoveLoopRelationshipAndOtherRelationships( 5 );
+    }
+    
+    @Test
+    public void getSingleRelationshipOnNodeWithOneLoopOnly() throws Exception
+    {
+        Node node = getGraphDb().createNode();
+        Relationship singleRelationship = node.createRelationshipTo( node, TEST );
+        assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.OUTGOING ) );
+        assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.INCOMING ) );
+        assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.BOTH ) );
+        commit();
+        assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.OUTGOING ) );
+        assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.INCOMING ) );
+        assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.BOTH ) );
+    }
+    
+    @Test
+    public void cannotDeleteNodeWithLoopStillAttached() throws Exception
+    {
+        Node node = getGraphDb().createNode();
+        node.createRelationshipTo( node, TEST );
+        newTransaction();
+        node.delete();
+        try
+        {
+            commit();
+            fail( "Shouldn't be able to delete a node which still has a loop relationship attached" );
+        }
+        catch ( TransactionFailureException e )
+        { // Good
+        }
+    }
+    
+    @Test
+    public void getOtherNodeFunctionsCorrectly() throws Exception
+    {
+        Node node = getGraphDb().createNode();
+        Relationship relationship = node.createRelationshipTo( node, TEST );
+        
+        // This loop messes up the readability of the test case, but avoids duplicated
+        // assertion code. Same assertions withing the transaction as after it has committed.
+        for ( int i = 0; i < 2; i++ )
+        {
+            assertEquals( node, relationship.getOtherNode( node ) );
+            assertEquals( asList( node, node ), asList( relationship.getNodes() ) );
+            try
+            {
+                relationship.getOtherNode( getGraphDb().getReferenceNode() );
+                fail( "Should throw exception if another node is passed into loop.getOtherNode" );
+            }
+            catch ( NotFoundException e )
+            { // Good
+            }
+            newTransaction();
+        }
     }
 
     private void testAddAndRemoveLoopRelationshipAndOtherRelationships( int size )
