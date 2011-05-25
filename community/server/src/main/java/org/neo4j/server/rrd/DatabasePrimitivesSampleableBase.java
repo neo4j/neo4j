@@ -19,9 +19,7 @@
  */
 package org.neo4j.server.rrd;
 
-import org.neo4j.jmx.Kernel;
-import org.neo4j.jmx.Primitives;
-import org.neo4j.kernel.AbstractGraphDatabase;
+import java.lang.management.ManagementFactory;
 
 import javax.management.AttributeNotFoundException;
 import javax.management.InstanceNotFoundException;
@@ -30,20 +28,20 @@ import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
-import java.lang.management.ManagementFactory;
 
-public abstract class JmxSampleableBase  implements Sampleable
+import org.neo4j.jmx.Kernel;
+import org.neo4j.jmx.Primitives;
+import org.neo4j.server.database.Database;
+
+public abstract class DatabasePrimitivesSampleableBase  implements Sampleable
 {
-    private MBeanServer mbeanServer;
-    private ObjectName objectName;
-
-    public JmxSampleableBase( AbstractGraphDatabase graphDb ) throws MalformedObjectNameException
+    private final MBeanServer mbeanServer;
+    private final Database database;
+    
+    public DatabasePrimitivesSampleableBase( Database db )
     {
         mbeanServer = ManagementFactory.getPlatformMBeanServer();
-        ObjectName neoQuery = graphDb.getManagementBean( Kernel.class ).getMBeanQuery();
-        String instance = neoQuery.getKeyProperty( "instance" );
-        String baseName = neoQuery.getDomain() + ":instance=" + instance + ",name=";
-        objectName = new ObjectName( baseName + Primitives.NAME );
+        this.database = db;
     }
 
     public abstract String getName();
@@ -52,21 +50,34 @@ public abstract class JmxSampleableBase  implements Sampleable
     {
         try
         {
-            return (Long)mbeanServer.getAttribute( objectName, getJmxAttributeName() );
+            return (Long)mbeanServer.getAttribute( getObjectName(), getJmxAttributeName() );
+        } catch( UnsupportedOperationException e) {
+            // Happens when the database has been shut down
+            throw new UnableToSampleException();
+        } catch ( InstanceNotFoundException e ) {
+            throw new UnableToSampleException();
         } catch ( MBeanException e )
         {
             throw new RuntimeException( e );
         } catch ( AttributeNotFoundException e )
         {
             throw new RuntimeException( e );
-        } catch ( InstanceNotFoundException e )
-        {
-            throw new RuntimeException( e );
         } catch ( ReflectionException e )
         {
             throw new RuntimeException( e );
         }
+        catch ( MalformedObjectNameException e )
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     protected abstract String getJmxAttributeName();
+
+    protected ObjectName getObjectName() throws MalformedObjectNameException, NullPointerException {
+        ObjectName neoQuery = database.graph.getManagementBean( Kernel.class ).getMBeanQuery();
+        String instance = neoQuery.getKeyProperty( "instance" );
+        String baseName = neoQuery.getDomain() + ":instance=" + instance + ",name=";
+        return new ObjectName( baseName + Primitives.NAME );
+    }
 }

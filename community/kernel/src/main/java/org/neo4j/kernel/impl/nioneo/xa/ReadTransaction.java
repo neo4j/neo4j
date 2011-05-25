@@ -104,8 +104,7 @@ class ReadTransaction implements NeoStoreTransaction
         // initialCapacity=grabSize saves the lists the trouble of resizing
         List<RelationshipRecord> out = new ArrayList<RelationshipRecord>();
         List<RelationshipRecord> in = new ArrayList<RelationshipRecord>();
-        // LOOPS-DISABLED
-//        List<RelationshipRecord> loop = null;
+        List<RelationshipRecord> loop = null;
         Map<DirectionWrapper, Iterable<RelationshipRecord>> result =
             new EnumMap<DirectionWrapper, Iterable<RelationshipRecord>>( DirectionWrapper.class );
         result.put( DirectionWrapper.OUTGOING, out );
@@ -123,8 +122,7 @@ class ReadTransaction implements NeoStoreTransaction
             long secondNode = relRecord.getSecondNode();
             if ( relRecord.inUse() )
             {
-                // LOOPS-DISABLED
-                /*if ( firstNode == secondNode )
+                if ( firstNode == secondNode )
                 {
                     if ( loop == null )
                     {
@@ -135,7 +133,7 @@ class ReadTransaction implements NeoStoreTransaction
                     }
                     loop.add( relRecord );
                 }
-                else */if ( firstNode == nodeId )
+                else if ( firstNode == nodeId )
                 {
                     out.add( relRecord );
                 }

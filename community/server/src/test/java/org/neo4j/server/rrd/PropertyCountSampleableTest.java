@@ -34,10 +34,11 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.ImpermanentGraphDatabase;
+import org.neo4j.server.database.Database;
 
 public class PropertyCountSampleableTest
 {
-    public ImpermanentGraphDatabase db;
+    public Database db;
     public PropertyCountSampleable sampleable;
 
     @Test
@@ -60,9 +61,9 @@ public class PropertyCountSampleableTest
     }
 
     private void addNodeIntoGraph() {
-        Transaction tx = db.beginTx();
-        Node referenceNode = db.getReferenceNode();
-        Node myNewNode = db.createNode();
+        Transaction tx = db.graph.beginTx();
+        Node referenceNode = db.graph.getReferenceNode();
+        Node myNewNode = db.graph.createNode();
         myNewNode.setProperty("id", UUID.randomUUID().toString());
         myNewNode.createRelationshipTo(referenceNode, new RelationshipType() {
             public String name() {
@@ -76,8 +77,8 @@ public class PropertyCountSampleableTest
 
     private void addPropertyToReferenceNode( )
     {
-        Transaction tx = db.beginTx();
-        Node n = db.getReferenceNode();
+        Transaction tx = db.graph.beginTx();
+        Node n = db.graph.getReferenceNode();
         n.setProperty( "monkey", "rock!" );
         tx.success();
         tx.finish();
@@ -86,13 +87,13 @@ public class PropertyCountSampleableTest
     @Before
     public void setUp() throws Exception
     {
-        db = new ImpermanentGraphDatabase();
+        db = new Database(new ImpermanentGraphDatabase());
         sampleable = new PropertyCountSampleable( db );
     }
 
     @After
     public void shutdownDatabase()
     {
-        this.db.shutdown();
+        db.shutdown();
     }
 }

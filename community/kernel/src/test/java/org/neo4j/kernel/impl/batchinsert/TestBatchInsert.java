@@ -24,6 +24,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -36,10 +37,9 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
-import org.neo4j.kernel.impl.batchinsert.BatchInserter;
-import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
-import org.neo4j.kernel.impl.batchinsert.SimpleRelationship;
 
 public class TestBatchInsert
 {
@@ -128,24 +128,53 @@ public class TestBatchInsert
     }
     
     @Test
-    public void testBadStuff()
+    public void makeSureLoopsCanBeCreated()
     {
         BatchInserter graphDb = newBatchInserter();
         long startNode = graphDb.createNode( properties );
-        try
+        long otherNode = graphDb.createNode( properties );
+        long selfRelationship = graphDb.createRelationship( startNode, startNode,
+                relTypeArray[0], properties );
+        long relationship = graphDb.createRelationship( startNode, otherNode,
+                relTypeArray[0], properties );
+        for ( SimpleRelationship rel : graphDb.getRelationships( startNode ) )
         {
-            graphDb.createRelationship( startNode, startNode, relTypeArray[0], 
-                    properties );
-            fail( "Could create relationship with same start and end node" );
+            if ( rel.getId() == selfRelationship )
+            {
+                assertEquals( startNode, rel.getStartNode() );
+                assertEquals( startNode, rel.getEndNode() );
+            }
+            else if ( rel.getId() == relationship )
+            {
+                assertEquals( startNode, rel.getStartNode() );
+                assertEquals( otherNode, rel.getEndNode() );
+            }
+            else
+            {
+                fail( "Unexpected relationship " + rel.getId() );
+            }
         }
-        catch ( IllegalArgumentException e )
-        {
-            // good
-        }
-        finally
-        {
-            graphDb.shutdown();
-        }
+        String storeDir = ((BatchInserterImpl)graphDb).getStore();
+        graphDb.shutdown();
+        
+        GraphDatabaseService db = new EmbeddedGraphDatabase( storeDir );
+        Node realStartNode = db.getNodeById( startNode );
+        Relationship realSelfRelationship = db.getRelationshipById( selfRelationship );
+        Relationship realRelationship = db.getRelationshipById( relationship );
+        assertEquals( realSelfRelationship, realStartNode.getSingleRelationship( RelTypes.REL_TYPE1, Direction.INCOMING ) );
+        assertEquals( asSet( realSelfRelationship, realRelationship ), asSet( realStartNode.getRelationships( Direction.OUTGOING ) ) );
+        assertEquals( asSet( realSelfRelationship, realRelationship ), asSet( realStartNode.getRelationships() ) );
+        db.shutdown();
+    }
+    
+    private static <T> Set<T> asSet( T... items )
+    {
+        return new HashSet<T>( Arrays.asList( items ) );
+    }
+    
+    private static <T> Set<T> asSet( Iterable<T> items )
+    {
+        return new HashSet<T>( IteratorUtil.asCollection( items ) );
     }
     
     private void setProperties( Node node )
@@ -201,15 +230,6 @@ public class TestBatchInsert
         {
             Node endNode = graphDb.createNode();
             startNode.createRelationshipTo( endNode, relTypeArray[i] ); 
-        }
-        try
-        {
-            startNode.createRelationshipTo( startNode, relTypeArray[0] );
-            fail( "Could create relationship with same start and end node" );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            // ok good
         }
         for ( int i = 0; i < 5; i++ )
         {

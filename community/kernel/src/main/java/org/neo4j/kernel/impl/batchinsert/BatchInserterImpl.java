@@ -176,12 +176,6 @@ public class BatchInserterImpl implements BatchInserter
     public long createRelationship( long node1, long node2, RelationshipType
         type, Map<String,Object> properties )
     {
-        // LOOPS-DISABLED
-        if ( node1 == node2 )
-        {
-            throw new IllegalArgumentException( "Start node[" + node1 + 
-                    "] equals end node[" + node2 + "]" );
-        }
         NodeRecord firstNode = getNodeRecord( node1 );
         NodeRecord secondNode = getNodeRecord( node2 );
         int typeId = typeHolder.getTypeId( type.name() );
@@ -201,51 +195,40 @@ public class BatchInserterImpl implements BatchInserter
         return id;
     }
     
-    private void connectRelationship( NodeRecord firstNode, 
-        NodeRecord secondNode, RelationshipRecord rel )
+    private void connectRelationship( NodeRecord firstNode,
+            NodeRecord secondNode, RelationshipRecord rel )
     {
+        assert firstNode.getNextRel() != rel.getId();
+        assert secondNode.getNextRel() != rel.getId();
         rel.setFirstNextRel( firstNode.getNextRel() );
         rel.setSecondNextRel( secondNode.getNextRel() );
-        if ( firstNode.getNextRel() != Record.NO_NEXT_RELATIONSHIP.intValue() )
-        {
-            RelationshipRecord nextRel = getRelationshipStore().getRecord( 
-                firstNode.getNextRel() );
-            if ( nextRel.getFirstNode() == firstNode.getId() )
-            {
-                nextRel.setFirstPrevRel( rel.getId() );
-            }
-            else if ( nextRel.getSecondNode() == firstNode.getId() )
-            {
-                nextRel.setSecondPrevRel( rel.getId() );
-            }
-            else
-            {
-                throw new InvalidRecordException( firstNode + " dont match "
-                    + nextRel );
-            }
-            getRelationshipStore().updateRecord( nextRel );
-        }
-        if ( secondNode.getNextRel() != Record.NO_NEXT_RELATIONSHIP.intValue() )
-        {
-            RelationshipRecord nextRel = getRelationshipStore().getRecord(  
-                secondNode.getNextRel() );
-            if ( nextRel.getFirstNode() == secondNode.getId() )
-            {
-                nextRel.setFirstPrevRel( rel.getId() );
-            }
-            else if ( nextRel.getSecondNode() == secondNode.getId() )
-            {
-                nextRel.setSecondPrevRel( rel.getId() );
-            }
-            else
-            {
-                throw new InvalidRecordException( secondNode + " dont match "
-                    + nextRel );
-            }
-            getRelationshipStore().updateRecord( nextRel );
-        }
+        connect( firstNode, rel );
+        connect( secondNode, rel );
         firstNode.setNextRel( rel.getId() );
         secondNode.setNextRel( rel.getId() );
+    }
+
+    private void connect( NodeRecord node, RelationshipRecord rel )
+    {
+        if ( node.getNextRel() != Record.NO_NEXT_RELATIONSHIP.intValue() )
+        {
+            RelationshipRecord nextRel = getRelationshipStore().getRecord( node.getNextRel() );
+            boolean changed = false;
+            if ( nextRel.getFirstNode() == node.getId() )
+            {
+                nextRel.setFirstPrevRel( rel.getId() );
+                changed = true;
+            }
+            if ( nextRel.getSecondNode() == node.getId() )
+            {
+                nextRel.setSecondPrevRel( rel.getId() );
+                changed = true;
+            }
+            if ( !changed )
+            {
+                throw new InvalidRecordException( node + " dont match " + nextRel );
+            }
+        }
     }
     
     public void setNodeProperties( long node, Map<String,Object> properties )

@@ -64,7 +64,7 @@ public class WebAdminModule implements ServerModule
     {
         Database db = neoServer.getDatabase();
         RrdFactory rrdFactory = new RrdFactory( neoServer.getConfiguration() );
-        RrdDb rrdDb = rrdFactory.createRrdDbAndSampler( db.graph, jobScheduler );
+        RrdDb rrdDb = rrdFactory.createRrdDbAndSampler( db, jobScheduler );
         db.setRrdDb( rrdDb );
     }
 }

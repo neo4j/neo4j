@@ -27,6 +27,7 @@ import javax.management.MalformedObjectNameException;
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.database.Database;
 import org.rrd4j.ConsolFun;
 import org.rrd4j.DsType;
 import org.rrd4j.core.RrdDb;
@@ -46,7 +47,7 @@ public class RrdFactory
         this.config = config;
     }
 
-    public RrdDb createRrdDbAndSampler( AbstractGraphDatabase db,
+    public RrdDb createRrdDbAndSampler( Database db,
                                         JobScheduler scheduler ) throws MalformedObjectNameException, IOException
     {
         Sampleable[] sampleables = new Sampleable[]{
@@ -56,7 +57,7 @@ public class RrdFactory
                 new RelationshipCountSampleable( db )
         };
 
-        String basePath = config.getString( Configurator.RRDB_LOCATION_PROPERTY_KEY, getDefaultDirectory( db ) );
+        String basePath = config.getString( Configurator.RRDB_LOCATION_PROPERTY_KEY, getDefaultDirectory( db.graph ) );
         RrdDb rrdb = createRrdb( basePath, STEP_SIZE, STEPS_PER_ARCHIVE, sampleables );
 
         RrdSampler sampler = new RrdSampler( rrdb.createSample(), sampleables );

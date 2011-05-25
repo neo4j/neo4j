@@ -33,9 +33,6 @@ package org.neo4j.graphdb;
  * Relationship rel = node.{@link Node#createRelationshipTo(Node, RelationshipType) createRelationshipTo}( otherNode, MyRels.REL_TYPE );
  * </code>
  * <p>
- * <em>Neo4j doesn't support relationships where the start node and end node are the
- * same.</em>
- * <p>
  * The fact that the relationship API gives meaning to {@link #getStartNode()
  * start} and {@link #getEndNode() end} nodes implicitly means that all
  * relationships have a direction. In the example above, <code>rel</code> would

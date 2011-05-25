@@ -19,27 +19,10 @@
  */
 package org.neo4j.server.rrd;
 
-import javax.management.MalformedObjectNameException;
-
-import org.neo4j.server.database.Database;
-
-public class RelationshipCountSampleable extends DatabasePrimitivesSampleableBase
+public class UnableToSampleException extends RuntimeException
 {
-    public RelationshipCountSampleable( Database db )
-        throws MalformedObjectNameException
-    {
-        super( db );
-    }
+    
+    private static final long serialVersionUID = 112443232112435425L;
 
-    @Override
-    public String getName()
-    {
-        return "relationship_count";
-    }
 
-    @Override
-    protected String getJmxAttributeName()
-    {
-        return "NumberOfRelationshipIdsInUse";
-    }
 }

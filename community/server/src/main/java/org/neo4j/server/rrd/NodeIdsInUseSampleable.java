@@ -19,16 +19,17 @@
  */
 package org.neo4j.server.rrd;
 
-import org.neo4j.kernel.AbstractGraphDatabase;
-
 import javax.management.MalformedObjectNameException;
 
-public class NodeIdsInUseSampleable extends JmxSampleableBase
+import org.neo4j.server.database.Database;
+
+
+public class NodeIdsInUseSampleable extends DatabasePrimitivesSampleableBase
 {
-    public NodeIdsInUseSampleable( AbstractGraphDatabase graphDb )
-            throws MalformedObjectNameException
+
+    public NodeIdsInUseSampleable( Database db ) throws MalformedObjectNameException
     {
-        super( graphDb );
+        super( db );
     }
 
     public String getName()

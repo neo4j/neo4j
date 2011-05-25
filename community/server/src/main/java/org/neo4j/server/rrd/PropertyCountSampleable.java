@@ -19,16 +19,16 @@
  */
 package org.neo4j.server.rrd;
 
-import org.neo4j.kernel.AbstractGraphDatabase;
-
 import javax.management.MalformedObjectNameException;
 
-public class PropertyCountSampleable extends JmxSampleableBase
+import org.neo4j.server.database.Database;
+
+public class PropertyCountSampleable extends DatabasePrimitivesSampleableBase
 {
-    public PropertyCountSampleable( AbstractGraphDatabase graphDb )
-            throws MalformedObjectNameException
+    public PropertyCountSampleable( Database db )
+        throws MalformedObjectNameException
     {
-        super( graphDb );
+        super( db );
     }
 
     @Override
