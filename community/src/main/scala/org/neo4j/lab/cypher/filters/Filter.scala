@@ -37,6 +37,14 @@ class TrueFilter extends Filter {
   def isMatch(result: Map[String, Any]): Boolean = true
 }
 
-class EqualsFilter(variable: String, propName: String, value: String) extends Filter {
+class EqualsFilter(variable: String, propName: String, value: Any) extends Filter {
   def isMatch(result: Map[String, Any]): Boolean = result(variable).asInstanceOf[PropertyContainer].getProperty(propName) == value
+}
+
+class ComparisonFilter(varA:String, propA:String, varB:String, propB:String) extends Filter {
+  def isMatch(result: Map[String, Any]): Boolean = {
+    val valA = result(varA).asInstanceOf[PropertyContainer].getProperty(propA)
+    val valB = result(varB).asInstanceOf[PropertyContainer].getProperty(propB)
+    valA == valB
+  }
 }

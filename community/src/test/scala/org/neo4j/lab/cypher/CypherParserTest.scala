@@ -92,7 +92,7 @@ class CypherParserTest {
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
-        StringEquals("a", "name", "andres"))
+        PropertyEquals("a", "name", "andres"))
     )
   }
 
@@ -103,8 +103,8 @@ class CypherParserTest {
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
         Or(
-          StringEquals("a", "name", "andres"),
-          StringEquals("a", "name", "mattias")
+          PropertyEquals("a", "name", "andres"),
+          PropertyEquals("a", "name", "mattias")
         ))
     )
   }
@@ -168,7 +168,7 @@ class CypherParserTest {
       Query(
         Return(PropertyOutput("a", "name")),
         Start(NodeById("a", 1)),
-        And(StringEquals("a", "name", "andres"), StringEquals("a", "lastname", "taylor"))
+        And(PropertyEquals("a", "name", "andres"), PropertyEquals("a", "lastname", "taylor"))
       )
     )
   }
@@ -227,11 +227,11 @@ class CypherParserTest {
         Start(NodeById("n", 1,2,3)),
         Or(
           And(
-            StringEquals("n", "animal", "monkey"),
-            StringEquals("n", "food", "banana")),
+            PropertyEquals("n", "animal", "monkey"),
+            PropertyEquals("n", "food", "banana")),
           And(
-            StringEquals("n", "animal", "cow"),
-            StringEquals("n", "food", "grass"))
+            PropertyEquals("n", "animal", "cow"),
+            PropertyEquals("n", "food", "grass"))
         )
       )
     )

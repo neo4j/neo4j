@@ -24,7 +24,7 @@ import pipes.{Pipe, FromPump}
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb._
 import org.neo4j.lab.cypher.filters._
-import org.neo4j.graphmatching.{CommonValueMatchers, PatternRelationship}
+import org.neo4j.graphmatching.PatternRelationship
 
 class ExecutionEngine(val graph: GraphDatabaseService) {
   type MapTransformer = (Map[String, Any]) => Map[String, Any]
@@ -47,44 +47,17 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
   }
 
   def createFilters(where: Option[Clause], patternKeeper: PatternKeeper): Filter = {
-
-
     where match {
       case None => new TrueFilter()
-
-      /*
-       Boolean OR is not handled by the graph-matcher. If we have at least one
-       OR, just create a filter. Otherwise, let the matcher filter the results for us (faster)
-      */
-      case Some(clause) => if (clause.hasOrs) {
-        //
-        createFilter(clause)
-      } else {
-        addFiltersToPattern(clause, patternKeeper)
-        new TrueFilter()
-      }
+      case Some(clause) => createFilter(clause)
     }
   }
 
   def createFilter(clause: Clause): Filter = clause match {
     case And(a, b) => new AndFilter(createFilter(a), createFilter(b))
     case Or(a, b) => new OrFilter(createFilter(a), createFilter(b))
-    case StringEquals(variable, property, value) => new EqualsFilter(variable, property, value)
-  }
-
-  def addFiltersToPattern(clause: Clause, patternKeeper: PatternKeeper) {
-    clause match {
-
-      case And(a, b) => {
-        addFiltersToPattern(a, patternKeeper)
-        addFiltersToPattern(b, patternKeeper)
-      }
-
-      case StringEquals(variable, property, value) => {
-        val patternPart = patternKeeper.getOrThrow(variable)
-        patternPart.addPropertyConstraint(property, CommonValueMatchers.exact(value))
-      }
-    }
+    case PropertyEquals(variable, property, value) => new EqualsFilter(variable, property, value)
+    case PropertyEqualsBetweenEntities(varA, propA, varB, propB) => new ComparisonFilter(varA, propA, varB, propB)
   }
 
   def addStartItemVariables(start: Start, patternKeeper: PatternKeeper) {

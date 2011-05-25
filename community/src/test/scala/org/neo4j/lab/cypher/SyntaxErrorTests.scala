@@ -21,8 +21,8 @@ package org.neo4j.lab.cypher
 
 import commands._
 import org.junit.Test
-import org.neo4j.graphdb.Node
 import org.junit.Assert._
+import org.neo4j.graphdb.{Direction, Node}
 
 /**
  * Created by Andres Taylor
@@ -41,13 +41,24 @@ class SyntaxErrorTests extends ExecutionEngineTestBase {
     expectedError(query, """Unknown variable "bar".""")
   }
 
+  @Test def defineANodeAndTreatItAsRelationship() {
+    val node: Node = createNode()
+
+    val query = Query(
+      Return(EntityOutput("foo")),
+      Start(NodeById("foo", node.getId)),
+      Match(RelatedTo("a", "b", "foo", "KNOWS", Direction.BOTH)))
+
+    expectedError(query, """Variable "foo" already defined as a node.""")
+  }
+
 
   def expectedError(query: Query, message: String) {
     try {
       execute(query).toList
       fail("Did not get the expected syntax error")
     } catch {
-      case x: SyntaxError => assertEquals(x.getMessage, message)
+      case x: SyntaxError => assertEquals(message, x.getMessage)
     }
   }
 }

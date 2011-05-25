@@ -114,7 +114,7 @@ class CypherParser extends JavaTokenParsers {
 
   def predicate = (
     ident ~ "." ~ ident ~ "=" ~ stringLiteral ^^ {
-      case c ~ "." ~ p ~ "=" ~ v => StringEquals(c, p, stripQuotes(v))
+      case c ~ "." ~ p ~ "=" ~ v => PropertyEquals(c, p, stripQuotes(v))
     })
 
   private def stripQuotes(s: String) = s.substring(1, s.length - 1)

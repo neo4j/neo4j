@@ -21,19 +21,16 @@ package org.neo4j.lab.cypher
 
 import commands._
 import org.junit.Assert._
-
-import org.neo4j.kernel.{AbstractGraphDatabase, ImpermanentGraphDatabase}
 import java.lang.String
-import org.junit.{Ignore, After, Before, Test}
-import org.neo4j.graphdb.{Relationship, Direction, DynamicRelationshipType, Node}
+import org.junit.{Ignore, Test}
+import org.neo4j.graphdb.{Relationship, Direction, Node}
 
 class ExecutionEngineTest extends ExecutionEngineTestBase {
 
   @Test def shouldGetReferenceNode() {
     val query = Query(
       Return(EntityOutput("node")),
-      Start(NodeById("node", 0))
-    )
+      Start(NodeById("node", 0)))
 
     val result = execute(query)
     assertEquals(List(refNode), result.columnAs[Node]("node").toList)
@@ -44,8 +41,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
     val query = Query(
       Return(EntityOutput("node")),
-      Start(NodeById("node", node.getId))
-    )
+      Start(NodeById("node", node.getId)))
 
     val result = execute(query)
     assertEquals(List(node), result.columnAs[Node]("node").toList)
@@ -58,8 +54,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
     val query = Query(
       Return(EntityOutput("rel")),
-      Start(RelationshipById("rel", rel.getId))
-    )
+      Start(RelationshipById("rel", rel.getId)))
 
     val result = execute(query)
     assertEquals(List(rel), result.columnAs[Relationship]("rel").toList)
@@ -70,8 +65,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
     val query = Query(
       Return(EntityOutput("node")),
-      Start(NodeById("node", refNode.getId, node.getId))
-    )
+      Start(NodeById("node", refNode.getId, node.getId)))
 
     val result = execute(query)
     assertEquals(List(refNode, node), result.columnAs[Node]("node").toList)
@@ -83,8 +77,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
     val query = Query(
       Return(PropertyOutput("node", "name")),
-      Start(NodeById("node", node.getId))
-    )
+      Start(NodeById("node", node.getId)))
 
     val result = execute(query)
     val list = result.columnAs[String]("node.name").toList
@@ -103,8 +96,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
       Return(EntityOutput("a")),
       Start(NodeById("start", start.getId)),
       Match(RelatedTo("start", "a", None, Some("x"), Direction.BOTH)),
-      StringEquals("a", "name", name)
-    )
+      PropertyEquals("a", "name", name))
 
     val result = execute(query)
     assertEquals(List(a2), result.columnAs[Node]("a").toList)
@@ -121,8 +113,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
       Return(EntityOutput("a")),
       Start(NodeById("start", start.getId)),
       Match(RelatedTo("start", "a", Some("r"), Some("KNOWS"), Direction.BOTH)),
-      StringEquals("r", "name", "monkey")
-    )
+      PropertyEquals("r", "name", "monkey"))
 
     val result = execute(query)
     assertEquals(List(a), result.columnAs[Node]("a").toList)
@@ -137,9 +128,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
       Return(EntityOutput("n1"), EntityOutput("n2")),
       Start(
         NodeById("n1", n1.getId),
-        NodeById("n2", n2.getId)
-      )
-    )
+        NodeById("n2", n2.getId)))
 
     val result = execute(query)
 
@@ -154,8 +143,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val query = Query(
       Return(EntityOutput("n1"), EntityOutput("n2")),
       Start(NodeById("n1", n1.getId)),
-      Match(RelatedTo("n1", "n2", None, Some("KNOWS"), Direction.OUTGOING))
-    )
+      Match(RelatedTo("n1", "n2", None, Some("KNOWS"), Direction.OUTGOING)))
 
     val result = execute(query)
 
@@ -172,8 +160,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val query = Query(
       Return(EntityOutput("x")),
       Start(NodeById("start", n1.getId)),
-      Match(RelatedTo("start", "x", None, Some("KNOWS"), Direction.OUTGOING))
-    )
+      Match(RelatedTo("start", "x", None, Some("KNOWS"), Direction.OUTGOING)))
 
     val result = execute(query)
 
@@ -190,8 +177,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val query = Query(
       Return(EntityOutput("x"), EntityOutput("start")),
       Start(NodeById("start", n1.getId)),
-      Match(RelatedTo("start", "x", None, Some("KNOWS"), Direction.OUTGOING))
-    )
+      Match(RelatedTo("start", "x", None, Some("KNOWS"), Direction.OUTGOING)))
 
     val result = execute(query)
 
@@ -210,8 +196,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
       Start(NodeById("start", n1.getId)),
       Match(
         RelatedTo("start", "a", None, Some("KNOWS"), Direction.OUTGOING),
-        RelatedTo("a", "b", None, Some("FRIEND"), Direction.OUTGOING))
-    )
+        RelatedTo("a", "b", None, Some("FRIEND"), Direction.OUTGOING)))
 
     val result = execute(query)
 
@@ -227,8 +212,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
     val query = Query(
       Return(EntityOutput("n")),
-      Start(NodeByIndex("n", idxName, key, value))
-    )
+      Start(NodeByIndex("n", idxName, key, value)))
 
     val result = execute(query)
 
@@ -236,17 +220,15 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
   }
 
   @Test def shouldHandleOrFilters() {
-    val n1 = createNode(Map("name" -> "pojke"))
-    val n2 = createNode(Map("name" -> "flicka"))
+    val n1 = createNode(Map("name" -> "boy"))
+    val n2 = createNode(Map("name" -> "girl"))
 
     val query = Query(
       Return(EntityOutput("n")),
       Start(NodeById("n", n1.getId, n2.getId)),
       Or(
-        StringEquals("n", "name", "pojke"),
-        StringEquals("n", "name", "flicka")
-      )
-    )
+        PropertyEquals("n", "name", "boy"),
+        PropertyEquals("n", "name", "girl")))
 
     val result = execute(query)
 
@@ -255,26 +237,51 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
 
   @Test def shouldHandleNestedAndOrFilters() {
-    val n1 = createNode(Map("djur" -> "apa", "mat" -> "banan"))
-    val n2 = createNode(Map("djur" -> "ko", "mat" -> "gräs"))
-    val n3 = createNode(Map("djur" -> "ko", "mat" -> "banan"))
+    val n1 = createNode(Map("animal" -> "monkey", "food" -> "banana"))
+    val n2 = createNode(Map("animal" -> "cow", "food" -> "grass"))
+    val n3 = createNode(Map("animal" -> "cow", "food" -> "banana"))
 
     val query = Query(
       Return(EntityOutput("n")),
       Start(NodeById("n", n1.getId, n2.getId, n3.getId)),
       Or(
         And(
-          StringEquals("n", "djur", "apa"),
-          StringEquals("n", "mat", "banan")),
+          PropertyEquals("n", "animal", "monkey"),
+          PropertyEquals("n", "food", "banana")),
         And(
-          StringEquals("n", "djur", "ko"),
-          StringEquals("n", "mat", "gräs"))
-      )
-    )
+          PropertyEquals("n", "animal", "cow"),
+          PropertyEquals("n", "food", "grass"))))
 
     val result = execute(query)
 
     assertEquals(List(n1, n2), result.columnAs[Node]("n").toList)
+  }
+
+  @Test def shouldHandleComparisonBetweenNodeProperties() {
+    //start n = node(1,4) match (n) --> (x) where n.animal = x.animal return n,x
+
+
+    val n1 = createNode(Map("animal" -> "monkey"))
+    val n2 = createNode(Map("animal" -> "cow"))
+    val n3 = createNode(Map("animal" -> "monkey"))
+    val n4 = createNode(Map("animal" -> "cow"))
+
+    relate(n1, n2, "A")
+    relate(n1, n3, "A")
+    relate(n4, n2, "A")
+    relate(n4, n3, "A")
+
+    val query = Query(
+      Return(EntityOutput("n"), EntityOutput("x")),
+      Start(NodeById("n", n1.getId, n4.getId)),
+      Match(RelatedTo("n", "x", None, None, Direction.OUTGOING)),
+      PropertyEqualsBetweenEntities("n", "animal", "x", "animal"))
+
+    val result = execute(query).toList
+
+    assertEquals(List(
+      Map("n" -> n1, "x" -> n3),
+      Map("n" -> n4, "x" -> n2)), result)
   }
 
   @Ignore("No implemented yet")
@@ -288,8 +295,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
       Return(EntityOutput("a")),
       Start(NodeById("a", refNode.getId)),
       Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
-      Aggregation(Count("*"))
-    )
+      Aggregation(Count("*")))
 
     val result = execute(query)
 

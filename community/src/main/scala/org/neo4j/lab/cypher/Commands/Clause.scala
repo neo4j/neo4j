@@ -19,8 +19,6 @@
  */
 package org.neo4j.lab.cypher.commands
 
-import org.neo4j.graphdb.Direction
-
 /**
  * Created by Andres Taylor
  * Date: 4/16/11
@@ -33,9 +31,11 @@ abstract sealed class Clause {
   def hasOrs : Boolean = false
 }
 
-case class StringEquals(variable: String, propName: String, value: String) extends Clause
+case class PropertyEquals(variable: String, propName: String, value: Any) extends Clause
 
 case class NumberLargerThan(variable: String, propName: String, value: Float) extends Clause
+
+case class PropertyEqualsBetweenEntities(variable1: String, property1: String, variable2:String, property2: String) extends Clause
 
 case class And(a: Clause, b: Clause) extends Clause {
   override def hasOrs = a.hasOrs || b.hasOrs

@@ -24,21 +24,19 @@ import collection.immutable.Map
 import org.neo4j.graphmatching.{PatternRelationship, AbstractPatternObject, PatternNode}
 import scala.Some
 import org.apache.commons.lang.NotImplementedException
-import java.lang.Boolean
 
 /**
  * Created by Andres Taylor
  * Date: 5/20/11
  * Time: 13:54 
  */
-
 class PatternKeeper {
   val nodes = scala.collection.mutable.Map[String, PatternNode]()
   val rels = scala.collection.mutable.Map[String, PatternRelationship]()
 
   def getOrCreateNode(name: String): PatternNode = {
      if (rels.contains(name))
-       throw new SyntaxError(name + " already defined as a relationship")
+       throw new SyntaxError("Variable \"" + name + "\" already defined as a relationship.")
 
      nodes.getOrElse(name, {
        val pNode = new PatternNode(name)
@@ -61,7 +59,7 @@ class PatternKeeper {
 
   def addRelationship(name: String, rel: PatternRelationship) {
     if (nodes.contains(name))
-      throw new SyntaxError(name + " already defined as a node")
+      throw new SyntaxError("Variable \"" + name + "\" already defined as a node.")
 
     rels(name) = rel
   }
