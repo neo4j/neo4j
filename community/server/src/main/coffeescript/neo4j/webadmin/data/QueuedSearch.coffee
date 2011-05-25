@@ -49,16 +49,11 @@ define(
         job = @queue.pull()
         @isSearching = true
 
-        jobDone = (result) =>
+        jobCompletionCallback = (result) =>
+          @jobDone()
           job.promise.fulfill(result)
-          setTimeout(@jobDone, 0)
   
-        QueuedSearch.__super__.exec.call(this, job.statement).then(jobDone, jobDone)
+        QueuedSearch.__super__.exec.call(this, job.statement).then(jobCompletionCallback, jobCompletionCallback)
 
-      pickSearcher : (statement) =>
-        
-        for searcher in @searchers
-          if searcher.match statement
-            return searcher
 )
 

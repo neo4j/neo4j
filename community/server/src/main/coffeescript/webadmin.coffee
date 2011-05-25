@@ -31,16 +31,18 @@ require(
    "neo4j/webadmin/DataBrowserController"
    "neo4j/webadmin/ConsoleController"
    "neo4j/webadmin/ServerInfoController"
+   "neo4j/webadmin/IndexManagerController"
    "neo4j/webadmin/models/ApplicationState"
    "neo4j/webadmin/views/BaseView"
    "neo4j/webadmin/ui/FoldoutWatcher"
    "neo4j/webadmin/KeyboardShortcuts"
    "neo4j/webadmin/SplashScreen"
+   "neo4j/webadmin/GlobalLoadingIndicator"
    "ribcage/security/HtmlEscaper"
    "lib/jquery"
    "lib/neo4js"
    "lib/backbone"]
-  (DashboardController, DataBrowserController, ConsoleController, ServerInfoController, ApplicationState, BaseView, FoldoutWatcher, KeyboardShortcuts, SplashScreen, HtmlEscaper) ->
+  (DashboardController, DataBrowserController, ConsoleController, ServerInfoController, IndexManagerController, ApplicationState, BaseView, FoldoutWatcher, KeyboardShortcuts, SplashScreen, GlobalLoadingIndicator, HtmlEscaper) ->
 
     # Global html escaper, used by the pre-compiled templates. Should be replaced by writing a haml template plugin.
     htmlEscaper = new HtmlEscaper()
@@ -49,6 +51,7 @@ require(
     # WEBADMIN BOOT
 
     splashScreen = new SplashScreen
+    loadingIndicator = new GlobalLoadingIndicator("#global-loading-indicator")
       
     appState = new ApplicationState
     appState.set server : new neo4j.GraphDatabase(location.protocol + "//" + location.host)
@@ -59,6 +62,7 @@ require(
     databrowserController = new DataBrowserController appState
     consoleController     = new ConsoleController appState
     serverInfoController  = new ServerInfoController appState
+    indexManagerController = new IndexManagerController appState
 
     # Remnant from the old webadmin. Handles opening and
     # closing of the more-info foldout menues seen in the 
@@ -75,9 +79,11 @@ require(
     jQuery () ->
 
       $("body").append(baseView.el)
+      
       foldoutWatcher.init()
       Backbone.history.start()
       shortcuts.init()
+      loadingIndicator.init()
 
       #if not splashScreen.hasBeenShownForThisSession()
       #  splashScreen.show()

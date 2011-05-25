@@ -21,31 +21,34 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 define(
   ["./UrlSearcher", 
    "./NodeSearcher", 
+   "./NodeIndexSearcher", 
    "./RelationshipSearcher",
-   "./RelationshipsForNodeSearcher"], 
-  (UrlSearcher, NodeSearcher, RelationshipSearcher, RelationshipsForNodeSearcher) ->
+   "./RelationshipsForNodeSearcher",
+   "./RelationshipIndexSearcher"], 
+  (UrlSearcher, NodeSearcher, NodeIndexSearcher, RelationshipSearcher, RelationshipsForNodeSearcher, RelationshipIndexSearcher) ->
 
     class Search
 
       constructor : (@server) ->
         
         @searchers = [
-          new UrlSearcher(server),
-          new NodeSearcher(server),
+          new UrlSearcher(server)
+          new NodeSearcher(server)
+          new NodeIndexSearcher(server)
           new RelationshipSearcher(server)
-          new RelationshipsForNodeSearcher(server)
+          new RelationshipsForNodeSearcher(server)        
+          new RelationshipIndexSearcher(server)  
         ]
       
 
       exec : (statement) =>
         searcher = @pickSearcher statement
-        if searcher? 
+        if searcher?
           searcher.exec statement
         else
           return neo4j.Promise.fulfilled(null)
 
       pickSearcher : (statement) =>
-        
         for searcher in @searchers
           if searcher.match statement
             return searcher

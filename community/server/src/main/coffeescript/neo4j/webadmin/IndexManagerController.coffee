@@ -18,30 +18,25 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-define ["lib/backbone"], () ->
+define( 
+  ['./views/IndexManagerView',
+   './models/IndexManager'
+   'lib/backbone'],
+  (IndexManagerView, IndexManager) ->
+  
+    class IndexManagerController extends Backbone.Controller
+      routes : 
+        "/index/" : "idxManager"
 
-  class ItemUrlResolver
+      initialize : (appState) =>
+        @appState = appState
+        @idxMgr = new IndexManager(server:@appState.get("server"))
 
-    constructor : (server) ->
-      @server = server
+      idxManager : =>
+        @appState.set( mainView : @getIndexManagerView() )
 
-    getNodeUrl : (id) =>
-      @server.url + "/db/data/node/" + id
-
-    getRelationshipUrl : (id) =>
-      @server.url + "/db/data/relationship/" + id
-      
-    getNodeIndexHitsUrl: (index,key,value) =>
-      @server.url + "/db/data/index" + index + "/" + key + "/" + value
- 
-    extractNodeId : (url) =>
-      @extractLastUrlSegment(url)
-
-    extractRelationshipId : (url) =>
-      @extractLastUrlSegment(url)
-
-    extractLastUrlSegment : (url) =>
-      if url.substr(-1) is "/"
-        url = url.substr(0, url.length - 1)
-
-      url.substr(url.lastIndexOf("/") + 1)
+      getIndexManagerView : =>
+        @view ?= new IndexManagerView  
+          state   : @appState
+          idxMgr  : @idxMgr
+)

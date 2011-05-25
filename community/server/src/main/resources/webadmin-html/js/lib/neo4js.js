@@ -503,21 +503,21 @@ a++){neo4j.setTimeout((function(g){return function(){try{g(c)
 })(e[a]),0)
 }}};
 neo4j.events=new neo4j.Events();
-neo4j.jqueryWebProvider={ajax:function(e){var g=e.timeout||5000,a=e.method,b=e.url,d=e.data,i=e.success,c=e.failure,f=function(k){try{if(k.status===200){return i(null)
-}}catch(l){}try{if(k.status===0){c(new neo4j.exceptions.ConnectionLostException())
-}else{var j=JSON.parse(k.responseText);
-c(new neo4j.exceptions.HttpException(k.status,j,k))
-}}catch(l){c(new neo4j.exceptions.HttpException(-1,{},k))
+neo4j.jqueryWebProvider={ajax:function(f){var h=f.timeout||5000,a=f.method,c=f.url,e=f.data,j=f.success,d=f.failure,b=a==="GET",g=function(l){try{if(l.status===200){return j(null)
+}}catch(m){}try{if(l.status===0){d(new neo4j.exceptions.ConnectionLostException())
+}else{var k=JSON.parse(l.responseText);
+d(new neo4j.exceptions.HttpException(l.status,k,l))
+}}catch(m){d(new neo4j.exceptions.HttpException(-1,{},l))
 }};
-var h=this.isCrossDomain;
-setTimeout((function(n,k,l,m,j){if(l===null||l==="null"){l=""
-}else{l=JSON.stringify(l)
-}return function(){if(h(k)&&window.XDomainRequest){if(typeof(j)==="function"){j(new neo4j.exceptions.HttpException(-1,null,null,"Cross-domain requests are available in IE, but are not yet implemented in neo4js."))
-}}else{var p=false,o=$.ajax({url:k,type:n,data:l,timeout:g,cache:false,processData:false,success:function(r,q,s){if(s.status===0){f(s)
-}else{m.apply(this,arguments)
-}},contentType:"application/json",error:f,dataType:"json"})
+var i=this.isCrossDomain;
+setTimeout((function(o,l,m,n,k){if(m===null||m==="null"){m=""
+}else{if(!b){m=JSON.stringify(m)
+}}return function(){if(i(l)&&window.XDomainRequest){if(typeof(k)==="function"){k(new neo4j.exceptions.HttpException(-1,null,null,"Cross-domain requests are available in IE, but are not yet implemented in neo4js."))
+}}else{var q=false,p=$.ajax({url:l,type:o,data:m,timeout:h,cache:false,processData:b,success:function(s,r,t){if(t.status===0){g(t)
+}else{n.apply(this,arguments)
+}},contentType:"application/json",error:g,dataType:"json"})
 }}
-})(a,b,d,i,c),0)
+})(a,c,e,j,d),0)
 },isCrossDomain:function(b){if(b){var a=b.indexOf("://");
 if(a===-1||a>7){return false
 }else{return b.substring(a+3).split("/",1)[0]!==window.location.host
@@ -1008,6 +1008,8 @@ neo4j.services.MonitorService.prototype.getDataBetween=neo4j.Service.resourceFac
 neo4j.index=neo4j.index||{};
 neo4j.index.Index=function(a,b){this.db=a;
 this.name=b;
+this.config=null;
+this.provider="N/A";
 _.bindAll(this,"query","exactQuery","index","unindex")
 };
 _.extend(neo4j.index.Index.prototype,{getUriFor:function(a){return""
@@ -1015,6 +1017,9 @@ _.extend(neo4j.index.Index.prototype,{getUriFor:function(a){return""
 },getType:function(){return""
 },createObjectFromDefinition:function(a){},getIdFor:function(a){return a.then(function(c,b){b(c.getId())
 })
+},setConfig:function(a){this.config=a
+},configAvailable:function(){return this.config!==null
+},getConfig:function(){return this.config
 },query:function(b){var a=this;
 return this.db.getServiceDefinition().then(function(e,d,c){a.db.web.get(e[a.getType()]+"/"+a.name,{query:b},function(f){var h=[];
 for(var j=0,g=f.length;
@@ -1093,22 +1098,27 @@ _.extend(neo4j.index.Indexes.prototype,{getAllNodeIndexes:function(){return this
 return this.db.getServiceDefinition().then(function(f,e,d){a.web.get(f[c],function(m){var j=[],h=m===null?[]:_(m).keys();
 for(var k=0,g=h.length;
 k<g;
-k++){j.push(b._getOrCreateLocalIndexObject(c,h[k]))
+k++){j.push(b._getOrCreateLocalIndexObject(c,h[k],m[h[k]]))
 }e(j)
 },d)
 })
-},_createIndex:function(e,d,c){var c=c||{},a=this.db,b=this;
-return this.db.getServiceDefinition().then(function(h,g,f){a.web.post(h[e],{name:d,config:c},function(i){g(b._getOrCreateLocalIndexObject(e,d))
+},_createIndex:function(e,d,c){var c=c||{provider:"lucene",type:"exact"},a=this.db,b=this;
+return this.db.getServiceDefinition().then(function(h,g,f){a.web.post(h[e],{name:d,config:c},function(i){g(b._getOrCreateLocalIndexObject(e,d,c))
 },f)
 })
 },_removeIndex:function(c,b){var a=this.db;
 return this.db.getServiceDefinition().then(function(f,e,d){a.web.del(f[c]+"/"+b,e,d)
 })
-},_getOrCreateLocalIndexObject:function(c,b){if(typeof(this._cache[c])=="undefined"){this._cache[c]={}
-}if(typeof(this._cache[c][b])=="undefined"){if(c==="relationship_index"){var a=new neo4j.index.RelationshipIndex(this.db,b)
-}else{var a=new neo4j.index.NodeIndex(this.db,b)
-}this._cache[c][b]=a
-}return this._cache[c][b]
+},_getOrCreateLocalIndexObject:function(d,c,b){var b=b||null;
+if(typeof(this._cache[d])=="undefined"){this._cache[d]={}
+}if(typeof(this._cache[d][c])=="undefined"){if(d==="relationship_index"){var a=new neo4j.index.RelationshipIndex(this.db,c)
+}else{var a=new neo4j.index.NodeIndex(this.db,c)
+}this._cache[d][c]=a
+}if(b!=null){if(b.provider){this._cache[d][c].provider=b.provider;
+delete (b.provider)
+}if(b.template){delete (b.template)
+}this._cache[d][c].setConfig(b)
+}return this._cache[d][c]
 }});
 neo4j.GraphDatabaseManager=function(a){_.bindAll(this,"discoverServices");
 this.db=a;

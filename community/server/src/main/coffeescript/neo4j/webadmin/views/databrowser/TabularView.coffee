@@ -22,10 +22,11 @@ define(
   ['./NodeView',
    './RelationshipView',
    './RelationshipListView',
+   './NodeListView',
    'neo4j/webadmin/views/View',
    'neo4j/webadmin/templates/databrowser/notfound',
    'lib/backbone'], 
-  (NodeView, RelationshipView, RelationshipListView, View, notFoundTemplate) ->
+  (NodeView, RelationshipView, RelationshipListView, NodeListView, View, notFoundTemplate) ->
   
     class SimpleView extends View
 
@@ -34,6 +35,7 @@ define(
         @nodeView = new NodeView
         @relationshipView = new RelationshipView
         @relationshipListView = new RelationshipListView
+        @nodeListView = new NodeListView
 
         @dataModel = options.dataModel
         @dataModel.bind("change:data", @render)
@@ -43,6 +45,8 @@ define(
         switch type
           when "node"
             view = @nodeView
+          when "nodeList"
+            view = @nodeListView
           when "relationship"
             view = @relationshipView
           when "relationshipList"
@@ -58,6 +62,7 @@ define(
       remove : =>
         @dataModel.unbind("change", @render)
         @nodeView.remove()
+        @nodeListView.remove()
         @relationshipView.remove()
         @relationshipListView.remove()
         super()

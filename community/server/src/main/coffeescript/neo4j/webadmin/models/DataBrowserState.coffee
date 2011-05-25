@@ -19,10 +19,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['./NodeProxy'
+  ['./NodeProxy', './NodeList',
    './RelationshipProxy'
    './RelationshipList', 'lib/backbone'], 
-  (NodeProxy, RelationshipProxy, RelationshipList) ->
+  (NodeProxy, NodeList, RelationshipProxy, RelationshipList) ->
   
     class DataBrowserState extends Backbone.Model
       
@@ -51,7 +51,7 @@ define(
         return @get("type") == "relationship"
 
       setQuery : (val, isForCurrentData=false, opts={}) =>
-        if @get("query") != val
+        if @get("query") != val or opts.force is true
           @set {"queryOutOfSyncWithData": not isForCurrentData }, opts
           @set {"query" : val }, opts
 
@@ -59,15 +59,21 @@ define(
         @set({"data":result, "queryOutOfSyncWithData" : not basedOnCurrentQuery }, {silent:true})
 
         if result instanceof neo4j.models.Node
-          @set({type:"node","data":new NodeProxy(result)}, opts)
+          return @set({type:"node","data":new NodeProxy(result)}, opts)
 
         else if result instanceof neo4j.models.Relationship
-          @set({type:"relationship","data":new RelationshipProxy(result)}, opts)
+          return @set({type:"relationship","data":new RelationshipProxy(result)}, opts)
 
-        else if _(result).isArray()
-          @set({type:"relationshipList", "data":new RelationshipList(result)}, opts)
+        else if _(result).isArray() and result.length > 0 
 
-        else
-          @set({"data":null, type:"not-found"}, opts)
+          if result.length is 1 # If only showing one item, show it in single-item view
+            return @setData(result[0], basedOnCurrentQuery, opts)
+          else
+            if result[0] instanceof neo4j.models.Relationship
+              return @set({type:"relationshipList", "data":new RelationshipList(result)}, opts)
+            else if result[0] instanceof neo4j.models.Node
+              return @set({type:"nodeList", "data":new NodeList(result)}, opts)
+
+        @set({type:"not-found", "data":null}, opts)
 
 )

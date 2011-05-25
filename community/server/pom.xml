@@ -712,6 +712,7 @@ the relevant Commercial Agreement.
                 <jvmArg>-Dlog4j.configuration=file:///${project.basedir}/target/test-classes/log4j.properties</jvmArg>
                 <jvmArg>-Dwebdriver.impl=${webdriver.impl.class}</jvmArg>
                 <jvmArg>-DtestWithExternalServer=${testWithExternalServer}</jvmArg>
+                <jvmArg>-DtestWithDevHtmlFile=${testWithDevHtmlFile}</jvmArg>
               </jvmArgs>
               <cucumberArgs>
                 <cucumberArg>--verbose</cucumberArg>
@@ -793,7 +794,7 @@ the relevant Commercial Agreement.
           <plugin>
             <groupId>com.voltvoodoo</groupId>
             <artifactId>brew</artifactId>
-            <version>0.2.1</version>
+            <version>0.2.2</version>
             <executions>
               <execution>
               	<id>build-webadmin</id>

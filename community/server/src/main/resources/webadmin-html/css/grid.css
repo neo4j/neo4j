@@ -1,0 +1,23 @@
+
+
+.span-1  { width: 6.958%; float:left;  margin-right:1.5%; }
+.span-2  { width: 15.416%; float:left; margin-right:1.5%; }
+.span-3  { width: 23.875%; float:left; margin-right:1.5%; }
+.span-4  { width: 32.333%; float:left; margin-right:1.5%; }
+.span-5  { width: 40.791%; float:left; margin-right:1.5%; }
+.span-6  { width: 49.250%; float:left; margin-right:1.5%; }
+.span-7  { width: 57.708%; float:left; margin-right:1.5%; }
+.span-8  { width: 66.166%; float:left; margin-right:1.5%; }
+.span-9  { width: 74.625%; float:left; margin-right:1.5%; }
+.span-10 { width: 83.083%; float:left; margin-right:1.5%; }
+.span-11 { width: 91.541%; float:left; margin-right:1.5%; }
+.span-12 { width: 100%; float:left; margin-right:0%; }
+
+.span-third { width: 32%; float:left; margin-right:2%; }
+.span-half { width: 49%; float:left; margin-right:2%; }
+.span-all { width: 100%; float:left; clear:right; }
+
+.span-third.no-margin { width: 33.333%; float:left; margin-right:0%; }
+.span-half.no-margin { width: 50%; float:left; margin-right:0%; }
+
+.last { clear:right; margin-right:0; }

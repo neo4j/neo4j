@@ -4,8 +4,8 @@
       %input#data-console(value="#{htmlEscape(query)}")
       %button#data-execute-console.icon-button(title="Search")
       .helpbox.break
-        Search by: [node id], rel:[relationship id], rels:[node id]
-    
+        %a(href="#") Syntax help
+          %span.helptext <b>You can use the following syntaxes in the search bar:</b><br />[node id], rel:[relationship id],rels:[node id]<br />node:index:[index]:[query], rel:index:[index]:[query]
     .span-half.last
       %ul.data-toolbar.button-bar
         %li

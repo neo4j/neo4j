@@ -42,13 +42,27 @@ You can also run them one-by-one via a web GUI:
 Webadmin development
 --------------------
 
+The webadmin build tool (brew) is disconnected from the normal build, and
+the artifact it produces (webadmin.min.js) is actually checked into this 
+source tree. If you make changes to webadmin code, run the following command
+to re-build webadmin.min.js:
+
+`mvn clean package -Dwebadmin-build`
+
 Webadmin development comes with a few helpers to make development faster. To 
 work on webadmin, let the following commands run in separate terminals:
 
-Run the server, let this get the server started before issuing other commands:
+Run the server (let this get the server started before issuing other commands):
 
-`mvn clean antrun:run -Pwebdev-exec,neodev`
+`mvn clean compile antrun:run -Pwebdev-exec,neodev`
 
 Auto-recompile coffeescript and HAML files:
 
-`mvn package -Pwebadmin-build -Dbrew.watch=true -DskipTests`
+`mvn package -Pwebadmin-build,neodev -Dbrew.watch=true -DskipTests`
+
+Then go to http://localhost:7474/webadmin/dev.html 
+
+The dev.html file loads each individual js file, unminified, which makes debugging
+a lot easier. Please note however, that for your changes to be seen in the normal
+http://localhost:7474/webadmin/ you need to run the normal webadmin build at the 
+top of this section.
