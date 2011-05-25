@@ -26,7 +26,6 @@ import static org.junit.Assert.assertTrue;
 import java.lang.reflect.Field;
 import java.util.Map;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class TestArrayMap
@@ -90,62 +89,61 @@ public class TestArrayMap
     }
 
     @Test
-    @Ignore("Ignored until the return true statement is removed from the test code")
+//    @Ignore("Ignored until the return true statement is removed from the test code")
     public void arraymapIsClearedWhenExpandingToHashMapIfNonShrinkable() throws Exception
     {
-        assertArrayMapIsClearedWhenExpandingToHashMap( new ArrayMap<String, Integer>( 3, false,
+        assertDataRepresentationSwitchesWhenAboveThreshold( new ArrayMap<String, Integer>( 3, false,
                 false ), false );
     }
 
     @Test
-    @Ignore("Ignored until the return true statement is removed from the test code")
+//    @Ignore("Ignored until the return true statement is removed from the test code")
     public void arraymapIsClearedWhenExpandingToHashMapIfShrinkable() throws Exception
     {
-        assertArrayMapIsClearedWhenExpandingToHashMap( new ArrayMap<String, Integer>( 3, false,
+        assertDataRepresentationSwitchesWhenAboveThreshold( new ArrayMap<String, Integer>( 3, false,
                 true ), true );
     }
 
     @Test
-    @Ignore("Ignored until the return true statement is removed from the test code")
+//    @Ignore("Ignored until the return true statement is removed from the test code")
     public void arraymapIsClearedWhenExpandingToHashMapIfNonShrinkableAndSynchronized()
             throws Exception
     {
-        assertArrayMapIsClearedWhenExpandingToHashMap( new ArrayMap<String, Integer>( 3, true,
+        assertDataRepresentationSwitchesWhenAboveThreshold( new ArrayMap<String, Integer>( 3, true,
                 false ), false );
     }
 
     @Test
-    @Ignore("Ignored until the return true statement is removed from the test code")
+//    @Ignore("Ignored until the return true statement is removed from the test code")
     public void arraymapIsClearedWhenExpandingToHashMapIfShrinkableAndSynchronized()
             throws Exception
     {
-        assertArrayMapIsClearedWhenExpandingToHashMap(
+        assertDataRepresentationSwitchesWhenAboveThreshold(
                 new ArrayMap<String, Integer>( 3, true, true ), true );
     }
 
-    private void assertArrayMapIsClearedWhenExpandingToHashMap( ArrayMap<String, Integer> map,
-            boolean shrinkable )
-            throws Exception
+    @SuppressWarnings( "rawtypes" )
+    private void assertDataRepresentationSwitchesWhenAboveThreshold( ArrayMap<String, Integer> map,
+            boolean shrinkable ) throws Exception
     {
 
         // Perhaps not the pretties solution... quite brittle...
-        Field expansion = ArrayMap.class.getDeclaredField( "data" );
-        expansion.setAccessible( true );
-
-        Field array = ArrayMap.class.getDeclaredField( "data" );
-        array.setAccessible( true );
-
-        map.put( "key1", 1 );
-        map.put( "key2", 2 );
-        map.put( "key3", 3 );
-        map.put( "key4", 4 );
-        map.put( "key5", 5 );
-
-        Object[] data = (Object[]) array.get( map );
-        if ( data != null ) for ( int i = 0; i < data.length; i++ )
+        Field mapThresholdField = ArrayMap.class.getDeclaredField( "toMapThreshold" );
+        mapThresholdField.setAccessible( true );
+        int arraySize = mapThresholdField.getInt( map );
+        Field dataField = ArrayMap.class.getDeclaredField( "data" );
+        dataField.setAccessible( true );
+        assertTrue( dataField.get( map ) instanceof Object[] );
+        
+        for ( int i = 0; i < arraySize; i++ )
         {
-            assertNull( "Nonnull element", data[i] );
+            map.put( "key" + i, i );
+            assertTrue( dataField.get( map ) instanceof Object[] );
         }
+
+        map.put( "next key", 999 );
+        Map dataAsMap = (Map) dataField.get( map );
+        assertEquals( arraySize+1, dataAsMap.size() );
 
         map.remove( "key1" );
         map.remove( "key2" );
@@ -153,8 +151,13 @@ public class TestArrayMap
 
         if ( shrinkable )
         {
-            Map<?, ?> exp = (Map<?, ?>) expansion.get( map );
-            assertTrue( "Data still expanded", exp == null || exp.size() == 0 );
+            // It should've shrinked back into an array
+            assertTrue( dataField.get( map ) instanceof Object[] );
+        }
+        else
+        {
+            // It should stay as Map representation
+            assertTrue( dataField.get( map ) instanceof Map );
         }
     }
 
