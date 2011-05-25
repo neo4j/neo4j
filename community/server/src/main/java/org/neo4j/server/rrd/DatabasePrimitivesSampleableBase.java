@@ -51,6 +51,9 @@ public abstract class DatabasePrimitivesSampleableBase  implements Sampleable
         try
         {
             return (Long)mbeanServer.getAttribute( getObjectName(), getJmxAttributeName() );
+        } catch( UnsupportedOperationException e) {
+            // Happens when the database has been shut down
+            throw new UnableToSampleException();
         } catch ( InstanceNotFoundException e ) {
             throw new UnableToSampleException();
         } catch ( MBeanException e )
