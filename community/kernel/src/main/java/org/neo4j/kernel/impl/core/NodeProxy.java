@@ -194,12 +194,6 @@ class NodeProxy implements Node
     public Relationship createRelationshipTo( Node otherNode,
         RelationshipType type )
     {
-        // LOOPS-DISABLED
-        if ( otherNode.equals( this ) )
-        {
-            throw new IllegalArgumentException( "Start node equals end node" );
-        }
-        
         return nm.getNodeForProxy( nodeId ).createRelationshipTo( nm, otherNode,
             type );
     }
