@@ -22,6 +22,9 @@ package org.neo4j.server;
 import java.io.File;
 import java.util.Arrays;
 
+import org.neo4j.server.configuration.PropertyFileConfigurator;
+import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
+import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.modules.DiscoveryModule;
 import org.neo4j.server.modules.ManagementApiModule;
 import org.neo4j.server.modules.RESTApiModule;
@@ -38,7 +41,7 @@ public class CleaningNeoServer extends NeoServerWithEmbeddedWebServer {
 
     public CleaningNeoServer(final AddressResolver addressResolver, final StartupHealthCheck startupHealthCheck, final File configFile,
             final Jetty6WebServer jetty6WebServer, final String dir, Class<? extends ServerModule>... serverModules) {
-        super( new NeoServerBootstrapper(), addressResolver, startupHealthCheck, configFile,
+        super( new NeoServerBootstrapper(), addressResolver, startupHealthCheck, new PropertyFileConfigurator(new Validator(new DatabaseLocationMustBeSpecifiedRule()),configFile),
                 jetty6WebServer, serverModulesOrDefault( serverModules ) );
         this.configFile = configFile;
 

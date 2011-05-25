@@ -29,9 +29,6 @@ import java.util.Map;
 
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.configuration.PropertyFileConfigurator;
-import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
-import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.GraphDatabaseFactory;
 import org.neo4j.server.logging.Logger;
@@ -48,7 +45,6 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
 
     public static final Logger log = Logger.getLogger(NeoServerWithEmbeddedWebServer.class);
 
-    private final File configFile;
     private Configurator configurator;
     private Database database;
     private final WebServer webServer;
@@ -64,13 +60,13 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
     private final Bootstrapper bootstrapper;
 
     public NeoServerWithEmbeddedWebServer( Bootstrapper bootstrapper, AddressResolver addressResolver,
-            StartupHealthCheck startupHealthCheck, File configFile, WebServer webServer,
+            StartupHealthCheck startupHealthCheck, Configurator configurator, WebServer webServer,
             Iterable<Class<? extends ServerModule>> moduleClasses )
     {
         this.bootstrapper = bootstrapper;
         this.addressResolver = addressResolver;
         this.startupHealthCheck = startupHealthCheck;
-        this.configFile = configFile;
+        this.configurator = configurator;
         this.webServer = webServer;
         webServer.setNeoServer( this );
         for ( Class<? extends ServerModule> moduleClass : moduleClasses )
@@ -80,16 +76,15 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
     }
 
     public NeoServerWithEmbeddedWebServer( Bootstrapper bootstrapper, StartupHealthCheck startupHealthCheck,
-            File configFile, WebServer ws, Iterable<Class<? extends ServerModule>> mc )
+            Configurator configurator, WebServer ws, Iterable<Class<? extends ServerModule>> mc )
     {
-        this( bootstrapper, new AddressResolver(), startupHealthCheck, configFile, ws, mc );
+        this( bootstrapper, new AddressResolver(), startupHealthCheck, configurator, ws, mc );
     }
 
     @Override
     public void start() {
         // Start at the bottom of the stack and work upwards to the Web container
         startupHealthCheck();
-        validateConfiguration();
 
         startDatabase();
 
@@ -143,10 +138,6 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
         if (!startupHealthCheck.run()) {
             throw new StartupHealthCheckFailedException(startupHealthCheck.failedRule());
         }
-    }
-
-    private void validateConfiguration() {
-        this.configurator = new PropertyFileConfigurator(new Validator(new DatabaseLocationMustBeSpecifiedRule()), configFile);
     }
 
     private void startDatabase() {

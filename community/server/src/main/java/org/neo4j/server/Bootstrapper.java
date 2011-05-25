@@ -26,6 +26,9 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.configuration.PropertyFileConfigurator;
+import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
+import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.database.GraphDatabaseFactory;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.modules.ServerModule;
@@ -63,7 +66,7 @@ public abstract class Bootstrapper
             StartupHealthCheck startupHealthCheck = new StartupHealthCheck( rules() );
             Jetty6WebServer webServer = new Jetty6WebServer();
             server = new NeoServerWithEmbeddedWebServer( this, new AddressResolver(),
-                    startupHealthCheck, getConfigFile(), webServer, getServerModules() );
+                    startupHealthCheck, getConfigurator(), webServer, getServerModules() );
             server.start();
 
             Runtime.getRuntime().addShutdownHook( new Thread()
@@ -117,6 +120,10 @@ public abstract class Bootstrapper
         String location = "unknown location";
         try
         {
+            if ( server != null )
+            {
+                server.stop();
+            }
             log.info( "Successfully shutdown Neo Server on port [%d], database [%s]", server.getWebServerPort(),
                     location );
             return 0;
@@ -134,9 +141,10 @@ public abstract class Bootstrapper
         return server;
     }
 
-    protected static File getConfigFile()
+    protected Configurator getConfigurator()
     {
-        return new File( System.getProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY, Configurator.DEFAULT_CONFIG_DIR ) );
+        File configFile = new File( System.getProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY, Configurator.DEFAULT_CONFIG_DIR ) );
+        return new PropertyFileConfigurator(new Validator(new DatabaseLocationMustBeSpecifiedRule()), configFile);
     }
 
     public static void main( String[] args )
