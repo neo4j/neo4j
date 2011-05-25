@@ -39,6 +39,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.kernel.ImpermanentGraphDatabase;
+import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.rest.web.EntityOutputFormat;
 import org.neo4j.server.rrd.Job;
@@ -50,7 +51,7 @@ public class MonitorServiceTest implements JobScheduler
 {
     private RrdDb rrdDb;
     private MonitorService monitorService;
-    private ImpermanentGraphDatabase database;
+    private Database database;
     private EntityOutputFormat output;
 
     @Test
@@ -88,7 +89,7 @@ public class MonitorServiceTest implements JobScheduler
     @Before
     public void setUp() throws Exception
     {
-        database = new ImpermanentGraphDatabase();
+        database = new Database(new ImpermanentGraphDatabase());
 
         rrdDb = new RrdFactory( new SystemConfiguration() ).createRrdDbAndSampler( database, this );
 

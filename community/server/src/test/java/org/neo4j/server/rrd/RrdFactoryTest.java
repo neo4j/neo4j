@@ -34,18 +34,19 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.kernel.ImpermanentGraphDatabase;
 import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.database.Database;
 import org.rrd4j.core.RrdDb;
 
 public class RrdFactoryTest
 {
     private Configuration config;
-    private ImpermanentGraphDatabase db;
+    private Database db;
 
     @Before
     public void setUp() throws Exception
     {
         config = new MapConfiguration( new HashMap<String, String>() );
-        db = new ImpermanentGraphDatabase();
+        db = new Database(new ImpermanentGraphDatabase());
     }
 
     @After
@@ -80,7 +81,7 @@ public class RrdFactoryTest
 
         RrdDb rrdDbAndSampler = factory.createRrdDbAndSampler( db, new NullJobScheduler() );
 
-        assertThat( factory.directoryUsed, startsWith( db.getStoreDir() ) );
+        assertThat( factory.directoryUsed, startsWith( db.graph.getStoreDir() ) );
         assertThat( factory.directoryUsed, endsWith( "rrd" ) );
 
         rrdDbAndSampler.close();
