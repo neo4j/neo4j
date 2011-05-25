@@ -19,11 +19,12 @@
  */
 package org.neo4j.server.rrd;
 
-import org.rrd4j.core.Sample;
-
-import javax.management.MalformedObjectNameException;
 import java.io.IOException;
 import java.util.Date;
+
+import javax.management.MalformedObjectNameException;
+
+import org.rrd4j.core.Sample;
 
 /**
  * Manages sampling the state of the database and storing the samples in a round
@@ -57,6 +58,8 @@ public class RrdSampler {
             }
 
             sample.update();
+            return sample;
+        } catch(UnableToSampleException e) {
             return sample;
         } catch (IOException e) {
             throw new RuntimeException("IO Error trying to access round robin database path. See nested exception.", e);

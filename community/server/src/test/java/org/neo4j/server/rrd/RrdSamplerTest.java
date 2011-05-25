@@ -19,13 +19,14 @@
  */
 package org.neo4j.server.rrd;
 
-import org.junit.Test;
-import org.rrd4j.core.Sample;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;;
 
 import javax.management.MalformedObjectNameException;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import org.junit.Test;
+import org.rrd4j.core.Sample;
 
 public class RrdSamplerTest
 {
@@ -40,6 +41,19 @@ public class RrdSamplerTest
         sampler.updateSample();
 
         verify( sample ).setValue( "myTest", 15 );
+    }
+    
+    @Test
+    public void shouldIgnoreUnableToSampleExceptions() throws MalformedObjectNameException {
+        Sampleable failingSampleable = new FailingSamplable( "myTest", 15 );
+        
+        Sample sample = mock( Sample.class );
+
+        RrdSampler sampler = new RrdSampler( sample, failingSampleable );
+        
+        sampler.updateSample();
+        
+        verify( sample, never() ).setValue( "myTest", 15 );
     }
 
     private class TestSamplable implements Sampleable
@@ -61,6 +75,28 @@ public class RrdSamplerTest
         public long getValue()
         {
             return value;
+        }
+    }
+    
+    private class FailingSamplable implements Sampleable
+    {
+        private String name;
+        private long value;
+
+        private FailingSamplable( String name, long value )
+        {
+            this.name = name;
+            this.value = value;
+        }
+
+        public String getName()
+        {
+            return "asd";
+        }
+
+        public long getValue()
+        {
+            throw new UnableToSampleException();
         }
     }
 }
