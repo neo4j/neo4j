@@ -60,15 +60,21 @@ public class RetrieveNodeFunctionalTest
     DocumentationGenerator gen = new DocumentationGenerator();
 
     @Before
-    public void setupServer() throws IOException, DatabaseBlockedException, URISyntaxException {
-        server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
+    public void setupServer() throws IOException, DatabaseBlockedException, URISyntaxException
+    {
+        server = ServerBuilder.server()
+                .withRandomDatabaseDir()
+                .withPassingStartupHealthcheck()
+                .build();
         server.start();
-        functionalTestHelper = new FunctionalTestHelper(server);
-        nodeUri = new URI(functionalTestHelper.nodeUri() + "/" + new GraphDbHelper(server.getDatabase()).createNode());
+        functionalTestHelper = new FunctionalTestHelper( server );
+        nodeUri = new URI( functionalTestHelper.nodeUri() + "/"
+                           + new GraphDbHelper( server.getDatabase() ).createNode() );
     }
 
     @After
-    public void stopServer() {
+    public void stopServer()
+    {
         server.stop();
         server = null;
     }
@@ -76,53 +82,62 @@ public class RetrieveNodeFunctionalTest
     /**
      * Get node.
      * 
-     * Note that the response contains URI/templates for
-     * the available operations for getting properties and relationships.
+     * Note that the response contains URI/templates for the available
+     * operations for getting properties and relationships.
      */
     @Documented
     @Test
-    public void shouldGet200WhenRetrievingNode() throws Exception {
+    public void shouldGet200WhenRetrievingNode() throws Exception
+    {
         String uri = nodeUri.toString();
         gen.create()
+                .expectedStatus( 200 )
                 .get( uri );
     }
 
     /**
      * Get node - compact.
      * 
-     * Specifying the subformat in the requests media type yields a more compact JSON response without metadata 
-     * and templates.
+     * Specifying the subformat in the requests media type yields a more compact
+     * JSON response without metadata and templates.
      */
     @Documented
     @Test
-    public void shouldGet200WhenRetrievingNodeCompact() {
+    public void shouldGet200WhenRetrievingNodeCompact()
+    {
         String uri = nodeUri.toString();
         ResponseEntity entity = gen.create()
                 .expectedType( CompactJsonFormat.MEDIA_TYPE )
+                .expectedStatus( 200 )
                 .get( uri );
-        assertTrue( entity.entity().contains( "self" ) ); 
+        assertTrue( entity.entity()
+                .contains( "self" ) );
     }
 
     @Test
-    public void shouldGetContentLengthHeaderWhenRetrievingNode() throws Exception {
-        ClientResponse response = retrieveNodeFromService(nodeUri.toString());
-        assertNotNull(response.getHeaders().get("Content-Length"));
+    public void shouldGetContentLengthHeaderWhenRetrievingNode() throws Exception
+    {
+        ClientResponse response = retrieveNodeFromService( nodeUri.toString() );
+        assertNotNull( response.getHeaders()
+                .get( "Content-Length" ) );
         response.close();
     }
 
     @Test
-    public void shouldHaveJsonMediaTypeOnResponse() {
-        ClientResponse response = retrieveNodeFromService(nodeUri.toString());
-        assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
+    public void shouldHaveJsonMediaTypeOnResponse()
+    {
+        ClientResponse response = retrieveNodeFromService( nodeUri.toString() );
+        assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
         response.close();
     }
 
     @Test
-    public void shouldHaveJsonDataInResponse() throws Exception {
-        ClientResponse response = retrieveNodeFromService(nodeUri.toString());
+    public void shouldHaveJsonDataInResponse() throws Exception
+    {
+        ClientResponse response = retrieveNodeFromService( nodeUri.toString() );
 
-        Map<String, Object> map = JsonHelper.jsonToMap(response.getEntity(String.class));
-        assertTrue(map.containsKey("self"));
+        Map<String, Object> map = JsonHelper.jsonToMap( response.getEntity( String.class ) );
+        assertTrue( map.containsKey( "self" ) );
         response.close();
     }
 
@@ -131,17 +146,19 @@ public class RetrieveNodeFunctionalTest
      */
     @Documented
     @Test
-    public void shouldGet404WhenRetrievingNonExistentNode() throws Exception {
+    public void shouldGet404WhenRetrievingNonExistentNode() throws Exception
+    {
         gen.create()
-                .expectedStatus( Response.Status.NOT_FOUND )
+                .expectedStatus( 404 )
                 .get( nodeUri + "00000" );
     }
 
-    private ClientResponse retrieveNodeFromService(final String uri) {
-        WebResource resource = CLIENT.resource(uri);
-        ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
+    private ClientResponse retrieveNodeFromService( final String uri )
+    {
+        WebResource resource = CLIENT.resource( uri );
+        ClientResponse response = resource.accept( MediaType.APPLICATION_JSON )
+                .get( ClientResponse.class );
         return response;
     }
-
 
 }

@@ -71,6 +71,7 @@ public class GetOnRootFunctionalTest
     @Title( "Get service root" )
     public void assert200OkFromGet() throws Exception {
         gen.create()
+                .expectedStatus( 200 )
                 .get( functionalTestHelper.dataUri() );
     }
 

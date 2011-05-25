@@ -78,7 +78,7 @@ public class GetNodePropertiesFunctionalTest
         WebResource createResource = client.resource(functionalTestHelper.dataUri() + "node/");
         ClientResponse createResponse = createResource.accept(MediaType.APPLICATION_JSON).entity("").post(ClientResponse.class);
         gen.create()
-                .expectedStatus( Response.Status.NO_CONTENT )
+                .expectedStatus( 204 )
                 .get( createResponse.getLocation()
                         .toString() + "/properties" );
     }
@@ -96,6 +96,7 @@ public class GetNodePropertiesFunctionalTest
         ClientResponse createResponse = createResource.type(MediaType.APPLICATION_JSON).entity(entity).accept(MediaType.APPLICATION_JSON).post(
                 ClientResponse.class);
         gen.create()
+                .expectedStatus( 200 )
                 .get( createResponse.getLocation()
                         .toString() + "/properties" );
     }
@@ -173,7 +174,7 @@ public class GetNodePropertiesFunctionalTest
         response.close();
 
         gen.create()
-                .expectedStatus( Response.Status.OK )
+                .expectedStatus( 200 )
                 .get( getPropertyUri( createResponse.getLocation()
                         .toString(), "foo" ).toString() );
     }

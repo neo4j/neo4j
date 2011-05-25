@@ -85,7 +85,7 @@ public class SetNodePropertiesFunctionalTest {
         map.put("jim", "tobias");
         gen.create()
                 .payload( JsonHelper.createJsonFrom( map ) )
-                .expectedStatus( Response.Status.NO_CONTENT )
+                .expectedStatus( 204 )
                 .put( propertiesUri.toString() );
         ClientResponse response = updateNodePropertiesOnServer(map);
         assertEquals(204, response.getStatus());
@@ -139,7 +139,7 @@ public class SetNodePropertiesFunctionalTest {
     public void shouldReturn204WhenPropertyIsSet() throws Exception {
         gen.create()
                 .payload( JsonHelper.createJsonFrom( "bar" ) )
-                .expectedStatus( Response.Status.NO_CONTENT )
+                .expectedStatus( 204 )
                 .put( getPropertyUri( "foo" ).toString() );
     }
 
@@ -154,7 +154,7 @@ public class SetNodePropertiesFunctionalTest {
     public void shouldReturn400WhenSendinIncompatibleJsonProperty() throws Exception {
         gen.create()
                 .payload( "{\"foo\" : {\"bar\" : \"baz\"}}" )
-                .expectedStatus( Response.Status.BAD_REQUEST )
+                .expectedStatus( 400 )
                 .post( functionalTestHelper.nodeUri() );
         ClientResponse response = setNodePropertyOnServer("jim", new HashMap<String, Object>());
         assertEquals(400, response.getStatus());

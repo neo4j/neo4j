@@ -82,7 +82,7 @@ public class SetRelationshipPropertiesFunctionalTest
         map.put("jim", "tobias");
         gen.create()
                 .payload( JsonHelper.createJsonFrom( map ) )
-                .expectedStatus( Response.Status.NO_CONTENT )
+                .expectedStatus( 204 )
                 .put( propertiesUri.toString() );
         ClientResponse response = updatePropertiesOnServer(map);
         assertEquals(204, response.getStatus());
