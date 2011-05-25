@@ -16,7 +16,7 @@
     <groupId>org.neo4j.lab</groupId>
     <artifactId>neo4j-cypher</artifactId>
     <packaging>jar</packaging>
-    <version>0.1-SNAPSHOT</version>
+    <version>0.2-SNAPSHOT</version>
     <name>cypher</name>
     <repositories>
         <repository>
