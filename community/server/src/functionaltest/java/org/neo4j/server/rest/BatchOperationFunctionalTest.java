@@ -63,8 +63,9 @@ public class BatchOperationFunctionalTest
         server = null;
     }
     
+    @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldReturn200OnGetRequest() throws JsonParseException, ClientHandlerException, UniformInterfaceException {
+    public void shouldReturnCorrectFromAndIdValuesOnMixedRequest() throws JsonParseException, ClientHandlerException, UniformInterfaceException {
         
         String jsonString = "[" +
           "{ " +
@@ -77,34 +78,17 @@ public class BatchOperationFunctionalTest
             "\"method\":\"GET\"," +
             "\"to\":\"/node/0\"," +
             "\"id\":1"+
-          "}"+
-        "]";
-        
-        ClientResponse response = Client.create()
-          .resource( functionalTestHelper.dataUri() + "batch")
-          .type(MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON )
-          .entity( jsonString ).post( ClientResponse.class );
-        
-        assertEquals(200, response.getStatus());
-        
-        List<Map<String, Object>> results = JsonHelper.jsonToList( response.getEntity( String.class ));
-        
-        assertEquals(2, results.size());
-        
-        int id=0;
-        for(Map<String, Object> result : results) {
-            assertEquals(id,result.get("id"));
-            id++;
-        }
-    }
-    
-    @Test
-    public void shouldGetLocationHeadersWhenCreatingThings() throws JsonParseException, ClientHandlerException, UniformInterfaceException {
-        
-        String jsonString = "[" +
+          "},"+
           "{ " +
             "\"method\":\"POST\"," +
             "\"to\":\"/node\", " +
+            "\"id\":2,"+
+            "\"body\":{ \"age\":1 }" +
+          "},"+
+          "{ " +
+            "\"method\":\"POST\"," +
+            "\"to\":\"/node\", " +
+            "\"id\":3,"+
             "\"body\":{ \"age\":1 }" +
           "}"+
         "]";
@@ -118,15 +102,141 @@ public class BatchOperationFunctionalTest
         
         List<Map<String, Object>> results = JsonHelper.jsonToList( response.getEntity( String.class ));
         
+        assertEquals(4, results.size());
+
+        Map<String, Object> putResult = results.get( 0 );
+        Map<String, Object> getResult = results.get( 1 );
+        Map<String, Object> firstPostResult = results.get( 2 );
+        Map<String, Object> secondPostResult = results.get( 3 );
+        
+        // Ids should be ok
+        assertEquals(0, putResult.get("id"));
+        assertEquals(1, getResult.get("id"));
+        assertEquals(2, firstPostResult.get("id"));
+        assertEquals(3, secondPostResult.get("id"));
+
+        // Should contain "from"
+        assertEquals("/node/0/properties", putResult.get( "from" ));
+        assertEquals("/node/0", getResult.get("from"));
+        assertEquals("/node", firstPostResult.get("from"));
+        assertEquals("/node", secondPostResult.get("from"));
+
+        
+        // Should have created by the first PUT request
+        Map<String, Object> body = JsonHelper.jsonToMap( (String) getResult.get("body"));
+        assertEquals(1, ((Map<String, Object>)body.get("data")).get( "age" ));
+    }
+    
+    @Test
+    public void shouldGetLocationHeadersWhenCreatingThings() throws JsonParseException, ClientHandlerException, UniformInterfaceException {
+        
+        String jsonString = "[" +
+          "{ " +
+            "\"method\":\"POST\"," +
+            "\"to\":\"/node\", " +
+            "\"body\":{ \"age\":1 }" +
+          "}"+
+        "]";
+        
+        int originalNodeCount = helper.getNumberOfNodes();
+        
+        ClientResponse response = Client.create()
+          .resource( functionalTestHelper.dataUri() + "batch")
+          .type(MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON )
+          .entity( jsonString ).post( ClientResponse.class );
+        
+        assertEquals(200, response.getStatus());
+        assertEquals(originalNodeCount + 1, helper.getNumberOfNodes());
+        
+        List<Map<String, Object>> results = JsonHelper.jsonToList( response.getEntity( String.class ));
+        
         assertEquals(1, results.size());
         
-        
         Map<String, Object> result = results.get( 0 );
+        assertTrue(((String)result.get( "location" )).length() > 0);
+    }
+    
+    @Test
+    public void shouldRollbackAllWhenGivenIncorrectRequest() throws JsonParseException, ClientHandlerException, UniformInterfaceException {
         
-        assertTrue(result.containsKey( "headers" ));
-        Map<String, String> headers = (Map<String, String>) result.get( "headers" );
+        String jsonString = "[" +
+          "{ " +
+            "\"method\":\"POST\"," +
+            "\"to\":\"/node\", " +
+            "\"body\":{ \"age\":1 }" +
+          "},"+
+          "{ " +
+            "\"method\":\"POST\"," +
+            "\"to\":\"/node\", " +
+            "\"body\":[\"a_list\",\"this_makes_no_sense\"]" +
+          "}"+
+        "]";
         
-        assertTrue(headers.containsKey( "Location" ));
-        assertTrue(headers.get( "Location" ).length() > 0);
+        int originalNodeCount = helper.getNumberOfNodes();
+        
+        ClientResponse response = Client.create()
+          .resource( functionalTestHelper.dataUri() + "batch")
+          .type(MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON )
+          .entity( jsonString ).post( ClientResponse.class );
+        
+        assertEquals(400, response.getStatus());
+        assertEquals(originalNodeCount, helper.getNumberOfNodes());
+        
+    }
+    
+    @Test
+    public void shouldRollbackAllWhenInsertingIllegalData() throws JsonParseException, ClientHandlerException, UniformInterfaceException {
+        
+        String jsonString = "[" +
+          "{ " +
+            "\"method\":\"POST\"," +
+            "\"to\":\"/node\", " +
+            "\"body\":{ \"age\":1 }" +
+          "},"+
+          "{ " +
+            "\"method\":\"POST\"," +
+            "\"to\":\"/node\", " +
+            "\"body\":{ \"age\":{ \"age\":{ \"age\":1 } } }" +
+          "}"+
+        "]";
+        
+        int originalNodeCount = helper.getNumberOfNodes();
+        
+        ClientResponse response = Client.create()
+          .resource( functionalTestHelper.dataUri() + "batch")
+          .type(MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON )
+          .entity( jsonString ).post( ClientResponse.class );
+        
+        assertEquals(400, response.getStatus());
+        assertEquals(originalNodeCount, helper.getNumberOfNodes());
+        
+    }
+    
+
+    @Test
+    public void shouldRollbackAllOnSingle404() throws JsonParseException, ClientHandlerException, UniformInterfaceException {
+        
+        String jsonString = "[" +
+          "{ " +
+            "\"method\":\"POST\"," +
+            "\"to\":\"/node\", " +
+            "\"body\":{ \"age\":1 }" +
+          "},"+
+          "{ " +
+            "\"method\":\"POST\"," +
+            "\"to\":\"www.google.com\"" +
+          "}"+
+        "]";
+        
+        int originalNodeCount = helper.getNumberOfNodes();
+        
+        ClientResponse response = Client.create()
+          .resource( functionalTestHelper.dataUri() + "batch")
+          .type(MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON )
+          .entity( jsonString ).post( ClientResponse.class );
+        
+        assertEquals(400, response.getStatus());
+        assertEquals(originalNodeCount, helper.getNumberOfNodes());
+        
     }
 }

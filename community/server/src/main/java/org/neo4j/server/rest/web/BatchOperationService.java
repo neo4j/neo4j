@@ -76,6 +76,10 @@ public class BatchOperationService
         try
         {
 
+            List<Object> operations = input.readList( body );
+            List<BatchOperationRepresentation> results = new ArrayList<BatchOperationRepresentation>(
+                    operations.size() );
+
             InternalJettyServletRequest req = new InternalJettyServletRequest();
             InternalJettyServletResponse res = new InternalJettyServletResponse();
 
@@ -83,10 +87,6 @@ public class BatchOperationService
             String servletPath = uriInfo.getBaseUri().getPath();
             servletBaseUrl = servletBaseUrl.substring( 0,
                     servletBaseUrl.length() - 1 );
-
-            List<Object> operations = input.readList( body );
-            List<BatchOperationRepresentation> results = new ArrayList<BatchOperationRepresentation>(
-                    operations.size() );
 
             String opBody, opMethod, opPath;
             Integer opId;
@@ -101,6 +101,10 @@ public class BatchOperationService
                         : "";
                 opId = op.containsKey( ID_KEY ) ? (Integer) op.get( ID_KEY )
                         : null;
+                
+                if(!opPath.startsWith( "/" )) {
+                   opPath = "/" + opPath;
+                }
 
                 req.setup( opMethod, new HttpURI( servletBaseUrl + opPath ),
                         opBody, // Request body
@@ -108,26 +112,35 @@ public class BatchOperationService
                 res.setup();
 
                 webServer.handle( servletPath + opPath, req, res );
-
-                results.add( new BatchOperationRepresentation( opId,
-                        res.getStatus(), res.getOutputStream().toString(),
-                        res.getHeaders() ) );
+                
+                if(is2XXStatusCode(res.getStatus())) {
+                    results.add( new BatchOperationRepresentation(
+                            opId,
+                            opPath,
+                            res.getOutputStream().toString(),
+                            res.getHeaders() ) );
+                } else {
+                    tx.failure();
+                    return output.badRequest( new RuntimeException(res.getReason()) );
+                }
             }
 
-            response = output.ok( BatchOperationRepresentation.list( results ) );
-
             tx.success();
+            
+            return output.ok( BatchOperationRepresentation.list( results ) );
         }
         catch ( Exception e )
         {
-            e.printStackTrace();
+            tx.failure();
             return output.badRequest( e );
         }
         finally
         {
             tx.finish();
         }
-
-        return response;
+    }
+    
+    private boolean is2XXStatusCode(int statusCode) {
+        return statusCode - 200 >= 0 && statusCode - 200 < 100;
     }
 }

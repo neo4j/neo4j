@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.rest.repr;
 
-import java.util.HashMap;
 import java.util.Map;
 
 public class BatchOperationRepresentation extends ObjectRepresentation 
@@ -28,48 +27,26 @@ public class BatchOperationRepresentation extends ObjectRepresentation
     // TODO: Lab project. This should be defined together with other representation types.
     private static final RepresentationType TYPE = new RepresentationType( "batch-operation" );
     
-    private static class HttpHeadersRepresentation extends MappingRepresentation {
-        
-        private static final RepresentationType TYPE = new RepresentationType( "http-headers" );
-        private final Map<String,String> headers;
-        
-        HttpHeadersRepresentation( Map<String, String> headers )
-        {
-            super( TYPE );
-            this.headers = headers;
-        }
-
-        @Override
-        protected void serialize( MappingSerializer serializer )
-        {
-            for(String header : headers.keySet()) {
-                serializer.putString( header, headers.get( header ));
-            }
-        }
-        
-    }
-    
+    private final String from;
     private final Integer id;
-    private final int status;
     private final String responseData;
     private final Map<String, Object> headers;
     private final static String[] INCLUDE_HEADERS = {"Location"};
     
-    public BatchOperationRepresentation( Integer id, int status, String responseData, Map<String, Object> headers )
+    public BatchOperationRepresentation( Integer id, String from, String responseData, Map<String, Object> headers )
     {
         super( TYPE );
+        this.from = from;
         this.id = id;
-        this.status = status;
         this.headers = headers;
         this.responseData = responseData;
     }
 
-    @Mapping( "status" )
-    public ValueRepresentation relationshipCreationUri()
-    {
-        return ValueRepresentation.number( status );
+    @Mapping( "from" )
+    public ValueRepresentation from() {
+        return ValueRepresentation.string( from );
     }
-
+    
     @Mapping( "body" )
     public ValueRepresentation responseData()
     {
@@ -83,15 +60,10 @@ public class BatchOperationRepresentation extends ObjectRepresentation
             serializer.putNumber( "id", id );
         }
         
-        Map<String, String> includedHeaders = new HashMap<String, String>();
         for(String header : INCLUDE_HEADERS) {
             if(headers.containsKey( header )) {
-                includedHeaders.put( header, headers.get( header ).toString() );
+                serializer.putString( header.toLowerCase(), headers.get( header ).toString() );
             }
-        }
-        
-        if(includedHeaders.size() > 0) {
-            serializer.putMapping( "headers", new HttpHeadersRepresentation( includedHeaders ) );
         }
         
     }

@@ -91,6 +91,8 @@ public class InternalJettyServletRequest extends Request {
         
         setUri(uri);
         setCharacterEncoding( encoding );
+        setRequestURI(null);
+        setQueryString( null );
     }
 
     @Override
@@ -130,7 +132,7 @@ public class InternalJettyServletRequest extends Request {
     {
         return inputReader;
     }
-
+    
     @Override
     public String getRemoteAddr()
     {
