@@ -1,3 +1,8 @@
+1.4.M03 (2011-05-26)
+--------------------
+o Moved LuceneIndexProvider to public package to work better with OSGI.
+o Tweaked lucene batch inserter settings for better performance.
+
 1.4.M02 (2011-05-12)
 --------------------
 o Upgraded lucene version to 3.1

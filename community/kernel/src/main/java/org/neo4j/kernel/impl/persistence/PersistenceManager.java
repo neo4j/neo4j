@@ -128,63 +128,63 @@ public class PersistenceManager
 
     public ArrayMap<Integer,PropertyData> nodeDelete( long nodeId )
     {
-        return getResource().nodeDelete( nodeId );
+        return getResource( true ).nodeDelete( nodeId );
     }
 
     public long nodeAddProperty( long nodeId, PropertyIndex index, Object value )
     {
-        return getResource().nodeAddProperty( nodeId, index, value );
+        return getResource( true ).nodeAddProperty( nodeId, index, value );
     }
 
     public void nodeChangeProperty( long nodeId, long propertyId, Object value )
     {
-        getResource().nodeChangeProperty( nodeId, propertyId, value );
+        getResource( true ).nodeChangeProperty( nodeId, propertyId, value );
     }
 
     public void nodeRemoveProperty( long nodeId, long propertyId )
     {
-        getResource().nodeRemoveProperty( nodeId, propertyId );
+        getResource( true ).nodeRemoveProperty( nodeId, propertyId );
     }
 
     public void nodeCreate( long id )
     {
-        getResource().nodeCreate( id );
+        getResource( true ).nodeCreate( id );
     }
 
     public void relationshipCreate( long id, int typeId, long startNodeId,
         long endNodeId )
     {
-        getResource().relationshipCreate( id, typeId, startNodeId, endNodeId );
+        getResource( true ).relationshipCreate( id, typeId, startNodeId, endNodeId );
     }
 
     public ArrayMap<Integer,PropertyData> relDelete( long relId )
     {
-        return getResource().relDelete( relId );
+        return getResource( true ).relDelete( relId );
     }
 
     public long relAddProperty( long relId, PropertyIndex index, Object value )
     {
-        return getResource().relAddProperty( relId, index, value );
+        return getResource( true ).relAddProperty( relId, index, value );
     }
 
     public void relChangeProperty( long relId, long propertyId, Object value )
     {
-        getResource().relChangeProperty( relId, propertyId, value );
+        getResource( true ).relChangeProperty( relId, propertyId, value );
     }
 
     public void relRemoveProperty( long relId, long propertyId )
     {
-        getResource().relRemoveProperty( relId, propertyId );
+        getResource( true ).relRemoveProperty( relId, propertyId );
     }
 
     public void createPropertyIndex( String key, int id )
     {
-        getResource().createPropertyIndex( key, id );
+        getResource( true ).createPropertyIndex( key, id );
     }
 
     public void createRelationshipType( int id, String name )
     {
-        getResource().createRelationshipType( id, name );
+        getResource( false ).createRelationshipType( id, name );
     }
 
     private NeoStoreTransaction getReadOnlyResource()
@@ -208,7 +208,7 @@ public class PersistenceManager
         return con;
     }
     
-    private NeoStoreTransaction getResource()
+    private NeoStoreTransaction getResource( boolean registerEventHooks )
     {
         NeoStoreTransaction con = null;
 
@@ -233,7 +233,7 @@ public class PersistenceManager
                 con = persistenceSource.createTransaction( xaConnection );
                 
                 tx.registerSynchronization( new TxCommitHook( tx ) );
-                registerTransactionEventHookIfNeeded();
+                if ( registerEventHooks ) registerTransactionEventHookIfNeeded();
                 txConnectionMap.put( tx, con );
             }
             catch ( javax.transaction.RollbackException re )
@@ -359,17 +359,17 @@ public class PersistenceManager
 
     public RelIdArray getCreatedNodes()
     {
-        return getResource().getCreatedNodes();
+        return getResource( true ).getCreatedNodes();
     }
 
     public boolean isNodeCreated( long nodeId )
     {
-        return getResource().isNodeCreated( nodeId );
+        return getResource( true ).isNodeCreated( nodeId );
     }
 
     public boolean isRelationshipCreated( long relId )
     {
-        return getResource().isRelationshipCreated( relId );
+        return getResource( true ).isRelationshipCreated( relId );
     }
 
     public int getKeyIdForProperty( long propertyId )

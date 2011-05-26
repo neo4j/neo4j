@@ -32,8 +32,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.neo4j.test.SubProcess.DebugInterface;
 
-@Ignore
 public class SubProcessTest
 {
     private static final String MESSAGE = "message";
@@ -82,7 +82,7 @@ public class SubProcessTest
                 new SubProcessBreakPoint( TestingProcess.class, "call" )
                 {
                     @Override
-                    protected void callback()
+                    protected void callback( DebugInterface debug )
                     {
                         called.set( true );
                     }

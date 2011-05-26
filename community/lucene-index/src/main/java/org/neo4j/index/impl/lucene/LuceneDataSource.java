@@ -280,7 +280,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
     }
 
     @Override
-    public void close()
+    public synchronized void close()
     {
         if ( closed )
         {
@@ -565,6 +565,8 @@ public class LuceneDataSource extends LogBackedXaDataSource
     
     synchronized IndexWriter getIndexWriter( IndexIdentifier identifier )
     {
+        if ( closed ) throw new IllegalStateException( "Index has been shut down" );
+
         Pair<IndexWriter, AtomicBoolean> writer = indexWriters.get( identifier );
         if ( writer != null )
         {
