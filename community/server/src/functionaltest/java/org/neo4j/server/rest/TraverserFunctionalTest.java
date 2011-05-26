@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import org.junit.After;
