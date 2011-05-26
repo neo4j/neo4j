@@ -17,14 +17,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.lab.cypher
+
+package org.neo4j.sunshine
 
 import commands._
 import pipes.{Pipe, FromPump}
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb._
-import org.neo4j.lab.cypher.filters._
 import org.neo4j.graphmatching.PatternRelationship
+import org.neo4j.sunshine.filters._
 
 class ExecutionEngine(val graph: GraphDatabaseService) {
   type MapTransformer = (Map[String, Any]) => Map[String, Any]

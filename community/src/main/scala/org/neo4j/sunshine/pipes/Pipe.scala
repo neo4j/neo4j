@@ -17,34 +17,43 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.lab.cypher
+package org.neo4j.sunshine.pipes
 
-import commands._
-import org.junit.Test
-import org.junit.Assert._
+import java.lang.String
 
 /**
  * Created by Andres Taylor
- * Date: 5/24/11
- * Time: 15:53 
+ * Date: 4/18/11
+ * Time: 21:00 
  */
 
-class FilterTests {
-  @Test def andsDoesntHaveOrs() {
-    val x = And(
-      PropertyEquals("a", "b", "c"),
-      PropertyEquals("a", "b", "c"))
-    assertFalse("Should not claim it has any ors", x.hasOrs)
-  }
+abstract class Pipe extends Traversable[Map[String, Any]] {
+//  var input: Option[Pipe] = None
 
-  @Test def nestedStuffHasOrs() {
-    val x =
-      And(
-        PropertyEquals("a", "b", "c"),
-        Or(
-          PropertyEquals("a", "b", "c"),
-          PropertyEquals("a", "b", "c")))
+//  protected def getInput: Pipe = input match {
+//    case None => throw new RuntimeException("No input defined yet")
+//    case Some(x) => x
+//  }
 
-    assertTrue("Does have an or, but didn't say it.", x.hasOrs)
-  }
+//  def dependsOn: List[String]
+
+  def ++(other: Pipe): Pipe = new JoinPipe(this, other)
+
+//  def setInput(pipe: Pipe) {
+//    input = Some(pipe)
+//  }
+
+  def columnNames: List[String]
+
+
+//  def childrenNames: String =
+//    input match {
+//      case None => ""
+//      case Some(x) => ".." + x.toString
+//    }
+
+
+//  override def toString(): String =
+//    this.getClass.getSimpleName + "(deps:" + dependsOn + " gives:" + columnNames + ")" + childrenNames
+
 }

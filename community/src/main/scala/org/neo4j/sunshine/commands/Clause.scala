@@ -17,22 +17,30 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.lab.cypher.commands
-
-import org.neo4j.graphdb.Direction
-import scala.Some
+package org.neo4j.sunshine.commands
 
 /**
  * Created by Andres Taylor
- * Date: 5/19/11
- * Time: 17:06 
+ * Date: 4/16/11
+ * Time: 13:29 
  */
 
-abstract class Pattern
 
-object RelatedTo {
-  def apply(left: String, right: String, relName: String, relType: String, direction: Direction) =
-    new RelatedTo(left, right, Some(relName), Some(relType), direction)
+abstract sealed class Clause {
+  def ++(other: Clause): Clause = And(this, other)
+  def hasOrs : Boolean = false
 }
 
-case class RelatedTo(left: String, right: String, relName: Option[String], relType: Option[String], direction: Direction) extends Pattern
+case class PropertyEquals(variable: String, propName: String, value: Any) extends Clause
+
+case class NumberLargerThan(variable: String, propName: String, value: Float) extends Clause
+
+case class PropertyEqualsBetweenEntities(variable1: String, property1: String, variable2:String, property2: String) extends Clause
+
+case class And(a: Clause, b: Clause) extends Clause {
+  override def hasOrs = a.hasOrs || b.hasOrs
+}
+
+case class Or(a: Clause, b: Clause) extends Clause {
+  override def hasOrs = true
+}

@@ -17,23 +17,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.lab.cypher.pipes
+package org.neo4j.sunshine
 
-import org.neo4j.graphdb.{PropertyContainer, Node}
+import java.lang.Exception
 
 /**
  * Created by Andres Taylor
- * Date: 4/18/11
- * Time: 21:00 
+ * Date: 5/20/11
+ * Time: 14:08 
  */
 
-class FromPump[T <: PropertyContainer](name: String, source: Iterable[T]) extends Pipe {
-  def columnNames: List[String] = List(name)
-
-  def foreach[U](f: (Map[String, Any]) => U) {
-    source.foreach((x) => {
-      val map = Map(name -> x)
-      f.apply(map)
-    })
-  }
+class SyntaxError(message:String, cause:Throwable) extends Exception(message, cause) {
+  def this(message:String) = this(message, null)
 }

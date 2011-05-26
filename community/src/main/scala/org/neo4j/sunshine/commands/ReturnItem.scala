@@ -17,25 +17,21 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.lab.cypher.pipes
+package org.neo4j.sunshine.commands
 
-import java.lang.String
 
 /**
  * Created by Andres Taylor
- * Date: 4/18/11
- * Time: 21:01 
+ * Date: 4/16/11
+ * Time: 19:08 
  */
 
-class JoinPipe(a: Pipe, b: Pipe) extends Pipe {
+abstract sealed class ReturnItem
 
-  def columnNames: List[String] = a.columnNames ++ b.columnNames
+case class EntityOutput(name: String) extends ReturnItem
+case class PropertyOutput(entityName:String, propName:String) extends ReturnItem
+case class NullablePropertyOutput(entityName:String, propName:String) extends ReturnItem
 
-  def foreach[U](f: (Map[String, Any]) => U) {
-    a.foreach((aMap) => {
-      b.foreach((bMap) => {
-        f.apply(aMap ++ bMap)
-      })
-    })
-  }
-}
+abstract sealed class AggregationItem extends ReturnItem
+
+case class Count(variable:String) extends AggregationItem

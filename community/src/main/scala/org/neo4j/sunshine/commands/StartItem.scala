@@ -17,30 +17,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.lab.cypher.commands
+package org.neo4j.sunshine.commands
 
-/**
- * Created by Andres Taylor
- * Date: 4/16/11
- * Time: 13:29 
- */
+abstract sealed class StartItem(val variable:String)
 
+abstract class RelationshipStartItem(varName:String) extends StartItem(varName)
 
-abstract sealed class Clause {
-  def ++(other: Clause): Clause = And(this, other)
-  def hasOrs : Boolean = false
-}
+abstract class NodeStartItem(varName:String) extends StartItem(varName)
 
-case class PropertyEquals(variable: String, propName: String, value: Any) extends Clause
+case class RelationshipById(varName:String, id: Long*) extends RelationshipStartItem(varName)
 
-case class NumberLargerThan(variable: String, propName: String, value: Float) extends Clause
+case class NodeByIndex(varName:String, idxName: String, key:String, value: Any) extends NodeStartItem(varName)
 
-case class PropertyEqualsBetweenEntities(variable1: String, property1: String, variable2:String, property2: String) extends Clause
+case class RelationshipByIndex(varName:String, idxName: String, value: Any) extends RelationshipStartItem(varName)
 
-case class And(a: Clause, b: Clause) extends Clause {
-  override def hasOrs = a.hasOrs || b.hasOrs
-}
-
-case class Or(a: Clause, b: Clause) extends Clause {
-  override def hasOrs = true
-}
+case class NodeById(varName:String, id: Long*) extends NodeStartItem(varName)

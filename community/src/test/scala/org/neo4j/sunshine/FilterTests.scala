@@ -17,16 +17,34 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.lab.cypher
+package org.neo4j.sunshine
 
-import java.lang.Exception
+import commands._
+import org.junit.Test
+import org.junit.Assert._
 
 /**
  * Created by Andres Taylor
- * Date: 5/20/11
- * Time: 14:08 
+ * Date: 5/24/11
+ * Time: 15:53 
  */
 
-class SyntaxError(message:String, cause:Throwable) extends Exception(message, cause) {
-  def this(message:String) = this(message, null)
+class FilterTests {
+  @Test def andsDoesntHaveOrs() {
+    val x = And(
+      PropertyEquals("a", "b", "c"),
+      PropertyEquals("a", "b", "c"))
+    assertFalse("Should not claim it has any ors", x.hasOrs)
+  }
+
+  @Test def nestedStuffHasOrs() {
+    val x =
+      And(
+        PropertyEquals("a", "b", "c"),
+        Or(
+          PropertyEquals("a", "b", "c"),
+          PropertyEquals("a", "b", "c")))
+
+    assertTrue("Does have an or, but didn't say it.", x.hasOrs)
+  }
 }

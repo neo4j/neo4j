@@ -1,6 +1,6 @@
 Introduction
 ==
-Cypher has a few syntaxes that should be explained before we jump into the examples.
+Sunshine has a few syntaxes that should be explained before we jump into the examples.
 
 
 FROM _from_expr_ [, _from_expr_ ...]

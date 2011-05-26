@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.lab.cypher
+package org.neo4j.sunshine
 
 import commands._
 import scala.util.parsing.combinator._
 import org.neo4j.graphdb.Direction
 import scala.Some
 
-class CypherParser extends JavaTokenParsers {
+class SunshineParser extends JavaTokenParsers {
   def ignoreCase(str:String): Parser[String] = ("""(?i)\Q""" + str + """\E""").r
 
   def query: Parser[Query] = start ~ opt(matching) ~ opt(where) ~ returns ^^ {

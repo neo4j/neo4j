@@ -9,15 +9,15 @@
 
     <properties>
         <scala.version>2.8.1</scala.version>
-        <neo.version>1.4.M02</neo.version>
+        <neo.version>1.4-SNAPSHOT</neo.version>
     </properties>
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.neo4j.lab</groupId>
-    <artifactId>neo4j-cypher</artifactId>
+    <artifactId>neo4j-sunshine</artifactId>
     <packaging>jar</packaging>
     <version>0.2-SNAPSHOT</version>
-    <name>cypher</name>
+    <name>Neo4j Sunshine</name>
     <repositories>
         <repository>
             <id>scala-tools.org</id>

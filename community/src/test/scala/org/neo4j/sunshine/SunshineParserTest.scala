@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.lab.cypher
+package org.neo4j.sunshine
 
 import commands._
 import org.junit.Test
@@ -31,9 +31,9 @@ import org.neo4j.graphdb.Direction
  * Time: 10:36 
  */
 
-class CypherParserTest {
+class SunshineParserTest {
   def testQuery(query: String, expectedQuery: Query) {
-    val parser = new CypherParser()
+    val parser = new SunshineParser()
     val executionTree = parser.parse(query).get
 
     assertEquals(expectedQuery, executionTree)

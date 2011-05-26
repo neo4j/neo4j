@@ -17,18 +17,23 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.lab.cypher.commands
+package org.neo4j.sunshine.pipes
 
-abstract sealed class StartItem(val variable:String)
+import org.neo4j.graphdb.{PropertyContainer, Node}
 
-abstract class RelationshipStartItem(varName:String) extends StartItem(varName)
+/**
+ * Created by Andres Taylor
+ * Date: 4/18/11
+ * Time: 21:00 
+ */
 
-abstract class NodeStartItem(varName:String) extends StartItem(varName)
+class FromPump[T <: PropertyContainer](name: String, source: Iterable[T]) extends Pipe {
+  def columnNames: List[String] = List(name)
 
-case class RelationshipById(varName:String, id: Long*) extends RelationshipStartItem(varName)
-
-case class NodeByIndex(varName:String, idxName: String, key:String, value: Any) extends NodeStartItem(varName)
-
-case class RelationshipByIndex(varName:String, idxName: String, value: Any) extends RelationshipStartItem(varName)
-
-case class NodeById(varName:String, id: Long*) extends NodeStartItem(varName)
+  def foreach[U](f: (Map[String, Any]) => U) {
+    source.foreach((x) => {
+      val map = Map(name -> x)
+      f.apply(map)
+    })
+  }
+}

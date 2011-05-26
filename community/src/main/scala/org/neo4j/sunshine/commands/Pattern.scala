@@ -17,20 +17,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.lab.cypher.commands
+package org.neo4j.sunshine.commands
+
+import org.neo4j.graphdb.Direction
+import scala.Some
 
 /**
  * Created by Andres Taylor
- * Date: 4/16/11
- * Time: 19:08 
+ * Date: 5/19/11
+ * Time: 17:06 
  */
 
-abstract sealed class ReturnItem
+abstract class Pattern
 
-case class EntityOutput(name: String) extends ReturnItem
-case class PropertyOutput(entityName:String, propName:String) extends ReturnItem
-case class NullablePropertyOutput(entityName:String, propName:String) extends ReturnItem
+object RelatedTo {
+  def apply(left: String, right: String, relName: String, relType: String, direction: Direction) =
+    new RelatedTo(left, right, Some(relName), Some(relType), direction)
+}
 
-abstract sealed class AggregationItem extends ReturnItem
-
-case class Count(variable:String) extends AggregationItem
+case class RelatedTo(left: String, right: String, relName: Option[String], relType: Option[String], direction: Direction) extends Pattern
