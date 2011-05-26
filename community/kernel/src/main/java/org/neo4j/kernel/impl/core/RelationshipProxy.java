@@ -72,7 +72,7 @@ class RelationshipProxy implements Relationship
 
     public RelationshipType getType()
     {
-        return nm.getRelForProxy( relId ).getType();
+        return nm.getRelForProxy( relId ).getType( nm );
     }
 
     public Iterable<String> getPropertyKeys()
@@ -112,7 +112,7 @@ class RelationshipProxy implements Relationship
 
     public boolean isType( RelationshipType type )
     {
-        return nm.getRelForProxy( relId ).isType( type );
+        return nm.getRelForProxy( relId ).isType( nm, type );
     }
 
     public int compareTo( Object rel )

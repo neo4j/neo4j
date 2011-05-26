@@ -305,4 +305,29 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         Node end = graph.getNode( "i" );
         assertPaths( finder.findAllPaths( start, end ), "a,b,c,d,e,f,g,i", "a,b,c,d,e,f,h,i" );
     }
+    
+    @Test
+    public void makeSureShortestPathCanBeFetchedEvenIfANodeHasLoops() throws Exception
+    {
+        // Layout:
+        //
+        // = means loop :)
+        //
+        //   (m)
+        //   /  \
+        // (s)  (o)=
+        //   \  /
+        //   (n)=
+        //    |
+        //   (p)
+        graph.makeEdgeChain( "m,s,n,p" );
+        graph.makeEdgeChain( "m,o,n" );
+        graph.makeEdge( "o", "o" );
+        graph.makeEdge( "n", "n" );
+
+        PathFinder<Path> finder = instantiatePathFinder( 3 );
+        Iterable<Path> paths =
+                finder.findAllPaths( graph.getNode( "m" ), graph.getNode( "p" ) );
+        assertPaths( paths, "m,s,n,p", "m,o,n,p" );
+    }
 }

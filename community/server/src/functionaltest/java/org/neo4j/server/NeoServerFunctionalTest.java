@@ -19,22 +19,27 @@
  */
 package org.neo4j.server;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.server.WebTestUtils.CLIENT;
+
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.URI;
+
+import javax.ws.rs.core.MediaType;
+
 import org.dummy.web.service.DummyThirdPartyWebService;
 import org.junit.After;
 import org.junit.Test;
 import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.server.rest.FunctionalTestHelper;
 
-import javax.ws.rs.core.MediaType;
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.URI;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import com.sun.jersey.api.client.ClientResponse;
 
 public class NeoServerFunctionalTest {
 
@@ -53,10 +58,10 @@ public class NeoServerFunctionalTest {
         server.start();
         FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper(server);
 
-        Client client = Client.create();
-        ClientResponse response = client.resource(functionalTestHelper.getWebadminUri()).get(ClientResponse.class);
+        ClientResponse response = CLIENT.resource(functionalTestHelper.getWebadminUri()).get(ClientResponse.class);
 
         assertThat(response.getStatus(), is(200));
+        response.close();
     }
 
     @Test
@@ -79,11 +84,11 @@ public class NeoServerFunctionalTest {
         server = ServerBuilder.server().withPassingStartupHealthcheck().withRandomDatabaseDir().build();
         server.start();
 
-        Client client = Client.create();
         assertFalse(server.baseUri().toString().contains("webadmin"));
-        ClientResponse response = client.resource(server.baseUri()).get(ClientResponse.class);
+        ClientResponse response = CLIENT.resource(server.baseUri()).get(ClientResponse.class);
         assertThat(response.getStatus(), is(200));
         assertThat(response.toString(), containsString("webadmin"));
+        response.close();
     }
 
     @Test
@@ -92,11 +97,11 @@ public class NeoServerFunctionalTest {
         server.start();
         FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper(server);
 
-        Client client = Client.create();
-        ClientResponse response = client.resource(functionalTestHelper.getWebadminUri()).get(ClientResponse.class);
+        ClientResponse response = CLIENT.resource(functionalTestHelper.getWebadminUri()).get(ClientResponse.class);
 
         assertThat(response.getStatus(), is(200));
         assertThat(response.getHeaders().getFirst("Content-Type"), containsString("html"));
+        response.close();
     }
 
     @Test
@@ -105,9 +110,10 @@ public class NeoServerFunctionalTest {
         server.start();
         FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper(server);
 
-        ClientResponse response = Client.create().resource(functionalTestHelper.getWebadminUri()).accept(MediaType.APPLICATION_JSON_TYPE)
+        ClientResponse response = CLIENT.resource(functionalTestHelper.getWebadminUri()).accept(MediaType.APPLICATION_JSON_TYPE)
                 .get(ClientResponse.class);
         assertEquals(200, response.getStatus());
+        response.close();
     }
 
     @Test
@@ -145,7 +151,7 @@ public class NeoServerFunctionalTest {
         server.start();
 
         URI thirdPartyServiceUri = new URI(server.baseUri().toString() + DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT).normalize();
-        String response = Client.create().resource(thirdPartyServiceUri.toString()).get(String.class);
+        String response = CLIENT.resource(thirdPartyServiceUri.toString()).get(String.class);
         assertEquals("hello", response);
     }
 
@@ -156,7 +162,7 @@ public class NeoServerFunctionalTest {
         server.start();
 
         URI thirdPartyServiceUri = new URI(server.baseUri().toString() + DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT + "/sayFortyTwo").normalize();
-        String response = Client.create().resource(thirdPartyServiceUri.toString()).get(String.class);
+        String response = CLIENT.resource(thirdPartyServiceUri.toString()).get(String.class);
         assertEquals("hello 42", response);
     }
 

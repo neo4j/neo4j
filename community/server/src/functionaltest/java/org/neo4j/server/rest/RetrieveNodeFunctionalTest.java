@@ -22,6 +22,7 @@ package org.neo4j.server.rest;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.server.WebTestUtils.CLIENT;
 
 import java.io.IOException;
 import java.net.URI;
@@ -29,18 +30,20 @@ import java.net.URISyntaxException;
 import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
+import org.neo4j.server.rest.DocsGenerator.ResponseEntity;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.repr.formats.CompactJsonFormat;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
@@ -52,64 +55,109 @@ public class RetrieveNodeFunctionalTest
 
     private FunctionalTestHelper functionalTestHelper;
 
-
+    public @Rule
+    DocumentationGenerator gen = new DocumentationGenerator();
 
     @Before
-    public void setupServer() throws IOException, DatabaseBlockedException, URISyntaxException {
-        server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
+    public void setupServer() throws IOException, DatabaseBlockedException, URISyntaxException
+    {
+        server = ServerBuilder.server()
+                .withRandomDatabaseDir()
+                .withPassingStartupHealthcheck()
+                .build();
         server.start();
-        functionalTestHelper = new FunctionalTestHelper(server);
-        nodeUri = new URI(functionalTestHelper.nodeUri() + "/" + new GraphDbHelper(server.getDatabase()).createNode());
+        functionalTestHelper = new FunctionalTestHelper( server );
+        nodeUri = new URI( functionalTestHelper.nodeUri() + "/"
+                           + new GraphDbHelper( server.getDatabase() ).createNode() );
     }
 
     @After
-    public void stopServer() {
+    public void stopServer()
+    {
         server.stop();
         server = null;
     }
 
+    /**
+     * Get node.
+     * 
+     * Note that the response contains URI/templates for the available
+     * operations for getting properties and relationships.
+     */
+    @Documented
     @Test
-    public void shouldGet200WhenRetrievingNode() throws Exception {
+    public void shouldGet200WhenRetrievingNode() throws Exception
+    {
         String uri = nodeUri.toString();
-        DocsGenerator.create(
-                "Get node",
-                "Note that the response contains URI/templates for "
-                        + "the available operations for getting properties and relationships." )
+        gen.create()
+                .expectedStatus( 200 )
                 .get( uri );
     }
 
+    /**
+     * Get node - compact.
+     * 
+     * Specifying the subformat in the requests media type yields a more compact
+     * JSON response without metadata and templates.
+     */
+    @Documented
     @Test
-    public void shouldGetContentLengthHeaderWhenRetrievingNode() throws Exception {
-        ClientResponse response = retrieveNodeFromService(nodeUri.toString());
-        assertNotNull(response.getHeaders().get("Content-Length"));
+    public void shouldGet200WhenRetrievingNodeCompact()
+    {
+        String uri = nodeUri.toString();
+        ResponseEntity entity = gen.create()
+                .expectedType( CompactJsonFormat.MEDIA_TYPE )
+                .expectedStatus( 200 )
+                .get( uri );
+        assertTrue( entity.entity()
+                .contains( "self" ) );
     }
 
     @Test
-    public void shouldHaveJsonMediaTypeOnResponse() {
-        ClientResponse response = retrieveNodeFromService(nodeUri.toString());
-        assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
+    public void shouldGetContentLengthHeaderWhenRetrievingNode() throws Exception
+    {
+        ClientResponse response = retrieveNodeFromService( nodeUri.toString() );
+        assertNotNull( response.getHeaders()
+                .get( "Content-Length" ) );
+        response.close();
     }
 
     @Test
-    public void shouldHaveJsonDataInResponse() throws Exception {
-        ClientResponse response = retrieveNodeFromService(nodeUri.toString());
-
-        Map<String, Object> map = JsonHelper.jsonToMap(response.getEntity(String.class));
-        assertTrue(map.containsKey("self"));
+    public void shouldHaveJsonMediaTypeOnResponse()
+    {
+        ClientResponse response = retrieveNodeFromService( nodeUri.toString() );
+        assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
+        response.close();
     }
 
     @Test
-    public void shouldGet404WhenRetrievingNonExistentNode() throws Exception {
-        DocsGenerator.create( "Get non-existent node" )
-                .expectedStatus( Response.Status.NOT_FOUND )
+    public void shouldHaveJsonDataInResponse() throws Exception
+    {
+        ClientResponse response = retrieveNodeFromService( nodeUri.toString() );
+
+        Map<String, Object> map = JsonHelper.jsonToMap( response.getEntity( String.class ) );
+        assertTrue( map.containsKey( "self" ) );
+        response.close();
+    }
+
+    /**
+     * Get non-existent node.
+     */
+    @Documented
+    @Test
+    public void shouldGet404WhenRetrievingNonExistentNode() throws Exception
+    {
+        gen.create()
+                .expectedStatus( 404 )
                 .get( nodeUri + "00000" );
     }
 
-    private ClientResponse retrieveNodeFromService(final String uri) {
-        WebResource resource = Client.create().resource(uri);
-        ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
+    private ClientResponse retrieveNodeFromService( final String uri )
+    {
+        WebResource resource = CLIENT.resource( uri );
+        ClientResponse response = resource.accept( MediaType.APPLICATION_JSON )
+                .get( ClientResponse.class );
         return response;
     }
-
 
 }

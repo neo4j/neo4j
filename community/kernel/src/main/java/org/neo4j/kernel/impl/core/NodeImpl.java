@@ -36,7 +36,6 @@ import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.Record;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -45,25 +44,30 @@ import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
 class NodeImpl extends Primitive
 {
-    private volatile ArrayMap<String,RelIdArray> relationshipMap = null;
-    // private RelationshipGrabber relationshipGrabber = null;
-    private RelationshipChainPosition relChainPosition = null;
+    private volatile ArrayMap<String,RelIdArray> relationshipMap;
+    private long relChainPosition = Record.NO_NEXT_RELATIONSHIP.intValue();
+    private long id;
 
     NodeImpl( long id )
     {
-        super( id );
+        this( id, false );
     }
 
     // newNode will only be true for NodeManager.createNode
     NodeImpl( long id, boolean newNode )
     {
-        super( id, newNode );
+        super( newNode );
+        this.id = id;
         if ( newNode )
         {
             relationshipMap = new ArrayMap<String,RelIdArray>();
-            relChainPosition = new RelationshipChainPosition(
-                Record.NO_NEXT_RELATIONSHIP.intValue() );
         }
+    }
+    
+    @Override
+    public long getId()
+    {
+        return id;
     }
 
     @Override
@@ -193,6 +197,14 @@ class NodeImpl extends Primitive
             this, DirectionWrapper.BOTH, nodeManager, types );
     }
 
+    public Iterable<Relationship> getRelationships( NodeManager nodeManager,
+            Direction direction, RelationshipType... types )
+    {
+        DirectionWrapper dir = RelIdArray.wrap( direction );
+        return new IntArrayIterator( getAllRelationshipsOfType( nodeManager, dir, types ),
+            this, dir, nodeManager, types );
+    }
+    
     public Relationship getSingleRelationship( NodeManager nodeManager, RelationshipType type,
         Direction dir )
     {
@@ -266,7 +278,7 @@ class NodeImpl extends Primitive
     // this method is only called when a relationship is created or
     // a relationship delete is undone or when the full node is loaded
     void addRelationship( NodeManager nodeManager, RelationshipType type, long relId,
-            Direction dir )
+            DirectionWrapper dir )
     {
         RelIdArray relationshipSet = nodeManager.getCowRelationshipAddMap(
             this, type.name(), true );
@@ -280,7 +292,7 @@ class NodeImpl extends Primitive
     {
         RelIdArray relationshipSet = nodeManager.getCowRelationshipRemoveMap(
             this, type.name(), true );
-        relationshipSet.add( relId, Direction.OUTGOING );
+        relationshipSet.add( relId, DirectionWrapper.OUTGOING );
     }
 
     private void ensureRelationshipMapNotNull( NodeManager nodeManager )
@@ -298,8 +310,7 @@ class NodeImpl extends Primitive
         {
             if ( relationshipMap == null )
             {
-                this.relChainPosition =
-                    nodeManager.getRelationshipChainPosition( this );
+                this.relChainPosition = nodeManager.getRelationshipChainPosition( this );
                 ArrayMap<String,RelIdArray> tmpRelMap = new ArrayMap<String,RelIdArray>();
                 map = getMoreRelationships( nodeManager, tmpRelMap );
                 this.relationshipMap = tmpRelMap;
@@ -314,7 +325,7 @@ class NodeImpl extends Primitive
     private Map<Long,RelationshipImpl> getMoreRelationships( NodeManager nodeManager, 
             ArrayMap<String,RelIdArray> tmpRelMap )
     {
-        if ( !relChainPosition.hasMore() )
+        if ( !hasMoreRelationshipsToLoad() )
         {
             return null;
         }
@@ -342,12 +353,17 @@ class NodeImpl extends Primitive
         // nodeManager.putAllInRelCache( pair.other() );
     }
     
+    private boolean hasMoreRelationshipsToLoad()
+    {
+        return relChainPosition != Record.NO_NEXT_RELATIONSHIP.intValue();
+    }
+
     boolean getMoreRelationships( NodeManager nodeManager )
     {
         Pair<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>> pair;
         synchronized ( this )
         {
-            if ( !relChainPosition.hasMore() )
+            if ( !hasMoreRelationshipsToLoad() )
             {
                 return false;
             }
@@ -452,6 +468,12 @@ class NodeImpl extends Primitive
         return getRelationships( nodeManager, types ).iterator().hasNext();
     }
 
+    public boolean hasRelationship( NodeManager nodeManager, Direction direction,
+            RelationshipType... types )
+    {
+        return getRelationships( nodeManager, direction, types ).iterator().hasNext();
+    }
+    
     public boolean hasRelationship( NodeManager nodeManager, Direction dir )
     {
         return getRelationships( nodeManager, dir ).iterator().hasNext();
@@ -501,9 +523,14 @@ class NodeImpl extends Primitive
         }
     }
 
-    RelationshipChainPosition getRelChainPosition()
+    long getRelChainPosition()
     {
         return relChainPosition;
+    }
+    
+    void setRelChainPosition( long position )
+    {
+        this.relChainPosition = position;
     }
 
     RelIdArray getRelationshipIds( String type )

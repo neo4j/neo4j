@@ -17,22 +17,47 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.index.impl.lucene;
+package org.neo4j.server.configuration;
 
-import org.neo4j.graphdb.index.IndexImplementation;
-import org.neo4j.graphdb.index.IndexProvider;
-import org.neo4j.kernel.KernelData;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
-public class LuceneIndexProvider extends IndexProvider
+import org.apache.commons.configuration.AbstractConfiguration;
+
+public class MapBasedConfiguration extends AbstractConfiguration
 {
-    public LuceneIndexProvider()
+    
+    private Map<String, Object> config = new HashMap<String, Object>();
+
+    @Override
+    public boolean isEmpty()
     {
-        super( LuceneIndexImplementation.SERVICE_NAME );
+        return config.isEmpty();
     }
 
     @Override
-    public IndexImplementation load( KernelData kernel )
+    public boolean containsKey( String key )
     {
-        return new LuceneIndexImplementation( kernel.graphDatabase(), kernel.getConfig() );
+        return config.containsKey( key );
     }
+
+    @Override
+    public Object getProperty( String key )
+    {
+        return config.get( key );
+    }
+
+    @Override
+    public Iterator getKeys()
+    {
+        return config.keySet().iterator();
+    }
+
+    @Override
+    protected void addPropertyDirect( String key, Object value )
+    {
+        config.put( key, value );
+    }
+
 }

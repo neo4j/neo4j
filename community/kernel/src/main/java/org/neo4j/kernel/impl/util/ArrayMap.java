@@ -25,31 +25,30 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 
 public class ArrayMap<K,V>
 {
-    private ArrayEntry<K,V>[] arrayEntries;
-
-    private volatile int arrayCount = 0;
-    private int toMapThreshold = 5;
-    private Map<K,V> propertyMap = null;
+    private Object data;
+    private volatile byte arrayCount;
+    private byte toMapThreshold = 5;
     private final boolean useThreadSafeMap;
-    private boolean switchBackToArray = false;
+    private final boolean switchBackToArray;
 
     public ArrayMap()
     {
+        switchBackToArray = false;
         useThreadSafeMap = false;
-        arrayEntries = new ArrayEntry[toMapThreshold];
+        data = new ArrayEntry[toMapThreshold];
     }
 
     public ArrayMap( int mapThreshold, boolean threadSafe, boolean shrinkToArray )
     {
-        this.toMapThreshold = mapThreshold;
+        this.toMapThreshold = (byte)mapThreshold;
         this.useThreadSafeMap = threadSafe;
         this.switchBackToArray = shrinkToArray;
-        arrayEntries = new ArrayEntry[toMapThreshold];
+        data = new ArrayEntry[toMapThreshold];
     }
 
     public void put( K key, V value )
@@ -61,34 +60,33 @@ public class ArrayMap<K,V>
         }
         for ( int i = 0; i < arrayCount; i++ )
         {
-            if ( arrayEntries[i].getKey().equals( key ) )
+            if ( ((ArrayEntry[])data)[i].getKey().equals( key ) )
             {
-                arrayEntries[i].setNewValue( value );
+                ((ArrayEntry[])data)[i].setNewValue( value );
                 return;
             }
         }
         if ( arrayCount != -1 )
         {
-            if ( arrayCount < arrayEntries.length )
+            if ( arrayCount < ((ArrayEntry[])data).length )
             {
-                arrayEntries[arrayCount++] = new ArrayEntry<K,V>( key, value );
+                ((ArrayEntry[])data)[arrayCount++] = new ArrayEntry<K,V>( key, value );
             }
             else
             {
-                propertyMap = new HashMap<K,V>( arrayEntries.length * 2 );
+                Map propertyMap = new HashMap<K,V>( ((ArrayEntry[])data).length * 2 );
                 for ( int i = 0; i < arrayCount; i++ )
                 {
-                    propertyMap.put( arrayEntries[i].getKey(), arrayEntries[i]
-                        .getValue() );
+                    propertyMap.put( ((ArrayEntry[])data)[i].getKey(), ((ArrayEntry[])data)[i].getValue() );
                 }
-                arrayEntries = null;
+                data = propertyMap;
                 arrayCount = -1;
                 propertyMap.put( key, value );
             }
         }
         else
         {
-            propertyMap.put( key, value );
+            ((Map)data).put( key, value );
         }
     }
 
@@ -96,34 +94,33 @@ public class ArrayMap<K,V>
     {
         for ( int i = 0; i < arrayCount; i++ )
         {
-            if ( arrayEntries[i].getKey().equals( key ) )
+            if ( ((ArrayEntry[])data)[i].getKey().equals( key ) )
             {
-                arrayEntries[i].setNewValue( value );
+                ((ArrayEntry[])data)[i].setNewValue( value );
                 return;
             }
         }
         if ( arrayCount != -1 )
         {
-            if ( arrayCount < arrayEntries.length )
+            if ( arrayCount < ((ArrayEntry[])data).length )
             {
-                arrayEntries[arrayCount++] = new ArrayEntry<K,V>( key, value );
+                ((ArrayEntry[])data)[arrayCount++] = new ArrayEntry<K,V>( key, value );
             }
             else
             {
-                propertyMap = new HashMap<K,V>( arrayEntries.length * 2 );
+                Map propertyMap = new HashMap<K,V>( ((ArrayEntry[])data).length * 2 );
                 for ( int i = 0; i < arrayCount; i++ )
                 {
-                    propertyMap.put( arrayEntries[i].getKey(), arrayEntries[i]
-                        .getValue() );
+                    propertyMap.put( ((ArrayEntry[])data)[i].getKey(), ((ArrayEntry[])data)[i].getValue() );
                 }
-                arrayEntries = null;
+                data = propertyMap;
                 arrayCount = -1;
                 propertyMap.put( key, value );
             }
         }
         else
         {
-            propertyMap.put( key, value );
+            ((Map)data).put( key, value );
         }
     }
 
@@ -140,7 +137,7 @@ public class ArrayMap<K,V>
         int count = arrayCount;
         for ( int i = 0; i < count; i++ )
         {
-            ArrayEntry<K, V> entry = arrayEntries[i];
+            ArrayEntry<K, V> entry = ((ArrayEntry[])data)[i];
             if ( entry != null && key.equals( entry.getKey() ) )
             {
                 return entry.getValue();
@@ -148,23 +145,25 @@ public class ArrayMap<K,V>
         }
         if ( arrayCount == -1 )
         {
-            return propertyMap.get( key );
+            return (V) ((Map)data).get( key );
         }
         return null;
     }
 
     private synchronized V synchronizedGet( K key )
     {
-        for ( int i = 0; i < arrayCount; i++ )
+        int count = arrayCount;
+        for ( int i = 0; i < count; i++ )
         {
-            if ( key.equals( arrayEntries[i].getKey() ) )
+            ArrayEntry<K, V> entry = ((ArrayEntry[])data)[i];
+            if ( entry != null && key.equals( entry.getKey() ) )
             {
-                return arrayEntries[i].getValue();
+                return entry.getValue();
             }
         }
         if ( arrayCount == -1 )
         {
-            return propertyMap.get( key );
+            return (V) ((Map)data).get( key );
         }
         return null;
     }
@@ -173,30 +172,30 @@ public class ArrayMap<K,V>
     {
         for ( int i = 0; i < arrayCount; i++ )
         {
-            if ( arrayEntries[i].getKey().equals( key ) )
+            if ( ((ArrayEntry[])data)[i].getKey().equals( key ) )
             {
-                V removedProperty = arrayEntries[i].getValue();
+                V removedProperty = (V) ((ArrayEntry[])data)[i].getValue();
                 arrayCount--;
-                System.arraycopy( arrayEntries, i + 1, arrayEntries, i,
+                System.arraycopy( ((ArrayEntry[])data), i + 1, ((ArrayEntry[])data), i,
                     arrayCount - i );
-                arrayEntries[arrayCount] = null;
+                ((ArrayEntry[])data)[arrayCount] = null;
                 return removedProperty;
             }
         }
         if ( arrayCount == -1 )
         {
-            V value = propertyMap.remove( key );
-            if ( switchBackToArray && propertyMap.size() < toMapThreshold )
+            V value = (V) ((Map)data).remove( key );
+            if ( switchBackToArray && ((Map)data).size() < toMapThreshold )
             {
-                arrayEntries = new ArrayEntry[toMapThreshold];
+                ArrayEntry[] arrayEntries = new ArrayEntry[toMapThreshold];
                 int tmpCount = 0;
-                for ( Entry<K,V> entry : propertyMap.entrySet() )
+                for ( Object entryObject : ((Map)data).entrySet() )
                 {
-                    arrayEntries[tmpCount++] = new ArrayEntry<K,V>( entry
-                        .getKey(), entry.getValue() );
+                    Entry entry = (Entry) entryObject;
+                    arrayEntries[tmpCount++] = new ArrayEntry( entry.getKey(), entry.getValue() );
                 }
-                propertyMap = null;
-                arrayCount = tmpCount;
+                data = arrayEntries;
+                arrayCount = (byte) tmpCount;
             }
             return value;
         }
@@ -211,30 +210,30 @@ public class ArrayMap<K,V>
         }
         for ( int i = 0; i < arrayCount; i++ )
         {
-            if ( arrayEntries[i].getKey().equals( key ) )
+            if ( ((ArrayEntry[])data)[i].getKey().equals( key ) )
             {
-                V removedProperty = arrayEntries[i].getValue();
+                V removedProperty = (V) ((ArrayEntry[])data)[i].getValue();
                 arrayCount--;
-                System.arraycopy( arrayEntries, i + 1, arrayEntries, i,
+                System.arraycopy( ((ArrayEntry[])data), i + 1, ((ArrayEntry[])data), i,
                     arrayCount - i );
-                arrayEntries[arrayCount] = null;
+                ((ArrayEntry[])data)[arrayCount] = null;
                 return removedProperty;
             }
         }
         if ( arrayCount == -1 )
         {
-            V value = propertyMap.remove( key );
-            if ( switchBackToArray && propertyMap.size() < toMapThreshold )
+            V value = (V) ((Map)data).remove( key );
+            if ( switchBackToArray && ((Map)data).size() < toMapThreshold )
             {
-                arrayEntries = new ArrayEntry[toMapThreshold];
+                ArrayEntry[] arrayEntries = new ArrayEntry[toMapThreshold];
                 int tmpCount = 0;
-                for ( Entry<K,V> entry : propertyMap.entrySet() )
+                for ( Object entryObject : ((Map)data).entrySet() )
                 {
-                    arrayEntries[tmpCount++] = new ArrayEntry<K,V>( entry
-                        .getKey(), entry.getValue() );
+                    Entry entry = (Entry) entryObject;
+                    arrayEntries[tmpCount++] = new ArrayEntry( entry.getKey(), entry.getValue() );
                 }
-                propertyMap = null;
-                arrayCount = tmpCount;
+                data = arrayEntries;
+                arrayCount = (byte) tmpCount;
             }
             return value;
         }
@@ -279,12 +278,12 @@ public class ArrayMap<K,V>
     {
         if ( arrayCount == -1 )
         {
-            return propertyMap.keySet();
+            return ((Map)data).keySet();
         }
         List<K> keys = new LinkedList<K>();
         for ( int i = 0; i < arrayCount; i++ )
         {
-            keys.add( arrayEntries[i].getKey() );
+            keys.add( (K) ((ArrayEntry[])data)[i].getKey() );
         }
         return keys;
     }
@@ -293,12 +292,12 @@ public class ArrayMap<K,V>
     {
         if ( arrayCount == -1 )
         {
-            return propertyMap.values();
+            return ((Map)data).values();
         }
         List<V> values = new LinkedList<V>();
         for ( int i = 0; i < arrayCount; i++ )
         {
-            values.add( arrayEntries[i].getValue() );
+            values.add( (V) ((ArrayEntry[])data)[i].getValue() );
         }
         return values;
     }
@@ -307,12 +306,12 @@ public class ArrayMap<K,V>
     {
         if ( arrayCount == -1 )
         {
-            return propertyMap.entrySet();
+            return ((Map)data).entrySet();
         }
         Set<Entry<K,V>> entries = new HashSet<Entry<K,V>>();
         for ( int i = 0; i < arrayCount; i++ )
         {
-            entries.add( arrayEntries[i] );
+            entries.add( ((ArrayEntry[])data)[i] );
         }
         return entries;
     }
@@ -323,7 +322,7 @@ public class ArrayMap<K,V>
         {
             return arrayCount;
         }
-        return propertyMap.size();
+        return ((Map)data).size();
     }
 
     public void clear()
@@ -335,12 +334,12 @@ public class ArrayMap<K,V>
         }
         if ( arrayCount != -1 )
         {
-            Arrays.fill( arrayEntries, null );
+            Arrays.fill( ((ArrayEntry[])data), null );
             arrayCount = 0;
         }
         else
         {
-            propertyMap.clear();
+            ((Map)data).clear();
         }
     }
 
@@ -348,12 +347,12 @@ public class ArrayMap<K,V>
     {
         if ( arrayCount != -1 )
         {
-            Arrays.fill( arrayEntries, null );
+            Arrays.fill( ((ArrayEntry[])data), null );
             arrayCount = 0;
         }
         else
         {
-            propertyMap.clear();
+            ((Map)data).clear();
         }
     }
 }

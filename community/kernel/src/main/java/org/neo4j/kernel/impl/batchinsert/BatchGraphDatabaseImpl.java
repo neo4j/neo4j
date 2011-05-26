@@ -246,6 +246,12 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
             return newRelIterator( Direction.BOTH, types );
         }
 
+        public Iterable<Relationship> getRelationships( Direction direction,
+                RelationshipType... types )
+        {
+            return newRelIterator( direction, types );
+        }
+        
         public Iterable<Relationship> getRelationships( Direction dir )
         {
             return newRelIterator( dir, null );
@@ -277,18 +283,19 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
 
         public boolean hasRelationship()
         {
-            Iterator<Relationship> relItr =
-                newRelIterator( Direction.BOTH, null );
-            return relItr.hasNext();
+            return newRelIterator( Direction.BOTH, null ).hasNext();
         }
 
         public boolean hasRelationship( RelationshipType... types )
         {
-            Iterator<Relationship> relItr =
-                newRelIterator( Direction.BOTH, types );
-            return relItr.hasNext();
+            return newRelIterator( Direction.BOTH, types ).hasNext();
         }
 
+        public boolean hasRelationship( Direction direction, RelationshipType... types )
+        {
+            return newRelIterator( direction, types ).hasNext();
+        }
+        
         public boolean hasRelationship( Direction dir )
         {
             Iterator<Relationship> relItr =
@@ -298,9 +305,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
 
         public boolean hasRelationship( RelationshipType type, Direction dir )
         {
-            Iterator<Relationship> relItr =
-                newRelIterator( dir, new RelationshipType[] { type } );
-            return relItr.hasNext();
+            return newRelIterator( dir, new RelationshipType[] { type } ).hasNext();
         }
 
         /* Tentative expansion API

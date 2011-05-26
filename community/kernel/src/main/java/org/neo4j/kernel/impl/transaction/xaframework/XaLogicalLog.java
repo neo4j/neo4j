@@ -150,8 +150,6 @@ public class XaLogicalLog
             }
             buf.flip();
             char c = buf.asCharBuffer().get();
-            File copy = new File( fileName + ".copy" );
-            safeDeleteFile( copy );
             if ( c == CLEAN )
             {
                 // clean
@@ -177,15 +175,9 @@ public class XaLogicalLog
                     throw new IllegalStateException(
                         "Active marked as 1 but no " + newLog + " exist" );
                 }
-                currentLog = LOG1;
                 File otherLog = new File( getLog2FileName() );
-                if ( otherLog.exists() )
-                {
-                    if ( !otherLog.delete() )
-                    {
-                        log.warning( "Unable to delete " + copy.getName() );
-                    }
-                }
+                safeDeleteFile( otherLog );
+                currentLog = LOG1;
                 open( newLog );
             }
             else if ( c == LOG2 )
@@ -197,13 +189,7 @@ public class XaLogicalLog
                         "Active marked as 2 but no " + newLog + " exist" );
                 }
                 File otherLog = new File( getLog1FileName() );
-                if ( otherLog.exists() )
-                {
-                    if ( !otherLog.delete() )
-                    {
-                        log.warning( "Unable to delete " + copy.getName() );
-                    }
-                }
+                safeDeleteFile( otherLog );
                 currentLog = LOG2;
                 open( newLog );
             }
@@ -606,9 +592,6 @@ public class XaLogicalLog
     private void renameCurrentLogFileAndIncrementVersion( String logFileName,
         long endPosition ) throws IOException
     {
-//        System.out.println( " ---- Performing clean close on " + logFileName + " -----" );
-//        DumpLogicalLog.main( new String[] { logFileName } );
-//        System.out.println( " ----- end ----" );
         File file = new File( logFileName );
         if ( !file.exists() )
         {
@@ -644,9 +627,6 @@ public class XaLogicalLog
                 }
             }
         }
-//        System.out.println( " ---- Created " + newName + " -----" );
-//        DumpLogicalLog.main( new String[] { newName } );
-//        System.out.println( " ----- end ----" );
     }
 
     private void deleteCurrentLogFile( String logFileName ) throws IOException

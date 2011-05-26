@@ -29,6 +29,13 @@ import com.sun.jersey.api.client.ClientResponse;
 
 public class WebTestUtils {
 
+    public static final Client CLIENT = Client.create();
+    public static final Client NON_REDIRECTING_CLIENT = Client.create();
+    static
+    {
+        NON_REDIRECTING_CLIENT.setFollowRedirects( false );
+    }
+    
     private static boolean available(int port) {
         if (port < 1111 || port > 9999) {
             throw new IllegalArgumentException("Invalid start port: " + port);
@@ -69,6 +76,6 @@ public class WebTestUtils {
     }
     
     public static ClientResponse sendGetRequestTo(URI targetUri) {
-        return Client.create().resource(targetUri).get(ClientResponse.class);
+        return CLIENT.resource(targetUri).get(ClientResponse.class);
     }
 }

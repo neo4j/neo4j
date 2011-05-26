@@ -22,6 +22,7 @@ package org.neo4j.server;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.server.WebTestUtils.NON_REDIRECTING_CLIENT;
 
 import java.io.IOException;
 
@@ -31,7 +32,6 @@ import org.junit.Test;
 import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.server.web.Jetty6WebServer;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class NeoServerStartupLoggingFunctionalTest
@@ -66,9 +66,7 @@ public class NeoServerStartupLoggingFunctionalTest
         assertThat( appender.toString().length(), is( greaterThan( 0 ) ) );
 
         // Check the server is alive
-        Client client = Client.create();
-        client.setFollowRedirects( false );
-        ClientResponse response = client.resource( "http://localhost:" + server.getWebServerPort() + "/" )
+        ClientResponse response = NON_REDIRECTING_CLIENT.resource( "http://localhost:" + server.getWebServerPort() + "/" )
                 .get( ClientResponse.class );
         assertThat( response.getStatus(), is( greaterThan( 199 ) ) );
 

@@ -1,0 +1,16 @@
+[[tutorials-java-embedded-setup]]
+Include Neo4j in your project
+=============================
+
+== Add Neo4j to the build path ==
+
+Extract a Neo4j http://neo4j.org/download/[download] zip/tarball, and use the '.jar' files found in the lib/ directory.
+
+Eclipse::
+ Right click on the project and then go _Build Path -> Configure Build Path._
+ In the dialog, choose _Add External JARs_, browse to the Neo4j 'lib/' directory and select all of the jar files.
+
+
+== Add Neo4j as a dependency ==
+
+

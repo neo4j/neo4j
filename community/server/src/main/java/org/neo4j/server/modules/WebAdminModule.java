@@ -47,7 +47,7 @@ public class WebAdminModule implements ServerModule
             startRoundRobinDB( neoServer );
         } catch ( Exception e )
         {
-            log.warn( e );
+            log.error( e );
             return;
         }
         neoServer.getWebServer().addStaticContent( DEFAULT_WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION, DEFAULT_WEB_ADMIN_PATH );
@@ -64,7 +64,7 @@ public class WebAdminModule implements ServerModule
     {
         Database db = neoServer.getDatabase();
         RrdFactory rrdFactory = new RrdFactory( neoServer.getConfiguration() );
-        RrdDb rrdDb = rrdFactory.createRrdDbAndSampler( db.graph, jobScheduler );
+        RrdDb rrdDb = rrdFactory.createRrdDbAndSampler( db, jobScheduler );
         db.setRrdDb( rrdDb );
     }
 }

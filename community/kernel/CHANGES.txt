@@ -1,3 +1,12 @@
+1.4.M03 (2011-05-26)
+--------------------
+o Kernel now supports self relationships or "loops".
+o Added new relationship direction aware cache on nodes speeding up traversals by direction.
+o Reduced memory usage by relationships.
+o Reduced call stack removing the EventConsumer/ResourceConnection wrappers glue between nioneo and kernel.
+o Fixed bug in global tx log that did not mark transactions finished when closed then crashed.
+o Fixed cache invalidation when applying external transaction.
+
 1.4.M02 (2011-05-12)
 --------------------
 o Changed the default implementation of the logical log to a DirectMappedLogBuffer.

@@ -1,11 +1,11 @@
 
-
 @import url(jquery.ui.css);
 @import url(jquery.notify.css);
 @import url(buttons.css);
 @import url(typography.css);
 @import url(tables.css);
 @import url(forms.css);
+@import url(grid.css);
 
 body { 
   width:100%; 
@@ -395,6 +395,16 @@ body {
 }
 
 /**
+ * INDEX MANAGER
+ */
+
+.node-indexes-wrap {
+  border-right:2px solid #AAAAAA;
+  width:49% !important;
+  height:100%;
+}
+
+/**
  * HEADLINE BAR
  */
 
@@ -655,6 +665,7 @@ ol lh {
 
 #global-loading-indicator {
   float:left;
+  display:none;
 }
 
 .loading-spinner {
@@ -682,29 +693,33 @@ ol lh {
   padding: 3px 0;
 }
 
+.helpbox a {
+  position:relative;
+  display:block;
+  text-decoration:none;
+}
+
+.helpbox a .helptext {
+  background: none repeat scroll 0 0 #333333;
+  color: #EEEEEE;
+  display: none;
+  padding: 5px 10px;
+  position: absolute;
+  text-decoration: none !important;
+
+  -moz-border-radius:4px;
+  -webkit-border-radius:4px;
+  border-radius:4px;
+}
+
+.helpbox a:hover .helptext {
+  display:block;
+}
+
 .error {
   font-size: 10px;
   padding: 2px 5px;
 }
-
-.span-1  { width: 6.958%; float:left;  margin-right:1.5%; }
-.span-2  { width: 15.416%; float:left; margin-right:1.5%; }
-.span-3  { width: 23.875%; float:left; margin-right:1.5%; }
-.span-4  { width: 32.333%; float:left; margin-right:1.5%; }
-.span-5  { width: 40.791%; float:left; margin-right:1.5%; }
-.span-6  { width: 49.250%; float:left; margin-right:1.5%; }
-.span-7  { width: 57.708%; float:left; margin-right:1.5%; }
-.span-8  { width: 66.166%; float:left; margin-right:1.5%; }
-.span-9  { width: 74.625%; float:left; margin-right:1.5%; }
-.span-10 { width: 83.083%; float:left; margin-right:1.5%; }
-.span-11 { width: 91.541%; float:left; margin-right:1.5%; }
-.span-12 { width: 100%; float:left; margin-right:0%; }
-
-.span-third { width: 32%; float:left; margin-right:2%; }
-.span-half { width: 49%; float:left; margin-right:2%; }
-.span-all { width: 100%; float:left; clear:right; }
-
-.last { clear:right; margin-right:0; }
 
 /**
  * DEBUGGING

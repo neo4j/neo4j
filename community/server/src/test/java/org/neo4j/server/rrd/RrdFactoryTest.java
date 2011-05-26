@@ -19,6 +19,14 @@
  */
 package org.neo4j.server.rrd;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertThat;
+
+import java.io.IOException;
+import java.util.HashMap;
+
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.MapConfiguration;
 import org.junit.After;
@@ -26,26 +34,19 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.kernel.ImpermanentGraphDatabase;
 import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.database.Database;
 import org.rrd4j.core.RrdDb;
-
-import java.io.IOException;
-import java.util.HashMap;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertThat;
 
 public class RrdFactoryTest
 {
     private Configuration config;
-    private ImpermanentGraphDatabase db;
+    private Database db;
 
     @Before
     public void setUp() throws Exception
     {
         config = new MapConfiguration( new HashMap<String, String>() );
-        db = new ImpermanentGraphDatabase();
+        db = new Database(new ImpermanentGraphDatabase());
     }
 
     @After
@@ -80,7 +81,7 @@ public class RrdFactoryTest
 
         RrdDb rrdDbAndSampler = factory.createRrdDbAndSampler( db, new NullJobScheduler() );
 
-        assertThat( factory.directoryUsed, startsWith( db.getStoreDir() ) );
+        assertThat( factory.directoryUsed, startsWith( db.graph.getStoreDir() ) );
         assertThat( factory.directoryUsed, endsWith( "rrd" ) );
 
         rrdDbAndSampler.close();
@@ -112,7 +113,7 @@ public class RrdFactoryTest
     private static class NullJobScheduler implements JobScheduler
     {
         @Override
-        public void scheduleToRunEveryXSeconds( Job job, int runEveryXSeconds )
+        public void scheduleToRunEveryXSeconds( Job job, String name, int runEveryXSeconds )
         {
 
         }

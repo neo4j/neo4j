@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphdb;
 
-
 /**
  * A node in the graph with properties and relationships to other entities.
  * Along with {@link Relationship relationships}, nodes are the core building
@@ -72,11 +71,9 @@ public interface Node extends PropertyContainer
     /**
      * Deletes this node if it has no relationships attached to it. If
      * <code>delete()</code> is invoked on a node with relationships, an
-     * unchecked exception will be raised when the transaction is committed.
+     * unchecked exception will be raised when the transaction is committing.
      * Invoking any methods on this node after <code>delete()</code> has
      * returned is invalid and will lead to unspecified behavior.
-     *
-     * @throws RuntimeException if this node has relationships attached to it
      */
     public void delete();
 
@@ -110,6 +107,19 @@ public interface Node extends PropertyContainer
      *         node
      */
     public Iterable<Relationship> getRelationships( RelationshipType... types );
+    
+    /**
+     * Returns all the relationships of any of the types in <code>types</code>
+     * that are attached to this node and have the given <code>direction</code>.
+     * If no relationships of the given types are attached to this node, an empty
+     * iterable will be returned.
+     *
+     * @param types the given relationship type(s)
+     * @param direction the direction of the relationships to return.
+     * @return all relationships of the given type(s) that are attached to this
+     *         node
+     */
+    public Iterable<Relationship> getRelationships( Direction direction, RelationshipType... types );
 
     /**
      * Returns <code>true</code> if there are any relationships of any of the
@@ -123,6 +133,19 @@ public interface Node extends PropertyContainer
      */
     public boolean hasRelationship( RelationshipType... types );
 
+    /**
+     * Returns <code>true</code> if there are any relationships of any of the
+     * types in <code>types</code> attached to this node (for the given
+     * <code>direction</code>), <code>false</code> otherwise.
+     *
+     * @param types the given relationship type(s)
+     * @param direction the direction to check relationships for
+     * @return <code>true</code> if there are any relationships of any of the
+     *         types in <code>types</code> attached to this node,
+     *         <code>false</code> otherwise
+     */
+    public boolean hasRelationship( Direction direction, RelationshipType... types );
+    
     /**
      * Returns all {@link Direction#OUTGOING OUTGOING} or
      * {@link Direction#INCOMING INCOMING} relationships from this node. If
@@ -239,10 +262,6 @@ public interface Node extends PropertyContainer
      * Creates a relationship between this node and another node. The
      * relationship is of type <code>type</code>. It starts at this node and
      * ends at <code>otherNode</code>.
-     * <p>
-     * Neo4j doesn't support self-relationships, i.e. relationships where the
-     * start node and end node are the same. If <code>otherNode</code> is the
-     * same as this node then an exception will be thrown.
      * <p>
      * A relationship is equally well traversed in both directions so there's no
      * need to create another relationship in the opposite direction (in regards

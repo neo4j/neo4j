@@ -32,11 +32,13 @@ import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.ImpermanentGraphDatabase;
+import org.neo4j.server.database.Database;
 
 public class RelationshipCountSampleableTest
 {
-    public ImpermanentGraphDatabase db;
+    public Database db;
     public RelationshipCountSampleable sampleable;
 
     @Test
@@ -48,12 +50,12 @@ public class RelationshipCountSampleableTest
     @Test
     public void addANodeAndSampleableGoesUp() throws IOException, MalformedObjectNameException
     {
-        createARelationship( db );
+        createARelationship( db.graph );
 
         assertThat( sampleable.getValue(), is( 1L ) );
     }
 
-    private void createARelationship( ImpermanentGraphDatabase db )
+    private void createARelationship( AbstractGraphDatabase db )
     {
         Transaction tx = db.beginTx();
         Node node1 = db.createNode();
@@ -66,7 +68,7 @@ public class RelationshipCountSampleableTest
     @Before
     public void setUp() throws Exception
     {
-        db = new ImpermanentGraphDatabase();
+        db = new Database(new ImpermanentGraphDatabase());
         sampleable = new RelationshipCountSampleable( db );
     }
 

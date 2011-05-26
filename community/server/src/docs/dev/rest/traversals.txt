@@ -1,0 +1,42 @@
+
+Traversals are performed from a start node.
+The kind of objects in the response is determined by 'traverse/\{returnType}' in the URL.
++returnType+ can have one of these values:
+ * +node+
+ * +relationship+
+ * +path+
+ * +fullpath+
+
+To decide how the graph should be traversed you can use:
+
+order:: Decides in which order to visit nodes. Possible values:
+ * +breadth first+
+ * +depth first+
+relationships:: Decides which relationship types and directions should be followed.
+ The direction can be one of:
+ * +all+
+ * +in+
+ * +out+
+uniqueness:: Decides how uniqueness should be calculated. Possible values:
+ * +node global+
+ * +none+
+ * +relationship global+
+ * +node path+
+ * +relationship path+
+prune evaluator:: Decides whether the traverser should continue down that path or if it should be pruned so that the traverser won't continue down that path.
+ You can write your own prune evaluator or use the built-in +none+ prune evaluator.
+return filter:: Decides whether the current position should be included in the result.
+ You can provide your own code for this, or use one of the built-in filters:
+ * +all+
+ * +all but start node+
+max depth:: Is a short-hand way of specifying a prune evaluator which prunes after a certain depth.
+ If not specified a max depth of 1 is used and if a +prune evaluator+ is specified instead of a +max depth+, no max depth limit is set.
+
+The +position+ object in the body of the return filter and prune evaluator is a
++http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Path.html[Path]+
+object representing the path from the start node to the current traversal position.
+
+Out of the box, the REST API supports JavaScript code in filters/evaluators.
+See the examples for the exact syntax of the request.
+
+

@@ -19,9 +19,13 @@
  */
 package org.neo4j.server.rest.web;
 
-//TODO: move this to another package. domain?
 public class OperationFailureException extends Exception
 {
+    public OperationFailureException( String message )
+    {
+        super(message);
+    }
+
     private static final long serialVersionUID = -4594462038185850546L;
 
 }

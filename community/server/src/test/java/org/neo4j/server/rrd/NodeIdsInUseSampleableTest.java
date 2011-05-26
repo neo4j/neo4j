@@ -31,11 +31,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.ImpermanentGraphDatabase;
+import org.neo4j.server.database.Database;
 
 public class NodeIdsInUseSampleableTest
 {
-    public ImpermanentGraphDatabase db;
+    public Database db;
     public NodeIdsInUseSampleable sampleable;
 
     @Test
@@ -49,12 +51,12 @@ public class NodeIdsInUseSampleableTest
     {
         long oldValue = sampleable.getValue();
 
-        createNode( db );
+        createNode( db.graph );
 
         assertThat( sampleable.getValue(), greaterThan( oldValue ) );
     }
 
-    private void createNode( ImpermanentGraphDatabase db )
+    private void createNode( AbstractGraphDatabase db )
     {
         Transaction tx = db.beginTx();
         db.createNode();
@@ -65,7 +67,7 @@ public class NodeIdsInUseSampleableTest
     @Before
     public void setUp() throws Exception
     {
-        db = new ImpermanentGraphDatabase();
+        db = new Database(new ImpermanentGraphDatabase());
         sampleable = new NodeIdsInUseSampleable( db );
     }
 

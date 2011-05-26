@@ -250,7 +250,7 @@ abstract class Command extends XaCommand
                 record.setNextRel( buffer.getLong() );
                 record.setNextProp( buffer.getLong() );
             }
-            return new NodeCommand( neoStore.getNodeStore(), record );
+            return new NodeCommand( neoStore == null ? null : neoStore.getNodeStore(), record );
         }
 
         @Override
@@ -284,6 +284,11 @@ abstract class Command extends XaCommand
         long getSecondNode()
         {
             return record.getSecondNode();
+        }
+
+        boolean isRemove()
+        {
+            return !record.inUse();
         }
 
         @Override
@@ -374,7 +379,7 @@ abstract class Command extends XaCommand
                 record = new RelationshipRecord( id, -1, -1, -1 );
                 record.setInUse( false );
             }
-            return new RelationshipCommand( neoStore.getRelationshipStore(),
+            return new RelationshipCommand( neoStore == null ? null : neoStore.getRelationshipStore(),
                 record );
         }
 
@@ -485,7 +490,7 @@ abstract class Command extends XaCommand
                 }
                 record.addKeyRecord( dr );
             }
-            return new PropertyIndexCommand( neoStore.getPropertyStore()
+            return new PropertyIndexCommand( neoStore == null ? null : neoStore.getPropertyStore()
                 .getIndexStore(), record );
         }
 
@@ -670,7 +675,7 @@ abstract class Command extends XaCommand
                 }
                 record.addValueRecord( dr );
             }
-            return new PropertyCommand( neoStore.getPropertyStore(), record );
+            return new PropertyCommand( neoStore == null ? null : neoStore.getPropertyStore(), record );
         }
 
         private static PropertyType getType( int type )
@@ -777,8 +782,8 @@ abstract class Command extends XaCommand
                 }
                 record.addTypeRecord( dr );
             }
-            return new RelationshipTypeCommand(
-                neoStore.getRelationshipTypeStore(), record );
+            return new RelationshipTypeCommand( 
+                    neoStore == null ? null : neoStore.getRelationshipTypeStore(), record );
         }
 
         @Override

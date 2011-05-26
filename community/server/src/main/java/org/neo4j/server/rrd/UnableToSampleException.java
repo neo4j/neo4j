@@ -17,29 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.nioneo.store;
+package org.neo4j.server.rrd;
 
-public class RelationshipChainPosition
+public class UnableToSampleException extends RuntimeException
 {
-    private long nextRecord;
     
-    public RelationshipChainPosition( long startRecord )
-    {
-        nextRecord = startRecord;
-    }
-    
-    public long getNextRecord()
-    {
-        return nextRecord;
-    }
-    
-    public void setNextRecord( long record )
-    {
-        nextRecord = record;
-    }
+    private static final long serialVersionUID = 112443232112435425L;
 
-    public boolean hasMore()
-    {
-        return nextRecord != Record.NO_NEXT_RELATIONSHIP.intValue();
-    }
+
 }

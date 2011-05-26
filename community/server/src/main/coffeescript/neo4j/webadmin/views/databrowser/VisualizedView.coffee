@@ -55,6 +55,8 @@ define(
           switch @dataModel.get("type")
             when "node"
               @visualizeFromNode @dataModel.getData().getItem()
+            when "nodeList"
+              @visualizeFromNodes @dataModel.getData().getRawNodes()
             when "relationship"
               @visualizeFromRelationships [@dataModel.getData().getItem()]
             when "relationshipList"
@@ -66,6 +68,9 @@ define(
 
       visualizeFromNode : (node) ->
         @getViz().setNode(node)
+
+      visualizeFromNodes : (nodes) ->
+        @getViz().setNodes(nodes)
 
       visualizeFromRelationships : (rels) ->
 

@@ -21,7 +21,9 @@ package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.server.WebTestUtils.CLIENT;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
@@ -32,18 +34,19 @@ import javax.ws.rs.core.Response.Status;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
-
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
 import org.neo4j.server.rest.web.PropertyValueException;
+
+import com.sun.jersey.api.client.ClientResponse;
 
 public class TraverserFunctionalTest {
     private long startNode;
@@ -56,6 +59,9 @@ public class TraverserFunctionalTest {
     private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
     private GraphDbHelper helper;
+
+    public @Rule
+    DocumentationGenerator gen = new DocumentationGenerator();
 
     @Before
     public void setupServer() throws Exception {
@@ -91,7 +97,7 @@ public class TraverserFunctionalTest {
     }
 
     private ClientResponse traverse(long node, String description) {
-        return Client.create().resource(functionalTestHelper.nodeUri(node) + "/traverse/node").accept(MediaType.APPLICATION_JSON_TYPE).entity(description,
+        return CLIENT.resource(functionalTestHelper.nodeUri(node) + "/traverse/node").accept(MediaType.APPLICATION_JSON_TYPE).entity(description,
                 MediaType.APPLICATION_JSON_TYPE).post(ClientResponse.class);
     }
 
@@ -99,6 +105,7 @@ public class TraverserFunctionalTest {
     public void shouldGet404WhenTraversingFromNonExistentNode() {
         ClientResponse response = traverse(99999, "{}");
         assertEquals(Status.NOT_FOUND.getStatusCode(), response.getStatus());
+        response.close();
     }
 
     @Test
@@ -106,6 +113,7 @@ public class TraverserFunctionalTest {
         long node = helper.createNode();
         ClientResponse response = traverse(node, "{}");
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
+        response.close();
     }
 
     @Test
@@ -115,6 +123,7 @@ public class TraverserFunctionalTest {
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
         String entity = response.getEntity(String.class);
         expectNodes(entity, child1_l1, child2_l1);
+        response.close();
     }
 
     private void expectNodes(String entity, long... nodes) throws PropertyValueException
@@ -132,14 +141,39 @@ public class TraverserFunctionalTest {
         assertTrue("Expected not empty:" + expected, expected.isEmpty());
     }
 
+    /**
+     * Traversal using a return filter.
+     * 
+     * In this example, the +none+ prune evaluator is used and a
+     * return filter is supplied. The result is to be returned as nodes
+     * and the max depth is set to 3.
+     */
+    @Documented
     @Test
     public void shouldGetExpectedHitsWhenTraversingWithDescription() throws PropertyValueException
     {
-        String description = JsonHelper.createJsonFrom(MapUtil.map("prune evaluator", MapUtil.map("language", "builtin", "name", "none"), "return filter",
-                MapUtil.map("language", "javascript", "body", "position.endNode().getProperty('name').toLowerCase().contains('t')")));
-        ClientResponse response = traverse(startNode, description);
-        String entity = response.getEntity(String.class);
-        expectNodes(entity, startNode, child1_l1, child1_l3, child2_l3);
+        ArrayList<Map<String,Object>> rels = new ArrayList<Map<String,Object>>();
+        rels.add( MapUtil.map( "type","knows","direction","all") );
+        rels.add( MapUtil.map( "type","loves","direction","all") );
+        String description = JsonHelper.createJsonFrom( MapUtil.map(
+                "order",
+                "breadth first",
+                "uniqueness",
+                "node global",
+                "prune evaluator",
+                MapUtil.map( "language", "builtin", "name", "none" ),
+                "return filter",
+                MapUtil.map( "language", "javascript", "body",
+                        "position.endNode().getProperty('name').toLowerCase().contains('t')" ),
+                "relationships", rels, "max depth", 3 ) );
+        String entity = gen.create()
+                .expectedStatus( 200 )
+                .payload( description )
+                .post( functionalTestHelper.nodeUri( startNode )
+                       + "/traverse/node" )
+                .entity();
+        expectNodes( entity, startNode, child1_l1, child1_l3,
+                child2_l3 );
     }
 
     @Test
@@ -147,5 +181,6 @@ public class TraverserFunctionalTest {
         long node = helper.createNode();
         ClientResponse response = traverse(node, "::not JSON{[ at all");
         assertEquals(Status.BAD_REQUEST.getStatusCode(), response.getStatus());
+        response.close();
     }
 }

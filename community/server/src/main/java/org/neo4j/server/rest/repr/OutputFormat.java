@@ -48,8 +48,8 @@ public class OutputFormat
         return response( Response.ok(), representation );
     }
 
-    public final <REPR extends Representation & EntityRepresentation> Response created(
-            REPR representation ) throws BadInputException
+    public final <REPR extends Representation & EntityRepresentation> Response created( REPR representation )
+            throws BadInputException
     {
         return response( Response.created( uri( representation ) ), representation );
     }
@@ -61,31 +61,28 @@ public class OutputFormat
 
     public Response badRequest( Throwable exception )
     {
-        return response( Response.status( Status.BAD_REQUEST ), new ExceptionRepresentation(
-                exception ) );
+        return response( Response.status( Status.BAD_REQUEST ), new ExceptionRepresentation( exception ) );
     }
 
     public Response notFound( Throwable exception )
     {
-        return response( Response.status( Status.NOT_FOUND ), new ExceptionRepresentation(
-                exception ) );
+        return response( Response.status( Status.NOT_FOUND ), new ExceptionRepresentation( exception ) );
     }
 
     public Response notFound()
     {
-        return Response.status( Status.NOT_FOUND ).build();
+        return Response.status( Status.NOT_FOUND )
+                .build();
     }
 
     public Response conflict( Throwable exception )
     {
-        return response( Response.status( Status.CONFLICT ),
-                new ExceptionRepresentation( exception ) );
+        return response( Response.status( Status.CONFLICT ), new ExceptionRepresentation( exception ) );
     }
 
     public Response serverError( Throwable exception )
     {
-        return response( Response.status( Status.INTERNAL_SERVER_ERROR ),
-                new ExceptionRepresentation( exception ) );
+        return response( Response.status( Status.INTERNAL_SERVER_ERROR ), new ExceptionRepresentation( exception ) );
     }
 
     private URI uri( EntityRepresentation representation ) throws BadInputException
@@ -100,12 +97,15 @@ public class OutputFormat
         try
         {
             entityAsBytes = entity.getBytes( UTF8 );
-        } catch ( UnsupportedEncodingException e )
+        }
+        catch ( UnsupportedEncodingException e )
         {
             throw new RuntimeException( "Could not encode string as UTF-8", e );
         }
-        return response.entity( entityAsBytes ).header( HttpHeaders.CONTENT_ENCODING, UTF8 ).type(
-                getMediaType() ).build();
+        return response.entity( entityAsBytes )
+                .header( HttpHeaders.CONTENT_ENCODING, UTF8 )
+                .type( getMediaType() )
+                .build();
     }
 
     public MediaType getMediaType()
@@ -120,6 +120,7 @@ public class OutputFormat
 
     public Response noContent()
     {
-        return Response.status( Status.NO_CONTENT ).build();
+        return Response.status( Status.NO_CONTENT )
+                .build();
     }
 }

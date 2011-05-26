@@ -284,8 +284,8 @@ public class AdaptiveCacheManager
             // then allocationRatio
             ratio = 0;
         }
-        // System.out.println( "max= " + max + " total=" + total +
-        // " ratio= " + ratio + " ... free=" + free );
+
+
         if ( ratio > element.getRatio() )
         {
             // decrease cache size
@@ -357,11 +357,6 @@ public class AdaptiveCacheManager
             this.cache = cache;
             this.ratio = ratio;
             this.minSize = minSize;
-        }
-
-        String getName()
-        {
-            return cache.getName();
         }
 
         Cache<?,?> getCache()

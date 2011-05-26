@@ -31,7 +31,7 @@ public class Exceptions
         }
         catch ( Exception failure )
         {
-            // ok, we did our best, guess there will be no cause
+            // OK, we did our best, guess there will be no cause
         }
         return exception;
     }
@@ -58,7 +58,7 @@ public class Exceptions
         }
         else
         {
-            throw new RuntimeException( messageForUnexpected, exception );
+            return new RuntimeException( messageForUnexpected, exception );
         }
     }
 

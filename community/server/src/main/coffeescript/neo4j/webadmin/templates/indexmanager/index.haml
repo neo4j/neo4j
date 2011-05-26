@@ -1,3 +1,12 @@
-.index
-	%p= index.name
-	%button.delete-index.bad-button Delete
+%td.value= htmlEscape(index.name)
+:if index.configAvailable()
+  %td.value= htmlEscape(index.provider)
+  %td
+    %p= htmlEscape(JSON.stringify(index.getConfig()))
+:if !index.configAvailable()
+  %td
+    %p N/A  
+  %td 
+    %p N/A
+%td
+  %button.delete-index.bad-button Delete

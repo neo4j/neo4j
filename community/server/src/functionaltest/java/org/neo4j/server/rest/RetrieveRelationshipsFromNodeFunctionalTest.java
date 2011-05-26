@@ -21,6 +21,7 @@ package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.neo4j.server.WebTestUtils.CLIENT;
 
 import java.io.IOException;
 import java.util.List;
@@ -30,7 +31,9 @@ import javax.ws.rs.core.MediaType;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
@@ -39,7 +42,6 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
@@ -52,6 +54,9 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
     private GraphDbHelper helper;
+    
+    public @Rule
+    DocumentationGenerator gen = new DocumentationGenerator();    
 
     @Before
     public void setupServer() throws IOException {
@@ -76,7 +81,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     }
 
     private ClientResponse sendRetrieveRequestToServer(long nodeId, String path) {
-        WebResource resource = Client.create().resource(functionalTestHelper.nodeUri() + "/" + nodeId + "/relationships" + path);
+        WebResource resource = CLIENT.resource(functionalTestHelper.nodeUri() + "/" + nodeId + "/relationships" + path);
         return resource.accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
     }
 
@@ -89,43 +94,63 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
         }
     }
 
+    /**
+     * Get all relationships.
+     */
+    @Documented
     @Test
     public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingAllRelationshipsForANode() throws JsonParseException
     {
-        String entity = DocsGenerator.create( "Get all relationships" )
+        String entity = gen.create()
+                .expectedStatus( 200 )
                 .get( functionalTestHelper.nodeUri() + "/"
                       + nodeWithRelationships + "/relationships" + "/all" )
                 .entity();
         verifyRelReps( 3, entity );
     }
 
+    /**
+     * Get incoming relationships.
+     */
+    @Documented
     @Test
     public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingIncomingRelationshipsForANode() throws JsonParseException
     {
-        String entity = DocsGenerator.create( "Get incoming relationships" )
+        String entity = gen.create()
+                .expectedStatus( 200 )
                 .get( functionalTestHelper.nodeUri() + "/"
                       + nodeWithRelationships + "/relationships" + "/in" )
                 .entity();
         verifyRelReps( 1, entity );
     }
 
+    /**
+     * Get outgoing relationships.
+     */
+    @Documented
     @Test
     public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingOutgoingRelationshipsForANode() throws JsonParseException
     {
-        String entity = DocsGenerator.create( "Get outgoing relationships" )
+        String entity = gen.create()
+                .expectedStatus( 200 )
                 .get( functionalTestHelper.nodeUri() + "/"
                       + nodeWithRelationships + "/relationships" + "/out" )
                 .entity();
         verifyRelReps( 2, entity );
     }
 
+    /**
+     * Get typed relationships.
+     * 
+     * Note that the "+&+" needs to be escaped for example when using
+     * http://curl.haxx.se/[cURL] from the terminal.
+     */
+    @Documented
     @Test
     public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingAllTypedRelationshipsForANode() throws JsonParseException
     {
-        String entity = DocsGenerator.create(
-                "Get typed relationships",
-                "Note that the \"+&+\" escaped for example when using "
-                        + "http://curl.haxx.se/[cURL] from the terminal." )
+        String entity = gen.create()
+                .expectedStatus( 200 )
                 .get( functionalTestHelper.nodeUri() + "/"
                       + nodeWithRelationships + "/relationships"
                       + "/all/LIKES&HATES" )
@@ -140,6 +165,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
         assertEquals(200, response.getStatus());
         assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
         verifyRelReps(1, response.getEntity(String.class));
+        response.close();
     }
 
     @Test
@@ -149,13 +175,18 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
         assertEquals(200, response.getStatus());
         assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
         verifyRelReps(1, response.getEntity(String.class));
+        response.close();
     }
 
+    /**
+     * Get relationships on a node without relationships.
+     */
+    @Documented
     @Test
     public void shouldRespondWith200AndEmptyListOfRelationshipRepresentationsWhenGettingAllRelationshipsForANodeWithoutRelationships() throws JsonParseException
     {
-        String entity = DocsGenerator.create(
-                "Get relationships on a node without relationships" )
+        String entity = gen.create()
+                .expectedStatus( 200 )
                 .get( functionalTestHelper.nodeUri() + "/"
                       + nodeWithoutRelationships + "/relationships" + "/all" )
                 .entity();
@@ -169,6 +200,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
         assertEquals(200, response.getStatus());
         assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
         verifyRelReps(0, response.getEntity(String.class));
+        response.close();
     }
 
     @Test
@@ -178,45 +210,51 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
         assertEquals(200, response.getStatus());
         assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
         verifyRelReps(0, response.getEntity(String.class));
+        response.close();
     }
 
     @Test
     public void shouldRespondWith404WhenGettingAllRelationshipsForNonExistingNode() {
         ClientResponse response = sendRetrieveRequestToServer(nonExistingNode, "/all");
         assertEquals(404, response.getStatus());
+        response.close();
     }
 
     @Test
     public void shouldRespondWith404WhenGettingIncomingRelationshipsForNonExistingNode() {
         ClientResponse response = sendRetrieveRequestToServer(nonExistingNode, "/in");
         assertEquals(404, response.getStatus());
+        response.close();
     }
 
     @Test
     public void shouldRespondWith404WhenGettingOutgoingRelationshipsForNonExistingNode() {
         ClientResponse response = sendRetrieveRequestToServer(nonExistingNode, "/out");
         assertEquals(404, response.getStatus());
+        response.close();
     }
 
     @Test
     public void shouldGet200WhenRetrievingValidRelationship() throws DatabaseBlockedException {
         long relationshipId = helper.createRelationship("LIKES");
 
-        ClientResponse response = Client.create().resource( functionalTestHelper.relationshipUri(relationshipId) ).accept( MediaType.APPLICATION_JSON_TYPE ).get(ClientResponse.class);
+        ClientResponse response = CLIENT.resource( functionalTestHelper.relationshipUri(relationshipId) ).accept( MediaType.APPLICATION_JSON_TYPE ).get(ClientResponse.class);
 
         assertEquals(200, response.getStatus());
+        response.close();
     }
 
     @Test
     public void shouldGetARelationshipRepresentationInJsonWhenRetrievingValidRelationship() throws Exception {
         long relationshipId = helper.createRelationship("LIKES");
 
-        ClientResponse response = Client.create().resource(functionalTestHelper.relationshipUri(relationshipId)).accept(MediaType.APPLICATION_JSON_TYPE).get(
+        ClientResponse response = CLIENT.resource(functionalTestHelper.relationshipUri(relationshipId)).accept(MediaType.APPLICATION_JSON_TYPE).get(
                 ClientResponse.class);
 
         String entity = response.getEntity(String.class);
         assertNotNull(entity);
         isLegalJson(entity);
+        response.close();
     }
 
     private void isLegalJson(String entity) throws IOException, JsonParseException

@@ -22,6 +22,7 @@ package org.neo4j.server.rest;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.server.WebTestUtils.CLIENT;
 
 import java.io.IOException;
 import java.util.Map;
@@ -33,6 +34,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
+import org.neo4j.server.WebTestUtils;
 import org.neo4j.server.rest.domain.JsonHelper;
 
 import com.sun.jersey.api.client.Client;
@@ -59,18 +61,21 @@ public class DiscoveryServiceFunctionalTest {
     public void shouldRespondWith200WhenRetrievingDiscoveryDocument() throws Exception {
         ClientResponse response = getDiscoveryDocument();
         assertEquals( 200, response.getStatus() );
+        response.close();
     }
 
     @Test
     public void shouldGetContentLengthHeaderWhenRetrievingDiscoveryDocument() throws Exception {
         ClientResponse response = getDiscoveryDocument();
         assertNotNull(response.getHeaders().get("Content-Length"));
+        response.close();
     }
 
     @Test
     public void shouldHaveJsonMediaTypeWhenRetrievingDiscoveryDocument() throws Exception {
         ClientResponse response = getDiscoveryDocument();
         assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
+        response.close();
     }
     
     @Test
@@ -86,12 +91,12 @@ public class DiscoveryServiceFunctionalTest {
         String dataKey = "data";
         assertTrue(map.containsKey(dataKey));
         assertNotNull(map.get(dataKey));
+        response.close();
     }
     
     @Test
     public void shouldRedirectToWebadminOnHtmlRequest() throws Exception {
-        Client client = Client.create();
-        client.setFollowRedirects(false);
+        Client client = WebTestUtils.NON_REDIRECTING_CLIENT;
         
         ClientResponse clientResponse = client.resource( server.baseUri() ).accept( MediaType.TEXT_HTML ).get( ClientResponse.class );
         
@@ -99,7 +104,7 @@ public class DiscoveryServiceFunctionalTest {
     }
     
     private ClientResponse getDiscoveryDocument() throws Exception {
-        return Client.create().resource( server.baseUri() ).accept( MediaType.APPLICATION_JSON ).get( ClientResponse.class );
+        return CLIENT.resource( server.baseUri() ).accept( MediaType.APPLICATION_JSON ).get( ClientResponse.class );
     }
     
 }

@@ -21,6 +21,7 @@ package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.neo4j.server.WebTestUtils.CLIENT;
 
 import java.io.IOException;
 import java.util.Map;
@@ -29,12 +30,14 @@ import javax.ws.rs.core.MediaType;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
+import org.neo4j.server.rest.DocumentationGenerator.Title;
 import org.neo4j.server.rest.domain.JsonHelper;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class GetOnRootFunctionalTest
@@ -42,6 +45,9 @@ public class GetOnRootFunctionalTest
 
     private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
+
+    public @Rule
+    DocumentationGenerator gen = new DocumentationGenerator();
 
     @Before
     public void setupServer() throws IOException {
@@ -57,16 +63,21 @@ public class GetOnRootFunctionalTest
         server = null;
     }
 
+    /**
+     * The service root is your starting point to discover the REST API.
+     */
+    @Documented
     @Test
+    @Title( "Get service root" )
     public void assert200OkFromGet() throws Exception {
-        DocsGenerator.create( "Get service root",
-                "The service root is your starting point to discover the REST API." )
+        gen.create()
+                .expectedStatus( 200 )
                 .get( functionalTestHelper.dataUri() );
     }
 
     @Test
     public void assertResponseHaveCorrectContentFromGet() throws Exception {
-        ClientResponse response = Client.create().resource(functionalTestHelper.dataUri()).accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
+        ClientResponse response = CLIENT.resource(functionalTestHelper.dataUri()).accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
         String body = response.getEntity(String.class);
         Map<String, Object> map = JsonHelper.jsonToMap(body);
         assertEquals(functionalTestHelper.nodeUri(), map.get("node"));
@@ -74,9 +85,11 @@ public class GetOnRootFunctionalTest
         assertNotNull(map.get("node_index"));
         assertNotNull(map.get("relationship_index"));
         assertNotNull(map.get("extensions_info"));
+        response.close();
 
         String referenceNodeUri = (String) map.get("reference_node");
-        response = Client.create().resource(referenceNodeUri).accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
+        response = CLIENT.resource(referenceNodeUri).accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
         assertEquals(200, response.getStatus());
+        response.close();
     }
 }

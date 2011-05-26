@@ -26,7 +26,12 @@ define(
 
     class IndexView extends View
       
+      NODE_INDEX_TYPE : "nodeidx"
+      REL_INDEX_TYPE : "relidx"
+
       template : template
+
+      tagName : "tr"
       
       events : 
         "click .delete-index" : "deleteIndex"
@@ -34,11 +39,17 @@ define(
       initialize : (opts) =>
         @index = opts.index
         @idxMgr = opts.idxMgr
+        @type = opts.type
 
       render : =>
         $(@el).html(template(index : @index))
         return this
       
       deleteIndex : =>
-        @idxMgr.deleteIndex({name : @index.name})
+        if confirm "Are you sure?"
+          if @type is @NODE_INDEX_TYPE
+            @idxMgr.deleteNodeIndex({name : @index.name})
+          else
+            @idxMgr.deleteRelationshipIndex({name : @index.name})
+          
 )

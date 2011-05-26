@@ -76,7 +76,7 @@ public abstract class LogEntry
         @Override
         public String toString()
         {
-            return "Start[" + getIdentifier() + "]";
+            return "Start[" + getIdentifier() + ", " + xid + "]";
         }
     }
 

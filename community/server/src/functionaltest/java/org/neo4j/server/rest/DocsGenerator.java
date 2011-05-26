@@ -39,18 +39,23 @@ import java.util.TreeMap;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientRequest;
+import com.sun.jersey.api.client.ClientRequest.Builder;
 import com.sun.jersey.api.client.ClientResponse;
 
 /**
  * Generate asciidoc-formatted documentation from HTTP requests and responses.
- * The status and media type of all responses is checked.
+ * The status and media type of all responses is checked as well as the
+ * existence of any expected headers.
  */
 public class DocsGenerator
 {
+    private static final String DOCUMENTATION_END = "\n...\n";
+
+    private static final Builder REQUEST_BUILDER = ClientRequest.create();
+
     private static final List<String> RESPONSE_HEADERS = Arrays.asList( new String[] {
             "Content-Type", "Location" } );
 
@@ -59,7 +64,7 @@ public class DocsGenerator
 
     private final String title;
     private String description = null;
-    private Response.Status expectedResponseStatus = Response.Status.OK;
+    private int expectedResponseStatus = -1;
     private MediaType expectedMediaType = MediaType.APPLICATION_JSON_TYPE;
     private MediaType payloadMediaType = MediaType.APPLICATION_JSON_TYPE;
     private final List<String> expectedHeaderFields = new ArrayList<String>();
@@ -84,26 +89,6 @@ public class DocsGenerator
         return new DocsGenerator( title );
     }
 
-    /**
-     * Creates a documented test case with a description. Finish building by
-     * using one of these: {@link #get(String)}, {@link #post(String)},
-     * {@link #put(String)}, {@link #delete(String)},
-     * {@link #request(ClientRequest)}. To access the response, use
-     * {@link ResponseEntity#entity} to get the entity or
-     * {@link ResponseEntity#response} to get the rest of the response
-     * (excluding the entity).
-     * 
-     * @param title title of the test
-     * @param description description of the test (in asciidoc format)
-     */
-    public static DocsGenerator create( final String title,
-            final String description )
-    {
-        DocsGenerator instance = DocsGenerator.create( title );
-        instance.description( description );
-        return instance;
-    }
-
     private DocsGenerator( final String title )
     {
         this.title = title;
@@ -122,13 +107,23 @@ public class DocsGenerator
             throw new IllegalArgumentException(
                     "The description can not be null" );
         }
-        if ( this.description == null )
+        String content;
+        int pos = description.indexOf( DOCUMENTATION_END );
+        if ( pos != -1 )
         {
-            this.description = description;
+            content = description.substring( 0, pos );
         }
         else
         {
-            this.description += "\n\n" + description;
+            content = description;
+        }
+        if ( this.description == null )
+        {
+            this.description = content;
+        }
+        else
+        {
+            this.description += "\n\n" + content;
         }
         return this;
     }
@@ -140,7 +135,7 @@ public class DocsGenerator
      * @param expectedResponseStatus the expected response status
      */
     public DocsGenerator expectedStatus(
-            final Response.Status expectedResponseStatus )
+            final int expectedResponseStatus )
     {
         this.expectedResponseStatus = expectedResponseStatus;
         return this;
@@ -257,19 +252,17 @@ public class DocsGenerator
      */
     private ResponseEntity retrieveResponseFromRequest( final String title,
             final String description, final String method, final String uri,
-            final Status responseCode, final MediaType accept,
+            final int responseCode, final MediaType accept,
             final List<String> headerFields )
     {
         ClientRequest request;
         try
         {
-            request = ClientRequest.create()
-                    .accept( accept )
+            request = REQUEST_BUILDER.accept( accept )
                     .build( new URI( uri ), method );
         }
         catch ( URISyntaxException e )
         {
-            System.out.println( "URI syntax exception: '" + uri + "'" );
             throw new RuntimeException( e );
         }
         return retrieveResponse( title, description, uri, responseCode, accept,
@@ -282,7 +275,7 @@ public class DocsGenerator
     private ResponseEntity retrieveResponseFromRequest( final String title,
             final String description, final String method, final String uri,
             final String payload, final MediaType payloadType,
-            final Status responseCode, final MediaType accept,
+            final int responseCode, final MediaType accept,
             final List<String> headerFields )
     {
         ClientRequest request;
@@ -290,22 +283,19 @@ public class DocsGenerator
         {
             if ( payload != null )
             {
-                request = ClientRequest.create()
-                        .type( payloadType )
+                request = REQUEST_BUILDER.type( payloadType )
                         .accept( accept )
                         .entity( payload )
                         .build( new URI( uri ), method );
             }
             else
             {
-                request = ClientRequest.create()
-                        .accept( accept )
+                request = REQUEST_BUILDER.accept( accept )
                         .build( new URI( uri ), method );
             }
         }
         catch ( URISyntaxException e )
         {
-            System.out.println( "URI syntax exception: '" + uri + "'" );
             throw new RuntimeException( e );
         }
         return retrieveResponse( title, description, uri, responseCode, accept,
@@ -317,10 +307,9 @@ public class DocsGenerator
      */
     private ResponseEntity retrieveResponse( final String title,
             final String description, final String uri,
-            final Response.Status responseCode, final MediaType type,
+            final int responseCode, final MediaType type,
             final List<String> headerFields, final ClientRequest request )
     {
-        System.out.println( "==== Documenting: " + title );
         DocumentationData data = new DocumentationData();
         getRequestHeaders( data, request.getHeaders() );
         if ( request.getEntity() != null )
@@ -329,7 +318,7 @@ public class DocsGenerator
         }
         Client client = new Client();
         ClientResponse response = client.handle( request );
-        assertEquals( responseCode.getStatusCode(), response.getStatus() );
+        assertEquals( responseCode, response.getStatus() );
         if ( response.getType() != null )
         {
             assertEquals( type, response.getType() );
@@ -348,6 +337,7 @@ public class DocsGenerator
         {
             data.setEntity( response.getEntity( String.class ) );
         }
+        response.close();
         getResponseHeaders( data, response.getHeaders(), headerFields );
         document( data );
         return new ResponseEntity( response, data.entity );
@@ -432,7 +422,7 @@ public class DocsGenerator
         public String description;
         public String uri;
         public String method;
-        public Status status;
+        public int status;
         public String entity;
         public Map<String, String> requestHeaders;
         public Map<String, String> responseHeaders;
@@ -462,7 +452,7 @@ public class DocsGenerator
             this.method = method;
         }
 
-        public void setStatus( final Status responseCode )
+        public void setStatus( final int responseCode )
         {
             this.status = responseCode;
 
@@ -519,7 +509,7 @@ public class DocsGenerator
 
             fw = new FileWriter( out, false );
 
-            line( fw, "[[rest-api-" + name + "]]" );
+            line( fw, "[[rest-api-" + name.replaceAll( "\\(|\\)", "" ) + "]]" );
             line( fw, "=== " + data.title + " ===" );
             line( fw, "" );
             if ( data.description != null && !data.description.isEmpty() )
@@ -543,9 +533,8 @@ public class DocsGenerator
             line( fw, "" );
             line( fw, "_Example response_" );
             line( fw, "" );
-            line( fw, "* *+" + data.status.getStatusCode() + ":+* +"
-                      + data.status.name()
-                              .replace( '_', ' ' ) + "+" );
+            line( fw, "* *+" + data.status + ":+* +"
+                      + Response.Status.fromStatusCode( data.status ).toString());
             if ( data.responseHeaders != null )
             {
                 for ( Entry<String, String> header : data.responseHeaders.entrySet() )

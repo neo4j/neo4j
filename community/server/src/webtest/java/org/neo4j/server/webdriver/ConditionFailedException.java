@@ -17,3 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.neo4j.server.webdriver;
+
+public class ConditionFailedException extends RuntimeException
+{
+    
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 1L;
+
+    public ConditionFailedException(String msg, Throwable cause) {
+        super(msg, cause);
+    }
+ 
+}

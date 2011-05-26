@@ -103,6 +103,7 @@ public class TxLog
      */
     public void close() throws IOException
     {
+        logBuffer.force();
         logBuffer.getFileChannel().close();
     }
 
