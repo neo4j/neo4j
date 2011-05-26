@@ -33,12 +33,14 @@ define ['lib/backbone'], () ->
     
     createNodeIndex: (opts) =>
       name = opts.name
+      if @_hasNodeIndex name then return
       @server.index.createNodeIndex(name).then (index) => 
         @get("nodeIndexes").push index
         @trigger "change"
 
     createRelationshipIndex : (opts) =>
       name = opts.name
+      if @_hasRelationshipIndex name then return
       @server.index.createRelationshipIndex(name).then (index) => 
         @get("relationshipIndexes").push index
         @trigger "change"
@@ -54,6 +56,16 @@ define ['lib/backbone'], () ->
       @server.index.removeRelationshipIndex(name).then () =>
         @set "relationshipIndexes" : @_removeIndexFromList( @get("relationshipIndexes"), name )
         @trigger "change"
+
+    _hasRelationshipIndex : (name) =>
+      for idx in @get "relationshipIndexes"
+        if idx.name == name then return true
+      return false
+
+    _hasnNodeIndex : (name) =>
+      for idx in @get "nodeIndexes"
+        if idx.name == name then return true
+      return false
 
     _removeIndexFromList : (idxs, name) ->
       for i in [idxs.length-1..0]
