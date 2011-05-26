@@ -1,3 +1,9 @@
+1.4.M03 (2011-05-26) 
+--------------------
+o Fixed bug that did not rollback tx associated with dead channels.
+o Modified master election algo to be more robust against zookeeper hiccups.                          
+o Fixed a synchronization bug in ZooClient that could cause waits on wrong monitor.
+
 1.4.M02 (2011-05-12)
 --------------------
 o At startup, the Config.USE_MEMORY_MAPPED_LOG parameter is set to 'true' since HA member will benefit performance wise from memory mapping since they
