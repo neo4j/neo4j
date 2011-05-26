@@ -20,6 +20,7 @@
 package org.neo4j.server;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.server.WebTestUtils.CLIENT;
 
 import java.io.IOException;
@@ -36,7 +37,7 @@ import org.neo4j.server.rest.FunctionalTestHelper;
 
 import com.sun.jersey.api.client.ClientResponse;
 
-public class EmbeddedNeoServerTest
+public class WrappingNeoServerBootstrapperTest
 {
     AbstractGraphDatabase myDb;
     FunctionalTestHelper helper;
@@ -54,7 +55,7 @@ public class EmbeddedNeoServerTest
     @Test
     public void shouldBeAbleToStartEmbeddedNeoServer() {
         
-        EmbeddedNeoServer srv = new EmbeddedNeoServer(myDb);
+        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper(myDb);
         
         srv.start();
         helper = new FunctionalTestHelper(srv.getServer());
@@ -68,7 +69,7 @@ public class EmbeddedNeoServerTest
     @Test
     public void embeddedServerAPIShouldModifyInjectedDatabase() {
         
-        EmbeddedNeoServer srv = new EmbeddedNeoServer(myDb);
+        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper(myDb);
         
         srv.start();
         
@@ -88,6 +89,19 @@ public class EmbeddedNeoServerTest
         assertEquals(originalNodeNumber + 1, newNodeNumber);
         
         srv.stop();
+    }
+    
+    @Test
+    public void shouldNotStopDatabaseOnShutdown() {
+        
+        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper(myDb);
+        
+        srv.start();
+        helper = new FunctionalTestHelper(srv.getServer());
+        srv.stop();
+        
+        // Should be able to still talk to the db
+        assertTrue(myDb.getReferenceNode() != null);
     }
     
 }

@@ -47,7 +47,7 @@ public abstract class Bootstrapper
 
     private static Logger log = Logger.getLogger( NeoServerBootstrapper.class );
 
-    private NeoServerWithEmbeddedWebServer server;
+    protected NeoServerWithEmbeddedWebServer server;
 
     public void controlEvent( int arg )
     {
