@@ -1,3 +1,8 @@
+1.4.M03 (2011-05-26)
+--------------------
+o Ability to manage indexes via the webadmin
+o Ability to search in indexes via the webadmin 
+
 1.4.M02 (2011-05-12)
 --------------------
 o Exposed all neo4j index operations via the REST interface
