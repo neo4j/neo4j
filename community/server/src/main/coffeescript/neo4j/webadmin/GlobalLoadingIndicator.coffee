@@ -28,7 +28,15 @@ define(
         
 
       init : ->
-        $(window).ajaxStart () => $(@target).show()
-        $(window).ajaxStop () => $(@target).hide()
+        $(window).ajaxStart () => 
+          @timeout = setTimeout @show, 400
+        $(window).ajaxStop @hide
+
+      show : =>
+        $(@target).show()
+
+      hide : =>
+        clearTimeout @timeout
+        $(@target).hide()
 
 )

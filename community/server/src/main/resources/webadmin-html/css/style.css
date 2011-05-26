@@ -665,6 +665,7 @@ ol lh {
 
 #global-loading-indicator {
   float:left;
+  display:none;
 }
 
 .loading-spinner {
