@@ -53,7 +53,21 @@ public class WrappingNeoServerBootstrapperTest
     }
     
     @Test
-    public void shouldBeAbleToStartEmbeddedNeoServer() {
+    // START SNIPPET: usingWrappingNeoServerBootstrapper
+    public void usingWrappingNeoServerBootstrapper() {
+        
+        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper(myDb);
+        
+        srv.start();
+        
+        // Server will now be online
+        
+        srv.stop();
+    }
+    // END SNIPPET: usingWrappingNeoServerBootstrapper
+
+    @Test
+    public void serverShouldRespondProperly() {
         
         WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper(myDb);
         
@@ -67,7 +81,7 @@ public class WrappingNeoServerBootstrapperTest
     }
     
     @Test
-    public void embeddedServerAPIShouldModifyInjectedDatabase() {
+    public void shouldModifyInjectedDatabase() {
         
         WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper(myDb);
         
