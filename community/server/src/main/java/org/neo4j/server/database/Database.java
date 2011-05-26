@@ -62,7 +62,7 @@ public class Database
     private static AbstractGraphDatabase createDatabase( GraphDatabaseFactory factory,
             String databaseStoreDirectory, Map<String, String> databaseProperties )
     {
-        log.info( "Creating database at " + databaseStoreDirectory );
+        log.info( "Using database at " + databaseStoreDirectory );
 
         if ( databaseProperties == null )
         {

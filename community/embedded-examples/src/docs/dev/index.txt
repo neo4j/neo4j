@@ -1,0 +1,13 @@
+[[tutorials-java-embedded]]
+Using Neo4j embedded in Java applications
+=========================================
+
+:leveloffset: 2
+
+include::setup.txt[]
+
+:leveloffset: 2
+
+include::hello-world.txt[]
+
+
