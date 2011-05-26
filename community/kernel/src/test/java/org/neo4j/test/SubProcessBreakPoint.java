@@ -22,7 +22,10 @@ package org.neo4j.test;
 import java.util.Iterator;
 import java.util.List;
 
-public abstract class SubProcessBreakPoint
+import org.neo4j.test.SubProcess.DebugInterface;
+import org.neo4j.test.SubProcess.DebuggedThread;
+
+public abstract class SubProcessBreakPoint implements SubProcess.DeadlockCallback
 {
     public SubProcessBreakPoint( Class<?> type, String method, Class<?>... args )
     {
@@ -35,7 +38,13 @@ public abstract class SubProcessBreakPoint
         }
     }
 
-    protected abstract void callback();
+    protected abstract void callback( DebugInterface debug );
+
+    @Override
+    public void deadlock( DebuggedThread thread )
+    {
+        throw new SubProcess.DeadlockDetectedError();
+    }
 
     final String type;
     private final String method;
