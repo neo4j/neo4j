@@ -5,7 +5,7 @@ Securing access to the Neo4j Server
 The Neo4j server currently does not enforce security on the REST access layer.
 This should be taken care of by external means.
 We strongly recommend to front a running Neo4j Server with a proxy like Apache `mod_proxy` footnote:[http://httpd.apache.org/docs/2.2/mod/mod_proxy.html].
-This provides a number of advatages:
+This provides a number of advantages:
 
 * Control access to the Neo4j server to specific IP addresses, URL patterns and IP ranges. This can be used to make for instance only the +/db/data+ namespace accessible to non-local clients, while the +/db/admin+ URLs only respond to a specific IP address.
 +

@@ -55,7 +55,6 @@ import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.EndNodeNotFoundException;
 import org.neo4j.server.rest.domain.RelationshipExpanderBuilder;
 import org.neo4j.server.rest.domain.StartNodeNotFoundException;
-import org.neo4j.server.rest.domain.StartNodeSameAsEndNodeException;
 import org.neo4j.server.rest.domain.TraversalDescriptionBuilder;
 import org.neo4j.server.rest.domain.TraverserReturnType;
 import org.neo4j.server.rest.repr.DatabaseRepresentation;
@@ -435,12 +434,9 @@ public class DatabaseActions
     public RelationshipRepresentation createRelationship( long startNodeId, long endNodeId,
                                                           String type,
                                                           Map<String, Object> properties ) throws StartNodeNotFoundException,
-            EndNodeNotFoundException, StartNodeSameAsEndNodeException, PropertyValueException
+            EndNodeNotFoundException, PropertyValueException
     {
-        if ( startNodeId == endNodeId )
-        {
-            throw new StartNodeSameAsEndNodeException();
-        }
+
         Node start, end;
         try
         {

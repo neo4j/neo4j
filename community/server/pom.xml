@@ -175,7 +175,7 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>com.tinkerpop</groupId>
       <artifactId>gremlin</artifactId>
-      <version>1.0</version>
+      <version>0.9</version>
       <type>jar</type>
       <exclusions>
         <!-- Sail support not needed --> 
@@ -568,7 +568,7 @@ the relevant Commercial Agreement.
     <profile>
       <id>functional-tests</id>
       <activation>
-        <activeByDefault>true</activeByDefault>
+        <activeByDefault>false</activeByDefault>
         <property>
           <name>tests</name>
           <value>functional</value>

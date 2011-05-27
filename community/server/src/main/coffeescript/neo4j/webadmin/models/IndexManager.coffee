@@ -62,7 +62,7 @@ define ['lib/backbone'], () ->
         if idx.name == name then return true
       return false
 
-    _hasnNodeIndex : (name) =>
+    _hasNodeIndex : (name) =>
       for idx in @get "nodeIndexes"
         if idx.name == name then return true
       return false

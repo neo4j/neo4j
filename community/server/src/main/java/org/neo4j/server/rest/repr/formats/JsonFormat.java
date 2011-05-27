@@ -93,10 +93,20 @@ public class JsonFormat extends RepresentationFormat
     }
 
     @Override
-    public List<Object> readList( String input )
+    @SuppressWarnings( "unchecked" )
+    public List<Object> readList( String input ) throws BadInputException
     {
-        // TODO tobias: Implement readList() [Dec 10, 2010]
-        throw new UnsupportedOperationException( "Not implemented: JsonInput.readList()" );
+        try
+        {
+            return (List<Object>)JsonHelper.readJson( input );
+        }
+        catch (ClassCastException ex ) {
+            throw new BadInputException( ex );
+        }
+        catch ( JsonParseException ex )
+        {
+            throw new BadInputException( ex );
+        }
     }
 
     @Override

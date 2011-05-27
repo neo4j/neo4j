@@ -450,12 +450,12 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith400WhenTryingToCreateRelationshipToStartNode() throws DatabaseBlockedException
+    public void shouldRespondWith201WhenTryingToCreateRelationshipBackToSelf() throws DatabaseBlockedException
     {
         long nodeId = helper.createNode();
         Response response = service.createRelationship( nodeId, "{\"to\" : \"" + BASE_URI + nodeId
                 + "\", \"type\" : \"LOVES\"}" );
-        assertEquals( 400, response.getStatus() );
+        assertEquals( 201, response.getStatus() );
     }
 
     @Test
