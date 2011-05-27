@@ -20,12 +20,14 @@
 package org.neo4j.server.rest.repr.formats;
 
 import org.junit.Test;
+import org.neo4j.server.rest.repr.BadInputException;
 
 import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.*;
 
 public class UrlFormFormatTest
 {
@@ -33,29 +35,54 @@ public class UrlFormFormatTest
     public void shouldParseEmptyMap() throws Exception
     {
         UrlFormFormat format = new UrlFormFormat();
-        Map<String,Object> map = format.readMap( "" );
+        Map<String, Object> map = format.readMap( "" );
 
-        assertThat(map.size(), is(0));
+        assertThat( map.size(), is( 0 ) );
     }
 
     @Test
     public void canParseSingleKeyMap() throws Exception
     {
         UrlFormFormat format = new UrlFormFormat();
-        Map<String,Object> map = format.readMap( "var=A" );
+        Map<String, Object> map = format.readMap( "var=A" );
 
-        assertThat(map.size(), is(1));
-        assertThat((String)map.get( "var" ), is("A"));
+        assertThat( map.size(), is( 1 ) );
+        assertThat( (String) map.get( "var" ), is( "A" ) );
     }
 
-        @Test
+    @Test
     public void canParseListsInMaps() throws Exception
     {
         UrlFormFormat format = new UrlFormFormat();
-        Map<String,Object> map = format.readMap( "var=A&var=B" );
+        Map<String, Object> map = format.readMap( "var=A&var=B" );
 
-        assertThat(map.size(), is(1));
-        assertThat(((List<String>)map.get( "var" )).get(0), is("A"));
-        assertThat(((List<String>)map.get( "var" )).get(1), is("B"));
+        assertThat( map.size(), is( 1 ) );
+        assertThat( ( (List<String>) map.get( "var" ) ).get( 0 ), is( "A" ) );
+        assertThat( ( (List<String>) map.get( "var" ) ).get( 1 ), is( "B" ) );
     }
+
+    @Test
+    public void shouldSupportPhpStyleUrlEncodedPostBodiesForAListOnly() throws Exception
+    {
+        UrlFormFormat format = new UrlFormFormat();
+        Map<String, Object> map = format.readMap( "var[]=A&var[]=B" );
+
+        assertThat( map.size(), is( 1 ) );
+        assertThat( ( (List<String>) map.get( "var" ) ).get( 0 ), is( "A" ) );
+        assertThat( ( (List<String>) map.get( "var" ) ).get( 1 ), is( "B" ) );
+
+    }
+
+    @Test
+    public void shouldSupportPhpStyleUrlEncodedPostBodiesForAListAndNonListParams() throws Exception
+    {
+        UrlFormFormat format = new UrlFormFormat();
+        Map<String, Object> map = format.readMap( "var[]=A&var[]=B&foo=bar" );
+
+        assertThat( map.size(), is( 2 ) );
+        assertThat( ( (List<String>) map.get( "var" ) ).get( 0 ), is( "A" ) );
+        assertThat( ( (List<String>) map.get( "var" ) ).get( 1 ), is( "B" ) );
+        assertEquals( "bar", map.get( "foo" ) );
+    }
+
 }

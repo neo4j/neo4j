@@ -93,7 +93,7 @@ public class UrlFormFormat extends RepresentationFormat
 
             try
             {
-                key = URLDecoder.decode( fields[ 0 ], "UTF-8" ); //Shouldn't this come from the outside?
+                key = ensureThatKeyDoesNotHavePhPStyleParenthesesAtTheEnd(URLDecoder.decode( fields[ 0 ], "UTF-8" ));
                 value = URLDecoder.decode( fields[ 1 ], "UTF-8" );
             } catch ( UnsupportedEncodingException e )
             {
@@ -122,6 +122,14 @@ public class UrlFormFormat extends RepresentationFormat
 
 
         return result;
+    }
+
+    private String ensureThatKeyDoesNotHavePhPStyleParenthesesAtTheEnd( String key )
+    {
+        if(key.endsWith( "[]" )) {
+             return key.substring( 0, key.length() -2 );
+        }
+        return key;
     }
 
     @Override

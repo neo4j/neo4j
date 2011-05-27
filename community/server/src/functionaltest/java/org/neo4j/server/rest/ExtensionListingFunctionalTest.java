@@ -37,7 +37,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
-import org.neo4j.server.plugins.Plugin;
+import org.neo4j.server.plugins.FunctionalTestPlugin;
 import org.neo4j.server.rest.domain.JsonHelper;
 
 import com.sun.jersey.api.client.ClientResponse;
@@ -92,7 +92,7 @@ public class ExtensionListingFunctionalTest
         assertThat( response.getStatus(), equalTo( 200 ) );
 
         Map<String, Object> json = JsonHelper.jsonToMap( response.getEntity( String.class ) );
-        String refNodeService = (String) json.get( Plugin.class.getSimpleName() );
+        String refNodeService = (String) json.get( FunctionalTestPlugin.class.getSimpleName() );
         response.close();
 
         response = CLIENT.resource( refNodeService ).accept(
@@ -104,7 +104,7 @@ public class ExtensionListingFunctionalTest
 
         json = JsonHelper.jsonToMap( result );
         json = (Map<String, Object>) json.get( "graphdb" );
-        assertThat( json, hasKey( Plugin.GET_REFERENCE_NODE ) );
+        assertThat( json, hasKey( FunctionalTestPlugin.GET_REFERENCE_NODE ) );
         response.close();
     }
 }

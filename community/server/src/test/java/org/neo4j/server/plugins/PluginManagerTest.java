@@ -60,16 +60,16 @@ public class PluginManagerTest
     public void canGetUrisForNode() throws Exception
     {
         Map<String, List<String>> extensions = manager.getExensionsFor( GraphDatabaseService.class );
-        List<String> methods = extensions.get( Plugin.class.getSimpleName() );
+        List<String> methods = extensions.get( FunctionalTestPlugin.class.getSimpleName() );
         assertNotNull( methods );
-        assertThat( methods, hasItem( Plugin.GET_REFERENCE_NODE ) );
+        assertThat( methods, hasItem( FunctionalTestPlugin.GET_REFERENCE_NODE ) );
     }
 
     @Test
     public void canInvokeExtension() throws Exception
     {
-        manager.invoke( graphDb, Plugin.class.getSimpleName(), GraphDatabaseService.class,
-                Plugin.GET_REFERENCE_NODE, graphDb,
+        manager.invoke( graphDb, FunctionalTestPlugin.class.getSimpleName(), GraphDatabaseService.class,
+                FunctionalTestPlugin.GET_REFERENCE_NODE, graphDb,
                 new NullFormat( null, (MediaType[]) null ).readParameterList( "" ) );
     }
 }
