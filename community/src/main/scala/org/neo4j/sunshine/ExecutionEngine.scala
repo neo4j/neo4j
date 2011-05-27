@@ -28,7 +28,7 @@ import org.neo4j.sunshine.filters._
 import org.neo4j.graphmatching.{PatternRelationship, PatternNode, AbstractPatternObject}
 
 class ExecutionEngine(val graph: GraphDatabaseService) {
-  type MapTransformer = (Map[String, Any]) => Map[String, Any]
+  type MapTransformer = Map[String, Any] => Map[String, Any]
 
   def execute(query: Query): Projection = query match {
     case Query(select, start, matching, where, aggregation) => {
