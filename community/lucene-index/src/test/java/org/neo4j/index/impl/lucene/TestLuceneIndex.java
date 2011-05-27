@@ -19,6 +19,28 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsNull.nullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.index.Neo4jTestCase.assertContains;
+import static org.neo4j.index.Neo4jTestCase.assertContainsInOrder;
+import static org.neo4j.index.impl.lucene.Contains.contains;
+import static org.neo4j.index.impl.lucene.IsEmpty.isEmpty;
+import static org.neo4j.index.lucene.QueryContext.numericRange;
+import static org.neo4j.index.lucene.ValueContext.numeric;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser.Operator;
 import org.apache.lucene.search.DefaultSimilarity;
@@ -41,22 +63,6 @@ import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsNull.nullValue;
-import static org.junit.Assert.*;
-import static org.neo4j.index.Neo4jTestCase.assertContains;
-import static org.neo4j.index.Neo4jTestCase.assertContainsInOrder;
-import static org.neo4j.index.impl.lucene.Contains.contains;
-import static org.neo4j.index.impl.lucene.IsEmpty.isEmpty;
-import static org.neo4j.index.lucene.QueryContext.numericRange;
-import static org.neo4j.index.lucene.ValueContext.numeric;
 
 public class TestLuceneIndex extends AbstractLuceneIndexTest
 {
@@ -1233,5 +1239,27 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         catch ( IllegalArgumentException e )
         { // OK
         }
+    }
+
+    private Node createAndIndexNode( Index<Node> index, String key, String value )
+    {
+        Node node = graphDb.createNode();
+        node.setProperty( key, value );
+        index.add( node, key, value );
+        return node;
+    }
+    
+    @Test
+    public void testRemoveNodeFromIndex()
+    {
+        Index<Node> index = nodeIndex( "removal-1", LuceneIndexImplementation.EXACT_CONFIG );
+        String key = "key";
+        String value = "MYID";
+        Node node = createAndIndexNode( index, key, value );
+        index.remove( node );
+        node.delete();
+
+        Node node2 = createAndIndexNode( index, key, value );
+        assertEquals( node2, index.get( key, value ).getSingle() );
     }
 }

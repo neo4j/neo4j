@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import static java.util.Collections.emptyList;
 import static org.neo4j.index.impl.lucene.LuceneDataSource.LUCENE_VERSION;
 import static org.neo4j.index.impl.lucene.LuceneIndex.KEY_DOC_ID;
 
@@ -50,7 +51,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.neo4j.index.lucene.QueryContext;
 
-class FullTxData extends ExactTxData
+class FullTxData extends TxData
 {
     private static final String ORPHANS_KEY = "__all__";
     private static final String ORPHANS_VALUE = "1";
@@ -71,7 +72,6 @@ class FullTxData extends ExactTxData
     @Override
     void add( TxDataHolder holder, Object entityId, String key, Object value )
     {
-        super.add( holder, entityId, key, value );
         try
         {
             ensureLuceneDataInstantiated();
@@ -152,7 +152,6 @@ class FullTxData extends ExactTxData
     @Override
     void remove( TxDataHolder holder, Object entityId, String key, Object value )
     {
-        super.remove( holder, entityId, key, value );
         try
         {
             ensureLuceneDataInstantiated();
@@ -329,5 +328,17 @@ class FullTxData extends ExactTxData
     {
         boolean refresh = context == null || !context.getTradeCorrectnessForSpeed();
         return searcher( refresh );
+    }
+
+    @Override
+    Collection<Long> get( TxDataHolder holder, String key, Object value )
+    {
+        return internalQuery( index.type.get( key, value ), null );
+    }
+
+    @Override
+    Collection<Long> getOrphans( String key )
+    {
+        return emptyList();
     }
 }
