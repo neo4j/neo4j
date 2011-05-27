@@ -19,15 +19,14 @@
  */
 package org.neo4j.server.rest.repr.formats;
 
-import org.junit.Test;
-import org.neo4j.server.rest.repr.BadInputException;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
 
 import java.util.List;
 import java.util.Map;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.*;
+import org.junit.Test;
 
 public class UrlFormFormatTest
 {
