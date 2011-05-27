@@ -47,7 +47,6 @@ class ExecutionEngineTestBase {
 
   def execute(query: Query) = {
     val result = engine.execute(query)
-    println(query)
     result
   }
 

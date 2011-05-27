@@ -39,7 +39,7 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
 
       createPattern(matching, patternKeeper)
 
-      checkValidityOfPattern(patternKeeper, sourcePump)
+      checkConnectednessOfPatternGraph(patternKeeper, sourcePump)
 
       val filter = createFilters(where, patternKeeper)
 
@@ -49,12 +49,11 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
     }
   }
 
-  def checkValidityOfPattern(pattern: PatternKeeper, source: Pipe) {
+  def checkConnectednessOfPatternGraph(pattern: PatternKeeper, source: Pipe) {
     val visited = scala.collection.mutable.HashSet[String]()
 
     def visit(visitedObject:AbstractPatternObject[_ <: PropertyContainer]) {
       val label = visitedObject.getLabel
-      println(visited)
       if(label == null || !visited.contains(label)) {
         if(label != null) { visited.add(label) }
 
@@ -68,29 +67,6 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
 
       }
     }
-
-//    def visit(point: String) {
-//      if (!visited.contains(name)) {
-//        visited.add(name)
-//
-//        pattern.nodes.get(name) match {
-//          case Some(node) => node.getAllRelationships.asScala.foreach((rel) => {
-//            val relLabel = rel.getLabel
-//            if (relLabel != null) {
-//              visit(relLabel)
-//            }
-//          })
-//
-//          case None => pattern.rels.get(name) match {
-//            case Some(rel) => {
-//              visit(rel.getFirstNode.getLabel)
-//              visit(rel.getSecondNode.getLabel)
-//            }
-//            case None => throw new SyntaxError("Encountered a part of the pattern that is not part of the pattern. If you see this, please report this problem!")
-//          }
-//        }
-//      }
-//    }
 
     source.columnNames.map( pattern.patternObject ).foreach( _ match {
       case None =>  throw new SyntaxError("Encountered a part of the pattern that is not part of the pattern. If you see this, please report this problem!")
