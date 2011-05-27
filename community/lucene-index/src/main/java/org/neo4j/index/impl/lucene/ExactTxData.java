@@ -142,10 +142,20 @@ public class ExactTxData extends TxData
         {
             return;
         }
-        Collection<Object> ids = idCollection( key, value, false );
-        if ( ids != null )
+        
+        if ( key == null || value == null )
         {
-            ids.remove( entityId );
+            TxData fullData = toFullTxData();
+            fullData.remove( holder, entityId, key, value );
+            holder.set( fullData );
+        }
+        else
+        {
+            Collection<Object> ids = idCollection( key, value, false );
+            if ( ids != null )
+            {
+                ids.remove( entityId );
+            }
         }
     }
 

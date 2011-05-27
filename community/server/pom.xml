@@ -100,17 +100,6 @@ the relevant Commercial Agreement.
       <version>1.4-SNAPSHOT</version>
     </dependency>
 
-    <!-- dependency>
-      <groupId>log4j</groupId>
-      <artifactId>log4j</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <version>0.9.27</version>
-    </dependency>
-     -->
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
@@ -131,18 +120,6 @@ the relevant Commercial Agreement.
       <artifactId>jcl-over-slf4j</artifactId>
       <version>1.6.1</version>
     </dependency>
-    <!--
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>jul-to-slf4j</artifactId>
-      <version>1.6.1</version>
-    </dependency>
-    <dependency>
-      <groupId>uk.org.lidalia</groupId>
-      <artifactId>sysout-over-slf4j</artifactId>
-      <version>1.0.2</version>
-    </dependency-->
-
 
     <dependency>
       <groupId>org.mortbay.jetty</groupId>
@@ -198,7 +175,7 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>com.tinkerpop</groupId>
       <artifactId>gremlin</artifactId>
-      <version>0.9</version>
+      <version>1.0</version>
       <type>jar</type>
       <exclusions>
         <!-- Sail support not needed --> 
@@ -221,7 +198,7 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>com.tinkerpop.blueprints</groupId>
       <artifactId>blueprints-neo4j-graph</artifactId>
-      <version>0.6</version>
+      <version>0.7</version>
       <exclusions>
         <exclusion>
           <groupId>org.neo4j</groupId>
@@ -591,7 +568,7 @@ the relevant Commercial Agreement.
     <profile>
       <id>functional-tests</id>
       <activation>
-        <activeByDefault>false</activeByDefault>
+        <activeByDefault>true</activeByDefault>
         <property>
           <name>tests</name>
           <value>functional</value>
