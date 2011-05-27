@@ -37,6 +37,23 @@ class FunctionalTests {
   var engine: ExecutionEngine = null
   val parser = new SunshineParser
 
+  @Test def sunshineHelloWorld() {
+    testQuery(
+      "start n = node(0) return n",
+      List(Map("n" -> db.getReferenceNode)))
+  }
+
+  @Test def sunshineHelloWorldWithPattern() {
+    testQuery("start a = node(%a) match (a)-[:TO]->(b) return b",
+      List(Map("b" -> node("b"))))
+  }
+
+  @Test def filterOnNumbericValue() {
+    setProp("a", "age", 36)
+    testQuery("start a = node(%a) where a.age = 36 return a",
+      List(Map("a" -> node("a"))))
+  }
+
   @Before def init() {
     db = new ImpermanentGraphDatabase()
     engine = new ExecutionEngine(db)
@@ -63,22 +80,5 @@ class FunctionalTests {
     val parseResult = parser.parse(q)
     val result = engine.execute(parseResult)
     assertEquals(expectedResult, result.toList)
-  }
-
-  @Test def sunshineHelloWorld() {
-    testQuery(
-      "start n = node(0) return n",
-      List(Map("n" -> db.getReferenceNode)))
-  }
-
-  @Test def sunshineHelloWorldWithPattern() {
-    testQuery("start a = node(%a) match (a)-[:TO]->(b) return b",
-      List(Map("b" -> node("b"))))
-  }
-
-  @Test def filterOnNumbericValue() {
-    setProp("a","age",36)
-    testQuery("start a = node(%a) where a.age = 36 return a",
-      List(Map("a" -> node("a"))))
   }
 }
