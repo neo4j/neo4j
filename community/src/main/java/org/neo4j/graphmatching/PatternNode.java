@@ -19,11 +19,11 @@
  */
 package org.neo4j.graphmatching;
 
-import java.util.LinkedList;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
+
+import java.util.LinkedList;
 
 /**
  * Represents a pattern for matching a {@link Node}.
@@ -49,7 +49,6 @@ public class PatternNode extends AbstractPatternObject<Node>
 	private LinkedList<PatternRelationship> optionalRelationships =
 		new LinkedList<PatternRelationship>();
 
-	private final String label;
 	private final PatternGroup group;
 
     /**
@@ -324,16 +323,6 @@ public class PatternNode extends AbstractPatternObject<Node>
         otherNode.addRelationship( relationship, optional );
         return relationship;
     }
-
-    /**
-     * Get the label of this pattern node.
-     *
-     * @return the label of this pattern node.
-     */
-	public String getLabel()
-	{
-		return this.label;
-	}
 
 	@Override
 	public String toString()

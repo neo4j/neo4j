@@ -19,15 +19,11 @@
  */
 package org.neo4j.graphmatching;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+
+import java.util.*;
 
 /**
  * The base class for {@link PatternNode} and {@link PatternRelationship}.
@@ -39,6 +35,7 @@ public abstract class AbstractPatternObject<T extends PropertyContainer>
     private T assocication;
     private Map<String, Collection<ValueMatcher>> constrains =
             new HashMap<String, Collection<ValueMatcher>>();
+    protected String label;
 
     AbstractPatternObject()
     {
@@ -99,5 +96,22 @@ public abstract class AbstractPatternObject<T extends PropertyContainer>
         Iterable<Map.Entry<String, Collection<ValueMatcher>>> matchers = this.constrains.entrySet();
         return matchers != null ? matchers :
                 Collections.<Map.Entry<String, Collection<ValueMatcher>>>emptyList();
+    }
+
+    /**
+     * Get the label of this pattern object.
+     *
+     * @return the label of this pattern object.
+     */
+    public String getLabel() {
+        return label;
+    }
+
+    /**
+     * Sets the label of this pattern object;
+     * @param label the label of this pattern object;
+     */
+    public void setLabel(String label) {
+        this.label = label;
     }
 }
