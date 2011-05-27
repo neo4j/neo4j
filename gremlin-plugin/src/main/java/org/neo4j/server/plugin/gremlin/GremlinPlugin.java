@@ -40,64 +40,103 @@ import java.util.List;
  * and much, much more.
  */
 
-@Description("A server side Gremlin plugin for the Neo4j REST server")
-public class GremlinPlugin extends ServerPlugin {
+@Description( "A server side Gremlin plugin for the Neo4j REST server" )
+public class GremlinPlugin extends ServerPlugin
+{
 
     private final String g = "g";
-    private static final ScriptEngine engine = new ScriptEngineManager().getEngineByName("gremlin");
+    private static final ScriptEngine engine = new ScriptEngineManager().getEngineByName( "gremlin" );
 
-    @Name("execute_script")
-    @Description("execute a Gremlin script with 'g' set to the Neo4jGraph and 'results' containing the results. Only results of one object type is supported.")
-    @PluginTarget(GraphDatabaseService.class)
-    public Representation executeScript(@Source final GraphDatabaseService neo4j, @Description("The Gremlin script") @Parameter(name = "script", optional = false) final String script) {
-        final Neo4jGraph graph = new Neo4jGraph(neo4j);
+    @Name( "execute_script" )
+    @Description( "execute a Gremlin script with 'g' set to the Neo4jGraph and 'results' containing the results. Only results of one object type is supported." )
+    @PluginTarget( GraphDatabaseService.class )
+    public Representation executeScript(
+            @Source final GraphDatabaseService neo4j,
+            @Description( "The Gremlin script" ) @Parameter( name = "script", optional = false ) final String script )
+    {
+        final Neo4jGraph graph = new Neo4jGraph( neo4j );
         final Bindings bindings = new SimpleBindings();
-        bindings.put(g, graph);
+        bindings.put( g, graph );
 
-        try {
-            final Object result = this.engine.eval(script, bindings);
-            if (result instanceof Iterable) {
+        try
+        {
+            final Object result = this.engine.eval( script, bindings );
+            if ( result instanceof Iterable )
+            {
                 RepresentationType type = RepresentationType.STRING;
                 final List<Representation> results = new ArrayList<Representation>();
-                for (final Object r : (Iterable) result) {
-                    if (r instanceof Vertex) {
+                for ( final Object r : (Iterable) result )
+                {
+                    if ( r instanceof Vertex )
+                    {
                         type = RepresentationType.NODE;
-                        results.add(new NodeRepresentation(((Neo4jVertex) r).getRawVertex()));
-                    } else if (r instanceof Edge) {
+                        results.add( new NodeRepresentation(
+                                ( (Neo4jVertex) r ).getRawVertex() ) );
+                    }
+                    else if ( r instanceof Edge )
+                    {
                         type = RepresentationType.RELATIONSHIP;
-                        results.add(new RelationshipRepresentation(((Neo4jEdge) r).getRawEdge()));
-                    } else if (r instanceof Graph) {
+                        results.add( new RelationshipRepresentation(
+                                ( (Neo4jEdge) r ).getRawEdge() ) );
+                    }
+                    else if ( r instanceof Graph )
+                    {
                         type = RepresentationType.STRING;
-                        results.add(ValueRepresentation.string(graph.getRawGraph().toString()));
-                    } else if (r instanceof Double || r instanceof Float) {
+                        results.add( ValueRepresentation.string( graph.getRawGraph().toString() ) );
+                    }
+                    else if ( r instanceof Double || r instanceof Float )
+                    {
                         type = RepresentationType.DOUBLE;
-                        results.add(ValueRepresentation.number(((Number) r).doubleValue()));
-                    } else if (r instanceof Long || r instanceof Integer) {
+                        results.add( ValueRepresentation.number( ( (Number) r ).doubleValue() ) );
+                    }
+                    else if ( r instanceof Long || r instanceof Integer )
+                    {
                         type = RepresentationType.LONG;
-                        results.add(ValueRepresentation.number(((Number) r).longValue()));
-                    } else {
+                        results.add( ValueRepresentation.number( ( (Number) r ).longValue() ) );
+                    }
+                    else
+                    {
+                        System.out.println("GremlinPlugin: got back" + r);
                         type = RepresentationType.STRING;
-                        results.add(ValueRepresentation.string(r.toString()));
+                        results.add( ValueRepresentation.string( r.toString() ) );
                     }
                 }
-                return new ListRepresentation(type, results);
-            } else {
-                if (result instanceof Vertex) {
-                    return new NodeRepresentation(((Neo4jVertex) result).getRawVertex());
-                } else if (result instanceof Edge) {
-                    return new RelationshipRepresentation(((Neo4jEdge) result).getRawEdge());
-                } else if (result instanceof Graph) {
-                    return ValueRepresentation.string(graph.getRawGraph().toString());
-                } else if (result instanceof Double || result instanceof Float) {
-                    return ValueRepresentation.number(((Number) result).doubleValue());
-                } else if (result instanceof Long || result instanceof Integer) {
-                    return ValueRepresentation.number(((Number) result).longValue());
-                } else {
-                    return ValueRepresentation.string(result+"");
+                return new ListRepresentation( type, results );
+            }
+            else
+            {
+                if ( result instanceof Vertex )
+                {
+                    return new NodeRepresentation(
+                            ( (Neo4jVertex) result ).getRawVertex() );
+                }
+                else if ( result instanceof Edge )
+                {
+                    return new RelationshipRepresentation(
+                            ( (Neo4jEdge) result ).getRawEdge() );
+                }
+                else if ( result instanceof Graph )
+                {
+                    return ValueRepresentation.string( graph.getRawGraph().toString() );
+                }
+                else if ( result instanceof Double || result instanceof Float )
+                {
+                    return ValueRepresentation.number( ( (Number) result ).doubleValue() );
+                }
+                else if ( result instanceof Long || result instanceof Integer )
+                {
+                    return ValueRepresentation.number( ( (Number) result ).longValue() );
+                }
+                else
+                {
+                    return ValueRepresentation.string( result + "" );
                 }
             }
-        } catch (final ScriptException e) {
-            return ValueRepresentation.string(e.getMessage());
+        }
+        catch ( final ScriptException e )
+        {
+            return ValueRepresentation.string( e.getMessage() );
         }
     }
+
 }

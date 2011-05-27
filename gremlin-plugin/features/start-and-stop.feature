@@ -14,3 +14,6 @@ Feature: Start and stop Neo4j Server
     Then requesting "http://localhost:7474/db/data/ext/" should contain "GremlinPlugin"
     Then sending "script=g.V" to "http://localhost:7474/db/data/ext/GremlinPlugin/graphdb/execute_script" should contain "node"
     Then sending "script=for (i in 1..2){g.v(0);1};1" to "http://localhost:7474/db/data/ext/GremlinPlugin/graphdb/execute_script" should contain "1"    
+    Then sending "script=GraphMLReader.inputGraph(g, new URL('https://github.com/tinkerpop/gremlin/raw/master/data/graph-example-1.xml').openStream());g.v(1).outE.inV.name.paths" to "http://localhost:7474/db/data/ext/GremlinPlugin/graphdb/execute_script" should contain "1"    
+    
+    
