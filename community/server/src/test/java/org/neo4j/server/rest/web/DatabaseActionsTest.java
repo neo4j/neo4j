@@ -56,12 +56,12 @@ import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.EndNodeNotFoundException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.StartNodeNotFoundException;
-import org.neo4j.server.rest.domain.StartNodeSameAsEndNodeException;
 import org.neo4j.server.rest.domain.TraverserReturnType;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.NodeRepresentation;
 import org.neo4j.server.rest.repr.NodeRepresentationTest;
+import org.neo4j.server.rest.repr.RelationshipRepresentation;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 
@@ -356,18 +356,13 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldNotCreateRelationshipWithSameStartAsEndNode() throws Exception
+    public void shouldAllowCreateRelationshipWithSameStartAsEndNode() throws Exception
     {
         long nodeId = graphdbHelper.createNode();
         Map<String, Object> properties = Collections.<String, Object>emptyMap();
-        try
-        {
-            actions.createRelationship( nodeId, nodeId, "Loves", properties );
-            fail();
-        } catch ( StartNodeSameAsEndNodeException e )
-        {
-            // ok
-        }
+        RelationshipRepresentation rel = actions.createRelationship( nodeId, nodeId, "Loves", properties );
+        assertNotNull(rel);
+        
     }
 
     @Test

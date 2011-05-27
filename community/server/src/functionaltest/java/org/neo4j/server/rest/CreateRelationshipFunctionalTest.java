@@ -167,6 +167,32 @@ public class CreateRelationshipFunctionalTest
     }
 
     @Test
+    public void shouldRespondWith201WhenCreatingALoopRelationship() throws Exception
+    {
+        long theOnlyNode = helper.createNode();
+
+        String jsonString = "{\"to\" : \"" + functionalTestHelper.dataUri() + "node/" + theOnlyNode
+                            + "\", \"type\" : \"LOVES\"}";
+        String uri = functionalTestHelper.dataUri() + "node/" + theOnlyNode + "/relationships";
+        ClientResponse response = CLIENT.resource( uri )
+                .type( MediaType.APPLICATION_JSON )
+                .accept( MediaType.APPLICATION_JSON )
+                .entity( jsonString )
+                .post( ClientResponse.class );
+        assertEquals( 201, response.getStatus() );
+        assertTrue( response.getLocation()
+                .toString()
+                .matches( RELATIONSHIP_URI_PATTERN ) );
+        assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
+        assertProperRelationshipRepresentation( JsonHelper.jsonToMap( response.getEntity( String.class ) ) );
+        gen.create()
+                .payload( jsonString )
+                .expectedStatus( 201 )
+                .post( uri );
+        response.close();
+    }
+
+    @Test
     public void shouldRespondWith400WhenBadJsonProvided() throws DatabaseBlockedException
     {
         long startNode = helper.createNode();

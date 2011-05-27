@@ -175,7 +175,7 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>com.tinkerpop</groupId>
       <artifactId>gremlin</artifactId>
-      <version>1.0</version>
+      <version>0.9</version>
       <type>jar</type>
       <exclusions>
         <!-- Sail support not needed --> 
