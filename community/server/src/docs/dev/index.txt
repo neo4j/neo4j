@@ -10,8 +10,6 @@ include::server-configuration.txt[]
 
 include::server-debugging.txt[]
 
-include::server-embedded.txt[]
-
 include::high-availability.txt[]
 
 include::server-plugins.txt[]
