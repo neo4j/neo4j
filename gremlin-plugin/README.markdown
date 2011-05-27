@@ -5,6 +5,12 @@ This is a beginning of providing [Gremlin](http://gremlin.tinkerpop.com) backend
     cd $NEO4J_HOME
     bin/neo4j restart
   
+Integration testing:
+    
+    mvn clean package
+    source set_env.sh
+    rake
+  
 access the plugin
 
     curl localhost:7474/db/data/
