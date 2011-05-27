@@ -25,6 +25,7 @@ import static org.junit.Assert.fail;
 import java.io.File;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
@@ -38,6 +39,8 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.test.GraphDefinition;
+import org.neo4j.test.GraphDescription;
 
 public abstract class AbstractTestBase
 {
@@ -101,17 +104,17 @@ public abstract class AbstractTestBase
 
     protected static void createGraph( String... description )
     {
-        createGraph( new GraphDescription( description ) );
+        createGraph( GraphDescription.create( description ) );
     }
 
-    protected static Node createGraph( GraphDefinition graph )
+    protected static Map<String, Node> createGraph( GraphDefinition graph )
     {
         Transaction tx = graphdb.beginTx();
         try
         {
-            Node root = graph.create( graphdb );
+            Map<String, Node> result = graph.create( graphdb );
             tx.success();
-            return root;
+            return result;
         }
         finally
         {

@@ -37,6 +37,7 @@ import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
+import org.neo4j.test.TestData;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
@@ -49,7 +50,7 @@ public class GetNodePropertiesFunctionalTest
     private FunctionalTestHelper functionalTestHelper;
 
     public @Rule
-    DocumentationGenerator gen = new DocumentationGenerator();
+    TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
 
     @Before
     public void setupServer() throws IOException {
@@ -67,7 +68,7 @@ public class GetNodePropertiesFunctionalTest
 
     /**
      * Get properties for node (empty result).
-     * 
+     *
      * If there are no properties, there will be an HTTP 204 response.
      */
     @Documented
@@ -76,7 +77,7 @@ public class GetNodePropertiesFunctionalTest
         Client client = CLIENT;
         WebResource createResource = client.resource(functionalTestHelper.dataUri() + "node/");
         ClientResponse createResponse = createResource.accept(MediaType.APPLICATION_JSON).entity("").post(ClientResponse.class);
-        gen.create()
+        gen.get()
                 .expectedStatus( 204 )
                 .get( createResponse.getLocation()
                         .toString() + "/properties" );
@@ -94,7 +95,7 @@ public class GetNodePropertiesFunctionalTest
         String entity = JsonHelper.createJsonFrom(Collections.singletonMap("foo", "bar"));
         ClientResponse createResponse = createResource.type(MediaType.APPLICATION_JSON).entity(entity).accept(MediaType.APPLICATION_JSON).post(
                 ClientResponse.class);
-        gen.create()
+        gen.get()
                 .expectedStatus( 200 )
                 .get( createResponse.getLocation()
                         .toString() + "/properties" );
@@ -131,7 +132,7 @@ public class GetNodePropertiesFunctionalTest
         WebResource resource = client.resource(createResponse.getLocation().toString() + "/properties");
         ClientResponse response = resource.type(MediaType.APPLICATION_FORM_URLENCODED).accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
         assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
-        
+
         createResponse.close();
         response.close();
     }
@@ -145,14 +146,14 @@ public class GetNodePropertiesFunctionalTest
         WebResource resource = client.resource(getPropertyUri(createResponse.getLocation().toString(), "foo"));
         ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
         assertEquals(404, response.getStatus());
-        
+
         createResponse.close();
         response.close();
     }
 
     /**
      * Get property for node.
-     * 
+     *
      * Get a single node property from a node.
      */
     @Documented
@@ -172,7 +173,7 @@ public class GetNodePropertiesFunctionalTest
         createResponse.close();
         response.close();
 
-        gen.create()
+        gen.get()
                 .expectedStatus( 200 )
                 .get( getPropertyUri( createResponse.getLocation()
                         .toString(), "foo" ).toString() );
@@ -198,7 +199,7 @@ public class GetNodePropertiesFunctionalTest
         WebResource resource = client.resource(getPropertyUri(createResponse.getLocation().toString(), "foo"));
         ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
         assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
-        
+
         createResponse.close();
         response.close();
     }

@@ -44,6 +44,7 @@ import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.test.TestData;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
@@ -59,7 +60,7 @@ public class ManageNodeFunctionalTest
     private GraphDbHelper helper;
 
     public @Rule
-    DocumentationGenerator gen = new DocumentationGenerator();
+    TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
 
     @Before
     public void setupServer() throws IOException
@@ -86,7 +87,7 @@ public class ManageNodeFunctionalTest
     @Test
     public void shouldGet201WhenCreatingNode() throws Exception
     {
-        ClientResponse response = gen.create()
+        ClientResponse response = gen.get()
                 .expectedStatus( 201 )
                 .expectedHeader( "Location" )
                 .post( functionalTestHelper.nodeUri() )
@@ -103,7 +104,7 @@ public class ManageNodeFunctionalTest
     @Test
     public void shouldGet201WhenCreatingNodeWithProperties() throws Exception
     {
-        ClientResponse response = gen.create()
+        ClientResponse response = gen.get()
                 .payload( "{\"foo\" : \"bar\"}" )
                 .expectedStatus( 201 )
                 .expectedHeader( "Location" )
@@ -117,14 +118,14 @@ public class ManageNodeFunctionalTest
 
     /**
      * Property values can not be null.
-     * 
+     *
      * This example shows the response you get when trying to set a property to null.
      */
     @Documented
     @Test
     public void shouldGet400WhenSupplyingNullValueForAProperty() throws Exception
     {
-        gen.create()
+        gen.get()
                 .payload( "{\"foo\":null}" )
                 .expectedStatus( 400 )
                 .post( functionalTestHelper.nodeUri() );
@@ -210,7 +211,7 @@ public class ManageNodeFunctionalTest
     @Test
     public void shouldRespondWith204WhenNodeDeleted() throws Exception
     {
-        gen.create()
+        gen.get()
                 .expectedStatus( 204 )
                 .delete( functionalTestHelper.dataUri() + "node/" + helper.createNode() );
     }
@@ -228,7 +229,7 @@ public class ManageNodeFunctionalTest
 
     /**
      * Nodes with relationships can not be deleted.
-     * 
+     *
      * The relationships on a node has to be deleted before the node can be
      * deleted.
      */
@@ -244,7 +245,7 @@ public class ManageNodeFunctionalTest
         assertThat( jsonMap, hasKey( "message" ) );
         assertNotNull( jsonMap.get( "message" ) );
 
-        gen.create()
+        gen.get()
                 .expectedStatus( 409 )
                 .delete( functionalTestHelper.dataUri() + "node/" + id );
     }

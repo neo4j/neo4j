@@ -41,6 +41,7 @@ import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
+import org.neo4j.test.TestData;
 
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
@@ -54,9 +55,9 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
     private GraphDbHelper helper;
-    
+
     public @Rule
-    DocumentationGenerator gen = new DocumentationGenerator();    
+    TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
 
     @Before
     public void setupServer() throws IOException {
@@ -101,7 +102,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     @Test
     public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingAllRelationshipsForANode() throws JsonParseException
     {
-        String entity = gen.create()
+        String entity = gen.get()
                 .expectedStatus( 200 )
                 .get( functionalTestHelper.nodeUri() + "/"
                       + nodeWithRelationships + "/relationships" + "/all" )
@@ -116,7 +117,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     @Test
     public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingIncomingRelationshipsForANode() throws JsonParseException
     {
-        String entity = gen.create()
+        String entity = gen.get()
                 .expectedStatus( 200 )
                 .get( functionalTestHelper.nodeUri() + "/"
                       + nodeWithRelationships + "/relationships" + "/in" )
@@ -131,7 +132,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     @Test
     public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingOutgoingRelationshipsForANode() throws JsonParseException
     {
-        String entity = gen.create()
+        String entity = gen.get()
                 .expectedStatus( 200 )
                 .get( functionalTestHelper.nodeUri() + "/"
                       + nodeWithRelationships + "/relationships" + "/out" )
@@ -141,7 +142,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
 
     /**
      * Get typed relationships.
-     * 
+     *
      * Note that the "+&+" needs to be escaped for example when using
      * http://curl.haxx.se/[cURL] from the terminal.
      */
@@ -149,7 +150,8 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     @Test
     public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingAllTypedRelationshipsForANode() throws JsonParseException
     {
-        String entity = gen.create()
+        String entity = gen
+                .get()
                 .expectedStatus( 200 )
                 .get( functionalTestHelper.nodeUri() + "/"
                       + nodeWithRelationships + "/relationships"
@@ -185,7 +187,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     @Test
     public void shouldRespondWith200AndEmptyListOfRelationshipRepresentationsWhenGettingAllRelationshipsForANodeWithoutRelationships() throws JsonParseException
     {
-        String entity = gen.create()
+        String entity = gen.get()
                 .expectedStatus( 200 )
                 .get( functionalTestHelper.nodeUri() + "/"
                       + nodeWithoutRelationships + "/relationships" + "/all" )

@@ -40,6 +40,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
+import org.neo4j.test.GraphDefinition;
+import org.neo4j.test.TestData.Producer;
+
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientRequest.Builder;
@@ -62,6 +65,21 @@ public class DocsGenerator
     private static final List<String> REQUEST_HEADERS = Arrays.asList( new String[] {
             "Content-Type", "Accept" } );
 
+    public static final Producer<DocsGenerator> PRODUCER = new Producer<DocsGenerator>()
+    {
+        @Override
+        public DocsGenerator create( GraphDefinition graph, String title, String documentation )
+        {
+            return DocsGenerator.create( title ).description( documentation );
+        }
+
+        @Override
+        public void destroy( DocsGenerator product )
+        {
+            // TODO: invoke some complete method here?
+        }
+    };
+
     private final String title;
     private String description = null;
     private int expectedResponseStatus = -1;
@@ -77,7 +95,7 @@ public class DocsGenerator
      * response, use {@link ResponseEntity#entity} to get the entity or
      * {@link ResponseEntity#response} to get the rest of the response
      * (excluding the entity).
-     * 
+     *
      * @param title title of the test
      */
     public static DocsGenerator create( final String title )
@@ -97,7 +115,7 @@ public class DocsGenerator
     /**
      * Add a description to the test (in asciidoc format). Adding multiple
      * descriptions will yield one paragraph per description.
-     * 
+     *
      * @param description the description
      */
     public DocsGenerator description( final String description )
@@ -131,7 +149,7 @@ public class DocsGenerator
     /**
      * Set the expected status of the response. The test will fail if the
      * response has a different status. Defaults to HTTP 200 OK.
-     * 
+     *
      * @param expectedResponseStatus the expected response status
      */
     public DocsGenerator expectedStatus(
@@ -144,7 +162,7 @@ public class DocsGenerator
     /**
      * Set the expected media type of the response. The test will fail if the
      * response has a different media type. Defaults to application/json.
-     * 
+     *
      * @param expectedMediaType the expected media tyupe
      */
     public DocsGenerator expectedType( final MediaType expectedMediaType )
@@ -155,7 +173,7 @@ public class DocsGenerator
 
     /**
      * The media type of the request payload. Defaults to application/json.
-     * 
+     *
      * @param payloadMediaType the media type to use
      */
     public DocsGenerator payloadType( final MediaType payloadMediaType )
@@ -166,7 +184,7 @@ public class DocsGenerator
 
     /**
      * Set the payload of the request.
-     * 
+     *
      * @param payload the payload
      */
     public DocsGenerator payload( final String payload )
@@ -179,7 +197,7 @@ public class DocsGenerator
      * Add an expected response header. If the heading is missing in the
      * response the test will fail. The header and its value are also included
      * in the documentation.
-     * 
+     *
      * @param expectedHeaderField the expected header
      */
     public DocsGenerator expectedHeader( final String expectedHeaderField )
@@ -190,7 +208,7 @@ public class DocsGenerator
 
     /**
      * Send a request using your own request object.
-     * 
+     *
      * @param request the request to perform
      */
     public ResponseEntity request( final ClientRequest request )
@@ -202,7 +220,7 @@ public class DocsGenerator
 
     /**
      * Send a GET request.
-     * 
+     *
      * @param uri the URI to use.
      */
     public ResponseEntity get( final String uri )
@@ -213,7 +231,7 @@ public class DocsGenerator
 
     /**
      * Send a POST request.
-     * 
+     *
      * @param uri the URI to use.
      */
     public ResponseEntity post( final String uri )
@@ -225,7 +243,7 @@ public class DocsGenerator
 
     /**
      * Send a PUT request.
-     * 
+     *
      * @param uri the URI to use.
      */
     public ResponseEntity put( final String uri )
@@ -237,7 +255,7 @@ public class DocsGenerator
 
     /**
      * Send a DELETE request.
-     * 
+     *
      * @param uri the URI to use.
      */
     public ResponseEntity delete( final String uri )

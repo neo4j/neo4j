@@ -43,12 +43,12 @@ import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
-import org.neo4j.server.rest.DocumentationGenerator.Title;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.domain.URIHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
+import org.neo4j.test.TestData;
 
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
@@ -60,7 +60,7 @@ public class IndexNodeFunctionalTest
     private GraphDbHelper helper;
 
     public @Rule
-    DocumentationGenerator gen = new DocumentationGenerator();
+    TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
 
     @Before
     public void setupServer() throws IOException
@@ -83,27 +83,27 @@ public class IndexNodeFunctionalTest
     /**
      * List node indexes (empty result). This is an example covering the case
      * where no node index exists.
-     * 
+     *
      * ...
-     * 
+     *
      * GET ${org.neo4j.server.rest.web}/index/node/
      */
     @Documented
     @Test
     public void shouldGetEmptyListOfNodeIndexesWhenNoneExist()
     {
-        gen.create()
+        gen.get()
                 .expectedStatus( 204 )
                 .get( functionalTestHelper.nodeIndexUri() );
     }
 
     /**
      * List node indexes.
-     * 
+     *
      * ...
-     * 
+     *
      * GET ${org.neo4j.server.rest.web}/index/node/
-     * 
+     *
      * @throws PropertyValueException
      */
     @Documented
@@ -112,7 +112,7 @@ public class IndexNodeFunctionalTest
     {
         String indexName = "favorites";
         helper.createNodeIndex( indexName );
-        String entity = gen.create()
+        String entity = gen.get()
                 .expectedStatus( 200 )
                 .get( functionalTestHelper.nodeIndexUri() )
                 .entity();
@@ -124,7 +124,7 @@ public class IndexNodeFunctionalTest
     /**
      * POST ${org.neo4j.server.rest.web}/index/node { "name":"index-name" }
      */
-    @Title( "Create node index" )
+    @TestData.Title( "Create node index" )
     @Documented( "NOTE: Instead of creating the index this way, " + "you can simply start to use it, "
                  + "and it will be created automatically." )
     @Test
@@ -134,7 +134,7 @@ public class IndexNodeFunctionalTest
         Map<String, String> indexSpecification = new HashMap<String, String>();
         indexSpecification.put( "name", indexName );
 
-        gen.create()
+        gen.get()
                 .payload( JsonHelper.createJsonFrom( indexSpecification ) )
                 .expectedStatus( 201 )
                 .expectedHeader( "Location" )
@@ -150,12 +150,12 @@ public class IndexNodeFunctionalTest
      * defaults, you can just start indexing nodes/relationships, as
      * non-existent indexes will automatically be created as you do. See
      * <<indexing-create-advanced>> for more information on index configuration.
-     * 
+     *
      * ...
-     * 
+     *
      * POST ${org.neo4j.server.rest.web}/index/node { "name":"index-name",
      * "config":{"type":"fulltext","provider":"lucene"} }
-     * 
+     *
      * @throws Exception
      * @throws ClientHandlerException
      * @throws PropertyValueException
@@ -164,7 +164,7 @@ public class IndexNodeFunctionalTest
     @Test
     public void shouldCreateANamedNodeIndexWithConfiguration() throws Exception
     {
-        gen.create()
+        gen.get()
                 .payload( "{\"name\":\"fulltext\", \"config\":{\"type\":\"fulltext\",\"provider\":\"lucene\"}}" )
                 .expectedStatus( 201 )
                 .expectedHeader( "Location" )
@@ -176,18 +176,18 @@ public class IndexNodeFunctionalTest
 
     /**
      * Add node to index.
-     * 
+     *
      * Associates a node with the given key/value pair in the given index.
-     * 
+     *
      * NOTE: Spaces in the URI have to be escaped.
-     * 
+     *
      * [CAUTION] This does *not* overwrite previous entries. If you index the
      * same key/value/item combination twice,two index entries are created. To
      * do update-type operations,you need to delete the old entry before adding
      * a new one.
-     * 
+     *
      * ...
-     * 
+     *
      * POST ${org.neo4j.server.rest.web}/index/node/{indexName}/{key}/{value}
      */
     @Documented
@@ -200,7 +200,7 @@ public class IndexNodeFunctionalTest
         value = URIHelper.encode( value );
         int nodeId = 0;
         // implicitly create the index
-        gen.create()
+        gen.get()
                 .expectedStatus( 201 )
                 .payload( JsonHelper.createJsonFrom( functionalTestHelper.nodeUri( nodeId ) ) )
                 .post( functionalTestHelper.indexNodeUri( indexName, key, value ) );
@@ -215,7 +215,7 @@ public class IndexNodeFunctionalTest
 
     /**
      * Find node by exact match.
-     * 
+     *
      * NOTE: Spaces in the URI have to be escaped.
      */
     @Documented
@@ -234,7 +234,7 @@ public class IndexNodeFunctionalTest
         assertEquals( response.getStatus(), 201 );
 
         // search it exact
-        String entity = gen.create()
+        String entity = gen.get()
                 .expectedStatus( 200 )
                 .get( functionalTestHelper.indexNodeUri( indexName, key, value ) )
                 .entity();
@@ -416,7 +416,7 @@ public class IndexNodeFunctionalTest
         String indexName = "kvnode";
         helper.createNodeIndex( indexName );
 
-        gen.create()
+        gen.get()
                 .expectedStatus( 204 )
                 .delete( functionalTestHelper.indexNodeUri( indexName ) );
     }

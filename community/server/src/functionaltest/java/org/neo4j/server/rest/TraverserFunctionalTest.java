@@ -45,6 +45,7 @@ import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
+import org.neo4j.test.TestData;
 
 import com.sun.jersey.api.client.ClientResponse;
 
@@ -61,7 +62,7 @@ public class TraverserFunctionalTest {
     private GraphDbHelper helper;
 
     public @Rule
-    DocumentationGenerator gen = new DocumentationGenerator();
+    TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
 
     @Before
     public void setupServer() throws Exception {
@@ -143,7 +144,7 @@ public class TraverserFunctionalTest {
 
     /**
      * Traversal using a return filter.
-     * 
+     *
      * In this example, the +none+ prune evaluator is used and a
      * return filter is supplied. The result is to be returned as nodes
      * and the max depth is set to 3.
@@ -166,7 +167,7 @@ public class TraverserFunctionalTest {
                 MapUtil.map( "language", "javascript", "body",
                         "position.endNode().getProperty('name').toLowerCase().contains('t')" ),
                 "relationships", rels, "max depth", 3 ) );
-        String entity = gen.create()
+        String entity = gen.get()
                 .expectedStatus( 200 )
                 .payload( description )
                 .post( functionalTestHelper.nodeUri( startNode )

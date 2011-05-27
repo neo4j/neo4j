@@ -402,15 +402,24 @@ public abstract class SubProcess<T, P> implements Serializable
             this.event = event;
         }
 
-        public String getCallingClassName( int offset )
+        public boolean matchCallingMethod( int offset, Class<?> owner, String method )
         {
             try
             {
-                return event.thread().frames().get( offset ).location().declaringType().name();
+                com.sun.jdi.Location location = event.thread().frame( offset ).location();
+                if ( owner != null )
+                {
+                    if ( !owner.getName().equals( location.declaringType().name() ) ) return false;
+                }
+                if ( method != null )
+                {
+                    if ( !method.equals( location.method().name() ) ) return false;
+                }
+                return true;
             }
             catch ( com.sun.jdi.IncompatibleThreadStateException e )
             {
-                return null;
+                return false;
             }
         }
 

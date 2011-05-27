@@ -40,6 +40,7 @@ import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
+import org.neo4j.test.TestData;
 
 import com.sun.jersey.api.client.ClientResponse;
 
@@ -52,7 +53,7 @@ public class SetRelationshipPropertiesFunctionalTest
     private NeoServerWithEmbeddedWebServer server;
 
     public @Rule
-    DocumentationGenerator gen = new DocumentationGenerator();
+    TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
 
     @Before
     public void setupServer() throws IOException, URISyntaxException {
@@ -79,7 +80,7 @@ public class SetRelationshipPropertiesFunctionalTest
     {
         Map<String, Object> map = new HashMap<String, Object>();
         map.put("jim", "tobias");
-        gen.create()
+        gen.get()
                 .payload( JsonHelper.createJsonFrom( map ) )
                 .expectedStatus( 204 )
                 .put( propertiesUri.toString() );

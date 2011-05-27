@@ -35,8 +35,8 @@ import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
-import org.neo4j.server.rest.DocumentationGenerator.Title;
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.test.TestData;
 
 import com.sun.jersey.api.client.ClientResponse;
 
@@ -47,7 +47,7 @@ public class GetOnRootFunctionalTest
     private FunctionalTestHelper functionalTestHelper;
 
     public @Rule
-    DocumentationGenerator gen = new DocumentationGenerator();
+    TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
 
     @Before
     public void setupServer() throws IOException {
@@ -68,9 +68,9 @@ public class GetOnRootFunctionalTest
      */
     @Documented
     @Test
-    @Title( "Get service root" )
+    @TestData.Title( "Get service root" )
     public void assert200OkFromGet() throws Exception {
-        gen.create()
+        gen.get()
                 .expectedStatus( 200 )
                 .get( functionalTestHelper.dataUri() );
     }

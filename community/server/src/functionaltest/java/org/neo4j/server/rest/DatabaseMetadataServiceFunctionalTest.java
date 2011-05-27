@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.rest.domain.GraphDbHelper;
+import org.neo4j.test.TestData;
 
 public class DatabaseMetadataServiceFunctionalTest
 {
@@ -37,7 +38,7 @@ public class DatabaseMetadataServiceFunctionalTest
     private GraphDbHelper helper;
 
     public @Rule
-    DocumentationGenerator gen = new DocumentationGenerator();
+    TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
 
     @Before
     public void setupServer() throws IOException
@@ -68,7 +69,7 @@ public class DatabaseMetadataServiceFunctionalTest
         helper.createRelationship( "foo" );
         helper.createRelationship( "bar" );
 
-        gen.create()
+        gen.get()
                 .expectedStatus( 200 )
                 .get( functionalTestHelper.dataUri() + "relationship/types" );
     }

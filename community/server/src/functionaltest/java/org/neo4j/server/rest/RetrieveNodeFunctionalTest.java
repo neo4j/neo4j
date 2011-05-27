@@ -43,6 +43,7 @@ import org.neo4j.server.rest.DocsGenerator.ResponseEntity;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.formats.CompactJsonFormat;
+import org.neo4j.test.TestData;
 
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
@@ -56,7 +57,7 @@ public class RetrieveNodeFunctionalTest
     private FunctionalTestHelper functionalTestHelper;
 
     public @Rule
-    DocumentationGenerator gen = new DocumentationGenerator();
+    TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
 
     @Before
     public void setupServer() throws IOException, DatabaseBlockedException, URISyntaxException
@@ -80,7 +81,7 @@ public class RetrieveNodeFunctionalTest
 
     /**
      * Get node.
-     * 
+     *
      * Note that the response contains URI/templates for the available
      * operations for getting properties and relationships.
      */
@@ -89,14 +90,14 @@ public class RetrieveNodeFunctionalTest
     public void shouldGet200WhenRetrievingNode() throws Exception
     {
         String uri = nodeUri.toString();
-        gen.create()
+        gen.get()
                 .expectedStatus( 200 )
                 .get( uri );
     }
 
     /**
      * Get node - compact.
-     * 
+     *
      * Specifying the subformat in the requests media type yields a more compact
      * JSON response without metadata and templates.
      */
@@ -105,7 +106,7 @@ public class RetrieveNodeFunctionalTest
     public void shouldGet200WhenRetrievingNodeCompact()
     {
         String uri = nodeUri.toString();
-        ResponseEntity entity = gen.create()
+        ResponseEntity entity = gen.get()
                 .expectedType( CompactJsonFormat.MEDIA_TYPE )
                 .expectedStatus( 200 )
                 .get( uri );
@@ -147,7 +148,7 @@ public class RetrieveNodeFunctionalTest
     @Test
     public void shouldGet404WhenRetrievingNonExistentNode() throws Exception
     {
-        gen.create()
+        gen.get()
                 .expectedStatus( 404 )
                 .get( nodeUri + "00000" );
     }

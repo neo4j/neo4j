@@ -58,7 +58,7 @@ public class ShutdownRaceTest extends AbstractSubProcessTestBase
             @Override
             protected void callback( DebugInterface debug )
             {
-                if ( LuceneDataSource.class.getName().equals( debug.getCallingClassName( 1 ) ) )
+                if ( debug.matchCallingMethod( 1, LuceneDataSource.class, null ) )
                 {
                     shutdownThread.set( debug.thread().suspend( this ) );
                     resume( indexThread.getAndSet( null ) );

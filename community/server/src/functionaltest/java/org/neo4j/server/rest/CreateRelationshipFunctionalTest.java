@@ -41,6 +41,7 @@ import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
+import org.neo4j.test.TestData;
 
 import com.sun.jersey.api.client.ClientResponse;
 
@@ -53,7 +54,7 @@ public class CreateRelationshipFunctionalTest
     private GraphDbHelper helper;
 
     public @Rule
-    DocumentationGenerator gen = new DocumentationGenerator();
+    TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
 
     @SuppressWarnings( "unchecked" )
     @Before
@@ -128,7 +129,7 @@ public class CreateRelationshipFunctionalTest
                 .matches( RELATIONSHIP_URI_PATTERN ) );
         assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
         assertProperRelationshipRepresentation( JsonHelper.jsonToMap( response.getEntity( String.class ) ) );
-        gen.create()
+        gen.get()
                 .payload( jsonString )
                 .expectedStatus( 201 )
                 .post( uri );
@@ -185,7 +186,7 @@ public class CreateRelationshipFunctionalTest
                 .matches( RELATIONSHIP_URI_PATTERN ) );
         assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
         assertProperRelationshipRepresentation( JsonHelper.jsonToMap( response.getEntity( String.class ) ) );
-        gen.create()
+        gen.get()
                 .payload( jsonString )
                 .expectedStatus( 201 )
                 .post( uri );

@@ -37,6 +37,7 @@ import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
+import org.neo4j.test.TestData;
 
 import com.sun.jersey.api.client.ClientResponse;
 
@@ -47,7 +48,7 @@ public class RemoveNodePropertiesFunctionalTest
     private GraphDbHelper helper;
 
     public @Rule
-    DocumentationGenerator gen = new DocumentationGenerator();
+    TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
 
     @Before
     public void setupServer() throws IOException
@@ -96,7 +97,7 @@ public class RemoveNodePropertiesFunctionalTest
         Map<String, Object> map = new HashMap<String, Object>();
         map.put( "jim", "tobias" );
         helper.setNodeProperties( nodeId, map );
-        gen.create()
+        gen.get()
                 .expectedStatus( 204 )
                 .delete( functionalTestHelper.nodePropertiesUri( nodeId ) );
     }
