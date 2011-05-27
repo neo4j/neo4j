@@ -79,7 +79,7 @@ public class RelIdArray
         long highBits = id&0xFFFFFFFF00000000L;
         if ( lastBlock == null || lastBlock.getHighBits() != highBits )
         {
-            IdBlock newLastBlock = highBits == 0 ? new LowIdBlock( direction ) : new HighIdBlock( direction, highBits );
+            IdBlock newLastBlock = highBits == 0 ? new LowIdBlock() : new HighIdBlock( highBits );
             newLastBlock.prev = lastBlock;
             direction.assignTopLevelBlock( this, newLastBlock );
             lastBlock = newLastBlock;
@@ -173,7 +173,7 @@ public class RelIdArray
         return direction.iterator( this );
     }
     
-    public static final IdBlock EMPTY_BLOCK = new LowIdBlock( DirectionWrapper.BOTH )
+    public static final IdBlock EMPTY_BLOCK = new LowIdBlock()
     {
         @Override
         int length()
@@ -283,15 +283,9 @@ public class RelIdArray
     
     public static abstract class IdBlock
     {
-        protected DirectionWrapper tempDirRemoveThisLater;
         private int[] ids = new int[2];
         private int length;
         private IdBlock prev;
-        
-        public IdBlock( DirectionWrapper dir )
-        {
-            this.tempDirRemoveThisLater = dir;
-        }
         
         IdBlock copy()
         {
@@ -353,21 +347,10 @@ public class RelIdArray
         }
         
         abstract long getHighBits();
-        
-        @Override
-        public String toString()
-        {
-            return tempDirRemoveThisLater.name() + ", " + this.hashCode();
-        }
     }
     
     private static class LowIdBlock extends IdBlock
     {
-        public LowIdBlock( DirectionWrapper dir )
-        {
-            super( dir );
-        }
-
         @Override
         long transform( int id )
         {
@@ -377,7 +360,7 @@ public class RelIdArray
         @Override
         protected IdBlock copyInstance()
         {
-            return new LowIdBlock( tempDirRemoveThisLater );
+            return new LowIdBlock();
         }
         
         @Override
@@ -391,9 +374,8 @@ public class RelIdArray
     {
         private final long highBits;
 
-        HighIdBlock( DirectionWrapper dir, long highBits )
+        HighIdBlock( long highBits )
         {
-            super( dir );
             this.highBits = highBits;
         }
         
@@ -406,7 +388,7 @@ public class RelIdArray
         @Override
         protected IdBlock copyInstance()
         {
-            return new HighIdBlock( tempDirRemoveThisLater, highBits );
+            return new HighIdBlock( highBits );
         }
         
         @Override

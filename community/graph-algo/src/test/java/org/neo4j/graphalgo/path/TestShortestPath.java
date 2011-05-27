@@ -20,7 +20,10 @@
 package org.neo4j.graphalgo.path;
 
 import static common.SimpleGraphBuilder.KEY_ID;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.neo4j.graphalgo.GraphAlgoFactory.shortestPath;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -329,5 +332,33 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         Iterable<Path> paths =
                 finder.findAllPaths( graph.getNode( "m" ), graph.getNode( "p" ) );
         assertPaths( paths, "m,s,n,p", "m,o,n,p" );
+    }
+
+    @Test
+    public void makeSureAMaxResultCountCanIsObeyed()
+    {
+        // Layout:
+        //
+        //   (a)--(b)--(c)--(d)--(e)
+        //    |                 / | \
+        //   (f)--(g)---------(h) |  \
+        //    |                   |   |
+        //   (i)-----------------(j)  |
+        //    |                       |
+        //   (k)----------------------
+        // 
+        graph.makeEdgeChain( "a,b,c,d,e" );
+        graph.makeEdgeChain( "a,f,g,h,e" );
+        graph.makeEdgeChain(   "f,i,j,e" );
+        graph.makeEdgeChain(     "i,k,e" );
+        
+        RelationshipExpander expander = Traversal.expanderForTypes( MyRelTypes.R1, Direction.OUTGOING );
+        Node a = graph.getNode( "a" );
+        Node e = graph.getNode( "e" );
+        assertEquals( 4, count( shortestPath( expander, 10, 10 ).findAllPaths( a, e ) ) );
+        assertEquals( 4, count( shortestPath( expander, 10, 4 ).findAllPaths( a, e ) ) );
+        assertEquals( 3, count( shortestPath( expander, 10, 3 ).findAllPaths( a, e ) ) );
+        assertEquals( 2, count( shortestPath( expander, 10, 2 ).findAllPaths( a, e ) ) );
+        assertEquals( 1, count( shortestPath( expander, 10, 1 ).findAllPaths( a, e ) ) );
     }
 }

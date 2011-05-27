@@ -56,6 +56,7 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 public class ShortestPath implements PathFinder<Path>
 {
     private final int maxDepth;
+    private final int maxResultCount;
     private final RelationshipExpander relExpander;
     private final HitDecider hitDecider;
     
@@ -68,7 +69,7 @@ public class ShortestPath implements PathFinder<Path>
      */
     public ShortestPath( int maxDepth, RelationshipExpander relExpander )
     {
-        this( maxDepth, relExpander, false );
+        this( maxDepth, relExpander, Integer.MAX_VALUE, false );
     }
     
     /**
@@ -77,13 +78,31 @@ public class ShortestPath implements PathFinder<Path>
      * will never have a greater {@link Path#length()} than {@code maxDepth}.
      * @param relExpander the {@link RelationshipExpander} to use for deciding
      * which relationships to expand for each {@link Node}.
+     * @param maxResultCount the maximum number of hits to return. If this number
+     * of hits are encountered the traversal will stop.
+     */
+    public ShortestPath( int maxDepth, RelationshipExpander relExpander, int maxResultCount )
+    {
+        this( maxDepth, relExpander, maxResultCount, false );
+    }
+    
+    /**
+     * Constructs a new stortest path algorithm.
+     * @param maxDepth the maximum depth for the traversal. Returned paths
+     * will never have a greater {@link Path#length()} than {@code maxDepth}.
+     * @param relExpander the {@link RelationshipExpander} to use for deciding
+     * which relationships to expand for each {@link Node}.
+     * @param maxResultCount the maximum number of hits to return. If this number
+     * of hits are encountered the traversal will stop.
      * @param findPathsOnMaxDepthOnly if {@code true} then it will only try to
      * find paths on that particular depth ({@code maxDepth}).
      */
-    public ShortestPath( int maxDepth, RelationshipExpander relExpander, boolean findPathsOnMaxDepthOnly )
+    public ShortestPath( int maxDepth, RelationshipExpander relExpander, int maxResultCount,
+            boolean findPathsOnMaxDepthOnly )
     {
         this.maxDepth = maxDepth;
         this.relExpander = relExpander;
+        this.maxResultCount = maxResultCount;
         this.hitDecider = findPathsOnMaxDepthOnly ? new DepthHitDecider( maxDepth ) : YES_HIT_DECIDER;
     }
     
@@ -97,7 +116,7 @@ public class ShortestPath implements PathFinder<Path>
         Iterator<Path> paths = internalPaths( start, end, true ).iterator();
         return paths.hasNext() ? paths.next() : null;
     }
-    
+
     private Iterable<Path> internalPaths( Node start, Node end, boolean stopAsap )
     {
         if ( start.equals( end ) )
@@ -110,17 +129,17 @@ public class ShortestPath implements PathFinder<Path>
         MutableInteger sharedFrozenDepth = new MutableInteger( MutableInteger.NULL );
         MutableBoolean sharedStop = new MutableBoolean();
         MutableInteger sharedCurrentDepth = new MutableInteger( 0 );
-        final DirectionData startData = new DirectionData( Direction.OUTGOING, start,
+        final DirectionData startData = new DirectionData( start,
                 sharedVisitedRels, sharedFrozenDepth, sharedStop,
-                sharedCurrentDepth, stopAsap, relExpander );
-        final DirectionData endData = new DirectionData( Direction.INCOMING, end,
+                sharedCurrentDepth, relExpander );
+        final DirectionData endData = new DirectionData( end,
                 sharedVisitedRels, sharedFrozenDepth, sharedStop,
-                sharedCurrentDepth, stopAsap, relExpander.reversed() );
+                sharedCurrentDepth, relExpander.reversed() );
         
         while ( startData.hasNext() || endData.hasNext() )
         {
-            goOneStep( startData, endData, hits, stopAsap, startData );
-            goOneStep( endData, startData, hits, stopAsap, startData );
+            goOneStep( startData, endData, hits, startData );
+            goOneStep( endData, startData, hits, startData );
         }
         
         Collection<Hit> least = hits.least();
@@ -156,7 +175,7 @@ public class ShortestPath implements PathFinder<Path>
     }
 
     private void goOneStep( DirectionData directionData, DirectionData otherSide, Hits hits,
-            boolean stopAsEarlyAsPossible, DirectionData startSide )
+            DirectionData startSide )
     {
         if ( !directionData.hasNext() )
         {
@@ -188,11 +207,6 @@ public class ShortestPath implements PathFinder<Path>
                     // I'm basing that decision on that it was the other side
                     // which found the deeper paths (correct assumption?)
                     otherSide.stop = true;
-                    if ( stopAsEarlyAsPossible )
-                    {
-                        // we can stop here because we won't get a less deep path than this.
-                        directionData.sharedStop.value = true;
-                    }
                 }
                 
                 // Add it to the list of hits
@@ -200,7 +214,11 @@ public class ShortestPath implements PathFinder<Path>
                         directionData == startSide ? directionData : otherSide;
                 DirectionData endSideData =
                         directionData == startSide ? otherSide : directionData;
-                hits.add( new Hit( startSideData, endSideData, nextNode ), depth );
+                if ( hits.add( new Hit( startSideData, endSideData, nextNode ), depth ) >= maxResultCount )
+                {
+                    directionData.stop = true;
+                    otherSide.stop = true;
+                }
             }
         }
     }
@@ -208,9 +226,6 @@ public class ShortestPath implements PathFinder<Path>
     // Two long-lived instances
     protected class DirectionData extends PrefetchingIterator<Node>
     {
-        // For debugging, the one from the first node has OUTGOING, the other INCOMING.
-        private Direction direction;
-        
         private final Node startNode;
         private int currentDepth;
         private Iterator<Relationship> nextRelationships;
@@ -223,22 +238,18 @@ public class ShortestPath implements PathFinder<Path>
         private final MutableInteger sharedCurrentDepth;
         private boolean haveFoundSomething;
         private boolean stop;
-        private final boolean stopAsap;
         private final RelationshipExpander expander;
         
-        DirectionData( Direction direction, Node startNode, Collection<Long> sharedVisitedRels,
+        DirectionData( Node startNode, Collection<Long> sharedVisitedRels,
                 MutableInteger sharedFrozenDepth, MutableBoolean sharedStop,
-                MutableInteger sharedCurrentDepth, boolean stopAsap,
-                RelationshipExpander expander )
+                MutableInteger sharedCurrentDepth, RelationshipExpander expander )
         {
-            this.direction = direction;
             this.startNode = startNode;
             this.visitedNodes.put( startNode, new LevelData( null, 0 ) );
             this.nextNodes.add( startNode );
             this.sharedFrozenDepth = sharedFrozenDepth;
             this.sharedStop = sharedStop;
             this.sharedCurrentDepth = sharedCurrentDepth;
-            this.stopAsap = stopAsap;
             this.expander = expander;
             this.sharedVisitedRels = sharedVisitedRels;
             
@@ -296,18 +307,13 @@ public class ShortestPath implements PathFinder<Path>
                     createdLevelData = true;
                 }
                 
-                if ( this.currentDepth < levelData.depth )
-                {
-                    throw new RuntimeException( "This shouldn't happen... I think" );
-                }
-                else if ( !this.stopAsap && this.currentDepth == levelData.depth &&
-                        !createdLevelData )
+                if ( this.currentDepth == levelData.depth && !createdLevelData )
                 {
                     levelData.addRel( nextRel );
                 }
                 
-                // Have we visited this node before? In that case don't add it
-                // as next node to traverse
+                // Was this leveldata created right now, i.e. have we visited this node before?
+                // In that case don't add it as next node to traverse
                 if ( !createdLevelData )
                 {
                     continue;
@@ -326,11 +332,14 @@ public class ShortestPath implements PathFinder<Path>
         
         private Relationship fetchNextRelOrNull()
         {
-            boolean stopped = this.stop || this.sharedStop.value;
+            if ( this.stop || this.sharedStop.value )
+            {
+                return null;
+            }
             boolean hasComeTooFarEmptyHanded = this.sharedFrozenDepth.value != MutableInteger.NULL
                     && this.sharedCurrentDepth.value > this.sharedFrozenDepth.value
                     && !this.haveFoundSomething;
-            if ( stopped || hasComeTooFarEmptyHanded )
+            if ( hasComeTooFarEmptyHanded )
             {
                 return null;
             }
@@ -408,8 +417,9 @@ public class ShortestPath implements PathFinder<Path>
         private Map<Integer, Collection<Hit>> hits =
             new HashMap<Integer, Collection<Hit>>();
         private int lowestDepth;
+        private int totalHitCount;
         
-        void add( Hit hit, int atDepth )
+        int add( Hit hit, int atDepth )
         {
             Collection<Hit> depthHits = hits.get( atDepth );
             if ( depthHits == null )
@@ -417,11 +427,15 @@ public class ShortestPath implements PathFinder<Path>
                 depthHits = new HashSet<Hit>();
                 hits.put( atDepth, depthHits );
             }
-            depthHits.add( hit );
+            if ( depthHits.add( hit ) )
+            {
+                totalHitCount++;
+            }
             if ( lowestDepth == 0 || atDepth < lowestDepth )
             {
                 lowestDepth = atDepth;
             }
+            return totalHitCount;
         }
         
         Collection<Hit> least()
