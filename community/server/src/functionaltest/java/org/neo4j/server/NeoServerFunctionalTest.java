@@ -48,7 +48,7 @@ public class NeoServerFunctionalTest {
     @After
     public void stopServer() {
         if (server != null) {
-            server.stop();
+            server.stop(); 
         }
     }
 
@@ -125,7 +125,7 @@ public class NeoServerFunctionalTest {
         server = null; // Need this to prevent the server being stopped twice
         assertThat(
                 appender.toString(),
-                containsString( "INFO: Successfully shutdown Neo Server on port [7474], database [" ) );
+                containsString( "INFO: Successfully shutdown database [" ) );
     }
 
     @Test
