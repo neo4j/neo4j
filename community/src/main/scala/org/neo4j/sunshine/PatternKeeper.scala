@@ -22,8 +22,8 @@ package org.neo4j.sunshine
 import org.neo4j.graphdb.PropertyContainer
 import collection.immutable.Map
 import org.neo4j.graphmatching.{PatternRelationship, AbstractPatternObject, PatternNode}
-import scala.Some
 import org.apache.commons.lang.NotImplementedException
+import scala.Some
 
 /**
  * Created by Andres Taylor
@@ -76,5 +76,15 @@ class PatternKeeper {
   def relationshipsMap : Map[String, PatternRelationship] = rels.toMap
 
   def assertHas(variable:String) { if (!(nodes.contains(variable) || rels.contains(variable))) throw new SyntaxError("Unknown variable \""+ variable +"\".") }
+
+  def variables = nodes.keySet ++ rels.keySet
+
+  def patternObject(key:String):Option[AbstractPatternObject[_ <: PropertyContainer]] = nodes.get(key) match {
+    case Some(node) => Some(node.asInstanceOf[AbstractPatternObject[_ <: PropertyContainer]])
+    case None => rels.get(key) match {
+      case Some(rel) => Some(rel.asInstanceOf[AbstractPatternObject[_ <: PropertyContainer]])
+      case None => None
+    }
+  }
 
 }

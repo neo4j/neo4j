@@ -24,8 +24,8 @@ import commands._
 import pipes.{Pipe, FromPump}
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb._
-import org.neo4j.graphmatching.PatternRelationship
 import org.neo4j.sunshine.filters._
+import org.neo4j.graphmatching.{PatternRelationship, PatternNode, AbstractPatternObject}
 
 class ExecutionEngine(val graph: GraphDatabaseService) {
   type MapTransformer = (Map[String, Any]) => Map[String, Any]
@@ -39,12 +39,70 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
 
       createPattern(matching, patternKeeper)
 
+      checkValidityOfPattern(patternKeeper, sourcePump)
+
       val filter = createFilters(where, patternKeeper)
 
       val projections = createProjectionTransformers(select, patternKeeper)
 
       new Projection(patternKeeper.nodesMap, patternKeeper.relationshipsMap, sourcePump, projections, filter)
     }
+  }
+
+  def checkValidityOfPattern(pattern: PatternKeeper, source: Pipe) {
+    val visited = scala.collection.mutable.HashSet[String]()
+
+    def visit(visitedObject:AbstractPatternObject[_ <: PropertyContainer]) {
+      val label = visitedObject.getLabel
+      println(visited)
+      if(label == null || !visited.contains(label)) {
+        if(label != null) { visited.add(label) }
+
+        visitedObject match {
+          case node:PatternNode => node.getAllRelationships.asScala.foreach(visit)
+          case rel:PatternRelationship => {
+            visit(rel.getFirstNode)
+            visit(rel.getSecondNode)
+          }
+        }
+
+      }
+    }
+
+//    def visit(point: String) {
+//      if (!visited.contains(name)) {
+//        visited.add(name)
+//
+//        pattern.nodes.get(name) match {
+//          case Some(node) => node.getAllRelationships.asScala.foreach((rel) => {
+//            val relLabel = rel.getLabel
+//            if (relLabel != null) {
+//              visit(relLabel)
+//            }
+//          })
+//
+//          case None => pattern.rels.get(name) match {
+//            case Some(rel) => {
+//              visit(rel.getFirstNode.getLabel)
+//              visit(rel.getSecondNode.getLabel)
+//            }
+//            case None => throw new SyntaxError("Encountered a part of the pattern that is not part of the pattern. If you see this, please report this problem!")
+//          }
+//        }
+//      }
+//    }
+
+    source.columnNames.map( pattern.patternObject ).foreach( _ match {
+      case None =>  throw new SyntaxError("Encountered a part of the pattern that is not part of the pattern. If you see this, please report this problem!")
+      case Some(obj) => visit(obj)
+    })
+
+    val notVisitedParts = pattern.variables -- visited
+    if (notVisitedParts.nonEmpty) {
+      throw new SyntaxError("All parts of the pattern must either directly or indirectly be connected to at least one bound entity. These variables were found to be disconnected: " +
+        notVisitedParts.mkString("", ", ", ""))
+    }
+
   }
 
   def createFilters(where: Option[Clause], patternKeeper: PatternKeeper): Filter = {
@@ -78,15 +136,17 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
           case RelatedTo(left, right, relName, relationType, direction) => {
             val leftPattern = patternKeeper.getOrCreateNode(left)
             val rightPattern = patternKeeper.getOrCreateNode(right)
-            val rel: PatternRelationship = relationType match {
+            val rel = relationType match {
               case Some(relType) => leftPattern.createRelationshipTo(rightPattern, DynamicRelationshipType.withName(relType), direction)
               case None => leftPattern.createRelationshipTo(rightPattern, direction)
             }
 
-
             relName match {
               case None =>
-              case Some(name) => patternKeeper.addRelationship(name, rel)
+              case Some(name) => {
+                patternKeeper.addRelationship(name, rel)
+                rel.setLabel(name)
+              }
             }
           }
         }

@@ -47,16 +47,16 @@ class SyntaxErrorTests extends ExecutionEngineTestBase {
     val query = Query(
       Return(EntityOutput("foo")),
       Start(NodeById("foo", node.getId)),
-      Match(RelatedTo("a", "b", "foo", "KNOWS", Direction.BOTH)))
+      Match(RelatedTo("a", "b", None, None, Direction.BOTH)))
 
-    expectedError(query, """Variable "foo" already defined as a node.""")
+    expectedError(query, "All parts of the pattern must either directly or indirectly be connected to at least one bound entity. These variables were found to be disconnected: a, b")
   }
 
 
   def expectedError(query: Query, message: String) {
     try {
       execute(query).toList
-      fail("Did not get the expected syntax error")
+      fail("Did not get the expected syntax error, expected: " + message)
     } catch {
       case x: SyntaxError => assertEquals(message, x.getMessage)
     }
