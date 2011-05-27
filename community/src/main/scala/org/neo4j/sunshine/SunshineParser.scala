@@ -23,6 +23,7 @@ import commands._
 import scala.util.parsing.combinator._
 import org.neo4j.graphdb.Direction
 import scala.Some
+import util.regexp.SyntaxError
 
 class SunshineParser extends JavaTokenParsers {
   def ignoreCase(str:String): Parser[String] = ("""(?i)\Q""" + str + """\E""").r
@@ -109,15 +110,20 @@ class SunshineParser extends JavaTokenParsers {
 
   def where: Parser[Clause] = ignoreCase("where") ~> clause ^^ { case klas => klas }
 
-  def clause: Parser[Clause] = (predicate | parens ) * (
+  def clause: Parser[Clause] = (decimalEquals | stringEquals | parens ) * (
     "and" ^^^ { (a: Clause, b: Clause) => And(a, b) } |
     "or" ^^^ {  (a: Clause, b: Clause) => Or(a, b) })
 
   def parens: Parser[Clause] = "(" ~> clause <~ ")"
 
-  def predicate = (
+  def stringEquals = (
     ident ~ "." ~ ident ~ "=" ~ stringLiteral ^^ {
       case c ~ "." ~ p ~ "=" ~ v => PropertyEquals(c, p, stripQuotes(v))
+    })
+
+  def decimalEquals = (
+    ident ~ "." ~ ident ~ "=" ~ decimalNumber ^^ {
+      case c ~ "." ~ p ~ "=" ~ number => PropertyEquals(c, p, number.toLong)
     })
 
   private def stripQuotes(s: String) = s.substring(1, s.length - 1)
@@ -130,10 +136,10 @@ class SunshineParser extends JavaTokenParsers {
       case (true,true) => Direction.BOTH
     }
 
-  def parse(sql: String): Option[Query] =
-    parseAll(query, sql) match {
-      case Success(r, q) => Option(r)
-      case x => println(x); None
+  def parse(sunshineQuery: String): Query =
+    parseAll(query, sunshineQuery) match {
+      case Success(r, q) => r
+      case NoSuccess(message, input) => throw new SyntaxError(message)
     }
 
   class NodeNamer {

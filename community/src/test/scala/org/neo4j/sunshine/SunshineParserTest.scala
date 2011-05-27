@@ -34,7 +34,7 @@ import org.neo4j.graphdb.Direction
 class SunshineParserTest {
   def testQuery(query: String, expectedQuery: Query) {
     val parser = new SunshineParser()
-    val executionTree = parser.parse(query).get
+    val executionTree = parser.parse(query)
 
     assertEquals(expectedQuery, executionTree)
   }
@@ -57,7 +57,6 @@ class SunshineParserTest {
       )
     )
   }
-
 
   @Test def keywordsShouldBeCaseInsensitive() {
     testQuery(
@@ -93,6 +92,16 @@ class SunshineParserTest {
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
         PropertyEquals("a", "name", "andres"))
+    )
+  }
+
+   @Test def shouldFilterOnNumericProp() {
+    testQuery(
+      "start a = node(1) where a.age = 35 return a",
+      Query(
+        Return(EntityOutput("a")),
+        Start(NodeById("a", 1)),
+        PropertyEquals("a", "age", 35))
     )
   }
 
