@@ -96,7 +96,7 @@ public class DepthPitfallGraphTest extends AbstractTestBase
     @Test
     public void testSmallestPossibleInit() throws Exception
     {
-        Traverser traversal = Traversal.description().traverse( referenceNode() );
+        Traverser traversal = Traversal.description().traverse( node( "1" ) );
         int count = 0;
         for ( Path position : traversal )
         {
@@ -127,7 +127,7 @@ public class DepthPitfallGraphTest extends AbstractTestBase
     private void testAllNodesAreReturnedOnce( TraversalDescription traversal )
     {
         Traverser traverser = traversal.uniqueness( Uniqueness.NODE_GLOBAL ).traverse(
-                referenceNode() );
+                node( "1" ) );
 
         expectNodes( traverser, "1", "2", "3", "4", "5", "6" );
     }
@@ -152,7 +152,7 @@ public class DepthPitfallGraphTest extends AbstractTestBase
             TraversalDescription description )
     {
         Traverser traverser = description.uniqueness( Uniqueness.NODE_RECENT, 6 ).traverse(
-                referenceNode() );
+                node( "1" ) );
 
         expectNodes( traverser, "1", "2", "3", "4", "5", "6" );
     }
@@ -175,7 +175,7 @@ public class DepthPitfallGraphTest extends AbstractTestBase
             TraversalDescription description ) throws Exception
     {
         Traverser traverser = Traversal.description().uniqueness(
-                Uniqueness.RELATIONSHIP_GLOBAL ).traverse( referenceNode() );
+                Uniqueness.RELATIONSHIP_GLOBAL ).traverse( node( "1" ) );
 
         expectRelationships( traverser, THE_WORLD_AS_WE_KNOW_IT );
     }
@@ -201,7 +201,7 @@ public class DepthPitfallGraphTest extends AbstractTestBase
     {
         Traverser traverser = description.uniqueness(
                 Uniqueness.RELATIONSHIP_RECENT, THE_WORLD_AS_WE_KNOW_IT.length ).traverse(
-                referenceNode() );
+                        node( "1" ) );
 
         expectRelationships( traverser, THE_WORLD_AS_WE_KNOW_IT );
     }
@@ -222,7 +222,7 @@ public class DepthPitfallGraphTest extends AbstractTestBase
             throws Exception
     {
         Traverser traverser = description.uniqueness(
-                Uniqueness.NODE_PATH ).traverse( referenceNode() );
+                Uniqueness.NODE_PATH ).traverse( node( "1" ) );
 
         expectPaths( traverser, NODE_UNIQUE_PATHS );
     }
@@ -247,7 +247,7 @@ public class DepthPitfallGraphTest extends AbstractTestBase
         expected.addAll( Arrays.asList( RELATIONSHIP_UNIQUE_EXTRA_PATHS ) );
 
         Traverser traverser = description.uniqueness(
-                Uniqueness.RELATIONSHIP_PATH ).traverse( referenceNode() );
+                Uniqueness.RELATIONSHIP_PATH ).traverse( node( "1" ) );
 
         expectPaths( traverser, expected );
     }
@@ -267,7 +267,7 @@ public class DepthPitfallGraphTest extends AbstractTestBase
     private void canPruneTraversalAtSpecificDepth( TraversalDescription description )
     {
         Traverser traverser = description.uniqueness(
-                Uniqueness.NONE ).evaluator( Evaluators.toDepth( 1 ) ).traverse( referenceNode() );
+                Uniqueness.NONE ).evaluator( Evaluators.toDepth( 1 ) ).traverse( node( "1" ) );
 
         expectNodes( traverser, "1", "2", "3", "4", "5" );
     }
@@ -287,7 +287,7 @@ public class DepthPitfallGraphTest extends AbstractTestBase
     private void canPreFilterNodes( TraversalDescription description )
     {
         Traverser traverser = description.uniqueness(
-                Uniqueness.NONE ).evaluator( Evaluators.atDepth( 2 ) ).traverse( referenceNode() );
+                Uniqueness.NONE ).evaluator( Evaluators.atDepth( 2 ) ).traverse( node( "1" ) );
 
         expectPaths( traverser, "1,2,6", "1,3,5", "1,4,5", "1,5,3", "1,5,4",
                 "1,5,6" );

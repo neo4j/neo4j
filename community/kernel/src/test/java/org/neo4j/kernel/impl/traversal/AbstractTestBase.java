@@ -46,6 +46,7 @@ public abstract class AbstractTestBase
 {
     private static final String TARGET_NEODB = "target/neodb";
     private static GraphDatabaseService graphdb;
+    private static Map<String, Node> nodes;
 
     @BeforeClass
     public static final void beforeSuite()
@@ -57,11 +58,17 @@ public abstract class AbstractTestBase
     @AfterClass
     public static final void afterSuite()
     {
-        graphdb.shutdown();
+        if ( graphdb != null ) graphdb.shutdown();
         graphdb = null;
+        nodes = null;
     }
 
-    protected static final Node referenceNode()
+    protected static final Node node( String name )
+    {
+        return nodes.get( name );
+    }
+
+    private static final Node referenceNode()
     {
         return graphdb.getReferenceNode();
     }
@@ -104,10 +111,10 @@ public abstract class AbstractTestBase
 
     protected static void createGraph( String... description )
     {
-        createGraph( GraphDescription.create( description ) );
+        nodes = createGraph( GraphDescription.create( description ) );
     }
 
-    protected static Map<String, Node> createGraph( GraphDefinition graph )
+    private static Map<String, Node> createGraph( GraphDefinition graph )
     {
         Transaction tx = graphdb.beginTx();
         try

@@ -53,12 +53,12 @@ public class TestOrderByTypeExpander extends AbstractTestBase
         RelationshipExpander expander =
             new OrderedByTypeExpander().add( firstComment ).add( comment ).add( next );
         Iterator<Node> itr = Traversal.description().depthFirst().expand(
-                expander ).traverse( referenceNode() ).nodes().iterator();
+                expander ).traverse( node( "A1" ) ).nodes().iterator();
         assertOrder( itr, "A1", "C1", "C2", "C3", "A2", "C4", "C5", "C6", "A3", "C7", "C8", "C9" );
 
         expander = new OrderedByTypeExpander().add( next ).add( firstComment ).add( comment );
         itr = Traversal.description().depthFirst().expand(
-                expander ).traverse( referenceNode() ).nodes().iterator();
+                expander ).traverse( node( "A1" ) ).nodes().iterator();
         assertOrder( itr, "A1", "A2", "A3", "C7", "C8", "C9", "C4", "C5", "C6", "C1", "C2", "C3" );
     }
     

@@ -50,7 +50,7 @@ public class TestMultiPruneEvaluators extends AbstractTestBase
                 "e to m", "e to n",
                 "k to o", "k to p", "k to q", "k to r" );
     }
-    
+
     @Test
     public void makeSurePruneIsntCalledForStartNode()
     {
@@ -66,11 +66,11 @@ public class TestMultiPruneEvaluators extends AbstractTestBase
                 return false;
             }
         };
-        
-        IteratorUtil.lastOrNull( Traversal.description().prune( evaluator ).traverse( referenceNode() ) );
+
+        IteratorUtil.lastOrNull( Traversal.description().prune( evaluator ).traverse( node( "a" ) ) );
         assertFalse( calledForStartPosition[0] );
     }
-    
+
     @Test
     public void testMaxDepthAndCustomPruneEvaluatorCombined()
     {
@@ -82,12 +82,12 @@ public class TestMultiPruneEvaluators extends AbstractTestBase
                         Evaluation.INCLUDE_AND_PRUNE : Evaluation.INCLUDE_AND_CONTINUE;
             }
         };
-        
+
         TraversalDescription description = Traversal.description().evaluator( Evaluators.all() )
                 .evaluator( Evaluators.toDepth( 1 ) ).evaluator( lessThanThreeRels );
         Set<String> expectedNodes = new HashSet<String>(
                 Arrays.asList( "a", "b", "c", "d", "e" ) );
-        for ( Path position : description.traverse( referenceNode() ) )
+        for ( Path position : description.traverse( node( "a" ) ) )
         {
             String name = (String) position.endNode().getProperty( "name" );
             assertTrue( name + " shouldn't have been returned", expectedNodes.remove( name ) );

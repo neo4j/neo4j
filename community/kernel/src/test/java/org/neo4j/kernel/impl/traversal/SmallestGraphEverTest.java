@@ -126,7 +126,7 @@ public class SmallestGraphEverTest extends AbstractTestBase
     private void execute( TraversalDescription traversal, Uniqueness uniqueness )
     {
         Traverser traverser = traversal.uniqueness( uniqueness ).traverse(
-                referenceNode() );
+                node( "1" ) );
         assertFalse( "empty traversal", IteratorUtil.count( traverser ) == 0 );
     }
 
@@ -137,7 +137,7 @@ public class SmallestGraphEverTest extends AbstractTestBase
         TraversalDescription traversal = Traversal.description().filter(
                 Traversal.returnAllButStartNode() );
         int count = 0;
-        for ( Relationship rel : traversal.traverse( referenceNode() ).relationships() )
+        for ( Relationship rel : traversal.traverse( node( "1" ) ).relationships() )
         {
             count++;
         }

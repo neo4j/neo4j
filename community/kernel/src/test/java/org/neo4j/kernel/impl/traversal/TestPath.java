@@ -46,14 +46,14 @@ public class TestPath extends AbstractTestBase
     public void testPathIterator()
     {
         Path path = Traversal.description().evaluator( Evaluators.atDepth( 4 ) ).traverse(
-                referenceNode() ).iterator().next();
+                node( "A" ) ).iterator().next();
         
         assertPathIsCorrect( path );
     }
 
     private void assertPathIsCorrect( Path path )
     {
-        Node a = referenceNode();
+        Node a = node( "A" );
         Relationship to1 = a.getRelationships( Direction.OUTGOING ).iterator().next();
         Node b = to1.getEndNode();
         Relationship to2 = b.getRelationships( Direction.OUTGOING ).iterator().next();

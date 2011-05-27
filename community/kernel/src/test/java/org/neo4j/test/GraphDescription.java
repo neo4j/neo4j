@@ -19,6 +19,8 @@
  */
 package org.neo4j.test;
 
+import static org.neo4j.test.GraphDescription.PropType.STRING;
+
 import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -82,7 +84,7 @@ public class GraphDescription implements GraphDefinition
 
         String value();
 
-        PropType type() default PropType.STRING;
+        PropType type() default STRING;
     }
 
     @SuppressWarnings( "boxing" )

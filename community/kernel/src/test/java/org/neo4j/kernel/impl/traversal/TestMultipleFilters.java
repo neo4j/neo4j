@@ -88,8 +88,8 @@ public class TestMultipleFilters extends AbstractTestBase
         };
         
         TraversalDescription description = Traversal.description().evaluator( mustBeConnectedToK );
-        expectNodes( description.traverse( referenceNode() ), "b", "c" );
-        expectNodes( description.evaluator( mustNotHaveMoreThanTwoOutRels ).traverse( referenceNode() ), "c" );
+        expectNodes( description.traverse( node( "a" ) ), "b", "c" );
+        expectNodes( description.evaluator( mustNotHaveMoreThanTwoOutRels ).traverse( node( "a" ) ), "c" );
     }
     
     @Test
@@ -99,10 +99,10 @@ public class TestMultipleFilters extends AbstractTestBase
         MustBeConnectedToNodeFilter mustBeConnectedToE = new MustBeConnectedToNodeFilter( getNodeWithName( "e" ) );
         
         // Nodes connected (OUTGOING) to c (which "a" is)
-        expectNodes( Traversal.description().evaluator( mustBeConnectedToC ).traverse( referenceNode() ), "a" );
+        expectNodes( Traversal.description().evaluator( mustBeConnectedToC ).traverse( node( "a" ) ), "a" );
         // Nodes connected (OUTGOING) to c AND e (which none is)
-        expectNodes( Traversal.description().evaluator( mustBeConnectedToC ).evaluator( mustBeConnectedToE ).traverse( referenceNode() ) );
+        expectNodes( Traversal.description().evaluator( mustBeConnectedToC ).evaluator( mustBeConnectedToE ).traverse( node( "a" ) ) );
         // Nodes connected (OUTGOING) to c OR e (which "a" and "b" is)
-        expectNodes( Traversal.description().filter( Traversal.returnAcceptedByAny( mustBeConnectedToC, mustBeConnectedToE ) ).traverse( referenceNode() ), "a", "b" );
+        expectNodes( Traversal.description().filter( Traversal.returnAcceptedByAny( mustBeConnectedToC, mustBeConnectedToE ) ).traverse( node( "a" ) ), "a", "b" );
     }
 }

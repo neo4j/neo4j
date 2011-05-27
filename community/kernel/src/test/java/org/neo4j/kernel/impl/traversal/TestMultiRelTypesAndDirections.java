@@ -56,7 +56,7 @@ public class TestMultiRelTypesAndDirections extends AbstractTestBase
     {
         description = description.relationships(ONE, Direction.OUTGOING);
         int i = 0;
-        for ( Path position : description.traverse( referenceNode() ) )
+        for ( Path position : description.traverse( node( "A" ) ) )
         {
             assertEquals( i++, position.length() );
         }

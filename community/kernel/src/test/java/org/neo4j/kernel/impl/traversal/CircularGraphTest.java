@@ -45,7 +45,7 @@ public class CircularGraphTest extends AbstractTestBase
     {
         createGraph( "1 TO 2", "2 TO 3", "3 TO 1" );
     }
-    
+
     @Test
     public void testCircularBug()
     {
@@ -55,9 +55,9 @@ public class CircularGraphTest extends AbstractTestBase
         getNodeWithName( "3" ).setProperty( "timestamp", 2L );
         tx.success();
         tx.finish();
-        
+
         final RelationshipType type = DynamicRelationshipType.withName( "TO" );
-        Traverser t = referenceNode().traverse( Order.DEPTH_FIRST, new StopEvaluator()
+        Traverser t = node( "1" ).traverse( Order.DEPTH_FIRST, new StopEvaluator()
         {
             public boolean isStopNode( TraversalPosition position )
             {
