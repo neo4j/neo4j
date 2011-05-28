@@ -8,7 +8,7 @@
     </parent>
 
     <properties>
-        <scala.version>2.8.1</scala.version>
+        <scala.version>2.9.0</scala.version>
         <neo.version>1.4-SNAPSHOT</neo.version>
     </properties>
 
