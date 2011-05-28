@@ -96,7 +96,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
       Return(EntityOutput("a")),
       Start(NodeById("start", start.getId)),
       Match(RelatedTo("start", "a", None, Some("x"), Direction.BOTH)),
-      PropertyEquals("a", "name", name))
+      Equals(PropertyValue("a", "name"), StringLiteral(name)))
 
     val result = execute(query)
     assertEquals(List(a2), result.columnAs[Node]("a").toList)
@@ -113,7 +113,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
       Return(EntityOutput("a")),
       Start(NodeById("start", start.getId)),
       Match(RelatedTo("start", "a", Some("r"), Some("KNOWS"), Direction.BOTH)),
-      PropertyEquals("r", "name", "monkey"))
+      Equals(PropertyValue("r", "name"), StringLiteral("monkey")))
 
     val result = execute(query)
     assertEquals(List(a), result.columnAs[Node]("a").toList)
@@ -227,8 +227,8 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
       Return(EntityOutput("n")),
       Start(NodeById("n", n1.getId, n2.getId)),
       Or(
-        PropertyEquals("n", "name", "boy"),
-        PropertyEquals("n", "name", "girl")))
+        Equals(PropertyValue("n", "name"), StringLiteral("boy")),
+        Equals(PropertyValue("n", "name"), StringLiteral("girl"))))
 
     val result = execute(query)
 
@@ -246,11 +246,11 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
       Start(NodeById("n", n1.getId, n2.getId, n3.getId)),
       Or(
         And(
-          PropertyEquals("n", "animal", "monkey"),
-          PropertyEquals("n", "food", "banana")),
+          Equals(PropertyValue("n", "animal"), StringLiteral("monkey")),
+          Equals(PropertyValue("n", "food"), StringLiteral("banana"))),
         And(
-          PropertyEquals("n", "animal", "cow"),
-          PropertyEquals("n", "food", "grass"))))
+          Equals(PropertyValue("n", "animal"), StringLiteral("cow")),
+          Equals(PropertyValue("n", "food"), StringLiteral("grass")))))
 
     val result = execute(query)
 
@@ -282,7 +282,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
       Return(EntityOutput("n"), EntityOutput("x")),
       Start(NodeById("n", n1.getId, n4.getId)),
       Match(RelatedTo("n", "x", None, None, Direction.OUTGOING)),
-      PropertyEqualsBetweenEntities("n", "animal", "x", "animal"))
+      Equals(PropertyValue("n", "animal"), PropertyValue("x", "animal")))
 
     val result = execute(query).toList
 

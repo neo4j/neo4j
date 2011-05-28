@@ -24,7 +24,6 @@ import commands._
 import pipes.{Pipe, FromPump}
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb._
-import org.neo4j.sunshine.filters._
 import org.neo4j.graphmatching.{PatternRelationship, PatternNode, AbstractPatternObject}
 
 class ExecutionEngine(val graph: GraphDatabaseService) {
@@ -81,18 +80,11 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
 
   }
 
-  def createFilters(where: Option[Clause], patternKeeper: PatternKeeper): Filter = {
+  def createFilters(where: Option[Clause], patternKeeper: PatternKeeper): Clause = {
     where match {
-      case None => new TrueFilter()
-      case Some(clause) => createFilter(clause)
+      case None => new True()
+      case Some(clause) => clause
     }
-  }
-
-  def createFilter(clause: Clause): Filter = clause match {
-    case And(a, b) => new AndFilter(createFilter(a), createFilter(b))
-    case Or(a, b) => new OrFilter(createFilter(a), createFilter(b))
-    case PropertyEquals(variable, property, value) => new EqualsFilter(variable, property, value)
-    case PropertyEqualsBetweenEntities(varA, propA, varB, propB) => new ComparisonFilter(varA, propA, varB, propB)
   }
 
   def addStartItemVariables(start: Start, patternKeeper: PatternKeeper) {

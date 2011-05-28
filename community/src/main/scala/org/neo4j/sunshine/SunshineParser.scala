@@ -23,7 +23,6 @@ import commands._
 import scala.util.parsing.combinator._
 import org.neo4j.graphdb.Direction
 import scala.Some
-import util.regexp.SyntaxError
 
 class SunshineParser extends JavaTokenParsers {
   def ignoreCase(str:String): Parser[String] = ("""(?i)\Q""" + str + """\E""").r
@@ -118,12 +117,12 @@ class SunshineParser extends JavaTokenParsers {
 
   def stringEquals = (
     ident ~ "." ~ ident ~ "=" ~ stringLiteral ^^ {
-      case c ~ "." ~ p ~ "=" ~ v => PropertyEquals(c, p, stripQuotes(v))
+      case c ~ "." ~ p ~ "=" ~ v => Equals( PropertyValue(c, p), StringLiteral(stripQuotes(v)))
     })
 
   def decimalEquals = (
     ident ~ "." ~ ident ~ "=" ~ decimalNumber ^^ {
-      case c ~ "." ~ p ~ "=" ~ number => PropertyEquals(c, p, number.toLong)
+      case c ~ "." ~ p ~ "=" ~ number => Equals(PropertyValue(c, p), LongLiteral(number.toLong))
     })
 
   private def stripQuotes(s: String) = s.substring(1, s.length - 1)

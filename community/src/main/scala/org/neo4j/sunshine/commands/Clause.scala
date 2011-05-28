@@ -19,6 +19,8 @@
  */
 package org.neo4j.sunshine.commands
 
+import org.neo4j.graphdb.PropertyContainer
+
 /**
  * Created by Andres Taylor
  * Date: 4/16/11
@@ -28,19 +30,37 @@ package org.neo4j.sunshine.commands
 
 abstract sealed class Clause {
   def ++(other: Clause): Clause = And(this, other)
-  def hasOrs : Boolean = false
+  def isMatch(m: Map[String, Any]):Boolean
 }
 
-case class PropertyEquals(variable: String, propName: String, value: Any) extends Clause
-
-case class NumberLargerThan(variable: String, propName: String, value: Float) extends Clause
-
-case class PropertyEqualsBetweenEntities(variable1: String, property1: String, variable2:String, property2: String) extends Clause
-
 case class And(a: Clause, b: Clause) extends Clause {
-  override def hasOrs = a.hasOrs || b.hasOrs
+  def isMatch(m: Map[String, Any]): Boolean = a.isMatch(m) && b.isMatch(m)
+}
+
+case class Equals(a:Value, b:Value) extends Clause {
+  def isMatch(m: Map[String, Any]): Boolean = a.value(m) == b.value(m)
 }
 
 case class Or(a: Clause, b: Clause) extends Clause {
-  override def hasOrs = true
+  def isMatch(m: Map[String, Any]): Boolean = a.isMatch(m) || b.isMatch(m)
+}
+
+case class True() extends Clause {
+  def isMatch(m: Map[String, Any]): Boolean = true
+}
+
+abstract sealed class Value {
+  def value(m: Map[String,Any]):Any
+}
+
+case class LongLiteral(number:Long) extends Value {
+  def value(m: Map[String,Any]) = number
+}
+
+case class StringLiteral(str:String) extends Value {
+  def value(m: Map[String,Any]) = str
+}
+
+case class PropertyValue(variable:String, property:String) extends Value {
+  def value(m: Map[String, Any]): Any = m(variable).asInstanceOf[PropertyContainer].getProperty(property)
 }

@@ -91,7 +91,7 @@ class SunshineParserTest {
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
-        PropertyEquals("a", "name", "andres"))
+        Equals(PropertyValue("a", "name"), StringLiteral("andres")))
     )
   }
 
@@ -101,7 +101,7 @@ class SunshineParserTest {
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
-        PropertyEquals("a", "age", 35))
+        Equals(PropertyValue("a", "age"),LongLiteral(35)))
     )
   }
 
@@ -112,8 +112,8 @@ class SunshineParserTest {
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
         Or(
-          PropertyEquals("a", "name", "andres"),
-          PropertyEquals("a", "name", "mattias")
+          Equals(PropertyValue("a", "name"), StringLiteral("andres")),
+          Equals(PropertyValue("a", "name"), StringLiteral("mattias"))
         ))
     )
   }
@@ -177,7 +177,7 @@ class SunshineParserTest {
       Query(
         Return(PropertyOutput("a", "name")),
         Start(NodeById("a", 1)),
-        And(PropertyEquals("a", "name", "andres"), PropertyEquals("a", "lastname", "taylor"))
+        And(Equals(PropertyValue("a", "name"), StringLiteral("andres")), Equals(PropertyValue("a", "lastname"), StringLiteral("taylor")))
       )
     )
   }
@@ -244,11 +244,11 @@ class SunshineParserTest {
         Start(NodeById("n", 1, 2, 3)),
         Or(
           And(
-            PropertyEquals("n", "animal", "monkey"),
-            PropertyEquals("n", "food", "banana")),
+            Equals(PropertyValue("n", "animal"), StringLiteral("monkey")),
+            Equals(PropertyValue("n", "food"), StringLiteral("banana"))),
           And(
-            PropertyEquals("n", "animal", "cow"),
-            PropertyEquals("n", "food", "grass"))
+            Equals(PropertyValue("n", "animal"), StringLiteral("cow")),
+            Equals(PropertyValue("n", "food"), StringLiteral("grass")))
         )
       )
     )

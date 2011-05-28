@@ -19,7 +19,7 @@
  */
 package org.neo4j.sunshine
 
-import filters.Filter
+import commands.Clause
 import scala.collection.JavaConverters._
 import org.apache.commons.lang.StringUtils
 import pipes.Pipe
@@ -34,7 +34,7 @@ import collection.immutable.Map
  * Time: 19:18 
  */
 
-class Projection(pNodes: Map[String, PatternNode], pRels: Map[String, PatternRelationship], from: Pipe, select: Seq[Map[String, Any] => Map[String, Any]], filter: Filter) extends Traversable[Map[String, Any]] {
+class Projection(pNodes: Map[String, PatternNode], pRels: Map[String, PatternRelationship], from: Pipe, select: Seq[Map[String, Any] => Map[String, Any]], filter: Clause) extends Traversable[Map[String, Any]] {
   def foreach[U](f: Map[String, Any] => U) {
     from.foreach((fromRow) => {
 
