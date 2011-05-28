@@ -145,6 +145,16 @@ class SunshineParserTest {
     )
   }
 
+  @Test def shouldHandleRegularComparison() {
+    testQuery(
+      "start a = node(1) where \"Andres\" =~ /And.*/ return a",
+      Query(
+        Return(EntityOutput("a")),
+        Start(NodeById("a", 1)),
+        RegularExpression(Literal("Andres"), "And.*" ))
+    )
+  }
+
   @Test def shouldHandleGreaterThanOrEqual() {
     testQuery(
       "start a = node(1) where a.name >= \"andres\" return a",

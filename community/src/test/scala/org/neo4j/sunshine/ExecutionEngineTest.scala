@@ -47,6 +47,19 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     assertEquals(List(refNode), result.columnAs[Node]("node").toList)
   }
 
+  @Test def shouldFilterOnRegexp() {
+    val n1 = createNode(Map("name"->"Andres"))
+    val n2 = createNode(Map("name"->"Jim"))
+    val query = Query(
+      Return(EntityOutput("node")),
+      Start(NodeById("node", n1.getId, n2.getId)),
+      RegularExpression(PropertyValue("node", "name"), "And.*")
+    )
+
+    val result = execute(query)
+    assertEquals(List(n1), result.columnAs[Node]("node").toList)
+  }
+
   @Test def shouldGetOtherNode() {
     val node: Node = createNode()
 

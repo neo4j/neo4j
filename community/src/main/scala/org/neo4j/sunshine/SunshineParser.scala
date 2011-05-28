@@ -23,6 +23,7 @@ import commands._
 import scala.util.parsing.combinator._
 import org.neo4j.graphdb.Direction
 import scala.Some
+import java.rmi.registry.Registry
 
 class SunshineParser extends JavaTokenParsers {
   def ignoreCase(str:String): Parser[String] = ("""(?i)\Q""" + str + """\E""").r
@@ -109,9 +110,17 @@ class SunshineParser extends JavaTokenParsers {
 
   def where: Parser[Clause] = ignoreCase("where") ~> clause ^^ { case klas => klas }
 
-  def clause: Parser[Clause] = (orderedComparison | not | notEquals | equals | parens) * (
+  def clause: Parser[Clause] = (orderedComparison | not | notEquals | equals | regexp | parens) * (
     "and" ^^^ { (a: Clause, b: Clause) => And(a, b) } |
     "or" ^^^ {  (a: Clause, b: Clause) => Or(a, b) })
+
+  def regexp: Parser[Clause] = value ~ "=~" ~ regularLiteral ^^ {
+    case a ~ "=~" ~ b => RegularExpression(a, stripQuotes(b))
+  }
+
+
+  def regularLiteral = ("/"+"""([^"\p{Cntrl}\\]|\\[\\/bfnrt]|\\u[a-fA-F0-9]{4})*"""+"/").r
+
 
   def parens: Parser[Clause] = "(" ~> clause <~ ")"
 

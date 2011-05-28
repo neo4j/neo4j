@@ -55,6 +55,14 @@ case class True() extends Clause {
   def isMatch(m: Map[String, Any]): Boolean = true
 }
 
+case class RegularExpression(a:Value, str:String) extends Clause {
+  def isMatch(m: Map[String, Any]): Boolean = {
+    val value = a.value(m).asInstanceOf[String]
+    str.r.pattern.matcher(value).matches()
+  }
+}
+
+
 abstract sealed class ComparableClause(a: Value, b: Value) extends Clause {
   def isOrderedMatch(a: Comparable[AnyRef], b: Comparable[AnyRef]): Boolean
 
