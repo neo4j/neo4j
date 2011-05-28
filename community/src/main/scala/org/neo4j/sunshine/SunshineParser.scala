@@ -109,21 +109,53 @@ class SunshineParser extends JavaTokenParsers {
 
   def where: Parser[Clause] = ignoreCase("where") ~> clause ^^ { case klas => klas }
 
-  def clause: Parser[Clause] = (decimalEquals | stringEquals | parens ) * (
+  def clause: Parser[Clause] = (orderedComparison | not | notEquals | equals | parens) * (
     "and" ^^^ { (a: Clause, b: Clause) => And(a, b) } |
     "or" ^^^ {  (a: Clause, b: Clause) => Or(a, b) })
 
   def parens: Parser[Clause] = "(" ~> clause <~ ")"
 
-  def stringEquals = (
-    ident ~ "." ~ ident ~ "=" ~ stringLiteral ^^ {
-      case c ~ "." ~ p ~ "=" ~ v => Equals( PropertyValue(c, p), StringLiteral(stripQuotes(v)))
-    })
+  def equals: Parser[Clause] = value ~ "=" ~ value ^^ {
+    case l ~ "=" ~ r => Equals(l,r)
+  }
 
-  def decimalEquals = (
-    ident ~ "." ~ ident ~ "=" ~ decimalNumber ^^ {
-      case c ~ "." ~ p ~ "=" ~ number => Equals(PropertyValue(c, p), LongLiteral(number.toLong))
-    })
+  def orderedComparison:Parser[Clause] = (lessThanOrEqual | greaterThanOrEqual | lessThan | greaterThan)
+
+  def lessThan: Parser[Clause] = value ~ "<" ~ value ^^ {
+    case l ~ "<" ~ r => LessThan(l,r)
+  }
+
+  def greaterThan: Parser[Clause] = value ~ ">" ~ value ^^ {
+    case l ~ ">" ~ r => GreaterThan(l,r)
+  }
+
+  def lessThanOrEqual: Parser[Clause] = value ~ "<=" ~ value ^^ {
+    case l ~ "<=" ~ r => LessThanOrEqual(l,r)
+  }
+
+  def greaterThanOrEqual: Parser[Clause] = value ~ ">=" ~ value ^^ {
+    case l ~ ">=" ~ r => GreaterThanOrEqual(l,r)
+  }
+
+  def notEquals: Parser[Clause] = value ~ "<>" ~ value ^^ {
+    case l ~ "<>" ~ r => Not(Equals(l,r))
+  }
+
+  def not:Parser[Clause] = ignoreCase("not") ~ "(" ~ clause ~ ")" ^^ {
+    case not ~ "(" ~ inner ~ ")" => Not(inner)
+  }
+
+  def value: Parser[Value] = (boolean | property | string | decimal)
+
+  def property: Parser[Value] = ident ~ "." ~ ident ^^ {  case v ~ "." ~ p => PropertyValue(v,p) }
+
+  def string: Parser[Value] = stringLiteral ^^ { case str => Literal(stripQuotes(str)) }
+
+  def decimal: Parser[Value] = decimalNumber ^^ { case num => Literal(num.toLong) }
+
+  def boolean: Parser[Value] = (trueX | falseX)
+  def trueX: Parser[Value] = ignoreCase("true") ^^ { case str => Literal(true) }
+  def falseX: Parser[Value] = ignoreCase("false") ^^ { case str => Literal(false) }
 
   private def stripQuotes(s: String) = s.substring(1, s.length - 1)
 

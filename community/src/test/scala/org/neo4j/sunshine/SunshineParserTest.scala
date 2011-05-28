@@ -91,17 +91,88 @@ class SunshineParserTest {
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
-        Equals(PropertyValue("a", "name"), StringLiteral("andres")))
+        Equals(PropertyValue("a", "name"), Literal("andres")))
     )
   }
 
-   @Test def shouldFilterOnNumericProp() {
+  @Test def shouldHandleNot() {
     testQuery(
-      "start a = node(1) where a.age = 35 return a",
+      "start a = node(1) where not(a.name = \"andres\") return a",
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
-        Equals(PropertyValue("a", "age"),LongLiteral(35)))
+        Not(Equals(PropertyValue("a", "name"), Literal("andres"))))
+    )
+  }
+
+  @Test def shouldHandleNotEqualTo() {
+    testQuery(
+      "start a = node(1) where a.name <> \"andres\" return a",
+      Query(
+        Return(EntityOutput("a")),
+        Start(NodeById("a", 1)),
+        Not(Equals(PropertyValue("a", "name"), Literal("andres"))))
+    )
+  }
+
+  @Test def shouldHandleLessThan() {
+    testQuery(
+      "start a = node(1) where a.name < \"andres\" return a",
+      Query(
+        Return(EntityOutput("a")),
+        Start(NodeById("a", 1)),
+        LessThan(PropertyValue("a", "name"), Literal("andres")))
+    )
+  }
+
+  @Test def shouldHandleGreaterThan() {
+    testQuery(
+      "start a = node(1) where a.name > \"andres\" return a",
+      Query(
+        Return(EntityOutput("a")),
+        Start(NodeById("a", 1)),
+        GreaterThan(PropertyValue("a", "name"), Literal("andres")))
+    )
+  }
+
+  @Test def shouldHandleLessThanOrEqual() {
+    testQuery(
+      "start a = node(1) where a.name <= \"andres\" return a",
+      Query(
+        Return(EntityOutput("a")),
+        Start(NodeById("a", 1)),
+        LessThanOrEqual(PropertyValue("a", "name"), Literal("andres")))
+    )
+  }
+
+  @Test def shouldHandleGreaterThanOrEqual() {
+    testQuery(
+      "start a = node(1) where a.name >= \"andres\" return a",
+      Query(
+        Return(EntityOutput("a")),
+        Start(NodeById("a", 1)),
+        GreaterThanOrEqual(PropertyValue("a", "name"), Literal("andres")))
+    )
+  }
+
+
+  @Test def booleanLiterals() {
+    testQuery(
+      "start a = node(1) where true = false return a",
+      Query(
+        Return(EntityOutput("a")),
+        Start(NodeById("a", 1)),
+        Equals(Literal(true), Literal(false)))
+    )
+  }
+
+  @Test def shouldFilterOnNumericProp() {
+    testQuery(
+      "start a = node(1) where 35 = a.age return a",
+      Query(
+        Return(EntityOutput("a")),
+        Start(NodeById("a", 1)),
+        Equals(Literal(35), PropertyValue("a", "age")))
     )
   }
 
@@ -112,8 +183,8 @@ class SunshineParserTest {
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
         Or(
-          Equals(PropertyValue("a", "name"), StringLiteral("andres")),
-          Equals(PropertyValue("a", "name"), StringLiteral("mattias"))
+          Equals(PropertyValue("a", "name"), Literal("andres")),
+          Equals(PropertyValue("a", "name"), Literal("mattias"))
         ))
     )
   }
@@ -177,7 +248,9 @@ class SunshineParserTest {
       Query(
         Return(PropertyOutput("a", "name")),
         Start(NodeById("a", 1)),
-        And(Equals(PropertyValue("a", "name"), StringLiteral("andres")), Equals(PropertyValue("a", "lastname"), StringLiteral("taylor")))
+        And(
+          Equals(PropertyValue("a", "name"), Literal("andres")),
+          Equals(PropertyValue("a", "lastname"), Literal("taylor")))
       )
     )
   }
@@ -244,11 +317,11 @@ class SunshineParserTest {
         Start(NodeById("n", 1, 2, 3)),
         Or(
           And(
-            Equals(PropertyValue("n", "animal"), StringLiteral("monkey")),
-            Equals(PropertyValue("n", "food"), StringLiteral("banana"))),
+            Equals(PropertyValue("n", "animal"), Literal("monkey")),
+            Equals(PropertyValue("n", "food"), Literal("banana"))),
           And(
-            Equals(PropertyValue("n", "animal"), StringLiteral("cow")),
-            Equals(PropertyValue("n", "food"), StringLiteral("grass")))
+            Equals(PropertyValue("n", "animal"), Literal("cow")),
+            Equals(PropertyValue("n", "food"), Literal("grass")))
         )
       )
     )

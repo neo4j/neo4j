@@ -36,6 +36,17 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     assertEquals(List(refNode), result.columnAs[Node]("node").toList)
   }
 
+  @Test def shouldFilterOnGreaterThan() {
+    val query = Query(
+      Return(EntityOutput("node")),
+      Start(NodeById("node", 0)),
+      LessThan(Literal(0), Literal(1))
+    )
+
+    val result = execute(query)
+    assertEquals(List(refNode), result.columnAs[Node]("node").toList)
+  }
+
   @Test def shouldGetOtherNode() {
     val node: Node = createNode()
 
@@ -96,7 +107,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
       Return(EntityOutput("a")),
       Start(NodeById("start", start.getId)),
       Match(RelatedTo("start", "a", None, Some("x"), Direction.BOTH)),
-      Equals(PropertyValue("a", "name"), StringLiteral(name)))
+      Equals(PropertyValue("a", "name"), Literal(name)))
 
     val result = execute(query)
     assertEquals(List(a2), result.columnAs[Node]("a").toList)
@@ -113,7 +124,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
       Return(EntityOutput("a")),
       Start(NodeById("start", start.getId)),
       Match(RelatedTo("start", "a", Some("r"), Some("KNOWS"), Direction.BOTH)),
-      Equals(PropertyValue("r", "name"), StringLiteral("monkey")))
+      Equals(PropertyValue("r", "name"), Literal("monkey")))
 
     val result = execute(query)
     assertEquals(List(a), result.columnAs[Node]("a").toList)
@@ -227,8 +238,8 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
       Return(EntityOutput("n")),
       Start(NodeById("n", n1.getId, n2.getId)),
       Or(
-        Equals(PropertyValue("n", "name"), StringLiteral("boy")),
-        Equals(PropertyValue("n", "name"), StringLiteral("girl"))))
+        Equals(PropertyValue("n", "name"), Literal("boy")),
+        Equals(PropertyValue("n", "name"), Literal("girl"))))
 
     val result = execute(query)
 
@@ -246,11 +257,11 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
       Start(NodeById("n", n1.getId, n2.getId, n3.getId)),
       Or(
         And(
-          Equals(PropertyValue("n", "animal"), StringLiteral("monkey")),
-          Equals(PropertyValue("n", "food"), StringLiteral("banana"))),
+          Equals(PropertyValue("n", "animal"), Literal("monkey")),
+          Equals(PropertyValue("n", "food"), Literal("banana"))),
         And(
-          Equals(PropertyValue("n", "animal"), StringLiteral("cow")),
-          Equals(PropertyValue("n", "food"), StringLiteral("grass")))))
+          Equals(PropertyValue("n", "animal"), Literal("cow")),
+          Equals(PropertyValue("n", "food"), Literal("grass")))))
 
     val result = execute(query)
 
