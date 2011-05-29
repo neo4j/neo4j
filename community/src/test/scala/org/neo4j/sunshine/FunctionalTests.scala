@@ -39,18 +39,18 @@ class FunctionalTests {
 
   @Test def sunshineHelloWorld() {
     testQuery(
-      "start n = node(0) return n",
+      "start n = (0) return n",
       List(Map("n" -> db.getReferenceNode)))
   }
 
   @Test def sunshineHelloWorldWithPattern() {
-    testQuery("start a = node(%a) match (a)-[:TO]->(b) return b",
+    testQuery("start a = (%a) match (a)-[:TO]->(b) return b",
       List(Map("b" -> node("b"))))
   }
 
   @Test def filterOnNumbericValue() {
     setProp("a", "age", 36)
-    testQuery("start a = node(%a) where a.age = 36 return a",
+    testQuery("start a = (%a) where a.age = 36 return a",
       List(Map("a" -> node("a"))))
   }
 

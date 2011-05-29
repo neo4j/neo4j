@@ -41,7 +41,7 @@ class SunshineParserTest {
 
   @Test def shouldParseEasiestPossibleQuery() {
     testQuery(
-      "start s = node(1) return s",
+      "start s = (1) return s",
       Query(
         Return(EntityOutput("s")),
         Start(NodeById("s", 1))
@@ -50,7 +50,7 @@ class SunshineParserTest {
 
   @Test def sourceIsAnIndex() {
     testQuery(
-      "start a = node_index(\"index\", \"key\", \"value\") return a",
+      """start a = (index, key, "value") return a""",
       Query(
         Return(EntityOutput("a")),
         Start(NodeByIndex("a", "index", "key", "value"))
@@ -60,7 +60,7 @@ class SunshineParserTest {
 
   @Test def keywordsShouldBeCaseInsensitive() {
     testQuery(
-      "START start = NODE(1) RETURN start",
+      "START start = (1) RETURN start",
       Query(
         Return(EntityOutput("start")),
         Start(NodeById("start", 1))
@@ -69,7 +69,7 @@ class SunshineParserTest {
 
   @Test def shouldParseMultipleNodes() {
     testQuery(
-      "start s = node(1,2,3) return s",
+      "start s = (1,2,3) return s",
       Query(
         Return(EntityOutput("s")),
         Start(NodeById("s", 1, 2, 3))
@@ -78,7 +78,7 @@ class SunshineParserTest {
 
   @Test def shouldParseMultipleInputs() {
     testQuery(
-      "start a = node(1), b = node(2) return a,b",
+      "start a = (1), b = (2) return a,b",
       Query(
         Return(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1), NodeById("b", 2))
@@ -87,7 +87,7 @@ class SunshineParserTest {
 
   @Test def shouldFilterOnProp() {
     testQuery(
-      "start a = node(1) where a.name = \"andres\" return a",
+      "start a = (1) where a.name = \"andres\" return a",
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
@@ -97,7 +97,7 @@ class SunshineParserTest {
 
   @Test def shouldHandleNot() {
     testQuery(
-      "start a = node(1) where not(a.name = \"andres\") return a",
+      "start a = (1) where not(a.name = \"andres\") return a",
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
@@ -107,7 +107,7 @@ class SunshineParserTest {
 
   @Test def shouldHandleNotEqualTo() {
     testQuery(
-      "start a = node(1) where a.name <> \"andres\" return a",
+      "start a = (1) where a.name <> \"andres\" return a",
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
@@ -117,7 +117,7 @@ class SunshineParserTest {
 
   @Test def shouldHandleLessThan() {
     testQuery(
-      "start a = node(1) where a.name < \"andres\" return a",
+      "start a = (1) where a.name < \"andres\" return a",
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
@@ -127,7 +127,7 @@ class SunshineParserTest {
 
   @Test def shouldHandleGreaterThan() {
     testQuery(
-      "start a = node(1) where a.name > \"andres\" return a",
+      "start a = (1) where a.name > \"andres\" return a",
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
@@ -137,7 +137,7 @@ class SunshineParserTest {
 
   @Test def shouldHandleLessThanOrEqual() {
     testQuery(
-      "start a = node(1) where a.name <= \"andres\" return a",
+      "start a = (1) where a.name <= \"andres\" return a",
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
@@ -147,7 +147,7 @@ class SunshineParserTest {
 
   @Test def shouldHandleRegularComparison() {
     testQuery(
-      "start a = node(1) where \"Andres\" =~ /And.*/ return a",
+      "start a = (1) where \"Andres\" =~ /And.*/ return a",
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
@@ -157,7 +157,7 @@ class SunshineParserTest {
 
   @Test def shouldHandleGreaterThanOrEqual() {
     testQuery(
-      "start a = node(1) where a.name >= \"andres\" return a",
+      "start a = (1) where a.name >= \"andres\" return a",
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
@@ -168,7 +168,7 @@ class SunshineParserTest {
 
   @Test def booleanLiterals() {
     testQuery(
-      "start a = node(1) where true = false return a",
+      "start a = (1) where true = false return a",
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
@@ -178,7 +178,7 @@ class SunshineParserTest {
 
   @Test def shouldFilterOnNumericProp() {
     testQuery(
-      "start a = node(1) where 35 = a.age return a",
+      "start a = (1) where 35 = a.age return a",
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
@@ -188,7 +188,7 @@ class SunshineParserTest {
 
   @Test def multipleFilters() {
     testQuery(
-      "start a = node(1) where a.name = \"andres\" or a.name = \"mattias\" return a",
+      "start a = (1) where a.name = \"andres\" or a.name = \"mattias\" return a",
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
@@ -201,7 +201,7 @@ class SunshineParserTest {
 
   @Test def relatedTo() {
     testQuery(
-      "start a = node(1) match (a) -[:KNOWS]-> (b) return a, b",
+      "start a = (1) match (a) -[:KNOWS]-> (b) return a, b",
       Query(
         Return(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
@@ -212,7 +212,7 @@ class SunshineParserTest {
 
   @Test def relatedToWithoutRelType() {
     testQuery(
-      "start a = node(1) match (a) --> (b) return a, b",
+      "start a = (1) match (a) --> (b) return a, b",
       Query(
         Return(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
@@ -223,7 +223,7 @@ class SunshineParserTest {
 
   @Test def relatedToWithoutRelTypeButWithRelVariable() {
     testQuery(
-      "start a = node(1) match (a) -[r]-> (b) return r",
+      "start a = (1) match (a) -[r]-> (b) return r",
       Query(
         Return(EntityOutput("r")),
         Start(NodeById("a", 1)),
@@ -234,7 +234,7 @@ class SunshineParserTest {
 
   @Test def relatedToTheOtherWay() {
     testQuery(
-      "start a = node(1) match (a) <-[:KNOWS]- (b) return a, b",
+      "start a = (1) match (a) <-[:KNOWS]- (b) return a, b",
       Query(
         Return(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
@@ -245,7 +245,7 @@ class SunshineParserTest {
 
   @Test def shouldOutputVariables() {
     testQuery(
-      "start a = node(1) return a.name",
+      "start a = (1) return a.name",
       Query(
         Return(PropertyOutput("a", "name")),
         Start(NodeById("a", 1)))
@@ -254,7 +254,7 @@ class SunshineParserTest {
 
   @Test def shouldHandleAndClauses() {
     testQuery(
-      "start a = node(1) where a.name = \"andres\" and a.lastname = \"taylor\" return a.name",
+      "start a = (1) where a.name = \"andres\" and a.lastname = \"taylor\" return a.name",
       Query(
         Return(PropertyOutput("a", "name")),
         Start(NodeById("a", 1)),
@@ -267,7 +267,7 @@ class SunshineParserTest {
 
   @Test def relatedToWithRelationOutput() {
     testQuery(
-      "start a = node(1) match (a) -[rel,:KNOWS]-> (b) return rel",
+      "start a = (1) match (a) -[rel,:KNOWS]-> (b) return rel",
       Query(
         Return(EntityOutput("rel")),
         Start(NodeById("a", 1)),
@@ -278,7 +278,7 @@ class SunshineParserTest {
 
   @Test def relatedToWithoutEndName() {
     testQuery(
-      "start a = node(1) match (a) -[:MARRIED]-> () return a",
+      "start a = (1) match (a) -[:MARRIED]-> () return a",
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
@@ -289,7 +289,7 @@ class SunshineParserTest {
 
   @Test def relatedInTwoSteps() {
     testQuery(
-      "start a = node(1) match (a) -[:KNOWS]-> (b) -[:FRIEND]-> (c) return c",
+      "start a = (1) match (a) -[:KNOWS]-> (b) -[:FRIEND]-> (c) return c",
       Query(
         Return(EntityOutput("c")),
         Start(NodeById("a", 1)),
@@ -302,7 +302,7 @@ class SunshineParserTest {
 
   @Test def countTheNumberOfHits() {
     testQuery(
-      "start a = node(1) match (a) --> (b) return a, b, count(*)",
+      "start a = (1) match (a) --> (b) return a, b, count(*)",
       Query(
         Return(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
@@ -313,7 +313,7 @@ class SunshineParserTest {
 
   @Test def nullableProperty() {
     testQuery(
-      "start a = node(1) return a.name?",
+      "start a = (1) return a.name?",
       Query(
         Return(NullablePropertyOutput("a", "name")),
         Start(NodeById("a", 1))))
@@ -321,7 +321,7 @@ class SunshineParserTest {
 
   @Test def nestedBooleanOperatorsAndParentesis() {
     testQuery(
-      """start n = node(1,2,3) where (n.animal = "monkey" and n.food = "banana") or (n.animal = "cow" and n.food="grass") return n""",
+      """start n = (1,2,3) where (n.animal = "monkey" and n.food = "banana") or (n.animal = "cow" and n.food="grass") return n""",
       Query(
         Return(EntityOutput("n")),
         Start(NodeById("n", 1, 2, 3)),

@@ -75,13 +75,12 @@ class SunshineParser extends JavaTokenParsers {
     case relName => (Some(relName), None)
   }
 
-  def nodeByIds = ident ~ "=" ~ ignoreCase("node") ~ "(" ~ repsep(wholeNumber, ",") ~ ")" ^^ {
-    case varName ~ "=" ~ node ~ "(" ~ id ~ ")" => NodeById(varName, id.map(_.toLong).toSeq: _*)
+  def nodeByIds = ident ~ "=" ~ "(" ~ rep1sep(wholeNumber, ",") ~ ")" ^^ {
+    case varName ~ "=" ~ "(" ~ id ~ ")" => NodeById(varName, id.map(_.toLong).toSeq: _*)
   }
 
-  def nodeByIndex = ident ~ "=" ~ ignoreCase("node_index") ~ "(" ~ stringLiteral ~ "," ~ stringLiteral ~ "," ~ stringLiteral ~ ")" ^^ {
-    case varName ~ "=" ~ node_index ~ "(" ~ index ~ "," ~ key ~ "," ~ value ~ ")" =>
-      NodeByIndex(varName, stripQuotes(index), stripQuotes(key), stripQuotes(value))
+  def nodeByIndex = ident ~ "=" ~ "(" ~ ident ~ "," ~ ident ~ "," ~ stringLiteral ~ ")" ^^ {
+    case varName ~ "=" ~ "(" ~ index ~ "," ~ key ~ "," ~ value ~ ")" => NodeByIndex(varName, index, key, stripQuotes(value))
   }
 
   def returns: Parser[(Return, Option[Aggregation])] = ignoreCase("return") ~> rep1sep((count | nullablePropertyOutput | propertyOutput | nodeOutput), ",") ^^
