@@ -8,6 +8,7 @@ import java.util.Map;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -44,10 +45,6 @@ public class TestGremlin implements GraphHolder
     @Graph( value = { "I know you" } )
     public void testGremlinPostURLEncoded()
     {
-        
-        server = new WrappingNeoServerBootstrapper(
-                graphdb );
-        server.start();
         String response = gen.get()
         .expectedStatus( Status.OK.getStatusCode() )
         .payload( "script=g.v(2).outE.inV" )
@@ -56,7 +53,6 @@ public class TestGremlin implements GraphHolder
         .entity();
         System.out.println(response);
         assertTrue(response.contains( "you" ));
-        server.stop();
         
     }
 
@@ -69,9 +65,7 @@ public class TestGremlin implements GraphHolder
     {
         assertTrue(data.get().size() == 2);
         
-        server = new WrappingNeoServerBootstrapper(
-                graphdb );
-        server.start();
+        
         String response = gen.get()
         .expectedStatus( Status.OK.getStatusCode() )
         .payload( "{\"script\":\"g.v(4).outE.inV\"}" )
@@ -80,7 +74,6 @@ public class TestGremlin implements GraphHolder
         .entity();
         System.out.println(response);
         assertTrue(response.contains( "you" ));
-        server.stop();
         
     }
     @BeforeClass
@@ -99,5 +92,17 @@ public class TestGremlin implements GraphHolder
     public GraphDatabaseService graphdb()
     {
         return graphdb;
+    }
+    
+    @Before
+    public void startServer() {
+        server = new WrappingNeoServerBootstrapper(
+                graphdb );
+        server.start();
+    }
+    
+    @After
+    public void shutdownServer() {
+        server.stop();
     }
 }
