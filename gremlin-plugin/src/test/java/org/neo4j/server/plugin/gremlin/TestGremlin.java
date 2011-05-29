@@ -47,7 +47,7 @@ public class TestGremlin implements GraphHolder
     {
         String response = gen.get()
         .expectedStatus( Status.OK.getStatusCode() )
-        .payload( "script=" + URLEncoder.encode( "i=g.v("+data.get().get( "I" ).getId() +");i.outE.inV", "UTF-8") )
+        .payload( "script=" + URLEncoder.encode( "i = g.v("+data.get().get( "I" ).getId() +");i.outE.inV", "UTF-8") )
         .payloadType( MediaType.APPLICATION_FORM_URLENCODED_TYPE )
         .post( ENDPOINT )
         .entity();
