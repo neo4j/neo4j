@@ -47,7 +47,7 @@ public class TestGremlin implements GraphHolder
     {
         String response = gen.get()
         .expectedStatus( Status.OK.getStatusCode() )
-        .payload( "script=g.v(2).outE.inV" )
+        .payload( "script=g.v("+data.get().get( "I" ).getId() +").outE.inV" )
         .payloadType( MediaType.APPLICATION_FORM_URLENCODED_TYPE )
         .post( "http://localhost:7474/db/data/ext/GremlinPlugin/graphdb/execute_script" )
         .entity();
@@ -64,11 +64,9 @@ public class TestGremlin implements GraphHolder
     public void testGremlinPostJSON()
     {
         assertTrue(data.get().size() == 2);
-        
-        
         String response = gen.get()
         .expectedStatus( Status.OK.getStatusCode() )
-        .payload( "{\"script\":\"g.v(4).outE.inV\"}" )
+        .payload( "{\"script\":\"i = g.v("+data.get().get( "I" ).getId() +");i.outE.inV\"}" )
         .payloadType( MediaType.APPLICATION_JSON_TYPE )
         .post( "http://localhost:7474/db/data/ext/GremlinPlugin/graphdb/execute_script" )
         .entity();
