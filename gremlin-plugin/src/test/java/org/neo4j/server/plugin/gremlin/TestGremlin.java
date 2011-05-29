@@ -2,6 +2,8 @@ package org.neo4j.server.plugin.gremlin;
 
 import static org.junit.Assert.assertTrue;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
@@ -41,11 +43,11 @@ public class TestGremlin implements GraphHolder
     @Title("Send a Gremlin Script, URL encoded")
     @Documented("Send a Gremlin Script, URL-encoded")
     @Graph( value = { "I know you" } )
-    public void testGremlinPostURLEncoded()
+    public void testGremlinPostURLEncoded() throws UnsupportedEncodingException
     {
         String response = gen.get()
         .expectedStatus( Status.OK.getStatusCode() )
-        .payload( "script=g.v("+data.get().get( "I" ).getId() +").outE.inV" )
+        .payload( "script=" + URLEncoder.encode( "i=g.v("+data.get().get( "I" ).getId() +");i.outE.inV", "UTF-8") )
         .payloadType( MediaType.APPLICATION_FORM_URLENCODED_TYPE )
         .post( ENDPOINT )
         .entity();
