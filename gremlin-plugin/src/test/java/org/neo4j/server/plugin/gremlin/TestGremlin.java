@@ -2,7 +2,6 @@ package org.neo4j.server.plugin.gremlin;
 
 import static org.junit.Assert.assertTrue;
 
-import java.io.IOException;
 import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
@@ -12,12 +11,10 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.ImpermanentGraphDatabase;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.WrappingNeoServerBootstrapper;
@@ -30,6 +27,7 @@ import org.neo4j.test.TestData.Title;
 
 public class TestGremlin implements GraphHolder
 {
+    private static final String ENDPOINT = "http://localhost:7474/db/data/ext/GremlinPlugin/graphdb/execute_script";
     private static ImpermanentGraphDatabase graphdb;
     public @Rule
     TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor(
@@ -49,30 +47,28 @@ public class TestGremlin implements GraphHolder
         .expectedStatus( Status.OK.getStatusCode() )
         .payload( "script=g.v("+data.get().get( "I" ).getId() +").outE.inV" )
         .payloadType( MediaType.APPLICATION_FORM_URLENCODED_TYPE )
-        .post( "http://localhost:7474/db/data/ext/GremlinPlugin/graphdb/execute_script" )
+        .post( ENDPOINT )
         .entity();
-        System.out.println(response);
         assertTrue(response.contains( "you" ));
-        
     }
 
+    /**
+     * To send a Script JSON encoded, 
+     * adjust the payload Content Headers
+     */
     @Test
     @Title("Send a Gremlin Script, JSON encoded")
-    @Documented("To send a Script JSON encoded, " +
-    		"adjust the payload Content Headers")
+    @Documented
     @Graph( value = { "I know you" } )
     public void testGremlinPostJSON()
     {
-        assertTrue(data.get().size() == 2);
         String response = gen.get()
         .expectedStatus( Status.OK.getStatusCode() )
         .payload( "{\"script\":\"i = g.v("+data.get().get( "I" ).getId() +");i.outE.inV\"}" )
         .payloadType( MediaType.APPLICATION_JSON_TYPE )
-        .post( "http://localhost:7474/db/data/ext/GremlinPlugin/graphdb/execute_script" )
+        .post( ENDPOINT )
         .entity();
-        System.out.println(response);
         assertTrue(response.contains( "you" ));
-        
     }
     @BeforeClass
     public static void startDatabase()
