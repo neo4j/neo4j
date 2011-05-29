@@ -39,7 +39,6 @@ public class TestGremlin implements GraphHolder
     private static WrappingNeoServerBootstrapper server;
 
     @Test
-    @Ignore
     @Title("Send a Gremlin Script, URL encoded")
     @Documented("Send a Gremlin Script, URL-encoded")
     @Graph( value = { "I know you" } )
@@ -68,12 +67,14 @@ public class TestGremlin implements GraphHolder
     @Graph( value = { "I know you" } )
     public void testGremlinPostJSON()
     {
+        assertTrue(data.get().size() == 2);
+        
         server = new WrappingNeoServerBootstrapper(
                 graphdb );
         server.start();
         String response = gen.get()
         .expectedStatus( Status.OK.getStatusCode() )
-        .payload( "{\"script\":\"g.v(2).outE.inV\"}" )
+        .payload( "{\"script\":\"g.v(4).outE.inV\"}" )
         .payloadType( MediaType.APPLICATION_JSON_TYPE )
         .post( "http://localhost:7474/db/data/ext/GremlinPlugin/graphdb/execute_script" )
         .entity();
