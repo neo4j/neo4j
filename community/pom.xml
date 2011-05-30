@@ -9,7 +9,7 @@
 
     <properties>
         <scala.version>2.8.1</scala.version>
-        <neo.version>1.4-SNAPSHOT</neo.version>
+        <neo4j.version>1.4-SNAPSHOT</neo4j.version>
     </properties>
 
     <modelVersion>4.0.0</modelVersion>
@@ -17,14 +17,7 @@
     <artifactId>neo4j-sunshine</artifactId>
     <packaging>jar</packaging>
     <version>0.2-SNAPSHOT</version>
-    <name>Neo4j Sunshine</name>
-    <repositories>
-        <repository>
-            <id>scala-tools.org</id>
-            <name>Scala-tools Maven2 Repository</name>
-            <url>http://scala-tools.org/repo-releases</url>
-        </repository>
-    </repositories>
+    <name>Neo4j Sunshine</name>    
     <pluginRepositories>
         <pluginRepository>
             <id>scala-tools.org</id>
@@ -39,19 +32,14 @@
             <version>${scala.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-compiler</artifactId>
-            <version>${scala.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j</artifactId>
-            <version>${neo.version}</version>
+            <version>${neo4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-kernel</artifactId>
-            <version>${neo.version}</version>
+            <version>${neo4j.version}</version>
             <classifier>tests</classifier>
         </dependency>
         <dependency>
