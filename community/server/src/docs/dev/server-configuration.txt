@@ -135,4 +135,13 @@ wrapper.java.command=/path/to/jre/java
 ----
 Note that on Windows systems, absolute locations including drive letters need to read "c:/jre6/bin/java.exe"
 
+=== Enabling logging from the garbage collector ===
 
+To get garbage collection logging output you have to pass the corresponding option to the server JVM 
+executable by setting in +conf/neo4j-wrapper.conf+ the value
+----
+wrapper.java.additional.3=-Xloggc:data/log/neo4j-gc.log
+----
+This line is already present and needs uncommenting. Note also that logging is not directed to console, since
+the wrapper swallows all output. You will find the logging statements in +data/log/ne4j-gc.log+ or
+whatever directory you set at the option
