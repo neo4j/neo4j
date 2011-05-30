@@ -22,6 +22,7 @@ package org.neo4j.server.webadmin.rest;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.webadmin.console.GremlinSession;
 import org.neo4j.server.webadmin.console.ScriptSession;
+import org.neo4j.server.webadmin.console.SunshineSession;
 
 import javax.servlet.http.HttpSession;
 
@@ -37,12 +38,18 @@ public class SessionFactoryImpl implements SessionFactory
     @Override
     public ScriptSession createSession( String engineName, Database database )
     {
-        Object session = httpSession.getAttribute( "consoleSession" );
-        if ( session == null )
+        if(engineName.equals("sunshine"))
         {
-            session = new GremlinSession( database );
-            httpSession.setAttribute( "consoleSession", session );
+            return new SunshineSession(database.graph);
+        } else
+        {
+            Object session = httpSession.getAttribute( "consoleSession" );
+            if ( session == null )
+            {
+                session = new GremlinSession( database );
+                httpSession.setAttribute( "consoleSession", session );
+            }
+            return (ScriptSession) session;
         }
-        return (ScriptSession) session;
     }
 }
