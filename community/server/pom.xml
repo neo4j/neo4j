@@ -100,11 +100,11 @@ the relevant Commercial Agreement.
       <version>1.4-SNAPSHOT</version>
     </dependency>
 
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-sunshine</artifactId>
-      <version>0.2-SNAPSHOT</version>
-    </dependency>
+    <!--<dependency>-->
+      <!--<groupId>org.neo4j</groupId>-->
+      <!--<artifactId>neo4j-sunshine</artifactId>-->
+      <!--<version>0.2-SNAPSHOT</version>-->
+    <!--</dependency>-->
 
     <dependency>
       <groupId>org.slf4j</groupId>
