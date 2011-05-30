@@ -19,7 +19,7 @@
  */
 package org.neo4j.sunshine
 
-import java.lang.RuntimeException
+import java.lang.Exception
 
 /**
  * Created by Andres Taylor
@@ -27,6 +27,6 @@ import java.lang.RuntimeException
  * Time: 14:08 
  */
 
-class SyntaxError(message:String, cause:Throwable) extends RuntimeException(message, cause) {
+class SyntaxError(message:String, cause:Throwable) extends Exception(message, cause) {
   def this(message:String) = this(message, null)
 }

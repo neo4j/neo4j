@@ -23,7 +23,6 @@ import commands._
 import scala.util.parsing.combinator._
 import org.neo4j.graphdb.Direction
 import scala.Some
-import java.rmi.registry.Registry
 
 class SunshineParser extends JavaTokenParsers {
   def ignoreCase(str:String): Parser[String] = ("""(?i)\Q""" + str + """\E""").r
@@ -175,6 +174,7 @@ class SunshineParser extends JavaTokenParsers {
       case (true,true) => Direction.BOTH
     }
 
+  @throws(classOf[SyntaxError])
   def parse(sunshineQuery: String): Query =
     parseAll(query, sunshineQuery) match {
       case Success(r, q) => r

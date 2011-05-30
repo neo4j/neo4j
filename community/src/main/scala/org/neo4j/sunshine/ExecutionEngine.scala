@@ -25,9 +25,11 @@ import scala.collection.JavaConverters._
 import org.neo4j.graphdb._
 import org.neo4j.graphmatching.{PatternRelationship, PatternNode, AbstractPatternObject}
 
+
 class ExecutionEngine(val graph: GraphDatabaseService) {
   type MapTransformer = Map[String, Any] => Map[String, Any]
 
+  @throws(classOf[SyntaxError])
   def execute(query: Query): Projection = query match {
     case Query(select, start, matching, where, aggregation) => {
       val patternKeeper = new PatternKeeper
@@ -50,14 +52,16 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
   def checkConnectednessOfPatternGraph(pattern: PatternKeeper, source: Pipe) {
     val visited = scala.collection.mutable.HashSet[String]()
 
-    def visit(visitedObject:AbstractPatternObject[_ <: PropertyContainer]) {
+    def visit(visitedObject: AbstractPatternObject[_ <: PropertyContainer]) {
       val label = visitedObject.getLabel
-      if(label == null || !visited.contains(label)) {
-        if(label != null) { visited.add(label) }
+      if (label == null || !visited.contains(label)) {
+        if (label != null) {
+          visited.add(label)
+        }
 
         visitedObject match {
-          case node:PatternNode => node.getAllRelationships.asScala.foreach(visit)
-          case rel:PatternRelationship => {
+          case node: PatternNode => node.getAllRelationships.asScala.foreach(visit)
+          case rel: PatternRelationship => {
             visit(rel.getFirstNode)
             visit(rel.getSecondNode)
           }
@@ -66,8 +70,8 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
       }
     }
 
-    source.columnNames.map( pattern.patternObject ).foreach( _ match {
-      case None =>  throw new SyntaxError("Encountered a part of the pattern that is not part of the pattern. If you see this, please report this problem!")
+    source.columnNames.map(pattern.patternObject).foreach(_ match {
+      case None => throw new SyntaxError("Encountered a part of the pattern that is not part of the pattern. If you see this, please report this problem!")
       case Some(obj) => visit(obj)
     })
 
