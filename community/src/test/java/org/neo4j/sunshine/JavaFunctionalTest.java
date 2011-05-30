@@ -17,16 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.sunshine
+package org.neo4j.sunshine;
 
-import java.lang.RuntimeException
+import org.junit.Test;
+import static org.junit.Assert.assertTrue;
+import org.neo4j.kernel.ImpermanentGraphDatabase;
+import org.neo4j.sunshine.commands.Query;
 
 /**
  * Created by Andres Taylor
- * Date: 5/20/11
- * Time: 14:08 
+ * Date: 5/30/11
+ * Time: 16:28
  */
-
-class SyntaxError(message:String, cause:Throwable) extends RuntimeException(message, cause) {
-  def this(message:String) = this(message, null)
+public class JavaFunctionalTest
+{
+    @Test
+    public void testHelloWorldFromJava() throws Exception
+    {
+        SunshineParser parser = new SunshineParser();
+        ExecutionEngine engine = new ExecutionEngine(new ImpermanentGraphDatabase());
+        Query query = parser.parse("start n = (0) return n");
+        Projection result = engine.execute(query);
+        assertTrue(result.toString().contains("Node[0]"));
+    }
 }
