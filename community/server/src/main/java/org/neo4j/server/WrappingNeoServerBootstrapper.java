@@ -43,7 +43,7 @@ import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
  * configuration, and launches a server using that database.
  * <p>
  * Use this to start up a full Neo4j server from within an application
- * that already uses the {@link EmbeddedGraphDatabase} or the 
+ * that already uses the {@link EmbeddedGraphDatabase} or the
  * {@link HighlyAvailableGraphDatabase}. This gives your application
  * the full benifits of the servers REST API, the web administration
  * interface and statistics tracking.
@@ -67,11 +67,11 @@ import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
  */
 public class WrappingNeoServerBootstrapper extends Bootstrapper
 {
-    
-    private AbstractGraphDatabase db;
-    private Configurator configurator;
+
+    private final AbstractGraphDatabase db;
+    private final Configurator configurator;
     private static Logger log = Logger.getLogger( WrappingNeoServerBootstrapper.class );
-    
+
     /**
      * Create an instance with default settings.
      * @param db
@@ -79,7 +79,7 @@ public class WrappingNeoServerBootstrapper extends Bootstrapper
     public WrappingNeoServerBootstrapper(AbstractGraphDatabase db) {
         this(db, new EmbeddedServerConfigurator(db));
     }
-    
+
     /**
      * Create an instance with custom documentation. {@link EmbeddedServerConfigurator}
      * is written to fit well here, see its' documentation.
@@ -91,7 +91,7 @@ public class WrappingNeoServerBootstrapper extends Bootstrapper
         this.db = db;
         this.configurator = configurator;
     }
-    
+
     @Override
     public Iterable<StartupHealthCheckRule> getHealthCheckRules()
     {
@@ -113,6 +113,7 @@ public class WrappingNeoServerBootstrapper extends Bootstrapper
             if ( server != null )
             {
                 server.stopServer();
+                server.getDatabase().rrdDb().close();
             }
             return 0;
         }
@@ -123,7 +124,7 @@ public class WrappingNeoServerBootstrapper extends Bootstrapper
             return 1;
         }
     }
-    
+
     @Override
     protected GraphDatabaseFactory getGraphDatabaseFactory( Configuration configuration )
     {
@@ -136,9 +137,10 @@ public class WrappingNeoServerBootstrapper extends Bootstrapper
                 return db;
             }
         };
-        
+
     }
 
+    @Override
     protected Configurator getConfigurator()
     {
         return configurator;
