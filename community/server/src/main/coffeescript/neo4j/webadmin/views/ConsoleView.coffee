@@ -34,6 +34,7 @@ define(
       initialize : (opts) =>
         @appState = opts.appState
         @consoleState = opts.consoleState
+        @lang = opts.lang
         @consoleState.bind("change", @renderConsole)
 
       consoleKeyUp : (ev) =>
@@ -47,16 +48,12 @@ define(
       wrapperClicked : (ev) =>
         $("#console-input").focus()
 
-      render : =>
-        $(@el).html(baseTemplate())
-        @renderConsole()
-        return this
-
-      renderConsole : =>
+      renderConsole : (asdf)=>
         $("#console",@el).html consoleTemplate(
           lines : @consoleState.get "lines"
           prompt : @consoleState.get "prompt"
-          showPrompt : @consoleState.get "showPrompt")
+          showPrompt : @consoleState.get "showPrompt"
+          promptPrefix : @lang)
         
         @delegateEvents()
         $("#console-input").focus()

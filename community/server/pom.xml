@@ -101,6 +101,12 @@ the relevant Commercial Agreement.
     </dependency>
 
     <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-sunshine</artifactId>
+      <version>0.2-SNAPSHOT</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
       <version>1.6.1</version>

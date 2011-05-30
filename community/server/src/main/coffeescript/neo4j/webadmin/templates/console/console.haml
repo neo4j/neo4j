@@ -4,5 +4,5 @@
 
   %li 
     :if showPrompt
-      gremlin> 
+      =htmlEscape(promptPrefix+">") 
       %input#console-input(type="text" value="#{htmlEscape(prompt)}")

@@ -18,21 +18,37 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-define ['./models/Console', './views/ConsoleView', 'lib/backbone'], (Console, ConsoleView) ->
+define(
+  ['./models/Console',
+   './models/SunshineConsole',
+   './views/SunshineConsoleView',
+   './views/GremlinConsoleView',
+   'lib/backbone'], 
+  (Console, SunshineConsole, SunshineConsoleView, GremlinConsoleView) ->
   
-  class ConsoleController extends Backbone.Controller
-    routes : 
-      "/console/" : "console"
+    class ConsoleController extends Backbone.Controller
+      routes : 
+        "/console/" : "console"
+        "/console/:type" : "console"
 
-    initialize : (appState) =>
-      @appState = appState
-      @consoleState = new Console(server:@appState.get("server"))
+      initialize : (appState) =>
+        @appState = appState
+        @gremlinState = new Console(server:@appState.get("server"), lang:"gremlin")
+        @sunshineState = new SunshineConsole(server:@appState.get("server"), lang:"sunshine")
+      
+        @views = 
+          gremlin : new GremlinConsoleView
+            appState : @appState
+            consoleState : @gremlinState
+            lang: "gremlin"
+          sunshine : new SunshineConsoleView
+            appState : @appState
+            consoleState : @sunshineState
+            lang: ""
+          
+      console : (type="sunshine") =>
+        @appState.set( mainView : @getConsoleView(type) )
 
-    console : =>
-      @appState.set( mainView : @getConsoleView() )
-
-    getConsoleView : =>
-      @view ?= new ConsoleView
-        appState : @appState
-        consoleState : @consoleState
-
+      getConsoleView : (type) =>
+        @views[type]
+)

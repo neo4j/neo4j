@@ -31,17 +31,18 @@ define ['lib/backbone'], () ->
 
     initialize : (opts) =>
       @server = opts.server
+      @lang = opts.lang
       @eval("init()", false, false)
 
-    eval : (statement, showStatement=true, includeInHistory=true) =>
+    eval : (statement, showStatement=true, includeInHistory=true, prepend = @lang) =>
       @set {"showPrompt":false, prompt:""}, {silent:true}
       if showStatement
-        @pushLines [statement], "gremlin> "
+        @pushLines [statement], prepend + ">"
       
       if includeInHistory
         @pushHistory statement
 
-      @server.manage.console.exec statement, "awesome", @parseEvalResult   
+      @server.manage.console.exec statement, @lang, @parseEvalResult   
 
     prevHistory : =>
       history = @get "history"
