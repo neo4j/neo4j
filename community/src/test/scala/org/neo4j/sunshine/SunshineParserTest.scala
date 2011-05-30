@@ -5,24 +5,24 @@
  * This file is part of Neo4j.
  *
  * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.sunshine
 
 import commands._
-import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.graphdb.Direction
+import org.junit.{Ignore, Test}
 
 
 /**
@@ -151,7 +151,7 @@ class SunshineParserTest {
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
-        RegularExpression(Literal("Andres"), "And.*" ))
+        RegularExpression(Literal("Andres"), "And.*"))
     )
   }
 
@@ -296,6 +296,17 @@ class SunshineParserTest {
         Match(
           RelatedTo("a", "b", None, Some("KNOWS"), Direction.OUTGOING),
           RelatedTo("b", "c", None, Some("FRIEND"), Direction.OUTGOING))
+      )
+    )
+  }
+
+  @Ignore("Soon my precious.") @Test def djangoRelationshipType() {
+    testQuery(
+      "start a = (1) match (a) -[:`<<KNOWS>>]-> (b) return c",
+      Query(
+        Return(EntityOutput("c")),
+        Start(NodeById("a", 1)),
+        Match(RelatedTo("a", "b", None, Some("<<KNOWS>>"), Direction.OUTGOING))
       )
     )
   }
