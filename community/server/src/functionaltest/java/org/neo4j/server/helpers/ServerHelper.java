@@ -10,6 +10,8 @@ import org.neo4j.server.modules.RESTApiModule;
 
 public class ServerHelper
 {
+    private static NeoServerWithEmbeddedWebServer server;
+
     public static void cleanTheDatabase( final NeoServerWithEmbeddedWebServer server )
     {
         new Transactor( server.getDatabase().graph, new UnitOfWork()
@@ -47,12 +49,15 @@ public class ServerHelper
     @SuppressWarnings( "unchecked" )
     public static NeoServerWithEmbeddedWebServer createServer() throws IOException
     {
-        NeoServerWithEmbeddedWebServer server = ServerBuilder.server()
-                .withRandomDatabaseDir()
-                .withSpecificServerModules( RESTApiModule.class )
-                .withPassingStartupHealthcheck()
-                .build();
-        server.start();
+        if ( server == null )
+        {
+            server = ServerBuilder.server()
+                    .withRandomDatabaseDir()
+                    .withAllServerModules()
+                    .withPassingStartupHealthcheck()
+                    .build();
+            server.start();
+        }
         return server;
     }
 }

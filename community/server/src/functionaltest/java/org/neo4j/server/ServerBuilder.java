@@ -19,11 +19,12 @@
  */
 package org.neo4j.server;
 
-import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.modules.ServerModule;
-import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
-import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
-import org.neo4j.server.web.Jetty6WebServer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.server.ServerTestUtils.createTempDir;
+import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
+import static org.neo4j.server.ServerTestUtils.writePropertiesToFile;
+import static org.neo4j.server.ServerTestUtils.writePropertyToFile;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -37,11 +38,22 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.server.ServerTestUtils.*;
+import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.configuration.PropertyFileConfigurator;
+import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
+import org.neo4j.server.configuration.validation.Validator;
+import org.neo4j.server.modules.DiscoveryModule;
+import org.neo4j.server.modules.ManagementApiModule;
+import org.neo4j.server.modules.RESTApiModule;
+import org.neo4j.server.modules.ServerModule;
+import org.neo4j.server.modules.ThirdPartyJAXRSModule;
+import org.neo4j.server.modules.WebAdminModule;
+import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
+import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
+import org.neo4j.server.web.Jetty6WebServer;
 
-public class ServerBuilder {
+public class ServerBuilder
+{
 
     private String portNo = "7474";
     private String dbDir = null;
@@ -51,181 +63,242 @@ public class ServerBuilder {
     private AddressResolver addressResolver = new LocalhostAddressResolver();
     private final HashMap<String, String> thirdPartyPackages = new HashMap<String, String>();
 
-    private static enum WhatToDo {
-        CREATE_GOOD_TUNING_FILE, CREATE_DANGLING_TUNING_FILE_PROPERTY, CREATE_CORRUPT_TUNING_FILE
+    private static enum WhatToDo
+    {
+        CREATE_GOOD_TUNING_FILE,
+        CREATE_DANGLING_TUNING_FILE_PROPERTY,
+        CREATE_CORRUPT_TUNING_FILE
     };
 
     private WhatToDo action;
     private List<Class<? extends ServerModule>> serverModules = new ArrayList<Class<? extends ServerModule>>();
 
-    public static ServerBuilder server() {
+    public static ServerBuilder server()
+    {
         return new ServerBuilder();
     }
 
-    public NeoServerWithEmbeddedWebServer build() throws IOException {
+    public NeoServerWithEmbeddedWebServer build() throws IOException
+    {
         if ( dbDir == null )
         {
             throw new IllegalStateException( "database directory must be configured." );
         }
-        File f = createPropertiesFiles();
-        
-        return new CleaningNeoServer(addressResolver, startupHealthCheck, f, new Jetty6WebServer(), dbDir, (Class<? extends ServerModule>[]) serverModules.toArray(new Class[0]));
-    }
-    
+        File configFile = createPropertiesFiles();
 
-    public File createPropertiesFiles() throws IOException {
+        return new NeoServerWithEmbeddedWebServer( new NeoServerBootstrapper(), addressResolver, startupHealthCheck,
+                new PropertyFileConfigurator( new Validator( new DatabaseLocationMustBeSpecifiedRule() ), configFile ),
+                new Jetty6WebServer(), serverModules );
+
+    }
+
+    public File createPropertiesFiles() throws IOException
+    {
         File temporaryConfigFile = createTempPropertyFile();
-        
-        createPropertiesFile(temporaryConfigFile);
-        createTuningFile(temporaryConfigFile);
-        
+
+        createPropertiesFile( temporaryConfigFile );
+        createTuningFile( temporaryConfigFile );
+
         return temporaryConfigFile;
     }
 
-    private void createPropertiesFile(File temporaryConfigFile) {
-        writePropertyToFile(Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir, temporaryConfigFile);
-        if (portNo != null) {
-            writePropertyToFile(Configurator.WEBSERVER_PORT_PROPERTY_KEY, portNo, temporaryConfigFile);
+    private void createPropertiesFile( File temporaryConfigFile )
+    {
+        writePropertyToFile( Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir, temporaryConfigFile );
+        if ( portNo != null )
+        {
+            writePropertyToFile( Configurator.WEBSERVER_PORT_PROPERTY_KEY, portNo, temporaryConfigFile );
         }
-        writePropertyToFile(Configurator.MANAGEMENT_PATH_PROPERTY_KEY, webAdminUri, temporaryConfigFile);
-        writePropertyToFile(Configurator.DATA_API_PATH_PROPERTY_KEY, webAdminDataUri, temporaryConfigFile);
-        
-        if (thirdPartyPackages.keySet().size() > 0) {
-            writePropertiesToFile(Configurator.THIRD_PARTY_PACKAGES_KEY, thirdPartyPackages, temporaryConfigFile);
+        writePropertyToFile( Configurator.MANAGEMENT_PATH_PROPERTY_KEY, webAdminUri, temporaryConfigFile );
+        writePropertyToFile( Configurator.DATA_API_PATH_PROPERTY_KEY, webAdminDataUri, temporaryConfigFile );
+
+        if ( thirdPartyPackages.keySet()
+                .size() > 0 )
+        {
+            writePropertiesToFile( Configurator.THIRD_PARTY_PACKAGES_KEY, thirdPartyPackages, temporaryConfigFile );
         }
     }
 
-    private void createTuningFile(File temporaryConfigFile) throws IOException {
-        if (action == WhatToDo.CREATE_GOOD_TUNING_FILE) {
+    private void createTuningFile( File temporaryConfigFile ) throws IOException
+    {
+        if ( action == WhatToDo.CREATE_GOOD_TUNING_FILE )
+        {
             File databaseTuningPropertyFile = createTempPropertyFile();
-            writePropertyToFile("neostore.nodestore.db.mapped_memory", "25M", databaseTuningPropertyFile);
-            writePropertyToFile("neostore.relationshipstore.db.mapped_memory", "50M", databaseTuningPropertyFile);
-            writePropertyToFile("neostore.propertystore.db.mapped_memory", "90M", databaseTuningPropertyFile);
-            writePropertyToFile("neostore.propertystore.db.strings.mapped_memory", "130M", databaseTuningPropertyFile);
-            writePropertyToFile("neostore.propertystore.db.arrays.mapped_memory", "130M", databaseTuningPropertyFile);
-            writePropertyToFile(Configurator.DB_TUNING_PROPERTY_FILE_KEY, databaseTuningPropertyFile.getAbsolutePath(), temporaryConfigFile);
-        } else if (action == WhatToDo.CREATE_DANGLING_TUNING_FILE_PROPERTY) {
-            writePropertyToFile(Configurator.DB_TUNING_PROPERTY_FILE_KEY, createTempPropertyFile().getAbsolutePath(), temporaryConfigFile);
-        } else if (action == WhatToDo.CREATE_CORRUPT_TUNING_FILE) {
+            writePropertyToFile( "neostore.nodestore.db.mapped_memory", "25M", databaseTuningPropertyFile );
+            writePropertyToFile( "neostore.relationshipstore.db.mapped_memory", "50M", databaseTuningPropertyFile );
+            writePropertyToFile( "neostore.propertystore.db.mapped_memory", "90M", databaseTuningPropertyFile );
+            writePropertyToFile( "neostore.propertystore.db.strings.mapped_memory", "130M", databaseTuningPropertyFile );
+            writePropertyToFile( "neostore.propertystore.db.arrays.mapped_memory", "130M", databaseTuningPropertyFile );
+            writePropertyToFile( Configurator.DB_TUNING_PROPERTY_FILE_KEY,
+                    databaseTuningPropertyFile.getAbsolutePath(), temporaryConfigFile );
+        }
+        else if ( action == WhatToDo.CREATE_DANGLING_TUNING_FILE_PROPERTY )
+        {
+            writePropertyToFile( Configurator.DB_TUNING_PROPERTY_FILE_KEY, createTempPropertyFile().getAbsolutePath(),
+                    temporaryConfigFile );
+        }
+        else if ( action == WhatToDo.CREATE_CORRUPT_TUNING_FILE )
+        {
             File corruptTuningFile = trashFile();
-            writePropertyToFile(Configurator.DB_TUNING_PROPERTY_FILE_KEY, corruptTuningFile.getAbsolutePath(), temporaryConfigFile);
+            writePropertyToFile( Configurator.DB_TUNING_PROPERTY_FILE_KEY, corruptTuningFile.getAbsolutePath(),
+                    temporaryConfigFile );
         }
     }
 
-    private File trashFile() throws IOException {
+    private File trashFile() throws IOException
+    {
         File f = createTempPropertyFile();
 
-        FileWriter fstream = new FileWriter(f, true);
-        BufferedWriter out = new BufferedWriter(fstream);
+        FileWriter fstream = new FileWriter( f, true );
+        BufferedWriter out = new BufferedWriter( fstream );
 
-        for (int i = 0; i < 100; i++) {
-            out.write((int) System.currentTimeMillis());
+        for ( int i = 0; i < 100; i++ )
+        {
+            out.write( (int) System.currentTimeMillis() );
         }
 
         out.close();
         return f;
     }
 
-    private ServerBuilder() {
+    private ServerBuilder()
+    {
     }
 
-    public ServerBuilder withPassingStartupHealthcheck() {
-        startupHealthCheck = mock(StartupHealthCheck.class);
-        when(startupHealthCheck.run()).thenReturn(true);
+    public ServerBuilder withPassingStartupHealthcheck()
+    {
+        startupHealthCheck = mock( StartupHealthCheck.class );
+        when( startupHealthCheck.run() ).thenReturn( true );
         return this;
     }
 
-    public ServerBuilder onPort(int portNo) {
-        this.portNo = String.valueOf(portNo);
+    public ServerBuilder onPort( int portNo )
+    {
+        this.portNo = String.valueOf( portNo );
         return this;
     }
 
-    public ServerBuilder usingDatabaseDir(String dbDir) {
+    public ServerBuilder usingDatabaseDir( String dbDir )
+    {
         this.dbDir = dbDir;
         return this;
     }
 
-    public ServerBuilder withRandomDatabaseDir() throws IOException {
+    public ServerBuilder withRandomDatabaseDir() throws IOException
+    {
         this.dbDir = createTempDir().getAbsolutePath();
         return this;
     }
 
-    public ServerBuilder withRelativeWebAdminUriPath(String webAdminUri) {
-        try {
-            URI theUri = new URI(webAdminUri);
-            if(theUri.isAbsolute()) {
+    public ServerBuilder withRelativeWebAdminUriPath( String webAdminUri )
+    {
+        try
+        {
+            URI theUri = new URI( webAdminUri );
+            if ( theUri.isAbsolute() )
+            {
                 this.webAdminUri = theUri.getPath();
-            } else {
+            }
+            else
+            {
                 this.webAdminUri = theUri.toString();
             }
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
+        }
+        catch ( URISyntaxException e )
+        {
+            throw new RuntimeException( e );
         }
         return this;
     }
 
-    public ServerBuilder withRelativeWebDataAdminUriPath(String webAdminDataUri) {
-        try {
-            URI theUri = new URI(webAdminDataUri);
-            if(theUri.isAbsolute()) {
+    public ServerBuilder withRelativeWebDataAdminUriPath( String webAdminDataUri )
+    {
+        try
+        {
+            URI theUri = new URI( webAdminDataUri );
+            if ( theUri.isAbsolute() )
+            {
                 this.webAdminDataUri = theUri.getPath();
-            } else {
+            }
+            else
+            {
                 this.webAdminDataUri = theUri.toString();
             }
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
+        }
+        catch ( URISyntaxException e )
+        {
+            throw new RuntimeException( e );
         }
         return this;
     }
 
-    public ServerBuilder withoutWebServerPort() {
+    public ServerBuilder withoutWebServerPort()
+    {
         portNo = null;
         return this;
     }
 
-    public ServerBuilder withNetworkBoundHostnameResolver() {
+    public ServerBuilder withNetworkBoundHostnameResolver()
+    {
         addressResolver = new AddressResolver();
         return this;
     }
 
-    public ServerBuilder withFailingStartupHealthcheck() {
-        startupHealthCheck = mock(StartupHealthCheck.class);
-        when(startupHealthCheck.run()).thenReturn(false);
-        when(startupHealthCheck.failedRule()).thenReturn(new StartupHealthCheckRule() {
+    public ServerBuilder withFailingStartupHealthcheck()
+    {
+        startupHealthCheck = mock( StartupHealthCheck.class );
+        when( startupHealthCheck.run() ).thenReturn( false );
+        when( startupHealthCheck.failedRule() ).thenReturn( new StartupHealthCheckRule()
+        {
 
-            public String getFailureMessage() {
+            public String getFailureMessage()
+            {
                 return "mockFailure";
             }
 
-            public boolean execute(Properties properties) {
+            public boolean execute( Properties properties )
+            {
                 return false;
             }
-        });
+        } );
         return this;
     }
 
-    public ServerBuilder withDefaultDatabaseTuning() throws IOException {
+    public ServerBuilder withDefaultDatabaseTuning() throws IOException
+    {
         action = WhatToDo.CREATE_GOOD_TUNING_FILE;
         return this;
     }
 
-    public ServerBuilder withNonResolvableTuningFile() throws IOException {
+    public ServerBuilder withNonResolvableTuningFile() throws IOException
+    {
         action = WhatToDo.CREATE_DANGLING_TUNING_FILE_PROPERTY;
         return this;
     }
 
-    public ServerBuilder withCorruptTuningFile() throws IOException {
+    public ServerBuilder withCorruptTuningFile() throws IOException
+    {
         action = WhatToDo.CREATE_CORRUPT_TUNING_FILE;
         return this;
     }
 
-    public ServerBuilder withThirdPartyJaxRsPackage(String packageName, String mountPoint) {
-        thirdPartyPackages.put(packageName, mountPoint);
+    public ServerBuilder withThirdPartyJaxRsPackage( String packageName, String mountPoint )
+    {
+        thirdPartyPackages.put( packageName, mountPoint );
         return this;
     }
-    
-    public ServerBuilder withSpecificServerModules(Class<? extends ServerModule> ... modules) {
-        serverModules = Arrays.asList(modules);
+
+    public ServerBuilder withSpecificServerModules( Class<? extends ServerModule>... modules )
+    {
+        serverModules = Arrays.asList( modules );
+        return this;
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public ServerBuilder withAllServerModules()
+    {
+        withSpecificServerModules( DiscoveryModule.class, ManagementApiModule.class, RESTApiModule.class,
+                ThirdPartyJAXRSModule.class, WebAdminModule.class );
         return this;
     }
 }

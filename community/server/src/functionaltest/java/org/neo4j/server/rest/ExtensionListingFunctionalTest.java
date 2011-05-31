@@ -32,11 +32,12 @@ import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
 
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
-import org.neo4j.server.ServerBuilder;
+import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.plugins.FunctionalTestPlugin;
 import org.neo4j.server.rest.domain.JsonHelper;
 
@@ -44,19 +45,24 @@ import com.sun.jersey.api.client.ClientResponse;
 
 public class ExtensionListingFunctionalTest
 {
-    private NeoServerWithEmbeddedWebServer server;
-    private FunctionalTestHelper functionalTestHelper;
+    private static NeoServerWithEmbeddedWebServer server;
+    private static FunctionalTestHelper functionalTestHelper;
 
-    @Before
-    public void startServer() throws IOException
+    @BeforeClass
+    public static void setupServer() throws IOException
     {
-        server = ServerBuilder.server().withRandomDatabaseDir().withNonResolvableTuningFile().withPassingStartupHealthcheck().build();
-        server.start();
+        server = ServerHelper.createServer();
         functionalTestHelper = new FunctionalTestHelper( server );
     }
 
-    @After
-    public void stopServer()
+    @Before
+    public void cleanTheDatabase()
+    {
+        ServerHelper.cleanTheDatabase( server );
+    }
+
+    @AfterClass
+    public static void stopServer()
     {
         server.stop();
     }
@@ -64,8 +70,9 @@ public class ExtensionListingFunctionalTest
     @Test
     public void datarootContainsReferenceToExtensions() throws Exception
     {
-        ClientResponse response = CLIENT.resource( functionalTestHelper.dataUri() ).accept(
-                MediaType.APPLICATION_JSON_TYPE ).get( ClientResponse.class );
+        ClientResponse response = CLIENT.resource( functionalTestHelper.dataUri() )
+                .accept( MediaType.APPLICATION_JSON_TYPE )
+                .get( ClientResponse.class );
         assertThat( response.getStatus(), equalTo( 200 ) );
         Map<String, Object> json = JsonHelper.jsonToMap( response.getEntity( String.class ) );
         String extInfo = (String) json.get( "extensions_info" );
@@ -76,29 +83,32 @@ public class ExtensionListingFunctionalTest
     @Test
     public void canListAllAvailableServerExtensions() throws Exception
     {
-        ClientResponse response = CLIENT.resource( functionalTestHelper.extensionUri() ).accept(
-                MediaType.APPLICATION_JSON_TYPE ).get( ClientResponse.class );
+        ClientResponse response = CLIENT.resource( functionalTestHelper.extensionUri() )
+                .accept( MediaType.APPLICATION_JSON_TYPE )
+                .get( ClientResponse.class );
         assertThat( response.getStatus(), equalTo( 200 ) );
         Map<String, Object> json = JsonHelper.jsonToMap( response.getEntity( String.class ) );
         assertFalse( json.isEmpty() );
         response.close();
     }
 
+    @SuppressWarnings( "unchecked" )
     @Test
     public void canListExtensionMethodsForServerExtension() throws Exception
     {
-        ClientResponse response = CLIENT.resource( functionalTestHelper.extensionUri() ).accept(
-                MediaType.APPLICATION_JSON_TYPE ).get( ClientResponse.class );
+        ClientResponse response = CLIENT.resource( functionalTestHelper.extensionUri() )
+                .accept( MediaType.APPLICATION_JSON_TYPE )
+                .get( ClientResponse.class );
         assertThat( response.getStatus(), equalTo( 200 ) );
 
         Map<String, Object> json = JsonHelper.jsonToMap( response.getEntity( String.class ) );
         String refNodeService = (String) json.get( FunctionalTestPlugin.class.getSimpleName() );
         response.close();
 
-        response = CLIENT.resource( refNodeService ).accept(
-                MediaType.APPLICATION_JSON_TYPE ).get( ClientResponse.class );
+        response = CLIENT.resource( refNodeService )
+                .accept( MediaType.APPLICATION_JSON_TYPE )
+                .get( ClientResponse.class );
         String result = response.getEntity( String.class );
-
 
         assertThat( response.getStatus(), equalTo( 200 ) );
 
