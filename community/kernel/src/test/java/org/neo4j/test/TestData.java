@@ -190,6 +190,24 @@ public class TestData<T> implements MethodRule
     {
         if ( doc != null )
         {
+            if ( title == null )
+            {
+                // standard javadoc means of finding a title
+                int dot = doc.indexOf( '.' );
+                if ( dot > 0 )
+                {
+                    title = doc.substring( 0, dot );
+                    if ( title.contains( "\n" ) )
+                    {
+                        title = null;
+                    }
+                    else
+                    {
+                        title = title.trim();
+                        doc = doc.substring( dot + 1 );
+                    }
+                }
+            }
             String[] lines = doc.split( "\n" );
             int indent = Integer.MAX_VALUE;
             int start = 0, end = 0;
@@ -214,8 +232,8 @@ public class TestData<T> implements MethodRule
                 }
             }
             if ( end == lines.length ) end--; // all lines were empty
-            // If there is no title, and the first line looks like a title,
-            // take the first line as title
+            // If there still is no title, and the first line looks like a
+            // title, take the first line as title
             if ( title == null && start < end && lines[start + 1] == EMPTY )
             {
                 title = lines[start].trim();
@@ -224,7 +242,7 @@ public class TestData<T> implements MethodRule
             StringBuilder documentation = new StringBuilder();
             for ( int i = start; i <= end; i++ )
             {
-                documentation.append( lines[i] == EMPTY ? lines[i] : lines[i].substring( indent ) ).append( "\n" );
+                documentation.append( lines[i] == EMPTY ? EMPTY : lines[i].substring( indent ) ).append( "\n" );
             }
             doc = documentation.toString();
         }
