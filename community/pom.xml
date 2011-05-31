@@ -62,15 +62,20 @@
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j</artifactId>
+            <artifactId>neo4j-kernel</artifactId>
+            <version>${neo4j.version}</version>
+            <classifier>tests</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-lucene-index</artifactId>
             <version>${neo4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-kernel</artifactId>
             <version>${neo4j.version}</version>
-            <classifier>tests</classifier>
-        </dependency>
+        </dependency>        
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-graph-matching</artifactId>

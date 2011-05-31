@@ -22,7 +22,7 @@ package org.neo4j.sunshine
 import commands._
 import org.junit.Assert._
 import org.neo4j.graphdb.Direction
-import org.junit.{Ignore, Test}
+import org.junit.Test
 
 
 /**
@@ -300,9 +300,9 @@ class SunshineParserTest {
     )
   }
 
-  @Ignore("Soon my precious.") @Test def djangoRelationshipType() {
+  @Test def djangoRelationshipType() {
     testQuery(
-      "start a = (1) match (a) -[:`<<KNOWS>>]-> (b) return c",
+      "start a = (1) match (a) -[:`<<KNOWS>>`]-> (b) return c",
       Query(
         Return(EntityOutput("c")),
         Start(NodeById("a", 1)),

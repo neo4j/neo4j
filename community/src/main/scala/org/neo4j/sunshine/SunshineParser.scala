@@ -57,28 +57,28 @@ class SunshineParser extends JavaTokenParsers {
     }
   }
 
-  def relatedHead:Parser[Option[String]] = "(" ~> opt(ident) <~ ")" ^^ { case name => name }
+  def relatedHead:Parser[Option[String]] = "(" ~> opt(identity) <~ ")" ^^ { case name => name }
 
-  def relatedTail = opt("<") ~ "-" ~ opt("[" ~> (relationshipInfo1 | relationshipInfo2) <~ "]") ~ "-" ~ opt(">") ~ "(" ~ opt(ident) ~ ")" ^^ {
+  def relatedTail = opt("<") ~ "-" ~ opt("[" ~> (relationshipInfo1 | relationshipInfo2) <~ "]") ~ "-" ~ opt(">") ~ "(" ~ opt(identity) ~ ")" ^^ {
     case back ~ "-" ~ relInfo ~ "-" ~ forward ~ "(" ~ end ~ ")" => relInfo match {
       case Some(x) => (back, x._1, x._2, forward, end)
       case None => (back, None, None, forward, end)
     }
   }
 
-  def relationshipInfo1 = opt(ident <~ ",") ~ ":" ~ ident ^^ {
+  def relationshipInfo1 = opt(identity <~ ",") ~ ":" ~ identity ^^ {
     case relName ~ ":" ~ relType => (relName, Some(relType))
   }
 
-  def relationshipInfo2 = ident ^^ {
+  def relationshipInfo2 = identity ^^ {
     case relName => (Some(relName), None)
   }
 
-  def nodeByIds = ident ~ "=" ~ "(" ~ rep1sep(wholeNumber, ",") ~ ")" ^^ {
+  def nodeByIds = identity ~ "=" ~ "(" ~ rep1sep(wholeNumber, ",") ~ ")" ^^ {
     case varName ~ "=" ~ "(" ~ id ~ ")" => NodeById(varName, id.map(_.toLong).toSeq: _*)
   }
 
-  def nodeByIndex = ident ~ "=" ~ "(" ~ ident ~ "," ~ ident ~ "," ~ stringLiteral ~ ")" ^^ {
+  def nodeByIndex = identity ~ "=" ~ "(" ~ identity ~ "," ~ identity ~ "," ~ stringLiteral ~ ")" ^^ {
     case varName ~ "=" ~ "(" ~ index ~ "," ~ key ~ "," ~ value ~ ")" => NodeByIndex(varName, index, key, stripQuotes(value))
   }
 
@@ -95,12 +95,12 @@ class SunshineParser extends JavaTokenParsers {
       )
     }}
 
-  def nodeOutput:Parser[ReturnItem] = ident ^^ { EntityOutput(_) }
+  def nodeOutput:Parser[ReturnItem] = identity ^^ { EntityOutput(_) }
 
-  def propertyOutput:Parser[ReturnItem] = ident ~ "." ~ ident ^^
+  def propertyOutput:Parser[ReturnItem] = identity ~ "." ~ identity ^^
     { case c ~ "." ~ p => PropertyOutput(c,p) }
 
-  def nullablePropertyOutput:Parser[ReturnItem] = ident ~ "." ~ ident ~ "?" ^^
+  def nullablePropertyOutput:Parser[ReturnItem] = identity ~ "." ~ identity ~ "?" ^^
     { case c ~ "." ~ p ~ "?" => NullablePropertyOutput(c,p) }
 
   def count:Parser[ReturnItem] = ignoreCase("count") ~ "(" ~ "*" ~ ")" ^^
@@ -116,9 +116,7 @@ class SunshineParser extends JavaTokenParsers {
     case a ~ "=~" ~ b => RegularExpression(a, stripQuotes(b))
   }
 
-
   def regularLiteral = ("/"+"""([^"\p{Cntrl}\\]|\\[\\/bfnrt]|\\u[a-fA-F0-9]{4})*"""+"/").r
-
 
   def parens: Parser[Clause] = "(" ~> clause <~ ")"
 
@@ -154,7 +152,7 @@ class SunshineParser extends JavaTokenParsers {
 
   def value: Parser[Value] = (boolean | property | string | decimal)
 
-  def property: Parser[Value] = ident ~ "." ~ ident ^^ {  case v ~ "." ~ p => PropertyValue(v,p) }
+  def property: Parser[Value] = identity ~ "." ~ identity ^^ {  case v ~ "." ~ p => PropertyValue(v,p) }
 
   def string: Parser[Value] = stringLiteral ^^ { case str => Literal(stripQuotes(str)) }
 
@@ -164,7 +162,13 @@ class SunshineParser extends JavaTokenParsers {
   def trueX: Parser[Value] = ignoreCase("true") ^^ { case str => Literal(true) }
   def falseX: Parser[Value] = ignoreCase("false") ^^ { case str => Literal(false) }
 
+  def identity:Parser[String] = (ident | escapedIdentity)
+
+  def escapedIdentity:Parser[String] = ("`(``|[^`])*`").r ^^ { case str => stripQuotes(str).replace("``", "`") }
+
   private def stripQuotes(s: String) = s.substring(1, s.length - 1)
+
+
 
   private def getDirection(back:Option[String], forward:Option[String]):Direction =
     (back.nonEmpty, forward.nonEmpty) match {
