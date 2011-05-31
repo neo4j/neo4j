@@ -29,6 +29,6 @@ case class RelationshipById(varName:String, id: Long*) extends RelationshipStart
 
 case class NodeByIndex(varName:String, idxName: String, key:String, value: Any) extends NodeStartItem(varName)
 
-case class RelationshipByIndex(varName:String, idxName: String, value: Any) extends RelationshipStartItem(varName)
+case class RelationshipByIndex(varName:String, idxName: String, key:String, value: Any) extends RelationshipStartItem(varName)
 
 case class NodeById(varName:String, id: Long*) extends NodeStartItem(varName)

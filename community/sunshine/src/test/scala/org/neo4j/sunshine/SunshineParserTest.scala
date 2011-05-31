@@ -58,6 +58,26 @@ class SunshineParserTest {
     )
   }
 
+  @Test def shouldParseEasiestPossibleRelationshipQuery() {
+    testQuery(
+      "start s = <1> return s",
+      Query(
+        Return(EntityOutput("s")),
+        Start(RelationshipById("s", 1))
+      ))
+  }
+
+  @Test def sourceIsARelationshipIndex() {
+    testQuery(
+      """start a = <index, key, "value"> return a""",
+      Query(
+        Return(EntityOutput("a")),
+        Start(RelationshipByIndex("a", "index", "key", "value"))
+      )
+    )
+  }
+
+
   @Test def keywordsShouldBeCaseInsensitive() {
     testQuery(
       "START start = (1) RETURN start",
