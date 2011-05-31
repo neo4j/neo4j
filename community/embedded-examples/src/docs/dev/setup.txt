@@ -2,15 +2,68 @@
 Include Neo4j in your project
 =============================
 
+After selecting the appropriate <<editions,edition>> for your platform, embed Neo4j in your Java application by including the Neo4j library jars in your build.
+
 == Add Neo4j to the build path ==
 
-Extract a Neo4j http://neo4j.org/download/[download] zip/tarball, and use the '.jar' files found in the lib/ directory.
+Get the Neo4j libraries from one of these sources:
 
+* Extract a Neo4j http://neo4j.org/download/[download] zip/tarball, and use the 'jar' files found in the 'lib/' directory.
+* Use the 'jar' files available from http://search.maven.org/#search|ga|1|g%3A%22org.neo4j%22[Maven Central Repository}
+
+Add the jar files to your project:
+
+JDK tools::
+ Append to +-classpath+
 Eclipse::
- Right click on the project and then go _Build Path -> Configure Build Path._
- In the dialog, choose _Add External JARs_, browse to the Neo4j 'lib/' directory and select all of the jar files.
+ * Right-click on the project and then go _Build Path -> Configure Build Path._
+   In the dialog, choose _Add External JARs_, browse to the Neo4j 'lib/' directory and select all of the jar files.
+ * Another option is to use http://help.eclipse.org/helios/index.jsp?topic=/org.eclipse.jdt.doc.user/reference/preferences/java/buildpath/ref-preferences-user-libraries.htm[User Libraries].
+IntelliJ IDEA::
+ See http://www.jetbrains.com/idea/webhelp/libraries-global-libraries-and-the-configure-library-dialog.html[Libraries, Global Libraries, and the Configure Library dialog]
+NetBeans::
+ * Right-click on the _Libraries_ node of the project, choose _Add JAR/Folder_, browse to the Neo4j 'lib/' directory and select all of the jar files.
+ * You can also handle libraries from the proejct node, see http://netbeans.org/kb/docs/java/project-setup.html#projects-classpath[Managing a Project's Classpath].
 
 
 == Add Neo4j as a dependency ==
 
+For an overview of the main Neo4j artifacts, see <<editions>>.
+The artifacts listed there are top-level artifacts that will transitively include the actual Neo4j implementation.
+You can either go with the top-level artifact or include the individual components directly.
+
+.Maven dependency
+[source,xml] 
+--------------------------------------------
+<project>
+...
+ <dependencies>
+  <dependency>
+   <groupId>org.neo4j</groupId>
+   <artifactId>neo4j</artifactId>
+   <version>${neo4j-version}</version>
+  </dependency>
+  ...
+ </dependencies>
+...
+</project>
+--------------------------------------------
+
+_Where +$\{neo4j-version}+ is the intended version and the +artifactId+ is one of +neo4j+, +neo4j-advanced+, +neo4j-enterprise+._
+
+
+[source,xml]
+----
+<ivysettings>
+  <settings defaultResolver="main"/>
+  <resolvers>
+    <chain name="main">
+      <filesystem name="local">
+        <artifact pattern="${ivy.settings.dir}/repository/[artifact]-[revision].[ext]" />
+      </filesystem>
+      <ibiblio name="maven_central" root="http://repo1.maven.org/maven2/" m2compatible="true"/>
+    </chain>
+  </resolvers>
+</ivysettings>
+----
 
