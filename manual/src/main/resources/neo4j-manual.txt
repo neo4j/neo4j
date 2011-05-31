@@ -52,6 +52,16 @@ include::operations/index.txt[]
 
 :leveloffset: 0
 
+[[tutorials]]
+Tutorials
+=========
+
+:leveloffset: 1
+
+include::{importdir}/neo4j-examples-docs-jar/dev/index.txt[]
+
+:leveloffset: 0
+
 [[tools]]
 Tools
 =====

@@ -7,14 +7,11 @@ For Java developers, it is also possible to use Neo4j as a library, embedded in 
 
 For information on installing Neo4j as a server, see <<server-installation>>.
 
-== Embedded Installation ==
+The following table outlines the available editions and their names for use with dependency management tools.
 
-The latest release is always available from from http://neo4j.org/download, packaged as part of the Neo4j server.
-After selecting the appropriate version for your platform, embed Neo4j in your Java application, by including the Neo4j library jars in your build.
-Either take the jar files from the +lib+ directory of the download, or directly use the artifacts available from Maven Central Repository footnote:[http://repo1.maven.org/maven2/org/neo4j/]. Stable and milestone releases are available there.
+TIP: Follow the links in the table for details on dependency configuration with Apache Maven, Apache Buildr, Apache Ivy and Groovy Grape!
 
-For information on how to use Neo4j as a dependency with Maven and other dependency management tools, see the following table:
-
+[[editions]]
 .Neo4j editions
 [options="header"]
 |=======================
@@ -24,7 +21,19 @@ For information on how to use Neo4j as a dependency with Maven and other depende
 |Enterprise  |http://search.maven.org/#search\|gav\|1\|g%3A%22org.neo4j%22%20AND%20a%3A%22neo4j-enterprise%22[org.neo4j:neo4j-enterprise] |adding online backup and High Availability clustering |AGPLv3
 |=======================
 
+NOTE: The listed dependeices do not contain the implementation, put pulls it in transitively.
+
 For more information regarding licensing, see the http://neo4j.org/licensing-guide/[Licensing Guide].
+
+
+== Embedded Installation ==
+
+The latest release is always available from http://neo4j.org/download, included as part of the Neo4j download packages.
+After selecting the appropriate version for your platform, embed Neo4j in your Java application by including the Neo4j library jars in your build.
+Either take the jar files from the 'lib/' directory of the download, or directly use the artifacts available from Maven Central Repository footnote:[http://repo1.maven.org/maven2/org/neo4j/]. Stable and milestone releases are available there.
+
+For information on how to use Neo4j as a dependency with Maven and other dependency management tools, see the following table:
+
 
 NOTE: The listed dependeices do not contain the implementation, put pulls it in transitively.
 
@@ -34,12 +43,12 @@ NOTE: The listed dependeices do not contain the implementation, put pulls it in 
 <project>
 ...
  <dependencies>
-	<dependency>
-   	<groupId>org.neo4j</groupId>
-   	<artifactId>neo4j</artifactId>
-   	<version>${neo4j-version}</version>
-	</dependency>
-	...
+  <dependency>
+   <groupId>org.neo4j</groupId>
+   <artifactId>neo4j</artifactId>
+   <version>${neo4j-version}</version>
+  </dependency>
+  ...
  </dependencies>
 ...
 </project>
