@@ -70,7 +70,6 @@ public class BatchOperationService
     {
 
         AbstractGraphDatabase db = database.graph;
-        Response response;
 
         Transaction tx = db.beginTx();
         try
