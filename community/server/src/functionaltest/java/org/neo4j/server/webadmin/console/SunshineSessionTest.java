@@ -36,27 +36,27 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-//
-//package org.neo4j.server.webadmin.console;
-//
-//import org.junit.Assert;
-//import org.junit.Test;
-//import org.neo4j.kernel.ImpermanentGraphDatabase;
-//
-//import static org.hamcrest.text.StringContains.containsString;
-//
-///**
-// * Created by Andres Taylor
-// * Date: 5/30/11
-// * Time: 21:58
-// */
-//public class SunshineSessionTest
-//{
-//    @Test
-//    public void testHelloWorld() throws Exception
-//    {
-//        SunshineSession session = new SunshineSession(new ImpermanentGraphDatabase());
-//        String result = session.evaluate("start a=(0) return a");
-//        Assert.assertThat(result, containsString("Node[0]"));
-//    }
-//}
+
+package org.neo4j.server.webadmin.console;
+
+import org.junit.Assert;
+import org.junit.Test;
+import org.neo4j.kernel.ImpermanentGraphDatabase;
+
+import static org.hamcrest.text.StringContains.containsString;
+
+/**
+* Created by Andres Taylor
+* Date: 5/30/11
+* Time: 21:58
+*/
+public class SunshineSessionTest
+{
+    @Test
+    public void testHelloWorld() throws Exception
+    {
+        SunshineSession session = new SunshineSession(new ImpermanentGraphDatabase());
+        String result = session.evaluate("start a=(0) return a");
+        Assert.assertThat(result, containsString("Node[0]"));
+    }
+}
