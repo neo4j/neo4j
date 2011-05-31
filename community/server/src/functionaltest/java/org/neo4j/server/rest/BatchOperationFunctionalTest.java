@@ -30,13 +30,16 @@ import javax.ws.rs.core.MediaType;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
+import org.neo4j.test.TestData;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandlerException;
@@ -45,6 +48,10 @@ import com.sun.jersey.api.client.UniformInterfaceException;
 
 public class BatchOperationFunctionalTest
 {
+    
+    public @Rule
+    TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
+    
     private NeoServerWithEmbeddedWebServer server;
     private FunctionalTestHelper functionalTestHelper;
     private GraphDbHelper helper;
@@ -63,9 +70,32 @@ public class BatchOperationFunctionalTest
         server = null;
     }
     
+    /**
+     * Execute multiple operations in batch.
+     * 
+     * This lets you execute multiple API calls through a single HTTP call,
+     * significantly improving performance for large insert and update operations.
+     * 
+     * The batch service expects an array of job descriptions as input, 
+     * each job description describing an action to be performed via the 
+     * normal server API.
+     * 
+     * This service is transactional. If any of the operations performed
+     * fails (returns a non-2xx HTTP status code), the transaction will be 
+     * rolled back and all changes will be undone.
+     * 
+     * Each job description should contain a path attribute, with a value relative to the
+     * data API root (so http://localhost/db/data/node becomes just /node), and
+     * a a method attribute containing HTTP verb to use. 
+     * 
+     * Optionally you may provide a body attribute, and an id attribute to help you keep 
+     * track of responses, although responses are guaranteed to be returned in the same 
+     * order the job descriptions are recieved.
+     */
+    @Documented
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldReturnCorrectFromAndIdValuesOnMixedRequest() throws JsonParseException, ClientHandlerException, UniformInterfaceException {
+    public void shouldPerformMultipleOperations() throws JsonParseException, ClientHandlerException, UniformInterfaceException {
         
         String jsonString = "[" +
           "{ " +
@@ -76,8 +106,7 @@ public class BatchOperationFunctionalTest
           "},"+
           "{ " +
             "\"method\":\"GET\"," +
-            "\"to\":\"/node/0\"," +
-            "\"id\":1"+
+            "\"to\":\"/node/0\"" +
           "},"+
           "{ " +
             "\"method\":\"POST\"," +
@@ -89,12 +118,14 @@ public class BatchOperationFunctionalTest
             "\"method\":\"POST\"," +
             "\"to\":\"/node\", " +
             "\"id\":3,"+
-            "\"body\":{ \"age\":1 }" +
+            "\"body\":{ \"age\":12 }" +
           "}"+
         "]";
+
+        String uri = functionalTestHelper.dataUri() + "batch";
         
         ClientResponse response = Client.create()
-          .resource( functionalTestHelper.dataUri() + "batch")
+          .resource( uri)
           .type(MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON )
           .entity( jsonString ).post( ClientResponse.class );
         
@@ -111,7 +142,6 @@ public class BatchOperationFunctionalTest
         
         // Ids should be ok
         assertEquals(0, putResult.get("id"));
-        assertEquals(1, getResult.get("id"));
         assertEquals(2, firstPostResult.get("id"));
         assertEquals(3, secondPostResult.get("id"));
 
@@ -120,11 +150,19 @@ public class BatchOperationFunctionalTest
         assertEquals("/node/0", getResult.get("from"));
         assertEquals("/node", firstPostResult.get("from"));
         assertEquals("/node", secondPostResult.get("from"));
-
         
+        // Post should contain location
+        assertTrue(((String)firstPostResult.get( "location" )).length() > 0);
+        assertTrue(((String)secondPostResult.get( "location" )).length() > 0);
+
         // Should have created by the first PUT request
-        Map<String, Object> body = JsonHelper.jsonToMap( (String) getResult.get("body"));
+        Map<String, Object> body = (Map<String, Object>) getResult.get("body");
         assertEquals(1, ((Map<String, Object>)body.get("data")).get( "age" ));
+        
+        gen.get()
+            .payload( jsonString )
+            .expectedStatus( 200 )
+            .post( uri );
     }
     
     @Test

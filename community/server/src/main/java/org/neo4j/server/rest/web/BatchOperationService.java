@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.rest.web;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -27,6 +26,8 @@ import javax.servlet.http.Cookie;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
@@ -35,7 +36,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.repr.BatchOperationRepresentation;
+import org.neo4j.server.rest.repr.BatchOperationResults;
 import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.web.WebServer;
@@ -70,14 +71,13 @@ public class BatchOperationService
     {
 
         AbstractGraphDatabase db = database.graph;
-        Response response;
 
         Transaction tx = db.beginTx();
         try
         {
 
             List<Object> operations = input.readList( body );
-            List<BatchOperationRepresentation> results = new ArrayList<BatchOperationRepresentation>(
+            BatchOperationResults results = new BatchOperationResults(
                     operations.size() );
 
             InternalJettyServletRequest req = new InternalJettyServletRequest();
@@ -101,9 +101,10 @@ public class BatchOperationService
                         : "";
                 opId = op.containsKey( ID_KEY ) ? (Integer) op.get( ID_KEY )
                         : null;
-                
-                if(!opPath.startsWith( "/" )) {
-                   opPath = "/" + opPath;
+
+                if ( !opPath.startsWith( "/" ) )
+                {
+                    opPath = "/" + opPath;
                 }
 
                 req.setup( opMethod, new HttpURI( servletBaseUrl + opPath ),
@@ -112,22 +113,26 @@ public class BatchOperationService
                 res.setup();
 
                 webServer.handle( servletPath + opPath, req, res );
-                
-                if(is2XXStatusCode(res.getStatus())) {
-                    results.add( new BatchOperationRepresentation(
-                            opId,
-                            opPath,
+
+                if ( is2XXStatusCode( res.getStatus() ) )
+                {
+                    results.addOperationResult( opPath, opId,
                             res.getOutputStream().toString(),
-                            res.getHeaders() ) );
-                } else {
+                            res.getHeader( "Location" ) );
+                }
+                else
+                {
                     tx.failure();
-                    return output.badRequest( new RuntimeException(res.getReason()) );
+                    return output.badRequest( new RuntimeException(
+                            res.getReason() ) );
                 }
             }
 
             tx.success();
-            
-            return output.ok( BatchOperationRepresentation.list( results ) );
+
+            return Response.ok().entity( results.toJSON().getBytes( "UTF-8" ) ).header(
+                    HttpHeaders.CONTENT_ENCODING, "UTF-8" ).type(
+                    MediaType.APPLICATION_JSON ).build();
         }
         catch ( Exception e )
         {
@@ -139,8 +144,9 @@ public class BatchOperationService
             tx.finish();
         }
     }
-    
-    private boolean is2XXStatusCode(int statusCode) {
+
+    private boolean is2XXStatusCode( int statusCode )
+    {
         return statusCode - 200 >= 0 && statusCode - 200 < 100;
     }
 }
