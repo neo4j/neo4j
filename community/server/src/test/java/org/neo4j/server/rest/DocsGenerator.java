@@ -74,7 +74,7 @@ public class DocsGenerator
         }
 
         @Override
-        public void destroy( DocsGenerator product )
+        public void destroy( DocsGenerator product, boolean successful )
         {
             // TODO: invoke some complete method here?
         }
