@@ -1,16 +1,42 @@
 [[server-embedded]]
 Using the server with an embedded database
-===================
+==========================================
 
-You can programmatically start a server from within an existing JVM-based application, giving
-it an already existing EmbeddedGraphDatabase or HighlyAvailableGraphDatabase instance to use.
+Even if you are using the Neo4j Java API directly, for instance via EmbeddedGraphDatabase or HighlyAvailableGraphDatabase, you can still use the features the server provides.
 
-This lets you build applications using the core neo4j APIs, while simultaneously running the server, 
-letting you use the REST API and the web administration live with your running application.
+The neo4j server exposes a class called WrappingNeoServerBootstrapper, which is
+capable of starting a neo4j server in the same process as your application, using an 
+AbstractGraphDatabase instance you provide.
 
+This gives your application, among other things, the REST API, statistics gathering and 
+the web administration interface that comes with the server.
+
+.Usage example
 [snippet,java]
 ----
 component=neo4j-server
 source=org/neo4j/server/WrappingNeoServerBootstrapperTest.java
 tag=usingWrappingNeoServerBootstrapper
+classifier=test-sources
 ----
+
+Providing custom configuration
+------------------------------
+
+You can modify the server settings programmatically and, within reason, the same settings
+are available to you here as those outlined in the <<server-configuration, Server Configuration chapter>>.
+
+The settings that are not available (or rather, that are ignored) are those that concern
+the underlying database, such as database location and database configuration path.
+
+.Custom config example
+[snippet,java]
+----
+component=neo4j-server
+source=org/neo4j/server/WrappingNeoServerBootstrapperTest.java
+tag=customConfiguredWrappingNeoServerBootstrapper
+classifier=test-sources
+----
+
+
+

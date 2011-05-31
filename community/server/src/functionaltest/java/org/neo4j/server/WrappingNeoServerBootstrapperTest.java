@@ -33,6 +33,8 @@ import org.junit.Test;
 import org.neo4j.jmx.Primitives;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.ImpermanentGraphDatabase;
+import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.configuration.EmbeddedServerConfigurator;
 import org.neo4j.server.rest.FunctionalTestHelper;
 
 import com.sun.jersey.api.client.ClientResponse;
@@ -53,18 +55,35 @@ public class WrappingNeoServerBootstrapperTest
     }
     
     @Test
-    // START SNIPPET: usingWrappingNeoServerBootstrapper
     public void usingWrappingNeoServerBootstrapper() {
-        
+
+        // START SNIPPET: usingWrappingNeoServerBootstrapper
         WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper(myDb);
         
         srv.start();
         
-        // Server will now be online
+        // Server is now running in background threads
+        
+        srv.stop();
+        // END SNIPPET: usingWrappingNeoServerBootstrapper
+    }
+    
+
+    
+    @Test
+    public void shouldAllowModifyingProperties() {
+
+        // START SNIPPET: customConfiguredWrappingNeoServerBootstrapper
+        EmbeddedServerConfigurator config = new EmbeddedServerConfigurator(myDb);
+        config.configuration().setProperty( Configurator.WEBSERVER_PORT_PROPERTY_KEY, 7575 );
+        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper(myDb, config);
+        srv.start();
+        // END SNIPPET: customConfiguredWrappingNeoServerBootstrapper
+        
+        assertEquals(srv.getServer().baseUri().getPort(),7575);
         
         srv.stop();
     }
-    // END SNIPPET: usingWrappingNeoServerBootstrapper
 
     @Test
     public void serverShouldRespondProperly() {
