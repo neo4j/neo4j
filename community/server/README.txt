@@ -47,7 +47,7 @@ the artifact it produces (webadmin.min.js) is actually checked into this
 source tree. If you make changes to webadmin code, run the following command
 to re-build webadmin.min.js:
 
-`mvn clean package -Dwebadmin-build`
+`mvn clean package -Pwebadmin-build`
 
 Webadmin development comes with a few helpers to make development faster. To 
 work on webadmin, let the following commands run in separate terminals:

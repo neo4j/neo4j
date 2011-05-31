@@ -46,7 +46,7 @@ define(
             consoleState : @sunshineState
             lang: ""
           
-      console : (type="sunshine") =>
+      console : (type="gremlin") =>
         @appState.set( mainView : @getConsoleView(type) )
 
       getConsoleView : (type) =>
