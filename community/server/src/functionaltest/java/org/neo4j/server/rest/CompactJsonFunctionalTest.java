@@ -30,13 +30,14 @@ import java.util.Collections;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
-import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
+import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
@@ -45,32 +46,50 @@ import org.neo4j.server.rest.repr.formats.CompactJsonFormat;
 
 import com.sun.jersey.api.client.ClientResponse;
 
-public class CompactJsonFunctionalTest {
+public class CompactJsonFunctionalTest
+{
     private long thomasAnderson;
     private long trinity;
     private long thomasAndersonLovesTrinity;
 
-    private NeoServerWithEmbeddedWebServer server;
-    private FunctionalTestHelper functionalTestHelper;
-    private GraphDbHelper helper;
+    private static NeoServerWithEmbeddedWebServer server;
+    private static FunctionalTestHelper functionalTestHelper;
+    private static GraphDbHelper helper;
+
+    @BeforeClass
+    public static void setupServer() throws IOException
+    {
+        server = ServerHelper.createServer();
+        functionalTestHelper = new FunctionalTestHelper( server );
+        helper = functionalTestHelper.getGraphDbHelper();
+    }
+
+    @AfterClass
+    public static void stopServer()
+    {
+        server.stop();
+    }
 
     @Before
-    public void setupServer() throws IOException {
-        server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
-        server.start();
-        functionalTestHelper = new FunctionalTestHelper(server);
-        helper = functionalTestHelper.getGraphDbHelper();
+    public void cleanTheDatabase()
+    {
+        ServerHelper.cleanTheDatabase( server );
+        createTheMatrix();
+    }
 
+    private void createTheMatrix()
+    {
         // Create the matrix example
-        thomasAnderson = createAndIndexNode("Thomas Anderson");
-        trinity = createAndIndexNode("Trinity");
-        long tank = createAndIndexNode("Tank");
+        thomasAnderson = createAndIndexNode( "Thomas Anderson" );
+        trinity = createAndIndexNode( "Trinity" );
+        long tank = createAndIndexNode( "Tank" );
 
         long knowsRelationshipId = helper.createRelationship( "KNOWS", thomasAnderson, trinity );
-        thomasAndersonLovesTrinity = helper.createRelationship("LOVES", thomasAnderson, trinity);
-        helper.setRelationshipProperties( thomasAndersonLovesTrinity, Collections.singletonMap( "strength", (Object) 100 ) );
-        helper.createRelationship("KNOWS", thomasAnderson, tank);
-        helper.createRelationship("KNOWS", trinity, tank);
+        thomasAndersonLovesTrinity = helper.createRelationship( "LOVES", thomasAnderson, trinity );
+        helper.setRelationshipProperties( thomasAndersonLovesTrinity,
+                Collections.singletonMap( "strength", (Object) 100 ) );
+        helper.createRelationship( "KNOWS", thomasAnderson, tank );
+        helper.createRelationship( "KNOWS", trinity, tank );
 
         // index a relationship
         helper.createRelationshipIndex( "relationships" );
@@ -79,121 +98,143 @@ public class CompactJsonFunctionalTest {
         // index a relationship
         helper.createRelationshipIndex( "relationships2" );
         helper.addRelationshipToIndex( "relationships2", "key2", "value2", knowsRelationshipId );
-
     }
 
-    @After
-    public void stopServer() {
-        server.stop();
-    }
-
-    private long createAndIndexNode(String name) throws DatabaseBlockedException {
+    private long createAndIndexNode( String name ) throws DatabaseBlockedException
+    {
         long id = helper.createNode();
-        helper.setNodeProperties(id, Collections.singletonMap("name", (Object) name));
-        helper.addNodeToIndex("node", "name", name, id);
+        helper.setNodeProperties( id, Collections.singletonMap( "name", (Object) name ) );
+        helper.addNodeToIndex( "node", "name", name, id );
         return id;
     }
 
     @Test
     @Ignore
-    public void shouldGetRoot() {
-        ClientResponse response = CLIENT.resource(functionalTestHelper.dataUri()).accept(CompactJsonFormat.MEDIA_TYPE).get(ClientResponse.class);
-        assertEquals(Status.OK.getStatusCode(), response.getStatus());
-        assertValidJson(response.getEntity(String.class));
+    public void shouldGetRoot()
+    {
+        ClientResponse response = CLIENT.resource( functionalTestHelper.dataUri() )
+                .accept( CompactJsonFormat.MEDIA_TYPE )
+                .get( ClientResponse.class );
+        assertEquals( Status.OK.getStatusCode(), response.getStatus() );
+        assertValidJson( response.getEntity( String.class ) );
         response.close();
     }
 
     @Test
     @Ignore
-    public void shouldGetNodeIndexRoot() {
-        ClientResponse response = CLIENT.resource(functionalTestHelper.nodeIndexUri()).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
-        assertEquals(Status.OK.getStatusCode(), response.getStatus());
-        assertValidJson(response.getEntity(String.class));
+    public void shouldGetNodeIndexRoot()
+    {
+        ClientResponse response = CLIENT.resource( functionalTestHelper.nodeIndexUri() )
+                .accept( MediaType.TEXT_HTML_TYPE )
+                .get( ClientResponse.class );
+        assertEquals( Status.OK.getStatusCode(), response.getStatus() );
+        assertValidJson( response.getEntity( String.class ) );
         response.close();
     }
 
     @Test
     @Ignore
-    public void shouldGetRelationshipIndexRoot() {
-        ClientResponse response = CLIENT.resource(functionalTestHelper.relationshipIndexUri()).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
-        assertEquals(Status.OK.getStatusCode(), response.getStatus());
-        assertValidJson(response.getEntity(String.class));
+    public void shouldGetRelationshipIndexRoot()
+    {
+        ClientResponse response = CLIENT.resource( functionalTestHelper.relationshipIndexUri() )
+                .accept( MediaType.TEXT_HTML_TYPE )
+                .get( ClientResponse.class );
+        assertEquals( Status.OK.getStatusCode(), response.getStatus() );
+        assertValidJson( response.getEntity( String.class ) );
         response.close();
     }
 
     @Test
     @Ignore
-    public void shouldGetTrinityWhenSearchingForHer() {
-        ClientResponse response = CLIENT.resource(functionalTestHelper.indexNodeUri("node", "name", "Trinity" )).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
-        assertEquals(Status.OK.getStatusCode(), response.getStatus());
-        String entity = response.getEntity(String.class);
-        assertTrue(entity.contains("Trinity"));
-        assertValidJson(entity);
+    public void shouldGetTrinityWhenSearchingForHer()
+    {
+        ClientResponse response = CLIENT.resource( functionalTestHelper.indexNodeUri( "node", "name", "Trinity" ) )
+                .accept( MediaType.TEXT_HTML_TYPE )
+                .get( ClientResponse.class );
+        assertEquals( Status.OK.getStatusCode(), response.getStatus() );
+        String entity = response.getEntity( String.class );
+        assertTrue( entity.contains( "Trinity" ) );
+        assertValidJson( entity );
         response.close();
     }
 
     @Test
-    public void shouldGetThomasAndersonDirectly() {
-        ClientResponse response = CLIENT.resource(functionalTestHelper.nodeUri(thomasAnderson)).accept(CompactJsonFormat.MEDIA_TYPE).get(ClientResponse.class);
-        assertEquals(Status.OK.getStatusCode(), response.getStatus());
-        String entity = response.getEntity(String.class);
-        assertTrue(entity.contains("Thomas Anderson"));
-        assertValidJson(entity);
-        response.close();
-    }
-
-    @Test
-    @Ignore
-    public void shouldGetSomeRelationships() {
-        ClientResponse response = CLIENT.resource(functionalTestHelper.relationshipsUri(thomasAnderson, RelationshipDirection.all.name(), "KNOWS")).accept(
-                MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
-        assertEquals(Status.OK.getStatusCode(), response.getStatus());
-        String entity = response.getEntity(String.class);
-        assertTrue(entity.contains("KNOWS"));
-        assertFalse(entity.contains("LOVES"));
-        assertValidJson(entity);
-        response.close();
-
-        response = CLIENT.resource(functionalTestHelper.relationshipsUri(thomasAnderson, RelationshipDirection.all.name(), "LOVES")).accept(MediaType.TEXT_HTML_TYPE).get(
-                ClientResponse.class);
-        entity = response.getEntity(String.class);
-        assertFalse(entity.contains("KNOWS"));
-        assertTrue(entity.contains("LOVES"));
-        assertValidJson(entity);
-        response.close();
-
-        response = CLIENT.resource(functionalTestHelper.relationshipsUri(thomasAnderson, RelationshipDirection.all.name(), "LOVES", "KNOWS")).accept(
-                MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
-        entity = response.getEntity(String.class);
-        assertTrue(entity.contains("KNOWS"));
-        assertTrue(entity.contains("LOVES"));
-        assertValidJson(entity);
+    public void shouldGetThomasAndersonDirectly()
+    {
+        ClientResponse response = CLIENT.resource( functionalTestHelper.nodeUri( thomasAnderson ) )
+                .accept( CompactJsonFormat.MEDIA_TYPE )
+                .get( ClientResponse.class );
+        assertEquals( Status.OK.getStatusCode(), response.getStatus() );
+        String entity = response.getEntity( String.class );
+        assertTrue( entity.contains( "Thomas Anderson" ) );
+        assertValidJson( entity );
         response.close();
     }
 
     @Test
     @Ignore
-    public void shouldGetThomasAndersonLovesTrinityRelationship() {
-        ClientResponse response = CLIENT.resource(functionalTestHelper.relationshipUri(thomasAndersonLovesTrinity)).accept(MediaType.TEXT_HTML_TYPE).get(
-                ClientResponse.class);
-        assertEquals(Status.OK.getStatusCode(), response.getStatus());
-        String entity = response.getEntity(String.class);
-        assertTrue(entity.contains("strength"));
-        assertTrue(entity.contains("100"));
-        assertTrue(entity.contains("LOVES"));
-        assertValidJson(entity);
+    public void shouldGetSomeRelationships()
+    {
+        ClientResponse response = CLIENT.resource(
+                functionalTestHelper.relationshipsUri( thomasAnderson, RelationshipDirection.all.name(), "KNOWS" ) )
+                .accept( MediaType.TEXT_HTML_TYPE )
+                .get( ClientResponse.class );
+        assertEquals( Status.OK.getStatusCode(), response.getStatus() );
+        String entity = response.getEntity( String.class );
+        assertTrue( entity.contains( "KNOWS" ) );
+        assertFalse( entity.contains( "LOVES" ) );
+        assertValidJson( entity );
+        response.close();
+
+        response = CLIENT.resource(
+                functionalTestHelper.relationshipsUri( thomasAnderson, RelationshipDirection.all.name(), "LOVES" ) )
+                .accept( MediaType.TEXT_HTML_TYPE )
+                .get( ClientResponse.class );
+        entity = response.getEntity( String.class );
+        assertFalse( entity.contains( "KNOWS" ) );
+        assertTrue( entity.contains( "LOVES" ) );
+        assertValidJson( entity );
+        response.close();
+
+        response = CLIENT.resource(
+                functionalTestHelper.relationshipsUri( thomasAnderson, RelationshipDirection.all.name(), "LOVES",
+                        "KNOWS" ) )
+                .accept( MediaType.TEXT_HTML_TYPE )
+                .get( ClientResponse.class );
+        entity = response.getEntity( String.class );
+        assertTrue( entity.contains( "KNOWS" ) );
+        assertTrue( entity.contains( "LOVES" ) );
+        assertValidJson( entity );
         response.close();
     }
- 
-    private void assertValidJson(String entity) {
+
+    @Test
+    @Ignore
+    public void shouldGetThomasAndersonLovesTrinityRelationship()
+    {
+        ClientResponse response = CLIENT.resource( functionalTestHelper.relationshipUri( thomasAndersonLovesTrinity ) )
+                .accept( MediaType.TEXT_HTML_TYPE )
+                .get( ClientResponse.class );
+        assertEquals( Status.OK.getStatusCode(), response.getStatus() );
+        String entity = response.getEntity( String.class );
+        assertTrue( entity.contains( "strength" ) );
+        assertTrue( entity.contains( "100" ) );
+        assertTrue( entity.contains( "LOVES" ) );
+        assertValidJson( entity );
+        response.close();
+    }
+
+    private void assertValidJson( String entity )
+    {
         try
         {
-            assertTrue(JsonHelper.jsonToMap( entity ).containsKey( "self" ));
-            assertFalse(JsonHelper.jsonToMap( entity ).containsKey( "properties" ));
+            assertTrue( JsonHelper.jsonToMap( entity )
+                    .containsKey( "self" ) );
+            assertFalse( JsonHelper.jsonToMap( entity )
+                    .containsKey( "properties" ) );
         }
         catch ( JsonParseException e )
         {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
     }

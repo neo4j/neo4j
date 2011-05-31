@@ -28,16 +28,16 @@ import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
 
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
-import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
-import org.neo4j.server.modules.RESTApiModule;
+import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
@@ -47,37 +47,38 @@ import com.sun.jersey.api.client.ClientResponse;
 
 public class CreateRelationshipFunctionalTest
 {
-    private String RELATIONSHIP_URI_PATTERN;
-
-    private NeoServerWithEmbeddedWebServer server;
-    private FunctionalTestHelper functionalTestHelper;
-    private GraphDbHelper helper;
+    private static String RELATIONSHIP_URI_PATTERN;
 
     public @Rule
     TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
 
-    @SuppressWarnings( "unchecked" )
-    @Before
-    public void setupServer() throws IOException
+    
+    private static NeoServerWithEmbeddedWebServer server;
+    private static FunctionalTestHelper functionalTestHelper;
+    private static GraphDbHelper helper;
+
+    @BeforeClass
+    public static void setupServer() throws IOException
     {
-        server = ServerBuilder.server()
-                .withRandomDatabaseDir()
-                .withSpecificServerModules( RESTApiModule.class )
-                .withPassingStartupHealthcheck()
-                .build();
-        server.start();
+        server = ServerHelper.createServer();
         functionalTestHelper = new FunctionalTestHelper( server );
         helper = functionalTestHelper.getGraphDbHelper();
-
+        
         RELATIONSHIP_URI_PATTERN = functionalTestHelper.dataUri() + "relationship/[0-9]+";
     }
 
-    @After
-    public void stopServer()
+    @Before
+    public void cleanTheDatabase()
+    {
+        ServerHelper.cleanTheDatabase( server );
+    }
+
+    @AfterClass
+    public static void stopServer()
     {
         server.stop();
-        server = null;
     }
+
 
     @Test
     public void shouldRespondWith201WhenSuccessfullyCreatedRelationshipWithProperties() throws Exception
