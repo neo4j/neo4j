@@ -76,7 +76,9 @@ public class WrappingNeoServerBootstrapperTest
         // START SNIPPET: customConfiguredWrappingNeoServerBootstrapper
         EmbeddedServerConfigurator config = new EmbeddedServerConfigurator(myDb);
         config.configuration().setProperty( Configurator.WEBSERVER_PORT_PROPERTY_KEY, 7575 );
+        
         WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper(myDb, config);
+        
         srv.start();
         // END SNIPPET: customConfiguredWrappingNeoServerBootstrapper
         

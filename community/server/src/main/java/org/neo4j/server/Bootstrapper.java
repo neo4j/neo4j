@@ -49,6 +49,23 @@ public abstract class Bootstrapper
 
     protected NeoServerWithEmbeddedWebServer server;
 
+    public static void main( String[] args )
+    {
+        Bootstrapper bootstrapper = loadMostDerivedBootstrapper();
+        bootstrapper.start( args );
+    }
+
+    public static Bootstrapper loadMostDerivedBootstrapper()
+    {
+        Bootstrapper winner = new NeoServerBootstrapper();
+        for ( Bootstrapper candidate : Service.load( Bootstrapper.class ) )
+        {
+            if ( candidate.isMoreDerivedThan( winner ) ) winner = candidate;
+        }
+        return winner;
+    }
+    
+    
     public void controlEvent( int arg )
     {
         // Do nothing, required by the WrapperListener interface
@@ -69,18 +86,7 @@ public abstract class Bootstrapper
                     startupHealthCheck, getConfigurator(), webServer, getServerModules() );
             server.start();
 
-            Runtime.getRuntime().addShutdownHook( new Thread()
-            {
-                @Override
-                public void run()
-                {
-                    log.info( "Neo4j Server shutdown initiated by kill signal" );
-                    if ( server != null )
-                    {
-                        server.stop();
-                    }
-                }
-            } );
+            addShutdownHook();
 
             return OK;
         }
@@ -98,17 +104,6 @@ public abstract class Bootstrapper
             return WEB_SERVER_STARTUP_ERROR_CODE;
         }
     }
-
-    protected abstract GraphDatabaseFactory getGraphDatabaseFactory( Configuration configuration );
-
-    private StartupHealthCheckRule[] rules()
-    {
-        return IteratorUtil.asCollection( getHealthCheckRules() ).toArray( new StartupHealthCheckRule[0] );
-    }
-
-    protected abstract Iterable<StartupHealthCheckRule> getHealthCheckRules();
-
-    protected abstract Iterable<Class<? extends ServerModule>> getServerModules();
 
     public void stop()
     {
@@ -140,28 +135,32 @@ public abstract class Bootstrapper
     {
         return server;
     }
+    
+    protected abstract GraphDatabaseFactory getGraphDatabaseFactory( Configuration configuration );
 
+    protected abstract Iterable<StartupHealthCheckRule> getHealthCheckRules();
+
+    protected abstract Iterable<Class<? extends ServerModule>> getServerModules();
+
+    protected void addShutdownHook() {
+        Runtime.getRuntime().addShutdownHook( new Thread()
+        {
+            @Override
+            public void run()
+            {
+                log.info( "Neo4j Server shutdown initiated by kill signal" );
+                if ( server != null )
+                {
+                    server.stop();
+                }
+            }
+        } );
+    }
+    
     protected Configurator getConfigurator()
     {
         File configFile = new File( System.getProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY, Configurator.DEFAULT_CONFIG_DIR ) );
         return new PropertyFileConfigurator(new Validator(new DatabaseLocationMustBeSpecifiedRule()), configFile);
-    }
-
-    public static void main( String[] args )
-    {
-        configureLogging();
-        Bootstrapper bootstrapper = loadMostDerivedBootstrapper();
-        bootstrapper.start( args );
-    }
-
-    public static Bootstrapper loadMostDerivedBootstrapper()
-    {
-        Bootstrapper winner = new NeoServerBootstrapper();
-        for ( Bootstrapper candidate : Service.load( Bootstrapper.class ) )
-        {
-            if ( candidate.isMoreDerivedThan( winner ) ) winner = candidate;
-        }
-        return winner;
     }
 
     protected boolean isMoreDerivedThan( Bootstrapper other )
@@ -170,8 +169,8 @@ public abstract class Bootstrapper
         return other.getClass().isAssignableFrom( getClass() );
     }
 
-    private static void configureLogging()
+    private StartupHealthCheckRule[] rules()
     {
-        // SysOutOverSLF4J.sendSystemOutAndErrToSLF4J();
+        return IteratorUtil.asCollection( getHealthCheckRules() ).toArray( new StartupHealthCheckRule[0] );
     }
 }

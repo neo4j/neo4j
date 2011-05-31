@@ -124,6 +124,11 @@ public class WrappingNeoServerBootstrapper extends Bootstrapper
             return 1;
         }
     }
+    
+    @Override
+    protected void addShutdownHook() {
+        // No-op
+    }
 
     @Override
     protected GraphDatabaseFactory getGraphDatabaseFactory( Configuration configuration )
