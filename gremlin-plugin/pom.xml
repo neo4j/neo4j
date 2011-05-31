@@ -1,4 +1,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.neo4j</groupId>
+    <artifactId>parent-pom</artifactId>
+    <version>21</version>
+  </parent>
+
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.server.plugin</groupId>
   <artifactId>neo4j-gremlin-plugin</artifactId>
@@ -17,7 +23,30 @@
     <neo4j.version>1.4-SNAPSHOT</neo4j.version>
     <blueprints.version>0.6</blueprints.version>
     <jersey.server.version>1.6</jersey.server.version>
+    <license-text.header>GPL-3-header.txt</license-text.header>
   </properties>
+  <licenses>
+    <license>
+      <name>GNU General Public License, Version 3</name>
+      <url>http://www.gnu.org/licenses/gpl-3.0-standalone.html</url>
+      <comments>The software ("Software") developed and owned by Network Engine for
+Objects in Lund AB (referred to in this notice as "Neo Technology") is
+licensed under the GNU GENERAL PUBLIC LICENSE Version 3 to all third
+parties and that license is included below.
+
+However, if you have executed an End User Software License and Services
+Agreement or an OEM Software License and Support Services Agreement, or
+another commercial license agreement with Neo Technology or one of its
+affiliates (each, a "Commercial Agreement"), the terms of the license in
+such Commercial Agreement will supersede the GNU GENERAL PUBLIC LICENSE
+Version 3 and you may use the Software solely pursuant to the terms of
+the relevant Commercial Agreement.
+      </comments>
+    </license>
+  </licenses>
+  <scm>
+    <url>https://github.com/neo4j/neo4j-gremlin-plugin/tree/master</url>
+  </scm>
 
   <dependencies>
 
@@ -35,14 +64,7 @@
       <type>test-jar</type>
       <scope>provided</scope>
     </dependency>
-    
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-kernel</artifactId>
-      <version>${neo4j.version}</version>
-      <type>test-jar</type>
-      <scope>provided</scope>
-    </dependency>
+
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
@@ -89,23 +111,8 @@
     <!--end neo4j -->
 
 
-<!--     <dependency>
-      <groupId>com.tinkerpop</groupId>
-      <artifactId>pipes</artifactId>
-      <version>0.4</version>
-    </dependency>
-     <dependency>
-      <groupId>org.codehaus.groovy</groupId>
-      <artifactId>groovy</artifactId>
-      <version>1.7.5</version>
-       <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>javax.script</groupId>
-      <artifactId>script-api</artifactId>
-      <version>1.0</version>
-    </dependency>
- -->
+    <!-- <dependency> <groupId>com.tinkerpop</groupId> <artifactId>pipes</artifactId> <version>0.4</version> </dependency> <dependency> <groupId>org.codehaus.groovy</groupId> <artifactId>groovy</artifactId> <version>1.7.5</version> <scope>provided</scope> </dependency> <dependency> <groupId>javax.script</groupId> 
+      <artifactId>script-api</artifactId> <version>1.0</version> </dependency> -->
     <!--end neo4j -->
 
     <!-- Jackson Dependencies -->
