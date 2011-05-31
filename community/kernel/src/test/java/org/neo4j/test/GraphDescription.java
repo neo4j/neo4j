@@ -40,7 +40,7 @@ import org.neo4j.graphdb.Transaction;
 
 public class GraphDescription implements GraphDefinition
 {
-    @Target( ElementType.METHOD )
+    @Target( { ElementType.METHOD, ElementType.TYPE } )
     @Retention( RetentionPolicy.RUNTIME )
     public @interface Graph
     {
@@ -128,7 +128,7 @@ public class GraphDescription implements GraphDefinition
             }
 
             @Override
-            public void destroy( Map<String, Node> product )
+            public void destroy( Map<String, Node> product, boolean successful )
             {
                 if ( destroy )
                 {
