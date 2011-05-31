@@ -33,9 +33,8 @@ class GloballyUnique extends AbstractUniquenessFilter
         super( type );
     }
 
-    public boolean check( TraversalBranch branch, boolean remember )
+    public boolean check( TraversalBranch branch )
     {
-        long id = type.getId( branch );
-        return remember ? visited.add( id ) : !visited.contains( id );
+        return visited.add( type.getId( branch ) );
     }
 }

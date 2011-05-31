@@ -37,11 +37,11 @@ class RecentlyUnique extends AbstractUniquenessFilter
                 ((Number) parameter).intValue(), null );
     }
 
-    public boolean check( TraversalBranch branch, boolean remember )
+    public boolean check( TraversalBranch branch )
     {
         long id = type.getId( branch );
         boolean add = recentlyVisited.get( id ) == null;
-        if ( add&remember )
+        if ( add )
         {
             recentlyVisited.put( id, PLACE_HOLDER );
         }

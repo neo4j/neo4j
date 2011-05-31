@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import java.util.Collections;
 import java.util.Iterator;
 
 import org.neo4j.graphdb.Node;
@@ -32,6 +31,27 @@ import org.neo4j.kernel.impl.traversal.TraverserImpl.TraverserIterator;
 
 class TraversalBranchImpl implements TraversalBranch//, Path
 {
+    private static final Iterator<Relationship> EMPTY_ITERATOR = new Iterator<Relationship>()
+    {
+        @Override
+        public boolean hasNext()
+        {
+            return false;
+        }
+
+        @Override
+        public Relationship next()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void remove()
+        {
+            throw new UnsupportedOperationException();
+        }
+    };
+    
     private final TraversalBranch parent;
     private final Node source;
     private Iterator<Relationship> relationships;
@@ -75,12 +95,21 @@ class TraversalBranchImpl implements TraversalBranch//, Path
         this.evaluation = traverser.description.evaluator.evaluate( position() );
     }
 
-    protected void expandRelationships( boolean doChecks )
+    private void expandRelationships()
     {
-        boolean okToExpand = !doChecks || evaluation.continues();
-        relationships = okToExpand ?
-                traverser.description.expander.expand( source ).iterator() :
-                Collections.<Relationship>emptyList().iterator();
+        if ( evaluation.continues() )
+        {
+            expandRelationshipsWithoutChecks();
+        }
+        else
+        {
+            relationships = EMPTY_ITERATOR;
+        }
+    }
+    
+    protected void expandRelationshipsWithoutChecks()
+    {
+        relationships = traverser.description.expander.expand( source ).iterator();
     }
 
     protected boolean hasExpandedRelationships()
@@ -91,7 +120,7 @@ class TraversalBranchImpl implements TraversalBranch//, Path
     public void initialize()
     {
         evaluation = traverser.description.evaluator.evaluate( position() );
-        expandRelationships( true );
+        expandRelationships();
     }
 
     public TraversalBranch next()

@@ -115,7 +115,7 @@ class TraverserImpl implements Traverser
 
         boolean okToProceed( TraversalBranch source )
         {
-            return this.uniquness.check( source, true );
+            return this.uniquness.check( source );
         }
 
         @Override
