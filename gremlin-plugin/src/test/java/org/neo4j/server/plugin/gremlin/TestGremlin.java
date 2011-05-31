@@ -39,9 +39,13 @@ public class TestGremlin implements GraphHolder
     TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
     private static WrappingNeoServerBootstrapper server;
 
+    /**
+     * Send a Gremlin Script, URL-encoded with UTF-8 encoding, e.g.
+     * the equivalent of the Gremlin Script `i = g.v(1);i.outE.inV`"
+     */
     @Test
     @Title("Send a Gremlin Script, URL encoded")
-    @Documented("Send a Gremlin Script, URL-encoded")
+    @Documented
     @Graph( value = { "I know you" } )
     public void testGremlinPostURLEncoded() throws UnsupportedEncodingException
     {
