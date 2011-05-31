@@ -27,7 +27,7 @@ import org.neo4j.test.GraphHolder;
 import org.neo4j.test.TestData;
 import org.neo4j.test.TestData.Title;
 
-public class TestGremlin implements GraphHolder
+public class GremlinPluginFunctionalTest implements GraphHolder
 {
     private static final String ENDPOINT = "http://localhost:7474/db/data/ext/GremlinPlugin/graphdb/execute_script";
     private static ImpermanentGraphDatabase graphdb;
@@ -79,7 +79,7 @@ public class TestGremlin implements GraphHolder
     @BeforeClass
     public static void startDatabase()
     {
-        graphdb = new ImpermanentGraphDatabase("target/db");
+        graphdb = new ImpermanentGraphDatabase("target/db" + System.currentTimeMillis());
         
     }
 
