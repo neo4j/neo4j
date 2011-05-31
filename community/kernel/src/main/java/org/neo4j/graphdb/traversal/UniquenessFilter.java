@@ -37,11 +37,8 @@ public interface UniquenessFilter
      * Checks whether or not {@code branch} is unique, and hence can be
      * visited in this traversal.
      * @param branch the {@link TraversalBranch} to check for uniqueness.
-     * @param remember whether or not to remember {@code branch}. If
-     * {@code remember} is {@code false} then no state in this filter must be
-     * changed.
      * @return whether or not {@code branch} is unique, and hence can be
      * visited in this traversal.
      */
-    boolean check( TraversalBranch branch, boolean remember );
+    boolean check( TraversalBranch branch );
 }
