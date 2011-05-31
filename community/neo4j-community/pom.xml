@@ -47,15 +47,15 @@
       <artifactId>neo4j-udc</artifactId>
       <version>1.4-SNAPSHOT</version>
     </dependency>
-        <dependency>
+    <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-graph-matching</artifactId>
-      <version>0.9-SNAPSHOT</version>
+      <version>1.4-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-sunshine</artifactId>
-      <version>0.2-SNAPSHOT</version>
+      <version>1.4-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>

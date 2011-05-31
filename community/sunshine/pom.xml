@@ -10,7 +10,6 @@
     <properties>
         <bundle.namespace>org.neo4j.sunshine</bundle.namespace>
         <scala.version>2.8.1</scala.version>
-        <neo4j.version>1.4-SNAPSHOT</neo4j.version>
         <license-text.header>GPL-3-header.txt</license-text.header>
     </properties>
 
@@ -18,13 +17,13 @@
     <groupId>org.neo4j</groupId>
     <artifactId>neo4j-sunshine</artifactId>
     <packaging>jar</packaging>
-    <version>0.2-SNAPSHOT</version>
-    <name>Neo4j Sunshine</name>
+    <version>1.4-SNAPSHOT</version>
+    <name>Neo4j - Sunshine</name>
     <description>Neo4j query language</description>
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
     <scm>
-        <url>https://github.com/neo4j/sunshine</url>
+        <url>https://github.com/neo4j/community/tree/master/sunshine</url>
     </scm>
 
     <licenses>
@@ -63,23 +62,23 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-kernel</artifactId>
-            <version>${neo4j.version}</version>
+            <version>1.4-SNAPSHOT</version>
             <classifier>tests</classifier>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-lucene-index</artifactId>
-            <version>${neo4j.version}</version>
+            <version>1.4-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-kernel</artifactId>
-            <version>${neo4j.version}</version>
-        </dependency>        
+            <version>1.4-SNAPSHOT</version>
+        </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-graph-matching</artifactId>
-            <version>0.9-SNAPSHOT</version>
+            <version>1.4-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
