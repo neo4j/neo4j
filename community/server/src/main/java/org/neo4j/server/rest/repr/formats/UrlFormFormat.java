@@ -19,12 +19,6 @@
  */
 package org.neo4j.server.rest.repr.formats;
 
-import org.neo4j.server.rest.repr.BadInputException;
-import org.neo4j.server.rest.repr.ListWriter;
-import org.neo4j.server.rest.repr.MappingWriter;
-import org.neo4j.server.rest.repr.RepresentationFormat;
-
-import javax.ws.rs.core.MediaType;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLDecoder;
@@ -32,6 +26,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import javax.ws.rs.core.MediaType;
+
+import org.neo4j.server.rest.repr.BadInputException;
+import org.neo4j.server.rest.repr.ListWriter;
+import org.neo4j.server.rest.repr.MappingWriter;
+import org.neo4j.server.rest.repr.RepresentationFormat;
 
 public class UrlFormFormat extends RepresentationFormat
 {

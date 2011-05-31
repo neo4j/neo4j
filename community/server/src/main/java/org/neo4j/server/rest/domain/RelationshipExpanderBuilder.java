@@ -24,9 +24,9 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.Expander;
+import org.neo4j.graphdb.RelationshipExpander;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.Traversal;
 
 // import org.neo4j.graphdb.Traverser.Order;

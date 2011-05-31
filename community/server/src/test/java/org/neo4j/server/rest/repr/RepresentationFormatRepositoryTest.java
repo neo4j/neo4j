@@ -19,11 +19,11 @@
  */
 package org.neo4j.server.rest.repr;
 
-import org.junit.Test;
+import static org.junit.Assert.fail;
 
 import javax.ws.rs.core.MediaType;
 
-import static org.junit.Assert.fail;
+import org.junit.Test;
 
 public class RepresentationFormatRepositoryTest
 {

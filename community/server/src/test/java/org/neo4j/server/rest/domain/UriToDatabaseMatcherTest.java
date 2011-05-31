@@ -24,8 +24,6 @@ import static org.junit.Assert.assertEquals;
 import java.net.URI;
 
 import org.junit.Test;
-import org.neo4j.server.rest.domain.GraphDatabaseName;
-import org.neo4j.server.rest.domain.UriToDatabaseMatcher;
 
 public class UriToDatabaseMatcherTest {
 

@@ -19,20 +19,21 @@
  */
 package org.neo4j.server.webadmin.rest;
 
-import org.junit.Test;
-import org.neo4j.server.rest.repr.formats.JsonFormat;
-import org.neo4j.server.rest.web.EntityOutputFormat;
-
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
-import java.net.URI;
-import java.util.Map;
-
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import java.net.URI;
+import java.util.Map;
+
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
+
+import org.junit.Test;
+import org.neo4j.server.rest.repr.formats.JsonFormat;
+import org.neo4j.server.rest.web.EntityOutputFormat;
 
 public class RootServiceTest
 {

@@ -19,11 +19,11 @@
  */
 package org.neo4j.server.rest.web;
 
-import org.neo4j.server.rest.domain.JsonHelper;
-
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.neo4j.server.rest.domain.JsonHelper;
 
 /**
  * Helps generate testable data models, using a RestfulGraphDatabase.

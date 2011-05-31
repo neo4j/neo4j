@@ -19,12 +19,18 @@
  */
 package org.neo4j.server.rest.web;
 
-import org.neo4j.server.rest.repr.*;
-
-import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+
+import javax.ws.rs.core.Response;
+
+import org.neo4j.server.rest.repr.BadInputException;
+import org.neo4j.server.rest.repr.ExtensionInjector;
+import org.neo4j.server.rest.repr.OutputFormat;
+import org.neo4j.server.rest.repr.Representation;
+import org.neo4j.server.rest.repr.RepresentationFormat;
+import org.neo4j.server.rest.repr.RepresentationTestBase;
 
 public class EntityOutputFormat extends OutputFormat
 {

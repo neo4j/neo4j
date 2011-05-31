@@ -19,14 +19,14 @@
  */
 package org.neo4j.server.configuration;
 
-import org.neo4j.server.ServerTestUtils;
+import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
+import static org.neo4j.server.ServerTestUtils.writePropertyToFile;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
-import static org.neo4j.server.ServerTestUtils.writePropertyToFile;
+import org.neo4j.server.ServerTestUtils;
 
 public class PropertyFileBuilder
 {

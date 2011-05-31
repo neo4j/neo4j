@@ -19,12 +19,13 @@
  */
 package org.neo4j.server.rest.repr;
 
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 
 /**

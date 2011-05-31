@@ -36,7 +36,6 @@ import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.helpers.ServerHelper;
-import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.TestData;

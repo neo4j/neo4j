@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.database;
 
-import com.sun.jersey.api.core.HttpContext;
-
 import javax.ws.rs.ext.Provider;
+
+import com.sun.jersey.api.core.HttpContext;
 
 @Provider
 public class DatabaseProvider extends

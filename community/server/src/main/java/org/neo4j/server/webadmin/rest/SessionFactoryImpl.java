@@ -19,12 +19,12 @@
  */
 package org.neo4j.server.webadmin.rest;
 
+import javax.servlet.http.HttpSession;
+
 import org.neo4j.server.database.Database;
 import org.neo4j.server.webadmin.console.GremlinSession;
 import org.neo4j.server.webadmin.console.ScriptSession;
 import org.neo4j.server.webadmin.console.SunshineSession;
-
-import javax.servlet.http.HttpSession;
 
 public class SessionFactoryImpl implements SessionFactory
 {

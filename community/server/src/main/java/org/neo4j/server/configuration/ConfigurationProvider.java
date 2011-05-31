@@ -19,11 +19,12 @@
  */
 package org.neo4j.server.configuration;
 
-import com.sun.jersey.api.core.HttpContext;
+import javax.ws.rs.ext.Provider;
+
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.server.database.AbstractInjectableProvider;
 
-import javax.ws.rs.ext.Provider;
+import com.sun.jersey.api.core.HttpContext;
 
 @Provider
 public class ConfigurationProvider extends AbstractInjectableProvider<Configuration>

@@ -19,15 +19,15 @@
  */
 package org.neo4j.server.modules;
 
+import java.util.Collection;
+import java.util.HashSet;
+
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.NeoServer;
-import org.neo4j.server.plugins.PluginLifecycle;
 import org.neo4j.server.plugins.Injectable;
-
-import java.util.Collection;
-import java.util.HashSet;
+import org.neo4j.server.plugins.PluginLifecycle;
 
 /**
  *  Allows Plugins to provide their own initialization

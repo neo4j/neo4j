@@ -19,18 +19,23 @@
  */
 package org.neo4j.server.rest.repr.formats;
 
+import static org.hamcrest.Matchers.hasEntry;
+import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
+import java.util.ArrayList;
+import java.util.Map;
+
+import javax.ws.rs.core.MediaType;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.DefaultFormat;
 import org.neo4j.server.rest.repr.MediaTypeNotSupportedException;
-
-import javax.ws.rs.core.MediaType;
-import java.util.ArrayList;
-import java.util.Map;
-
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
 
 public class DefaultFormatTest
 {

@@ -19,15 +19,15 @@
  */
 package org.neo4j.server.rest.repr;
 
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.util.Map;
 
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-
-
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
 
 public class DatabaseRepresentationTest {
     @Test

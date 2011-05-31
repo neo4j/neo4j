@@ -19,20 +19,22 @@
  */
 package org.neo4j.server.rest;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.MatcherAssert.assertThat;
+
+import java.io.IOException;
+
+import javax.ws.rs.core.MediaType;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 
-import javax.ws.rs.core.MediaType;
-import java.io.IOException;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
 
 public class RedirectorTests
 {

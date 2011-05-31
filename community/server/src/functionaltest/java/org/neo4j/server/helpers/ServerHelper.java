@@ -6,7 +6,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
-import org.neo4j.server.modules.RESTApiModule;
 
 public class ServerHelper
 {

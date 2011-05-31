@@ -19,6 +19,13 @@
  */
 package org.neo4j.server.plugins;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.AbstractGraphDatabase;
@@ -27,13 +34,6 @@ import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.ExtensionInjector;
 import org.neo4j.server.rest.repr.ExtensionPointRepresentation;
 import org.neo4j.server.rest.repr.Representation;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 public final class PluginManager implements ExtensionInjector, PluginInvocator
 {
