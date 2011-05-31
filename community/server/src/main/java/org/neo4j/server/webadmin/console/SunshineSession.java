@@ -36,45 +36,45 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-//package org.neo4j.server.webadmin.console;
-//
-//import org.neo4j.graphdb.GraphDatabaseService;
-//import org.neo4j.sunshine.ExecutionEngine;
-//import org.neo4j.sunshine.Projection;
-//import org.neo4j.sunshine.SunshineParser;
-//import org.neo4j.sunshine.SyntaxError;
-//import org.neo4j.sunshine.commands.Query;
-//
-///**
-// * Created by Andres Taylor
-// * Date: 5/30/11
-// * Time: 21:54
-// */
-//public class SunshineSession implements ScriptSession
-//{
-//    private GraphDatabaseService graph;
-//    private final ExecutionEngine engine;
-//    private final SunshineParser parser;
-//
-//    public SunshineSession(GraphDatabaseService graph)
-//    {
-//        this.graph = graph;
-//        parser = new SunshineParser();
-//        engine = new ExecutionEngine(graph);
-//    }
-//
-//    @Override
-//    public String evaluate(String script)
-//    {
-//        try
-//        {
-//            Query query = parser.parse(script);
-//            Projection result = engine.execute(query);
-//
-//            return result.toString();
-//        } catch (SyntaxError error)
-//        {
-//            return error.getMessage();
-//        }
-//    }
-//}
+package org.neo4j.server.webadmin.console;
+
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.sunshine.ExecutionEngine;
+import org.neo4j.sunshine.Projection;
+import org.neo4j.sunshine.SunshineParser;
+import org.neo4j.sunshine.SyntaxError;
+import org.neo4j.sunshine.commands.Query;
+
+/**
+* Created by Andres Taylor
+* Date: 5/30/11
+* Time: 21:54
+*/
+public class SunshineSession implements ScriptSession
+{
+    private GraphDatabaseService graph;
+    private final ExecutionEngine engine;
+    private final SunshineParser parser;
+
+    public SunshineSession(GraphDatabaseService graph)
+    {
+        this.graph = graph;
+        parser = new SunshineParser();
+        engine = new ExecutionEngine(graph);
+    }
+
+    @Override
+    public String evaluate(String script)
+    {
+        try
+        {
+            Query query = parser.parse(script);
+            Projection result = engine.execute(query);
+
+            return result.toString();
+        } catch (SyntaxError error)
+        {
+            return error.getMessage();
+        }
+    }
+}

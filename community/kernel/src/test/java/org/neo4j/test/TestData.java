@@ -47,7 +47,7 @@ public class TestData<T> implements MethodRule
     {
         T create( GraphDefinition graph, String title, String documentation );
 
-        void destroy( T product );
+        void destroy( T product, boolean successful );
     }
 
     public static <T> TestData<T> producedThrough( Producer<T> transformation )
@@ -56,12 +56,63 @@ public class TestData<T> implements MethodRule
         return new TestData<T>( transformation );
     }
 
-    private final Producer<T> transformation;
-    private T product;
-
-    private TestData( Producer<T> transformation )
+    public T get()
     {
-        this.transformation = transformation;
+        return get( true );
+    }
+
+    private static final class Lazy
+    {
+        private volatile Object productOrFactory;
+
+        Lazy( GraphDefinition graph, String title, String documentation )
+        {
+            productOrFactory = new Factory( graph, title, documentation );
+        }
+
+        @SuppressWarnings( "unchecked"/*cast to T*/)
+        <T> T get( Producer<T> producer, boolean create )
+        {
+            Object result = productOrFactory;
+            if ( result instanceof Factory )
+            {
+                synchronized ( this )
+                {
+                    if ( ( result = productOrFactory ) instanceof Factory )
+                    {
+                        productOrFactory = result = ( (Factory) result ).create( producer, create );
+                    }
+                }
+            }
+            return (T) result;
+        }
+    }
+
+    private static final class Factory
+    {
+        private final GraphDefinition graph;
+        private final String title;
+        private final String documentation;
+
+        Factory( GraphDefinition graph, String title, String documentation )
+        {
+            this.graph = graph;
+            this.title = title;
+            this.documentation = documentation;
+        }
+
+        Object create( Producer<?> producer, boolean create )
+        {
+            return create ? producer.create( graph, title, documentation ) : null;
+        }
+    }
+
+    private final Producer<T> producer;
+    private final ThreadLocal<Lazy> product = new InheritableThreadLocal<Lazy>();
+
+    private TestData( Producer<T> producer )
+    {
+        this.producer = producer;
     }
 
     @Override
@@ -69,14 +120,16 @@ public class TestData<T> implements MethodRule
     {
         final Title title = method.getAnnotation( Title.class );
         final Documented doc = method.getAnnotation( Documented.class );
-        final GraphDescription graph = GraphDescription.create( method.getAnnotation( GraphDescription.Graph.class ) );
+        GraphDescription.Graph g = method.getAnnotation( GraphDescription.Graph.class );
+        if ( g == null ) g = method.getMethod().getDeclaringClass().getAnnotation( GraphDescription.Graph.class );
+        final GraphDescription graph = GraphDescription.create( g );
         return new Statement()
         {
             @Override
             public void evaluate() throws Throwable
             {
-                product = create( graph, title == null ? null : title.value(), doc == null ? null : doc.value(),
-                        method.getName() );
+                product.set( create( graph, title == null ? null : title.value(), doc == null ? null : doc.value(),
+                        method.getName() ) );
                 try
                 {
                     try
@@ -87,7 +140,7 @@ public class TestData<T> implements MethodRule
                     {
                         try
                         {
-                            transformation.destroy( product );
+                            destroy( get( false ), false );
                         }
                         catch ( Throwable sub )
                         {
@@ -105,19 +158,35 @@ public class TestData<T> implements MethodRule
                         }
                         throw err;
                     }
-                    transformation.destroy( product );
+                    destroy( get( false ), false );
                 }
                 finally
                 {
-                    product = null;
+                    product.set( null );
                 }
             }
         };
     }
 
+    private void destroy( @SuppressWarnings( "hiding" ) T product, boolean successful )
+    {
+        if ( product != null ) producer.destroy( product, successful );
+    }
+
+    private T get( boolean create )
+    {
+        Lazy lazy = product.get();
+        if ( lazy == null )
+        {
+            if ( create ) throw new IllegalStateException( "Not in test case" );
+            return null;
+        }
+        return lazy.get( producer, create );
+    }
+
     private static final String EMPTY = "";
 
-    private T create( GraphDescription graph, String title, String doc, String methodName )
+    private static Lazy create( GraphDescription graph, String title, String doc, String methodName )
     {
         if ( doc != null )
         {
@@ -144,6 +213,7 @@ public class TestData<T> implements MethodRule
                     end = i; // skip blank lines at the end
                 }
             }
+            if ( end == lines.length ) end--; // all lines were empty
             // If there is no title, and the first line looks like a title,
             // take the first line as title
             if ( title == null && start < end && lines[start + 1] == EMPTY )
@@ -166,11 +236,6 @@ public class TestData<T> implements MethodRule
         {
             title = methodName;
         }
-        return transformation.create( graph, title, doc );
-    }
-
-    public T get()
-    {
-        return product;
+        return new Lazy( graph, title, doc );
     }
 }
