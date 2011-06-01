@@ -21,11 +21,13 @@ package org.neo4j.sunshine.docgen
 
 import org.neo4j.graphdb.Node
 import scala.collection.JavaConverters._
-import org.junit.Test
 import org.junit.Assert.assertThat
+import org.junit.Assert.assertEquals
 import org.junit.matchers.JUnitMatchers.hasItem
+import org.junit.Test
 
-class StartTests extends DocumentingTestBase {
+class StartTests extends DocumentingTestBase
+{
   def graphDescription = List("A KNOWS B", "A KNOWS C")
 
   def indexProps = List("name")
@@ -33,7 +35,8 @@ class StartTests extends DocumentingTestBase {
 
   def section: String = "Start"
 
-  @Test def nodes_by_id() {
+  @Test def nodes_by_id()
+  {
     testQuery(
       title = "Including start nodes by id",
       query = "start n=(0) return n",
@@ -41,5 +44,6 @@ class StartTests extends DocumentingTestBase {
       (p) => assertThat(p.columnAs[Node]("n").toList.asJava, hasItem(db.getReferenceNode))
     )
   }
+
 }
 
