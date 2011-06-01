@@ -19,14 +19,14 @@
  */
 package org.neo4j.sunshine.docgen
 
-import org.neo4j.graphdb.{Node, GraphDatabaseService}
 import org.neo4j.graphdb.index.Index
 import org.neo4j.sunshine.{Projection, ExecutionEngine, SunshineParser}
-import org.junit.Before
+import org.junit.{Before,After}
 import org.neo4j.kernel.ImpermanentGraphDatabase
 import org.neo4j.test.GraphDescription
 import scala.collection.JavaConverters._
 import java.io.{PrintWriter, File, FileWriter}
+import org.neo4j.graphdb._
 /**
  * @author ata
  * @since 6/1/11
@@ -38,6 +38,7 @@ abstract class DocumentingTestBase {
   var engine: ExecutionEngine = null
   var nodes: Map[String, Node] = null
   var nodeIndex: Index[Node] = null
+  var relIndex: Index[Relationship] = null
 
   def section: String
 
@@ -79,17 +80,42 @@ abstract class DocumentingTestBase {
       dir.mkdirs()
     }
 
-    val writer = new PrintWriter(new FileWriter(new File(dir, nicefy(title)+".txt")))
+    val writer = new PrintWriter(new FileWriter(new File(dir, nicefy(title) + ".txt")))
 
     dumpToFile(writer, title, query, returns, result)
 
   }
 
+  def indexProperties[T<:PropertyContainer](n: T , index: Index[T]) {
+    indexProps.foreach(( property ) => {
+      if ( n.hasProperty(property) ) {
+        index.add(n, property, n.getProperty(property))
+      }
+    })
+  }
+
+  def node(name:String)=nodes.getOrElse(name, throw new NotFoundException())
+
+  @After def teardown() {
+    db.shutdown()
+  }
+
   @Before def init() {
     db = new ImpermanentGraphDatabase()
     engine = new ExecutionEngine(db)
-    nodeIndex = db.index().forNodes("Person")
+
+    val tx = db.beginTx()
+    nodeIndex = db.index().forNodes("nodes")
+    relIndex = db.index().forRelationships("rels")
     val description = GraphDescription.create(graphDescription: _*)
+
     nodes = description.create(db).asScala.toMap
+
+    db.getAllNodes.asScala.foreach((n) => {
+      indexProperties(n, nodeIndex)
+      n.getRelationships(Direction.OUTGOING).asScala.foreach( indexProperties(_, relIndex) )
+    })
+    tx.success()
+    tx.finish()
   }
 }
