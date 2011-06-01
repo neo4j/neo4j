@@ -17,14 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.sunshine
+package org.neo4j.sunshine.javacompat;
 
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.sunshine.SyntaxError;
+import org.neo4j.sunshine.commands.Query;
 /**
- * Created by Andres Taylor
- * Date: 5/20/11
- * Time: 14:08 
+ * @author ata
+ * @since 5/31/11
  */
+public class ExecutionEngine
+{
+    private org.neo4j.sunshine.ExecutionEngine inner;
 
-class SyntaxError(message:String, cause:Throwable) extends Exception(message, cause) {
-  def this(message:String) = this(message, null)
+    public ExecutionEngine( GraphDatabaseService database )
+    {
+        inner = new org.neo4j.sunshine.ExecutionEngine( database );
+    }
+
+    public Projection execute( Query query ) throws SyntaxError
+    {
+        return new Projection(inner.execute( query ));
+    }
 }
