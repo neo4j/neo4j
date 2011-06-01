@@ -32,8 +32,9 @@ import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
 
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -41,7 +42,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
-import org.neo4j.server.ServerBuilder;
+import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
@@ -50,139 +51,158 @@ import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.UniformInterfaceException;
 
-public class CloneSubgraphPluginTest {
+public class CloneSubgraphPluginTest
+{
 
-    private static final RelationshipType KNOWS = DynamicRelationshipType.withName("knows");
-    private static final RelationshipType WORKED_FOR = DynamicRelationshipType.withName("worked_for");
+    private static final RelationshipType KNOWS = DynamicRelationshipType.withName( "knows" );
+    private static final RelationshipType WORKED_FOR = DynamicRelationshipType.withName( "worked_for" );
 
-    private NeoServerWithEmbeddedWebServer server;
-    private FunctionalTestHelper functionalTestHelper;
+    private static NeoServerWithEmbeddedWebServer server;
+    private static FunctionalTestHelper functionalTestHelper;
+
+    @BeforeClass
+    public static void setupServer() throws IOException
+    {
+        server = ServerHelper.createServer();
+        functionalTestHelper = new FunctionalTestHelper( server );
+    }
+
+    @Before
+    public void setupTheDatabase()
+    {
+        ServerHelper.cleanTheDatabase( server );
+        createASocialNetwork( server.getDatabase().graph );
+    }
+
+    @AfterClass
+    public static void stopServer()
+    {
+        server.stop();
+    }
 
     private Node jw;
 
-    @Before
-    public void setupServer() throws IOException {
-        server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
-        server.start();
-        functionalTestHelper = new FunctionalTestHelper(server);
-        createASocialNetwork(server.getDatabase().graph);
-    }
-    
-    private void createASocialNetwork(GraphDatabaseService db) {
+    private void createASocialNetwork( GraphDatabaseService db )
+    {
         Transaction tx = db.beginTx();
-        try {
+        try
+        {
             jw = db.createNode();
-            jw.setProperty("name", "jim");
+            jw.setProperty( "name", "jim" );
             Node sp = db.createNode();
-            sp.setProperty("name", "savas");
+            sp.setProperty( "name", "savas" );
             Node bg = db.createNode();
-            bg.setProperty("name", "bill");
+            bg.setProperty( "name", "bill" );
             Node th = db.createNode();
-            th.setProperty("name", "tony");
+            th.setProperty( "name", "tony" );
             Node rj = db.createNode();
-            rj.setProperty("name", "rhodri");
-            rj.setProperty("hobby", "family");
+            rj.setProperty( "name", "rhodri" );
+            rj.setProperty( "hobby", "family" );
             Node nj = db.createNode();
-            nj.setProperty("name", "ned");
-            nj.setProperty("hobby", "cs");
+            nj.setProperty( "name", "ned" );
+            nj.setProperty( "hobby", "cs" );
             Node ml = db.createNode();
-            ml.setProperty("name", "mark");
+            ml.setProperty( "name", "mark" );
             Node mf = db.createNode();
-            mf.setProperty("name", "martin");
+            mf.setProperty( "name", "martin" );
             Node rp = db.createNode();
-            rp.setProperty("name", "rebecca");
+            rp.setProperty( "name", "rebecca" );
             Node rs = db.createNode();
-            rs.setProperty("name", "roy");
+            rs.setProperty( "name", "roy" );
             Node sc = db.createNode();
-            sc.setProperty("name", "steve");
-            sc.setProperty("hobby", "cloud");
+            sc.setProperty( "name", "steve" );
+            sc.setProperty( "hobby", "cloud" );
             Node sw = db.createNode();
-            sw.setProperty("name", "stuart");
-            sw.setProperty("hobby", "cs");
+            sw.setProperty( "name", "stuart" );
+            sw.setProperty( "hobby", "cs" );
 
-            jw.createRelationshipTo(sp, KNOWS);
-            jw.createRelationshipTo(mf, KNOWS);
-            jw.createRelationshipTo(rj, KNOWS);
-            rj.createRelationshipTo(nj, KNOWS);
+            jw.createRelationshipTo( sp, KNOWS );
+            jw.createRelationshipTo( mf, KNOWS );
+            jw.createRelationshipTo( rj, KNOWS );
+            rj.createRelationshipTo( nj, KNOWS );
 
-            mf.createRelationshipTo(rp, KNOWS);
-            mf.createRelationshipTo(rs, KNOWS);
+            mf.createRelationshipTo( rp, KNOWS );
+            mf.createRelationshipTo( rs, KNOWS );
 
-            sp.createRelationshipTo(bg, KNOWS);
-            sp.createRelationshipTo(th, KNOWS);
-            sp.createRelationshipTo(mf, KNOWS);
-            sp.createRelationshipTo(ml, WORKED_FOR);
+            sp.createRelationshipTo( bg, KNOWS );
+            sp.createRelationshipTo( th, KNOWS );
+            sp.createRelationshipTo( mf, KNOWS );
+            sp.createRelationshipTo( ml, WORKED_FOR );
 
-            ml.createRelationshipTo(sc, KNOWS);
-            ml.createRelationshipTo(sw, KNOWS);
+            ml.createRelationshipTo( sc, KNOWS );
+            ml.createRelationshipTo( sw, KNOWS );
 
-            jw.setProperty("hobby", "cs");
-            sp.setProperty("hobby", "cs");
-            bg.setProperty("hobby", "cs");
-            ml.setProperty("hobby", "cs");
-            mf.setProperty("hobby", "cs");
+            jw.setProperty( "hobby", "cs" );
+            sp.setProperty( "hobby", "cs" );
+            bg.setProperty( "hobby", "cs" );
+            ml.setProperty( "hobby", "cs" );
+            mf.setProperty( "hobby", "cs" );
 
-            rp.setProperty("hobby", "lisp");
-            rs.setProperty("hobby", "socialism");
-            th.setProperty("hobby", "fishing");
+            rp.setProperty( "hobby", "lisp" );
+            rs.setProperty( "hobby", "socialism" );
+            th.setProperty( "hobby", "fishing" );
             tx.success();
-        } finally {
+        }
+        finally
+        {
             tx.finish();
         }
 
     }
 
-    @After
-    public void stopServer() {
-        if (server != null) {
-            server.stop();
-        }
-    }
-
     @Test
-    public void shouldAdvertiseExtenstionThatPluginCreates() throws JsonParseException, ClientHandlerException, UniformInterfaceException {
-        int originalCount = eagerlyCount(server.getDatabase().graph.getAllNodes());
+    public void shouldAdvertiseExtenstionThatPluginCreates() throws JsonParseException, ClientHandlerException,
+            UniformInterfaceException
+    {
+        int originalCount = eagerlyCount( server.getDatabase().graph.getAllNodes() );
         originalCount--; // Don't count the reference node
 
         // Find the start node URI from the server
-        ClientResponse response = CLIENT.resource(functionalTestHelper.dataUri() + "node/1").accept(MediaType.APPLICATION_JSON)
-                .get(ClientResponse.class);
+        ClientResponse response = CLIENT.resource( functionalTestHelper.dataUri() + "node/1" )
+                .accept( MediaType.APPLICATION_JSON )
+                .get( ClientResponse.class );
 
-        String entity = response.getEntity(String.class);
-        Map<String, Object> map = JsonHelper.jsonToMap(entity);
+        String entity = response.getEntity( String.class );
 
-        HashMap<?, ?> extensionsMap = (HashMap<?, ?>) map.get("extensions");
+        System.out.println( entity );
 
-        assertNotNull(extensionsMap);
-        assertFalse(extensionsMap.isEmpty());
-        
-        
+        Map<String, Object> map = JsonHelper.jsonToMap( entity );
+
+        HashMap<?, ?> extensionsMap = (HashMap<?, ?>) map.get( "extensions" );
+
+        assertNotNull( extensionsMap );
+        assertFalse( extensionsMap.isEmpty() );
+
         final String GRAPH_CLONER_KEY = "GraphCloner";
-        assertTrue(extensionsMap.keySet().contains(GRAPH_CLONER_KEY));
-                
+        assertTrue( extensionsMap.keySet()
+                .contains( GRAPH_CLONER_KEY ) );
+
         final String CLONE_SUBGRAPH_KEY = "clonedSubgraph";
-        String clonedSubgraphUri = (String) ((HashMap<?, ?>)extensionsMap.get(GRAPH_CLONER_KEY)).get(CLONE_SUBGRAPH_KEY);
-        assertNotNull(clonedSubgraphUri);
-        
+        String clonedSubgraphUri = (String) ( (HashMap<?, ?>) extensionsMap.get( GRAPH_CLONER_KEY ) ).get( CLONE_SUBGRAPH_KEY );
+        assertNotNull( clonedSubgraphUri );
+
         final String CLONE_DEPTH_MUCH_LARGER_THAN_THE_GRAPH = "99";
         response.close();
-        response = CLIENT.resource(clonedSubgraphUri).type(MediaType.APPLICATION_FORM_URLENCODED).entity("depth=" + CLONE_DEPTH_MUCH_LARGER_THAN_THE_GRAPH).post(ClientResponse.class);
-        
-        assertEquals(200, response.getStatus());
-        
+        response = CLIENT.resource( clonedSubgraphUri )
+                .type( MediaType.APPLICATION_FORM_URLENCODED )
+                .entity( "depth=" + CLONE_DEPTH_MUCH_LARGER_THAN_THE_GRAPH )
+                .post( ClientResponse.class );
 
-        int doubleTheNumberOfNodes = (originalCount * 2) + 1;
-        assertEquals(doubleTheNumberOfNodes, eagerlyCount(server.getDatabase().graph.getAllNodes()));
+        assertEquals( 200, response.getStatus() );
+
+        int doubleTheNumberOfNodes = ( originalCount * 2 ) + 1;
+        assertEquals( doubleTheNumberOfNodes, eagerlyCount( server.getDatabase().graph.getAllNodes() ) );
         response.close();
     }
 
-    private int eagerlyCount(Iterable<?> items) {
-        if (items == null)
-            return 0;
+    private int eagerlyCount( Iterable<?> items )
+    {
+        if ( items == null ) return 0;
 
         int count = 0;
         Iterator<?> iterator = items.iterator();
-        while (iterator.hasNext()) {
+        while ( iterator.hasNext() )
+        {
             count++;
             iterator.next();
         }
