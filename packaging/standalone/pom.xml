@@ -31,6 +31,9 @@
     <!-- other filter properties -->
     <wrapper.conf>conf/neo4j-wrapper.conf</wrapper.conf>
     <neo4j.version>1.4-SNAPSHOT</neo4j.version>
+    
+    <!-- plugin versions -->
+    <neo4j-gremlin-plugin.version>0.1-SNAPSHOT</neo4j-gremlin-plugin.version>
 
     <!-- conf/neo4j-server.properties filter properties -->
     <org.neo4j.database.location>data/graph.db</org.neo4j.database.location>
@@ -505,6 +508,12 @@ terms of the relevant Commercial Agreement.
       <classifier>upgrade</classifier>
       <type>zip</type>
     </dependency>
+    <dependency>
+      <groupId>org.neo4j.server.plugin</groupId>
+      <artifactId>neo4j-gremlin-plugin</artifactId>
+      <version>${neo4j-gremlin-plugin.version}</version>
+    </dependency>
+    
   </dependencies>
 
   <developers>
