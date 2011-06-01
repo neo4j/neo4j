@@ -24,14 +24,19 @@ import pipes.{Pipe, FromPump}
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb._
 import org.neo4j.graphmatching.{PatternRelationship, PatternNode, AbstractPatternObject}
+import java.lang.Iterable
+import collection.Seq
 
 
-class ExecutionEngine(val graph: GraphDatabaseService) {
+class ExecutionEngine(val graph: GraphDatabaseService)
+{
   type MapTransformer = Map[String, Any] => Map[String, Any]
 
   @throws(classOf[SyntaxError])
-  def execute(query: Query): Projection = query match {
-    case Query(select, start, matching, where, aggregation) => {
+  def execute(query: Query): Projection = query match
+  {
+    case Query(select, start, matching, where, aggregation) =>
+    {
       val patternKeeper = new PatternKeeper
       val sourcePump: Pipe = createSourcePumps(start).reduceLeft(_ ++ _)
 
@@ -49,19 +54,25 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
     }
   }
 
-  def checkConnectednessOfPatternGraph(pattern: PatternKeeper, source: Pipe) {
+  def checkConnectednessOfPatternGraph(pattern: PatternKeeper, source: Pipe)
+  {
     val visited = scala.collection.mutable.HashSet[String]()
 
-    def visit(visitedObject: AbstractPatternObject[_ <: PropertyContainer]) {
+    def visit(visitedObject: AbstractPatternObject[_ <: PropertyContainer])
+    {
       val label = visitedObject.getLabel
-      if (label == null || !visited.contains(label)) {
-        if (label != null) {
+      if ( label == null || !visited.contains(label) )
+      {
+        if ( label != null )
+        {
           visited.add(label)
         }
 
-        visitedObject match {
+        visitedObject match
+        {
           case node: PatternNode => node.getAllRelationships.asScala.foreach(visit)
-          case rel: PatternRelationship => {
+          case rel: PatternRelationship =>
+          {
             visit(rel.getFirstNode)
             visit(rel.getSecondNode)
           }
@@ -70,29 +81,36 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
       }
     }
 
-    source.columnNames.map(pattern.patternObject).foreach(_ match {
+    source.columnNames.map(pattern.patternObject).foreach(_ match
+    {
       case None => throw new SyntaxError("Encountered a part of the pattern that is not part of the pattern. If you see this, please report this problem!")
       case Some(obj) => visit(obj)
     })
 
     val notVisitedParts = pattern.variables -- visited
-    if (notVisitedParts.nonEmpty) {
+    if ( notVisitedParts.nonEmpty )
+    {
       throw new SyntaxError("All parts of the pattern must either directly or indirectly be connected to at least one bound entity. These variables were found to be disconnected: " +
         notVisitedParts.mkString("", ", ", ""))
     }
 
   }
 
-  def createFilters(where: Option[Clause], patternKeeper: PatternKeeper): Clause = {
-    where match {
+  def createFilters(where: Option[Clause], patternKeeper: PatternKeeper): Clause =
+  {
+    where match
+    {
       case None => new True()
       case Some(clause) => clause
     }
   }
 
-  def addStartItemVariables(start: Start, patternKeeper: PatternKeeper) {
-    start.startItems.foreach((item) => {
-      item match {
+  def addStartItemVariables(start: Start, patternKeeper: PatternKeeper)
+  {
+    start.startItems.foreach((item) =>
+    {
+      item match
+      {
         case relItem: RelationshipStartItem => patternKeeper.getOrCreateRelationship(item.variable)
         case nodeItem: NodeStartItem => patternKeeper.getOrCreateNode(item.variable)
       }
@@ -100,21 +118,29 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
     })
   }
 
-  def createPattern(matching: Option[Match], patternKeeper: PatternKeeper) {
-    matching match {
-      case Some(m) => m.patterns.foreach((p) => {
-        p match {
-          case RelatedTo(left, right, relName, relationType, direction) => {
+  def createPattern(matching: Option[Match], patternKeeper: PatternKeeper)
+  {
+    matching match
+    {
+      case Some(m) => m.patterns.foreach((pattern) =>
+      {
+        pattern match
+        {
+          case RelatedTo(left, right, relName, relationType, direction) =>
+          {
             val leftPattern = patternKeeper.getOrCreateNode(left)
             val rightPattern = patternKeeper.getOrCreateNode(right)
-            val rel = relationType match {
+            val rel = relationType match
+            {
               case Some(relType) => leftPattern.createRelationshipTo(rightPattern, DynamicRelationshipType.withName(relType), direction)
               case None => leftPattern.createRelationshipTo(rightPattern, direction)
             }
 
-            relName match {
+            relName match
+            {
               case None =>
-              case Some(name) => {
+              case Some(name) =>
+              {
                 patternKeeper.addRelationship(name, rel)
                 rel.setLabel(name)
               }
@@ -126,21 +152,27 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
     }
   }
 
-  def createProjectionTransformers(select: Return, patternKeeper: PatternKeeper): Seq[MapTransformer] = {
+  def createProjectionTransformers(select: Return, patternKeeper: PatternKeeper): Seq[MapTransformer] =
+  {
 
-    select.returnItems.map((selectItem) => {
-      selectItem match {
-        case PropertyOutput(nodeName, propName) => {
+    select.returnItems.map((selectItem) =>
+    {
+      selectItem match
+      {
+        case PropertyOutput(nodeName, propName) =>
+        {
           patternKeeper.assertHas(nodeName)
           nodePropertyOutput(nodeName, propName) _
         }
 
-        case NullablePropertyOutput(nodeName, propName) => {
+        case NullablePropertyOutput(nodeName, propName) =>
+        {
           patternKeeper.assertHas(nodeName)
           nullableNodePropertyOutput(nodeName, propName) _
         }
 
-        case EntityOutput(nodeName) => {
+        case EntityOutput(nodeName) =>
+        {
           patternKeeper.assertHas(nodeName)
           nodeOutput(nodeName) _
         }
@@ -150,12 +182,14 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
 
   def nodeOutput(column: String)(m: Map[String, Any]): Map[String, Any] = Map(column -> m.getOrElse(column, throw new NotFoundException))
 
-  def nodePropertyOutput(column: String, propName: String)(m: Map[String, Any]): Map[String, Any] = {
+  def nodePropertyOutput(column: String, propName: String)(m: Map[String, Any]): Map[String, Any] =
+  {
     val node = m.getOrElse(column, throw new NotFoundException).asInstanceOf[PropertyContainer]
     Map(column + "." + propName -> node.getProperty(propName))
   }
 
-  def nullableNodePropertyOutput(column: String, propName: String)(m: Map[String, Any]): Map[String, Any] = {
+  def nullableNodePropertyOutput(column: String, propName: String)(m: Map[String, Any]): Map[String, Any] =
+  {
     val node = m.getOrElse(column, throw new NotFoundException).asInstanceOf[PropertyContainer]
 
     val property = try {
@@ -167,12 +201,19 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
     Map(column + "." + propName -> property)
   }
 
-  private def createSourcePumps(from: Start): Seq[Pipe] = from.startItems.map(_ match {
-    case NodeByIndex(varName, idxName, key, value) => {
-      val indexHits: java.lang.Iterable[Node] = graph.index.forNodes(idxName).get(key, value)
-      new FromPump(varName, indexHits.asScala)
-    }
-    case NodeById(varName, ids@_*) => new FromPump(varName, ids.map(graph.getNodeById))
-    case RelationshipById(varName, ids@_*) => new FromPump(varName, ids.map(graph.getRelationshipById))
-  })
+  private def createSourcePumps(from: Start): Seq[Pipe] =
+    from.startItems.map((item) =>
+    {
+      item match
+      {
+        case NodeByIndex(varName, idxName, key, value) =>
+        {
+          val indexHits: Iterable[Node] = graph.index.forNodes(idxName).get(key, value)
+          new FromPump(varName, indexHits.asScala.toList)
+        }
+        case NodeById(varName, ids@_*) => new FromPump(varName, ids.map(graph.getNodeById))
+        case RelationshipById(varName, ids@_*) => new FromPump(varName, ids.map(graph.getRelationshipById))
+      }
+    })
+
 }

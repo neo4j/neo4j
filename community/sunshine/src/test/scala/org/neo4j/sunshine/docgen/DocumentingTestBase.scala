@@ -83,13 +83,13 @@ abstract class DocumentingTestBase {
     val writer = new PrintWriter(new FileWriter(new File(dir, nicefy(title) + ".txt")))
 
     dumpToFile(writer, title, query, returns, result)
-
   }
 
   def indexProperties[T<:PropertyContainer](n: T , index: Index[T]) {
     indexProps.foreach(( property ) => {
       if ( n.hasProperty(property) ) {
-        index.add(n, property, n.getProperty(property))
+        val value = n.getProperty(property)
+        index.add(n, property, value)
       }
     })
   }

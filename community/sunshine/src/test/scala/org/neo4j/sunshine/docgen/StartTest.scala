@@ -26,12 +26,11 @@ import org.junit.Assert.assertEquals
 import org.junit.matchers.JUnitMatchers.hasItem
 import org.junit.Test
 
-class StartTests extends DocumentingTestBase
+class StartTest extends DocumentingTestBase
 {
   def graphDescription = List("A KNOWS B", "A KNOWS C")
 
   def indexProps = List("name")
-
 
   def section: String = "Start"
 
@@ -45,5 +44,14 @@ class StartTests extends DocumentingTestBase
     )
   }
 
+  @Test def nodes_by_index()
+  {
+    testQuery(
+      title = "Including start nodes by index lookup",
+      query = """start n=(nodes,name,"A") return n""",
+      returns = """The node indexed with name "A" is returned""",
+      (p) => assertEquals(List(Map("n" -> node("A"))), p.toList)
+    )
+  }
 }
 

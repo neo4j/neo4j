@@ -19,7 +19,7 @@
  */
 package org.neo4j.sunshine.pipes
 
-import org.neo4j.graphdb.{PropertyContainer, Node}
+import org.neo4j.graphdb.PropertyContainer
 
 /**
  * Created by Andres Taylor
