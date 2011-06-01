@@ -68,6 +68,8 @@ class Projection(pNodes: Map[String, PatternNode], pRels: Map[String, PatternRel
     })
   }
 
+  def javaColumnAs[T](column:String) = columnAs[T](column).asJava
+
   def columnAs[T](column: String): Iterator[T] = {
     this.map((map) => {
       val item: Any = map.getOrElse(column, throw new NotFoundException())

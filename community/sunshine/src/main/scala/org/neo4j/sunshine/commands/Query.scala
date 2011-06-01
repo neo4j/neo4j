@@ -42,8 +42,6 @@ case class Return(returnItems: ReturnItem*)
 
 case class Start(startItems: StartItem*)
 
-//case class Where(clauses: Clause*)
-
 case class Match(patterns: Pattern*)
 
 case class Aggregation(aggregationItems:AggregationItem*)

@@ -17,14 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.sunshine
+package org.neo4j.sunshine.docgen
 
-/**
- * Created by Andres Taylor
- * Date: 5/20/11
- * Time: 14:08 
- */
+import org.neo4j.graphdb.Node
+import scala.collection.JavaConverters._
+import org.junit.Test
+import org.junit.Assert.assertThat
+import org.junit.matchers.JUnitMatchers.hasItem
 
-class SyntaxError(message:String, cause:Throwable) extends Exception(message, cause) {
-  def this(message:String) = this(message, null)
+class StartTests extends DocumentingTestBase {
+  def graphDescription = List("A KNOWS B", "A KNOWS C")
+
+  def indexProps = List("name")
+
+
+  def section: String = "Start"
+
+  @Test def nodes_by_id() {
+    testQuery(
+      title = "Including start nodes by id",
+      query = "start n=(0) return n",
+      returns = "The reference node is returned",
+      (p) => assertThat(p.columnAs[Node]("n").toList.asJava, hasItem(db.getReferenceNode))
+    )
+  }
 }
+

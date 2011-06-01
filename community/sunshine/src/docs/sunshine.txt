@@ -1,0 +1,43 @@
+[[sunshine]]
+Sunshine Query Language
+=======================
+
+Sunshine queries consist of a few different parts. Let's go through them in order.
+
+== START ==
+Queries have start points. It could be that you know the id of one of of the nodes, or have an index search as the start point for a query.
+
+If you want to use ids as start points, you write like this:
+
+[source,shell]
+----
+START a=(1,2,3,4)
+----
+
+This means that the variable a will be bound to first node with id 1, then the node with id 2, and so on.
+
+You can also have relationships as start points, like this:
+
+[source,shell]
+----
+START a=<1,2,3,4>
+----
+
+This query will bind a to relationship with id i, then 2, and so on.
+
+You might also want to use an index search as start point. To use node indexes, you do:
+
+[source,shell]
+----
+START a=(index, key, "value")
+----
+
+This will bind a to whatever nodes are found by the exact index query above.
+
+== MATCH ==
+
+
+
+
+== WHERE ==
+== RETURN ==
