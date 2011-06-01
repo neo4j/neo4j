@@ -148,6 +148,10 @@ public class PropertyFileConfigurator implements Configurator {
         return neo4jPropertyFiles != null && neo4jPropertyFiles.length == 1;
     }
 
+    public File getPropertyFileDirectory() {
+        return propertyFileDirectory;
+    }
+
     @Override
     public Map<String, String> getDatabaseTuningProperties() {
         return databaseTuningProperties == null ? new HashMap<String, String>() : databaseTuningProperties;
