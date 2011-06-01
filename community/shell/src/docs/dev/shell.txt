@@ -1,6 +1,6 @@
 [[shell]]
 Neo4j Shell
-==========
+===========
 
 // If you're just looking for an example try the <<shell-example>>, otherwise read on.
 
