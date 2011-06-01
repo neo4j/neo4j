@@ -22,7 +22,6 @@ package org.neo4j.server.web;
 import java.io.IOException;
 import java.util.List;
 
-import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -37,18 +36,6 @@ public interface WebServer {
     public void setMaxThreads(int maxThreads);
     public void addJAXRSPackages(List<String> packageNames, String serverMountPoint);
     public void addStaticContent(String contentLocation, String serverMountPoint);
-
-    void addServlet( Servlet unmanagedServlet, String serverMountPoint );
     
-    /**
-     * Used to directly inject requests into the server, bypassing
-     * the network stack. 
-     * 
-     * @param target
-     * @param request
-     * @param response
-     * @throws IOException
-     * @throws ServletException
-     */
-    public void handle(String target, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException;
+    public void invokeDirectly(String targetUri, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException;
 }
