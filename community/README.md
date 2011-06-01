@@ -51,9 +51,12 @@ build enterprise
     mvn clean install -Dmaven.test.skip=true
     cd ..
 
-build the manual
+install the ASCIIDOC toolchain
 
     brew install docbook asciidoc w3m fop
+
+build the manual
+
     git clone git@github.com:neo4j/manual.git
     cd manual
     git pull origin master
