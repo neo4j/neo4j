@@ -17,25 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.sunshine.javax;
+package org.neo4j.sunshine.javacompat;
 
-import org.neo4j.sunshine.SyntaxError;
-import org.neo4j.sunshine.commands.Query;
-/**
- * @author ata
- * @since 5/31/11
- */
-public class SunshineParser
+import java.util.Iterator;
+
+public class Projection
 {
-    private org.neo4j.sunshine.SunshineParser inner;
+    private org.neo4j.sunshine.Projection inner;
 
-    public SunshineParser()
+    public Projection( org.neo4j.sunshine.Projection projection )
     {
-        inner = new org.neo4j.sunshine.SunshineParser();
+        inner = projection;
     }
 
-    public Query parse( String query ) throws SyntaxError
+    public <T> Iterator<T> columnAs( String n )
     {
-        return inner.parse( query );
+        return inner.javaColumnAs( n );
     }
 }

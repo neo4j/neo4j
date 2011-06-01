@@ -17,26 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.sunshine.javax;
+package org.neo4j.sunshine.javacompat;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.sunshine.SyntaxError;
 import org.neo4j.sunshine.commands.Query;
 /**
  * @author ata
  * @since 5/31/11
  */
-public class ExecutionEngine
+public class SunshineParser
 {
-    private org.neo4j.sunshine.ExecutionEngine inner;
+    private org.neo4j.sunshine.SunshineParser inner;
 
-    public ExecutionEngine( GraphDatabaseService database )
+    public SunshineParser()
     {
-        inner = new org.neo4j.sunshine.ExecutionEngine( database );
+        inner = new org.neo4j.sunshine.SunshineParser();
     }
 
-    public Projection execute( Query query ) throws SyntaxError
+    public Query parse( String query ) throws SyntaxError
     {
-        return new Projection(inner.execute( query ));
+        return inner.parse( query );
     }
 }

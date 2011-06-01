@@ -25,9 +25,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.ImpermanentGraphDatabase;
 import org.neo4j.sunshine.commands.Query;
-import org.neo4j.sunshine.javax.ExecutionEngine;
-import org.neo4j.sunshine.javax.Projection;
-import org.neo4j.sunshine.javax.SunshineParser;
+import org.neo4j.sunshine.javacompat.ExecutionEngine;
+import org.neo4j.sunshine.javacompat.Projection;
+import org.neo4j.sunshine.javacompat.SunshineParser;
 
 import java.util.Collection;
 

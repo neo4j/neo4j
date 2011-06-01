@@ -17,21 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.sunshine.javax;
+package org.neo4j.sunshine.javacompat;
 
-import java.util.Iterator;
-
-public class Projection
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.sunshine.SyntaxError;
+import org.neo4j.sunshine.commands.Query;
+/**
+ * @author ata
+ * @since 5/31/11
+ */
+public class ExecutionEngine
 {
-    private org.neo4j.sunshine.Projection inner;
+    private org.neo4j.sunshine.ExecutionEngine inner;
 
-    public Projection( org.neo4j.sunshine.Projection projection )
+    public ExecutionEngine( GraphDatabaseService database )
     {
-        inner = projection;
+        inner = new org.neo4j.sunshine.ExecutionEngine( database );
     }
 
-    public <T> Iterator<T> columnAs( String n )
+    public Projection execute( Query query ) throws SyntaxError
     {
-        return inner.javaColumnAs( n );
+        return new Projection(inner.execute( query ));
     }
 }
