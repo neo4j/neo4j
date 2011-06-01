@@ -65,8 +65,4 @@ Useful links when configuring the docbook toolchain:
 
 === With brew on OSX ===
 
-  brew install docbook
-  brew install asciidoc
-  brew install w3m
-  brew install fop
-
+  brew install docbook asciidoc w3m fop
