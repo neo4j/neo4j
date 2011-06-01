@@ -28,9 +28,9 @@ access the plugin
     }
 
 
-submit (HTTP POST) a Gremlin script `g.V` returning a list of nodes:
+submit (HTTP POST) a Gremlin script `i=g.V(2);i.outE.inV` returning a list of nodes, URL encoded:
 
-    curl -d "script=g.V" http://localhost:7474/db/data/ext/GremlinPlugin/graphdb/execute_script
+    curl -d "script=i+%3D+g.v%282%29%3Bi.outE.inV" http://localhost:7474/db/data/ext/GremlinPlugin/graphdb/execute_script
     [ {
       "outgoing_relationships" : "http://localhost:7474/db/data/node/0/relationships/out",
       "data" : {
