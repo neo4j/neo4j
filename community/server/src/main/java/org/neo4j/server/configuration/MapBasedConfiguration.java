@@ -49,7 +49,7 @@ public class MapBasedConfiguration extends AbstractConfiguration
     }
 
     @Override
-    public Iterator getKeys()
+    public Iterator<String> getKeys()
     {
         return config.keySet().iterator();
     }
