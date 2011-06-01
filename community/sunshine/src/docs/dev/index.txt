@@ -1,0 +1,7 @@
+[[query-lang]]
+Neo4j Query Language
+====================
+
+:leveloffset: 2
+
+include::ql/match/index.txt[]

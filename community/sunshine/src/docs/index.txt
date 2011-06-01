@@ -1,7 +1,0 @@
-[[sunshine]]
-Neo4j Sunshine Query Language
-=============================
-
-:leveloffset: 2
-
-include::sunshine.txt[]

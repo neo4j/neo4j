@@ -53,18 +53,19 @@ abstract class DocumentingTestBase {
     writer.println("== " + title + " ==")
     writer.println()
     writer.println("_Query_")
-    writer.println("[source]")
+    writer.println("[source,plain]")
     writer.println("----")
     writer.println(query)
     writer.println("----")
     writer.println()
     writer.println(returns)
+    writer.println()
     writer.println("_Result_")
     writer.println()
-    writer.println("[source]")
-    writer.println("----")
+    writer.println("[source,plain]")
+    writer.println(".....")
     writer.println(result.toString())
-    writer.println("----")
+    writer.println(".....")
     writer.flush()
     writer.close()
   }
@@ -75,7 +76,7 @@ abstract class DocumentingTestBase {
     assertions.foreach(_.apply(result))
 
 
-    val dir = new File("target/docs/" + nicefy(section))
+    val dir = new File("target/docs/ql/" + nicefy(section))
     if ( !dir.exists() ) {
       dir.mkdirs()
     }
