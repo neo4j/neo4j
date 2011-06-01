@@ -68,7 +68,6 @@ Build the standalone distributions
     #git clone git@github.com:neo4j/packaging.git
     cd packaging
     git pull origin master
-    git submodule init
-    git submodule update
     cd standalone
     mvn clean package
+
