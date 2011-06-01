@@ -70,7 +70,8 @@ public class Jetty6WebServer implements WebServer
 
     @Override
     public void start() {
-        jetty = new Server(jettyPort);
+        jetty = createJetty();
+
         MovedContextHandler redirector = new MovedContextHandler();
 
         jetty.addHandler( redirector );
@@ -79,6 +80,14 @@ public class Jetty6WebServer implements WebServer
         loadStaticContent( sm );
         loadJAXRSPackages( sm );
 
+        startJetty();
+    }
+
+    protected Server createJetty() {
+        return new Server(jettyPort);
+    }
+
+    protected void startJetty() {
         try {
             jetty.start();
         } catch (Exception e) {
@@ -210,7 +219,7 @@ public class Jetty6WebServer implements WebServer
         for (String mountPoint : jaxRSPackages.keySet()) {
 
             ServletHolder servletHolder = jaxRSPackages.get(mountPoint);
-            log.debug( "Mounting servlet at [%s]", mountPoint );
+            log.debug("Mounting servlet at [%s]", mountPoint);
             Context jerseyContext = new Context(jetty, mountPoint);
             SessionHandler sh = new SessionHandler(sm);
             jerseyContext.addServlet(servletHolder, "/*");
