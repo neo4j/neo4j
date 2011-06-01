@@ -13,3 +13,59 @@ Build Steps Community:
 
     git clone git://github.com/neo4j/community.git
     mvn clean install
+
+
+To build all of the Neo4j Distribution
+======================================
+
+
+These instructions are for OS X, with https://github.com/mxcl/homebrew installed.
+
+prepare the repo:
+
+    rm -rf ~/.m2/repository/org/neo4j
+    mkdir build
+    cd build
+
+build community:
+
+    git clone git@github.com:neo4j/community.git
+    cd community
+    git pull origin master
+    mvn clean install -Dmaven.test.skip=true
+    cd ..
+
+build advanced
+
+    git clone git@github.com:neo4j/advanced.git
+    cd advanced
+    git pull origin master
+    mvn clean install -Dmaven.test.skip=true
+    cd ..
+
+build enterprise
+
+    git clone git@github.com:neo4j/enterprise.git
+    cd enterprise
+    git pull origin master
+    mvn clean install -Dmaven.test.skip=true
+    cd ..
+
+build the manual
+
+    brew install docbook asciidoc w3m fop
+    git clone git@github.com:neo4j/manual.git
+    cd manual
+    git pull origin master
+    mvn clean install -Dmaven.test.skip=true
+    cd ..
+
+Build the standalone distributions
+
+    #git clone git@github.com:neo4j/packaging.git
+    cd packaging
+    git pull origin master
+    git submodule init
+    git submodule update
+    cd standalone
+    mvn clean package
