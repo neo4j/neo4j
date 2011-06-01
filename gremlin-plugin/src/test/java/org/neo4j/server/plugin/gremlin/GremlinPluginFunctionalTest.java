@@ -63,9 +63,8 @@ public class GremlinPluginFunctionalTest implements GraphHolder
      * the equivalent of the Gremlin Script `i = g.v(1);i.outE.inV`"
      */
     @Test
-    @Title("Send a Gremlin Script, URL encoded")
-    @Documented("Send a Gremlin Script, URL-encoded with UTF-8 encoding, e.g." +
-    		"the equivalent of the Gremlin Script `i = g.v(1);i.outE.inV`")
+    @Title("Send a Gremlin Script - URL encoded")
+    @Documented
     @Graph( value = { "I know you" } )
     public void testGremlinPostURLEncoded() throws UnsupportedEncodingException
     {
@@ -78,9 +77,12 @@ public class GremlinPluginFunctionalTest implements GraphHolder
         assertTrue(response.contains( "you" ));
     }
 
+    /**
+     * To send a Script JSON encoded, adjust the payload Content Headers
+     */
     @Test
-    @Title("Send a Gremlin Script, JSON encoded")
-    @Documented("To send a Script JSON encoded, adjust the payload Content Headers")
+    @Title("Send a Gremlin Script - JSON encoded")
+    @Documented
     @Graph( value = { "I know you" } )
     public void testGremlinPostJSON()
     {

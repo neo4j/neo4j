@@ -1,0 +1,16 @@
+[[gremlin-plugin]]
+Neo4j Gremlin Plugin
+====================
+
+http://gremlin.tinkerpop.com[Gremlin] is a Groovy based Graph Traversal Language and provides a very expressive
+way of explicitly scripting traversals through a Neo4j graph.
+
+The Neo4j Gremlin Plugin provides an endpoint to send Gremlin scripts to the Neo4j Server, have them executed
+on the server database and return the results as Neo4j Node and Relationship representations, thus keeping
+the types throughout the REST API consistent.
+
+:leveloffset: 2
+
+include::send-a-gremlin-script---json-encoded.txt[]
+
+include::send-a-gremlin-script---url-encoded.txt[]

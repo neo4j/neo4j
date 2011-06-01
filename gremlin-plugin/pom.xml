@@ -181,6 +181,7 @@ the relevant Commercial Agreement.
         <configuration>
           <descriptors>
             <descriptor>src/main/assembly/server-plugin.xml</descriptor>
+            <descriptor>src/main/assembly/docs-assembly.xml</descriptor>
           </descriptors>
         </configuration>
         <executions>
