@@ -17,27 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.sunshine;
+package org.neo4j.sunshine.javax;
 
-import org.junit.Test;
-import static org.junit.Assert.assertTrue;
-import org.neo4j.kernel.ImpermanentGraphDatabase;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.sunshine.SyntaxError;
 import org.neo4j.sunshine.commands.Query;
-
 /**
- * Created by Andres Taylor
- * Date: 5/30/11
- * Time: 16:28
+ * @author ata
+ * @since 5/31/11
  */
-public class JavaFunctionalTest
+public class ExecutionEngine
 {
-    @Test
-    public void testHelloWorldFromJava() throws Exception
+    private org.neo4j.sunshine.ExecutionEngine inner;
+
+    public ExecutionEngine( GraphDatabaseService database )
     {
-        SunshineParser parser = new SunshineParser();
-        ExecutionEngine engine = new ExecutionEngine(new ImpermanentGraphDatabase());
-        Query query = parser.parse("start n = (0) return n");
-        Projection result = engine.execute(query);
-        assertTrue(result.toString().contains("Node[0]"));
+        inner = new org.neo4j.sunshine.ExecutionEngine( database );
+    }
+
+    public Projection execute( Query query ) throws SyntaxError
+    {
+        return new Projection(inner.execute( query ));
     }
 }

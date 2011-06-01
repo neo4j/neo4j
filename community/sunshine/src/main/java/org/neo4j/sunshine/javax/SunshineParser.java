@@ -17,14 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.sunshine
+package org.neo4j.sunshine.javax;
 
+import org.neo4j.sunshine.SyntaxError;
+import org.neo4j.sunshine.commands.Query;
 /**
- * Created by Andres Taylor
- * Date: 5/20/11
- * Time: 14:08 
+ * @author ata
+ * @since 5/31/11
  */
+public class SunshineParser
+{
+    private org.neo4j.sunshine.SunshineParser inner;
 
-class SyntaxError(message:String, cause:Throwable) extends Exception(message, cause) {
-  def this(message:String) = this(message, null)
+    public SunshineParser()
+    {
+        inner = new org.neo4j.sunshine.SunshineParser();
+    }
+
+    public Query parse( String query ) throws SyntaxError
+    {
+        return inner.parse( query );
+    }
 }

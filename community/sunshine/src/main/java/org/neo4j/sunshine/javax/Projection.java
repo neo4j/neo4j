@@ -17,14 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.sunshine
+package org.neo4j.sunshine.javax;
 
-/**
- * Created by Andres Taylor
- * Date: 5/20/11
- * Time: 14:08 
- */
+import java.util.Iterator;
 
-class SyntaxError(message:String, cause:Throwable) extends Exception(message, cause) {
-  def this(message:String) = this(message, null)
+public class Projection
+{
+    private org.neo4j.sunshine.Projection inner;
+
+    public Projection( org.neo4j.sunshine.Projection projection )
+    {
+        inner = projection;
+    }
+
+    public <T> Iterator<T> columnAs( String n )
+    {
+        return inner.javaColumnAs( n );
+    }
 }
