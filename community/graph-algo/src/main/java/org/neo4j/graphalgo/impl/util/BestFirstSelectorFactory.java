@@ -25,9 +25,9 @@ import java.util.Set;
 import org.neo4j.graphalgo.impl.util.PriorityMap.Converter;
 import org.neo4j.graphalgo.impl.util.PriorityMap.Entry;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.traversal.TraversalBranch;
-import org.neo4j.graphdb.traversal.BranchSelector;
 import org.neo4j.graphdb.traversal.BranchOrderingPolicy;
+import org.neo4j.graphdb.traversal.BranchSelector;
+import org.neo4j.graphdb.traversal.TraversalBranch;
 
 public abstract class BestFirstSelectorFactory<P extends Comparable<P>, D>
         implements BranchOrderingPolicy
