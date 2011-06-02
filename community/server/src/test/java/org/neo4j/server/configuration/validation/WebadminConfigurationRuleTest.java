@@ -46,7 +46,7 @@ public class WebadminConfigurationRuleTest {
     public void shouldFailIfOnlyRestApiKeySpecified() throws RuleFailedException {
         WebadminConfigurationRule rule = new WebadminConfigurationRule();
         BaseConfiguration config = new BaseConfiguration();
-        config.addProperty(Configurator.DATA_API_PATH_PROPERTY_KEY, "http://localhost:7474/db/data");
+        config.addProperty(Configurator.REST_API_PATH_PROPERTY_KEY, "http://localhost:7474/db/data");
         rule.validate(config);
         assertFalse(theValidatorHasPassed);
     }
@@ -64,7 +64,7 @@ public class WebadminConfigurationRuleTest {
     public void shouldAllowAbsoluteUris() throws RuleFailedException {
         WebadminConfigurationRule rule = new WebadminConfigurationRule();
         BaseConfiguration config = new BaseConfiguration();
-        config.addProperty(Configurator.DATA_API_PATH_PROPERTY_KEY, "http://localhost:7474/db/data");
+        config.addProperty(Configurator.REST_API_PATH_PROPERTY_KEY, "http://localhost:7474/db/data");
         config.addProperty(Configurator.MANAGEMENT_PATH_PROPERTY_KEY, "http://localhost:7474/db/manage");
         rule.validate(config);
         assertTrue(theValidatorHasPassed);
@@ -74,7 +74,7 @@ public class WebadminConfigurationRuleTest {
     public void shouldAllowRelativeUris() throws RuleFailedException {
         WebadminConfigurationRule rule = new WebadminConfigurationRule();
         BaseConfiguration config = new BaseConfiguration();
-        config.addProperty(Configurator.DATA_API_PATH_PROPERTY_KEY, "/db/data");
+        config.addProperty(Configurator.REST_API_PATH_PROPERTY_KEY, "/db/data");
         config.addProperty(Configurator.MANAGEMENT_PATH_PROPERTY_KEY, "/db/manage");
         rule.validate(config);
         assertTrue(theValidatorHasPassed);
@@ -84,7 +84,7 @@ public class WebadminConfigurationRuleTest {
     public void shouldNormaliseUris() throws RuleFailedException {
         WebadminConfigurationRule rule = new WebadminConfigurationRule();
         BaseConfiguration config = new BaseConfiguration();
-        config.addProperty(Configurator.DATA_API_PATH_PROPERTY_KEY, "http://localhost:7474///db///data///");
+        config.addProperty(Configurator.REST_API_PATH_PROPERTY_KEY, "http://localhost:7474///db///data///");
         config.addProperty(Configurator.MANAGEMENT_PATH_PROPERTY_KEY, "http://localhost:7474////db///manage");
         rule.validate(config);
         
@@ -93,8 +93,8 @@ public class WebadminConfigurationRuleTest {
         assertFalse(((String)config.getProperty(Configurator.MANAGEMENT_PATH_PROPERTY_KEY)).endsWith("//"));
         assertFalse(((String)config.getProperty(Configurator.MANAGEMENT_PATH_PROPERTY_KEY)).endsWith("/"));
         
-        assertThat((String)config.getProperty(Configurator.DATA_API_PATH_PROPERTY_KEY), not(containsString("///")));
-        assertFalse(((String)config.getProperty(Configurator.DATA_API_PATH_PROPERTY_KEY)).endsWith("//"));
-        assertFalse(((String)config.getProperty(Configurator.DATA_API_PATH_PROPERTY_KEY)).endsWith("/"));
+        assertThat((String)config.getProperty(Configurator.REST_API_PATH_PROPERTY_KEY), not(containsString("///")));
+        assertFalse(((String)config.getProperty(Configurator.REST_API_PATH_PROPERTY_KEY)).endsWith("//"));
+        assertFalse(((String)config.getProperty(Configurator.REST_API_PATH_PROPERTY_KEY)).endsWith("/"));
     }
 }

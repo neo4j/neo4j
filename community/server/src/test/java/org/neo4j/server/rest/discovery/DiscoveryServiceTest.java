@@ -48,7 +48,7 @@ public class DiscoveryServiceTest {
         String managementUri = "/management";
         when(mockConfig.getString(Configurator.MANAGEMENT_PATH_PROPERTY_KEY, Configurator.DEFAULT_MANAGEMENT_API_PATH)).thenReturn(managementUri);
         String dataUri = "/data";
-        when(mockConfig.getString(Configurator.DATA_API_PATH_PROPERTY_KEY, Configurator.DEFAULT_DATA_API_PATH)).thenReturn(dataUri);
+        when(mockConfig.getString(Configurator.REST_API_PATH_PROPERTY_KEY, Configurator.DEFAULT_DATA_API_PATH)).thenReturn(dataUri);
         
         String baseUri = "http://www.example.com";
         DiscoveryService ds = new DiscoveryService(mockConfig, new EntityOutputFormat( new JsonFormat(), new URI(baseUri), null ));
@@ -73,7 +73,7 @@ public class DiscoveryServiceTest {
         String managementUri = "http://absolutedomain/management";
         when(mockConfig.getString(Configurator.MANAGEMENT_PATH_PROPERTY_KEY, Configurator.DEFAULT_MANAGEMENT_API_PATH)).thenReturn(managementUri);
         String dataUri = "http://absolutedomain/management";
-        when(mockConfig.getString(Configurator.DATA_API_PATH_PROPERTY_KEY, Configurator.DEFAULT_DATA_API_PATH)).thenReturn(dataUri);
+        when(mockConfig.getString(Configurator.REST_API_PATH_PROPERTY_KEY, Configurator.DEFAULT_DATA_API_PATH)).thenReturn(dataUri);
         
         String baseUri = "http://www.example.com";
         DiscoveryService ds = new DiscoveryService(mockConfig, new EntityOutputFormat( new JsonFormat(), new URI(baseUri), null ));

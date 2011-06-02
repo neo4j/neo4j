@@ -35,15 +35,15 @@ public interface Configurator {
     int DEFAULT_WEBSERVER_PORT = 7474;
     String WEBSERVER_PORT_PROPERTY_KEY = "org.neo4j.server.webserver.port";
 
-    String DATA_API_PATH_PROPERTY_KEY = "org.neo4j.server.webadmin.data.uri";
-    String DATA_API_PACKAGE = "org.neo4j.server.rest.web";
+    String REST_API_PATH_PROPERTY_KEY = "org.neo4j.server.webadmin.data.uri";
+    String REST_API_PACKAGE = "org.neo4j.server.rest.web";
     String DEFAULT_DATA_API_PATH = "/db/data";
 
     String ENABLE_OSGI_SERVER_PROPERTY_KEY = "org.neo4j.server.osgi.enable";
     String OSGI_BUNDLE_DIR_PROPERTY_KEY = "org.neo4j.server.osgi.bundledir";
     String OSGI_CACHE_DIR_PROPERTY_KEY = "org.neo4j.server.osgi.cachedir";
 
-    String ROOT_DISCOVERY_REST_API_PACKAGE = "org.neo4j.server.rest.discovery";
+    String DISCOVERY_API_PACKAGE = "org.neo4j.server.rest.discovery";
 
     String MANAGEMENT_API_PACKAGE = "org.neo4j.server.webadmin.rest";
     String MANAGEMENT_PATH_PROPERTY_KEY = "org.neo4j.server.webadmin.management.uri";

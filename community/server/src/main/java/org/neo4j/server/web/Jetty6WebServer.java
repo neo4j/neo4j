@@ -26,7 +26,6 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 
-import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -53,14 +52,12 @@ public class Jetty6WebServer implements WebServer
 {
     public static final Logger log = Logger.getLogger( Jetty6WebServer.class );
 
-
     private Server jetty;
     private int jettyPort = 80;
 
     private final HashMap<String, String> staticContent = new HashMap<String, String>();
     private final HashMap<String, ServletHolder> jaxRSPackages = new HashMap<String, ServletHolder>();
     private NeoServer server;
-
 
     @Override
     public void setNeoServer( NeoServer server )
@@ -69,7 +66,8 @@ public class Jetty6WebServer implements WebServer
     }
 
     @Override
-    public void start() {
+    public void start()
+    {
         jetty = createJetty();
 
         MovedContextHandler redirector = new MovedContextHandler();
@@ -83,15 +81,20 @@ public class Jetty6WebServer implements WebServer
         startJetty();
     }
 
-    protected Server createJetty() {
-        return new Server(jettyPort);
+    protected Server createJetty()
+    {
+        return new Server( jettyPort );
     }
 
-    protected void startJetty() {
-        try {
+    protected void startJetty()
+    {
+        try
+        {
             jetty.start();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( e );
         }
     }
 
@@ -105,137 +108,154 @@ public class Jetty6WebServer implements WebServer
         }
         catch ( Exception e )
         {
-            throw new RuntimeException(e);
+            throw new RuntimeException( e );
         }
     }
 
     @Override
-    public void setPort(int portNo) {
+    public void setPort( int portNo )
+    {
         jettyPort = portNo;
     }
 
     @Override
-    public void setMaxThreads(int maxThreads) {
-        jetty.setThreadPool(new QueuedThreadPool(maxThreads));
-    }
-
-    @Override
-    public void addJAXRSPackages(List<String> packageNames, String mountPoint) {
-        // We don't want absolute URIs at this point
-        mountPoint = ensureRelativeUri(mountPoint);
-
-        // Trim any trailing slash to keep Jetty happy
-        mountPoint = trimTrailingSlash(mountPoint);
-
-        ServletContainer container = new NeoServletContainer(server, server.getInjectables( packageNames ) );
-        ServletHolder servletHolder = new ServletHolder(container);
-        servletHolder.setInitParameter("com.sun.jersey.config.property.packages", toCommaSeparatedList(packageNames));
-        servletHolder.setInitParameter(ResourceConfig.PROPERTY_CONTAINER_RESPONSE_FILTERS, AllowAjaxFilter.class.getName());
-        log.debug( "Adding JAXRS package %s at [%s]", packageNames, mountPoint );
-        jaxRSPackages.put(mountPoint, servletHolder);
-    }
-
-    @Override
-    public void addServlet( Servlet unmanagedServlet, String mountPoint )
+    public void setMaxThreads( int maxThreads )
     {
-        log.debug( "adding Servlet [%s] at [%s]",
-                unmanagedServlet.getClass().getName(), mountPoint );
-        Context servletContext = new Context(jetty, mountPoint);
-        SessionManager sm = new HashSessionManager();
-        SessionHandler sh = new SessionHandler(sm);
-        ServletHolder servletHolder = new ServletHolder(unmanagedServlet);
-        servletContext.addServlet(servletHolder, "/*");
-        servletContext.setSessionHandler(sh);
+        jetty.setThreadPool( new QueuedThreadPool( maxThreads ) );
     }
 
-    private String trimTrailingSlash(String mountPoint) {
-        if(mountPoint.equals("/")) {
+    @Override
+    public void addJAXRSPackages( List<String> packageNames, String mountPoint )
+    {
+        // We don't want absolute URIs at this point
+        mountPoint = ensureRelativeUri( mountPoint );
+
+        mountPoint = trimTrailingSlashToKeepJettyHappy( mountPoint );
+
+        ServletContainer container = new NeoServletContainer( server, server.getInjectables( packageNames ) );
+        ServletHolder servletHolder = new ServletHolder( container );
+        servletHolder.setInitParameter( "com.sun.jersey.config.property.packages", toCommaSeparatedList( packageNames ) );
+        servletHolder.setInitParameter( ResourceConfig.PROPERTY_CONTAINER_RESPONSE_FILTERS, AllowAjaxFilter.class.getName() );
+        log.debug( "Adding JAXRS packages %s at [%s]", packageNames, mountPoint );
+
+        System.out.println(String.format( "Adding JAXRS packages %s at [%s]", packageNames, mountPoint ));
+        
+        jaxRSPackages.put( mountPoint, servletHolder );
+    }
+
+    private String trimTrailingSlashToKeepJettyHappy( String mountPoint )
+    {
+        if ( mountPoint.equals( "/" ) )
+        {
             return mountPoint;
         }
 
-        if(mountPoint.endsWith("/")) {
-            mountPoint = mountPoint.substring(0, mountPoint.length() -1);
+        if ( mountPoint.endsWith( "/" ) )
+        {
+            mountPoint = mountPoint.substring( 0, mountPoint.length() - 1 );
         }
         return mountPoint;
     }
 
-    private String ensureRelativeUri(String mountPoint) {
-        try {
-            URI result = new URI(mountPoint);
-            if(result.isAbsolute()) {
+    private String ensureRelativeUri( String mountPoint )
+    {
+        try
+        {
+            URI result = new URI( mountPoint );
+            if ( result.isAbsolute() )
+            {
                 return result.getPath();
-            } else {
+            }
+            else
+            {
                 return result.toString();
             }
-        } catch (URISyntaxException e) {
-            log.debug("Unable to translate [%s] to a relative URI in ensureRelativeUri(String mountPoint)", mountPoint);
+        }
+        catch ( URISyntaxException e )
+        {
+            log.debug( "Unable to translate [%s] to a relative URI in ensureRelativeUri(String mountPoint)", mountPoint );
             return mountPoint;
         }
     }
 
     @Override
-    public void addStaticContent(String contentLocation, String serverMountPoint) {
-        staticContent.put(serverMountPoint, contentLocation);
+    public void addStaticContent( String contentLocation, String serverMountPoint )
+    {
+        staticContent.put( serverMountPoint, contentLocation );
     }
 
     @Override
-    public void handle( String target, HttpServletRequest request,
-            HttpServletResponse response ) throws IOException, ServletException
+    public void invokeDirectly( String targetPath, HttpServletRequest request, HttpServletResponse response )
+            throws IOException, ServletException
     {
-        jetty.handle( target, request, response, Handler.DEFAULT );
+        System.out.println( request.getMethod() + " --> " + targetPath );
+        jetty.handle( targetPath, request, response, Handler.DEFAULT);
     }
 
     protected void loadStaticContent( SessionManager sm )
     {
-        for (String mountPoint : staticContent.keySet()) {
-            String contentLocation = staticContent.get(mountPoint);
-            log.info("Mounting static content at [%s] from [%s]", mountPoint, contentLocation);
-            try {
+        for ( String mountPoint : staticContent.keySet() )
+        {
+            String contentLocation = staticContent.get( mountPoint );
+            log.info( "Mounting static content at [%s] from [%s]", mountPoint, contentLocation );
+            try
+            {
                 final WebAppContext staticContext = new WebAppContext( null, new SessionHandler( sm ), null, null );
-                staticContext.setServer(jetty);
-                staticContext.setContextPath(mountPoint);
-                URL resourceLoc = getClass().getClassLoader().getResource(contentLocation);
-                if(resourceLoc != null) {
+                staticContext.setServer( jetty );
+                staticContext.setContextPath( mountPoint );
+                URL resourceLoc = getClass().getClassLoader()
+                        .getResource( contentLocation );
+                if ( resourceLoc != null )
+                {
                     log.debug( "Found [%s]", resourceLoc );
-                    URL url = resourceLoc.toURI().toURL();
-                    final Resource resource = Resource.newResource(url);
-                    staticContext.setBaseResource(resource);
-                    log.debug( "Mounting static content from [%s] at [%s]",
-                            url, mountPoint );
-                    jetty.addHandler(staticContext);
-                } else {
-                    log.error("No static content available for Neo Server at port [%d], management console may not be available.", jettyPort);
+                    URL url = resourceLoc.toURI()
+                            .toURL();
+                    final Resource resource = Resource.newResource( url );
+                    staticContext.setBaseResource( resource );
+                    log.debug( "Mounting static content from [%s] at [%s]", url, mountPoint );
+                    jetty.addHandler( staticContext );
                 }
-            } catch (Exception e) {
-                log.error(e);
+                else
+                {
+                    log.error(
+                            "No static content available for Neo Server at port [%d], management console may not be available.",
+                            jettyPort );
+                }
+            }
+            catch ( Exception e )
+            {
+                log.error( e );
                 e.printStackTrace();
-                throw new RuntimeException(e);
+                throw new RuntimeException( e );
             }
         }
     }
 
     protected void loadJAXRSPackages( SessionManager sm )
     {
-        for (String mountPoint : jaxRSPackages.keySet()) {
+        for ( String mountPoint : jaxRSPackages.keySet() )
+        {
 
-            ServletHolder servletHolder = jaxRSPackages.get(mountPoint);
-            log.debug("Mounting servlet at [%s]", mountPoint);
-            Context jerseyContext = new Context(jetty, mountPoint);
-            SessionHandler sh = new SessionHandler(sm);
-            jerseyContext.addServlet(servletHolder, "/*");
-            jerseyContext.setSessionHandler(sh);
+            ServletHolder servletHolder = jaxRSPackages.get( mountPoint );
+            log.debug( "Mounting servlet at [%s]", mountPoint );
+            Context jerseyContext = new Context( jetty, mountPoint );
+            SessionHandler sh = new SessionHandler( sm );
+            jerseyContext.addServlet( servletHolder, "/*" );
+            jerseyContext.setSessionHandler( sh );
         }
     }
 
-    private String toCommaSeparatedList(List<String> packageNames) {
+    private String toCommaSeparatedList( List<String> packageNames )
+    {
         StringBuilder sb = new StringBuilder();
 
-        for (String str : packageNames) {
-            sb.append(str);
-            sb.append(", ");
+        for ( String str : packageNames )
+        {
+            sb.append( str );
+            sb.append( ", " );
         }
 
         String result = sb.toString();
-        return result.substring(0, result.length() - 2);
+        return result.substring( 0, result.length() - 2 );
     }
 }

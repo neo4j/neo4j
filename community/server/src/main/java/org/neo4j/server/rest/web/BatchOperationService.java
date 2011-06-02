@@ -79,8 +79,8 @@ public class BatchOperationService
             List<BatchOperationRepresentation> results = new ArrayList<BatchOperationRepresentation>(
                     operations.size() );
 
-            InternalJettyServletRequest req = new InternalJettyServletRequest();
-            InternalJettyServletResponse res = new InternalJettyServletResponse();
+            InternalJettyServletRequest request = new InternalJettyServletRequest();
+            InternalJettyServletResponse response = new InternalJettyServletResponse();
 
             String servletBaseUrl = uriInfo.getBaseUri().toString();
             String servletPath = uriInfo.getBaseUri().getPath();
@@ -105,22 +105,26 @@ public class BatchOperationService
                    opPath = "/" + opPath;
                 }
 
-                req.setup( opMethod, new HttpURI( servletBaseUrl + opPath ),
+                request.setup( opMethod, new HttpURI( servletBaseUrl + opPath ),
                         opBody, // Request body
                         new Cookie[] {} );
-                res.setup();
+                response.setup();
 
-                webServer.handle( servletPath + opPath, req, res );
+                System.out.println("_____"+stripDoubleSlashes(servletPath + opPath));
                 
-                if(is2XXStatusCode(res.getStatus())) {
+                webServer.invokeDirectly( stripDoubleSlashes(servletPath + opPath), request, response );
+                
+                System.out.println(response.getStatus());
+                
+                if(is2XXStatusCode(response.getStatus())) {
                     results.add( new BatchOperationRepresentation(
                             opId,
                             opPath,
-                            res.getOutputStream().toString(),
-                            res.getHeaders() ) );
+                            response.getOutputStream().toString(),
+                            response.getHeaders() ) );
                 } else {
                     tx.failure();
-                    return output.badRequest( new RuntimeException(res.getReason()) );
+                    return output.badRequest( new RuntimeException(response.getReason()) );
                 }
             }
 
@@ -139,6 +143,11 @@ public class BatchOperationService
         }
     }
     
+    private String stripDoubleSlashes( String str )
+    {
+        return str.replace( "//", "/" );
+    }
+
     private boolean is2XXStatusCode(int statusCode) {
         return statusCode - 200 >= 0 && statusCode - 200 < 100;
     }

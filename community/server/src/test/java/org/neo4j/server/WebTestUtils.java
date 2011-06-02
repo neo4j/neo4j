@@ -22,19 +22,8 @@ package org.neo4j.server;
 import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.ServerSocket;
-import java.net.URI;
-
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
 
 public class WebTestUtils {
-
-    public static final Client CLIENT = Client.create();
-    public static final Client NON_REDIRECTING_CLIENT = Client.create();
-    static
-    {
-        NON_REDIRECTING_CLIENT.setFollowRedirects( false );
-    }
     
     private static boolean available(int port) {
         if (port < 1111 || port > 9999) {
@@ -73,9 +62,5 @@ public class WebTestUtils {
             nonPriveledgedPortNumber++;
         }
         return nonPriveledgedPortNumber;
-    }
-    
-    public static ClientResponse sendGetRequestTo(URI targetUri) {
-        return CLIENT.resource(targetUri).get(ClientResponse.class);
     }
 }
