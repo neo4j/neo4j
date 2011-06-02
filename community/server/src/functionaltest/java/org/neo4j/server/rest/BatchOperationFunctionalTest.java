@@ -19,29 +19,25 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-
-import javax.ws.rs.core.MediaType;
-
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientHandlerException;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.UniformInterfaceException;
+import org.json.JSONStringer;
+import org.junit.*;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientHandlerException;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.UniformInterfaceException;
+import javax.ws.rs.core.MediaType;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class BatchOperationFunctionalTest
 {
@@ -72,22 +68,43 @@ public class BatchOperationFunctionalTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldReturnCorrectFromAndIdValuesOnMixedRequest() throws JsonParseException, ClientHandlerException,
-            UniformInterfaceException
-    {
-
-        String jsonString = "[" + "{ " + "\"method\":\"PUT\"," + "\"to\":\"/node/0/properties\", "
-                            + "\"body\":{ \"age\":1 }," + "\"id\":0" + "}," + "{ " + "\"method\":\"GET\","
-                            + "\"to\":\"/node/0\"," + "\"id\":1" + "}," + "{ " + "\"method\":\"POST\","
-                            + "\"to\":\"/node\", " + "\"id\":2," + "\"body\":{ \"age\":1 }" + "}," + "{ "
-                            + "\"method\":\"POST\"," + "\"to\":\"/node\", " + "\"id\":3," + "\"body\":{ \"age\":1 }"
-                            + "}" + "]";
-
+    public void shouldReturnCorrectFromAndIdValuesOnMixedRequest() throws Exception {
         ClientResponse response = Client.create()
                 .resource( functionalTestHelper.dataUri() + "batch" )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
-                .entity( jsonString )
+                .entity(new JSONStringer()
+                        .array()
+
+                        .object()
+                        .key("method").value("PUT")
+                        .key("to").value("/node/0/properties")
+                        .key("body").object().key("age").value(1).endObject()
+                        .key("id").value(0)
+                        .endObject()
+
+                        .object()
+                        .key("method").value("GET")
+                        .key("to").value("/node/0")
+                        .key("id").value(1)
+                        .endObject()
+
+                        .object()
+                        .key("method").value("POST")
+                        .key("to").value("/node")
+                        .key("body").object().key("age").value(1).endObject()
+                        .key("id").value(2)
+                        .endObject()
+
+                        .object()
+                        .key("method").value("POST")
+                        .key("to").value("/node")
+                        .key("body").object().key("age").value(1).endObject()
+                        .key("id").value(3)
+                        .endObject()
+
+                        .endArray()
+                        .toString())
                 .post( ClientResponse.class );
 
         assertEquals( 200, response.getStatus() );
@@ -119,12 +136,7 @@ public class BatchOperationFunctionalTest
     }
 
     @Test
-    public void shouldGetLocationHeadersWhenCreatingThings() throws JsonParseException, ClientHandlerException,
-            UniformInterfaceException
-    {
-
-        String jsonString = "[" + "{ " + "\"method\":\"POST\"," + "\"to\":\"/node\", " + "\"body\":{ \"age\":1 }" + "}"
-                            + "]";
+    public void shouldGetLocationHeadersWhenCreatingThings() throws Exception {
 
         int originalNodeCount = helper.getNumberOfNodes();
 
@@ -132,7 +144,17 @@ public class BatchOperationFunctionalTest
                 .resource( functionalTestHelper.dataUri() + "batch" )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
-                .entity( jsonString )
+                .entity(new JSONStringer()
+                        .array()
+
+                        .object()
+                        .key("method").value("POST")
+                        .key("to").value("/NODE")
+                        .key("body").object().key("age").value(1).endObject()
+                        .endObject()
+
+                        .endArray()
+                        .toString())
                 .post( ClientResponse.class );
 
         assertEquals( 200, response.getStatus() );

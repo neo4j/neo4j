@@ -189,7 +189,7 @@ public class Jetty6WebServer implements WebServer
             throws IOException, ServletException
     {
         System.out.println( request.getMethod() + " --> " + targetPath );
-        jetty.handle( targetPath, request, response, Handler.DEFAULT);
+        jetty.handle( targetPath, request, response, Handler.REQUEST);
     }
 
     protected void loadStaticContent( SessionManager sm )
