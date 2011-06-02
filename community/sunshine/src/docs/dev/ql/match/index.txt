@@ -2,4 +2,7 @@
 Matching
 ========
 
-include::this_is_the_simplest_way_of_finding_all_related_nodes.txt[]
+include::this-is-the-simplest-way-of-finding-all-related-nodes.txt[]
+
+include::this-is-the-simplest-way-of-finding-related-nodes.txt[]
+

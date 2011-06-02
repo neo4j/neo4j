@@ -46,14 +46,15 @@ abstract class DocumentingTestBase {
 
   def indexProps: List[String]
 
-  def nicefy(in: String): String = in.toLowerCase.replace(" ", "_")
+  def nicefy(in: String): String = in.toLowerCase.replace(" ", "-")
 
   def dumpToFile(writer: PrintWriter, title: String, query: String, returns: String, result: Projection) {
     writer.println("[[" + nicefy(section + " " + title) + "]]")
     writer.println("== " + title + " ==")
     writer.println()
     writer.println("_Query_")
-    writer.println("[source,plain]")
+    writer.println()
+    writer.println("[source]")
     writer.println("----")
     writer.println(query)
     writer.println("----")
@@ -62,10 +63,12 @@ abstract class DocumentingTestBase {
     writer.println()
     writer.println("_Result_")
     writer.println()
-    writer.println("[source,plain]")
-    writer.println(".....")
-    writer.println(result.toString())
-    writer.println(".....")
+    writer.println("[source]")
+    writer.println("----")
+    writer.println(" "+result.toString().replace("\n", "\n "))
+    writer.println("----")
+    writer.println()
+    writer.println()
     writer.flush()
     writer.close()
   }

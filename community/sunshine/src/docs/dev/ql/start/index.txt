@@ -1,3 +1,8 @@
 [[query-start]]
 Start
 =====
+
+include::including-start-nodes-by-id.txt[]
+
+include::including-start-nodes-by-index-lookup.txt[]
+
