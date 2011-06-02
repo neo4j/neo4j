@@ -46,25 +46,29 @@ abstract class DocumentingTestBase {
 
   def indexProps: List[String]
 
-  def nicefy(in: String): String = in.toLowerCase.replace(" ", "_")
+  def nicefy(in: String): String = in.toLowerCase.replace(" ", "-")
 
   def dumpToFile(writer: PrintWriter, title: String, query: String, returns: String, result: Projection) {
     writer.println("[[" + nicefy(section + " " + title) + "]]")
     writer.println("== " + title + " ==")
     writer.println()
     writer.println("_Query_")
+    writer.println()
     writer.println("[source]")
     writer.println("----")
     writer.println(query)
     writer.println("----")
     writer.println()
     writer.println(returns)
+    writer.println()
     writer.println("_Result_")
     writer.println()
     writer.println("[source]")
     writer.println("----")
-    writer.println(result.toString())
+    writer.println(" "+result.toString().replace("\n", "\n "))
     writer.println("----")
+    writer.println()
+    writer.println()
     writer.flush()
     writer.close()
   }
@@ -75,7 +79,7 @@ abstract class DocumentingTestBase {
     assertions.foreach(_.apply(result))
 
 
-    val dir = new File("target/docs/" + nicefy(section))
+    val dir = new File("target/docs/ql/" + nicefy(section))
     if ( !dir.exists() ) {
       dir.mkdirs()
     }
@@ -83,13 +87,13 @@ abstract class DocumentingTestBase {
     val writer = new PrintWriter(new FileWriter(new File(dir, nicefy(title) + ".txt")))
 
     dumpToFile(writer, title, query, returns, result)
-
   }
 
   def indexProperties[T<:PropertyContainer](n: T , index: Index[T]) {
     indexProps.foreach(( property ) => {
       if ( n.hasProperty(property) ) {
-        index.add(n, property, n.getProperty(property))
+        val value = n.getProperty(property)
+        index.add(n, property, value)
       }
     })
   }

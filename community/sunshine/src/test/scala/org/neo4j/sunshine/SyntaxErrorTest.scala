@@ -30,7 +30,7 @@ import org.neo4j.graphdb.{Direction, Node}
  * Time: 16:53 
  */
 
-class SyntaxErrorTests extends ExecutionEngineTestBase {
+class SyntaxErrorTest extends ExecutionEngineTestBase {
   @Test def returnNodeThatsNotThere() {
     val node: Node = createNode()
 
