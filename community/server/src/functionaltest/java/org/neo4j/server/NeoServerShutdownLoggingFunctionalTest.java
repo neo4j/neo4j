@@ -5,6 +5,7 @@ import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.server.helpers.ServerHelper;
@@ -19,6 +20,13 @@ public class NeoServerShutdownLoggingFunctionalTest
     {
         server = ServerHelper.createServer();
         ServerHelper.cleanTheDatabase( server );
+    }
+    
+    @After
+    public void shutdownTheServer() {
+        if(server != null) {
+            server.stop();
+        }
     }
     
     @Test

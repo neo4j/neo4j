@@ -21,23 +21,17 @@ package org.neo4j.server;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
-import java.net.URI;
 
-import javax.ws.rs.core.MediaType;
-
-import org.dummy.web.service.DummyThirdPartyWebService;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.server.helpers.ServerHelper;
-import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.server.rest.FunctionalTestHelper;
 
 import com.sun.jersey.api.client.Client;
@@ -47,12 +41,10 @@ public class NeoServerFunctionalTest
 {
 
     private static NeoServerWithEmbeddedWebServer server;
-    private static InMemoryAppender appender;
 
     @BeforeClass
     public static void setupServer() throws IOException
     {
-        appender = new InMemoryAppender( NeoServerWithEmbeddedWebServer.log );
         server = ServerHelper.createServer();
     }
 
@@ -65,7 +57,7 @@ public class NeoServerFunctionalTest
     @AfterClass
     public static void stopServer()
     {
-        if(server != null) 
+        if ( server != null )
         {
             server.stop();
         }
@@ -77,15 +69,14 @@ public class NeoServerFunctionalTest
         assertNotNull( server.getDatabase() );
     }
 
-
-
     @Test
     public void shouldRedirectRootToWebadmin() throws Exception
     {
         assertFalse( server.baseUri()
                 .toString()
                 .contains( "webadmin" ) );
-        ClientResponse response = Client.create().resource( server.baseUri() )
+        ClientResponse response = Client.create()
+                .resource( server.baseUri() )
                 .get( ClientResponse.class );
         assertThat( response.getStatus(), is( 200 ) );
         assertThat( response.toString(), containsString( "webadmin" ) );
@@ -97,7 +88,8 @@ public class NeoServerFunctionalTest
     {
         FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper( server );
 
-        ClientResponse response = Client.create().resource( functionalTestHelper.getWebadminUri() )
+        ClientResponse response = Client.create()
+                .resource( functionalTestHelper.getWebadminUri() )
                 .get( ClientResponse.class );
 
         assertThat( response.getStatus(), is( 200 ) );
@@ -105,7 +97,5 @@ public class NeoServerFunctionalTest
                 .getFirst( "Content-Type" ), containsString( "html" ) );
         response.close();
     }
-
-
 
 }
