@@ -22,66 +22,64 @@ package org.neo4j.server.rest;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.server.WebTestUtils.CLIENT;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
 
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
-import org.neo4j.server.ServerBuilder;
-import org.neo4j.server.database.DatabaseBlockedException;
+import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.DocsGenerator.ResponseEntity;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.formats.CompactJsonFormat;
 import org.neo4j.test.TestData;
 
+import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
 public class RetrieveNodeFunctionalTest
 {
     private URI nodeUri;
+    private static NeoServerWithEmbeddedWebServer server;
+    private static FunctionalTestHelper functionalTestHelper;
 
-    private NeoServerWithEmbeddedWebServer server;
-
-    private FunctionalTestHelper functionalTestHelper;
-
-    public @Rule
-    TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
+    @BeforeClass
+    public static void setupServer() throws IOException
+    {
+        server = ServerHelper.createServer();
+        functionalTestHelper = new FunctionalTestHelper( server );
+    }
 
     @Before
-    public void setupServer() throws IOException, DatabaseBlockedException, URISyntaxException
+    public void cleanTheDatabaseAndInitialiseTheNodeUri() throws Exception
     {
-        server = ServerBuilder.server()
-                .withRandomDatabaseDir()
-                .withPassingStartupHealthcheck()
-                .build();
-        server.start();
-        functionalTestHelper = new FunctionalTestHelper( server );
+        ServerHelper.cleanTheDatabase( server );
         nodeUri = new URI( functionalTestHelper.nodeUri() + "/"
                            + new GraphDbHelper( server.getDatabase() ).createNode() );
     }
 
-    @After
-    public void stopServer()
+    @AfterClass
+    public static void stopServer()
     {
         server.stop();
-        server = null;
     }
+
+    public @Rule
+    TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
 
     /**
      * Get node.
-     *
+     * 
      * Note that the response contains URI/templates for the available
      * operations for getting properties and relationships.
      */
@@ -97,7 +95,7 @@ public class RetrieveNodeFunctionalTest
 
     /**
      * Get node - compact.
-     *
+     * 
      * Specifying the subformat in the requests media type yields a more compact
      * JSON response without metadata and templates.
      */
@@ -155,7 +153,7 @@ public class RetrieveNodeFunctionalTest
 
     private ClientResponse retrieveNodeFromService( final String uri )
     {
-        WebResource resource = CLIENT.resource( uri );
+        WebResource resource = Client.create().resource( uri );
         ClientResponse response = resource.accept( MediaType.APPLICATION_JSON )
                 .get( ClientResponse.class );
         return response;

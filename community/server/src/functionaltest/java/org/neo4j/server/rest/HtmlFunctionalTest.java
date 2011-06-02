@@ -22,7 +22,6 @@ package org.neo4j.server.rest;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.server.WebTestUtils.CLIENT;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -30,16 +29,18 @@ import java.util.Collections;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
-import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
+import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.RelationshipDirection;
 
+import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class HtmlFunctionalTest {
@@ -47,17 +48,27 @@ public class HtmlFunctionalTest {
     private long trinity;
     private long thomasAndersonLovesTrinity;
 
-    private NeoServerWithEmbeddedWebServer server;
-    private FunctionalTestHelper functionalTestHelper;
-    private GraphDbHelper helper;
+    private static NeoServerWithEmbeddedWebServer server;
+    private static FunctionalTestHelper functionalTestHelper;
+    private static GraphDbHelper helper;
+
+    @BeforeClass
+    public static void setupServer() throws IOException
+    {
+        server = ServerHelper.createServer();
+        functionalTestHelper = new FunctionalTestHelper( server );
+        helper = functionalTestHelper.getGraphDbHelper();
+    }
 
     @Before
-    public void setupServer() throws IOException {
-        server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
-        server.start();
-        functionalTestHelper = new FunctionalTestHelper(server);
-        helper = functionalTestHelper.getGraphDbHelper();
+    public void setupTheDatabase()
+    {
+        ServerHelper.cleanTheDatabase( server );
+        createTheMatrix();
+    }
 
+    private void createTheMatrix()
+    {
         // Create the matrix example
         thomasAnderson = createAndIndexNode("Thomas Anderson");
         trinity = createAndIndexNode("Trinity");
@@ -76,13 +87,14 @@ public class HtmlFunctionalTest {
         // index a relationship
         helper.createRelationshipIndex( "relationships2" );
         helper.addRelationshipToIndex( "relationships2", "key2", "value2", knowsRelationshipId );
-
     }
 
-    @After
-    public void stopServer() {
+    @AfterClass
+    public static void stopServer()
+    {
         server.stop();
     }
+
 
     private long createAndIndexNode(String name) throws DatabaseBlockedException {
         long id = helper.createNode();
@@ -93,7 +105,7 @@ public class HtmlFunctionalTest {
     @Ignore
     @Test
     public void shouldGetRoot() {
-        ClientResponse response = CLIENT.resource(functionalTestHelper.dataUri()).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
+        ClientResponse response = Client.create().resource(functionalTestHelper.dataUri()).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
         assertValidHtml(response.getEntity(String.class));
         response.close();
@@ -102,7 +114,7 @@ public class HtmlFunctionalTest {
     @Test
     @Ignore
     public void shouldGetNodeIndexRoot() {
-        ClientResponse response = CLIENT.resource(functionalTestHelper.nodeIndexUri()).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
+        ClientResponse response = Client.create().resource(functionalTestHelper.nodeIndexUri()).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
         assertValidHtml(response.getEntity(String.class));
         response.close();
@@ -111,7 +123,7 @@ public class HtmlFunctionalTest {
     @Test
     @Ignore
     public void shouldGetRelationshipIndexRoot() {
-        ClientResponse response = CLIENT.resource(functionalTestHelper.relationshipIndexUri()).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
+        ClientResponse response = Client.create().resource(functionalTestHelper.relationshipIndexUri()).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
         assertValidHtml(response.getEntity(String.class));
         response.close();
@@ -120,7 +132,7 @@ public class HtmlFunctionalTest {
     @Test
     @Ignore
     public void shouldGetTrinityWhenSearchingForHer() {
-        ClientResponse response = CLIENT.resource(functionalTestHelper.indexNodeUri("node", "name", "Trinity" )).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
+        ClientResponse response = Client.create().resource(functionalTestHelper.indexNodeUri("node", "name", "Trinity" )).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
         String entity = response.getEntity(String.class);
         assertTrue(entity.contains("Trinity"));
@@ -130,7 +142,7 @@ public class HtmlFunctionalTest {
 
     @Test
     public void shouldGetThomasAndersonDirectly() {
-        ClientResponse response = CLIENT.resource(functionalTestHelper.nodeUri(thomasAnderson)).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
+        ClientResponse response = Client.create().resource(functionalTestHelper.nodeUri(thomasAnderson)).accept(MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
         String entity = response.getEntity(String.class);
         assertTrue(entity.contains("Thomas Anderson"));
@@ -141,7 +153,7 @@ public class HtmlFunctionalTest {
     @Test
     @Ignore
     public void shouldGetSomeRelationships() {
-        ClientResponse response = CLIENT.resource(functionalTestHelper.relationshipsUri(thomasAnderson, RelationshipDirection.all.name(), "KNOWS")).accept(
+        ClientResponse response = Client.create().resource(functionalTestHelper.relationshipsUri(thomasAnderson, RelationshipDirection.all.name(), "KNOWS")).accept(
                 MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
         String entity = response.getEntity(String.class);
@@ -150,7 +162,7 @@ public class HtmlFunctionalTest {
         assertValidHtml(entity);
         response.close();
 
-        response = CLIENT.resource(functionalTestHelper.relationshipsUri(thomasAnderson, RelationshipDirection.all.name(), "LOVES")).accept(MediaType.TEXT_HTML_TYPE).get(
+        response = Client.create().resource(functionalTestHelper.relationshipsUri(thomasAnderson, RelationshipDirection.all.name(), "LOVES")).accept(MediaType.TEXT_HTML_TYPE).get(
                 ClientResponse.class);
         entity = response.getEntity(String.class);
         assertFalse(entity.contains("KNOWS"));
@@ -158,7 +170,7 @@ public class HtmlFunctionalTest {
         assertValidHtml(entity);
         response.close();
 
-        response = CLIENT.resource(functionalTestHelper.relationshipsUri(thomasAnderson, RelationshipDirection.all.name(), "LOVES", "KNOWS")).accept(
+        response = Client.create().resource(functionalTestHelper.relationshipsUri(thomasAnderson, RelationshipDirection.all.name(), "LOVES", "KNOWS")).accept(
                 MediaType.TEXT_HTML_TYPE).get(ClientResponse.class);
         entity = response.getEntity(String.class);
         assertTrue(entity.contains("KNOWS"));
@@ -170,7 +182,7 @@ public class HtmlFunctionalTest {
     @Test
     @Ignore
     public void shouldGetThomasAndersonLovesTrinityRelationship() {
-        ClientResponse response = CLIENT.resource(functionalTestHelper.relationshipUri(thomasAndersonLovesTrinity)).accept(MediaType.TEXT_HTML_TYPE).get(
+        ClientResponse response = Client.create().resource(functionalTestHelper.relationshipUri(thomasAndersonLovesTrinity)).accept(MediaType.TEXT_HTML_TYPE).get(
                 ClientResponse.class);
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
         String entity = response.getEntity(String.class);

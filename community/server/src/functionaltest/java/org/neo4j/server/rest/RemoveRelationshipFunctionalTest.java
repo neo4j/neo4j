@@ -20,65 +20,78 @@
 package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.server.WebTestUtils.CLIENT;
 
 import java.io.IOException;
 import java.net.URI;
 
 import javax.ws.rs.core.MediaType;
 
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
-import org.neo4j.server.ServerBuilder;
+import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 
+import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
-public class RemoveRelationshipFunctionalTest {
+public class RemoveRelationshipFunctionalTest
+{
 
-    private NeoServerWithEmbeddedWebServer server;
-    private FunctionalTestHelper functionalTestHelper;
-    private GraphDbHelper helper;
-    
-    @Before
-    public void setupServer() throws IOException {
-        server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
-        server.start();
-        functionalTestHelper = new FunctionalTestHelper(server);
+    private static NeoServerWithEmbeddedWebServer server;
+    private static FunctionalTestHelper functionalTestHelper;
+    private static GraphDbHelper helper;
+
+    @BeforeClass
+    public static void setupServer() throws IOException
+    {
+        server = ServerHelper.createServer();
+        functionalTestHelper = new FunctionalTestHelper( server );
         helper = functionalTestHelper.getGraphDbHelper();
     }
-    
-    @After
-    public void stopServer() {
+
+    @Before
+    public void cleanTheDatabase()
+    {
+        ServerHelper.cleanTheDatabase( server );
+    }
+
+    @AfterClass
+    public static void stopServer()
+    {
         server.stop();
-        server = null;
     }
 
     @Test
-    public void shouldGet204WhenRemovingAValidRelationship() throws Exception {
-        long relationshipId = helper.createRelationship("KNOWS");
+    public void shouldGet204WhenRemovingAValidRelationship() throws Exception
+    {
+        long relationshipId = helper.createRelationship( "KNOWS" );
 
-        ClientResponse response = sendDeleteRequest(new URI(functionalTestHelper.relationshipUri(relationshipId)));
+        ClientResponse response = sendDeleteRequest( new URI( functionalTestHelper.relationshipUri( relationshipId ) ) );
 
-        assertEquals(204, response.getStatus());
+        assertEquals( 204, response.getStatus() );
         response.close();
     }
 
     @Test
-    public void shouldGet404WhenRemovingAnInvalidRelationship() throws Exception {
-        long relationshipId = helper.createRelationship("KNOWS");
+    public void shouldGet404WhenRemovingAnInvalidRelationship() throws Exception
+    {
+        long relationshipId = helper.createRelationship( "KNOWS" );
 
-        ClientResponse response = sendDeleteRequest(new URI(functionalTestHelper.relationshipUri((relationshipId + 1) * 9999)));
+        ClientResponse response = sendDeleteRequest( new URI(
+                functionalTestHelper.relationshipUri( ( relationshipId + 1 ) * 9999 ) ) );
 
-        assertEquals(404, response.getStatus());
+        assertEquals( 404, response.getStatus() );
         response.close();
     }
 
-    private ClientResponse sendDeleteRequest(URI requestUri) {
-        WebResource.Builder resource = CLIENT.resource(requestUri).accept( MediaType.APPLICATION_JSON );
+    private ClientResponse sendDeleteRequest( URI requestUri )
+    {
+        WebResource.Builder resource = Client.create().resource( requestUri )
+                .accept( MediaType.APPLICATION_JSON );
         ClientResponse response = resource.delete( ClientResponse.class );
         return response;
     }

@@ -23,7 +23,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.server.WebTestUtils.CLIENT;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -47,6 +46,7 @@ import org.neo4j.server.rest.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 
+import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.UniformInterfaceException;
@@ -158,7 +158,7 @@ public class CloneSubgraphPluginTest
         originalCount--; // Don't count the reference node
 
         // Find the start node URI from the server
-        ClientResponse response = CLIENT.resource( functionalTestHelper.dataUri() + "node/1" )
+        ClientResponse response = Client.create().resource( functionalTestHelper.dataUri() + "node/1" )
                 .accept( MediaType.APPLICATION_JSON )
                 .get( ClientResponse.class );
 
@@ -183,7 +183,7 @@ public class CloneSubgraphPluginTest
 
         final String CLONE_DEPTH_MUCH_LARGER_THAN_THE_GRAPH = "99";
         response.close();
-        response = CLIENT.resource( clonedSubgraphUri )
+        response = Client.create().resource( clonedSubgraphUri )
                 .type( MediaType.APPLICATION_FORM_URLENCODED )
                 .entity( "depth=" + CLONE_DEPTH_MUCH_LARGER_THAN_THE_GRAPH )
                 .post( ClientResponse.class );

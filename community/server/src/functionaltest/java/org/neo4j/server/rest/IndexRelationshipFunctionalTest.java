@@ -21,7 +21,6 @@ package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.neo4j.server.WebTestUtils.CLIENT;
 
 import java.io.IOException;
 import java.net.URI;
@@ -34,38 +33,45 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
-import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
+import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.domain.URIHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
 
+import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class IndexRelationshipFunctionalTest
 {
-    private NeoServerWithEmbeddedWebServer server;
-    private FunctionalTestHelper functionalTestHelper;
-    private GraphDbHelper helper;
+    private static NeoServerWithEmbeddedWebServer server;
+    private static FunctionalTestHelper functionalTestHelper;
+    private static GraphDbHelper helper;
 
-    @Before
-    public void setupServer() throws IOException
+    @BeforeClass
+    public static void setupServer() throws IOException
     {
-        server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
-        server.start();
+        server = ServerHelper.createServer();
         functionalTestHelper = new FunctionalTestHelper( server );
         helper = functionalTestHelper.getGraphDbHelper();
     }
 
-    @After
-    public void stopServer()
+    @Before
+    public void cleanTheDatabase()
+    {
+        ServerHelper.cleanTheDatabase( server );
+    }
+
+    @AfterClass
+    public static void stopServer()
     {
         server.stop();
     }
@@ -117,7 +123,7 @@ public class IndexRelationshipFunctionalTest
 
     private JaxRsResponse httpPostIndexRelationshipRoot( String jsonIndexSpecification )
     {
-        return new JaxRsResponse( CLIENT.resource( functionalTestHelper.relationshipIndexUri() )
+        return new JaxRsResponse( Client.create().resource( functionalTestHelper.relationshipIndexUri() )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
                 .entity( jsonIndexSpecification ).post( ClientResponse.class ) );
@@ -147,7 +153,7 @@ public class IndexRelationshipFunctionalTest
 
     private JaxRsResponse httpGetIndexRelationshipNameKeyValue( String indexName, String key, String value, MediaType acceptType )
     {
-        return new JaxRsResponse( CLIENT.resource( functionalTestHelper.indexRelationshipUri( indexName, key, value ) )
+        return new JaxRsResponse( Client.create().resource( functionalTestHelper.indexRelationshipUri( indexName, key, value ) )
                 .accept( acceptType )
                 .get( ClientResponse.class ) );
     }
@@ -155,7 +161,7 @@ public class IndexRelationshipFunctionalTest
     private JaxRsResponse httpPostIndexRelationshipNameKeyValue( String indexName, String key, String value, String entity, MediaType postType, MediaType acceptType )
     {
         return new JaxRsResponse(
-                CLIENT.resource(
+                Client.create().resource(
                         functionalTestHelper.indexRelationshipUri( indexName, key, value ) )
                 .type( postType )
                 .accept( acceptType )
@@ -189,7 +195,7 @@ public class IndexRelationshipFunctionalTest
 
     private JaxRsResponse httpGet( String indexUri, MediaType acceptType )
     {
-        return new JaxRsResponse( CLIENT.resource( indexUri ).accept( acceptType ).get( ClientResponse.class ) );
+        return new JaxRsResponse( Client.create().resource( indexUri ).accept( acceptType ).get( ClientResponse.class ) );
     }
 
     @Test
@@ -244,7 +250,7 @@ public class IndexRelationshipFunctionalTest
         uriToName.put( indexLocation1.toString(), relationshipName1 );
         uriToName.put( indexLocation2.toString(), relationshipName2 );
 
-        ClientResponse response = CLIENT.resource( functionalTestHelper.indexRelationshipUri( indexName, key, value ) ).accept( MediaType.APPLICATION_JSON )
+        ClientResponse response = Client.create().resource( functionalTestHelper.indexRelationshipUri( indexName, key, value ) ).accept( MediaType.APPLICATION_JSON )
                 .get( ClientResponse.class );
         assertEquals( 200, response.getStatus() );
         Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( response.getEntity( String.class ) );
@@ -263,7 +269,7 @@ public class IndexRelationshipFunctionalTest
 
     private ClientResponse httpPostCreateRelationship( long startNode, String jsonString )
     {
-        return CLIENT.resource( functionalTestHelper.dataUri() + "node/" + startNode + "/relationships" )
+        return Client.create().resource( functionalTestHelper.dataUri() + "node/" + startNode + "/relationships" )
                 .type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON )
                 .entity( jsonString )
                 .post( ClientResponse.class );
@@ -281,7 +287,7 @@ public class IndexRelationshipFunctionalTest
     {
         String indexName = "empty-index";
         helper.createRelationshipIndex( indexName );
-        ClientResponse response = CLIENT.resource( functionalTestHelper.indexRelationshipUri( indexName, "non-existent-key", "non-existent-value" ) ).accept(
+        ClientResponse response = Client.create().resource( functionalTestHelper.indexRelationshipUri( indexName, "non-existent-key", "non-existent-value" ) ).accept(
                 MediaType.APPLICATION_JSON ).get( ClientResponse.class );
         assertEquals( 200, response.getStatus() );
         response.close();
@@ -298,7 +304,7 @@ public class IndexRelationshipFunctionalTest
         long relationship = helper.createRelationship("TYPE");
         helper.addRelationshipToIndex( indexName, key, value, relationship );
 
-        ClientResponse response = CLIENT.resource( functionalTestHelper.indexRelationshipUri( indexName ) + "?query="+key+":"+value ).accept( MediaType.APPLICATION_JSON )
+        ClientResponse response = Client.create().resource( functionalTestHelper.indexRelationshipUri( indexName ) + "?query="+key+":"+value ).accept( MediaType.APPLICATION_JSON )
                 .get( ClientResponse.class );
         
         assertEquals( 200, response.getStatus() );
@@ -323,17 +329,17 @@ public class IndexRelationshipFunctionalTest
         assertEquals( 1, helper.getIndexedRelationships( indexName, key1, value2 ).size() );
         assertEquals( 1, helper.getIndexedRelationships( indexName, key2, value1 ).size() );
         assertEquals( 1, helper.getIndexedRelationships( indexName, key2, value2 ).size() );
-        CLIENT.resource( functionalTestHelper.relationshipIndexUri() + indexName + "/" + key1 + "/" + value1 + "/" + relationship ).delete( ClientResponse.class );
+        Client.create().resource( functionalTestHelper.relationshipIndexUri() + indexName + "/" + key1 + "/" + value1 + "/" + relationship ).delete( ClientResponse.class );
         assertEquals( 0, helper.getIndexedRelationships( indexName, key1, value1 ).size() );
         assertEquals( 1, helper.getIndexedRelationships( indexName, key1, value2 ).size() );
         assertEquals( 1, helper.getIndexedRelationships( indexName, key2, value1 ).size() );
         assertEquals( 1, helper.getIndexedRelationships( indexName, key2, value2 ).size() );
-        CLIENT.resource( functionalTestHelper.relationshipIndexUri() + indexName + "/" + key2 + "/" + relationship ).delete( ClientResponse.class );
+        Client.create().resource( functionalTestHelper.relationshipIndexUri() + indexName + "/" + key2 + "/" + relationship ).delete( ClientResponse.class );
         assertEquals( 0, helper.getIndexedRelationships( indexName, key1, value1 ).size() );
         assertEquals( 1, helper.getIndexedRelationships( indexName, key1, value2 ).size() );
         assertEquals( 0, helper.getIndexedRelationships( indexName, key2, value1 ).size() );
         assertEquals( 0, helper.getIndexedRelationships( indexName, key2, value2 ).size() );
-        CLIENT.resource( functionalTestHelper.relationshipIndexUri() + indexName + "/" + relationship ).delete( ClientResponse.class );
+        Client.create().resource( functionalTestHelper.relationshipIndexUri() + indexName + "/" + relationship ).delete( ClientResponse.class );
         assertEquals( 0, helper.getIndexedRelationships( indexName, key1, value1 ).size() );
         assertEquals( 0, helper.getIndexedRelationships( indexName, key1, value2 ).size() );
         assertEquals( 0, helper.getIndexedRelationships( indexName, key2, value1 ).size() );
@@ -366,7 +372,7 @@ public class IndexRelationshipFunctionalTest
         assertEquals( 1, hits.size() );
         response.close();
 
-        CLIENT.resource( location ).delete();
+        Client.create().resource( location ).delete();
         response = httpGetIndexRelationshipNameKeyValue( indexName, key, value, MediaType.APPLICATION_JSON_TYPE );
         assertEquals( 200, response.getStatus() );
         responseEntity = response.getEntity( String.class );

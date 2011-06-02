@@ -110,7 +110,7 @@ public class ServerBuilder
             writePropertyToFile( Configurator.WEBSERVER_PORT_PROPERTY_KEY, portNo, temporaryConfigFile );
         }
         writePropertyToFile( Configurator.MANAGEMENT_PATH_PROPERTY_KEY, webAdminUri, temporaryConfigFile );
-        writePropertyToFile( Configurator.DATA_API_PATH_PROPERTY_KEY, webAdminDataUri, temporaryConfigFile );
+        writePropertyToFile( Configurator.REST_API_PATH_PROPERTY_KEY, webAdminDataUri, temporaryConfigFile );
 
         if ( thirdPartyPackages.keySet()
                 .size() > 0 )
@@ -297,8 +297,7 @@ public class ServerBuilder
     @SuppressWarnings( "unchecked" )
     public ServerBuilder withAllServerModules()
     {
-        withSpecificServerModules( DiscoveryModule.class, ManagementApiModule.class, RESTApiModule.class,
-                ThirdPartyJAXRSModule.class, WebAdminModule.class );
+        withSpecificServerModules(RESTApiModule.class, WebAdminModule.class, ManagementApiModule.class, ThirdPartyJAXRSModule.class, DiscoveryModule.class);
         return this;
     }
 }

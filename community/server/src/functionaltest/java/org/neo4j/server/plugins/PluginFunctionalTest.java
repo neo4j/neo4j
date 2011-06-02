@@ -25,7 +25,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.server.WebTestUtils.CLIENT;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -50,6 +49,7 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.NodeRepresentationTest;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 
+import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 @SuppressWarnings( "unchecked" )
@@ -340,7 +340,7 @@ public class PluginFunctionalTest
 
         String postBody = "strings[]=aaa&strings[]=bbb&strings[]=ccc";
 
-        CLIENT.resource( methodUri )
+        Client.create().resource( methodUri )
                 .accept( MediaType.APPLICATION_JSON_TYPE )
                 .entity( postBody, MediaType.APPLICATION_FORM_URLENCODED )
                 .post( ClientResponse.class );
@@ -359,7 +359,7 @@ public class PluginFunctionalTest
 
         String postBody = "strings[]=aaa&strings[]=bbb&strings[]=ccc&count=3";
 
-        CLIENT.resource( methodUri )
+        Client.create().resource( methodUri )
                 .accept( MediaType.APPLICATION_JSON_TYPE )
                 .entity( postBody, MediaType.APPLICATION_FORM_URLENCODED )
                 .post( ClientResponse.class );
@@ -434,7 +434,7 @@ public class PluginFunctionalTest
 
         String url = getPluginMethodUri( functionalTestHelper.nodeUri( n ), "pathToReference" );
 
-        ClientResponse response = CLIENT.resource( url )
+        ClientResponse response = Client.create().resource( url )
                 .accept( MediaType.APPLICATION_JSON_TYPE )
                 .post( ClientResponse.class );
 

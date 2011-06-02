@@ -27,28 +27,35 @@ import java.io.IOException;
 
 import javax.ws.rs.core.MediaType;
 
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
-import org.neo4j.server.ServerBuilder;
+import org.neo4j.server.helpers.ServerHelper;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class RedirectorTests
 {
-    private NeoServerWithEmbeddedWebServer server;
+    private static NeoServerWithEmbeddedWebServer server;
 
-    @Before
-    public void setupServer() throws IOException
+    @BeforeClass
+    public static void setupServer() throws IOException
     {
-        server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
-        server.start();
+        server = ServerHelper.createServer();
+
     }
 
-    @After
-    public void stopServer()
+    @Before
+    public void cleanTheDatabase()
+    {
+        ServerHelper.cleanTheDatabase( server );
+    }
+
+    @AfterClass
+    public static void stopServer()
     {
         server.stop();
     }
@@ -56,12 +63,11 @@ public class RedirectorTests
     @Test
     public void shouldRedirectRootToWebadmin() throws Exception
     {
-        ClientResponse response = Client.
-                create().
-                resource( server.baseUri() ).
-                type( MediaType.APPLICATION_JSON ).
-                accept( MediaType.APPLICATION_JSON ).
-                get( ClientResponse.class );
+        ClientResponse response = Client.create()
+                .resource( server.baseUri() )
+                .type( MediaType.APPLICATION_JSON )
+                .accept( MediaType.APPLICATION_JSON )
+                .get( ClientResponse.class );
 
         assertThat( response.getStatus(), is( not( 404 ) ) );
     }
@@ -71,12 +77,11 @@ public class RedirectorTests
     {
         String url = server.baseUri() + "a/different/relative/webadmin/data/uri/";
 
-        ClientResponse response = Client.
-                create().
-                resource( url ).
-                type( MediaType.APPLICATION_JSON ).
-                accept( MediaType.APPLICATION_JSON ).
-                get( ClientResponse.class );
+        ClientResponse response = Client.create()
+                .resource( url )
+                .type( MediaType.APPLICATION_JSON )
+                .accept( MediaType.APPLICATION_JSON )
+                .get( ClientResponse.class );
 
         assertThat( response.getStatus(), is( 404 ) );
     }

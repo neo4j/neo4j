@@ -22,51 +22,56 @@ package org.neo4j.server;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.server.WebTestUtils.NON_REDIRECTING_CLIENT;
 
 import java.io.IOException;
 
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
+import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.server.web.Jetty6WebServer;
 
+import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class NeoServerStartupLoggingFunctionalTest
 {
 
-    private NeoServerWithEmbeddedWebServer server;
+    private static InMemoryAppender appender = new InMemoryAppender( Jetty6WebServer.log );
 
-    private InMemoryAppender appender;
+    private static NeoServerWithEmbeddedWebServer server;
 
-    @Before
-    public void setupServer() throws IOException
+    @BeforeClass
+    public static void setupServer() throws IOException
     {
-        appender = new InMemoryAppender( Jetty6WebServer.log );
-        server = ServerBuilder.server()
-                .withRandomDatabaseDir()
-                .withPassingStartupHealthcheck()
-                .build();
-        server.start();
+        server = ServerHelper.createServer();
     }
 
-    @After
-    public void stopServer() throws IOException
+    @Before
+    public void cleanTheDatabase()
+    {
+        ServerHelper.cleanTheDatabase( server );
+    }
+
+    @AfterClass
+    public static void stopServer()
     {
         server.stop();
     }
 
     @Test
-    public void shouldLogStartup() throws IOException, ServerStartupException
+    public void shouldLogStartup() throws Exception
     {
-
         // Check the logs
-        assertThat( appender.toString().length(), is( greaterThan( 0 ) ) );
+        assertThat( appender.toString()
+                .length(), is( greaterThan( 0 ) ) );
 
         // Check the server is alive
-        ClientResponse response = NON_REDIRECTING_CLIENT.resource( "http://localhost:" + server.getWebServerPort() + "/" )
+        Client nonRedirectingClient = Client.create();
+        nonRedirectingClient.setFollowRedirects( false );
+        ClientResponse response = nonRedirectingClient.resource( "http://localhost:" + server.getWebServerPort() + "/" )
                 .get( ClientResponse.class );
         assertThat( response.getStatus(), is( greaterThan( 199 ) ) );
 

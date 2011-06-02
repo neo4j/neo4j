@@ -22,43 +22,53 @@ package org.neo4j.server.rest;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.server.WebTestUtils.CLIENT;
 
 import java.io.IOException;
 
 import javax.ws.rs.core.MediaType;
 
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
-import org.neo4j.server.ServerBuilder;
+import org.neo4j.server.helpers.ServerHelper;
 
+import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class JmxServiceTest
 {
-    private NeoServerWithEmbeddedWebServer server;
-    private FunctionalTestHelper functionalTestHelper;
+    private static NeoServerWithEmbeddedWebServer server;
+    private static FunctionalTestHelper functionalTestHelper;
 
-    @Before
-    public void setupServer() throws IOException {
-        server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
-        server.start();
-        functionalTestHelper = new FunctionalTestHelper(server);
+    @BeforeClass
+    public static void setupServer() throws IOException
+    {
+        server = ServerHelper.createServer();
+        functionalTestHelper = new FunctionalTestHelper( server );
     }
 
-    @After
-    public void stopServer() {
+    @Before
+    public void cleanTheDatabase()
+    {
+        ServerHelper.cleanTheDatabase( server );
+    }
+
+    @AfterClass
+    public static void stopServer()
+    {
         server.stop();
-        server = null;
     }
 
     @Test
-    public void shouldRespondWithTheWebAdminClientSettings() throws Exception {
+    public void shouldRespondWithTheWebAdminClientSettings() throws Exception
+    {
         String url = functionalTestHelper.mangementUri() + "/server/jmx";
-        ClientResponse resp = CLIENT.resource(url).accept( MediaType.APPLICATION_JSON_TYPE ).get(ClientResponse.class);
-        String json = resp.getEntity(String.class);
+        ClientResponse resp = Client.create().resource( url )
+                .accept( MediaType.APPLICATION_JSON_TYPE )
+                .get( ClientResponse.class );
+        String json = resp.getEntity( String.class );
 
         assertEquals( json, 200, resp.getStatus() );
         assertThat( json, containsString( "resources" ) );

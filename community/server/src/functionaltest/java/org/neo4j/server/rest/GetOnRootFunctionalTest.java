@@ -21,47 +21,53 @@ package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.neo4j.server.WebTestUtils.CLIENT;
 
 import java.io.IOException;
 import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
 
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
-import org.neo4j.server.ServerBuilder;
+import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.test.TestData;
 
+import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class GetOnRootFunctionalTest
 {
 
-    private NeoServerWithEmbeddedWebServer server;
-    private FunctionalTestHelper functionalTestHelper;
+    private static NeoServerWithEmbeddedWebServer server;
+    private static FunctionalTestHelper functionalTestHelper;
+
+    @BeforeClass
+    public static void setupServer() throws IOException
+    {
+        server = ServerHelper.createServer();
+        functionalTestHelper = new FunctionalTestHelper( server );
+    }
+
+    @Before
+    public void cleanTheDatabase()
+    {
+        ServerHelper.cleanTheDatabase( server );
+    }
+
+    @AfterClass
+    public static void stopServer()
+    {
+        server.stop();
+    }
 
     public @Rule
     TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
-
-    @Before
-    public void setupServer() throws IOException {
-        server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
-        server.start();
-        functionalTestHelper = new FunctionalTestHelper(server);
-
-    }
-
-    @After
-    public void stopServer() {
-        server.stop();
-        server = null;
-    }
 
     /**
      * The service root is your starting point to discover the REST API.
@@ -69,27 +75,33 @@ public class GetOnRootFunctionalTest
     @Documented
     @Test
     @TestData.Title( "Get service root" )
-    public void assert200OkFromGet() throws Exception {
+    public void assert200OkFromGet() throws Exception
+    {
         gen.get()
                 .expectedStatus( 200 )
                 .get( functionalTestHelper.dataUri() );
     }
 
     @Test
-    public void assertResponseHaveCorrectContentFromGet() throws Exception {
-        ClientResponse response = CLIENT.resource(functionalTestHelper.dataUri()).accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
-        String body = response.getEntity(String.class);
-        Map<String, Object> map = JsonHelper.jsonToMap(body);
-        assertEquals(functionalTestHelper.nodeUri(), map.get("node"));
-        assertNotNull(map.get("reference_node"));
-        assertNotNull(map.get("node_index"));
-        assertNotNull(map.get("relationship_index"));
-        assertNotNull(map.get("extensions_info"));
+    public void assertResponseHaveCorrectContentFromGet() throws Exception
+    {
+        ClientResponse response = Client.create().resource( functionalTestHelper.dataUri() )
+                .accept( MediaType.APPLICATION_JSON )
+                .get( ClientResponse.class );
+        String body = response.getEntity( String.class );
+        Map<String, Object> map = JsonHelper.jsonToMap( body );
+        assertEquals( functionalTestHelper.nodeUri(), map.get( "node" ) );
+        assertNotNull( map.get( "reference_node" ) );
+        assertNotNull( map.get( "node_index" ) );
+        assertNotNull( map.get( "relationship_index" ) );
+        assertNotNull( map.get( "extensions_info" ) );
         response.close();
 
-        String referenceNodeUri = (String) map.get("reference_node");
-        response = CLIENT.resource(referenceNodeUri).accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
-        assertEquals(200, response.getStatus());
+        String referenceNodeUri = (String) map.get( "reference_node" );
+        response = Client.create().resource( referenceNodeUri )
+                .accept( MediaType.APPLICATION_JSON )
+                .get( ClientResponse.class );
+        assertEquals( 200, response.getStatus() );
         response.close();
     }
 }

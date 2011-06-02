@@ -22,7 +22,6 @@ package org.neo4j.server.rest;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.server.WebTestUtils.CLIENT;
 
 import java.io.IOException;
 import java.util.Map;
@@ -34,7 +33,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
-import org.neo4j.server.WebTestUtils;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 
@@ -109,9 +107,10 @@ public class DiscoveryServiceFunctionalTest
     @Test
     public void shouldRedirectToWebadminOnHtmlRequest() throws Exception
     {
-        Client client = WebTestUtils.NON_REDIRECTING_CLIENT;
+        Client nonRedirectingClient = Client.create();
+        nonRedirectingClient.setFollowRedirects( false );
 
-        ClientResponse clientResponse = client.resource( server.baseUri() )
+        ClientResponse clientResponse = nonRedirectingClient.resource( server.baseUri() )
                 .accept( MediaType.TEXT_HTML )
                 .get( ClientResponse.class );
 
@@ -120,7 +119,7 @@ public class DiscoveryServiceFunctionalTest
 
     private ClientResponse getDiscoveryDocument() throws Exception
     {
-        return CLIENT.resource( server.baseUri() )
+        return Client.create().resource( server.baseUri() )
                 .accept( MediaType.APPLICATION_JSON )
                 .get( ClientResponse.class );
     }

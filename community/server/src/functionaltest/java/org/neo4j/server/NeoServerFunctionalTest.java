@@ -25,145 +25,87 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.server.WebTestUtils.CLIENT;
 
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.net.URI;
 
 import javax.ws.rs.core.MediaType;
 
 import org.dummy.web.service.DummyThirdPartyWebService;
-import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
+import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.server.rest.FunctionalTestHelper;
 
+import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
-public class NeoServerFunctionalTest {
+public class NeoServerFunctionalTest
+{
 
-    private NeoServerWithEmbeddedWebServer server;
+    private static NeoServerWithEmbeddedWebServer server;
+    private static InMemoryAppender appender;
 
-    @After
-    public void stopServer() {
-        if (server != null) {
-            server.stop(); 
+    @BeforeClass
+    public static void setupServer() throws IOException
+    {
+        appender = new InMemoryAppender( NeoServerWithEmbeddedWebServer.log );
+        server = ServerHelper.createServer();
+    }
+
+    @Before
+    public void cleanTheDatabase()
+    {
+        ServerHelper.cleanTheDatabase( server );
+    }
+
+    @AfterClass
+    public static void stopServer()
+    {
+        if(server != null) 
+        {
+            server.stop();
         }
     }
 
     @Test
-    public void shouldDefaultToSensiblePortIfNoneSpecifiedInConfig() throws Exception {
-        server = ServerBuilder.server().withPassingStartupHealthcheck().withoutWebServerPort().withRandomDatabaseDir().build();
-        server.start();
-        FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper(server);
+    public void whenServerIsStartedItshouldStartASingleDatabase() throws Exception
+    {
+        assertNotNull( server.getDatabase() );
+    }
 
-        ClientResponse response = CLIENT.resource(functionalTestHelper.getWebadminUri()).get(ClientResponse.class);
 
-        assertThat(response.getStatus(), is(200));
+
+    @Test
+    public void shouldRedirectRootToWebadmin() throws Exception
+    {
+        assertFalse( server.baseUri()
+                .toString()
+                .contains( "webadmin" ) );
+        ClientResponse response = Client.create().resource( server.baseUri() )
+                .get( ClientResponse.class );
+        assertThat( response.getStatus(), is( 200 ) );
+        assertThat( response.toString(), containsString( "webadmin" ) );
         response.close();
     }
 
     @Test
-    public void whenServerIsStartedItshouldStartASingleDatabase() throws Exception {
-        server = ServerBuilder.server().withPassingStartupHealthcheck().withRandomDatabaseDir().build();
-        server.start();
-        assertNotNull(server.getDatabase());
-    }
+    public void serverShouldProvideAWelcomePage() throws Exception
+    {
+        FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper( server );
 
-    @Test
-    public void shouldLogStartup() throws Exception {
-        InMemoryAppender appender = new InMemoryAppender(NeoServerWithEmbeddedWebServer.log);
-        server = ServerBuilder.server().withPassingStartupHealthcheck().withRandomDatabaseDir().build();
-        server.start();
-        assertThat(appender.toString(), containsString("Starting Neo Server on port [" + server.getWebServerPort() + "]"));
-    }
+        ClientResponse response = Client.create().resource( functionalTestHelper.getWebadminUri() )
+                .get( ClientResponse.class );
 
-    @Test
-    public void shouldRedirectRootToWebadmin() throws Exception {
-        server = ServerBuilder.server().withPassingStartupHealthcheck().withRandomDatabaseDir().build();
-        server.start();
-
-        assertFalse(server.baseUri().toString().contains("webadmin"));
-        ClientResponse response = CLIENT.resource(server.baseUri()).get(ClientResponse.class);
-        assertThat(response.getStatus(), is(200));
-        assertThat(response.toString(), containsString("webadmin"));
+        assertThat( response.getStatus(), is( 200 ) );
+        assertThat( response.getHeaders()
+                .getFirst( "Content-Type" ), containsString( "html" ) );
         response.close();
     }
 
-    @Test
-    public void serverShouldProvideAWelcomePage() throws Exception {
-        server = ServerBuilder.server().withPassingStartupHealthcheck().withRandomDatabaseDir().build();
-        server.start();
-        FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper(server);
 
-        ClientResponse response = CLIENT.resource(functionalTestHelper.getWebadminUri()).get(ClientResponse.class);
-
-        assertThat(response.getStatus(), is(200));
-        assertThat(response.getHeaders().getFirst("Content-Type"), containsString("html"));
-        response.close();
-    }
-
-    @Test
-    public void shouldMakeJAXRSClassesAvailableViaHTTP() throws Exception {
-        server = ServerBuilder.server().withPassingStartupHealthcheck().withRandomDatabaseDir().build();
-        server.start();
-        FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper(server);
-
-        ClientResponse response = CLIENT.resource(functionalTestHelper.getWebadminUri()).accept(MediaType.APPLICATION_JSON_TYPE)
-                .get(ClientResponse.class);
-        assertEquals(200, response.getStatus());
-        response.close();
-    }
-
-    @Test
-    public void shouldLogShutdown() throws Exception {
-        InMemoryAppender appender = new InMemoryAppender(NeoServerWithEmbeddedWebServer.log);
-        server = ServerBuilder.server().withPassingStartupHealthcheck().withRandomDatabaseDir().build();
-        server.start();
-        server.stop();
-        server = null; // Need this to prevent the server being stopped twice
-        assertThat(
-                appender.toString(),
-                containsString( "INFO: Successfully shutdown database [" ) );
-    }
-
-    @Test
-    public void shouldComplainIfServerPortIsAlreadyTaken() throws IOException {
-        int contestedPort = 9999;
-        ServerSocket socket = new ServerSocket(contestedPort);
-
-        InMemoryAppender appender = new InMemoryAppender(NeoServerWithEmbeddedWebServer.log);
-        server = ServerBuilder.server().withPassingStartupHealthcheck().onPort(contestedPort).withRandomDatabaseDir().build();
-        server.start();
-
-        // Don't include the SEVERE string since it's OS-regional-settings-specific
-        assertThat( appender.toString(), containsString( String.format(
-                ": Failed to start Neo Server on port [%s]",
-                server.getWebServerPort() ) ) );
-        socket.close();
-    }
-
-    @Test
-    public void shouldLoadThirdPartyJaxRsClasses() throws Exception {
-        server = ServerBuilder.server().withThirdPartyJaxRsPackage("org.dummy.web.service", DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT)
-                .withPassingStartupHealthcheck().withRandomDatabaseDir().build();
-        server.start();
-
-        URI thirdPartyServiceUri = new URI(server.baseUri().toString() + DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT).normalize();
-        String response = CLIENT.resource(thirdPartyServiceUri.toString()).get(String.class);
-        assertEquals("hello", response);
-    }
-
-    @Test
-    public void shouldLoadExtensionInitializers() throws Exception {
-        server = ServerBuilder.server().withThirdPartyJaxRsPackage("org.dummy.web.service", DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT)
-                .withPassingStartupHealthcheck().withRandomDatabaseDir().build();
-        server.start();
-
-        URI thirdPartyServiceUri = new URI(server.baseUri().toString() + DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT + "/sayFortyTwo").normalize();
-        String response = CLIENT.resource(thirdPartyServiceUri.toString()).get(String.class);
-        assertEquals("hello 42", response);
-    }
 
 }
