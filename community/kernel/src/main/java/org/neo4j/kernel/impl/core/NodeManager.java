@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
+import org.neo4j.kernel.impl.util.RelIdArrayWithLoops;
 
 public class NodeManager
 {
@@ -605,17 +606,25 @@ public class NodeManager
         ArrayMap<String,RelIdArray> newRelationshipMap =
             new ArrayMap<String,RelIdArray>();
         Map<Long,RelationshipImpl> relsMap = new HashMap<Long,RelationshipImpl>( 150 );
-        for ( Map.Entry<DirectionWrapper, Iterable<RelationshipRecord>> entry : rels.first().entrySet() )
+        
+        Iterable<RelationshipRecord> loops = rels.first().get( DirectionWrapper.BOTH );
+        boolean hasLoops = loops != null;
+        if ( hasLoops )
         {
-            receiveRelationships( entry.getValue(), newRelationshipMap, relsMap, entry.getKey() );
+            receiveRelationships( loops, newRelationshipMap, relsMap, DirectionWrapper.BOTH, true );
         }
+        receiveRelationships( rels.first().get( DirectionWrapper.OUTGOING ), newRelationshipMap,
+                relsMap, DirectionWrapper.OUTGOING, hasLoops );
+        receiveRelationships( rels.first().get( DirectionWrapper.INCOMING ), newRelationshipMap,
+                relsMap, DirectionWrapper.INCOMING, hasLoops );
+        
         // relCache.putAll( relsMap );
         return Pair.of( newRelationshipMap, relsMap );
     }
 
     private void receiveRelationships(
             Iterable<RelationshipRecord> rels, ArrayMap<String, RelIdArray> newRelationshipMap,
-            Map<Long, RelationshipImpl> relsMap, DirectionWrapper dir )
+            Map<Long, RelationshipImpl> relsMap, DirectionWrapper dir, boolean hasLoops )
     {
         for ( RelationshipRecord rel : rels )
         {
@@ -638,7 +647,7 @@ public class NodeManager
             RelIdArray relationshipSet = newRelationshipMap.get( type.name() );
             if ( relationshipSet == null )
             {
-                relationshipSet = new RelIdArray();
+                relationshipSet = hasLoops ? new RelIdArrayWithLoops() : new RelIdArray();
                 newRelationshipMap.put( type.name(), relationshipSet );
             }
             relationshipSet.add( relId, dir );

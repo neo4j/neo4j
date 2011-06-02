@@ -346,7 +346,12 @@ class NodeImpl extends Primitive
             }
             else
             {
-                srcRels.addAll( addRels );
+                RelIdArray newSrcRels = srcRels.addAll( addRels );
+                // This can happen if srcRels gets upgraded to a RelIdArrayWithLoops
+                if ( newSrcRels != srcRels )
+                {
+                    tmpRelMap.put( type, newSrcRels );
+                }
             }
         }
         return pair.other();
@@ -385,7 +390,12 @@ class NodeImpl extends Primitive
                 }
                 else
                 {
-                    srcRels.addAll( addRels );
+                    RelIdArray newSrcRels = srcRels.addAll( addRels );
+                    // This can happen if srcRels gets upgraded to a RelIdArrayWithLoops
+                    if ( newSrcRels != srcRels )
+                    {
+                        relationshipMap.put( type, newSrcRels );
+                    }
                 }
             }
         }

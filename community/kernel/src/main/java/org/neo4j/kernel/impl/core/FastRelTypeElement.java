@@ -25,8 +25,8 @@ import org.neo4j.kernel.impl.util.RelIdArray.RelIdIterator;
 
 class FastRelTypeElement extends RelTypeElementIterator
 {
-    private final RelIdArray src;
-    private final RelIdIterator iterator;
+    private RelIdArray src;
+    private RelIdIterator iterator;
     private final DirectionWrapper direction;
 
     FastRelTypeElement( String type, NodeImpl node, RelIdArray src, DirectionWrapper direction )
@@ -59,6 +59,12 @@ class FastRelTypeElement extends RelTypeElementIterator
     public RelTypeElementIterator setSrc( RelIdArray newSrc )
     {
         return new FastRelTypeElement( getType(), getNode(), newSrc, direction );
+    }
+    
+    @Override
+    public void updateSrc( RelIdArray newSrc )
+    {
+        this.iterator.updateSource( newSrc );
     }
     
     @Override
