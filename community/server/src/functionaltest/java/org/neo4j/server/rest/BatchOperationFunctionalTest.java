@@ -71,7 +71,6 @@ public class BatchOperationFunctionalTest
         server.stop();
     }
 
-    @Ignore("Fix me!")
     @SuppressWarnings( "unchecked" )
     @Test
     public void shouldReturnCorrectFromAndIdValuesOnMixedRequest() throws JsonParseException, ClientHandlerException,
@@ -120,7 +119,6 @@ public class BatchOperationFunctionalTest
         assertEquals( 1, ( (Map<String, Object>) body.get( "data" ) ).get( "age" ) );
     }
 
-    @Ignore("fix me")
     @Test
     public void shouldGetLocationHeadersWhenCreatingThings() throws JsonParseException, ClientHandlerException,
             UniformInterfaceException
