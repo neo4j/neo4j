@@ -37,7 +37,7 @@ public class TestDirectArrayMap
     {
         int size = 10;
         int count = 100000000;
-        
+
         // ConcurrentHashMap
         {
             Map<Integer, String> map = new ConcurrentHashMap<Integer, String>();
@@ -45,15 +45,15 @@ public class TestDirectArrayMap
             {
                 map.put( i, "yo " + i );
             }
-            
+
             long t = currentTimeMillis();
             for ( int i = 0; i < count; i++ )
             {
-                map.get( i%size );
+                map.get( i % size );
             }
-            System.out.println( "map " + (currentTimeMillis()-t) );
+            System.out.println( "map " + ( currentTimeMillis() - t ) );
         }
-        
+
         // DirectArrayMap
         {
             DirectArrayMap<String> map = new DirectArrayMap<String>( 10 );
@@ -61,26 +61,26 @@ public class TestDirectArrayMap
             {
                 map.put( i, "yo " + i );
             }
-            
+
             long t = currentTimeMillis();
             for ( int i = 0; i < count; i++ )
             {
-                map.get( i%size );
+                map.get( i % size );
             }
-            System.out.println( "dmap " + (currentTimeMillis()-t) );
         }
     }
-    
+
     @Test
     public void multiThreaded() throws Exception
     {
         final int size = 15;
         final int count = 10000000;
-        
+
         // ConcurrentHashMap
         {
             final Map<Integer, String> map = new ConcurrentHashMap<Integer, String>();
-            for ( int i = 0; i < 3; i++ ) map.put( i, "yo " + i );
+            for ( int i = 0; i < 3; i++ )
+                map.put( i, "yo " + i );
             List<Thread> threads = new ArrayList<Thread>();
             long t = currentTimeMillis();
             for ( int i = 0; i < 3; i++ )
@@ -92,17 +92,12 @@ public class TestDirectArrayMap
                     {
                         for ( int i = 0; i < count; i++ )
                         {
-                            map.get( i%size );
-                            if ( count%100000 == 0 && i > 0 )
+                            map.get( i % size );
+                            if ( count % 100000 == 0 && i > 0 )
                             {
-                                int key = (int)(currentTimeMillis()%size);
+                                int key = (int) ( currentTimeMillis() % size );
                                 map.put( key, "yo " + key );
                             }
-//                            else if ( count%150000 == 0 && i > 0 )
-//                            {
-//                                int key = (int)(currentTimeMillis()%size);
-//                                map.remove( key );
-//                            }
                         }
                     }
                 };
@@ -113,13 +108,13 @@ public class TestDirectArrayMap
             {
                 thread.join();
             }
-            System.out.println( "map " + (currentTimeMillis()-t) );
         }
 
         // DirectArrayMap
         {
             final DirectArrayMap<String> map = new DirectArrayMap<String>( size );
-            for ( int i = 0; i < 3; i++ ) map.put( i, "yo " + i );
+            for ( int i = 0; i < 3; i++ )
+                map.put( i, "yo " + i );
             List<Thread> threads = new ArrayList<Thread>();
             long t = currentTimeMillis();
             for ( int i = 0; i < 3; i++ )
@@ -131,17 +126,12 @@ public class TestDirectArrayMap
                     {
                         for ( int i = 0; i < count; i++ )
                         {
-                            map.get( i%size );
-                            if ( count%100000 == 0 && i > 0 )
+                            map.get( i % size );
+                            if ( count % 100000 == 0 && i > 0 )
                             {
-                                int key = (int)(currentTimeMillis()%size);
+                                int key = (int) ( currentTimeMillis() % size );
                                 map.put( key, "yo " + key );
                             }
-//                            else if ( count%150000 == 0 && i > 0 )
-//                            {
-//                                int key = (int)(currentTimeMillis()%size);
-//                                map.remove( key );
-//                            }
                         }
                     }
                 };
@@ -152,7 +142,6 @@ public class TestDirectArrayMap
             {
                 thread.join();
             }
-            System.out.println( "dmap " + (currentTimeMillis()-t) );
         }
     }
 }
