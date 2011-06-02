@@ -188,8 +188,7 @@ public class Jetty6WebServer implements WebServer
     public void invokeDirectly( String targetPath, HttpServletRequest request, HttpServletResponse response )
             throws IOException, ServletException
     {
-        System.out.println( request.getMethod() + " --> " + targetPath );
-        jetty.handle( targetPath, request, response, Handler.DEFAULT);
+        jetty.handle( targetPath, request, response, Handler.REQUEST);
     }
 
     protected void loadStaticContent( SessionManager sm )

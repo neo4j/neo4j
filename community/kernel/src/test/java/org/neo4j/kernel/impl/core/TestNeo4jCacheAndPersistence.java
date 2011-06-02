@@ -529,7 +529,18 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testLowGrabSizeWithLoops()
+    public void testAnotherLowGrabSize()
+    {
+        testLowGrabSize( false );
+    }
+    
+    @Test
+    public void testAnotherLowGrabSizeWithLoops()
+    {
+        testLowGrabSize( true );
+    }
+    
+    private void testLowGrabSize( boolean includeLoops )
     {
         Map<String, String> config = new HashMap<String, String>();
         config.put( "relationship_grab_size", "2" );
@@ -546,8 +557,17 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         Collection<Relationship> incomingOriginal = new HashSet<Relationship>();
         Collection<Relationship> loopsOriginal = new HashSet<Relationship>();
         
+        int total = 0;
+        int totalOneDirection = 0;
         for ( int i = 0; i < 33; i++ )
         {
+            if ( includeLoops )
+            {
+                loopsOriginal.add( node2.createRelationshipTo( node2, MyRelTypes.TEST ) );
+                total++;
+                totalOneDirection++;
+            }
+            
             if ( i % 2 == 0 )
             {
                 incomingOriginal.add( node1.createRelationshipTo( node2, MyRelTypes.TEST ) );
@@ -558,8 +578,8 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
                 outgoingOriginal.add( node2.createRelationshipTo( node1, MyRelTypes.TEST ) );
                 incomingOriginal.add( node3.createRelationshipTo( node2, MyRelTypes.TEST ) );
             }
-            // loopsOriginal.add( node2.createRelationshipTo( node2, MyRelTypes.TEST )
-            // );
+            total += 2;
+            totalOneDirection++;
         }
         tx.success();
         tx.finish();
@@ -587,7 +607,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
                 assertTrue( incoming.remove( rel ) );
             }
         }
-        assertEquals( 66 /* 99 for loops */, rels.size() );
+        assertEquals( total, rels.size() );
         assertEquals( 0, loops.size() );
         assertEquals( 0, incoming.size() );
         assertEquals( 0, outgoing.size() );
@@ -613,7 +633,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
                 fail( "There should be no incomming relationships " + rel );
             }
         }
-        assertEquals( 33 /* 66 for loops */, rels.size() );
+        assertEquals( totalOneDirection, rels.size() );
         assertEquals( 0, loops.size() );
         assertEquals( 0, outgoing.size() );
         rels.clear();
@@ -638,7 +658,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
                 fail( "There should be no outgoing relationships " + rel );
             }
         }
-        assertEquals( 33 /* 66 for loops */, rels.size() );
+        assertEquals( totalOneDirection, rels.size() );
         assertEquals( 0, loops.size() );
         assertEquals( 0, incoming.size() );
         rels.clear();

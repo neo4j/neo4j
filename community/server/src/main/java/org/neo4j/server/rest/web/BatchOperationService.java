@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.rest.web;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -79,14 +80,6 @@ public class BatchOperationService
             List<BatchOperationRepresentation> results = new ArrayList<BatchOperationRepresentation>(
                     operations.size() );
 
-            InternalJettyServletRequest request = new InternalJettyServletRequest();
-            InternalJettyServletResponse response = new InternalJettyServletResponse();
-
-            String servletBaseUrl = uriInfo.getBaseUri().toString();
-            String servletPath = uriInfo.getBaseUri().getPath();
-            servletBaseUrl = servletBaseUrl.substring( 0,
-                    servletBaseUrl.length() - 1 );
-
             String opBody, opMethod, opPath;
             Integer opId;
             Map<String, Object> op;
@@ -100,22 +93,25 @@ public class BatchOperationService
                         : "";
                 opId = op.containsKey( ID_KEY ) ? (Integer) op.get( ID_KEY )
                         : null;
-                
+
                 if(!opPath.startsWith( "/" )) {
                    opPath = "/" + opPath;
                 }
 
-                request.setup( opMethod, new HttpURI( servletBaseUrl + opPath ),
-                        opBody, // Request body
-                        new Cookie[] {} );
+
+                final URI resolve = uriInfo.getBaseUri().resolve("." + opPath);
+                InternalJettyServletRequest request = new InternalJettyServletRequest();
+                request.setup(opMethod, new HttpURI(resolve.toString()),
+                        opBody,
+                        new Cookie[]{},
+                        "application/json", "UTF-8"
+                );
+
+                InternalJettyServletResponse response = new InternalJettyServletResponse();
                 response.setup();
 
-                System.out.println("_____"+stripDoubleSlashes(servletPath + opPath));
-                
-                webServer.invokeDirectly( stripDoubleSlashes(servletPath + opPath), request, response );
-                
-                System.out.println(response.getStatus());
-                
+                webServer.invokeDirectly(resolve.getPath(), request, response);
+
                 if(is2XXStatusCode(response.getStatus())) {
                     results.add( new BatchOperationRepresentation(
                             opId,
@@ -129,7 +125,7 @@ public class BatchOperationService
             }
 
             tx.success();
-            
+
             return output.ok( BatchOperationRepresentation.list( results ) );
         }
         catch ( Exception e )
@@ -141,11 +137,6 @@ public class BatchOperationService
         {
             tx.finish();
         }
-    }
-    
-    private String stripDoubleSlashes( String str )
-    {
-        return str.replace( "//", "/" );
     }
 
     private boolean is2XXStatusCode(int statusCode) {

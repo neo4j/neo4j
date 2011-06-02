@@ -28,10 +28,10 @@ import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
 
+import org.json.JSONStringer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.helpers.ServerHelper;
@@ -73,22 +73,43 @@ public class BatchOperationFunctionalTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldReturnCorrectFromAndIdValuesOnMixedRequest() throws JsonParseException, ClientHandlerException,
-            UniformInterfaceException
-    {
-
-        String jsonString = "[" + "{ " + "\"method\":\"PUT\"," + "\"to\":\"/node/0/properties\", "
-                            + "\"body\":{ \"age\":1 }," + "\"id\":0" + "}," + "{ " + "\"method\":\"GET\","
-                            + "\"to\":\"/node/0\"," + "\"id\":1" + "}," + "{ " + "\"method\":\"POST\","
-                            + "\"to\":\"/node\", " + "\"id\":2," + "\"body\":{ \"age\":1 }" + "}," + "{ "
-                            + "\"method\":\"POST\"," + "\"to\":\"/node\", " + "\"id\":3," + "\"body\":{ \"age\":1 }"
-                            + "}" + "]";
-
+    public void shouldReturnCorrectFromAndIdValuesOnMixedRequest() throws Exception {
         ClientResponse response = Client.create()
                 .resource( functionalTestHelper.dataUri() + "batch" )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
-                .entity( jsonString )
+                .entity(new JSONStringer()
+                        .array()
+
+                        .object()
+                        .key("method").value("PUT")
+                        .key("to").value("/node/0/properties")
+                        .key("body").object().key("age").value(1).endObject()
+                        .key("id").value(0)
+                        .endObject()
+
+                        .object()
+                        .key("method").value("GET")
+                        .key("to").value("/node/0")
+                        .key("id").value(1)
+                        .endObject()
+
+                        .object()
+                        .key("method").value("POST")
+                        .key("to").value("/node")
+                        .key("body").object().key("age").value(1).endObject()
+                        .key("id").value(2)
+                        .endObject()
+
+                        .object()
+                        .key("method").value("POST")
+                        .key("to").value("/node")
+                        .key("body").object().key("age").value(1).endObject()
+                        .key("id").value(3)
+                        .endObject()
+
+                        .endArray()
+                        .toString())
                 .post( ClientResponse.class );
 
         assertEquals( 200, response.getStatus() );
@@ -120,12 +141,7 @@ public class BatchOperationFunctionalTest
     }
 
     @Test
-    public void shouldGetLocationHeadersWhenCreatingThings() throws JsonParseException, ClientHandlerException,
-            UniformInterfaceException
-    {
-
-        String jsonString = "[" + "{ " + "\"method\":\"POST\"," + "\"to\":\"/node\", " + "\"body\":{ \"age\":1 }" + "}"
-                            + "]";
+    public void shouldGetLocationHeadersWhenCreatingThings() throws Exception {
 
         int originalNodeCount = helper.getNumberOfNodes();
 
@@ -133,7 +149,17 @@ public class BatchOperationFunctionalTest
                 .resource( functionalTestHelper.dataUri() + "batch" )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
-                .entity( jsonString )
+                .entity(new JSONStringer()
+                        .array()
+
+                        .object()
+                        .key("method").value("POST")
+                        .key("to").value("/node")
+                        .key("body").object().key("age").value(1).endObject()
+                        .endObject()
+
+                        .endArray()
+                        .toString())
                 .post( ClientResponse.class );
 
         assertEquals( 200, response.getStatus() );

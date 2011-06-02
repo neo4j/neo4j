@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.util.RelIdArray.RelIdIterator;
 
 class RelTypeElement extends RelTypeElementIterator
 {
-    private final RelIdArray src;
+    private RelIdArray src;
     private final Set<Long> remove = new HashSet<Long>();
     private final RelIdIterator srcIterator;
     private final RelIdIterator addIterator;
@@ -119,7 +119,14 @@ class RelTypeElement extends RelTypeElementIterator
     @Override
     public RelTypeElementIterator setSrc( RelIdArray newSrc )
     {
+        // TODO Is this right?
         return new FastRelTypeElement( getType(), getNode(), newSrc, direction );
+    }
+    
+    @Override
+    public void updateSrc( RelIdArray newSrc )
+    {
+        this.srcIterator.updateSource( newSrc );
     }
     
     public void notifyAboutMoreRelationships()
