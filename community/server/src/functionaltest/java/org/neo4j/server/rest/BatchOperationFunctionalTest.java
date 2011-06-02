@@ -149,7 +149,7 @@ public class BatchOperationFunctionalTest
 
                         .object()
                         .key("method").value("POST")
-                        .key("to").value("/NODE")
+                        .key("to").value("/node")
                         .key("body").object().key("age").value(1).endObject()
                         .endObject()
 
