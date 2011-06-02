@@ -19,6 +19,8 @@
  */
 package org.dummy.web.service;
 
+import java.util.Iterator;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -26,22 +28,44 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
 
-@Path("/")
-public class DummyThirdPartyWebService {
+@Path( "/" )
+public class DummyThirdPartyWebService
+{
 
     public static final String DUMMY_WEB_SERVICE_MOUNT_POINT = "/dummy";
 
     @GET
-    @Produces(MediaType.TEXT_PLAIN)
-    public Response sayHello() {
-        return Response.ok().entity("hello").build();
+    @Produces( MediaType.TEXT_PLAIN )
+    public Response sayHello()
+    {
+        return Response.ok()
+                .entity( "hello" )
+                .build();
     }
 
     @GET
-    @Path("sayFortyTwo")
-    @Produces(MediaType.TEXT_PLAIN)
-    public Response sayFortyTwo(@Context Long fortyTwo) {
-        return Response.ok().entity("hello "+fortyTwo).build();
+    @Path( "inject-test" )
+    @Produces( MediaType.TEXT_PLAIN )
+    public Response countNodes( @Context GraphDatabaseService db )
+    {
+        return Response.ok()
+                .entity( String.valueOf( countNodesIn( db ) ) )
+                .build();
+    }
+
+    private int countNodesIn( GraphDatabaseService db )
+    {
+        int count = 0;
+        Iterator<Node> nodes = db.getAllNodes()
+                .iterator();
+        while ( nodes.hasNext() )
+        {
+            nodes.next();
+            count++;
+        }
+        return count;
     }
 }
