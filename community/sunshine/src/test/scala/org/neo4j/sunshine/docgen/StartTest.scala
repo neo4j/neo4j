@@ -37,8 +37,9 @@ class StartTest extends DocumentingTestBase
   @Test def nodes_by_id()
   {
     testQuery(
-      title = "Including start nodes by id",
-      query = "start n=(0) return n",
+      title = "Node by id",
+      text = "Including a node as a start point is done by using parenthesis.",
+      queryText = "start n=(0) return n",
       returns = "The reference node is returned",
       (p) => assertThat(p.columnAs[Node]("n").toList.asJava, hasItem(db.getReferenceNode))
     )
@@ -47,8 +48,9 @@ class StartTest extends DocumentingTestBase
   @Test def nodes_by_index()
   {
     testQuery(
-      title = "Including start nodes by index lookup",
-      query = """start n=(nodes,name,"A") return n""",
+      title = "Node by index lookup",
+      text = "If the start point can be found by index lookups, it can be done like this: (index-name, key, value). Like this: ",
+      queryText = """start n=(nodes,name,"A") return n""",
       returns = """The node indexed with name "A" is returned""",
       (p) => assertEquals(List(Map("n" -> node("A"))), p.toList)
     )

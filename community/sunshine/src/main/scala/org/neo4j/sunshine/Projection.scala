@@ -23,9 +23,9 @@ import commands.Clause
 import scala.collection.JavaConverters._
 import org.apache.commons.lang.StringUtils
 import pipes.Pipe
-import org.neo4j.graphdb.{Relationship, NotFoundException, Node}
 import org.neo4j.graphmatching.{PatternRelationship, PatternMatch, PatternNode, PatternMatcher}
 import collection.immutable.Map
+import org.neo4j.graphdb.{PropertyContainer, Relationship, NotFoundException, Node}
 
 
 /**
@@ -48,7 +48,7 @@ class Projection(pNodes: Map[String, PatternNode], pRels: Map[String, PatternRel
 
       })
 
-      val startKey = pNodes.keys.head
+      val startKey = fromRow.keys.head
       val startPNode = pNodes(startKey)
       val startNode = fromRow(startKey).asInstanceOf[Node]
       val patternMatches: java.lang.Iterable[PatternMatch] = PatternMatcher.getMatcher.`match`(startPNode, startNode)
@@ -85,7 +85,7 @@ class Projection(pNodes: Map[String, PatternNode], pRels: Map[String, PatternRel
 
     this.foreach((m) => {
       m.foreach((kv) => {
-        val length = kv._2.toString.size
+        val length = text(kv._2).size
         if (!columnSizes.contains(kv._1) || columnSizes.get(kv._1).get < length) {
           columnSizes.put(kv._1, length)
         }
@@ -114,10 +114,23 @@ class Projection(pNodes: Map[String, PatternNode], pRels: Map[String, PatternRel
     builder.toString()
   }
 
+  def props(x:PropertyContainer):String = x.getPropertyKeys.asScala.map( (key)=> key + "->" + quoteString(x.getProperty(key)) ).mkString("{",  ",", "}")
+
+  def text(obj:Any):String = obj match {
+    case x:Node => x.toString + props(x)
+    case x:Relationship => ":" + x.getType.toString +"["+ x.getId + "] " + props(x)
+    case x => x.toString
+  }
+
+  def quoteString(in:Any):String = in match {
+    case x:String => "\"" + x + "\""
+    case x => x.toString
+  }
+
   def createString(columns: List[String], columnSizes: Map[String, Int], m: Map[String, Any]): String = {
     columns.map((c) => {
       val length = columnSizes.get(c).get
-      val value = StringUtils.rightPad(StringUtils.left(m.get(c).get.toString, length), length)
+      val value = StringUtils.rightPad(StringUtils.left(text(m.get(c).get), length), length)
       value
     }).reduceLeft(_ + " | " + _)
   }

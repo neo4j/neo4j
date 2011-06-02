@@ -21,7 +21,7 @@ package org.neo4j.sunshine.docgen
 
 import org.neo4j.graphdb.index.Index
 import org.neo4j.sunshine.{Projection, ExecutionEngine, SunshineParser}
-import org.junit.{Before,After}
+import org.junit.{Before, After}
 import org.neo4j.kernel.ImpermanentGraphDatabase
 import org.neo4j.test.GraphDescription
 import scala.collection.JavaConverters._
@@ -32,7 +32,8 @@ import org.neo4j.graphdb._
  * @since 6/1/11
  */
 
-abstract class DocumentingTestBase {
+abstract class DocumentingTestBase
+{
   var db: GraphDatabaseService = null
   val parser: SunshineParser = new SunshineParser
   var engine: ExecutionEngine = null
@@ -48,9 +49,11 @@ abstract class DocumentingTestBase {
 
   def nicefy(in: String): String = in.toLowerCase.replace(" ", "-")
 
-  def dumpToFile(writer: PrintWriter, title: String, query: String, returns: String, result: Projection) {
+  def dumpToFile(writer: PrintWriter, title: String, query: String, returns: String, text: String, result: Projection)
+  {
     writer.println("[[" + nicefy(section + " " + title) + "]]")
     writer.println("== " + title + " ==")
+    writer.println(text)
     writer.println()
     writer.println("_Query_")
     writer.println()
@@ -65,7 +68,7 @@ abstract class DocumentingTestBase {
     writer.println()
     writer.println("[source]")
     writer.println("----")
-    writer.println(" "+result.toString().replace("\n", "\n "))
+    writer.println(" " + result.toString().replace("\n", "\n "))
     writer.println("----")
     writer.println()
     writer.println()
@@ -73,38 +76,47 @@ abstract class DocumentingTestBase {
     writer.close()
   }
 
-  def testQuery(title: String, query: String, returns: String, assertions: ( ( Projection ) => Unit )*) {
+  def testQuery(title: String, text: String, queryText: String, returns: String, assertions: ( ( Projection ) => Unit )*)
+  {
+    var query = queryText
+    nodes.keySet.foreach((key) => query = query.replace("%"+key+"%", node(key).getId.toString))
     val q = parser.parse(query)
     val result = engine.execute(q)
     assertions.foreach(_.apply(result))
 
 
     val dir = new File("target/docs/ql/" + nicefy(section))
-    if ( !dir.exists() ) {
+    if ( !dir.exists() )
+    {
       dir.mkdirs()
     }
 
     val writer = new PrintWriter(new FileWriter(new File(dir, nicefy(title) + ".txt")))
 
-    dumpToFile(writer, title, query, returns, result)
+    dumpToFile(writer, title, query, returns, text, result)
   }
 
-  def indexProperties[T<:PropertyContainer](n: T , index: Index[T]) {
-    indexProps.foreach(( property ) => {
-      if ( n.hasProperty(property) ) {
+  def indexProperties[T <: PropertyContainer](n: T, index: Index[T])
+  {
+    indexProps.foreach((property) =>
+    {
+      if ( n.hasProperty(property) )
+      {
         val value = n.getProperty(property)
         index.add(n, property, value)
       }
     })
   }
 
-  def node(name:String)=nodes.getOrElse(name, throw new NotFoundException())
+  def node(name: String) = nodes.getOrElse(name, throw new NotFoundException())
 
-  @After def teardown() {
+  @After def teardown()
+  {
     db.shutdown()
   }
 
-  @Before def init() {
+  @Before def init()
+  {
     db = new ImpermanentGraphDatabase()
     engine = new ExecutionEngine(db)
 
@@ -115,9 +127,10 @@ abstract class DocumentingTestBase {
 
     nodes = description.create(db).asScala.toMap
 
-    db.getAllNodes.asScala.foreach((n) => {
+    db.getAllNodes.asScala.foreach((n) =>
+    {
       indexProperties(n, nodeIndex)
-      n.getRelationships(Direction.OUTGOING).asScala.foreach( indexProperties(_, relIndex) )
+      n.getRelationships(Direction.OUTGOING).asScala.foreach(indexProperties(_, relIndex))
     })
     tx.success()
     tx.finish()
