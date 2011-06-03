@@ -32,7 +32,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -83,14 +82,22 @@ public class ServerBuilder
     {
         if ( dbDir == null )
         {
-            throw new IllegalStateException( "database directory must be configured." );
+            this.dbDir = createTempDir().getAbsolutePath();
         }
         File configFile = createPropertiesFiles();
 
-        if(serverModules == null) {
-            withSpecificServerModules(RESTApiModule.class, WebAdminModule.class, ManagementApiModule.class, ThirdPartyJAXRSModule.class, DiscoveryModule.class);
+        if ( serverModules == null )
+        {
+            withSpecificServerModulesOnly( RESTApiModule.class, WebAdminModule.class, ManagementApiModule.class,
+                    ThirdPartyJAXRSModule.class, DiscoveryModule.class );
         }
-        
+
+        if ( startupHealthCheck == null )
+        {
+            startupHealthCheck = mock( StartupHealthCheck.class );
+            when( startupHealthCheck.run() ).thenReturn( true );
+        }
+
         return new NeoServerWithEmbeddedWebServer( new NeoServerBootstrapper(), addressResolver, startupHealthCheck,
                 new PropertyFileConfigurator( new Validator( new DatabaseLocationMustBeSpecifiedRule() ), configFile ),
                 new Jetty6WebServer(), serverModules );
@@ -170,13 +177,6 @@ public class ServerBuilder
     {
     }
 
-    public ServerBuilder withPassingStartupHealthcheck()
-    {
-        startupHealthCheck = mock( StartupHealthCheck.class );
-        when( startupHealthCheck.run() ).thenReturn( true );
-        return this;
-    }
-
     public ServerBuilder onPort( int portNo )
     {
         this.portNo = String.valueOf( portNo );
@@ -186,12 +186,6 @@ public class ServerBuilder
     public ServerBuilder usingDatabaseDir( String dbDir )
     {
         this.dbDir = dbDir;
-        return this;
-    }
-
-    public ServerBuilder withRandomDatabaseDir() throws IOException
-    {
-        this.dbDir = createTempDir().getAbsolutePath();
         return this;
     }
 
@@ -293,7 +287,7 @@ public class ServerBuilder
         return this;
     }
 
-    public ServerBuilder withSpecificServerModules( Class<? extends ServerModule>... modules )
+    public ServerBuilder withSpecificServerModulesOnly( Class<? extends ServerModule>... modules )
     {
         serverModules = Arrays.asList( modules );
         return this;

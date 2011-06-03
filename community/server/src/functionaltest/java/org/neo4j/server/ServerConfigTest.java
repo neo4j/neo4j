@@ -40,18 +40,17 @@ public class ServerConfigTest
     private NeoServerWithEmbeddedWebServer server;
 
     @After
-    public void stopTheServer() {
+    public void stopTheServer()
+    {
         server.stop();
     }
-    
+
     @Test
     public void shouldPickUpPortFromConfig() throws Exception
     {
         final int NON_DEFAULT_PORT = 4321;
 
-        server = server().withRandomDatabaseDir()
-                .withPassingStartupHealthcheck()
-                .onPort( NON_DEFAULT_PORT )
+        server = server().onPort( NON_DEFAULT_PORT )
                 .build();
         server.start();
 
@@ -71,10 +70,8 @@ public class ServerConfigTest
         String webAdminDataUri = "/a/different/webadmin/data/uri/";
         String webAdminManagementUri = "/a/different/webadmin/management/uri/";
 
-        server = server().withRandomDatabaseDir()
-                .withRelativeWebDataAdminUriPath( webAdminDataUri )
+        server = server().withRelativeWebDataAdminUriPath( webAdminDataUri )
                 .withRelativeWebAdminUriPath( webAdminManagementUri )
-                .withPassingStartupHealthcheck()
                 .build();
         server.start();
 

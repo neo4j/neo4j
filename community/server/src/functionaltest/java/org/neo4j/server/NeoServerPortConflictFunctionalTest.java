@@ -39,9 +39,7 @@ public class NeoServerPortConflictFunctionalTest
 
         InMemoryAppender appender = new InMemoryAppender( NeoServerWithEmbeddedWebServer.log );
         NeoServerWithEmbeddedWebServer server = ServerBuilder.server()
-                .withPassingStartupHealthcheck()
                 .onPort( contestedPort )
-                .withRandomDatabaseDir()
                 .build();
         server.start();
 

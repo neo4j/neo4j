@@ -30,59 +30,75 @@ import org.junit.Test;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.logging.InMemoryAppender;
 
-public class DatabaseTuningFunctionalTest {
+public class DatabaseTuningFunctionalTest
+{
 
     @Test
-    public void shouldLoadAKnownGoodPropertyFile() throws IOException {
-        NeoServerWithEmbeddedWebServer server = ServerBuilder.server().withPassingStartupHealthcheck().withRandomDatabaseDir().withDefaultDatabaseTuning().build();
+    public void shouldLoadAKnownGoodPropertyFile() throws IOException
+    {
+        NeoServerWithEmbeddedWebServer server = ServerBuilder.server()
+                .withDefaultDatabaseTuning()
+                .build();
         server.start();
-        Map<Object, Object> params = server.getDatabase().graph.getConfig().getParams();
-        
-        
-        assertTrue(propertyAndValuePresentIn("neostore.nodestore.db.mapped_memory", "25M", params));
-        assertTrue(propertyAndValuePresentIn("neostore.relationshipstore.db.mapped_memory", "50M", params));
-        assertTrue(propertyAndValuePresentIn("neostore.propertystore.db.mapped_memory", "90M", params));
-        assertTrue(propertyAndValuePresentIn("neostore.propertystore.db.strings.mapped_memory", "130M", params));
-        assertTrue(propertyAndValuePresentIn("neostore.propertystore.db.arrays.mapped_memory", "130M", params));
-        
+        Map<Object, Object> params = server.getDatabase().graph.getConfig()
+                .getParams();
+
+        assertTrue( propertyAndValuePresentIn( "neostore.nodestore.db.mapped_memory", "25M", params ) );
+        assertTrue( propertyAndValuePresentIn( "neostore.relationshipstore.db.mapped_memory", "50M", params ) );
+        assertTrue( propertyAndValuePresentIn( "neostore.propertystore.db.mapped_memory", "90M", params ) );
+        assertTrue( propertyAndValuePresentIn( "neostore.propertystore.db.strings.mapped_memory", "130M", params ) );
+        assertTrue( propertyAndValuePresentIn( "neostore.propertystore.db.arrays.mapped_memory", "130M", params ) );
+
         server.stop();
     }
-    
-    
-    private boolean propertyAndValuePresentIn(String name, String value, Map<Object, Object> params) {
-        for(Object o : params.keySet()) {
-            if(o.toString().equals(name) && params.get(o).toString().equals(value)) {
+
+    private boolean propertyAndValuePresentIn( String name, String value, Map<Object, Object> params )
+    {
+        for ( Object o : params.keySet() )
+        {
+            if ( o.toString()
+                    .equals( name ) && params.get( o )
+                    .toString()
+                    .equals( value ) )
+            {
                 return true;
             }
         }
-        
+
         return false;
     }
 
-
     @Test
-    public void shouldLogWarningAndContinueIfNoTuningFilePropertyPresent() throws IOException {
-        InMemoryAppender appender = new InMemoryAppender(PropertyFileConfigurator.log);
-        
-        NeoServer server = ServerBuilder.server().withPassingStartupHealthcheck().withNonResolvableTuningFile().withRandomDatabaseDir().build();
+    public void shouldLogWarningAndContinueIfNoTuningFilePropertyPresent() throws IOException
+    {
+        InMemoryAppender appender = new InMemoryAppender( PropertyFileConfigurator.log );
+
+        NeoServer server = ServerBuilder.server()
+                .withNonResolvableTuningFile()
+                .build();
         server.start();
-        
-        assertThat(appender.toString(), containsString("The specified file for database performance tuning properties"));
-        
+
+        assertThat( appender.toString(),
+                containsString( "The specified file for database performance tuning properties" ) );
+
         server.stop();
     }
-    
+
     @Test
-    public void shouldLogWarningAndContinueIfTuningFilePropertyDoesNotResolve() throws IOException {
-        InMemoryAppender appender = new InMemoryAppender(PropertyFileConfigurator.log);
-        
-        NeoServer server = ServerBuilder.server().withPassingStartupHealthcheck().withRandomDatabaseDir().withNonResolvableTuningFile().build();
+    public void shouldLogWarningAndContinueIfTuningFilePropertyDoesNotResolve() throws IOException
+    {
+        InMemoryAppender appender = new InMemoryAppender( PropertyFileConfigurator.log );
+
+        NeoServer server = ServerBuilder.server()
+                .withNonResolvableTuningFile()
+                .build();
         server.start();
-        
-        assertThat(appender.toString(), containsString(String.format("The specified file for database performance tuning properties [")));
-        assertThat(appender.toString(), containsString(String.format("] does not exist.")));
-        
+
+        assertThat( appender.toString(),
+                containsString( String.format( "The specified file for database performance tuning properties [" ) ) );
+        assertThat( appender.toString(), containsString( String.format( "] does not exist." ) ) );
+
         server.stop();
-    } 
+    }
 
 }

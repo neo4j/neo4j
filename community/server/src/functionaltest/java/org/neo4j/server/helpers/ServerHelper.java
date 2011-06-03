@@ -84,8 +84,9 @@ public class ServerHelper
                 for ( String indexName : server.getDatabase().graph.index()
                         .relationshipIndexNames() )
                 {
-                    server.getDatabase().graph.index().forRelationships(
-                            indexName ).delete();
+                    server.getDatabase().graph.index()
+                            .forRelationships( indexName )
+                            .delete();
                 }
             }
         } ).execute();
@@ -94,8 +95,6 @@ public class ServerHelper
     public static NeoServerWithEmbeddedWebServer createServer() throws IOException
     {
         NeoServerWithEmbeddedWebServer server = ServerBuilder.server()
-                .withRandomDatabaseDir()
-                .withPassingStartupHealthcheck()
                 .build();
 
         server.start();
