@@ -1,0 +1,29 @@
+<assembly>
+  <formats>
+    <format>jar</format>
+  </formats>
+  <includeBaseDirectory>false</includeBaseDirectory>
+
+  <dependencySets>
+    <dependencySet>
+      <outputDirectory>/</outputDirectory>
+      <unpack>true</unpack>
+      <useProjectArtifact>true</useProjectArtifact>
+      <includes>
+        <include>org.neo4j:*:test-jar:*</include>
+      </includes>
+      <unpackOptions>
+        <excludes>
+          <exclude>**/*Test.class</exclude>
+          <exclude>**/*Tests.class</exclude>
+          <exclude>**/*Test$*.class</exclude>
+          <exclude>**/*Tests$*.class</exclude>
+        </excludes>
+        <includes>
+          <include>org/neo4j/test/**</include>
+        </includes>
+      </unpackOptions>
+    </dependencySet>
+  </dependencySets>
+
+</assembly>
