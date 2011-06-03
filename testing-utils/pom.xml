@@ -6,10 +6,10 @@
 
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-test-utils</artifactId>
-  <version>1.0</version>
+  <version>1.4-SNAPSHOT</version>
 
   <properties>
-    <neo4j.version>1.4.M03</neo4j.version>
+    <neo4j.version>1.4-SNAPSHOT</neo4j.version>
   </properties>
 
   <build>
@@ -29,10 +29,18 @@
               <descriptors>
                 <descriptor>src/main/assemblies/neo4j-test-utils.xml</descriptor>
               </descriptors>
-              <finalName>neo4j-test-utils-${project.version}</finalName>
+              <!--<finalName>neo4j-test-utils-${project.version}</finalName>-->
             </configuration>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>1.6</source>
+          <target>1.6</target>
+        </configuration>
       </plugin>
     </plugins>
   </build>
