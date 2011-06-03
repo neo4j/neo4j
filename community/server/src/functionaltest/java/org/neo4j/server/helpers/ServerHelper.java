@@ -84,9 +84,8 @@ public class ServerHelper
                 for ( String indexName : server.getDatabase().graph.index()
                         .relationshipIndexNames() )
                 {
-                    server.getDatabase().graph.index()
-                            .forNodes( indexName )
-                            .delete();
+                    server.getDatabase().graph.index().forRelationships(
+                            indexName ).delete();
                 }
             }
         } ).execute();
