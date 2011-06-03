@@ -21,42 +21,44 @@ package org.neo4j.server.rest;
 
 import java.io.IOException;
 
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
-import org.neo4j.server.ServerBuilder;
+import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.test.TestData;
 
 public class DatabaseMetadataServiceFunctionalTest
 {
-    private NeoServerWithEmbeddedWebServer server;
-    private FunctionalTestHelper functionalTestHelper;
-    private GraphDbHelper helper;
-
     public @Rule
     TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
 
-    @Before
-    public void setupServer() throws IOException
+    private static NeoServerWithEmbeddedWebServer server;
+    private static FunctionalTestHelper functionalTestHelper;
+    private static GraphDbHelper helper;
+
+    @BeforeClass
+    public static void setupServer() throws IOException
     {
-        server = ServerBuilder.server()
-                .withRandomDatabaseDir()
-                .withPassingStartupHealthcheck()
-                .build();
-        server.start();
+        server = ServerHelper.createServer();
         functionalTestHelper = new FunctionalTestHelper( server );
         helper = functionalTestHelper.getGraphDbHelper();
     }
 
-    @After
-    public void stopServer()
+    @Before
+    public void cleanTheDatabase()
+    {
+        ServerHelper.cleanTheDatabase( server );
+    }
+
+    @AfterClass
+    public static void stopServer()
     {
         server.stop();
-        server = null;
     }
 
     /**

@@ -25,8 +25,8 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.server.WebTestUtils.CLIENT;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -36,29 +36,59 @@ import java.util.Set;
 
 import javax.ws.rs.core.MediaType;
 
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.server.NeoServerWithEmbeddedWebServer;
+import org.neo4j.server.helpers.ServerHelper;
+import org.neo4j.server.plugins.PluginFunctionalTestHelper.RegExp;
+import org.neo4j.server.rest.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.NodeRepresentationTest;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 
+import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 @SuppressWarnings( "unchecked" )
-public class PluginFunctionalTest extends PluginFunctionalAbstractBase
+public class PluginFunctionalTest
 {
 
+    private static NeoServerWithEmbeddedWebServer server;
+    private static FunctionalTestHelper functionalTestHelper;
+
+    @BeforeClass
+    public static void setupServer() throws IOException
+    {
+        server = ServerHelper.createServer();
+        functionalTestHelper = new FunctionalTestHelper( server );
+    }
+
+    @Before
+    public void cleanTheDatabase()
+    {
+        ServerHelper.cleanTheDatabase( server );
+    }
+
+    @AfterClass
+    public static void stopServer()
+    {
+        server.stop();
+    }
+    
     @Test
     public void canGetGraphDatabaseExtensionList() throws Exception
     {
-        Map<String, Object> map = makeGet( functionalTestHelper.dataUri() );
+        Map<String, Object> map = PluginFunctionalTestHelper.makeGet( functionalTestHelper.dataUri() );
         assertThat( map.get( "extensions" ), instanceOf( Map.class ) );
     }
 
     @Test
     public void canGetExtensionDefinitionForReferenceNodeExtension() throws Exception
     {
-        Map<String, Object> map = makeGet( functionalTestHelper.dataUri() );
+        Map<String, Object> map = PluginFunctionalTestHelper.makeGet( functionalTestHelper.dataUri() );
         map = (Map<String, Object>) map.get( "extensions" );
 
         assertThat( map.get( FunctionalTestPlugin.class.getSimpleName() ), instanceOf( Map.class ) );
@@ -67,7 +97,7 @@ public class PluginFunctionalTest extends PluginFunctionalAbstractBase
     @Test
     public void canGetExtensionDataForGetReferenceNode() throws Exception
     {
-        Map<String, Object> map = makeGet( functionalTestHelper.dataUri() );
+        Map<String, Object> map = PluginFunctionalTestHelper.makeGet( functionalTestHelper.dataUri() );
         map = (Map<String, Object>) map.get( "extensions" );
         map = (Map<String, Object>) map.get( FunctionalTestPlugin.class.getSimpleName() );
 
@@ -78,23 +108,23 @@ public class PluginFunctionalTest extends PluginFunctionalAbstractBase
     @Test
     public void canGetExtensionDescription() throws Exception
     {
-        Map<String, Object> map = makeGet( functionalTestHelper.dataUri() );
+        Map<String, Object> map = PluginFunctionalTestHelper.makeGet( functionalTestHelper.dataUri() );
         map = (Map<String, Object>) map.get( "extensions" );
         map = (Map<String, Object>) map.get( FunctionalTestPlugin.class.getSimpleName() );
 
         String uri = (String) map.get( FunctionalTestPlugin.GET_REFERENCE_NODE );
-        makeGet( uri );
+        PluginFunctionalTestHelper.makeGet( uri );
     }
 
     @Test
     public void canInvokeExtensionMethodWithNoArguments() throws Exception
     {
-        Map<String, Object> map = makeGet( functionalTestHelper.dataUri() );
+        Map<String, Object> map = PluginFunctionalTestHelper.makeGet( functionalTestHelper.dataUri() );
         map = (Map<String, Object>) map.get( "extensions" );
         map = (Map<String, Object>) map.get( FunctionalTestPlugin.class.getSimpleName() );
 
         String uri = (String) map.get( FunctionalTestPlugin.GET_REFERENCE_NODE );
-        Map<String, Object> description = makePostMap( uri );
+        Map<String, Object> description = PluginFunctionalTestHelper.makePostMap( uri );
 
         NodeRepresentationTest.verifySerialisation( description );
     }
@@ -105,12 +135,12 @@ public class PluginFunctionalTest extends PluginFunctionalAbstractBase
         long n = functionalTestHelper.getGraphDbHelper()
                 .createNode();
 
-        Map<String, Object> map = makeGet( functionalTestHelper.nodeUri( n ) );
+        Map<String, Object> map = PluginFunctionalTestHelper.makeGet( functionalTestHelper.nodeUri( n ) );
         map = (Map<String, Object>) map.get( "extensions" );
         map = (Map<String, Object>) map.get( FunctionalTestPlugin.class.getSimpleName() );
 
         String uri = (String) map.get( FunctionalTestPlugin.GET_CONNECTED_NODES );
-        List<Map<String, Object>> response = makePostList( uri );
+        List<Map<String, Object>> response = PluginFunctionalTestHelper.makePostList( uri );
         verifyNodes( response );
     }
 
@@ -128,13 +158,13 @@ public class PluginFunctionalTest extends PluginFunctionalAbstractBase
         long n = functionalTestHelper.getGraphDbHelper()
                 .createNode();
 
-        Map<String, Object> map = makeGet( functionalTestHelper.dataUri() );
+        Map<String, Object> map = PluginFunctionalTestHelper.makeGet( functionalTestHelper.dataUri() );
         map = (Map<String, Object>) map.get( "extensions" );
         map = (Map<String, Object>) map.get( FunctionalTestPlugin.class.getSimpleName() );
 
         String uri = (String) map.get( "methodWithIntParam" );
         Map<String, Object> params = MapUtil.map( "id", n );
-        Map<String, Object> node = makePostMap( uri, params );
+        Map<String, Object> node = PluginFunctionalTestHelper.makePostMap( uri, params );
 
         NodeRepresentationTest.verifySerialisation( node );
     }
@@ -152,14 +182,14 @@ public class PluginFunctionalTest extends PluginFunctionalAbstractBase
         String uri = getPluginMethodUri( functionalTestHelper.relationshipUri( relId ), "methodOnRelationship" );
 
         Map<String, Object> params = MapUtil.map( "id", relId );
-        List<Map<String, Object>> nodes = makePostList( uri, params );
+        List<Map<String, Object>> nodes = PluginFunctionalTestHelper.makePostList( uri, params );
 
         verifyNodes( nodes );
     }
 
     private String getPluginMethodUri( String startUrl, String methodName ) throws JsonParseException
     {
-        Map<String, Object> map = makeGet( startUrl );
+        Map<String, Object> map = PluginFunctionalTestHelper.makeGet( startUrl );
         map = (Map<String, Object>) map.get( "extensions" );
         map = (Map<String, Object>) map.get( FunctionalTestPlugin.class.getSimpleName() );
         return (String) map.get( methodName );
@@ -181,7 +211,7 @@ public class PluginFunctionalTest extends PluginFunctionalAbstractBase
         Map<String, Object> params = MapUtil.map( "id", a, "id2", b, "id3", c, "id4", d, "id5", e, "id6", f, "id7", g,
                 "id8", h, "id9", i );
 
-        makePostMap( methodUri, params );
+        PluginFunctionalTestHelper.makePostMap( methodUri, params );
 
         assertThat( FunctionalTestPlugin._string, is( a ) );
         assertThat( FunctionalTestPlugin._byte, is( b ) );
@@ -200,7 +230,7 @@ public class PluginFunctionalTest extends PluginFunctionalAbstractBase
         long n = functionalTestHelper.getGraphDbHelper()
                 .createNode();
         String methodUri = getPluginMethodUri( functionalTestHelper.nodeUri( n ), "getThisNodeOrById" );
-        Map<String, Object> map = makePostMap( methodUri );
+        Map<String, Object> map = PluginFunctionalTestHelper.makePostMap( methodUri );
         NodeRepresentationTest.verifySerialisation( map );
     }
 
@@ -214,7 +244,7 @@ public class PluginFunctionalTest extends PluginFunctionalAbstractBase
                 .getReferenceNode();
         Map<String, Object> params = MapUtil.map( "id", id );
 
-        makePostMap( methodUri, params );
+        PluginFunctionalTestHelper.makePostMap( methodUri, params );
 
         assertThat( FunctionalTestPlugin.optional, is( id ) );
     }
@@ -237,12 +267,12 @@ public class PluginFunctionalTest extends PluginFunctionalAbstractBase
                 .createRelationship( "KNOWS", n, functionalTestHelper.getGraphDbHelper()
                         .createNode() );
 
-        Map<String, Object> map = makeGet( functionalTestHelper.nodeUri( n ) );
+        Map<String, Object> map = PluginFunctionalTestHelper.makeGet( functionalTestHelper.nodeUri( n ) );
         map = (Map<String, Object>) map.get( "extensions" );
         map = (Map<String, Object>) map.get( FunctionalTestPlugin.class.getSimpleName() );
 
         String uri = (String) map.get( "getRelationshipsBetween" );
-        List<Map<String, Object>> response = makePostList( uri,
+        List<Map<String, Object>> response = PluginFunctionalTestHelper.makePostList( uri,
                 MapUtil.map( "other", functionalTestHelper.nodeUri( m ) ) );
         assertEquals( 2, response.size() );
         verifyRelationships( response );
@@ -253,7 +283,7 @@ public class PluginFunctionalTest extends PluginFunctionalAbstractBase
     {
         long n = functionalTestHelper.getGraphDbHelper()
                 .createNode();
-        Map<String, Object> map = makeGet( functionalTestHelper.nodeUri( n ) );
+        Map<String, Object> map = PluginFunctionalTestHelper.makeGet( functionalTestHelper.nodeUri( n ) );
         map = (Map<String, Object>) map.get( "extensions" );
         map = (Map<String, Object>) map.get( FunctionalTestPlugin.class.getSimpleName() );
         List<String> nodes = Arrays.asList( functionalTestHelper.nodeUri( functionalTestHelper.getGraphDbHelper()
@@ -262,7 +292,7 @@ public class PluginFunctionalTest extends PluginFunctionalAbstractBase
                 .createNode() ) );
 
         String uri = (String) map.get( "createRelationships" );
-        List<Map<String, Object>> response = makePostList( uri, MapUtil.map( "type", "KNOWS", "nodes", nodes ) );
+        List<Map<String, Object>> response = PluginFunctionalTestHelper.makePostList( uri, MapUtil.map( "type", "KNOWS", "nodes", nodes ) );
         assertEquals( nodes.size(), response.size() );
         verifyRelationships( response );
     }
@@ -282,7 +312,7 @@ public class PluginFunctionalTest extends PluginFunctionalAbstractBase
         List<String> strings = Arrays.asList( "aaa", "bbb", "aaa" );
         Map<String, Object> params = MapUtil.map( "strings", strings );
 
-        makePostMap( methodUri, params );
+        PluginFunctionalTestHelper.makePostMap( methodUri, params );
 
         Set<String> stringsSet = new HashSet<String>( strings );
 
@@ -296,7 +326,7 @@ public class PluginFunctionalTest extends PluginFunctionalAbstractBase
         List<String> strings = Arrays.asList( "aaa", "bbb", "aaa" );
         Map<String, Object> params = MapUtil.map( "strings", strings );
 
-        makePostMap( methodUri, params );
+        PluginFunctionalTestHelper.makePostMap( methodUri, params );
 
         List<String> stringsList = new ArrayList<String>( strings );
 
@@ -310,7 +340,7 @@ public class PluginFunctionalTest extends PluginFunctionalAbstractBase
 
         String postBody = "strings[]=aaa&strings[]=bbb&strings[]=ccc";
 
-        CLIENT.resource( methodUri )
+        Client.create().resource( methodUri )
                 .accept( MediaType.APPLICATION_JSON_TYPE )
                 .entity( postBody, MediaType.APPLICATION_FORM_URLENCODED )
                 .post( ClientResponse.class );
@@ -329,7 +359,7 @@ public class PluginFunctionalTest extends PluginFunctionalAbstractBase
 
         String postBody = "strings[]=aaa&strings[]=bbb&strings[]=ccc&count=3";
 
-        CLIENT.resource( methodUri )
+        Client.create().resource( methodUri )
                 .accept( MediaType.APPLICATION_JSON_TYPE )
                 .entity( postBody, MediaType.APPLICATION_FORM_URLENCODED )
                 .post( ClientResponse.class );
@@ -350,7 +380,7 @@ public class PluginFunctionalTest extends PluginFunctionalAbstractBase
         List<String> strings = Arrays.asList( stringArray );
         Map<String, Object> params = MapUtil.map( "strings", strings );
 
-        makePostMap( methodUri, params );
+        PluginFunctionalTestHelper.makePostMap( methodUri, params );
 
         assertThat( FunctionalTestPlugin.stringArray, is( stringArray ) );
     }
@@ -363,7 +393,7 @@ public class PluginFunctionalTest extends PluginFunctionalAbstractBase
         List<Integer> ints = Arrays.asList( intArray );
         Map<String, Object> params = MapUtil.map( "ints", ints );
 
-        makePostMap( methodUri, params );
+        PluginFunctionalTestHelper.makePostMap( methodUri, params );
 
         assertThat( FunctionalTestPlugin.intArray, is( new int[] { 5, 6, 7, 8 } ) );
     }
@@ -373,7 +403,7 @@ public class PluginFunctionalTest extends PluginFunctionalAbstractBase
     {
         String methodUri = getPluginMethodUri( functionalTestHelper.dataUri(), "methodWithOptionalArray" );
 
-        makePostMap( methodUri );
+        PluginFunctionalTestHelper.makePostMap( methodUri );
 
         assertThat( FunctionalTestPlugin.intArray, is( nullValue() ) );
     }
@@ -390,7 +420,7 @@ public class PluginFunctionalTest extends PluginFunctionalAbstractBase
 
         String methodUri = getPluginMethodUri( functionalTestHelper.nodeUri( n ), "pathToReference" );
 
-        Map<String, Object> maps = makePostMap( methodUri );
+        Map<String, Object> maps = PluginFunctionalTestHelper.makePostMap( methodUri );
 
         assertThat( (String) maps.get( "start" ), endsWith( Long.toString( r ) ) );
         assertThat( (String) maps.get( "end" ), endsWith( Long.toString( n ) ) );
@@ -404,7 +434,7 @@ public class PluginFunctionalTest extends PluginFunctionalAbstractBase
 
         String url = getPluginMethodUri( functionalTestHelper.nodeUri( n ), "pathToReference" );
 
-        ClientResponse response = CLIENT.resource( url )
+        ClientResponse response = Client.create().resource( url )
                 .accept( MediaType.APPLICATION_JSON_TYPE )
                 .post( ClientResponse.class );
 

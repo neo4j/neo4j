@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdArray.RelIdIterator;
+import org.neo4j.kernel.impl.util.RelIdArrayWithLoops;
 
 /**
  * Manages object version diffs and locks for each transaction.
@@ -294,7 +295,7 @@ public class LockReleaser
         RelIdArray set = element.relationshipAddMap.get( type );
         if ( set == null )
         {
-            set = new RelIdArray();
+            set = new RelIdArrayWithLoops();
             element.relationshipAddMap.put( type, set );
         }
         return set;

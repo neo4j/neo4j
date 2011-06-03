@@ -24,7 +24,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
 import org.junit.Test;
-import org.neo4j.graphalgo.impl.util.PriorityMap;
 import org.neo4j.graphalgo.impl.util.PriorityMap.Entry;
 
 public class TestPriorityMap

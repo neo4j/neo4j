@@ -29,18 +29,18 @@ public class WebadminConfigurationRule implements ValidationRule {
     @Override
     public void validate(Configuration configuration) throws RuleFailedException {
         String managementApi = validateConfigurationContainsKey(configuration, Configurator.MANAGEMENT_PATH_PROPERTY_KEY);
-        String restApi = validateConfigurationContainsKey(configuration, Configurator.DATA_API_PATH_PROPERTY_KEY);
+        String restApi = validateConfigurationContainsKey(configuration, Configurator.REST_API_PATH_PROPERTY_KEY);
         
         // Check URIs are ok
         URI managementUri =  validateAndNormalizeUri(managementApi, Configurator.MANAGEMENT_PATH_PROPERTY_KEY);
-        URI restUri = validateAndNormalizeUri(restApi, Configurator.DATA_API_PATH_PROPERTY_KEY);
+        URI restUri = validateAndNormalizeUri(restApi, Configurator.REST_API_PATH_PROPERTY_KEY);
                     
         // Overwrite the properties with the new normalised URIs
         configuration.clearProperty(Configurator.MANAGEMENT_PATH_PROPERTY_KEY);
         configuration.addProperty(Configurator.MANAGEMENT_PATH_PROPERTY_KEY, managementUri.toString());
         
-        configuration.clearProperty(Configurator.DATA_API_PATH_PROPERTY_KEY);
-        configuration.addProperty(Configurator.DATA_API_PATH_PROPERTY_KEY, restUri.toString());
+        configuration.clearProperty(Configurator.REST_API_PATH_PROPERTY_KEY);
+        configuration.addProperty(Configurator.REST_API_PATH_PROPERTY_KEY, restUri.toString());
     }
 
     private String trimTrailingSlash(String uri) {

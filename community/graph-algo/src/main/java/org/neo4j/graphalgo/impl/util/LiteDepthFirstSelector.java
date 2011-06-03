@@ -22,8 +22,8 @@ package org.neo4j.graphalgo.impl.util;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.BranchSelector;
+import org.neo4j.graphdb.traversal.TraversalBranch;
 
 /**
  * A preorder depth first selector which detects "super nodes", i.e. nodes

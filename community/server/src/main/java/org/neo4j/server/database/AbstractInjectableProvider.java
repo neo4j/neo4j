@@ -19,13 +19,13 @@
  */
 package org.neo4j.server.database;
 
+import javax.ws.rs.core.Context;
+
 import com.sun.jersey.core.spi.component.ComponentContext;
 import com.sun.jersey.core.spi.component.ComponentScope;
 import com.sun.jersey.server.impl.inject.AbstractHttpContextInjectable;
 import com.sun.jersey.spi.inject.Injectable;
 import com.sun.jersey.spi.inject.InjectableProvider;
-
-import javax.ws.rs.core.Context;
 
 public abstract class AbstractInjectableProvider<E>
       extends AbstractHttpContextInjectable<E>

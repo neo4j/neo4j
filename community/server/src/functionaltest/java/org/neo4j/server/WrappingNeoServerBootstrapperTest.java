@@ -21,7 +21,6 @@ package org.neo4j.server;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.server.WebTestUtils.CLIENT;
 
 import java.io.IOException;
 
@@ -37,6 +36,7 @@ import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.EmbeddedServerConfigurator;
 import org.neo4j.server.rest.FunctionalTestHelper;
 
+import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class WrappingNeoServerBootstrapperTest
@@ -95,7 +95,7 @@ public class WrappingNeoServerBootstrapperTest
         srv.start();
         helper = new FunctionalTestHelper(srv.getServer());
         
-        ClientResponse response = CLIENT.resource(helper.dataUri()).type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
+        ClientResponse response = Client.create().resource(helper.dataUri()).type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
         assertEquals(200,response.getStatus());
         
         srv.stop();
@@ -113,7 +113,7 @@ public class WrappingNeoServerBootstrapperTest
         helper = new FunctionalTestHelper(srv.getServer());
         String nodeData = "{\"age\":12}";
         
-        ClientResponse response = CLIENT.resource(helper.dataUri()+"node").type(MediaType.APPLICATION_JSON)
+        ClientResponse response = Client.create().resource(helper.dataUri()+"node").type(MediaType.APPLICATION_JSON)
                                         .accept(MediaType.APPLICATION_JSON)
                                         .entity( nodeData )
                                         .post(ClientResponse.class);

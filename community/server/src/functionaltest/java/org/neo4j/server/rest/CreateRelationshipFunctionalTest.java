@@ -21,63 +21,64 @@ package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.server.WebTestUtils.CLIENT;
 
 import java.io.IOException;
 import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
 
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
-import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
-import org.neo4j.server.modules.RESTApiModule;
+import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import org.neo4j.test.TestData;
 
+import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class CreateRelationshipFunctionalTest
 {
-    private String RELATIONSHIP_URI_PATTERN;
-
-    private NeoServerWithEmbeddedWebServer server;
-    private FunctionalTestHelper functionalTestHelper;
-    private GraphDbHelper helper;
+    private static String RELATIONSHIP_URI_PATTERN;
 
     public @Rule
     TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
 
-    @SuppressWarnings( "unchecked" )
-    @Before
-    public void setupServer() throws IOException
+    
+    private static NeoServerWithEmbeddedWebServer server;
+    private static FunctionalTestHelper functionalTestHelper;
+    private static GraphDbHelper helper;
+
+    @BeforeClass
+    public static void setupServer() throws IOException
     {
-        server = ServerBuilder.server()
-                .withRandomDatabaseDir()
-                .withSpecificServerModules( RESTApiModule.class )
-                .withPassingStartupHealthcheck()
-                .build();
-        server.start();
+        server = ServerHelper.createServer();
         functionalTestHelper = new FunctionalTestHelper( server );
         helper = functionalTestHelper.getGraphDbHelper();
-
+        
         RELATIONSHIP_URI_PATTERN = functionalTestHelper.dataUri() + "relationship/[0-9]+";
     }
 
-    @After
-    public void stopServer()
+    @Before
+    public void cleanTheDatabase()
+    {
+        ServerHelper.cleanTheDatabase( server );
+    }
+
+    @AfterClass
+    public static void stopServer()
     {
         server.stop();
-        server = null;
     }
+
 
     @Test
     public void shouldRespondWith201WhenSuccessfullyCreatedRelationshipWithProperties() throws Exception
@@ -86,7 +87,7 @@ public class CreateRelationshipFunctionalTest
         long endNode = helper.createNode();
         String jsonString = "{\"to\" : \"" + functionalTestHelper.dataUri() + "node/" + endNode
                             + "\", \"type\" : \"LOVES\", \"data\" : {\"foo\" : \"bar\"}}";
-        ClientResponse response = CLIENT.resource(
+        ClientResponse response = Client.create().resource(
                 functionalTestHelper.dataUri() + "node/" + startNode + "/relationships" )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
@@ -118,7 +119,7 @@ public class CreateRelationshipFunctionalTest
         String jsonString = "{\"to\" : \"" + functionalTestHelper.dataUri() + "node/" + endNode
                             + "\", \"type\" : \"LOVES\"}";
         String uri = functionalTestHelper.dataUri() + "node/" + startNode + "/relationships";
-        ClientResponse response = CLIENT.resource( uri )
+        ClientResponse response = Client.create().resource( uri )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
                 .entity( jsonString )
@@ -142,7 +143,7 @@ public class CreateRelationshipFunctionalTest
         long endNode = helper.createNode();
         String jsonString = "{\"to\" : \"" + functionalTestHelper.dataUri() + "node/" + endNode
                             + "\", \"type\" : \"LOVES\", \"data\" : {\"foo\" : \"bar\"}}";
-        ClientResponse response = CLIENT.resource( functionalTestHelper.dataUri() + "node/999999/relationships" )
+        ClientResponse response = Client.create().resource( functionalTestHelper.dataUri() + "node/999999/relationships" )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
                 .entity( jsonString )
@@ -157,7 +158,7 @@ public class CreateRelationshipFunctionalTest
         long startNode = helper.createNode();
         String jsonString = "{\"to\" : \"" + functionalTestHelper.dataUri() + "node/"
                             + "999999\", \"type\" : \"LOVES\", \"data\" : {\"foo\" : \"bar\"}}";
-        ClientResponse response = CLIENT.resource(
+        ClientResponse response = Client.create().resource(
                 functionalTestHelper.dataUri() + "node/" + startNode + "/relationships" )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
@@ -175,7 +176,7 @@ public class CreateRelationshipFunctionalTest
         String jsonString = "{\"to\" : \"" + functionalTestHelper.dataUri() + "node/" + theOnlyNode
                             + "\", \"type\" : \"LOVES\"}";
         String uri = functionalTestHelper.dataUri() + "node/" + theOnlyNode + "/relationships";
-        ClientResponse response = CLIENT.resource( uri )
+        ClientResponse response = Client.create().resource( uri )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
                 .entity( jsonString )
@@ -200,7 +201,7 @@ public class CreateRelationshipFunctionalTest
         long endNode = helper.createNode();
         String jsonString = "{\"to\" : \"" + functionalTestHelper.dataUri() + "node/" + endNode
                             + "\", \"type\" : \"LOVES\", \"data\" : {\"foo\" : **BAD JSON HERE*** \"bar\"}}";
-        ClientResponse response = CLIENT.resource(
+        ClientResponse response = Client.create().resource(
                 functionalTestHelper.dataUri() + "node/" + startNode + "/relationships" )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )

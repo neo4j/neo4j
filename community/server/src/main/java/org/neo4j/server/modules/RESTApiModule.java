@@ -41,7 +41,7 @@ public class RESTApiModule implements ServerModule
         {
             URI restApiUri = restApiUri( neoServer );
 
-            neoServer.getWebServer().addJAXRSPackages( listFrom( new String[] { Configurator.DATA_API_PACKAGE } ),
+            neoServer.getWebServer().addJAXRSPackages( listFrom( new String[] { Configurator.REST_API_PACKAGE } ),
                     restApiUri.toString() );
             loadPlugins( neoServer );
 
@@ -60,7 +60,7 @@ public class RESTApiModule implements ServerModule
 
     private URI restApiUri( NeoServerWithEmbeddedWebServer neoServer ) throws URISyntaxException
     {
-            return new URI( neoServer.getConfiguration().getString( Configurator.DATA_API_PATH_PROPERTY_KEY,
+            return new URI( neoServer.getConfiguration().getString( Configurator.REST_API_PATH_PROPERTY_KEY,
                     Configurator.DEFAULT_DATA_API_PATH ) );
     }
 

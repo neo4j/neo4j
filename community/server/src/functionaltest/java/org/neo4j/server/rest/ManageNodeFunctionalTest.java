@@ -25,7 +25,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.server.WebTestUtils.CLIENT;
 
 import java.io.IOException;
 import java.net.URI;
@@ -35,13 +34,14 @@ import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
 
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
-import org.neo4j.server.ServerBuilder;
+import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.test.TestData;
@@ -55,30 +55,32 @@ public class ManageNodeFunctionalTest
     private static final long NON_EXISTENT_NODE_ID = 999999;
     private static String NODE_URI_PATTERN = "^.*/node/[0-9]+$";
 
-    private NeoServerWithEmbeddedWebServer server;
-    private FunctionalTestHelper functionalTestHelper;
-    private GraphDbHelper helper;
+    private static NeoServerWithEmbeddedWebServer server;
+    private static FunctionalTestHelper functionalTestHelper;
+    private static GraphDbHelper helper;
 
-    public @Rule
-    TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
-
-    @Before
-    public void setupServer() throws IOException
+    @BeforeClass
+    public static void setupServer() throws IOException
     {
-        server = ServerBuilder.server()
-                .withRandomDatabaseDir()
-                .withPassingStartupHealthcheck()
-                .build();
-        server.start();
+        server = ServerHelper.createServer();
         functionalTestHelper = new FunctionalTestHelper( server );
         helper = functionalTestHelper.getGraphDbHelper();
     }
 
-    @After
-    public void stopServer()
+    @Before
+    public void cleanTheDatabase()
+    {
+        ServerHelper.cleanTheDatabase( server );
+    }
+
+    @AfterClass
+    public static void stopServer()
     {
         server.stop();
     }
+    
+    public @Rule
+    TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
 
     /**
      * Create node.
@@ -147,7 +149,7 @@ public class ManageNodeFunctionalTest
 
     private ClientResponse sendCreateRequestToServer( final String json )
     {
-        WebResource resource = CLIENT.resource( functionalTestHelper.dataUri() + "node/" );
+        WebResource resource = Client.create().resource( functionalTestHelper.dataUri() + "node/" );
         ClientResponse response = resource.type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
                 .entity( json )
@@ -157,7 +159,7 @@ public class ManageNodeFunctionalTest
 
     private ClientResponse sendCreateRequestToServer()
     {
-        WebResource resource = CLIENT.resource( functionalTestHelper.dataUri() + "node/" );
+        WebResource resource = Client.create().resource( functionalTestHelper.dataUri() + "node/" );
         ClientResponse response = resource.type( MediaType.APPLICATION_FORM_URLENCODED )
                 .accept( MediaType.APPLICATION_JSON )
                 .post( ClientResponse.class );
@@ -267,7 +269,7 @@ public class ManageNodeFunctionalTest
         URI nodeLocation = sendCreateRequestToServer().getLocation();
 
         String mangledJsonArray = "[1,2,\"three\"]";
-        ClientResponse response = CLIENT.resource( new URI( nodeLocation.toString() + "/properties/myprop" ) )
+        ClientResponse response = Client.create().resource( new URI( nodeLocation.toString() + "/properties/myprop" ) )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
                 .entity( mangledJsonArray )
@@ -285,7 +287,7 @@ public class ManageNodeFunctionalTest
         URI nodeLocation = sendCreateRequestToServer().getLocation();
 
         String mangledJsonProperties = "{\"a\":\"b\", \"c\":[1,2,\"three\"]}";
-        ClientResponse response = CLIENT.resource( new URI( nodeLocation.toString() + "/properties" ) )
+        ClientResponse response = Client.create().resource( new URI( nodeLocation.toString() + "/properties" ) )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
                 .entity( mangledJsonProperties )

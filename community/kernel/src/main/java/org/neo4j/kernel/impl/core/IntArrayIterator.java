@@ -96,17 +96,25 @@ class IntArrayIterator implements Iterable<Relationship>,
                     for ( RelTypeElementIterator itr : rels )
                     {
                         RelTypeElementIterator newItr = itr;
-                        if ( itr.isSrcEmpty() )
+                        RelIdArray newSrc = fromNode.getRelationshipIds( itr.getType() );
+                        if ( newSrc != null )
                         {
-                            RelIdArray newSrc = fromNode.getRelationshipIds( itr.getType() );
-                            if ( newSrc != null )
+                            if ( itr.isSrcEmpty() )
                             {
                                 newItr = itr.setSrc( newSrc );
                             }
+                            else if ( newSrc.supportsLoops() )
+                            {
+                                itr.updateSrc( newSrc );
+                            }
+                            newItr.notifyAboutMoreRelationships();
                         }
                         newRels.put( newItr.getType(), newItr );
-                        newItr.notifyAboutMoreRelationships();
                     }
+                    
+                    // If we wanted relationships of any type check if there are
+                    // any new relationship types loaded for this node and if so
+                    // initiate iterators for them
                     if ( types.length == 0 )
                     {
                         for ( Map.Entry<String, RelIdArray> entry : fromNode.getRelationshipIds().entrySet() )

@@ -24,7 +24,6 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.server.WebTestUtils.CLIENT;
 
 import java.util.List;
 import java.util.Map;
@@ -35,41 +34,19 @@ import org.hamcrest.Description;
 import org.hamcrest.Factory;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
-import org.junit.After;
-import org.junit.Before;
-import org.neo4j.server.NeoServerWithEmbeddedWebServer;
-import org.neo4j.server.ServerBuilder;
-import org.neo4j.server.rest.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 
+import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
-public class PluginFunctionalAbstractBase
+public class PluginFunctionalTestHelper
 {
-    protected NeoServerWithEmbeddedWebServer server;
-    protected FunctionalTestHelper functionalTestHelper;
-
-    @Before
-    public void setupServer() throws Exception
+    public static Map<String, Object> makeGet( String url ) throws JsonParseException
     {
-        server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
-        server.start();
-        functionalTestHelper = new FunctionalTestHelper( server );
-    }
-
-    @After
-    public void stopServer()
-    {
-        if ( server != null )
-        {
-            server.stop();
-        }
-    }
-    protected Map<String, Object> makeGet( String url ) throws JsonParseException
-    {
-        ClientResponse response = CLIENT.resource( url ).accept(
-                MediaType.APPLICATION_JSON_TYPE ).get( ClientResponse.class );
+        ClientResponse response = Client.create().resource( url )
+                .accept( MediaType.APPLICATION_JSON_TYPE )
+                .get( ClientResponse.class );
 
         String body = getResponseText( response );
         response.close();
@@ -77,23 +54,21 @@ public class PluginFunctionalAbstractBase
         return deserializeMap( body );
     }
 
-    protected Map<String, Object> deserializeMap( final String body )
-            throws JsonParseException
+    protected static Map<String, Object> deserializeMap( final String body ) throws JsonParseException
     {
         Map<String, Object> result = JsonHelper.jsonToMap( body );
         assertThat( result, is( not( nullValue() ) ) );
         return result;
     }
 
-    private List<Map<String, Object>> deserializeList( final String body )
-            throws JsonParseException
+    private static List<Map<String, Object>> deserializeList( final String body ) throws JsonParseException
     {
         List<Map<String, Object>> result = JsonHelper.jsonToList( body );
         assertThat( result, is( not( nullValue() ) ) );
         return result;
     }
 
-    protected String getResponseText( final ClientResponse response )
+    protected static String getResponseText( final ClientResponse response )
     {
         String body = response.getEntity( String.class );
 
@@ -101,10 +76,11 @@ public class PluginFunctionalAbstractBase
         return body;
     }
 
-    protected Map<String, Object> makePostMap( String url ) throws JsonParseException
+    protected static Map<String, Object> makePostMap( String url ) throws JsonParseException
     {
-        ClientResponse response = CLIENT.resource( url ).accept(
-                MediaType.APPLICATION_JSON_TYPE ).post( ClientResponse.class );
+        ClientResponse response = Client.create().resource( url )
+                .accept( MediaType.APPLICATION_JSON_TYPE )
+                .post( ClientResponse.class );
 
         String body = getResponseText( response );
         response.close();
@@ -112,11 +88,13 @@ public class PluginFunctionalAbstractBase
         return deserializeMap( body );
     }
 
-    protected Map<String, Object> makePostMap( String url, Map<String, Object> params ) throws JsonParseException
+    protected static Map<String, Object> makePostMap( String url, Map<String, Object> params ) throws JsonParseException
     {
         String json = JsonHelper.createJsonFrom( params );
-        ClientResponse response = CLIENT.resource( url ).accept(
-                MediaType.APPLICATION_JSON_TYPE ).entity( json, MediaType.APPLICATION_JSON_TYPE ).post( ClientResponse.class );
+        ClientResponse response = Client.create().resource( url )
+                .accept( MediaType.APPLICATION_JSON_TYPE )
+                .entity( json, MediaType.APPLICATION_JSON_TYPE )
+                .post( ClientResponse.class );
 
         String body = getResponseText( response );
         response.close();
@@ -124,10 +102,11 @@ public class PluginFunctionalAbstractBase
         return deserializeMap( body );
     }
 
-    protected List<Map<String, Object>> makePostList( String url ) throws JsonParseException
+    protected static List<Map<String, Object>> makePostList( String url ) throws JsonParseException
     {
-        ClientResponse response = CLIENT.resource( url ).accept(
-                MediaType.APPLICATION_JSON_TYPE ).post( ClientResponse.class );
+        ClientResponse response = Client.create().resource( url )
+                .accept( MediaType.APPLICATION_JSON_TYPE )
+                .post( ClientResponse.class );
 
         String body = getResponseText( response );
         response.close();
@@ -135,11 +114,14 @@ public class PluginFunctionalAbstractBase
         return deserializeList( body );
     }
 
-    protected List<Map<String, Object>> makePostList( String url, Map<String, Object> params ) throws JsonParseException
+    protected static List<Map<String, Object>> makePostList( String url, Map<String, Object> params )
+            throws JsonParseException
     {
         String json = JsonHelper.createJsonFrom( params );
-        ClientResponse response = CLIENT.resource( url ).accept(
-                MediaType.APPLICATION_JSON_TYPE ).entity( json, MediaType.APPLICATION_JSON_TYPE ).post( ClientResponse.class );
+        ClientResponse response = Client.create().resource( url )
+                .accept( MediaType.APPLICATION_JSON_TYPE )
+                .entity( json, MediaType.APPLICATION_JSON_TYPE )
+                .post( ClientResponse.class );
 
         String body = getResponseText( response );
         response.close();
@@ -152,21 +134,22 @@ public class PluginFunctionalAbstractBase
         enum MatchType
         {
             end( "ends with" )
-                    {
-                        @Override
-                        boolean match( String pattern, String string )
-                        {
-                            return string.endsWith( pattern );
-                        }
-                    },
+            {
+                @Override
+                boolean match( String pattern, String string )
+                {
+                    return string.endsWith( pattern );
+                }
+            },
             matches()
-                    {
-                        @Override
-                        boolean match( String pattern, String string )
-                        {
-                            return string.matches( pattern );
-                        }
-                    },;
+            {
+                @Override
+                boolean match( String pattern, String string )
+                {
+                    return string.matches( pattern );
+                }
+            },
+            ;
             private final String description;
 
             abstract boolean match( String pattern, String string );
@@ -208,9 +191,13 @@ public class PluginFunctionalAbstractBase
         @Override
         public void describeTo( Description descr )
         {
-            descr.appendText( "expected something that " ).appendText( type.description ).appendText(
-                    " [" ).appendText( pattern ).appendText( "] but got [" ).appendText( string ).appendText(
-                    "]" );
+            descr.appendText( "expected something that " )
+                    .appendText( type.description )
+                    .appendText( " [" )
+                    .appendText( pattern )
+                    .appendText( "] but got [" )
+                    .appendText( string )
+                    .appendText( "]" );
         }
     }
 

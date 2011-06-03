@@ -19,7 +19,8 @@
  */
 package org.neo4j.server.configuration.validation;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import org.apache.commons.configuration.Configuration;
 import org.junit.Test;

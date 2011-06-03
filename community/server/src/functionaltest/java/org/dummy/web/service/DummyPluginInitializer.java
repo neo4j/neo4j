@@ -19,13 +19,13 @@
  */
 package org.dummy.web.service;
 
-import org.apache.commons.configuration.Configuration;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.server.plugins.PluginLifecycle;
-import org.neo4j.server.plugins.Injectable;
-
 import java.util.Collection;
 import java.util.Collections;
+
+import org.apache.commons.configuration.Configuration;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.server.plugins.Injectable;
+import org.neo4j.server.plugins.PluginLifecycle;
 
 public class DummyPluginInitializer implements PluginLifecycle
 {

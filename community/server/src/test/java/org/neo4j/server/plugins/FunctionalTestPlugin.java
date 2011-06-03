@@ -19,6 +19,11 @@
  */
 package org.neo4j.server.plugins;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -30,11 +35,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.FilteringIterable;
 import org.neo4j.kernel.Traversal;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
 
 @Description( "Here you can describe your plugin. It will show up in the description of the methods." )
 public class FunctionalTestPlugin extends ServerPlugin

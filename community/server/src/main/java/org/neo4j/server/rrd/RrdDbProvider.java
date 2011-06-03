@@ -19,11 +19,12 @@
  */
 package org.neo4j.server.rrd;
 
-import com.sun.jersey.api.core.HttpContext;
+import javax.ws.rs.ext.Provider;
+
 import org.neo4j.server.database.AbstractInjectableProvider;
 import org.rrd4j.core.RrdDb;
 
-import javax.ws.rs.ext.Provider;
+import com.sun.jersey.api.core.HttpContext;
 
 @Provider
 public class RrdDbProvider extends AbstractInjectableProvider<RrdDb>

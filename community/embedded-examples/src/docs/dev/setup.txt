@@ -9,7 +9,7 @@ After selecting the appropriate <<editions,edition>> for your platform, embed Ne
 Get the Neo4j libraries from one of these sources:
 
 * Extract a Neo4j http://neo4j.org/download/[download] zip/tarball, and use the 'jar' files found in the 'lib/' directory.
-* Use the 'jar' files available from http://search.maven.org/#search|ga|1|g%3A%22org.neo4j%22[Maven Central Repository}
+* Use the 'jar' files available from http://search.maven.org/#search|ga|1|g%3A%22org.neo4j%22[Maven Central Repository]
 
 Add the jar files to your project:
 
@@ -32,6 +32,8 @@ For an overview of the main Neo4j artifacts, see <<editions>>.
 The artifacts listed there are top-level artifacts that will transitively include the actual Neo4j implementation.
 You can either go with the top-level artifact or include the individual components directly.
 
+=== Maven ===
+
 .Maven dependency
 [source,xml] 
 --------------------------------------------
@@ -49,8 +51,11 @@ You can either go with the top-level artifact or include the individual componen
 </project>
 --------------------------------------------
 
-_Where +$\{neo4j-version}+ is the intended version and the +artifactId+ is one of +neo4j+, +neo4j-advanced+, +neo4j-enterprise+._
+_Where +$\{neo4j-version}+ is the intended version and the +artifactId+ is found in <<editions>>._
 
+=== Ivy ===
+
+Make sure to resolve dependencies from Maven Central, for example using this configuration in your 'ivysettings.xml' file:
 
 [source,xml]
 ----
@@ -66,4 +71,5 @@ _Where +$\{neo4j-version}+ is the intended version and the +artifactId+ is one o
   </resolvers>
 </ivysettings>
 ----
+
 

@@ -19,15 +19,15 @@
  */
 package org.neo4j.server.webadmin.rest.representations;
 
-import org.neo4j.server.rest.repr.ObjectRepresentation;
-import org.neo4j.server.rest.repr.Representation;
-import org.neo4j.server.rest.repr.ValueRepresentation;
+import java.lang.management.ManagementFactory;
 
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
-import java.lang.management.ManagementFactory;
+import org.neo4j.server.rest.repr.ObjectRepresentation;
+import org.neo4j.server.rest.repr.Representation;
+import org.neo4j.server.rest.repr.ValueRepresentation;
 
 public class JmxAttributeRepresentation extends ObjectRepresentation
 {

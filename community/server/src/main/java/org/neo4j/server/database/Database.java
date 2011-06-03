@@ -50,7 +50,9 @@ public class Database
     public Database( GraphDatabaseFactory factory, String databaseStoreDirectory )
     {
         this( createDatabase( factory, databaseStoreDirectory, null ) );
-        log.warn( "No database tuning properties set in the property file, using defaults. Please specify the performance properties file with org.neo4j.server.db.tuning.properties in the server properties file [%s].", System.getProperty( "org.neo4j.server.properties" ) );
+        log.warn(
+                "No database tuning properties set in the property file, using defaults. Please specify the performance properties file with org.neo4j.server.db.tuning.properties in the server properties file [%s].",
+                System.getProperty( "org.neo4j.server.properties" ) );
     }
 
     public Database( GraphDatabaseFactory factory, String databaseStoreDirectory,
@@ -59,8 +61,8 @@ public class Database
         this( createDatabase( factory, databaseStoreDirectory, databaseTuningProperties ) );
     }
 
-    private static AbstractGraphDatabase createDatabase( GraphDatabaseFactory factory,
-            String databaseStoreDirectory, Map<String, String> databaseProperties )
+    private static AbstractGraphDatabase createDatabase( GraphDatabaseFactory factory, String databaseStoreDirectory,
+            Map<String, String> databaseProperties )
     {
         log.info( "Using database at " + databaseStoreDirectory );
 
@@ -76,9 +78,7 @@ public class Database
         return factory.createDatabase( databaseStoreDirectory, databaseProperties );
     }
 
-
-    private static void putIfAbsent( Map<String, String> databaseProperties,
-            String configKey, String configValue )
+    private static void putIfAbsent( Map<String, String> databaseProperties, String configKey, String configValue )
     {
         if ( databaseProperties.get( configKey ) == null )
         {
@@ -111,7 +111,8 @@ public class Database
                 graph.shutdown();
             }
             log.info( "Successfully shutdown database" );
-        } catch ( Exception e )
+        }
+        catch ( Exception e )
         {
             log.error( "Database did not shut down cleanly. Reason [%s]", e.getMessage() );
             throw new RuntimeException( e );
@@ -125,7 +126,8 @@ public class Database
 
     public org.neo4j.graphdb.index.Index<Relationship> getRelationshipIndex( String name )
     {
-        RelationshipIndex index = graph.index().forRelationships( name );
+        RelationshipIndex index = graph.index()
+                .forRelationships( name );
         if ( index == null )
         {
             throw new RuntimeException( "No index for [" + name + "]" );
@@ -135,7 +137,8 @@ public class Database
 
     public org.neo4j.graphdb.index.Index<Node> getNodeIndex( String name )
     {
-        org.neo4j.graphdb.index.Index<Node> index = graph.index().forNodes( name );
+        org.neo4j.graphdb.index.Index<Node> index = graph.index()
+                .forNodes( name );
         if ( index == null )
         {
             throw new RuntimeException( "No index for [" + name + "]" );
@@ -145,8 +148,6 @@ public class Database
 
     public RrdDb rrdDb()
     {
-        //assert rrdDb != null : "RrdDb is null";
-
         return rrdDb;
     }
 
@@ -154,8 +155,6 @@ public class Database
     {
         this.rrdDb = rrdDb;
     }
-
-
 
     public IndexManager getIndexManager()
     {

@@ -19,12 +19,12 @@
  */
 package org.neo4j.server.plugins;
 
-import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.server.rest.repr.BadInputException;
-
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+
+import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.server.rest.repr.BadInputException;
 
 class URLTypeCaster extends TypeCaster
 {

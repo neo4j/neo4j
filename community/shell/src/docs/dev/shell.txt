@@ -1,6 +1,6 @@
 [[shell]]
 Neo4j Shell
-==========
+===========
 
 // If you're just looking for an example try the <<shell-example>>, otherwise read on.
 
@@ -191,6 +191,12 @@ And an example of setting a +double[]+ property:
 [source,plain]
 ----
 $ set -t double[] my_values [1.4,12.2,13]
+----
+
+Example of setting a +String+ property containing a JSON string:
+[source,plain]
+----
+mkrel -c -d i -t DOMAIN_OF --np "{'app':'foobar'}"
 ----
 
 * +rm <key>+ removes a property.

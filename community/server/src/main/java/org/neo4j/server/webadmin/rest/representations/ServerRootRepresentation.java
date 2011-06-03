@@ -19,13 +19,13 @@
  */
 package org.neo4j.server.webadmin.rest.representations;
 
-import org.neo4j.server.rest.repr.MappingRepresentation;
-import org.neo4j.server.rest.repr.MappingSerializer;
-import org.neo4j.server.webadmin.rest.AdvertisableService;
-
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.neo4j.server.rest.repr.MappingRepresentation;
+import org.neo4j.server.rest.repr.MappingSerializer;
+import org.neo4j.server.webadmin.rest.AdvertisableService;
 
 public class ServerRootRepresentation extends MappingRepresentation
 {

@@ -20,6 +20,7 @@
 package org.neo4j.server.rest.web;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
@@ -80,18 +81,9 @@ public class BatchOperationService
             BatchOperationResults results = new BatchOperationResults(
                     operations.size() );
 
-            InternalJettyServletRequest req = new InternalJettyServletRequest();
-            InternalJettyServletResponse res = new InternalJettyServletResponse();
-
-            String servletPath = uriInfo.getBaseUri().getPath();
-            String servletBaseUrl = uriInfo.getBaseUri().toString();
-            servletBaseUrl = servletBaseUrl.substring( 0,
-                    servletBaseUrl.length() - 1 );
-
             for ( Object rawOperation : operations )
             {
-                performJob( results, req, res, servletBaseUrl, servletPath,
-                        (Map<String, Object>) rawOperation );
+                performJob( results, uriInfo, (Map<String, Object>) rawOperation );
             }
 
             tx.success();
@@ -112,10 +104,13 @@ public class BatchOperationService
     }
 
     private void performJob( BatchOperationResults results,
-            InternalJettyServletRequest req, InternalJettyServletResponse res,
-            String servletUrl, String servletPath, Map<String, Object> desc )
+            UriInfo uriInfo, Map<String, Object> desc )
             throws IOException, ServletException
     {
+        
+        InternalJettyServletRequest req = new InternalJettyServletRequest();
+        InternalJettyServletResponse res = new InternalJettyServletResponse();
+        
         String method = (String) desc.get( METHOD_KEY );
         String path = (String) desc.get( TO_KEY );
         String body = desc.containsKey( BODY_KEY ) ? JsonHelper.createJsonFrom( desc.get( BODY_KEY ) )
@@ -128,19 +123,12 @@ public class BatchOperationService
         path = replaceLocationPlaceholders( path, locations );
         body = replaceLocationPlaceholders( body, locations );
         
-        if( path.startsWith( servletUrl ) ) {
-            path = path.substring( servletUrl.length() );
-        }
-        
-        if ( !path.startsWith( "/" ) )
-        {
-            path = "/" + path;
-        }
+        URI targetUri = calculateTargetUri( uriInfo, path );
 
-        req.setup( method, servletUrl + path, body);
+        req.setup( method, targetUri.toString(), body);
         res.setup();
 
-        webServer.handle( servletPath + path, req, res );
+        webServer.invokeDirectly(targetUri.getPath(), req, res);
 
         if ( is2XXStatusCode( res.getStatus() ) )
         {
@@ -152,6 +140,20 @@ public class BatchOperationService
         {
             throw new RuntimeException( res.getReason() );
         }
+    }
+    
+    private URI calculateTargetUri(UriInfo serverUriInfo, String requestedPath) {
+        URI baseUri = serverUriInfo.getBaseUri();
+        
+        if(requestedPath.startsWith( baseUri.toString() )) {
+            requestedPath = requestedPath.substring( baseUri.toString().length() );
+        }
+
+        if(!requestedPath.startsWith( "/" )) {
+            requestedPath = "/" + requestedPath;
+        }
+        
+        return baseUri.resolve("." + requestedPath);
     }
     
     private String replaceLocationPlaceholders(String str, Map<Integer, String> locations) {

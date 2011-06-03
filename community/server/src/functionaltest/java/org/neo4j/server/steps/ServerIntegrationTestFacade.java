@@ -27,20 +27,22 @@ import org.neo4j.server.ServerBuilder;
 public class ServerIntegrationTestFacade
 {
 
-    
     private static final String USE_EXTERNAL_SERVER_KEY = "testWithExternalServer";
     private static final String EXTERNAL_SERVER_KEY = "externalTestServerUrl";
-    
     private static final String DEFAULT_EXTERNAL_SERVER_URL = "http://localhost:7474/";
-    
+
     private NeoServerWithEmbeddedWebServer server;
 
     public String getServerUrl()
     {
-        if(isUsingExternalServer() ) {
+        if ( isUsingExternalServer() )
+        {
             return getExternalServerUrl();
-        } else {
-            return server.baseUri().toString();
+        }
+        else
+        {
+            return server.baseUri()
+                    .toString();
         }
     }
 
@@ -48,7 +50,8 @@ public class ServerIntegrationTestFacade
     {
         if ( !isUsingExternalServer() )
         {
-            server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
+            server = ServerBuilder.server()
+                    .build();
             server.start();
         }
     }
@@ -64,9 +67,10 @@ public class ServerIntegrationTestFacade
 
     public boolean isUsingExternalServer()
     {
-        return System.getProperty( USE_EXTERNAL_SERVER_KEY, "false" ).equals("true");
+        return System.getProperty( USE_EXTERNAL_SERVER_KEY, "false" )
+                .equals( "true" );
     }
-    
+
     private String getExternalServerUrl()
     {
         return System.getProperty( EXTERNAL_SERVER_KEY, DEFAULT_EXTERNAL_SERVER_URL );

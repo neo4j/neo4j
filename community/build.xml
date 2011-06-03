@@ -1,0 +1,54 @@
+<project name="NeoCommunity" basedir="." default="build">
+	
+	<property name="buildNumber" value="1.4.DEVELOPER"/>
+	
+	<target name="build" description="Build the Neo4j community edition" depends="clean,compile"/>
+
+	<target name="clean" description="Cleans all of the community components">
+		<exec executable="mvn" dir="." failonerror="true">
+			<arg value="clean"/>
+		</exec>
+		<delete>
+			<fileset dir="." includes="**/pom-with-build-number.xml"/>
+		</delete>
+		<!-- Controversial! This is to ensure that there aren't any cached nasties -->
+		<!-- Currently commented-out so that we play nicely with other builds in TeamCity -->
+		<!-- <delete>
+			<fileset dir="${user.home}/.m2/repository/org/neo4j" includes="**/*"/>
+		</delete> -->
+	</target>
+	
+	<target name="compile" description="Compiles all of the individual community components">
+		<compileProject projectName="kernel"/>
+		<compileProject projectName="jmx"/>		
+		<compileProject projectName="udc"/>
+		<compileProject projectName="lucene-index"/>
+		<compileProject projectName="graph-algo"/>
+		<compileProject projectName="graph-matching"/>
+		<compileProject projectName="sunshine"/>
+		<compileProject projectName="neo4j"/>
+		<compileProject projectName="neo4j-community"/>
+		<compileProject projectName="shell"/>
+		<compileProject projectName="embedded-examples"/>
+		<compileProject projectName="server-api"/>
+		<compileProject projectName="server"/>
+		<compileProject projectName="server-examples"/>	
+	</target>
+	
+	<macrodef name="compileProject" description="Maven installs a single project"> 
+		<attribute name="projectName"/>
+		<sequential>
+			<echo message="Compiling @{projectName}"/>
+			<!-- Substitute version number into a new pom -->
+			<copy file="@{projectName}/pom.xml" tofile="@{projectName}/pom-with-build-number.xml" overwrite="true"/>
+			<replace file="@{projectName}/pom-with-build-number.xml" token="1.4-SNAPSHOT" value="${buildNumber}"/>
+			<!-- Maven's ant task doesn't compile. Have to use exec -->
+			<exec executable="mvn" dir="@{projectName}" failonerror="true">
+				<arg value="install"/>
+				<arg value="-f"/>
+				<arg value="pom-with-build-number.xml"/>
+			</exec>
+		</sequential>
+	</macrodef>
+	
+</project>

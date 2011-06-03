@@ -22,89 +22,106 @@ package org.neo4j.server.rest;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.server.WebTestUtils.CLIENT;
 
 import java.io.IOException;
 import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
 
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
-import org.neo4j.server.ServerBuilder;
-import org.neo4j.server.WebTestUtils;
+import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
+public class DiscoveryServiceFunctionalTest
+{
 
-public class DiscoveryServiceFunctionalTest {
+    private static NeoServerWithEmbeddedWebServer server;
 
-    private NeoServerWithEmbeddedWebServer server;
-    
+    @BeforeClass
+    public static void setupServer() throws IOException
+    {
+        server = ServerHelper.createServer();
+    }
+
     @Before
-    public void setupServer() throws IOException {
-        server = ServerBuilder.server().withRandomDatabaseDir().withPassingStartupHealthcheck().build();
-        server.start();
+    public void cleanTheDatabase()
+    {
+        ServerHelper.cleanTheDatabase( server );
     }
 
-    @After
-    public void stopServer() {
+    @AfterClass
+    public static void stopServer()
+    {
         server.stop();
-        server = null;
     }
-    
+
     @Test
-    public void shouldRespondWith200WhenRetrievingDiscoveryDocument() throws Exception {
+    public void shouldRespondWith200WhenRetrievingDiscoveryDocument() throws Exception
+    {
         ClientResponse response = getDiscoveryDocument();
         assertEquals( 200, response.getStatus() );
         response.close();
     }
 
     @Test
-    public void shouldGetContentLengthHeaderWhenRetrievingDiscoveryDocument() throws Exception {
+    public void shouldGetContentLengthHeaderWhenRetrievingDiscoveryDocument() throws Exception
+    {
         ClientResponse response = getDiscoveryDocument();
-        assertNotNull(response.getHeaders().get("Content-Length"));
+        assertNotNull( response.getHeaders()
+                .get( "Content-Length" ) );
         response.close();
     }
 
     @Test
-    public void shouldHaveJsonMediaTypeWhenRetrievingDiscoveryDocument() throws Exception {
+    public void shouldHaveJsonMediaTypeWhenRetrievingDiscoveryDocument() throws Exception
+    {
         ClientResponse response = getDiscoveryDocument();
-        assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
+        assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
         response.close();
     }
-    
+
     @Test
-    public void shouldHaveJsonDataInResponse() throws Exception {
+    public void shouldHaveJsonDataInResponse() throws Exception
+    {
         ClientResponse response = getDiscoveryDocument();
 
-        Map<String, Object> map = JsonHelper.jsonToMap(response.getEntity(String.class));
-        
+        Map<String, Object> map = JsonHelper.jsonToMap( response.getEntity( String.class ) );
+
         String managementKey = "management";
-        assertTrue(map.containsKey(managementKey));
-        assertNotNull(map.get(managementKey));
+        assertTrue( map.containsKey( managementKey ) );
+        assertNotNull( map.get( managementKey ) );
 
         String dataKey = "data";
-        assertTrue(map.containsKey(dataKey));
-        assertNotNull(map.get(dataKey));
+        assertTrue( map.containsKey( dataKey ) );
+        assertNotNull( map.get( dataKey ) );
         response.close();
     }
-    
+
     @Test
-    public void shouldRedirectToWebadminOnHtmlRequest() throws Exception {
-        Client client = WebTestUtils.NON_REDIRECTING_CLIENT;
-        
-        ClientResponse clientResponse = client.resource( server.baseUri() ).accept( MediaType.TEXT_HTML ).get( ClientResponse.class );
-        
-        assertEquals(303, clientResponse.getStatus());
+    public void shouldRedirectToWebadminOnHtmlRequest() throws Exception
+    {
+        Client nonRedirectingClient = Client.create();
+        nonRedirectingClient.setFollowRedirects( false );
+
+        ClientResponse clientResponse = nonRedirectingClient.resource( server.baseUri() )
+                .accept( MediaType.TEXT_HTML )
+                .get( ClientResponse.class );
+
+        assertEquals( 303, clientResponse.getStatus() );
     }
-    
-    private ClientResponse getDiscoveryDocument() throws Exception {
-        return CLIENT.resource( server.baseUri() ).accept( MediaType.APPLICATION_JSON ).get( ClientResponse.class );
+
+    private ClientResponse getDiscoveryDocument() throws Exception
+    {
+        return Client.create().resource( server.baseUri() )
+                .accept( MediaType.APPLICATION_JSON )
+                .get( ClientResponse.class );
     }
-    
+
 }

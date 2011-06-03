@@ -123,7 +123,7 @@ public class PropertyFileConfigurator implements Configurator {
 
     private void normalizeUris() {
         try {
-            for (String key : new String[] { MANAGEMENT_PATH_PROPERTY_KEY, DATA_API_PATH_PROPERTY_KEY }) {
+            for (String key : new String[] { MANAGEMENT_PATH_PROPERTY_KEY, REST_API_PATH_PROPERTY_KEY }) {
                 if (configuration().containsKey(key)) {
                     URI normalizedUri = new URI((String) configuration().getProperty(key)).normalize();
                     configuration().clearProperty(key);
@@ -146,6 +146,10 @@ public class PropertyFileConfigurator implements Configurator {
             }
         });
         return neo4jPropertyFiles != null && neo4jPropertyFiles.length == 1;
+    }
+
+    public File getPropertyFileDirectory() {
+        return propertyFileDirectory;
     }
 
     @Override

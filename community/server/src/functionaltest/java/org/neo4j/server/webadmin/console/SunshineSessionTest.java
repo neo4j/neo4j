@@ -39,11 +39,11 @@
 
 package org.neo4j.server.webadmin.console;
 
+import static org.hamcrest.text.StringContains.containsString;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.neo4j.kernel.ImpermanentGraphDatabase;
-
-import static org.hamcrest.text.StringContains.containsString;
 
 /**
 * Created by Andres Taylor

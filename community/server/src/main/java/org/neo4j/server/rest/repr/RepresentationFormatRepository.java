@@ -19,14 +19,15 @@
  */
 package org.neo4j.server.rest.repr;
 
-import org.neo4j.helpers.Service;
-import org.neo4j.server.rest.repr.formats.JsonFormat;
-
-import javax.ws.rs.core.MediaType;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import javax.ws.rs.core.MediaType;
+
+import org.neo4j.helpers.Service;
+import org.neo4j.server.rest.repr.formats.JsonFormat;
 
 public final class RepresentationFormatRepository
 {

@@ -19,11 +19,12 @@
  */
 package org.neo4j.server.rrd;
 
+import java.lang.management.ManagementFactory;
+
 import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.management.openmbean.CompositeDataSupport;
-import java.lang.management.ManagementFactory;
 
 public class MemoryUsedSampleable implements Sampleable
 {

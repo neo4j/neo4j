@@ -20,7 +20,6 @@
 package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.server.WebTestUtils.CLIENT;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -28,46 +27,49 @@ import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
 
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
-import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.DatabaseBlockedException;
+import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.test.TestData;
 
+import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class RemoveNodePropertiesFunctionalTest
 {
-    private NeoServerWithEmbeddedWebServer server;
-    private FunctionalTestHelper functionalTestHelper;
-    private GraphDbHelper helper;
+    private static NeoServerWithEmbeddedWebServer server;
+    private static FunctionalTestHelper functionalTestHelper;
+    private static GraphDbHelper helper;
 
-    public @Rule
-    TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
-
-    @Before
-    public void setupServer() throws IOException
+    @BeforeClass
+    public static void setupServer() throws IOException
     {
-        server = ServerBuilder.server()
-                .withRandomDatabaseDir()
-                .withPassingStartupHealthcheck()
-                .build();
-        server.start();
+        server = ServerHelper.createServer();
         functionalTestHelper = new FunctionalTestHelper( server );
         helper = functionalTestHelper.getGraphDbHelper();
     }
 
-    @After
-    public void stopServer()
+    @Before
+    public void cleanTheDatabase()
+    {
+        ServerHelper.cleanTheDatabase( server );
+    }
+
+    @AfterClass
+    public static void stopServer()
     {
         server.stop();
-        server = null;
     }
+
+    public @Rule
+    TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
 
     private String getPropertiesUri( final long nodeId )
     {
@@ -105,7 +107,7 @@ public class RemoveNodePropertiesFunctionalTest
     @Test
     public void shouldReturn404WhenPropertiesSentToANodeWhichDoesNotExist()
     {
-        ClientResponse response = CLIENT.resource( getPropertiesUri( 999999 ) )
+        ClientResponse response = Client.create().resource( getPropertiesUri( 999999 ) )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
                 .delete( ClientResponse.class );
@@ -115,7 +117,7 @@ public class RemoveNodePropertiesFunctionalTest
 
     private ClientResponse removeNodePropertiesOnServer( final long nodeId )
     {
-        return CLIENT.resource( getPropertiesUri( nodeId ) )
+        return Client.create().resource( getPropertiesUri( nodeId ) )
                 .delete( ClientResponse.class );
     }
 
@@ -146,7 +148,7 @@ public class RemoveNodePropertiesFunctionalTest
     @Test
     public void shouldReturn404WhenPropertySentToANodeWhichDoesNotExist()
     {
-        ClientResponse response = CLIENT.resource( getPropertyUri( 999999, "foo" ) )
+        ClientResponse response = Client.create().resource( getPropertyUri( 999999, "foo" ) )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
                 .delete( ClientResponse.class );
@@ -161,7 +163,7 @@ public class RemoveNodePropertiesFunctionalTest
 
     private ClientResponse removeNodePropertyOnServer( final long nodeId, final String key )
     {
-        return CLIENT.resource( getPropertyUri( nodeId, key ) )
+        return Client.create().resource( getPropertyUri( nodeId, key ) )
                 .delete( ClientResponse.class );
     }
 }

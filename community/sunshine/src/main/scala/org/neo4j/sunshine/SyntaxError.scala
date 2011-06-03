@@ -19,8 +19,6 @@
  */
 package org.neo4j.sunshine
 
-import java.lang.Exception
-
 /**
  * Created by Andres Taylor
  * Date: 5/20/11

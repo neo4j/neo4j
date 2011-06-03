@@ -33,6 +33,10 @@ public abstract class RelTypeElementIterator
             return this;
         }
         
+        public void updateSrc( RelIdArray newSrc )
+        {
+        }
+        
         @Override
         public long next( NodeManager nodeManager )
         {
@@ -82,6 +86,8 @@ public abstract class RelTypeElementIterator
     public abstract boolean isSrcEmpty();
 
     public abstract RelTypeElementIterator setSrc( RelIdArray newSrc );
+    
+    public abstract void updateSrc( RelIdArray newSrc );
     
     public abstract void notifyAboutMoreRelationships();
 }

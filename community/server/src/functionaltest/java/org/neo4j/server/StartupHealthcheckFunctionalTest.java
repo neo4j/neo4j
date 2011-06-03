@@ -24,13 +24,17 @@ import java.io.IOException;
 import org.junit.Test;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 
-public class StartupHealthcheckFunctionalTest {
-    
+public class StartupHealthcheckFunctionalTest
+{
+
     private NeoServer server;
-    
-    @Test(expected = StartupHealthCheckFailedException.class)
-    public void shouldExitWhenFailedStartupHealthCheck() throws IOException {
-        server = ServerBuilder.server().withFailingStartupHealthcheck().withRandomDatabaseDir().build();
+
+    @Test( expected = StartupHealthCheckFailedException.class )
+    public void shouldExitWhenFailedStartupHealthCheck() throws IOException
+    {
+        server = ServerBuilder.server()
+                .withFailingStartupHealthcheck()
+                .build();
         server.start();
     }
 }

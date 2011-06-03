@@ -32,7 +32,7 @@ public class DiscoveryModule implements ServerModule {
 
     public void start( NeoServerWithEmbeddedWebServer neoServer )
     {
-        neoServer.getWebServer().addJAXRSPackages(listFrom(new String[] { Configurator.ROOT_DISCOVERY_REST_API_PACKAGE }), ROOT_PATH);
+        neoServer.getWebServer().addJAXRSPackages(listFrom(new String[] { Configurator.DISCOVERY_API_PACKAGE }), ROOT_PATH);
         log.info("Mounted discovery module at [%s]", ROOT_PATH);
     }
 

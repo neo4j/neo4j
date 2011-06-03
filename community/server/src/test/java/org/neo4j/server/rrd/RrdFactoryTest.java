@@ -46,19 +46,13 @@ public class RrdFactoryTest
     public void setUp() throws Exception
     {
         config = new MapConfiguration( new HashMap<String, String>() );
-        db = new Database(new ImpermanentGraphDatabase());
+        db = new Database( new ImpermanentGraphDatabase() );
     }
 
     @After
     public void tearDown() throws Exception
     {
-        try
-        {
-            db.shutdown();
-        } catch ( Exception e )
-        {
-            ;
-        }
+        db.shutdown();
     }
 
     @Test
@@ -72,7 +66,6 @@ public class RrdFactoryTest
 
         assertThat( factory.directoryUsed, is( expected ) );
     }
-
 
     @Test
     public void shouldCreateRrdInAGoodDefaultPlace() throws Exception
@@ -102,8 +95,8 @@ public class RrdFactoryTest
         }
 
         @Override
-        protected RrdDb createRrdb( String inDirectory, int stepSize, int stepsPerArchive,
-                                    Sampleable... sampleables ) throws IOException
+        protected RrdDb createRrdb( String inDirectory, int stepSize, int stepsPerArchive, Sampleable... sampleables )
+                throws IOException
         {
             directoryUsed = inDirectory;
             return super.createRrdb( inDirectory, stepSize, stepsPerArchive, sampleables );

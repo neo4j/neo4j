@@ -19,11 +19,10 @@
  */
 package org.neo4j.server.webadmin.rest.representations;
 
-import org.neo4j.helpers.collection.IterableWrapper;
-import org.neo4j.server.rest.repr.ListRepresentation;
-import org.neo4j.server.rest.repr.ObjectRepresentation;
-import org.neo4j.server.rest.repr.Representation;
-import org.neo4j.server.rest.repr.ValueRepresentation;
+import java.io.UnsupportedEncodingException;
+import java.lang.management.ManagementFactory;
+import java.net.URLEncoder;
+import java.util.Arrays;
 
 import javax.management.InstanceNotFoundException;
 import javax.management.IntrospectionException;
@@ -32,10 +31,12 @@ import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
-import java.io.UnsupportedEncodingException;
-import java.lang.management.ManagementFactory;
-import java.net.URLEncoder;
-import java.util.Arrays;
+
+import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.server.rest.repr.ListRepresentation;
+import org.neo4j.server.rest.repr.ObjectRepresentation;
+import org.neo4j.server.rest.repr.Representation;
+import org.neo4j.server.rest.repr.ValueRepresentation;
 
 public class JmxMBeanRepresentation extends ObjectRepresentation
 {
