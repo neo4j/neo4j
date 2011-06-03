@@ -59,6 +59,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
     private final boolean createdNow;
     private Map<String, LruCache<String, Collection<Long>>> cache;
     private int updateCount;
+    private int commitBatchSize = 500000;
 
     LuceneBatchInserterIndex( LuceneBatchInserterIndexProvider provider,
             BatchInserter inserter, IndexIdentifier identifier, Map<String, String> config )
@@ -69,6 +70,17 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         this.identifier = identifier;
         this.type = IndexType.getIndexType( identifier, config );
         this.writer = instantiateWriter( storeDir.first() );
+    }
+    
+    /**
+     * Sets the number of modifications that will be the threshold for a commit
+     * to happen. This will free up memory.
+     * 
+     * @param size the threshold for triggering a commit.
+     */
+    public void setCommitBatchSize( int size )
+    {
+        this.commitBatchSize = size;
     }
 
     public void add( long entityId, Map<String, Object> properties )
@@ -96,7 +108,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
                 }
             }
             writer.addDocument( document );
-            if ( ++updateCount == 500000 )
+            if ( ++updateCount == commitBatchSize )
             {
                 writer.commit();
                 updateCount = 0;
@@ -363,14 +375,14 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
     public void flush()
     {
         writerModified = true;
-        try
-        {
-            writer.commit();
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+//        try
+//        {
+//            writer.commit();
+//        }
+//        catch ( IOException e )
+//        {
+//            throw new RuntimeException( e );
+//        }
     }
     
     public void setCacheCapacity( String key, int size )
