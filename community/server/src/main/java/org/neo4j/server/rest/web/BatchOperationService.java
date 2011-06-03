@@ -19,10 +19,11 @@
  */
 package org.neo4j.server.rest.web;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.http.Cookie;
+import javax.servlet.ServletException;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
@@ -31,7 +32,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
-import org.mortbay.jetty.HttpURI;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.database.Database;
@@ -83,49 +83,15 @@ public class BatchOperationService
             InternalJettyServletRequest req = new InternalJettyServletRequest();
             InternalJettyServletResponse res = new InternalJettyServletResponse();
 
-            String servletBaseUrl = uriInfo.getBaseUri().toString();
             String servletPath = uriInfo.getBaseUri().getPath();
+            String servletBaseUrl = uriInfo.getBaseUri().toString();
             servletBaseUrl = servletBaseUrl.substring( 0,
                     servletBaseUrl.length() - 1 );
 
-            String opBody, opMethod, opPath;
-            Integer opId;
-            Map<String, Object> op;
             for ( Object rawOperation : operations )
             {
-                op = (Map<String, Object>) rawOperation;
-
-                opMethod = (String) op.get( METHOD_KEY );
-                opPath = (String) op.get( TO_KEY );
-                opBody = op.containsKey( BODY_KEY ) ? JsonHelper.createJsonFrom( op.get( BODY_KEY ) )
-                        : "";
-                opId = op.containsKey( ID_KEY ) ? (Integer) op.get( ID_KEY )
-                        : null;
-
-                if ( !opPath.startsWith( "/" ) )
-                {
-                    opPath = "/" + opPath;
-                }
-
-                req.setup( opMethod, new HttpURI( servletBaseUrl + opPath ),
-                        opBody, // Request body
-                        new Cookie[] {} );
-                res.setup();
-
-                webServer.handle( servletPath + opPath, req, res );
-
-                if ( is2XXStatusCode( res.getStatus() ) )
-                {
-                    results.addOperationResult( opPath, opId,
-                            res.getOutputStream().toString(),
-                            res.getHeader( "Location" ) );
-                }
-                else
-                {
-                    tx.failure();
-                    return output.badRequest( new RuntimeException(
-                            res.getReason() ) );
-                }
+                performJob( results, req, res, servletBaseUrl, servletPath,
+                        (Map<String, Object>) rawOperation );
             }
 
             tx.success();
@@ -143,6 +109,57 @@ public class BatchOperationService
         {
             tx.finish();
         }
+    }
+
+    private void performJob( BatchOperationResults results,
+            InternalJettyServletRequest req, InternalJettyServletResponse res,
+            String servletUrl, String servletPath, Map<String, Object> desc )
+            throws IOException, ServletException
+    {
+        String method = (String) desc.get( METHOD_KEY );
+        String path = (String) desc.get( TO_KEY );
+        String body = desc.containsKey( BODY_KEY ) ? JsonHelper.createJsonFrom( desc.get( BODY_KEY ) )
+                : "";
+        Integer id = desc.containsKey( ID_KEY ) ? (Integer) desc.get( ID_KEY )
+                : null;
+        
+        // Replace {[ID]} placeholders with location values
+        Map<Integer, String> locations = results.getLocations();
+        path = replaceLocationPlaceholders( path, locations );
+        body = replaceLocationPlaceholders( body, locations );
+        
+        if( path.startsWith( servletUrl ) ) {
+            path = path.substring( servletUrl.length() );
+        }
+        
+        if ( !path.startsWith( "/" ) )
+        {
+            path = "/" + path;
+        }
+
+        req.setup( method, servletUrl + path, body);
+        res.setup();
+
+        webServer.handle( servletPath + path, req, res );
+
+        if ( is2XXStatusCode( res.getStatus() ) )
+        {
+            results.addOperationResult( path, id,
+                    res.getOutputStream().toString(),
+                    res.getHeader( "Location" ) );
+        }
+        else
+        {
+            throw new RuntimeException( res.getReason() );
+        }
+    }
+    
+    private String replaceLocationPlaceholders(String str, Map<Integer, String> locations) {
+        // TODO: Potential memory-hog on big requests, write smarter implementation.
+        for(Integer jobId : locations.keySet()) {
+            str = str.replace( "{"+jobId+"}", locations.get( jobId ) );   
+        }
+        return str;
     }
 
     private boolean is2XXStatusCode( int statusCode )

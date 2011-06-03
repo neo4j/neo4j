@@ -165,6 +165,70 @@ public class BatchOperationFunctionalTest
             .post( uri );
     }
     
+    /**
+     * Referring to items created earlier in the same batch job.
+     * 
+     * The batch operation API allows you to refer to the URL returned
+     * from a created resource in subsequent job descriptions, within the same batch call. 
+     * 
+     * Use the "{[JOB ID]}" special syntax to inject URLs from created
+     * resources into JSON strings in subsequent job descriptions.
+     */
+    @Documented
+    @Test
+    public void shouldBeAbleToReferToCreatedResource() throws JsonParseException, ClientHandlerException, UniformInterfaceException {
+        
+        String jsonString = "[" +
+          "{ " +
+            "\"method\":\"POST\"," +
+            "\"to\":\"/node\", " +
+            "\"id\":0,"+
+            "\"body\":{ \"age\":1 }" +
+          "},"+
+          "{ " +
+            "\"method\":\"POST\"," +
+            "\"to\":\"/node\", " +
+            "\"id\":1,"+
+            "\"body\":{ \"age\":12 }" +
+          "},"+
+          "{ " +
+            "\"method\":\"POST\"," +
+            "\"to\":\"{0}/relationships\", " +
+            "\"id\":3,"+
+            "\"body\":{ "+
+              "\"to\":\"{1}\"," +
+              "\"data\":{\"name\":\"bob\"}," +
+              "\"type\":\"KNOWS\"" +
+            " }" +
+          "},"+
+          "{ " +
+            "\"method\":\"POST\"," +
+            "\"to\":\"/index/relationship/my_rels/name/bob\", " +
+            "\"id\":4,"+
+            "\"body\": \"{3}\""+
+          "}"+
+        "]";
+
+        String uri = functionalTestHelper.dataUri() + "batch";
+        
+        ClientResponse response = Client.create()
+          .resource( uri)
+          .type(MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON )
+          .entity( jsonString ).post( ClientResponse.class );
+        
+        assertEquals(200, response.getStatus());
+        
+        List<Map<String, Object>> results = JsonHelper.jsonToList( response.getEntity( String.class ));
+        
+        assertEquals(4, results.size());
+        assertEquals( 1, helper.getIndexedRelationships( "my_rels", "name", "bob" ).size() );
+        
+        gen.get()
+            .payload( jsonString )
+            .expectedStatus( 200 )
+            .post( uri );
+    }
+    
     @Test
     public void shouldGetLocationHeadersWhenCreatingThings() throws JsonParseException, ClientHandlerException, UniformInterfaceException {
         

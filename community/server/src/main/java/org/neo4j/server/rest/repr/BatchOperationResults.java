@@ -21,7 +21,9 @@ package org.neo4j.server.rest.repr;
 
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -44,7 +46,8 @@ public class BatchOperationResults
     private static final String COMMA = ",";
 
     private List<String> operationResults;
-
+    private Map<Integer, String> locations = new HashMap<Integer, String>();
+    
     public BatchOperationResults( int numOperations )
     {
         operationResults = new ArrayList<String>( numOperations );
@@ -52,7 +55,7 @@ public class BatchOperationResults
 
     public void addOperationResult( String from, Integer id, String body,
             String location )
-    {
+    {   
         StringWriter wt = new StringWriter();
 
         wt.append( OPENING_CURLY );
@@ -64,6 +67,7 @@ public class BatchOperationResults
 
         if ( location != null )
         {
+            locations.put( id, location );
             wt.append( "\"location\":" ).append(
                     JsonHelper.createJsonFrom( location ) ).append( COMMA );
         }
@@ -78,6 +82,10 @@ public class BatchOperationResults
         wt.append( CLOSING_CURLY );
 
         operationResults.add( wt.toString() );
+    }
+    
+    public Map<Integer, String> getLocations() {
+        return locations;
     }
 
     public String toJSON()

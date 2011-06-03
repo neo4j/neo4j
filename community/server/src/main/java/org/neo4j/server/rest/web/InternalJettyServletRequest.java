@@ -75,8 +75,8 @@ public class InternalJettyServletRequest extends Request {
         
     }
     
-    public void setup(String method, HttpURI uri, String body, Cookie[] cookies) throws UnsupportedEncodingException {
-        setup(method, uri, body, cookies, MediaType.APPLICATION_JSON, "UTF-8");
+    public void setup(String method, String uri, String body) throws UnsupportedEncodingException {
+        setup(method, new HttpURI(uri), body, new Cookie[] {}, MediaType.APPLICATION_JSON, "UTF-8");
     }
     
     public void setup(String method, HttpURI uri, String body, Cookie[] cookies, String contentType, String encoding) throws UnsupportedEncodingException {
