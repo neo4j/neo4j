@@ -117,7 +117,7 @@ public class IndexRelationshipFunctionalTest
         JaxRsResponse response = httpPostIndexRelationshipRoot( JsonHelper.createJsonFrom( indexSpecification ) );
         assertEquals( 201, response.getStatus() );
         assertNotNull( response.getHeaders().get( "Location" ).get( 0 ) );
-        assertEquals( helper.getRelationshipIndexes().length, 1 );
+        assertEquals( 1, helper.getRelationshipIndexes().length);
         assertNotNull( helper.getRelationshipIndex( indexName ) );
     }
 
