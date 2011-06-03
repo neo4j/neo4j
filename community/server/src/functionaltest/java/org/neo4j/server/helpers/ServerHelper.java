@@ -96,7 +96,6 @@ public class ServerHelper
     {
         NeoServerWithEmbeddedWebServer server = ServerBuilder.server()
                 .withRandomDatabaseDir()
-                .withAllServerModules()
                 .withPassingStartupHealthcheck()
                 .build();
 

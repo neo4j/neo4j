@@ -71,13 +71,14 @@ public class ServerBuilder
     };
 
     private WhatToDo action;
-    private List<Class<? extends ServerModule>> serverModules = new ArrayList<Class<? extends ServerModule>>();
+    private List<Class<? extends ServerModule>> serverModules = null;
 
     public static ServerBuilder server()
     {
         return new ServerBuilder();
     }
 
+    @SuppressWarnings( "unchecked" )
     public NeoServerWithEmbeddedWebServer build() throws IOException
     {
         if ( dbDir == null )
@@ -86,6 +87,10 @@ public class ServerBuilder
         }
         File configFile = createPropertiesFiles();
 
+        if(serverModules == null) {
+            withSpecificServerModules(RESTApiModule.class, WebAdminModule.class, ManagementApiModule.class, ThirdPartyJAXRSModule.class, DiscoveryModule.class);
+        }
+        
         return new NeoServerWithEmbeddedWebServer( new NeoServerBootstrapper(), addressResolver, startupHealthCheck,
                 new PropertyFileConfigurator( new Validator( new DatabaseLocationMustBeSpecifiedRule() ), configFile ),
                 new Jetty6WebServer(), serverModules );
@@ -291,13 +296,6 @@ public class ServerBuilder
     public ServerBuilder withSpecificServerModules( Class<? extends ServerModule>... modules )
     {
         serverModules = Arrays.asList( modules );
-        return this;
-    }
-
-    @SuppressWarnings( "unchecked" )
-    public ServerBuilder withAllServerModules()
-    {
-        withSpecificServerModules(RESTApiModule.class, WebAdminModule.class, ManagementApiModule.class, ThirdPartyJAXRSModule.class, DiscoveryModule.class);
         return this;
     }
 }

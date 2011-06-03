@@ -81,7 +81,6 @@ public class NeoServerJAXRSFunctionalTest
                 .withThirdPartyJaxRsPackage( "org.dummy.web.service",
                         DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT )
                 .withPassingStartupHealthcheck()
-                .withAllServerModules()
                 .withRandomDatabaseDir()
                 .build();
         server.start();
@@ -101,7 +100,6 @@ public class NeoServerJAXRSFunctionalTest
                 .withThirdPartyJaxRsPackage( "org.dummy.web.service",
                         DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT )
                 .withPassingStartupHealthcheck()
-                .withAllServerModules()
                 .withRandomDatabaseDir()
                 .build();
         server.start();

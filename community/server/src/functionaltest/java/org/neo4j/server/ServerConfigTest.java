@@ -50,7 +50,6 @@ public class ServerConfigTest
         final int NON_DEFAULT_PORT = 4321;
 
         server = server().withRandomDatabaseDir()
-                .withAllServerModules()
                 .withPassingStartupHealthcheck()
                 .onPort( NON_DEFAULT_PORT )
                 .build();
@@ -73,7 +72,6 @@ public class ServerConfigTest
         String webAdminManagementUri = "/a/different/webadmin/management/uri/";
 
         server = server().withRandomDatabaseDir()
-                .withAllServerModules()
                 .withRelativeWebDataAdminUriPath( webAdminDataUri )
                 .withRelativeWebAdminUriPath( webAdminManagementUri )
                 .withPassingStartupHealthcheck()
