@@ -48,6 +48,13 @@ org.neo4j.server.webadmin.data.uri=http://localhost:7474/db/data/
 ----
 
 The management URI for the administration API that the  Webadmin tool uses. If you plan to connect to the Webadmin from other than localhost, put in the external hostname of your server instead of localhost, e.g. http://my.host:7474/db/manage .
+Force the server to use IPv4 network addresses, in `conf/neo4j-wrapper.conf` under section `Java Additional Parameters`
+add a new paramter:
+[source]
+----
+wrapper.java.additional.3=-Djava.net.preferIPv4Stack=true
+----
+
 [source]
 ----
 org.neo4j.server.webadmin.management.uri=http://localhost:7474/db/manage
