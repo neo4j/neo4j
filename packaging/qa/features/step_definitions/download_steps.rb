@@ -65,9 +65,10 @@ Then /^Neo4j Home should contain a Neo4j Server installation$/ do
   end
 end
 
-Then /^the Neo4j version of the installation should be correct$/ do
+Then /^the Neo4j version of the installation files except plugins should be correct$/ do
   (Dir.entries(neo4j.home+"/lib") + Dir.entries(neo4j.home+"/system/lib")).each do |lib|
-    if lib =~ /^neo4j.*\.jar$/
+    if (lib =~ /^neo4j.*\.jar$/ && !(lib =~ /.*plugin.*/))
+      puts "testing #{lib}"      
       fail lib+" does not contain the Neo4j-version" unless lib =~ /#{neo4j.version}/;
     end
   end
