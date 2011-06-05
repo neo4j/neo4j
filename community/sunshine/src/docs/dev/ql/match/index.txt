@@ -1,8 +1,20 @@
 [[query-match]]
-Matching
-========
+Match
+=====
 
-include::this-is-the-simplest-way-of-finding-all-related-nodes.txt[]
+In the match part of a query, the pattern is described. The description of the
+pattern made up of one or more paths, separated by commas.
 
-include::this-is-the-simplest-way-of-finding-related-nodes.txt[]
+include::related-nodes.txt[]
 
+include::outgoing-relationships.txt[]
+
+include::directed-relationships-and-variable.txt[]
+
+include::match-by-relationship-type.txt[]
+
+include::match-by-relationship-type-and-use-a-variable.txt[]
+
+include::multiple-relationships.txt[]
+
+include::complex-matching.txt[]
