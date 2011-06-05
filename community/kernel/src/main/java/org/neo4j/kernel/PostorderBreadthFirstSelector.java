@@ -23,8 +23,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.BranchSelector;
+import org.neo4j.graphdb.traversal.TraversalBranch;
 
 /**
  * Selects {@link TraversalBranch}s according to postorder breadth first

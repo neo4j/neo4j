@@ -19,13 +19,13 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import java.util.Collection;
+
 import org.hamcrest.Description;
 import org.hamcrest.Factory;
 import org.junit.internal.matchers.TypeSafeMatcher;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.collection.IteratorUtil;
-
-import java.util.Collection;
 
 public class Contains<T> extends TypeSafeMatcher<IndexHits<T>>
 {

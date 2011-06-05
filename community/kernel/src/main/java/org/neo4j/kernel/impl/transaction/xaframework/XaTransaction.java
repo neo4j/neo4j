@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
+
 import javax.transaction.xa.XAException;
 
 import org.neo4j.graphdb.TransactionFailureException;

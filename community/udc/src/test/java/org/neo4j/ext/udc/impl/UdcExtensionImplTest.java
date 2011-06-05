@@ -19,11 +19,12 @@
  */
 package org.neo4j.ext.udc.impl;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.http.localserver.LocalTestServer;
-import org.junit.Before;
-import org.junit.Test;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,10 +34,11 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import org.apache.commons.io.FileUtils;
+import org.apache.http.localserver.LocalTestServer;
+import org.junit.Before;
+import org.junit.Test;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 /**
  * Unit testing for the UDC kernel extension.

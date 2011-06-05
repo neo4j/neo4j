@@ -23,7 +23,6 @@ import java.util.Map;
 
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 
 /**
  * Dynamic store that stores strings.

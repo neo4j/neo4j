@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel;
 
-import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.BranchSelector;
+import org.neo4j.graphdb.traversal.TraversalBranch;
 
 /**
  * Selects {@link TraversalBranch}s according to postorder depth first pattern,
