@@ -28,9 +28,9 @@ class ReturnTest extends DocumentingTestBase
 
   def graphDescription = List("A KNOWS B")
 
-  def properties = Map("A" -> Map("age" -> 35))
-
   def section = "Return"
+
+  override val properties = Map("A" -> Map("<<!!__??>>" -> "Yes!", "age" -> 55))
 
   @Test def returnNode()
   {
@@ -51,6 +51,33 @@ class ReturnTest extends DocumentingTestBase
       queryText = """start n=(%A%) return n.name""",
       returns = """The the value of the property 'name'.""",
       (p) => assertEquals(List(Map("n.name" -> "A")), p.toList)
+    )
+  }
+
+
+  @Test def weird_variable_names()
+  {
+    testQuery(
+      title = "Identifier with uncommon characters",
+      text = """To introduce a placeholder that is made up of characters that are
+      outside of the english alphabet, you can use the ` to enclose the identifier, like this:""",
+      queryText = """start `This isn't a common identifier`=(%A%)
+return `This isn't a common identifier`.`<<!!__??>>`""",
+      returns = """The node indexed with name "A" is returned""",
+      (p) => assertEquals(List(Map("This isn't a common identifier.<<!!__??>>" -> "Yes!")), p.toList)
+    )
+  }
+
+
+  @Test def nullable_properties()
+  {
+    testQuery(
+      title = "Optional nodes",
+      text = """If a property might or might not be there, you can select it optionally by adding a questionmark to the identifier,
+like this:""",
+      queryText = """start n=(%A%, %B%) return n.age?""",
+      returns = """The age when the node has that property, or null if the property is not there.""",
+      (p) => assertEquals(List(55, null), p.columnAs[Int]("n.age").toList)
     )
   }
 }

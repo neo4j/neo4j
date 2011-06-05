@@ -25,7 +25,6 @@ import org.junit.Assert.assertThat
 import org.junit.Assert.assertEquals
 import org.junit.matchers.JUnitMatchers.hasItem
 import org.junit.Test
-
 class StartTest extends DocumentingTestBase
 {
   def graphDescription = List("A KNOWS B", "A KNOWS C")
@@ -42,6 +41,17 @@ class StartTest extends DocumentingTestBase
       queryText = "start n=(0) return n",
       returns = "The reference node is returned",
       (p) => assertThat(p.columnAs[Node]("n").toList.asJava, hasItem(db.getReferenceNode))
+    )
+  }
+
+  @Test def multiple_nodes_by_id()
+  {
+    testQuery(
+      title = "Multiple nodes by id",
+      text = "Multiple nodes are selected by listing them separated by commas.",
+      queryText = "start n=(%A%, %B%, %C%) return n",
+      returns = "The reference node is returned",
+      (p) => assertEquals(List(node("A"), node("B"), node("C")), p.columnAs[Node]("n").toList)
     )
   }
 

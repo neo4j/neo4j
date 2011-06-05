@@ -40,6 +40,7 @@ abstract class DocumentingTestBase
   var nodes: Map[String, Node] = null
   var nodeIndex: Index[Node] = null
   var relIndex: Index[Relationship] = null
+  val properties: Map[String, Map[String, Any]] = Map()
 
   def section: String
 
@@ -79,7 +80,7 @@ abstract class DocumentingTestBase
   def testQuery(title: String, text: String, queryText: String, returns: String, assertions: ( ( Projection ) => Unit )*)
   {
     var query = queryText
-    nodes.keySet.foreach((key) => query = query.replace("%"+key+"%", node(key).getId.toString))
+    nodes.keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
     val q = parser.parse(query)
     val result = engine.execute(q)
     assertions.foreach(_.apply(result))
@@ -108,7 +109,7 @@ abstract class DocumentingTestBase
     })
   }
 
-  def node(name: String) = nodes.getOrElse(name, throw new NotFoundException())
+  def node(name: String): Node = nodes.getOrElse(name, throw new NotFoundException(name))
 
   @After def teardown()
   {
@@ -132,6 +133,13 @@ abstract class DocumentingTestBase
       indexProperties(n, nodeIndex)
       n.getRelationships(Direction.OUTGOING).asScala.foreach(indexProperties(_, relIndex))
     })
+
+    properties.foreach((n) =>
+    {
+      val nod = node(n._1)
+      n._2.foreach((kv) => nod.setProperty(kv._1, kv._2))
+    })
+
     tx.success()
     tx.finish()
   }
