@@ -102,7 +102,7 @@ the relevant Commercial Agreement.
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-sunshine</artifactId>
+      <artifactId>neo4j-tbd</artifactId>
       <version>1.4-SNAPSHOT</version>
     </dependency>
 

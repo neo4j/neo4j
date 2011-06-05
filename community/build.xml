@@ -25,7 +25,7 @@
 		<compileProject projectName="lucene-index"/>
 		<compileProject projectName="graph-algo"/>
 		<compileProject projectName="graph-matching"/>
-		<compileProject projectName="sunshine"/>
+		<compileProject projectName="TBD"/>
 		<compileProject projectName="neo4j"/>
 		<compileProject projectName="neo4j-community"/>
 		<compileProject projectName="shell"/>
