@@ -5,6 +5,8 @@ Match
 In the match part of a query, the pattern is described. The description of the
 pattern made up of one or more paths, separated by commas.
 
+All parts of the pattern must be directly or indirectly bound to a start point.
+
 include::related-nodes.txt[]
 
 include::outgoing-relationships.txt[]
