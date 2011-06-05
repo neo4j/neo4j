@@ -24,7 +24,7 @@ import javax.servlet.http.HttpSession;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.webadmin.console.GremlinSession;
 import org.neo4j.server.webadmin.console.ScriptSession;
-import org.neo4j.server.webadmin.console.SunshineSession;
+import org.neo4j.server.webadmin.console.TBDSession;
 
 public class SessionFactoryImpl implements SessionFactory
 {
@@ -38,9 +38,9 @@ public class SessionFactoryImpl implements SessionFactory
     @Override
     public ScriptSession createSession( String engineName, Database database )
     {
-        if(engineName.equals("sunshine"))
+        if(engineName.equals("tbd"))
         {
-            return new SunshineSession(database.graph);
+            return new TBDSession(database.graph);
         } else
         {
             Object session = httpSession.getAttribute( "consoleSession" );
