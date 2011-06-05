@@ -143,6 +143,16 @@ public class PropertyRecord extends Abstract64BitRecord
         this.nextProp = nextProp;
     }
 
+    public PropertyData newPropertyData()
+    {
+        return getType().newPropertyData( this, null );
+    }
+    
+    public PropertyData newPropertyData( Object extractedValue )
+    {
+        return getType().newPropertyData( this, extractedValue );
+    }
+    
     @Override
     public String toString()
     {

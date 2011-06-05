@@ -30,9 +30,8 @@ import java.util.Map;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 
-
 /**
- * Implementation of the node store.
+ * Implementation of the property store.
  */
 public class PropertyIndexStore extends AbstractStore implements Store
 {

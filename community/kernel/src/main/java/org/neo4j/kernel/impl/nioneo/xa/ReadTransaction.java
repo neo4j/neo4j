@@ -30,7 +30,6 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
@@ -165,6 +164,23 @@ class ReadTransaction implements NeoStoreTransaction
         return Pair.of( result, position );
     }
     
+    static ArrayMap<Integer, PropertyData> loadProperties( PropertyStore propertyStore, long nextProp )
+    {
+        if ( nextProp == Record.NO_NEXT_PROPERTY.intValue() )
+        {
+            return null;
+        }
+        ArrayMap<Integer,PropertyData> propertyMap = 
+            new ArrayMap<Integer,PropertyData>( 9, false, true );
+        while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
+        {
+            PropertyRecord propRecord = propertyStore.getLightRecord( nextProp );
+            propertyMap.put( propRecord.getKeyIndexId(), propRecord.newPropertyData() );
+            nextProp = propRecord.getNextProp();
+        }
+        return propertyMap;
+    }
+    
     public ArrayMap<Integer,PropertyData> relLoadProperties( long relId, boolean light )
     {
         RelationshipRecord relRecord = getRelationshipStore().getRecord( relId );
@@ -173,37 +189,12 @@ class ReadTransaction implements NeoStoreTransaction
             throw new InvalidRecordException( "Relationship[" + relId + 
                 "] not in use" );
         }
-        long nextProp = relRecord.getNextProp();
-        ArrayMap<Integer,PropertyData> propertyMap = 
-            new ArrayMap<Integer,PropertyData>( 9, false, true );
-        while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
-        {
-            PropertyRecord propRecord = 
-                getPropertyStore().getLightRecord( nextProp );
-            propertyMap.put( propRecord.getKeyIndexId(), 
-                new PropertyData( propRecord.getId(),                      
-                    propertyGetValueOrNull( propRecord ) ) );
-            nextProp = propRecord.getNextProp();
-        }
-        return propertyMap;
+        return loadProperties( getPropertyStore(), relRecord.getNextProp() );
     }
 
     public ArrayMap<Integer,PropertyData> nodeLoadProperties( long nodeId, boolean light )
     {
-        NodeRecord nodeRecord = getNodeStore().getRecord( nodeId );
-
-        long nextProp = nodeRecord.getNextProp();
-        ArrayMap<Integer,PropertyData> propertyMap =
-            new ArrayMap<Integer,PropertyData>( 9, false, true );
-        while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
-        {
-            PropertyRecord propRecord = getPropertyStore().getLightRecord( nextProp );
-            propertyMap.put( propRecord.getKeyIndexId(),
-                new PropertyData( propRecord.getId(),
-                    propertyGetValueOrNull( propRecord ) ) );
-            nextProp = propRecord.getNextProp();
-        }
-        return propertyMap;
+        return loadProperties( getPropertyStore(), getNodeStore().getRecord( nodeId ).getNextProp() );
     }
 
     // Duplicated code
@@ -277,13 +268,13 @@ class ReadTransaction implements NeoStoreTransaction
     }
 
     @Override
-    public long nodeAddProperty( long nodeId, PropertyIndex index, Object value )
+    public PropertyData nodeAddProperty( long nodeId, PropertyIndex index, Object value )
     {
         throw readOnlyException();
     }
 
     @Override
-    public void nodeChangeProperty( long nodeId, long propertyId, Object value )
+    public PropertyData nodeChangeProperty( long nodeId, long propertyId, Object value )
     {
         throw readOnlyException();
     }
@@ -313,13 +304,13 @@ class ReadTransaction implements NeoStoreTransaction
     }
 
     @Override
-    public long relAddProperty( long relId, PropertyIndex index, Object value )
+    public PropertyData relAddProperty( long relId, PropertyIndex index, Object value )
     {
         throw readOnlyException();
     }
 
     @Override
-    public void relChangeProperty( long relId, long propertyId, Object value )
+    public PropertyData relChangeProperty( long relId, long propertyId, Object value )
     {
         throw readOnlyException();
     }

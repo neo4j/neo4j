@@ -55,9 +55,9 @@ public interface NeoStoreTransaction
 
     public ArrayMap<Integer,PropertyData> nodeDelete( long nodeId );
 
-    public long nodeAddProperty( long nodeId, PropertyIndex index, Object value );
+    public PropertyData nodeAddProperty( long nodeId, PropertyIndex index, Object value );
 
-    public void nodeChangeProperty( long nodeId, long propertyId, Object value );
+    public PropertyData nodeChangeProperty( long nodeId, long propertyId, Object value );
 
     public void nodeRemoveProperty( long nodeId, long propertyId );
 
@@ -68,9 +68,9 @@ public interface NeoStoreTransaction
 
     public ArrayMap<Integer,PropertyData> relDelete( long relId );
 
-    public long relAddProperty( long relId, PropertyIndex index, Object value );
+    public PropertyData relAddProperty( long relId, PropertyIndex index, Object value );
 
-    public void relChangeProperty( long relId, long propertyId, Object value );
+    public PropertyData relChangeProperty( long relId, long propertyId, Object value );
 
     public void relRemoveProperty( long relId, long propertyId );
 

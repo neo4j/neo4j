@@ -31,6 +31,12 @@ public enum PropertyType
         {
             throw new InvalidRecordException( "Invalid type: 0 for record " + record );
         }
+
+        @Override
+        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
+        {
+            throw new InvalidRecordException( "Invalid type: 0 for record " + record );
+        }
     },
     INT( 1 )
     {
@@ -38,6 +44,12 @@ public enum PropertyType
         public Object getValue( PropertyRecord record, PropertyStore store )
         {
             return Integer.valueOf( (int) record.getPropBlock() );
+        }
+
+        @Override
+        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
+        {
+            return PropertyDatas.forInt( record.getKeyIndexId(), record.getId(), (int) record.getPropBlock() );
         }
     },
     STRING( 2 )
@@ -48,14 +60,31 @@ public enum PropertyType
             if ( store == null ) return null;
             return store.getStringFor( record );
         }
+
+        @Override
+        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
+        {
+            return PropertyDatas.forStringOrArray( record.getKeyIndexId(), record.getId(), extractedValue );
+        }
     },
     BOOL( 3 )
     {
         @Override
         public Object getValue( PropertyRecord record, PropertyStore store )
         {
-            if ( record.getPropBlock() == 1 ) return Boolean.TRUE;
-            return Boolean.FALSE;
+            return getValue( record.getPropBlock() );
+        }
+        
+        private Boolean getValue( long propBlock )
+        {
+            return propBlock == 1 ? Boolean.TRUE : Boolean.FALSE;
+        }
+
+        @Override
+        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
+        {
+            return PropertyDatas.forBoolean( record.getKeyIndexId(), record.getId(),
+                    getValue( record.getPropBlock() ).booleanValue() );
         }
     },
     DOUBLE( 4 )
@@ -65,13 +94,35 @@ public enum PropertyType
         {
             return Double.valueOf( Double.longBitsToDouble( record.getPropBlock() ) );
         }
+        
+        private double getValue( long propBlock )
+        {
+            return Double.longBitsToDouble( propBlock );
+        }
+
+        @Override
+        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
+        {
+            return PropertyDatas.forDouble( record.getKeyIndexId(), record.getId(), getValue( record.getPropBlock() ) );
+        }
     },
     FLOAT( 5 )
     {
         @Override
         public Object getValue( PropertyRecord record, PropertyStore store )
         {
-            return new Float( Float.intBitsToFloat( (int) record.getPropBlock() ) );
+            return Float.valueOf( getValue( record.getPropBlock() ) );
+        }
+        
+        private float getValue( long propBlock )
+        {
+            return Float.intBitsToFloat( (int) propBlock );
+        }
+
+        @Override
+        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
+        {
+            return PropertyDatas.forFloat( record.getKeyIndexId(), record.getId(), getValue( record.getPropBlock() ) );
         }
     },
     LONG( 6 )
@@ -81,6 +132,12 @@ public enum PropertyType
         {
             return Long.valueOf( record.getPropBlock() );
         }
+
+        @Override
+        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
+        {
+            return PropertyDatas.forLong( record.getKeyIndexId(), record.getId(), record.getPropBlock() );
+        }
     },
     BYTE( 7 )
     {
@@ -89,6 +146,12 @@ public enum PropertyType
         {
             return Byte.valueOf( (byte) record.getPropBlock() );
         }
+
+        @Override
+        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
+        {
+            return PropertyDatas.forByte( record.getKeyIndexId(), record.getId(), (byte) record.getPropBlock() );
+        }
     },
     CHAR( 8 )
     {
@@ -96,6 +159,12 @@ public enum PropertyType
         public Object getValue( PropertyRecord record, PropertyStore store )
         {
             return Character.valueOf( (char) record.getPropBlock() );
+        }
+
+        @Override
+        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
+        {
+            return PropertyDatas.forChar( record.getKeyIndexId(), record.getId(), (char) record.getPropBlock() );
         }
     },
     ARRAY( 9 )
@@ -106,6 +175,12 @@ public enum PropertyType
             if ( store == null ) return null;
             return store.getArrayFor( record );
         }
+
+        @Override
+        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
+        {
+            return PropertyDatas.forStringOrArray( record.getKeyIndexId(), record.getId(), extractedValue );
+        }
     },
     SHORT( 10 )
     {
@@ -114,6 +189,12 @@ public enum PropertyType
         {
             return Short.valueOf( (short) record.getPropBlock() );
         }
+
+        @Override
+        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
+        {
+            return PropertyDatas.forShort( record.getKeyIndexId(), record.getId(), (short) record.getPropBlock() );
+        }
     },
     SHORT_STRING( 11 )
     {
@@ -121,6 +202,12 @@ public enum PropertyType
         public Object getValue( PropertyRecord record, PropertyStore store )
         {
             return ShortString.decode( record.getPropBlock() );
+        }
+
+        @Override
+        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
+        {
+            return PropertyDatas.forStringOrArray( record.getKeyIndexId(), record.getId(), getValue( record, null ) );
         }
     }
     ;
@@ -143,6 +230,8 @@ public enum PropertyType
     }
 
     public abstract Object getValue( PropertyRecord record, PropertyStore store );
+    
+    public abstract PropertyData newPropertyData( PropertyRecord record, Object extractedValue );
 
     public static PropertyType getPropertyType( int type, boolean nullOnIllegal )
     {

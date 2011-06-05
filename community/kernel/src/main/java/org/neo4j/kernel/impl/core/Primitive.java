@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
@@ -30,11 +29,15 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 
 abstract class Primitive
 {
-    private ArrayMap<Integer,PropertyData> propertyMap = null;
+    // Used for marking that properties have been loaded but there just wasn't any.
+    // Saves an extra trip down to the store layer.
+    private static final PropertyData[] NO_PROPERTIES = new PropertyData[0];
+    
+    private volatile PropertyData[] properties;
 
-    protected abstract void changeProperty( NodeManager nodeManager, long propertyId, Object value );
+    protected abstract PropertyData changeProperty( NodeManager nodeManager, long propertyId, Object value );
 
-    protected abstract long addProperty( NodeManager nodeManager, PropertyIndex index, Object value );
+    protected abstract PropertyData addProperty( NodeManager nodeManager, PropertyIndex index, Object value );
 
     protected abstract void removeProperty( NodeManager nodeManager, long propertyId );
 
@@ -45,7 +48,7 @@ abstract class Primitive
     {
         if ( newPrimitive )
         {
-            propertyMap = new ArrayMap<Integer,PropertyData>( 9, false, true );
+            properties = NO_PROPERTIES;
         }
     }
     
@@ -68,8 +71,9 @@ abstract class Primitive
         ensureFullProperties( nodeManager );
         List<Object> values = new ArrayList<Object>();
 
-        for ( Integer index : propertyMap.keySet() )
+        for ( PropertyData property : properties )
         {
+            Integer index = property.getIndex();
             if ( skipMap != null && skipMap.get( index ) != null )
             {
                 continue;
@@ -78,7 +82,7 @@ abstract class Primitive
             {
                 continue;
             }
-            values.add( propertyMap.get( index ).getValue() );
+            values.add( property.getValue() );
         }
         if ( addMap != null )
         {
@@ -100,8 +104,9 @@ abstract class Primitive
         ensureFullProperties( nodeManager );
         List<String> keys = new ArrayList<String>();
 
-        for ( Integer index : propertyMap.keySet() )
+        for ( PropertyData property : properties )
         {
+            Integer index = property.getIndex();
             if ( skipMap != null && skipMap.get( index ) != null )
             {
                 continue;
@@ -148,7 +153,7 @@ abstract class Primitive
                     return getPropertyValue( nodeManager, property );
                 }
             }
-            PropertyData property = propertyMap.get( index.getKeyId() );
+            PropertyData property = getPropertyForIndex( index.getKeyId() );
             if ( property != null )
             {
                 return getPropertyValue( nodeManager, property );
@@ -200,8 +205,9 @@ abstract class Primitive
                 }
             }
         }
-        for ( int keyId : propertyMap.keySet() )
+        for ( PropertyData property : properties )
         {
+            int keyId = property.getIndex();
             if ( !nodeManager.hasIndexFor( keyId ) )
             {
                 PropertyIndex indexToCheck = nodeManager.getIndexFor( keyId );
@@ -211,8 +217,6 @@ abstract class Primitive
                     {
                         throw newPropertyNotFoundException( key );
                     }
-                    PropertyData property = propertyMap.get( 
-                        indexToCheck.getKeyId() );
                     if ( property != null )
                     {
                         return property;
@@ -249,7 +253,7 @@ abstract class Primitive
                     return getPropertyValue( nodeManager, property );
                 }
             }
-            PropertyData property = propertyMap.get( index.getKeyId() );
+            PropertyData property = getPropertyForIndex( index.getKeyId() );
             if ( property != null )
             {
                 return getPropertyValue( nodeManager, property );
@@ -290,7 +294,7 @@ abstract class Primitive
                     return true;
                 }
             }
-            PropertyData property = propertyMap.get( index.getKeyId() );
+            PropertyData property = getPropertyForIndex( index.getKeyId() );
             if ( property != null )
             {
                 return true;
@@ -338,7 +342,7 @@ abstract class Primitive
                 {
                     break;
                 }
-                property = propertyMap.get( cachedIndex.getKeyId() );
+                property = getPropertyForIndex( cachedIndex.getKeyId() );
                 if ( property != null )
                 {
                     break;
@@ -369,8 +373,9 @@ abstract class Primitive
                 }
                 if ( property == null )
                 {
-                    for ( int keyId : propertyMap.keySet() )
+                    for ( PropertyData aProperty : properties )
                     {
+                        int keyId = aProperty.getIndex();
                         if ( !nodeManager.hasIndexFor( keyId ) )
                         {
                             PropertyIndex indexToCheck = nodeManager
@@ -382,8 +387,7 @@ abstract class Primitive
                                     skipMap.remove( indexToCheck.getKeyId() );
                                 }
                                 index = indexToCheck;
-                                property = propertyMap.get( indexToCheck
-                                    .getKeyId() );
+                                property = getPropertyForIndex( indexToCheck.getKeyId() );
                                 if ( property != null )
                                 {
                                     break;
@@ -400,13 +404,11 @@ abstract class Primitive
             if ( property != null && !foundInSkipMap )
             {
                 long propertyId = property.getId();
-                changeProperty( nodeManager, propertyId, value );
-                property = new PropertyData( propertyId, value );
+                property = changeProperty( nodeManager, propertyId, value );
             }
             else
             {
-                long propertyId = addProperty( nodeManager, index, value );
-                property = new PropertyData( propertyId, value );
+                property = addProperty( nodeManager, index, value );
             }
             addMap.put( index.getKeyId(), property );
             success = true;
@@ -456,7 +458,7 @@ abstract class Primitive
                     success = true;
                     return null;
                 }
-                property = propertyMap.get( cachedIndex.getKeyId() );
+                property = getPropertyForIndex( cachedIndex.getKeyId() );
                 if ( property != null )
                 {
                     removeMap = removeMap != null ? removeMap : nodeManager.getCowPropertyRemoveMap( this, true );
@@ -490,16 +492,16 @@ abstract class Primitive
                     }
                     if ( property == null )
                     {
-                        for ( int keyId : propertyMap.keySet() )
+                        for ( PropertyData aProperty : properties )
                         {
+                            int keyId = aProperty.getIndex();
                             if ( !nodeManager.hasIndexFor( keyId ) )
                             {
                                 PropertyIndex indexToCheck = nodeManager
                                     .getIndexFor( keyId );
                                 if ( indexToCheck.getKey().equals( key ) )
                                 {
-                                    property = propertyMap.get( indexToCheck
-                                        .getKeyId() );
+                                    property = getPropertyForIndex( indexToCheck.getKeyId() );
                                     if ( property != null )
                                     {
                                         removeMap = removeMap != null ? removeMap : nodeManager.getCowPropertyRemoveMap( this, true );
@@ -537,6 +539,7 @@ abstract class Primitive
         Object value = property.getValue();
         if ( value == null )
         {
+            // This will only happen for "heavy" property value, such asstrings/arrays
             value = nodeManager.loadPropertyValue( property.getId() );
             property.setNewValue( value );
         }
@@ -547,42 +550,114 @@ abstract class Primitive
         ArrayMap<Integer,PropertyData> cowPropertyAddMap,
         ArrayMap<Integer,PropertyData> cowPropertyRemoveMap )
     {
-        if ( propertyMap == null )
+        if ( properties == null )
         {
             // we will load full in some other tx
             return;
         }
-        if ( cowPropertyAddMap != null )
+        
+        PropertyData[] newArray = properties;
+        int extraLength = (cowPropertyAddMap != null ? cowPropertyAddMap.size() : 0) -
+                (cowPropertyRemoveMap != null ? cowPropertyRemoveMap.size() : 0);
+        if ( extraLength > 0 )
         {
-            for ( Integer index : cowPropertyAddMap.keySet() )
+            newArray = new PropertyData[properties.length+extraLength];
+            System.arraycopy( properties, 0, newArray, 0, properties.length );
+        }
+        
+        int newArraySize = properties.length;
+        if ( cowPropertyRemoveMap != null )
+        {
+            for ( Integer keyIndex : cowPropertyRemoveMap.keySet() )
             {
-                propertyMap.put( index, cowPropertyAddMap.get( index ) );
+                for ( int i = 0; i < newArraySize; i++ )
+                {
+                    PropertyData existingProperty = newArray[i];
+                    if ( existingProperty.getIndex() == keyIndex )
+                    {
+                        int swapWith = --newArraySize;
+                        newArray[i] = newArray[swapWith]; 
+                        newArray[swapWith] = null;
+                        break;
+                    }
+                }
             }
         }
-        if ( cowPropertyRemoveMap != null && propertyMap != null )
+        if ( cowPropertyAddMap != null )
         {
-            for ( Integer index : cowPropertyRemoveMap.keySet() )
+            for ( PropertyData addedProperty : cowPropertyAddMap.values() )
             {
-                propertyMap.remove( index );
+                for ( int i = 0; i < newArray.length; i++ )
+                {
+                    PropertyData existingProperty = newArray[i];
+                    if ( existingProperty == null || addedProperty.getIndex() == existingProperty.getIndex() )
+                    {
+                        newArray[i] = addedProperty;
+                        if ( existingProperty == null )
+                        {
+                            newArraySize++;
+                        }
+                        break;
+                    }
+                }
             }
+        }
+        
+        if ( newArraySize < newArray.length )
+        {
+            PropertyData[] compactedNewArray = new PropertyData[newArraySize];
+            System.arraycopy( newArray, 0, compactedNewArray, 0, newArraySize );
+            properties = compactedNewArray;
+        }
+        else
+        {
+            properties = newArray;
         }
     }
 
+    private PropertyData getPropertyForIndex( int keyId )
+    {
+        for ( PropertyData property : properties )
+        {
+            if ( property.getIndex() == keyId )
+            {
+                return property;
+            }
+        }
+        return null;
+    }
+    
     private boolean ensureFullProperties( NodeManager nodeManager )
     {
-        if ( propertyMap == null )
+        if ( properties == null )
         {
-            this.propertyMap = loadProperties( nodeManager, false );
+            this.properties = toPropertyArray( loadProperties( nodeManager, false ) );
             return true;
         }
         return false;
     }
 
+    private PropertyData[] toPropertyArray( ArrayMap<Integer, PropertyData> loadedProperties )
+    {
+        if ( loadedProperties == null || loadedProperties.size() == 0 )
+        {
+            return NO_PROPERTIES;
+        }
+        
+        PropertyData[] result = new PropertyData[loadedProperties.size()];
+        int i = 0;
+        for ( PropertyData property : loadedProperties.values() )
+        {
+            result[i++] = property;
+        }
+        return result;
+    }
+
     private boolean ensureFullLightProperties( NodeManager nodeManager )
     {
-        if ( propertyMap == null )
+        if ( properties == null )
         {
-            this.propertyMap = loadProperties( nodeManager, true );
+            this.properties = toPropertyArray( loadProperties( nodeManager, true ) );
             return true;
         }
         return false;
@@ -591,28 +666,32 @@ abstract class Primitive
     protected List<PropertyEventData> getAllCommittedProperties( NodeManager nodeManager )
     {
         ensureFullLightProperties( nodeManager );
-        List<PropertyEventData> props =
-            new ArrayList<PropertyEventData>( propertyMap.size() );
-        for ( Map.Entry<Integer,PropertyData> entry : propertyMap.entrySet() )
+        if ( properties == null )
         {
-            PropertyIndex index = nodeManager.getIndexFor( entry.getKey() );
-            Object value = getPropertyValue( nodeManager, propertyMap.get( index.getKeyId() ) );
+            return new ArrayList<PropertyEventData>();
+        }
+        List<PropertyEventData> props =
+            new ArrayList<PropertyEventData>( properties.length );
+        for ( PropertyData property : properties )
+        {
+            PropertyIndex index = nodeManager.getIndexFor( property.getIndex() );
+            Object value = getPropertyValue( nodeManager, property );
             props.add( new PropertyEventData( index.getKey(), value ) );
         }
         return props;
    }
 
     protected Object getCommittedPropertyValue( NodeManager nodeManager, String key )
-   {
+    {
         ensureFullLightProperties( nodeManager );
-       for ( PropertyIndex index : nodeManager.index( key ) )
-       {
-           PropertyData property = propertyMap.get( index.getKeyId() );
-           if ( property != null )
-           {
+        for ( PropertyIndex index : nodeManager.index( key ) )
+        {
+            PropertyData property = getPropertyForIndex( index.getKeyId() );
+            if ( property != null )
+            {
                 return getPropertyValue( nodeManager, property );
-           }
-       }
-       return null;
-   }
+            }
+        }
+        return null;
+    }
 }

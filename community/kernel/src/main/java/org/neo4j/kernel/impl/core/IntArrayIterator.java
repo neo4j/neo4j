@@ -103,7 +103,7 @@ class IntArrayIterator implements Iterable<Relationship>,
                             {
                                 newItr = itr.setSrc( newSrc );
                             }
-                            else if ( newSrc.supportsLoops() )
+                            else if ( newSrc.couldBeNeedingUpdate() )
                             {
                                 itr.updateSrc( newSrc );
                             }
@@ -117,13 +117,12 @@ class IntArrayIterator implements Iterable<Relationship>,
                     // initiate iterators for them
                     if ( types.length == 0 )
                     {
-                        for ( Map.Entry<String, RelIdArray> entry : fromNode.getRelationshipIds().entrySet() )
+                        for ( RelIdArray ids : fromNode.getRelationshipIds() )
                         {
-                            String type = entry.getKey();
+                            String type = ids.getType();
                             RelTypeElementIterator itr = newRels.get( type );
                             if ( itr == null || itr.isSrcEmpty() )
                             {
-                                RelIdArray ids = entry.getValue();
                                 itr = itr == null ? new FastRelTypeElement( type, fromNode, ids, direction ) :
                                         itr.setSrc( ids );
                                 newRels.put( type, itr );
