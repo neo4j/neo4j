@@ -4,6 +4,16 @@ Sunshine Query Language
 
 The query language is comprised of four distinct parts.
 
+In Java, using the query language looks something like this:
+
+[snippet,java]
+----
+component=neo4j-tbd
+source=org/neo4j/tbd/JavaExecutionEngineTests.java
+tag=JavaQuery
+classifier=test-sources
+----
+
 :leveloffset: 2
 
 include::ql/start/index.txt[]

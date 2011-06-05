@@ -34,7 +34,7 @@ import java.util.Collection;
 import static org.junit.Assert.assertThat;
 import static org.junit.matchers.JUnitMatchers.hasItem;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
-
+// START SNIPPET: JavaQuery
 public class JavaExecutionEngineTests
 {
     private SunshineParser parser;
@@ -63,3 +63,4 @@ public class JavaExecutionEngineTests
         return IteratorUtil.asCollection( asIterable( result.<Node>columnAs( "n" ) ) );
     }
 }
+// END SNIPPET: JavaQuery
