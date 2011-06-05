@@ -22,8 +22,8 @@ package org.neo4j.kernel;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.BranchSelector;
+import org.neo4j.graphdb.traversal.TraversalBranch;
 
 /**
  * Selects {@link TraversalBranch}s according to breadth first

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction;
 
 import java.util.Iterator;
 import java.util.LinkedList;
+
 import javax.transaction.Synchronization;
 import javax.transaction.Transaction;
 import javax.transaction.xa.XAResource;

@@ -19,7 +19,6 @@
  */
 package org.neo4j.jmx.impl;
 
-import org.neo4j.jmx.impl.JmxExtension;
 import org.neo4j.kernel.KernelExtensionContractTest;
 
 public class TestJmxExtension extends KernelExtensionContractTest<JmxExtension.JmxData, JmxExtension>

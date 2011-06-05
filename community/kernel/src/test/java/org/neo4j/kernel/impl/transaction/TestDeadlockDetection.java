@@ -24,7 +24,6 @@ import static org.junit.Assert.fail;
 
 import org.junit.Test;
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.impl.transaction.LockManager;
 
 public class TestDeadlockDetection
 {

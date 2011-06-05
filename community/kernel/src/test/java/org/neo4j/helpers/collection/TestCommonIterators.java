@@ -31,11 +31,6 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 import org.junit.Test;
-import org.neo4j.helpers.collection.CachingIterator;
-import org.neo4j.helpers.collection.FilteringIterator;
-import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.helpers.collection.PagingIterator;
-import org.neo4j.helpers.collection.RangeIterator;
 
 public class TestCommonIterators
 {

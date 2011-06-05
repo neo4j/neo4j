@@ -19,10 +19,10 @@
  */
 package org.neo4j.server.plugins;
 
+import java.util.Collection;
+
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.graphdb.GraphDatabaseService;
-
-import java.util.Collection;
 
 /**
  *  Interface to be implemented and exposed via the Java ServiceLocator mechanism that allows

@@ -19,14 +19,14 @@
  */
 package org.neo4j.server.plugins;
 
-import org.neo4j.helpers.Service;
-
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
+import org.neo4j.helpers.Service;
 
 /**
  * API for creating extensions for the Neo4j server.

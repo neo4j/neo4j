@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import java.util.concurrent.atomic.AtomicLong;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -27,6 +26,7 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.LinkedList;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * This class generates unique ids for a resource type. For example, nodes in a

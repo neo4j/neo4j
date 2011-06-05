@@ -19,13 +19,13 @@
  */
 package org.neo4j.server.rest.repr;
 
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.helpers.collection.IterableWrapper;
-import org.neo4j.helpers.collection.PrefetchingIterator;
-
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Iterator;
+
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 
 public final class ListRepresentation extends Representation
 {

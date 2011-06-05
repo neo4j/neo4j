@@ -30,7 +30,6 @@ import java.util.List;
 
 import org.junit.Test;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
-import org.neo4j.kernel.impl.transaction.TxLog;
 import org.neo4j.kernel.impl.transaction.TxLog.Record;
 
 public class TestTxLog

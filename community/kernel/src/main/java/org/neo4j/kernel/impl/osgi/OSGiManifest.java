@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.osgi;
 
-import org.osgi.framework.Bundle;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -29,6 +27,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
+
+import org.osgi.framework.Bundle;
 
 /**
  * Wraps an OSGi Bundle in a jar Manifest.
