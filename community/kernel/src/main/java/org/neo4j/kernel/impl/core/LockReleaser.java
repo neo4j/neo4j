@@ -238,7 +238,7 @@ public class LockReleaser
         RelIdArray set = element.relationshipRemoveMap.get( type );
         if ( set == null )
         {
-            set = new RelIdArray();
+            set = new RelIdArray( null );
             element.relationshipRemoveMap.put( type, set );
         }
         return set;
@@ -295,7 +295,7 @@ public class LockReleaser
         RelIdArray set = element.relationshipAddMap.get( type );
         if ( set == null )
         {
-            set = new RelIdArrayWithLoops();
+            set = new RelIdArrayWithLoops( type );
             element.relationshipAddMap.put( type, set );
         }
         return set;

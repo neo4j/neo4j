@@ -24,6 +24,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.kernel.impl.core.RelTypeElementIterator;
 
 public class RelIdArray
 {
@@ -34,7 +35,7 @@ public class RelIdArray
     private static final DirectionWrapper[] DIRECTIONS_FOR_BOTH =
             new DirectionWrapper[] { DirectionWrapper.OUTGOING, DirectionWrapper.INCOMING, DirectionWrapper.BOTH };
     
-    public static final RelIdArray EMPTY = new RelIdArray()
+    public static final RelIdArray EMPTY = new RelIdArray( "" )
     {
         private RelIdIterator emptyIterator = new RelIdIterator( null, new DirectionWrapper[0] )
         {
@@ -62,17 +63,32 @@ public class RelIdArray
         }
     };
     
+    private final String type;
     private IdBlock lastOutBlock;
     private IdBlock lastInBlock;
     
-    public RelIdArray()
+    public RelIdArray( String type )
     {
+        this.type = type;
+    }
+    
+    public String getType()
+    {
+        return type;
     }
     
     protected RelIdArray( RelIdArray from )
     {
+        this( from.type );
         this.lastOutBlock = from.lastOutBlock;
         this.lastInBlock = from.lastInBlock;
+    }
+    
+    protected RelIdArray( String type, IdBlock out, IdBlock in )
+    {
+        this( type );
+        this.lastOutBlock = out;
+        this.lastInBlock = in;
     }
     
     /*
@@ -84,8 +100,20 @@ public class RelIdArray
         long highBits = id&0xFFFFFFFF00000000L;
         if ( lastBlock == null || lastBlock.getHighBits() != highBits )
         {
-            IdBlock newLastBlock = highBits == 0 ? new LowIdBlock() : new HighIdBlock( highBits );
-            newLastBlock.prev = lastBlock;
+            IdBlock newLastBlock = null;
+            if ( highBits == 0 && lastBlock == null )
+            {
+                newLastBlock = new LowIdBlock();
+            }
+            else
+            {
+                newLastBlock = new HighIdBlock( highBits );
+                if ( lastBlock != null )
+                {
+                    lastBlock = lastBlock.upgradeIfNeeded();
+                    newLastBlock.setPrev( lastBlock );
+                }
+            }
             direction.setLastBlock( this, newLastBlock );
             lastBlock = newLastBlock;
         }
@@ -113,6 +141,14 @@ public class RelIdArray
     protected IdBlock getLastLoopBlock()
     {
         return null;
+    }
+    
+    public RelIdArray shrink()
+    {
+        IdBlock shrunkOut = lastOutBlock != null ? lastOutBlock.shrink() : null;
+        IdBlock shrunkIn = lastInBlock != null ? lastInBlock.shrink() : null;
+        return shrunkOut == lastOutBlock && shrunkIn == lastInBlock ? this : 
+                new RelIdArray( type, shrunkOut, shrunkIn );
     }
     
     protected void setLastLoopBlock( IdBlock block )
@@ -143,25 +179,51 @@ public class RelIdArray
             else if ( toBlock.getHighBits() == fromBlock.getHighBits() )
             {
                 toBlock.addAll( fromBlock );
-                if ( fromBlock.prev != null )
+                if ( fromBlock.getPrev() != null )
                 {
-                    last( toBlock ).prev = fromBlock.prev.copy();
+                    boolean isTheOnlyOne = toBlock.getPrev() == null;
+                    IdBlock last = last( toBlock );
+                    last.setPrev( fromBlock.getPrev().copy() );
+                    if ( isTheOnlyOne )
+                    {
+                        direction.setLastBlock( this, last );
+                    }
                 }
             }
             else
             {
-                last( toBlock ).prev = fromBlock.copy();
+                boolean isTheOnlyOne = toBlock.getPrev() == null;
+                IdBlock last = last( toBlock );
+                last.setPrev( fromBlock.copy() );
+                if ( isTheOnlyOne )
+                {
+                    direction.setLastBlock( this, last );
+                }
             }
         }
     }
     
+    /**
+     * Also upgrade along the way if necessary
+     */
     private static IdBlock last( IdBlock block )
     {
-        while ( block.prev != null )
+        IdBlock previousInLoop = null;
+        while ( true )
         {
-            block = block.prev;
+            block = block.upgradeIfNeeded();
+            if ( previousInLoop != null )
+            {
+                previousInLoop.setPrev( block );
+            }
+            IdBlock prev = block.getPrev();
+            if ( prev == null )
+            {
+                return block;
+            }
+            previousInLoop = block;
+            block = prev;
         }
-        return block;
     }
     
     public boolean isEmpty()
@@ -176,17 +238,10 @@ public class RelIdArray
     
     public RelIdArray newSimilarInstance()
     {
-        return new RelIdArray();
+        return new RelIdArray( type );
     }
     
-    public static final IdBlock EMPTY_BLOCK = new LowIdBlock()
-    {
-        @Override
-        int length()
-        {
-            return 0;
-        }
-    };
+    public static final IdBlock EMPTY_BLOCK = new LowIdBlock();
     
     public static enum DirectionWrapper
     {
@@ -289,59 +344,83 @@ public class RelIdArray
     
     public static abstract class IdBlock
     {
-        private int[] ids = new int[2];
-        private int length;
-        private IdBlock prev;
+        // First element is the actual length w/o the slack
+        private int[] ids = new int[3];
         
+        /**
+         * @return a copy of itself. The copy is also shrunk so that there's no
+         * slack in the id array.
+         */
         IdBlock copy()
         {
             IdBlock copy = copyInstance();
-            copy.ids = new int[ids.length];
-            System.arraycopy( ids, 0, copy.ids, 0, length );
-            copy.length = length;
-            if ( prev != null )
-            {
-                copy.prev = prev.copy();
-            }
+            int length = length();
+            copy.ids = new int[length+1];
+            System.arraycopy( ids, 0, copy.ids, 0, length+1 );
             return copy;
         }
         
-        protected abstract IdBlock copyInstance();
-
-        int length()
+        /**
+         * @return a shrunk version of itself. It returns itself if there is
+         * no need to shrink it or a {@link #copy()} if there is slack in the array.
+         */
+        IdBlock shrink()
         {
-            return length;
+            return length() == ids.length-1 ? this : copy();
         }
         
+        /**
+         * Upgrades to a {@link HighIdBlock} if this is a {@link LowIdBlock}.
+         */
+        abstract IdBlock upgradeIfNeeded();
+        
+        int length()
+        {
+            return ids[0];
+        }
+
+        IdBlock getPrev()
+        {
+            return null;
+        }
+        
+        abstract void setPrev( IdBlock prev );
+        
+        protected abstract IdBlock copyInstance();
+
         // Assume id has same high bits
         void add( int id )
         {
-            if ( length == ids.length )
+            int length = length();
+            if ( length == ids.length-1 )
             {
-                int[] newIds = new int[length*2];
-                System.arraycopy( ids, 0, newIds, 0, ids.length );
+                int[] newIds = new int[(length == 0 ? 1 : length)*5];
+                System.arraycopy( ids, 0, newIds, 0, length+1 );
                 ids = newIds;
             }
-            ids[length++] = id;
+            ids[length+1] = id;
+            ids[0] = length+1;
         }
         
         void addAll( IdBlock block )
         {
-            int newLength = length + block.length;
-            if ( newLength >= ids.length )
+            int length = length();
+            int otherBlockLength = block.length();
+            int newLength = length + otherBlockLength;
+            if ( newLength+1 > ids.length )
             {
-                int[] newIds = new int[newLength];
-                System.arraycopy( ids, 0, newIds, 0, length );
+                int[] newIds = new int[newLength+1];
+                System.arraycopy( ids, 1, newIds, 1, length );
                 ids = newIds;
             }
-            System.arraycopy( block.ids, 0, ids, length, block.length );
-            length = newLength;
+            System.arraycopy( block.ids, 1, ids, length+1, otherBlockLength );
+            ids[0] = newLength;
         }
         
         long get( int index )
         {
-            assert index >= 0 && index < length;
-            return transform( ids[index] );
+            assert index >= 0 && index < length();
+            return transform( ids[index+1] );
         }
         
         abstract long transform( int id );
@@ -349,7 +428,7 @@ public class RelIdArray
         void set( long id, int index )
         {
             // Assume same high bits
-            ids[index] = (int) id;
+            ids[index+1] = (int) id;
         }
         
         abstract long getHighBits();
@@ -357,6 +436,20 @@ public class RelIdArray
     
     private static class LowIdBlock extends IdBlock
     {
+        @Override
+        void setPrev( IdBlock prev )
+        {
+            throw new UnsupportedOperationException();
+        }
+        
+        @Override
+        IdBlock upgradeIfNeeded()
+        {
+            IdBlock highBlock = new HighIdBlock( 0 );
+            highBlock.ids = ((IdBlock)this).ids;
+            return highBlock;
+        }
+
         @Override
         long transform( int id )
         {
@@ -379,12 +472,42 @@ public class RelIdArray
     private static class HighIdBlock extends IdBlock
     {
         private final long highBits;
+        private IdBlock prev;
 
         HighIdBlock( long highBits )
         {
             this.highBits = highBits;
         }
         
+        @Override
+        IdBlock upgradeIfNeeded()
+        {
+            return this;
+        }
+        
+        @Override
+        IdBlock copy()
+        {
+            IdBlock copy = super.copy();
+            if ( prev != null )
+            {
+                copy.setPrev( prev.copy() );
+            }
+            return copy;
+        }
+
+        @Override
+        IdBlock getPrev()
+        {
+            return prev;
+        }
+
+        @Override
+        void setPrev( IdBlock prev )
+        {
+            this.prev = prev;
+        }
+
         @Override
         long transform( int id )
         {
@@ -406,6 +529,7 @@ public class RelIdArray
     
     private static class IteratorState
     {
+        private int blockIndex;
         private IdBlock block;
         private int relativePosition;
         private int absolutePosition;
@@ -418,10 +542,11 @@ public class RelIdArray
         
         boolean nextBlock()
         {
-            if ( block.prev != null )
+            if ( block.getPrev() != null )
             {
-                block = block.prev;
+                block = block.getPrev();
                 relativePosition = 0;
+                blockIndex++;
                 return true;
             }
             return false;
@@ -429,7 +554,7 @@ public class RelIdArray
         
         boolean hasNext()
         {
-            return relativePosition < block.length;
+            return relativePosition < block.length();
         }
         
         /*
@@ -439,6 +564,15 @@ public class RelIdArray
         {
             absolutePosition++;
             return block.get( relativePosition++ );
+        }
+
+        public void update( IdBlock lastBlock )
+        {
+            for ( int i = 0; i < blockIndex; i++ )
+            {
+                lastBlock = lastBlock.getPrev();
+            }
+            this.block = lastBlock;
         }
     }
     
@@ -480,6 +614,16 @@ public class RelIdArray
         public void updateSource( RelIdArray newSource )
         {
             this.ids = newSource;
+            
+            // Blocks may have gotten upgraded to support a linked list
+            // of blocks, so reestablish those references.
+            for ( int i = 0; i < states.length; i++ )
+            {
+                if ( states[i] != null )
+                {
+                    states[i].update( directions[i].getLastBlock( ids ) );
+                }
+            }
         }
         
         public boolean hasNext()
@@ -571,20 +715,6 @@ public class RelIdArray
         }
     }
     
-//    private static class SingleBlockRelIdIterator extends RelIdIterator
-//    {
-//        SingleBlockRelIdIterator( RelIdArray ids, DirectionWrapper[] directions )
-//        {
-//            super( ids, directions );
-//        }
-//        
-//        @Override
-//        protected boolean findNextBlock()
-//        {
-//            return false;
-//        }
-//    }
-    
     public static RelIdArray from( RelIdArray src, RelIdArray add, RelIdArray remove )
     {
         if ( remove == null )
@@ -618,7 +748,7 @@ public class RelIdArray
             }
             else
             {
-                newArray = new RelIdArray();
+                newArray = add.newSimilarInstance();
             }
             if ( add != null )
             {
@@ -632,7 +762,7 @@ public class RelIdArray
                     }
                 }
             }
-            return newArray;
+            return newArray.shrink();
         }
     }
 
@@ -646,10 +776,10 @@ public class RelIdArray
                 boolean swapSuccessful = false;
                 IteratorState state = iterator.currentState;
                 IdBlock block = state.block;
-                for ( int j = block.length - 1; j >= state.relativePosition; j--)
+                for ( int j = block.length() - 1; j >= state.relativePosition; j--)
                 {
                     long backValue = block.get( j );
-                    block.length--;
+                    block.ids[0] = block.ids[0]-1;
                     if ( !excluded.contains( backValue) )
                     {
                         block.set( backValue, state.relativePosition-1 );
@@ -659,7 +789,7 @@ public class RelIdArray
                 }
                 if ( !swapSuccessful ) // all elements from pos in remove
                 {
-                    block.length--;
+                    block.ids[0] = block.ids[0]-1;
                 }
             }
         }
@@ -675,8 +805,16 @@ public class RelIdArray
         return set;
     }
 
-    public boolean supportsLoops()
+    /**
+     * Optimization in the lazy loading of relationships for a node.
+     * {@link RelTypeElementIterator#updateSrc(RelIdArray)} is only called if
+     * this returns true, i.e if a {@link RelIdArray} or {@link IdBlock} might have
+     * gotten upgraded to handle f.ex loops or high id ranges so that the
+     * {@link RelIdIterator} gets updated accordingly.
+     */
+    public boolean couldBeNeedingUpdate()
     {
-        return false;
+        return (lastOutBlock != null && lastOutBlock.getPrev() != null) ||
+                (lastInBlock != null && lastInBlock.getPrev() != null);
     }
 }

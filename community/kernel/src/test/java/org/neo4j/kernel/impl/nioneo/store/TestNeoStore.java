@@ -92,6 +92,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
     @Before
     public void setUpNeoStore() throws Exception
     {
+        deleteFileOrDirectory( path() );
         NeoStore.createStore( file( "neo" ), MapUtil.map(
                 IdGeneratorFactory.class, ID_GENERATOR_FACTORY,
                 FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction(),
@@ -407,7 +408,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         {
             long id = props.get( keyId ).getId();
             PropertyRecord record = pStore.getRecord( id );
-            PropertyData data = new PropertyData( id, getValue( record ) );
+            PropertyData data = record.newPropertyData();
             if ( data.getId() == prop1 )
             {
                 assertEquals( "prop1", MyPropertyIndex.getIndexFor( 
@@ -478,7 +479,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         {
             long id = props.get( keyId ).getId();
             PropertyRecord record = pStore.getRecord( id );
-            PropertyData data = new PropertyData( id, getValue( record ) );
+            PropertyData data = record.newPropertyData();
             if ( data.getId() == prop1 )
             {
                 assertEquals( "prop1", MyPropertyIndex.getIndexFor(
@@ -549,7 +550,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         {
             long id = props.get( keyId ).getId();
             PropertyRecord record = pStore.getRecord( id );
-            PropertyData data = new PropertyData( id, getValue( record ) );
+            PropertyData data = record.newPropertyData();
             if ( data.getId() == prop1 )
             {
                 assertEquals( "prop1", MyPropertyIndex.getIndexFor(
@@ -594,7 +595,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         {
             long id = props.get( keyId ).getId();
             PropertyRecord record = pStore.getRecord( id );
-            PropertyData data = new PropertyData( id, getValue( record ) );
+            PropertyData data = record.newPropertyData();
             if ( data.getId() == prop1 )
             {
                 assertEquals( "prop1", MyPropertyIndex.getIndexFor(
@@ -669,7 +670,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         {
             long id = props.get( keyId ).getId();
             PropertyRecord record = pStore.getRecord( id );
-            PropertyData data = new PropertyData( id, getValue( record ) );
+            PropertyData data = record.newPropertyData();
             if ( data.getId() == prop1 )
             {
                 assertEquals( "prop1", MyPropertyIndex.getIndexFor(
@@ -722,7 +723,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         {
             long id = props.get( keyId ).getId();
             PropertyRecord record = pStore.getRecord( id );
-            PropertyData data = new PropertyData( id, getValue( record ) );
+            PropertyData data = record.newPropertyData();
             if ( data.getId() == prop1 )
             {
                 assertEquals( "prop1", MyPropertyIndex.getIndexFor(
@@ -773,7 +774,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         {
             long id = props.get( keyId ).getId();
             PropertyRecord record = pStore.getRecord( id );
-            PropertyData data = new PropertyData( id, getValue( record ) );
+            PropertyData data = record.newPropertyData();
             if ( data.getId() == prop1 )
             {
                 assertEquals( "prop1", MyPropertyIndex.getIndexFor(
@@ -817,7 +818,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         {
             long id = props.get( keyId ).getId();
             PropertyRecord record = pStore.getRecord( id );
-            PropertyData data = new PropertyData( id, getValue( record ) );
+            PropertyData data = record.newPropertyData();
             if ( data.getId() == prop1 )
             {
                 assertEquals( "prop1", MyPropertyIndex.getIndexFor(

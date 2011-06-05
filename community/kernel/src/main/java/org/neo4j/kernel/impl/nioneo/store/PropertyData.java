@@ -19,29 +19,34 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-public class PropertyData
+public interface PropertyData
 {
-    private final long id;
-    private Object value = null;
-
-    public PropertyData( long id, Object value )
-    {
-        this.id = id;
-        this.value = value;
-    }
-
-    public long getId()
-    {
-        return id;
-    }
+    /**
+     * @return the property record id.
+     */
+    long getId();
     
-    public Object getValue()
-    {
-        return value;
-    }
+    /**
+     * @return the property index
+     */
+    int getIndex();
+    
+    /**
+     * @return the value of the property. This can be null if the value
+     * hasn't been loaded yet.
+     */
+    Object getValue();
 
-    public void setNewValue( Object newValue )
-    {
-        this.value = newValue;
-    }
+    /**
+     * Sets the value of this {@link PropertyData} if it hasn't been set
+     * before (light loading of the node). The instance containing the
+     * new value will be returned. It can be the same or a new instance
+     * depending on what would be more suitable for the {@code newValue}.
+     * 
+     * This method is only valid for String/Array property types. All other
+     * get loaded directly.
+     * 
+     * @param newValue the new value to set.
+     */
+    void setNewValue( Object newValue );
 }

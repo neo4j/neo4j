@@ -19,18 +19,26 @@
  */
 package org.neo4j.kernel.impl.util;
 
+
 public class RelIdArrayWithLoops extends RelIdArray
 {
     private IdBlock lastLoopBlock;
     
-    public RelIdArrayWithLoops()
+    public RelIdArrayWithLoops( String type )
     {
+        super( type );
     }
     
     protected RelIdArrayWithLoops( RelIdArray from )
     {
         super( from );
         lastLoopBlock = from.getLastLoopBlock();
+    }
+    
+    protected RelIdArrayWithLoops( String type, IdBlock out, IdBlock in, IdBlock loop )
+    {
+        super( type, out, in );
+        this.lastLoopBlock = loop;
     }
 
     @Override
@@ -72,12 +80,24 @@ public class RelIdArrayWithLoops extends RelIdArray
 
     public RelIdArray newSimilarInstance()
     {
-        return new RelIdArrayWithLoops();
+        return new RelIdArrayWithLoops( getType() );
     }
     
     @Override
-    public boolean supportsLoops()
+    public boolean couldBeNeedingUpdate()
     {
         return true;
+    }
+    
+    @Override
+    public RelIdArray shrink()
+    {
+        IdBlock lastOutBlock = DirectionWrapper.OUTGOING.getLastBlock( this );
+        IdBlock lastInBlock = DirectionWrapper.INCOMING.getLastBlock( this );
+        IdBlock shrunkOut = lastOutBlock != null ? lastOutBlock.shrink() : null;
+        IdBlock shrunkIn = lastInBlock != null ? lastInBlock.shrink() : null;
+        IdBlock shrunkLoop = lastLoopBlock != null ? lastLoopBlock.shrink() : null;
+        return shrunkOut == lastOutBlock && shrunkIn == lastInBlock && shrunkLoop == lastLoopBlock ? this : 
+                new RelIdArrayWithLoops( getType(), shrunkOut, shrunkIn, shrunkLoop );
     }
 }

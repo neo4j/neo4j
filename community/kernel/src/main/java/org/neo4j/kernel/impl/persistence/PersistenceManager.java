@@ -75,7 +75,7 @@ public class PersistenceManager
 
     public boolean loadLightNode( long id )
     {
-        return getReadOnlyResource().nodeLoadLight( id );
+        return getReadOnlyResourceIfPossible().nodeLoadLight( id );
     }
 
     public Object loadPropertyValue( long id )
@@ -85,17 +85,17 @@ public class PersistenceManager
 
     public String loadIndex( int id )
     {
-        return getReadOnlyResource().loadIndex( id );
+        return getReadOnlyResourceIfPossible().loadIndex( id );
     }
 
     public PropertyIndexData[] loadPropertyIndexes( int maxCount )
     {
-        return getReadOnlyResource().loadPropertyIndexes( maxCount );
+        return getReadOnlyResourceIfPossible().loadPropertyIndexes( maxCount );
     }
 
     public long getRelationshipChainPosition( long nodeId )
     {
-        return getReadOnlyResource().getRelationshipChainPosition( nodeId );
+        return getReadOnlyResourceIfPossible().getRelationshipChainPosition( nodeId );
     }
     
     public Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, Long> getMoreRelationships(
@@ -107,23 +107,23 @@ public class PersistenceManager
     public ArrayMap<Integer,PropertyData> loadNodeProperties( long nodeId,
             boolean light )
     {
-        return getReadOnlyResource().nodeLoadProperties( nodeId, light );
+        return getReadOnlyResourceIfPossible().nodeLoadProperties( nodeId, light );
     }
 
     public ArrayMap<Integer,PropertyData> loadRelProperties( long relId,
             boolean light )
     {
-        return getReadOnlyResource().relLoadProperties( relId, light );
+        return getReadOnlyResourceIfPossible().relLoadProperties( relId, light );
     }
 
     public RelationshipRecord loadLightRelationship( long id )
     {
-        return getReadOnlyResource().relLoadLight( id );
+        return getReadOnlyResourceIfPossible().relLoadLight( id );
     }
 
     public RelationshipTypeData[] loadAllRelationshipTypes()
     {
-        return getReadOnlyResource().loadRelationshipTypes();
+        return getReadOnlyResourceIfPossible().loadRelationshipTypes();
     }
 
     public ArrayMap<Integer,PropertyData> nodeDelete( long nodeId )
@@ -131,14 +131,14 @@ public class PersistenceManager
         return getResource( true ).nodeDelete( nodeId );
     }
 
-    public long nodeAddProperty( long nodeId, PropertyIndex index, Object value )
+    public PropertyData nodeAddProperty( long nodeId, PropertyIndex index, Object value )
     {
         return getResource( true ).nodeAddProperty( nodeId, index, value );
     }
 
-    public void nodeChangeProperty( long nodeId, long propertyId, Object value )
+    public PropertyData nodeChangeProperty( long nodeId, long propertyId, Object value )
     {
-        getResource( true ).nodeChangeProperty( nodeId, propertyId, value );
+        return getResource( true ).nodeChangeProperty( nodeId, propertyId, value );
     }
 
     public void nodeRemoveProperty( long nodeId, long propertyId )
@@ -162,14 +162,14 @@ public class PersistenceManager
         return getResource( true ).relDelete( relId );
     }
 
-    public long relAddProperty( long relId, PropertyIndex index, Object value )
+    public PropertyData relAddProperty( long relId, PropertyIndex index, Object value )
     {
         return getResource( true ).relAddProperty( relId, index, value );
     }
 
-    public void relChangeProperty( long relId, long propertyId, Object value )
+    public PropertyData relChangeProperty( long relId, long propertyId, Object value )
     {
-        getResource( true ).relChangeProperty( relId, propertyId, value );
+        return getResource( true ).relChangeProperty( relId, propertyId, value );
     }
 
     public void relRemoveProperty( long relId, long propertyId )
@@ -186,8 +186,14 @@ public class PersistenceManager
     {
         getResource( false ).createRelationshipType( id, name );
     }
-
+    
     private NeoStoreTransaction getReadOnlyResource()
+    {
+        return ((NioNeoDbPersistenceSource) 
+                persistenceSource ).createReadOnlyResourceConnection();
+    }
+
+    private NeoStoreTransaction getReadOnlyResourceIfPossible()
     {
         Transaction tx = this.getCurrentTransaction();
 //        if ( tx == null )
@@ -374,7 +380,7 @@ public class PersistenceManager
 
     public int getKeyIdForProperty( long propertyId )
     {
-        return getReadOnlyResource().getKeyIdForProperty( propertyId );
+        return getReadOnlyResourceIfPossible().getKeyIdForProperty( propertyId );
     }
 
 }

@@ -51,13 +51,13 @@ abstract class RelationshipImpl extends Primitive
     }
 
     @Override
-    protected void changeProperty( NodeManager nodeManager, long propertyId, Object value )
+    protected PropertyData changeProperty( NodeManager nodeManager, long propertyId, Object value )
     {
-        nodeManager.relChangeProperty( this, propertyId, value );
+        return nodeManager.relChangeProperty( this, propertyId, value );
     }
 
     @Override
-    protected long addProperty( NodeManager nodeManager, PropertyIndex index, Object value )
+    protected PropertyData addProperty( NodeManager nodeManager, PropertyIndex index, Object value )
     {
         return nodeManager.relAddProperty( this, index, value );
     }

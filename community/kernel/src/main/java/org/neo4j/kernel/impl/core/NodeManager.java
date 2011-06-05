@@ -647,7 +647,7 @@ public class NodeManager
             RelIdArray relationshipSet = newRelationshipMap.get( type.name() );
             if ( relationshipSet == null )
             {
-                relationshipSet = hasLoops ? new RelIdArrayWithLoops() : new RelIdArray();
+                relationshipSet = hasLoops ? new RelIdArrayWithLoops( type.name() ) : new RelIdArray( type.name() );
                 newRelationshipMap.put( type.name(), relationshipSet );
             }
             relationshipSet.add( relId, dir );
@@ -843,14 +843,14 @@ public class NodeManager
         // remove from node cache done via event
     }
 
-    long nodeAddProperty( NodeImpl node, PropertyIndex index, Object value )
+    PropertyData nodeAddProperty( NodeImpl node, PropertyIndex index, Object value )
     {
         return persistenceManager.nodeAddProperty( node.getId(), index, value );
     }
 
-    void nodeChangeProperty( NodeImpl node, long propertyId, Object value )
+    PropertyData nodeChangeProperty( NodeImpl node, long propertyId, Object value )
     {
-        persistenceManager.nodeChangeProperty( node.getId(), propertyId, value );
+        return persistenceManager.nodeChangeProperty( node.getId(), propertyId, value );
     }
 
     void nodeRemoveProperty( NodeImpl node, long propertyId )
@@ -865,15 +865,15 @@ public class NodeManager
         // remove in rel cache done via event
     }
 
-    long relAddProperty( RelationshipImpl rel, PropertyIndex index,
+    PropertyData relAddProperty( RelationshipImpl rel, PropertyIndex index,
         Object value )
     {
         return persistenceManager.relAddProperty( rel.getId(), index, value );
     }
 
-    void relChangeProperty( RelationshipImpl rel, long propertyId, Object value )
+    PropertyData relChangeProperty( RelationshipImpl rel, long propertyId, Object value )
     {
-        persistenceManager.relChangeProperty( rel.getId(), propertyId, value );
+        return persistenceManager.relChangeProperty( rel.getId(), propertyId, value );
     }
 
     void relRemoveProperty( RelationshipImpl rel, long propertyId )

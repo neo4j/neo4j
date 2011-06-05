@@ -44,7 +44,9 @@ import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
 class NodeImpl extends Primitive
 {
-    private volatile ArrayMap<String,RelIdArray> relationshipMap;
+    private static final RelIdArray[] NO_RELATIONSHIPS = new RelIdArray[0];
+    
+    private volatile RelIdArray[] relationships;
     private long relChainPosition = Record.NO_NEXT_RELATIONSHIP.intValue();
     private long id;
 
@@ -60,7 +62,7 @@ class NodeImpl extends Primitive
         this.id = id;
         if ( newNode )
         {
-            relationshipMap = new ArrayMap<String,RelIdArray>();
+            relationships = NO_RELATIONSHIPS;
         }
     }
     
@@ -83,13 +85,13 @@ class NodeImpl extends Primitive
     }
 
     @Override
-    protected void changeProperty( NodeManager nodeManager, long propertyId, Object value )
+    protected PropertyData changeProperty( NodeManager nodeManager, long propertyId, Object value )
     {
-        nodeManager.nodeChangeProperty( this, propertyId, value );
+        return nodeManager.nodeChangeProperty( this, propertyId, value );
     }
 
     @Override
-    protected long addProperty( NodeManager nodeManager, PropertyIndex index, Object value )
+    protected PropertyData addProperty( NodeManager nodeManager, PropertyIndex index, Object value )
     {
         return nodeManager.nodeAddProperty( this, index, value );
     }
@@ -117,9 +119,10 @@ class NodeImpl extends Primitive
         {
             addMap = nodeManager.getCowRelationshipAddMap( this );
         }
-        for ( String type : relationshipMap.keySet() )
+        
+        for ( RelIdArray src : relationships )
         {
-            RelIdArray src = relationshipMap.get( type );
+            String type = src.getType();
             RelIdArray remove = null;
             RelIdArray add = null;
             if ( hasModifications )
@@ -136,7 +139,7 @@ class NodeImpl extends Primitive
         {
             for ( String type : addMap.keySet() )
             {
-                if ( relationshipMap.get( type ) == null )
+                if ( getRelIdArray( type ) == null )
                 {
                     RelIdArray remove = nodeManager.getCowRelationshipRemoveMap( this, type );
                     RelIdArray add = addMap.get( type );
@@ -156,7 +159,7 @@ class NodeImpl extends Primitive
         boolean hasModifications = nodeManager.getLockReleaser().hasRelationshipModifications( this );
         for ( RelationshipType type : types )
         {
-            RelIdArray src = relationshipMap.get( type.name() );
+            RelIdArray src = getRelIdArray( type.name() );
             RelIdArray remove = null;
             RelIdArray add = null;
             if ( hasModifications )
@@ -297,7 +300,7 @@ class NodeImpl extends Primitive
 
     private void ensureRelationshipMapNotNull( NodeManager nodeManager )
     {
-        if ( relationshipMap == null )
+        if ( relationships == null )
         {
             loadInitialRelationships( nodeManager );
         }
@@ -308,18 +311,34 @@ class NodeImpl extends Primitive
         Map<Long,RelationshipImpl> map = null;
         synchronized ( this )
         {
-            if ( relationshipMap == null )
+            if ( relationships == null )
             {
                 this.relChainPosition = nodeManager.getRelationshipChainPosition( this );
                 ArrayMap<String,RelIdArray> tmpRelMap = new ArrayMap<String,RelIdArray>();
                 map = getMoreRelationships( nodeManager, tmpRelMap );
-                this.relationshipMap = tmpRelMap;
+                this.relationships = toRelIdArray( tmpRelMap );
             }
         }
         if ( map != null )
         {
             nodeManager.putAllInRelCache( map );
         }
+    }
+
+    private RelIdArray[] toRelIdArray( ArrayMap<String, RelIdArray> tmpRelMap )
+    {
+        if ( tmpRelMap == null || tmpRelMap.size() == 0 )
+        {
+            return NO_RELATIONSHIPS;
+        }
+        
+        RelIdArray[] result = new RelIdArray[tmpRelMap.size()];
+        int i = 0;
+        for ( RelIdArray array : tmpRelMap.values() )
+        {
+            result[i++] = array.shrink();
+        }
+        return result;
     }
 
     private Map<Long,RelationshipImpl> getMoreRelationships( NodeManager nodeManager, 
@@ -366,6 +385,10 @@ class NodeImpl extends Primitive
     boolean getMoreRelationships( NodeManager nodeManager )
     {
         Pair<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>> pair;
+        if ( !hasMoreRelationshipsToLoad() )
+        {
+            return false;
+        }
         synchronized ( this )
         {
             if ( !hasMoreRelationshipsToLoad() )
@@ -383,10 +406,10 @@ class NodeImpl extends Primitive
             {
                 RelIdArray addRels = addMap.get( type );
                 // IntArray srcRels = tmpRelMap.get( type );
-                RelIdArray srcRels = relationshipMap.get( type );
+                RelIdArray srcRels = getRelIdArray( type );
                 if ( srcRels == null )
                 {
-                    relationshipMap.put( type, addRels );
+                    putRelIdArray( addRels );
                 }
                 else
                 {
@@ -394,7 +417,7 @@ class NodeImpl extends Primitive
                     // This can happen if srcRels gets upgraded to a RelIdArrayWithLoops
                     if ( newSrcRels != srcRels )
                     {
-                        relationshipMap.put( type, newSrcRels );
+                        putRelIdArray( newSrcRels );
                     }
                 }
             }
@@ -403,6 +426,65 @@ class NodeImpl extends Primitive
         return true;
     }
         
+
+    private RelIdArray getRelIdArray( String type )
+    {
+        // Concurrency-wise it's ok even if the relationships variable
+        // gets rebound to something else (in putRelIdArray) since for-each
+        // stashes the reference away and uses that
+        for ( RelIdArray array : relationships )
+        {
+            if ( array.getType().equals( type ) )
+            {
+                return array;
+            }
+        }
+        return null;
+    }
+    
+    private void putRelIdArray( RelIdArray addRels )
+    {
+        // Try to overwrite it if it's already set
+        //
+        // Make sure the same array is looped all the way through, that's why
+        // a safe reference is kept to it. If the real array has changed when
+        // we're about to set it then redo the loop. A kind of lock-free synchronization
+        
+        String expectedType = addRels.getType();
+        RelIdArray[] safeRelationships = relationships;
+        boolean stay = true;
+        while ( stay )
+        {
+            stay = false;
+            for ( int i = 0; i < safeRelationships.length; i++ )
+            {
+                if ( safeRelationships[i].getType().equals( expectedType ) )
+                {
+                    if ( relationships == safeRelationships )
+                    {
+                        safeRelationships[i] = addRels;
+                        return;
+                    }
+                    stay = true;
+                    safeRelationships = relationships;
+                    break;
+                }
+            }
+        }
+        
+        while ( true )
+        {
+            RelIdArray[] newArray = new RelIdArray[safeRelationships.length+1];
+            System.arraycopy( safeRelationships, 0, newArray, 0, safeRelationships.length );
+            newArray[safeRelationships.length] = addRels;
+            if ( relationships == safeRelationships )
+            {
+                relationships = newArray;
+                break;
+            }
+            safeRelationships = relationships;
+        }
+    }
 
     public Relationship createRelationshipTo( NodeManager nodeManager, Node otherNode,
         RelationshipType type )
@@ -498,39 +580,43 @@ class NodeImpl extends Primitive
         ArrayMap<String,RelIdArray> cowRelationshipAddMap,
         ArrayMap<String,RelIdArray> cowRelationshipRemoveMap )
     {
-        if ( relationshipMap == null )
+        if ( relationships == null )
         {
             // we will load full in some other tx
             return;
         }
-        if ( cowRelationshipAddMap != null )
-        {
-            for ( String type : cowRelationshipAddMap.keySet() )
+        
+//        synchronized ( this )
+//        {
+            if ( cowRelationshipAddMap != null )
             {
-                RelIdArray add = cowRelationshipAddMap.get( type );
-                RelIdArray remove = null;
-                if ( cowRelationshipRemoveMap != null )
+                for ( String type : cowRelationshipAddMap.keySet() )
                 {
-                    remove = cowRelationshipRemoveMap.get( type );
+                    RelIdArray add = cowRelationshipAddMap.get( type );
+                    RelIdArray remove = null;
+                    if ( cowRelationshipRemoveMap != null )
+                    {
+                        remove = cowRelationshipRemoveMap.get( type );
+                    }
+                    RelIdArray src = getRelIdArray( type );
+                    putRelIdArray( RelIdArray.from( src, add, remove ) );
                 }
-                RelIdArray src = relationshipMap.get( type );
-                relationshipMap.put( type, RelIdArray.from( src, add, remove ) );
             }
-        }
-        if ( cowRelationshipRemoveMap != null )
-        {
-            for ( String type : cowRelationshipRemoveMap.keySet() )
+            if ( cowRelationshipRemoveMap != null )
             {
-                if ( cowRelationshipAddMap != null &&
-                    cowRelationshipAddMap.get( type ) != null )
+                for ( String type : cowRelationshipRemoveMap.keySet() )
                 {
-                    continue;
+                    if ( cowRelationshipAddMap != null &&
+                        cowRelationshipAddMap.get( type ) != null )
+                    {
+                        continue;
+                    }
+                    RelIdArray src = getRelIdArray( type );
+                    RelIdArray remove = cowRelationshipRemoveMap.get( type );
+                    putRelIdArray( RelIdArray.from( src, null, remove ) );
                 }
-                RelIdArray src = relationshipMap.get( type );
-                RelIdArray remove = cowRelationshipRemoveMap.get( type );
-                relationshipMap.put( type, RelIdArray.from( src, null, remove ) );
             }
-        }
+//        }
     }
 
     long getRelChainPosition()
@@ -545,11 +631,11 @@ class NodeImpl extends Primitive
 
     RelIdArray getRelationshipIds( String type )
     {
-        return relationshipMap.get( type );
+        return getRelIdArray( type );
     }
     
-    ArrayMap<String, RelIdArray> getRelationshipIds()
+    RelIdArray[] getRelationshipIds()
     {
-        return relationshipMap;
+        return relationships;
     }
 }
