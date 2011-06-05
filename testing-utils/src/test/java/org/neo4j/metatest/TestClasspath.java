@@ -17,14 +17,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.testoftests;
+package org.neo4j.metatest;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
 import org.junit.Test;
+import org.neo4j.kernel.impl.annotations.Documented;
 
-public class MainTest
+/**
+ * Tests the classpath for the tests
+ */
+@Documented
+public class TestClasspath
 {
     @Test
     public void theTestClasspathShouldNotContainTheOriginalArtifacts()
@@ -40,5 +46,13 @@ public class MainTest
     public void canLoadSubProcess() throws Exception
     {
         assertNotNull( Class.forName( "org.neo4j.test.SubProcess" ) );
+    }
+
+    @Test
+    public void canAccessJavadocThroughProcessedAnnotation()
+    {
+        Documented doc = getClass().getAnnotation( Documented.class );
+        assertNotNull( "accessing Documented annotation", doc );
+        assertEquals( "Tests the classpath for the tests", doc.value().trim() );
     }
 }
