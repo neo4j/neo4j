@@ -1,6 +1,12 @@
 [[query-lang]]
-Query Language
-==============
+Sunshine Query Language
+=======================
+
+The query language is comprised of four distinct parts.
+
+:leveloffset: 2
+
+include::ql/start/index.txt[]
 
 :leveloffset: 2
 
@@ -8,5 +14,8 @@ include::ql/match/index.txt[]
 
 :leveloffset: 2
 
-include::ql/start/index.txt[]
+include::ql/where/index.txt[]
 
+:leveloffset: 2
+
+include::ql/return/index.txt[]
