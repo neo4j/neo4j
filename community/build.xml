@@ -38,6 +38,10 @@
 	
 	<target name="generateKernelVersion" description="Generate versioned code">
 		<mkdir dir="kernel/target/generated-sources/version/org/neo4j/kernel/impl" />
+		<exec executable="git" failifexecutionfails="false" failonerror="false">
+        <arg value="fetch" />
+        <arg value="--tags" />
+      </exec>
 		<exec executable="git" outputproperty="git.describe" errorproperty="git.describe.error" failifexecutionfails="false" failonerror="false" dir="kernel">
 			<arg value="describe" />
 			<arg value="--dirty" />
