@@ -78,14 +78,15 @@ public class GremlinPluginFunctionalTest implements GraphHolder
     }
 
     /**
-     * Import a graph form a GraphML file
+     * Load a sample graph graph from a GraphML file URL.
+     *
+     * Import a graph form a http://graphml.graphdrawing.org/[GraphML] file
      * can be achieved through the Gremlin GraphMLReader.
      * The following script imports 2 nodes into Neo4j
      * and returns all vertices in the graph (the 2 new ones and the
      * reference node 0)
      */
     @Test
-    @Title("Load a sample graph graph from a GraphML file URL")
     @Documented
     public void testGremlinImportGraph() throws UnsupportedEncodingException
     {
