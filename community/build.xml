@@ -1,6 +1,7 @@
 <project name="NeoCommunity" basedir="." default="build">
 	
 	<property name="buildNumber" value="1.4.DEVELOPER"/>
+	<property environment="env" />
 	
 	<target name="build" description="Build the Neo4j community edition" depends="clean,compile"/>
 
@@ -18,29 +19,44 @@
 		</delete> -->
 	</target>
 	
-	<target name="compile" description="Compiles all of the individual community components">
-		<compileProject projectName="kernel"/>
-		<compileProject projectName="jmx"/>		
-		<compileProject projectName="udc"/>
-		<compileProject projectName="lucene-index"/>
-		<compileProject projectName="graph-algo"/>
-		<compileProject projectName="graph-matching"/>
-		<compileProject projectName="TBD"/>
-		<compileProject projectName="neo4j"/>
-		<compileProject projectName="neo4j-community"/>
-		<compileProject projectName="shell"/>
-		<compileProject projectName="embedded-examples"/>
-		<compileProject projectName="server-api"/>
-		<compileProject projectName="server"/>
-		<compileProject projectName="server-examples"/>	
+	<target name="compile" description="Compiles all of the individual community components" depends="generateKernelVersion">
+		<compileProject projectName="kernel" pom="pom.tom"/>
+		<!-- <compileProject projectName="jmx" pom="pom.xml"/>		
+		<compileProject projectName="udc" pom="pom.xml"/>
+		<compileProject projectName="lucene-index" pom="pom.xml"/>
+		<compileProject projectName="graph-algo" pom="pom.xml"/>
+		<compileProject projectName="graph-matching" pom="pom.xml"/>
+		<compileProject projectName="TBD" pom="pom.xml"/>
+		<compileProject projectName="neo4j" pom="pom.xml"/>
+		<compileProject projectName="neo4j-community" pom="pom.xml"/>
+		<compileProject projectName="shell" pom="pom.xml"/>
+		<compileProject projectName="embedded-examples" pom="pom.xml"/>
+		<compileProject projectName="server-api" pom="pom.xml"/>
+		<compileProject projectName="server" pom="pom.xml"/>
+		<compileProject projectName="server-examples" pom="pom.xml"/>	 -->
+	</target>
+	
+	<target name="generateKernelVersion" description="Generate versioned code">
+		<mkdir dir="kernel/target/generated-sources/version/org/neo4j/kernel/impl/" />
+		<exec executable="git" outputproperty="git.describe" errorproperty="git.describe.error" failifexecutionfails="true" failonerror="true" dir="kernel">
+			<arg value="describe" />
+			<arg value="--dirty" />
+		</exec>
+		<property name="git.describe" value="Version Unknown" />
+		<copy file="kernel/ComponentVersion.tmpl" tofile="kernel/target/generated-sources/version/org/neo4j/kernel/impl/ComponentVersion.java"/>
+		<replace file="kernel/target/generated-sources/version/org/neo4j/kernel/impl/ComponentVersion.java"
+			 		token="@BUILDNUMBER@" value="${buildNumber}"/>
+		<replace file="kernel/target/generated-sources/version/org/neo4j/kernel/impl/ComponentVersion.java"
+			 		token="@GITDESCRIBE@" value="${git.describe}"/>	
 	</target>
 	
 	<macrodef name="compileProject" description="Maven installs a single project"> 
 		<attribute name="projectName"/>
+		<attribute name="pom"/>
 		<sequential>
 			<echo message="Compiling @{projectName}"/>
 			<!-- Substitute version number into a new pom -->
-			<copy file="@{projectName}/pom.xml" tofile="@{projectName}/pom-with-build-number.xml" overwrite="true"/>
+			<copy file="@{projectName}/@{pom}" tofile="@{projectName}/pom-with-build-number.xml" overwrite="true"/>
 			<replace file="@{projectName}/pom-with-build-number.xml" token="1.4-SNAPSHOT" value="${buildNumber}"/>
 			<!-- Maven's ant task doesn't compile. Have to use exec -->
 			<exec executable="mvn" dir="@{projectName}" failonerror="true">
