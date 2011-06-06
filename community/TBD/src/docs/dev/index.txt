@@ -1,5 +1,5 @@
 [[query-lang]]
-Sunshine Query Language
+Query Language
 =======================
 
 The query language is comprised of four distinct parts.
