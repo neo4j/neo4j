@@ -78,6 +78,24 @@ public class GremlinPluginFunctionalTest implements GraphHolder
     }
 
     /**
+     * Import a graph form a GraphML file
+     * can be achieved through the Gremlin GraphMLReader.
+     * 
+     */
+    @Test
+    @Title("Load a sample graph graph from a GraphML file URL")
+    @Documented
+    public void testGremlinImportGraph() throws UnsupportedEncodingException
+    {
+        String response = gen.get()
+        .expectedStatus( Status.OK.getStatusCode() )
+        .payload( "{\"script\":\"GraphMLReader.inputGraph(g, new URL('https://github.com/tinkerpop/gremlin/raw/master/data/graph-example-1.xml').openStream());g.V\"}" )
+        .payloadType( MediaType.APPLICATION_JSON_TYPE )
+        .post( ENDPOINT )
+        .entity();
+        assertTrue(response.contains( "peter" ));
+    }
+    /**
      * To send a Script JSON encoded, adjust the payload Content Headers
      */
     @Test
