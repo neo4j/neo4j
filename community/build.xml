@@ -37,12 +37,12 @@
 	</target>
 	
 	<target name="generateKernelVersion" description="Generate versioned code">
-		<mkdir dir="kernel/target/generated-sources/version/org/neo4j/kernel/impl/" />
-		<exec executable="git" outputproperty="git.describe" errorproperty="git.describe.error" failifexecutionfails="true" failonerror="true" dir="kernel">
+		<mkdir dir="kernel/target/generated-sources/version/org/neo4j/kernel/impl" />
+		<exec executable="git" outputproperty="git.describe" errorproperty="git.describe.error" failifexecutionfails="false" failonerror="false" dir="kernel">
 			<arg value="describe" />
 			<arg value="--dirty" />
 		</exec>
-		<property name="git.describe" value="Version Unknown" />
+		<property name="git.describe" value="${gitDescribe}" />
 		<copy file="kernel/ComponentVersion.tmpl" tofile="kernel/target/generated-sources/version/org/neo4j/kernel/impl/ComponentVersion.java"/>
 		<replace file="kernel/target/generated-sources/version/org/neo4j/kernel/impl/ComponentVersion.java"
 			 		token="@BUILDNUMBER@" value="${buildNumber}"/>
