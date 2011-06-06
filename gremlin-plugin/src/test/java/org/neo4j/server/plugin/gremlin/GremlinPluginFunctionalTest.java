@@ -80,7 +80,9 @@ public class GremlinPluginFunctionalTest implements GraphHolder
     /**
      * Import a graph form a GraphML file
      * can be achieved through the Gremlin GraphMLReader.
-     * 
+     * The following script imports 2 nodes into Neo4j
+     * and returns all vertices in the graph (the 2 new ones and the
+     * reference node 0)
      */
     @Test
     @Title("Load a sample graph graph from a GraphML file URL")
@@ -89,11 +91,11 @@ public class GremlinPluginFunctionalTest implements GraphHolder
     {
         String response = gen.get()
         .expectedStatus( Status.OK.getStatusCode() )
-        .payload( "{\"script\":\"GraphMLReader.inputGraph(g, new URL('https://github.com/tinkerpop/gremlin/raw/master/data/graph-example-1.xml').openStream());g.V\"}" )
+        .payload( "{\"script\":\"GraphMLReader.inputGraph(g, new URL('https://raw.github.com/neo4j/neo4j-gremlin-plugin/master/src/data/graphml1.xml').openStream());g.V\"}" )
         .payloadType( MediaType.APPLICATION_JSON_TYPE )
         .post( ENDPOINT )
         .entity();
-        assertTrue(response.contains( "peter" ));
+        assertTrue(response.contains( "you" ));
     }
     /**
      * To send a Script JSON encoded, adjust the payload Content Headers
