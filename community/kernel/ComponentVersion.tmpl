@@ -1,0 +1,19 @@
+package org.neo4j.kernel.impl;
+
+import org.neo4j.kernel.Version;
+import org.neo4j.helpers.Service;
+
+@Service.Implementation(Version.class)
+public class ComponentVersion extends Version
+{
+public ComponentVersion()
+{
+super("neo4j-kernel", "@BUILDNUMBER@");
+}
+
+@Override
+public String getRevision()
+{
+return "@GITDESCRIBE@";
+}
+}
