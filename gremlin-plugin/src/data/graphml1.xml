@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns
+        http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
+    <key id="weight" for="edge" attr.name="weight" attr.type="float"/>
+    <key id="name" for="node" attr.name="name" attr.type="string"/>
+    <key id="age" for="node" attr.name="age" attr.type="int"/>
+    <key id="lang" for="node" attr.name="lang" attr.type="string"/>
+    <graph id="G" edgedefault="directed">
+        <node id="1">
+            <data key="name">I</data>
+        </node>
+        <node id="2">
+            <data key="name">you</data>
+        </node>
+        <edge id="3" source="1" target="2" label="know">
+            <data key="weight">0.5</data>
+        </edge>
+    </graph>
+</graphml>
