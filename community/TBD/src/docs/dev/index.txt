@@ -1,6 +1,6 @@
 [[query-lang]]
 Query Language
-=======================
+==============
 
 The query language is comprised of four distinct parts.
 
