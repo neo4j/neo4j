@@ -28,7 +28,7 @@ include::{importdir}/neo4j-kernel-docs-jar/dev/transactions.txt[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-sunshine-docs-jar/dev/index.txt[]
+include::{importdir}/neo4j-tbd-docs-jar/dev/index.txt[]
 
 :leveloffset: 1
 
