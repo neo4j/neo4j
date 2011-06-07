@@ -20,14 +20,15 @@
 package org.neo4j.tbd
 
 import commands.Query
-import org.neo4j.kernel.{ImpermanentGraphDatabase, AbstractGraphDatabase}
-import org.junit.{After, Before}
-import org.neo4j.graphdb.{DynamicRelationshipType, Relationship, Node}
+import org.neo4j.kernel.AbstractGraphDatabase
+import org.neo4j.test.ImpermanentGraphDatabase
+import org.junit.{ After, Before }
+import org.neo4j.graphdb.{ DynamicRelationshipType, Relationship, Node }
 
 /**
  * Created by Andres Taylor
  * Date: 5/24/11
- * Time: 16:56 
+ * Time: 16:56
  */
 
 class ExecutionEngineTestBase {
@@ -35,13 +36,15 @@ class ExecutionEngineTestBase {
   var engine: ExecutionEngine = null
   var refNode: Node = null
 
-  @Before def init() {
+  @Before
+  def init() {
     graph = new ImpermanentGraphDatabase()
     engine = new ExecutionEngine(graph)
     refNode = graph.getReferenceNode
   }
 
-  @After def cleanUp() {
+  @After
+  def cleanUp() {
     graph.shutdown()
   }
 
@@ -66,7 +69,6 @@ class ExecutionEngineTestBase {
 
     result
   }
-
 
   def relate(n1: Node, n2: Node, relType: String, props: Map[String, Any] = Map()): Relationship = {
     inTx(() => {

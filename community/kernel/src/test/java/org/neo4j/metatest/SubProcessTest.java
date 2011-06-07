@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test;
+package org.neo4j.metatest;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
@@ -32,7 +32,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Ignore;
 import org.junit.Test;
-import org.neo4j.test.SubProcess.DebugInterface;
+import org.neo4j.test.subprocess.DebugInterface;
+import org.neo4j.test.subprocess.SubProcess;
+import org.neo4j.test.subprocess.BreakPoint;
 
 public class SubProcessTest
 {
@@ -79,7 +81,7 @@ public class SubProcessTest
     {
         final AtomicBoolean called = new AtomicBoolean( false );
         Callable<String> proc = new TestingProcess().start( MESSAGE,//
-                new SubProcessBreakPoint( TestingProcess.class, "call" )
+                new BreakPoint( TestingProcess.class, "call" )
                 {
                     @Override
                     protected void callback( DebugInterface debug )

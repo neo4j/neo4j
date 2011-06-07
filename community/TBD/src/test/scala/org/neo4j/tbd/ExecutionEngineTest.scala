@@ -25,9 +25,11 @@ import java.lang.String
 import org.junit.{Ignore, Test}
 import org.neo4j.graphdb.{Relationship, Direction, Node}
 
-class ExecutionEngineTest extends ExecutionEngineTestBase {
+class ExecutionEngineTest extends ExecutionEngineTestBase
+{
 
-  @Test def shouldGetReferenceNode() {
+  @Test def shouldGetReferenceNode()
+  {
     val query = Query(
       Return(EntityOutput("node")),
       Start(NodeById("node", 0)))
@@ -36,7 +38,8 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     assertEquals(List(refNode), result.columnAs[Node]("node").toList)
   }
 
-  @Test def shouldFilterOnGreaterThan() {
+  @Test def shouldFilterOnGreaterThan()
+  {
     val query = Query(
       Return(EntityOutput("node")),
       Start(NodeById("node", 0)),
@@ -47,9 +50,10 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     assertEquals(List(refNode), result.columnAs[Node]("node").toList)
   }
 
-  @Test def shouldFilterOnRegexp() {
-    val n1 = createNode(Map("name"->"Andres"))
-    val n2 = createNode(Map("name"->"Jim"))
+  @Test def shouldFilterOnRegexp()
+  {
+    val n1 = createNode(Map("name" -> "Andres"))
+    val n2 = createNode(Map("name" -> "Jim"))
     val query = Query(
       Return(EntityOutput("node")),
       Start(NodeById("node", n1.getId, n2.getId)),
@@ -60,7 +64,8 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     assertEquals(List(n1), result.columnAs[Node]("node").toList)
   }
 
-  @Test def shouldGetOtherNode() {
+  @Test def shouldGetOtherNode()
+  {
     val node: Node = createNode()
 
     val query = Query(
@@ -72,7 +77,8 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
   }
 
   @Ignore("graph-matching doesn't support using relationships as start points. revisit when it does.")
-  @Test def shouldGetRelationship() {
+  @Test def shouldGetRelationship()
+  {
     val node: Node = createNode()
     val rel: Relationship = relate(refNode, node, "yo")
 
@@ -84,7 +90,8 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     assertEquals(List(rel), result.columnAs[Relationship]("rel").toList)
   }
 
-  @Test def shouldGetTwoNodes() {
+  @Test def shouldGetTwoNodes()
+  {
     val node: Node = createNode()
 
     val query = Query(
@@ -95,7 +102,8 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     assertEquals(List(refNode, node), result.columnAs[Node]("node").toList)
   }
 
-  @Test def shouldGetNodeProperty() {
+  @Test def shouldGetNodeProperty()
+  {
     val name = "Andres"
     val node: Node = createNode(Map("name" -> name))
 
@@ -108,7 +116,8 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     assertEquals(List(name), list)
   }
 
-  @Test def shouldFilterOutBasedOnNodePropName() {
+  @Test def shouldFilterOutBasedOnNodePropName()
+  {
     val name = "Andres"
     val start: Node = createNode()
     val a1: Node = createNode(Map("name" -> "Someone Else"))
@@ -126,7 +135,8 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     assertEquals(List(a2), result.columnAs[Node]("a").toList)
   }
 
-  @Test def shouldFilterBasedOnRelPropName() {
+  @Test def shouldFilterBasedOnRelPropName()
+  {
     val start: Node = createNode()
     val a: Node = createNode()
     val b: Node = createNode()
@@ -144,7 +154,8 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
   }
 
   @Ignore("Maybe later")
-  @Test def shouldOutputTheCartesianProductOfTwoNodes() {
+  @Test def shouldOutputTheCartesianProductOfTwoNodes()
+  {
     val n1: Node = createNode()
     val n2: Node = createNode()
 
@@ -159,7 +170,8 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     assertEquals(List(Map("n1" -> n1, "n2" -> n2)), result.toList)
   }
 
-  @Test def shouldGetNeighbours() {
+  @Test def shouldGetNeighbours()
+  {
     val n1: Node = createNode()
     val n2: Node = createNode()
     relate(n1, n2, "KNOWS")
@@ -174,7 +186,8 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     assertEquals(List(Map("n1" -> n1, "n2" -> n2)), result.toList)
   }
 
-  @Test def shouldGetTwoRelatedNodes() {
+  @Test def shouldGetTwoRelatedNodes()
+  {
     val n1: Node = createNode()
     val n2: Node = createNode()
     val n3: Node = createNode()
@@ -191,7 +204,8 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     assertEquals(List(Map("x" -> n2), Map("x" -> n3)), result.toList)
   }
 
-  @Test def toStringTest() {
+  @Test def toStringTest()
+  {
     val n1: Node = createNode()
     val n2: Node = createNode()
     val n3: Node = createNode()
@@ -208,7 +222,8 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     println(result)
   }
 
-  @Test def shouldGetRelatedToRelatedTo() {
+  @Test def shouldGetRelatedToRelatedTo()
+  {
     val n1: Node = createNode()
     val n2: Node = createNode()
     val n3: Node = createNode()
@@ -227,7 +242,8 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     assertEquals(List(Map("b" -> n3)), result.toList)
   }
 
-  @Test def shouldFindNodesByIndex() {
+  @Test def shouldFindNodesByIndex()
+  {
     val n = createNode()
     val idxName = "idxName"
     val key = "key"
@@ -243,7 +259,8 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     assertEquals(List(Map("n" -> n)), result.toList)
   }
 
-  @Test def shouldHandleOrFilters() {
+  @Test def shouldHandleOrFilters()
+  {
     val n1 = createNode(Map("name" -> "boy"))
     val n2 = createNode(Map("name" -> "girl"))
 
@@ -260,7 +277,8 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
   }
 
 
-  @Test def shouldHandleNestedAndOrFilters() {
+  @Test def shouldHandleNestedAndOrFilters()
+  {
     val n1 = createNode(Map("animal" -> "monkey", "food" -> "banana"))
     val n2 = createNode(Map("animal" -> "cow", "food" -> "grass"))
     val n3 = createNode(Map("animal" -> "cow", "food" -> "banana"))
@@ -281,7 +299,8 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     assertEquals(List(n1, n2), result.columnAs[Node]("n").toList)
   }
 
-  @Test def shouldBeAbleToOutputNullForMissingProperties() {
+  @Test def shouldBeAbleToOutputNullForMissingProperties()
+  {
     val query = Query(
       Return(NullablePropertyOutput("node", "name")),
       Start(NodeById("node", 0)))
@@ -290,7 +309,8 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     assertEquals(List(Map("node.name" -> null)), result.toList)
   }
 
-  @Test def shouldHandleComparisonBetweenNodeProperties() {
+  @Test def shouldHandleComparisonBetweenNodeProperties()
+  {
     //start n = node(1,4) match (n) --> (x) where n.animal = x.animal return n,x
     val n1 = createNode(Map("animal" -> "monkey"))
     val n2 = createNode(Map("animal" -> "cow"))
@@ -315,8 +335,29 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
       Map("n" -> n4, "x" -> n2)), result)
   }
 
+  @Test def comparingNumbersShouldWorkNicely()
+  {
+    //start n=... where n.x < 100 return n
+
+    val n1 = createNode(Map("x" -> 50))
+    val n2 = createNode(Map("x" -> 50l))
+    val n3 = createNode(Map("x" -> 50f))
+    val n4 = createNode(Map("x" -> 50d))
+    val n5 = createNode(Map("x"-> 50.toByte))
+
+    val query = Query(
+      Return(EntityOutput("n")),
+      Start(NodeById("n", n1.getId, n2.getId, n3.getId, n4.getId, n5.getId)),
+      LessThan(PropertyValue("n", "x"), Literal(100)))
+
+    val result = execute(query)
+
+    assertEquals(List(n1,n2,n3,n4,n5), result.columnAs[Node]("n").toList)
+  }
+
   @Ignore("No implemented yet")
-  @Test def shouldBeAbleToCount() {
+  @Test def shouldBeAbleToCount()
+  {
     val a = createNode() //start a = node(0) match (a) --> (b) return a, count(*)
     val b = createNode()
     relate(refNode, a, "A")

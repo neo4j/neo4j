@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test;
+package org.neo4j.metatest;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -39,6 +39,10 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.test.GraphDescription;
+import org.neo4j.test.GraphHolder;
+import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestData;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphDescription.NODE;
 import org.neo4j.test.GraphDescription.PROP;

@@ -43,7 +43,7 @@ import static org.hamcrest.text.StringContains.containsString;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.neo4j.kernel.ImpermanentGraphDatabase;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 /**
 * Created by Andres Taylor

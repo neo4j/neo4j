@@ -17,22 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test;
+package org.neo4j.test.subprocess;
 
-import static org.junit.Assert.assertNotNull;
-
-import org.junit.Rule;
-import org.junit.Test;
-
-public class TargetDirectoryTest
+public interface DebuggerDeadlockCallback
 {
-    private static final TargetDirectory target = TargetDirectory.forTest( TargetDirectoryTest.class );
-
-    public @Rule TargetDirectory.TestDirectory dir = target.testDirectory();
-
-    @Test
-    public void hasDir() throws Exception
-    {
-        assertNotNull( dir );
-    }
+    void deadlock( DebuggedThread thread );
 }

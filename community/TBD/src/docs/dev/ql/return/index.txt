@@ -7,6 +7,8 @@ interested in. It can be nodes, relationships, or properties on these.
 
 include::return-nodes.txt[]
 
+include::return-relationships.txt[]
+
 include::return-property.txt[]
 
 include::optional-nodes.txt[]

@@ -126,29 +126,31 @@ class ExecutionEngine(val graph: GraphDatabaseService)
       {
         pattern match
         {
-          case RelatedTo(left, right, relName, relationType, direction) =>
-          {
-            val leftPattern = patternKeeper.getOrCreateNode(left)
-            val rightPattern = patternKeeper.getOrCreateNode(right)
-            val rel = relationType match
-            {
-              case Some(relType) => leftPattern.createRelationshipTo(rightPattern, DynamicRelationshipType.withName(relType), direction)
-              case None => leftPattern.createRelationshipTo(rightPattern, direction)
-            }
-
-            relName match
-            {
-              case None =>
-              case Some(name) =>
-              {
-                patternKeeper.addRelationship(name, rel)
-                rel.setLabel(name)
-              }
-            }
-          }
+          case RelatedTo(left, right, relName, relationType, direction) => createRelationshipPattern(patternKeeper, left, right, relationType, direction, relName)
         }
       })
       case None =>
+    }
+  }
+
+  def createRelationshipPattern(patternKeeper: PatternKeeper, left: String, right: String, relationType: Option[String], direction: Direction, relName: Option[String])
+  {
+    val leftPattern = patternKeeper.getOrCreateNode(left)
+    val rightPattern = patternKeeper.getOrCreateNode(right)
+    val rel = relationType match
+    {
+      case Some(relType) => leftPattern.createRelationshipTo(rightPattern, DynamicRelationshipType.withName(relType), direction)
+      case None => leftPattern.createRelationshipTo(rightPattern, direction)
+    }
+
+    relName match
+    {
+      case None =>
+      case Some(name) =>
+      {
+        patternKeeper.addRelationship(name, rel)
+        rel.setLabel(name)
+      }
     }
   }
 
@@ -192,9 +194,11 @@ class ExecutionEngine(val graph: GraphDatabaseService)
   {
     val node = m.getOrElse(column, throw new NotFoundException).asInstanceOf[PropertyContainer]
 
-    val property = try {
+    val property = try
+    {
       node.getProperty(propName)
-    } catch {
+    } catch
+    {
       case x: NotFoundException => null
     }
 

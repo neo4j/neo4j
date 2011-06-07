@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.metatest;
 
 import static junit.framework.Assert.assertEquals;
 
@@ -27,6 +27,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class ImpermanentGraphDatabaseTests
 {

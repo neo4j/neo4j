@@ -30,10 +30,9 @@ import org.neo4j.index.impl.lucene.LuceneDataSource;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.impl.transaction.xaframework.XaContainer;
 import org.neo4j.test.AbstractSubProcessTestBase;
-import org.neo4j.test.SubProcess;
-import org.neo4j.test.SubProcess.DebugInterface;
-import org.neo4j.test.SubProcess.DebuggedThread;
-import org.neo4j.test.SubProcessBreakPoint;
+import org.neo4j.test.subprocess.DebugInterface;
+import org.neo4j.test.subprocess.DebuggedThread;
+import org.neo4j.test.subprocess.BreakPoint;
 
 public class ShutdownRaceTest extends AbstractSubProcessTestBase
 {
@@ -50,10 +49,10 @@ public class ShutdownRaceTest extends AbstractSubProcessTestBase
     }
 
     @Override
-    protected SubProcessBreakPoint[] breakpoints( int id )
+    protected BreakPoint[] breakpoints( int id )
     {
         final AtomicReference<DebuggedThread> shutdownThread = new AtomicReference<DebuggedThread>(), indexThread = new AtomicReference<DebuggedThread>();
-        return new SubProcessBreakPoint[] { new SubProcessBreakPoint( XaContainer.class, "close" )
+        return new BreakPoint[] { new BreakPoint( XaContainer.class, "close" )
         {
             @Override
             protected void callback( DebugInterface debug )
@@ -67,12 +66,12 @@ public class ShutdownRaceTest extends AbstractSubProcessTestBase
             }
 
             @Override
-            public void deadlock( SubProcess.DebuggedThread thread )
+            public void deadlock( DebuggedThread thread )
             {
                 shutdownThread.set( null );
                 thread.resume();
             }
-        }.enable(), new SubProcessBreakPoint( BreakTask.class, "breakpoint1" )
+        }.enable(), new BreakPoint( BreakTask.class, "breakpoint1" )
         {
             @Override
             protected void callback( DebugInterface debug )
@@ -80,7 +79,7 @@ public class ShutdownRaceTest extends AbstractSubProcessTestBase
                 indexThread.set( debug.thread().suspend( this ) );
                 restart.countDown();
             }
-        }.enable(), new SubProcessBreakPoint( BreakTask.class, "breakpoint2" )
+        }.enable(), new BreakPoint( BreakTask.class, "breakpoint2" )
         {
             @Override
             protected void callback( DebugInterface debug )

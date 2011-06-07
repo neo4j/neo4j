@@ -27,6 +27,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.test.subprocess.SubProcess;
+import org.neo4j.test.subprocess.BreakPoint;
 
 public class AbstractSubProcessTestBase
 {
@@ -63,7 +65,7 @@ public class AbstractSubProcessTestBase
     /**
      * @param id the id of the instance to get breakpoints for
      */
-    protected SubProcessBreakPoint[] breakpoints( int id )
+    protected BreakPoint[] breakpoints( int id )
     {
         return null;
     }

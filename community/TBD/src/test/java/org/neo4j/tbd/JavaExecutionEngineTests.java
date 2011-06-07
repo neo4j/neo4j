@@ -23,11 +23,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.ImpermanentGraphDatabase;
 import org.neo4j.tbd.commands.Query;
 import org.neo4j.tbd.javacompat.ExecutionEngine;
 import org.neo4j.tbd.javacompat.Projection;
 import org.neo4j.tbd.javacompat.SunshineParser;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 import java.util.Collection;
 
