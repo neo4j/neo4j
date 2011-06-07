@@ -37,9 +37,20 @@ class ReturnTest extends DocumentingTestBase
     testQuery(
       title = "Return nodes",
       text = "To return a node, list it in the return statemenet.",
-      queryText = """start n=(%A%) return n""",
+      queryText = """start n=(%B%) return n""",
       returns = """The node.""",
-      (p) => assertEquals(List(Map("n" -> node("A"))), p.toList)
+      (p) => assertEquals(List(Map("n" -> node("B"))), p.toList)
+    )
+  }
+
+  @Test def returnRelationship()
+  {
+    testQuery(
+      title = "Return relationships",
+      text = "To return a relationship, just include it in the return list.",
+      queryText = """start n=(%A%) match (n)-[r]->(c) return r""",
+      returns = """The relationship.""",
+      (p) => assertEquals(1, p.size)
     )
   }
 
