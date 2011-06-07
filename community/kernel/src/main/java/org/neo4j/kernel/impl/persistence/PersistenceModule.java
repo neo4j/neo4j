@@ -21,13 +21,14 @@ package org.neo4j.kernel.impl.persistence;
 
 import javax.transaction.TransactionManager;
 
+import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 
 /**
- * 
+ *
  * This class represents the persistence module. It receives lifecycle events
  * from the module framework.
- * 
+ *
  */
 public class PersistenceModule
 {
@@ -44,12 +45,12 @@ public class PersistenceModule
         // Do nothing
     }
 
-    public synchronized void start( TransactionManager transactionManager, 
+    public synchronized void start( TransactionManager transactionManager,
         PersistenceSource persistenceSource,
-        TxEventSyncHookFactory syncHookFactory )
+            TxEventSyncHookFactory syncHookFactory, LockReleaser lockReleaser )
     {
-        this.persistenceManager = new PersistenceManager( transactionManager, 
-            persistenceSource, syncHookFactory );
+        this.persistenceManager = new PersistenceManager( transactionManager,
+                persistenceSource, syncHookFactory, lockReleaser );
     }
 
     public synchronized void reload()

@@ -24,6 +24,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.transaction.RollbackException;
+import javax.transaction.Status;
 import javax.transaction.Synchronization;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
@@ -33,6 +34,7 @@ import javax.transaction.xa.XAResource;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
@@ -40,7 +42,6 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaConnection;
 import org.neo4j.kernel.impl.nioneo.xa.NioNeoDbPersistenceSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -51,23 +52,26 @@ public class PersistenceManager
 {
     private static Logger log = Logger.getLogger( PersistenceManager.class
         .getName() );
-    
+
     private final PersistenceSource persistenceSource;
     private final TransactionManager transactionManager;
-    
-    private final ArrayMap<Transaction,NeoStoreTransaction> txConnectionMap = 
+    private final LockReleaser lockReleaser;
+
+    private final ArrayMap<Transaction,NeoStoreTransaction> txConnectionMap =
         new ArrayMap<Transaction,NeoStoreTransaction>( 5, true, true );
 
     private final TxEventSyncHookFactory syncHookFactory;
 
-    public PersistenceManager( TransactionManager transactionManager, 
-        PersistenceSource persistenceSource, TxEventSyncHookFactory syncHookFactory )
+    public PersistenceManager( TransactionManager transactionManager,
+            PersistenceSource persistenceSource,
+            TxEventSyncHookFactory syncHookFactory, LockReleaser lockReleaser )
     {
         this.transactionManager = transactionManager;
         this.persistenceSource = persistenceSource;
         this.syncHookFactory = syncHookFactory;
+        this.lockReleaser = lockReleaser;
     }
-    
+
     public PersistenceSource getPersistenceSource()
     {
         return persistenceSource;
@@ -97,13 +101,13 @@ public class PersistenceManager
     {
         return getReadOnlyResourceIfPossible().getRelationshipChainPosition( nodeId );
     }
-    
+
     public Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, Long> getMoreRelationships(
             long nodeId, long position )
     {
         return getReadOnlyResource().getMoreRelationships( nodeId, position );
     }
-    
+
     public ArrayMap<Integer,PropertyData> loadNodeProperties( long nodeId,
             boolean light )
     {
@@ -186,10 +190,10 @@ public class PersistenceManager
     {
         getResource( false ).createRelationshipType( id, name );
     }
-    
+
     private NeoStoreTransaction getReadOnlyResource()
     {
-        return ((NioNeoDbPersistenceSource) 
+        return ((NioNeoDbPersistenceSource)
                 persistenceSource ).createReadOnlyResourceConnection();
     }
 
@@ -198,22 +202,22 @@ public class PersistenceManager
         Transaction tx = this.getCurrentTransaction();
 //        if ( tx == null )
 //        {
-//            return ((NioNeoDbPersistenceSource) 
+//            return ((NioNeoDbPersistenceSource)
 //                    persistenceSource ).createReadOnlyResourceConnection();
 //        }
-        
+
         NeoStoreTransaction con = txConnectionMap.get( tx );
         if ( con == null )
         {
             // con is put in map on write operation, see getResoure()
-            // createReadOnlyResourceConnection just return a single final 
+            // createReadOnlyResourceConnection just return a single final
             // resource and does not create a new object
-            return ((NioNeoDbPersistenceSource) 
+            return ((NioNeoDbPersistenceSource)
                 persistenceSource ).createReadOnlyResourceConnection();
         }
         return con;
     }
-    
+
     private NeoStoreTransaction getResource( boolean registerEventHooks )
     {
         NeoStoreTransaction con = null;
@@ -228,8 +232,7 @@ public class PersistenceManager
         {
             try
             {
-                XaConnection xaConnection = (NeoStoreXaConnection)
-                        persistenceSource.getXaDataSource().getXaConnection();
+                XaConnection xaConnection = persistenceSource.getXaDataSource().getXaConnection();
                 XAResource xaResource = xaConnection.getXaResource();
                 if ( !tx.enlistResource( xaResource ) )
                 {
@@ -237,7 +240,7 @@ public class PersistenceManager
                         "Unable to enlist '" + xaResource + "' in " + "transaction" );
                 }
                 con = persistenceSource.createTransaction( xaConnection );
-                
+
                 tx.registerSynchronization( new TxCommitHook( tx ) );
                 if ( registerEventHooks ) registerTransactionEventHookIfNeeded();
                 txConnectionMap.put( tx, con );
@@ -255,7 +258,7 @@ public class PersistenceManager
         }
         return con;
     }
-    
+
     private void registerTransactionEventHookIfNeeded()
             throws SystemException, RollbackException
     {
@@ -266,7 +269,7 @@ public class PersistenceManager
                     hook );
         }
     }
-    
+
     private Transaction getCurrentTransaction()
         throws NotInTransactionException
     {
@@ -295,10 +298,18 @@ public class PersistenceManager
             try
             {
                 releaseConnections( tx );
+                if ( param == Status.STATUS_COMMITTED )
+                {
+                    lockReleaser.commit();
+                }
+                else
+                {
+                    lockReleaser.rollback();
+                }
             }
             catch ( Throwable t )
             {
-                log.log( Level.SEVERE, 
+                log.log( Level.SEVERE,
                     "Unable to release connections for " + tx, t );
             }
         }
@@ -311,7 +322,7 @@ public class PersistenceManager
             }
             catch ( Throwable t )
             {
-                log.log( Level.SEVERE, 
+                log.log( Level.SEVERE,
                     "Unable to delist resources for " + tx, t );
             }
         }
@@ -324,7 +335,7 @@ public class PersistenceManager
             }
             catch ( Throwable t )
             {
-                log.log( Level.SEVERE, 
+                log.log( Level.SEVERE,
                     "Error releasing resources for " + tx, t );
             }
         }
@@ -347,12 +358,12 @@ public class PersistenceManager
             catch ( SystemException e )
             {
                 throw new TransactionFailureException(
-                    "Failed to delist resource '" + con + 
+                    "Failed to delist resource '" + con +
                     "' from current transaction.", e );
             }
         }
     }
-    
+
     void releaseResourceConnectionsForTransaction( Transaction tx )
         throws NotInTransactionException
     {
