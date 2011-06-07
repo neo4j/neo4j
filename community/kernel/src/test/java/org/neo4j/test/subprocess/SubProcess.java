@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test;
+package org.neo4j.test.subprocess;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -112,7 +112,7 @@ public abstract class SubProcess<T, P> implements Serializable
         this( null );
     }
 
-    public T start( P parameter, SubProcessBreakPoint... breakpoints )
+    public T start( P parameter, BreakPoint... breakpoints )
     {
         DebuggerConnector debugger = null;
         if ( breakpoints != null && breakpoints.length != 0 ) debugger = new DebuggerConnector( breakpoints );
@@ -197,17 +197,17 @@ public abstract class SubProcess<T, P> implements Serializable
             }
             connector = first;
         }
-        private final Map<String, List<SubProcessBreakPoint>> breakpoints = new HashMap<String, List<SubProcessBreakPoint>>();
+        private final Map<String, List<BreakPoint>> breakpoints = new HashMap<String, List<BreakPoint>>();
         private final Map<String, ? extends com.sun.jdi.connect.Connector.Argument> args;
 
-        DebuggerConnector( SubProcessBreakPoint[] breakpoints )
+        DebuggerConnector( BreakPoint[] breakpoints )
         {
             this.args = connector.defaultArguments();
-            for ( SubProcessBreakPoint breakpoint : breakpoints )
+            for ( BreakPoint breakpoint : breakpoints )
             {
-                List<SubProcessBreakPoint> list = this.breakpoints.get( breakpoint.type );
+                List<BreakPoint> list = this.breakpoints.get( breakpoint.type );
                 if ( list == null )
-                    this.breakpoints.put( breakpoint.type, list = new ArrayList<SubProcessBreakPoint>() );
+                    this.breakpoints.put( breakpoint.type, list = new ArrayList<BreakPoint>() );
                 list.add( breakpoint );
             }
         }
@@ -238,13 +238,13 @@ public abstract class SubProcess<T, P> implements Serializable
                 throw new RuntimeException( "Debugger connection failure", e );
             }
             com.sun.jdi.request.EventRequestManager erm = vm.eventRequestManager();
-            TYPES: for ( Map.Entry<String, List<SubProcessBreakPoint>> entry : breakpoints.entrySet() )
+            TYPES: for ( Map.Entry<String, List<BreakPoint>> entry : breakpoints.entrySet() )
             {
                 for ( com.sun.jdi.ReferenceType type : vm.classesByName( entry.getKey() ) )
                 {
                     if ( type.name().equals( entry.getKey() ) )
                     {
-                        for ( SubProcessBreakPoint breakpoint : entry.getValue() )
+                        for ( BreakPoint breakpoint : entry.getValue() )
                         {
                             breakpoint.setup( type );
                         }
@@ -266,13 +266,13 @@ public abstract class SubProcess<T, P> implements Serializable
     }
 
     @SuppressWarnings( "restriction" )
-    private static class DebugDispatch implements Runnable
+    static class DebugDispatch implements Runnable
     {
         volatile Handler handler;
         private final com.sun.jdi.event.EventQueue queue;
-        private final Map<String, List<SubProcessBreakPoint>> breakpoints;
-        private final Map<com.sun.jdi.ThreadReference, DeadlockCallback> suspended = new HashMap<com.sun.jdi.ThreadReference, DeadlockCallback>();
-        private final DeadlockCallback defaultCallback = new DeadlockCallback()
+        private final Map<String, List<BreakPoint>> breakpoints;
+        private final Map<com.sun.jdi.ThreadReference, DebuggerDeadlockCallback> suspended = new HashMap<com.sun.jdi.ThreadReference, DebuggerDeadlockCallback>();
+        private final DebuggerDeadlockCallback defaultCallback = new DebuggerDeadlockCallback()
         {
             @Override
             public void deadlock( DebuggedThread thread )
@@ -281,7 +281,7 @@ public abstract class SubProcess<T, P> implements Serializable
             }
         };
 
-        DebugDispatch( com.sun.jdi.event.EventQueue queue, Map<String, List<SubProcessBreakPoint>> breakpoints )
+        DebugDispatch( com.sun.jdi.event.EventQueue queue, Map<String, List<BreakPoint>> breakpoints )
         {
             this.queue = queue;
             this.breakpoints = breakpoints;
@@ -320,7 +320,7 @@ public abstract class SubProcess<T, P> implements Serializable
                             }
                             if ( thread != null && thread.isSuspended() )
                             {
-                                DeadlockCallback callback = suspended.get( thread );
+                                DebuggerDeadlockCallback callback = suspended.get( thread );
                                 try
                                 {
                                     if ( callback != null ) callback.deadlock( new DebuggedThread( this, thread ) );
@@ -356,9 +356,9 @@ public abstract class SubProcess<T, P> implements Serializable
 
         private void setup( com.sun.jdi.ReferenceType type )
         {
-            List<SubProcessBreakPoint> list = breakpoints.get( type.name() );
+            List<BreakPoint> list = breakpoints.get( type.name() );
             if ( list == null ) return;
-            for ( SubProcessBreakPoint breakpoint : list )
+            for ( BreakPoint breakpoint : list )
             {
                 breakpoint.setup( type );
             }
@@ -366,10 +366,10 @@ public abstract class SubProcess<T, P> implements Serializable
 
         private void callback( com.sun.jdi.event.LocatableEvent event )
         {
-            List<SubProcessBreakPoint> list = breakpoints.get( event.location().declaringType().name() );
+            List<BreakPoint> list = breakpoints.get( event.location().declaringType().name() );
             if ( list == null ) return;
             com.sun.jdi.Method method = event.location().method();
-            for ( SubProcessBreakPoint breakpoint : list )
+            for ( BreakPoint breakpoint : list )
             {
                 if ( breakpoint.matches( method.name(), method.argumentTypeNames() ) )
                 {
@@ -378,81 +378,15 @@ public abstract class SubProcess<T, P> implements Serializable
             }
         }
 
-        private void suspended( com.sun.jdi.ThreadReference thread, DeadlockCallback callback )
+        void suspended( com.sun.jdi.ThreadReference thread, DebuggerDeadlockCallback callback )
         {
             if ( callback == null ) callback = defaultCallback;
             suspended.put( thread, callback );
         }
 
-        private void resume( com.sun.jdi.ThreadReference thread )
+        void resume( com.sun.jdi.ThreadReference thread )
         {
             suspended.remove( thread );
-        }
-    }
-
-    @SuppressWarnings( "restriction" )
-    public static class DebugInterface
-    {
-        private final com.sun.jdi.event.LocatableEvent event;
-        private final DebugDispatch debug;
-
-        private DebugInterface( DebugDispatch debug, com.sun.jdi.event.LocatableEvent event )
-        {
-            this.debug = debug;
-            this.event = event;
-        }
-
-        public boolean matchCallingMethod( int offset, Class<?> owner, String method )
-        {
-            try
-            {
-                com.sun.jdi.Location location = event.thread().frame( offset ).location();
-                if ( owner != null )
-                {
-                    if ( !owner.getName().equals( location.declaringType().name() ) ) return false;
-                }
-                if ( method != null )
-                {
-                    if ( !method.equals( location.method().name() ) ) return false;
-                }
-                return true;
-            }
-            catch ( com.sun.jdi.IncompatibleThreadStateException e )
-            {
-                return false;
-            }
-        }
-
-        public DebuggedThread thread()
-        {
-            return new DebuggedThread( debug, event.thread() );
-        }
-    }
-
-    @SuppressWarnings( "restriction" )
-    public static class DebuggedThread
-    {
-        private final com.sun.jdi.ThreadReference thread;
-        private final DebugDispatch debug;
-
-        public DebuggedThread( DebugDispatch debug, com.sun.jdi.ThreadReference thread )
-        {
-            this.debug = debug;
-            this.thread = thread;
-        }
-
-        public DebuggedThread suspend( DeadlockCallback callback )
-        {
-            thread.suspend();
-            debug.suspended( thread, callback );
-            return this;
-        }
-
-        public DebuggedThread resume()
-        {
-            thread.resume();
-            debug.resume( thread );
-            return this;
         }
     }
 
@@ -463,11 +397,6 @@ public abstract class SubProcess<T, P> implements Serializable
         {
             return this;
         }
-    }
-
-    public interface DeadlockCallback
-    {
-        void deadlock( DebuggedThread thread );
     }
 
     protected abstract void startup( P parameter ) throws Throwable;

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.test;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,6 +31,9 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.Config;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 /**
  * A database meant to be used in unit tests. It will always be empty on start.

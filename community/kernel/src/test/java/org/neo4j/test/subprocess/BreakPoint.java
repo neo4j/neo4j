@@ -17,17 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test;
+package org.neo4j.test.subprocess;
 
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.test.SubProcess.DebugInterface;
-import org.neo4j.test.SubProcess.DebuggedThread;
 
-public abstract class SubProcessBreakPoint implements SubProcess.DeadlockCallback
+public abstract class BreakPoint implements DebuggerDeadlockCallback
 {
-    public SubProcessBreakPoint( Class<?> type, String method, Class<?>... args )
+    public BreakPoint( Class<?> type, String method, Class<?>... args )
     {
         this.type = type.getName();
         this.method = method;
@@ -54,7 +52,7 @@ public abstract class SubProcessBreakPoint implements SubProcess.DeadlockCallbac
     com.sun.jdi.request.EventRequest request = null;
 
     @SuppressWarnings( "restriction" )
-    public synchronized SubProcessBreakPoint enable()
+    public synchronized BreakPoint enable()
     {
         this.enabled = true;
         if ( request != null ) request.enable();
@@ -62,7 +60,7 @@ public abstract class SubProcessBreakPoint implements SubProcess.DeadlockCallbac
     }
 
     @SuppressWarnings( "restriction" )
-    public synchronized SubProcessBreakPoint disable()
+    public synchronized BreakPoint disable()
     {
         this.enabled = false;
         if ( request != null ) request.disable();

@@ -31,10 +31,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.jmx.Primitives;
 import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.ImpermanentGraphDatabase;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.EmbeddedServerConfigurator;
 import org.neo4j.server.rest.FunctionalTestHelper;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;

@@ -40,7 +40,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Pair;
 import org.neo4j.index.lucene.LuceneTimeline;
 import org.neo4j.index.lucene.TimelineIndex;
-import org.neo4j.kernel.ImpermanentGraphDatabase;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class TestTimeline
 {

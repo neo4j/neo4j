@@ -33,8 +33,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.ImpermanentGraphDatabase;
 import org.neo4j.server.rest.repr.formats.NullFormat;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class PluginManagerTest
 {
