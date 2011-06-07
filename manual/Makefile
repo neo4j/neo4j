@@ -33,7 +33,7 @@ FILTERDEST       = ~/.asciidoc/filters
 
 ifdef VERBOSE
 	V = -v
-  VA = VERBOSE=1
+	VA = VERBOSE=1
 endif
 
 ifdef KEEP
@@ -42,19 +42,33 @@ ifdef KEEP
 endif
 
 ifdef VERSION
-    VERS = --attribute revnumber=$(VERSION)
+	VERSNUM =$(VERSION)
 else
-    VERS = --attribute revnumber=-neo4j-version
+	VERSNUM =-neo4j-version
 endif
 
 ifdef IMPORTDIR
-    IMPDIR = --attribute importdir=$(IMPORTDIR)
+	IMPDIR = --attribute importdir=$(IMPORTDIR)
 else
-    IMPDIR = --attribute importdir=$(SRCDIR)
-    IMPORTDIR = $(SRCDIR)
+	IMPDIR = --attribute importdir=$(SRCDIR)
+	IMPORTDIR = $(SRCDIR)
 endif
 
-GENERAL_FLAGS = $(V) $(K) $(VERS) $(IMPDIR)
+ifneq (,$(findstring SNAPSHOT,$(VERSNUM)))
+	GITVERSNUM =master
+else
+	GITVERSNUM =$(VERSION)
+endif
+
+ifndef VERSION
+	GITVERSNUM =master
+endif
+
+VERS =  --attribute revnumber=$(VERSNUM)
+
+GITVERS = --attribute gitversion=$(GITVERSNUM)
+
+GENERAL_FLAGS = $(V) $(K) $(VERS) $(GITVERS) $(IMPDIR)
 
 .PHONY: all dist docbook help clean pdf latexpdf html offline-html singlehtml text cleanup annotated manpages upgrade installfilter
 

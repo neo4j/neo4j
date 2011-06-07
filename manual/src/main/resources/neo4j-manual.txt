@@ -3,6 +3,7 @@ The Neo4j Manual
 
 :neo4j-version: {revnumber}
 :neo4j-buildnumber: {revnumber}
+:neo4j-git-tag: {gitversion}
 
 include::introduction/introduction.txt[]
 
