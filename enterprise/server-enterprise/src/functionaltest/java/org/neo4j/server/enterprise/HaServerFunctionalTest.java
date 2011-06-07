@@ -32,11 +32,12 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
-import org.neo4j.ha.LocalhostZooKeeperCluster;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.Config;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.ha.LocalhostZooKeeperCluster;
+import org.neo4j.test.server.ha.ServerCluster;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;

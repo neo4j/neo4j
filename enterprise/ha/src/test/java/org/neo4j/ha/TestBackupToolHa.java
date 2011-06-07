@@ -43,6 +43,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.test.DbRepresentation;
+import org.neo4j.test.ha.LocalhostZooKeeperCluster;
 
 public class TestBackupToolHa
 {

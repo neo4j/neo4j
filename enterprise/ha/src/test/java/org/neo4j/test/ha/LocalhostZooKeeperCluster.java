@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.ha;
+package org.neo4j.test.ha;
 
 import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
 
@@ -40,8 +40,8 @@ import org.jboss.netty.handler.timeout.TimeoutException;
 import org.junit.Ignore;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.ha.zookeeper.ClusterManager;
-import org.neo4j.test.SubProcess;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.subprocess.SubProcess;
 
 @Ignore
 public final class LocalhostZooKeeperCluster

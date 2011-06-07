@@ -26,8 +26,8 @@ import java.util.Map;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
-import org.neo4j.ha.LocalhostZooKeeperCluster;
-import org.neo4j.ha.StandaloneDatabase;
+import org.neo4j.test.ha.LocalhostZooKeeperCluster;
+import org.neo4j.test.ha.StandaloneDatabase;
 
 public class MultiJvmWithZooKeeperTest extends MultiJvmTest
 {

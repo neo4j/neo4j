@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.ha;
+package org.neo4j.test.ha;
 
 import static java.util.Arrays.asList;
 
@@ -41,7 +41,7 @@ import org.neo4j.kernel.ha.FakeSlaveBroker;
 import org.neo4j.kernel.ha.MasterClient;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.management.HighAvailability;
-import org.neo4j.test.SubProcess;
+import org.neo4j.test.subprocess.SubProcess;
 
 import slavetest.AbstractHaTest;
 import slavetest.Job;

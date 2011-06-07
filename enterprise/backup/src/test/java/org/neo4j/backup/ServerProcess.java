@@ -25,7 +25,7 @@ import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.test.SubProcess;
+import org.neo4j.test.subprocess.SubProcess;
 
 public class ServerProcess extends SubProcess<ServerInterface, Pair<String, String>> implements ServerInterface
 {

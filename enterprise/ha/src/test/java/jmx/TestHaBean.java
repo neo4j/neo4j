@@ -30,7 +30,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.Ignore;
 import org.neo4j.ha.CreateEmptyDb;
-import org.neo4j.ha.LocalhostZooKeeperCluster;
 import org.neo4j.ha.Neo4jHaCluster;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
@@ -40,6 +39,7 @@ import org.neo4j.management.HighAvailability;
 import org.neo4j.management.InstanceInfo;
 import org.neo4j.management.Neo4jManager;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.ha.LocalhostZooKeeperCluster;
 
 public class TestHaBean
 {

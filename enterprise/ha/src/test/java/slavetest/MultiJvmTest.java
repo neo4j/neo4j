@@ -33,9 +33,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.After;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.ha.StandaloneDatabase;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.test.ha.StandaloneDatabase;
 
 public class MultiJvmTest extends AbstractHaTest
 {

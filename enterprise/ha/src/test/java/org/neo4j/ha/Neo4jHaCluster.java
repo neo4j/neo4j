@@ -26,6 +26,7 @@ import java.util.Map;
 import org.junit.Ignore;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
+import org.neo4j.test.ha.LocalhostZooKeeperCluster;
 
 @Ignore
 public class Neo4jHaCluster
