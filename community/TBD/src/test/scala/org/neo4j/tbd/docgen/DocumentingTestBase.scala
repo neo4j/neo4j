@@ -20,20 +20,19 @@
 package org.neo4j.tbd.docgen
 
 import org.neo4j.graphdb.index.Index
-import org.neo4j.tbd.{Projection, ExecutionEngine, TBDParser}
-import org.junit.{Before, After}
-import org.neo4j.kernel.ImpermanentGraphDatabase
+import org.neo4j.tbd.{ Projection, ExecutionEngine, TBDParser }
+import org.junit.{ Before, After }
+import org.neo4j.test.ImpermanentGraphDatabase
 import org.neo4j.test.GraphDescription
 import scala.collection.JavaConverters._
-import java.io.{PrintWriter, File, FileWriter}
+import java.io.{ PrintWriter, File, FileWriter }
 import org.neo4j.graphdb._
 /**
  * @author ata
  * @since 6/1/11
  */
 
-abstract class DocumentingTestBase
-{
+abstract class DocumentingTestBase {
   var db: GraphDatabaseService = null
   val parser: TBDParser = new TBDParser
   var engine: ExecutionEngine = null
@@ -50,8 +49,7 @@ abstract class DocumentingTestBase
 
   def nicefy(in: String): String = in.toLowerCase.replace(" ", "-")
 
-  def dumpToFile(writer: PrintWriter, title: String, query: String, returns: String, text: String, result: Projection)
-  {
+  def dumpToFile(writer: PrintWriter, title: String, query: String, returns: String, text: String, result: Projection) {
     writer.println("[[" + nicefy(section + " " + title) + "]]")
     writer.println("== " + title + " ==")
     writer.println(text)
@@ -77,18 +75,15 @@ abstract class DocumentingTestBase
     writer.close()
   }
 
-  def testQuery(title: String, text: String, queryText: String, returns: String, assertions: ( ( Projection ) => Unit )*)
-  {
+  def testQuery(title: String, text: String, queryText: String, returns: String, assertions: ((Projection) => Unit)*) {
     var query = queryText
     nodes.keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
     val q = parser.parse(query)
     val result = engine.execute(q)
     assertions.foreach(_.apply(result))
 
-
     val dir = new File("target/docs/ql/" + nicefy(section))
-    if ( !dir.exists() )
-    {
+    if (!dir.exists()) {
       dir.mkdirs()
     }
 
@@ -97,27 +92,25 @@ abstract class DocumentingTestBase
     dumpToFile(writer, title, query, returns, text, result)
   }
 
-  def indexProperties[T <: PropertyContainer](n: T, index: Index[T])
-  {
+  def indexProperties[T <: PropertyContainer](n: T, index: Index[T]) {
     indexProps.foreach((property) =>
-    {
-      if ( n.hasProperty(property) )
       {
-        val value = n.getProperty(property)
-        index.add(n, property, value)
-      }
-    })
+        if (n.hasProperty(property)) {
+          val value = n.getProperty(property)
+          index.add(n, property, value)
+        }
+      })
   }
 
   def node(name: String): Node = nodes.getOrElse(name, throw new NotFoundException(name))
 
-  @After def teardown()
-  {
+  @After
+  def teardown() {
     db.shutdown()
   }
 
-  @Before def init()
-  {
+  @Before
+  def init() {
     db = new ImpermanentGraphDatabase()
     engine = new ExecutionEngine(db)
 
@@ -129,16 +122,16 @@ abstract class DocumentingTestBase
     nodes = description.create(db).asScala.toMap
 
     db.getAllNodes.asScala.foreach((n) =>
-    {
-      indexProperties(n, nodeIndex)
-      n.getRelationships(Direction.OUTGOING).asScala.foreach(indexProperties(_, relIndex))
-    })
+      {
+        indexProperties(n, nodeIndex)
+        n.getRelationships(Direction.OUTGOING).asScala.foreach(indexProperties(_, relIndex))
+      })
 
     properties.foreach((n) =>
-    {
-      val nod = node(n._1)
-      n._2.foreach((kv) => nod.setProperty(kv._1, kv._2))
-    })
+      {
+        val nod = node(n._1)
+        n._2.foreach((kv) => nod.setProperty(kv._1, kv._2))
+      })
 
     tx.success()
     tx.finish()
