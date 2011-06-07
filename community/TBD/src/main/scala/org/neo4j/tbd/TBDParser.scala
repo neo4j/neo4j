@@ -28,7 +28,7 @@ class TBDParser extends JavaTokenParsers {
   def ignoreCase(str:String): Parser[String] = ("""(?i)\Q""" + str + """\E""").r
 
   def query: Parser[Query] = start ~ opt(matching) ~ opt(where) ~ returns ^^ {
-    case start ~ matching ~ where ~ returns => Query(returns._1, start, matching, where, returns._2)
+    case start ~ matching ~ where ~ returns => Query(returns._1, start, matching, where, returns._2, None)
   }
 
   def start: Parser[Start] = ignoreCase("start") ~> repsep(nodeByIds | nodeByIndex | relsByIds | relsByIndex, ",") ^^ (Start(_: _*))

@@ -21,9 +21,9 @@ package org.neo4j.tbd
 
 import org.neo4j.graphdb.PropertyContainer
 import collection.immutable.Map
-import org.neo4j.graphmatching.{PatternRelationship, AbstractPatternObject, PatternNode}
 import org.apache.commons.lang.NotImplementedException
 import scala.Some
+import org.neo4j.graphmatching.{PatternGroup, PatternRelationship, AbstractPatternObject, PatternNode}
 
 /**
  * Created by Andres Taylor
@@ -31,6 +31,7 @@ import scala.Some
  * Time: 13:54 
  */
 class PatternKeeper {
+  val group = new PatternGroup
   val nodes = scala.collection.mutable.Map[String, PatternNode]()
   val rels = scala.collection.mutable.Map[String, PatternRelationship]()
 
@@ -39,7 +40,7 @@ class PatternKeeper {
        throw new SyntaxError("Variable \"" + name + "\" already defined as a relationship.")
 
      nodes.getOrElse(name, {
-       val pNode = new PatternNode(name)
+       val pNode = new PatternNode(group, name)
        nodes(name) = pNode
        pNode
      })

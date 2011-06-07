@@ -22,21 +22,22 @@ package org.neo4j.tbd.commands
 import scala.Some
 
 object Query {
-  def apply(returns:Return, start:Start) = new Query(returns, start, None, None, None)
+  def apply(returns:Return, start:Start) = new Query(returns, start, None, None, None, None)
 
-  def apply(returns:Return, start:Start, matching:Match) = new Query(returns, start, Some(matching), None, None)
-  def apply(returns:Return, start:Start, where:Clause) = new Query(returns, start, None, Some(where), None)
-  def apply(returns:Return, start:Start, aggregation:Aggregation) = new Query(returns, start, None, None, Some(aggregation))
+  def apply(returns:Return, start:Start, matching:Match) = new Query(returns, start, Some(matching), None, None, None)
+  def apply(returns:Return, start:Start, where:Clause) = new Query(returns, start, None, Some(where), None, None)
+  def apply(returns:Return, start:Start, aggregation:Aggregation) = new Query(returns, start, None, None, Some(aggregation), None)
 
-  def apply(returns:Return, start:Start, matching:Match, where:Clause) = new Query(returns, start, Some(matching), Some(where), None)
-  def apply(returns:Return, start:Start, matching:Match, aggregation:Aggregation) = new Query(returns, start, Some(matching), None, Some(aggregation))
-  def apply(returns:Return, start:Start, where:Clause, aggregation:Aggregation) = new Query(returns, start, None, Some(where), Some(aggregation))
+  def apply(returns:Return, start:Start, matching:Match, where:Clause) = new Query(returns, start, Some(matching), Some(where), None, None)
+  def apply(returns:Return, start:Start, matching:Match, aggregation:Aggregation) = new Query(returns, start, Some(matching), None, Some(aggregation), None)
+  def apply(returns:Return, start:Start, where:Clause, aggregation:Aggregation) = new Query(returns, start, None, Some(where), Some(aggregation), None)
 
-  def apply(returns:Return, start:Start, where:Clause, matching:Match, aggregation:Aggregation) = new Query(returns, start, Some(matching), Some(where), Some(aggregation))
+  def apply(returns:Return, start:Start, where:Clause, matching:Match, aggregation:Aggregation) = new Query(returns, start, Some(matching), Some(where), Some(aggregation), None)
 }
 
 
-case class Query(returns: Return, start: Start, matching:Option[Match], where: Option[Clause], aggregation: Option[Aggregation])
+case class Query(returns: Return, start: Start, matching:Option[Match], where: Option[Clause], aggregation: Option[Aggregation],
+                 sort:Option[Sort])
 
 case class Return(returnItems: ReturnItem*)
 
@@ -45,3 +46,5 @@ case class Start(startItems: StartItem*)
 case class Match(patterns: Pattern*)
 
 case class Aggregation(aggregationItems:AggregationItem*)
+
+case class Sort(sortItems:ReturnItem*)

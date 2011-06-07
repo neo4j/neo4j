@@ -35,7 +35,7 @@ class ExecutionEngine(val graph: GraphDatabaseService)
   @throws(classOf[SyntaxError])
   def execute(query: Query): Projection = query match
   {
-    case Query(select, start, matching, where, aggregation) =>
+    case Query(select, start, matching, where, aggregation, sort) =>
     {
       val patternKeeper = new PatternKeeper
       val sourcePump: Pipe = createSourcePumps(start).reduceLeft(_ ++ _)
@@ -114,7 +114,6 @@ class ExecutionEngine(val graph: GraphDatabaseService)
         case relItem: RelationshipStartItem => patternKeeper.getOrCreateRelationship(item.variable)
         case nodeItem: NodeStartItem => patternKeeper.getOrCreateNode(item.variable)
       }
-      patternKeeper.getOrCreateNode(item.variable)
     })
   }
 
