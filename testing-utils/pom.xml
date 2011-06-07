@@ -10,7 +10,7 @@
   </parent>
 
   <groupId>org.neo4j</groupId>
-  <artifactId>neo4j-test-utils</artifactId>
+  <artifactId>neo4j-testing-utils</artifactId>
   <version>1.4-SNAPSHOT</version>
 
   <properties>
