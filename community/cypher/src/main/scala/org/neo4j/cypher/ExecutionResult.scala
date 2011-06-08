@@ -49,6 +49,9 @@ import org.apache.commons.lang.StringUtils
 
 trait ExecutionResult extends Traversable[Map[String, Any]]
 {
+  val columns:List[String]
+
+  def javaColumns:java.util.List[String] = columns.asJava
   def javaColumnAs[T](column: String) = columnAs[T](column).asJava
 
   def columnAs[T](column: String): Iterator[T] =

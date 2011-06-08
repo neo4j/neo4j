@@ -20,19 +20,15 @@
 package org.neo4j.cypher.javacompat;
 
 import org.neo4j.cypher.SyntaxError;
-import org.neo4j.cypher.CypherParser;
 import org.neo4j.cypher.commands.Query;
-/**
- * @author ata
- * @since 5/31/11
- */
-public class SunshineParser
-{
-    private CypherParser inner;
 
-    public SunshineParser()
+public class CypherParser
+{
+    private org.neo4j.cypher.CypherParser inner;
+
+    public CypherParser()
     {
-        inner = new CypherParser();
+        inner = new org.neo4j.cypher.CypherParser();
     }
 
     public Query parse( String query ) throws SyntaxError

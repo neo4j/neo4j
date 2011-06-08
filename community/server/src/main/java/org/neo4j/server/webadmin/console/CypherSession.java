@@ -39,15 +39,12 @@
 package org.neo4j.server.webadmin.console;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.cypher.ExecutionEngine;
-import org.neo4j.cypher.ExecutionResult;
-import org.neo4j.cypher.CypherParser;
+import org.neo4j.cypher.javacompat.ExecutionEngine;
+import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.cypher.javacompat.CypherParser;
 import org.neo4j.cypher.SyntaxError;
 import org.neo4j.cypher.commands.Query;
 
-/**
-* Created by Andres Taylor
-*/
 public class CypherSession implements ScriptSession
 {
     private final ExecutionEngine engine;

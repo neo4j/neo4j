@@ -32,7 +32,7 @@ class ExecutionEngine(val graph: GraphDatabaseService)
 {
   type MapTransformer = Map[String, Any] => Map[String, Any]
 
-  def createSortItems(sort: Option[Sort], patternKeeper: PatternKeeper): Seq[MapTransformer] =
+  def createSortItems(sort: Option[Sort], patternKeeper: SymbolTable): Seq[MapTransformer] =
   {
     sort match
     {
@@ -46,67 +46,26 @@ class ExecutionEngine(val graph: GraphDatabaseService)
   {
     case Query(returns, start, matching, where, aggregation, sort) =>
     {
-      val patternKeeper = new PatternKeeper
+      val patternKeeper = new SymbolTable
       val sourcePump: Pipe = createSourcePumps(start).reduceLeft(_ ++ _)
 
-      addStartItemVariables(start, patternKeeper)
+      patternKeeper.addStartItems(start)
 
       createPattern(matching, patternKeeper)
 
-      checkConnectednessOfPatternGraph(patternKeeper, sourcePump)
+        patternKeeper.checkConnectednessOfPatternGraph(start)
 
       val filter = createFilters(where, patternKeeper)
 
       val projections = createMapTransformers(returns.returnItems, patternKeeper)
-      val sortItems = createSortItems(sort, patternKeeper)
+      val columns:List[String] = returns.returnItems.map(_.identifier).toList
+      //      val sortItems = createSortItems(sort, patternKeeper)
 
-      new Projection(patternKeeper.nodesMap, patternKeeper.relationshipsMap, sourcePump, projections, filter)
+      new Projection(patternKeeper.nodesMap, patternKeeper.relationshipsMap, sourcePump, projections, filter, columns)
     }
   }
 
-  def checkConnectednessOfPatternGraph(pattern: PatternKeeper, source: Pipe)
-  {
-    val visited = scala.collection.mutable.HashSet[String]()
-
-    def visit(visitedObject: AbstractPatternObject[_ <: PropertyContainer])
-    {
-      val label = visitedObject.getLabel
-      if ( label == null || !visited.contains(label) )
-      {
-        if ( label != null )
-        {
-          visited.add(label)
-        }
-
-        visitedObject match
-        {
-          case node: PatternNode => node.getAllRelationships.asScala.foreach(visit)
-          case rel: PatternRelationship =>
-          {
-            visit(rel.getFirstNode)
-            visit(rel.getSecondNode)
-          }
-        }
-
-      }
-    }
-
-    source.columnNames.map(pattern.patternObject).foreach(_ match
-    {
-      case None => throw new SyntaxError("Encountered a part of the pattern that is not part of the pattern. If you see this, please report this problem!")
-      case Some(obj) => visit(obj)
-    })
-
-    val notVisitedParts = pattern.variables -- visited
-    if ( notVisitedParts.nonEmpty )
-    {
-      throw new SyntaxError("All parts of the pattern must either directly or indirectly be connected to at least one bound entity. These variables were found to be disconnected: " +
-        notVisitedParts.mkString("", ", ", ""))
-    }
-
-  }
-
-  def createFilters(where: Option[Clause], patternKeeper: PatternKeeper): Clause =
+  def createFilters(where: Option[Clause], patternKeeper: SymbolTable): Clause =
   {
     where match
     {
@@ -115,19 +74,7 @@ class ExecutionEngine(val graph: GraphDatabaseService)
     }
   }
 
-  def addStartItemVariables(start: Start, patternKeeper: PatternKeeper)
-  {
-    start.startItems.foreach((item) =>
-    {
-      item match
-      {
-        case relItem: RelationshipStartItem => patternKeeper.getOrCreateRelationship(item.variable)
-        case nodeItem: NodeStartItem => patternKeeper.getOrCreateNode(item.variable)
-      }
-    })
-  }
-
-  def createPattern(matching: Option[Match], patternKeeper: PatternKeeper)
+  def createPattern(matching: Option[Match], patternKeeper: SymbolTable)
   {
     matching match
     {
@@ -142,7 +89,7 @@ class ExecutionEngine(val graph: GraphDatabaseService)
     }
   }
 
-  def createRelationshipPattern(patternKeeper: PatternKeeper, left: String, right: String, relationType: Option[String], direction: Direction, relName: Option[String])
+  def createRelationshipPattern(patternKeeper: SymbolTable, left: String, right: String, relationType: Option[String], direction: Direction, relName: Option[String])
   {
     val leftPattern = patternKeeper.getOrCreateNode(left)
     val rightPattern = patternKeeper.getOrCreateNode(right)
@@ -163,7 +110,7 @@ class ExecutionEngine(val graph: GraphDatabaseService)
     }
   }
 
-  def createMapTransformers(returnItems: Seq[ReturnItem], patternKeeper: PatternKeeper): Seq[MapTransformer] =
+  def createMapTransformers(returnItems: Seq[ReturnItem], patternKeeper: SymbolTable): Seq[MapTransformer] =
   {
 
     returnItems.map((selectItem) =>

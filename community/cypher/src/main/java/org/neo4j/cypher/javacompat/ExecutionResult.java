@@ -20,11 +20,32 @@
 package org.neo4j.cypher.javacompat;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
-/**
- * @author Andres Taylor
- */
-public interface ExecutionResult extends Iterable<Map<String,Object>>
+
+
+public class ExecutionResult implements Iterable<Map<String,Object>>
 {
-    <T> Iterator<T> columnAs( String n );
+    private org.neo4j.cypher.ExecutionResult inner;
+
+    public ExecutionResult( org.neo4j.cypher.ExecutionResult projection )
+    {
+        inner = projection;
+    }
+
+    public <T> Iterator<T> columnAs( String n )
+    {
+        return inner.javaColumnAs( n );
+    }
+
+    public List<String> columns()
+    {
+        return inner.javaColumns();
+    }
+
+    @Override
+    public Iterator<Map<String, Object>> iterator()
+    {
+        return inner.javaIterator();
+    }
 }

@@ -32,7 +32,8 @@ class Projection(pNodes: Map[String, PatternNode],
                  pRels: Map[String, PatternRelationship],
                  startPoints: Pipe,
                  select: Seq[Map[String, Any] => Map[String, Any]],
-                 filter: Clause) extends ExecutionResult
+                 filter: Clause,
+                 val columns:List[String]) extends ExecutionResult
 {
   def bindStartPoints[U](x: (String, Any))
   {

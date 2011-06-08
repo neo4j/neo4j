@@ -35,8 +35,8 @@ public class ExecutionEngine
         inner = new org.neo4j.cypher.ExecutionEngine( database );
     }
 
-    public Projection execute( Query query ) throws SyntaxError
+    public ExecutionResult execute( Query query ) throws SyntaxError
     {
-        return new Projection(inner.execute( query ));
+        return new ExecutionResult(inner.execute( query ));
     }
 }

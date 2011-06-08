@@ -35,14 +35,14 @@ import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 // START SNIPPET: JavaQuery
 public class JavaExecutionEngineTests
 {
-    private SunshineParser parser;
+    private CypherParser parser;
     private ImpermanentGraphDatabase db;
     private ExecutionEngine engine;
 
     @Before
     public void setUp() throws Exception
     {
-        parser = new SunshineParser();
+        parser = new CypherParser();
         db = new ImpermanentGraphDatabase();
         engine = new ExecutionEngine( db );
     }

@@ -26,7 +26,7 @@ import org.neo4j.test.GraphDescription
 import scala.collection.JavaConverters._
 import java.io.{ PrintWriter, File, FileWriter }
 import org.neo4j.graphdb._
-import org.neo4j.cypher.{ExecutionResult, Projection, ExecutionEngine, CypherParser}
+import org.neo4j.cypher.{ExecutionResult, ExecutionEngine, CypherParser}
 /**
  * @author ata
  * @since 6/1/11
@@ -75,7 +75,7 @@ abstract class DocumentingTestBase {
     writer.close()
   }
 
-  def testQuery(title: String, text: String, queryText: String, returns: String, assertions: ((ExecutionResult) => Unit)*) {
+  def testQuery(title: String, text: String, queryText: String, returns: String, assertions: (ExecutionResult => Unit)*) {
     var query = queryText
     nodes.keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
     val q = parser.parse(query)

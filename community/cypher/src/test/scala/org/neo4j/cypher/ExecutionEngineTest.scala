@@ -328,11 +328,13 @@ class ExecutionEngineTest extends ExecutionEngineTestBase
       Match(RelatedTo("n", "x", None, None, Direction.OUTGOING)),
       Equals(PropertyValue("n", "animal"), PropertyValue("x", "animal")))
 
-    val result = execute(query).toList
+    val result = execute(query)
 
     assertEquals(List(
       Map("n" -> n1, "x" -> n3),
-      Map("n" -> n4, "x" -> n2)), result)
+      Map("n" -> n4, "x" -> n2)), result.toList)
+
+    assertEquals(List("n", "x"), result.columns)
   }
 
   @Test def comparingNumbersShouldWorkNicely()
