@@ -315,14 +315,22 @@ class LuceneTransaction extends XaTransaction
     @Override
     protected void doPrepare()
     {
+        boolean containsDeleteCommand = false;
         for ( CommandList list : commandMap.values() )
         {
             for ( LuceneCommand command : list.commands )
             {
+                if ( command instanceof DeleteCommand )
+                {
+                    containsDeleteCommand = true;
+                }
                 addCommand( command );
             }
         }
-        addAbandonedEntitiesToTheTx();
+        if ( !containsDeleteCommand )
+        { // unless the entire index is deleted
+            addAbandonedEntitiesToTheTx();
+        } // else: the DeleteCommand will clear abandonedIds
     }
 
     private void addAbandonedEntitiesToTheTx()
