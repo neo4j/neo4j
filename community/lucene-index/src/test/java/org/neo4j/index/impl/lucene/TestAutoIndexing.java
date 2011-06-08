@@ -21,6 +21,7 @@ package org.neo4j.index.impl.lucene;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -194,14 +195,11 @@ public class TestAutoIndexing extends AbstractNeo4jTestCase
     @Test
     public void testDefaultIsOff()
     {
-        AutoIndexer autoIndexer = getGraphDb().index().getAutoIndexer();
-        autoIndexer.addAutoIndexingForNodeProperty( "testProp" );
-        newTransaction();
-
         Node node1 = getGraphDb().createNode();
-        node1.setProperty( "test_uuid", "node1" );
+        node1.setProperty( "testProp", "node1" );
 
         newTransaction();
+        AutoIndexer autoIndexer = getGraphDb().index().getAutoIndexer();
         assertFalse( autoIndexer.getNodesFor( "testProp", "node1" ).hasNext() );
     }
 
@@ -262,4 +260,51 @@ public class TestAutoIndexing extends AbstractNeo4jTestCase
         assertFalse( autoIndexer.getRelationshipsFor( "propName", "rel1" ).hasNext() );
     }
 
+    @Test( expected = IllegalArgumentException.class )
+    public void testIfBothListsSetFromConfigResultsInError()
+    {
+        tearDownTest(); // To restart with custom configuration
+        config = new HashMap<String, String>();
+        config.put( Config.NODE_KEYS_INDEXABLE, "foo" );
+        config.put( Config.NODE_KEYS_NON_INDEXABLE, "bar" );
+        setUpTest();
+    }
+
+    @Test
+    public void testIfBothListsSetFromAPIResultsInError()
+    {
+        AutoIndexer autoIndexer = getGraphDb().index().getAutoIndexer();
+        autoIndexer.addAutoIndexingForNodeProperty( "testProp" );
+        // This is fine, we can remove already added stuff
+        autoIndexer.removeAutoIndexingForNodeProperty( "testProp" );
+
+        autoIndexer.addAutoIndexingForRelationshipProperty( "inThere" );
+        try
+        {
+            autoIndexer.removeAutoIndexingForRelationshipProperty( "notThere" );
+            fail("Removing non added auto indexed property while there are auto indexed ones is an error");
+        }
+        catch(Exception e)
+        {
+            // it was deliberate
+        }
+
+        autoIndexer.removeAutoIndexingForRelationshipProperty( "inThere" );
+        // This should succeed, both lists are empty
+        autoIndexer.removeAutoIndexingForRelationshipProperty( "dontWannaSee" );
+        // This should succeed since it was in the ignore list
+        autoIndexer.addAutoIndexingForRelationshipProperty( "dontWannaSee" );
+        // Put it in the ignore list, get ready for the failure below
+        autoIndexer.removeAutoIndexingForRelationshipProperty( "dontWannaSee" );
+
+        try
+        {
+            autoIndexer.addAutoIndexingForRelationshipProperty( "notThere" );
+            fail( "Adding a new auto indexed property while there are non-auto indexed ones is an error" );
+        }
+        catch ( Exception e )
+        {
+            // it was deliberate
+        }
+    }
 }
