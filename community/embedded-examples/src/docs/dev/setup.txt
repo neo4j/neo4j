@@ -73,4 +73,17 @@ Make sure to resolve dependencies from Maven Central, for example using this con
 </ivysettings>
 ----
 
+With that in place you can add Neo4j to the mix by having something along these lines to your 'ivy.xml' file:
+
+[source,xml]
+----
+..
+<dependencies>
+  ..
+  <dependency org="org.neo4j" name="neo4j" rev="${neo4j-version}"/>
+  ..
+</dependencies>
+..
+----
+_Where +$\{neo4j-version}+ is the intended version and the +name+ is found in <<editions>>._
 

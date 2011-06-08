@@ -47,45 +47,50 @@ tag=find--hackers-usage
 Full source code:
 https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/test/java/org/neo4j/examples/MatrixTest.java[MatrixTest.java]
 
-////
 == User roles ==
 
-    Here we have users assigned to groups, and groups containing other
-    groups. This is the full node space of our example:
+Here we have users assigned to groups, and groups containing other groups.
+This is the full node space of our example:
 
-[./images/roles.png] User roles node space view
+image::roles.png[title="User roles node space view"]
 
-    Get the admins using the <<new traversal framework>>:
+Get the admins:
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/RolesTest.java
+tag=get-admins
+----
     
-%{source-code|snippet=get-admins|file=src/test/java/org/neo4j/examples/RolesTest.java}
+Get the group memberships of a user:
 
-    Get the admins using the <<old traversal framework>>:
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/RolesTest.java
+tag=get-user-memberships
+----
+
+Get all groups:
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/RolesTest.java
+tag=get-groups
+----
+
+Get all members of all groups:
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/RolesTest.java
+tag=get-members
+----
     
-%{source-code|snippet=get-admins|file=src/test/java/org/neo4j/examples/RolesOldTest.java}
+Full source code:
+https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/test/java/org/neo4j/examples/RolesTest.java[RolesTest.java]
 
-    Get the group memberships of a user using the <<new traversal framework>>:
-
-%{source-code|snippet=get-user-memberships|file=src/test/java/org/neo4j/examples/RolesTest.java}
-
-    Get the group memberships of a user using the <<old traversal framework>>:
-
-%{source-code|snippet=get-user-memberships|file=src/test/java/org/neo4j/examples/RolesOldTest.java}
-
-    Get all groups using the <<new traversal framework>>:
-
-%{source-code|snippet=get-groups|file=src/test/java/org/neo4j/examples/RolesTest.java}
-
-    Get all groups using the <<old traversal framework>>:
-
-%{source-code|snippet=get-groups|file=src/test/java/org/neo4j/examples/RolesOldTest.java}
-
-    Get all members of all groups using the <<new traversal framework>>:
-
-%{source-code|snippet=get-members|file=src/test/java/org/neo4j/examples/RolesTest.java}
-
-    Get all members of all groups using the <<old traversal framework>>:
-
-%{source-code|snippet=get-members|file=src/test/java/org/neo4j/examples/RolesOldTest.java}
-    
-////
 

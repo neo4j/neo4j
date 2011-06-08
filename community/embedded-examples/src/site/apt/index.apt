@@ -7,8 +7,6 @@ Neo4j Embedded
     
     * {{{./basic-index.html}Basic index usage}}
 
-    * {{{./traversal.html}Traversal}}
-    
     * {{{./ordered-path.html}Ordered Path Traversals}}
 
     * {{{./entities.html}Domain entities}}
