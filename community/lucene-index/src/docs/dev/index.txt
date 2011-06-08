@@ -10,7 +10,7 @@ Indexing in Neo4j can be done in two different ways:
   For example a tree structure can be layered on top of the data and used for index lookups performed by a traverser.
 . Separate index engines can be used, with http://lucene.apache.org/java/{lucene-version}/index.html[Apache Lucene] being the default backend included with Neo4j.
 
-This chapter demonstrate how to use the second type of indexing, focussing on Lucene.
+This chapter demonstrate how to use the second type of indexing, focusing on Lucene.
 
 [[indexing-introduction]]
 == Introduction ==
