@@ -22,21 +22,61 @@ package org.neo4j.graphdb.index;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 
+/**
+ * The primary interaction point with the auto indexing infrastructure of neo4j.
+ * From here it is possible to enable/disable the auto indexing functionality,
+ * set/unset auto indexed properties and retrieve index hits.
+ */
 public interface AutoIndexer
 {
-    IndexHits<Node> getNodesFor( String key, Object value );
+    /**
+     * Sets the AutoIndexer as enabled or not. Enabled means that appropriately
+     * configured properties are auto indexed and hits can be returned, disabled
+     * means that no index additions happen but the index can be queried.
+     *
+     * @param enabled True to enable this auto indexer, false to disable it.
+     */
+    void setAutoIndexingEnabled( boolean enabled );
 
-    Index<Node> getNodeIndex();
+    /**
+     * Returns true iff this auto indexer is enabled, false otherwise. For a
+     * cursory definition of enabled indexer, look at
+     * <code>setAutoIndexingEnabled(boolean)</code>
+     *
+     * @return true iff this auto indexer is enabled
+     *
+     * @see setAutoIndexingEnabled(boolean)
+     */
+    boolean isAutoIndexingEnabled();
 
-    IndexHits<Relationship> getRelationshipsFor( String key, Object value );
+    /**
+     * Returns the index used by the auto indexer for indexing nodes.
+     *
+     * @return The node index
+     */
+    AutoIndex<Node> getNodeIndex();
 
-    Index<Relationship> getRelationshipIndex();
+    /**
+     * Returns the index used by the auto indexer for indexing relationships.
+     *
+     * @return The relationship index
+     */
+    AutoIndex<Relationship> getRelationshipIndex();
 
-    void addAutoIndexingForNodeProperty( String key );
+    void startAutoIndexingNodeProperty( String propName );
 
-    void removeAutoIndexingForNodeProperty( String key );
+    void stopAutoIndexingNodeProperty( String propName );
 
-    void addAutoIndexingForRelationshipProperty( String key );
+    void startAutoIndexingRelationshipProperty( String propName );
 
-    void removeAutoIndexingForRelationshipProperty( String key );
+    void stopAutoIndexingRelationshipProperty( String propName );
+
+    void startIgnoringNodeProperty(String propName);
+
+    void stopIgnoringNodeProperty(String propName);
+
+    void startIgnoringRelationshipProperty(String propName);
+
+    void stopIgnoringRelationshipProperty( String propName );
+
 }

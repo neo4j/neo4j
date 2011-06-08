@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.StringTokenizer;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -28,6 +30,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
+import org.neo4j.graphdb.index.AutoIndex;
 import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
@@ -42,21 +45,26 @@ class AutoIndexerImpl implements TransactionEventHandler<Void>, AutoIndexer
 
     private final EmbeddedGraphDbImpl gdb;
 
+    private volatile boolean enabled;
+
     public AutoIndexerImpl( EmbeddedGraphDbImpl gdb )
     {
         this.gdb = gdb;
+        resolveConfig();
     }
 
     public Void beforeCommit( TransactionData data ) throws Exception
     {
         handleNodeProperties( data.removedNodeProperties(), data.assignedNodeProperties() );
+        handleRelationshipProperties( data.removedRelationshipProperties(),
+                data.assignedRelationshipProperties() );
         return null;
     }
 
     private <T extends PropertyContainer> void handleNodeProperties(
             Iterable<PropertyEntry<Node>> removed, Iterable<PropertyEntry<Node>> assigned )
     {
-        final Index<Node> nodeIndex = getNodeIndex();
+        final Index<Node> nodeIndex = getNodeIndexInternal();
         for ( PropertyEntry<Node> entry : assigned )
         {
             // will fix thread safety later
@@ -85,27 +93,60 @@ class AutoIndexerImpl implements TransactionEventHandler<Void>, AutoIndexer
         }
     }
 
-    public IndexHits<Node> getNodesFor( String key, Object value )
+    private <T extends PropertyContainer> void handleRelationshipProperties(
+            Iterable<PropertyEntry<Relationship>> removed,
+            Iterable<PropertyEntry<Relationship>> assigned )
     {
-        return getNodeIndex().get( key, value );
+        final Index<Relationship> relIndex = getRelationshipIndexInternal();
+        for ( PropertyEntry<Relationship> entry : assigned )
+        {
+            // will fix thread safety later
+            if ( relPropertyKeysToInclude.contains( entry.key() ) )
+            {
+                Object previousValue = entry.previouslyCommitedValue();
+                String key = entry.key();
+                if ( previousValue != null )
+                {
+                    relIndex.remove( entry.entity(), key, previousValue );
+                }
+                relIndex.add( entry.entity(), key, entry.value() );
+            }
+        }
+        for ( PropertyEntry<Relationship> entry : removed )
+        {
+            // will fix thread safety later
+            if ( relPropertyKeysToInclude.contains( entry.key() ) )
+            {
+                Object previouslyCommitedValue = entry.previouslyCommitedValue();
+                if ( previouslyCommitedValue != null )
+                {
+                    relIndex.remove( entry.entity(), entry.key(),
+                            previouslyCommitedValue );
+                }
+            }
+        }
     }
 
-    @Override
-    public IndexHits<Relationship> getRelationshipsFor( String key, Object value )
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    public Index<Node> getNodeIndex()
+    public Index<Node> getNodeIndexInternal()
     {
         return gdb.index().forNodes( "node_auto_index" );
     }
 
-    @Override
-    public Index<Relationship> getRelationshipIndex()
+    public Index<Relationship> getRelationshipIndexInternal()
     {
         return gdb.index().forRelationships( "relationship_auto_index" );
+    }
+
+    @Override
+    public AutoIndex<Node> getNodeIndex()
+    {
+        return new IndexWrapper<Node>( getNodeIndexInternal() );
+    }
+
+    @Override
+    public AutoIndex<Relationship> getRelationshipIndex()
+    {
+        return new IndexWrapper<Relationship>( getRelationshipIndexInternal() );
     }
 
     public void afterCommit( TransactionData data, Void state )
@@ -116,47 +157,206 @@ class AutoIndexerImpl implements TransactionEventHandler<Void>, AutoIndexer
     {
     }
 
-    public synchronized void addAutoIndexingForNodeProperty( String key )
+    @Override
+    public boolean isAutoIndexingEnabled()
     {
-        if ( nodePropertyKeysToInclude.isEmpty() )
-        {
-            // TODO: add check for index provider, if non exist throw exception
-            gdb.registerTransactionEventHandler( this );
-        }
-        nodePropertyKeysToInclude.add( key );
+        return enabled;
     }
 
-    public synchronized void removeAutoIndexingForNodeProperty( String key )
+    @Override
+    public void setAutoIndexingEnabled( boolean enable )
     {
-        if ( nodePropertyKeysToInclude.remove( key )
-             && nodePropertyKeysToInclude.isEmpty() )
+        // Act only if actual state change requested
+        if ( enable && !this.enabled )
+        {
+            checkListConsistency();
+            gdb.registerTransactionEventHandler( this );
+        }
+        else if ( !enable && this.enabled )
         {
             gdb.unregisterTransactionEventHandler( this );
         }
+        this.enabled = enable;
     }
 
     @Override
-    public void addAutoIndexingForRelationshipProperty( String key )
+    public void startAutoIndexingNodeProperty( String propName )
     {
-        // TODO Auto-generated method stub
-
+        nodePropertyKeysToInclude.add( propName );
+        if ( enabled )
+        {
+            checkListConsistency();
+        }
     }
 
     @Override
-    public void removeAutoIndexingForRelationshipProperty( String key )
+    public void startAutoIndexingRelationshipProperty( String propName )
     {
-        // TODO Auto-generated method stub
-
+        relPropertyKeysToInclude.add( propName );
+        if ( enabled )
+        {
+            checkListConsistency();
+        }
     }
 
-    protected boolean isIndexableForNode( String propName )
+    @Override
+    public void stopAutoIndexingNodeProperty( String propName )
     {
-
+        nodePropertyKeysToInclude.remove( propName );
+        if ( enabled )
+        {
+            checkListConsistency();
+        }
     }
 
-    protected boolean isIndexableForRelationship( String propName )
+    @Override
+    public void stopAutoIndexingRelationshipProperty( String propName )
     {
-
+        relPropertyKeysToInclude.remove( propName );
+        if ( enabled )
+        {
+            checkListConsistency();
+        }
     }
 
+    @Override
+    public void startIgnoringNodeProperty( String propName )
+    {
+        nodePropertyKeysToIgnore.add( propName );
+        if ( enabled )
+        {
+            checkListConsistency();
+        }
+    }
+
+    @Override
+    public void stopIgnoringNodeProperty( String propName )
+    {
+        nodePropertyKeysToIgnore.remove( propName );
+        if ( enabled )
+        {
+            checkListConsistency();
+        }
+    }
+
+    @Override
+    public void startIgnoringRelationshipProperty( String propName )
+    {
+        relPropertyKeysToIgnore.add( propName );
+        if ( enabled )
+        {
+            checkListConsistency();
+        }
+    }
+
+    @Override
+    public void stopIgnoringRelationshipProperty( String propName )
+    {
+        relPropertyKeysToIgnore.remove( propName );
+        if ( enabled )
+        {
+            checkListConsistency();
+        }
+    }
+
+    private void switchSetsConditionally( Set<String> from, Set<String> to,
+            String value )
+    {
+        if ( !from.remove( value ) || from.isEmpty() )
+        {
+            to.add( value );
+        }
+        if ( enabled )
+        {
+            checkListConsistency();
+        }
+    }
+
+    private void resolveConfig()
+    {
+        Config config = gdb.getConfig();
+        boolean enable = Boolean.parseBoolean( (String) ( config.getParams().get( Config.AUTO_INDEXING_ENABLED ) ) );
+        setAutoIndexingEnabled( enable );
+
+        nodePropertyKeysToInclude.addAll( parseConfigList( (String) ( config.getParams().get( Config.NODE_KEYS_INDEXABLE ) ) ) );
+        nodePropertyKeysToIgnore.addAll( parseConfigList( (String) ( config.getParams().get( Config.NODE_KEYS_NON_INDEXABLE ) ) ) );
+        relPropertyKeysToInclude.addAll( parseConfigList( (String) ( config.getParams().get( Config.RELATIONSHIP_KEYS_INDEXABLE ) ) ) );
+        relPropertyKeysToIgnore.addAll( parseConfigList( (String) ( config.getParams().get( Config.RELATIONSHIP_KEYS_NON_INDEXABLE ) ) ) );
+        checkListConsistency();
+    }
+
+    private void checkListConsistency()
+    {
+
+        if ( !nodePropertyKeysToInclude.isEmpty()
+             && !nodePropertyKeysToIgnore.isEmpty() )
+        {
+            throw new IllegalArgumentException(
+                    "Cannot set both add and ignore lists for node auto indexing" );
+        }
+        if ( !relPropertyKeysToInclude.isEmpty()
+             && !relPropertyKeysToIgnore.isEmpty() )
+        {
+            throw new IllegalArgumentException(
+                    "Cannot set both add and ignore lists for relationship auto indexing" );
+        }
+    }
+
+    private Set<String> parseConfigList( String list )
+    {
+        if ( list == null )
+        {
+            return Collections.emptySet();
+        }
+
+        Set<String> toReturn = new HashSet<String>();
+        StringTokenizer tokenizer = new StringTokenizer(list, "," );
+        String currentToken;
+        while ( tokenizer.hasMoreTokens() )
+        {
+            currentToken = tokenizer.nextToken();
+            if ( ( currentToken = currentToken.trim() ).length() > 0 )
+            {
+                toReturn.add( currentToken );
+            }
+        }
+        return toReturn;
+    }
+
+    private static class IndexWrapper<K extends PropertyContainer> implements
+            AutoIndex<K>
+    {
+
+        private final Index<K> delegate;
+
+        IndexWrapper( Index<K> delegate )
+        {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public Class<K> getEntityType()
+        {
+            return delegate.getEntityType();
+        }
+
+        @Override
+        public IndexHits<K> get( String key, Object value )
+        {
+            return delegate.get( key, value );
+        }
+
+        @Override
+        public IndexHits<K> query( String key, Object queryOrQueryObject )
+        {
+            return delegate.query( key, queryOrQueryObject );
+        }
+
+        @Override
+        public IndexHits<K> query( Object queryOrQueryObject )
+        {
+            return delegate.query( queryOrQueryObject );
+        }
+
+    }
 }
