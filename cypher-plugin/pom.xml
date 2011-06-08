@@ -7,10 +7,10 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.server.plugin</groupId>
-  <artifactId>neo4j-query-plugin</artifactId>
+  <artifactId>neo4j-cypher-plugin</artifactId>
   <packaging>jar</packaging>
   <version>0.1-SNAPSHOT</version>
-  <name>neo4j-query-plugin</name>
+  <name>neo4j-cypher-plugin</name>
 
 
   <properties>
@@ -44,7 +44,7 @@ the relevant Commercial Agreement.
     </license>
   </licenses>
   <scm>
-    <url>https://github.com/neo4j/neo4j-gremlin-plugin/tree/master</url>
+    <url>https://github.com/neo4j/neo4j-cypher-plugin/tree/master</url>
   </scm>
 
   <dependencies>

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.plugin.query;
+package org.neo4j.server.plugin.cypher;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 
@@ -37,7 +37,7 @@ import org.neo4j.server.plugins.ServerPlugin;
 import org.neo4j.server.plugins.Source;
 import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.NodeRepresentation;
-import org.neo4j.server.rest.repr.QueryResultRepresentation;
+import org.neo4j.server.rest.repr.CypherResultRepresentation;
 import org.neo4j.server.rest.repr.RelationshipRepresentation;
 import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.RepresentationType;
@@ -61,7 +61,7 @@ import org.neo4j.tbd.javacompat.SunshineParser;
  */
 
 @Description( "A server side Query language plugin for the Neo4j REST server" )
-public class QueryPlugin extends ServerPlugin
+public class CypherPlugin extends ServerPlugin
 {
 
     private SunshineParser parser;
@@ -72,8 +72,7 @@ public class QueryPlugin extends ServerPlugin
     @PluginTarget( GraphDatabaseService.class )
     public Representation executeScript(
             @Source final GraphDatabaseService neo4j,
-            @Description( "The query string" ) @Parameter( name = "query", optional = false ) final String query,
-            @Description( "The name of the return column, rightnow only one is supported" ) @Parameter( name = "returns", optional = false ) String returns )
+            @Description( "The query string" ) @Parameter( name = "query", optional = false ) final String query )
     {
         parser = new SunshineParser();
         Projection result;
@@ -82,7 +81,7 @@ public class QueryPlugin extends ServerPlugin
             Query compiledQuery = parser.parse( query );
             engine = new ExecutionEngine( neo4j );
             result = engine.execute( compiledQuery );
-            return new QueryResultRepresentation( result );
+            return new CypherResultRepresentation( result );
         }
         catch ( SyntaxError e )
         {

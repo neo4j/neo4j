@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.plugin.query;
+package org.neo4j.server.plugin.cypher;
 
 import static org.junit.Assert.assertTrue;
 
@@ -46,7 +46,7 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestData;
 import org.neo4j.test.TestData.Title;
 
-public class QueryPluginFunctionalTest implements GraphHolder
+public class CypherPluginFunctionalTest implements GraphHolder
 {
     private static final String ENDPOINT = "http://localhost:7474/db/data/ext/QueryPlugin/graphdb/execute_query";
     private static ImpermanentGraphDatabase graphdb;

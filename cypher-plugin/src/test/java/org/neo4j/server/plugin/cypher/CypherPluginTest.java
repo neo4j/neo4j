@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.plugin.query;
+package org.neo4j.server.plugin.cypher;
 
 import static org.junit.Assert.assertTrue;
 
@@ -30,6 +30,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.server.plugin.cypher.CypherPlugin;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
@@ -42,7 +43,7 @@ import org.neo4j.test.GraphHolder;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestData;
 
-public class QueryPluginTest implements GraphHolder
+public class CypherPluginTest implements GraphHolder
 {
     
     private SunshineParser parser;
@@ -51,7 +52,7 @@ public class QueryPluginTest implements GraphHolder
     public @Rule
     TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor(
             this, true ) );
-    private QueryPlugin plugin;
+    private CypherPlugin plugin;
     private OutputFormat json;
     
     @Before
@@ -60,7 +61,7 @@ public class QueryPluginTest implements GraphHolder
         parser = new SunshineParser();
         db = new ImpermanentGraphDatabase();
         engine = new ExecutionEngine( db );
-        plugin = new QueryPlugin();
+        plugin = new CypherPlugin();
         json = new OutputFormat( new JsonFormat(),
                 new URI( "http://localhost/" ), null );
     }
@@ -70,14 +71,14 @@ public class QueryPluginTest implements GraphHolder
     public void runSimpleQuery() throws Exception
     {
         Node i = data.get().get( "I" );
-        Representation result = testQuery( "start n=("+i.getId() + ") return n", "n" );
+        Representation result = testQuery( "start n=("+i.getId() + ") return n" );
         assertTrue( json.format( result).contains( "I" ));
     }
  
-    private Representation testQuery( String query, String returns ) throws SyntaxError
+    private Representation testQuery( String query ) throws SyntaxError
     {
         
-        return plugin.executeScript( db, query, returns );
+        return plugin.executeScript( db, query );
     }
 
     @Override

@@ -25,11 +25,11 @@ import java.util.Map;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.tbd.javacompat.Projection;
 
-public class QueryResultRepresentation extends ObjectRepresentation {
+public class CypherResultRepresentation extends ObjectRepresentation {
 
 	private final Projection queryResult;
 
-    public QueryResultRepresentation( Projection result )
+    public CypherResultRepresentation( Projection result )
     {
         super( RepresentationType.STRING );
         this.queryResult = result;
