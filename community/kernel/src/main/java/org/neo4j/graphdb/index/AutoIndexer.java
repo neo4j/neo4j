@@ -38,5 +38,5 @@ public interface AutoIndexer
 
     void addAutoIndexingForRelationshipProperty( String key );
 
-    void removeAutIndexingForRelationshipProperty( String key );
+    void removeAutoIndexingForRelationshipProperty( String key );
 }

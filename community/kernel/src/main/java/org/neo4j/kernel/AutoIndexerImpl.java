@@ -34,7 +34,11 @@ import org.neo4j.graphdb.index.IndexHits;
 
 class AutoIndexerImpl implements TransactionEventHandler<Void>, AutoIndexer
 {
-    private final Set<String> nodePropertyKeys = new HashSet<String>();
+    private final Set<String> nodePropertyKeysToInclude = new HashSet<String>();
+    private final Set<String> nodePropertyKeysToIgnore = new HashSet<String>();
+
+    private final Set<String> relPropertyKeysToInclude = new HashSet<String>();
+    private final Set<String> relPropertyKeysToIgnore = new HashSet<String>();
 
     private final EmbeddedGraphDbImpl gdb;
 
@@ -55,8 +59,8 @@ class AutoIndexerImpl implements TransactionEventHandler<Void>, AutoIndexer
         final Index<Node> nodeIndex = getNodeIndex();
         for ( PropertyEntry<Node> entry : assigned )
         {
-            // will fix thread saftey later
-            if ( nodePropertyKeys.contains( entry.key()) )
+            // will fix thread safety later
+            if ( nodePropertyKeysToInclude.contains( entry.key() ) )
             {
                 Object previousValue = entry.previouslyCommitedValue();
                 String key = entry.key();
@@ -69,8 +73,8 @@ class AutoIndexerImpl implements TransactionEventHandler<Void>, AutoIndexer
         }
         for ( PropertyEntry<Node> entry : removed )
         {
-            // will fix thread saftey later
-            if ( nodePropertyKeys.contains( entry.key()) )
+            // will fix thread safety later
+            if ( nodePropertyKeysToInclude.contains( entry.key() ) )
             {
                 Object previouslyCommitedValue = entry.previouslyCommitedValue();
                 if ( previouslyCommitedValue != null )
@@ -86,9 +90,22 @@ class AutoIndexerImpl implements TransactionEventHandler<Void>, AutoIndexer
         return getNodeIndex().get( key, value );
     }
 
+    @Override
+    public IndexHits<Relationship> getRelationshipsFor( String key, Object value )
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
     public Index<Node> getNodeIndex()
     {
         return gdb.index().forNodes( "node_auto_index" );
+    }
+
+    @Override
+    public Index<Relationship> getRelationshipIndex()
+    {
+        return gdb.index().forRelationships( "relationship_auto_index" );
     }
 
     public void afterCommit( TransactionData data, Void state )
@@ -101,17 +118,18 @@ class AutoIndexerImpl implements TransactionEventHandler<Void>, AutoIndexer
 
     public synchronized void addAutoIndexingForNodeProperty( String key )
     {
-        if ( nodePropertyKeys.isEmpty() )
+        if ( nodePropertyKeysToInclude.isEmpty() )
         {
             // TODO: add check for index provider, if non exist throw exception
             gdb.registerTransactionEventHandler( this );
         }
-        nodePropertyKeys.add( key );
+        nodePropertyKeysToInclude.add( key );
     }
 
     public synchronized void removeAutoIndexingForNodeProperty( String key )
     {
-        if ( nodePropertyKeys.remove( key ) && nodePropertyKeys.isEmpty() )
+        if ( nodePropertyKeysToInclude.remove( key )
+             && nodePropertyKeysToInclude.isEmpty() )
         {
             gdb.unregisterTransactionEventHandler( this );
         }
@@ -125,23 +143,20 @@ class AutoIndexerImpl implements TransactionEventHandler<Void>, AutoIndexer
     }
 
     @Override
-    public Index<Relationship> getRelationshipIndex()
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public IndexHits<Relationship> getRelationshipsFor( String key, Object value )
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public void removeAutIndexingForRelationshipProperty( String key )
+    public void removeAutoIndexingForRelationshipProperty( String key )
     {
         // TODO Auto-generated method stub
 
     }
+
+    protected boolean isIndexableForNode( String propName )
+    {
+
+    }
+
+    protected boolean isIndexableForRelationship( String propName )
+    {
+
+    }
+
 }
