@@ -48,4 +48,10 @@ public class ExecutionResult implements Iterable<Map<String,Object>>
     {
         return inner.javaIterator();
     }
+
+    @Override
+    public String toString()
+    {
+        return inner.dumpToString();
+    }
 }
