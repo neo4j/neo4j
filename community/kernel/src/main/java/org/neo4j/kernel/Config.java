@@ -133,10 +133,34 @@ public class Config
      */
     @Documented
     public static final String CACHE_TYPE = "cache_type";
+    /**
+     * The name of the Transaction Manager service to use as defined in the TM
+     * service provider constructor, defaults to native.
+     */
+    @Documented
     public static final String TXMANAGER_IMPLEMENTATION = "tx_manager_impl";
+    /**
+     * Boolean (one of true,false) defining whether to allow a store upgrade
+     * in case the current version of the database starts against an older store
+     * version. Setting this to true does not guarantee successful upgrade, just
+     * allows an attempt at it.
+     */
+    @Documented
     public static final String ALLOW_STORE_UPGRADE = "allow_store_upgrade";
     public static final String STRING_BLOCK_SIZE = "string_block_size";
     public static final String ARRAY_BLOCK_SIZE = "array_block_size";
+    /**
+     * A List of property names (as strings) that will be indexed by default.
+     * This applies to Nodes only.
+     */
+    @Documented
+    public static final String NODE_KEYS_INDEXABLE = "node_keys_indexable";
+    /**
+     * A List of property names (as strings) that will be indexed by default.
+     * This applies to Relationships only.
+     */
+    @Documented
+    public static final String RELATIONSHIP_KEYS_INDEXABLE = "relationship_keys_indexable";
 
     static final String LOAD_EXTENSIONS = "load_kernel_extensions";
 
