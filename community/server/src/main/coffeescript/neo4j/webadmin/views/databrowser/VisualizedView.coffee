@@ -23,7 +23,7 @@ define(
    'neo4j/webadmin/data/ItemUrlResolver'
    'neo4j/webadmin/views/databrowser/VisualizationSettingsDialog'
    'neo4j/webadmin/views/View'
-   'neo4j/webadmin/security/HtmlEscaper'
+   'ribcage/security/HtmlEscaper'
    'neo4j/webadmin/templates/databrowser/visualization'
    'lib/backbone'], 
   (VisualGraph, ItemUrlResolver, VisualizationSettingsDialog, View, HtmlEscaper, template) ->

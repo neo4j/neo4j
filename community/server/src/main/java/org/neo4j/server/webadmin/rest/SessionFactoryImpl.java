@@ -24,7 +24,7 @@ import javax.servlet.http.HttpSession;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.webadmin.console.GremlinSession;
 import org.neo4j.server.webadmin.console.ScriptSession;
-import org.neo4j.server.webadmin.console.TBDSession;
+import org.neo4j.server.webadmin.console.CypherSession;
 
 public class SessionFactoryImpl implements SessionFactory
 {
@@ -38,9 +38,9 @@ public class SessionFactoryImpl implements SessionFactory
     @Override
     public ScriptSession createSession( String engineName, Database database )
     {
-        if(engineName.equals("tbd"))
+        if(engineName.equals("cypher"))
         {
-            return new TBDSession(database.graph);
+            return new CypherSession(database.graph);
         } else
         {
             Object session = httpSession.getAttribute( "consoleSession" );

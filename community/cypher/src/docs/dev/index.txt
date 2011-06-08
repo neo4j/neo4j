@@ -1,0 +1,32 @@
+[[query-lang]]
+Cypher Query Language
+==============
+This is an experimental query language for Neo4j.
+
+The query language is comprised of four distinct parts.
+
+In Java, using the query language looks something like this:
+
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTests.java
+tag=JavaQuery
+classifier=test-sources
+----
+
+:leveloffset: 2
+
+include::ql/start/index.txt[]
+
+:leveloffset: 2
+
+include::ql/match/index.txt[]
+
+:leveloffset: 2
+
+include::ql/where/index.txt[]
+
+:leveloffset: 2
+
+include::ql/return/index.txt[]

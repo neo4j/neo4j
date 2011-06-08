@@ -10,7 +10,7 @@ function work {
     deploy neo4j docs javadoc
     deploy neo4j-community docs javadoc
     
-    deploy neo4j-tbd sources test-sources tests docs
+    deploy neo4j-cypher sources test-sources tests docs
     
     deploy neo4j-server site static-web docs javadoc sources test-sources tests
 

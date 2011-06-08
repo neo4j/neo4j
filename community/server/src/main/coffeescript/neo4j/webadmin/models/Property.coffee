@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-define ['neo4j/webadmin/security/HtmlEscaper','lib/backbone'], (HtmlEscaper) ->
+define ['ribcage/security/HtmlEscaper','lib/backbone'], (HtmlEscaper) ->
   
   htmlEscaper = new HtmlEscaper
 
