@@ -22,6 +22,7 @@ package org.neo4j.tbd.commands
 import collection.immutable.Nil
 import java.lang.RuntimeException
 import java.math.BigDecimal
+import java.lang.Character
 
 /**
  * Created by Andres Taylor
@@ -76,9 +77,31 @@ abstract sealed class ComparableClause(a: Value, b: Value) extends Clause
 {
   def compare(comparisonResult: Int): Boolean
 
-  def compareComparables(l: AnyRef, r: AnyRef): Int = (l,r) match {
-    case (left:Comparable[AnyRef], right:Comparable[AnyRef]) => left.compareTo(right)
+  def compareValuesOfSameType(l: AnyRef, r: AnyRef): Int = (l, r) match
+  {
+    case (left: Comparable[AnyRef], right: Comparable[AnyRef]) => left.compareTo(right)
     case _ => throw new RuntimeException("This shouldn't happen")
+  }
+
+  def compareValuesOfDifferentTypes(l: Any, r: Any): Int = (l, r) match
+  {
+    case (left: Long, right: Number) => BigDecimal.valueOf(left).compareTo(BigDecimal.valueOf(right.doubleValue()))
+    case (left: Number, right: Long) => BigDecimal.valueOf(left.doubleValue()).compareTo(BigDecimal.valueOf(right))
+    case (left: Number, right: Number) => java.lang.Double.compare(left.doubleValue(), right.doubleValue())
+    case (left: String, right: Character) => left.compareTo(right.toString)
+    case (left: Character, right: String) => left.toString.compareTo(right.toString)
+    case (left, right) =>
+    {
+      throw new RuntimeException("Don't know how to compare that. Left: " + left.toString + "; Right: " + right.toString)
+    }
+  }
+
+
+  def areComparableOfSameType(l: AnyRef, r: AnyRef): Boolean =
+  {
+    l.isInstanceOf[Comparable[_]] &&
+      r.isInstanceOf[Comparable[_]] &&
+      l.getClass.isInstance(r)
   }
 
   def isMatch(m: Map[String, Any]): Boolean =
@@ -95,26 +118,16 @@ abstract sealed class ComparableClause(a: Value, b: Value) extends Clause
     val r = right.asInstanceOf[AnyRef]
 
     val comparisonResult: Int =
-      if ( l.isInstanceOf[Comparable[_]] &&
-        r.isInstanceOf[Comparable[_]] &&
-        l.getClass.isInstance(r)
-      )
+      if ( areComparableOfSameType(l, r) )
       {
-        compareComparables(l, r)
+        compareValuesOfSameType(l, r)
       } else
       {
-        (left, right) match
-        {
-          case (left: Long, right: Number) => BigDecimal.valueOf(left).compareTo(BigDecimal.valueOf(right.doubleValue()))
-          case (left: Number, right: Long) => BigDecimal.valueOf(left.doubleValue()).compareTo(BigDecimal.valueOf(right))
-          case (left: Number, right: Number) => java.lang.Double.compare(left.doubleValue(), right.doubleValue())
-          case _ => throw new RuntimeException
-        }
+        compareValuesOfDifferentTypes(left, right)
       }
 
     compare(comparisonResult)
   }
-
 }
 
 case class LessThan(a: Value, b: Value) extends ComparableClause(a, b)

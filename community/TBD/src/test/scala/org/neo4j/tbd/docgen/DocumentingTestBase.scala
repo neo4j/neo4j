@@ -20,13 +20,13 @@
 package org.neo4j.tbd.docgen
 
 import org.neo4j.graphdb.index.Index
-import org.neo4j.tbd.{ Projection, ExecutionEngine, TBDParser }
 import org.junit.{ Before, After }
 import org.neo4j.test.ImpermanentGraphDatabase
 import org.neo4j.test.GraphDescription
 import scala.collection.JavaConverters._
 import java.io.{ PrintWriter, File, FileWriter }
 import org.neo4j.graphdb._
+import org.neo4j.tbd.{ExecutionResult, Projection, ExecutionEngine, TBDParser}
 /**
  * @author ata
  * @since 6/1/11
@@ -49,7 +49,7 @@ abstract class DocumentingTestBase {
 
   def nicefy(in: String): String = in.toLowerCase.replace(" ", "-")
 
-  def dumpToFile(writer: PrintWriter, title: String, query: String, returns: String, text: String, result: Projection) {
+  def dumpToFile(writer: PrintWriter, title: String, query: String, returns: String, text: String, result: ExecutionResult) {
     writer.println("[[" + nicefy(section + " " + title) + "]]")
     writer.println("== " + title + " ==")
     writer.println(text)
@@ -67,7 +67,7 @@ abstract class DocumentingTestBase {
     writer.println()
     writer.println("[source]")
     writer.println("----")
-    writer.println(" " + result.toString().replace("\n", "\n "))
+    writer.println(" " + result.dumpToString().replace("\n", "\n "))
     writer.println("----")
     writer.println()
     writer.println()
@@ -75,7 +75,7 @@ abstract class DocumentingTestBase {
     writer.close()
   }
 
-  def testQuery(title: String, text: String, queryText: String, returns: String, assertions: ((Projection) => Unit)*) {
+  def testQuery(title: String, text: String, queryText: String, returns: String, assertions: ((ExecutionResult) => Unit)*) {
     var query = queryText
     nodes.keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
     val q = parser.parse(query)

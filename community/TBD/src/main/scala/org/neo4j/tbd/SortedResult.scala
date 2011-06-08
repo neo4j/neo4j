@@ -17,30 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.tbd.javacompat;
 
-import java.util.Iterator;
-import java.util.Map;
-
-
-public class Projection implements ExecutionResult
-{
-    private org.neo4j.tbd.ExecutionResult inner;
-
-    public Projection( org.neo4j.tbd.ExecutionResult projection )
-    {
-        inner = projection;
-    }
-
-    @Override
-    public <T> Iterator<T> columnAs( String n )
-    {
-        return inner.javaColumnAs( n );
-    }
-
-    @Override
-    public Iterator<Map<String, Object>> iterator()
-    {
-        return inner.javaIterator();
-    }
-}
+//package org.neo4j.tbd
+//
+///**
+// * @author Andres Taylor
+// */
+//
+//class SortedResult(inner: ExecutionResult, sortItems: List[Map[String, Any] => Map[String, Any]]) extends ExecutionResult
+//{
+//  def foreach[U](f: ( Map[String, Any] ) => U)
+//  {
+//    inner.toList.sortWith((a, b) =>
+//    {
+//      sortItems.g
+//    })
+//  }
+//}

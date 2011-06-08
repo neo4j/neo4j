@@ -337,13 +337,11 @@ class ExecutionEngineTest extends ExecutionEngineTestBase
 
   @Test def comparingNumbersShouldWorkNicely()
   {
-    //start n=... where n.x < 100 return n
-
     val n1 = createNode(Map("x" -> 50))
     val n2 = createNode(Map("x" -> 50l))
     val n3 = createNode(Map("x" -> 50f))
     val n4 = createNode(Map("x" -> 50d))
-    val n5 = createNode(Map("x"-> 50.toByte))
+    val n5 = createNode(Map("x" -> 50.toByte))
 
     val query = Query(
       Return(EntityOutput("n")),
@@ -352,7 +350,24 @@ class ExecutionEngineTest extends ExecutionEngineTestBase
 
     val result = execute(query)
 
-    assertEquals(List(n1,n2,n3,n4,n5), result.columnAs[Node]("n").toList)
+    assertEquals(List(n1, n2, n3, n4, n5), result.columnAs[Node]("n").toList)
+  }
+
+  @Test def comparingStringAndCharsShouldWorkNicely()
+  {
+    val n1 = createNode(Map("x" -> "Anders"))
+    val n2 = createNode(Map("x" -> 'C'))
+
+    val query = Query(
+      Return(EntityOutput("n")),
+      Start(NodeById("n", n1.getId, n2.getId)),
+      And(
+        LessThan(PropertyValue("n", "x"), Literal("Z")),
+        LessThan(PropertyValue("n", "x"), Literal('Z'))))
+
+    val result = execute(query)
+
+    assertEquals(List(n1, n2), result.columnAs[Node]("n").toList)
   }
 
   @Ignore("No implemented yet")
