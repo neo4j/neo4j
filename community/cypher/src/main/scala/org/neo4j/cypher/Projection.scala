@@ -78,6 +78,4 @@ class Projection(pNodes: Map[String, PatternNode],
     })
   }
 
-  //TODO: This is horrible. The Result object must know it's metadata in a state that doesn't force us to loop
-
 }

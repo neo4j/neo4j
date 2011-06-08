@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.commands
 
+import org.neo4j.cypher.{AggregationType, NodeType, PropertyType, SymbolType}
 
 /**
  * Created by Andres Taylor
@@ -26,12 +27,12 @@ package org.neo4j.cypher.commands
  * Time: 19:08 
  */
 
-abstract sealed class ReturnItem(val identifier:String)
+abstract sealed class ReturnItem(val identifier:SymbolType)
 
-case class EntityOutput(name: String) extends ReturnItem(name)
-case class PropertyOutput(entityName:String, propName:String) extends ReturnItem(entityName + "." + propName)
-case class NullablePropertyOutput(entityName:String, propName:String) extends ReturnItem(entityName + "." + propName)
+case class EntityOutput(name: String) extends ReturnItem(NodeType(name))  // todo relationship-entity-type
+case class PropertyOutput(entityName:String, propName:String) extends ReturnItem(PropertyType(entityName + "." + propName))
+case class NullablePropertyOutput(entityName:String, propName:String) extends ReturnItem(PropertyType(entityName + "." + propName))
 
-abstract sealed class AggregationItem(ident:String) extends ReturnItem(ident)
+abstract sealed class AggregationItem(ident:String) extends ReturnItem(AggregationType(ident))
 
 case class Count(variable:String) extends AggregationItem(variable)

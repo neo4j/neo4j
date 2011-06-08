@@ -20,6 +20,7 @@
 package org.neo4j.cypher.pipes
 
 import java.lang.String
+import org.neo4j.cypher.SymbolTable
 
 /**
  * Created by Andres Taylor
@@ -37,5 +38,10 @@ class JoinPipe(a: Pipe, b: Pipe) extends Pipe {
         f.apply(aMap ++ bMap)
       })
     })
+  }
+
+  def prepare(symbolTable: SymbolTable) = {
+    a.prepare(symbolTable)
+    b.prepare(symbolTable)
   }
 }

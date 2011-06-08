@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.pipes
 
-import java.lang.String
 import org.neo4j.cypher.SymbolTable
+import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
 
 /**
  * Created by Andres Taylor
@@ -28,10 +28,20 @@ import org.neo4j.cypher.SymbolTable
  * Time: 21:00 
  */
 
-abstract class Pipe extends Traversable[Map[String, Any]] {
+class StartPipe[T <: PropertyContainer](name: String, source: Iterable[T]) extends Pipe {
+  def columnNames: List[String] = List(name)
 
-  def ++(other: Pipe): Pipe = new JoinPipe(this, other)
 
-  def prepare(symbolTable : SymbolTable)
-  def columnNames: List[String]
+  def foreach[U](f: (Map[String, Any]) => U) {
+    source.foreach((x) => {
+      f(Map(name -> x))
+    })
+  }
+
+  def prepare(symbolTable: SymbolTable) {
+    source match {
+      case nodes: Iterable[Node] => symbolTable.registerNode(name)
+      case relationships: Iterable[Relationship] => symbolTable.registerRelationship(name)
+    }
+  }
 }

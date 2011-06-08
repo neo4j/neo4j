@@ -1,3 +1,5 @@
+}
+
 /**
  * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -19,19 +21,29 @@
  */
 package org.neo4j.cypher.pipes
 
-import java.lang.String
+import org.neo4j.cypher.commands.Match
+import org.neo4j.cypher.PatternContext
+import org.neo4j.cypher.pipes.Pipe
 import org.neo4j.cypher.SymbolTable
+import collection.immutable.Map
 
-/**
- * Created by Andres Taylor
- * Date: 4/18/11
- * Time: 21:00 
- */
+class PatternPipe(source: Pipe, matching: Option[Match]) extends Pipe {
 
-abstract class Pipe extends Traversable[Map[String, Any]] {
+  var patternContext: PatternContext
 
-  def ++(other: Pipe): Pipe = new JoinPipe(this, other)
+  def prepare(symbolTable: SymbolTable) {
+    patternContext = new PatternContext(symbolTable)
+    patternContext.createPatterns(matching)
+    patternContext.checkConnectednessOfPatternGraph
+  }
 
-  def prepare(symbolTable : SymbolTable)
-  def columnNames: List[String]
+  def foreach[U](f: Map[String, Any] => U) {
+    source.foreach((row) => {
+      row.foreach(patternContext.bindStartPoint(_))
+
+      patternContext.getPatternMatches(row).map(f)
+    })
+  }
+
+  def columnNames = source.columnNames ++ patternContext.columns
 }
