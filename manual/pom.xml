@@ -260,7 +260,6 @@
                 <argument>dist</argument>
                 <argument>VERSION=${project.version}</argument>
                 <argument>IMPORTDIR=${docs.sources}</argument>
-                <argument>VERBOSE=1</argument>
               </arguments>
             </configuration>
           </execution>
