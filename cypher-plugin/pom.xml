@@ -1,0 +1,216 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.neo4j</groupId>
+    <artifactId>parent-pom</artifactId>
+    <version>21</version>
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.neo4j.server.plugin</groupId>
+  <artifactId>neo4j-query-plugin</artifactId>
+  <packaging>jar</packaging>
+  <version>0.1-SNAPSHOT</version>
+  <name>neo4j-query-plugin</name>
+
+
+  <properties>
+    <!-- Jar Versions -->
+    <junit.version>4.8.2</junit.version>
+    <spring.version>3.0.4.RELEASE</spring.version>
+    <jackson.version>1.5.2</jackson.version>
+    <cxf.version>2.3.1</cxf.version>
+    <servlet-api.version>2.5</servlet-api.version>
+    <neo4j.version>1.4-SNAPSHOT</neo4j.version>
+    <jersey.server.version>1.6</jersey.server.version>
+    <license-text.header>GPL-3-header.txt</license-text.header>
+  </properties>
+  <licenses>
+    <license>
+      <name>GNU General Public License, Version 3</name>
+      <url>http://www.gnu.org/licenses/gpl-3.0-standalone.html</url>
+      <comments>The software ("Software") developed and owned by Network Engine for
+Objects in Lund AB (referred to in this notice as "Neo Technology") is
+licensed under the GNU GENERAL PUBLIC LICENSE Version 3 to all third
+parties and that license is included below.
+
+However, if you have executed an End User Software License and Services
+Agreement or an OEM Software License and Support Services Agreement, or
+another commercial license agreement with Neo Technology or one of its
+affiliates (each, a "Commercial Agreement"), the terms of the license in
+such Commercial Agreement will supersede the GNU GENERAL PUBLIC LICENSE
+Version 3 and you may use the Software solely pursuant to the terms of
+the relevant Commercial Agreement.
+      </comments>
+    </license>
+  </licenses>
+  <scm>
+    <url>https://github.com/neo4j/neo4j-gremlin-plugin/tree/master</url>
+  </scm>
+
+  <dependencies>
+
+    <!-- Neo4j Dependencies -->
+    <dependency>
+      <groupId>org.neo4j.app</groupId>
+      <artifactId>neo4j-server</artifactId>
+      <version>${neo4j.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j.app</groupId>
+      <artifactId>neo4j-server</artifactId>
+      <version>${neo4j.version}</version>
+      <type>test-jar</type>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel</artifactId>
+      <version>${neo4j.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.sun.jersey</groupId>
+      <artifactId>jersey-client</artifactId>
+      <version>${jersey.server.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.sun.jersey</groupId>
+      <artifactId>jersey-server</artifactId>
+      <version>${jersey.server.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j</artifactId>
+      <version>${neo4j.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>server-api</artifactId>
+      <version>${neo4j.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <!--end neo4j -->
+
+
+    <!-- <dependency> <groupId>com.tinkerpop</groupId> <artifactId>pipes</artifactId> <version>0.4</version> </dependency> <dependency> <groupId>org.codehaus.groovy</groupId> <artifactId>groovy</artifactId> <version>1.7.5</version> <scope>provided</scope> </dependency> <dependency> <groupId>javax.script</groupId> 
+      <artifactId>script-api</artifactId> <version>1.0</version> </dependency> -->
+    <!--end neo4j -->
+
+    <!-- Jackson Dependencies -->
+    <dependency>
+      <groupId>org.codehaus.jackson</groupId>
+      <artifactId>jackson-core-asl</artifactId>
+      <version>${jackson.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.jackson</groupId>
+      <artifactId>jackson-mapper-asl</artifactId>
+      <version>${jackson.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.jackson</groupId>
+      <artifactId>jackson-jaxrs</artifactId>
+      <version>${jackson.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.jackson</groupId>
+      <artifactId>jackson-xc</artifactId>
+      <version>${jackson.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <!--end jackson dependencies -->
+
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.8.2</version>
+      <type>jar</type>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+  <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>false</filtering>
+      </resource>
+      <resource>
+        <directory>src/main/webapp</directory>
+        <filtering>false</filtering>
+      </resource>
+      <resource>
+        <directory>data</directory>
+        <filtering>false</filtering>
+      </resource>
+    </resources>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>2.0.2</version>
+        <configuration>
+          <source>1.6</source>
+          <target>1.6</target>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <configuration>
+          <descriptors>
+            <descriptor>src/main/assembly/server-plugin.xml</descriptor>
+            <descriptor>src/main/assembly/docs-assembly.xml</descriptor>
+          </descriptors>
+        </configuration>
+        <executions>
+          <execution>
+            <id>make-assembly</id>
+            <!-- this is used for inheritance merges -->
+            <phase>package</phase>
+            <!-- bind to the packaging phase -->
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+  <repositories>
+    <repository>
+      <id>neo4j-dev</id>
+      <name>neo4j.org repository</name>
+      <url>https://m2.neo4j.org/content/groups/public/</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+    <repository>
+      <id>maven2-repository.dev.java.net</id>
+      <name>Java.net Repository for Maven</name>
+      <url>http://download.java.net/maven/2/</url>
+      <layout>default</layout>
+    </repository>
+    <repository>
+      <id>maven-repository.dev.java.net</id>
+      <name>Java.net Maven 1 Repository (legacy)</name>
+      <url>http://download.java.net/maven/1</url>
+      <layout>legacy</layout>
+    </repository>
+    <repository>
+      <id>jasig-3rd-party</id>
+      <name>Jasig 3rd Party Repository</name>
+      <url>http://developer.jasig.org/repo/content/repositories/3rd-party</url>
+    </repository>
+  </repositories>
+
+</project>
