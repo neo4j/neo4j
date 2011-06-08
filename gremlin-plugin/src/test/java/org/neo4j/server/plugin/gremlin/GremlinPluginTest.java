@@ -19,10 +19,13 @@
  */
 package org.neo4j.server.plugin.gremlin;
 
-import com.tinkerpop.blueprints.pgm.Graph;
-import com.tinkerpop.blueprints.pgm.Vertex;
-import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import junit.framework.Assert;
+
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -30,16 +33,14 @@ import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.ImpermanentGraphDatabase;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
-import java.net.URI;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import com.tinkerpop.blueprints.pgm.Graph;
+import com.tinkerpop.blueprints.pgm.Vertex;
+import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
 
 public class GremlinPluginTest
 {

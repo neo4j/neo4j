@@ -36,20 +36,20 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.kernel.ImpermanentGraphDatabase;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.WrappingNeoServerBootstrapper;
 import org.neo4j.server.rest.DocsGenerator;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphHolder;
+import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestData;
 import org.neo4j.test.TestData.Title;
 
 public class GremlinPluginFunctionalTest implements GraphHolder
 {
     private static final String ENDPOINT = "http://localhost:7474/db/data/ext/GremlinPlugin/graphdb/execute_script";
-    private static ImpermanentGraphDatabase graphdb;
+    private static org.neo4j.test.ImpermanentGraphDatabase graphdb;
     public @Rule
     TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor(
             this, true ) );
