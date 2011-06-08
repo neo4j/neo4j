@@ -40,7 +40,7 @@ package org.neo4j.server.webadmin.console;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.tbd.ExecutionEngine;
-import org.neo4j.tbd.Projection;
+import org.neo4j.tbd.ExecutionResult;
 import org.neo4j.tbd.TBDParser;
 import org.neo4j.tbd.SyntaxError;
 import org.neo4j.tbd.commands.Query;
@@ -69,7 +69,7 @@ public class TBDSession implements ScriptSession
         try
         {
             Query query = parser.parse(script);
-            Projection result = engine.execute(query);
+            ExecutionResult result = engine.execute(query);
 
             return result.toString();
         } catch (SyntaxError error)
