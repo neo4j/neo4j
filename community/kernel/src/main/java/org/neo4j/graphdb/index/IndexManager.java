@@ -187,4 +187,7 @@ public interface IndexManager
      * @return the removed value if any.
      */
     String removeConfiguration( Index<? extends PropertyContainer> index, String key );
+
+
+    AutoIndexer getAutoIndexer();
 }
