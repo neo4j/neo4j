@@ -95,12 +95,6 @@ the relevant Commercial Agreement.
       <version>${neo4j.version}</version>
       <scope>provided</scope>
     </dependency>
-    <!--end neo4j -->
-
-
-    <!-- <dependency> <groupId>com.tinkerpop</groupId> <artifactId>pipes</artifactId> <version>0.4</version> </dependency> <dependency> <groupId>org.codehaus.groovy</groupId> <artifactId>groovy</artifactId> <version>1.7.5</version> <scope>provided</scope> </dependency> <dependency> <groupId>javax.script</groupId> 
-      <artifactId>script-api</artifactId> <version>1.0</version> </dependency> -->
-    <!--end neo4j -->
 
     <!-- Jackson Dependencies -->
     <dependency>
