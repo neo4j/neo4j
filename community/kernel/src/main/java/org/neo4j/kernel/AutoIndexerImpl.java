@@ -55,19 +55,37 @@ class AutoIndexerImpl implements TransactionEventHandler<Void>, AutoIndexer
 
     public Void beforeCommit( TransactionData data ) throws Exception
     {
-        handleNodeProperties( data.removedNodeProperties(), data.assignedNodeProperties() );
-        handleRelationshipProperties( data.removedRelationshipProperties(),
+        if ( nodePropertyKeysToInclude.size() > 0 )
+        {
+            handleNodePropertiesDefaultInclude( data.removedNodeProperties(),
+                    data.assignedNodeProperties() );
+        }
+        else
+        {
+            handleNodePropertiesDefaultIgnore( data.removedNodeProperties(),
+                    data.assignedNodeProperties() );
+        }
+        if ( relPropertyKeysToInclude.size() > 0 )
+        {
+            handleRelationshipPropertiesDefaultInclude(
+                    data.removedRelationshipProperties(),
                 data.assignedRelationshipProperties() );
+        }
+        else
+        {
+            handleRelationshipPropertiesDefaultIgnore(
+                    data.removedRelationshipProperties(),
+                    data.assignedRelationshipProperties() );
+        }
         return null;
     }
 
-    private <T extends PropertyContainer> void handleNodeProperties(
+    private <T extends PropertyContainer> void handleNodePropertiesDefaultInclude(
             Iterable<PropertyEntry<Node>> removed, Iterable<PropertyEntry<Node>> assigned )
     {
         final Index<Node> nodeIndex = getNodeIndexInternal();
         for ( PropertyEntry<Node> entry : assigned )
         {
-            // will fix thread safety later
             if ( nodePropertyKeysToInclude.contains( entry.key() ) )
             {
                 Object previousValue = entry.previouslyCommitedValue();
@@ -93,7 +111,40 @@ class AutoIndexerImpl implements TransactionEventHandler<Void>, AutoIndexer
         }
     }
 
-    private <T extends PropertyContainer> void handleRelationshipProperties(
+    private <T extends PropertyContainer> void handleNodePropertiesDefaultIgnore(
+            Iterable<PropertyEntry<Node>> removed,
+            Iterable<PropertyEntry<Node>> assigned )
+    {
+        final Index<Node> nodeIndex = getNodeIndexInternal();
+        for ( PropertyEntry<Node> entry : assigned )
+        {
+            if ( !nodePropertyKeysToIgnore.contains( entry.key() ) )
+            {
+                Object previousValue = entry.previouslyCommitedValue();
+                String key = entry.key();
+                if ( previousValue != null )
+                {
+                    nodeIndex.remove( entry.entity(), key, previousValue );
+                }
+                nodeIndex.add( entry.entity(), key, entry.value() );
+            }
+        }
+        for ( PropertyEntry<Node> entry : removed )
+        {
+            // will fix thread safety later
+            if ( !nodePropertyKeysToIgnore.contains( entry.key() ) )
+            {
+                Object previouslyCommitedValue = entry.previouslyCommitedValue();
+                if ( previouslyCommitedValue != null )
+                {
+                    nodeIndex.remove( entry.entity(), entry.key(),
+                            previouslyCommitedValue );
+                }
+            }
+        }
+    }
+
+    private <T extends PropertyContainer> void handleRelationshipPropertiesDefaultInclude(
             Iterable<PropertyEntry<Relationship>> removed,
             Iterable<PropertyEntry<Relationship>> assigned )
     {
@@ -116,6 +167,40 @@ class AutoIndexerImpl implements TransactionEventHandler<Void>, AutoIndexer
         {
             // will fix thread safety later
             if ( relPropertyKeysToInclude.contains( entry.key() ) )
+            {
+                Object previouslyCommitedValue = entry.previouslyCommitedValue();
+                if ( previouslyCommitedValue != null )
+                {
+                    relIndex.remove( entry.entity(), entry.key(),
+                            previouslyCommitedValue );
+                }
+            }
+        }
+    }
+
+    private <T extends PropertyContainer> void handleRelationshipPropertiesDefaultIgnore(
+            Iterable<PropertyEntry<Relationship>> removed,
+            Iterable<PropertyEntry<Relationship>> assigned )
+    {
+        final Index<Relationship> relIndex = getRelationshipIndexInternal();
+        for ( PropertyEntry<Relationship> entry : assigned )
+        {
+            // will fix thread safety later
+            if ( !relPropertyKeysToIgnore.contains( entry.key() ) )
+            {
+                Object previousValue = entry.previouslyCommitedValue();
+                String key = entry.key();
+                if ( previousValue != null )
+                {
+                    relIndex.remove( entry.entity(), key, previousValue );
+                }
+                relIndex.add( entry.entity(), key, entry.value() );
+            }
+        }
+        for ( PropertyEntry<Relationship> entry : removed )
+        {
+            // will fix thread safety later
+            if ( !relPropertyKeysToIgnore.contains( entry.key() ) )
             {
                 Object previouslyCommitedValue = entry.previouslyCommitedValue();
                 if ( previouslyCommitedValue != null )

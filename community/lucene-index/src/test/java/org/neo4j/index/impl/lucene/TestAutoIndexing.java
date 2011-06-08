@@ -203,7 +203,7 @@ public class TestAutoIndexing
         rel12.setProperty( "relPropNonIndexable1", "rel12ValueNonIndexable" );
 
         rel23.setProperty( "relProp2", "rel23Value1" );
-        rel23.setProperty( "nodePropNonIndexable2", "rel23ValueNonIndexable" );
+        rel23.setProperty( "relPropNonIndexable2", "rel23ValueNonIndexable" );
 
         rel31.setProperty( "relProp1", "rel31Value1" );
         rel31.setProperty( "relProp2", "rel31Value2" );
@@ -298,6 +298,98 @@ public class TestAutoIndexing
     }
 
     @Test
+    public void testSmallGraphWithDefaultAllIndexableProps() throws Exception
+    {
+        stopDb();
+        config = new HashMap<String, String>();
+        config.put( Config.NODE_KEYS_NON_INDEXABLE, "nodeProp1, nodeProp2" );
+        config.put( Config.RELATIONSHIP_KEYS_NON_INDEXABLE,
+                "relProp1, relProp2" );
+        config.put( Config.AUTO_INDEXING_ENABLED, "true" );
+        startDb();
+
+        assertTrue( graphDb.index().getAutoIndexer().isAutoIndexingEnabled() );
+
+        newTransaction();
+
+        // Build the graph, a 3-cycle
+        Node node1 = graphDb.createNode();
+        Node node2 = graphDb.createNode();
+        Node node3 = graphDb.createNode();
+
+        Relationship rel12 = node1.createRelationshipTo( node2,
+                DynamicRelationshipType.withName( "DYNAMIC" ) );
+        Relationship rel23 = node2.createRelationshipTo( node3,
+                DynamicRelationshipType.withName( "DYNAMIC" ) );
+        Relationship rel31 = node3.createRelationshipTo( node1,
+                DynamicRelationshipType.withName( "DYNAMIC" ) );
+
+        // Nodes
+        node1.setProperty( "nodeProp1", "node1Value1" );
+        node1.setProperty( "nodePropIndexable1", "node1ValueIndexable" );
+
+        node2.setProperty( "nodeProp2", "node2Value1" );
+        node2.setProperty( "nodePropIndexable2", "node2ValueIndexable" );
+
+        node3.setProperty( "nodeProp1", "node3Value1" );
+        node3.setProperty( "nodeProp2", "node3Value2" );
+        node3.setProperty( "nodePropIndexable3", "node3ValueIndexable" );
+
+        // Relationships
+        rel12.setProperty( "relProp1", "rel12Value1" );
+        rel12.setProperty( "relPropIndexable1", "rel12ValueIndexable" );
+
+        rel23.setProperty( "relProp2", "rel23Value1" );
+        rel23.setProperty( "relPropIndexable2", "rel23ValueIndexable" );
+
+        rel31.setProperty( "relProp1", "rel31Value1" );
+        rel31.setProperty( "relProp2", "rel31Value2" );
+        rel31.setProperty( "relPropIndexable3", "rel31ValueIndexable" );
+
+        newTransaction();
+
+        // Committed, time to check
+        AutoIndexer autoIndexer = graphDb.index().getAutoIndexer();
+        assertFalse( autoIndexer.getNodeIndex().get( "nodeProp1", "node1Value1" ).hasNext() );
+        assertFalse( autoIndexer.getNodeIndex().get( "nodeProp2", "node2Value1" ).hasNext() );
+        assertFalse( autoIndexer.getNodeIndex().get( "nodeProp1", "node3Value1" ).hasNext() );
+        assertFalse( autoIndexer.getNodeIndex().get( "nodeProp2", "node3Value2" ).hasNext() );
+        assertEquals(
+                node1,
+                autoIndexer.getNodeIndex().get( "nodePropIndexable1",
+                        "node1ValueIndexable" ).getSingle() );
+        assertEquals(
+                node2,
+                autoIndexer.getNodeIndex().get( "nodePropIndexable2",
+                        "node2ValueIndexable" ).getSingle() );
+        assertEquals(
+                node3,
+                autoIndexer.getNodeIndex().get( "nodePropIndexable3",
+                        "node3ValueIndexable" ).getSingle() );
+
+        assertFalse( autoIndexer.getRelationshipIndex().get( "relProp1",
+                "rel12Value1" ).hasNext() );
+        assertFalse( autoIndexer.getRelationshipIndex().get( "relProp2",
+                "rel23Value1" ).hasNext() );
+        assertFalse( autoIndexer.getRelationshipIndex().get( "relProp1",
+                "rel31Value1" ).hasNext() );
+        assertFalse( autoIndexer.getRelationshipIndex().get( "relProp2",
+                "rel31Value2" ).hasNext() );
+        assertEquals(
+                rel12,
+                autoIndexer.getRelationshipIndex().get( "relPropIndexable1",
+                        "rel12ValueIndexable" ).getSingle() );
+        assertEquals(
+                rel23,
+                autoIndexer.getRelationshipIndex().get( "relPropIndexable2",
+                        "rel23ValueIndexable" ).getSingle() );
+        assertEquals(
+                rel31,
+                autoIndexer.getRelationshipIndex().get( "relPropIndexable3",
+                        "rel31ValueIndexable" ).getSingle() );
+    }
+
+    @Test
     public void testDefaultsAreSeparateForNodesAndRelationships()
             throws Exception
     {
@@ -365,7 +457,6 @@ public class TestAutoIndexing
         autoIndexer.stopAutoIndexingRelationshipProperty( "inThere" );
         // This should succeed, both lists are empty
         autoIndexer.startIgnoringRelationshipProperty( "dontWannaSee" );
-        // Stop monitoring the above. This just removes it.
 
         try
         {
