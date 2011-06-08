@@ -19,19 +19,7 @@
  */
 package org.neo4j.cypher.commands
 
-import collection.immutable.Nil
-import java.lang.RuntimeException
-import java.math.BigDecimal
-import java.lang.Character
-
-/**
- * Created by Andres Taylor
- * Date: 4/16/11
- * Time: 13:29 
- */
-
-
-abstract sealed class Clause
+abstract class Clause
 {
   def ++(other: Clause): Clause = And(this, other)
 
@@ -41,11 +29,6 @@ abstract sealed class Clause
 case class And(a: Clause, b: Clause) extends Clause
 {
   def isMatch(m: Map[String, Any]): Boolean = a.isMatch(m) && b.isMatch(m)
-}
-
-case class Equals(a: Value, b: Value) extends Clause
-{
-  def isMatch(m: Map[String, Any]): Boolean = a.value(m) == b.value(m)
 }
 
 case class Or(a: Clause, b: Clause) extends Clause
@@ -71,82 +54,3 @@ case class RegularExpression(a: Value, str: String) extends Clause
     str.r.pattern.matcher(value).matches()
   }
 }
-
-
-abstract sealed class ComparableClause(a: Value, b: Value) extends Clause
-{
-  def compare(comparisonResult: Int): Boolean
-
-  def compareValuesOfSameType(l: AnyRef, r: AnyRef): Int = (l, r) match
-  {
-    case (left: Comparable[AnyRef], right: Comparable[AnyRef]) => left.compareTo(right)
-    case _ => throw new RuntimeException("This shouldn't happen")
-  }
-
-  def compareValuesOfDifferentTypes(l: Any, r: Any): Int = (l, r) match
-  {
-    case (left: Long, right: Number) => BigDecimal.valueOf(left).compareTo(BigDecimal.valueOf(right.doubleValue()))
-    case (left: Number, right: Long) => BigDecimal.valueOf(left.doubleValue()).compareTo(BigDecimal.valueOf(right))
-    case (left: Number, right: Number) => java.lang.Double.compare(left.doubleValue(), right.doubleValue())
-    case (left: String, right: Character) => left.compareTo(right.toString)
-    case (left: Character, right: String) => left.toString.compareTo(right.toString)
-    case (left, right) =>
-    {
-      throw new RuntimeException("Don't know how to compare that. Left: " + left.toString + "; Right: " + right.toString)
-    }
-  }
-
-
-  def areComparableOfSameType(l: AnyRef, r: AnyRef): Boolean =
-  {
-    l.isInstanceOf[Comparable[_]] &&
-      r.isInstanceOf[Comparable[_]] &&
-      l.getClass.isInstance(r)
-  }
-
-  def isMatch(m: Map[String, Any]): Boolean =
-  {
-    val left: Any = a.value(m)
-    val right: Any = b.value(m)
-
-    if ( left == Nil || right == Nil )
-    {
-      throw new RuntimeException("Can't compare against NULL")
-    }
-
-    val l = left.asInstanceOf[AnyRef]
-    val r = right.asInstanceOf[AnyRef]
-
-    val comparisonResult: Int =
-      if ( areComparableOfSameType(l, r) )
-      {
-        compareValuesOfSameType(l, r)
-      } else
-      {
-        compareValuesOfDifferentTypes(left, right)
-      }
-
-    compare(comparisonResult)
-  }
-}
-
-case class LessThan(a: Value, b: Value) extends ComparableClause(a, b)
-{
-  def compare(comparisonResult: Int) = comparisonResult < 0
-}
-
-case class GreaterThan(a: Value, b: Value) extends ComparableClause(a, b)
-{
-  def compare(comparisonResult: Int) = comparisonResult > 0
-}
-
-case class LessThanOrEqual(a: Value, b: Value) extends ComparableClause(a, b)
-{
-  def compare(comparisonResult: Int) = comparisonResult <= 0
-}
-
-case class GreaterThanOrEqual(a: Value, b: Value) extends ComparableClause(a, b)
-{
-  def compare(comparisonResult: Int) = comparisonResult >= 0
-}
-
