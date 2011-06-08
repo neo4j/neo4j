@@ -32,10 +32,19 @@ class ExecutionEngine(val graph: GraphDatabaseService)
 {
   type MapTransformer = Map[String, Any] => Map[String, Any]
 
-  @throws(classOf[SyntaxError])
-  def execute(query: Query): Projection = query match
+  def createSortItems(sort: Option[Sort], patternKeeper: PatternKeeper): Seq[MapTransformer] =
   {
-    case Query(select, start, matching, where, aggregation, sort) =>
+    sort match
+    {
+      case None => Seq[MapTransformer]()
+      case Some(x) => createMapTransformers(x.sortItems, patternKeeper)
+    }
+  }
+
+  @throws(classOf[SyntaxError])
+  def execute(query: Query): ExecutionResult = query match
+  {
+    case Query(returns, start, matching, where, aggregation, sort) =>
     {
       val patternKeeper = new PatternKeeper
       val sourcePump: Pipe = createSourcePumps(start).reduceLeft(_ ++ _)
@@ -48,7 +57,8 @@ class ExecutionEngine(val graph: GraphDatabaseService)
 
       val filter = createFilters(where, patternKeeper)
 
-      val projections = createProjectionTransformers(select, patternKeeper)
+      val projections = createMapTransformers(returns.returnItems, patternKeeper)
+      val sortItems = createSortItems(sort, patternKeeper)
 
       new Projection(patternKeeper.nodesMap, patternKeeper.relationshipsMap, sourcePump, projections, filter)
     }
@@ -153,10 +163,10 @@ class ExecutionEngine(val graph: GraphDatabaseService)
     }
   }
 
-  def createProjectionTransformers(select: Return, patternKeeper: PatternKeeper): Seq[MapTransformer] =
+  def createMapTransformers(returnItems: Seq[ReturnItem], patternKeeper: PatternKeeper): Seq[MapTransformer] =
   {
 
-    select.returnItems.map((selectItem) =>
+    returnItems.map((selectItem) =>
     {
       selectItem match
       {

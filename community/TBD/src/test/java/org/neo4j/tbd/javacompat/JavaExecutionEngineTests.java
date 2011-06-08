@@ -17,16 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.tbd;
+package org.neo4j.tbd.javacompat;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.tbd.*;
 import org.neo4j.tbd.commands.Query;
-import org.neo4j.tbd.javacompat.ExecutionEngine;
-import org.neo4j.tbd.javacompat.Projection;
-import org.neo4j.tbd.javacompat.SunshineParser;
+import org.neo4j.tbd.javacompat.*;
+import org.neo4j.tbd.javacompat.ExecutionResult;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 import java.util.Collection;
@@ -59,7 +59,7 @@ public class JavaExecutionEngineTests
     private Collection<Node> testQuery( String query ) throws SyntaxError
     {
         Query compiledQuery = parser.parse( query );
-        Projection result = engine.execute( compiledQuery );
+        ExecutionResult result = engine.execute( compiledQuery );
         return IteratorUtil.asCollection( asIterable( result.<Node>columnAs( "n" ) ) );
     }
 }

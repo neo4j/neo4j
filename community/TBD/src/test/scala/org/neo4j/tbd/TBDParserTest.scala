@@ -31,141 +31,142 @@ import org.junit.Test
  * Time: 10:36 
  */
 
-class TBDParserTest {
-  def testQuery(query: String, expectedQuery: Query) {
+class TBDParserTest
+{
+  def testQuery(query: String, expectedQuery: Query)
+  {
     val parser = new TBDParser()
     val executionTree = parser.parse(query)
 
     assertEquals(expectedQuery, executionTree)
   }
 
-  @Test def shouldParseEasiestPossibleQuery() {
+  @Test def shouldParseEasiestPossibleQuery()
+  {
     testQuery(
       "start s = (1) return s",
       Query(
         Return(EntityOutput("s")),
-        Start(NodeById("s", 1))
-      ))
+        Start(NodeById("s", 1))))
   }
 
-  @Test def sourceIsAnIndex() {
+  @Test def sourceIsAnIndex()
+  {
     testQuery(
       """start a = (index, key, "value") return a""",
       Query(
         Return(EntityOutput("a")),
-        Start(NodeByIndex("a", "index", "key", "value"))
-      )
-    )
+        Start(NodeByIndex("a", "index", "key", "value"))))
   }
 
-  @Test def shouldParseEasiestPossibleRelationshipQuery() {
+  @Test def shouldParseEasiestPossibleRelationshipQuery()
+  {
     testQuery(
       "start s = <1> return s",
       Query(
         Return(EntityOutput("s")),
-        Start(RelationshipById("s", 1))
-      ))
+        Start(RelationshipById("s", 1))))
   }
 
-  @Test def sourceIsARelationshipIndex() {
+  @Test def sourceIsARelationshipIndex()
+  {
     testQuery(
       """start a = <index, key, "value"> return a""",
       Query(
         Return(EntityOutput("a")),
-        Start(RelationshipByIndex("a", "index", "key", "value"))
-      )
-    )
+        Start(RelationshipByIndex("a", "index", "key", "value"))))
   }
 
 
-  @Test def keywordsShouldBeCaseInsensitive() {
+  @Test def keywordsShouldBeCaseInsensitive()
+  {
     testQuery(
       "START start = (1) RETURN start",
       Query(
         Return(EntityOutput("start")),
-        Start(NodeById("start", 1))
-      ))
+        Start(NodeById("start", 1))))
   }
 
-  @Test def shouldParseMultipleNodes() {
+  @Test def shouldParseMultipleNodes()
+  {
     testQuery(
       "start s = (1,2,3) return s",
       Query(
         Return(EntityOutput("s")),
-        Start(NodeById("s", 1, 2, 3))
-      ))
+        Start(NodeById("s", 1, 2, 3))))
   }
 
-  @Test def shouldParseMultipleInputs() {
+  @Test def shouldParseMultipleInputs()
+  {
     testQuery(
       "start a = (1), b = (2) return a,b",
       Query(
         Return(EntityOutput("a"), EntityOutput("b")),
-        Start(NodeById("a", 1), NodeById("b", 2))
-      ))
+        Start(NodeById("a", 1), NodeById("b", 2))))
   }
 
-  @Test def shouldFilterOnProp() {
+  @Test def shouldFilterOnProp()
+  {
     testQuery(
       "start a = (1) where a.name = \"andres\" return a",
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
-        Equals(PropertyValue("a", "name"), Literal("andres")))
-    )
+        Equals(PropertyValue("a", "name"), Literal("andres"))))
   }
 
-  @Test def shouldHandleNot() {
+  @Test def shouldHandleNot()
+  {
     testQuery(
       "start a = (1) where not(a.name = \"andres\") return a",
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
-        Not(Equals(PropertyValue("a", "name"), Literal("andres"))))
-    )
+        Not(Equals(PropertyValue("a", "name"), Literal("andres")))))
   }
 
-  @Test def shouldHandleNotEqualTo() {
+  @Test def shouldHandleNotEqualTo()
+  {
     testQuery(
       "start a = (1) where a.name <> \"andres\" return a",
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
-        Not(Equals(PropertyValue("a", "name"), Literal("andres"))))
-    )
+        Not(Equals(PropertyValue("a", "name"), Literal("andres")))))
   }
 
-  @Test def shouldHandleLessThan() {
+  @Test def shouldHandleLessThan()
+  {
     testQuery(
       "start a = (1) where a.name < \"andres\" return a",
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
-        LessThan(PropertyValue("a", "name"), Literal("andres")))
-    )
+        LessThan(PropertyValue("a", "name"), Literal("andres"))))
   }
 
-  @Test def shouldHandleGreaterThan() {
+  @Test def shouldHandleGreaterThan()
+  {
     testQuery(
       "start a = (1) where a.name > \"andres\" return a",
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
-        GreaterThan(PropertyValue("a", "name"), Literal("andres")))
-    )
+        GreaterThan(PropertyValue("a", "name"), Literal("andres"))))
   }
 
-  @Test def shouldHandleLessThanOrEqual() {
+  @Test def shouldHandleLessThanOrEqual()
+  {
     testQuery(
       "start a = (1) where a.name <= \"andres\" return a",
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
-        LessThanOrEqual(PropertyValue("a", "name"), Literal("andres")))
-    )
+        LessThanOrEqual(PropertyValue("a", "name"), Literal("andres"))))
   }
 
-  @Test def shouldHandleRegularComparison() {
+  @Test def shouldHandleRegularComparison()
+  {
     testQuery(
       "start a = (1) where \"Andres\" =~ /And.*/ return a",
       Query(
@@ -175,38 +176,39 @@ class TBDParserTest {
     )
   }
 
-  @Test def shouldHandleGreaterThanOrEqual() {
+  @Test def shouldHandleGreaterThanOrEqual()
+  {
     testQuery(
       "start a = (1) where a.name >= \"andres\" return a",
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
-        GreaterThanOrEqual(PropertyValue("a", "name"), Literal("andres")))
-    )
+        GreaterThanOrEqual(PropertyValue("a", "name"), Literal("andres"))))
   }
 
 
-  @Test def booleanLiterals() {
+  @Test def booleanLiterals()
+  {
     testQuery(
       "start a = (1) where true = false return a",
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
-        Equals(Literal(true), Literal(false)))
-    )
+        Equals(Literal(true), Literal(false))))
   }
 
-  @Test def shouldFilterOnNumericProp() {
+  @Test def shouldFilterOnNumericProp()
+  {
     testQuery(
       "start a = (1) where 35 = a.age return a",
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
-        Equals(Literal(35), PropertyValue("a", "age")))
-    )
+        Equals(Literal(35), PropertyValue("a", "age"))))
   }
 
-  @Test def multipleFilters() {
+  @Test def multipleFilters()
+  {
     testQuery(
       "start a = (1) where a.name = \"andres\" or a.name = \"mattias\" return a",
       Query(
@@ -214,65 +216,60 @@ class TBDParserTest {
         Start(NodeById("a", 1)),
         Or(
           Equals(PropertyValue("a", "name"), Literal("andres")),
-          Equals(PropertyValue("a", "name"), Literal("mattias"))
-        ))
-    )
+          Equals(PropertyValue("a", "name"), Literal("mattias")))))
   }
 
-  @Test def relatedTo() {
+  @Test def relatedTo()
+  {
     testQuery(
       "start a = (1) match (a) -[:KNOWS]-> (b) return a, b",
       Query(
         Return(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
-        Match(RelatedTo("a", "b", None, Some("KNOWS"), Direction.OUTGOING))
-      )
-    )
+        Match(RelatedTo("a", "b", None, Some("KNOWS"), Direction.OUTGOING))))
   }
 
-  @Test def relatedToWithoutRelType() {
+  @Test def relatedToWithoutRelType()
+  {
     testQuery(
       "start a = (1) match (a) --> (b) return a, b",
       Query(
         Return(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
-        Match(RelatedTo("a", "b", None, None, Direction.OUTGOING))
-      )
-    )
+        Match(RelatedTo("a", "b", None, None, Direction.OUTGOING))))
   }
 
-  @Test def relatedToWithoutRelTypeButWithRelVariable() {
+  @Test def relatedToWithoutRelTypeButWithRelVariable()
+  {
     testQuery(
       "start a = (1) match (a) -[r]-> (b) return r",
       Query(
         Return(EntityOutput("r")),
         Start(NodeById("a", 1)),
-        Match(RelatedTo("a", "b", Some("r"), None, Direction.OUTGOING))
-      )
-    )
+        Match(RelatedTo("a", "b", Some("r"), None, Direction.OUTGOING))))
   }
 
-  @Test def relatedToTheOtherWay() {
+  @Test def relatedToTheOtherWay()
+  {
     testQuery(
       "start a = (1) match (a) <-[:KNOWS]- (b) return a, b",
       Query(
         Return(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
-        Match(RelatedTo("a", "b", None, Some("KNOWS"), Direction.INCOMING))
-      )
-    )
+        Match(RelatedTo("a", "b", None, Some("KNOWS"), Direction.INCOMING))))
   }
 
-  @Test def shouldOutputVariables() {
+  @Test def shouldOutputVariables()
+  {
     testQuery(
       "start a = (1) return a.name",
       Query(
         Return(PropertyOutput("a", "name")),
-        Start(NodeById("a", 1)))
-    )
+        Start(NodeById("a", 1))))
   }
 
-  @Test def shouldHandleAndClauses() {
+  @Test def shouldHandleAndClauses()
+  {
     testQuery(
       "start a = (1) where a.name = \"andres\" and a.lastname = \"taylor\" return a.name",
       Query(
@@ -280,34 +277,31 @@ class TBDParserTest {
         Start(NodeById("a", 1)),
         And(
           Equals(PropertyValue("a", "name"), Literal("andres")),
-          Equals(PropertyValue("a", "lastname"), Literal("taylor")))
-      )
-    )
+          Equals(PropertyValue("a", "lastname"), Literal("taylor")))))
   }
 
-  @Test def relatedToWithRelationOutput() {
+  @Test def relatedToWithRelationOutput()
+  {
     testQuery(
       "start a = (1) match (a) -[rel,:KNOWS]-> (b) return rel",
       Query(
         Return(EntityOutput("rel")),
         Start(NodeById("a", 1)),
-        Match(RelatedTo("a", "b", "rel", "KNOWS", Direction.OUTGOING))
-      )
-    )
+        Match(RelatedTo("a", "b", "rel", "KNOWS", Direction.OUTGOING))))
   }
 
-  @Test def relatedToWithoutEndName() {
+  @Test def relatedToWithoutEndName()
+  {
     testQuery(
       "start a = (1) match (a) -[:MARRIED]-> () return a",
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
-        Match(RelatedTo("a", "___NODE1", None, Some("MARRIED"), Direction.OUTGOING))
-      )
-    )
+        Match(RelatedTo("a", "___NODE1", None, Some("MARRIED"), Direction.OUTGOING))))
   }
 
-  @Test def relatedInTwoSteps() {
+  @Test def relatedInTwoSteps()
+  {
     testQuery(
       "start a = (1) match (a) -[:KNOWS]-> (b) -[:FRIEND]-> (c) return c",
       Query(
@@ -320,29 +314,39 @@ class TBDParserTest {
     )
   }
 
-  @Test def djangoRelationshipType() {
+  @Test def djangoRelationshipType()
+  {
     testQuery(
       "start a = (1) match (a) -[:`<<KNOWS>>`]-> (b) return c",
       Query(
         Return(EntityOutput("c")),
         Start(NodeById("a", 1)),
-        Match(RelatedTo("a", "b", None, Some("<<KNOWS>>"), Direction.OUTGOING))
-      )
-    )
+        Match(RelatedTo("a", "b", None, Some("<<KNOWS>>"), Direction.OUTGOING))))
   }
 
-  @Test def countTheNumberOfHits() {
+  @Test def countTheNumberOfHits()
+  {
     testQuery(
       "start a = (1) match (a) --> (b) return a, b, count(*)",
       Query(
         Return(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
         Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
-        Aggregation(Count("*")))
-    )
+        Aggregation(Count("*"))))
   }
 
-  @Test def nullableProperty() {
+  @Test def sorting()
+  {
+    testQuery(
+      "start a = (1) return a sort by a.name",
+      Query(
+        Return(EntityOutput("a")),
+        Start(NodeById("a", 1)),
+        Sort(PropertyOutput("a", "name"))))
+  }
+
+  @Test def nullableProperty()
+  {
     testQuery(
       "start a = (1) return a.name?",
       Query(
@@ -350,7 +354,8 @@ class TBDParserTest {
         Start(NodeById("a", 1))))
   }
 
-  @Test def nestedBooleanOperatorsAndParentesis() {
+  @Test def nestedBooleanOperatorsAndParentesis()
+  {
     testQuery(
       """start n = (1,2,3) where (n.animal = "monkey" and n.food = "banana") or (n.animal = "cow" and n.food="grass") return n""",
       Query(

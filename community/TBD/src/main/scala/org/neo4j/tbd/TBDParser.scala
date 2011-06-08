@@ -27,8 +27,8 @@ import scala.Some
 class TBDParser extends JavaTokenParsers {
   def ignoreCase(str:String): Parser[String] = ("""(?i)\Q""" + str + """\E""").r
 
-  def query: Parser[Query] = start ~ opt(matching) ~ opt(where) ~ returns ^^ {
-    case start ~ matching ~ where ~ returns => Query(returns._1, start, matching, where, returns._2, None)
+  def query: Parser[Query] = start ~ opt(matching) ~ opt(where) ~ returns ~ opt(sort) ^^ {
+    case start ~ matching ~ where ~ returns ~ sort => Query(returns._1, start, matching, where, returns._2, sort)
   }
 
   def start: Parser[Start] = ignoreCase("start") ~> repsep(nodeByIds | nodeByIndex | relsByIds | relsByIndex, ",") ^^ (Start(_: _*))
@@ -89,6 +89,11 @@ class TBDParser extends JavaTokenParsers {
   def relsByIndex = identity ~ "=" ~ "<" ~ identity ~ "," ~ identity ~ "," ~ stringLiteral ~ ">" ^^ {
     case varName ~ "=" ~ "<" ~ index ~ "," ~ key ~ "," ~ value ~ ">" => RelationshipByIndex(varName, index, key, stripQuotes(value))
   }
+
+  def sort: Parser[Sort] = ignoreCase("sort by")  ~> rep1sep(nullablePropertyOutput | propertyOutput | nodeOutput, ",") ^^
+    {
+      case items => Sort(items:_*)
+    }
 
   def returns: Parser[(Return, Option[Aggregation])] = ignoreCase("return") ~> rep1sep((count | nullablePropertyOutput | propertyOutput | nodeOutput), ",") ^^
     { case items => {

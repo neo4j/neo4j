@@ -21,26 +21,10 @@ package org.neo4j.tbd.javacompat;
 
 import java.util.Iterator;
 import java.util.Map;
-
-
-public class Projection implements ExecutionResult
+/**
+ * @author Andres Taylor
+ */
+public interface ExecutionResult extends Iterable<Map<String,Object>>
 {
-    private org.neo4j.tbd.ExecutionResult inner;
-
-    public Projection( org.neo4j.tbd.ExecutionResult projection )
-    {
-        inner = projection;
-    }
-
-    @Override
-    public <T> Iterator<T> columnAs( String n )
-    {
-        return inner.javaColumnAs( n );
-    }
-
-    @Override
-    public Iterator<Map<String, Object>> iterator()
-    {
-        return inner.javaIterator();
-    }
+    <T> Iterator<T> columnAs( String n );
 }
