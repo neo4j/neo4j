@@ -10,3 +10,4 @@ include::boolean-operations.txt[]
 include::filter-on-node-property.txt[]
 
 include::regular-expressions.txt[]
+

@@ -31,11 +31,12 @@ NetBeans::
 For an overview of the main Neo4j artifacts, see <<editions>>.
 The artifacts listed there are top-level artifacts that will transitively include the actual Neo4j implementation.
 You can either go with the top-level artifact or include the individual components directly.
+The examples included here use the top-level artifact approach.
 
 === Maven ===
 
 .Maven dependency
-[source,xml] 
+[source,xml]
 --------------------------------------------
 <project>
 ...

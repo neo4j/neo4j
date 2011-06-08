@@ -19,8 +19,6 @@ Neo4j Embedded
     
     * {{{./management.html}Management features}}    
 
-    * {{{./integrated-index.html}Integrated indexing}} - managed through the GraphDatabaseService
-
 Neo4j Tests
 
     For your reference, there are unit tests included which illustrate

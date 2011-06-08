@@ -28,17 +28,16 @@ import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.ReturnableEvaluator;
-import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.TraversalPosition;
-import org.neo4j.graphdb.Traverser;
-import org.neo4j.graphdb.Traverser.Order;
+import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.Traversal;
 
-public class MatrixTest
+public class MatrixNewTravTest
 {
     public enum RelTypes implements RelationshipType
     {
@@ -117,14 +116,13 @@ public class MatrixTest
 
     /**
      * Get the Neo node. (a.k.a. Thomas Anderson node)
-     * 
+     *
      * @return the Neo node
      */
     private static Node getNeoNode()
     {
-        return graphDb.getReferenceNode()
-        .getSingleRelationship( RelTypes.NEO_NODE, Direction.OUTGOING )
-        .getEndNode();
+        return graphDb.getReferenceNode().getSingleRelationship(
+                RelTypes.NEO_NODE, Direction.OUTGOING ).getEndNode();
     }
 
     @Test
@@ -132,30 +130,26 @@ public class MatrixTest
     {
         Node neoNode = getNeoNode();
         System.out.println( neoNode.getProperty( "name" ) + "'s friends:" );
-        // START SNIPPET: friends-usage
-        Traverser friendsTraverser = getFriends( neoNode );
+        // START SNIPPET: get-friends-usage
+        Traverser friendsTraverser = getFriendsNew( neoNode );
         int numberOfFriends = 0;
-        for ( Node friendNode : friendsTraverser )
+        for ( Path friendPath : friendsTraverser )
         {
-            System.out.println( "At depth "
-                    + friendsTraverser.currentPosition()
-                    .depth() + " => "
-                    + friendNode.getProperty( "name" ) );
-            // END SNIPPET: friends-usage
+            System.out.println( "At depth " + friendPath.length() + " => "
+                    + friendPath.endNode().getProperty( "name" ) );
             numberOfFriends++;
-            // START SNIPPET: friends-usage
         }
-        // END SNIPPET: friends-usage
+        // END SNIPPET: get-friends-usage
         assertEquals( 4, numberOfFriends );
     }
 
     // START SNIPPET: get-friends
-    private static Traverser getFriends( final Node person )
+    private static Traverser getFriendsNew( final Node person )
     {
-        return person.traverse( Order.BREADTH_FIRST,
-                StopEvaluator.END_OF_GRAPH,
-                ReturnableEvaluator.ALL_BUT_START_NODE, RelTypes.KNOWS,
-                Direction.OUTGOING );
+        TraversalDescription td = Traversal.description().breadthFirst().relationships(
+                RelTypes.KNOWS, Direction.OUTGOING ).filter(
+                        Traversal.returnAllButStartNode() );
+        return td.traverse( person );
     }
     // END SNIPPET: get-friends
 
@@ -163,37 +157,27 @@ public class MatrixTest
     public void printMatrixHackers() throws Exception
     {
         System.out.println( "Hackers:" );
-        // START SNIPPET: find--hackers-usage
+        // START SNIPPET: find-hackers-usage
         Traverser traverser = findHackers( getNeoNode() );
         int numberOfHackers = 0;
-        for ( Node hackerNode : traverser )
+        for ( Path hackerPath : traverser )
         {
-            System.out.println( "At depth " + traverser.currentPosition()
-                    .depth() + " => " + hackerNode.getProperty( "name" ) );
-            // END SNIPPET: find--hackers-usage
+            System.out.println( "At depth " + hackerPath.length() + " => "
+                    + hackerPath.endNode().getProperty( "name" ) );
             numberOfHackers++;
-            // START SNIPPET: find--hackers-usage
         }
-        // END SNIPPET: find--hackers-usage
+        // END SNIPPET: find-hackers-usage
         assertEquals( 1, numberOfHackers );
     }
 
     // START SNIPPET: find-hackers
     private static Traverser findHackers( final Node startNode )
     {
-        return startNode.traverse( Order.BREADTH_FIRST,
-                StopEvaluator.END_OF_GRAPH, new ReturnableEvaluator()
-        {
-            @Override
-            public boolean isReturnableNode(
-                    final TraversalPosition currentPos )
-            {
-                return !currentPos.isStartNode()
-                && currentPos.lastRelationshipTraversed()
-                .isType( RelTypes.CODED_BY );
-            }
-        }, RelTypes.CODED_BY, Direction.OUTGOING, RelTypes.KNOWS,
-        Direction.OUTGOING );
+        TraversalDescription td = Traversal.description().breadthFirst().relationships(
+                RelTypes.CODED_BY, Direction.OUTGOING ).relationships(
+                        RelTypes.KNOWS, Direction.OUTGOING ).filter(
+                                Traversal.returnWhereLastRelationshipTypeIs( RelTypes.CODED_BY ) );
+        return td.traverse( startNode );
     }
     // END SNIPPET: find-hackers
 
@@ -202,8 +186,7 @@ public class MatrixTest
         // Registers a shutdown hook for the Neo4j instance so that it
         // shuts down nicely when the VM exits (even if you "Ctrl-C" the
         // running example before it's completed)
-        Runtime.getRuntime()
-        .addShutdownHook( new Thread()
+        Runtime.getRuntime().addShutdownHook( new Thread()
         {
             @Override
             public void run()
@@ -226,8 +209,7 @@ public class MatrixTest
             {
                 deleteFileOrDirectory( child );
             }
-        }
-        else
+        } else
         {
             file.delete();
         }
