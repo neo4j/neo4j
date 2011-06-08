@@ -1,6 +1,7 @@
 [[query-lang]]
 Cypher Query Language
-==============
+=====================
+
 This is an experimental query language for Neo4j.
 
 The query language is comprised of four distinct parts.
@@ -30,3 +31,4 @@ include::ql/where/index.txt[]
 :leveloffset: 2
 
 include::ql/return/index.txt[]
+

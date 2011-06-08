@@ -101,10 +101,6 @@
               <mainClass>org.neo4j.examples.CalculateShortestPath</mainClass>
               <name>calculate-shortest-path</name>
             </program>
-            <program>
-              <mainClass>org.neo4j.examples.UsingIntegratedIndex</mainClass>
-              <name>using-integrated-index</name>
-            </program>
           </programs>
         </configuration>
         <executions>

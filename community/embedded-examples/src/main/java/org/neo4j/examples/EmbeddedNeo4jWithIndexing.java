@@ -32,7 +32,7 @@ public class EmbeddedNeo4jWithIndexing
     private static final String DB_PATH = "neo4j-store";
     private static final String USERNAME_KEY = "username";
     private static GraphDatabaseService graphDb;
-    private static Index<Node> indexService;
+    private static Index<Node> nodeIndex;
 
     // START SNIPPET: createRelTypes
     private static enum RelTypes implements RelationshipType
@@ -46,7 +46,7 @@ public class EmbeddedNeo4jWithIndexing
     {
         // START SNIPPET: startDb
         graphDb = new EmbeddedGraphDatabase( DB_PATH );
-        indexService = graphDb.index().forNodes( "nodes" );
+        nodeIndex = graphDb.index().forNodes( "nodes" );
         registerShutdownHook();
         // END SNIPPET: startDb
 
@@ -72,7 +72,7 @@ public class EmbeddedNeo4jWithIndexing
             // Find a user through the search index
             // START SNIPPET: findUser
             int idToFind = 45;
-            Node foundUser = indexService.get( USERNAME_KEY,
+            Node foundUser = nodeIndex.get( USERNAME_KEY,
                 idToUserName( idToFind ) ).getSingle();
             System.out.println( "The username of user " + idToFind + " is "
                 + foundUser.getProperty( USERNAME_KEY ) );
@@ -83,7 +83,7 @@ public class EmbeddedNeo4jWithIndexing
                     RelTypes.USER, Direction.OUTGOING ) )
             {
                 Node user = relationship.getEndNode();
-                indexService.remove(  user, USERNAME_KEY,
+                nodeIndex.remove(  user, USERNAME_KEY,
                         user.getProperty( USERNAME_KEY ) );
                 user.delete();
                 relationship.delete();
@@ -116,7 +116,7 @@ public class EmbeddedNeo4jWithIndexing
     {
         Node node = graphDb.createNode();
         node.setProperty( USERNAME_KEY, username );
-        indexService.add( node, USERNAME_KEY, username );
+        nodeIndex.add( node, USERNAME_KEY, username );
         return node;
     }
     // END SNIPPET: helperMethods

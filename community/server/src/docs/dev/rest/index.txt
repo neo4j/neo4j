@@ -12,7 +12,7 @@ include::get-service-root.txt[]
 [[rest-api-nodes]]
 == Nodes ==
 
-include::create-a-node.txt[]
+include::create-node.txt[]
 
 include::create-node-with-properties.txt[]
 
@@ -105,4 +105,13 @@ include::find-node-by-exact-match.txt[]
 include::traversals.txt[]
 
 include::traversal-using-a-return-filter.txt[]
+
+[[rest-api-batch-ops]]
+== Batch operations ==
+
+WARNING: Batch support is currently _experimental_. Expect this part of the API to change.
+
+include::execute-multiple-operations-in-batch.txt[]
+
+include::refer-to-items-created-earlier-in-the-same-batch-job.txt[]
 

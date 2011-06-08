@@ -14,3 +14,4 @@ include::return-property.txt[]
 include::optional-nodes.txt[]
 
 include::identifier-with-uncommon-characters.txt[]
+
