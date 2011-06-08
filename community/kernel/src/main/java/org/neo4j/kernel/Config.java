@@ -150,17 +150,45 @@ public class Config
     public static final String STRING_BLOCK_SIZE = "string_block_size";
     public static final String ARRAY_BLOCK_SIZE = "array_block_size";
     /**
-     * A List of property names (as strings) that will be indexed by default.
+     * A list of property names (comma separated) that will be indexed by
+     * default.
      * This applies to Nodes only.
      */
     @Documented
     public static final String NODE_KEYS_INDEXABLE = "node_keys_indexable";
     /**
-     * A List of property names (as strings) that will be indexed by default.
+     * A list of property names (comma separated) that will be indexed by
+     * default.
      * This applies to Relationships only.
      */
     @Documented
     public static final String RELATIONSHIP_KEYS_INDEXABLE = "relationship_keys_indexable";
+    /**
+     * A list of property names (comma separated) that will be ignored by the
+     * auto indexer.
+     * This applies to Nodes only.
+     */
+    @Documented
+    public static final String NODE_KEYS_NON_INDEXABLE = "node_keys_non_indexable";
+    /**
+     * A list of property names (comma separated) that will be ignored by the
+     * auto indexer.
+     * This applies to Relationships only.
+     */
+    @Documented
+    public static final String RELATIONSHIP_KEYS_NON_INDEXABLE = "relationship_keys_non_indexable";
+    /**
+     * Boolean value (one of true, false) that controls the auto indexing
+     * feature. Setting to false shuts it down unconditionally, while true
+     * enables it for every property, subject to restrictions in the
+     * configuration.
+     * The default is false unless one of NODE_KEYS_INDEXABLE,
+     * RELATIONSHIP_KEYS_INDEXABLE, NODE_KEYS_NON_INDEXABLE or
+     * RELATIONSHIP_KEYS_NON_INDEXABLE is set, separately for nodes and
+     * relationships.
+     */
+    @Documented
+    public static final String AUTO_INDEXING_ENABLED = "auto_indexing_enabled";
 
     static final String LOAD_EXTENSIONS = "load_kernel_extensions";
 
@@ -247,6 +275,7 @@ public class Config
             // If not on win, default use memory mapping
             params.put( Config.USE_MEMORY_MAPPED_BUFFERS, "true" );
         }
+        params.put( AUTO_INDEXING_ENABLED, "false" );
         return params;
     }
 
