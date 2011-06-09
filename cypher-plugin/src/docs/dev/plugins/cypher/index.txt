@@ -1,0 +1,9 @@
+[[cypher-plugin]]
+Cypher Plugin
+=============
+
+The Neo4j Sypher Plugin enables querying with the Cypher Query Language possible
+
+:leveloffset: 1
+
+include::send-a-query---url-encoded.txt[]

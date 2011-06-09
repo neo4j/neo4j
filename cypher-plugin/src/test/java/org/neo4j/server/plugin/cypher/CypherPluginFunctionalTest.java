@@ -59,30 +59,13 @@ public class CypherPluginFunctionalTest implements GraphHolder
     private static WrappingNeoServerBootstrapper server;
 
     /**
+     * Send a Query - URL encoded.
      * 
-     * 
-     */
-    @Test
-    @Title("Send a Query - URL encoded")
-    @Documented
-    @Graph( value = { "I know you" } )
-    public void testQueryUrlEncoded() throws UnsupportedEncodingException
-    {
-        String response = gen.get()
-        .expectedStatus( Status.OK.getStatusCode() )
-        .payload( "query=" + URLEncoder.encode( "start n  = ("+data.get().get( "I" ).getId() +") return n", "UTF-8") )
-        .payloadType( MediaType.APPLICATION_FORM_URLENCODED_TYPE )
-        .post( ENDPOINT )
-        .entity();
-        assertTrue(response.contains( "I" ));
-    }
-
-    /**
-     * 
+     * A simple query returning a node:
+     * `start n  = (1) return n`
      * 
      */
     @Test
-    @Title("Send a Query - URL encoded")
     @Documented
     @Graph( value = { "I know you" } )
     public void testPropertyColumn() throws UnsupportedEncodingException
