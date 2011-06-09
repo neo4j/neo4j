@@ -23,9 +23,9 @@ import commands.{SymbolType, NodeType, RelationshipType}
 import scala.collection.mutable.{Map, Buffer}
 import scala.Some
 
-class SymbolTable {
+class SymbolTable(val identifiers: Map[String, SymbolType]) {
+  def this() = this(Map())
 
-  val identifiers: Map[String, SymbolType] = Map()
   val columns: Buffer[String] = Buffer()
 
   def registerNode(name: String) {
@@ -53,4 +53,6 @@ class SymbolTable {
       throw new SyntaxError("Unknown identifier \"" + name + "\".")
     }
   }
+
+  def ++(other:SymbolTable):SymbolTable = new SymbolTable(identifiers ++ other.identifiers)
 }

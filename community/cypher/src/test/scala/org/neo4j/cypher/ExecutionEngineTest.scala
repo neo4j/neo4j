@@ -218,7 +218,12 @@ class ExecutionEngineTest extends ExecutionEngineTestBase
       Match(RelatedTo("start", "x", None, Some("KNOWS"), Direction.OUTGOING)))
 
     val result = execute(query)
-
+    assertEquals("""---------------------
+| start   | x       |
+---------------------
+| Node[1] | Node[2] |
+| Node[1] | Node[3] |
+---------------------""", result.dumpToString() )
     println(result)
   }
 
