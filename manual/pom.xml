@@ -158,13 +158,13 @@
       <classifier>docs</classifier>
       <scope>provided</scope>
     </dependency>
-    <dependency>
+    <!-- dependency>
       <groupId>org.neo4j.server.plugin</groupId>
       <artifactId>neo4j-cypher-plugin</artifactId>
       <version>${neo4j-cypher-plugin.version}</version>
       <classifier>docs</classifier>
       <scope>provided</scope>
-    </dependency>
+    </dependency -->
   </dependencies>
 
   <build>
