@@ -1,0 +1,56 @@
+.sidebar
+  %p.pad The Neo4j console allows you to use the experimental Cypher query language for working with your graph. 
+
+  .foldout
+    %h2
+      %a.foldout_trigger(href="#") Cheat sheet
+    .foldout_content
+      %p.pad Type these in as a single line!
+      %ul.info_list
+        %li
+          %h3 Get node with id 0
+          %p START a = (0)
+          %p RETURN a
+        %li
+          %h3 Get all nodes connects to node with id 0
+          %p START a = (0)
+          %p MATCH (a)-->(b)
+          %p RETURN b
+        %li
+          %h3 Get all nodes connected to node with id 0, and the relationships
+          %p START a = (0)
+          %p MATCH (a)-[r]->(b)
+          %p RETURN r, b
+        %li
+          %h3 Get all nodes related to node with id 0 with relationship type KNOWS
+          %p START a = (0)
+          %p MATCH (a)-[:KNOWS]->(b)
+          %p RETURN b
+        %li
+          %h3 Get all nodes from index "people", with key "name", matching value "Doctor"
+          %p START a = (people, name, "Doctor")
+          %p RETURN a
+        %li
+          %h3 Get all nodes connected to the doctor 
+          %p START doctor = (people, name, "Doctor")
+          %p MATCH (doctor)-[:ENEMY_OF]->(enemy)
+          %p WHERE enemy.name = "Cybermen"
+          %p RETURN doctor
+        %li
+          %h3 Get all friends of friends of the doctor 
+          %p START doctor = (people, name, "Doctor")
+          %p MATCH (doctor)-[:FRIEND]->(friend)-[:FRIEND]->(friend_of_friend)
+          %p RETURN friend_of_friend
+
+
+  .foldout
+    %h2
+      %a.foldout_trigger(href="#") If the console hangs
+    .foldout_content
+      %p.pad If I done goofed, you can reset the console by clearing your browser cookies for webadmin.
+  %p.pad <a href="#/console/gremlin">Give me gremlin back!</a>
+
+.workarea.with-sidebar#console-base.pad
+  #console
+
+

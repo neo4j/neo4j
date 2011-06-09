@@ -348,10 +348,6 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             propIndexCommands.clear();
             relCommands.clear();
             relTypeCommands.clear();
-            if ( !isRecovered() )
-            {
-                lockReleaser.rollback();
-            }
         }
     }
 
@@ -458,10 +454,6 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             }
 
             neoStore.setLastCommittedTx( getCommitTxId() );
-            if ( !isRecovered() )
-            {
-                lockReleaser.commit();
-            }
         }
         finally
         {
@@ -535,10 +527,6 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 neoStore.setRecoveredStatus( false );
             }
             neoStore.getIdGeneratorFactory().updateIdGenerators( neoStore );
-            if ( !isRecovered() )
-            {
-                lockReleaser.commit();
-            }
         }
         finally
         {
@@ -717,8 +705,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             {
                 if ( !propRecord.isChanged() )
                 {
-                    propertyMap.put( propRecord.getKeyIndexId(), 
-                            propRecord.newPropertyData( propertyGetValueOrNull( propRecord ) ) ); 
+                    propertyMap.put( propRecord.getKeyIndexId(),
+                            propRecord.newPropertyData( propertyGetValueOrNull( propRecord ) ) );
                 }
                 else
                 {
@@ -887,7 +875,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
         return getNodeStore().getRecord( nodeId ).getNextRel();
     }
-    
+
     public Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, Long> getMoreRelationships( long nodeId,
         long position )
     {
@@ -1036,7 +1024,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
         return ReadTransaction.loadProperties( getPropertyStore(), nodeRecord.getNextProp() );
     }
-    
+
     public Object propertyGetValueOrNull( PropertyRecord propertyRecord )
     {
         return propertyRecord.getType().getValue( propertyRecord, propertyRecord.isLight() ? null : getPropertyStore() );
@@ -1366,7 +1354,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         firstNode.setNextRel( rel.getId() );
         secondNode.setNextRel( rel.getId() );
     }
-    
+
     private void connect( NodeRecord node, RelationshipRecord rel )
     {
         if ( node.getNextRel() != Record.NO_NEXT_RELATIONSHIP.intValue() )

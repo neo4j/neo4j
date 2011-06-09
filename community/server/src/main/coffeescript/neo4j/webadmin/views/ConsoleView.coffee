@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['neo4j/webadmin/templates/console/base',
+  ['neo4j/webadmin/templates/console/gremlin',
    'neo4j/webadmin/templates/console/console',
    'neo4j/webadmin/views/View',
    'lib/backbone'], 

@@ -1,6 +1,6 @@
 Walking an ordered graph with the Traversal Framework
 
-  This example shows how to use a path context holding a represenation of a path.
+  This example shows how to use a path context holding a representation of a path.
 
   First, we create a toy graph:
 

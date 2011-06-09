@@ -10,4 +10,19 @@ include::setup.txt[]
 
 include::hello-world.txt[]
 
+:leveloffset: 2
+
+include::index-users.txt[]
+
+:leveloffset: 2
+
+include::traversal.txt[]
+
+:leveloffset: 2
+
+include::entities.txt[]
+
+:leveloffset: 2
+
+// include::social.txt[]
 

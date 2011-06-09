@@ -20,11 +20,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 define(
   ['./models/Console',
-   './models/TBDConsole',
-   './views/TBDConsoleView',
+   './models/CypherConsole',
+   './views/CypherConsoleView',
    './views/GremlinConsoleView',
    'lib/backbone'], 
-  (Console, TBDConsole, TBDConsoleView, GremlinConsoleView) ->
+  (Console, CypherConsole, CypherConsoleView, GremlinConsoleView) ->
   
     class ConsoleController extends Backbone.Controller
       routes : 
@@ -34,16 +34,16 @@ define(
       initialize : (appState) =>
         @appState = appState
         @gremlinState = new Console(server:@appState.get("server"), lang:"gremlin")
-        @tbdState = new TBDConsole(server:@appState.get("server"), lang:"tbd")
+        @cypherState = new CypherConsole(server:@appState.get("server"), lang:"cypher")
       
         @views = 
           gremlin : new GremlinConsoleView
             appState : @appState
             consoleState : @gremlinState
             lang: "gremlin"
-          tbd : new TBDConsoleView
+          cypher : new CypherConsoleView
             appState : @appState
-            consoleState : @tbdState
+            consoleState : @cypherState
             lang: ""
           
       console : (type="gremlin") =>

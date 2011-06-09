@@ -294,6 +294,27 @@ public class TestIndexDeletion
         assertFalse( pathToLuceneIndex.exists() );
         assertTrue( pathToOtherLuceneIndex.exists() );
     }
+    
+    @Test
+    public void canDeleteIndexEvenIfEntitiesAreFoundToBeAbandonedInTheSameTx()
+    {
+        // create and index a node
+        Index<Node> nodeIndex = graphDb.index().forNodes( "index" );
+        Node node = graphDb.createNode();
+        nodeIndex.add( node, "key", "value" );
+        // make sure to commit the creation of the entry
+        restartTx();
+
+        // delete the node to abandon the index entry
+        node.delete();
+        restartTx();
+
+        // iterate over all nodes indexed with the key to discover abandoned
+        for ( @SuppressWarnings( "unused" ) Node hit : nodeIndex.get( "key", "value" ) );
+
+        nodeIndex.delete();
+        restartTx();
+    }
 
     private WorkThread createWorker()
     {

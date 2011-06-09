@@ -33,8 +33,8 @@ import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.ImpermanentGraphDatabase;
 import org.neo4j.server.database.Database;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class RelationshipCountSampleableTest
 {

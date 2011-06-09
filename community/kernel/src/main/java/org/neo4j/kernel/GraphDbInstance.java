@@ -160,7 +160,8 @@ class GraphDbInstance
 
         config.getTxModule().start();
         config.getPersistenceModule().start( config.getTxModule().getTxManager(),
-                persistenceSource, config.getSyncHookFactory() );
+ persistenceSource,
+                config.getSyncHookFactory(), config.getLockReleaser() );
         persistenceSource.start( config.getTxModule().getXaDataSourceManager() );
         config.getIdGeneratorModule().start();
         config.getGraphDbModule().start( config.getLockReleaser(),

@@ -1,3 +1,9 @@
+1.4.M04 (2011-06-09)
+--------------------
+o Locks on database primitives acquired by neostore XAResources are now released during afterCompletion()
+  of the global transaction. This allows for nodes and relationships to be used as monitors in distributed
+  settings. 
+
 1.4.M03 (2011-05-26)
 --------------------
 o Kernel now supports self relationships or "loops".

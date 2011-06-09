@@ -19,24 +19,21 @@
  */
 package org.neo4j.server.webadmin.console;
 
+import com.tinkerpop.blueprints.pgm.TransactionalGraph;
+import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
 import groovy.lang.Binding;
 import groovy.lang.GroovyRuntimeException;
-
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.codehaus.groovy.tools.shell.IO;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseBlockedException;
 
-import com.tinkerpop.blueprints.pgm.TransactionalGraph;
-import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class GremlinSession implements ScriptSession
 {
@@ -44,7 +41,6 @@ public class GremlinSession implements ScriptSession
     private static final String INIT_FUNCTION = "init()";
 
     protected GremlinWebConsole scriptEngine;
-    protected StringWriter outputWriter;
     private final Database database;
     private final IO io;
     private final ByteArrayOutputStream baos = new ByteArrayOutputStream();

@@ -1,0 +1,96 @@
+[[tutorials-java-embedded-traversal]]
+Traversal
+=========
+
+== The Matrix ==
+
+This is the first node space we want to traverse into:
+    
+image::matrix.png[title="Matrix node space view"]
+
+Here's how to get friends and friends of friends of a person in the network:
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/MatrixTest.java
+tag=get-friends
+----
+
+Let's perform the actual traversal and print the results:
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/MatrixTest.java
+tag=friends-usage
+----
+
+Now let's find out who coded the Matrix:
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/MatrixTest.java
+tag=find-hackers
+----
+    
+Print out the result:    
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/MatrixTest.java
+tag=find--hackers-usage
+----
+
+Full source code:
+https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/test/java/org/neo4j/examples/MatrixTest.java[MatrixTest.java]
+
+== User roles ==
+
+Here we have users assigned to groups, and groups containing other groups.
+This is the full node space of our example:
+
+image::roles.png[title="User roles node space view"]
+
+Get the admins:
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/RolesTest.java
+tag=get-admins
+----
+    
+Get the group memberships of a user:
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/RolesTest.java
+tag=get-user-memberships
+----
+
+Get all groups:
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/RolesTest.java
+tag=get-groups
+----
+
+Get all members of all groups:
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/RolesTest.java
+tag=get-members
+----
+    
+Full source code:
+https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/test/java/org/neo4j/examples/RolesTest.java[RolesTest.java]
+
+

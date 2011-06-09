@@ -24,8 +24,8 @@ import static org.junit.Assert.assertEquals;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.kernel.ImpermanentGraphDatabase;
 import org.neo4j.server.database.Database;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class GremlinSessionTest
 {

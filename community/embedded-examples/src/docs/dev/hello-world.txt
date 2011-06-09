@@ -61,5 +61,5 @@ tag=shutdownServer
 ----
 
 Full source code:
-https://github.com/neo4j/community/blob/master/embedded-examples/src/main/java/org/neo4j/examples/EmbeddedNeo4j.java[EmbeddedNeo4j.java]
+https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/main/java/org/neo4j/examples/EmbeddedNeo4j.java[EmbeddedNeo4j.java]
 

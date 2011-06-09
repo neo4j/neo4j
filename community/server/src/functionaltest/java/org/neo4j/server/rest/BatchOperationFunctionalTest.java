@@ -92,13 +92,13 @@ public class BatchOperationFunctionalTest
      * fails (returns a non-2xx HTTP status code), the transaction will be 
      * rolled back and all changes will be undone.
      * 
-     * Each job description should contain a path attribute, with a value relative to the
+     * Each job description should contain a +path+ attribute, with a value relative to the
      * data API root (so http://localhost/db/data/node becomes just /node), and
-     * a a method attribute containing HTTP verb to use. 
+     * a +method+ attribute containing HTTP verb to use. 
      * 
-     * Optionally you may provide a body attribute, and an id attribute to help you keep 
+     * Optionally you may provide a +body+ attribute, and an +id+ attribute to help you keep 
      * track of responses, although responses are guaranteed to be returned in the same 
-     * order the job descriptions are recieved.
+     * order the job descriptions are received.
      */
     @Documented
     @SuppressWarnings( "unchecked" )
@@ -183,19 +183,18 @@ public class BatchOperationFunctionalTest
     }
     
     /**
-     * Referring to items created earlier in the same batch job.
+     * Refer to items created earlier in the same batch job.
      * 
-     * The batch operation API allows you to refer to the URL returned
+     * The batch operation API allows you to refer to the URI returned
      * from a created resource in subsequent job descriptions, within the same batch call. 
      * 
-     * Use the "{[JOB ID]}" special syntax to inject URLs from created
+     * Use the +{[JOB ID]}+ special syntax to inject URIs from created
      * resources into JSON strings in subsequent job descriptions.
      */
     @Documented
     @Test
     public void shouldBeAbleToReferToCreatedResource() throws Exception
     {
-        
         String jsonString =new JSONStringer()
             .array()
             .object()
