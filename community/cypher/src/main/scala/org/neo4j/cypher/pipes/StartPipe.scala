@@ -29,7 +29,7 @@ import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
  */
 
 class StartPipe[T <: PropertyContainer](name: String, source: Iterable[T]) extends Pipe {
-  def columnNames: List[String] = List(name)
+  def columns: List[String] = List(name)
 
 
   def foreach[U](f: (Map[String, Any]) => U) {

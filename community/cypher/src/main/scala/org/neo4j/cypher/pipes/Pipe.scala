@@ -33,5 +33,5 @@ abstract class Pipe extends Traversable[Map[String, Any]] {
   def ++(other: Pipe): Pipe = new JoinPipe(this, other)
 
   def prepare(symbolTable : SymbolTable)
-  def columnNames: List[String]
+  def columns: List[String]
 }

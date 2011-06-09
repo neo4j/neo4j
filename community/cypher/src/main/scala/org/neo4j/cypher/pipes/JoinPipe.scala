@@ -30,7 +30,7 @@ import org.neo4j.cypher.SymbolTable
 
 class JoinPipe(a: Pipe, b: Pipe) extends Pipe {
 
-  def columnNames: List[String] = a.columnNames ++ b.columnNames
+  def columns: List[String] = a.columns ++ b.columns
 
   def foreach[U](f: (Map[String, Any]) => U) {
     a.foreach((aMap) => {

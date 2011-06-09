@@ -33,7 +33,7 @@ class TransformPipe(val returnItems: Seq[ReturnItem], source: Pipe) extends Pipe
 
   type MapTransformer = Map[String, Any] => Map[String, Any]
 
-  def columnNames = returnItems.map(_.identifier).toList
+  val columns = returnItems.map(_.identifier.name).toList
 
   def createMapTransformers(returnItems: Seq[ReturnItem], symbolTable: SymbolTable): Seq[MapTransformer] = {
 

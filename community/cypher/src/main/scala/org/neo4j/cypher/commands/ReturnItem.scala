@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.commands
 
-import org.neo4j.cypher.{AggregationType, NodeType, PropertyType, SymbolType}
-
 /**
  * Created by Andres Taylor
  * Date: 4/16/11

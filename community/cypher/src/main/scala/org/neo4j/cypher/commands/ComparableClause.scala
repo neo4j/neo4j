@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.commands
 
+import java.math.BigDecimal
+
 abstract sealed class ComparableClause(a: Value, b: Value) extends Clause
 {
   def compare(comparisonResult: Int): Boolean
@@ -76,7 +78,7 @@ abstract sealed class ComparableClause(a: Value, b: Value) extends Clause
   }
 }
 
-case class LessThan(a: Value, b: Value) extends ComparableClause(a, b)
+case class Equals(a: Value, b: Value) extends ComparableClause(a, b)
 {
   def compare(comparisonResult: Int) = comparisonResult == 0
 }

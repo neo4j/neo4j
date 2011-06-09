@@ -37,7 +37,7 @@ class FilterPipe(val where: Option[Clause], source: Pipe) extends Pipe {
     }
   }
 
-  def columnNames = null
+  def columns = null
   var filters : Clause = null
 
   def prepare(symbolTable: SymbolTable) {

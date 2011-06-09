@@ -33,18 +33,18 @@ class SymbolTable {
   val columns: Buffer[String] = Buffer()
 
   def registerNode(name: String) {
-    val symbolType = identifiers.get(name) match {
-      case Some(RelationshipType(name)) => throw new SyntaxError("Identifier \"" + name + "\" already defined as a relationship.")
+      identifiers.get(name) match {
+      case Some(RelationshipType(_)) => throw new SyntaxError("Identifier \"" + name + "\" already defined as a relationship.")
       case None => identifiers(name) = NodeType(name)
       case Some(NodeType(_)) =>
     }
   }
 
   def registerRelationship(name: String) {
-    val symbolType = identifiers.get(name) match {
-      case Some(NodeType(name)) => throw new SyntaxError("Identifier \"" + name + "\" already defined as a node.")
+      identifiers.get(name) match {
+      case Some(NodeType(_)) => throw new SyntaxError("Identifier \"" + name + "\" already defined as a node.")
       case None => identifiers(name) = RelationshipType(name)
-      case Some(RelationshipType(name)) =>
+      case Some(RelationshipType(_)) =>
     }
   }
 

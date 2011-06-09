@@ -1,4 +1,4 @@
-}
+package org.neo4j.cypher.pipes
 
 /**
  * Copyright (c) 2002-2011 "Neo Technology,"
@@ -19,22 +19,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.pipes
 
 import org.neo4j.cypher.commands.Match
 import org.neo4j.cypher.PatternContext
-import org.neo4j.cypher.pipes.Pipe
 import org.neo4j.cypher.SymbolTable
 import collection.immutable.Map
 
 class PatternPipe(source: Pipe, matching: Option[Match]) extends Pipe {
 
-  var patternContext: PatternContext
+  var patternContext: PatternContext = null
 
   def prepare(symbolTable: SymbolTable) {
     patternContext = new PatternContext(symbolTable)
     patternContext.createPatterns(matching)
-    patternContext.checkConnectednessOfPatternGraph
+    patternContext.checkConnectednessOfPatternGraph(source.columns)
   }
 
   def foreach[U](f: Map[String, Any] => U) {
@@ -45,5 +43,5 @@ class PatternPipe(source: Pipe, matching: Option[Match]) extends Pipe {
     })
   }
 
-  def columnNames = source.columnNames ++ patternContext.columns
+  def columns = source.columns // TODO ++ patternContext.columns
 }
