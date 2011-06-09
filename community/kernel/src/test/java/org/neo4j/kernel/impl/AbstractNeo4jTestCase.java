@@ -20,8 +20,6 @@
 package org.neo4j.kernel.impl;
 
 import java.io.File;
-import java.util.Collections;
-import java.util.Map;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -54,11 +52,6 @@ public abstract class AbstractNeo4jTestCase
         return false;
     }
 
-    protected static Map<String, String> getConfig()
-    {
-        return Collections.EMPTY_MAP;
-    }
-
     public Transaction getTransaction()
     {
         return tx;
@@ -73,8 +66,7 @@ public abstract class AbstractNeo4jTestCase
     public static void setUpDb()
     {
         deleteFileOrDirectory( new File( getStorePath( "neo-test" ) ) );
-        graphDb = new EmbeddedGraphDatabase( getStorePath( "neo-test" ),
-                getConfig() );
+        graphDb = new EmbeddedGraphDatabase( getStorePath( "neo-test" ) );
     }
 
     @Before

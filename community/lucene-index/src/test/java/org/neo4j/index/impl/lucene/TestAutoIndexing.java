@@ -499,4 +499,40 @@ public class TestAutoIndexing
         assertEquals( node2,
                 autoIndexer.getNodeIndex().get( "propName", "node" ).getSingle() );
     }
+
+    @Test
+    public void testStopMonitoringProperty()
+    {
+        AutoIndexer autoIndexer = graphDb.index().getAutoIndexer();
+        autoIndexer.setAutoIndexingEnabled( true );
+        // Now everything is indexed by default.
+        newTransaction();
+        Node node1 = graphDb.createNode();
+        Node node2 = graphDb.createNode();
+        node1.setProperty( "propName", "node" );
+        newTransaction();
+        assertEquals(
+                node1,
+                autoIndexer.getNodeIndex().get( "propName", "node" ).getSingle() );
+        newTransaction();
+        // Setting just a property to autoindex ignores everything else
+        autoIndexer.startAutoIndexingNodeProperty( "propName2" );
+        node2.setProperty( "propName", "propValue" );
+        Node node3 = graphDb.createNode();
+        node3.setProperty( "propName2", "propValue" );
+        newTransaction();
+        // Now node2 must be not there, node3 must be there and node1 should not have been touched
+        assertEquals(
+                node1,
+                autoIndexer.getNodeIndex().get( "propName", "node" ).getSingle() );
+        assertEquals(
+                node3,
+                autoIndexer.getNodeIndex().get( "propName2", "propValue" ).getSingle() );
+        // Now, since only propName2 is autoindexed, every other should be
+        // removed when touched, such as node1's propName
+        node1.setProperty( "propName", "newValue" );
+        newTransaction();
+        assertFalse( autoIndexer.getNodeIndex().get( "propName", "newValue" ).hasNext() );
+
+    }
 }
