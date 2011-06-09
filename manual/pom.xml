@@ -385,6 +385,45 @@
       </plugin>
     </plugins>
   </build>
+  
+  <profiles>
+    <profile>
+      <id>debug-asciidoc</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <property>
+          <name>debug</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>execute-asciidoc</id>
+                <phase>compile</phase>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <configuration>
+                  <executable>make</executable>
+                  <arguments>
+                    <argument>dist</argument>
+                    <argument>VERSION=${project.version}</argument>
+                    <argument>IMPORTDIR=${docs.sources}</argument>
+                    <argument>KEEP=1</argument>
+                    <argument>VERBOSE=1</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
   <distributionManagement>
     <site>
