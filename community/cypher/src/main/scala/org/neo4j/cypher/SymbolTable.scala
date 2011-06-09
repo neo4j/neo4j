@@ -22,31 +22,22 @@ package org.neo4j.cypher
 import commands.{Start, RelationshipStartItem, NodeStartItem}
 import org.neo4j.graphdb.PropertyContainer
 import collection.immutable.Map
-import org.apache.commons.lang.NotImplementedException
 import scala.Some
 import org.neo4j.graphmatching.{PatternGroup, PatternRelationship, AbstractPatternObject, PatternNode}
 import scala.collection.JavaConverters._
+import java.lang.UnsupportedOperationException
 
-/**
- * Created by Andres Taylor
- * Date: 5/20/11
- * Time: 13:54 
- */
-class SymbolTable
-{
+class SymbolTable {
   val group = new PatternGroup
   val nodes = scala.collection.mutable.Map[String, PatternNode]()
   val rels = scala.collection.mutable.Map[String, PatternRelationship]()
 
-  def getOrCreateNode(name: String): PatternNode =
-  {
-    if ( rels.contains(name) )
-    {
+  def getOrCreateNode(name: String): PatternNode = {
+    if (rels.contains(name)) {
       throw new SyntaxError("Variable \"" + name + "\" already defined as a relationship.")
     }
 
-    nodes.getOrElse(name,
-    {
+    nodes.getOrElse(name, {
       val pNode = new PatternNode(group, name)
       nodes(name) = pNode
       pNode
@@ -54,25 +45,19 @@ class SymbolTable
   }
 
 
-  def checkConnectednessOfPatternGraph(start: Start)
-  {
+  def checkConnectednessOfPatternGraph(start: Start) {
     val visited = scala.collection.mutable.HashSet[String]()
 
-    def visit(visitedObject: AbstractPatternObject[_ <: PropertyContainer])
-    {
+    def visit(visitedObject: AbstractPatternObject[_ <: PropertyContainer]) {
       val label = visitedObject.getLabel
-      if ( label == null || !visited.contains(label) )
-      {
-        if ( label != null )
-        {
+      if (label == null || !visited.contains(label)) {
+        if (label != null) {
           visited.add(label)
         }
 
-        visitedObject match
-        {
+        visitedObject match {
           case node: PatternNode => node.getAllRelationships.asScala.foreach(visit)
-          case rel: PatternRelationship =>
-          {
+          case rel: PatternRelationship => {
             visit(rel.getFirstNode)
             visit(rel.getSecondNode)
           }
@@ -81,27 +66,22 @@ class SymbolTable
       }
     }
 
-    start.startItems.map((item) => patternObject(item.variable)).foreach(_ match
-    {
+    start.startItems.map((item) => patternObject(item.variable)).foreach(_ match {
       case None => throw new SyntaxError("Encountered a part of the pattern that is not part of the pattern. If you see this, please report this problem!")
       case Some(obj) => visit(obj)
     })
 
     val notVisitedParts = identifiers -- visited
-    if ( notVisitedParts.nonEmpty )
-    {
+    if (notVisitedParts.nonEmpty) {
       throw new SyntaxError("All parts of the pattern must either directly or indirectly be connected to at least one bound entity. These variables were found to be disconnected: " +
         notVisitedParts.mkString("", ", ", ""))
     }
 
   }
 
-  def addStartItems(start: Start)
-  {
-    start.startItems.foreach((item) =>
-    {
-      item match
-      {
+  def addStartItems(start: Start) {
+    start.startItems.foreach((item) => {
+      item match {
         case relItem: RelationshipStartItem => getOrCreateRelationship(item.variable)
         case nodeItem: NodeStartItem => getOrCreateNode(item.variable)
       }
@@ -109,9 +89,8 @@ class SymbolTable
   }
 
 
-  def getOrCreateRelationship(name: String): PatternRelationship =
-  {
-    throw new NotImplementedException("graph-matching doesn't support this yet. Revisit when it does.")
+  def getOrCreateRelationship(name: String): PatternRelationship = {
+    throw new UnsupportedOperationException("graph-matching doesn't support this yet. Revisit when it does.")
     //     if (nodes.contains(name))
     //       throw new SyntaxError(name + " already defined as a node")
     //
@@ -122,21 +101,17 @@ class SymbolTable
     //     })
   }
 
-  def addRelationship(name: String, rel: PatternRelationship)
-  {
-    if ( nodes.contains(name) )
-    {
+  def addRelationship(name: String, rel: PatternRelationship) {
+    if (nodes.contains(name)) {
       throw new SyntaxError("Variable \"" + name + "\" already defined as a node.")
     }
 
     rels(name) = rel
   }
 
-  def getOrThrow(name: String): AbstractPatternObject[_ <: PropertyContainer] = nodes.get(name) match
-  {
+  def getOrThrow(name: String): AbstractPatternObject[_ <: PropertyContainer] = nodes.get(name) match {
     case Some(x) => x.asInstanceOf[AbstractPatternObject[_ <: PropertyContainer]]
-    case None => rels.get(name) match
-    {
+    case None => rels.get(name) match {
       case Some(x) => x.asInstanceOf[AbstractPatternObject[_ <: PropertyContainer]]
       case None => throw new SyntaxError("No variable named " + name + " has been defined")
     }
@@ -146,21 +121,17 @@ class SymbolTable
 
   def relationshipsMap: Map[String, PatternRelationship] = rels.toMap
 
-  def assertHas(variable: String)
-  {
-    if ( !( nodes.contains(variable) || rels.contains(variable) ) )
-    {
+  def assertHas(variable: String) {
+    if (!(nodes.contains(variable) || rels.contains(variable))) {
       throw new SyntaxError("Unknown variable \"" + variable + "\".")
     }
   }
 
   def identifiers = nodes.keySet ++ rels.keySet
 
-  def patternObject(key: String): Option[AbstractPatternObject[_ <: PropertyContainer]] = nodes.get(key) match
-  {
+  def patternObject(key: String): Option[AbstractPatternObject[_ <: PropertyContainer]] = nodes.get(key) match {
     case Some(node) => Some(node.asInstanceOf[AbstractPatternObject[_ <: PropertyContainer]])
-    case None => rels.get(key) match
-    {
+    case None => rels.get(key) match {
       case Some(rel) => Some(rel.asInstanceOf[AbstractPatternObject[_ <: PropertyContainer]])
       case None => None
     }

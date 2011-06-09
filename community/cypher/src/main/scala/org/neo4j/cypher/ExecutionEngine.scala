@@ -23,7 +23,6 @@ import commands._
 import pipes.{Pipe, FromPump}
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb._
-import org.neo4j.graphmatching.{PatternRelationship, PatternNode, AbstractPatternObject}
 import java.lang.Iterable
 import collection.Seq
 

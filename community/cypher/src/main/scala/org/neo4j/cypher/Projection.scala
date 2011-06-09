@@ -21,11 +21,10 @@ package org.neo4j.cypher
 
 import commands.Clause
 import scala.collection.JavaConverters._
-import org.apache.commons.lang.StringUtils
 import pipes.Pipe
 import org.neo4j.graphmatching.{PatternRelationship, PatternMatch, PatternNode, PatternMatcher}
 import collection.immutable.Map
-import org.neo4j.graphdb.{PropertyContainer, Relationship, Node}
+import org.neo4j.graphdb.{Relationship, Node}
 import collection.Iterable
 
 class Projection(pNodes: Map[String, PatternNode],
