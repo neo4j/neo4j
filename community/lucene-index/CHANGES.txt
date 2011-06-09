@@ -1,3 +1,8 @@
+1.4.M04 (2011-06-09)
+--------------------
+o The LuceneBatchInserterIndex now accepts a batch size (defaults to 50K) after which
+  it automatically commits, as a way of dealing with out-of-memory issues.
+
 1.4.M03 (2011-05-26)
 --------------------
 o Moved LuceneIndexProvider to public package to work better with OSGI.
