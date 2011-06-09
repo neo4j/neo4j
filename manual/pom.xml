@@ -151,13 +151,13 @@
       <classifier>sources</classifier>
       <scope>provided</scope>
     </dependency>
-    <dependency>
+    <!-- dependency>
       <groupId>org.neo4j.server.plugin</groupId>
       <artifactId>neo4j-gremlin-plugin</artifactId>
       <version>${neo4j-gremlin-plugin.version}</version>
       <classifier>docs</classifier>
       <scope>provided</scope>
-    </dependency>
+    </dependency -->
     <!-- dependency>
       <groupId>org.neo4j.server.plugin</groupId>
       <artifactId>neo4j-cypher-plugin</artifactId>
