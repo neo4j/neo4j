@@ -22,6 +22,7 @@
     <docs.images>${project.build.outputDirectory}/images</docs.images>
     <neo4j.version>1.4-SNAPSHOT</neo4j.version>
     <neo4j-gremlin-plugin.version>0.1-SNAPSHOT</neo4j-gremlin-plugin.version>
+    <neo4j-cypher-plugin.version>0.1-SNAPSHOT</neo4j-cypher-plugin.version>
   </properties>
 
   <scm>
@@ -154,6 +155,13 @@
       <groupId>org.neo4j.server.plugin</groupId>
       <artifactId>neo4j-gremlin-plugin</artifactId>
       <version>${neo4j-gremlin-plugin.version}</version>
+      <classifier>docs</classifier>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j.server.plugin</groupId>
+      <artifactId>neo4j-cypher-plugin</artifactId>
+      <version>${neo4j-cypher-plugin.version}</version>
       <classifier>docs</classifier>
       <scope>provided</scope>
     </dependency>
