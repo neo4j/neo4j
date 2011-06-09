@@ -59,6 +59,11 @@ public class CypherSession implements ScriptSession
     @Override
     public String evaluate(String script)
     {
+        if(script.trim().equals(""))
+        {
+            return "";
+        }
+
         try
         {
             Query query = parser.parse(script);

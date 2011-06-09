@@ -20,10 +20,10 @@
 package org.neo4j.cypher
 
 import commands.{RelationshipType, NodeType, RelatedTo, Match}
-import org.apache.commons.lang.NotImplementedException
 import org.neo4j.graphdb._
 import org.neo4j.graphmatching._
 import scala.collection.JavaConversions._
+import java.lang.UnsupportedOperationException
 
 class PatternContext(val symbolTable: SymbolTable) {
 
@@ -114,7 +114,7 @@ class PatternContext(val symbolTable: SymbolTable) {
 
   def getOrCreateRelationship(name: String): PatternRelationship = {
     symbolTable.registerRelationship(name)
-    throw new NotImplementedException("graph-matching doesn't support this yet. Revisit when it does.")
+    throw new UnsupportedOperationException("graph-matching doesn't support this yet. Revisit when it does.")
     //     if (nodes.contains(name))
     //       throw new SyntaxError(name + " already defined as a node")
     //

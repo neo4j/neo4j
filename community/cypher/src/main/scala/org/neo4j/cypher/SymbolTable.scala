@@ -20,20 +20,16 @@
 package org.neo4j.cypher
 
 import commands.{SymbolType, NodeType, RelationshipType}
-import scala.collection.mutable.{Map,Buffer}
+import scala.collection.mutable.{Map, Buffer}
 import scala.Some
-/**
- * Created by Andres Taylor
- * Date: 5/20/11
- * Time: 13:54 
- */
+
 class SymbolTable {
 
   val identifiers: Map[String, SymbolType] = Map()
   val columns: Buffer[String] = Buffer()
 
   def registerNode(name: String) {
-      identifiers.get(name) match {
+    identifiers.get(name) match {
       case Some(RelationshipType(_)) => throw new SyntaxError("Identifier \"" + name + "\" already defined as a relationship.")
       case None => identifiers(name) = NodeType(name)
       case Some(NodeType(_)) =>
@@ -41,14 +37,14 @@ class SymbolTable {
   }
 
   def registerRelationship(name: String) {
-      identifiers.get(name) match {
+    identifiers.get(name) match {
       case Some(NodeType(_)) => throw new SyntaxError("Identifier \"" + name + "\" already defined as a node.")
       case None => identifiers(name) = RelationshipType(name)
       case Some(RelationshipType(_)) =>
     }
   }
 
-  def registerColumn(name : String) {
+  def registerColumn(name: String) {
     columns ++ name
   }
 
@@ -58,4 +54,3 @@ class SymbolTable {
     }
   }
 }
-

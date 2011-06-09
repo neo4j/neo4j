@@ -1809,7 +1809,7 @@ Apache License 2.0:
 ---------------
 MIT License:
  SLF4J API Module, SLF4J Log4j-12 Binding, SLF4J JDK1.4 Logging Binding,
- SLF4J Jakarta Commons Logging Binding, SLF4J System out Binding,
+ SLF4J Jakarta Commons Logging Binding,
  Base64.js, jTemplates, jQuery, jQuery BBQ, jQuery hashchange event,
  SimpleModal, jQuery flot including colorhelpers
 ----------------

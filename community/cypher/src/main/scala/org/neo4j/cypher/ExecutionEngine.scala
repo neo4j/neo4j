@@ -23,7 +23,6 @@ import commands._
 import pipes._
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb._
-import org.neo4j.graphmatching.{PatternRelationship, PatternNode, AbstractPatternObject}
 import java.lang.Iterable
 import collection.Seq
 
@@ -49,7 +48,7 @@ class ExecutionEngine(val graph: GraphDatabaseService)
       val transformPipe = new TransformPipe(returns.returnItems,filterPipe) with ExecutionResult
       transformPipe.prepare(symbolTable)
 
-      return transformPipe
+      transformPipe
     }
   }
 
