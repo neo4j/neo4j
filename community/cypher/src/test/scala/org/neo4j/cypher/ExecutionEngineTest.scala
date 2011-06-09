@@ -219,7 +219,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase
 
     val result = execute(query)
 
-    println(result)
+    println(result.dumpToString())
   }
 
   @Test def shouldGetRelatedToRelatedTo()
