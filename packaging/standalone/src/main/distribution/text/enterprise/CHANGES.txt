@@ -1,3 +1,11 @@
+1.4.M04 (2011-06-09)
+--------------------
+o First iteration of the Cypher Query Language included,
+  with a section in the manual.
+o Experimental support for batch operations in REST
+o The Neo4j Manual now includes some examples, and the
+  section on REST has been extended.   
+
 1.4.M01 (2011-04-28)
 --------------------
 o Server logging has been changed, see the Server Configuration chapter in
