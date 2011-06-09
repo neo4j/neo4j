@@ -98,6 +98,7 @@
         <include>org.apache.servicemix.bundles:org.apache.servicemix.bundles.jline</include>
         <include>org.apache.servicemix.bundles:org.apache.servicemix.bundles.lucene</include>
         <include>org.apache.lucene:lucene-core</include>
+        <include>org.scala-lang:scala-library</include>
       </includes>
       <excludes>
         <exclude>*:javadoc:*</exclude>
@@ -135,6 +136,7 @@
         <exclude>log4j:log4j</exclude>
         <exclude>org.neo4j:neo4j-enterprise</exclude>
         <exclude>*:neo4j-server-enterprise</exclude>
+        <exclude>org.scala-lang:scala-library</exclude>
       </excludes>
     </dependencySet>
     <!-- java examples -->

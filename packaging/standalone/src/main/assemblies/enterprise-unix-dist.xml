@@ -99,6 +99,7 @@
         <include>org.apache.lucene:lucene-core</include>
         <include>org.apache.zookeeper:zookeeper</include>
         <include>org.slf4j:slf4j-api</include>
+        <include>org.scala-lang:scala-library</include>
         <!-- include>org.slf4j:log4j-over-slf4j</include-->
       </includes>
       <excludes>
@@ -135,6 +136,7 @@
         <exclude>org.slf4j:slf4j-api</exclude>
         <exclude>org.slf4j:log4j-over-slf4j</exclude>
         <exclude>commons-logging:*</exclude>
+        <exclude>org.scala-lang:scala-library</exclude>
       </excludes>
     </dependencySet>
     <dependencySet>
