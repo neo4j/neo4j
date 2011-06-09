@@ -38,7 +38,6 @@ class ExecutionEngine(val graph: GraphDatabaseService)
       val symbolTable = new SymbolTable
 
       val startPipe: Pipe = createSourcePumps(start).reduceLeft(_ ++ _)
-
       startPipe.prepare(symbolTable)
 
       val patternPipe = new PatternPipe(startPipe,matching)

@@ -23,11 +23,6 @@ import org.neo4j.cypher.SymbolTable
 import org.neo4j.cypher.commands.{True, Clause}
 import java.lang.String
 
-/**
- * @author mh
- * @since 09.06.11
- */
-
 class FilterPipe(val where: Option[Clause], source: Pipe) extends Pipe {
 
   def createFilters(where: Option[Clause], symbolTable: SymbolTable): Clause = {
@@ -37,7 +32,7 @@ class FilterPipe(val where: Option[Clause], source: Pipe) extends Pipe {
     }
   }
 
-  def columns = null
+  def columns = source.columns
   var filters : Clause = null
 
   def prepare(symbolTable: SymbolTable) {

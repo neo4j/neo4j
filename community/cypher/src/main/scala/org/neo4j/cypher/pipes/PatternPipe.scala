@@ -43,5 +43,5 @@ class PatternPipe(source: Pipe, matching: Option[Match]) extends Pipe {
     })
   }
 
-  def columns = source.columns // TODO ++ patternContext.columns
+  def columns = patternContext.identifiers.toList
 }

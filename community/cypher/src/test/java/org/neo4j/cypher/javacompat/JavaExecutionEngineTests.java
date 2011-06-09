@@ -56,7 +56,7 @@ public class JavaExecutionEngineTests
         GraphDatabaseService db = new ImpermanentGraphDatabase();
         CypherParser parser = new CypherParser();
         ExecutionEngine engine = new ExecutionEngine( db );
-        Query query = parser.parse( "start n=(0) return n" );
+        Query query = parser.parse( "start n=(0) where 1=1 return n" );
         ExecutionResult result = engine.execute( query );
 
         assertThat( result.columns(), hasItem( "n" ) );

@@ -24,10 +24,6 @@ import org.apache.commons.lang.NotImplementedException
 import org.neo4j.graphdb._
 import org.neo4j.graphmatching._
 import scala.collection.JavaConversions._
-/**
- * @author mh
- * @since 08.06.11
- */
 
 class PatternContext(val symbolTable: SymbolTable) {
 
@@ -39,7 +35,6 @@ class PatternContext(val symbolTable: SymbolTable) {
     case (name: String, symbolType: NodeType) => nodes(name) = getOrCreateNode(name)
     case (name: String, symbolType: RelationshipType) => rels(name) = getOrCreateRelationship(name)
   })
-
 
   def createPatterns(matching: Option[Match]) {
     matching match {
@@ -84,7 +79,6 @@ class PatternContext(val symbolTable: SymbolTable) {
 
 
   def checkConnectednessOfPatternGraph(startIdentifiers : List[String]) {
-    //val identifiers = symbolTable.identifiers
     val visited = scala.collection.mutable.HashSet[String]()
 
     def visit(visitedObject: PatternType) {

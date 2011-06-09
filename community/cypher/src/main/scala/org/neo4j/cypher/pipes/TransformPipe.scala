@@ -24,13 +24,7 @@ import org.neo4j.cypher.SymbolTable
 import org.neo4j.cypher.commands.{NullablePropertyOutput, PropertyOutput, EntityOutput, ReturnItem}
 import org.neo4j.graphdb.{NotFoundException, PropertyContainer}
 
-/**
- * @author mh
- * @since 09.06.11
- */
-
-class TransformPipe(val returnItems: Seq[ReturnItem], source: Pipe) extends Pipe {
-
+class TransformPipe(returnItems: Seq[ReturnItem], source: Pipe) extends Pipe {
   type MapTransformer = Map[String, Any] => Map[String, Any]
 
   val columns = returnItems.map(_.identifier.name).toList
@@ -80,7 +74,6 @@ class TransformPipe(val returnItems: Seq[ReturnItem], source: Pipe) extends Pipe
 
   def prepare(symbolTable: SymbolTable) {
     transformers = createMapTransformers(returnItems, symbolTable)
-    //returnItems.map(_.identifier).foreach((column) => symbolTable.registerColumn(column))
   }
 
   def foreach[U](f: (Map[String, Any]) => U) {
