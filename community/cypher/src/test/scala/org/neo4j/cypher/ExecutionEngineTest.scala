@@ -204,7 +204,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase
     assertEquals(List(Map("x" -> n2), Map("x" -> n3)), result.toList)
   }
 
-  @Test def toStringTest()
+  @Test def executionResultTextualOutput()
   {
     val n1: Node = createNode()
     val n2: Node = createNode()
@@ -218,13 +218,10 @@ class ExecutionEngineTest extends ExecutionEngineTestBase
       Match(RelatedTo("start", "x", None, Some("KNOWS"), Direction.OUTGOING)))
 
     val result = execute(query)
-    assertEquals("""---------------------
-| start   | x       |
----------------------
-| Node[1] | Node[2] |
-| Node[1] | Node[3] |
----------------------""", result.dumpToString() )
-    println(result)
+
+    val textOutput = result.dumpToString()
+
+    println(textOutput)
   }
 
   @Test def shouldGetRelatedToRelatedTo()

@@ -83,7 +83,7 @@ trait ExecutionResult extends Traversable[Map[String, Any]] {
 
     val headers = columns.map((c) => Map[String, Any](c -> c)).reduceLeft(_ ++ _)
     builder.append("| " + createString(columns, columnSizes, headers) + " |" + "\r\n")
-    val wholeLine = repeat("-", builder.length - 2)
+    val wholeLine = repeat("-", builder.length-2)
     builder.append(wholeLine + "\r\n")
     builder.insert(0, wholeLine + "\r\n")
 
@@ -96,7 +96,7 @@ trait ExecutionResult extends Traversable[Map[String, Any]] {
     builder.toString()
   }
 
-  def repeat(x: String, size: Int): String = (0 to size).map((i) => x).mkString
+  def repeat(x: String, size: Int): String = (1 to size).map((i) => x).mkString
 
   def props(x: PropertyContainer): String = x.getPropertyKeys.asScala.map((key) => key + "->" + quoteString(x.getProperty(key))).mkString("{", ",", "}")
 
@@ -126,7 +126,7 @@ trait ExecutionResult extends Traversable[Map[String, Any]] {
     if (actualSize > wantedSize) {
       txt.slice(0, wantedSize)
     } else if (actualSize < wantedSize) {
-      txt + repeat(" ", actualSize - wantedSize)
+      txt + repeat(" ", wantedSize - actualSize)
     } else txt
   }
 
