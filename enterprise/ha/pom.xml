@@ -18,7 +18,7 @@
   <properties>
     <bundle.namespace>org.neo4j.kernel.ha</bundle.namespace>
     <short-name>ha</short-name>
-    <neo4j.version>1.4.M04</neo4j.version>
+    <neo4j.version>1.4-SNAPSHOT</neo4j.version>
   </properties>
 
   <scm>
