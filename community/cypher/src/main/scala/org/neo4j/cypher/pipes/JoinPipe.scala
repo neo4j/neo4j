@@ -20,6 +20,7 @@
 package org.neo4j.cypher.pipes
 
 import java.lang.String
+import org.neo4j.cypher.SymbolTable
 
 /**
  * Created by Andres Taylor
@@ -29,7 +30,7 @@ import java.lang.String
 
 class JoinPipe(a: Pipe, b: Pipe) extends Pipe {
 
-  def columnNames: List[String] = a.columnNames ++ b.columnNames
+  def columns: List[String] = a.columns ++ b.columns
 
   def foreach[U](f: (Map[String, Any]) => U) {
     a.foreach((aMap) => {
@@ -37,5 +38,10 @@ class JoinPipe(a: Pipe, b: Pipe) extends Pipe {
         f.apply(aMap ++ bMap)
       })
     })
+  }
+
+  def prepare(symbolTable: SymbolTable) = {
+    a.prepare(symbolTable)
+    b.prepare(symbolTable)
   }
 }

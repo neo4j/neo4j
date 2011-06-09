@@ -20,6 +20,7 @@
 package org.neo4j.cypher.pipes
 
 import java.lang.String
+import org.neo4j.cypher.SymbolTable
 
 /**
  * Created by Andres Taylor
@@ -31,5 +32,6 @@ abstract class Pipe extends Traversable[Map[String, Any]] {
 
   def ++(other: Pipe): Pipe = new JoinPipe(this, other)
 
-  def columnNames: List[String]
+  def prepare(symbolTable : SymbolTable)
+  def columns: List[String]
 }

@@ -38,7 +38,7 @@ class SyntaxErrorTest extends ExecutionEngineTestBase {
       Return(EntityOutput("bar")),
       Start(NodeById("foo", node.getId)))
 
-    expectedError(query, """Unknown variable "bar".""")
+    expectedError(query, """Unknown identifier "bar".""")
   }
 
   @Test def defineANodeAndTreatItAsRelationship() {
@@ -49,7 +49,7 @@ class SyntaxErrorTest extends ExecutionEngineTestBase {
       Start(NodeById("foo", node.getId)),
       Match(RelatedTo("a", "b", None, None, Direction.BOTH)))
 
-    expectedError(query, "All parts of the pattern must either directly or indirectly be connected to at least one bound entity. These variables were found to be disconnected: a, b")
+    expectedError(query, "All parts of the pattern must either directly or indirectly be connected to at least one bound entity. These identifiers were found to be disconnected: a, b")
   }
 
 

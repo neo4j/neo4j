@@ -17,28 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-//package org.neo4j.cypher.docgen
-//
-//import org.junit.Test
-//import org.junit.Assert._
-//import org.neo4j.graphdb.Node
-//
-//class SortTest extends DocumentingTestBase
-//{
-//  def indexProps = List()
-//
-//  def graphDescription = List("A KNOWS B", "B KNOWS C")
-//
-//  def section = "Sort"
-//
-//  @Test def sortByName()
-//  {
-//    testQuery(
-//      title = "Sort nodes by property",
-//      text = "SORT BY is used to sort the output",
-//      queryText = """start n=(%C%,%A%,%B%) return n sort by n.name""",
-//      returns = """The nodes, sorted by their name.""",
-//      (p) => assertEquals(List(node("A"), node("B"), node("C")), p.columnAs[Node]("n") .toList)
-//    )
-//  }
-//}
+package org.neo4j.cypher.docgen
+
+import org.junit.Assert._
+import org.neo4j.graphdb.Node
+import org.junit.{Ignore, Test}
+
+class SortTest extends DocumentingTestBase
+{
+  def indexProps = List()
+
+  def graphDescription = List("A KNOWS B", "B KNOWS C")
+
+  def section = "Sort"
+
+  @Test @Ignore def sortByName()
+  {
+    testQuery(
+      title = "Sort nodes by property",
+      text = "SORT BY is used to sort the output",
+      queryText = """start n=(%C%,%A%,%B%) return n sort by n.name""",
+      returns = """The nodes, sorted by their name.""",
+      (p) => assertEquals(List(node("A"), node("B"), node("C")), p.columnAs[Node]("n") .toList)
+    )
+  }
+}

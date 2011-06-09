@@ -17,20 +17,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.commands
+package org.neo4j.cypher.pipes
+
+import org.neo4j.cypher.SymbolTable
+import org.neo4j.cypher.commands.{True, Clause}
+import java.lang.String
 
 /**
- * Created by Andres Taylor
- * Date: 4/16/11
- * Time: 19:08 
+ * @author mh
+ * @since 09.06.11
  */
 
-abstract sealed class ReturnItem(val identifier:SymbolType)
+class FilterPipe(val where: Option[Clause], source: Pipe) extends Pipe {
 
-case class EntityOutput(name: String) extends ReturnItem(NodeType(name))  // todo relationship-entity-type
-case class PropertyOutput(entityName:String, propName:String) extends ReturnItem(PropertyType(entityName + "." + propName))
-case class NullablePropertyOutput(entityName:String, propName:String) extends ReturnItem(PropertyType(entityName + "." + propName))
+  def createFilters(where: Option[Clause], symbolTable: SymbolTable): Clause = {
+    where match {
+      case None => new True()
+      case Some(clause) => clause
+    }
+  }
 
-abstract sealed class AggregationItem(ident:String) extends ReturnItem(AggregationType(ident))
+  def columns = null
+  var filters : Clause = null
 
-case class Count(variable:String) extends AggregationItem(variable)
+  def prepare(symbolTable: SymbolTable) {
+    filters = createFilters(where,symbolTable)
+  }
+
+  def foreach[U](f: (Map[String, Any]) => U) {
+    source.filter((row) => {
+      filters.isMatch(row)
+    }).foreach(f)
+  }
+}

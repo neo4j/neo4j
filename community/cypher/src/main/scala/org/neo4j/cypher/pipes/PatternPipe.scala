@@ -1,3 +1,5 @@
+package org.neo4j.cypher.pipes
+
 /**
  * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -17,20 +19,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.commands
 
-/**
- * Created by Andres Taylor
- * Date: 4/16/11
- * Time: 19:08 
- */
+import org.neo4j.cypher.commands.Match
+import org.neo4j.cypher.PatternContext
+import org.neo4j.cypher.SymbolTable
+import collection.immutable.Map
 
-abstract sealed class ReturnItem(val identifier:SymbolType)
+class PatternPipe(source: Pipe, matching: Option[Match]) extends Pipe {
 
-case class EntityOutput(name: String) extends ReturnItem(NodeType(name))  // todo relationship-entity-type
-case class PropertyOutput(entityName:String, propName:String) extends ReturnItem(PropertyType(entityName + "." + propName))
-case class NullablePropertyOutput(entityName:String, propName:String) extends ReturnItem(PropertyType(entityName + "." + propName))
+  var patternContext: PatternContext = null
 
-abstract sealed class AggregationItem(ident:String) extends ReturnItem(AggregationType(ident))
+  def prepare(symbolTable: SymbolTable) {
+    patternContext = new PatternContext(symbolTable)
+    patternContext.createPatterns(matching)
+    patternContext.checkConnectednessOfPatternGraph(source.columns)
+  }
 
-case class Count(variable:String) extends AggregationItem(variable)
+  def foreach[U](f: Map[String, Any] => U) {
+    source.foreach((row) => {
+      row.foreach(patternContext.bindStartPoint(_))
+
+      patternContext.getPatternMatches(row).map(f)
+    })
+  }
+
+  def columns = source.columns // TODO ++ patternContext.columns
+}
