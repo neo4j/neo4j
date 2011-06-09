@@ -48,7 +48,7 @@ import org.neo4j.test.TestData.Title;
 
 public class CypherPluginFunctionalTest implements GraphHolder
 {
-    private static final String ENDPOINT = "http://localhost:7474/db/data/ext/QueryPlugin/graphdb/execute_query";
+    private static final String ENDPOINT = "http://localhost:7474/db/data/ext/CypherPlugin/graphdb/execute_query";
     private static ImpermanentGraphDatabase graphdb;
     public @Rule
     TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor(
@@ -66,11 +66,11 @@ public class CypherPluginFunctionalTest implements GraphHolder
     @Title("Send a Query - URL encoded")
     @Documented
     @Graph( value = { "I know you" } )
-    public void testGremlinPostURLEncoded() throws UnsupportedEncodingException
+    public void testQueryUrlEncoded() throws UnsupportedEncodingException
     {
         String response = gen.get()
         .expectedStatus( Status.OK.getStatusCode() )
-        .payload( "query=" + URLEncoder.encode( "start n  = ("+data.get().get( "I" ).getId() +") return n", "UTF-8") + "&returns=n" )
+        .payload( "query=" + URLEncoder.encode( "start n  = ("+data.get().get( "I" ).getId() +") return n", "UTF-8") )
         .payloadType( MediaType.APPLICATION_FORM_URLENCODED_TYPE )
         .post( ENDPOINT )
         .entity();
@@ -89,10 +89,11 @@ public class CypherPluginFunctionalTest implements GraphHolder
     {
         String response = gen.get()
         .expectedStatus( Status.OK.getStatusCode() )
-        .payload( "query=" + URLEncoder.encode( "start n  = ("+data.get().get( "I" ).getId() +") return n.name", "UTF-8")  + "&returns=n")
+        .payload( "query=" + URLEncoder.encode( "start n  = ("+data.get().get( "I" ).getId() +") return n.name", "UTF-8"))
         .payloadType( MediaType.APPLICATION_FORM_URLENCODED_TYPE )
         .post( ENDPOINT )
         .entity();
+        System.out.println(response);
         assertTrue(response.contains( "I" ));
     }
 

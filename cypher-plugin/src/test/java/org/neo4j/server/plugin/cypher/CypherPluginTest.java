@@ -28,15 +28,14 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.cypher.CypherParser;
+import org.neo4j.cypher.ExecutionEngine;
+import org.neo4j.cypher.SyntaxError;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.server.plugin.cypher.CypherPlugin;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
-import org.neo4j.tbd.SyntaxError;
-import org.neo4j.tbd.javacompat.ExecutionEngine;
-import org.neo4j.tbd.javacompat.SunshineParser;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphHolder;
@@ -46,7 +45,7 @@ import org.neo4j.test.TestData;
 public class CypherPluginTest implements GraphHolder
 {
     
-    private SunshineParser parser;
+    private CypherParser parser;
     private static ImpermanentGraphDatabase db;
     private ExecutionEngine engine;
     public @Rule
@@ -58,7 +57,7 @@ public class CypherPluginTest implements GraphHolder
     @Before
     public void setUp() throws Exception
     {
-        parser = new SunshineParser();
+        parser = new CypherParser();
         db = new ImpermanentGraphDatabase();
         engine = new ExecutionEngine( db );
         plugin = new CypherPlugin();

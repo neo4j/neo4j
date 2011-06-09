@@ -22,14 +22,14 @@ package org.neo4j.server.rest.repr;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.tbd.javacompat.Projection;
+import org.neo4j.cypher.ExecutionResult;
+
 
 public class CypherResultRepresentation extends ObjectRepresentation {
 
-	private final Projection queryResult;
+	private final ExecutionResult queryResult;
 
-    public CypherResultRepresentation( Projection result )
+    public CypherResultRepresentation( ExecutionResult result )
     {
         super( RepresentationType.STRING );
         this.queryResult = result;
@@ -37,8 +37,10 @@ public class CypherResultRepresentation extends ObjectRepresentation {
 
     @Mapping("content")
     public Representation self() {
-        Map<String, String> columns = MapUtil.stringMap( "col1", "value" );
-        return MappingRepresentation.stringMap( STRING, columns );
+        
+        Map<String, String> c = new HashMap<String, String>();
+        c.put( "columns", queryResult.dumpToString() );
+        return MappingRepresentation.stringMap( STRING, c); 
     }
     
 //    private void fillColumns() {
