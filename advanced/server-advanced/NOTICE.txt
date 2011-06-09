@@ -59,7 +59,7 @@ The Apache Software License, Version 2.0:
 
 MIT License:
  SLF4J API Module, SLF4J Log4j-12 Binding, SLF4J JDK1.4 Logging Binding,
- SLF4J Jakarta Commons Logging Binding, SLF4J System out Binding,
+ SLF4J Jakarta Commons Logging Binding,
  Base64.js,
  jTemplates,
  jQuery,
@@ -73,7 +73,7 @@ BSD licence:
  Blueprints: Data Models and their Implementations,
  Gremlin: A Graph-Based Programming Language,
  Pipes: A Data Flow Framework using Process Graphs,
- JLine
+ JLine, Scala library
 
 provided without support or warranty: JSON (JavaScript Object Notation)
 
