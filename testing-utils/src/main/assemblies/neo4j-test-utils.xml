@@ -36,12 +36,6 @@
         <include>org.neo4j:*:test-jar:*</include>
       </includes>
       <unpackOptions>
-        <excludes>
-          <exclude>**/*Test.class</exclude>
-          <exclude>**/*Tests.class</exclude>
-          <exclude>**/*Test$*.class</exclude>
-          <exclude>**/*Tests$*.class</exclude>
-        </excludes>
         <includes>
           <include>org/neo4j/test/**</include>
         </includes>
