@@ -24,7 +24,7 @@ import scala.collection.mutable.{Map, Buffer}
 import scala.Some
 
 class SymbolTable(val identifiers: Map[String, SymbolType]) {
-  def this() = this(Map())
+  def this() = this (Map())
 
   val columns: Buffer[String] = Buffer()
 
@@ -54,5 +54,18 @@ class SymbolTable(val identifiers: Map[String, SymbolType]) {
     }
   }
 
-  def ++(other:SymbolTable):SymbolTable = new SymbolTable(identifiers ++ other.identifiers)
+  def ++(other: SymbolTable): SymbolTable = {
+    identifiers.foreach {
+      case (key, value) => {
+        other.identifiers.get(key) match {
+          case None =>
+          case Some(x) => if (!x.getClass.isInstance(value)) {
+            throw new SyntaxError("Identifier " + key + " already defined with different type")
+          }
+        }
+      }
+    }
+
+    new SymbolTable(identifiers ++ other.identifiers)
+  }
 }
