@@ -19,15 +19,14 @@
  */
 package org.neo4j.graphdb.index;
 
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.PropertyContainer;
 
 /**
  * The primary interaction point with the auto indexing infrastructure of neo4j.
  * From here it is possible to enable/disable the auto indexing functionality,
  * set/unset auto indexed properties and retrieve index hits.
  */
-public interface AutoIndexer
+public interface AutoIndexer<T extends PropertyContainer>
 {
     /**
      * Sets the AutoIndexer as enabled or not. Enabled means that appropriately
@@ -50,33 +49,17 @@ public interface AutoIndexer
     boolean isAutoIndexingEnabled();
 
     /**
-     * Returns the index used by the auto indexer for indexing nodes.
+     * Returns the index used by the auto indexer for indexing properties.
      *
-     * @return The node index
+     * @return A read only index
      */
-    AutoIndex<Node> getNodeIndex();
+    AutoIndex<T> getAutoIndex();
 
-    /**
-     * Returns the index used by the auto indexer for indexing relationships.
-     *
-     * @return The relationship index
-     */
-    AutoIndex<Relationship> getRelationshipIndex();
+    void startAutoIndexingProperty( String propName );
 
-    void startAutoIndexingNodeProperty( String propName );
+    void stopAutoIndexingProperty( String propName );
 
-    void stopAutoIndexingNodeProperty( String propName );
+    void startIgnoringProperty( String propName );
 
-    void startAutoIndexingRelationshipProperty( String propName );
-
-    void stopAutoIndexingRelationshipProperty( String propName );
-
-    void startIgnoringNodeProperty(String propName);
-
-    void stopIgnoringNodeProperty(String propName);
-
-    void startIgnoringRelationshipProperty(String propName);
-
-    void stopIgnoringRelationshipProperty( String propName );
-
+    void stopIgnoringProperty( String propName );
 }

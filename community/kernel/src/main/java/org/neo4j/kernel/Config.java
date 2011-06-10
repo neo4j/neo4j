@@ -179,16 +179,24 @@ public class Config
     public static final String RELATIONSHIP_KEYS_NON_INDEXABLE = "relationship_keys_non_indexable";
     /**
      * Boolean value (one of true, false) that controls the auto indexing
-     * feature. Setting to false shuts it down unconditionally, while true
+     * feature for nodes. Setting to false shuts it down unconditionally, while true
      * enables it for every property, subject to restrictions in the
      * configuration.
-     * The default is false unless one of NODE_KEYS_INDEXABLE,
-     * RELATIONSHIP_KEYS_INDEXABLE, NODE_KEYS_NON_INDEXABLE or
-     * RELATIONSHIP_KEYS_NON_INDEXABLE is set, separately for nodes and
-     * relationships.
+     * The default is false.
      */
     @Documented
-    public static final String AUTO_INDEXING_ENABLED = "auto_indexing_enabled";
+    public static final String NODE_AUTO_INDEXING = "node_auto_indexing";
+
+    /**
+     * Boolean value (one of true, false) that controls the auto indexing
+     * feature for relationships. Setting to false shuts it down
+     * unconditionally, while true
+     * enables it for every property, subject to restrictions in the
+     * configuration.
+     * The default is false.
+     */
+    @Documented
+    public static final String RELATIONSHIP_AUTO_INDEXING = "relationship_auto_indexing";
 
     static final String LOAD_EXTENSIONS = "load_kernel_extensions";
 
@@ -275,7 +283,8 @@ public class Config
             // If not on win, default use memory mapping
             params.put( Config.USE_MEMORY_MAPPED_BUFFERS, "true" );
         }
-        params.put( AUTO_INDEXING_ENABLED, "false" );
+        params.put( NODE_AUTO_INDEXING, "false" );
+        params.put( RELATIONSHIP_AUTO_INDEXING, "false" );
         return params;
     }
 
