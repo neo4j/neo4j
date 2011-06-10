@@ -37,6 +37,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.index.AutoIndex;
 import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
@@ -98,8 +99,8 @@ public class TestAutoIndexing
     @Test
     public void testNodeAutoIndexFromAPISanity()
     {
-        AutoIndexer autoIndexer = graphDb.index().getAutoIndexer();
-        autoIndexer.startAutoIndexingNodeProperty( "test_uuid" );
+        AutoIndexer<Node> autoIndexer = graphDb.index().getNodeAutoIndexer();
+        autoIndexer.startAutoIndexingProperty( "test_uuid" );
         autoIndexer.setAutoIndexingEnabled( true );
         newTransaction();
 
@@ -109,25 +110,25 @@ public class TestAutoIndexing
         node2.setProperty( "test_uuid", "node2" );
 
         // will index on commit
-        assertFalse( autoIndexer.getNodeIndex().get( "test_uuid", "node1" ).hasNext() );
-        assertFalse( autoIndexer.getNodeIndex().get( "test_uuid", "node2" ).hasNext() );
+        assertFalse( autoIndexer.getAutoIndex().get( "test_uuid", "node1" ).hasNext() );
+        assertFalse( autoIndexer.getAutoIndex().get( "test_uuid", "node2" ).hasNext() );
 
         newTransaction();
 
         assertEquals(
                 node1,
-                autoIndexer.getNodeIndex().get( "test_uuid", "node1" ).getSingle() );
+                autoIndexer.getAutoIndex().get( "test_uuid", "node1" ).getSingle() );
         assertEquals(
                 node2,
-                autoIndexer.getNodeIndex().get( "test_uuid", "node2" ).getSingle() );
+                autoIndexer.getAutoIndex().get( "test_uuid", "node2" ).getSingle() );
     }
 
     @Test
     public void testRelationshipAutoIndexFromAPISanity()
     {
         final String propNameToIndex = "test";
-        AutoIndexer autoIndexer = graphDb.index().getAutoIndexer();
-        autoIndexer.startAutoIndexingRelationshipProperty( propNameToIndex );
+        AutoIndexer<Relationship> autoIndexer = graphDb.index().getRelationshipAutoIndexer();
+        autoIndexer.startAutoIndexingProperty( propNameToIndex );
         autoIndexer.setAutoIndexingEnabled( true );
         newTransaction();
 
@@ -144,20 +145,20 @@ public class TestAutoIndexing
         rel23.setProperty( propNameToIndex, "rel23" );
 
         // will index on commit
-        assertFalse( autoIndexer.getRelationshipIndex().get( propNameToIndex,
+        assertFalse( autoIndexer.getAutoIndex().get( propNameToIndex,
                 "rel12" ).hasNext() );
-        assertFalse( autoIndexer.getRelationshipIndex().get( propNameToIndex,
+        assertFalse( autoIndexer.getAutoIndex().get( propNameToIndex,
                 "rel23" ).hasNext() );
 
         newTransaction();
 
         assertEquals(
                 rel12,
-                autoIndexer.getRelationshipIndex().get( propNameToIndex,
+                autoIndexer.getAutoIndex().get( propNameToIndex,
                         "rel12" ).getSingle() );
         assertEquals(
                 rel23,
-                autoIndexer.getRelationshipIndex().get( propNameToIndex,
+                autoIndexer.getAutoIndex().get( propNameToIndex,
                         "rel23" ).getSingle() );
     }
 
@@ -168,10 +169,12 @@ public class TestAutoIndexing
         config = new HashMap<String, String>();
         config.put( Config.NODE_KEYS_INDEXABLE, "nodeProp1, nodeProp2" );
         config.put( Config.RELATIONSHIP_KEYS_INDEXABLE, "relProp1, relProp2" );
-        config.put( Config.AUTO_INDEXING_ENABLED, "true" );
+        config.put( Config.NODE_AUTO_INDEXING, "true" );
+        config.put( Config.RELATIONSHIP_AUTO_INDEXING, "true" );
         startDb();
 
-        assertTrue( graphDb.index().getAutoIndexer().isAutoIndexingEnabled() );
+        assertTrue( graphDb.index().getNodeAutoIndexer().isAutoIndexingEnabled() );
+        assertTrue( graphDb.index().getRelationshipAutoIndexer().isAutoIndexingEnabled() );
 
         newTransaction();
 
@@ -212,49 +215,53 @@ public class TestAutoIndexing
         newTransaction();
 
         // Committed, time to check
-        AutoIndexer autoIndexer = graphDb.index().getAutoIndexer();
+        AutoIndexer<Node> autoNodeIndexer = graphDb.index().getNodeAutoIndexer();
         assertEquals(
                 node1,
-                autoIndexer.getNodeIndex().get( "nodeProp1", "node1Value1" ).getSingle() );
+                autoNodeIndexer.getAutoIndex().get( "nodeProp1", "node1Value1" ).getSingle() );
         assertEquals(
                 node2,
-                autoIndexer.getNodeIndex().get( "nodeProp2", "node2Value1" ).getSingle() );
+                autoNodeIndexer.getAutoIndex().get( "nodeProp2", "node2Value1" ).getSingle() );
         assertEquals(
                 node3,
-                autoIndexer.getNodeIndex().get( "nodeProp1", "node3Value1" ).getSingle() );
+                autoNodeIndexer.getAutoIndex().get( "nodeProp1", "node3Value1" ).getSingle() );
         assertEquals(
                 node3,
-                autoIndexer.getNodeIndex().get( "nodeProp2", "node3Value2" ).getSingle() );
-        assertFalse( autoIndexer.getNodeIndex().get( "nodePropNonIndexable1",
+                autoNodeIndexer.getAutoIndex().get( "nodeProp2", "node3Value2" ).getSingle() );
+        assertFalse( autoNodeIndexer.getAutoIndex().get(
+                "nodePropNonIndexable1",
                 "node1ValueNonIndexable" ).hasNext() );
-        assertFalse( autoIndexer.getNodeIndex().get( "nodePropNonIndexable2",
+        assertFalse( autoNodeIndexer.getAutoIndex().get(
+                "nodePropNonIndexable2",
                 "node2ValueNonIndexable" ).hasNext() );
-        assertFalse( autoIndexer.getNodeIndex().get( "nodePropNonIndexable3",
+        assertFalse( autoNodeIndexer.getAutoIndex().get(
+                "nodePropNonIndexable3",
                 "node3ValueNonIndexable" ).hasNext() );
 
+        AutoIndexer<Relationship> autoRelIndexer = graphDb.index().getRelationshipAutoIndexer();
         assertEquals(
                 rel12,
-                autoIndexer.getRelationshipIndex().get( "relProp1",
+                autoRelIndexer.getAutoIndex().get( "relProp1",
                         "rel12Value1" ).getSingle() );
         assertEquals(
                 rel23,
-                autoIndexer.getRelationshipIndex().get( "relProp2",
+                autoRelIndexer.getAutoIndex().get( "relProp2",
                         "rel23Value1" ).getSingle() );
         assertEquals(
                 rel31,
-                autoIndexer.getRelationshipIndex().get( "relProp1",
+                autoRelIndexer.getAutoIndex().get( "relProp1",
                         "rel31Value1" ).getSingle() );
         assertEquals(
                 rel31,
-                autoIndexer.getRelationshipIndex().get( "relProp2",
+                autoRelIndexer.getAutoIndex().get( "relProp2",
                         "rel31Value2" ).getSingle() );
-        assertFalse( autoIndexer.getRelationshipIndex().get(
+        assertFalse( autoRelIndexer.getAutoIndex().get(
                 "relPropNonIndexable1",
                 "rel12ValueNonIndexable" ).hasNext() );
-        assertFalse( autoIndexer.getRelationshipIndex().get(
+        assertFalse( autoRelIndexer.getAutoIndex().get(
                 "relPropNonIndexable2",
                 "rel23ValueNonIndexable" ).hasNext() );
-        assertFalse( autoIndexer.getRelationshipIndex().get(
+        assertFalse( autoRelIndexer.getAutoIndex().get(
                 "relPropNonIndexable3",
                 "rel31ValueNonIndexable" ).hasNext() );
     }
@@ -267,8 +274,8 @@ public class TestAutoIndexing
         node1.setProperty( "testProp", "node1" );
 
         newTransaction();
-        AutoIndexer autoIndexer = graphDb.index().getAutoIndexer();
-        assertFalse( autoIndexer.getNodeIndex().get( "testProp", "node1" ).hasNext() );
+        AutoIndexer<Node> autoIndexer = graphDb.index().getNodeAutoIndexer();
+        assertFalse( autoIndexer.getAutoIndex().get( "testProp", "node1" ).hasNext() );
     }
 
     @Test
@@ -278,11 +285,12 @@ public class TestAutoIndexing
         config = new HashMap<String, String>();
         config.put( Config.NODE_KEYS_INDEXABLE, "nodeProp1, nodeProp2" );
         config.put( Config.RELATIONSHIP_KEYS_INDEXABLE, "relProp1, relProp2" );
-        config.put( Config.AUTO_INDEXING_ENABLED, "false" );
+        config.put( Config.NODE_AUTO_INDEXING, "false" );
+        config.put( Config.RELATIONSHIP_AUTO_INDEXING, "false" );
         startDb();
 
-        AutoIndexer autoIndexer = graphDb.index().getAutoIndexer();
-        autoIndexer.startAutoIndexingNodeProperty( "testProp" );
+        AutoIndexer<Node> autoIndexer = graphDb.index().getNodeAutoIndexer();
+        autoIndexer.startAutoIndexingProperty( "testProp" );
         newTransaction();
 
         Node node1 = graphDb.createNode();
@@ -292,9 +300,9 @@ public class TestAutoIndexing
 
         newTransaction();
 
-        assertFalse( autoIndexer.getNodeIndex().get( "nodeProp1", "node1" ).hasNext() );
-        assertFalse( autoIndexer.getNodeIndex().get( "nodeProp2", "node1" ).hasNext() );
-        assertFalse( autoIndexer.getNodeIndex().get( "testProp", "node1" ).hasNext() );
+        assertFalse( autoIndexer.getAutoIndex().get( "nodeProp1", "node1" ).hasNext() );
+        assertFalse( autoIndexer.getAutoIndex().get( "nodeProp2", "node1" ).hasNext() );
+        assertFalse( autoIndexer.getAutoIndex().get( "testProp", "node1" ).hasNext() );
     }
 
     @Test
@@ -305,10 +313,12 @@ public class TestAutoIndexing
         config.put( Config.NODE_KEYS_NON_INDEXABLE, "nodeProp1, nodeProp2" );
         config.put( Config.RELATIONSHIP_KEYS_NON_INDEXABLE,
                 "relProp1, relProp2" );
-        config.put( Config.AUTO_INDEXING_ENABLED, "true" );
+        config.put( Config.NODE_AUTO_INDEXING, "true" );
+        config.put( Config.RELATIONSHIP_AUTO_INDEXING, "true" );
         startDb();
 
-        assertTrue( graphDb.index().getAutoIndexer().isAutoIndexingEnabled() );
+        assertTrue( graphDb.index().getNodeAutoIndexer().isAutoIndexingEnabled() );
+        assertTrue( graphDb.index().getRelationshipAutoIndexer().isAutoIndexingEnabled() );
 
         newTransaction();
 
@@ -349,44 +359,35 @@ public class TestAutoIndexing
         newTransaction();
 
         // Committed, time to check
-        AutoIndexer autoIndexer = graphDb.index().getAutoIndexer();
-        assertFalse( autoIndexer.getNodeIndex().get( "nodeProp1", "node1Value1" ).hasNext() );
-        assertFalse( autoIndexer.getNodeIndex().get( "nodeProp2", "node2Value1" ).hasNext() );
-        assertFalse( autoIndexer.getNodeIndex().get( "nodeProp1", "node3Value1" ).hasNext() );
-        assertFalse( autoIndexer.getNodeIndex().get( "nodeProp2", "node3Value2" ).hasNext() );
+        AutoIndex<Node> nodeIndex = graphDb.index().getNodeAutoIndexer().getAutoIndex();
+        assertFalse( nodeIndex.get( "nodeProp1", "node1Value1" ).hasNext() );
+        assertFalse( nodeIndex.get( "nodeProp2", "node2Value1" ).hasNext() );
+        assertFalse( nodeIndex.get( "nodeProp1", "node3Value1" ).hasNext() );
+        assertFalse( nodeIndex.get( "nodeProp2", "node3Value2" ).hasNext() );
         assertEquals(
                 node1,
-                autoIndexer.getNodeIndex().get( "nodePropIndexable1",
-                        "node1ValueIndexable" ).getSingle() );
+                nodeIndex.get( "nodePropIndexable1", "node1ValueIndexable" ).getSingle() );
         assertEquals(
                 node2,
-                autoIndexer.getNodeIndex().get( "nodePropIndexable2",
-                        "node2ValueIndexable" ).getSingle() );
+                nodeIndex.get( "nodePropIndexable2", "node2ValueIndexable" ).getSingle() );
         assertEquals(
                 node3,
-                autoIndexer.getNodeIndex().get( "nodePropIndexable3",
-                        "node3ValueIndexable" ).getSingle() );
+                nodeIndex.get( "nodePropIndexable3", "node3ValueIndexable" ).getSingle() );
 
-        assertFalse( autoIndexer.getRelationshipIndex().get( "relProp1",
-                "rel12Value1" ).hasNext() );
-        assertFalse( autoIndexer.getRelationshipIndex().get( "relProp2",
-                "rel23Value1" ).hasNext() );
-        assertFalse( autoIndexer.getRelationshipIndex().get( "relProp1",
-                "rel31Value1" ).hasNext() );
-        assertFalse( autoIndexer.getRelationshipIndex().get( "relProp2",
-                "rel31Value2" ).hasNext() );
+        AutoIndex<Relationship> relIndex = graphDb.index().getRelationshipAutoIndexer().getAutoIndex();
+        assertFalse( relIndex.get( "relProp1", "rel12Value1" ).hasNext() );
+        assertFalse( relIndex.get( "relProp2", "rel23Value1" ).hasNext() );
+        assertFalse( relIndex.get( "relProp1", "rel31Value1" ).hasNext() );
+        assertFalse( relIndex.get( "relProp2", "rel31Value2" ).hasNext() );
         assertEquals(
                 rel12,
-                autoIndexer.getRelationshipIndex().get( "relPropIndexable1",
-                        "rel12ValueIndexable" ).getSingle() );
+                relIndex.get( "relPropIndexable1", "rel12ValueIndexable" ).getSingle() );
         assertEquals(
                 rel23,
-                autoIndexer.getRelationshipIndex().get( "relPropIndexable2",
-                        "rel23ValueIndexable" ).getSingle() );
+                relIndex.get( "relPropIndexable2", "rel23ValueIndexable" ).getSingle() );
         assertEquals(
                 rel31,
-                autoIndexer.getRelationshipIndex().get( "relPropIndexable3",
-                        "rel31ValueIndexable" ).getSingle() );
+                relIndex.get( "relPropIndexable3", "rel31ValueIndexable" ).getSingle() );
     }
 
     @Test
@@ -396,7 +397,7 @@ public class TestAutoIndexing
         stopDb();
         config = new HashMap<String, String>();
         config.put( Config.NODE_KEYS_INDEXABLE, "propName" );
-        config.put( Config.AUTO_INDEXING_ENABLED, "true" );
+        config.put( Config.NODE_AUTO_INDEXING, "true" );
         // Now only node properties named propName should be indexed.
         startDb();
 
@@ -414,13 +415,11 @@ public class TestAutoIndexing
 
         newTransaction();
 
-        AutoIndexer autoIndexer = graphDb.index().getAutoIndexer();
-        assertEquals( node1,
-                autoIndexer.getNodeIndex().get( "propName", "node1" ).getSingle() );
-        assertEquals(
-                node2,
-                autoIndexer.getNodeIndex().get( "propName", "node2" ).getSingle() );
-        assertFalse( autoIndexer.getRelationshipIndex().get( "propName", "rel1" ).hasNext() );
+        AutoIndex<Node> autoIndex = graphDb.index().getNodeAutoIndexer().getAutoIndex();
+        assertEquals( node1, autoIndex.get( "propName", "node1" ).getSingle() );
+        assertEquals( node2, autoIndex.get( "propName", "node2" ).getSingle() );
+        assertFalse( graphDb.index().getRelationshipAutoIndexer().getAutoIndex().get(
+                "propName", "rel1" ).hasNext() );
     }
 
     @Test( expected = IllegalArgumentException.class )
@@ -436,31 +435,33 @@ public class TestAutoIndexing
     @Test
     public void testIfBothListsSetFromAPIResultsInError()
     {
-        AutoIndexer autoIndexer = graphDb.index().getAutoIndexer();
-        autoIndexer.setAutoIndexingEnabled( true );
-        autoIndexer.startAutoIndexingNodeProperty( "testProp" );
+        AutoIndexer<Node> nodeAutoIndexer = graphDb.index().getNodeAutoIndexer();
+        AutoIndexer<Relationship> relAutoIndexer = graphDb.index().getRelationshipAutoIndexer();
+        nodeAutoIndexer.setAutoIndexingEnabled( true );
+        relAutoIndexer.setAutoIndexingEnabled( true );
+        nodeAutoIndexer.startAutoIndexingProperty( "testProp" );
         // This is fine, we can remove already added stuff
-        autoIndexer.stopAutoIndexingNodeProperty( "testProp" );
+        nodeAutoIndexer.stopAutoIndexingProperty( "testProp" );
 
         // This is to prepare for failing below
-        autoIndexer.startAutoIndexingRelationshipProperty( "inThere" );
+        relAutoIndexer.startAutoIndexingProperty( "inThere" );
         try
         {
-            autoIndexer.startIgnoringRelationshipProperty( "notThere" );
-            fail( "Removing non-monitored property while there are auto indexed ones is an error" );
+            relAutoIndexer.startIgnoringProperty( "notThere" );
+            fail( "Ignoring property while there are auto indexed ones is an error" );
         }
         catch(Exception e)
         {
             // it was deliberate
         }
 
-        autoIndexer.stopAutoIndexingRelationshipProperty( "inThere" );
+        relAutoIndexer.stopAutoIndexingProperty( "inThere" );
         // This should succeed, both lists are empty
-        autoIndexer.startIgnoringRelationshipProperty( "dontWannaSee" );
+        relAutoIndexer.startIgnoringProperty( "dontWannaSee" );
 
         try
         {
-            autoIndexer.startAutoIndexingRelationshipProperty( "notThere" );
+            relAutoIndexer.startAutoIndexingProperty( "notThere" );
             fail( "Adding a new auto indexed property while there are non-auto indexed ones is an error" );
         }
         catch ( Exception e )
@@ -475,11 +476,11 @@ public class TestAutoIndexing
         stopDb();
         config = new HashMap<String, String>();
         config.put( Config.NODE_KEYS_INDEXABLE, "propName" );
-        config.put( Config.AUTO_INDEXING_ENABLED, "true" );
+        config.put( Config.NODE_AUTO_INDEXING, "true" );
         // Now only node properties named propName should be indexed.
         startDb();
 
-        AutoIndexer autoIndexer = graphDb.index().getAutoIndexer();
+        AutoIndexer<Node> autoIndexer = graphDb.index().getNodeAutoIndexer();
 
         newTransaction();
 
@@ -490,20 +491,20 @@ public class TestAutoIndexing
         // Committing with auto indexing off, should not be in the index
         newTransaction();
 
-        assertFalse( autoIndexer.getNodeIndex().get( "nodeProp1", "node1" ).hasNext() );
+        assertFalse( autoIndexer.getAutoIndex().get( "nodeProp1", "node1" ).hasNext() );
         autoIndexer.setAutoIndexingEnabled( true );
         node2.setProperty( "propName", "node" );
 
         newTransaction();
 
         assertEquals( node2,
-                autoIndexer.getNodeIndex().get( "propName", "node" ).getSingle() );
+                autoIndexer.getAutoIndex().get( "propName", "node" ).getSingle() );
     }
 
     @Test
     public void testStopMonitoringProperty()
     {
-        AutoIndexer autoIndexer = graphDb.index().getAutoIndexer();
+        AutoIndexer<Node> autoIndexer = graphDb.index().getNodeAutoIndexer();
         autoIndexer.setAutoIndexingEnabled( true );
         // Now everything is indexed by default.
         newTransaction();
@@ -513,10 +514,10 @@ public class TestAutoIndexing
         newTransaction();
         assertEquals(
                 node1,
-                autoIndexer.getNodeIndex().get( "propName", "node" ).getSingle() );
+                autoIndexer.getAutoIndex().get( "propName", "node" ).getSingle() );
         newTransaction();
         // Setting just a property to autoindex ignores everything else
-        autoIndexer.startAutoIndexingNodeProperty( "propName2" );
+        autoIndexer.startAutoIndexingProperty( "propName2" );
         node2.setProperty( "propName", "propValue" );
         Node node3 = graphDb.createNode();
         node3.setProperty( "propName2", "propValue" );
@@ -524,15 +525,15 @@ public class TestAutoIndexing
         // Now node2 must be not there, node3 must be there and node1 should not have been touched
         assertEquals(
                 node1,
-                autoIndexer.getNodeIndex().get( "propName", "node" ).getSingle() );
+                autoIndexer.getAutoIndex().get( "propName", "node" ).getSingle() );
         assertEquals(
                 node3,
-                autoIndexer.getNodeIndex().get( "propName2", "propValue" ).getSingle() );
+                autoIndexer.getAutoIndex().get( "propName2", "propValue" ).getSingle() );
         // Now, since only propName2 is autoindexed, every other should be
         // removed when touched, such as node1's propName
         node1.setProperty( "propName", "newValue" );
         newTransaction();
-        assertFalse( autoIndexer.getNodeIndex().get( "propName", "newValue" ).hasNext() );
+        assertFalse( autoIndexer.getAutoIndex().get( "propName", "newValue" ).hasNext() );
 
     }
 }
