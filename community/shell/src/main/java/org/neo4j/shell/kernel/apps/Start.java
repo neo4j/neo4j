@@ -38,12 +38,12 @@ import org.neo4j.shell.ShellException;
  * could also (regarding POSIX) move nodes, but it doesn't).
  */
 @Service.Implementation( App.class )
-public class Q extends GraphDatabaseApp
+public class Start extends GraphDatabaseApp
 {
     /**
      * Constructs a new "q" application.
      */
-    public Q()
+    public Start()
     {
         super();
 //        this.addOptionDefinition( "o", new OptionDefinition( OptionValueType.NONE,
@@ -54,19 +54,18 @@ public class Q extends GraphDatabaseApp
     public String getDescription()
     {
         return "Executes a Cypher query. " +
-        	"Usage: q <query>";
+        	"Usage: start <rest of query>";
     }
 
     @Override
     protected String exec( AppCommandParser parser, Session session, Output out )
         throws ShellException, RemoteException
     {
-        if ( parser.arguments().size() < 1 )
+        String query = "start ";
+        for (String i : parser.arguments()) 
         {
-            throw new ShellException( "Must supply <query>" +
-                "arguments, like: q \"start n = (0) return n\"" );
+            query += " " + i;
         }
-        String query = parser.arguments().get( 0 );
         CypherParser qparser = new CypherParser();
         ExecutionEngine engine = new ExecutionEngine( getServer().getDb() );
         try

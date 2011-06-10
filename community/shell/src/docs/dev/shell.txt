@@ -273,3 +273,7 @@ If you'd like it to display some nice help information when using the +help+ (or
 
 Know that the apps reside server-side so if you have a running server and starts a remote client to it from another JVM you can't add your apps on the client.
 
+[[sampleshell-session]]
+== An example shell session ==
+
+include::shell/sample-session.txt[]

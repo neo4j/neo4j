@@ -95,7 +95,8 @@ the relevant Commercial Agreement.
             </manifest>
             <manifestEntries>
               <url>http://neo4j.org</url>
-              <Class-Path>neo4j-kernel-${project.version}.jar neo4j-index-${project.version}.jar lucene-core-${lucene.main.version}.jar ${lucene.artifactId}-${lucene.version}.jar jta-${sun.jta.version}.jar ${jta.artifactId}-${jta.version}.jar jline-${jline.main.version}.jar ${jline.artifactId}-${jline.version}.jar</Class-Path>
+              <Class-Path>neo4j-kernel-${project.version}.jar neo4j-index-${project.version}.jar lucene-core-${lucene.main.version}.jar ${lucene.artifactId}-${lucene.version}.jar jta-${sun.jta.version}.jar ${jta.artifactId}-${jta.version}.jar jline-${jline.main.version}.jar
+                ${jline.artifactId}-${jline.version}.jar</Class-Path>
               <Agent-Class>org.neo4j.shell.StartClient</Agent-Class>
             </manifestEntries>
           </archive>
@@ -112,15 +113,31 @@ the relevant Commercial Agreement.
           </provision>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>docs</id>
+            <phase>package</phase>
+            <configuration>
+              <attach>true</attach>
+              <appendAssemblyId>true</appendAssemblyId>
+              <descriptors>
+                <descriptor>src/main/assemblies/docs-assembly.xml</descriptor>
+              </descriptors>
+            </configuration>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 
   <dependencies>
-    <!--
-      If you add the jLine library (at least version 0.9.94) to the
-      classpath of the client then you'll get enhanced prompt abilities.
-      Much like regular bash etc.
-    -->
+    <!-- If you add the jLine library (at least version 0.9.94) to the classpath of the client then you'll get enhanced prompt abilities. Much like regular bash etc. -->
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
@@ -156,7 +173,7 @@ the relevant Commercial Agreement.
       <groupId>${jline.groupId}</groupId>
       <artifactId>${jline.artifactId}</artifactId>
       <version>${jline.version}</version>
-      <!--scope>provided</scope-->
+      <!--scope>provided</scope -->
       <exclusions>
         <exclusion>
           <groupId>junit</groupId>

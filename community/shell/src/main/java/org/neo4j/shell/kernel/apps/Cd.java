@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.TreeSet;
 
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
@@ -133,9 +134,14 @@ public class Cd extends ReadOnlyGraphDatabaseApp
         NodeOrRelationship newThing = null;
         if ( parser.arguments().isEmpty() )
         {
-            newThing = NodeOrRelationship.wrap(
+            try {
+              newThing = NodeOrRelationship.wrap(
                 getServer().getDb().getReferenceNode() );
-            paths.clear();
+              paths.clear();
+            } catch (NotFoundException nne) {
+                out.println( "Can't find reference node, not moving.");
+                return null;
+            }
         }
         else
         {

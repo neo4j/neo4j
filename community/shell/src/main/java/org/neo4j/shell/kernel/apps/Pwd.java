@@ -22,6 +22,7 @@ package org.neo4j.shell.kernel.apps;
 import java.rmi.RemoteException;
 import java.util.List;
 
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
@@ -46,7 +47,15 @@ public class Pwd extends ReadOnlyGraphDatabaseApp
     protected String exec( AppCommandParser parser, Session session,
         Output out ) throws ShellException, RemoteException
     {
-        NodeOrRelationship current = this.getCurrent( session );
+
+        NodeOrRelationship current = null;
+        try {
+            
+            current = this.getCurrent( session );
+        } catch (NotFoundException nnfe) {
+            out.println( "Current not found. make sure you are standing on a valid structure.");
+            return null;
+        }
         out.println( "Current is " +
             getDisplayName( getServer(), session, current, false ) );
 
