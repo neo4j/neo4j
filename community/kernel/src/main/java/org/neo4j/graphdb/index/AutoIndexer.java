@@ -49,8 +49,9 @@ public interface AutoIndexer<T extends PropertyContainer>
     boolean isAutoIndexingEnabled();
 
     /**
-     * Returns the index used by the auto indexer for indexing properties.
-     *
+     * Returns the auto index used by the auto indexer. This should be able
+     * to be released safely (read only) to the outside world.
+     * 
      * @return A read only index
      */
     AutoIndex<T> getAutoIndex();

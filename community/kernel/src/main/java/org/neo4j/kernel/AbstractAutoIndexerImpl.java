@@ -33,6 +33,12 @@ import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 
+/**
+ * Default implementation of the AutoIndexer, binding to the beforeCommit hook
+ * as a TransactionEventHandler
+ *
+ * @param <T> The database primitive type auto indexed
+ */
 abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
         TransactionEventHandler<Void>, AutoIndexer<T>
 {
@@ -49,113 +55,10 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
         resolveConfig();
     }
 
-    protected EmbeddedGraphDbImpl getGraphDbImpl()
-    {
-        return gdb;
-    }
-
-    public Void beforeCommit( TransactionData data ) throws Exception
-    {
-        if ( propertyKeysToInclude.size() > 0 )
-        {
-            handlePropertiesDefaultInclude(
-                    getRemovedPropertiesOnCommit( data ),
-                    getAssignedPropertiesOnCommit( data ) );
-        }
-        else
-        {
-            handlePropertiesDefaultIgnore(
-                    getRemovedPropertiesOnCommit( data ),
-                    getAssignedPropertiesOnCommit( data ) );
-        }
-        return null;
-    }
-
-    protected abstract Iterable<PropertyEntry<T>> getRemovedPropertiesOnCommit(
-            TransactionData data );
-
-    protected abstract Iterable<PropertyEntry<T>> getAssignedPropertiesOnCommit(
-            TransactionData data );
-
-    private void handlePropertiesDefaultInclude(
-            Iterable<PropertyEntry<T>> removed,
-            Iterable<PropertyEntry<T>> assigned )
-    {
-        final Index<T> nodeIndex = getIndexInternal();
-        for ( PropertyEntry<T> entry : assigned )
-        {
-            if ( propertyKeysToInclude.contains( entry.key() ) )
-            {
-                Object previousValue = entry.previouslyCommitedValue();
-                String key = entry.key();
-                if ( previousValue != null )
-                {
-                    nodeIndex.remove( entry.entity(), key, previousValue );
-                }
-                nodeIndex.add( entry.entity(), key, entry.value() );
-            }
-        }
-        for ( PropertyEntry<T> entry : removed )
-        {
-            // will fix thread safety later
-            if ( propertyKeysToInclude.contains( entry.key() ) )
-            {
-                Object previouslyCommitedValue = entry.previouslyCommitedValue();
-                if ( previouslyCommitedValue != null )
-                {
-                    nodeIndex.remove( entry.entity(), entry.key(), previouslyCommitedValue );
-                }
-            }
-        }
-    }
-
-    private void handlePropertiesDefaultIgnore(
-            Iterable<PropertyEntry<T>> removed,
-            Iterable<PropertyEntry<T>> assigned )
-    {
-        final Index<T> nodeIndex = getIndexInternal();
-        for ( PropertyEntry<T> entry : assigned )
-        {
-            if ( !propertyKeysToIgnore.contains( entry.key() ) )
-            {
-                Object previousValue = entry.previouslyCommitedValue();
-                String key = entry.key();
-                if ( previousValue != null )
-                {
-                    nodeIndex.remove( entry.entity(), key, previousValue );
-                }
-                nodeIndex.add( entry.entity(), key, entry.value() );
-            }
-        }
-        for ( PropertyEntry<T> entry : removed )
-        {
-            // will fix thread safety later
-            if ( !propertyKeysToIgnore.contains( entry.key() ) )
-            {
-                Object previouslyCommitedValue = entry.previouslyCommitedValue();
-                if ( previouslyCommitedValue != null )
-                {
-                    nodeIndex.remove( entry.entity(), entry.key(),
-                            previouslyCommitedValue );
-                }
-            }
-        }
-    }
-
-    protected abstract Index<T> getIndexInternal();
-
     @Override
     public AutoIndex<T> getAutoIndex()
     {
         return new IndexWrapper<T>( getIndexInternal() );
-    }
-
-    public void afterCommit( TransactionData data, Void state )
-    {
-    }
-
-    public void afterRollback( TransactionData data, Void state )
-    {
     }
 
     @Override
@@ -170,6 +73,7 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
         // Act only if actual state change requested
         if ( enable && !this.enabled )
         {
+            // Check first, enable later
             checkListConsistency();
             gdb.registerTransactionEventHandler( this );
         }
@@ -220,6 +124,156 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
         }
     }
 
+    protected EmbeddedGraphDbImpl getGraphDbImpl()
+    {
+        return gdb;
+    }
+
+    /**
+     * Returns an Iterable of the removed property entries for the primitive
+     * types
+     * that are of interest for this auto indexer.
+     *
+     * @param data The TransactionData available beforeCommmit.
+     * @return An Iterable of the removed properties for the primitive supported
+     *         by this AutoIndexer
+     */
+    protected abstract Iterable<PropertyEntry<T>> getRemovedPropertiesOnCommit(
+            TransactionData data );
+
+    /**
+     * Returns an Iterable of the changed property entries for the primitive
+     * types
+     * that are of interest for this auto indexer.
+     *
+     * @param data The TransactionData available beforeCommmit.
+     * @return An Iterable of the changed properties for the primitive supported
+     *         by this AutoIndexer
+     */
+    protected abstract Iterable<PropertyEntry<T>> getAssignedPropertiesOnCommit(
+            TransactionData data );
+
+    /**
+     * Returns the actual index used by the auto indexer. This is not supposed
+     * to
+     * leak unprotected to the outside world.
+     *
+     * @return The Index used by this AutoIndexer
+     */
+    protected abstract Index<T> getIndexInternal();
+
+    /**
+     * @return The configuration parameter name that contains the comma
+     *         separated list of properties to auto index.
+     */
+    protected abstract String getAutoIndexConfigListName();
+
+    /**
+     * @return The configuration parameter name that contains the comma
+     *         separated list of properties to ignore for auto indexing.
+     */
+    protected abstract String getIgnoreConfigListName();
+
+    /**
+     * @return The configuration parameter name that sets this auto indexer to
+     *         enabled/disabled.
+     */
+    protected abstract String getEnableConfigName();
+
+    /**
+     * @return The String that is the name of the Index used by this auto
+     *         indexer for Indexing.
+     */
+    protected abstract String getAutoIndexName();
+
+    /**
+     * Executed when there are indexable properties defined. It indexes only
+     * those defined, removing anything else.
+     *
+     * @param removed An iterable of PropertyEntries removed during this
+     *            transaction for the Primitive type supported
+     * @param assigned An iterable of PropertyEntries changed during this
+     *            transaction for the Primitive type supported
+     */
+    private void handlePropertiesDefaultInclude(
+            Iterable<PropertyEntry<T>> removed,
+            Iterable<PropertyEntry<T>> assigned )
+    {
+        final Index<T> nodeIndex = getIndexInternal();
+        for ( PropertyEntry<T> entry : assigned )
+        {
+            if ( propertyKeysToInclude.contains( entry.key() ) )
+            {
+                Object previousValue = entry.previouslyCommitedValue();
+                String key = entry.key();
+                if ( previousValue != null )
+                {
+                    nodeIndex.remove( entry.entity(), key, previousValue );
+                }
+                nodeIndex.add( entry.entity(), key, entry.value() );
+            }
+        }
+        for ( PropertyEntry<T> entry : removed )
+        {
+            // will fix thread safety later
+            if ( propertyKeysToInclude.contains( entry.key() ) )
+            {
+                Object previouslyCommitedValue = entry.previouslyCommitedValue();
+                if ( previouslyCommitedValue != null )
+                {
+                    nodeIndex.remove( entry.entity(), entry.key(), previouslyCommitedValue );
+                }
+            }
+        }
+    }
+
+    /**
+     * Executed when there are ignored properties defined. It ignores only
+     * those defined, indexing anything else.
+     *
+     * @param removed An iterable of PropertyEntries removed during this
+     *            transaction for the Primitive type supported
+     * @param assigned An iterable of PropertyEntries changed during this
+     *            transaction for the Primitive type supported
+     */
+    private void handlePropertiesDefaultIgnore(
+            Iterable<PropertyEntry<T>> removed,
+            Iterable<PropertyEntry<T>> assigned )
+    {
+        final Index<T> nodeIndex = getIndexInternal();
+        for ( PropertyEntry<T> entry : assigned )
+        {
+            if ( !propertyKeysToIgnore.contains( entry.key() ) )
+            {
+                Object previousValue = entry.previouslyCommitedValue();
+                String key = entry.key();
+                if ( previousValue != null )
+                {
+                    nodeIndex.remove( entry.entity(), key, previousValue );
+                }
+                nodeIndex.add( entry.entity(), key, entry.value() );
+            }
+        }
+        for ( PropertyEntry<T> entry : removed )
+        {
+            // will fix thread safety later
+            if ( !propertyKeysToIgnore.contains( entry.key() ) )
+            {
+                Object previouslyCommitedValue = entry.previouslyCommitedValue();
+                if ( previouslyCommitedValue != null )
+                {
+                    nodeIndex.remove( entry.entity(), entry.key(),
+                            previouslyCommitedValue );
+                }
+            }
+        }
+    }
+
+    /**
+     * Reads in the configuration from the GraphDbImpl, gets the actual
+     * configuration parameter names from the derived implementations and parses
+     * the input.
+     */
     private void resolveConfig()
     {
         Config config = gdb.getConfig();
@@ -230,14 +284,6 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
         propertyKeysToIgnore.addAll( parseConfigList( (String) ( config.getParams().get( getIgnoreConfigListName() ) ) ) );
         checkListConsistency();
     }
-
-    protected abstract String getAutoIndexConfigListName();
-
-    protected abstract String getIgnoreConfigListName();
-
-    protected abstract String getEnableConfigName();
-
-    protected abstract String getAutoIndexName();
 
     private void checkListConsistency()
     {
@@ -271,6 +317,48 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
         return toReturn;
     }
 
+    /**
+     * The main work method, gets the changed properties in the transactiosn
+     * for the supported primitives and adds/removes them from the index.
+     */
+    public Void beforeCommit( TransactionData data ) throws Exception
+    {
+        /*
+         *  If we are enabled, the lists are sane. We depend on this.
+         *  If there are keys to include, then index only those.
+         *  If there are keys to ignore, then index all but those.
+         */
+        if ( propertyKeysToInclude.size() > 0 )
+        {
+            handlePropertiesDefaultInclude(
+                    getRemovedPropertiesOnCommit( data ),
+                    getAssignedPropertiesOnCommit( data ) );
+        }
+        else
+        {
+            handlePropertiesDefaultIgnore(
+                    getRemovedPropertiesOnCommit( data ),
+                    getAssignedPropertiesOnCommit( data ) );
+        }
+        return null;
+    }
+
+    @Override
+    public void afterCommit( TransactionData data, Void state )
+    {
+    }
+
+    @Override
+    public void afterRollback( TransactionData data, Void state )
+    {
+    }
+
+    /**
+     * Simple implementation of the AutoIndex interface, as a wrapper around a
+     * normal Index that exposes the read-only operations.
+     *
+     * @param <K> The type of database primitive this index holds
+     */
     private static class IndexWrapper<K extends PropertyContainer> implements
             AutoIndex<K>
     {
