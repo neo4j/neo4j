@@ -103,7 +103,7 @@ class MatchTest extends DocumentingTestBase
   {
     testQuery(
       title = "Complex matching",
-      text = "Using Sunshine, you can also express more complex patterns to match on, like a diamond shape pattern.",
+      text = "Using Cypher, you can also express more complex patterns to match on, like a diamond shape pattern.",
       queryText = """start a=(%A%)
 match (a)-[:KNOWS]->(b)-[:KNOWS]->(c), (a)-[:BLOCKS]-(d)-[:KNOWS]-(c)
 return a,b,c,d""",

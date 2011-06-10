@@ -24,12 +24,6 @@ import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.graphdb.{Direction, Node}
 
-/**
- * Created by Andres Taylor
- * Date: 5/24/11
- * Time: 16:53 
- */
-
 class SyntaxErrorTest extends ExecutionEngineTestBase {
   @Test def returnNodeThatsNotThere() {
     val node: Node = createNode()
@@ -38,10 +32,10 @@ class SyntaxErrorTest extends ExecutionEngineTestBase {
       Return(EntityOutput("bar")),
       Start(NodeById("foo", node.getId)))
 
-    expectedError(query, """Unknown variable "bar".""")
+    expectedError(query, """Unknown identifier "bar".""")
   }
 
-  @Test def defineANodeAndTreatItAsRelationship() {
+  @Test def throwOnDisconnectedPattern() {
     val node: Node = createNode()
 
     val query = Query(
@@ -49,8 +43,20 @@ class SyntaxErrorTest extends ExecutionEngineTestBase {
       Start(NodeById("foo", node.getId)),
       Match(RelatedTo("a", "b", None, None, Direction.BOTH)))
 
-    expectedError(query, "All parts of the pattern must either directly or indirectly be connected to at least one bound entity. These variables were found to be disconnected: a, b")
+    expectedError(query, "All parts of the pattern must either directly or indirectly be connected to at least one bound entity. These identifiers were found to be disconnected: a, b")
   }
+
+  @Test def defineNodeAndTreatItAsARelationship() {
+    val node: Node = createNode()
+
+    val query = Query(
+      Return(EntityOutput("foo")),
+      Start(NodeById("foo", node.getId)),
+      Match(RelatedTo("a", "b", Some("foo"), None, Direction.BOTH)))
+
+    expectedError(query, "Identifier \"foo\" already defined as a node.")
+  }
+
 
 
   def expectedError(query: Query, message: String) {

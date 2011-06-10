@@ -19,21 +19,16 @@
  */
 package org.neo4j.cypher.pipes
 
-import org.neo4j.graphdb.PropertyContainer
+import org.neo4j.cypher.SymbolTable
+import org.neo4j.cypher.commands.Clause
+import java.lang.String
 
-/**
- * Created by Andres Taylor
- * Date: 4/18/11
- * Time: 21:00 
- */
-
-class FromPump[T <: PropertyContainer](name: String, source: Iterable[T]) extends Pipe {
-  def columnNames: List[String] = List(name)
+class FilterPipe(where: Clause, source: Pipe) extends Pipe {
+  val symbols: SymbolTable = source.symbols
 
   def foreach[U](f: (Map[String, Any]) => U) {
-    source.foreach((x) => {
-      val map = Map(name -> x)
-      f.apply(map)
-    })
+    source.filter((row) => {
+      where.isMatch(row)
+    }).foreach(f)
   }
 }

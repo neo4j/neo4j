@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import commands._
+import org.neo4j.cypher.commands._
 import org.junit.Assert._
 import java.lang.String
 import org.junit.{Ignore, Test}
@@ -204,7 +204,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase
     assertEquals(List(Map("x" -> n2), Map("x" -> n3)), result.toList)
   }
 
-  @Test def toStringTest()
+  @Test def executionResultTextualOutput()
   {
     val n1: Node = createNode()
     val n2: Node = createNode()
@@ -219,7 +219,9 @@ class ExecutionEngineTest extends ExecutionEngineTestBase
 
     val result = execute(query)
 
-    println(result.dumpToString())
+    val textOutput = result.dumpToString()
+
+    println(textOutput)
   }
 
   @Test def shouldGetRelatedToRelatedTo()

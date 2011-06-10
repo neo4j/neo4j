@@ -17,20 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.neo4j.cypher.pipes
 
-//package org.neo4j.cypher
-//
-///**
-// * @author Andres Taylor
-// */
-//
-//class SortedResult(inner: ExecutionResult, sortItems: List[Map[String, Any] => Map[String, Any]]) extends ExecutionResult
-//{
-//  def foreach[U](f: ( Map[String, Any] ) => U)
-//  {
-//    inner.toList.sortWith((a, b) =>
-//    {
-//      sortItems.g
-//    })
-//  }
-//}
+import org.neo4j.cypher.SymbolTable
+import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
+import org.neo4j.cypher.commands.{SymbolType, RelationshipType, NodeType}
+
+class StartPipe[T <: PropertyContainer](name: String, source: Iterable[T]) extends Pipe {
+  val symbolType: SymbolType = source match {
+    case nodes: Iterable[Node] => NodeType(name)
+    case rels: Iterable[Relationship] => RelationshipType(name)
+  }
+
+  val symbols: SymbolTable = new SymbolTable(Map(name -> symbolType))
+
+  def foreach[U](f: (Map[String, Any]) => U) {
+    source.foreach((x) => {
+      f(Map(name -> x))
+    })
+  }
+}

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import commands._
+import org.neo4j.cypher.commands._
 import org.junit.Assert._
 import org.neo4j.graphdb.Direction
 import org.junit.Test

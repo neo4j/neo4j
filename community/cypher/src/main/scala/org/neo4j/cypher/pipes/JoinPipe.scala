@@ -20,16 +20,10 @@
 package org.neo4j.cypher.pipes
 
 import java.lang.String
-
-/**
- * Created by Andres Taylor
- * Date: 4/18/11
- * Time: 21:01 
- */
+import org.neo4j.cypher.SymbolTable
 
 class JoinPipe(a: Pipe, b: Pipe) extends Pipe {
-
-  def columnNames: List[String] = a.columnNames ++ b.columnNames
+  val symbols: SymbolTable = a.symbols ++ b.symbols
 
   def foreach[U](f: (Map[String, Any]) => U) {
     a.foreach((aMap) => {

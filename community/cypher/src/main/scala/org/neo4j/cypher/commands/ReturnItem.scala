@@ -20,18 +20,12 @@
 package org.neo4j.cypher.commands
 
 
-/**
- * Created by Andres Taylor
- * Date: 4/16/11
- * Time: 19:08 
- */
+abstract sealed class ReturnItem(val identifier:SymbolType)
 
-abstract sealed class ReturnItem(val identifier:String)
+case class EntityOutput(name: String) extends ReturnItem(NodeType(name))  // todo relationship-entity-type
+case class PropertyOutput(entityName:String, propName:String) extends ReturnItem(PropertyType(entityName + "." + propName))
+case class NullablePropertyOutput(entityName:String, propName:String) extends ReturnItem(PropertyType(entityName + "." + propName))
 
-case class EntityOutput(name: String) extends ReturnItem(name)
-case class PropertyOutput(entityName:String, propName:String) extends ReturnItem(entityName + "." + propName)
-case class NullablePropertyOutput(entityName:String, propName:String) extends ReturnItem(entityName + "." + propName)
-
-abstract sealed class AggregationItem(ident:String) extends ReturnItem(ident)
+abstract sealed class AggregationItem(ident:String) extends ReturnItem(AggregationType(ident))
 
 case class Count(variable:String) extends AggregationItem(variable)
