@@ -14,23 +14,22 @@ want to make ad-hoc queries on the database. Its constructs are based
 on English prose and neat iconography, which helps to make it (somewhat) 
 self-explanatory.
 
+The query language is comprised of four distinct parts. Let's see three of them in action:
+
 For example, here is a query which finds a user called John in 
 an index and then traverses the graph looking for friends of 
 Johns friends (though not his direct friends) before returning 
 both John and any friends-of-friends that are found.
 
-The query language is comprised of four distinct parts.
+image::friends-of-friends.png["Cypher Example with index lookup",scaledwidth="80%"]
 
-.Cypher Example with nidex lookup 
-image::image2.png[scaledwidth="80%",alt="Cypher Example with nidex lookup"]
+Next up we will add filtering to set all four parts in motion:
 
 In this next example, we take a list of users (by node ID) and traverse 
-the graph looking for those other users that have an outgoing follows relationship, 
+the graph looking for those other users that have an outgoing +friend+ relationship, 
 returning only those followed users who are older than 18.
 
-.Cypher Example with Node id 
-image::image1.png[scaledwidth="80%",alt="Cypher Example with Node id"]
-
+image::basic-filtering.png["Cypher Example with Node id",scaledwidth="80%"]
 
 In Java, using the query language looks something like this:
 
