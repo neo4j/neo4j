@@ -27,38 +27,32 @@ import java.lang.Iterable
 import collection.Seq
 
 
-class ExecutionEngine(val graph: GraphDatabaseService)
-{
+class ExecutionEngine(val graph: GraphDatabaseService) {
   @throws(classOf[SyntaxError])
-  def execute(query: Query): ExecutionResult = query match
-  {
-    case Query(returns, start, matching, where, aggregation, sort) =>
-    {
-      val symbolTable = new SymbolTable
+  def execute(query: Query): ExecutionResult = query match {
+    case Query(returns, start, matching, where, aggregation, sort) => {
+      var pipe = createSourcePumps(start).reduceLeft(_ ++ _)
 
-      val startPipe: Pipe = createSourcePumps(start).reduceLeft(_ ++ _)
-      startPipe.prepare(symbolTable)
+      matching match {
+        case None =>
+        case Some(m) => pipe = new PatternPipe(pipe, m)
+      }
 
-      val patternPipe = new PatternPipe(startPipe,matching)
-      patternPipe.prepare(symbolTable)
+      where match {
+        case None =>
+        case Some(w) => pipe = new FilterPipe(w, pipe)
+      }
 
-      val filterPipe = new FilterPipe(where,patternPipe)
-      filterPipe.prepare(symbolTable)
+      val result = new TransformPipe(returns.returnItems, pipe) with ExecutionResult
 
-      val transformPipe = new TransformPipe(returns.returnItems,filterPipe) with ExecutionResult
-      transformPipe.prepare(symbolTable)
-
-      transformPipe
+      result
     }
   }
 
   private def createSourcePumps(from: Start): Seq[Pipe] =
-    from.startItems.map((item) =>
-    {
-      item match
-      {
-        case NodeByIndex(varName, idxName, key, value) =>
-        {
+    from.startItems.map((item) => {
+      item match {
+        case NodeByIndex(varName, idxName, key, value) => {
           val indexHits: Iterable[Node] = graph.index.forNodes(idxName).get(key, value)
           new StartPipe(varName, indexHits.asScala.toList)
         }

@@ -25,7 +25,5 @@ import org.neo4j.cypher.SymbolTable
 abstract class Pipe extends Traversable[Map[String, Any]] {
 
   def ++(other: Pipe): Pipe = new JoinPipe(this, other)
-
-  def prepare(symbolTable : SymbolTable)
-  def columns: List[String]
+  val symbols:SymbolTable
 }

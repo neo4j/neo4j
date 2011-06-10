@@ -22,15 +22,8 @@ package org.neo4j.cypher.pipes
 import java.lang.String
 import org.neo4j.cypher.SymbolTable
 
-/**
- * Created by Andres Taylor
- * Date: 4/18/11
- * Time: 21:01 
- */
-
 class JoinPipe(a: Pipe, b: Pipe) extends Pipe {
-
-  def columns: List[String] = a.columns ++ b.columns
+  val symbols: SymbolTable = a.symbols ++ b.symbols
 
   def foreach[U](f: (Map[String, Any]) => U) {
     a.foreach((aMap) => {
@@ -38,10 +31,5 @@ class JoinPipe(a: Pipe, b: Pipe) extends Pipe {
         f.apply(aMap ++ bMap)
       })
     })
-  }
-
-  def prepare(symbolTable: SymbolTable) = {
-    a.prepare(symbolTable)
-    b.prepare(symbolTable)
   }
 }

@@ -21,27 +21,22 @@ package org.neo4j.cypher.pipes
  */
 
 import org.neo4j.cypher.commands.Match
-import org.neo4j.cypher.PatternContext
-import org.neo4j.cypher.SymbolTable
 import collection.immutable.Map
+import org.neo4j.cypher.{SymbolTable, PatternContext}
 
-class PatternPipe(source: Pipe, matching: Option[Match]) extends Pipe {
+class PatternPipe(source: Pipe, matching: Match) extends Pipe {
 
-  var patternContext: PatternContext = null
+  val patternContext: PatternContext = new PatternContext(source, matching)
 
-  def prepare(symbolTable: SymbolTable) {
-    patternContext = new PatternContext(symbolTable)
-    patternContext.createPatterns(matching)
-    patternContext.checkConnectednessOfPatternGraph(source.columns)
-  }
+  val symbols: SymbolTable = patternContext.symbolTable
 
   def foreach[U](f: Map[String, Any] => U) {
+    patternContext.checkConnectednessOfPatternGraph(source.symbols)
+
     source.foreach((row) => {
       row.foreach(patternContext.bindStartPoint(_))
 
       patternContext.getPatternMatches(row).map(f)
     })
   }
-
-  def columns = patternContext.identifiers.toList
 }

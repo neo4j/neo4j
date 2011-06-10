@@ -19,11 +19,6 @@
  */
 package org.neo4j.cypher.commands
 
-/**
- * Created by Andres Taylor
- * Date: 4/16/11
- * Time: 19:08 
- */
 
 abstract sealed class ReturnItem(val identifier:SymbolType)
 

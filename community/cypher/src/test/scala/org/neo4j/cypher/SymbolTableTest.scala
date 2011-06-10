@@ -26,11 +26,8 @@ import org.junit.Assert._
 
 class SymbolTableTest {
   @Test def testConcatenating() {
-    val table1 = new SymbolTable
-    val table2 = new SymbolTable
-
-    table1.registerNode("node")
-    table2.registerRelationship("rel")
+    val table1 = new SymbolTable(Map("node"->NodeType("node")))
+    val table2 = new SymbolTable(Map("rel"->RelationshipType("rel")))
 
     val result = table1 ++ table2
 
@@ -39,21 +36,15 @@ class SymbolTableTest {
 
 
   @Test(expected = classOf[SyntaxError]) def shouldNotOverwriteSymbolsWithNewType() {
-    val table1 = new SymbolTable
-    val table2 = new SymbolTable
-
-    table1.registerNode("x")
-    table2.registerRelationship("x")
+    val table1 = new SymbolTable(Map("x"->NodeType("x")))
+    val table2 = new SymbolTable(Map("x"->RelationshipType("x")))
 
     table1 ++ table2
   }
 
   @Test def registreringTwiceIsOk() {
-    val table1 = new SymbolTable
-    val table2 = new SymbolTable
-
-    table1.registerNode("x")
-    table2.registerNode("x")
+    val table1 = new SymbolTable(Map("x"->NodeType("x")))
+    val table2 = new SymbolTable(Map("x"->NodeType("x")))
 
     val result = table1 ++ table2
 

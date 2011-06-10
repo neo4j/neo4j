@@ -21,27 +21,19 @@ package org.neo4j.cypher.pipes
 
 import org.neo4j.cypher.SymbolTable
 import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
-
-/**
- * Created by Andres Taylor
- * Date: 4/18/11
- * Time: 21:00 
- */
+import org.neo4j.cypher.commands.{SymbolType, RelationshipType, NodeType}
 
 class StartPipe[T <: PropertyContainer](name: String, source: Iterable[T]) extends Pipe {
-  def columns: List[String] = List(name)
+  val symbolType: SymbolType = source match {
+    case nodes: Iterable[Node] => NodeType(name)
+    case rels: Iterable[Relationship] => RelationshipType(name)
+  }
 
+  val symbols: SymbolTable = new SymbolTable(Map(name -> symbolType))
 
   def foreach[U](f: (Map[String, Any]) => U) {
     source.foreach((x) => {
       f(Map(name -> x))
     })
-  }
-
-  def prepare(symbolTable: SymbolTable) {
-    source match {
-      case nodes: Iterable[Node] => symbolTable.registerNode(name)
-      case relationships: Iterable[Relationship] => symbolTable.registerRelationship(name)
-    }
   }
 }

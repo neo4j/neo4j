@@ -22,12 +22,6 @@ package org.neo4j.cypher.commands
 import org.neo4j.graphdb.Direction
 import scala.Some
 
-/**
- * Created by Andres Taylor
- * Date: 5/19/11
- * Time: 17:06 
- */
-
 abstract class Pattern
 
 object RelatedTo {

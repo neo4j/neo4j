@@ -21,44 +21,49 @@ package org.neo4j.cypher.pipes
 
 import java.lang.String
 import org.neo4j.cypher.SymbolTable
-import org.neo4j.cypher.commands.{NullablePropertyOutput, PropertyOutput, EntityOutput, ReturnItem}
 import org.neo4j.graphdb.{NotFoundException, PropertyContainer}
+import org.neo4j.cypher.commands._
+import collection.Seq
 
 class TransformPipe(returnItems: Seq[ReturnItem], source: Pipe) extends Pipe {
   type MapTransformer = Map[String, Any] => Map[String, Any]
 
-  val columns = returnItems.map(_.identifier.name).toList
+  def getSymbolType(item: ReturnItem): SymbolType = item.identifier
+  val returnIdentifiers = returnItems.map(x => x.identifier.name -> x.identifier).toMap
+  val symbols: SymbolTable = source.symbols.add(returnIdentifiers)
+
+  var transformers: Seq[MapTransformer] = createMapTransformers(returnItems, symbols)
 
   def createMapTransformers(returnItems: Seq[ReturnItem], symbolTable: SymbolTable): Seq[MapTransformer] = {
 
     returnItems.map((selectItem) => {
       selectItem match {
         case PropertyOutput(nodeName, propName) => {
-          symbolTable.assertHas(nodeName)
+          source.symbols.assertHas(nodeName)
           nodePropertyOutput(nodeName, propName) _
         }
 
         case NullablePropertyOutput(nodeName, propName) => {
-          symbolTable.assertHas(nodeName)
-          nullableNodePropertyOutput(nodeName, propName) _
+          source.symbols.assertHas(nodeName)
+          nullablePropertyOutput(nodeName, propName) _
         }
 
         case EntityOutput(nodeName) => {
-          symbolTable.assertHas(nodeName)
-          nodeOutput(nodeName) _
+          source.symbols.assertHas(nodeName)
+          entityOutput(nodeName) _
         }
       }
     })
   }
 
-  def nodeOutput(column: String)(m: Map[String, Any]): Map[String, Any] = Map(column -> m.getOrElse(column, throw new NotFoundException))
+  def entityOutput(column: String)(m: Map[String, Any]): Map[String, Any] = Map(column -> m.getOrElse(column, throw new NotFoundException))
 
   def nodePropertyOutput(column: String, propName: String)(m: Map[String, Any]): Map[String, Any] = {
     val node = m.getOrElse(column, throw new NotFoundException).asInstanceOf[PropertyContainer]
     Map(column + "." + propName -> node.getProperty(propName))
   }
 
-  def nullableNodePropertyOutput(column: String, propName: String)(m: Map[String, Any]): Map[String, Any] = {
+  def nullablePropertyOutput(column: String, propName: String)(m: Map[String, Any]): Map[String, Any] = {
     val node = m.getOrElse(column, throw new NotFoundException).asInstanceOf[PropertyContainer]
 
     val property = try {
@@ -68,12 +73,6 @@ class TransformPipe(returnItems: Seq[ReturnItem], source: Pipe) extends Pipe {
     }
 
     Map(column + "." + propName -> property)
-  }
-
-  var transformers: Seq[MapTransformer] = null
-
-  def prepare(symbolTable: SymbolTable) {
-    transformers = createMapTransformers(returnItems, symbolTable)
   }
 
   def foreach[U](f: (Map[String, Any]) => U) {

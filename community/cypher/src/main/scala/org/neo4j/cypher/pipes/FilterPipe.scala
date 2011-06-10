@@ -20,28 +20,15 @@
 package org.neo4j.cypher.pipes
 
 import org.neo4j.cypher.SymbolTable
-import org.neo4j.cypher.commands.{True, Clause}
+import org.neo4j.cypher.commands.Clause
 import java.lang.String
 
-class FilterPipe(val where: Option[Clause], source: Pipe) extends Pipe {
-
-  def createFilters(where: Option[Clause], symbolTable: SymbolTable): Clause = {
-    where match {
-      case None => new True()
-      case Some(clause) => clause
-    }
-  }
-
-  def columns = source.columns
-  var filters : Clause = null
-
-  def prepare(symbolTable: SymbolTable) {
-    filters = createFilters(where,symbolTable)
-  }
+class FilterPipe(where: Clause, source: Pipe) extends Pipe {
+  val symbols: SymbolTable = source.symbols
 
   def foreach[U](f: (Map[String, Any]) => U) {
     source.filter((row) => {
-      filters.isMatch(row)
+      where.isMatch(row)
     }).foreach(f)
   }
 }

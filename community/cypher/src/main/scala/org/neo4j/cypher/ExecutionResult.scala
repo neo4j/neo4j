@@ -47,7 +47,9 @@ import scala.collection.JavaConverters._
 import org.neo4j.graphdb.{PropertyContainer, Relationship, NotFoundException, Node}
 
 trait ExecutionResult extends Traversable[Map[String, Any]] {
-  val columns: List[String]
+  val symbols:SymbolTable
+
+  val columns: List[String] = symbols.identifiers.map(_._1).toList
 
   def javaColumns: java.util.List[String] = columns.asJava
 
@@ -116,7 +118,7 @@ trait ExecutionResult extends Traversable[Map[String, Any]] {
     columns.map((c) => {
       val length = columnSizes.get(c).get
       val txt = text(m.get(c).get)
-      val value = makeSize(txt, length - 2)
+      val value = makeSize(txt, length)
       value
     }).reduceLeft(_ + " | " + _)
   }
