@@ -4,7 +4,33 @@ Cypher Query Language
 
 This is an experimental query language for Neo4j.
 
+To allow expressive and efficient querying of the graph store 
+without having to write traversers in code, we are releasing the 
+first iteration of a new query language, code-named `Cypher`.
+
+Cypher is designed to be a humane query language, suitable for both 
+developers and (importantly, we think) operations professionals who 
+want to make ad-hoc queries on the database. Its constructs are based 
+on English prose and neat iconography, which helps to make it (somewhat) 
+self-explanatory.
+
+For example, here is a query which finds a user called John in 
+an index and then traverses the graph looking for friends of 
+Johns friends (though not his direct friends) before returning 
+both John and any friends-of-friends that are found.
+
 The query language is comprised of four distinct parts.
+
+.Cypher1 
+image::image2.png[scaledwidth="50%",alt="Cypher Example with nidex lookup"]
+
+In this next example, we take a list of users (by node ID) and traverse 
+the graph looking for those other users that have an outgoing follows relationship, 
+returning only those followed users who are older than 18.
+
+.Cypher2 
+image::image1.png[scaledwidth="50%",alt="Cypher Example with Node id"]
+
 
 In Java, using the query language looks something like this:
 
