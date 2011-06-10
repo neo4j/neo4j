@@ -25,7 +25,7 @@ import pipes.Pipe
 import scala.collection.JavaConversions._
 import java.lang.UnsupportedOperationException
 import collection.Seq
-import org.neo4j.graphdb.{Node, PropertyContainer, DynamicRelationshipType, Direction, Relationship}
+import org.neo4j.graphdb.{PropertyContainer, DynamicRelationshipType, Direction}
 
 class PatternContext(source: Pipe, matching: Match) {
 
@@ -98,7 +98,7 @@ class PatternContext(source: Pipe, matching: Match) {
   }
 
 
-  def checkConnectednessOfPatternGraph(startIdentifiers: SymbolTable) {
+  def validatePattern(startIdentifiers: SymbolTable) {
     val visited = scala.collection.mutable.HashSet[String]()
 
     def visit(visitedObject: PatternType) {
@@ -152,24 +152,6 @@ class PatternContext(source: Pipe, matching: Match) {
     rels(name) = rel
   }
 
-  private def getOrThrow(name: String): PatternType = nodes.get(name) match {
-    case Some(x) => x.asInstanceOf[PatternType]
-    case None => rels.get(name) match {
-      case Some(x) => x.asInstanceOf[PatternType]
-      case None => throw new SyntaxError("No identifier named " + name + " has been defined")
-    }
-  }
-
-  private def nodesMap: Map[String, PatternNode] = nodes.toMap
-
-  private def relationshipsMap: Map[String, PatternRelationship] = rels.toMap
-
-  private def assertHas(variable: String) {
-    if (!(nodes.contains(variable) || rels.contains(variable))) {
-      throw new SyntaxError("Unknown variable \"" + variable + "\".")
-    }
-  }
-
   private def identifiers = nodes.keySet ++ rels.keySet
 
   private type PatternType = AbstractPatternObject[_ <: PropertyContainer]
@@ -181,27 +163,4 @@ class PatternContext(source: Pipe, matching: Match) {
       case None => None
     }
   }
-
-  def bindStartPoint[U](startPoint: (String, Any)) {
-    startPoint match {
-      case (identifier: String, node: Node) => nodes(identifier).setAssociation(node)
-      case (identifier: String, rel: Relationship) => rels(identifier).setAssociation(rel)
-    }
-  }
-
-  def getPatternMatches(fromRow: Map[String, Any]): Iterable[Map[String, Any]] = {
-    val startKey = fromRow.keys.head
-    val startPNode = nodes(startKey)
-    val startNode = fromRow(startKey).asInstanceOf[Node]
-    val matches: Iterable[PatternMatch] = PatternMatcher.getMatcher.`match`(startPNode, startNode)
-    matches.map(patternMatch => {
-      (nodes.map {
-        case (name: String, node: PatternNode) => name -> patternMatch.getNodeFor(node)
-      } ++
-        rels.map {
-          case (name: String, rel: PatternRelationship) => name -> patternMatch.getRelationshipFor(rel)
-        }).toMap[String, Any]
-    })
-  }
-
 }

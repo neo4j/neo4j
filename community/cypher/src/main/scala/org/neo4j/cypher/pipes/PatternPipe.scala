@@ -23,6 +23,9 @@ package org.neo4j.cypher.pipes
 import org.neo4j.cypher.commands.Match
 import collection.immutable.Map
 import org.neo4j.cypher.{SymbolTable, PatternContext}
+import org.neo4j.graphdb.{Relationship, Node}
+import org.neo4j.graphmatching.{PatternRelationship, PatternNode, PatternMatcher}
+import scala.collection.JavaConversions._
 
 class PatternPipe(source: Pipe, matching: Match) extends Pipe {
 
@@ -31,12 +34,38 @@ class PatternPipe(source: Pipe, matching: Match) extends Pipe {
   val symbols: SymbolTable = patternContext.symbolTable
 
   def foreach[U](f: Map[String, Any] => U) {
-    patternContext.checkConnectednessOfPatternGraph(source.symbols)
+    patternContext.validatePattern(source.symbols)
 
     source.foreach((row) => {
-      row.foreach(patternContext.bindStartPoint(_))
+      row.foreach(bindStartPoint(_))
 
-      patternContext.getPatternMatches(row).map(f)
+      getPatternMatches(row).map(f)
     })
   }
+
+  def bindStartPoint[U](startPoint: (String, Any)) {
+    startPoint match {
+      case (identifier: String, node: Node) => patternContext.nodes(identifier).setAssociation(node)
+      case (identifier: String, rel: Relationship) => patternContext.rels(identifier).setAssociation(rel)
+    }
+  }
+
+  def getPatternMatches(fromRow: Map[String, Any]): Iterable[Map[String, Any]] = {
+    val startKey = fromRow.keys.head
+    val startPNode = patternContext.nodes(startKey)
+    val startNode = fromRow(startKey).asInstanceOf[Node]
+    val matches = PatternMatcher.getMatcher.`match`(startPNode, startNode)
+    matches.map(patternMatch => {
+      val nodesMap = patternContext.nodes.map {
+        case (name: String, node: PatternNode) => name -> patternMatch.getNodeFor(node)
+      }
+
+      val relsMap = patternContext.rels.map {
+        case (name: String, rel: PatternRelationship) => name -> patternMatch.getRelationshipFor(rel)
+      }
+
+      (nodesMap ++ relsMap).toMap[String, Any]
+    })
+  }
+
 }

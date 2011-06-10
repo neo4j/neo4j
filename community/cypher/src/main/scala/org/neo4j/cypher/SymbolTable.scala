@@ -19,27 +19,11 @@
  */
 package org.neo4j.cypher
 
-import commands.{SymbolType, NodeType, RelationshipType}
+import commands.SymbolType
 import scala.Some
 
 class SymbolTable(val identifiers: Map[String, SymbolType]) {
   def this() = this (Map())
-
-//  def registerNode(name: String) {
-//    identifiers.get(name) match {
-//      case Some(RelationshipType(_)) => throw new SyntaxError("Identifier \"" + name + "\" already defined as a relationship.")
-//      case None => identifiers(name) = NodeType(name)
-//      case Some(NodeType(_)) =>
-//    }
-//  }
-//
-//  def registerRelationship(name: String) {
-//    identifiers.get(name) match {
-//      case Some(NodeType(_)) => throw new SyntaxError("Identifier \"" + name + "\" already defined as a node.")
-//      case None => identifiers(name) = RelationshipType(name)
-//      case Some(RelationshipType(_)) =>
-//    }
-//  }
 
   def assertHas(name: String) {
     if (!identifiers.contains(name)) {
