@@ -173,7 +173,7 @@ public class Documenter
 
     private void doc( Job job, PrintWriter out, String result )
     {
-            out.println( "# " + job.comment );
+            out.println( " # " + job.comment );
             out.println( " " + job.query );
             out.println( " " + result.replace( "\n", "\n " ) );
     }
