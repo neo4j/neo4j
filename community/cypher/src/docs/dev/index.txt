@@ -21,15 +21,15 @@ both John and any friends-of-friends that are found.
 
 The query language is comprised of four distinct parts.
 
-.Cypher1 
-image::image2.png[scaledwidth="50%",alt="Cypher Example with nidex lookup"]
+.Cypher Example with nidex lookup 
+image::image2.png[scaledwidth="80%",alt="Cypher Example with nidex lookup"]
 
 In this next example, we take a list of users (by node ID) and traverse 
 the graph looking for those other users that have an outgoing follows relationship, 
 returning only those followed users who are older than 18.
 
-.Cypher2 
-image::image1.png[scaledwidth="50%",alt="Cypher Example with Node id"]
+.Cypher Example with Node id 
+image::image1.png[scaledwidth="80%",alt="Cypher Example with Node id"]
 
 
 In Java, using the query language looks something like this:
