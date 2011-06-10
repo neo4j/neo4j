@@ -89,6 +89,7 @@ BSD licence:
  Pipes: A Data Flow Framework using Process Graphs,
  JLine,
  JGoodie Forms,
+ Scala library
 
 provided without support or warranty: JSON (JavaScript Object Notation)
 

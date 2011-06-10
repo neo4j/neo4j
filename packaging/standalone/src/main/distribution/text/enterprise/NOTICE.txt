@@ -75,7 +75,7 @@ GNU Lesser General Public License (LGPL) 2.1:
 
 MIT License:
  SLF4J API Module, SLF4J Log4j-12 Binding, SLF4J JDK1.4 Logging Binding,
- SLF4J Jakarta Commons Logging Binding, SLF4J System out Binding,
+ SLF4J Jakarta Commons Logging Binding,
  Base64.js,
  jTemplates,
  jQuery,
@@ -91,6 +91,7 @@ BSD licence:
  Pipes: A Data Flow Framework using Process Graphs,
  JLine,
  JGoodie Forms,
+ Scala library
 
 provided without support or warranty: JSON (JavaScript Object Notation)
 

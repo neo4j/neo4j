@@ -105,6 +105,7 @@
         <include>org.apache.zookeeper:zookeeper</include>
         <include>org.slf4j:slf4j-api</include>
         <include>org.slf4j:log4j-over-slf4j</include>
+        <include>org.scala-lang:scala-library</include>
       </includes>
       <excludes>
         <exclude>*:javadoc:*</exclude>
@@ -138,6 +139,7 @@
         <exclude>log4j:log4j</exclude>
         <exclude>org.slf4j:slf4j-api</exclude>
         <exclude>org.slf4j:log4j-over-slf4j</exclude>
+        <exclude>org.scala-lang:scala-library</exclude>
       </excludes>
     </dependencySet>
     <dependencySet>
