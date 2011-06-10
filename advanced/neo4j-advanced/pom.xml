@@ -240,6 +240,14 @@ terms of the relevant Commercial Agreement.
               <packages>org.neo4j.management:org.neo4j.management.*:org.neo4j.jmx:org.neo4j.jmx.*</packages>
             </group>
             <group>
+              <title>Query language</title>
+              <packages>org.neo4j.cypher.javacompat:org.neo4j.cypher.javacompat.*</packages>
+            </group>
+            <group>
+              <title>Graph matching</title>
+              <packages>org.neo4j.graphmatching:org.neo4j.graphmatching.*</packages>
+            </group>
+            <group>
               <title>Helpers</title>
               <packages>org.neo4j.helpers:org.neo4j.helpers.*</packages>
             </group>
