@@ -22,7 +22,7 @@ package org.neo4j.server.rest.repr;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.cypher.ExecutionResult;
+import org.neo4j.cypher.javacompat.ExecutionResult;
 
 
 public class CypherResultRepresentation extends ObjectRepresentation {
@@ -39,7 +39,7 @@ public class CypherResultRepresentation extends ObjectRepresentation {
     public Representation self() {
         
         Map<String, String> c = new HashMap<String, String>();
-        c.put( "columns", queryResult.dumpToString() );
+        c.put( "columns", queryResult.toString() );
         return MappingRepresentation.stringMap( STRING, c); 
     }
     

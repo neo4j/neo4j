@@ -19,12 +19,11 @@
  */
 package org.neo4j.server.plugin.cypher;
 
-import org.neo4j.cypher.CypherParser;
-import org.neo4j.cypher.ExecutionEngine;
-import org.neo4j.cypher.ExecutionResult;
-import org.neo4j.cypher.Projection;
 import org.neo4j.cypher.SyntaxError;
 import org.neo4j.cypher.commands.Query;
+import org.neo4j.cypher.javacompat.CypherParser;
+import org.neo4j.cypher.javacompat.ExecutionEngine;
+import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.server.plugins.Description;
 import org.neo4j.server.plugins.Name;
@@ -53,7 +52,7 @@ public class CypherPlugin extends ServerPlugin
 {
 
     private CypherParser parser;
-    private ExecutionEngine engine;
+    private ExecutionEngine engine; 
  
     @Name( "execute_query" )
     @Description( "execute a query" )
