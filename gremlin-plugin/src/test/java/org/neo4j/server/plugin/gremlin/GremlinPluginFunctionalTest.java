@@ -78,23 +78,43 @@ public class GremlinPluginFunctionalTest implements GraphHolder
     }
 
     /**
-     * Load a sample graph graph from a GraphML file URL.
-     *
      * Import a graph form a http://graphml.graphdrawing.org/[GraphML] file
      * can be achieved through the Gremlin GraphMLReader.
      * The following script imports 3 nodes into Neo4j
-     * and then returns a sorted list of all nodes connected via
-     * outgoing relationships to node 1, sorted by their `name`-property.
+     * and then returns a list of all nodes in the graph.
      */
     @Test
     @Documented
-    public void testGremlinImportGraphAndSortResults() throws UnsupportedEncodingException
+    @Title("Load a sample graph graph")
+    public void testGremlinImportGraph() throws UnsupportedEncodingException
     {
         String response = gen.get()
         .expectedStatus( Status.OK.getStatusCode() )
         .payload( "{\"script\":\"" +
         		"GraphMLReader.inputGraph(g, new URL('https://raw.github.com/neo4j/neo4j-gremlin-plugin/master/src/data/graphml1.xml').openStream());" +
-        		"g.v(1).outE.inV.sort{it.name}.toList()\"}" )
+        		"g.V\"}" )
+        .payloadType( MediaType.APPLICATION_JSON_TYPE )
+        .post( ENDPOINT )
+        .entity();
+        assertTrue(response.contains( "you" ));
+        assertTrue(response.contains( "him" ));
+    }
+    
+    
+    /**
+     * The following script returns a sorted list 
+     * of all nodes connected via outgoing relationships 
+     * to node 1, sorted by their `name`-property.
+     */
+    @Test
+    @Documented
+    @Title("Sort a result using raw Groovy operations")
+    @Graph( value = { "I know you", "I know him" } )
+    public void testSortResults() throws UnsupportedEncodingException
+    {
+        String response = gen.get()
+        .expectedStatus( Status.OK.getStatusCode() )
+        .payload( "{\"script\":\"g.v("+data.get().get( "I" ).getId()+").outE.inV.sort{it.name}.toList()\"}" )
         .payloadType( MediaType.APPLICATION_JSON_TYPE )
         .post( ENDPOINT )
         .entity();
@@ -102,6 +122,7 @@ public class GremlinPluginFunctionalTest implements GraphHolder
         assertTrue(response.contains( "him" ));
         assertTrue(response.indexOf( "you" ) > response.indexOf( "him" ));
     }
+    
     /**
      * To send a Script JSON encoded, set the payload Content-Type Header
      */

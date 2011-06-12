@@ -15,4 +15,6 @@ include::send-a-gremlin-script---json-encoded.txt[]
 
 include::send-a-gremlin-script---url-encoded.txt[]
 
-include::load-a-sample-graph-graph-from-a-graphml-file-url.txt[]
+include::load-a-sample-graph-graph.txt[]
+
+include::sort-a-result-using-raw-groovy-operations.txt[]
