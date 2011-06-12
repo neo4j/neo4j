@@ -35,8 +35,14 @@
         <node id="2">
             <data key="name">you</data>
         </node>
-        <edge id="3" source="1" target="2" label="know">
+        <node id="3">
+            <data key="name">him</data>
+        </node>
+        <edge id="1" source="1" target="2" label="know">
             <data key="weight">0.5</data>
+        </edge>
+        <edge id="2" source="1" target="3" label="know">
+            <data key="weight">0.8</data>
         </edge>
     </graph>
 </graphml>
