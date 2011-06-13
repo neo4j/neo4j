@@ -27,8 +27,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.test.subprocess.SubProcess;
 import org.neo4j.test.subprocess.BreakPoint;
+import org.neo4j.test.subprocess.SubProcess;
 
 public class AbstractSubProcessTestBase
 {

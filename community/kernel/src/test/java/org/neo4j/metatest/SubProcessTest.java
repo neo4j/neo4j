@@ -32,9 +32,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.DebugInterface;
 import org.neo4j.test.subprocess.SubProcess;
-import org.neo4j.test.subprocess.BreakPoint;
 
 public class SubProcessTest
 {
