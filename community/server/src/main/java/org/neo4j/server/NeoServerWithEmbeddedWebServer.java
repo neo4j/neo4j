@@ -54,9 +54,6 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
 
     private final List<ServerModule> serverModules = new ArrayList<ServerModule>();
     private PluginInitializer pluginInitializer;
-    // Perhaps this shouldn't reference (an instance of) the Bootstrapper class,
-    // but we need to provide configuration parameters to load the appropriate
-    // GraphDatabaseFactory implementation
     private final Bootstrapper bootstrapper;
 
     public NeoServerWithEmbeddedWebServer( Bootstrapper bootstrapper, AddressResolver addressResolver,
