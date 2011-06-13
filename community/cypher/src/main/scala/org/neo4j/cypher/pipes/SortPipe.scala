@@ -21,24 +21,28 @@ package org.neo4j.cypher.pipes
 
 import org.neo4j.cypher.{Comparer, SymbolTable}
 import org.neo4j.cypher.commands.ReturnItem
-import java.lang.Boolean
-
 
 class SortPipe(sortDescription: List[SortItem], inner: Pipe) extends Pipe with Comparer {
   val symbols: SymbolTable = inner.symbols
 
   def foreach[U](f: (Map[String, Any]) => U) {
-
-    val sortIdentifier = sortDescription.head.returnItem.identifier.name
-
-    val sorted = inner.toList.sortWith((a, b) => {
-      val aVal = a(sortIdentifier).asInstanceOf[String]
-      val bVal = b(sortIdentifier).asInstanceOf[String]
-
-      compare(aVal, bVal) < 1
-    })
+    val sorted = inner.toList.sortWith((a, b) => compareBy (a,b,sortDescription))
 
     sorted.foreach(f)
+  }
+
+  def compareBy(a:Map[String, Any], b:Map[String, Any], order:List[SortItem]):Boolean = order match {
+    case Nil => false
+    case head :: tail => {
+      val id = head.returnItem.identifier.name
+      val aVal = a(id)
+      val bVal = b(id)
+      compare(aVal, bVal) match {
+        case 1 => !head.ascending
+        case -1 => head.ascending
+        case 0 => compareBy(a,b,tail)
+      }
+    }
   }
 }
 

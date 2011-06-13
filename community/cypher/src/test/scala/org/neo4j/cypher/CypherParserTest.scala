@@ -24,6 +24,7 @@ import org.junit.Assert._
 import org.neo4j.graphdb.Direction
 import org.junit.Test
 import pipes.SortItem
+import scala.Predef._
 
 
 /**
@@ -305,13 +306,24 @@ class CypherParserTest {
         Aggregation(Count("*"))))
   }
 
-  @Test def sorting() {
+  @Test def singleColumnSorting() {
     testQuery(
       "start a = (1) return a sort by a.name",
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
         Sort(SortItem(PropertyOutput("a", "name"), true))))
+  }
+
+  @Test def shouldHandleTwoSortColumns() {
+    testQuery(
+      "start a = (1) return a sort by a.name, a.age",
+      Query(
+        Return(EntityOutput("a")),
+        Start(NodeById("a", 1)),
+        Sort(
+          SortItem(PropertyOutput("a", "name"), true),
+          SortItem(PropertyOutput("a", "age"), true))))
   }
 
   @Test def nullableProperty() {
