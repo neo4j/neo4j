@@ -26,6 +26,7 @@ import java.util.Map;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.cypher.CypherParser;
@@ -38,13 +39,15 @@ import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
+import org.neo4j.test.GraphDescription.NODE;
+import org.neo4j.test.GraphDescription.PROP;
 import org.neo4j.test.GraphHolder;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestData;
 
 public class CypherPluginTest implements GraphHolder
 {
-    
+
     private CypherParser parser;
     private static ImpermanentGraphDatabase db;
     private ExecutionEngine engine;
@@ -53,7 +56,7 @@ public class CypherPluginTest implements GraphHolder
             this, true ) );
     private CypherPlugin plugin;
     private OutputFormat json;
-    
+
     @Before
     public void setUp() throws Exception
     {
@@ -64,19 +67,37 @@ public class CypherPluginTest implements GraphHolder
         json = new OutputFormat( new JsonFormat(),
                 new URI( "http://localhost/" ), null );
     }
- 
+
     @Test
     @Graph( value = { "I know you" } )
     public void runSimpleQuery() throws Exception
     {
         Node i = data.get().get( "I" );
-        Representation result = testQuery( "start n=("+i.getId() + ") return n" );
-        assertTrue( json.format( result).contains( "I" ));
+        Representation result = testQuery( "start n=(" + i.getId()
+                                           + ") return n" );
+        assertTrue( json.format( result ).contains( "I" ) );
     }
- 
+
+    @Test
+    @Ignore
+    @Graph( value = { "I know you", "I know him" }, nodes = { @NODE( name = "you", properties = {
+            @PROP( key = "bool", value = "true", type = GraphDescription.PropType.BOOLEAN ),
+            @PROP( key = "name", value = "you" ) } ) } )
+    public void checkColumns() throws Exception
+    {
+        Node i = data.get().get( "I" );
+        Representation result = testQuery( "start x =("
+                                           + i.getId()
+                                           + ") match (x) -- (n) return n, n.name, n.bool" );
+        String formatted = json.format( result );
+        System.out.println( formatted );
+        assertTrue( formatted.contains( "columns" ) );
+        assertTrue( formatted.contains( "name" ) );
+    }
+
     private Representation testQuery( String query ) throws SyntaxError
     {
-        
+
         return plugin.executeScript( db, query );
     }
 
@@ -85,13 +106,13 @@ public class CypherPluginTest implements GraphHolder
     {
         return db;
     }
-    
+
     @BeforeClass
     public static void startDatabase()
     {
-        db = new ImpermanentGraphDatabase("target/db"+System.currentTimeMillis());
-        
+        db = new ImpermanentGraphDatabase( "target/db"
+                                           + System.currentTimeMillis() );
+
     }
 
-   
 }

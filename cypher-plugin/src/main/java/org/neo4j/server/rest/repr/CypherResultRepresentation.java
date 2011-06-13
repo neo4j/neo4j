@@ -19,15 +19,18 @@
  */
 package org.neo4j.server.rest.repr;
 
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 
+public class CypherResultRepresentation extends ObjectRepresentation
+{
 
-public class CypherResultRepresentation extends ObjectRepresentation {
-
-	private final ExecutionResult queryResult;
+    private final ExecutionResult queryResult;
 
     public CypherResultRepresentation( ExecutionResult result )
     {
@@ -35,51 +38,61 @@ public class CypherResultRepresentation extends ObjectRepresentation {
         this.queryResult = result;
     }
 
-    @Mapping("content")
-    public Representation self() {
-        
-        Map<String, String> c = new HashMap<String, String>();
-        c.put( "columns", queryResult.toString() );
-        return MappingRepresentation.stringMap( STRING, c); 
-    }
-    
-//    private void fillColumns() {
-//        Collection<Node> nodeCollection = IteratorUtil.asCollection( asIterable( result.<Node>columnAs( returns ) ) );
-//        if ( nodeCollection instanceof Iterable )
-//        {
-//            RepresentationType type = RepresentationType.STRING;
-//            final List<Representation> results = new ArrayList<Representation>();
-//            for ( final Object r : (Iterable) nodeCollection )
-//            {
-//                if ( r instanceof Node )
-//                {
-//                    type = RepresentationType.NODE;
-//                    results.add( new NodeRepresentation( (Node) r ) );
-//                }
-//                else if ( r instanceof Relationship )
-//                {
-//                    type = RepresentationType.RELATIONSHIP;
-//                    results.add( new RelationshipRepresentation(
-//                            (Relationship) r ) );
-//                }
-//                else if ( r instanceof Double || r instanceof Float )
-//                {
-//                    type = RepresentationType.DOUBLE;
-//                    results.add( ValueRepresentation.number( ( (Number) r ).doubleValue() ) );
-//                }
-//                else if ( r instanceof Long || r instanceof Integer )
-//                {
-//                    type = RepresentationType.LONG;
-//                    results.add( ValueRepresentation.number( ( (Number) r ).longValue() ) );
-//                }
-//                else
-//                {
-//                    System.out.println( "Query: got back" + r );
-//                    type = RepresentationType.STRING;
-//                    results.add( ValueRepresentation.string( r.toString() ) );
-//                }
-//    }
+    @Mapping( "columns" )
+    public Representation columns()
+    {
 
-    
-    
+        return ListRepresentation.string( queryResult.columns() );
+    }
+
+    @Mapping( "data" )
+    public Representation data()
+    {
+        // rows
+        List<Representation> rows = new ArrayList<Representation>();
+        for ( Map<String, Object> row : queryResult )
+        {
+            List<Representation> fields = new ArrayList<Representation>();
+            // columns
+            for ( String column : queryResult.columns() )
+            {
+                Representation rowRep = getRepresentation( row.get( column ) );
+                fields.add( rowRep );
+
+            }
+            rows.add( new ListRepresentation( "row", fields ) );
+        }
+        return new ListRepresentation( "data", rows );
+    }
+
+    // private void fillColumns() {
+    // Collection<Node> nodeCollection = IteratorUtil.asCollection( asIterable(
+
+    private Representation getRepresentation( Object r )
+    {
+        if(r == null ) {
+            return ValueRepresentation.string( null );
+        }
+        if ( r instanceof Node )
+        {
+            return new NodeRepresentation( (Node) r );
+        }
+        if ( r instanceof Relationship )
+        {
+            return new RelationshipRepresentation( (Relationship) r );
+        }
+        else if ( r instanceof Double || r instanceof Float )
+        {
+            return ValueRepresentation.number( ( (Number) r ).doubleValue() );
+        }
+        else if ( r instanceof Long || r instanceof Integer )
+        {
+            return ValueRepresentation.number( ( (Number) r ).longValue() );
+        }
+        else
+        {
+            return ValueRepresentation.string( r.toString() );
+        }
+    }
+
 }

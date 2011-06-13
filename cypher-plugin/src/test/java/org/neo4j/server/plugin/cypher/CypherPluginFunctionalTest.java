@@ -61,23 +61,24 @@ public class CypherPluginFunctionalTest implements GraphHolder
     /**
      * Send a Query - URL encoded.
      * 
-     * A simple query returning a node:
-     * `start n  = (1) return n`
+     * A simple query returning all nodes connected to node 1:
+     * 
+     * `start x  = (1) match (x) -- (n) return n, n.name`
      * 
      */
     @Test
     @Documented
-    @Graph( value = { "I know you" } )
+    @Graph( value = { "I know you", "I know him" } )
     public void testPropertyColumn() throws UnsupportedEncodingException
     {
         String response = gen.get()
         .expectedStatus( Status.OK.getStatusCode() )
-        .payload( "query=" + URLEncoder.encode( "start n  = ("+data.get().get( "I" ).getId() +") return n.name", "UTF-8"))
+        .payload( "query=" + URLEncoder.encode( "start x  = ("+data.get().get( "I" ).getId() +") match (x) -- (n) return n, n.name", "UTF-8"))
         .payloadType( MediaType.APPLICATION_FORM_URLENCODED_TYPE )
         .post( ENDPOINT )
         .entity();
-        System.out.println(response);
-        assertTrue(response.contains( "I" ));
+        assertTrue(response.contains( "you" ));
+        assertTrue(response.contains( "him" ));
     }
 
     @BeforeClass
