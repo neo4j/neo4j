@@ -31,6 +31,8 @@ define(
         "/console/" : "console"
         "/console/:type" : "console"
 
+      consoleType : "gremlin"
+
       initialize : (appState) =>
         @appState = appState
         @gremlinState = new Console(server:@appState.get("server"), lang:"gremlin")
@@ -46,7 +48,9 @@ define(
             consoleState : @cypherState
             lang: ""
           
-      console : (type="gremlin") =>
+      console : (type=false) =>
+        if type is false then type = @consoleType
+        @consoleType = type
         @appState.set( mainView : @getConsoleView(type) )
 
       getConsoleView : (type) =>

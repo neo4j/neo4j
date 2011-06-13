@@ -13,6 +13,6 @@ Feature: Webadmin has a gremlin console
     Given I have a neo4j server running
     When I look at webadmin in a web browser
     And I click on the Console tab in webadmin
-    And I type g.v(0) into the element found by the xpath //input[@id="console-input"]
+    And I type "g.v(0)" into the element found by the xpath //input[@id="console-input"]
     And I hit return in the element found by the xpath //input[@id="console-input"]
     Then An element should appear that can be found by the xpath //li[contains(.,"v[0]")]
