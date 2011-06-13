@@ -279,6 +279,34 @@ public class TestAutoIndexing
     }
 
     @Test
+    public void testDefaulIfOnIsForEverything()
+    {
+        graphDb.index().getNodeAutoIndexer().setAutoIndexingEnabled( true );
+        newTransaction();
+        Node node1 = graphDb.createNode();
+        node1.setProperty( "testProp", "node1" );
+        node1.setProperty( "testProp1", "node1" );
+        Node node2 = graphDb.createNode();
+        node2.setProperty( "testProp", "node2" );
+        node2.setProperty( "testProp1", "node2" );
+
+        newTransaction();
+        AutoIndexer<Node> autoIndexer = graphDb.index().getNodeAutoIndexer();
+        assertEquals(
+                node1,
+                autoIndexer.getAutoIndex().get( "testProp", "node1" ).getSingle() );
+        assertEquals(
+                node1,
+                autoIndexer.getAutoIndex().get( "testProp1", "node1" ).getSingle() );
+        assertEquals(
+                node2,
+                autoIndexer.getAutoIndex().get( "testProp", "node2" ).getSingle() );
+        assertEquals(
+                node2,
+                autoIndexer.getAutoIndex().get( "testProp1", "node2" ).getSingle() );
+    }
+
+    @Test
     public void testDefaultIsOffIfExplicit() throws Exception
     {
         stopDb();

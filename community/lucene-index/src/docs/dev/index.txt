@@ -442,5 +442,115 @@ Here are some pointers to get the most performance out of +BatchInserterIndex+:
 * Try to avoid http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/BatchInserterIndex.html#flush%28%29[flushing] too often because each flush will result in all additions (since last flush) to be visible to the querying methods, and publishing those changes can be a performance penalty.
 * Have (as big as possible) phases where one phase is either only writes or only reads, and don't forget to flush after a write phase so that those changes becomes visible to the querying methods.
 * Enable http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/BatchInserterIndex.html#setCacheCapacity%28java.lang.String,%20int%29[caching] for keys you know you're going to do lookups for later on to increase performance significantly (though insertion performance may degrade slightly).
-    
 
+
+[[auto-indexing]]
+== Auto Indexing ==
+
+Neo4j provides the ability to have an index that automatically follows property values as they are added, deleted and changed on database primitives.
+This functionality is called _auto indexing_ and is controlled both from the database configuration Map and through its own API.
+
+[CAUTION]
+This is an experimental feature. Expect changes in the API and do not rely on it for production data handling.
+
+[[auto-indexer-basic-use-config]]
+=== Basic usage through the Configuration ===
+
+By default Auto Indexing is off for both Nodes and Relationships. To enable it on database startup set the configuration options +Config.NODE_AUTO_INDEXING+
+and +Config.RELATIONSHIP_AUTO_INDEXING+ to the strings “true” for auto indexing on all indexable properties of Nodes and Relationships, respectively.
+
+[[properties-auto-select]]
+=== Selecting Properties to Auto Index ===
+
+If you just enable auto indexing as above, then _every_ property of the primitives for which it is enabled will be auto indexed. This is probably not something you want,
+so there is the option to explicitly state which properties you want monitored. To pass this in as a configuration parameter set the +Config.{NODE,RELATIONSHIP}_KEYS_INDEXABLE+
+option to a String that is a comma separated concatenation of the property names you want auto indexed. 
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/AutoIndexerExampleTests.java
+tag=ConfigAutoIndex
+classifier=test-sources
+----
+
+[[auto-index-api]]
+== Using the +AutoIndexer+ : The +AutoIndex+ API ==
+The usefulness of the auto indexing functionality comes of course from the ability to actually query the index and retrieve results.
+To that end, you can acquire an +AutoIndex+ object from the +AutoIndexer+ that exposes all the query and get methods of a normal
+http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html[+Index+],
+making it in essence a read-only version of one. Continuing from the previous example, accessing the index is done like this:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/AutoIndexerExampleTests.java
+tag=APIReadAutoIndex
+classifier=test-sources
+----
+
+[[properties-auto-ignore]]
+=== Selecting Properties to Auto Ignore ===
+
+In the use case where you want all but some of the properties auto indexed, then the appropriate configuration parameters are +Config.{NODE,RELATIONSHIP}_KEYS_NON_INDEXABLE+,
+for +Nodes+ and +Relationships+ respectively. The value is a +String+ that is the comma separated concatenation of the property names you want the auto indexer to ignore.
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/AutoIndexerExampleTests.java
+tag=ConfigAutoIndexIgnore
+classifier=test-sources
+----
+
+[WARNING]
+Setting both of the above lists for a particular primitive type will result in an +IllegalStateException+ - having both tracked and ignored properties is confusing and adds no value.
+
+[[auto-indexer-config-api]]
+=== Changing the follow/ignore sets based on changing requirements: Runtime configuration through the API. ===
+
+The same options that are available during database creation via the configuration, they can also be set during runtime via the +AutoIndexer+ API.
+
+Gaining access to the +AutoIndexer+ API, adding two +Node+ properties to auto index and a +Relationship+ property to ignore is done like so:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/AutoIndexerExampleTests.java
+tag=APIAutoIndexer
+classifier=test-sources
+----
+
+As with the start time configuration, the same restrictions apply, in that you can’t have both auto indexed and ignores properties.
+In case the changes you want to do would have you pass through such a state temporarily, you can disable the relevant +AutoIndexer+,
+do your changes and re-enable it - while an +AutoIndexer+ is disabled, no consistency checks are run, for exactly that reason.
+In case of error, an +IllegalStateException+ will be thrown. The example shows how to do runtime reconfiguration.
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/AutoIndexerExampleTests.java
+tag=APIOverConfigAutoIndexer
+classifier=test-sources
+----
+
+[[NOTE]]
+Parameters to the AutoIndexers passed through the Configuration and settings made through the API are cumulative.
+So you can set some beforehand known settings, do runtime checks to augment the initial configuration and then enable the desired auto indexers -
+the final configuration is the same regardless of the method used to reach it.
+
+[[auto-indexing-low-level]]
+== Some lower level details ==
+Currently the AutoIndexer functionality is implemented as a http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/event/TransactionEventHandler.html[+TransactionEventHandler+]
+that executes on +beforeCommit()+ of every transaction. The http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/event/TransactionData.html[+TransactionData+]
+object is queried for all modified (added, deleted and changed) properties of the primitives supported by the +AutoIndexer+ and adds and removes it based on the current configuration.
+This means that the auto indexing happens on successful http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Transaction.html#finish%28%29[+finish()+]
+of the transaction and before that the changes are not visible. An example showing how properties are added and removed during a (somewhat complicated) run follows.
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/AutoIndexerExampleTests.java
+tag=Semantics
+classifier=test-sources
+----

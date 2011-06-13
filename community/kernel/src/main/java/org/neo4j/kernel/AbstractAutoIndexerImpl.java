@@ -291,7 +291,7 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
         if ( !propertyKeysToInclude.isEmpty()
              && !propertyKeysToIgnore.isEmpty() )
         {
-            throw new IllegalArgumentException(
+            throw new IllegalStateException(
                     "Cannot set both add and ignore lists for node auto indexing" );
         }
     }
@@ -327,6 +327,9 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
          *  If we are enabled, the lists are sane. We depend on this.
          *  If there are keys to include, then index only those.
          *  If there are keys to ignore, then index all but those.
+         *  The default is the ignore list, which means that if
+         *  include is empty, default behavior is to index
+         *  everything
          */
         if ( propertyKeysToInclude.size() > 0 )
         {
