@@ -169,7 +169,7 @@ public class GraphDescription implements GraphDefinition
     {
         for ( PROP prop : properties )
         {
-            entity.setProperty( prop.key(), prop.value() );
+            entity.setProperty( prop.key(), prop.type().convert( prop.value() ) );
         }
         if ( name != null )
         {
