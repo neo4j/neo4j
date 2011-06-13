@@ -36,7 +36,7 @@
           %p &gt; edgeProps = ["quality":"awesome"]
         %li
           %h3 Create relation
-          %p &gt; myRelation = g.addEdge(edgeProps, refNode, secondNode, 'KNOWS')
+          %p &gt; myRelation = g.addEdge(refNode, secondNode, 'KNOWS', edgeProps)
         %li
           %h3 Remove node or relation
           %p &gt; g.removeEdge(myRelation)
@@ -63,6 +63,8 @@
     .foldout_content
       %p.pad If you done goofed, you can reset the gremlin console by clearing your browser cookies for webadmin.    
 
+  %p.pad Use <a href="#/console/cypher">Cypher</a> instead
+  
 .workarea.with-sidebar#console-base.pad
   #console
 

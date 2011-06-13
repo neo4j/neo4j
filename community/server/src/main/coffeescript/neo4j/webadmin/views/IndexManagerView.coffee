@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 define( 
   ['neo4j/webadmin/templates/indexmanager/base',
-   'neo4j/webadmin/templates/indexmanager/indexes',
+   'neo4j/webadmin/templates/indexmanager/index',
    'neo4j/webadmin/views/indexmanager/IndexView'
    'neo4j/webadmin/views/View',
    'lib/backbone'], 

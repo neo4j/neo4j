@@ -53,7 +53,7 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-tbd</artifactId>
+      <artifactId>neo4j-cypher</artifactId>
       <version>1.4-SNAPSHOT</version>
     </dependency>
     <dependency>
@@ -257,12 +257,19 @@ the relevant Commercial Agreement.
             </group>
             <group>
               <title>Graph algorithms</title>
-              <packages>org.neo4j.graphalgo:org.neo4j.graphalgo.*
-              </packages>
+              <packages>org.neo4j.graphalgo:org.neo4j.graphalgo.*</packages>
             </group>
             <group>
               <title>Management</title>
               <packages>org.neo4j.management:org.neo4j.management.*:org.neo4j.jmx:org.neo4j.jmx.*</packages>
+            </group>
+            <group>
+              <title>Query language</title>
+              <packages>org.neo4j.cypher.javacompat:org.neo4j.cypher.javacompat.*</packages>
+            </group>
+            <group>
+              <title>Graph matching</title>
+              <packages>org.neo4j.graphmatching:org.neo4j.graphmatching.*</packages>
             </group>
             <group>
               <title>Helpers</title>

@@ -586,8 +586,8 @@ class NodeImpl extends Primitive
             return;
         }
         
-//        synchronized ( this )
-//        {
+        synchronized ( this )
+        {
             if ( cowRelationshipAddMap != null )
             {
                 for ( String type : cowRelationshipAddMap.keySet() )
@@ -616,7 +616,7 @@ class NodeImpl extends Primitive
                     putRelIdArray( RelIdArray.from( src, null, remove ) );
                 }
             }
-//        }
+        }
     }
 
     long getRelChainPosition()
