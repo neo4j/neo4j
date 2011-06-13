@@ -509,16 +509,16 @@ terms of the relevant Commercial Agreement.
       <classifier>upgrade</classifier>
       <type>zip</type>
     </dependency>
-    <!--dependency>
+    <dependency>
       <groupId>org.neo4j.server.plugin</groupId>
       <artifactId>neo4j-gremlin-plugin</artifactId>
       <version>${neo4j-gremlin-plugin.version}</version>
-    </dependency -->
-    <!-- dependency>
+    </dependency>
+    <dependency>
       <groupId>org.neo4j.server.plugin</groupId>
       <artifactId>neo4j-cypher-plugin</artifactId>
       <version>${neo4j-cypher-plugin.version}</version>
-    </dependency -->
+    </dependency>
     
   </dependencies>
 
