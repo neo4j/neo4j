@@ -91,7 +91,7 @@ public class GremlinPluginFunctionalTest implements GraphHolder
         String response = gen.get()
         .expectedStatus( Status.OK.getStatusCode() )
         .payload( "{\"script\":\"" +
-        		"GraphMLReader.inputGraph(g, new URL('https://raw.github.com/neo4j/neo4j-gremlin-plugin/master/src/data/graphml1.xml').openStream());" +
+        		"GraphMLReader.inputGraph(g, new URL('https://raw.github.com/neo4j/gremlin-plugin/master/src/data/graphml1.xml').openStream());" +
         		"g.V\"}" )
         .payloadType( MediaType.APPLICATION_JSON_TYPE )
         .post( ENDPOINT )
