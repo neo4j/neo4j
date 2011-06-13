@@ -23,6 +23,7 @@ import org.neo4j.cypher.commands._
 import org.junit.Assert._
 import org.neo4j.graphdb.Direction
 import org.junit.Test
+import pipes.SortItem
 
 
 /**
@@ -31,18 +32,15 @@ import org.junit.Test
  * Time: 10:36 
  */
 
-class CypherParserTest
-{
-  def testQuery(query: String, expectedQuery: Query)
-  {
+class CypherParserTest {
+  def testQuery(query: String, expectedQuery: Query) {
     val parser = new CypherParser()
     val executionTree = parser.parse(query)
 
     assertEquals(expectedQuery, executionTree)
   }
 
-  @Test def shouldParseEasiestPossibleQuery()
-  {
+  @Test def shouldParseEasiestPossibleQuery() {
     testQuery(
       "start s = (1) return s",
       Query(
@@ -50,8 +48,7 @@ class CypherParserTest
         Start(NodeById("s", 1))))
   }
 
-  @Test def sourceIsAnIndex()
-  {
+  @Test def sourceIsAnIndex() {
     testQuery(
       """start a = (index, key, "value") return a""",
       Query(
@@ -59,8 +56,7 @@ class CypherParserTest
         Start(NodeByIndex("a", "index", "key", "value"))))
   }
 
-  @Test def shouldParseEasiestPossibleRelationshipQuery()
-  {
+  @Test def shouldParseEasiestPossibleRelationshipQuery() {
     testQuery(
       "start s = <1> return s",
       Query(
@@ -68,8 +64,7 @@ class CypherParserTest
         Start(RelationshipById("s", 1))))
   }
 
-  @Test def sourceIsARelationshipIndex()
-  {
+  @Test def sourceIsARelationshipIndex() {
     testQuery(
       """start a = <index, key, "value"> return a""",
       Query(
@@ -78,8 +73,7 @@ class CypherParserTest
   }
 
 
-  @Test def keywordsShouldBeCaseInsensitive()
-  {
+  @Test def keywordsShouldBeCaseInsensitive() {
     testQuery(
       "START start = (1) RETURN start",
       Query(
@@ -87,8 +81,7 @@ class CypherParserTest
         Start(NodeById("start", 1))))
   }
 
-  @Test def shouldParseMultipleNodes()
-  {
+  @Test def shouldParseMultipleNodes() {
     testQuery(
       "start s = (1,2,3) return s",
       Query(
@@ -96,8 +89,7 @@ class CypherParserTest
         Start(NodeById("s", 1, 2, 3))))
   }
 
-  @Test def shouldParseMultipleInputs()
-  {
+  @Test def shouldParseMultipleInputs() {
     testQuery(
       "start a = (1), b = (2) return a,b",
       Query(
@@ -105,8 +97,7 @@ class CypherParserTest
         Start(NodeById("a", 1), NodeById("b", 2))))
   }
 
-  @Test def shouldFilterOnProp()
-  {
+  @Test def shouldFilterOnProp() {
     testQuery(
       "start a = (1) where a.name = \"andres\" return a",
       Query(
@@ -115,8 +106,7 @@ class CypherParserTest
         Equals(PropertyValue("a", "name"), Literal("andres"))))
   }
 
-  @Test def shouldHandleNot()
-  {
+  @Test def shouldHandleNot() {
     testQuery(
       "start a = (1) where not(a.name = \"andres\") return a",
       Query(
@@ -125,8 +115,7 @@ class CypherParserTest
         Not(Equals(PropertyValue("a", "name"), Literal("andres")))))
   }
 
-  @Test def shouldHandleNotEqualTo()
-  {
+  @Test def shouldHandleNotEqualTo() {
     testQuery(
       "start a = (1) where a.name <> \"andres\" return a",
       Query(
@@ -135,8 +124,7 @@ class CypherParserTest
         Not(Equals(PropertyValue("a", "name"), Literal("andres")))))
   }
 
-  @Test def shouldHandleLessThan()
-  {
+  @Test def shouldHandleLessThan() {
     testQuery(
       "start a = (1) where a.name < \"andres\" return a",
       Query(
@@ -145,8 +133,7 @@ class CypherParserTest
         LessThan(PropertyValue("a", "name"), Literal("andres"))))
   }
 
-  @Test def shouldHandleGreaterThan()
-  {
+  @Test def shouldHandleGreaterThan() {
     testQuery(
       "start a = (1) where a.name > \"andres\" return a",
       Query(
@@ -155,8 +142,7 @@ class CypherParserTest
         GreaterThan(PropertyValue("a", "name"), Literal("andres"))))
   }
 
-  @Test def shouldHandleLessThanOrEqual()
-  {
+  @Test def shouldHandleLessThanOrEqual() {
     testQuery(
       "start a = (1) where a.name <= \"andres\" return a",
       Query(
@@ -165,8 +151,7 @@ class CypherParserTest
         LessThanOrEqual(PropertyValue("a", "name"), Literal("andres"))))
   }
 
-  @Test def shouldHandleRegularComparison()
-  {
+  @Test def shouldHandleRegularComparison() {
     testQuery(
       "start a = (1) where \"Andres\" =~ /And.*/ return a",
       Query(
@@ -176,8 +161,7 @@ class CypherParserTest
     )
   }
 
-  @Test def shouldHandleGreaterThanOrEqual()
-  {
+  @Test def shouldHandleGreaterThanOrEqual() {
     testQuery(
       "start a = (1) where a.name >= \"andres\" return a",
       Query(
@@ -187,8 +171,7 @@ class CypherParserTest
   }
 
 
-  @Test def booleanLiterals()
-  {
+  @Test def booleanLiterals() {
     testQuery(
       "start a = (1) where true = false return a",
       Query(
@@ -197,8 +180,7 @@ class CypherParserTest
         Equals(Literal(true), Literal(false))))
   }
 
-  @Test def shouldFilterOnNumericProp()
-  {
+  @Test def shouldFilterOnNumericProp() {
     testQuery(
       "start a = (1) where 35 = a.age return a",
       Query(
@@ -207,8 +189,7 @@ class CypherParserTest
         Equals(Literal(35), PropertyValue("a", "age"))))
   }
 
-  @Test def multipleFilters()
-  {
+  @Test def multipleFilters() {
     testQuery(
       "start a = (1) where a.name = \"andres\" or a.name = \"mattias\" return a",
       Query(
@@ -219,8 +200,7 @@ class CypherParserTest
           Equals(PropertyValue("a", "name"), Literal("mattias")))))
   }
 
-  @Test def relatedTo()
-  {
+  @Test def relatedTo() {
     testQuery(
       "start a = (1) match (a) -[:KNOWS]-> (b) return a, b",
       Query(
@@ -229,8 +209,7 @@ class CypherParserTest
         Match(RelatedTo("a", "b", None, Some("KNOWS"), Direction.OUTGOING))))
   }
 
-  @Test def relatedToWithoutRelType()
-  {
+  @Test def relatedToWithoutRelType() {
     testQuery(
       "start a = (1) match (a) --> (b) return a, b",
       Query(
@@ -239,8 +218,7 @@ class CypherParserTest
         Match(RelatedTo("a", "b", None, None, Direction.OUTGOING))))
   }
 
-  @Test def relatedToWithoutRelTypeButWithRelVariable()
-  {
+  @Test def relatedToWithoutRelTypeButWithRelVariable() {
     testQuery(
       "start a = (1) match (a) -[r]-> (b) return r",
       Query(
@@ -249,8 +227,7 @@ class CypherParserTest
         Match(RelatedTo("a", "b", Some("r"), None, Direction.OUTGOING))))
   }
 
-  @Test def relatedToTheOtherWay()
-  {
+  @Test def relatedToTheOtherWay() {
     testQuery(
       "start a = (1) match (a) <-[:KNOWS]- (b) return a, b",
       Query(
@@ -259,8 +236,7 @@ class CypherParserTest
         Match(RelatedTo("a", "b", None, Some("KNOWS"), Direction.INCOMING))))
   }
 
-  @Test def shouldOutputVariables()
-  {
+  @Test def shouldOutputVariables() {
     testQuery(
       "start a = (1) return a.name",
       Query(
@@ -268,8 +244,7 @@ class CypherParserTest
         Start(NodeById("a", 1))))
   }
 
-  @Test def shouldHandleAndClauses()
-  {
+  @Test def shouldHandleAndClauses() {
     testQuery(
       "start a = (1) where a.name = \"andres\" and a.lastname = \"taylor\" return a.name",
       Query(
@@ -280,8 +255,7 @@ class CypherParserTest
           Equals(PropertyValue("a", "lastname"), Literal("taylor")))))
   }
 
-  @Test def relatedToWithRelationOutput()
-  {
+  @Test def relatedToWithRelationOutput() {
     testQuery(
       "start a = (1) match (a) -[rel,:KNOWS]-> (b) return rel",
       Query(
@@ -290,8 +264,7 @@ class CypherParserTest
         Match(RelatedTo("a", "b", "rel", "KNOWS", Direction.OUTGOING))))
   }
 
-  @Test def relatedToWithoutEndName()
-  {
+  @Test def relatedToWithoutEndName() {
     testQuery(
       "start a = (1) match (a) -[:MARRIED]-> () return a",
       Query(
@@ -300,8 +273,7 @@ class CypherParserTest
         Match(RelatedTo("a", "___NODE1", None, Some("MARRIED"), Direction.OUTGOING))))
   }
 
-  @Test def relatedInTwoSteps()
-  {
+  @Test def relatedInTwoSteps() {
     testQuery(
       "start a = (1) match (a) -[:KNOWS]-> (b) -[:FRIEND]-> (c) return c",
       Query(
@@ -314,8 +286,7 @@ class CypherParserTest
     )
   }
 
-  @Test def djangoRelationshipType()
-  {
+  @Test def djangoRelationshipType() {
     testQuery(
       "start a = (1) match (a) -[:`<<KNOWS>>`]-> (b) return c",
       Query(
@@ -324,8 +295,7 @@ class CypherParserTest
         Match(RelatedTo("a", "b", None, Some("<<KNOWS>>"), Direction.OUTGOING))))
   }
 
-  @Test def countTheNumberOfHits()
-  {
+  @Test def countTheNumberOfHits() {
     testQuery(
       "start a = (1) match (a) --> (b) return a, b, count(*)",
       Query(
@@ -335,18 +305,16 @@ class CypherParserTest
         Aggregation(Count("*"))))
   }
 
-  @Test def sorting()
-  {
+  @Test def sorting() {
     testQuery(
       "start a = (1) return a sort by a.name",
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
-        Sort(PropertyOutput("a", "name"))))
+        Sort(SortItem(PropertyOutput("a", "name"), true))))
   }
 
-  @Test def nullableProperty()
-  {
+  @Test def nullableProperty() {
     testQuery(
       "start a = (1) return a.name?",
       Query(
@@ -354,8 +322,7 @@ class CypherParserTest
         Start(NodeById("a", 1))))
   }
 
-  @Test def nestedBooleanOperatorsAndParentesis()
-  {
+  @Test def nestedBooleanOperatorsAndParentesis() {
     testQuery(
       """start n = (1,2,3) where (n.animal = "monkey" and n.food = "banana") or (n.animal = "cow" and n.food="grass") return n""",
       Query(

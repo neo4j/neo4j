@@ -20,6 +20,7 @@
 package org.neo4j.cypher.commands
 
 import scala.Some
+import org.neo4j.cypher.pipes.SortItem
 
 object Query {
   def apply(returns:Return, start:Start) = new Query(returns, start, None, None, None, None)
@@ -52,4 +53,4 @@ case class Match(patterns: Pattern*)
 
 case class Aggregation(aggregationItems:AggregationItem*)
 
-case class Sort(sortItems:ReturnItem*)
+case class Sort(sortItems:SortItem*)
