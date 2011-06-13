@@ -59,14 +59,11 @@ public class CypherPluginFunctionalTest implements GraphHolder
     private static WrappingNeoServerBootstrapper server;
 
     /**
-     * Send a Query - URL encoded.
-     * 
      * A simple query returning all nodes connected to node 1:
-     * 
      * `start x  = (1) match (x) -- (n) return n, n.name`
-     * 
      */
     @Test
+    @Title("Send a Query - URL encoded")
     @Documented
     @Graph( value = { "I know you", "I know him" } )
     public void testPropertyColumn() throws UnsupportedEncodingException

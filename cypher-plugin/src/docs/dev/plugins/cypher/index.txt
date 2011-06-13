@@ -2,7 +2,7 @@
 Cypher Plugin
 =============
 
-The Neo4j Sypher Plugin enables querying with the Cypher Query Language possible
+The Neo4j Sypher Plugin enables querying with the <<cypher-query-lang>> possible
 
 :leveloffset: 1
 
