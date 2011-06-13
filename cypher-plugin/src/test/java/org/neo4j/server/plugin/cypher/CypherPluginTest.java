@@ -79,16 +79,17 @@ public class CypherPluginTest implements GraphHolder
     }
 
     @Test
-    @Ignore
     @Graph( value = { "I know you", "I know him" }, nodes = { @NODE( name = "you", properties = {
             @PROP( key = "bool", value = "true", type = GraphDescription.PropType.BOOLEAN ),
-            @PROP( key = "name", value = "you" ) } ) } )
+            @PROP( key = "name", value = "you" ),
+            @PROP( key = "int", value = "1", type = GraphDescription.PropType.INTEGER )
+            } ) } )
     public void checkColumns() throws Exception
     {
         Node i = data.get().get( "I" );
         Representation result = testQuery( "start x =("
                                            + i.getId()
-                                           + ") match (x) -- (n) return n, n.name, n.bool" );
+                                           + ") match (x) -- (n) return n, n.name?, n.bool?, n.int?" );
         String formatted = json.format( result );
         System.out.println( formatted );
         assertTrue( formatted.contains( "columns" ) );

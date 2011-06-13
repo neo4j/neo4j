@@ -59,19 +59,20 @@ public class CypherPluginFunctionalTest implements GraphHolder
     private static WrappingNeoServerBootstrapper server;
 
     /**
-     * A simple query returning all nodes connected to node 1:
-     * `start x  = (1) match (x) -- (n) return n, n.name`
+     * A simple query returning all nodes connected to node 1,
+     * returning the node and the name property, if it exists,
+     * otherwise `null`:
+     * `start x  = (1) match (x) -- (n) return n, n.name?`
      */
     @Test
-    @Title("Send a Query - URL encoded")
+    @Title("Send a Query")
     @Documented
     @Graph( value = { "I know you", "I know him" } )
     public void testPropertyColumn() throws UnsupportedEncodingException
     {
         String response = gen.get()
         .expectedStatus( Status.OK.getStatusCode() )
-        .payload( "query=" + URLEncoder.encode( "start x  = ("+data.get().get( "I" ).getId() +") match (x) -- (n) return n, n.name", "UTF-8"))
-        .payloadType( MediaType.APPLICATION_FORM_URLENCODED_TYPE )
+        .payload( "{\"query\": \"start x  = ("+data.get().get( "I" ).getId() +") match (x) -- (n) return n, n.name?\"}")
         .post( ENDPOINT )
         .entity();
         assertTrue(response.contains( "you" ));

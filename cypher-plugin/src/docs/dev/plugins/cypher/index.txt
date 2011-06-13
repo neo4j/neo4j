@@ -2,8 +2,11 @@
 Cypher Plugin
 =============
 
-The Neo4j Sypher Plugin enables querying with the <<cypher-query-lang>> possible
+The Neo4j Sypher Plugin enables querying with the <<cypher-query-lang>> possible.
+The results are returned as a list of string headers (`columns`), and a `data` part,
+consisting of a list of all rows, every row consisting of a list of REST representations
+of the field value - `Node`, `Relationship` or any simple value like `String`.
 
 :leveloffset: 1
 
-include::send-a-query---url-encoded.txt[]
+include::send-a-query.txt[]
