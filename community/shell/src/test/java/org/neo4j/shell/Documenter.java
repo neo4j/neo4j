@@ -35,9 +35,6 @@ public class Documenter
 
     public class DocOutput implements Output, Serializable
     {
-        /**
-         * 
-         */
         private static final long serialVersionUID = 1L;
         public ByteArrayOutputStream baos = new ByteArrayOutputStream();
         PrintWriter out = new PrintWriter( baos );
@@ -140,7 +137,7 @@ public class Documenter
             // TODO Auto-generated catch block
             e1.printStackTrace();
         }
-        out.println("[source,plain]");
+        out.println("[source]");
         out.println("-----");
         for ( Job job : stack )
         {
