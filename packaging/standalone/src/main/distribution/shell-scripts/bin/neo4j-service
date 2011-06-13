@@ -1,0 +1,215 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          neo4j-service
+# Required-Start:     
+# Required-Stop:      
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+### END INIT INFO
+
+function abspath() { pushd . > /dev/null; if [ -d "$1" ]; then cd "$1"; dirs -l +0; else cd "`dirname \"$1\"`"; cur_dir=`dirs -l +0`; if [ "$cur_dir" == "/" ]; then echo "$cur_dir`basename \"$1\"`"; else echo "$cur_dir/`basename \"$1\"`"; fi; fi; popd > /dev/null; }
+
+NEO4J_HOME=`abspath $( dirname $0 )/..`
+NEO4J_INSTANCE=$NEO4J_HOME
+NEO4J_OPTS="-Dorg.neo4j.server.properties=${NEO4J_INSTANCE}/conf/neo4j-server.properties -Djava.util.logging.config.file=${NEO4J_INSTANCE}/conf/logging.properties -Dneo4j.home=$NEO4J_HOME -Dneo4j.instance=$NEO4J_INSTANCE"
+JAVA_OPTS="-server"
+TIMEOUT=20
+
+PID_FILE=$NEO4J_INSTANCE/data/neo4j-service.pid
+
+findjava() {
+  # OS specific support.  $var _must_ be set to either true or false.
+  cygwin=false;
+  darwin=false;
+  case "`uname`" in
+    CYGWIN*) cygwin=true ;;
+    Darwin*) darwin=true
+           if [ -z "$JAVA_VERSION" ] ; then
+             JAVA_VERSION="CurrentJDK"
+           else
+             echo "Using Java version: $JAVA_VERSION"
+           fi
+           if [ -z "$JAVA_HOME" ] ; then
+             JAVA_HOME=/System/Library/Frameworks/JavaVM.framework/Versions/${JAVA_VERSION}/Home
+           fi
+           ;;
+  esac
+
+  if [ -z "$JAVA_HOME" ] ; then
+    if [ -r /etc/gentoo-release ] ; then
+      JAVA_HOME=`java-config --jre-home`
+    fi
+  fi
+
+  # For Cygwin, ensure paths are in UNIX format before anything is touched
+  if $cygwin ; then
+    [ -n "$JAVA_HOME" ] && JAVA_HOME=`cygpath --unix "$JAVA_HOME"`
+    [ -n "$CLASSPATH" ] && CLASSPATH=`cygpath --path --unix "$CLASSPATH"`
+  fi
+
+  # If a specific java binary isn't specified search for the standard 'java' binary
+  if [ -z "$JAVACMD" ] ; then
+    if [ -n "$JAVA_HOME"  ] ; then
+      if [ -x "$JAVA_HOME/jre/sh/java" ] ; then
+        # IBM's JDK on AIX uses strange locations for the executables
+        JAVACMD="$JAVA_HOME/jre/sh/java"
+      else
+        JAVACMD="$JAVA_HOME/bin/java"
+      fi
+    else
+      JAVACMD=`which java`
+    fi
+  fi
+
+  if [ ! -x "$JAVACMD" ] ; then
+    echo "Error: JAVA_HOME is not defined correctly."
+    echo "  We cannot execute $JAVACMD"
+    exit 1
+  fi
+}
+
+buildclasspath() {
+  # confirm library jars
+  LIBDIR="$NEO4J_HOME"/lib
+  if [ ! -e "$LIBDIR" ] ; then
+    echo "Error: missing Neo4j Library, expected at $LIBDIR"
+    exit 1
+  fi
+
+  # confirm system jars
+  SYSLIBDIR="$NEO4J_HOME"/system/lib
+  if [ ! -e "$SYSLIBDIR" ] ; then
+    echo "Error: missing Neo4j System Library, expected at $SYSLIBDIR"
+    exit 1
+  fi
+
+  ALL_JARS=""
+  for jar in "$LIBDIR"/*.jar "$SYSLIBDIR"/*.jar ; do
+    [ -z $ALL_JARS ] && ALL_JARS=$jar || ALL_JARS="$ALL_JARS":$jar
+  done
+
+  # add any plugin jars
+  for jar in "$NEO4J_HOME"/plugins/*.jar ; do
+    if [ -e $jar ] ; then
+      ALL_JARS="$ALL_JARS":$jar
+    fi
+  done
+
+  CLASSPATH=${ALL_JARS}
+}
+
+checkstatus() {
+  if [ -e $PID_FILE ] ; then
+    NEO4J_PID=$( cat $PID_FILE )
+    kill -0 $NEO4J_PID 2>/dev/null || NEO4J_PID=
+  fi
+}
+
+startit() {
+
+  checkstatus
+
+  if [ -z $NEO4J_PID ] ; then
+    printf "Starting neo4j-service..."
+
+    findjava
+    buildclasspath
+
+    $JAVACMD -cp $CLASSPATH $JAVA_OPTS $NEO4J_OPTS org.neo4j.server.Bootstrapper >> $NEO4J_INSTANCE/data/log/console.log 2>&1 &
+    STARTED_PID=$!
+    echo $STARTED_PID > $PID_FILE
+    printf " process [$STARTED_PID]... waiting for server to be ready."
+
+    sleep 5
+
+    if kill -0 $STARTED_PID 2>/dev/null ; then
+      echo " OK."
+      exit 0
+    else
+      echo " BAD."
+      echo "Server may have failed to start, please check the logs."
+      rm $PID_FILE
+      exit 1
+    fi
+  else
+    echo "Server already running with pid $NEO4J_PID"
+    exit 1
+  fi
+}
+
+
+stopit() {
+
+  checkstatus
+
+  if [ -z $NEO4J_PID ] ; then
+    echo "ERROR: server not running"
+    [ -e $PID_FILE ] && rm $PID_FILE
+    exit 1
+  else
+    printf "Stopping neo4j-service [$NEO4J_PID]..."
+    x=0
+    while [ $x -lt $TIMEOUT ] && kill $NEO4J_PID 2>/dev/null ; do
+      printf "."
+      sleep 1
+      x=$(( $x + 1 ))
+    done
+	  [  $x -eq $TIMEOUT ] && ( echo " force shutdown" ;  kill -9 $JPID >/dev/null ) || echo " done"
+	  [ -e $PID_FILE ] && rm  $PID_FILE
+	  exit 0
+  fi
+}
+
+reportstatus() {
+  
+  checkstatus
+
+  if [ -z $NEO4J_PID ] ; then
+    echo "Neo4j is not running"
+  else
+    echo "Neo4j is running at pid $NEO4J_PID"
+  fi
+
+}
+
+showinfo() {
+  reportstatus
+
+  findjava
+  buildclasspath
+
+  echo "NEO4J_HOME:     $NEO4J_HOME"
+  echo "NEO4J_INSTANCE: $NEO4J_INSTANCE"
+  echo "JAVA_HOME:      $JAVA_HOME"
+  echo "CLASSPATH:      $CLASSPATH"
+}
+
+case "$1" in
+  start)
+    startit
+    ;;
+
+  stop)
+    stopit
+    ;;
+
+  restart)
+    stopit
+    startit
+    ;;
+
+  status)
+    reportstatus
+    ;;
+
+  info)
+    showinfo
+    ;;
+
+  *)
+    echo "Usage: neo4j-service { start | stop | restart | status | info }"
+    exit 1;;
+
+esac
+
+exit $?
