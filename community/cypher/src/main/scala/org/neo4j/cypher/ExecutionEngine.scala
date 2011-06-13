@@ -25,9 +25,10 @@ import scala.collection.JavaConverters._
 import org.neo4j.graphdb._
 import java.lang.Iterable
 import collection.Seq
+import org.apache.lucene.search.Sort
 
 
-class ExecutionEngine(val graph: GraphDatabaseService) {
+class ExecutionEngine(graph: GraphDatabaseService) {
   @throws(classOf[SyntaxError])
   def execute(query: Query): ExecutionResult = query match {
     case Query(returns, start, matching, where, aggregation, sort) => {
@@ -41,6 +42,11 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
       where match {
         case None =>
         case Some(w) => pipe = new FilterPipe(w, pipe)
+      }
+
+      sort match {
+        case None =>
+        case Some(s) => pipe = new SortPipe(s.sortItems.toList, pipe)
       }
 
       val result = new TransformPipe(returns.returnItems, pipe) with ExecutionResult
@@ -60,5 +66,4 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
         case RelationshipById(varName, ids@_*) => new StartPipe(varName, ids.map(graph.getRelationshipById))
       }
     })
-
 }

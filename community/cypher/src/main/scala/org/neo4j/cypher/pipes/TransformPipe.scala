@@ -28,7 +28,7 @@ import collection.Seq
 class TransformPipe(returnItems: Seq[ReturnItem], source: Pipe) extends Pipe {
   type MapTransformer = Map[String, Any] => Map[String, Any]
 
-  def getSymbolType(item: ReturnItem): SymbolType = item.identifier
+  def getSymbolType(item: ReturnItem): Identifier = item.identifier
   val returnIdentifiers = returnItems.map(x => x.identifier.name -> x.identifier).toMap
   val symbols: SymbolTable = source.symbols.add(returnIdentifiers)
 
