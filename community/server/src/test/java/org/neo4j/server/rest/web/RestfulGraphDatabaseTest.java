@@ -984,7 +984,7 @@ public class RestfulGraphDatabaseTest
     @Test
     public void shouldBeAbleToGetListOfNodeRepresentationsFromIndexLookup() throws DatabaseBlockedException, PropertyValueException, URISyntaxException
     {
-        RestfulModelHelper.DomainModel matrixers = RestfulModelHelper.generateMatrix( service );
+        ModelBuilder.DomainModel matrixers = ModelBuilder.generateMatrix( service );
 
         Map.Entry<String, String> indexedKeyValue = matrixers.indexedNodeKeyValues.entrySet().iterator().next();
         Response response = service.getIndexedNodes( matrixers.nodeIndexName, indexedKeyValue.getKey(), indexedKeyValue.getValue() );
@@ -1006,7 +1006,7 @@ public class RestfulGraphDatabaseTest
     @Test
     public void shouldBeAbleToGetListOfNodeRepresentationsFromIndexQuery() throws DatabaseBlockedException, PropertyValueException, URISyntaxException
     {
-        RestfulModelHelper.DomainModel matrixers = RestfulModelHelper.generateMatrix( service );
+        ModelBuilder.DomainModel matrixers = ModelBuilder.generateMatrix( service );
 
         Map.Entry<String, String> indexedKeyValue = matrixers.indexedNodeKeyValues.entrySet().iterator().next();
         // query for the first letter with which the nodes were indexed.
@@ -1031,7 +1031,7 @@ public class RestfulGraphDatabaseTest
     @Test
     public void shouldBeAbleToGetListOfNodeRepresentationsFromIndexQueryWithDefaultKey() throws DatabaseBlockedException, PropertyValueException, URISyntaxException
     {
-        RestfulModelHelper.DomainModel matrixers = RestfulModelHelper.generateMatrix( service );
+        ModelBuilder.DomainModel matrixers = ModelBuilder.generateMatrix( service );
 
         Map.Entry<String, String> indexedKeyValue = matrixers.indexedNodeKeyValues.entrySet().iterator().next();
         // query for the first letter with which the nodes were indexed.

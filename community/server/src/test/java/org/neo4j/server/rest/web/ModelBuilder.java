@@ -29,7 +29,7 @@ import org.neo4j.server.rest.domain.JsonHelper;
  * Helps generate testable data models, using a RestfulGraphDatabase.
  *
  */
-public class RestfulModelHelper
+public class ModelBuilder
 {
     public static DomainModel generateMatrix( RestfulGraphDatabase rgd ) {
         String key = "key_get";

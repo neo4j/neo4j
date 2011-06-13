@@ -18,7 +18,7 @@ public class PagingTraversalTest
     
     @Test
     public void shouldRespondWith204IfTraversalResultsInZeroNodes() {
-        
+        fail("not implemented");
     }
     
     @Test
