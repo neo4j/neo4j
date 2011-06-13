@@ -267,5 +267,61 @@
  </xsl:call-template>
 </xsl:template>
 
+<!-- included to replace [square brackets] with <angle brackets> -->
+<xsl:template name="hyperlink.url.display">
+  <!-- * This template is called for all external hyperlinks (ulinks and -->
+  <!-- * for all simple xlinks); it determines whether the URL for the -->
+  <!-- * hyperlink is displayed, and how to display it (either inline or -->
+  <!-- * as a numbered footnote). -->
+  <xsl:param name="url"/>
+  <xsl:param name="ulink.url">
+    <!-- * ulink.url is just the value of the URL wrapped in 'url(...)' -->
+    <xsl:call-template name="fo-external-image">
+      <xsl:with-param name="filename" select="$url"/>
+    </xsl:call-template>
+  </xsl:param>
+
+  <xsl:if test="count(child::node()) != 0
+                and string(.) != $url
+                and $ulink.show != 0">
+    <!-- * Display the URL for this hyperlink only if it is non-empty, -->
+    <!-- * and the value of its content is not a URL that is the same as -->
+    <!-- * URL it links to, and if ulink.show is non-zero. -->
+    <xsl:choose>
+      <xsl:when test="$ulink.footnotes != 0 and not(ancestor::footnote)">
+        <!-- * ulink.show and ulink.footnote are both non-zero; that -->
+        <!-- * means we display the URL as a footnote (instead of inline) -->
+        <fo:footnote>
+          <xsl:call-template name="ulink.footnote.number"/>
+          <fo:footnote-body xsl:use-attribute-sets="footnote.properties">
+            <fo:block>
+              <xsl:call-template name="ulink.footnote.number"/>
+              <xsl:text> </xsl:text>
+              <fo:basic-link external-destination="{$ulink.url}">
+                <xsl:value-of select="$url"/>
+              </fo:basic-link>
+            </fo:block>
+          </fo:footnote-body>
+        </fo:footnote>
+      </xsl:when>
+      <xsl:otherwise>
+        <!-- * ulink.show is non-zero, but ulink.footnote is not; that -->
+        <!-- * means we display the URL inline -->
+        <fo:inline hyphenate="false">
+          <!-- * put square brackets around the URL -->
+          <xsl:text> &lt;</xsl:text>
+          <fo:basic-link external-destination="{$ulink.url}">
+            <xsl:call-template name="hyphenate-url">
+              <xsl:with-param name="url" select="$url"/>
+            </xsl:call-template>
+          </fo:basic-link>
+          <xsl:text>&gt;</xsl:text>
+        </fo:inline>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:if>
+
+</xsl:template>
+
 
 </xsl:stylesheet>
