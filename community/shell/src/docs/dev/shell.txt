@@ -227,6 +227,12 @@ An example: +trav -o depth -r KNOWS:both,HAS_.\*:incoming -c "ls $n"+.
 Which means traverse depth first for relationships with type +KNOWS+ disregarding direction and incoming relationships with type matching +HAS_.\*+ and do a +ls <matching node>+ for each match. The node filtering is supplied with the +-f+ option, see <<shell-filters>>.
 See <<shell-options-enum>> for the traversal order option. Even relationship types/directions are supplied using the same format as filters.
 
+=== Query with Cypher ===
+You can use Cypher to query the graph. For that, use the +start+ command.
+
+* +start n = (0) return n+ will give you a listing of the node with ID 0
+
+
 === Indexing ===
 It's possible to query and manipulate indexes via the index command.
 Example: +index -i persons name+ (will index the name for the current node or relationship in the "persons" index).

@@ -83,12 +83,13 @@ public class TestGraphDescription implements GraphHolder
     }
 
     @Test
-    @Graph( nodes = { @NODE( name = "I", properties = { @PROP( key = "name", value = "me" ) } ),
+    @Graph( nodes = { @NODE( name = "I", properties = { @PROP( key = "name", value = "me" ), @PROP( key="bool", value = "true", type = GraphDescription.PropType.BOOLEAN) } ),
             @NODE( name = "you", setNameProperty = true ) }, relationships = { @REL( start = "I", end = "you", type = "knows" ) } )
     public void canCreateMoreInvolvedGraphWithProperties() throws Exception
     {
         System.out.println( data.get() );
         verifyIknowYou( "knows", "me" );
+        assertEquals( true, data.get().get( "I" ).getProperty( "bool" ) );
     }
 
     @Graph( value = { "I know you" }, nodes = { @NODE( name = "I", properties = { @PROP( key = "name", value = "me" ) } ) } )
