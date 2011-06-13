@@ -176,7 +176,7 @@ define(
       cleanPropertyValue : (rawVal) =>
         try
           val = JSON.parse rawVal
-          if  val == null
+          if val == null
             return error:"Null values are not allowed. Please use strings, numbers or arrays."
           else if @isMap val
             return error:"Maps are not supported property values. Please use strings, numbers or arrays."

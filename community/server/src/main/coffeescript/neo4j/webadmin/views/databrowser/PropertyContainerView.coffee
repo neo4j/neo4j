@@ -147,5 +147,5 @@ define(
           JSON.parse val
           return false
         catch e
-          return /^[a-z0-9-_\/\\\(\)#%\&!$]+$/i.test(val)
+          return /^[a-z0-9- _\/\\\(\)#%\&!$]+$/i.test(val)
 )
