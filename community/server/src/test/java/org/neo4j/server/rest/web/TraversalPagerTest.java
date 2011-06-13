@@ -1,5 +1,6 @@
 package org.neo4j.server.rest.web;
 
+import static org.junit.Assert.*;
 import static org.junit.Assert.assertNull;
 
 import java.io.File;
@@ -79,16 +80,22 @@ public class TraversalPagerTest
         Traverser myTraverser = simpleListTraverser();
         TraversalPager traversalPager = new TraversalPager( myTraverser, LIST_LENGTH / 10 );
 
-        iterateThroughPagedTraverser( traversalPager );
+        int iterations = iterateThroughPagedTraverser( traversalPager );
 
+        assertEquals(10, iterations);
         assertNull( traversalPager.next() );
 
     }
 
     @SuppressWarnings( "unused" )
-    private void iterateThroughPagedTraverser( TraversalPager traversalPager )
+    private int iterateThroughPagedTraverser( TraversalPager traversalPager )
     {
-        for ( List<Path> paths : traversalPager ) {}
+        int count = 0;
+        for ( List<Path> paths : traversalPager )
+        {
+            count++;
+        }
+        return count;
     }
 
     @Test
@@ -96,13 +103,14 @@ public class TraversalPagerTest
     {
         int awkwardPageSize = 7;
         Traverser myTraverser = simpleListTraverser();
-        TraversalPager traversalPager = new TraversalPager( myTraverser, awkwardPageSize  );
+        TraversalPager traversalPager = new TraversalPager( myTraverser, awkwardPageSize );
 
-        iterateThroughPagedTraverser( traversalPager );
+        int iterations = iterateThroughPagedTraverser( traversalPager );
 
+        assertEquals(15, iterations);
         assertNull( traversalPager.next() );
     }
-    
+
     private Traverser simpleListTraverser()
     {
         return Traversal.description()
