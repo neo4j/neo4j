@@ -585,6 +585,8 @@ public class ImdbExampleTest
     @Test
     public void batchInsert()
     {
+        Neo4jTestCase.deleteFileOrDirectory( new File(
+                "target/neo4jdb-batchinsert" ) );
         // START SNIPPET: batchInsert
         BatchInserter inserter = new BatchInserterImpl( "target/neo4jdb-batchinsert" );
         BatchInserterIndexProvider indexProvider = new LuceneBatchInserterIndexProvider( inserter );
@@ -599,5 +601,14 @@ public class ImdbExampleTest
         indexProvider.shutdown();
         inserter.shutdown();
         // END SNIPPET: batchInsert
+
+        GraphDatabaseService db = new EmbeddedGraphDatabase(
+                "target/neo4jdb-batchinsert" );
+        Index<Node> index = db.index()
+                .forNodes( "actors" );
+        Node reeves = index.get( "name", "Keanu Reeves" )
+                .next();
+        assertEquals( node, reeves.getId() );
+        db.shutdown();
     }
 }

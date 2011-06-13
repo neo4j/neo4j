@@ -1,4 +1,4 @@
-[[query-lang]]
+[[cypher-query-lang]]
 Cypher Query Language
 =====================
 
