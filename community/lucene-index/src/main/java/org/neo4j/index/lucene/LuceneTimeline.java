@@ -66,7 +66,7 @@ public class LuceneTimeline<T extends PropertyContainer> implements TimelineInde
 
     private QueryContext rangeQuery( Long startTimestampOrNull, Long endTimestampOrNull )
     {
-        long start = startTimestampOrNull != null ? startTimestampOrNull : 0L;
+        long start = startTimestampOrNull != null ? startTimestampOrNull : -Long.MAX_VALUE;
         long end = endTimestampOrNull != null ? endTimestampOrNull : MAX_VALUE;
         return new QueryContext( newLongRange( FIELD, start, end, true, true ) );
     }
