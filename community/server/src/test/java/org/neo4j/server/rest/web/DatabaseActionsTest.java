@@ -937,18 +937,18 @@ public class DatabaseActionsTest
 
         // /paths
         List<Object> result = serialize( actions.findPaths( nodes[ 0 ], nodes[ 1 ], MapUtil.map(
-                "max depth", 2, "algorithm", "shortestPath", "relationships", MapUtil.map( "type",
+                "max_depth", 2, "algorithm", "shortestPath", "relationships", MapUtil.map( "type",
                 "to", "direction", "out" ) ) ) );
         assertPaths( 2, nodes, 2, result );
 
         // /path
         Map<String, Object> path = serialize( actions.findSinglePath( nodes[ 0 ], nodes[ 1 ],
-                MapUtil.map( "max depth", 2, "algorithm", "shortestPath", "relationships",
+                MapUtil.map( "max_depth", 2, "algorithm", "shortestPath", "relationships",
                         MapUtil.map( "type", "to", "direction", "out" ) ) ) );
         assertPaths( 1, nodes, 2, Arrays.<Object>asList( path ) );
 
         // /path {single: false} (has no effect)
-        path = serialize( actions.findSinglePath( nodes[ 0 ], nodes[ 1 ], MapUtil.map( "max depth", 2,
+        path = serialize( actions.findSinglePath( nodes[ 0 ], nodes[ 1 ], MapUtil.map( "max_depth", 2,
                 "algorithm", "shortestPath", "relationships", MapUtil.map( "type", "to",
                 "direction", "out" ), "single", false ) ) );
         assertPaths( 1, nodes, 2, Arrays.<Object>asList( path ) );
@@ -961,13 +961,13 @@ public class DatabaseActionsTest
 
         // /paths
         List<Object> result = serialize( actions.findPaths( nodes[ 0 ], nodes[ 1 ], map(
-                "algorithm", "dijkstra", "cost property", "cost", "relationships", map( "type",
+                "algorithm", "dijkstra", "cost_property", "cost", "relationships", map( "type",
                 "to", "direction", "out" ) ) ) );
         assertPaths( 1, nodes, 6, result );
 
         // /path
         Map<String, Object> path = serialize( actions.findSinglePath( nodes[ 0 ], nodes[ 1 ],
-                map( "algorithm", "dijkstra", "cost property", "cost", "relationships",
+                map( "algorithm", "dijkstra", "cost_property", "cost", "relationships",
                         map( "type", "to", "direction", "out" ) ) ) );
         assertPaths( 1, nodes, 6, Arrays.<Object>asList( path ) );
         assertEquals( 6.0d, path.get( "weight" ) );
@@ -980,13 +980,13 @@ public class DatabaseActionsTest
 
         // /paths
         List<Object> result = serialize( actions.findPaths( nodes[ 0 ], nodes[ 1 ], map(
-                "algorithm", "dijkstra", "cost property", "cost", "default cost", 1,
+                "algorithm", "dijkstra", "cost_property", "cost", "default_cost", 1,
                 "relationships", map( "type", "to", "direction", "out" ) ) ) );
         assertPaths( 1, nodes, 6, result );
 
         // /path
         Map<String, Object> path = serialize( actions.findSinglePath( nodes[ 0 ], nodes[ 1 ],
-                map( "algorithm", "dijkstra", "cost property", "cost", "default cost", 1,
+                map( "algorithm", "dijkstra", "cost_property", "cost", "default_cost", 1,
                         "relationships", map( "type", "to", "direction", "out" ) ) ) );
         assertPaths( 1, nodes, 6, Arrays.<Object>asList( path ) );
         assertEquals( 6.0d, path.get( "weight" ) );
@@ -996,7 +996,7 @@ public class DatabaseActionsTest
     public void shouldHandleNoFoundPathsCorrectly()
     {
         long[] nodes = createMoreComplexGraph();
-        serialize( actions.findSinglePath( nodes[ 0 ], nodes[ 1 ], map( "max depth", 2,
+        serialize( actions.findSinglePath( nodes[ 0 ], nodes[ 1 ], map( "max_depth", 2,
                 "algorithm", "shortestPath", "relationships", map( "type", "to",
                 "direction", "in" ), "single", false ) ) );
     }
