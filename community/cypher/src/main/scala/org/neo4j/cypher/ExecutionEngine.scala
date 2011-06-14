@@ -30,7 +30,7 @@ import collection.Seq
 class ExecutionEngine(graph: GraphDatabaseService) {
   @throws(classOf[SyntaxError])
   def execute(query: Query): ExecutionResult = query match {
-    case Query(returns, start, matching, where, aggregation, sort) => {
+    case Query(returns, start, matching, where, aggregation, sort, slice) => {
       var pipe = createSourcePumps(start).reduceLeft(_ ++ _)
 
       matching match {
@@ -48,6 +48,11 @@ class ExecutionEngine(graph: GraphDatabaseService) {
       sort match {
         case None =>
         case Some(s) => pipe = new SortPipe(pipe, s.sortItems)
+      }
+
+      slice match {
+        case None =>
+        case Some(x) => pipe = new SlicePipe(pipe, x.itemsToReturn)
       }
 
       val result = new ColumnFilterPipe(pipe, returns.returnItems) with ExecutionResult

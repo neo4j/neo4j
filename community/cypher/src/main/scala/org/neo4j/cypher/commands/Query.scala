@@ -23,27 +23,28 @@ import scala.Some
 import org.neo4j.cypher.pipes.SortItem
 
 object Query {
-  def apply(returns:Return, start:Start) = new Query(returns, start, None, None, None, None)
+  def apply(returns:Return, start:Start) = new Query(returns, start, None, None, None, None, None)
 
-  def apply(returns:Return, start:Start, matching:Match) = new Query(returns, start, Some(matching), None, None, None)
-  def apply(returns:Return, start:Start, where:Clause) = new Query(returns, start, None, Some(where), None, None)
-  def apply(returns:Return, start:Start, aggregation:Aggregation) = new Query(returns, start, None, None, Some(aggregation), None)
-  def apply(returns:Return, start:Start, sort:Sort) = new Query(returns, start, None, None, None, Some(sort))
+  def apply(returns:Return, start:Start, matching:Match) = new Query(returns, start, Some(matching), None, None, None, None)
+  def apply(returns:Return, start:Start, where:Clause) = new Query(returns, start, None, Some(where), None, None, None)
+  def apply(returns:Return, start:Start, aggregation:Aggregation) = new Query(returns, start, None, None, Some(aggregation), None, None)
+  def apply(returns:Return, start:Start, sort:Sort) = new Query(returns, start, None, None, None, Some(sort), None)
 
-  def apply(returns:Return, start:Start, matching:Match, where:Clause) = new Query(returns, start, Some(matching), Some(where), None, None)
-  def apply(returns:Return, start:Start, matching:Match, aggregation:Aggregation) = new Query(returns, start, Some(matching), None, Some(aggregation), None)
-  def apply(returns:Return, start:Start, matching:Match, sort:Sort) = new Query(returns, start, Some(matching), None, None, Some(sort))
+  def apply(returns:Return, start:Start, matching:Match, where:Clause) = new Query(returns, start, Some(matching), Some(where), None, None, None)
+  def apply(returns:Return, start:Start, matching:Match, aggregation:Aggregation) = new Query(returns, start, Some(matching), None, Some(aggregation), None, None)
+  def apply(returns:Return, start:Start, matching:Match, sort:Sort) = new Query(returns, start, Some(matching), None, None, Some(sort), None)
 
-  def apply(returns:Return, start:Start, where:Clause, aggregation:Aggregation) = new Query(returns, start, None, Some(where), Some(aggregation), None)
-  def apply(returns:Return, start:Start, where:Clause, sort:Sort) = new Query(returns, start, None, Some(where), None, Some(sort))
+  def apply(returns:Return, start:Start, where:Clause, aggregation:Aggregation) = new Query(returns, start, None, Some(where), Some(aggregation), None, None)
+  def apply(returns:Return, start:Start, where:Clause, sort:Sort) = new Query(returns, start, None, Some(where), None, Some(sort), None)
 
+  def apply(returns:Return, start:Start, slice:Slice) = new Query(returns, start, None, None, None, None, Some(slice))
 
-  def apply(returns:Return, start:Start, matching:Match, where:Clause, aggregation:Aggregation) = new Query(returns, start, Some(matching), Some(where), Some(aggregation), None)
+  def apply(returns:Return, start:Start, matching:Match, where:Clause, aggregation:Aggregation) = new Query(returns, start, Some(matching), Some(where), Some(aggregation), None, None)
 }
 
 
 case class Query(returns: Return, start: Start, matching:Option[Match], where: Option[Clause], aggregation: Option[Aggregation],
-                 sort:Option[Sort])
+                 sort:Option[Sort], slice:Option[Slice])
 
 case class Return(returnItems: ReturnItem*)
 
@@ -54,3 +55,5 @@ case class Match(patterns: Pattern*)
 case class Aggregation(aggregationItems:AggregationItem*)
 
 case class Sort(sortItems:SortItem*)
+
+case class Slice(itemsToReturn:Int)
