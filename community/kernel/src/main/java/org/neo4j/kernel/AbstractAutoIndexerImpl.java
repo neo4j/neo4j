@@ -62,13 +62,13 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
     }
 
     @Override
-    public boolean isAutoIndexingEnabled()
+    public boolean isEnabled()
     {
         return enabled;
     }
 
     @Override
-    public void setAutoIndexingEnabled( boolean enable )
+    public void setEnabled( boolean enable )
     {
         // Act only if actual state change requested
         if ( enable && !this.enabled )
@@ -122,6 +122,18 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
         {
             checkListConsistency();
         }
+    }
+
+    @Override
+    public Set<String> getAutoIndexedProperties()
+    {
+        return Collections.unmodifiableSet( propertyKeysToInclude );
+    }
+
+    @Override
+    public Set<String> getIgnoredProperties()
+    {
+        return Collections.unmodifiableSet( propertyKeysToIgnore );
     }
 
     protected EmbeddedGraphDbImpl getGraphDbImpl()
@@ -278,7 +290,7 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
     {
         Config config = gdb.getConfig();
         boolean enable = Boolean.parseBoolean( (String) ( config.getParams().get( getEnableConfigName() ) ) );
-        setAutoIndexingEnabled( enable );
+        setEnabled( enable );
 
         propertyKeysToInclude.addAll( parseConfigList( (String) ( config.getParams().get( getAutoIndexConfigListName() ) ) ) );
         propertyKeysToIgnore.addAll( parseConfigList( (String) ( config.getParams().get( getIgnoreConfigListName() ) ) ) );

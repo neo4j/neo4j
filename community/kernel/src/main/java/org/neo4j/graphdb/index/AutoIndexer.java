@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphdb.index;
 
+import java.util.Set;
+
 import org.neo4j.graphdb.PropertyContainer;
 
 /**
@@ -35,7 +37,7 @@ public interface AutoIndexer<T extends PropertyContainer>
      *
      * @param enabled True to enable this auto indexer, false to disable it.
      */
-    void setAutoIndexingEnabled( boolean enabled );
+    void setEnabled( boolean enabled );
 
     /**
      * Returns true iff this auto indexer is enabled, false otherwise. For a
@@ -46,21 +48,68 @@ public interface AutoIndexer<T extends PropertyContainer>
      *
      * @see setAutoIndexingEnabled(boolean)
      */
-    boolean isAutoIndexingEnabled();
+    boolean isEnabled();
 
     /**
      * Returns the auto index used by the auto indexer. This should be able
      * to be released safely (read only) to the outside world.
-     * 
+     *
      * @return A read only index
      */
     AutoIndex<T> getAutoIndex();
 
+    /**
+     * Start auto indexing a property. This could lead to an
+     * IllegalStateException in case there are already ignored properties.
+     * Adding an already auto indexed property is a no-op.
+     *
+     * @param propName The property name to start auto indexing.
+     */
     void startAutoIndexingProperty( String propName );
 
+    /**
+     * Removes the argument from the set of auto indexed properties. If
+     * the property was not already monitored, nothing happens
+     *
+     * @param propName The property name to stop auto indexing.
+     */
     void stopAutoIndexingProperty( String propName );
 
+    /**
+     * Start ignoring a property. This could lead to an IllegalStateException
+     * if there are already auto indexed properties. Adding an already ignored
+     * property is a no-op.
+     *
+     * @param propName The property name the auto indexer is supposed to ignore.
+     */
     void startIgnoringProperty( String propName );
 
+    /**
+     * Removes the argument from the set of ignored properties. If
+     * the property was not already ignored, nothing happens
+     *
+     * @param propName The property name to stop ignoring.
+     */
     void stopIgnoringProperty( String propName );
+
+    /**
+     * Returns the set of property names that are currently monitored for auto
+     * indexing. If this auto indexer is set to ignore properties, the result
+     * is the empty set.
+     * 
+     * @return An immutable set of the auto indexed property names, possibly
+     *         empty.
+     */
+    Set<String> getAutoIndexedProperties();
+
+    /**
+     * Returns the set of property names that are currently ignored from auto
+     * indexing. If this auto indexer is set to auto index properties, the
+     * result
+     * is the empty set.
+     *
+     * @return An immutable set of the ignored property names, possibly
+     *         empty.
+     */
+    Set<String> getIgnoredProperties();
 }

@@ -215,8 +215,8 @@ public class AutoIndexerExampleTests
         relAutoIndexer.startIgnoringProperty( "relProp1" );
 
         // None of the AutoIndexers are enabled so far. Do that now
-        nodeAutoIndexer.setAutoIndexingEnabled( true );
-        relAutoIndexer.setAutoIndexingEnabled( true );
+        nodeAutoIndexer.setEnabled( true );
+        relAutoIndexer.setEnabled( true );
 
         // END SNIPPET: APIAutoIndexer
 
@@ -314,7 +314,7 @@ public class AutoIndexerExampleTests
          * we can disable auto indexing for Nodes, make changes
          * in any order and then re-enable it. Here we do the latter.
          */
-        nodeAutoIndexer.setAutoIndexingEnabled( false );
+        nodeAutoIndexer.setEnabled( false );
         /*
          * Now this should work
          */
@@ -322,13 +322,13 @@ public class AutoIndexerExampleTests
         nodeAutoIndexer.stopAutoIndexingProperty( "nodeProp1" );
         nodeAutoIndexer.stopAutoIndexingProperty( "nodeProp2" );
         // Now we are consistent. Re-enable it.
-        nodeAutoIndexer.setAutoIndexingEnabled( true );
+        nodeAutoIndexer.setEnabled( true );
 
         // END SNIPPET: APIOverConfigAutoIndexer
 
         // We also close down the Relationship auto indexing
         AutoIndexer<Relationship> relAutoIndexer = graphDb.index().getRelationshipAutoIndexer();
-        relAutoIndexer.setAutoIndexingEnabled( false );
+        relAutoIndexer.setEnabled( false );
 
         Transaction tx = graphDb.beginTx();
         Node node1 = null, node2 = null;
