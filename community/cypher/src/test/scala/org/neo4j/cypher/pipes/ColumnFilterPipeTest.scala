@@ -27,7 +27,7 @@ class ColumnFilterPipeTest {
   @Test def shouldReturnColumnsFromReturnItems() {
     val returnItems = List(EntityOutput("foo"))
     val source = new FakePipe(List(Map("x" -> "x", "foo" -> "bar")))
-    val columnPipe = new ColumnFilterPipe(returnItems,source)
+    val columnPipe = new ColumnFilterPipe(source, returnItems)
 
     Assert.assertEquals(Map("foo" -> NodeIdentifier("foo")), columnPipe.symbols.identifiers)
     Assert.assertEquals(List(Map("foo" -> "bar")), columnPipe.toList)

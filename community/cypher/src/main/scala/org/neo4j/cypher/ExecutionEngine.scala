@@ -40,17 +40,17 @@ class ExecutionEngine(graph: GraphDatabaseService) {
 
       where match {
         case None =>
-        case Some(w) => pipe = new FilterPipe(w, pipe)
+        case Some(w) => pipe = new FilterPipe(pipe, w)
       }
 
-      pipe = new TransformPipe(returns.returnItems, pipe)
+      pipe = new TransformPipe(pipe, returns.returnItems)
 
       sort match {
         case None =>
-        case Some(s) => pipe = new SortPipe(s.sortItems.toList, pipe)
+        case Some(s) => pipe = new SortPipe(pipe, s.sortItems)
       }
 
-      val result = new ColumnFilterPipe(returns.returnItems, pipe) with ExecutionResult
+      val result = new ColumnFilterPipe(pipe, returns.returnItems) with ExecutionResult
 
       result
     }

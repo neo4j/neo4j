@@ -23,7 +23,7 @@ import org.neo4j.cypher.SymbolTable
 import org.neo4j.cypher.commands.Clause
 import java.lang.String
 
-class FilterPipe(where: Clause, source: Pipe) extends Pipe {
+class FilterPipe(source: Pipe, where: Clause) extends Pipe {
   val symbols: SymbolTable = source.symbols
 
   def foreach[U](f: (Map[String, Any]) => U) {
