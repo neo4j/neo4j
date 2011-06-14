@@ -25,6 +25,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -52,6 +53,8 @@ public class TestAutoIndexing
     private Transaction tx;
     private Map<String, String> config;
 
+    private String currentId = null;
+
     private void newTransaction()
     {
         if ( tx != null )
@@ -74,14 +77,17 @@ public class TestAutoIndexing
     @Before
     public void startDb()
     {
-        WorkDir.mkdir();
-        graphDb = new EmbeddedGraphDatabase( WorkDir.getAbsolutePath(),
+        File workDir = getWorkDir();
+        workDir.mkdirs();
+        graphDb = new EmbeddedGraphDatabase( workDir.getAbsolutePath(),
                 getConfig() );
     }
 
     @After
-    public void stopDb() throws Exception
+    public void stopDb()
     {
+        // For access from the delete thread
+        final File currentWorkDir = getWorkDir();
         if ( tx != null )
         {
             tx.finish();
@@ -90,10 +96,33 @@ public class TestAutoIndexing
         {
             graphDb.shutdown();
         }
-        FileUtils.deleteRecursively( WorkDir );
+        new Thread(new Runnable() {
+            public void run() {
+
+                try
+                {
+                    FileUtils.deleteRecursively( currentWorkDir );
+                }
+                catch ( IOException e )
+                {
+                    System.err.println( "The following exception can be ignored, it is a locking issue on windows. If on linux, investigate" );
+                    e.printStackTrace();
+                }
+            };
+        } ).start();
         tx = null;
         config = null;
         graphDb = null;
+        currentId = null;
+    }
+
+    private File getWorkDir()
+    {
+        if ( currentId == null )
+        {
+            currentId = Long.toString( System.currentTimeMillis() );
+        }
+        return new File( WorkDir, currentId );
     }
 
     @Test
