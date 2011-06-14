@@ -43,12 +43,14 @@ class ExecutionEngine(graph: GraphDatabaseService) {
         case Some(w) => pipe = new FilterPipe(w, pipe)
       }
 
+      pipe = new TransformPipe(returns.returnItems, pipe)
+
       sort match {
         case None =>
         case Some(s) => pipe = new SortPipe(s.sortItems.toList, pipe)
       }
 
-      val result = new TransformPipe(returns.returnItems, pipe) with ExecutionResult
+      val result = new ColumnFilterPipe(returns.returnItems, pipe) with ExecutionResult
 
       result
     }

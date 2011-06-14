@@ -29,7 +29,7 @@ class TransformPipe(returnItems: Seq[ReturnItem], source: Pipe) extends Pipe {
   def getSymbolType(item: ReturnItem): Identifier = item.identifier
 
   val returnIdentifiers = returnItems.map(x => x.identifier.name -> x.identifier).toMap
-  val symbols: SymbolTable = new SymbolTable(returnIdentifiers)
+  val symbols: SymbolTable = source.symbols.add(returnIdentifiers)
 
   checkDependenciesAreMet()
 
@@ -40,7 +40,7 @@ class TransformPipe(returnItems: Seq[ReturnItem], source: Pipe) extends Pipe {
   def foreach[U](f: (Map[String, Any]) => U) {
     source.foreach(row => {
       val projection = returnItems.map(_(row)).reduceLeft(_ ++ _)
-      f.apply(projection)
+      f.apply(projection ++ row)
     })
   }
 }
