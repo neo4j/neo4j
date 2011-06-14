@@ -326,6 +326,17 @@ class CypherParserTest {
           SortItem(PropertyOutput("a", "age"), true))))
   }
 
+    @Test def shouldHandleTwoSortColumnsWithOneDesc() {
+    testQuery(
+      "start a = (1) return a sort by a.name REVERSE, a.age",
+      Query(
+        Return(EntityOutput("a")),
+        Start(NodeById("a", 1)),
+        Sort(
+          SortItem(PropertyOutput("a", "name"), false),
+          SortItem(PropertyOutput("a", "age"), true))))
+  }
+
   @Test def nullableProperty() {
     testQuery(
       "start a = (1) return a.name?",

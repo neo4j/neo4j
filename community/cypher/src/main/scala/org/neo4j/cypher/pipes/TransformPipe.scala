@@ -30,7 +30,7 @@ class TransformPipe(returnItems: Seq[ReturnItem], source: Pipe) extends Pipe {
 
   def getSymbolType(item: ReturnItem): Identifier = item.identifier
   val returnIdentifiers = returnItems.map(x => x.identifier.name -> x.identifier).toMap
-  val symbols: SymbolTable = source.symbols.add(returnIdentifiers)
+  val symbols: SymbolTable = new SymbolTable(returnIdentifiers)
 
   var transformers: Seq[MapTransformer] = createMapTransformers(returnItems, symbols)
 

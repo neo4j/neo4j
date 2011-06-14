@@ -25,7 +25,6 @@ import scala.collection.JavaConverters._
 import org.neo4j.graphdb._
 import java.lang.Iterable
 import collection.Seq
-import org.apache.lucene.search.Sort
 
 
 class ExecutionEngine(graph: GraphDatabaseService) {
