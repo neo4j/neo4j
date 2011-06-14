@@ -59,6 +59,8 @@ Useful links when configuring the docbook toolchain:
 
 * http://www.docbook.org/tdg/en/html/docbook.html
 * http://www.sagehill.net/docbookxsl/index.html
+* http://docbook.sourceforge.net/release/xsl/1.76.1/doc/html/index.html
+* http://docbook.sourceforge.net/release/xsl/1.76.1/doc/fo/index.html
 
 === With brew on OSX ===
 

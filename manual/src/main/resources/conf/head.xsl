@@ -57,6 +57,76 @@ body #toolbar_item command_help {
   SyntaxHighlighter.defaults['toolbar'] = false;
   SyntaxHighlighter.all()
 </script>
+
+<!-- JQuery -->
+
+<script type="text/javascript" src="js/jquery-1.6.1.min.js"></script>
+
+<!-- Smart Image Scaling -->
+<!-- Makes sure images are never scaled to more than 100% -->
+<!-- while preserving image scaling as much as possible. -->
+
+<script type="text/javascript">
+
+jQuery( window ).load(  function()
+{
+  setImageSizes( jQuery );
+});
+
+function setImageSizes( $ )
+{
+  $( "span.inlinemediaobject > img[width]" ).each( function()
+  {
+    var img = this;
+    if ( img.naturalWidth && img.parentNode.offsetWidth > img.naturalWidth )
+    {
+      removeWidth( img );
+    }
+    else if ( img.realWidth && img.parentNode.offsetWidth > img.realWidth )
+    {
+      removeWidth( img );
+    }
+    else
+    {
+      $("<img />")
+        .attr( "src", img.getAttribute( "src" ) )
+        .load( function( )
+        {
+          img.realWidth = this.width;
+          if ( img.parentNode.offsetWidth > this.width )
+          {
+            removeWidth( img );
+          }
+        });
+    }
+  });
+}
+
+function resetImageSizes( $ )
+{
+  $( "span.inlinemediaobject > img" ).each( function()
+  {
+    if ( this.originalWidth )
+    {
+      this.setAttribute( "width", this.originalWidth );
+    }
+  });
+  setImageSizes( $ );
+}
+
+jQuery( window ).resize( function()
+{
+  resetImageSizes( jQuery );
+});
+
+function removeWidth( image )
+{
+  image.originalWidth = image.getAttribute( "width" );
+  image.removeAttribute( "width" );
+}
+
+</script>
+
 ]]>
 </xsl:text>
 </xsl:template>
