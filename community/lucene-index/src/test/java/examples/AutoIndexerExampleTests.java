@@ -21,14 +21,19 @@ package examples;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
@@ -36,9 +41,22 @@ import org.neo4j.graphdb.index.AutoIndex;
 import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.metatest.TestGraphDescription;
+import org.neo4j.test.GraphDescription;
+import org.neo4j.test.GraphDescription.Graph;
+import org.neo4j.test.GraphDescription.NODE;
+import org.neo4j.test.GraphDescription.REL;
+import org.neo4j.test.GraphHolder;
+import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestData;
 
-public class AutoIndexerExampleTests
+public class AutoIndexerExampleTests implements GraphHolder
 {
+    private static final TargetDirectory target = TargetDirectory.forTest( TestGraphDescription.class );
+    
+    private static EmbeddedGraphDatabase graphdb;
+    public @Rule
+    TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
 
     private String getStoreDir( String testName )
     {
@@ -454,4 +472,35 @@ public class AutoIndexerExampleTests
                 nodeAutoIndexer.getAutoIndex().get( "nodeProp1", "value1" ).getSingle() );
         // END SNIPPET: Semantics
     }
+    
+    @Test
+    @Graph( autoIndexNodes = true,
+            autoIndexRelationships = true,
+            value = { "I know you"  })
+    public void canCreateMoreInvolvedGraphWithPropertiesAndAutoIndex() throws Exception
+    {
+        GraphDatabaseService graphDatabase = data.get().values().iterator().next().getGraphDatabase();
+        assertTrue( "node autoindex Nodes not enabled.", graphDatabase.index().getNodeAutoIndexer().isEnabled() );
+        assertTrue( "node autoindex Rels not enabled.", graphDatabase.index().getRelationshipAutoIndexer().isEnabled() );
+    }
+    
+    @BeforeClass
+    public static void startDatabase()
+    {
+        graphdb = new EmbeddedGraphDatabase( target.graphDbDir( true ).getAbsolutePath() );
+    }
+
+    @AfterClass
+    public static void stopDatabase()
+    {
+        if ( graphdb != null ) graphdb.shutdown();
+        graphdb = null;
+    }
+
+    @Override
+    public GraphDatabaseService graphdb()
+    {
+        return graphdb;
+    }
+
 }
