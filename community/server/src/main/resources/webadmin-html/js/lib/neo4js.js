@@ -503,27 +503,27 @@ a++){neo4j.setTimeout((function(g){return function(){try{g(c)
 })(e[a]),0)
 }}};
 neo4j.events=new neo4j.Events();
-neo4j.jqueryWebProvider={ajax:function(f){var h=f.timeout||5000,a=f.method,c=f.url,e=f.data,j=f.success,d=f.failure,b=a==="GET",g=function(l){try{if(l.status===200){return j(null)
-}}catch(m){}try{if(l.status===0){d(new neo4j.exceptions.ConnectionLostException())
-}else{var k=JSON.parse(l.responseText);
-d(new neo4j.exceptions.HttpException(l.status,k,l))
-}}catch(m){d(new neo4j.exceptions.HttpException(-1,{},l))
-}};
-var i=this.isCrossDomain;
-setTimeout((function(o,l,m,n,k){if(m===null||m==="null"){m=""
-}else{if(!b){m=JSON.stringify(m)
-}}return function(){if(i(l)&&window.XDomainRequest){if(typeof(k)==="function"){k(new neo4j.exceptions.HttpException(-1,null,null,"Cross-domain requests are available in IE, but are not yet implemented in neo4js."))
-}}else{var q=false,p=$.ajax({url:l,type:o,data:m,timeout:h,cache:false,processData:b,success:function(s,r,t){if(t.status===0){g(t)
-}else{n.apply(this,arguments)
-}},contentType:"application/json",error:g,dataType:"json"})
-}}
-})(a,c,e,j,d),0)
+neo4j.jqueryWebProvider={ajax:function(h){var i=h.timeout||5000,a=h.method,c=h.url,e=h.data,k=h.success,d=h.failure,b=a==="GET";
+function g(m,l,n){if(n.status===0){f(n)
+}else{k.apply(this,arguments)
+}}function f(m){try{if(m.status===200){return k(null)
+}}catch(n){}try{if(m.status===0){d(new neo4j.exceptions.ConnectionLostException())
+}else{var l=JSON.parse(m.responseText);
+d(new neo4j.exceptions.HttpException(m.status,l,m))
+}}catch(n){d(new neo4j.exceptions.HttpException(-1,{},m))
+}}var j=this.isCrossDomain;
+(function(p,m,n,o,l){if(n===null||n==="null"){n=""
+}else{if(!b){n=JSON.stringify(n)
+}}if(j(m)&&window.XDomainRequest){if(typeof(l)==="function"){l(new neo4j.exceptions.HttpException(-1,null,null,"Cross-domain requests are available in IE, but are not yet implemented in neo4js."))
+}}else{$.ajax({url:m,type:p,data:n,timeout:i,cache:false,processData:b,success:g,contentType:"application/json",error:f,dataType:"json"})
+}})(a,c,e,k,d)
 },isCrossDomain:function(b){if(b){var a=b.indexOf("://");
 if(a===-1||a>7){return false
 }else{return b.substring(a+3).split("/",1)[0]!==window.location.host
 }}else{return false
 }}};
-neo4j.Web=function(a){this.webProvider=a||neo4j.jqueryWebProvider
+neo4j.Web=function(b,a){this.webProvider=b||neo4j.jqueryWebProvider;
+this.events=a||neo4j.events
 };
 _.extend(neo4j.Web.prototype,{get:function(b,c,d,a){return this.ajax("GET",b,c,d,a)
 },post:function(b,c,d,a){return this.ajax("POST",b,c,d,a)
@@ -548,7 +548,9 @@ return b.test(a)
 _.each(_.keys(b),function(d){a.url=a.url.replace("{"+d+"}",b[d])
 });
 return a.url
-},wrapFailureCallback:function(a){return function(b){if(typeof(b)!="undefined"&&b instanceof neo4j.exceptions.ConnectionLostException){neo4j.events.trigger("web.connection.failed",_.toArray(arguments))
+},wrapFailureCallback:function(a){var b=this.events;
+return function(c){if(typeof(c)!="undefined"&&c instanceof neo4j.exceptions.ConnectionLostException){b.trigger("web.connection_lost",_.toArray(arguments));
+b.trigger("web.connection.failed",_.toArray(arguments))
 }a.apply(this,arguments)
 }
 },_processAjaxArguments:function(c){var f,b,d,e,a,c=_.toArray(c);
@@ -1148,7 +1150,7 @@ for(var c in d.services){if(this[c]){this[c].makeAvailable(d.services[c])
 neo4j.GraphDatabase=function(b,a){this.url=b;
 this.events=new neo4j.Events({db:this});
 this.bind=neo4j.proxy(this.events.bind,this.events);
-this.web=a||new neo4j.Web();
+this.web=a||new neo4j.Web(null,this.events);
 this.trigger=neo4j.proxy(this.events.trigger,this.events);
 this.index=new neo4j.index.Indexes(this);
 this.manage=new neo4j.GraphDatabaseManager(this);

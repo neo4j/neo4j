@@ -19,13 +19,8 @@
  */
 package org.neo4j.cypher.commands
 
-/**
- * @author mh
- * @since 09.06.11
- */
-
-abstract sealed case class SymbolType(name : String)
-case class NodeType(subName:String) extends SymbolType(subName)
-case class RelationshipType(subName:String) extends SymbolType(subName)
-case class PropertyType(subName:String) extends SymbolType(subName)
-case class AggregationType(subName:String) extends SymbolType(subName)
+abstract sealed case class Identifier(name : String, visible:Boolean)
+case class NodeIdentifier(subName:String) extends Identifier(subName, true)
+case class RelationshipIdentifier(subName:String) extends Identifier(subName, true)
+case class PropertyIdentifier(entity:String, property:String) extends Identifier(entity + "." + property, true)
+case class AggregationIdentifier(subName:String) extends Identifier(subName, true)

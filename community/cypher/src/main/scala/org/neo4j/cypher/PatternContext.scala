@@ -29,7 +29,7 @@ import org.neo4j.graphdb.{PropertyContainer, DynamicRelationshipType, Direction}
 
 class PatternContext(source: Pipe, matching: Match) {
 
-  val patternSymbolTypes: Seq[SymbolType] = matching.patterns.map(pattern => createSymbolType(pattern)).flatten
+  val patternSymbolTypes: Seq[Identifier] = matching.patterns.map(pattern => createSymbolType(pattern)).flatten
   val patternSymbolMap = patternSymbolTypes.map(x => x.name -> x).toMap
 
   val symbolTable = source.symbols.add(patternSymbolMap)
@@ -45,8 +45,8 @@ class PatternContext(source: Pipe, matching: Match) {
     source.symbols.identifiers.foreach {
       case (name, typ) => {
         typ match {
-          case NodeType(subName) => getOrCreateNode(subName)
-          case RelationshipType(subName) => getOrCreateRelationship(subName)
+          case NodeIdentifier(subName) => getOrCreateNode(subName)
+          case RelationshipIdentifier(subName) => getOrCreateRelationship(subName)
         }
       }
     }
@@ -61,10 +61,10 @@ class PatternContext(source: Pipe, matching: Match) {
     })
   }
 
-  private def createSymbolType(pattern: Pattern): List[SymbolType] = pattern match {
-    case RelatedTo(left, right, relName, relType, direction) => List(Some(NodeType(left)), Some(NodeType(right)), relName match {
+  private def createSymbolType(pattern: Pattern): List[Identifier] = pattern match {
+    case RelatedTo(left, right, relName, relType, direction) => List(Some(NodeIdentifier(left)), Some(NodeIdentifier(right)), relName match {
       case None => None
-      case Some(name) => Some(RelationshipType(name))
+      case Some(name) => Some(RelationshipIdentifier(name))
     }).flatMap(_.toList)
   }
 

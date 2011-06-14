@@ -19,21 +19,31 @@
  */
 package org.neo4j.cypher.pipes
 
-import org.neo4j.cypher.SymbolTable
-import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
-import org.neo4j.cypher.commands.{Identifier, RelationshipIdentifier, NodeIdentifier}
+import org.neo4j.cypher.{Comparer, SymbolTable}
+import org.neo4j.cypher.commands.ReturnItem
 
-class StartPipe[T <: PropertyContainer](name: String, source: Iterable[T]) extends Pipe {
-  val symbolType: Identifier = source match {
-    case nodes: Iterable[Node] => NodeIdentifier(name)
-    case rels: Iterable[Relationship] => RelationshipIdentifier(name)
-  }
-
-  val symbols: SymbolTable = new SymbolTable(Map(name -> symbolType))
+class SortPipe(sortDescription: List[SortItem], inner: Pipe) extends Pipe with Comparer {
+  val symbols: SymbolTable = inner.symbols
 
   def foreach[U](f: (Map[String, Any]) => U) {
-    source.foreach((x) => {
-      f(Map(name -> x))
-    })
+    val sorted = inner.toList.sortWith((a, b) => compareBy (a,b,sortDescription))
+
+    sorted.foreach(f)
+  }
+
+  def compareBy(a:Map[String, Any], b:Map[String, Any], order:List[SortItem]):Boolean = order match {
+    case Nil => false
+    case head :: tail => {
+      val id = head.returnItem.identifier.name
+      val aVal = a(id)
+      val bVal = b(id)
+      compare(aVal, bVal) match {
+        case 1 => !head.ascending
+        case -1 => head.ascending
+        case 0 => compareBy(a,b,tail)
+      }
+    }
   }
 }
+
+case class SortItem(returnItem: ReturnItem, ascending: Boolean)

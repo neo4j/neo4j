@@ -40,13 +40,13 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.test.GraphDescription;
-import org.neo4j.test.GraphHolder;
-import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestData;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphDescription.NODE;
 import org.neo4j.test.GraphDescription.PROP;
 import org.neo4j.test.GraphDescription.REL;
+import org.neo4j.test.GraphHolder;
+import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestData;
 
 public class TestGraphDescription implements GraphHolder
 {
@@ -83,12 +83,13 @@ public class TestGraphDescription implements GraphHolder
     }
 
     @Test
-    @Graph( nodes = { @NODE( name = "I", properties = { @PROP( key = "name", value = "me" ) } ),
+    @Graph( nodes = { @NODE( name = "I", properties = { @PROP( key = "name", value = "me" ), @PROP( key="bool", value = "true", type = GraphDescription.PropType.BOOLEAN) } ),
             @NODE( name = "you", setNameProperty = true ) }, relationships = { @REL( start = "I", end = "you", type = "knows" ) } )
     public void canCreateMoreInvolvedGraphWithProperties() throws Exception
     {
         System.out.println( data.get() );
         verifyIknowYou( "knows", "me" );
+        assertEquals( true, data.get().get( "I" ).getProperty( "bool" ) );
     }
 
     @Graph( value = { "I know you" }, nodes = { @NODE( name = "I", properties = { @PROP( key = "name", value = "me" ) } ) } )

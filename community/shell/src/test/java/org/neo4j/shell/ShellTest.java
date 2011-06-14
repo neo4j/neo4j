@@ -115,10 +115,7 @@ public class ShellTest
     {
         final GraphDatabaseShellServer server = new GraphDatabaseShellServer( "target/shell-neo", false, null );
         ShellClient client = new SameJvmClient( server );
-//        int port = 8085;
-//        GraphDatabaseService graphDb = new ImpermanentGraphDatabase(
-//            "target/shell-neo", stringMap( ENABLE_REMOTE_SHELL, "port=" + port ) );
-//        ShellClient client = ShellLobby.newClient( port );
+        
         Documenter doc = new Documenter("sample session", client);
         doc.add("pwd", "", "where are we?");
         doc.add("start n=(0) return n", "0", "send a cypher query");
@@ -128,15 +125,13 @@ public class ShellTest
         doc.add("ls -avr", "DOMAIN", "list relationships, including relationshship id");
         
         doc.run();
-//        client.getServer().interpretLine( "mkrel -c -d i -t DOMAIN_OF --np \"{'app':'foobar'}\"", client.session(), client.getOutput() );
-//        client.getServer().interpretLine( "cd 1", client.session(), client.getOutput() );
+        //TODO: implement support for removing root node and previous nodes in the history stack of PWD
 //        client.getServer().interpretLine( "mkrel -c -d i -t KNOWS --np \"{'name':'Bob'}\"", client.session(), client.getOutput() );
 //        client.getServer().interpretLine( "pwd", client.session(), client.getOutput() );
 //        client.getServer().interpretLine( "ls -avr", client.session(), client.getOutput() );
 //        client.getServer().interpretLine( "rmrel -d 0", client.session(), client.getOutput() );
 //        client.getServer().interpretLine( "cd", client.session(), client.getOutput() );
 //        client.getServer().interpretLine( "pwd", client.session(), client.getOutput() );
-//        graphDb.shutdown();
         server.shutdown();
     }
 

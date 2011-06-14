@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher
 
-import commands.SymbolType
+import commands.Identifier
 import scala.Some
 
-class SymbolTable(val identifiers: Map[String, SymbolType]) {
+class SymbolTable(val identifiers: Map[String, Identifier]) {
   def this() = this (Map())
 
   def assertHas(name: String) {
@@ -31,7 +31,7 @@ class SymbolTable(val identifiers: Map[String, SymbolType]) {
     }
   }
 
-  def add(idents:Map[String, SymbolType]) = new SymbolTable(identifiers ++ idents)
+  def add(idents:Map[String, Identifier]) = new SymbolTable(identifiers ++ idents)
 
   def ++(other: SymbolTable): SymbolTable = {
     identifiers.foreach {

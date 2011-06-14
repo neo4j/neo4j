@@ -36,8 +36,8 @@ Feature: Webadmin data browser allows me to see and change details for a node
     When I click on the Add property button in webadmin
     Then An element should appear that can be found by the xpath //li[1]/ul/li//input[@class="property-key"]
     
-    When I type mykey into the element found by the xpath //li[1]/ul/li//input[@class="property-key"]
-    And I type 12 into the element found by the xpath //li[1]/ul/li//input[@class="property-value"]
+    When I type "mykey" into the element found by the xpath //li[1]/ul/li//input[@class="property-key"]
+    And I type "12" into the element found by the xpath //li[1]/ul/li//input[@class="property-value"]
     And I hit return in the element found by the xpath //li[1]/ul/li//input[@class="property-value"]
     Then The databrowser save button should change to saying Saved
     And The currently visible node in webadmin should have a property mykey with the value 12

@@ -19,7 +19,8 @@
  */
 package org.neo4j.shell;
 
-import java.io.BufferedWriter;
+import static org.junit.Assert.assertTrue;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileWriter;
@@ -29,16 +30,11 @@ import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.Stack;
 
-import static org.junit.Assert.assertTrue;
-
 public class Documenter
 {
 
     public class DocOutput implements Output, Serializable
     {
-        /**
-         * 
-         */
         private static final long serialVersionUID = 1L;
         public ByteArrayOutputStream baos = new ByteArrayOutputStream();
         PrintWriter out = new PrintWriter( baos );
@@ -141,7 +137,7 @@ public class Documenter
             // TODO Auto-generated catch block
             e1.printStackTrace();
         }
-        out.println("[source,plain]");
+        out.println("[source]");
         out.println("-----");
         for ( Job job : stack )
         {

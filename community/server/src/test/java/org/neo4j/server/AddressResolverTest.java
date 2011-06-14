@@ -17,23 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.pipes
+package org.neo4j.server;
 
-import org.neo4j.cypher.SymbolTable
-import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
-import org.neo4j.cypher.commands.{Identifier, RelationshipIdentifier, NodeIdentifier}
+import static org.junit.Assert.assertEquals;
 
-class StartPipe[T <: PropertyContainer](name: String, source: Iterable[T]) extends Pipe {
-  val symbolType: Identifier = source match {
-    case nodes: Iterable[Node] => NodeIdentifier(name)
-    case rels: Iterable[Relationship] => RelationshipIdentifier(name)
-  }
+import java.net.InetAddress;
 
-  val symbols: SymbolTable = new SymbolTable(Map(name -> symbolType))
+import org.junit.Test;
 
-  def foreach[U](f: (Map[String, Any]) => U) {
-    source.foreach((x) => {
-      f(Map(name -> x))
-    })
-  }
+
+public class AddressResolverTest
+{
+    @Test
+    public void givenNoOverrdingConfigurationShouldDefaultToLookingUpHostname() throws Exception {
+        AddressResolver resolver = new AddressResolver();
+        assertEquals(InetAddress.getLocalHost().getCanonicalHostName(), resolver.getHostname());
+    }
 }

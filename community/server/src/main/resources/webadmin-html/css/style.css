@@ -19,14 +19,22 @@ body {
 }
 
 /* SPLASH */
-#splash-wrap {
-  background: none repeat scroll 0 0 #222222;
-  bottom: 0;
-  left: 0;
-  position: absolute;
-  right: 0;
-  top: 0;
+
+.info-splash {
+  margin: 15% auto;
+  width: 152px;
 }
+
+.info-splash h1 {
+  color: #DDDDDD;
+  font-size: 13px;
+  font-weight: bold;
+  margin-top: 5px;
+  padding: 0;
+  text-align: center;
+  text-shadow: 1px 1px 5px #555555
+}
+
 
 #splash {
   margin: 15% auto;
@@ -470,14 +478,14 @@ body {
   background: none repeat scroll 0 0 black;
   bottom: 0;
   left: 0;
-  opacity: 0.5;
+  opacity: 0.8;
   position: fixed;
   right: 0;
   top: 0;
 
   /* Mmm, IE */
-  -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
-	filter: alpha(opacity=50);
+  -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=80)";
+	filter: alpha(opacity=80);
 }
 
 /**
