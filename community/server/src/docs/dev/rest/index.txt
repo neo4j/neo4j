@@ -109,7 +109,7 @@ include::traversal-using-a-return-filter.txt[]
 [[rest-api-batch-ops]]
 == Batch operations ==
 
-WARNING: Batch support is currently _experimental_. Expect this part of the API to change.
+CAUTION: Batch support is currently _experimental_. Expect this part of the API to change.
 
 include::execute-multiple-operations-in-batch.txt[]
 

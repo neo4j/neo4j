@@ -2,11 +2,10 @@
 Cypher Query Language
 =====================
 
-This is an experimental query language for Neo4j.
+CAUTION: This is an experimental feature.
 
-To allow expressive and efficient querying of the graph store 
-without having to write traversers in code, we are releasing the 
-first iteration of a new query language, code-named `Cypher`.
+A new query language, code-named ``Cypher'', has been added to Neo4j.
+It allows for expressive and efficient querying of the graph store without having to write traversers in code.
 
 Cypher is designed to be a humane query language, suitable for both 
 developers and (importantly, we think) operations professionals who 
