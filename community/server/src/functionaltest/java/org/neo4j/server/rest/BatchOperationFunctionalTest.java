@@ -94,11 +94,15 @@ public class BatchOperationFunctionalTest
      * 
      * Each job description should contain a +path+ attribute, with a value relative to the
      * data API root (so http://localhost/db/data/node becomes just /node), and
-     * a +method+ attribute containing HTTP verb to use. 
+     * a +method+ attribute containing HTTP verb to use.
      * 
      * Optionally you may provide a +body+ attribute, and an +id+ attribute to help you keep 
      * track of responses, although responses are guaranteed to be returned in the same 
      * order the job descriptions are received.
+     * 
+     * The following figure outlines the different parts of the job descriptions:
+     * 
+     * image::batch-request-api.png[]
      */
     @Documented
     @SuppressWarnings( "unchecked" )
