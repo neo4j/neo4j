@@ -1,3 +1,5 @@
+package org.neo4j.cypher
+
 /**
  * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -17,54 +19,35 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
-
-import commands._
-import org.junit.Test
+import org.neo4j.cypher.commands._
 import org.junit.Assert._
-import org.neo4j.graphdb.{Direction, Node}
-
-class SyntaxErrorTest extends ExecutionEngineTestBase {
-  @Test def returnNodeThatsNotThere() {
-    val node: Node = createNode()
-
-    val query = Query(
-      Return(EntityOutput("bar")),
-      Start(NodeById("foo", node.getId)))
-
-    expectedError(query, """Unknown identifier "bar".""")
-  }
-
-  @Test def throwOnDisconnectedPattern() {
-    val node: Node = createNode()
-
-    val query = Query(
-      Return(EntityOutput("foo")),
-      Start(NodeById("foo", node.getId)),
-      Match(RelatedTo("a", "b", None, None, Direction.BOTH)))
-
-    expectedError(query, "All parts of the pattern must either directly or indirectly be connected to at least one bound entity. These identifiers were found to be disconnected: a, b")
-  }
-
-  @Test def defineNodeAndTreatItAsARelationship() {
-    val node: Node = createNode()
-
-    val query = Query(
-      Return(EntityOutput("foo")),
-      Start(NodeById("foo", node.getId)),
-      Match(RelatedTo("a", "b", Some("foo"), None, Direction.BOTH)))
-
-    expectedError(query, "Identifier \"foo\" already defined as a node.")
-  }
+import org.neo4j.graphdb.Direction
+import pipes.SortItem
+import scala.Predef._
+import org.neo4j.helpers.Service.CaseInsensitiveService
+import org.junit.{Assert, Test}
 
 
+/**
+ * Created by Andres Taylor
+ * Date: 5/1/11
+ * Time: 10:36 
+ */
 
-  def expectedError(query: Query, message: String) {
+class SyntaxErrorTest {
+  def expectError(query: String, expectedError: String) {
+    val parser = new CypherParser()
     try {
-      execute(query).toList
-      fail("Did not get the expected syntax error, expected: " + message)
+      parser.parse(query)
+      fail("Should have produced the error: "+expectedError)
     } catch {
-      case x: SyntaxError => assertEquals(message, x.getMessage)
+      case x : SyntaxError => Assert.assertEquals(x.getMessage, expectedError)
     }
+  }
+
+  @Test def shouldRaiseErrorWhenSortingOnNode() {
+    expectError(
+      "start s = (1) return s sort by s",
+      "Cannot sort on nodes or relationships")
   }
 }
