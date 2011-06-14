@@ -19,29 +19,17 @@
  */
 package org.neo4j.cypher.pipes
 
-import java.lang.String
-import org.neo4j.cypher.SymbolTable
-import org.neo4j.cypher.commands._
+import org.junit.Assert
+import org.junit.Test
+import org.neo4j.cypher.commands.{NodeIdentifier, EntityOutput}
 
-class TransformPipe(source: Pipe, returnItems: Seq[ReturnItem]) extends Pipe {
-  type MapTransformer = Map[String, Any] => Map[String, Any]
+class ColumnFilterPipeTest {
+  @Test def shouldReturnColumnsFromReturnItems() {
+    val returnItems = List(EntityOutput("foo"))
+    val source = new FakePipe(List(Map("x" -> "x", "foo" -> "bar")))
+    val columnPipe = new ColumnFilterPipe(source, returnItems)
 
-  def getSymbolType(item: ReturnItem): Identifier = item.identifier
-
-  val returnIdentifiers = returnItems.map(x => x.identifier.name -> x.identifier).toMap
-  val symbols: SymbolTable = source.symbols.add(returnIdentifiers)
-
-  checkDependenciesAreMet()
-
-  def checkDependenciesAreMet() {
-    returnItems.foreach(_.assertDependencies(source))
-  }
-
-  def foreach[U](f: (Map[String, Any]) => U) {
-    source.foreach(row => {
-      val projection = returnItems.map(_(row)).reduceLeft(_ ++ _)
-      f.apply(projection ++ row)
-    })
+    Assert.assertEquals(Map("foo" -> NodeIdentifier("foo")), columnPipe.symbols.identifiers)
+    Assert.assertEquals(List(Map("foo" -> "bar")), columnPipe.toList)
   }
 }
-

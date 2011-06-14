@@ -27,28 +27,28 @@ import org.neo4j.cypher.commands.EntityOutput
 
 class SortPipeTest {
   @Test def emptyInIsEmptyOut() {
-    val inner = new StartPipe[Node]("x", List())
-    val sortPipe = new SortPipe(List(SortItem(EntityOutput("x"), true)), inner)
+    val source = new StartPipe[Node]("x", List())
+    val sortPipe = new SortPipe(source, List(SortItem(EntityOutput("x"), true)))
 
     assertEquals(List(), sortPipe.toList)
   }
 
   @Test def simpleSortingIsSupported() {
-    val inner = new FakePipe(List(Map("x" -> "B"), Map("x" -> "A")))
-    val sortPipe = new SortPipe(List(SortItem(EntityOutput("x"), true)), inner)
+    val source = new FakePipe(List(Map("x" -> "B"), Map("x" -> "A")))
+    val sortPipe = new SortPipe(source, List(SortItem(EntityOutput("x"), true)))
 
     assertEquals(List(Map("x" -> "A"), Map("x" -> "B")), sortPipe.toList)
   }
 
   @Test def sortByTwoColumns() {
-    val inner = new FakePipe(List(
+    val source = new FakePipe(List(
       Map("x" -> "B", "y" -> 20),
       Map("x" -> "A", "y" -> 100),
       Map("x" -> "B", "y" -> 10)))
 
-    val sortPipe = new SortPipe(List(
+    val sortPipe = new SortPipe(source, List(
       SortItem(EntityOutput("x"), true),
-      SortItem(EntityOutput("y"), true)), inner)
+      SortItem(EntityOutput("y"), true)))
 
     assertEquals(List(
       Map("x" -> "A", "y" -> 100),
@@ -57,14 +57,14 @@ class SortPipeTest {
   }
 
   @Test def sortByTwoColumnsWithOneDescending() {
-    val inner = new FakePipe(List(
+    val source = new FakePipe(List(
       Map("x" -> "B", "y" -> 20),
       Map("x" -> "A", "y" -> 100),
       Map("x" -> "B", "y" -> 10)))
 
-    val sortPipe = new SortPipe(List(
+    val sortPipe = new SortPipe(source, List(
       SortItem(EntityOutput("x"), true),
-      SortItem(EntityOutput("y"), false)), inner)
+      SortItem(EntityOutput("y"), false)))
 
     assertEquals(List(
       Map("x" -> "A", "y" -> 100),
