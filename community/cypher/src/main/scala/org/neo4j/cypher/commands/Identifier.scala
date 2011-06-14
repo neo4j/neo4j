@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.commands
 
-abstract sealed case class Identifier(name : String)
-case class NodeIdentifier(subName:String) extends Identifier(subName)
-case class RelationshipIdentifier(subName:String) extends Identifier(subName)
-case class PropertyIdentifier(entity:String, property:String) extends Identifier(entity + "." + property)
-case class AggregationIdentifier(subName:String) extends Identifier(subName)
+abstract sealed case class Identifier(name : String, visible:Boolean)
+case class NodeIdentifier(subName:String) extends Identifier(subName, true)
+case class RelationshipIdentifier(subName:String) extends Identifier(subName, true)
+case class PropertyIdentifier(entity:String, property:String) extends Identifier(entity + "." + property, true)
+case class AggregationIdentifier(subName:String) extends Identifier(subName, true)

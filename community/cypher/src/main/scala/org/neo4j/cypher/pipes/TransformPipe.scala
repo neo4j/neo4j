@@ -21,63 +21,25 @@ package org.neo4j.cypher.pipes
 
 import java.lang.String
 import org.neo4j.cypher.SymbolTable
-import org.neo4j.graphdb.{NotFoundException, PropertyContainer}
 import org.neo4j.cypher.commands._
-import collection.Seq
 
 class TransformPipe(returnItems: Seq[ReturnItem], source: Pipe) extends Pipe {
   type MapTransformer = Map[String, Any] => Map[String, Any]
 
   def getSymbolType(item: ReturnItem): Identifier = item.identifier
+
   val returnIdentifiers = returnItems.map(x => x.identifier.name -> x.identifier).toMap
   val symbols: SymbolTable = new SymbolTable(returnIdentifiers)
 
-  var transformers: Seq[MapTransformer] = createMapTransformers(returnItems, symbols)
+  checkDependenciesAreMet()
 
-  def createMapTransformers(returnItems: Seq[ReturnItem], symbolTable: SymbolTable): Seq[MapTransformer] = {
-
-    returnItems.map((selectItem) => {
-      selectItem match {
-        case PropertyOutput(nodeName, propName) => {
-          source.symbols.assertHas(nodeName)
-          nodePropertyOutput(nodeName, propName) _
-        }
-
-        case NullablePropertyOutput(nodeName, propName) => {
-          source.symbols.assertHas(nodeName)
-          nullablePropertyOutput(nodeName, propName) _
-        }
-
-        case EntityOutput(nodeName) => {
-          source.symbols.assertHas(nodeName)
-          entityOutput(nodeName) _
-        }
-      }
-    })
-  }
-
-  def entityOutput(column: String)(m: Map[String, Any]): Map[String, Any] = Map(column -> m.getOrElse(column, throw new NotFoundException))
-
-  def nodePropertyOutput(column: String, propName: String)(m: Map[String, Any]): Map[String, Any] = {
-    val node = m.getOrElse(column, throw new NotFoundException).asInstanceOf[PropertyContainer]
-    Map(column + "." + propName -> node.getProperty(propName))
-  }
-
-  def nullablePropertyOutput(column: String, propName: String)(m: Map[String, Any]): Map[String, Any] = {
-    val node = m.getOrElse(column, throw new NotFoundException).asInstanceOf[PropertyContainer]
-
-    val property = try {
-      node.getProperty(propName)
-    } catch {
-      case x: NotFoundException => null
-    }
-
-    Map(column + "." + propName -> property)
+  def checkDependenciesAreMet() {
+    returnItems.foreach(_.assertDependencies(source))
   }
 
   def foreach[U](f: (Map[String, Any]) => U) {
     source.foreach(row => {
-      val projection = transformers.map(_(row)).reduceLeft(_ ++ _)
+      val projection = returnItems.map(_(row)).reduceLeft(_ ++ _)
       f.apply(projection)
     })
   }

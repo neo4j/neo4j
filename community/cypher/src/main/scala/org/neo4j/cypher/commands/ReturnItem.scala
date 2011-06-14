@@ -19,13 +19,54 @@
  */
 package org.neo4j.cypher.commands
 
+import org.neo4j.graphdb.{PropertyContainer, NotFoundException}
+import org.neo4j.cypher.pipes.Pipe
 
-abstract sealed class ReturnItem(val identifier:Identifier)
+abstract sealed class ReturnItem(val identifier: Identifier) extends (Map[String, Any] => Map[String, Any]) {
+  def assertDependencies(source:Pipe)
+}
 
-case class EntityOutput(name: String) extends ReturnItem(NodeIdentifier(name))  // todo relationship-entity-type
-case class PropertyOutput(entityName:String, propName:String) extends ReturnItem(PropertyIdentifier(entityName,propName))
-case class NullablePropertyOutput(entityName:String, propName:String) extends ReturnItem(PropertyIdentifier(entityName,propName))
+case class EntityOutput(name: String) extends ReturnItem(NodeIdentifier(name)) {
+  def apply(m: Map[String, Any]): Map[String, Any] = Map(name -> m.getOrElse(name, throw new NotFoundException))
 
-abstract sealed class AggregationItem(ident:String) extends ReturnItem(AggregationIdentifier(ident))
+  def assertDependencies(source: Pipe) {
+    source.symbols.assertHas(name)
+  }
+}
 
-case class Count(variable:String) extends AggregationItem(variable)
+case class PropertyOutput(entityName: String, property: String) extends ReturnItem(PropertyIdentifier(entityName, property)) {
+  def apply(m: Map[String, Any]): Map[String, Any] = {
+    val node = m.getOrElse(entityName, throw new NotFoundException).asInstanceOf[PropertyContainer]
+    Map(entityName + "." + property -> node.getProperty(property))
+  }
+
+  def assertDependencies(source: Pipe) {
+    source.symbols.assertHas(entityName)
+  }
+}
+
+case class NullablePropertyOutput(entity: String, property: String) extends ReturnItem(PropertyIdentifier(entity, property)) {
+  def apply(m: Map[String, Any]): Map[String, Any] = {
+    val node = m.getOrElse(entity, throw new NotFoundException).asInstanceOf[PropertyContainer]
+
+    val value = try {
+      node.getProperty(property)
+    } catch {
+      case x: NotFoundException => null
+    }
+
+    Map(entity + "." + property -> value)
+  }
+
+  def assertDependencies(source: Pipe) {
+    source.symbols.assertHas(entity)
+  }
+}
+
+abstract sealed class AggregationItem(ident: String) extends ReturnItem(AggregationIdentifier(ident))
+
+case class Count(variable: String) extends AggregationItem(variable) {
+  def apply(m: Map[String, Any]): Map[String, Any] = m
+  def assertDependencies(source: Pipe) {
+  }
+}
