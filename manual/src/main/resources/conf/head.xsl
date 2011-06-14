@@ -97,7 +97,7 @@ function setImageSizes( $ )
     else
     {
       $("<img />")
-        .attr( "src", img.getAttribute( "src" ) )
+        .attr( "src", img.getAttribute( "src" ) + "?" + new Date().getTime() )
         .load( function( )
         {
           img.realWidth = this.width;
