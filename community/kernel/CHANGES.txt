@@ -1,3 +1,7 @@
+1.4.M04 (2011-06-??)
+--------------------
+o Added the ability to auto index properties for database primitives
+
 1.4.M04 (2011-06-09)
 --------------------
 o Locks on database primitives acquired by neostore XAResources are now released during afterCompletion()
