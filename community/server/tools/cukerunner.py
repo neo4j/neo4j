@@ -88,6 +88,7 @@ PAGE_TEMPLATE = """
         </p>
         <p>
            <input type="checkbox" name="bare-bones" %(bare_bones_checkbox)s /> return bare-bones output
+           <input type="submit" name="action:%(last_feature)s" value="Run last" style="float:right;"/>
         </p>
         <ul id="features">
           %(features)s
@@ -102,9 +103,18 @@ PAGE_TEMPLATE = """
 </html>
 """
 
+def safe_unicode(obj, *args):
+    """ return the unicode representation of obj """
+    try:
+        return unicode(obj, *args)
+    except UnicodeDecodeError:
+        # obj is byte string
+        ascii_text = str(obj).encode('string_escape')
+        return unicode(ascii_text)
+
 def clean_output(output, bare_bones=False):
 
-    output = output.replace(u"", "")
+    output = safe_unicode(output).replace(u"", "")
     if bare_bones:
         lines = []
         for line in output.split("\n"):
@@ -169,6 +179,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self, 
                console_output="", 
+               last_feature="",
                external_checkbox="", 
                dev_html_checkbox="checked=\"checked\"",
                bare_bones_checkbox="checked=\"checked\""):
@@ -178,6 +189,7 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
         self.wfile.write(PAGE_TEMPLATE % {"features":self.get_features_html(), 
+                                          "last_feature":last_feature,
                                           "console_output":console_output,
                                           "external_checkbox":external_checkbox,
                                           "dev_html_checkbox":dev_html_checkbox,
@@ -227,6 +239,7 @@ class Handler(BaseHTTPRequestHandler):
         dev_html_checkbox = "checked=\"checked\"" if use_dev_html else ""
         bare_bones_checkbox = "checked=\"checked\"" if bare_bones else ""
         self.do_GET(out, 
+                    last_feature = feature,
                     external_checkbox = external_checkbox,
                     dev_html_checkbox=dev_html_checkbox, 
                     bare_bones_checkbox=bare_bones_checkbox);

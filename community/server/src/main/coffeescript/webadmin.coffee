@@ -38,11 +38,12 @@ require(
    "neo4j/webadmin/KeyboardShortcuts"
    "neo4j/webadmin/SplashScreen"
    "neo4j/webadmin/GlobalLoadingIndicator"
+   "neo4j/webadmin/ServerConnectionMonitor"
    "ribcage/security/HtmlEscaper"
    "lib/jquery"
    "lib/neo4js"
    "lib/backbone"]
-  (DashboardController, DataBrowserController, ConsoleController, ServerInfoController, IndexManagerController, ApplicationState, BaseView, FoldoutWatcher, KeyboardShortcuts, SplashScreen, GlobalLoadingIndicator, HtmlEscaper) ->
+  (DashboardController, DataBrowserController, ConsoleController, ServerInfoController, IndexManagerController, ApplicationState, BaseView, FoldoutWatcher, KeyboardShortcuts, SplashScreen, GlobalLoadingIndicator, ServerConnectionMonitor, HtmlEscaper) ->
 
     # Global html escaper, used by the pre-compiled templates. Should be replaced by writing a haml template plugin.
     htmlEscaper = new HtmlEscaper()
@@ -50,8 +51,10 @@ require(
 
     # WEBADMIN BOOT
 
+    connectionMonitor = new ServerConnectionMonitor
     splashScreen = new SplashScreen
     loadingIndicator = new GlobalLoadingIndicator("#global-loading-indicator")
+    foldoutWatcher = new FoldoutWatcher
       
     appState = new ApplicationState
     appState.set server : new neo4j.GraphDatabase(location.protocol + "//" + location.host)
@@ -64,11 +67,6 @@ require(
     serverInfoController  = new ServerInfoController appState
     indexManagerController = new IndexManagerController appState
 
-    # Remnant from the old webadmin. Handles opening and
-    # closing of the more-info foldout menues seen in the 
-    # left sidebar.
-    foldoutWatcher = new FoldoutWatcher
-
     shortcuts = new KeyboardShortcuts(
       dashboardController, 
       databrowserController, 
@@ -80,6 +78,7 @@ require(
 
       $("body").append(baseView.el)
       
+      connectionMonitor.init(appState)
       foldoutWatcher.init()
       Backbone.history.start()
       shortcuts.init()

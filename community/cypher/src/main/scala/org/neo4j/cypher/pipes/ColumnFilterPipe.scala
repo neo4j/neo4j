@@ -19,29 +19,16 @@
  */
 package org.neo4j.cypher.pipes
 
-import java.lang.String
 import org.neo4j.cypher.SymbolTable
-import org.neo4j.cypher.commands._
+import org.neo4j.cypher.commands.ReturnItem
 
-class TransformPipe(source: Pipe, returnItems: Seq[ReturnItem]) extends Pipe {
-  type MapTransformer = Map[String, Any] => Map[String, Any]
-
-  def getSymbolType(item: ReturnItem): Identifier = item.identifier
-
-  val returnIdentifiers = returnItems.map(x => x.identifier.name -> x.identifier).toMap
-  val symbols: SymbolTable = source.symbols.add(returnIdentifiers)
-
-  checkDependenciesAreMet()
-
-  def checkDependenciesAreMet() {
-    returnItems.foreach(_.assertDependencies(source))
-  }
+class ColumnFilterPipe(source: Pipe,returnItems: Seq[ReturnItem]) extends Pipe {
+  val symbols: SymbolTable = new SymbolTable(returnItems.map(x => x.identifier.name -> x.identifier).toMap)
 
   def foreach[U](f: (Map[String, Any]) => U) {
     source.foreach(row => {
-      val projection = returnItems.map(_(row)).reduceLeft(_ ++ _)
-      f.apply(projection ++ row)
+      val filtered = row.filter((kv) => kv match { case (name,_) => returnItems.exists( _.identifier.name == name) } )
+      f.apply(filtered)
     })
   }
 }
-

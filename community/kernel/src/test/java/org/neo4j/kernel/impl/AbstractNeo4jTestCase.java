@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.core.NodeManager;
 public abstract class AbstractNeo4jTestCase
 {
     protected static final File NEO4J_BASE_DIR = new File( "target", "var" );
-    
+
     private static GraphDatabaseService graphDb;
     private Transaction tx;
 
@@ -46,7 +46,7 @@ public abstract class AbstractNeo4jTestCase
     {
         return (EmbeddedGraphDatabase) graphDb;
     }
-    
+
     protected boolean restartGraphDbBetweenTests()
     {
         return false;
@@ -68,7 +68,7 @@ public abstract class AbstractNeo4jTestCase
         deleteFileOrDirectory( new File( getStorePath( "neo-test" ) ) );
         graphDb = new EmbeddedGraphDatabase( getStorePath( "neo-test" ) );
     }
-    
+
     @Before
     public void setUpTest()
     {
@@ -78,7 +78,7 @@ public abstract class AbstractNeo4jTestCase
         }
         tx = graphDb.beginTx();
     }
-    
+
     @After
     public void tearDownTest()
     {
@@ -86,7 +86,7 @@ public abstract class AbstractNeo4jTestCase
         {
             tx.finish();
         }
-        
+
         if ( restartGraphDbBetweenTests() )
         {
             graphDb.shutdown();
@@ -117,7 +117,7 @@ public abstract class AbstractNeo4jTestCase
         }
         tx = graphDb.beginTx();
     }
-    
+
     public void commit()
     {
         if ( tx != null )
@@ -127,7 +127,7 @@ public abstract class AbstractNeo4jTestCase
             tx = null;
         }
     }
-    
+
     public void rollback()
     {
         if ( tx != null )
@@ -137,7 +137,7 @@ public abstract class AbstractNeo4jTestCase
             tx = null;
         }
     }
-    
+
     public NodeManager getNodeManager()
     {
         return ((EmbeddedGraphDatabase) graphDb).getConfig().getGraphDbModule().getNodeManager();
@@ -147,7 +147,7 @@ public abstract class AbstractNeo4jTestCase
     {
         deleteFileOrDirectory( new File( dir ) );
     }
-    
+
     public static void deleteFileOrDirectory( File file )
     {
         if ( !file.exists() )
@@ -167,7 +167,7 @@ public abstract class AbstractNeo4jTestCase
             file.delete();
         }
     }
-    
+
     protected void clearCache()
     {
         getEmbeddedGraphDb().getConfig().getGraphDbModule()

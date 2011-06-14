@@ -49,6 +49,10 @@ public class GraphDescription implements GraphDefinition
         NODE[] nodes() default {};
 
         REL[] relationships() default {};
+        
+        boolean autoIndexNodes() default false;
+        
+        boolean autoIndexRelationships() default false;
     }
 
     @Target( {} )
@@ -145,6 +149,8 @@ public class GraphDescription implements GraphDefinition
         Transaction tx = graphdb.beginTx();
         try
         {
+            graphdb.index().getNodeAutoIndexer().setEnabled( autoIndexNodes );
+            graphdb.index().getRelationshipAutoIndexer().setEnabled( autoIndexRelationships );
             for ( NODE def : nodes )
             {
                 result.put( def.name(),
@@ -169,7 +175,7 @@ public class GraphDescription implements GraphDefinition
     {
         for ( PROP prop : properties )
         {
-            entity.setProperty( prop.key(), prop.value() );
+            entity.setProperty( prop.key(), prop.type().convert( prop.value() ) );
         }
         if ( name != null )
         {
@@ -181,7 +187,7 @@ public class GraphDescription implements GraphDefinition
     private static final PROP[] NO_PROPS = {};
     private static final NODE[] NO_NODES = {};
     private static final REL[] NO_RELS = {};
-    private static final GraphDescription EMPTY = new GraphDescription( NO_NODES, NO_RELS )
+    private static final GraphDescription EMPTY = new GraphDescription( NO_NODES, NO_RELS, false, false )
     {
         @Override
         public Map<String, Node> create( GraphDatabaseService graphdb )
@@ -192,13 +198,15 @@ public class GraphDescription implements GraphDefinition
     };
     private final NODE[] nodes;
     private final REL[] rels;
+    private final boolean autoIndexRelationships;
+    private final boolean autoIndexNodes;
 
     public static GraphDescription create( String... definition )
     {
         Map<String, NODE> nodes = new HashMap<String, NODE>();
         List<REL> relationships = new ArrayList<REL>();
         parse( definition, nodes, relationships );
-        return new GraphDescription( nodes.values().toArray( NO_NODES ), relationships.toArray( NO_RELS ) );
+        return new GraphDescription( nodes.values().toArray( NO_NODES ), relationships.toArray( NO_RELS ), false, false );
     }
 
     public static void destroy( Map<String, Node> nodes )
@@ -252,7 +260,7 @@ public class GraphDescription implements GraphDefinition
             relationships.add( rel );
         }
         parse( graph.value(), nodes, relationships );
-        return new GraphDescription( nodes.values().toArray( NO_NODES ), relationships.toArray( NO_RELS ) );
+        return new GraphDescription( nodes.values().toArray( NO_NODES ), relationships.toArray( NO_RELS ), graph.autoIndexNodes(), graph.autoIndexRelationships() );
     }
 
     private static void createIfAbsent( Map<String, NODE> nodes, String name )
@@ -278,10 +286,12 @@ public class GraphDescription implements GraphDefinition
         }
     }
 
-    private GraphDescription( NODE[] nodes, REL[] rels )
+    private GraphDescription( NODE[] nodes, REL[] rels, boolean autoIndexNodes, boolean autoIndexRelationships )
     {
         this.nodes = nodes;
         this.rels = rels;
+        this.autoIndexNodes = autoIndexNodes;
+        this.autoIndexRelationships = autoIndexRelationships;
     }
 
     static String defined( String name )

@@ -20,34 +20,34 @@
 package org.neo4j.cypher
 
 import org.junit.Test
-import commands.{NodeType, RelationshipType}
+import commands.{NodeIdentifier, RelationshipIdentifier}
 import org.junit.Assert._
 
 
 class SymbolTableTest {
   @Test def testConcatenating() {
-    val table1 = new SymbolTable(Map("node"->NodeType("node")))
-    val table2 = new SymbolTable(Map("rel"->RelationshipType("rel")))
+    val table1 = new SymbolTable(Map("node"->NodeIdentifier("node")))
+    val table2 = new SymbolTable(Map("rel"->RelationshipIdentifier("rel")))
 
     val result = table1 ++ table2
 
-    assertEquals(Map("node" -> NodeType("node"), "rel" -> RelationshipType("rel")), result.identifiers)
+    assertEquals(Map("node" -> NodeIdentifier("node"), "rel" -> RelationshipIdentifier("rel")), result.identifiers)
   }
 
 
   @Test(expected = classOf[SyntaxError]) def shouldNotOverwriteSymbolsWithNewType() {
-    val table1 = new SymbolTable(Map("x"->NodeType("x")))
-    val table2 = new SymbolTable(Map("x"->RelationshipType("x")))
+    val table1 = new SymbolTable(Map("x"->NodeIdentifier("x")))
+    val table2 = new SymbolTable(Map("x"->RelationshipIdentifier("x")))
 
     table1 ++ table2
   }
 
   @Test def registreringTwiceIsOk() {
-    val table1 = new SymbolTable(Map("x"->NodeType("x")))
-    val table2 = new SymbolTable(Map("x"->NodeType("x")))
+    val table1 = new SymbolTable(Map("x"->NodeIdentifier("x")))
+    val table2 = new SymbolTable(Map("x"->NodeIdentifier("x")))
 
     val result = table1 ++ table2
 
-    assertEquals(Map("x" -> NodeType("x")), result.identifiers)
+    assertEquals(Map("x" -> NodeIdentifier("x")), result.identifiers)
   }
 }

@@ -1,3 +1,7 @@
+1.4.M04 (2011-06-??)
+--------------------
+o Added the tests and documentation for auto indexing
+
 1.4.M04 (2011-06-09)
 --------------------
 o The LuceneBatchInserterIndex now accepts a batch size (defaults to 50K) after which

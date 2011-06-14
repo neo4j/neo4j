@@ -20,6 +20,7 @@
 package org.neo4j.cypher
 
 import commands._
+import pipes.SortItem
 import scala.util.parsing.combinator._
 import org.neo4j.graphdb.Direction
 import scala.Some
@@ -90,7 +91,16 @@ class CypherParser extends JavaTokenParsers {
     case varName ~ "=" ~ "<" ~ index ~ "," ~ key ~ "," ~ value ~ ">" => RelationshipByIndex(varName, index, key, stripQuotes(value))
   }
 
-  def sort: Parser[Sort] = ignoreCase("sort by")  ~> rep1sep(nullablePropertyOutput | propertyOutput | nodeOutput, ",") ^^
+  def sortItem :Parser[SortItem] = (nullablePropertyOutput | propertyOutput | nodeOutput ) ~ opt("^") ^^ {
+    case returnItem ~ reverse => {
+      returnItem match {
+        case x : EntityOutput => throw new SyntaxError("Cannot sort on nodes or relationships")
+        case _ => SortItem(returnItem, reverse.isEmpty)
+      }
+    }
+  }
+
+  def sort: Parser[Sort] = ignoreCase("sort by")  ~> rep1sep(sortItem, ",") ^^
     {
       case items => Sort(items:_*)
     }

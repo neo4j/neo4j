@@ -17,15 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.commands
+package org.neo4j.cypher.pipes
 
-/**
- * @author mh
- * @since 09.06.11
- */
+import org.junit.Assert
+import org.junit.Test
+import org.neo4j.cypher.commands.{NodeIdentifier, EntityOutput}
 
-abstract sealed case class SymbolType(name : String)
-case class NodeType(subName:String) extends SymbolType(subName)
-case class RelationshipType(subName:String) extends SymbolType(subName)
-case class PropertyType(subName:String) extends SymbolType(subName)
-case class AggregationType(subName:String) extends SymbolType(subName)
+class ColumnFilterPipeTest {
+  @Test def shouldReturnColumnsFromReturnItems() {
+    val returnItems = List(EntityOutput("foo"))
+    val source = new FakePipe(List(Map("x" -> "x", "foo" -> "bar")))
+    val columnPipe = new ColumnFilterPipe(source, returnItems)
+
+    Assert.assertEquals(Map("foo" -> NodeIdentifier("foo")), columnPipe.symbols.identifiers)
+    Assert.assertEquals(List(Map("foo" -> "bar")), columnPipe.toList)
+  }
+}

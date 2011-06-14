@@ -27,7 +27,7 @@ import java.lang.Iterable
 import collection.Seq
 
 
-class ExecutionEngine(val graph: GraphDatabaseService) {
+class ExecutionEngine(graph: GraphDatabaseService) {
   @throws(classOf[SyntaxError])
   def execute(query: Query): ExecutionResult = query match {
     case Query(returns, start, matching, where, aggregation, sort) => {
@@ -40,10 +40,17 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
 
       where match {
         case None =>
-        case Some(w) => pipe = new FilterPipe(w, pipe)
+        case Some(w) => pipe = new FilterPipe(pipe, w)
       }
 
-      val result = new TransformPipe(returns.returnItems, pipe) with ExecutionResult
+      pipe = new TransformPipe(pipe, returns.returnItems)
+
+      sort match {
+        case None =>
+        case Some(s) => pipe = new SortPipe(pipe, s.sortItems)
+      }
+
+      val result = new ColumnFilterPipe(pipe, returns.returnItems) with ExecutionResult
 
       result
     }
@@ -60,5 +67,4 @@ class ExecutionEngine(val graph: GraphDatabaseService) {
         case RelationshipById(varName, ids@_*) => new StartPipe(varName, ids.map(graph.getRelationshipById))
       }
     })
-
 }

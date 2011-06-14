@@ -29,6 +29,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexManager;
@@ -45,11 +46,16 @@ class IndexManagerImpl implements IndexManager
     private final Map<String, IndexImplementation> indexProviders = new HashMap<String, IndexImplementation>();
 
     private final EmbeddedGraphDbImpl graphDbImpl;
+    private final AutoIndexer<Node> nodeAutoIndexer;
+    private final AutoIndexer<Relationship> relAutoIndexer;
+
 
     IndexManagerImpl( EmbeddedGraphDbImpl graphDbImpl, IndexStore indexStore )
     {
         this.graphDbImpl = graphDbImpl;
         this.indexStore = indexStore;
+        this.nodeAutoIndexer = new NodeAutoIndexerImpl( graphDbImpl );
+        this.relAutoIndexer = new RelationshipAutoIndexerImpl( graphDbImpl );
     }
 
     private IndexImplementation getIndexProvider( String provider )
@@ -324,5 +330,15 @@ class IndexManagerImpl implements IndexManager
             indexStore.set( index.getEntityType(), index.getName(), config );
         }
         return value;
+    }
+
+    public AutoIndexer<Node> getNodeAutoIndexer()
+    {
+        return nodeAutoIndexer;
+    }
+
+    public AutoIndexer<Relationship> getRelationshipAutoIndexer()
+    {
+        return relAutoIndexer;
     }
 }

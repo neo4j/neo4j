@@ -8,7 +8,7 @@ Feature: Webadmin can create node and relationship indexes
 
     When I look at webadmin in a web browser
     And I click on the Index manager tab in webadmin
-    And I type mynodeindex into the element found by the xpath //input[@id="create-node-index-name"]
+    And I type "mynodeindex" into the element found by the xpath //input[@id="create-node-index-name"]
     And I click on the button found by the xpath //button[@class="create-node-index button"]
 
     Then A single element should appear that can be found by the xpath //*[@id="node-indexes"]//td[contains(.,'mynodeindex')]
@@ -18,7 +18,7 @@ Feature: Webadmin can create node and relationship indexes
 
     When I look at webadmin in a web browser
     And I click on the Index manager tab in webadmin
-    And I type myrelindex into the element found by the xpath //input[@id="create-rel-index-name"]
+    And I type "myrelindex" into the element found by the xpath //input[@id="create-rel-index-name"]
     And I click on the button found by the xpath //button[@class="create-rel-index button"]
 
     Then A single element should appear that can be found by the xpath //*[@id="rel-indexes"]//td[contains(.,'myrelindex')]

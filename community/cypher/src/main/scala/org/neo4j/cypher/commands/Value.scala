@@ -21,12 +21,6 @@ package org.neo4j.cypher.commands
 
 import org.neo4j.graphdb.PropertyContainer
 
-/**
- * Created by Andres Taylor
- * Date: 5/28/11
- * Time: 22:52 
- */
-
 abstract sealed class Value {
   def value(m: Map[String, Any]): Any
 }
@@ -38,3 +32,4 @@ case class Literal(v: Any) extends Value {
 case class PropertyValue(variable: String, property: String) extends Value {
   def value(m: Map[String, Any]): Any = m(variable).asInstanceOf[PropertyContainer].getProperty(property)
 }
+

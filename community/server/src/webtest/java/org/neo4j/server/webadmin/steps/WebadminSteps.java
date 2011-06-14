@@ -42,7 +42,7 @@ public class WebadminSteps
         this.wl = wl;
     }
     
-    @When("^I type (.+) into the element found by the xpath (.+)$")
+    @When("^I type \"(.+)\" into the element found by the xpath (.+)$")
     public void iTypeIntoElementByXpath(String toType, String xPath) {
         ElementReference el = wl.getElement( By.xpath( xPath ) );
         wl.clearInput( el );

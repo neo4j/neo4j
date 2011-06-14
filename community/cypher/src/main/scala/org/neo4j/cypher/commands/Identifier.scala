@@ -17,23 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.pipes
+package org.neo4j.cypher.commands
 
-import org.neo4j.cypher.SymbolTable
-import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
-import org.neo4j.cypher.commands.{Identifier, RelationshipIdentifier, NodeIdentifier}
-
-class StartPipe[T <: PropertyContainer](name: String, source: Iterable[T]) extends Pipe {
-  val symbolType: Identifier = source match {
-    case nodes: Iterable[Node] => NodeIdentifier(name)
-    case rels: Iterable[Relationship] => RelationshipIdentifier(name)
-  }
-
-  val symbols: SymbolTable = new SymbolTable(Map(name -> symbolType))
-
-  def foreach[U](f: (Map[String, Any]) => U) {
-    source.foreach((x) => {
-      f(Map(name -> x))
-    })
-  }
-}
+abstract sealed case class Identifier(name : String)
+case class NodeIdentifier(subName:String) extends Identifier(subName)
+case class RelationshipIdentifier(subName:String) extends Identifier(subName)
+case class PropertyIdentifier(entity:String, property:String) extends Identifier(entity + "." + property)
+case class AggregationIdentifier(subName:String) extends Identifier(subName)

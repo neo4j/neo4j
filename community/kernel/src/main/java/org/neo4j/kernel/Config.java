@@ -133,10 +133,70 @@ public class Config
      */
     @Documented
     public static final String CACHE_TYPE = "cache_type";
+    /**
+     * The name of the Transaction Manager service to use as defined in the TM
+     * service provider constructor, defaults to native.
+     */
+    @Documented
     public static final String TXMANAGER_IMPLEMENTATION = "tx_manager_impl";
+    /**
+     * Boolean (one of true,false) defining whether to allow a store upgrade
+     * in case the current version of the database starts against an older store
+     * version. Setting this to true does not guarantee successful upgrade, just
+     * allows an attempt at it.
+     */
+    @Documented
     public static final String ALLOW_STORE_UPGRADE = "allow_store_upgrade";
     public static final String STRING_BLOCK_SIZE = "string_block_size";
     public static final String ARRAY_BLOCK_SIZE = "array_block_size";
+    /**
+     * A list of property names (comma separated) that will be indexed by
+     * default.
+     * This applies to Nodes only.
+     */
+    @Documented
+    public static final String NODE_KEYS_INDEXABLE = "node_keys_indexable";
+    /**
+     * A list of property names (comma separated) that will be indexed by
+     * default.
+     * This applies to Relationships only.
+     */
+    @Documented
+    public static final String RELATIONSHIP_KEYS_INDEXABLE = "relationship_keys_indexable";
+    /**
+     * A list of property names (comma separated) that will be ignored by the
+     * auto indexer.
+     * This applies to Nodes only.
+     */
+    @Documented
+    public static final String NODE_KEYS_NON_INDEXABLE = "node_keys_non_indexable";
+    /**
+     * A list of property names (comma separated) that will be ignored by the
+     * auto indexer.
+     * This applies to Relationships only.
+     */
+    @Documented
+    public static final String RELATIONSHIP_KEYS_NON_INDEXABLE = "relationship_keys_non_indexable";
+    /**
+     * Boolean value (one of true, false) that controls the auto indexing
+     * feature for nodes. Setting to false shuts it down unconditionally, while true
+     * enables it for every property, subject to restrictions in the
+     * configuration.
+     * The default is false.
+     */
+    @Documented
+    public static final String NODE_AUTO_INDEXING = "node_auto_indexing";
+
+    /**
+     * Boolean value (one of true, false) that controls the auto indexing
+     * feature for relationships. Setting to false shuts it down
+     * unconditionally, while true
+     * enables it for every property, subject to restrictions in the
+     * configuration.
+     * The default is false.
+     */
+    @Documented
+    public static final String RELATIONSHIP_AUTO_INDEXING = "relationship_auto_indexing";
 
     static final String LOAD_EXTENSIONS = "load_kernel_extensions";
 
@@ -223,6 +283,8 @@ public class Config
             // If not on win, default use memory mapping
             params.put( Config.USE_MEMORY_MAPPED_BUFFERS, "true" );
         }
+        params.put( NODE_AUTO_INDEXING, "false" );
+        params.put( RELATIONSHIP_AUTO_INDEXING, "false" );
         return params;
     }
 
