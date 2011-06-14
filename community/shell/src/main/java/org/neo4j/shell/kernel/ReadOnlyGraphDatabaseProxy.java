@@ -36,6 +36,7 @@ import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
+import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.IndexManager;
@@ -216,7 +217,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, IndexMa
         {
             return relationships( actual.getRelationships( direction, types ) );
         }
-        
+
         public Iterable<Relationship> getRelationships( Direction dir )
         {
             return relationships( actual.getRelationships( dir ) );
@@ -246,7 +247,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, IndexMa
         {
             return actual.hasRelationship( direction, types );
         }
-        
+
         public boolean hasRelationship( Direction dir )
         {
             return actual.hasRelationship( dir );
@@ -500,21 +501,33 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, IndexMa
     {
         return this;
     }
-    
+
     public Map<String, String> getConfiguration( Index<? extends PropertyContainer> index )
     {
         return actual.index().getConfiguration( index );
     }
-    
+
     public String setConfiguration( Index<? extends PropertyContainer> index, String key,
             String value )
     {
         throw new ReadOnlyDbException();
     }
-    
+
     public String removeConfiguration( Index<? extends PropertyContainer> index, String key )
     {
         throw new ReadOnlyDbException();
+    }
+
+    @Override
+    public AutoIndexer<Node> getNodeAutoIndexer()
+    {
+        return actual.index().getNodeAutoIndexer();
+    }
+
+    @Override
+    public AutoIndexer<Relationship> getRelationshipAutoIndexer()
+    {
+        return actual.index().getRelationshipAutoIndexer();
     }
 
     abstract class ReadOnlyIndexProxy<T extends PropertyContainer, I extends Index<T>> implements
@@ -558,12 +571,12 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, IndexMa
         {
             readOnly();
         }
-        
+
         public void remove(T entity, String key)
         {
             readOnly();
         }
-        
+
         public void remove(T entity)
         {
             readOnly();
@@ -587,7 +600,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, IndexMa
         {
             return actual.getName();
         }
-        
+
         public Class<Node> getEntityType()
         {
             return Node.class;
@@ -633,7 +646,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, IndexMa
         {
             return actual.getName();
         }
-        
+
         public Class<Relationship> getEntityType()
         {
             return Relationship.class;
