@@ -25,6 +25,7 @@ import org.junit.Assert.assertThat
 import org.junit.Assert.assertEquals
 import org.junit.matchers.JUnitMatchers.hasItem
 import org.junit.Test
+
 class StartTest extends DocumentingTestBase
 {
   def graphDescription = List("A KNOWS B", "A KNOWS C")

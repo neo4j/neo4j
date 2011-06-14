@@ -392,4 +392,18 @@ class ExecutionEngineTest extends ExecutionEngineTestBase
 
     assertEquals(List(Map("a" -> refNode, "count(*)" -> 2)), result.toList)
   }
+
+    @Test def shouldSliceOfTheFirstTwoHits()
+  {
+    val nodes = List(createNode(), createNode(), createNode(), createNode(), createNode(), createNode())
+
+    val query = Query(
+      Return(EntityOutput("start")),
+      Start(NodeById("start", nodes.map(_.getId):_*)),
+      Slice(2))
+
+    val result = execute(query)
+
+    assertEquals("Result was not trimmed down", 2, result.size)
+  }
 }

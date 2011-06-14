@@ -23,11 +23,6 @@ import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.graphdb.Node
 
-/**
- * @author ata
- * @since 6/4/11
- */
-
 class WhereTest extends DocumentingTestBase
 {
   def indexProps = List()
