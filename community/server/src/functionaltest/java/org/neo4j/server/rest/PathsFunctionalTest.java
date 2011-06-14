@@ -76,11 +76,6 @@ public class PathsFunctionalTest extends AbstractRestFunctionalTestBase
      * If no path algorithm is specified, a +ShortestPath+ algorithm with a max
      * depth of 1 will be chosen. In this example, the +max_depth+ is set to +3+
      * in order to find the shortest path between 3 linked nodes.
-     * 
-     * Example Graph:
-     * 
-     * [source] ---- (a) / \ v v (b)<---(c) (d)-->(e) \ / \ / / v v v v /
-     * (f)--->(g)<---- ----
      */
     @Title( "Find one of the shortest paths between nodes" )
     @Test
