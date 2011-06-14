@@ -85,11 +85,12 @@ function setImageSizes( $ )
   $( "span.inlinemediaobject > img[width]" ).each( function()
   {
     var img = this;
-    if ( img.naturalWidth && img.parentNode.offsetWidth > img.naturalWidth )
+    var width = $( this ).parent().width();
+    if ( img.naturalWidth && width > img.naturalWidth )
     {
       removeWidth( img );
     }
-    else if ( img.realWidth && img.parentNode.offsetWidth > img.realWidth )
+    else if ( img.realWidth && width > img.realWidth )
     {
       removeWidth( img );
     }
@@ -100,7 +101,7 @@ function setImageSizes( $ )
         .load( function( )
         {
           img.realWidth = this.width;
-          if ( img.parentNode.offsetWidth > this.width )
+          if ( width > this.width )
           {
             removeWidth( img );
           }
@@ -128,7 +129,10 @@ jQuery( window ).resize( function()
 
 function removeWidth( image )
 {
-  image.originalWidth = image.getAttribute( "width" );
+  if ( ! image.originalWidth )
+  {
+    image.originalWidth = image.getAttribute( "width" );
+  }
   image.removeAttribute( "width" );
 }
 
