@@ -91,7 +91,7 @@ class CypherParser extends JavaTokenParsers {
     case varName ~ "=" ~ "<" ~ index ~ "," ~ key ~ "," ~ value ~ ">" => RelationshipByIndex(varName, index, key, stripQuotes(value))
   }
 
-  def sortItem :Parser[SortItem] = (nullablePropertyOutput | propertyOutput | nodeOutput ) ~ opt("REVERSE") ^^ {
+  def sortItem :Parser[SortItem] = (nullablePropertyOutput | propertyOutput | nodeOutput ) ~ opt("^") ^^ {
     case returnItem ~ reverse => {
       returnItem match {
         case x : EntityOutput => throw new SyntaxError("Cannot sort on nodes or relationships")

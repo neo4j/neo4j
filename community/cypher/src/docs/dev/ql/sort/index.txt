@@ -1,0 +1,12 @@
+[[query-sort]]
+Sort
+=====
+
+To sort the output, use the SORT BY clause. Note that you can not sort on nodes and relationships,
+just on properties on these.
+
+include::sort-nodes-by-property.txt[]
+
+include::sort-nodes-by-multiple-properties.txt[]
+
+include::sort-nodes-in-reverse-order.txt[]

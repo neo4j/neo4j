@@ -328,7 +328,7 @@ class CypherParserTest {
 
     @Test def shouldHandleTwoSortColumnsWithOneDesc() {
     testQuery(
-      "start a = (1) return a sort by a.name REVERSE, a.age",
+      "start a = (1) return a sort by a.name^, a.age",
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
