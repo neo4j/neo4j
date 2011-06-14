@@ -21,6 +21,7 @@ package org.neo4j.cypher.pipes
 
 import org.neo4j.cypher.{Comparer, SymbolTable}
 import org.neo4j.cypher.commands.ReturnItem
+import scala.math.signum
 
 class SortPipe(sortDescription: List[SortItem], inner: Pipe) extends Pipe with Comparer {
   val symbols: SymbolTable = inner.symbols
@@ -35,9 +36,9 @@ class SortPipe(sortDescription: List[SortItem], inner: Pipe) extends Pipe with C
     case Nil => false
     case head :: tail => {
       val id = head.returnItem.identifier.name
-      val aVal = a(id)
-      val bVal = b(id)
-      compare(aVal, bVal) match {
+      val aVal = head.returnItem(a).head._2 // a(id)
+      val bVal = head.returnItem(b).head._2 //b(id)
+      signum(compare(aVal, bVal)) match {
         case 1 => !head.ascending
         case -1 => head.ascending
         case 0 => compareBy(a,b,tail)

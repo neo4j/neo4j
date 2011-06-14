@@ -31,7 +31,7 @@ class SortTest extends DocumentingTestBase
 
   def section = "Sort"
 
-  @Test @Ignore def sortByName()
+  @Test def sortByName()
   {
     testQuery(
       title = "Sort nodes by property",
@@ -39,6 +39,16 @@ class SortTest extends DocumentingTestBase
       queryText = """start n=(%C%,%A%,%B%) return n sort by n.name""",
       returns = """The nodes, sorted by their name.""",
       (p) => assertEquals(List(node("A"), node("B"), node("C")), p.columnAs[Node]("n") .toList)
+    )
+  }
+  @Test def sortByNameReverse()
+  {
+    testQuery(
+      title = "Sort nodes by property in reverse order",
+      text = "SORT BY id.property REVERSE is used to sort the output",
+      queryText = """start n=(%C%,%A%,%B%) return n sort by n.name REVERSE""",
+      returns = """The nodes, sorted by their name reversely.""",
+      (p) => assertEquals(List(node("C"), node("B"),node("A")), p.columnAs[Node]("n") .toList)
     )
   }
 }
