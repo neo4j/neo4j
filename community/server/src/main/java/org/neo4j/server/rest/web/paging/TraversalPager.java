@@ -1,4 +1,4 @@
-package org.neo4j.server.rest.web;
+package org.neo4j.server.rest.web.paging;
 
 import java.util.ArrayList;
 import java.util.Iterator;

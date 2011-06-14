@@ -1,6 +1,6 @@
-package org.neo4j.server.rest.web;
+package org.neo4j.server.rest.web.paging;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 import java.io.File;
