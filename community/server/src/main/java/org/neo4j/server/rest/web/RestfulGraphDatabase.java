@@ -969,7 +969,7 @@ public class RestfulGraphDatabase
         }
         catch ( NotFoundException e )
         {
-            return output.notFound();
+            return output.notFound( e );
         }
 
     }

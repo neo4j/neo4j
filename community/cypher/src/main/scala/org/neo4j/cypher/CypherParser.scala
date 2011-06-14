@@ -28,9 +28,11 @@ import scala.Some
 class CypherParser extends JavaTokenParsers {
   def ignoreCase(str:String): Parser[String] = ("""(?i)\Q""" + str + """\E""").r
 
-  def query: Parser[Query] = start ~ opt(matching) ~ opt(where) ~ returns ~ opt(sort) ^^ {
-    case start ~ matching ~ where ~ returns ~ sort => Query(returns._1, start, matching, where, returns._2, sort)
+  def query: Parser[Query] = start ~ opt(matching) ~ opt(where) ~ returns ~ opt(sort) ~ opt(slice) ^^ {
+    case start ~ matching ~ where ~ returns ~ sort ~ slice => Query(returns._1, start, matching, where, returns._2, sort, slice)
   }
+
+  def slice: Parser[Slice] = ignoreCase("slice") ~> wholeNumber ^^ { case sliceNumber => Slice(sliceNumber.toInt) }
 
   def start: Parser[Start] = ignoreCase("start") ~> repsep(nodeByIds | nodeByIndex | relsByIds | relsByIndex, ",") ^^ (Start(_: _*))
 

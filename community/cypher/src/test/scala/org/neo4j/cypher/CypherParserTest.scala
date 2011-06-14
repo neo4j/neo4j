@@ -24,14 +24,6 @@ import org.junit.Assert._
 import org.neo4j.graphdb.Direction
 import org.junit.Test
 import pipes.SortItem
-import scala.Predef._
-
-
-/**
- * Created by Andres Taylor
- * Date: 5/1/11
- * Time: 10:36 
- */
 
 class CypherParserTest {
   def testQuery(query: String, expectedQuery: Query) {
@@ -282,9 +274,7 @@ class CypherParserTest {
         Start(NodeById("a", 1)),
         Match(
           RelatedTo("a", "b", None, Some("KNOWS"), Direction.OUTGOING),
-          RelatedTo("b", "c", None, Some("FRIEND"), Direction.OUTGOING))
-      )
-    )
+          RelatedTo("b", "c", None, Some("FRIEND"), Direction.OUTGOING))))
   }
 
   @Test def djangoRelationshipType() {
@@ -326,7 +316,7 @@ class CypherParserTest {
           SortItem(PropertyOutput("a", "age"), true))))
   }
 
-    @Test def shouldHandleTwoSortColumnsWithOneDesc() {
+  @Test def shouldHandleTwoSortColumnsWithOneDesc() {
     testQuery(
       "start a = (1) return a sort by a.name^, a.age",
       Query(
@@ -357,10 +347,16 @@ class CypherParserTest {
             Equals(PropertyValue("n", "food"), Literal("banana"))),
           And(
             Equals(PropertyValue("n", "animal"), Literal("cow")),
-            Equals(PropertyValue("n", "food"), Literal("grass")))
-        )
-      )
-    )
+            Equals(PropertyValue("n", "food"), Literal("grass"))))))
   }
 
+  @Test def slice5() {
+    testQuery(
+      "start n=(1) return n slice 5",
+      Query(
+        Return(EntityOutput("n")),
+        Start(NodeById("n", 1)),
+        Slice(5))
+    )
+  }
 }

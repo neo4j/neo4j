@@ -975,7 +975,7 @@ public class DatabaseActions
             startNode = graphDb.getNodeById( startId );
             endNode = graphDb.getNodeById( endId );
 
-            Integer maxDepthObj = (Integer) map.get( "max depth" );
+            Integer maxDepthObj = (Integer) map.get( "max_depth" );
             int maxDepth = (maxDepthObj != null) ? maxDepthObj : 1;
 
             RelationshipExpander expander = RelationshipExpanderBuilder.describeRelationships( map );
@@ -1003,8 +1003,8 @@ public class DatabaseActions
             }
             else if ( algorithm.equals( "dijkstra" ) )
             {
-                String costProperty = (String) map.get( "cost property" );
-                Number defaultCost = (Number) map.get( "default cost" );
+                String costProperty = (String) map.get( "cost_property" );
+                Number defaultCost = (Number) map.get( "default_cost" );
                 CostEvaluator<Double> costEvaluator = defaultCost == null ?
                         CommonEvaluators.doubleCostEvaluator( costProperty ) :
                         CommonEvaluators.doubleCostEvaluator( costProperty, defaultCost.doubleValue() );

@@ -106,6 +106,15 @@ include::traversals.txt[]
 
 include::traversal-using-a-return-filter.txt[]
 
+[[rest-api-graph-algos]]
+== Built-in Graph Algorithms ==
+
+include::graph_algos.txt[]
+
+include::find-one-of-the-shortest-paths-between-nodes.txt[]
+
+include::find-all-shortest-paths.txt[]
+
 [[rest-api-batch-ops]]
 == Batch operations ==
 
