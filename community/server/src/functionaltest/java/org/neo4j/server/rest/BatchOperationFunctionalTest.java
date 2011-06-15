@@ -110,7 +110,7 @@ public class BatchOperationFunctionalTest
     public void shouldPerformMultipleOperations() throws Exception 
     {
         
-        String jsonString = new JSONStringer()
+        String jsonString = new PrettyJSON()
             .array()
     
             .object()
@@ -199,7 +199,7 @@ public class BatchOperationFunctionalTest
     @Test
     public void shouldBeAbleToReferToCreatedResource() throws Exception
     {
-        String jsonString =new JSONStringer()
+        String jsonString =new PrettyJSON()
             .array()
             .object()
               .key( "method" ).value( "POST" )
@@ -261,7 +261,7 @@ public class BatchOperationFunctionalTest
                 .resource( functionalTestHelper.dataUri() + "batch" )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
-                .entity(new JSONStringer()
+                .entity(new PrettyJSON()
                         .array()
 
                         .object()
