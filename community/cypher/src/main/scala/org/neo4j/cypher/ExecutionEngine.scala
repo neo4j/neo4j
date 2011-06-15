@@ -47,12 +47,12 @@ class ExecutionEngine(graph: GraphDatabaseService) {
 
       sort match {
         case None =>
-        case Some(s) => pipe = new SortPipe(pipe, s.sortItems)
+        case Some(s) => pipe = new SortPipe(pipe, s.sortItems.toList)
       }
 
       slice match {
         case None =>
-        case Some(x) => pipe = new SlicePipe(pipe, x.itemsToReturn)
+        case Some(x) => pipe = new SlicePipe(pipe, x.from, x.limit)
       }
 
       val result = new ColumnFilterPipe(pipe, returns.returnItems) with ExecutionResult

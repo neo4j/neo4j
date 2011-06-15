@@ -34,18 +34,9 @@ class SliceTest extends DocumentingTestBase {
     testQuery(
       title = "Return first part",
       text = "To return a subset of the result, starting from the top, use this syntax:",
-      queryText = "start n=(%A%, %B%, %C%, %D%, %E%) return n slice 3",
+      queryText = "start n=(%A%, %B%, %C%, %D%, %E%) return n limit 3",
       returns = "The top three items are returned",
       (p) => assertEquals(List(node("A"), node("B"), node("C")), p.columnAs[Node]("n").toList))
-  }
-
-  @Test @Ignore def returnLastThree() {
-    testQuery(
-      title = "Return last part",
-      text = "To return the last items of a result, use slice with a negative number.",
-      queryText = "start n=(%A%, %B%, %C%, %D%, %E%) return n slice -3",
-      returns = "The reference node is returned",
-      (p) => assertEquals(List(node("C"), node("D"), node("E")), p.columnAs[Node]("n").toList))
   }
 }
 

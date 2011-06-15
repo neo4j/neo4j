@@ -23,7 +23,6 @@ import org.neo4j.cypher.commands._
 import org.junit.Assert._
 import org.neo4j.graphdb.Direction
 import org.junit.Test
-import pipes.SortItem
 
 class CypherParserTest {
   def testQuery(query: String, expectedQuery: Query) {
@@ -350,13 +349,30 @@ class CypherParserTest {
             Equals(PropertyValue("n", "food"), Literal("grass"))))))
   }
 
-  @Test def slice5() {
+  @Test def limit5() {
     testQuery(
-      "start n=(1) return n slice 5",
+      "start n=(1) return n limit 5",
       Query(
         Return(EntityOutput("n")),
         Start(NodeById("n", 1)),
-        Slice(5))
-    )
+        Slice(None, Some(5))))
+  }
+
+  @Test def from5() {
+    testQuery(
+      "start n=(1) return n from 5",
+      Query(
+        Return(EntityOutput("n")),
+        Start(NodeById("n", 1)),
+        Slice(Some(5), None)))
+  }
+
+  @Test def from5limit5() {
+    testQuery(
+      "start n=(1) return n from 5 limit 5",
+      Query(
+        Return(EntityOutput("n")),
+        Start(NodeById("n", 1)),
+        Slice(Some(5), Some(5))))
   }
 }

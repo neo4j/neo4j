@@ -20,10 +20,10 @@
 package org.neo4j.cypher.pipes
 
 import org.neo4j.cypher.{Comparer, SymbolTable}
-import org.neo4j.cypher.commands.ReturnItem
 import scala.math.signum
+import org.neo4j.cypher.commands.SortItem
 
-class SortPipe(source: Pipe,sortDescription: Seq[SortItem]) extends Pipe with Comparer {
+class SortPipe(source: Pipe,sortDescription: List[SortItem]) extends Pipe with Comparer {
   val symbols: SymbolTable = source.symbols
 
   def foreach[U](f: (Map[String, Any]) => U) {
@@ -35,9 +35,8 @@ class SortPipe(source: Pipe,sortDescription: Seq[SortItem]) extends Pipe with Co
   def compareBy(a:Map[String, Any], b:Map[String, Any], order:Seq[SortItem]):Boolean = order match {
     case Nil => false
     case head :: tail => {
-      val id = head.returnItem.identifier.name
-      val aVal = head.returnItem(a).head._2 // a(id)
-      val bVal = head.returnItem(b).head._2 //b(id)
+      val aVal = head.returnItem(a).head._2
+      val bVal = head.returnItem(b).head._2
       signum(compare(aVal, bVal)) match {
         case 1 => !head.ascending
         case -1 => head.ascending
@@ -46,5 +45,3 @@ class SortPipe(source: Pipe,sortDescription: Seq[SortItem]) extends Pipe with Co
     }
   }
 }
-
-case class SortItem(returnItem: ReturnItem, ascending: Boolean)

@@ -22,14 +22,8 @@ package org.neo4j.cypher
 import commands.Query
 import org.neo4j.kernel.AbstractGraphDatabase
 import org.neo4j.test.ImpermanentGraphDatabase
-import org.junit.{ After, Before }
-import org.neo4j.graphdb.{ DynamicRelationshipType, Relationship, Node }
-
-/**
- * Created by Andres Taylor
- * Date: 5/24/11
- * Time: 16:56
- */
+import org.junit.{After, Before}
+import org.neo4j.graphdb.{DynamicRelationshipType, Relationship, Node}
 
 class ExecutionEngineTestBase {
   var graph: AbstractGraphDatabase = null
@@ -78,6 +72,9 @@ class ExecutionEngineTestBase {
       r
     })
   }
+
+  def createNodes(names: String*): Seq[Node] = names.map( x => createNode(Map("name" -> x)))
+
 
   def createNode(props: Map[String, Any]): Node = {
     inTx(() => {

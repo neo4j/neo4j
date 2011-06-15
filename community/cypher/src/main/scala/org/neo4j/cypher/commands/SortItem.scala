@@ -1,5 +1,3 @@
-package org.neo4j.cypher
-
 /**
  * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -19,30 +17,6 @@ package org.neo4j.cypher
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import org.junit.Assert._
-import org.junit.{Assert, Test}
+package org.neo4j.cypher.commands
 
-
-/**
- * Created by Andres Taylor
- * Date: 5/1/11
- * Time: 10:36 
- */
-
-class SyntaxErrorTest {
-  def expectError(query: String, expectedError: String) {
-    val parser = new CypherParser()
-    try {
-      parser.parse(query)
-      fail("Should have produced the error: "+expectedError)
-    } catch {
-      case x : SyntaxError => Assert.assertEquals(x.getMessage, expectedError)
-    }
-  }
-
-  @Test def shouldRaiseErrorWhenSortingOnNode() {
-    expectError(
-      "start s = (1) return s sort by s",
-      "Cannot sort on nodes or relationships")
-  }
-}
+case class SortItem(returnItem: ReturnItem, ascending: Boolean)

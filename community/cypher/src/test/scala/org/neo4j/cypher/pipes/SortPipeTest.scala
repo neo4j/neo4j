@@ -23,7 +23,7 @@ import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.graphdb._
 import org.neo4j.cypher.SymbolTable
-import org.neo4j.cypher.commands.EntityOutput
+import org.neo4j.cypher.commands.{SortItem, EntityOutput}
 
 class SortPipeTest {
   @Test def emptyInIsEmptyOut() {

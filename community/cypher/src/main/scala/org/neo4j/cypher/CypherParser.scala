@@ -20,19 +20,20 @@
 package org.neo4j.cypher
 
 import commands._
-import pipes.SortItem
 import scala.util.parsing.combinator._
 import org.neo4j.graphdb.Direction
-import scala.Some
 
 class CypherParser extends JavaTokenParsers {
   def ignoreCase(str:String): Parser[String] = ("""(?i)\Q""" + str + """\E""").r
 
-  def query: Parser[Query] = start ~ opt(matching) ~ opt(where) ~ returns ~ opt(sort) ~ opt(slice) ^^ {
-    case start ~ matching ~ where ~ returns ~ sort ~ slice => Query(returns._1, start, matching, where, returns._2, sort, slice)
+  def query: Parser[Query] = start ~ opt(matching) ~ opt(where) ~ returns ~ opt(sort) ~ opt(from) ~ opt(limit) ^^ {
+    case start ~ matching ~ where ~ returns ~ sort ~ None ~ None => Query(returns._1, start, matching, where, returns._2, sort, None)
+    case start ~ matching ~ where ~ returns ~ sort ~ from ~ limit => Query(returns._1, start, matching, where, returns._2, sort, Some(Slice(from, limit)))
   }
 
-  def slice: Parser[Slice] = ignoreCase("slice") ~> wholeNumber ^^ { case sliceNumber => Slice(sliceNumber.toInt) }
+  def from: Parser[Int] = ignoreCase("from") ~> positiveNumber ^^ { case startAt => startAt.toInt }
+
+  def limit: Parser[Int] = ignoreCase("limit") ~> positiveNumber ^^ { case count => count.toInt }
 
   def start: Parser[Start] = ignoreCase("start") ~> repsep(nodeByIds | nodeByIndex | relsByIds | relsByIndex, ",") ^^ (Start(_: _*))
 
@@ -193,6 +194,7 @@ class CypherParser extends JavaTokenParsers {
 
   private def stripQuotes(s: String) = s.substring(1, s.length - 1)
 
+  def positiveNumber: Parser[String] = """\d+""".r
 
 
   private def getDirection(back:Option[String], forward:Option[String]):Direction =
