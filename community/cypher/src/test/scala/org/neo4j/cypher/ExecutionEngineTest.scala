@@ -229,7 +229,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     assertEquals(List(Map("b" -> n3)), result.toList)
   }
 
-  @Test def shouldFindNodesByIndex() {
+  @Test def shouldFindNodesByExactIndexLookup() {
     val n = createNode()
     val idxName = "idxName"
     val key = "key"
@@ -239,6 +239,38 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val query = Query(
       Return(EntityOutput("n")),
       Start(NodeByIndex("n", idxName, key, value)))
+
+    val result = execute(query)
+
+    assertEquals(List(Map("n" -> n)), result.toList)
+  }
+
+  @Test def shouldFindNodesByIndexQuery() {
+    val n = createNode()
+    val idxName = "idxName"
+    val key = "key"
+    val value = "andres"
+    indexNode(n, idxName, key, value)
+
+    val query = Query(
+      Return(EntityOutput("n")),
+      Start(NodeByIndexQuery("n", idxName, key +":"+ value)))
+
+    val result = execute(query)
+
+    assertEquals(List(Map("n" -> n)), result.toList)
+  }
+
+  @Test def shouldFindNodesByIndexWildcardQuery() {
+    val n = createNode()
+    val idxName = "idxName"
+    val key = "key"
+    val value = "andres"
+    indexNode(n, idxName, key, value)
+
+    val query = Query(
+      Return(EntityOutput("n")),
+      Start(NodeByIndexQuery("n", idxName, key +":andr*")))
 
     val result = execute(query)
 

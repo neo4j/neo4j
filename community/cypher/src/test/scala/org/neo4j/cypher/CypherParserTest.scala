@@ -48,6 +48,14 @@ class CypherParserTest {
         Start(NodeByIndex("a", "index", "key", "value"))))
   }
 
+  @Test def sourceIsAnIndexQuery() {
+    testQuery(
+      """start a = (index, "key:value") return a""",
+      Query(
+        Return(EntityOutput("a")),
+        Start(NodeByIndexQuery("a", "index", "key:value"))))
+  }
+
   @Test def shouldParseEasiestPossibleRelationshipQuery() {
     testQuery(
       "start s = <1> return s",

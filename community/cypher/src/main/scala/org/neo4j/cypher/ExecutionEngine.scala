@@ -68,6 +68,10 @@ class ExecutionEngine(graph: GraphDatabaseService) {
           val indexHits: Iterable[Node] = graph.index.forNodes(idxName).get(key, value)
           new StartPipe(varName, indexHits.asScala.toList)
         }
+        case NodeByIndexQuery(varName, idxName, query) => {
+          val indexHits: Iterable[Node] = graph.index.forNodes(idxName).query(query)
+          new StartPipe(varName, indexHits.asScala.toList)
+        }
         case NodeById(varName, ids@_*) => new StartPipe(varName, ids.map(graph.getNodeById))
         case RelationshipById(varName, ids@_*) => new StartPipe(varName, ids.map(graph.getRelationshipById))
       }

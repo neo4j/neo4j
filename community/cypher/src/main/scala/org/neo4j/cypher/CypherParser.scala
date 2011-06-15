@@ -35,7 +35,7 @@ class CypherParser extends JavaTokenParsers {
 
   def limit: Parser[Int] = ignoreCase("limit") ~> positiveNumber ^^ { case count => count.toInt }
 
-  def start: Parser[Start] = ignoreCase("start") ~> repsep(nodeByIds | nodeByIndex | relsByIds | relsByIndex, ",") ^^ (Start(_: _*))
+  def start: Parser[Start] = ignoreCase("start") ~> repsep(nodeByIds | nodeByIndex | nodeByIndexQuery | relsByIds | relsByIndex, ",") ^^ (Start(_: _*))
 
   def matching: Parser[Match] = ignoreCase("match") ~> rep1sep(relatedTo, ",") ^^ { case matching:List[List[Pattern]] => Match(matching.flatten: _*) }
 
@@ -85,6 +85,11 @@ class CypherParser extends JavaTokenParsers {
   def nodeByIndex = identity ~ "=" ~ "(" ~ identity ~ "," ~ identity ~ "," ~ stringLiteral ~ ")" ^^ {
     case varName ~ "=" ~ "(" ~ index ~ "," ~ key ~ "," ~ value ~ ")" => NodeByIndex(varName, index, key, stripQuotes(value))
   }
+
+  def nodeByIndexQuery = identity ~ "=" ~ "(" ~ identity ~ "," ~ stringLiteral ~ ")" ^^ {
+    case varName ~ "=" ~ "(" ~ index ~ "," ~ query ~ ")" => NodeByIndexQuery(varName, index, stripQuotes(query))
+  }
+
 
   def relsByIds = identity ~ "=" ~ "<" ~ rep1sep(wholeNumber, ",") ~ ">" ^^ {
     case varName ~ "=" ~ "<" ~ id ~ ">" => RelationshipById(varName, id.map(_.toLong).toSeq: _*)
