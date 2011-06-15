@@ -56,9 +56,9 @@ class OrderByTest extends DocumentingTestBase {
   @Test def sortByMultipleColumns() {
     testQuery(
       title = "Order nodes by multiple properties",
-      text = "You can sort by multiple properties by stating each identifier in the SORT BY" +
+      text = "You can order by multiple properties by stating each identifier in the ORDER BY" +
         " statement. Cypher will sort the result by the first column, and for equals values, " +
-        "go to the next property listen in the sort by.",
+        "go to the next property listen in the order by.",
       queryText = """start n=(%C%,%A%,%B%) return n order by n.age, n.name""",
       returns = """The nodes, sorted first by their age, and then by their name.""",
       (p) => assertEquals(List(node("C"), node("A"), node("B")), p.columnAs[Node]("n").toList))
