@@ -31,8 +31,8 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.Traversal;
 
@@ -173,15 +173,15 @@ public class RolesNewTravTest
             System.out.println( "All admins:" );
             // START SNIPPET: get-admins
             Node admins = getGroupByName( "Admins" );
-            TraversalDescription td = Traversal.description().breadthFirst().relationships(
-                    RoleRels.PART_OF, Direction.INCOMING ).relationships(
-                    RoleRels.MEMBER_OF, Direction.INCOMING ).filter(
-                    Traversal.returnAllButStartNode() );
+            TraversalDescription td = Traversal.description()
+                    .breadthFirst()
+                    .relationships( RoleRels.PART_OF, Direction.INCOMING )
+                    .relationships( RoleRels.MEMBER_OF, Direction.INCOMING )
+                    .evaluator( Evaluators.excludeStartPosition() );
             for ( Path path : td.traverse( admins ) )
             {
                 Node part = path.endNode();
-                System.out.println( part.getProperty( NAME )
-                                    + " "
+                System.out.println( part.getProperty( NAME ) + " "
                                     + ( path.length() - 1 ) );
             }
             // END SNIPPET: get-admins
@@ -202,15 +202,15 @@ public class RolesNewTravTest
             System.out.println( "Jale's memberships:" );
             // START SNIPPET: get-user-memberships
             Node jale = getUserByName( "Jale" );
-            TraversalDescription td = Traversal.description().depthFirst().relationships(
-                    RoleRels.MEMBER_OF, Direction.OUTGOING ).relationships(
-                    RoleRels.PART_OF, Direction.OUTGOING ).filter(
-                    Traversal.returnAllButStartNode() );
+            TraversalDescription td = Traversal.description()
+                    .depthFirst()
+                    .relationships( RoleRels.MEMBER_OF, Direction.OUTGOING )
+                    .relationships( RoleRels.PART_OF, Direction.OUTGOING )
+                    .evaluator( Evaluators.excludeStartPosition() );
             for ( Path path : td.traverse( jale ) )
             {
                 Node membership = path.endNode();
-                System.out.println( membership.getProperty( NAME )
-                                    + " "
+                System.out.println( membership.getProperty( NAME ) + " "
                                     + ( path.length() - 1 ) );
             }
             // END SNIPPET: get-user-memberships
@@ -231,11 +231,13 @@ public class RolesNewTravTest
             System.out.println( "All groups:" );
             // START SNIPPET: get-groups
             Node referenceNode = graphDb.getReferenceNode();
-            TraversalDescription td = Traversal.description().breadthFirst().relationships(
-                    RoleRels.ROOT, Direction.INCOMING ).relationships(
-                    RoleRels.PART_OF, Direction.INCOMING ).filter(
-                    Traversal.returnAllButStartNode() );
-            for ( Node group : td.traverse( referenceNode ).nodes() )
+            TraversalDescription td = Traversal.description()
+                    .breadthFirst()
+                    .relationships( RoleRels.ROOT, Direction.INCOMING )
+                    .relationships( RoleRels.PART_OF, Direction.INCOMING )
+                    .evaluator( Evaluators.excludeStartPosition() );
+            for ( Node group : td.traverse( referenceNode )
+                    .nodes() )
             {
                 System.out.println( group.getProperty( NAME ) );
             }
@@ -257,22 +259,13 @@ public class RolesNewTravTest
             System.out.println( "All members:" );
             // START SNIPPET: get-members
             Node referenceNode = graphDb.getReferenceNode();
-            TraversalDescription td = Traversal.description().breadthFirst().relationships(
-                    RoleRels.ROOT, Direction.INCOMING ).relationships(
-                    RoleRels.MEMBER_OF, Direction.INCOMING ).relationships(
-                    RoleRels.PART_OF, Direction.INCOMING ).filter(
-                    new Predicate<Path>()
-                    {
-                        public boolean accept( Path item )
-                        {
-                            if ( item.length() == 0 )
-                            {
-                                return false;
-                            }
-                            return item.lastRelationship().isType(
-                                    RoleRels.MEMBER_OF );
-                        }
-                    } );
+            TraversalDescription td = Traversal.description()
+                    .breadthFirst()
+                    .relationships( RoleRels.ROOT, Direction.INCOMING )
+                    .relationships( RoleRels.MEMBER_OF, Direction.INCOMING )
+                    .relationships( RoleRels.PART_OF, Direction.INCOMING )
+                    .evaluator(
+                            Evaluators.pruneWhereLastRelationshipTypeIs( RoleRels.MEMBER_OF ) );
             for ( Node group : td.traverse( referenceNode ).nodes() )
             {
                 System.out.println( group.getProperty( NAME ) );

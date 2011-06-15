@@ -12,6 +12,8 @@
 		<delete>
 			<fileset dir="." includes="**/pom-with-build-number.xml"/>
 		</delete>
+		<delete dir="artifacts"/>
+		<mkdir dir="artifacts"/>
 		<!-- Controversial! This is to ensure that there aren't any cached nasties -->
 		<!-- Currently commented-out so that we play nicely with other builds in TeamCity -->
 		<!-- <delete>
@@ -21,7 +23,7 @@
 	
 	<target name="compile" description="Compiles all of the individual community components" depends="generateKernelVersion">
 		<compileProject projectName="kernel" pom="pom.tom"/>
-		<!-- <compileProject projectName="jmx" pom="pom.xml"/>		
+		<compileProject projectName="jmx" pom="pom.xml"/>		
 		<compileProject projectName="udc" pom="pom.xml"/>
 		<compileProject projectName="lucene-index" pom="pom.xml"/>
 		<compileProject projectName="graph-algo" pom="pom.xml"/>
@@ -33,7 +35,7 @@
 		<compileProject projectName="embedded-examples" pom="pom.xml"/>
 		<compileProject projectName="server-api" pom="pom.xml"/>
 		<compileProject projectName="server" pom="pom.xml"/>
-		<compileProject projectName="server-examples" pom="pom.xml"/>	 -->
+		<compileProject projectName="server-examples" pom="pom.xml"/>	
 	</target>
 	
 	<target name="generateKernelVersion" description="Generate versioned code">
@@ -51,7 +53,12 @@
 		<replace file="kernel/target/generated-sources/version/org/neo4j/kernel/impl/ComponentVersion.java"
 			 		token="@BUILDNUMBER@" value="${buildNumber}"/>
 		<replace file="kernel/target/generated-sources/version/org/neo4j/kernel/impl/ComponentVersion.java"
-			 		token="@GITDESCRIBE@" value="${git.describe}"/>	
+			 		token="@GITDESCRIBE@" value="${git.describe}"/>
+		<!-- This is to pass the build number on to downstream builds -->
+		<echo message="buildNumber=${buildNumber}" file="artifacts/buildNumber.properties"/>	
+	</target>
+	
+	<target name="createPackage" description="Creates package for linux" depends="compile">
 	</target>
 	
 	<macrodef name="compileProject" description="Maven installs a single project"> 
@@ -67,6 +74,7 @@
 				<arg value="install"/>
 				<arg value="-f"/>
 				<arg value="pom-with-build-number.xml"/>
+				<arg value="-Dtests=functional"/>
 			</exec>
 		</sequential>
 	</macrodef>
