@@ -19,13 +19,11 @@
  */
 package org.neo4j.server.plugin.cypher;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.util.Map;
 
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
 import org.junit.After;
@@ -62,21 +60,23 @@ public class CypherPluginFunctionalTest implements GraphHolder
      * A simple query returning all nodes connected to node 1,
      * returning the node and the name property, if it exists,
      * otherwise `null`:
-     * `start x  = (1) match (x) -- (n) return n, n.name?`
+     * `start x  = (1) match (x) -- (n) return n, n.name?, n.age?`
      */
-    @Test
     @Title("Send a Query")
+    @Test
     @Documented
     @Graph( value = { "I know you", "I know him" } )
     public void testPropertyColumn() throws UnsupportedEncodingException
     {
         String response = gen.get()
         .expectedStatus( Status.OK.getStatusCode() )
-        .payload( "{\"query\": \"start x  = ("+data.get().get( "I" ).getId() +") match (x) -- (n) return n, n.name?\"}")
+        .payload( "{\"query\": \"start x  = ("+data.get().get( "I" ).getId() +") match (x) --> (n) return n.name?, n.age?\"}")
         .post( ENDPOINT )
         .entity();
+        System.out.println(response);
         assertTrue(response.contains( "you" ));
         assertTrue(response.contains( "him" ));
+        assertTrue(!response.contains( "\"x\"" ));
     }
 
     @BeforeClass
