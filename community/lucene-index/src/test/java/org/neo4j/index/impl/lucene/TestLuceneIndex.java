@@ -1262,4 +1262,28 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         Node node2 = createAndIndexNode( index, key, value );
         assertEquals( node2, index.get( key, value ).getSingle() );
     }
+    
+    @Test
+    public void canQueryWithWildcardEvenIfAlternativeRemovalMethodsUsedInSameTx1() throws Exception
+    {
+        Index<Node> index = nodeIndex( "dfjk1", LuceneIndexImplementation.EXACT_CONFIG );
+        Node node = graphDb.createNode();
+        index.add( node, "key", "value" );
+        restartTx();
+        index.remove( node, "key" );
+        assertNull( index.query( "key", "v*" ).getSingle() );
+        assertNull( index.query( "key", "*" ).getSingle() );
+    }
+
+    @Test
+    public void canQueryWithWildcardEvenIfAlternativeRemovalMethodsUsedInSameTx2() throws Exception
+    {
+        Index<Node> index = nodeIndex( "dfjk2", LuceneIndexImplementation.EXACT_CONFIG );
+        Node node = graphDb.createNode();
+        index.add( node, "key", "value" );
+        restartTx();
+        index.remove( node );
+        assertNull( index.query( "key", "v*" ).getSingle() );
+        assertNull( index.query( "key", "*" ).getSingle() );
+    }
 }

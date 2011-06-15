@@ -44,8 +44,6 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.metatest.TestGraphDescription;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
-import org.neo4j.test.GraphDescription.NODE;
-import org.neo4j.test.GraphDescription.REL;
 import org.neo4j.test.GraphHolder;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestData;
