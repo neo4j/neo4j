@@ -21,14 +21,14 @@ package org.neo4j.cypher.docgen
 
 import org.neo4j.graphdb.Node
 import org.junit.Assert.assertEquals
-import org.junit.{Ignore, Test}
+import org.junit.Test
 
-class SliceTest extends DocumentingTestBase {
+class LimitTest extends DocumentingTestBase {
   def graphDescription = List("A KNOWS B", "A KNOWS C", "A KNOWS D", "A KNOWS E")
 
   def indexProps = List()
 
-  def section: String = "Slice"
+  def section: String = "Limit"
 
   @Test def returnFirstThree() {
     testQuery(
