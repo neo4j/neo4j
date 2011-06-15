@@ -22,6 +22,9 @@ package org.neo4j.cypher.javacompat;
 import org.neo4j.cypher.SyntaxError;
 import org.neo4j.cypher.commands.Query;
 
+/**
+ * This is the entry point to parse strings to {@link Query}-objects
+ */
 public class CypherParser
 {
     private org.neo4j.cypher.CypherParser inner;
