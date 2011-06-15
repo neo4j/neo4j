@@ -23,7 +23,6 @@ import org.neo4j.cypher.commands._
 import org.junit.Assert._
 import org.neo4j.graphdb.Direction
 import org.junit.Test
-import pipes.SortItem
 
 class CypherParserTest {
   def testQuery(query: String, expectedQuery: Query) {
@@ -47,6 +46,14 @@ class CypherParserTest {
       Query(
         Return(EntityOutput("a")),
         Start(NodeByIndex("a", "index", "key", "value"))))
+  }
+
+  @Test def sourceIsAnIndexQuery() {
+    testQuery(
+      """start a = (index, "key:value") return a""",
+      Query(
+        Return(EntityOutput("a")),
+        Start(NodeByIndexQuery("a", "index", "key:value"))))
   }
 
   @Test def shouldParseEasiestPossibleRelationshipQuery() {
@@ -298,7 +305,7 @@ class CypherParserTest {
 
   @Test def singleColumnSorting() {
     testQuery(
-      "start a = (1) return a sort by a.name",
+      "start a = (1) return a order by a.name",
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
@@ -307,7 +314,7 @@ class CypherParserTest {
 
   @Test def shouldHandleTwoSortColumns() {
     testQuery(
-      "start a = (1) return a sort by a.name, a.age",
+      "start a = (1) return a order by a.name, a.age",
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
@@ -316,15 +323,35 @@ class CypherParserTest {
           SortItem(PropertyOutput("a", "age"), true))))
   }
 
-  @Test def shouldHandleTwoSortColumnsWithOneDesc() {
+  @Test def shouldHandleTwoSortColumnsAscending() {
     testQuery(
-      "start a = (1) return a sort by a.name^, a.age",
+      "start a = (1) return a order by a.name ASCENDING, a.age ASC",
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
         Sort(
-          SortItem(PropertyOutput("a", "name"), false),
+          SortItem(PropertyOutput("a", "name"), true),
           SortItem(PropertyOutput("a", "age"), true))))
+  }
+
+  @Test def orderByDescending() {
+    testQuery(
+      "start a = (1) return a order by a.name DESCENDING",
+      Query(
+        Return(EntityOutput("a")),
+        Start(NodeById("a", 1)),
+        Sort(
+          SortItem(PropertyOutput("a", "name"), false))))
+  }
+
+  @Test def orderByDesc() {
+    testQuery(
+      "start a = (1) return a order by a.name desc",
+      Query(
+        Return(EntityOutput("a")),
+        Start(NodeById("a", 1)),
+        Sort(
+          SortItem(PropertyOutput("a", "name"), false))))
   }
 
   @Test def nullableProperty() {
@@ -350,13 +377,30 @@ class CypherParserTest {
             Equals(PropertyValue("n", "food"), Literal("grass"))))))
   }
 
-  @Test def slice5() {
+  @Test def limit5() {
     testQuery(
-      "start n=(1) return n slice 5",
+      "start n=(1) return n limit 5",
       Query(
         Return(EntityOutput("n")),
         Start(NodeById("n", 1)),
-        Slice(5))
-    )
+        Slice(None, Some(5))))
+  }
+
+  @Test def from5() {
+    testQuery(
+      "start n=(1) return n from 5",
+      Query(
+        Return(EntityOutput("n")),
+        Start(NodeById("n", 1)),
+        Slice(Some(5), None)))
+  }
+
+  @Test def from5limit5() {
+    testQuery(
+      "start n=(1) return n from 5 limit 5",
+      Query(
+        Return(EntityOutput("n")),
+        Start(NodeById("n", 1)),
+        Slice(Some(5), Some(5))))
   }
 }

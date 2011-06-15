@@ -1,0 +1,7 @@
+[[query-limit]]
+Limit
+=====
+
+Limit enables the return of only subsets of the total result.
+
+include::return-first-part.txt[]

@@ -21,31 +21,22 @@ package org.neo4j.cypher.docgen
 
 import org.neo4j.graphdb.Node
 import org.junit.Assert.assertEquals
-import org.junit.{Ignore, Test}
+import org.junit.Test
 
-class SliceTest extends DocumentingTestBase {
+class LimitTest extends DocumentingTestBase {
   def graphDescription = List("A KNOWS B", "A KNOWS C", "A KNOWS D", "A KNOWS E")
 
   def indexProps = List()
 
-  def section: String = "Slice"
+  def section: String = "Limit"
 
   @Test def returnFirstThree() {
     testQuery(
       title = "Return first part",
       text = "To return a subset of the result, starting from the top, use this syntax:",
-      queryText = "start n=(%A%, %B%, %C%, %D%, %E%) return n slice 3",
+      queryText = "start n=(%A%, %B%, %C%, %D%, %E%) return n limit 3",
       returns = "The top three items are returned",
       (p) => assertEquals(List(node("A"), node("B"), node("C")), p.columnAs[Node]("n").toList))
-  }
-
-  @Test @Ignore def returnLastThree() {
-    testQuery(
-      title = "Return last part",
-      text = "To return the last items of a result, use slice with a negative number.",
-      queryText = "start n=(%A%, %B%, %C%, %D%, %E%) return n slice -3",
-      returns = "The reference node is returned",
-      (p) => assertEquals(List(node("C"), node("D"), node("E")), p.columnAs[Node]("n").toList))
   }
 }
 

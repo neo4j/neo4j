@@ -62,4 +62,8 @@ include::ql/sort/index.txt[]
 
 :leveloffset: 2
 
-include::ql/slice/index.txt[]
+include::ql/from/index.txt[]
+
+:leveloffset: 2
+
+include::ql/limit/index.txt[]

@@ -2,7 +2,7 @@
 Sort
 =====
 
-To sort the output, use the SORT BY clause. Note that you can not sort on nodes and relationships,
+To sort the output, use the Order by clause. Note that you can not sort on nodes and relationships,
 just on properties on these.
 
 include::sort-nodes-by-property.txt[]

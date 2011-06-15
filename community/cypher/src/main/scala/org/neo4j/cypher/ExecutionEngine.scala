@@ -47,12 +47,12 @@ class ExecutionEngine(graph: GraphDatabaseService) {
 
       sort match {
         case None =>
-        case Some(s) => pipe = new SortPipe(pipe, s.sortItems)
+        case Some(s) => pipe = new SortPipe(pipe, s.sortItems.toList)
       }
 
       slice match {
         case None =>
-        case Some(x) => pipe = new SlicePipe(pipe, x.itemsToReturn)
+        case Some(x) => pipe = new SlicePipe(pipe, x.from, x.limit)
       }
 
       val result = new ColumnFilterPipe(pipe, returns.returnItems) with ExecutionResult
@@ -66,6 +66,10 @@ class ExecutionEngine(graph: GraphDatabaseService) {
       item match {
         case NodeByIndex(varName, idxName, key, value) => {
           val indexHits: Iterable[Node] = graph.index.forNodes(idxName).get(key, value)
+          new StartPipe(varName, indexHits.asScala.toList)
+        }
+        case NodeByIndexQuery(varName, idxName, query) => {
+          val indexHits: Iterable[Node] = graph.index.forNodes(idxName).query(query)
           new StartPipe(varName, indexHits.asScala.toList)
         }
         case NodeById(varName, ids@_*) => new StartPipe(varName, ids.map(graph.getNodeById))
