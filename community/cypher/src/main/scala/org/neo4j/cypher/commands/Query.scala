@@ -19,9 +19,6 @@
  */
 package org.neo4j.cypher.commands
 
-import scala.Some
-import org.neo4j.cypher.pipes.SortItem
-
 object Query {
   def apply(returns:Return, start:Start) = new Query(returns, start, None, None, None, None, None)
 
@@ -38,6 +35,7 @@ object Query {
   def apply(returns:Return, start:Start, where:Clause, sort:Sort) = new Query(returns, start, None, Some(where), None, Some(sort), None)
 
   def apply(returns:Return, start:Start, slice:Slice) = new Query(returns, start, None, None, None, None, Some(slice))
+  def apply(returns:Return, start:Start, sort:Sort, slice:Slice) = new Query(returns, start, None, None, None, Some(sort), Some(slice))
 
   def apply(returns:Return, start:Start, matching:Match, where:Clause, aggregation:Aggregation) = new Query(returns, start, Some(matching), Some(where), Some(aggregation), None, None)
 }
@@ -56,4 +54,4 @@ case class Aggregation(aggregationItems:AggregationItem*)
 
 case class Sort(sortItems:SortItem*)
 
-case class Slice(itemsToReturn:Int)
+case class Slice(from:Option[Int], limit:Option[Int])

@@ -23,7 +23,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-
+/**
+ * ExecutionResult is the class
+ */
 public class ExecutionResult implements Iterable<Map<String,Object>>
 {
     private org.neo4j.cypher.ExecutionResult inner;

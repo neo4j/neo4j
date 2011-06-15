@@ -167,6 +167,14 @@ public class TestTimeline
         assertEquals( sortedEntities( timestamps, true ), asCollection( timeline.getBetween( null, null, true ) ) );
     }
     
+    private void makeSureWeCanQueryLowerDefaultThan1970( EntityCreator<PropertyContainer> creator,
+            TimelineIndex<PropertyContainer> timeline ) throws Exception
+    {
+        LinkedList<Pair<PropertyContainer, Long>> timestamps = createTimestamps( creator, timeline,
+                -10000, 0, 10000 );
+        assertEquals( sortedEntities( timestamps, true ), asCollection( timeline.getBetween( null, 10000L, true ) ) );
+    }
+    
     private void makeSureUncommittedChangesAreSortedCorrectly( EntityCreator<PropertyContainer> creator,
             TimelineIndex<PropertyContainer> timeline ) throws Exception
     {
@@ -230,5 +238,16 @@ public class TestTimeline
     public void makeSureUncommittedChangesAreSortedCorrectlyRelationship() throws Exception
     {
         makeSureUncommittedChangesAreSortedCorrectly( relationshipCreator, relationshipTimeline() );
+    }
+    
+    @Test
+    public void makeSureWeCanQueryLowerDefaultThan1970Node() throws Exception
+    {
+        makeSureWeCanQueryLowerDefaultThan1970( nodeCreator, nodeTimeline() );
+    }
+    @Test
+    public void makeSureWeCanQueryLowerDefaultThan1970Relationship() throws Exception
+    {
+        makeSureWeCanQueryLowerDefaultThan1970( relationshipCreator, relationshipTimeline() );
     }
 }
