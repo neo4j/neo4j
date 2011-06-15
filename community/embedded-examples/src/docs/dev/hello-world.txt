@@ -38,7 +38,7 @@ tag=operationsInATransaction
 
 At this point this is how the database looks:
 
-image::hello-world.png[]
+image::hello-world.png[scaledwidth="25%"]
 
 In this case we'll remove the data before committing:
 

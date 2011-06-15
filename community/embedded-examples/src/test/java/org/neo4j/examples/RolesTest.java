@@ -260,6 +260,7 @@ public class RolesTest
                     Traverser.Order.BREADTH_FIRST, StopEvaluator.END_OF_GRAPH,
                     new ReturnableEvaluator()
                     {
+                        @Override
                         public boolean isReturnableNode(
                                 TraversalPosition currentPos )
                         {

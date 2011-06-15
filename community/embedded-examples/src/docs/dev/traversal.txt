@@ -6,10 +6,9 @@ Traversal
 
 This is the first node space we want to traverse into:
     
-image::matrix.png[title="Matrix node space view"]
+image::matrix.png[title="Matrix node space view", scaledwidth="75%"]
 
-Here's how to get friends and friends of friends of a person in the network:
-
+.Friends and friends of friends
 [snippet,java]
 ----
 component=neo4j-examples
@@ -26,8 +25,7 @@ source=org/neo4j/examples/MatrixTest.java
 tag=friends-usage
 ----
 
-Now let's find out who coded the Matrix:
-
+.Who coded the Matrix?
 [snippet,java]
 ----
 component=neo4j-examples
@@ -52,19 +50,17 @@ https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/te
 Here we have users assigned to groups, and groups containing other groups.
 This is the full node space of our example:
 
-image::roles.png[title="User roles node space view"]
+image::roles.png[title="User roles node space view", scaledwidth="80%"]
 
-Get the admins:
-
+.Get the admins
 [snippet,java]
 ----
 component=neo4j-examples
 source=org/neo4j/examples/RolesTest.java
 tag=get-admins
 ----
-    
-Get the group memberships of a user:
 
+.Get the group memberships of a user
 [snippet,java]
 ----
 component=neo4j-examples
@@ -72,8 +68,7 @@ source=org/neo4j/examples/RolesTest.java
 tag=get-user-memberships
 ----
 
-Get all groups:
-
+.Get all groups
 [snippet,java]
 ----
 component=neo4j-examples
@@ -81,8 +76,7 @@ source=org/neo4j/examples/RolesTest.java
 tag=get-groups
 ----
 
-Get all members of all groups:
-
+.Get all members of all groups
 [snippet,java]
 ----
 component=neo4j-examples
@@ -92,5 +86,92 @@ tag=get-members
     
 Full source code:
 https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/test/java/org/neo4j/examples/RolesTest.java[RolesTest.java]
+
+== New traversal framework ==
+
+[NOTE]
+The following examples use a new experimental traversal API.
+It shares the underlying implementation with the old traversal API, so performance-wise they should be equal.
+However, expect the new API to evolve and thus undergo changes.
+
+=== The Matrix ===
+
+The traversals from the Matrix example above, this time using the new traversal API:
+
+.Friends and friends of friends
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/MatrixNewTravTest.java
+tag=get-friends
+----
+
+Let's perform the actual traversal and print the results:
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/MatrixNewTravTest.java
+tag=friends-usage
+----
+
+.Who coded the Matrix?
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/MatrixNewTravTest.java
+tag=find-hackers
+----
+
+Print out the result:    
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/MatrixNewTravTest.java
+tag=find--hackers-usage
+----
+
+Full source code:
+https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/test/java/org/neo4j/examples/MatrixNewTravTest.java[MatrixNewTravTest.java]
+
+=== User roles ===
+
+The traversals from the User roles example above, this time using the new traversal API:
+
+.Get the admins
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/RolesNewTravTest.java
+tag=get-admins
+----
+    
+.Get the group memberships of a user
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/RolesNewTravTest.java
+tag=get-user-memberships
+----
+
+.Get all groups
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/RolesNewTravTest.java
+tag=get-groups
+----
+
+.Get all members of all groups
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/RolesNewTravTest.java
+tag=get-members
+----
+    
+Full source code:
+https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/test/java/org/neo4j/examples/RolesNewTravTest.java[RolesNewTravTest.java]
 
 
