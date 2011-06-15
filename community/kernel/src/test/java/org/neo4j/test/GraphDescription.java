@@ -110,6 +110,14 @@ public class GraphDescription implements GraphDefinition
                 return Long.parseLong( value );
             }
         },
+        DOUBLE
+        {
+            @Override
+            Double convert( String value )
+            {
+                return Double.parseDouble( value );
+            }
+        },
         BOOLEAN
         {
             @Override
