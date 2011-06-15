@@ -42,7 +42,7 @@ class SyntaxErrorTest {
 
   @Test def shouldRaiseErrorWhenSortingOnNode() {
     expectError(
-      "start s = (1) return s sort by s",
-      "Cannot sort on nodes or relationships")
+      "start s = (1) return s order by s",
+      "Cannot ORDER BY on nodes or relationships")
   }
 }

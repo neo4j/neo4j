@@ -297,7 +297,7 @@ class CypherParserTest {
 
   @Test def singleColumnSorting() {
     testQuery(
-      "start a = (1) return a sort by a.name",
+      "start a = (1) return a order by a.name",
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
@@ -306,7 +306,7 @@ class CypherParserTest {
 
   @Test def shouldHandleTwoSortColumns() {
     testQuery(
-      "start a = (1) return a sort by a.name, a.age",
+      "start a = (1) return a order by a.name, a.age",
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
@@ -315,15 +315,35 @@ class CypherParserTest {
           SortItem(PropertyOutput("a", "age"), true))))
   }
 
-  @Test def shouldHandleTwoSortColumnsWithOneDesc() {
+  @Test def shouldHandleTwoSortColumnsAscending() {
     testQuery(
-      "start a = (1) return a sort by a.name^, a.age",
+      "start a = (1) return a order by a.name ASCENDING, a.age ASC",
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
         Sort(
-          SortItem(PropertyOutput("a", "name"), false),
+          SortItem(PropertyOutput("a", "name"), true),
           SortItem(PropertyOutput("a", "age"), true))))
+  }
+
+  @Test def orderByDescending() {
+    testQuery(
+      "start a = (1) return a order by a.name DESCENDING",
+      Query(
+        Return(EntityOutput("a")),
+        Start(NodeById("a", 1)),
+        Sort(
+          SortItem(PropertyOutput("a", "name"), false))))
+  }
+
+  @Test def orderByDesc() {
+    testQuery(
+      "start a = (1) return a order by a.name desc",
+      Query(
+        Return(EntityOutput("a")),
+        Start(NodeById("a", 1)),
+        Sort(
+          SortItem(PropertyOutput("a", "name"), false))))
   }
 
   @Test def nullableProperty() {

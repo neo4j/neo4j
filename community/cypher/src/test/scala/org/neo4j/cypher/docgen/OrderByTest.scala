@@ -23,7 +23,7 @@ import org.junit.Assert._
 import org.neo4j.graphdb.Node
 import org.junit.Test
 
-class SortTest extends DocumentingTestBase {
+class OrderByTest extends DocumentingTestBase {
   def indexProps = List()
 
   def graphDescription = List("A KNOWS B", "B KNOWS C")
@@ -33,33 +33,33 @@ class SortTest extends DocumentingTestBase {
     "B" -> Map("age" -> 34),
     "C" -> Map("age" -> 32))
 
-  def section = "Sort"
+  def section = "Order by"
 
   @Test def sortByName() {
     testQuery(
-      title = "Sort nodes by property",
-      text = "SORT BY is used to sort the output",
-      queryText = """start n=(%C%,%A%,%B%) return n sort by n.name""",
+      title = "Order nodes by property",
+      text = "ORDER BY is used to sort the output",
+      queryText = """start n=(%C%,%A%,%B%) return n order by n.name""",
       returns = """The nodes, sorted by their name.""",
       (p) => assertEquals(List(node("A"), node("B"), node("C")), p.columnAs[Node]("n").toList))
   }
 
   @Test def sortByNameReverse() {
     testQuery(
-      title = "Sort nodes in reverse order",
-      text = "By adding a ^ to the sort identifier, the sort will be done in reverse order.",
-      queryText = """start n=(%C%,%A%,%B%) return n sort by n.name^""",
+      title = "Order nodes in descending order",
+      text = "By adding DESC[ENDING] after the identifier to sort on, the sort will be done in reverse order.",
+      queryText = """start n=(%C%,%A%,%B%) return n order by n.name DESC""",
       returns = """The nodes, sorted by their name reversely.""",
       (p) => assertEquals(List(node("C"), node("B"), node("A")), p.columnAs[Node]("n").toList))
   }
 
   @Test def sortByMultipleColumns() {
     testQuery(
-      title = "Sort nodes by multiple properties",
+      title = "Order nodes by multiple properties",
       text = "You can sort by multiple properties by stating each identifier in the SORT BY" +
         " statement. Cypher will sort the result by the first column, and for equals values, " +
         "go to the next property listen in the sort by.",
-      queryText = """start n=(%C%,%A%,%B%) return n sort by n.age, n.name""",
+      queryText = """start n=(%C%,%A%,%B%) return n order by n.age, n.name""",
       returns = """The nodes, sorted first by their age, and then by their name.""",
       (p) => assertEquals(List(node("C"), node("A"), node("B")), p.columnAs[Node]("n").toList))
   }

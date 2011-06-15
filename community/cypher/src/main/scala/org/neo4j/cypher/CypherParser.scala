@@ -26,7 +26,7 @@ import org.neo4j.graphdb.Direction
 class CypherParser extends JavaTokenParsers {
   def ignoreCase(str:String): Parser[String] = ("""(?i)\Q""" + str + """\E""").r
 
-  def query: Parser[Query] = start ~ opt(matching) ~ opt(where) ~ returns ~ opt(sort) ~ opt(from) ~ opt(limit) ^^ {
+  def query: Parser[Query] = start ~ opt(matching) ~ opt(where) ~ returns ~ opt(order) ~ opt(from) ~ opt(limit) ^^ {
     case start ~ matching ~ where ~ returns ~ sort ~ None ~ None => Query(returns._1, start, matching, where, returns._2, sort, None)
     case start ~ matching ~ where ~ returns ~ sort ~ from ~ limit => Query(returns._1, start, matching, where, returns._2, sort, Some(Slice(from, limit)))
   }
@@ -94,16 +94,25 @@ class CypherParser extends JavaTokenParsers {
     case varName ~ "=" ~ "<" ~ index ~ "," ~ key ~ "," ~ value ~ ">" => RelationshipByIndex(varName, index, key, stripQuotes(value))
   }
 
-  def sortItem :Parser[SortItem] = (nullablePropertyOutput | propertyOutput | nodeOutput ) ~ opt("^") ^^ {
+  def desc:Parser[String] = ignoreCase("descending") | ignoreCase("desc")
+
+  def asc:Parser[String] = ignoreCase("ascending") | ignoreCase("asc")
+
+  def ascOrDesc:Parser[Boolean] = opt(asc | desc) ^^ {
+    case None => true
+    case Some(txt) => txt.toLowerCase.startsWith("a")
+  }
+
+  def sortItem :Parser[SortItem] = (nullablePropertyOutput | propertyOutput | nodeOutput ) ~ ascOrDesc ^^ {
     case returnItem ~ reverse => {
       returnItem match {
-        case x : EntityOutput => throw new SyntaxError("Cannot sort on nodes or relationships")
-        case _ => SortItem(returnItem, reverse.isEmpty)
+        case x : EntityOutput => throw new SyntaxError("Cannot ORDER BY on nodes or relationships")
+        case _ => SortItem(returnItem, reverse)
       }
     }
   }
 
-  def sort: Parser[Sort] = ignoreCase("sort by")  ~> rep1sep(sortItem, ",") ^^
+  def order: Parser[Sort] = ignoreCase("order by")  ~> rep1sep(sortItem, ",") ^^
     {
       case items => Sort(items:_*)
     }
