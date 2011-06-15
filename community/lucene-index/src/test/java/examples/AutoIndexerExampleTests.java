@@ -25,6 +25,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -41,6 +42,7 @@ import org.neo4j.graphdb.index.AutoIndex;
 import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.metatest.TestGraphDescription;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
@@ -56,14 +58,15 @@ public class AutoIndexerExampleTests implements GraphHolder
     public @Rule
     TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
 
-    private String getStoreDir( String testName )
+    private String getStoreDir( String testName ) throws IOException
     {
         File base = new File( "target", "example-auto-index" );
+        FileUtils.deleteRecursively( base );
         return new File( base.getAbsolutePath(), testName ).getAbsolutePath();
     }
 
     @Test
-    public void testConfig()
+    public void testConfig() throws Exception
     {
         // START SNIPPET: ConfigAutoIndexer
 
@@ -135,10 +138,11 @@ public class AutoIndexerExampleTests implements GraphHolder
         assertFalse( autoRelIndex.get( "relPropNonIndexed",
                 "relPropValueNonIndexed" ).hasNext() );
         // END SNIPPET: APIReadAutoIndex
+        graphDb.shutdown();
     }
 
     @Test
-    public void testConfigIgnore()
+    public void testConfigIgnore() throws Exception
     {
         // START SNIPPET: ConfigAutoIndexIgnore
 
@@ -209,10 +213,11 @@ public class AutoIndexerExampleTests implements GraphHolder
         assertEquals(
                 rel,
                 autoRelIndex.get( "relPropIndexed", "relPropValueIndexed" ).getSingle() );
+        graphDb.shutdown();
     }
 
     @Test
-    public void testAPI()
+    public void testAPI() throws Exception
     {
         // START SNIPPET: APIAutoIndexer
 
@@ -286,10 +291,11 @@ public class AutoIndexerExampleTests implements GraphHolder
                 rel,
                 autoRelIndex.get( "relPropIndexed", "relPropValueIndexed" ).getSingle() );
 
+        graphDb.shutdown();
     }
 
     @Test
-    public void testAPIOverConfig()
+    public void testAPIOverConfig() throws Exception
     {
         // START SNIPPET: APIOverConfigAutoIndexer
 
@@ -387,10 +393,11 @@ public class AutoIndexerExampleTests implements GraphHolder
         // The auto indexer is off - nothing should be returned
         assertFalse( autoRelIndex.get( "relProp2", "relProp1Value" ).hasNext() );
 
+        graphDb.shutdown();
     }
 
     @Test
-    public void testSemantics()
+    public void testSemantics() throws Exception
     {
         // START SNIPPET: Semantics
         Map<String, String> config = new HashMap<String, String>();
@@ -469,6 +476,7 @@ public class AutoIndexerExampleTests implements GraphHolder
                 node1,
                 nodeAutoIndexer.getAutoIndex().get( "nodeProp1", "value1" ).getSingle() );
         // END SNIPPET: Semantics
+        graphDb.shutdown();
     }
     
     @Test
