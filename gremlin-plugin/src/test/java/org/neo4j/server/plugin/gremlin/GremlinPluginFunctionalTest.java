@@ -141,6 +141,7 @@ public class GremlinPluginFunctionalTest implements GraphHolder
         .post( ENDPOINT )
         .entity();
         System.out.println(response);
+        //there is nothing returned at all.
         assertTrue(response.contains( "you" ));
     }
     @BeforeClass
