@@ -57,11 +57,11 @@ public final class PluginManager implements ExtensionInjector, PluginInvocator
                 plugin.loadServerExtender( extender );
             } catch ( Exception ex )
             {
-                log.warn( "Failed to load plugin: " + plugin, ex );
+                log.warn( "Failed to load plugin [%s]: %s", plugin.toString(), ex.getMessage() );
                 continue;
             } catch ( LinkageError err )
             {
-                log.warn( "Failed to load plugin: " + plugin, err );
+                log.warn( "Failed to load plugin [%s]: %s", plugin.toString(), err.getMessage() );
                 continue;
             }
             Pair<ServerPlugin, ServerExtender> old = extensions.put( plugin.name, Pair.of(
