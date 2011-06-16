@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.plugin.gremlin;
 
+import static org.junit.Assert.*;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -115,9 +117,9 @@ public class GremlinPluginTest
     @Test
     public void testReturnTable() throws Exception
     {
-        System.out.println(json.format( GremlinPluginTest.executeTestScript( ""+
+        assertTrue(json.format( GremlinPluginTest.executeTestScript( ""+
         		"t = new Table();" +
-        		"g.v(1).out('knows').as('friends')[0..1].table(t);t;" ) ) );
+        		"g.v(1).out('knows').as('friends').table(t)>> -1;t;" ) ).contains("josh"));
     }
 
     @Test

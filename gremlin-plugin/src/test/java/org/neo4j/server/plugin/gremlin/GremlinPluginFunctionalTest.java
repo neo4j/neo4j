@@ -124,25 +124,29 @@ public class GremlinPluginFunctionalTest implements GraphHolder
     }
     
     /**
-     * To send a Script JSON encoded, set the payload Content-Type Header
+     * To send a Script JSON encoded, set the payload Content-Type Header.
+     * In this example, find all the things that my friends like,
+     * and return a table listing my friends by their name, 
+     * and the names of the things they like in a table with two columns,
+     * ignoring the third named step variable +I+.
      */
     @Test
-    @Title("Send a Gremlin Script - JSON encoded")
+    @Title("Send a Gremlin Script - JSON encoded with table result")
     @Documented
-    @Graph( value = { "I know you", "I like cats", "you like cats", "you like dogs" } )
+    @Graph( value = { "I know Joe", "I like cats", "Joe like cats", "Joe like dogs" } )
     public void testGremlinPostJSONWithTableResult()
     {
         String response = gen.get()
         .expectedStatus( Status.OK.getStatusCode() )
         .payload( "{\"script\":\"i = g.v("+data.get().get( "I" ).getId() +");" +
         		"t= new Table();" +
-        		"i.out('know').as('friends').table(t);t;\"}" )
+        		"i.as('I').out('know').as('friend').out('like').as('likes').table(t,['friend','likes']){it.name}{it.name} >> -1;t;\"}" )
         .payloadType( MediaType.APPLICATION_JSON_TYPE )
         .post( ENDPOINT )
         .entity();
         System.out.println(response);
         //there is nothing returned at all.
-        assertTrue(response.contains( "you" ));
+        assertTrue(response.contains( "cats" ));
     }
     @BeforeClass
     public static void startDatabase()

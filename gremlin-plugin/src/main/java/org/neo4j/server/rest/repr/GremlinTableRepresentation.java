@@ -19,20 +19,28 @@
  */
 package org.neo4j.server.rest.repr;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.server.plugin.gremlin.GremlinPlugin;
 
+import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
 import com.tinkerpop.gremlin.pipes.util.Table;
+import com.tinkerpop.gremlin.pipes.util.Table.Row;
 
 public class GremlinTableRepresentation extends ObjectRepresentation
 {
 
     private final Table queryResult;
+    private final Neo4jGraph graph;
 
-    public GremlinTableRepresentation( Table result )
+    public GremlinTableRepresentation( Table result, Neo4jGraph graph )
     {
         super( RepresentationType.STRING );
         this.queryResult = result;
+        this.graph = graph;
     }
 
     @Mapping( "columns" )
@@ -42,54 +50,26 @@ public class GremlinTableRepresentation extends ObjectRepresentation
         return ListRepresentation.string( queryResult.getColumnNames() );
     }
 
-//    @Mapping( "data" )
-//    public Representation data()
-//    {
-//        // rows
-//        List<Representation> rows = new ArrayList<Representation>();
-//        for ( Map<String, Object> row : queryResult. )
-//        {
-//            List<Representation> fields = new ArrayList<Representation>();
-//            // columns
-//            for ( String column : queryResult.columns() )
-//            {
-//                Representation rowRep = getRepresentation( row.get( column ) );
-//                fields.add( rowRep );
-//
-//            }
-//            rows.add( new ListRepresentation( "row", fields ) );
-//        }
-//        return new ListRepresentation( "data", rows );
-//    }
-
-    // private void fillColumns() {
-    // Collection<Node> nodeCollection = IteratorUtil.asCollection( asIterable(
-
-    private Representation getRepresentation( Object r )
+    @Mapping( "data" )
+    public Representation data()
     {
-        if(r == null ) {
-            return ValueRepresentation.string( null );
-        }
-        if ( r instanceof Node )
+//        // rows
+        List<Representation> rows = new ArrayList<Representation>();
+        for (  Row  row : queryResult )
         {
-            return new NodeRepresentation( (Node) r );
+            List<Representation> fields = new ArrayList<Representation>();
+            // columns
+            for ( String column : queryResult.getColumnNames() )
+            {
+                Representation rowRep = GremlinPlugin.getRepresentation( graph, row.getColumn( column ) );
+                fields.add( rowRep );
+
+            }
+            rows.add( new ListRepresentation( "row", fields ) );
         }
-        if ( r instanceof Relationship )
-        {
-            return new RelationshipRepresentation( (Relationship) r );
-        }
-        else if ( r instanceof Double || r instanceof Float )
-        {
-            return ValueRepresentation.number( ( (Number) r ).doubleValue() );
-        }
-        else if ( r instanceof Long || r instanceof Integer )
-        {
-            return ValueRepresentation.number( ( (Number) r ).longValue() );
-        }
-        else
-        {
-            return ValueRepresentation.string( r.toString() );
-        }
+        return new ListRepresentation( "data", rows );
     }
+
+    
 
 }

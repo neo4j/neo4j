@@ -11,10 +11,10 @@ the types throughout the REST API consistent.
 
 :leveloffset: 1
 
-include::send-a-gremlin-script---json-encoded.txt[]
-
 include::send-a-gremlin-script---url-encoded.txt[]
 
 include::load-a-sample-graph-graph.txt[]
 
 include::sort-a-result-using-raw-groovy-operations.txt[]
+
+include::send-a-gremlin-script---json-encoded-with-table-result.txt[]

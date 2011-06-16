@@ -83,86 +83,93 @@ public class GremlinPlugin extends ServerPlugin
         try
         {
             final Object result = this.engine.eval( script, bindings );
-            if ( result instanceof Iterable )
-            {
-                RepresentationType type = RepresentationType.STRING;
-                final List<Representation> results = new ArrayList<Representation>();
-                for ( final Object r : (Iterable) result )
-                {
-                    if ( r instanceof Vertex )
-                    {
-                        type = RepresentationType.NODE;
-                        results.add( new NodeRepresentation(
-                                ( (Neo4jVertex) r ).getRawVertex() ) );
-                    }
-                    else if ( r instanceof Edge )
-                    {
-                        type = RepresentationType.RELATIONSHIP;
-                        results.add( new RelationshipRepresentation(
-                                ( (Neo4jEdge) r ).getRawEdge() ) );
-                    }
-                    else if ( r instanceof Graph )
-                    {
-                        type = RepresentationType.STRING;
-                        results.add( ValueRepresentation.string( graph.getRawGraph().toString() ) );
-                    }
-                    else if ( r instanceof Table )
-                    {
-                        type = RepresentationType.STRING;
-                        results.add( new GremlinTableRepresentation( (Table) result ) );
-                    }
-                    else if ( r instanceof Double || r instanceof Float )
-                    {
-                        type = RepresentationType.DOUBLE;
-                        results.add( ValueRepresentation.number( ( (Number) r ).doubleValue() ) );
-                    }
-                    else if ( r instanceof Long || r instanceof Integer )
-                    {
-                        type = RepresentationType.LONG;
-                        results.add( ValueRepresentation.number( ( (Number) r ).longValue() ) );
-                    }
-                    else
-                    {
-                        System.out.println("GremlinPlugin: got back" + r);
-                        type = RepresentationType.STRING;
-                        results.add( ValueRepresentation.string( r.toString() ) );
-                    }
-                }
-                return new ListRepresentation( type, results );
-            }
-            else
-            {
-                if ( result instanceof Vertex )
-                {
-                    return new NodeRepresentation(
-                            ( (Neo4jVertex) result ).getRawVertex() );
-                }
-                else if ( result instanceof Edge )
-                {
-                    return new RelationshipRepresentation(
-                            ( (Neo4jEdge) result ).getRawEdge() );
-                }
-                else if ( result instanceof Graph )
-                {
-                    return ValueRepresentation.string( graph.getRawGraph().toString() );
-                }
-                else if ( result instanceof Double || result instanceof Float )
-                {
-                    return ValueRepresentation.number( ( (Number) result ).doubleValue() );
-                }
-                else if ( result instanceof Long || result instanceof Integer )
-                {
-                    return ValueRepresentation.number( ( (Number) result ).longValue() );
-                }
-                else
-                {
-                    return ValueRepresentation.string( result + "" );
-                }
-            }
+            return getRepresentation( graph, result );
         }
         catch ( final ScriptException e )
         {
             return ValueRepresentation.string( e.getMessage() );
+        }
+    }
+
+    public static Representation getRepresentation( final Neo4jGraph graph,
+            final Object result )
+    {
+        if ( result instanceof Iterable )
+        {
+            RepresentationType type = RepresentationType.STRING;
+            final List<Representation> results = new ArrayList<Representation>();
+            if ( result instanceof Table )
+            {
+                type = RepresentationType.STRING;
+                results.add( new GremlinTableRepresentation( (Table) result, graph ) );
+                return new ListRepresentation( type, results );
+            }
+            for ( final Object r : (Iterable) result )
+            {
+                if ( r instanceof Vertex )
+                {
+                    type = RepresentationType.NODE;
+                    results.add( new NodeRepresentation(
+                            ( (Neo4jVertex) r ).getRawVertex() ) );
+                }
+                else if ( r instanceof Edge )
+                {
+                    type = RepresentationType.RELATIONSHIP;
+                    results.add( new RelationshipRepresentation(
+                            ( (Neo4jEdge) r ).getRawEdge() ) );
+                }
+                else if ( r instanceof Graph )
+                {
+                    type = RepresentationType.STRING;
+                    results.add( ValueRepresentation.string( graph.getRawGraph().toString() ) );
+                }
+                else if ( r instanceof Double || r instanceof Float )
+                {
+                    type = RepresentationType.DOUBLE;
+                    results.add( ValueRepresentation.number( ( (Number) r ).doubleValue() ) );
+                }
+                else if ( r instanceof Long || r instanceof Integer )
+                {
+                    type = RepresentationType.LONG;
+                    results.add( ValueRepresentation.number( ( (Number) r ).longValue() ) );
+                }
+                else
+                {
+                    System.out.println("GremlinPlugin: got back" + r);
+                    type = RepresentationType.STRING;
+                    results.add( ValueRepresentation.string( r.toString() ) );
+                }
+            }
+            return new ListRepresentation( type, results );
+        }
+        else
+        {
+            if ( result instanceof Vertex )
+            {
+                return new NodeRepresentation(
+                        ( (Neo4jVertex) result ).getRawVertex() );
+            }
+            else if ( result instanceof Edge )
+            {
+                return new RelationshipRepresentation(
+                        ( (Neo4jEdge) result ).getRawEdge() );
+            }
+            else if ( result instanceof Graph )
+            {
+                return ValueRepresentation.string( graph.getRawGraph().toString() );
+            }
+            else if ( result instanceof Double || result instanceof Float )
+            {
+                return ValueRepresentation.number( ( (Number) result ).doubleValue() );
+            }
+            else if ( result instanceof Long || result instanceof Integer )
+            {
+                return ValueRepresentation.number( ( (Number) result ).longValue() );
+            }
+            else
+            {
+                return ValueRepresentation.string( result + "" );
+            }
         }
     }
 
