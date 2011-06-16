@@ -9,4 +9,9 @@ public class FakeClock implements Clock
     {
         return time;
     }
+
+    public void forwardMinutes( int minutes )
+    {
+        time += 60000 * minutes;
+    }
 }
