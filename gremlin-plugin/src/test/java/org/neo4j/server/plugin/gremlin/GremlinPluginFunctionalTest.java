@@ -129,6 +129,9 @@ public class GremlinPluginFunctionalTest implements GraphHolder
      * and return a table listing my friends by their name, 
      * and the names of the things they like in a table with two columns,
      * ignoring the third named step variable +I+.
+     * Remember that everything in Gremlin is an iterator - in order
+     * to populate the result table +t+, iterate through the pipes with
+     * +>> -1+.
      */
     @Test
     @Title("Send a Gremlin Script - JSON encoded with table result")
