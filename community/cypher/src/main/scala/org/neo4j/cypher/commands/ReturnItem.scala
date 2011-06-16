@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.commands
 
-import org.neo4j.graphdb.{PropertyContainer, NotFoundException}
 import org.neo4j.cypher.pipes.Pipe
+import org.neo4j.graphdb.{Relationship, PropertyContainer, NotFoundException}
 
 abstract sealed class ReturnItem(val identifier: Identifier) extends (Map[String, Any] => Map[String, Any]) {
-  def assertDependencies(source:Pipe)
+  def assertDependencies(source: Pipe)
 }
 
 case class EntityOutput(name: String) extends ReturnItem(NodeIdentifier(name)) {
@@ -42,6 +42,17 @@ case class PropertyOutput(entityName: String, property: String) extends ReturnIt
 
   def assertDependencies(source: Pipe) {
     source.symbols.assertHas(entityName)
+  }
+}
+
+case class RelationshipTypeOutput(relationship: String) extends ReturnItem(RelationshipTypeIdentifier(relationship)) {
+  def apply(m: Map[String, Any]): Map[String, Any] = {
+    val rel = m.getOrElse(relationship, throw new NotFoundException).asInstanceOf[Relationship]
+    Map(relationship + ":TYPE" -> rel.getType)
+  }
+
+  def assertDependencies(source: Pipe) {
+    source.symbols.assertHas(relationship)
   }
 }
 
@@ -67,6 +78,7 @@ abstract sealed class AggregationItem(ident: String) extends ReturnItem(Aggregat
 
 case class Count(variable: String) extends AggregationItem(variable) {
   def apply(m: Map[String, Any]): Map[String, Any] = m
+
   def assertDependencies(source: Pipe) {
   }
 }

@@ -21,9 +21,9 @@ package org.neo4j.cypher.docgen
 
 import org.junit.Test
 import org.junit.Assert._
+import org.neo4j.graphdb.RelationshipType
 
-class ReturnTest extends DocumentingTestBase
-{
+class ReturnTest extends DocumentingTestBase {
   def indexProps = List()
 
   def graphDescription = List("A KNOWS B")
@@ -32,42 +32,35 @@ class ReturnTest extends DocumentingTestBase
 
   override val properties = Map("A" -> Map("<<!!__??>>" -> "Yes!", "age" -> 55))
 
-  @Test def returnNode()
-  {
+  @Test def returnNode() {
     testQuery(
       title = "Return nodes",
       text = "To return a node, list it in the return statemenet.",
       queryText = """start n=(%B%) return n""",
       returns = """The node.""",
-      (p) => assertEquals(List(Map("n" -> node("B"))), p.toList)
-    )
+      (p) => assertEquals(List(Map("n" -> node("B"))), p.toList))
   }
 
-  @Test def returnRelationship()
-  {
+  @Test def returnRelationship() {
     testQuery(
       title = "Return relationships",
       text = "To return a relationship, just include it in the return list.",
       queryText = """start n=(%A%) match (n)-[r]->(c) return r""",
       returns = """The relationship.""",
-      (p) => assertEquals(1, p.size)
-    )
+      (p) => assertEquals(1, p.size))
   }
 
-  @Test def returnProperty()
-  {
+  @Test def returnProperty() {
     testQuery(
       title = "Return property",
       text = "To return a property, use the dot separator, like this:",
       queryText = """start n=(%A%) return n.name""",
       returns = """The the value of the property 'name'.""",
-      (p) => assertEquals(List(Map("n.name" -> "A")), p.toList)
-    )
+      (p) => assertEquals(List(Map("n.name" -> "A")), p.toList))
   }
 
 
-  @Test def weird_variable_names()
-  {
+  @Test def weird_variable_names() {
     testQuery(
       title = "Identifier with uncommon characters",
       text = """To introduce a placeholder that is made up of characters that are
@@ -75,20 +68,26 @@ class ReturnTest extends DocumentingTestBase
       queryText = """start `This isn't a common identifier`=(%A%)
 return `This isn't a common identifier`.`<<!!__??>>`""",
       returns = """The node indexed with name "A" is returned""",
-      (p) => assertEquals(List(Map("This isn't a common identifier.<<!!__??>>" -> "Yes!")), p.toList)
-    )
+      (p) => assertEquals(List(Map("This isn't a common identifier.<<!!__??>>" -> "Yes!")), p.toList))
   }
 
 
-  @Test def nullable_properties()
-  {
+  @Test def nullable_properties() {
     testQuery(
       title = "Optional nodes",
       text = """If a property might or might not be there, you can select it optionally by adding a questionmark to the identifier,
 like this:""",
       queryText = """start n=(%A%, %B%) return n.age?""",
       returns = """The age when the node has that property, or null if the property is not there.""",
-      (p) => assertEquals(List(55, null), p.columnAs[Int]("n.age").toList)
-    )
+      (p) => assertEquals(List(55, null), p.columnAs[Int]("n.age").toList))
+  }
+
+  @Test def relationship_type() {
+    testQuery(
+      title = "Relationship type",
+      text = """When you want to output the relationship type, and not the whole relationship, you can use :TYPE.""",
+      queryText = """start n=(%A%) match (n)-[r]->() return r:TYPE""",
+      returns = """The relationship type of r.""",
+      (p) => assertEquals("KNOWS", p.columnAs[RelationshipType]("r:TYPE").toList.head.name))
   }
 }

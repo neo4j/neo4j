@@ -23,11 +23,13 @@ import commands._
 import pipes._
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb._
-import java.lang.Iterable
 import collection.Seq
-
+import java.lang.{Error, Iterable}
 
 class ExecutionEngine(graph: GraphDatabaseService) {
+  checkScalaVersion()
+
+
   @throws(classOf[SyntaxError])
   def execute(query: Query): ExecutionResult = query match {
     case Query(returns, start, matching, where, aggregation, sort, slice) => {
@@ -76,4 +78,11 @@ class ExecutionEngine(graph: GraphDatabaseService) {
         case RelationshipById(varName, ids@_*) => new StartPipe(varName, ids.map(graph.getRelationshipById))
       }
     })
+
+  def checkScalaVersion() {
+    if (util.Properties.versionString != "version 2.9.0.1") {
+      throw new Error("Cypher can only run with Scala 2.9.0.1. It looks like the Scala version is: " +
+        util.Properties.versionString)
+    }
+  }
 }
