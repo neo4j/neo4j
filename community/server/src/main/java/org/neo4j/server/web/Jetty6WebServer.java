@@ -68,8 +68,6 @@ public class Jetty6WebServer implements WebServer
     @Override
     public void start()
     {
-        jetty = createJetty();
-
         MovedContextHandler redirector = new MovedContextHandler();
 
         jetty.addHandler( redirector );
@@ -81,9 +79,13 @@ public class Jetty6WebServer implements WebServer
         startJetty();
     }
 
-    protected Server createJetty()
+    @Override
+    public void init()
     {
-        return new Server( jettyPort );
+        if (jetty == null)
+        {
+            jetty = new Server( jettyPort );
+        }
     }
 
     protected void startJetty()
@@ -200,7 +202,7 @@ public class Jetty6WebServer implements WebServer
             try
             {
                 final WebAppContext staticContext = new WebAppContext( null, new SessionHandler( sm ), null, null );
-                staticContext.setServer( jetty );
+                staticContext.setServer( getJetty() );
                 staticContext.setContextPath( mountPoint );
                 URL resourceLoc = getClass().getClassLoader()
                         .getResource( contentLocation );
@@ -256,5 +258,10 @@ public class Jetty6WebServer implements WebServer
 
         String result = sb.toString();
         return result.substring( 0, result.length() - 2 );
+    }
+
+    @Override public Server getJetty()
+    {
+        return jetty;
     }
 }
