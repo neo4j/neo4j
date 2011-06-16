@@ -26,12 +26,12 @@ import org.neo4j.graphdb.Direction
 class CypherParser extends JavaTokenParsers {
   def ignoreCase(str:String): Parser[String] = ("""(?i)\Q""" + str + """\E""").r
 
-  def query: Parser[Query] = start ~ opt(matching) ~ opt(where) ~ returns ~ opt(order) ~ opt(from) ~ opt(limit) ^^ {
+  def query: Parser[Query] = start ~ opt(matching) ~ opt(where) ~ returns ~ opt(order) ~ opt(skip) ~ opt(limit) ^^ {
     case start ~ matching ~ where ~ returns ~ sort ~ None ~ None => Query(returns._1, start, matching, where, returns._2, sort, None)
-    case start ~ matching ~ where ~ returns ~ sort ~ from ~ limit => Query(returns._1, start, matching, where, returns._2, sort, Some(Slice(from, limit)))
+    case start ~ matching ~ where ~ returns ~ sort ~ skip ~ limit => Query(returns._1, start, matching, where, returns._2, sort, Some(Slice(skip, limit)))
   }
 
-  def from: Parser[Int] = ignoreCase("from") ~> positiveNumber ^^ { case startAt => startAt.toInt }
+  def skip: Parser[Int] = ignoreCase("skip") ~> positiveNumber ^^ { case startAt => startAt.toInt }
 
   def limit: Parser[Int] = ignoreCase("limit") ~> positiveNumber ^^ { case count => count.toInt }
 

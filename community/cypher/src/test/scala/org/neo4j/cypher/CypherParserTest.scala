@@ -386,18 +386,18 @@ class CypherParserTest {
         Slice(None, Some(5))))
   }
 
-  @Test def from5() {
+  @Test def skip5() {
     testQuery(
-      "start n=(1) return n from 5",
+      "start n=(1) return n skip 5",
       Query(
         Return(EntityOutput("n")),
         Start(NodeById("n", 1)),
         Slice(Some(5), None)))
   }
 
-  @Test def from5limit5() {
+  @Test def skip5limit5() {
     testQuery(
-      "start n=(1) return n from 5 limit 5",
+      "start n=(1) return n skip 5 limit 5",
       Query(
         Return(EntityOutput("n")),
         Start(NodeById("n", 1)),
