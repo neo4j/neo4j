@@ -65,8 +65,6 @@ public class PrettyJSON extends JSONStringer {
 			}
 		}
 		
-		System.out.println(w.toString());
-		
 		return w.toString();
 	}
 	
