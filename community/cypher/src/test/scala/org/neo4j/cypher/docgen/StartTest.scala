@@ -26,56 +26,56 @@ import org.junit.Assert.assertEquals
 import org.junit.matchers.JUnitMatchers.hasItem
 import org.junit.Test
 
-class StartTest extends DocumentingTestBase
-{
+class StartTest extends DocumentingTestBase {
   def graphDescription = List("A KNOWS B", "A KNOWS C")
 
   def indexProps = List("name")
 
   def section: String = "Start"
 
-  @Test def nodes_by_id()
-  {
+  @Test def nodes_by_id() {
     testQuery(
       title = "Node by id",
       text = "Including a node as a start point is done by using parenthesis.",
       queryText = "start n=(0) return n",
       returns = "The reference node is returned",
-      (p) => assertThat(p.columnAs[Node]("n").toList.asJava, hasItem(db.getReferenceNode))
-    )
+      (p) => assertThat(p.columnAs[Node]("n").toList.asJava, hasItem(db.getReferenceNode)))
   }
 
-  @Test def multiple_nodes_by_id()
-  {
+  @Test def multiple_nodes_by_id() {
     testQuery(
       title = "Multiple nodes by id",
       text = "Multiple nodes are selected by listing them separated by commas.",
       queryText = "start n=(%A%, %B%, %C%) return n",
       returns = "The reference node is returned",
-      (p) => assertEquals(List(node("A"), node("B"), node("C")), p.columnAs[Node]("n").toList)
-    )
+      (p) => assertEquals(List(node("A"), node("B"), node("C")), p.columnAs[Node]("n").toList))
   }
 
-  @Test def nodes_by_index()
-  {
+  @Test def nodes_by_index() {
     testQuery(
       title = "Node by index lookup",
       text = "If the start point can be found by index lookups, it can be done like this: (index-name, key, \"value\"). Like this: ",
       queryText = """start n=(nodes,name,"A") return n""",
       returns = """The node indexed with name "A" is returned""",
-      (p) => assertEquals(List(Map("n" -> node("A"))), p.toList)
-    )
+      (p) => assertEquals(List(Map("n" -> node("A"))), p.toList))
   }
 
-  @Test def nodes_by_index_query()
-  {
+  @Test def nodes_by_index_query() {
     testQuery(
       title = "Node by index query",
       text = "If the start point can be found by index queries, it can be done like this: (index-name, \"query\"). Like this: ",
       queryText = """start n=(nodes,"name:A") return n""",
       returns = """The node indexed with name "A" is returned""",
-      (p) => assertEquals(List(Map("n" -> node("A"))), p.toList)
-    )
+      (p) => assertEquals(List(Map("n" -> node("A"))), p.toList))
+  }
+
+  @Test def start_with_multiple_nodes() {
+    testQuery(
+      title = "Multiple start points",
+      text = "Sometimes you want to bind multiple start points. Just list them separated by commas.",
+      queryText = """start a=(%A%), b=(%B%) return a,b""",
+      returns = """Both the A and the B node are returned""",
+      (p) => assertEquals(List(Map("a" -> node("A"), "b"->node("B"))), p.toList))
   }
 }
 

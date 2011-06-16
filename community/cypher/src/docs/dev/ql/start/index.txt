@@ -10,4 +10,5 @@ index lookups.
 include::node-by-id.txt[]
 include::multiple-nodes-by-id.txt[]
 include::node-by-index-lookup.txt[]
+include::multiple-start-points.txt[]
 
