@@ -25,6 +25,8 @@ import com.tinkerpop.blueprints.pgm.Vertex;
 import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jEdge;
 import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
 import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jVertex;
+import com.tinkerpop.gremlin.pipes.util.Table;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.server.plugins.Description;
 import org.neo4j.server.plugins.Name;
@@ -32,6 +34,7 @@ import org.neo4j.server.plugins.Parameter;
 import org.neo4j.server.plugins.PluginTarget;
 import org.neo4j.server.plugins.ServerPlugin;
 import org.neo4j.server.plugins.Source;
+import org.neo4j.server.rest.repr.GremlinTableRepresentation;
 import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.NodeRepresentation;
 import org.neo4j.server.rest.repr.RelationshipRepresentation;
@@ -102,6 +105,11 @@ public class GremlinPlugin extends ServerPlugin
                     {
                         type = RepresentationType.STRING;
                         results.add( ValueRepresentation.string( graph.getRawGraph().toString() ) );
+                    }
+                    else if ( r instanceof Table )
+                    {
+                        type = RepresentationType.STRING;
+                        results.add( new GremlinTableRepresentation( (Table) result ) );
                     }
                     else if ( r instanceof Double || r instanceof Float )
                     {

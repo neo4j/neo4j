@@ -21,7 +21,7 @@
     <cxf.version>2.3.1</cxf.version>
     <servlet-api.version>2.5</servlet-api.version>
     <neo4j.version>1.4-SNAPSHOT</neo4j.version>
-    <blueprints.version>0.6</blueprints.version>
+    <blueprints.version>0.7</blueprints.version>
     <jersey.server.version>1.6</jersey.server.version>
     <license-text.header>GPL-3-header.txt</license-text.header>
   </properties>
@@ -100,12 +100,6 @@ the relevant Commercial Agreement.
       <groupId>com.tinkerpop.blueprints</groupId>
       <artifactId>blueprints-neo4j-graph</artifactId>
       <version>${blueprints.version}</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.tinkerpop</groupId>
-      <artifactId>gremlin</artifactId>
-      <version>0.9</version>
       <scope>provided</scope>
     </dependency>
     <!--end neo4j -->

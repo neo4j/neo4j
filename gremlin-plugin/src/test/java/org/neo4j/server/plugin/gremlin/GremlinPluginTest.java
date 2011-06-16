@@ -111,6 +111,14 @@ public class GremlinPluginTest
         Assert.assertEquals( "marko",
                 ( (JSONObject) object.get( "data" ) ).get( "name" ) );
     }
+    
+    @Test
+    public void testReturnTable() throws Exception
+    {
+        System.out.println(json.format( GremlinPluginTest.executeTestScript( ""+
+        		"t = new Table();" +
+        		"g.v(1).out('knows').as('friends')[0..1].table(t);t;" ) ) );
+    }
 
     @Test
     public void testExecuteScriptVertices() throws Exception

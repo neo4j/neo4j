@@ -129,15 +129,18 @@ public class GremlinPluginFunctionalTest implements GraphHolder
     @Test
     @Title("Send a Gremlin Script - JSON encoded")
     @Documented
-    @Graph( value = { "I know you" } )
-    public void testGremlinPostJSON()
+    @Graph( value = { "I know you", "I like cats", "you like cats", "you like dogs" } )
+    public void testGremlinPostJSONWithTableResult()
     {
         String response = gen.get()
         .expectedStatus( Status.OK.getStatusCode() )
-        .payload( "{\"script\":\"i = g.v("+data.get().get( "I" ).getId() +");i.outE.inV\"}" )
+        .payload( "{\"script\":\"i = g.v("+data.get().get( "I" ).getId() +");" +
+        		"t= new Table();" +
+        		"i.out('know').as('friends').table(t);t;\"}" )
         .payloadType( MediaType.APPLICATION_JSON_TYPE )
         .post( ENDPOINT )
         .entity();
+        System.out.println(response);
         assertTrue(response.contains( "you" ));
     }
     @BeforeClass
