@@ -6,12 +6,9 @@ In the return part of your query, you define which parts of the pattern you are
 interested in. It can be nodes, relationships, or properties on these.
 
 include::return-nodes.txt[]
-
 include::return-relationships.txt[]
-
+include::relationship-type.txt[]
 include::return-property.txt[]
-
 include::optional-nodes.txt[]
-
 include::identifier-with-uncommon-characters.txt[]
 

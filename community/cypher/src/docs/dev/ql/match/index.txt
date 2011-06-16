@@ -8,16 +8,9 @@ pattern made up of one or more paths, separated by commas.
 All parts of the pattern must be directly or indirectly bound to a start point.
 
 include::related-nodes.txt[]
-
 include::outgoing-relationships.txt[]
-
 include::directed-relationships-and-variable.txt[]
-
 include::match-by-relationship-type.txt[]
-
 include::match-by-relationship-type-and-use-a-variable.txt[]
-
 include::multiple-relationships.txt[]
-
 include::complex-matching.txt[]
-

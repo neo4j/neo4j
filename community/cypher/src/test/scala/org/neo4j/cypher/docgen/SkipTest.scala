@@ -23,19 +23,19 @@ import org.neo4j.graphdb.Node
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class FromTest extends DocumentingTestBase {
+class SkipTest extends DocumentingTestBase {
   def graphDescription = List("A KNOWS B", "A KNOWS C", "A KNOWS D", "A KNOWS E")
 
   def indexProps = List()
 
-  def section: String = "From"
+  def section: String = "Skip"
 
   @Test def returnFromThree() {
     testQuery(
       title = "Skip first three",
       text = "To return a subset of the result, starting from third result, use this syntax:",
-      queryText = "start n=(%A%, %B%, %C%, %D%, %E%) return n order by n.name from 3",
-      returns = "The top three items are returned",
+      queryText = "start n=(%A%, %B%, %C%, %D%, %E%) return n order by n.name skip 3",
+      returns = "The first three nodes are skipped, and only the last two are returned.",
       (p) => assertEquals(List(node("D"), node("E")), p.columnAs[Node]("n").toList))
   }
 
@@ -43,8 +43,8 @@ class FromTest extends DocumentingTestBase {
     testQuery(
       title = "Return middle two",
       text = "To return a subset of the result, starting from somewhere in the middle, use this syntax:",
-      queryText = "start n=(%A%, %B%, %C%, %D%, %E%) return n order by n.name from 1 limit 2",
-      returns = "The top three items are returned",
+      queryText = "start n=(%A%, %B%, %C%, %D%, %E%) return n order by n.name skip 1 limit 2",
+      returns = "Two nodes from the middle are returned",
       (p) => assertEquals(List(node("B"), node("C")), p.columnAs[Node]("n").toList))
   }
 }

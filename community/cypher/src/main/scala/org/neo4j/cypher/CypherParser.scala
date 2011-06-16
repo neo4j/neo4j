@@ -26,12 +26,12 @@ import org.neo4j.graphdb.Direction
 class CypherParser extends JavaTokenParsers {
   def ignoreCase(str:String): Parser[String] = ("""(?i)\Q""" + str + """\E""").r
 
-  def query: Parser[Query] = start ~ opt(matching) ~ opt(where) ~ returns ~ opt(order) ~ opt(from) ~ opt(limit) ^^ {
+  def query: Parser[Query] = start ~ opt(matching) ~ opt(where) ~ returns ~ opt(order) ~ opt(skip) ~ opt(limit) ^^ {
     case start ~ matching ~ where ~ returns ~ sort ~ None ~ None => Query(returns._1, start, matching, where, returns._2, sort, None)
-    case start ~ matching ~ where ~ returns ~ sort ~ from ~ limit => Query(returns._1, start, matching, where, returns._2, sort, Some(Slice(from, limit)))
+    case start ~ matching ~ where ~ returns ~ sort ~ skip ~ limit => Query(returns._1, start, matching, where, returns._2, sort, Some(Slice(skip, limit)))
   }
 
-  def from: Parser[Int] = ignoreCase("from") ~> positiveNumber ^^ { case startAt => startAt.toInt }
+  def skip: Parser[Int] = ignoreCase("skip") ~> positiveNumber ^^ { case startAt => startAt.toInt }
 
   def limit: Parser[Int] = ignoreCase("limit") ~> positiveNumber ^^ { case count => count.toInt }
 
@@ -122,7 +122,7 @@ class CypherParser extends JavaTokenParsers {
       case items => Sort(items:_*)
     }
 
-  def returns: Parser[(Return, Option[Aggregation])] = ignoreCase("return") ~> rep1sep((count | nullablePropertyOutput | propertyOutput | nodeOutput), ",") ^^
+  def returns: Parser[(Return, Option[Aggregation])] = ignoreCase("return") ~> rep1sep((count | nullablePropertyOutput | relationshipTypeOutput | propertyOutput | nodeOutput), ",") ^^
     { case items => {
       val list = items.filter(_.isInstanceOf[AggregationItem]).map(_.asInstanceOf[AggregationItem])
 
@@ -142,6 +142,10 @@ class CypherParser extends JavaTokenParsers {
 
   def nullablePropertyOutput:Parser[ReturnItem] = identity ~ "." ~ identity ~ "?" ^^
     { case c ~ "." ~ p ~ "?" => NullablePropertyOutput(c,p) }
+
+  def relationshipTypeOutput:Parser[ReturnItem] = identity <~ ":TYPE" ^^
+    { case c => RelationshipTypeOutput(c) }
+
 
   def count:Parser[ReturnItem] = ignoreCase("count") ~ "(" ~ "*" ~ ")" ^^
     { case count ~ "(" ~ "*" ~ ")" => Count("*") }
@@ -190,7 +194,7 @@ class CypherParser extends JavaTokenParsers {
     case not ~ "(" ~ inner ~ ")" => Not(inner)
   }
 
-  def value: Parser[Value] = (boolean | property | string | decimal)
+  def value: Parser[Value] = (boolean | relationshipType | property | string | decimal)
 
   def property: Parser[Value] = identity ~ "." ~ identity ^^ {  case v ~ "." ~ p => PropertyValue(v,p) }
 
@@ -201,6 +205,8 @@ class CypherParser extends JavaTokenParsers {
   def boolean: Parser[Value] = (trueX | falseX)
   def trueX: Parser[Value] = ignoreCase("true") ^^ { case str => Literal(true) }
   def falseX: Parser[Value] = ignoreCase("false") ^^ { case str => Literal(false) }
+
+  def relationshipType: Parser[Value] = identity <~ ":TYPE" ^^ {  case v => RelationshipTypeValue(v) }
 
   def identity:Parser[String] = (ident | escapedIdentity)
 
