@@ -1,6 +1,6 @@
 [[query-from]]
 From
-=====
+====
 
 From enables the return of only subsets of the total result.
 
