@@ -78,7 +78,7 @@ class PluginPointFactoryImpl implements PluginPointFactory
                 if ( types[ i ] != discovery )
                 {
                     throw new IllegalStateException(
-                            "Source parameter type must equal the discovery type." );
+                            "Source parameter type (" + types[i] + ") must equal the discovery type ("+discovery.getName()+")." );
                 }
                 if ( sourceExtractor != null )
                 {
