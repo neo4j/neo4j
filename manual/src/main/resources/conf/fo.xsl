@@ -169,41 +169,111 @@
  <xsl:value-of select="$body.font.master"/><xsl:text>pt</xsl:text>
 </xsl:param>
 
+<!-- turned off due to https://issues.apache.org/bugzilla/show_bug.cgi?id=37579 -->
+<xsl:param name="ulink.footnotes" select="0"></xsl:param>
+
+<xsl:param name="ulink.show" select="1"></xsl:param>
+
+<xsl:attribute-set name="xref.properties">
+  <xsl:attribute name="color">blue</xsl:attribute>
+</xsl:attribute-set>
+
+<xsl:attribute-set name="normal.para.spacing">
+  <xsl:attribute name="space-before.optimum">0em</xsl:attribute>
+  <xsl:attribute name="space-before.minimum">0em</xsl:attribute>
+  <xsl:attribute name="space-before.maximum">0em</xsl:attribute>
+  <xsl:attribute name="space-after.optimum">0.5em</xsl:attribute>
+  <xsl:attribute name="space-after.minimum">0.4em</xsl:attribute>
+  <xsl:attribute name="space-after.maximum">0.6em</xsl:attribute>
+</xsl:attribute-set>
+
+<xsl:attribute-set name="section.title.properties">
+  <xsl:attribute name="space-before.minimum">0.8em</xsl:attribute>
+  <xsl:attribute name="space-before.optimum">1.0em</xsl:attribute>
+  <xsl:attribute name="space-before.maximum">1.2em</xsl:attribute>
+  <xsl:attribute name="space-after.optimum">0.3em</xsl:attribute>
+  <xsl:attribute name="space-after.minimum">0.2em</xsl:attribute>
+  <xsl:attribute name="space-after.maximum">0.4em</xsl:attribute>
+</xsl:attribute-set>
+
+<xsl:attribute-set name="list.item.spacing">
+  <xsl:attribute name="space-before.optimum">0.20em</xsl:attribute>
+  <xsl:attribute name="space-before.minimum">0.15em</xsl:attribute>
+  <xsl:attribute name="space-before.maximum">0.25em</xsl:attribute>
+</xsl:attribute-set>
+
+<xsl:attribute-set name="variablelist.term.properties">
+  <xsl:attribute name="space-before.optimum">0.20em</xsl:attribute>
+  <xsl:attribute name="space-before.minimum">0.15em</xsl:attribute>
+  <xsl:attribute name="space-before.maximum">0.25em</xsl:attribute>
+</xsl:attribute-set>
+
+<xsl:param name="variablelist.as.blocks" select="0"></xsl:param>
+
+<xsl:param name="header.column.widths">1 10 1</xsl:param>
+
+<xsl:attribute-set name="formal.title.properties" use-attribute-sets="normal.para.spacing">
+  <xsl:attribute name="font-size">12pt</xsl:attribute>
+  <xsl:attribute name="font-weight">normal</xsl:attribute>
+  <xsl:attribute name="font-style">italic</xsl:attribute>
+  <xsl:attribute name="hyphenate">false</xsl:attribute>
+  <xsl:attribute name="space-before.minimum">0.8em</xsl:attribute>
+  <xsl:attribute name="space-before.optimum">1.0em</xsl:attribute>
+  <xsl:attribute name="space-before.maximum">1.2em</xsl:attribute>
+  <xsl:attribute name="space-after.minimum">0.10em</xsl:attribute>
+  <xsl:attribute name="space-after.optimum">0.15em</xsl:attribute>
+  <xsl:attribute name="space-after.maximum">0.20em</xsl:attribute>
+</xsl:attribute-set>
+
+<xsl:attribute-set name="formal.object.properties">
+  <xsl:attribute name="space-before.minimum">0em</xsl:attribute>
+  <xsl:attribute name="space-before.optimum">0em</xsl:attribute>
+  <xsl:attribute name="space-before.maximum">0em</xsl:attribute>
+  <xsl:attribute name="space-after.optimum">0.5em</xsl:attribute>
+  <xsl:attribute name="space-after.minimum">0.4em</xsl:attribute>
+  <xsl:attribute name="space-after.maximum">0.6em</xsl:attribute>
+  <xsl:attribute name="keep-together.within-column">always</xsl:attribute>
+</xsl:attribute-set>
+
 <xsl:attribute-set name="section.title.level1.properties">
-  <xsl:attribute name="font-size">
-    <xsl:value-of select="24"></xsl:value-of>
-    <xsl:text>pt</xsl:text>
-  </xsl:attribute>
+  <xsl:attribute name="font-size">18pt</xsl:attribute>
+  <xsl:attribute name="space-after.optimum">0.15em</xsl:attribute>
+  <xsl:attribute name="space-after.minimum">0.10em</xsl:attribute>
+  <xsl:attribute name="space-after.maximum">0.20em</xsl:attribute>
 </xsl:attribute-set>
 <xsl:attribute-set name="section.title.level2.properties">
-  <xsl:attribute name="font-size">
-    <xsl:value-of select="18"></xsl:value-of>
-    <xsl:text>pt</xsl:text>
-  </xsl:attribute>
+  <xsl:attribute name="font-size">14pt</xsl:attribute>
 </xsl:attribute-set>
 <xsl:attribute-set name="section.title.level3.properties">
   <xsl:attribute name="font-size">
-    <xsl:value-of select="16"></xsl:value-of>
+    <xsl:value-of select="$body.font.master"></xsl:value-of>
     <xsl:text>pt</xsl:text>
   </xsl:attribute>
 </xsl:attribute-set>
 <xsl:attribute-set name="section.title.level4.properties">
   <xsl:attribute name="font-size">
-    <xsl:value-of select="14"></xsl:value-of>
+    <xsl:value-of select="$body.font.master"></xsl:value-of>
     <xsl:text>pt</xsl:text>
   </xsl:attribute>
+  <xsl:attribute name="font-weight">normal</xsl:attribute>
+  <xsl:attribute name="font-style">italic</xsl:attribute>
 </xsl:attribute-set>
 <xsl:attribute-set name="section.title.level5.properties">
-  <xsl:attribute name="font-size">
-    <xsl:value-of select="$body.font.master"></xsl:value-of>
-    <xsl:text>pt</xsl:text>
-  </xsl:attribute>
+  <xsl:attribute name="font-size">10pt</xsl:attribute>
 </xsl:attribute-set>
 <xsl:attribute-set name="section.title.level6.properties">
-  <xsl:attribute name="font-size">
-    <xsl:value-of select="$body.font.master"></xsl:value-of>
-    <xsl:text>pt</xsl:text>
-  </xsl:attribute>
+  <xsl:attribute name="font-size">10pt</xsl:attribute>
+</xsl:attribute-set>
+
+<xsl:attribute-set name="section.level1.properties">
+  <xsl:attribute name="break-before">page</xsl:attribute>
+</xsl:attribute-set>
+
+<xsl:attribute-set name="component.title.properties">
+  <xsl:attribute name="font-size">18pt</xsl:attribute>
+  <xsl:attribute name="space-after.optimum">1.0em</xsl:attribute>
+  <xsl:attribute name="space-after.minimum">1.0em</xsl:attribute>
+  <xsl:attribute name="space-after.maximum">1.0em</xsl:attribute>
 </xsl:attribute-set>
 
 <xsl:template match="row/entry/simpara/literal">
@@ -332,3 +402,4 @@
 </xsl:attribute-set>
 
 </xsl:stylesheet>
+
