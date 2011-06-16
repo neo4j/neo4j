@@ -28,7 +28,6 @@ import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
 
-import org.json.JSONStringer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
