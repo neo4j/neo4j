@@ -61,16 +61,24 @@ class CommitContext
         }
     }
     
-    DocumentContext getDocument( Object entityId )
+    DocumentContext getDocument( Object entityId, boolean allowCreate )
     {
         long id = entityId instanceof Long ? (Long) entityId : ((RelationshipId)entityId).id;
         DocumentContext context = documents.get( id );
-        if ( context == null )
+        if ( context != null )
         {
-            Document document = LuceneDataSource.findDocument( indexType, searcher, id );
-            context = document == null ?
-                    new DocumentContext( identifier.entityType.newDocument( entityId ), false, id ) :
-                    new DocumentContext( document, true, id );
+            return context;
+        }
+        
+        Document document = LuceneDataSource.findDocument( indexType, searcher, id );
+        if ( document != null )
+        {
+            context = new DocumentContext( document, true, id );
+            documents.put( id, context );
+        }
+        else if ( allowCreate )
+        {
+            context = new DocumentContext( identifier.entityType.newDocument( entityId ), false, id );
             documents.put( id, context );
         }
         return context;
