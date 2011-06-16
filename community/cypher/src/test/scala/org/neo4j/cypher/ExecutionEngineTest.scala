@@ -23,7 +23,7 @@ import org.neo4j.cypher.commands._
 import org.junit.Assert._
 import java.lang.String
 import org.junit.{Ignore, Test}
-import org.neo4j.graphdb.{Relationship, Direction, Node}
+import org.neo4j.graphdb.{DynamicRelationshipType, Relationship, Direction, Node}
 
 class ExecutionEngineTest extends ExecutionEngineTestBase {
 
@@ -403,11 +403,11 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
   }
 
   @Test def shouldLimitToTwoHits() {
-    val nodes = List(createNode(), createNode(), createNode(), createNode(), createNode(), createNode())
+    createNodes("A", "B", "C", "D", "E")
 
     val query = Query(
       Return(EntityOutput("start")),
-      Start(NodeById("start", nodes.map(_.getId): _*)),
+      Start(NodeById("start", nodeIds:_*)),
       Slice(None, Some(2)))
 
     val result = execute(query)
@@ -420,7 +420,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
     val query = Query(
       Return(EntityOutput("start")),
-      Start(NodeById("start", nodes.map(_.getId): _*)),
+      Start(NodeById("start", nodeIds:_*)),
       Sort(SortItem(PropertyOutput("start", "name"), true)),
       Slice(Some(2), None))
 
@@ -434,12 +434,47 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
     val query = Query(
       Return(EntityOutput("start")),
-      Start(NodeById("start", nodes.map(_.getId): _*)),
+      Start(NodeById("start", nodeIds:_*)),
       Sort(SortItem(PropertyOutput("start", "name"), true)),
       Slice(Some(2), Some(2)))
 
     val result = execute(query)
 
-    assertEquals(nodes.slice(2,4).toList, result.columnAs[Node]("start").toList)
+    assertEquals(nodes.slice(2, 4).toList, result.columnAs[Node]("start").toList)
   }
+
+  @Test def magicRelTypeWorksAsExpected() {
+    createNodes("A", "B", "C")
+    relate("A" -> "KNOWS" -> "B")
+    relate("A" -> "HATES" -> "C")
+
+    val query = Query(
+      Return(EntityOutput("x")),
+      Start(NodeById("n", 1)),
+      Match(RelatedTo("n", "x", Some("r"), None, Direction.OUTGOING)),
+      Equals(RelationshipTypeValue("r"), Literal("KNOWS")))
+
+    val result = execute(query)
+
+    assertEquals(List(node("B")), result.columnAs[Node]("x").toList)
+  }
+
+  @Test def magicRelTypeOutput() {
+    createNodes("A", "B", "C")
+    relate("A" -> "KNOWS" -> "B")
+    relate("A" -> "HATES" -> "C")
+
+    val query = Query(
+      Return(RelationshipTypeOutput("r")),
+      Start(NodeById("n", 1)),
+      Match(RelatedTo("n", "x", Some("r"), None, Direction.OUTGOING)))
+
+    val result = execute(query)
+
+    val KNOWS =relType("KNOWS")
+    val HATES = relType("HATES")
+
+    assertEquals(List(KNOWS,HATES), result.columnAs[Node]("r:TYPE").toList)
+  }
+
 }

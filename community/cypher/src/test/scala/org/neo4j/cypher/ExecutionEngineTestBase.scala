@@ -23,12 +23,15 @@ import commands.Query
 import org.neo4j.kernel.AbstractGraphDatabase
 import org.neo4j.test.ImpermanentGraphDatabase
 import org.junit.{After, Before}
-import org.neo4j.graphdb.{DynamicRelationshipType, Relationship, Node}
+import org.neo4j.graphdb.{RelationshipType, DynamicRelationshipType, Relationship, Node}
+import scala.collection.JavaConverters._
+
 
 class ExecutionEngineTestBase {
   var graph: AbstractGraphDatabase = null
   var engine: ExecutionEngine = null
   var refNode: Node = null
+  var nodes: List[Node] = null
 
   @Before
   def init() {
@@ -64,6 +67,8 @@ class ExecutionEngineTestBase {
     result
   }
 
+  def nodeIds = nodes.map(_.getId).toArray
+
   def relate(n1: Node, n2: Node, relType: String, props: Map[String, Any] = Map()): Relationship = {
     inTx(() => {
       val r = n1.createRelationshipTo(n2, DynamicRelationshipType.withName(relType))
@@ -73,7 +78,24 @@ class ExecutionEngineTestBase {
     })
   }
 
-  def createNodes(names: String*): Seq[Node] = names.map( x => createNode(Map("name" -> x)))
+  def relate(x: ((String, String), String)): Relationship = inTx(() => {
+    x match {
+      case ((from, relType), to) => {
+        val f = node(from)
+        val t = node(to)
+        f.createRelationshipTo(t, DynamicRelationshipType.withName(relType))
+      }
+    }
+  })
+
+  def node(name: String): Node = nodes.find(_.getProperty("name") == name).get
+
+  def relType(name: String): RelationshipType = graph.getRelationshipTypes.asScala.find(_.name() == name).get
+
+  def createNodes(names: String*): List[Node] = {
+    nodes = names.map(x => createNode(Map("name" -> x))).toList
+    nodes
+  }
 
 
   def createNode(props: Map[String, Any]): Node = {

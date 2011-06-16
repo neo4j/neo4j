@@ -403,4 +403,24 @@ class CypherParserTest {
         Start(NodeById("n", 1)),
         Slice(Some(5), Some(5))))
   }
+
+  @Test def relationshipType() {
+    testQuery(
+      "start n=(1) match (n)-[r]->(x) where r:TYPE = \"something\" return r",
+      Query(
+        Return(EntityOutput("r")),
+        Start(NodeById("n", 1)),
+        Match(RelatedTo("n", "x", Some("r"), None, Direction.OUTGOING)),
+        Equals(RelationshipTypeValue("r"), Literal("something"))))
+  }
+
+    @Test def relationshipTypeOut() {
+    testQuery(
+      "start n=(1) match (n)-[r]->(x) return r:TYPE",
+
+      Query(
+        Return(RelationshipTypeOutput("r")),
+        Start(NodeById("n", 1)),
+        Match(RelatedTo("n", "x", Some("r"), None, Direction.OUTGOING))))
+  }
 }

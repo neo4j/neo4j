@@ -12,6 +12,8 @@ target
 *.iml
 .idea
 .DS_Store
+cypher/project
+cypher/lib_managed
 server/neo4j-home/data/
 server/neo4j-home/rrd
 server/src/main/resources/webadmin-html/js/neo4j/

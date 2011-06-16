@@ -1,5 +1,5 @@
-[[query-sort]]
-Sort
+[[query-order]]
+Order by
 =====
 
 To sort the output, use the Order by clause. Note that you can not sort on nodes and relationships,
