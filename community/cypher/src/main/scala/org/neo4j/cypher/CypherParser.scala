@@ -153,8 +153,8 @@ class CypherParser extends JavaTokenParsers {
   def where: Parser[Clause] = ignoreCase("where") ~> clause ^^ { case klas => klas }
 
   def clause: Parser[Clause] = (orderedComparison | not | notEquals | equals | regexp | parens) * (
-    "and" ^^^ { (a: Clause, b: Clause) => And(a, b) } |
-    "or" ^^^ {  (a: Clause, b: Clause) => Or(a, b) })
+    ignoreCase("and") ^^^ { (a: Clause, b: Clause) => And(a, b) } |
+    ignoreCase("or") ^^^ {  (a: Clause, b: Clause) => Or(a, b) })
 
   def regexp: Parser[Clause] = value ~ "=~" ~ regularLiteral ^^ {
     case a ~ "=~" ~ b => RegularExpression(a, stripQuotes(b))
