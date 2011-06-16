@@ -32,6 +32,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
@@ -130,25 +131,29 @@ public class MatrixNewTravTest
     {
         Node neoNode = getNeoNode();
         System.out.println( neoNode.getProperty( "name" ) + "'s friends:" );
-        // START SNIPPET: get-friends-usage
-        Traverser friendsTraverser = getFriendsNew( neoNode );
+        // START SNIPPET: friends-usage
+        Traverser friendsTraverser = getFriends( neoNode );
         int numberOfFriends = 0;
         for ( Path friendPath : friendsTraverser )
         {
             System.out.println( "At depth " + friendPath.length() + " => "
-                    + friendPath.endNode().getProperty( "name" ) );
+                                + friendPath.endNode()
+                                        .getProperty( "name" ) );
+            // END SNIPPET: friends-usage
             numberOfFriends++;
+            // START SNIPPET: friends-usage
         }
-        // END SNIPPET: get-friends-usage
+        // END SNIPPET: friends-usage
         assertEquals( 4, numberOfFriends );
     }
 
     // START SNIPPET: get-friends
-    private static Traverser getFriendsNew( final Node person )
+    private static Traverser getFriends( final Node person )
     {
-        TraversalDescription td = Traversal.description().breadthFirst().relationships(
-                RelTypes.KNOWS, Direction.OUTGOING ).filter(
-                        Traversal.returnAllButStartNode() );
+        TraversalDescription td = Traversal.description()
+                .breadthFirst()
+                .relationships( RelTypes.KNOWS, Direction.OUTGOING )
+                .evaluator( Evaluators.excludeStartPosition() );
         return td.traverse( person );
     }
     // END SNIPPET: get-friends
@@ -157,26 +162,31 @@ public class MatrixNewTravTest
     public void printMatrixHackers() throws Exception
     {
         System.out.println( "Hackers:" );
-        // START SNIPPET: find-hackers-usage
+        // START SNIPPET: find--hackers-usage
         Traverser traverser = findHackers( getNeoNode() );
         int numberOfHackers = 0;
         for ( Path hackerPath : traverser )
         {
             System.out.println( "At depth " + hackerPath.length() + " => "
-                    + hackerPath.endNode().getProperty( "name" ) );
+                                + hackerPath.endNode()
+                                        .getProperty( "name" ) );
+            // END SNIPPET: find--hackers-usage
             numberOfHackers++;
+            // START SNIPPET: find--hackers-usage
         }
-        // END SNIPPET: find-hackers-usage
+        // END SNIPPET: find--hackers-usage
         assertEquals( 1, numberOfHackers );
     }
 
     // START SNIPPET: find-hackers
     private static Traverser findHackers( final Node startNode )
     {
-        TraversalDescription td = Traversal.description().breadthFirst().relationships(
-                RelTypes.CODED_BY, Direction.OUTGOING ).relationships(
-                        RelTypes.KNOWS, Direction.OUTGOING ).filter(
-                                Traversal.returnWhereLastRelationshipTypeIs( RelTypes.CODED_BY ) );
+        TraversalDescription td = Traversal.description()
+                .breadthFirst()
+                .relationships( RelTypes.CODED_BY, Direction.OUTGOING )
+                .relationships( RelTypes.KNOWS, Direction.OUTGOING )
+                .evaluator(
+                        Evaluators.returnWhereLastRelationshipTypeIs( RelTypes.CODED_BY ) );
         return td.traverse( startNode );
     }
     // END SNIPPET: find-hackers

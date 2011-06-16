@@ -7,7 +7,7 @@ This example shows a very simple social model that connects friends and keeps tr
 
 == Simple social model ==
 
-image::socnet-model.png[title="Social network data model"]
+image::socnet-model.png[title="Social network data model", scaledwidth="60%"]
 
 The data model for a social network is pretty simple: +Persons+ with names and +StatusUpdates+ with timestamped text.
 These entities are then connected by specific relationships.
@@ -26,7 +26,7 @@ Each subsequent +StatusUpdate+ is connected by +next+.
 
 Here's an example where Andreas Kollegger micro-blogged his way to work in the morning:
 
-image::social_status.png[title="Andreas Kollegger's status updates"]
+image::social_status.png[title="Andreas Kollegger's status updates", scaledwidth="50%"]
 
 To read the status updates, we can create a traversal, like so:
 

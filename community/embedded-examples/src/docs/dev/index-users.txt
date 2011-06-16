@@ -5,7 +5,7 @@ User database with index
 You have a user database, and want to retrieve users by name.
 To begin with, this is the structure of the database we want to create:
 	
-image::users.png[title="Node space view of users"]
+image::users.png[title="Node space view of users", scaledwidth="100%"]
 
 That is, the reference node is connected to a users-reference node to which all users are connected.
 

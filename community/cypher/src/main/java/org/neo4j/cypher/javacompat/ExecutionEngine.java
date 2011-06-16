@@ -22,19 +22,30 @@ package org.neo4j.cypher.javacompat;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.cypher.SyntaxError;
 import org.neo4j.cypher.commands.Query;
+
 /**
- * @author ata
- * @since 5/31/11
+ * To run a {@link Query}, use this class.
  */
 public class ExecutionEngine
 {
     private org.neo4j.cypher.ExecutionEngine inner;
 
+    /**
+     * Creates an execution engine around the give graph database
+     * @param database The database to wrap
+     */
     public ExecutionEngine( GraphDatabaseService database )
     {
         inner = new org.neo4j.cypher.ExecutionEngine( database );
     }
 
+    /**
+     * Executes a {@link Query} and returns an iterable that contains the result set
+     * @param query The query to execute
+     * @return A ExecutionResult that contains the result set
+     * @throws SyntaxError If the Query contains errors,
+     * a SyntaxError exception might be thrown
+     */
     public ExecutionResult execute( Query query ) throws SyntaxError
     {
         return new ExecutionResult(inner.execute( query ));

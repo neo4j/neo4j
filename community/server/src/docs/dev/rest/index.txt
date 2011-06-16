@@ -111,9 +111,14 @@ include::traversal-using-a-return-filter.txt[]
 
 include::graph_algos.txt[]
 
+include::find-all-shortest-paths.txt[]
+
 include::find-one-of-the-shortest-paths-between-nodes.txt[]
 
-include::find-all-shortest-paths.txt[]
+include::execute-a-dijkstra-algorithm-with-similar-weights-on-relationships.txt[]
+
+include::execute-a-dijkstra-algorithm-with-weights-on-relationships.txt[]
+
 
 [[rest-api-batch-ops]]
 == Batch operations ==

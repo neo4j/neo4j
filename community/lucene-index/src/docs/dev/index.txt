@@ -453,14 +453,17 @@ This functionality is called _auto indexing_ and is controlled both from the dat
 [CAUTION]
 This is an experimental feature. Expect changes in the API and do not rely on it for production data handling.
 
-[[auto-indexer-basic-use-config]]
-=== Basic usage through the Configuration ===
+[[auto-indexing-config]]
+=== Configuration ===
 
-By default Auto Indexing is off for both Nodes and Relationships. To enable it on database startup set the configuration options +Config.NODE_AUTO_INDEXING+
-and +Config.RELATIONSHIP_AUTO_INDEXING+ to the strings “true” for auto indexing on all indexable properties of Nodes and Relationships, respectively.
+By default Auto Indexing is off for both Nodes and Relationships.
+To enable it on database startup set the configuration options +Config.NODE_AUTO_INDEXING+
+and +Config.RELATIONSHIP_AUTO_INDEXING+ to the string "+true+" for auto indexing on all indexable properties of Nodes and Relationships, respectively.
 
-[[properties-auto-select]]
-=== Selecting Properties to Auto Index ===
+If you just enable auto indexing as above, then _every_ property of the primitives for which it is enabled will be auto indexed.
+This is probably not something you want, so there is the option to explicitly state which properties you want monitored.
+To pass this in as a configuration parameter set the +Config.{NODE,RELATIONSHIP}_KEYS_INDEXABLE+
+option to a String that is a comma separated concatenation of the property names you want auto indexed.
 
 If you just enable auto indexing as above, then _every_ property of the primitives for which it is enabled will be auto indexed. This is probably not something you want,
 so there is the option to explicitly state which properties you want monitored. To pass this in as a configuration parameter set the +Config.{NODE,RELATIONSHIP}_KEYS_INDEXABLE+
@@ -474,12 +477,13 @@ tag=ConfigAutoIndex
 classifier=test-sources
 ----
 
-[[auto-index-api]]
-== Using the +AutoIndexer+ : The +AutoIndex+ API ==
+[[auto-indexing-api]]
+=== Search ===
 The usefulness of the auto indexing functionality comes of course from the ability to actually query the index and retrieve results.
 To that end, you can acquire an +AutoIndex+ object from the +AutoIndexer+ that exposes all the query and get methods of a normal
 http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html[+Index+],
-making it in essence a read-only version of one. Continuing from the previous example, accessing the index is done like this:
+making it in essence a read-only version of one.
+Continuing from the previous example, accessing the index is done like this:
 
 [snippet,java]
 ----
@@ -489,7 +493,7 @@ tag=APIReadAutoIndex
 classifier=test-sources
 ----
 
-[[properties-auto-ignore]]
+[[auto-indexing-properties-auto-ignore]]
 === Selecting Properties to Auto Ignore ===
 
 In the use case where you want all but some of the properties auto indexed, then the appropriate configuration parameters are +Config.{NODE,RELATIONSHIP}_KEYS_NON_INDEXABLE+,
@@ -506,10 +510,10 @@ classifier=test-sources
 [WARNING]
 Setting both of the above lists for a particular primitive type will result in an +IllegalStateException+ - having both tracked and ignored properties is confusing and adds no value.
 
-[[auto-indexer-config-api]]
-=== Changing the follow/ignore sets based on changing requirements: Runtime configuration through the API. ===
+[[auto-indexing-config-api]]
+=== Runtime Configuration ===
 
-The same options that are available during database creation via the configuration, they can also be set during runtime via the +AutoIndexer+ API.
+The same options that are available during database creation via the configuration can also be set during runtime via the +AutoIndexer+ API.
 
 Gaining access to the +AutoIndexer+ API, adding two +Node+ properties to auto index and a +Relationship+ property to ignore is done like so:
 
@@ -521,10 +525,10 @@ tag=APIAutoIndexer
 classifier=test-sources
 ----
 
-As with the start time configuration, the same restrictions apply, in that you can’t have both auto indexed and ignores properties.
+As with the start time configuration, the same restrictions apply, in that you can’t have both auto indexed and ignored properties.
 In case the changes you want to do would have you pass through such a state temporarily, you can disable the relevant +AutoIndexer+,
 do your changes and re-enable it - while an +AutoIndexer+ is disabled, no consistency checks are run, for exactly that reason.
-In case of error, an +IllegalStateException+ will be thrown. The example shows how to do runtime reconfiguration.
+In case of error, an +IllegalStateException+ will be thrown. The following example shows how to do runtime reconfiguration.
 
 [snippet,java]
 ----
@@ -540,7 +544,8 @@ So you can set some beforehand known settings, do runtime checks to augment the 
 the final configuration is the same regardless of the method used to reach it.
 
 [[auto-indexing-low-level]]
-== Some lower level details ==
+=== Low level details ===
+
 Currently the AutoIndexer functionality is implemented as a http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/event/TransactionEventHandler.html[+TransactionEventHandler+]
 that executes on +beforeCommit()+ of every transaction. The http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/event/TransactionData.html[+TransactionData+]
 object is queried for all modified (added, deleted and changed) properties of the primitives supported by the +AutoIndexer+ and adds and removes it based on the current configuration.
@@ -554,3 +559,4 @@ source=examples/AutoIndexerExampleTests.java
 tag=Semantics
 classifier=test-sources
 ----
+

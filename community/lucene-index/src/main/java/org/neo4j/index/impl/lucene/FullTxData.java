@@ -44,9 +44,11 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.neo4j.index.lucene.QueryContext;
@@ -194,8 +196,9 @@ class FullTxData extends TxData
         {
             Sort sorting = contextOrNull != null ? contextOrNull.getSorting() : null;
             boolean prioritizeCorrectness = contextOrNull == null || !contextOrNull.getTradeCorrectnessForSpeed();
+            IndexSearcher theSearcher = searcher( prioritizeCorrectness );
             query = includeOrphans( query );
-            Hits hits = new Hits( searcher( prioritizeCorrectness ), query, null, sorting, prioritizeCorrectness );
+            Hits hits = new Hits( theSearcher, query, null, sorting, prioritizeCorrectness );
             Collection<Long> result = new ArrayList<Long>();
             for ( int i = 0; i < hits.length(); i++ )
             {
@@ -236,17 +239,88 @@ class FullTxData extends TxData
         }
         else
         {
-            Set<Term> terms = new HashSet<Term>();
-            query.extractTerms( terms );
-            
-            // TODO Don't only use the first term
-            Term term = terms.iterator().next();
-            
             BooleanQuery result = new BooleanQuery();
             result.add( query, Occur.SHOULD );
-            result.add( new TermQuery( new Term( ORPHANS_KEY, term.field() ) ), Occur.SHOULD );
+            result.add( new TermQuery( new Term( ORPHANS_KEY, extractTermField( query ) ) ), Occur.SHOULD );
             return result;
         }
+    }
+
+    private String extractTermField( Query query )
+    {
+        // Try common types of queries
+        if ( query instanceof TermQuery )
+        {
+            return ((TermQuery)query).getTerm().field();
+        }
+        else if ( query instanceof WildcardQuery )
+        {
+            return ((WildcardQuery)query).getTerm().field();
+        }
+        else if ( query instanceof PrefixQuery )
+        {
+            return ((PrefixQuery)query).getPrefix().field();
+        }
+        
+        // Try to extract terms and get it that way
+        String field = getFieldFromExtractTerms( query );
+        if ( field != null )
+        {
+            return field;
+        }
+        
+        // Last resort: since Query doesn't have a common interface for getting
+        // the term/field of its query this is one option.
+        return getFieldViaReflection( query );
+    }
+
+    private String getFieldViaReflection( Query query )
+    {
+        try
+        {
+            try
+            {
+                Term term = (Term) query.getClass().getMethod( "getTerm" ).invoke( query );
+                return term.field();
+            }
+            catch ( NoSuchMethodException e )
+            {
+                return (String) query.getClass().getMethod( "getField" ).invoke( query );
+            }
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    private String getFieldFromExtractTerms( Query query )
+    {
+        Set<Term> terms = new HashSet<Term>();
+        try
+        {
+            query.extractTerms( terms );
+        }
+        catch ( UnsupportedOperationException e )
+        {
+            // In case of wildcard/range queries try to rewrite the query
+            // i.e. get the terms from the reader.
+            try
+            {
+                query.rewrite( reader ).extractTerms( terms );
+            }
+            catch ( IOException ioe )
+            {
+                throw new UnsupportedOperationException( ioe );
+            }
+            catch ( UnsupportedOperationException ue )
+            {
+                // TODO This is for "*" queries and such. Lucene doesn't seem
+                // to be able/willing to rewrite such queries.
+                // Just ignore the orphans then... OK?
+            }
+        }
+        return terms.isEmpty() ? null : terms.iterator().next().field();
     }
 
     @Override

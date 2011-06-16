@@ -19,7 +19,12 @@
  */
 package org.neo4j.graphdb.traversal;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 
 /**
  * Common {@link Evaluator}s useful during common traversals.
@@ -142,5 +147,89 @@ public abstract class Evaluators
                 return Evaluation.of( length >= minDepth && length <= maxDepth, length < maxDepth );
             }
         };
+    }
+    
+    /**
+     * Returns an {@link Evaluator} which compares the type of the last relationship
+     * in a {@link Path} to a given set of relationship types (one or more).If the type of
+     * the last relationship in a path is of one of the given types then
+     * {@code evaluationIfMatch} will be returned, otherwise
+     * {@code evaluationIfNoMatch} will be returned.
+     * 
+     * @param evaluationIfMatch the {@link Evaluation} to return if the type of the
+     * last relationship in the path matches any of the given types.
+     * @param evaluationIfNoMatch the {@link Evaluation} to return if the type of the
+     * last relationship in the path doesn't match any of the given types.
+     * @param type the (first) type (of possibly many) to match the last relationship
+     * in paths with.
+     * @param orAnyOfTheseTypes additional types to match the last relationship in
+     * paths with.
+     * @return an {@link Evaluator} which compares the type of the last relationship
+     * in a {@link Path} to a given set of relationship types.
+     */
+    public static Evaluator lastRelationshipTypeIs( final Evaluation evaluationIfMatch,
+            final Evaluation evaluationIfNoMatch, RelationshipType type,
+            RelationshipType... orAnyOfTheseTypes )
+    {
+        final Set<String> expectedTypes = new HashSet<String>();
+        expectedTypes.add( type.name() );
+        for ( RelationshipType otherType : orAnyOfTheseTypes )
+        {
+            expectedTypes.add( otherType.name() );
+        }
+        
+        return new Evaluator()
+        {
+            @Override
+            public Evaluation evaluate( Path path )
+            {
+                Relationship lastRelationship = path.lastRelationship();
+                if ( lastRelationship == null )
+                {
+                    return evaluationIfNoMatch;
+                }
+                
+                return expectedTypes.contains( lastRelationship.getType().name() ) ?
+                        evaluationIfMatch : evaluationIfNoMatch;
+            }
+        };
+    }
+
+    /**
+     * @see #lastRelationshipTypeIs(Evaluation, Evaluation, RelationshipType, RelationshipType...).
+     * Uses {@link Evaluation#INCLUDE_AND_CONTINUE} for {@code evaluationIfMatch}
+     * and {@link Evaluation#EXCLUDE_AND_CONTINUE} for {@code evaluationIfNoMatch}.
+     * 
+     * @param type the (first) type (of possibly many) to match the last relationship
+     * in paths with.
+     * @param orAnyOfTheseTypes additional types to match the last relationship in
+     * paths with.
+     * @return an {@link Evaluator} which compares the type of the last relationship
+     * in a {@link Path} to a given set of relationship types.
+     */
+    public static Evaluator returnWhereLastRelationshipTypeIs( RelationshipType type,
+            RelationshipType... orAnyOfTheseTypes )
+    {
+        return lastRelationshipTypeIs( Evaluation.INCLUDE_AND_CONTINUE, Evaluation.EXCLUDE_AND_CONTINUE,
+                type, orAnyOfTheseTypes );
+    }
+    
+    /**
+     * @see #lastRelationshipTypeIs(Evaluation, Evaluation, RelationshipType, RelationshipType...).
+     * Uses {@link Evaluation#INCLUDE_AND_PRUNE} for {@code evaluationIfMatch}
+     * and {@link Evaluation#INCLUDE_AND_CONTINUE} for {@code evaluationIfNoMatch}.
+     * 
+     * @param type the (first) type (of possibly many) to match the last relationship
+     * in paths with.
+     * @param orAnyOfTheseTypes additional types to match the last relationship in
+     * paths with.
+     * @return an {@link Evaluator} which compares the type of the last relationship
+     * in a {@link Path} to a given set of relationship types.
+     */
+    public static Evaluator pruneWhereLastRelationshipTypeIs( RelationshipType type,
+            RelationshipType... orAnyOfTheseTypes )
+    {
+        return lastRelationshipTypeIs( Evaluation.INCLUDE_AND_PRUNE, Evaluation.EXCLUDE_AND_CONTINUE,
+                type, orAnyOfTheseTypes );
     }
 }

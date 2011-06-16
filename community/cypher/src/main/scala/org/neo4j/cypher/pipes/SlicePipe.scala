@@ -21,10 +21,17 @@ package org.neo4j.cypher.pipes
 
 import org.neo4j.cypher.SymbolTable
 
-class SlicePipe(source:Pipe, itemsToReturn:Int) extends Pipe {
+class SlicePipe(source:Pipe, from:Option[Int], limit:Option[Int]) extends Pipe {
   val symbols: SymbolTable = source.symbols
 
   def foreach[U](f: (Map[String, Any]) => U) {
-    source.slice(0,itemsToReturn).foreach(f)
+    val slicedResult = (from, limit) match {
+      case (None, None) => source
+      case (Some(x), None) => source.drop(x)
+      case (None, Some(x)) => source.take(x)
+      case (Some(startAt), Some(count)) => source.slice(startAt, startAt + count)
+    }
+
+    slicedResult.foreach(f)
   }
 }
