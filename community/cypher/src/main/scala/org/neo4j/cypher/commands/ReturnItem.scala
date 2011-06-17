@@ -21,6 +21,7 @@ package org.neo4j.cypher.commands
 
 import org.neo4j.cypher.pipes.Pipe
 import org.neo4j.graphdb.{Relationship, PropertyContainer, NotFoundException}
+import org.neo4j.cypher.pipes.aggregation.{CountFunction, AggregationFunction}
 
 abstract sealed class ReturnItem(val identifier: Identifier) extends (Map[String, Any] => Map[String, Any]) {
   def assertDependencies(source: Pipe)
@@ -74,11 +75,15 @@ case class NullablePropertyOutput(entity: String, property: String) extends Retu
   }
 }
 
-abstract sealed class AggregationItem(ident: String) extends ReturnItem(AggregationIdentifier(ident))
+abstract sealed class AggregationItem(ident: String) extends ReturnItem(AggregationIdentifier(ident)) {
+  def createAggregationFunction:AggregationFunction
+}
 
-case class Count(variable: String) extends AggregationItem(variable) {
+case class Count(variable: String) extends AggregationItem("count("+variable+")") {
   def apply(m: Map[String, Any]): Map[String, Any] = m
 
   def assertDependencies(source: Pipe) {
   }
+
+  def createAggregationFunction: AggregationFunction = new CountFunction
 }

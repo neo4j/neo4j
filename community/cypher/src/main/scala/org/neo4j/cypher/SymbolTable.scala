@@ -31,7 +31,7 @@ class SymbolTable(val identifiers: Map[String, Identifier]) {
     }
   }
 
-  def add(idents:Map[String, Identifier]) = new SymbolTable(identifiers ++ idents)
+  def add(idents: Map[String, Identifier]) = new SymbolTable(identifiers ++ idents)
 
   def ++(other: SymbolTable): SymbolTable = {
     identifiers.foreach {
