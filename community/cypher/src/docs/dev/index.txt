@@ -26,7 +26,9 @@ and scripting languages like http://gremlin.tinkerpop.org[Gremlin] (supported vi
 and http://neo4j.rubyforge.org/[the JRuby Neo4j bindings]. This makes the concern of how to optimize
 queries in implementation detail not exposed to the user.
 
-The query language is comprised of several distinct parts. Let's see three of them in action:
+The query language is comprised of several distinct parts.
+
+Let's see three of them in action:
 
 For example, here is a query which finds a user called John in 
 an index and then traverses the graph looking for friends of 
@@ -80,3 +82,7 @@ include::ql/from/index.txt[]
 :leveloffset: 2
 
 include::ql/limit/index.txt[]
+
+:leveloffset: 2
+
+include::ql/skip/index.txt[]
