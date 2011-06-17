@@ -42,7 +42,7 @@ define(
         $(@el).html @template( mainmenu : [ 
           { label : "Dashboard",   subtitle:"Overview",url : "#",           current: location.hash is "" }
           { label : "Data browser",subtitle:"Explore and edit",url : "#/data/" ,    current: location.hash.indexOf("#/data/") is 0 }
-          { label : "Console",     subtitle:"Power tool",url : "#/console/" , current: location.hash is "#/console/" }
+          { label : "Console",     subtitle:"Power tool",url : "#/console/" , current: location.hash.indexOf("#/console/") is 0 }
           { label : "Server info", subtitle:"Details",url : "#/info/" ,    current: location.hash is "#/info/" } 
           { label : "Index manager", subtitle:"Indexing overview",url : "#/index/" ,    current: location.hash is "#/index/" } ] )
 
