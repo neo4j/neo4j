@@ -61,23 +61,23 @@ public class Start extends GraphDatabaseApp
     protected String exec( AppCommandParser parser, Session session, Output out )
         throws ShellException, RemoteException
     {
-        String query = "start ";
+        String query = "start";
         for (String i : parser.arguments()) 
         {
-            query += " " + i;
+            query += " " + i.replace( "'", "\"" );
         }
         CypherParser qparser = new CypherParser();
         ExecutionEngine engine = new ExecutionEngine( getServer().getDb() );
         try
         {
+            System.out.println( query );
             Query cquery = qparser.parse( query );
             ExecutionResult result = engine.execute( cquery );
             out.print( result.toString());
         }
         catch ( SyntaxError e )
         {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            throw ShellException.wrapCause( e );
         }
         //out.println( query );
         return null;
