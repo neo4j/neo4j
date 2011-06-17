@@ -174,4 +174,31 @@ tag=get-members
 Full source code:
 https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/test/java/org/neo4j/examples/RolesNewTravTest.java[RolesNewTravTest.java]
 
+=== Walking an ordered path ===
+
+This example shows how to use a path context holding a representation of a path.
+
+.Create a toy graph
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/orderedpath/OrderedPathTest.java
+tag=createGraph
+----
+
+image::ordered-path.png[title="The example graph", scaledwidth="5cm"]
+
+Now, the order of relationships (+REL1+ -> +REL2+ -> +REL3+) is stored in an +ArrayList+.
+Upon traversal, the +Evaluator+ can check against it to ensure that only paths are included and returned that have the predefined order of relationships:
+
+.Walk the path
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/orderedpath/OrderedPathTest.java
+tag=walkOrderedPath
+----
+
+Full source code:
+https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/test/java/org/neo4j/examples/orderedpath/OrderedPathTest.java[OrderedPathTest.java]
 
