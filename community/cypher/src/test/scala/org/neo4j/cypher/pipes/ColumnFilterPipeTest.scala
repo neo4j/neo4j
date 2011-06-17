@@ -29,7 +29,7 @@ class ColumnFilterPipeTest {
     val source = new FakePipe(List(Map("x" -> "x", "foo" -> "bar")))
     val columnPipe = new ColumnFilterPipe(source, returnItems)
 
-    Assert.assertEquals(Map("foo" -> NodeIdentifier("foo")), columnPipe.symbols.identifiers)
+    Assert.assertEquals(Set(NodeIdentifier("foo")), columnPipe.symbols.identifiers)
     Assert.assertEquals(List(Map("foo" -> "bar")), columnPipe.toList)
   }
 }

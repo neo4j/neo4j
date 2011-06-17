@@ -26,7 +26,7 @@ import org.neo4j.graphdb.{PropertyContainer, Relationship, NotFoundException, No
 trait ExecutionResult extends Traversable[Map[String, Any]] {
   val symbols:SymbolTable
 
-  val columns: List[String] = symbols.identifiers.map(_._1).toList
+  val columns: List[String] = symbols.identifiers.map(_.name).toList
 
   def javaColumns: java.util.List[String] = columns.asJava
 

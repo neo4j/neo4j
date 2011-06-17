@@ -1,5 +1,3 @@
-package org.neo4j.cypher
-
 /**
  * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -19,28 +17,35 @@ package org.neo4j.cypher
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import org.junit.Assert._
-import org.junit.{Assert, Test}
+package org.neo4j.cypher.pipes.aggregation
 
+import org.neo4j.cypher.commands.ReturnItem
 
+abstract class AggregationFunction {
+  def apply(data: Map[String, Any])
 
-class SyntaxErrorTest {
-  def expectError(query: String, expectedError: String) {
-    val parser = new CypherParser()
-    try {
-      parser.parse(query)
-      fail("Should have produced the error: "+expectedError)
-    } catch {
-      case x : SyntaxError => Assert.assertEquals(x.getMessage, expectedError)
+  def result: Any
+}
+
+class CountStarFunction extends AggregationFunction {
+  var count = 0
+
+  def apply(data: Map[String, Any]) {
+    count = count + 1
+  }
+
+  def result: Int = count
+}
+
+class CountFunction(returnItem:ReturnItem) extends AggregationFunction {
+  var count = 0
+
+  def apply(data: Map[String, Any]) {
+    returnItem(data).head._2 match {
+      case null =>
+      case _ => count = count + 1
     }
   }
 
-  @Test def shouldRaiseErrorWhenSortingOnNode() {
-    expectError(
-      "start s = (1) return s order by s",
-      "Cannot ORDER BY on nodes or relationships")
-  }
-
-  //TODO: Write test for       start n=(%A%,%B%,%C%,%D%,) return count(n.property?)
-
+  def result: Int = count
 }

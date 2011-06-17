@@ -358,14 +358,14 @@ public class PropertyDatas
 
     public static PropertyData forInt( int index, long id, int value )
     {
-        return value < LowIntPropertyData.LIMIT ?
+        return value >= 0 && value < LowIntPropertyData.LIMIT ?
                 new LowIntPropertyData( index, id, value ) :
                 new IntPropertyData( index, id, value );
     }
 
     public static PropertyData forLong( int index, long id, long value )
     {
-        return value < LowLongPropertyData.LIMIT ?
+        return value >= 0 && value < LowLongPropertyData.LIMIT ?
                 new LowLongPropertyData( index, id, value ) :
                 new LongPropertyData( index, id, value );
     }

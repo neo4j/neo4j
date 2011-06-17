@@ -74,7 +74,7 @@ return `This isn't a common identifier`.`<<!!__??>>`""",
 
   @Test def nullable_properties() {
     testQuery(
-      title = "Optional nodes",
+      title = "Optional properties",
       text = """If a property might or might not be there, you can select it optionally by adding a questionmark to the identifier,
 like this:""",
       queryText = """start n=(%A%, %B%) return n.age?""",

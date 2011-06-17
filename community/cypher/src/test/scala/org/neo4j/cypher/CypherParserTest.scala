@@ -300,7 +300,7 @@ class CypherParserTest {
         Return(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
         Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
-        Aggregation(Count("*"))))
+        Aggregation(CountStar())))
   }
 
   @Test def singleColumnSorting() {
@@ -423,4 +423,14 @@ class CypherParserTest {
         Start(NodeById("n", 1)),
         Match(RelatedTo("n", "x", Some("r"), None, Direction.OUTGOING))))
   }
+
+  @Test def countNonNullValues() {
+    testQuery(
+      "start a = (1) return a, count(a)",
+      Query(
+        Return(EntityOutput("a")),
+        Start(NodeById("a", 1)),
+        Aggregation(Count(EntityOutput("a")))))
+  }
+
 }

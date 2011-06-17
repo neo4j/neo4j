@@ -63,7 +63,8 @@ class StartTest extends DocumentingTestBase {
   @Test def nodes_by_index_query() {
     testQuery(
       title = "Node by index query",
-      text = "If the start point can be found by index queries, it can be done like this: (index-name, \"query\"). Like this: ",
+      text = "If the start point can be found by index queries, it can be done like this: (index-name, \"query\")." +
+        "This allows you to write more advanced index queries",
       queryText = """start n=(nodes,"name:A") return n""",
       returns = """The node indexed with name "A" is returned""",
       (p) => assertEquals(List(Map("n" -> node("A"))), p.toList))

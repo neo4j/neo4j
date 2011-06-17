@@ -47,6 +47,11 @@ class ExecutionEngine(graph: GraphDatabaseService) {
 
       pipe = new TransformPipe(pipe, returns.returnItems)
 
+      aggregation match {
+        case None =>
+        case Some(aggr) => pipe = new AggregationPipe(pipe, returns.returnItems, aggr.aggregationItems)
+      }
+
       sort match {
         case None =>
         case Some(s) => pipe = new SortPipe(pipe, s.sortItems.toList)
@@ -57,7 +62,9 @@ class ExecutionEngine(graph: GraphDatabaseService) {
         case Some(x) => pipe = new SlicePipe(pipe, x.from, x.limit)
       }
 
-      val result = new ColumnFilterPipe(pipe, returns.returnItems) with ExecutionResult
+      val columns = returns.returnItems ++ aggregation.getOrElse(new Aggregation()).aggregationItems
+
+      val result = new ColumnFilterPipe(pipe, columns) with ExecutionResult
 
       result
     }
