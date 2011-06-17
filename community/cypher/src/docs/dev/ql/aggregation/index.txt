@@ -1,0 +1,7 @@
+[[query-aggregation]]
+Aggregation
+===========
+
+To calculate aggregated data, Cypher offers a few aggregation functions.
+
+include::count-nodes.txt[]
