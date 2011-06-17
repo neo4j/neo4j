@@ -17,26 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.web;
+package org.neo4j.server.plugins;
 
-import org.mortbay.jetty.Server;
 import org.neo4j.server.NeoServer;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.List;
+import java.util.Collection;
 
-public interface WebServer {
-    void init();
-    void setNeoServer(NeoServer server);
-    void setPort(int portNo);
-    void start();
+public interface SPIPluginLifecycle extends PluginLifecycle {
+
+    Collection<Injectable<?>> start(NeoServer neoServer);
+
     void stop();
-    void setMaxThreads(int maxThreads);
-    void addJAXRSPackages(List<String> packageNames, String serverMountPoint);
-    void addStaticContent(String contentLocation, String serverMountPoint);
-    void invokeDirectly(String targetUri, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException;
-    Server getJetty();
 }

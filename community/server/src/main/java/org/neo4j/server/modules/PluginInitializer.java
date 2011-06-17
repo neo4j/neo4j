@@ -28,6 +28,7 @@ import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.plugins.PluginLifecycle;
+import org.neo4j.server.plugins.SPIPluginLifecycle;
 
 /**
  *  Allows Plugins to provide their own initialization
@@ -53,8 +54,15 @@ public class PluginInitializer
         {
             if ( hasPackage(pluginLifecycle, packageNames ) )
             {
-                Collection<Injectable<?>> start = pluginLifecycle.start( graphDatabaseService, configuration );
-                injectables.addAll( start );
+                if (pluginLifecycle instanceof SPIPluginLifecycle)
+                {
+                    SPIPluginLifecycle lifecycle = (SPIPluginLifecycle) pluginLifecycle;
+                    injectables.addAll( lifecycle.start( neoServer ) );
+                }
+                else
+                {
+                    injectables.addAll(pluginLifecycle.start( graphDatabaseService, configuration ));
+                }
             }
         }
         return injectables;

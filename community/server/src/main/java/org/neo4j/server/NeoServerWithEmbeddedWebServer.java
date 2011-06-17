@@ -83,6 +83,8 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
         // Start at the bottom of the stack and work upwards to the Web container
         startupHealthCheck();
 
+        initWebServer();
+
         startDatabase();
 
         startExtensionInitialization();
@@ -153,14 +155,17 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
         return configurator.configuration();
     }
 
-    private void startWebServer() {
+    private void initWebServer() {
 
         int webServerPort = getWebServerPort();
 
         log.info("Starting Neo Server on port [%s]", webServerPort);
         webServer.setPort(webServerPort);
+        webServer.init();
+    }
 
 
+    private void startWebServer() {
         try {
             webServer.start();
             log.info( "Server started on [%s]", baseUri() );
