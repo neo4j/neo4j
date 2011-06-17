@@ -511,5 +511,15 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
         Map("node.y" -> "b", "count(node.x)" -> 1)))
   }
 
+  @Test def shouldBeAbleToOutputANodeTwice() {
+    val query = Query(
+      Return(EntityOutput("node")),
+      Start(NodeById("node", 0)))
+
+    val result = execute(query)
+    assertEquals(List(refNode), result.columnAs[Node]("node").toList)
+  }
+
+
 }
 

@@ -41,6 +41,13 @@ class SyntaxErrorTest {
       "Cannot ORDER BY on nodes or relationships")
   }
 
+  @Test def shouldRaiseErrorWhenFinishingAListWithAComma() {
+    expectError(
+      "start s = (1,2,) return s order by s",
+      "Cannot ORDER BY on nodes or relationships")
+  }
+
+
   //TODO: Write test for       start n=(%A%,%B%,%C%,%D%,) return count(n.property?)
 
 }

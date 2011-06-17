@@ -82,12 +82,12 @@ class CypherParser extends JavaTokenParsers {
     case varName ~ "=" ~ "(" ~ id ~ ")" => NodeById(varName, id.map(_.toLong).toSeq: _*)
   }
 
-  def nodeByIndex = identity ~ "=" ~ "(" ~ identity ~ "," ~ identity ~ "," ~ stringLiteral ~ ")" ^^ {
-    case varName ~ "=" ~ "(" ~ index ~ "," ~ key ~ "," ~ value ~ ")" => NodeByIndex(varName, index, key, stripQuotes(value))
+  def nodeByIndex = identity ~ "=" ~ "(" ~ identity ~ "," ~ identity ~ "," ~ string ~ ")" ^^ {
+    case varName ~ "=" ~ "(" ~ index ~ "," ~ key ~ "," ~ value ~ ")" => NodeByIndex(varName, index, key, value)
   }
 
-  def nodeByIndexQuery = identity ~ "=" ~ "(" ~ identity ~ "," ~ stringLiteral ~ ")" ^^ {
-    case varName ~ "=" ~ "(" ~ index ~ "," ~ query ~ ")" => NodeByIndexQuery(varName, index, stripQuotes(query))
+  def nodeByIndexQuery = identity ~ "=" ~ "(" ~ identity ~ "," ~ string ~ ")" ^^ {
+    case varName ~ "=" ~ "(" ~ index ~ "," ~ query ~ ")" => NodeByIndexQuery(varName, index, query)
   }
 
 
@@ -95,8 +95,8 @@ class CypherParser extends JavaTokenParsers {
     case varName ~ "=" ~ "<" ~ id ~ ">" => RelationshipById(varName, id.map(_.toLong).toSeq: _*)
   }
 
-  def relsByIndex = identity ~ "=" ~ "<" ~ identity ~ "," ~ identity ~ "," ~ stringLiteral ~ ">" ^^ {
-    case varName ~ "=" ~ "<" ~ index ~ "," ~ key ~ "," ~ value ~ ">" => RelationshipByIndex(varName, index, key, stripQuotes(value))
+  def relsByIndex = identity ~ "=" ~ "<" ~ identity ~ "," ~ identity ~ "," ~ string ~ ">" ^^ {
+    case varName ~ "=" ~ "<" ~ index ~ "," ~ key ~ "," ~ value ~ ">" => RelationshipByIndex(varName, index, key, value)
   }
 
   def desc:Parser[String] = ignoreCase("descending") | ignoreCase("desc")
@@ -200,11 +200,11 @@ class CypherParser extends JavaTokenParsers {
     case not ~ "(" ~ inner ~ ")" => Not(inner)
   }
 
-  def value: Parser[Value] = (boolean | relationshipType | property | string | decimal)
+  def value: Parser[Value] = (boolean | relationshipType | property | stringValue | decimal)
 
   def property: Parser[Value] = identity ~ "." ~ identity ^^ {  case v ~ "." ~ p => PropertyValue(v,p) }
 
-  def string: Parser[Value] = stringLiteral ^^ { case str => Literal(stripQuotes(str)) }
+  def stringValue: Parser[Value] = string ^^ { case str => Literal(str) }
 
   def decimal: Parser[Value] = decimalNumber ^^ { case num => Literal(num.toLong) }
 
@@ -222,6 +222,9 @@ class CypherParser extends JavaTokenParsers {
 
   def positiveNumber: Parser[String] = """\d+""".r
 
+  def string: Parser[String] = (stringLiteral | apostropheString)  ^^ { case str => stripQuotes(str) }
+
+  def apostropheString:Parser[String] = ("\'"+"""([^"\p{Cntrl}\\]|\\[\\/bfnrt]|\\u[a-fA-F0-9]{4})*"""+"\'").r
 
   private def getDirection(back:Option[String], forward:Option[String]):Direction =
     (back.nonEmpty, forward.nonEmpty) match {

@@ -22,7 +22,7 @@ package org.neo4j.cypher
 import org.neo4j.cypher.commands._
 import org.junit.Assert._
 import org.neo4j.graphdb.Direction
-import org.junit.Test
+import org.junit.{Ignore, Test}
 
 class CypherParserTest {
   def testQuery(query: String, expectedQuery: Query) {
@@ -432,5 +432,21 @@ class CypherParserTest {
         Start(NodeById("a", 1)),
         Aggregation(Count(EntityOutput("a")))))
   }
+
+  @Test def shouldBeAbleToHandleStringLiteralsWithApostrophe() {
+  testQuery(
+    "start a = (index, key, 'value') return a",
+    Query(
+      Return(EntityOutput("a")),
+      Start(NodeByIndex("a", "index", "key", "value"))))
+}
+  @Ignore
+  @Test def shouldHandleQuotationsInsideApostrophes() {
+  testQuery(
+    "start a = (index, key, 'val\"ue') return a",
+    Query(
+      Return(EntityOutput("a")),
+      Start(NodeByIndex("a", "index", "key", "val\"ue"))))
+}
 
 }
