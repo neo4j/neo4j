@@ -300,7 +300,7 @@ class CypherParserTest {
         Return(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
         Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
-        Aggregation(Count("*"))))
+        Aggregation(CountStar())))
   }
 
   @Test def singleColumnSorting() {

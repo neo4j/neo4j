@@ -148,7 +148,7 @@ class CypherParser extends JavaTokenParsers {
 
 
   def count:Parser[ReturnItem] = ignoreCase("count") ~ "(" ~ "*" ~ ")" ^^
-    { case count ~ "(" ~ "*" ~ ")" => Count("*") }
+    { case count ~ "(" ~ "*" ~ ")" => CountStar() }
 
   def where: Parser[Clause] = ignoreCase("where") ~> clause ^^ { case klas => klas }
 

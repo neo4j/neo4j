@@ -79,7 +79,7 @@ abstract sealed class AggregationItem(ident: String) extends ReturnItem(Aggregat
   def createAggregationFunction:AggregationFunction
 }
 
-case class Count(variable: String) extends AggregationItem("count("+variable+")") {
+case class CountStar() extends AggregationItem("count(*)") {
   def apply(m: Map[String, Any]): Map[String, Any] = m
 
   def assertDependencies(source: Pipe) {

@@ -23,7 +23,7 @@ import org.junit.Test
 import org.junit.Assert._
 import org.junit.matchers.JUnitMatchers._
 import org.neo4j.cypher.SymbolTable
-import org.neo4j.cypher.commands.{NodeIdentifier, AggregationIdentifier, Count, EntityOutput}
+import org.neo4j.cypher.commands.{NodeIdentifier, AggregationIdentifier, CountStar, EntityOutput}
 import scala.collection.JavaConverters._
 
 
@@ -32,7 +32,7 @@ class AggregationPipeTest {
     val source = new FakePipe(List(), new SymbolTable(Map("foo" -> NodeIdentifier("foo"))))
 
     val returnItems = List(EntityOutput("name"))
-    val grouping = List(Count("*"))
+    val grouping = List(CountStar())
     val aggregationPipe = new AggregationPipe(source, returnItems, grouping)
 
     assertEquals(Map(
@@ -48,7 +48,7 @@ class AggregationPipeTest {
       Map("name" -> "Michael", "age" -> 31)), new SymbolTable(Map("foo" -> NodeIdentifier("foo"))))
 
     val returnItems = List(EntityOutput("name"))
-    val grouping = List(Count("*"))
+    val grouping = List(CountStar())
     val aggregationPipe = new AggregationPipe(source, returnItems, grouping)
 
     assertThat(aggregationPipe.toList.asJava, hasItems(

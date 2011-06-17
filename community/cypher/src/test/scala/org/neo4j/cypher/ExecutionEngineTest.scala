@@ -396,7 +396,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
       Return(EntityOutput("a")),
       Start(NodeById("a", refNode.getId)),
       Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
-      Aggregation(Count("*")))
+      Aggregation(CountStar()))
 
     val result = execute(query)
 
@@ -486,7 +486,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val query = Query(
       Return(PropertyOutput("node","x")),
       Start(NodeById("node", n1.getId, n2.getId, n3.getId)),
-      Aggregation(Count("*")))
+      Aggregation(CountStar()))
 
     val result = execute(query)
 
