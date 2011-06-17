@@ -23,7 +23,9 @@ import org.neo4j.cypher.commands._
 import org.junit.Assert._
 import java.lang.String
 import org.junit.{Ignore, Test}
-import org.neo4j.graphdb.{DynamicRelationshipType, Relationship, Direction, Node}
+import org.neo4j.graphdb.{Relationship, Direction, Node}
+import scala.collection.JavaConverters._
+import org.junit.matchers.JUnitMatchers._
 
 class ExecutionEngineTest extends ExecutionEngineTestBase {
 
@@ -384,9 +386,8 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     assertEquals(List(n1, n2), result.columnAs[Node]("n").toList)
   }
 
-  @Ignore("No implemented yet")
-  @Test def shouldBeAbleToCount() {
-    val a = createNode() //start a = node(0) match (a) --> (b) return a, count(*)
+  @Test def shouldBeAbleToCountNodes() {
+    val a = createNode() //start a = (0) match (a) --> (b) return a, count(*)
     val b = createNode()
     relate(refNode, a, "A")
     relate(refNode, b, "A")
@@ -477,4 +478,20 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     assertEquals(List(KNOWS,HATES), result.columnAs[Node]("r:TYPE").toList)
   }
 
+  @Test def shouldCountOnProperties() {
+    val n1 = createNode(Map("x"->33))
+    val n2 = createNode(Map("x"->33))
+    val n3 = createNode(Map("x"->42))
+
+    val query = Query(
+      Return(PropertyOutput("node","x")),
+      Start(NodeById("node", n1.getId, n2.getId, n3.getId)),
+      Aggregation(Count("*")))
+
+    val result = execute(query)
+
+    assertThat(result.toList.asJava, hasItems[Map[String,Any]]( Map("node.x"->33, "count(*)"->2), Map("node.x"->42, "count(*)"->1) ) )
+
+  }
 }
+
