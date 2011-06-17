@@ -87,7 +87,3 @@ include::ql/skip/index.txt[]
 
 include::ql/limit/index.txt[]
 
-:leveloffset: 2
-
-include::ql/skip/index.txt[]
-
