@@ -1,51 +1,9 @@
-[preface]
-[[tutorial]]
-What is Graph Database?
+[[graphdb-concepts]]
+Graph Database Concepts
 =======================
-A graph database stores data in a graph, the most generic of data structures, capable of elegantly representing any kind of data in a highly accessible way. 
-Let’s follow along some graphs, using them to express graph concepts. 
-We’ll “read” a graph by following arrows around the diagram to form sentences. 
 
-A Graph contains Nodes and Relationships
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-____
-"A Graph --records data in--> Nodes --which have--> Properties"
-____
+:leveloffset: 2
 
-The simplest possible graph is a single Node, a record that has named values referred to as Properties. 
-A Node could start with a single Property and grow to a few million, though that can get a little awkward. 
-At some point it makes sense to distribute the data into multiple nodes, organized with explicit Relationships.
+include::what-is-a-graphdb.txt[]
 
-____
-"Nodes --are organized by--> Relationships --which also have--> Properties"
-____
-
-Relationships organize Nodes into arbitrary structures, allowing a Graph to resemble a List, a Tree, a Map, or a compound Entity – any of which can be combined into yet more complex, richly inter-connected structures. 
-
-Query a Graph with a Traversal
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-____
-"A Traversal --navigates--> aGraph; it --identifies--> Paths --which order--> Nodes"
-____
-
-A Traversal is how you query a Graph, navigating from starting Nodes to related Nodes according to an algorithm, finding answers to questions like "what music do my friends like that I don't yet own," or "if this power supply goes down, what web services are affected?"
-
-
-Indexes look-up Nodes or Relationships
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-____
-"An Index --maps from--> Properties --to either--> Nodes or Relationships. It --is a special--> Traversal"
-____
-
-Often, you want to find a specific Node or Relationship according to a Property it has. This special case of Traversal is so common that it is optimized into an Index look-up, for questions like "find the Account for username master-of-graphs." 
-
-Neo4j is a Graph Database
-~~~~~~~~~~~~~~~~~~~~~~~~~
-____
-"A Graph Database --manages a--> Graph and --also manages related--> Indexes"
-____
-
-Neo4j is a commercially supported open-source graph database.
-It was designed and built from the ground-up to be a reliable database, optimized for graph structures instead of tables. 
-Working with Neo4j, your application gets all the expressiveness of a graph, with all the dependability you expect out of a database.
 
