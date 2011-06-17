@@ -37,7 +37,7 @@ define(
 
         @baseElement = opts.baseElement
         @closeCallback = opts.closeCallback
-        @settings = opts.appState.getVisualizationSettings()
+        @settings = opts.dataBrowserSettings
 
         @position()
         @render()
@@ -45,7 +45,6 @@ define(
       save : =>
         keys = $("#visualization-label-properties").val().split(",")
         @settings.setLabelProperties(keys)
-        @settings.save()
         @closeCallback()
 
       position : =>

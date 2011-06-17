@@ -20,12 +20,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 define(
   ['neo4j/webadmin/modules/databrowser/visualization/VisualGraph'
+   'neo4j/webadmin/modules/databrowser/DataBrowserSettings'
    'neo4j/webadmin/utils/ItemUrlResolver'
    './VisualizationSettingsDialog'
    'ribcage/View'
    'ribcage/security/HtmlEscaper'
-   './visualization'], 
-  (VisualGraph, ItemUrlResolver, VisualizationSettingsDialog, View, HtmlEscaper, template) ->
+   './visualization'],
+  (VisualGraph, DataBrowserSettings, ItemUrlResolver, VisualizationSettingsDialog, View, HtmlEscaper, template) ->
 
     class VisualizedView extends View
 
@@ -33,14 +34,13 @@ define(
         'click #visualization-show-settings' : "showSettingsDialog"
         'click #visualization-reflow' : "reflowGraphLayout"
 
-
       initialize : (options)->
         @server = options.server
         @appState = options.appState
         @dataModel = options.dataModel
       
-        @settings = @appState.getVisualizationSettings()
-        @settings.bind("change", @settingsChanged)
+        @settings = new DataBrowserSettings(@appState.getSettings())
+        @settings.labelPropertiesChanged @settingsChanged
         @dataModel.bind("change:data", @render)
 
       render : =>
@@ -114,7 +114,7 @@ define(
           button = $("#visualization-show-settings")
           button.addClass("selected")
           @settingsDialog = new VisualizationSettingsDialog(
-            appState : @appState
+            dataBrowserSettings : @settings
             baseElement : button
             closeCallback : @hideSettingsDialog)
 
