@@ -29,19 +29,19 @@ import org.neo4j.cypher.{SyntaxError, SymbolTable}
 
 class AggregationPipeTest {
   @Test def shouldReturnColumnsFromReturnItems() {
-    val source = new FakePipe(List(), new SymbolTable(Map("foo" -> NodeIdentifier("foo"))))
+    val source = new FakePipe(List(), new SymbolTable(NodeIdentifier("foo")))
 
     val returnItems = List(EntityOutput("name"))
     val grouping = List(CountStar())
     val aggregationPipe = new AggregationPipe(source, returnItems, grouping)
 
-    assertEquals(Map(
-      "count(*)" -> AggregationIdentifier("count(*)"),
-      "foo" -> NodeIdentifier("foo")), aggregationPipe.symbols.identifiers)
+    assertEquals(
+      Set(NodeIdentifier("foo"),AggregationIdentifier("count(*)")),
+      aggregationPipe.symbols.identifiers)
   }
 
   @Test(expected = classOf[SyntaxError]) def shouldThrowSemanticException() {
-    val source = new FakePipe(List(), new SymbolTable(Map("foo" -> NodeIdentifier("foo"))))
+    val source = new FakePipe(List(), new SymbolTable(NodeIdentifier("foo")))
 
     val returnItems = List(EntityOutput("name"))
     val grouping = List(Count(EntityOutput("none-existing-identifier")))
@@ -53,7 +53,7 @@ class AggregationPipeTest {
       Map("name" -> "Andres", "age" -> 36),
       Map("name" -> "Peter", "age" -> 38),
       Map("name" -> "Michael", "age" -> 36),
-      Map("name" -> "Michael", "age" -> 31)), new SymbolTable(Map("foo" -> NodeIdentifier("foo"))))
+      Map("name" -> "Michael", "age" -> 31)), new SymbolTable(NodeIdentifier("foo")))
 
     val returnItems = List(EntityOutput("name"))
     val grouping = List(CountStar())
@@ -70,7 +70,7 @@ class AggregationPipeTest {
       Map("name" -> "Andres", "age" -> 36),
       Map("name" -> null, "age" -> 38),
       Map("name" -> "Michael", "age" -> 36),
-      Map("name" -> "Michael", "age" -> 31)), new SymbolTable(Map("name" -> NodeIdentifier("name"))))
+      Map("name" -> "Michael", "age" -> 31)), new SymbolTable(NodeIdentifier("name")))
 
     val returnItems = List()
     val grouping = List(Count(EntityOutput("name")))

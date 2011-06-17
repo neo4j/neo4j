@@ -24,7 +24,7 @@ import org.neo4j.cypher.SymbolTable
 import org.neo4j.cypher.commands.{AggregationItem, ReturnItem}
 
 class AggregationPipe(source: Pipe, returnItems: Seq[ReturnItem], aggregations: Seq[AggregationItem]) extends Pipe {
-  val symbols: SymbolTable = source.symbols.add(aggregations.map(x => x.identifier.name -> x.identifier).toMap)
+  val symbols: SymbolTable = source.symbols.add(aggregations.map(_.identifier))
 
   aggregations.foreach(_.assertDependencies(source))
 
