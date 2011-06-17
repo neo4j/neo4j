@@ -69,7 +69,9 @@ VERS =  --attribute revnumber=$(VERSNUM)
 
 GITVERS = --attribute gitversion=$(GITVERSNUM)
 
-GENERAL_FLAGS = $(V) $(K) $(VERS) $(GITVERS) $(IMPDIR)
+ASCIIDOC_FLAGS = $(V) $(VERS) $(GITVERS) $(IMPDIR)
+
+A2X_FLAGS = $(K) $(ASCIIDOC_FLAGS)
 
 .PHONY: all dist docbook help clean pdf latexpdf html offline-html singlehtml text cleanup annotated manpages upgrade installfilter
 
@@ -134,7 +136,7 @@ docbook:  manpages copyimages
 	#
 	#
 	mkdir -p $(BUILDDIR)
-	asciidoc $(V) $(VERS) $(IMPDIR) --backend docbook --attribute docinfo --doctype book --conf-file=$(CONFDIR)/asciidoc.conf --conf-file=$(CONFDIR)/docbook45.conf --out-file $(DOCBOOKFILE) $(SRCFILE)
+	asciidoc $(ASCIIDOC_FLAGS) --backend docbook --attribute docinfo --doctype book --conf-file=$(CONFDIR)/asciidoc.conf --conf-file=$(CONFDIR)/docbook45.conf --out-file $(DOCBOOKFILE) $(SRCFILE)
 	xmllint --nonet --noout --xinclude --postvalid $(DOCBOOKFILE)
 
 docbook-shortinfo:  manpages copyimages
@@ -144,7 +146,7 @@ docbook-shortinfo:  manpages copyimages
 	#
 	#
 	mkdir -p $(BUILDDIR)
-	asciidoc $(V) $(VERS) $(IMPDIR) --backend docbook --attribute docinfo1 --doctype book --conf-file=$(CONFDIR)/asciidoc.conf --conf-file=$(CONFDIR)/docbook45.conf --out-file $(DOCBOOKSHORTINFOFILE) $(SRCFILE)
+	asciidoc $(ASCIIDOC_FLAGS) --backend docbook --attribute docinfo1 --doctype book --conf-file=$(CONFDIR)/asciidoc.conf --conf-file=$(CONFDIR)/docbook45.conf --out-file $(DOCBOOKSHORTINFOFILE) $(SRCFILE)
 	xmllint --nonet --noout --xinclude --postvalid $(DOCBOOKSHORTINFOFILE)
 
 docbook-html:  manpages copyimages
@@ -154,7 +156,7 @@ docbook-html:  manpages copyimages
 	#
 	#
 	mkdir -p $(BUILDDIR)
-	asciidoc $(V) $(VERS) $(IMPDIR) --backend docbook --attribute docinfo1 --doctype book --conf-file=$(CONFDIR)/asciidoc.conf --conf-file=$(CONFDIR)/docbook45.conf --conf-file=$(CONFDIR)/linkedimages.conf --out-file $(DOCBOOKFILEHTML) $(SRCFILE)
+	asciidoc $(ASCIIDOC_FLAGS) --backend docbook --attribute docinfo1 --doctype book --conf-file=$(CONFDIR)/asciidoc.conf --conf-file=$(CONFDIR)/docbook45.conf --conf-file=$(CONFDIR)/linkedimages.conf --out-file $(DOCBOOKFILEHTML) $(SRCFILE)
 	xmllint --nonet --noout --xinclude --postvalid $(DOCBOOKFILEHTML)
 
 pdf:  docbook copyimages
@@ -180,7 +182,7 @@ latexpdf:  manpages copyimages
 	#
 	#
 	mkdir -p $(BUILDDIR)/dblatex
-	a2x $(GENERAL_FLAGS) -L -f pdf -D $(BUILDDIR)/dblatex --conf-file=$(CONFDIR)/dblatex.conf $(SRCFILE)
+	a2x $(A2X_FLAGS) -L -f pdf -D $(BUILDDIR)/dblatex --conf-file=$(CONFDIR)/dblatex.conf $(SRCFILE)
 
 html: manpages copyimages docbook-html
 	#
@@ -212,7 +214,7 @@ singlehtml:  manpages copyimages
 	#
 	#
 	mkdir -p $(SINGLEHTMLDIR)
-	a2x $(GENERAL_FLAGS) -L -f xhtml -D $(SINGLEHTMLDIR) --conf-file=$(CONFDIR)/xhtml.conf --asciidoc-opts "--conf-file=$(CONFDIR)/asciidoc.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/docbook45.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/linkedimages.conf" --xsl-file=$(CONFDIR)/xhtml.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(SRCFILE)
+	a2x $(A2X_FLAGS) -L -f xhtml -D $(SINGLEHTMLDIR) --conf-file=$(CONFDIR)/xhtml.conf --asciidoc-opts "--conf-file=$(CONFDIR)/asciidoc.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/docbook45.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/linkedimages.conf" --xsl-file=$(CONFDIR)/xhtml.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(SRCFILE)
 	cp -fr $(JSDIR) $(SINGLEHTMLDIR)/js
 
 # builds docbook format first
@@ -223,7 +225,7 @@ annotated:  manpages copyimages
 	#
 	#
 	mkdir -p $(ANNOTATEDDIR)
-	a2x $(GENERAL_FLAGS) -L -a showcomments -f xhtml -D $(ANNOTATEDDIR) --conf-file=$(CONFDIR)/xhtml.conf --asciidoc-opts "--conf-file=$(CONFDIR)/asciidoc.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/docbook45.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/linkedimages.conf" --xsl-file=$(CONFDIR)/xhtml.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(SRCFILE)
+	a2x $(A2X_FLAGS) -L -a showcomments -f xhtml -D $(ANNOTATEDDIR) --conf-file=$(CONFDIR)/xhtml.conf --asciidoc-opts "--conf-file=$(CONFDIR)/asciidoc.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/docbook45.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/linkedimages.conf" --xsl-file=$(CONFDIR)/xhtml.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(SRCFILE)
 	cp -fr $(SRCDIR)/js $(ANNOTATEDDIR)/js
 
 text: docbook-shortinfo
