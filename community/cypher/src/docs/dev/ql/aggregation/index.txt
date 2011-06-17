@@ -5,3 +5,5 @@ Aggregation
 To calculate aggregated data, Cypher offers a few aggregation functions.
 
 include::count-nodes.txt[]
+include::count-entities.txt[]
+include::count-non-null-values.txt[]

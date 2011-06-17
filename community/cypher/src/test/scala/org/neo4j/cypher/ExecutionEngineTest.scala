@@ -256,7 +256,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
     val query = Query(
       Return(EntityOutput("n")),
-      Start(NodeByIndexQuery("n", idxName, key +":"+ value)))
+      Start(NodeByIndexQuery("n", idxName, key + ":" + value)))
 
     val result = execute(query)
 
@@ -272,7 +272,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
     val query = Query(
       Return(EntityOutput("n")),
-      Start(NodeByIndexQuery("n", idxName, key +":andr*")))
+      Start(NodeByIndexQuery("n", idxName, key + ":andr*")))
 
     val result = execute(query)
 
@@ -408,7 +408,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
     val query = Query(
       Return(EntityOutput("start")),
-      Start(NodeById("start", nodeIds:_*)),
+      Start(NodeById("start", nodeIds: _*)),
       Slice(None, Some(2)))
 
     val result = execute(query)
@@ -421,7 +421,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
     val query = Query(
       Return(EntityOutput("start")),
-      Start(NodeById("start", nodeIds:_*)),
+      Start(NodeById("start", nodeIds: _*)),
       Sort(SortItem(PropertyOutput("start", "name"), true)),
       Slice(Some(2), None))
 
@@ -435,7 +435,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
     val query = Query(
       Return(EntityOutput("start")),
-      Start(NodeById("start", nodeIds:_*)),
+      Start(NodeById("start", nodeIds: _*)),
       Sort(SortItem(PropertyOutput("start", "name"), true)),
       Slice(Some(2), Some(2)))
 
@@ -472,26 +472,44 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
     val result = execute(query)
 
-    val KNOWS =relType("KNOWS")
+    val KNOWS = relType("KNOWS")
     val HATES = relType("HATES")
 
-    assertEquals(List(KNOWS,HATES), result.columnAs[Node]("r:TYPE").toList)
+    assertEquals(List(KNOWS, HATES), result.columnAs[Node]("r:TYPE").toList)
   }
 
-  @Test def shouldCountOnProperties() {
-    val n1 = createNode(Map("x"->33))
-    val n2 = createNode(Map("x"->33))
-    val n3 = createNode(Map("x"->42))
+  @Test def shouldAggregateOnProperties() {
+    val n1 = createNode(Map("x" -> 33))
+    val n2 = createNode(Map("x" -> 33))
+    val n3 = createNode(Map("x" -> 42))
 
     val query = Query(
-      Return(PropertyOutput("node","x")),
+      Return(PropertyOutput("node", "x")),
       Start(NodeById("node", n1.getId, n2.getId, n3.getId)),
       Aggregation(CountStar()))
 
     val result = execute(query)
 
-    assertThat(result.toList.asJava, hasItems[Map[String,Any]]( Map("node.x"->33, "count(*)"->2), Map("node.x"->42, "count(*)"->1) ) )
-
+    assertThat(result.toList.asJava, hasItems[Map[String, Any]](Map("node.x" -> 33, "count(*)" -> 2), Map("node.x" -> 42, "count(*)" -> 1)))
   }
+
+  @Test def shouldCountNonNullValues() {
+    val n1 = createNode(Map("y" -> "a", "x" -> 33))
+    val n2 = createNode(Map("y" -> "a"))
+    val n3 = createNode(Map("y" -> "b", "x" -> 42))
+
+    val query = Query(
+      Return(PropertyOutput("node", "y")),
+      Start(NodeById("node", n1.getId, n2.getId, n3.getId)),
+      Aggregation(Count(NullablePropertyOutput("node", "x"))))
+
+    val result = execute(query)
+
+    assertThat(result.toList.asJava,
+      hasItems[Map[String, Any]](
+        Map("node.y" -> "a", "count(node.x)" -> 1),
+        Map("node.y" -> "b", "count(node.x)" -> 1)))
+  }
+
 }
 

@@ -122,7 +122,11 @@ class CypherParser extends JavaTokenParsers {
       case items => Sort(items:_*)
     }
 
-  def returns: Parser[(Return, Option[Aggregation])] = ignoreCase("return") ~> rep1sep((count | nullablePropertyOutput | relationshipTypeOutput | propertyOutput | nodeOutput), ",") ^^
+  def aggregate:Parser[AggregationItem] = count
+
+  def returnItem:Parser[ReturnItem] = nullablePropertyOutput | relationshipTypeOutput | propertyOutput | nodeOutput
+
+  def returns: Parser[(Return, Option[Aggregation])] = ignoreCase("return") ~> rep1sep((aggregate | returnItem), ",") ^^
     { case items => {
       val list = items.filter(_.isInstanceOf[AggregationItem]).map(_.asInstanceOf[AggregationItem])
 
@@ -146,9 +150,11 @@ class CypherParser extends JavaTokenParsers {
   def relationshipTypeOutput:Parser[ReturnItem] = identity <~ ":TYPE" ^^
     { case c => RelationshipTypeOutput(c) }
 
-
-  def count:Parser[ReturnItem] = ignoreCase("count") ~ "(" ~ "*" ~ ")" ^^
-    { case count ~ "(" ~ "*" ~ ")" => CountStar() }
+  def count:Parser[AggregationItem] = ignoreCase("count") ~>"(" ~> ("*" | returnItem) <~ ")" ^^
+    {
+      case "*" => CountStar()
+      case x:ReturnItem => Count(x)
+    }
 
   def where: Parser[Clause] = ignoreCase("where") ~> clause ^^ { case klas => klas }
 

@@ -23,11 +23,6 @@ import org.junit.Assert._
 import org.junit.{Assert, Test}
 
 
-/**
- * Created by Andres Taylor
- * Date: 5/1/11
- * Time: 10:36 
- */
 
 class SyntaxErrorTest {
   def expectError(query: String, expectedError: String) {
@@ -45,4 +40,7 @@ class SyntaxErrorTest {
       "start s = (1) return s order by s",
       "Cannot ORDER BY on nodes or relationships")
   }
+
+  //TODO: Write test for       start n=(%A%,%B%,%C%,%D%,) return count(n.property?)
+
 }

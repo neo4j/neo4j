@@ -19,8 +19,33 @@
  */
 package org.neo4j.cypher.pipes.aggregation
 
+import org.neo4j.cypher.commands.ReturnItem
+
 abstract class AggregationFunction {
-  def apply(data:Map[String,Any])
+  def apply(data: Map[String, Any])
 
   def result: Any
+}
+
+class CountStarFunction extends AggregationFunction {
+  var count = 0
+
+  def apply(data: Map[String, Any]) {
+    count = count + 1
+  }
+
+  def result: Int = count
+}
+
+class CountFunction(returnItem:ReturnItem) extends AggregationFunction {
+  var count = 0
+
+  def apply(data: Map[String, Any]) {
+    returnItem(data).head._2 match {
+      case null =>
+      case _ => count = count + 1
+    }
+  }
+
+  def result: Int = count
 }
