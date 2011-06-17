@@ -19,17 +19,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['./cypher',
+  ['./http',
    './console',
    'ribcage/View',
    './ConsoleView',
    'lib/backbone'], 
   (baseTemplate, consoleTemplate, View, ConsoleView) ->
- 
-    class CypherConsoleView extends ConsoleView
+
+    class HttpConsoleView extends ConsoleView
       
       render : =>
-        $(@el).html(baseTemplate(current:'cypher'))
+        $(@el).html(baseTemplate())
         @renderConsole()
         return this  
 )

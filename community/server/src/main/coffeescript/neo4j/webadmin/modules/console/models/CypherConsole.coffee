@@ -28,5 +28,5 @@ define ['./Console','lib/backbone'], (Console) ->
       @set {"showPrompt":true},{silent:true}
   
     eval : (statement, showStatement=true, includeInHistory=true) =>
-      super statement, showStatement, includeInHistory, ""
+      super statement, showStatement, includeInHistory, "cypher"
       

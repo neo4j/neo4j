@@ -1,0 +1,26 @@
+.sidebar
+  %p.pad HTTP Console, for prototyping REST calls to the neo4j server.
+
+  %p.pad Syntax: 
+  %pre.pad [HTTP VERB] [URI] [JSON DATA]
+  %pre.pad ex: GET /
+
+  .foldout
+    %h2
+      %a.foldout_trigger(href="#") Cheat sheet
+    .foldout_content
+      %ul.info_list
+        %li
+          %h3 Get database description
+          %p GET /db/data/
+        %li 
+          %h3 Create a node
+          %p POST /db/data/node {"name":"Steven"}
+
+  .foldout
+    %h2
+      %a.foldout_trigger(href="#") If the console hangs
+    .foldout_content
+      %p.pad If I done goofed, you can reset the console by clearing your browser cookies for webadmin.
+
+.workarea.with-sidebar#console-base
