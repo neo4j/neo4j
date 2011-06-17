@@ -42,7 +42,7 @@ body {
 }
 
 #splash h1 {
-  background: url("../img/icons/glyphish/141-lamp.png") no-repeat scroll center top transparent;
+  background: url("../img/icons/glyphish/stol.png") no-repeat scroll center top transparent;
   color: #DDDDDD;
   font-family: Georgia,serif;
   font-size: 13px;
@@ -478,7 +478,7 @@ body {
   background: none repeat scroll 0 0 black;
   bottom: 0;
   left: 0;
-  opacity: 0.8;
+  opacity: 0.9;
   position: fixed;
   right: 0;
   top: 0;
@@ -600,10 +600,35 @@ body {
 .foldout.visible .foldout_content { display:block; }
 
 /* INFO LIST */
+
 .info_list { font-size:70%; list-style:none; margin:0; padding: 5px 10px; }
 .info_list li { }
 .info_list li h3 { margin: 0; padding: 4px 0 0 0; }
 .info_list li p { margin: 0; padding: 2px 0; }
+
+/* FANCY BOX */
+.box { 
+  border : 1px solid #CCC;
+  padding: 5px 3px;
+  width:120px;
+  -moz-border-radius: 4px 4px 4px 4px;
+  -webkit-border-radius:4px;
+  border-radius:4px;
+  background-color: #eee;
+  background-image: -webkit-gradient(
+    linear,
+    left bottom,
+    left top,
+    color-stop(0.31, rgb(221,221,221)),
+    color-stop(0.58, rgb(238,238,238)));
+  background-image: -moz-linear-gradient(
+    center bottom,
+    rgb(221,221,221) 31%,
+    rgb(238,238,238) 58%);
+
+}
+.box .value { text-align:center; }
+.box .title { text-align:center; font-size:12px; }
 
 /**
  * TINY PROPERTY LIST

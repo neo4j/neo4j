@@ -3,35 +3,54 @@
     %tbody
       :if primitives.isDataAvailable()
         %tr
-          %td= htmlEscape(primitives.get("NumberOfNodeIdsInUse"))
-          %th nodes
-          %td= htmlEscape(primitives.get("NumberOfPropertyIdsInUse"))
-          %th properties
-          %td= htmlEscape(primitives.get("NumberOfRelationshipIdsInUse"))
-          %th relationships
-          %td= htmlEscape(primitives.get("NumberOfRelationshipTypeIdsInUse"))
-          %th relationship types
+          %td
+            .box
+              .value= htmlEscape(primitives.get("NumberOfNodeIdsInUse"))
+              .title nodes
+          %td
+            .box
+              .value= htmlEscape(primitives.get("NumberOfPropertyIdsInUse"))
+              .title properties
+          %td
+            .box
+              .value= htmlEscape(primitives.get("NumberOfRelationshipIdsInUse"))
+              .title relationships
+          %td
+            .box
+              .value= htmlEscape(primitives.get("NumberOfRelationshipTypeIdsInUse"))
+              .title relationship types
+          
       :if diskUsage.isDataAvailable()
         %tr
-          %td= htmlEscape(Math.round(diskUsage.get("TotalStoreSize") / 1024) + " kB ")
-          %th total disk usage
-          %td= htmlEscape(Math.round( diskUsage.getDatabaseSize() / 1024) + " kB " + "(" + diskUsage.getDatabasePercentage() + "%)")
-          %th database disk usage
-          %td= htmlEscape(Math.round( diskUsage.getLogicalLogSize() / 1024) + " kB " + "(" + diskUsage.getLogicalLogPercentage() + "%)")
-          %th logical log disk usage
           %td
-          %th
+            .box
+              .value= htmlEscape(Math.round(diskUsage.get("TotalStoreSize") / 1024) + " kB ")
+              .title total disk usage
+          %td
+            .box
+              .value= htmlEscape(Math.round( diskUsage.getDatabaseSize() / 1024) + " kB " + "(" + diskUsage.getDatabasePercentage() + "%)")
+              .title database disk usage
+          %td
+            .box
+              .value= htmlEscape(Math.round( diskUsage.getLogicalLogSize() / 1024) + " kB " + "(" + diskUsage.getLogicalLogPercentage() + "%)")
+              .title logical log disk usage
+          %td
 
       :if cacheUsage.isDataAvailable()
         %tr
-          %td= htmlEscape(cacheUsage.get("NodeCacheSize"))
-          %th cached nodes
-          %td= htmlEscape(cacheUsage.get("RelationshipCacheSize"))
-          %th cached relationships
-          %td= htmlEscape(cacheUsage.get("CacheType"))
-          %th is the cache type
           %td
-          %th
+            .box
+              .value= htmlEscape(cacheUsage.get("NodeCacheSize"))
+              .title cached nodes
+          %td
+            .box
+              .value= htmlEscape(cacheUsage.get("RelationshipCacheSize"))
+              .title cached relationships
+          %td
+            .box
+              .value= htmlEscape(cacheUsage.get("CacheType"))
+              .title is the cache type
+          %td
 
   .break
 
