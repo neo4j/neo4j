@@ -224,7 +224,7 @@ class CypherParser extends JavaTokenParsers {
 
   def string: Parser[String] = (stringLiteral | apostropheString)  ^^ { case str => stripQuotes(str) }
 
-  def apostropheString:Parser[String] = ("\'"+"""([^"\p{Cntrl}\\]|\\[\\/bfnrt]|\\u[a-fA-F0-9]{4})*"""+"\'").r
+  def apostropheString:Parser[String] = ("\'"+"""([^'\p{Cntrl}\\]|\\[\\/bfnrt]|\\u[a-fA-F0-9]{4})*"""+"\'").r
 
   private def getDirection(back:Option[String], forward:Option[String]):Direction =
     (back.nonEmpty, forward.nonEmpty) match {
@@ -238,7 +238,10 @@ class CypherParser extends JavaTokenParsers {
   def parse(queryText: String): Query =
     parseAll(query, queryText) match {
       case Success(r, q) => r
-      case NoSuccess(message, input) => throw new SyntaxError(message)
+      case NoSuccess(message, input) => message match {
+        case "string matching regex `-?\\d+' expected but `)' found" => throw new SyntaxError("Last element of list must be a value")
+        case _ => throw new SyntaxError(message)
+      }
     }
 
   class NodeNamer {

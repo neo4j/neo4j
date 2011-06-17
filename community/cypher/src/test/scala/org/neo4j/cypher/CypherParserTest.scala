@@ -440,7 +440,6 @@ class CypherParserTest {
       Return(EntityOutput("a")),
       Start(NodeByIndex("a", "index", "key", "value"))))
 }
-  @Ignore
   @Test def shouldHandleQuotationsInsideApostrophes() {
   testQuery(
     "start a = (index, key, 'val\"ue') return a",

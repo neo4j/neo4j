@@ -31,7 +31,7 @@ class SyntaxErrorTest {
       parser.parse(query)
       fail("Should have produced the error: "+expectedError)
     } catch {
-      case x : SyntaxError => Assert.assertEquals(x.getMessage, expectedError)
+      case x : SyntaxError => Assert.assertEquals(expectedError,x.getMessage)
     }
   }
 
@@ -44,7 +44,7 @@ class SyntaxErrorTest {
   @Test def shouldRaiseErrorWhenFinishingAListWithAComma() {
     expectError(
       "start s = (1,2,) return s order by s",
-      "Cannot ORDER BY on nodes or relationships")
+      "Last element of list must be a value")
   }
 
 
