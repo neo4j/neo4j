@@ -42,7 +42,7 @@ body {
 }
 
 #splash h1 {
-  background: url("../img/icons/glyphish/141-lamp.png") no-repeat scroll center top transparent;
+  background: url("../img/icons/glyphish/stol.png") no-repeat scroll center top transparent;
   color: #DDDDDD;
   font-family: Georgia,serif;
   font-size: 13px;
@@ -478,7 +478,7 @@ body {
   background: none repeat scroll 0 0 black;
   bottom: 0;
   left: 0;
-  opacity: 0.8;
+  opacity: 0.9;
   position: fixed;
   right: 0;
   top: 0;

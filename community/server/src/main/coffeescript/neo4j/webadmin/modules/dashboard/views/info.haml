@@ -3,14 +3,23 @@
     %tbody
       :if primitives.isDataAvailable()
         %tr
-          %td= htmlEscape(primitives.get("NumberOfNodeIdsInUse"))
-          %th nodes
-          %td= htmlEscape(primitives.get("NumberOfPropertyIdsInUse"))
-          %th properties
-          %td= htmlEscape(primitives.get("NumberOfRelationshipIdsInUse"))
-          %th relationships
-          %td= htmlEscape(primitives.get("NumberOfRelationshipTypeIdsInUse"))
-          %th relationship types
+          %td
+            .box
+              .value= htmlEscape(primitives.get("NumberOfNodeIdsInUse"))
+              .title nodes
+          %td
+            .box
+              .value= htmlEscape(primitives.get("NumberOfPropertyIdsInUse"))
+              .title properties
+          %td
+            .box
+              .value= htmlEscape(primitives.get("NumberOfRelationshipIdsInUse"))
+              .title relationships
+          %td
+            .box
+              .value= htmlEscape(primitives.get("NumberOfRelationshipTypeIdsInUse"))
+              .title relationship types
+          
       :if diskUsage.isDataAvailable()
         %tr
           %td= htmlEscape(Math.round(diskUsage.get("TotalStoreSize") / 1024) + " kB ")
