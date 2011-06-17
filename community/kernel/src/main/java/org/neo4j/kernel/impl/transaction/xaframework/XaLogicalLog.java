@@ -873,8 +873,7 @@ public class XaLogicalLog
         }
         FileChannel channel = new RandomAccessFile( name, "r" ).getChannel();
         channel.position( position );
-//        return new BufferedFileChannel( channel );
-        return channel;
+        return new BufferedFileChannel( channel );
     }
 
     private void extractPreparedTransactionFromLog( int identifier,
@@ -916,8 +915,6 @@ public class XaLogicalLog
             long expectedVersion, ReadableByteChannel log, LogBuffer targetBuffer ) throws IOException
     {
         // Assertions in read?
-        Map<Integer,List<LogEntry>> transactions =
-            new HashMap<Integer,List<LogEntry>>();
         LogEntry entry;
         TxPosition txPosition = txStartPositionCache.get( txId );
         LogEntryCollector collector = txPosition != null ?
@@ -966,17 +963,6 @@ public class XaLogicalLog
         InMemoryLogBuffer buffer = new InMemoryLogBuffer();
         extractPreparedTransactionFromLog( identifier, log, buffer );
         log.close();
-        return buffer;
-    }
-
-    private ReadableByteChannel wrapInMemoryLogEntryRepresentation( List<LogEntry> entries )
-            throws IOException
-    {
-        InMemoryLogBuffer buffer = new InMemoryLogBuffer();
-        for ( LogEntry entry : entries )
-        {
-            LogIoUtils.writeLogEntry( entry, buffer );
-        }
         return buffer;
     }
 
@@ -1076,7 +1062,7 @@ public class XaLogicalLog
         {
             String currentLogName = getCurrentLogFileName();
             FileChannel channel = new RandomAccessFile( currentLogName, "r" ).getChannel();
-//            channel = new BufferedFileChannel( channel );
+            channel = new BufferedFileChannel( channel );
 
             // Combined with the writeBuffer in cases where a DirectMappedLogBuffer
             // is used, on Windows or when memory mapping is turned off.
