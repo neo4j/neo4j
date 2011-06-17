@@ -76,4 +76,26 @@ public class TestProperties extends AbstractNeo4jTestCase
         newTransaction();
         assertNull( node.getProperty( "2", null ) );
     }
+    
+    @Test
+    public void testLongPropertyValues() throws Exception
+    {
+        Node n = getGraphDb().createNode();
+        setPropertyAndAssertIt( n, -134217728l );
+        setPropertyAndAssertIt( n, -134217729l );
+    }
+
+    @Test
+    public void testIntPropertyValues() throws Exception
+    {
+        Node n = getGraphDb().createNode();
+        setPropertyAndAssertIt( n, -134217728 );
+        setPropertyAndAssertIt( n, -134217729 );
+    }
+    
+    private void setPropertyAndAssertIt( Node n, long l )
+    {
+        n.setProperty( "key", l );
+        assertEquals( l, n.getProperty( "key" ) );
+    }
 }
