@@ -8,22 +8,34 @@ public class LeaseManagerTest
 {
     private static final long ONE_MINUTE = 60;
 
+    private static class LeasableObject implements Leasable
+    {
+    }
+
     @Test
-    public void shouldCreateADefaultLeaseForAPagedTraverser()
+    public void shouldCreateADefaultLease()
     {
         FakeClock fakeClock = new FakeClock();
-        LeaseManager<Object> manager = new LeaseManager<Object>( fakeClock );
+        LeaseManager<LeasableObject> manager = new LeaseManager<LeasableObject>( fakeClock );
+        assertNotNull( manager.createLease( new LeasableObject() ) );
+    }
 
-        assertNotNull( manager.createLease() );
+    @Test
+    public void shouldNotAcceptLeasesWithNegativeTTL()
+    {
+        FakeClock fakeClock = new FakeClock();
+        LeaseManager<LeasableObject> manager = new LeaseManager<LeasableObject>( fakeClock );
+        assertNull( manager.createLease( -1l, new LeasableObject() ) );
+        assertNull( manager.createLease( Long.MAX_VALUE + 1, new LeasableObject() ) );
     }
 
     @Test
     public void shouldRetrieveAnExistingLeaseImmediatelyAfterCreation()
     {
         FakeClock fakeClock = new FakeClock();
-        LeaseManager<Object> manager = new LeaseManager<Object>( fakeClock );
+        LeaseManager<LeasableObject> manager = new LeaseManager<LeasableObject>( fakeClock );
 
-        Lease<Object> lease = manager.createLease();
+        Lease<LeasableObject> lease = manager.createLease( new LeasableObject() );
 
         assertNotNull( manager.getLeaseById( lease.getId() ) );
 
@@ -33,9 +45,9 @@ public class LeaseManagerTest
     public void shouldRetrieveAnExistingLeaseSomeTimeAfterCreation()
     {
         FakeClock fakeClock = new FakeClock();
-        LeaseManager<Object> manager = new LeaseManager<Object>( fakeClock );
+        LeaseManager<LeasableObject> manager = new LeaseManager<LeasableObject>( fakeClock );
 
-        Lease<Object> lease = manager.createLease( 2 * 60 );
+        Lease<LeasableObject> lease = manager.createLease( 2 * 60, new LeasableObject() );
         fakeClock.forwardMinutes( 1 );
 
         assertNotNull( manager.getLeaseById( lease.getId() ) );
@@ -46,9 +58,9 @@ public class LeaseManagerTest
     public void shouldNotRetrieveALeaseAfterItExpired()
     {
         FakeClock fakeClock = new FakeClock();
-        LeaseManager<Object> manager = new LeaseManager<Object>( fakeClock );
+        LeaseManager<LeasableObject> manager = new LeaseManager<LeasableObject>( fakeClock );
 
-        Lease<Object> lease = manager.createLease( ONE_MINUTE );
+        Lease<LeasableObject> lease = manager.createLease( ONE_MINUTE, new LeasableObject() );
 
         fakeClock.forwardMinutes( 2 );
 
@@ -59,10 +71,10 @@ public class LeaseManagerTest
     public void shouldNotBarfWhenAnotherThreadOrRetrieveRevokesTheLease()
     {
         FakeClock fakeClock = new FakeClock();
-        LeaseManager<Object> manager = new LeaseManager<Object>( fakeClock );
+        LeaseManager<LeasableObject> manager = new LeaseManager<LeasableObject>( fakeClock );
 
-        Lease<Object> leaseA = manager.createLease( ONE_MINUTE );
-        Lease<Object> leaseB = manager.createLease( ONE_MINUTE * 3 );
+        Lease<LeasableObject> leaseA = manager.createLease( ONE_MINUTE, new LeasableObject() );
+        Lease<LeasableObject> leaseB = manager.createLease( ONE_MINUTE * 3, new LeasableObject() );
 
         fakeClock.forwardMinutes( 2 );
 

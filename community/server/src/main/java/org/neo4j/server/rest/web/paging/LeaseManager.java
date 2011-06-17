@@ -3,7 +3,7 @@ package org.neo4j.server.rest.web.paging;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class LeaseManager<T>
+public class LeaseManager<T extends Leasable>
 {
     private static final long ONE_MINUTE_IN_SECONDS = 60;
     private final Clock clock;
@@ -15,14 +15,18 @@ public class LeaseManager<T>
 
     }
 
-    public Lease<T> createLease()
+    public Lease<T> createLease(T leasedObject)
     {
-        return createLease( ONE_MINUTE_IN_SECONDS );
+        return createLease( ONE_MINUTE_IN_SECONDS, leasedObject );
     }
 
-    public Lease<T> createLease( long seconds )
+    public Lease<T> createLease( long seconds, T leasedObject )
     {
-        Lease<T> lease = new Lease<T>( null, clock.currentTimeInMilliseconds() + seconds * 1000 );
+        if(seconds < 1) {
+            return null;
+        }
+        
+        Lease<T> lease = new Lease<T>( leasedObject, clock.currentTimeInMilliseconds() + seconds * 1000 );
         leases.put( lease.getId(), lease );
         return lease;
     }
