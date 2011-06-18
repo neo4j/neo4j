@@ -22,6 +22,12 @@ package org.neo4j.cypher.pipes
 import java.lang.String
 import org.neo4j.cypher.SymbolTable
 
+/**
+ * Pipe is a central part of Cypher. Most pipes are decorators - they
+ * wrap another pipe. StartPipes are the only exception to this.
+ * Pipes are combined to form an execution plan, and when iterated over,
+ * the execute the query.
+ */
 abstract class Pipe extends Traversable[Map[String, Any]] {
 
   def ++(other: Pipe): Pipe = new JoinPipe(this, other)

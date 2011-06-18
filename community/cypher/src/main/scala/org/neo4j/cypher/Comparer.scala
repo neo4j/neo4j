@@ -22,6 +22,9 @@ package org.neo4j.cypher
 import java.math.BigDecimal
 import java.lang.Character
 
+/**
+ * Comparer is a trait that enables it's subclasses to compare to AnyRef with each other.
+ */
 trait Comparer {
   def compareValuesOfSameType(l: AnyRef, r: AnyRef): Int = (l, r) match {
     case (left: Comparable[AnyRef], right: Comparable[AnyRef]) => left.compareTo(right)
@@ -34,6 +37,9 @@ trait Comparer {
     case (left: Number, right: Number) => java.lang.Double.compare(left.doubleValue(), right.doubleValue())
     case (left: String, right: Character) => left.compareTo(right.toString)
     case (left: Character, right: String) => left.toString.compareTo(right.toString)
+    case (null, null) => 0
+    case (null, _) => 1
+    case (_, null) => -1
     case (left, right) => {
       throw new RuntimeException("Don't know how to compare that. Left: " + left.toString + "; Right: " + right.toString)
     }
