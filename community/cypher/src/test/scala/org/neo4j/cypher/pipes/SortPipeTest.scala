@@ -72,10 +72,24 @@ class SortPipeTest {
       Map("x" -> "B", "y" -> 10)), sortPipe.toList)
   }
 
+  @Test def shouldHandleSortingWithNullValues() {
+    val source = new FakePipe(List(
+      Map("y" -> 1),
+      Map("y" -> null),
+      Map("y" -> 2)))
+
+    val sortPipe = new SortPipe(source, List(SortItem(EntityOutput("y"), true)))
+
+    assertEquals(List(
+      Map("y" -> 1),
+      Map("y" -> 2),
+      Map("y" -> null)), sortPipe.toList)
+  }
+
 }
 
-class FakePipe(data: Seq[Map[String, Any]], val symbols:SymbolTable) extends Pipe {
-  def this(data: Seq[Map[String, Any]]) = this(data, new SymbolTable())
+class FakePipe(data: Seq[Map[String, Any]], val symbols: SymbolTable) extends Pipe {
+  def this(data: Seq[Map[String, Any]]) = this (data, new SymbolTable())
 
   def foreach[U](f: (Map[String, Any]) => U) {
     data.foreach(f(_))

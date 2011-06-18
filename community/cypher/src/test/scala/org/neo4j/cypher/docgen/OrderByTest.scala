@@ -29,9 +29,9 @@ class OrderByTest extends DocumentingTestBase {
   def graphDescription = List("A KNOWS B", "B KNOWS C")
 
   override val properties = Map(
-    "A" -> Map("age" -> 34),
+    "A" -> Map("age" -> 34, "length"->170),
     "B" -> Map("age" -> 34),
-    "C" -> Map("age" -> 32))
+    "C" -> Map("age" -> 32, "length"->185))
 
   def section = "Order by"
 
@@ -62,5 +62,15 @@ class OrderByTest extends DocumentingTestBase {
       queryText = """start n=(%C%,%A%,%B%) return n order by n.age, n.name""",
       returns = """The nodes, sorted first by their age, and then by their name.""",
       (p) => assertEquals(List(node("C"), node("A"), node("B")), p.columnAs[Node]("n").toList))
+  }
+
+  @Test def order_by_nullable_property() {
+    testQuery(
+      title = "Ordering null",
+      text = "When sorting the result set, null will always come at the end of the result set for" +
+        " ascending sorting, and first when doing descending sort.",
+      queryText = """start n=(%C%,%A%,%B%) return n order by n.length?""",
+      returns = """The nodes sorted by the length property, with a node without that property last.""",
+      (p) => assertEquals(List(node("A"), node("C"), node("B")), p.columnAs[Node]("n").toList))
   }
 }
