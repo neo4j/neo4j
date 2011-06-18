@@ -984,7 +984,7 @@ public class RestfulGraphDatabase
     }
 
     @POST
-    @Path( PATH_NODE_TRAVERSE )
+    @Path( PATH_TO_PAGED_TRAVERSERS )
     public Response createPagedTraverser( @PathParam( "nodeId" ) long startNode,
             @QueryParam( "pageSize" ) int pageSize, @PathParam( "returnType" ) TraverserReturnType returnType,
             String body)
@@ -993,7 +993,7 @@ public class RestfulGraphDatabase
     }
     
     @POST
-    @Path( PATH_NODE_TRAVERSE )
+    @Path( PATH_TO_PAGED_TRAVERSERS )
     public Response createPagedTraverser( @PathParam( "nodeId" ) long startNode,
             @QueryParam( "pageSize" ) int pageSize, @PathParam( "returnType" ) TraverserReturnType returnType,
             String body, int leaseTimeInSeconds )
