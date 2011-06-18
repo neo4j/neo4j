@@ -951,7 +951,7 @@ public class DatabaseActions
             throw new NotFoundException( String.format("The traverser with id [%s] was not found", traverserId) );
         }
         
-        PagedTraverser traverser = lease.getLeasedItem();
+        PagedTraverser traverser = lease.getLeasedItemAndRenewLease();
         List<Path> paths = traverser.next();
         
         List<Representation> result = new ArrayList<Representation>();

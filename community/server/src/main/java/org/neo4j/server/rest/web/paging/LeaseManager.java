@@ -39,7 +39,7 @@ public class LeaseManager<T extends Leasable>
             return null;
         }
 
-        Lease<T> lease = new Lease<T>( leasedObject, clock.currentTimeInMilliseconds() + (seconds * 1000), clock );
+        Lease<T> lease = new Lease<T>( leasedObject, seconds, clock );
         leases.put( lease.getId(), lease );
         return lease;
     }
@@ -63,7 +63,7 @@ public class LeaseManager<T extends Leasable>
             try
             {
                 Lease<T> lease = leases.get( key );
-                if ( lease.startTime < clock.currentTimeInMilliseconds() )
+                if ( lease.getStartTime() + lease.getPeriod() < clock.currentTimeInMilliseconds() )
                 {
                     leases.remove( key );
                 }

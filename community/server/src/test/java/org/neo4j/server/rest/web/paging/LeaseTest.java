@@ -34,9 +34,7 @@ public class LeaseTest
     @Test
     public void shouldReturnHexIdentifierString() throws Exception
     {
-        Lease<Leasable> lease = new Lease<Leasable>( new Leasable()
-        {
-        }, SIXTY_SECONDS, new FakeClock() );
+        Lease<Leasable> lease = new Lease<Leasable>( new Leasable() {}, SIXTY_SECONDS, new FakeClock() );
         assertThat( lease.getId(), containsOnlyHex() );
     }
 
@@ -44,9 +42,7 @@ public class LeaseTest
     public void shouldNotAllowLeasesInThePast() throws Exception
     {
         FakeClock clock = new FakeClock();
-        new Lease<Leasable>( new Leasable()
-        {
-        }, oneMinuteInThePast(), clock );
+        new Lease<Leasable>( new Leasable(){}, oneMinuteInThePast(), clock );
     }
 
     private long oneMinuteInThePast()
@@ -58,9 +54,7 @@ public class LeaseTest
     public void leasesShouldExpire() throws Exception
     {
         FakeClock clock = new FakeClock();
-        Lease<Leasable> lease = new Lease<Leasable>( new Leasable()
-        {
-        }, SIXTY_SECONDS, clock );
+        Lease<Leasable> lease = new Lease<Leasable>( new Leasable(){}, SIXTY_SECONDS, clock );
         clock.forwardMinutes( 10 );
         assertTrue( lease.expired() );
     }
@@ -69,13 +63,11 @@ public class LeaseTest
     public void shouldRenewLeaseForSamePeriod()
     {
         FakeClock clock = new FakeClock();
-        Lease<Leasable> lease = new Lease<Leasable>( new Leasable()
-        {
-        }, SIXTY_SECONDS, clock );
+        Lease<Leasable> lease = new Lease<Leasable>( new Leasable(){}, SIXTY_SECONDS, clock );
 
         clock.forwardSeconds( THIRTY_SECONDS );
 
-        lease.getLeasedItem(); // has side effect of renewing the lease
+        lease.getLeasedItemAndRenewLease(); // has side effect of renewing the lease
 
         clock.forwardSeconds( 30 );
         assertFalse( lease.expired() );

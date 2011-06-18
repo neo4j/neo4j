@@ -26,11 +26,8 @@ import org.junit.Test;
 
 public class LeaseManagerTest
 {
-    private static final long ONE_MINUTE = 60;
-
-    private static class LeasableObject implements Leasable
-    {
-    }
+    private static final long SIXTY_SECONDS = 60;
+    private static class LeasableObject implements Leasable {}
 
 
     @Test
@@ -48,7 +45,7 @@ public class LeaseManagerTest
         FakeClock fakeClock = new FakeClock();
         LeaseManager<LeasableObject> manager = new LeaseManager<LeasableObject>( fakeClock );
 
-        Lease<LeasableObject> lease = manager.createLease( ONE_MINUTE, new LeasableObject() );
+        Lease<LeasableObject> lease = manager.createLease( SIXTY_SECONDS, new LeasableObject() );
 
         assertNotNull( manager.getLeaseById( lease.getId() ) );
 
@@ -60,7 +57,8 @@ public class LeaseManagerTest
         FakeClock fakeClock = new FakeClock();
         LeaseManager<LeasableObject> manager = new LeaseManager<LeasableObject>( fakeClock );
 
-        Lease<LeasableObject> lease = manager.createLease( 2 * 60, new LeasableObject() );
+        Lease<LeasableObject> lease = manager.createLease( 120, new LeasableObject() );
+        
         fakeClock.forwardMinutes( 1 );
 
         assertNotNull( manager.getLeaseById( lease.getId() ) );
@@ -73,7 +71,7 @@ public class LeaseManagerTest
         FakeClock fakeClock = new FakeClock();
         LeaseManager<LeasableObject> manager = new LeaseManager<LeasableObject>( fakeClock );
 
-        Lease<LeasableObject> lease = manager.createLease( ONE_MINUTE, new LeasableObject() );
+        Lease<LeasableObject> lease = manager.createLease( SIXTY_SECONDS, new LeasableObject() );
 
         fakeClock.forwardMinutes( 2 );
 
@@ -86,8 +84,8 @@ public class LeaseManagerTest
         FakeClock fakeClock = new FakeClock();
         LeaseManager<LeasableObject> manager = new LeaseManager<LeasableObject>( fakeClock );
 
-        Lease<LeasableObject> leaseA = manager.createLease( ONE_MINUTE, new LeasableObject() );
-        Lease<LeasableObject> leaseB = manager.createLease( ONE_MINUTE * 3, new LeasableObject() );
+        Lease<LeasableObject> leaseA = manager.createLease( SIXTY_SECONDS, new LeasableObject() );
+        Lease<LeasableObject> leaseB = manager.createLease( SIXTY_SECONDS * 3, new LeasableObject() );
 
         fakeClock.forwardMinutes( 2 );
 

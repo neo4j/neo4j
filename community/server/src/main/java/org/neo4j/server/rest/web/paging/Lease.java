@@ -23,7 +23,7 @@ import java.util.UUID;
 
 public class Lease<T extends Leasable>
 {
-    public long startTime;
+    private long startTime;
     public final T leasedItem;
     private final String id;
     private long leasePeriod;
@@ -34,7 +34,7 @@ public class Lease<T extends Leasable>
         if ( leasePeriodInSeconds < 0 )
         {
             throw new LeaseAlreadyExpiredException( String.format( "Negative lease periods [%d] are not permitted",
-                    leasePeriodInSeconds) );
+                    leasePeriodInSeconds ) );
         }
 
         this.clock = clock;
@@ -55,22 +55,32 @@ public class Lease<T extends Leasable>
                 .replaceAll( "-", "" );
     }
 
-    public T getLeasedItem()
+    public T getLeasedItemAndRenewLease()
     {
-        renewLease();
+        renew();
         return leasedItem;
     }
 
-    public void renewLease()
+    public void renew()
     {
         if ( !expired() )
         {
             startTime = clock.currentTimeInMilliseconds();
-        } else {System.out.println("EXPIRED");}
+        }
     }
 
     public boolean expired()
     {
         return startTime + leasePeriod < clock.currentTimeInMilliseconds();
+    }
+
+    public long getStartTime()
+    {
+        return startTime;
+    }
+
+    public long getPeriod()
+    {
+        return leasePeriod;
     }
 }
