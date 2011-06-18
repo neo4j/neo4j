@@ -35,7 +35,6 @@ import org.neo4j.server.rest.repr.InputFormatProvider;
 import org.neo4j.server.rest.repr.OutputFormatProvider;
 import org.neo4j.server.rest.repr.RepresentationFormatRepository;
 import org.neo4j.server.rest.web.paging.RealClockProvider;
-import org.neo4j.server.rest.web.paging.RealClock;
 import org.neo4j.server.rrd.RrdDbProvider;
 
 import com.sun.jersey.api.core.HttpContext;

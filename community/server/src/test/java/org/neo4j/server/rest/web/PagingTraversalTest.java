@@ -100,11 +100,8 @@ public class PagingTraversalTest
     public void givenAPageTraversalHasBeenCreatedShouldYieldNextPageAndRespondWith200() throws Exception
     {
         Response response = createAPagedTraverser();
-        String locationUri = response.getMetadata()
-                .get( "Location" )
-                .get( 0 )
-                .toString();
-        String traverserId = parseTraverserIdFromLocationUri( locationUri );
+
+        String traverserId = parseTraverserIdFromLocationUri( response );
 
         response = service.pagedTraverse( traverserId, TraverserReturnType.node );
 
@@ -129,15 +126,30 @@ public class PagingTraversalTest
         Response response = createAPagedTraverser();
         clock.forwardMinutes( 2 );
 
-        String locationUri = response.getMetadata()
-                .get( "Location" )
-                .get( 0 )
-                .toString();
-        String traverserId = parseTraverserIdFromLocationUri( locationUri );
+        String traverserId = parseTraverserIdFromLocationUri( response );
 
         response = service.pagedTraverse( traverserId, TraverserReturnType.node );
 
         assertEquals( 404, response.getStatus() );
+    }
+    
+    @Test
+    public void shouldRenewLeaseAtEachTraversal() {
+        Response response = createAPagedTraverser();
+
+        String traverserId = parseTraverserIdFromLocationUri( response );
+        
+        clock.forwardSeconds( 30 );
+        response = service.pagedTraverse( traverserId, TraverserReturnType.node );
+        assertEquals(200, response.getStatus());
+
+        clock.forwardSeconds( 30 );
+        response = service.pagedTraverse( traverserId, TraverserReturnType.node );
+        assertEquals(200, response.getStatus());
+        
+        clock.forwardMinutes( 10 ); // Long pause, expect lease to expire
+        response = service.pagedTraverse( traverserId, TraverserReturnType.node );
+        assertEquals(404, response.getStatus());
     }
 
     private UriInfo uriInfo()
@@ -195,8 +207,13 @@ public class PagingTraversalTest
         }
     }
 
-    private String parseTraverserIdFromLocationUri( String locationUri )
+    private String parseTraverserIdFromLocationUri( Response response )
     {
+        String locationUri = response.getMetadata()
+        .get( "Location" )
+        .get( 0 )
+        .toString();
+        
         return locationUri.substring( locationUri.lastIndexOf( "/" ) + 1, locationUri.lastIndexOf( "?" ) );
     }
 }
