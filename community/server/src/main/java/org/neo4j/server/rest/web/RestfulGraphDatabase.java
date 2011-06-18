@@ -101,6 +101,7 @@ public class RestfulGraphDatabase
     protected static final String PATH_RELATIONSHIP_INDEX_REMOVE = PATH_NAMED_RELATIONSHIP_INDEX + "/{id}";
     protected static final String PATH_TO_PAGED_TRAVERSERS = "/traversers";
     private static final String SIXTY_SECONDS = "60";
+    private static final String FIFTY = "50";
 
     private final DatabaseActions server;
     private final OutputFormat output;
@@ -961,7 +962,7 @@ public class RestfulGraphDatabase
     @GET
     @Path( PATH_TO_PAGED_TRAVERSERS )
     public Response pagedTraverse( @PathParam( "traverserId" ) String traverserId,
-            @QueryParam( "returnType" ) TraverserReturnType returnType )
+            @PathParam( "returnType" ) TraverserReturnType returnType )
     {
         try
         {
@@ -987,8 +988,9 @@ public class RestfulGraphDatabase
     @POST
     @Path( PATH_TO_PAGED_TRAVERSERS )
     public Response createPagedTraverser( @PathParam( "nodeId" ) long startNode,
-            @PathParam( "returnType" ) TraverserReturnType returnType, @QueryParam( "pageSize" ) int pageSize,
-            @QueryParam( "leaseTime" ) @DefaultValue(SIXTY_SECONDS) int leaseTimeInSeconds, String body )
+            @PathParam( "returnType" ) TraverserReturnType returnType,
+            @QueryParam( "pageSize" ) @DefaultValue( FIFTY ) int pageSize,
+            @QueryParam( "leaseTime" ) @DefaultValue( SIXTY_SECONDS ) int leaseTimeInSeconds, String body )
     {
         try
         {
