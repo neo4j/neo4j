@@ -19,34 +19,68 @@
  */
 package org.neo4j.server.rest.web.paging;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.server.rest.web.paging.HexMatcher.containsOnlyHex;
 
 import org.junit.Test;
 
 public class LeaseTest
 {
-    private long ONE_MINUTE_IN_MILLISECONDS = 60000;
+    private static final long SIXTY_SECONDS = 60;
+    private static final long THIRTY_SECONDS = 30;
 
     @Test
     public void shouldReturnHexIdentifierString() throws Exception
     {
-        Lease<Leasable> lease = new Lease<Leasable>( new Leasable(){}, oneMinuteFromNow());
-        assertThat(lease.getId(), containsOnlyHex());
-    }
-    
-    private long oneMinuteFromNow()
-    {
-        return ONE_MINUTE_IN_MILLISECONDS + System.currentTimeMillis(); 
+        Lease<Leasable> lease = new Lease<Leasable>( new Leasable()
+        {
+        }, SIXTY_SECONDS, new FakeClock() );
+        assertThat( lease.getId(), containsOnlyHex() );
     }
 
-    @Test (expected = LeaseAlreadyExpiredException.class)
-    public void shouldNotAllowLeasesInThePast() throws Exception {
-        new Lease<Leasable>( new Leasable(){}, oneMinuteBeforeNow());
-    }
-    
-    private long oneMinuteBeforeNow()
+    @Test( expected = LeaseAlreadyExpiredException.class )
+    public void shouldNotAllowLeasesInThePast() throws Exception
     {
-        return System.currentTimeMillis() - ONE_MINUTE_IN_MILLISECONDS; 
+        FakeClock clock = new FakeClock();
+        new Lease<Leasable>( new Leasable()
+        {
+        }, oneMinuteInThePast(), clock );
+    }
+
+    private long oneMinuteInThePast()
+    {
+        return SIXTY_SECONDS * -1;
+    }
+
+    @Test
+    public void leasesShouldExpire() throws Exception
+    {
+        FakeClock clock = new FakeClock();
+        Lease<Leasable> lease = new Lease<Leasable>( new Leasable()
+        {
+        }, SIXTY_SECONDS, clock );
+        clock.forwardMinutes( 10 );
+        assertTrue( lease.expired() );
+    }
+
+    @Test
+    public void shouldRenewLeaseForSamePeriod()
+    {
+        FakeClock clock = new FakeClock();
+        Lease<Leasable> lease = new Lease<Leasable>( new Leasable()
+        {
+        }, SIXTY_SECONDS, clock );
+
+        clock.forwardSeconds( THIRTY_SECONDS );
+
+        lease.getLeasedItem(); // has side effect of renewing the lease
+
+        clock.forwardSeconds( 30 );
+        assertFalse( lease.expired() );
+
+        clock.forwardMinutes( 10 );
+        assertTrue( lease.expired() );
     }
 }

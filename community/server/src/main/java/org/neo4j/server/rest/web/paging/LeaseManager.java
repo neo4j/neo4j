@@ -22,6 +22,8 @@ package org.neo4j.server.rest.web.paging;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.commons.lang.NotImplementedException;
+
 public class LeaseManager<T extends Leasable>
 {
     private final Clock clock;
@@ -39,7 +41,7 @@ public class LeaseManager<T extends Leasable>
             return null;
         }
 
-        Lease<T> lease = new Lease<T>( leasedObject, clock.currentTimeInMilliseconds() + (seconds * 1000) );
+        Lease<T> lease = new Lease<T>( leasedObject, clock.currentTimeInMilliseconds() + (seconds * 1000), clock );
         leases.put( lease.getId(), lease );
         return lease;
     }
@@ -47,7 +49,11 @@ public class LeaseManager<T extends Leasable>
     public Lease<T> getLeaseById( String id )
     {
         pruneOldLeasesByNaivelyIteratingThroughAllOfThem();
-        return leases.get( id );
+        Lease<T> lease = leases.get( id );
+        
+        throw new NotImplementedException();
+        
+        
     }
 
     private void pruneOldLeasesByNaivelyIteratingThroughAllOfThem()
@@ -57,7 +63,7 @@ public class LeaseManager<T extends Leasable>
             try
             {
                 Lease<T> lease = leases.get( key );
-                if ( lease.expirationTime < clock.currentTimeInMilliseconds() )
+                if ( lease.startTime < clock.currentTimeInMilliseconds() )
                 {
                     leases.remove( key );
                 }

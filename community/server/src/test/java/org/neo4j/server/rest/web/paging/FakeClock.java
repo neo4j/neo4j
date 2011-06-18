@@ -33,4 +33,9 @@ public class FakeClock implements Clock
     {
         time += 60000 * minutes;
     }
+
+    public void forwardSeconds( long seconds )
+    {
+        time += 1000 * seconds;
+    }
 }

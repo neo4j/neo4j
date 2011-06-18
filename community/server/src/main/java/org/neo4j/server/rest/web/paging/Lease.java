@@ -23,21 +23,24 @@ import java.util.UUID;
 
 public class Lease<T extends Leasable>
 {
-    public final long expirationTime;
+    public long startTime;
     public final T leasedItem;
     private final String id;
+    private long leasePeriod;
+    private final Clock clock;
 
-    Lease( T leasedItem, long absoluteExpirationTimeInMilliseconds ) throws LeaseAlreadyExpiredException
+    Lease( T leasedItem, long leasePeriodInSeconds, Clock clock ) throws LeaseAlreadyExpiredException
     {
-        if ( absoluteExpirationTimeInMilliseconds - System.currentTimeMillis() < 0 )
+        if ( leasePeriodInSeconds < 0 )
         {
-            throw new LeaseAlreadyExpiredException( String.format(
-                    "Trying to create a lease [%d] milliseconds in the past is not permitted",
-                    absoluteExpirationTimeInMilliseconds - System.currentTimeMillis() ) );
+            throw new LeaseAlreadyExpiredException( String.format( "Negative lease periods [%d] are not permitted",
+                    leasePeriodInSeconds) );
         }
 
+        this.clock = clock;
         this.leasedItem = leasedItem;
-        this.expirationTime = absoluteExpirationTimeInMilliseconds;
+        this.startTime = clock.currentTimeInMilliseconds();
+        this.leasePeriod = leasePeriodInSeconds * 1000;
         this.id = toHexOnly( UUID.randomUUID() );
     }
 
@@ -54,6 +57,20 @@ public class Lease<T extends Leasable>
 
     public T getLeasedItem()
     {
+        renewLease();
         return leasedItem;
+    }
+
+    public void renewLease()
+    {
+        if ( !expired() )
+        {
+            startTime = clock.currentTimeInMilliseconds();
+        } else {System.out.println("EXPIRED");}
+    }
+
+    public boolean expired()
+    {
+        return startTime + leasePeriod < clock.currentTimeInMilliseconds();
     }
 }

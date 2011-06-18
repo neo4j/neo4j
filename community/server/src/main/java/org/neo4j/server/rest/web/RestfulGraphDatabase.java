@@ -27,6 +27,7 @@ import java.util.Map;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -99,7 +100,7 @@ public class RestfulGraphDatabase
     protected static final String PATH_RELATIONSHIP_INDEX_REMOVE_KEY = PATH_NAMED_RELATIONSHIP_INDEX + "/{key}/{id}";
     protected static final String PATH_RELATIONSHIP_INDEX_REMOVE = PATH_NAMED_RELATIONSHIP_INDEX + "/{id}";
     protected static final String PATH_TO_PAGED_TRAVERSERS = "/traversers";
-    private static final int SIXTY_SECONDS = 60;
+    private static final String SIXTY_SECONDS = "60";
 
     private final DatabaseActions server;
     private final OutputFormat output;
@@ -987,16 +988,7 @@ public class RestfulGraphDatabase
     @Path( PATH_TO_PAGED_TRAVERSERS )
     public Response createPagedTraverser( @PathParam( "nodeId" ) long startNode,
             @PathParam( "returnType" ) TraverserReturnType returnType, @QueryParam( "pageSize" ) int pageSize,
-            String body )
-    {
-        return createPagedTraverser( startNode, returnType, pageSize, SIXTY_SECONDS, body );
-    }
-
-    @POST
-    @Path( PATH_TO_PAGED_TRAVERSERS )
-    public Response createPagedTraverser( @PathParam( "nodeId" ) long startNode,
-            @PathParam( "returnType" ) TraverserReturnType returnType, @QueryParam( "pageSize" ) int pageSize,
-            @QueryParam( "leaseTime" ) int leaseTimeInSeconds, String body )
+            @QueryParam( "leaseTime" ) @DefaultValue(SIXTY_SECONDS) int leaseTimeInSeconds, String body )
     {
         try
         {
