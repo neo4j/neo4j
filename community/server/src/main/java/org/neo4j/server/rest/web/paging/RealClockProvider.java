@@ -4,17 +4,16 @@ import org.neo4j.server.database.AbstractInjectableProvider;
 
 import com.sun.jersey.api.core.HttpContext;
 
-public class RealClockProvider extends AbstractInjectableProvider<RealClock>
+public class RealClockProvider extends AbstractInjectableProvider<Clock>
 {
     public RealClockProvider()
     {
-        super(RealClock.class);
+        super(Clock.class);
     }
 
     @Override
-    public RealClock getValue( HttpContext arg0 )
+    public Clock getValue( HttpContext arg0 )
     {
         return new RealClock();
     }
-
 }

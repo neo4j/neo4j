@@ -164,7 +164,8 @@ public class PagingTraversalTest
                              + "\"order\":\"depth first\","
                              + "\"relationships\":{\"type\":\"PRECEDES\",\"direction\":\"out\"}" + "}";
 
-        Response response = service.createPagedTraverser( startNodeId, 10, TraverserReturnType.node, description );
+        Response response = service.createPagedTraverser( startNodeId, TraverserReturnType.node, 10, description );
+        
         return response;
     }
 

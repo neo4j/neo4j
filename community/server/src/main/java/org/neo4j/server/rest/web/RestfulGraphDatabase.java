@@ -107,7 +107,7 @@ public class RestfulGraphDatabase
     private final UriInfo uriInfo;
 
     public RestfulGraphDatabase( @Context UriInfo uriInfo, @Context Database database, @Context InputFormat input,
-            @Context OutputFormat output, Clock clock )
+            @Context OutputFormat output, @Context Clock clock )
     {
         this.uriInfo = uriInfo;
         this.input = input;
@@ -986,21 +986,22 @@ public class RestfulGraphDatabase
     @POST
     @Path( PATH_TO_PAGED_TRAVERSERS )
     public Response createPagedTraverser( @PathParam( "nodeId" ) long startNode,
-            @QueryParam( "pageSize" ) int pageSize, @PathParam( "returnType" ) TraverserReturnType returnType,
-            String body)
+            @PathParam( "returnType" ) TraverserReturnType returnType, @QueryParam( "pageSize" ) int pageSize,
+            String body )
     {
-        return createPagedTraverser( startNode, pageSize, returnType, body,  SIXTY_SECONDS);
+        return createPagedTraverser( startNode, returnType, pageSize, SIXTY_SECONDS, body );
     }
-    
+
     @POST
     @Path( PATH_TO_PAGED_TRAVERSERS )
     public Response createPagedTraverser( @PathParam( "nodeId" ) long startNode,
-            @QueryParam( "pageSize" ) int pageSize, @PathParam( "returnType" ) TraverserReturnType returnType,
-            String body, int leaseTimeInSeconds )
+            @PathParam( "returnType" ) TraverserReturnType returnType, @QueryParam( "pageSize" ) int pageSize,
+            @QueryParam( "leaseTime" ) int leaseTimeInSeconds, String body )
     {
         try
         {
-            String traverserId = server.createPagedTraverser( startNode, input.readMap( body ), pageSize, leaseTimeInSeconds );
+            String traverserId = server.createPagedTraverser( startNode, input.readMap( body ), pageSize,
+                    leaseTimeInSeconds );
 
             String responseBody = output.format( server.pagedTraverse( traverserId, returnType ) );
 
