@@ -64,6 +64,7 @@ import org.neo4j.server.rest.repr.NodeRepresentationTest;
 import org.neo4j.server.rest.repr.RelationshipRepresentation;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
+import org.neo4j.server.rest.web.paging.FakeClock;
 
 public class DatabaseActionsTest
 {
@@ -79,7 +80,7 @@ public class DatabaseActionsTest
         database = new Database( ServerTestUtils.EMBEDDED_GRAPH_DATABASE_FACTORY, databasePath );
 
         graphdbHelper = new GraphDbHelper( database );
-        this.actions = new DatabaseActions( database );
+        this.actions = new DatabaseActions( database, new FakeClock() );
     }
 
     @After

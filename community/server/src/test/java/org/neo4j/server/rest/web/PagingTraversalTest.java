@@ -5,7 +5,6 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -28,6 +27,7 @@ import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.TraverserReturnType;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
+import org.neo4j.server.rest.web.paging.FakeClock;
 
 public class PagingTraversalTest
 {
@@ -38,6 +38,7 @@ public class PagingTraversalTest
     private EntityOutputFormat output;
     private String databasePath;
     private GraphDbHelper helper;
+    private FakeClock clock;
 
     @Before
     public void startDatabase() throws IOException
@@ -47,7 +48,8 @@ public class PagingTraversalTest
         database = new Database( ServerTestUtils.EMBEDDED_GRAPH_DATABASE_FACTORY, databasePath );
         helper = new GraphDbHelper( database );
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
-        service = new RestfulGraphDatabase( uriInfo(), database, new JsonFormat(), output );
+        clock = new FakeClock();
+        service = new RestfulGraphDatabase( uriInfo(), database, new JsonFormat(), output, clock );
     }
 
     @After
@@ -69,7 +71,8 @@ public class PagingTraversalTest
         assertThat( responseUri, containsString( BASE_URI + "traversers" ) );
         assertThat( responseUri, containsString( "?returnType=node" ) );
         assertNotNull( response.getEntity() );
-        System.out.println(response.getEntity().toString());
+        System.out.println( response.getEntity()
+                .toString() );
         assertThat( response.getEntity()
                 .toString(), containsString( "\"name\" : \"19\"" ) );
     }
@@ -83,49 +86,39 @@ public class PagingTraversalTest
                 .get( 0 )
                 .toString();
         String traverserId = parseTraverserIdFromLocationUri( locationUri );
-        
+
         response = service.pagedTraverse( traverserId, TraverserReturnType.node );
 
-        
-        
         assertEquals( 200, response.getStatus() );
         assertNotNull( response.getEntity() );
         assertThat( response.getEntity()
-                .toString(), not(containsString( "\"name\" : \"19\"" ) ));
+                .toString(), not( containsString( "\"name\" : \"19\"" ) ) );
         assertThat( response.getEntity()
                 .toString(), containsString( "\"name\" : \"91\"" ) );
-    }
-
-
-
-    @Test
-    public void shouldTraverseAsFarAsPossibleForAGivenRangeWhenAtEndOfTraversalAndRespondWith200()
-    {
-        fail( "not implemented" );
-    }
-
-    @Test
-    public void shouldRespondWith204IfTraversalResultsInZeroNodes()
-    {
-        fail( "not implemented" );
-    }
-
-    @Test
-    public void shouldRespondWith400WhenTraversingRangeThatHasAlreadyBeenTraversed()
-    {
-        fail( "not implemented" );
     }
 
     @Test
     public void shouldRespondWith404WhenNoSuchTraversalRegistered()
     {
-        fail( "not implemented" );
+        Response response = service.pagedTraverse( "anUnlikelyTraverserId", TraverserReturnType.node );
+        assertEquals( 404, response.getStatus() );
     }
 
     @Test
-    public void shouldRespondWith210WhenTraversalHasExpired()
+    public void shouldRespondWith404WhenTraversalHasExpired()
     {
-        fail( "not implemented" );
+        Response response = createAPagedTraverser();
+        clock.forwardMinutes( 2 );
+
+        String locationUri = response.getMetadata()
+                .get( "Location" )
+                .get( 0 )
+                .toString();
+        String traverserId = parseTraverserIdFromLocationUri( locationUri );
+
+        response = service.pagedTraverse( traverserId, TraverserReturnType.node );
+
+        assertEquals( 404, response.getStatus() );
     }
 
     private UriInfo uriInfo()
@@ -179,7 +172,7 @@ public class PagingTraversalTest
             tx.finish();
         }
     }
-    
+
     private String parseTraverserIdFromLocationUri( String locationUri )
     {
         return locationUri.substring( locationUri.lastIndexOf( "/" ) + 1, locationUri.lastIndexOf( "?" ) );

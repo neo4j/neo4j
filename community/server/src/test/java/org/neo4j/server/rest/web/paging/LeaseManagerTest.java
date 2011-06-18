@@ -13,13 +13,6 @@ public class LeaseManagerTest
     {
     }
 
-    @Test
-    public void shouldCreateADefaultLease() throws Exception
-    {
-        FakeClock fakeClock = new FakeClock();
-        LeaseManager<LeasableObject> manager = new LeaseManager<LeasableObject>( fakeClock );
-        assertNotNull( manager.createLease( new LeasableObject() ) );
-    }
 
     @Test
     public void shouldNotAcceptLeasesWithNegativeTTL() throws Exception
@@ -36,7 +29,7 @@ public class LeaseManagerTest
         FakeClock fakeClock = new FakeClock();
         LeaseManager<LeasableObject> manager = new LeaseManager<LeasableObject>( fakeClock );
 
-        Lease<LeasableObject> lease = manager.createLease( new LeasableObject() );
+        Lease<LeasableObject> lease = manager.createLease( ONE_MINUTE, new LeasableObject() );
 
         assertNotNull( manager.getLeaseById( lease.getId() ) );
 

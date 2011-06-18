@@ -48,6 +48,7 @@ import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.PropertiesRepresentation;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
+import org.neo4j.server.rest.web.paging.Clock;
 
 @Path( "/" )
 public class RestfulGraphDatabase
@@ -98,6 +99,7 @@ public class RestfulGraphDatabase
     protected static final String PATH_RELATIONSHIP_INDEX_REMOVE_KEY = PATH_NAMED_RELATIONSHIP_INDEX + "/{key}/{id}";
     protected static final String PATH_RELATIONSHIP_INDEX_REMOVE = PATH_NAMED_RELATIONSHIP_INDEX + "/{id}";
     protected static final String PATH_TO_PAGED_TRAVERSERS = "/traversers";
+    private static final int SIXTY_SECONDS = 60;
 
     private final DatabaseActions server;
     private final OutputFormat output;
@@ -105,12 +107,12 @@ public class RestfulGraphDatabase
     private final UriInfo uriInfo;
 
     public RestfulGraphDatabase( @Context UriInfo uriInfo, @Context Database database, @Context InputFormat input,
-            @Context OutputFormat output )
+            @Context OutputFormat output, Clock clock )
     {
         this.uriInfo = uriInfo;
         this.input = input;
         this.output = output;
-        this.server = new DatabaseActions( database );
+        this.server = new DatabaseActions( database, clock );
     }
 
     private static Response nothing()
@@ -985,11 +987,20 @@ public class RestfulGraphDatabase
     @Path( PATH_NODE_TRAVERSE )
     public Response createPagedTraverser( @PathParam( "nodeId" ) long startNode,
             @QueryParam( "pageSize" ) int pageSize, @PathParam( "returnType" ) TraverserReturnType returnType,
-            String body )
+            String body)
+    {
+        return createPagedTraverser( startNode, pageSize, returnType, body,  SIXTY_SECONDS);
+    }
+    
+    @POST
+    @Path( PATH_NODE_TRAVERSE )
+    public Response createPagedTraverser( @PathParam( "nodeId" ) long startNode,
+            @QueryParam( "pageSize" ) int pageSize, @PathParam( "returnType" ) TraverserReturnType returnType,
+            String body, int leaseTimeInSeconds )
     {
         try
         {
-            String traverserId = server.createPagedTraverser( startNode, input.readMap( body ), pageSize );
+            String traverserId = server.createPagedTraverser( startNode, input.readMap( body ), pageSize, leaseTimeInSeconds );
 
             String responseBody = output.format( server.pagedTraverse( traverserId, returnType ) );
 

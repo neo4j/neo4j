@@ -64,6 +64,8 @@ import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 import org.neo4j.server.rest.web.RestfulGraphDatabase.AmpersandSeparatedCollection;
+import org.neo4j.server.rest.web.paging.Clock;
+import org.neo4j.server.rest.web.paging.FakeClock;
 
 public class RestfulGraphDatabaseTest
 {
@@ -73,6 +75,7 @@ public class RestfulGraphDatabaseTest
     private GraphDbHelper helper;
     private EntityOutputFormat output;
     private String databasePath;
+    private Clock clock;
 
     @Before
     public void doBefore() throws IOException
@@ -81,7 +84,8 @@ public class RestfulGraphDatabaseTest
         database = new Database( ServerTestUtils.EMBEDDED_GRAPH_DATABASE_FACTORY, databasePath );
         helper = new GraphDbHelper( database );
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
-        service = new RestfulGraphDatabase( uriInfo(), database, new JsonFormat(), output );
+        clock = new FakeClock();
+        service = new RestfulGraphDatabase( uriInfo(), database, new JsonFormat(), output, clock );
     }
 
     @After

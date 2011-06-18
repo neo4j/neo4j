@@ -5,18 +5,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class LeaseManager<T extends Leasable>
 {
-    private static final long ONE_MINUTE_IN_SECONDS = 60;
     private final Clock clock;
     private Map<String, Lease<T>> leases = new ConcurrentHashMap<String, Lease<T>>();
 
     public LeaseManager( Clock clock )
     {
         this.clock = clock;
-    }
-
-    public Lease<T> createLease( T leasedObject ) throws LeaseAlreadyExpiredException
-    {
-        return createLease( ONE_MINUTE_IN_SECONDS, leasedObject );
     }
 
     public Lease<T> createLease( long seconds, T leasedObject ) throws LeaseAlreadyExpiredException

@@ -72,18 +72,19 @@ import org.neo4j.server.rest.repr.RelationshipRepresentation;
 import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.RepresentationType;
 import org.neo4j.server.rest.repr.WeightedPathRepresentation;
+import org.neo4j.server.rest.web.paging.Clock;
 import org.neo4j.server.rest.web.paging.Lease;
 import org.neo4j.server.rest.web.paging.LeaseManager;
 import org.neo4j.server.rest.web.paging.PagedTraverser;
-import org.neo4j.server.rest.web.paging.RealClock;
 
 public class DatabaseActions
 {
     private final AbstractGraphDatabase graphDb;
-    private final LeaseManager<PagedTraverser> leases = new LeaseManager<PagedTraverser>( new RealClock() );
+    private final LeaseManager<PagedTraverser> leases;
 
-    public DatabaseActions( Database database )
+    public DatabaseActions( Database database, Clock clock )
     {
+        this.leases = new LeaseManager<PagedTraverser>( clock);
         this.graphDb = database.graph;
     }
 
@@ -962,7 +963,7 @@ public class DatabaseActions
         return new ListRepresentation( returnType.repType, result );
     }
 
-    public String createPagedTraverser( long nodeId, Map<String, Object> description, int pageSize )
+    public String createPagedTraverser( long nodeId, Map<String, Object> description, int pageSize, int leaseTime)
     {
         Node node = graphDb.getNodeById( nodeId );
 
@@ -970,7 +971,7 @@ public class DatabaseActions
 
         PagedTraverser traverser = new PagedTraverser( traversalDescription.traverse( node ), pageSize );
 
-        return leases.createLease( traverser ).getId();
+        return leases.createLease( leaseTime, traverser ).getId();
     }
     
     // Graph algos
