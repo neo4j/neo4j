@@ -14,7 +14,7 @@ public class LeaseManagerTest
     }
 
     @Test
-    public void shouldCreateADefaultLease()
+    public void shouldCreateADefaultLease() throws Exception
     {
         FakeClock fakeClock = new FakeClock();
         LeaseManager<LeasableObject> manager = new LeaseManager<LeasableObject>( fakeClock );
@@ -22,7 +22,7 @@ public class LeaseManagerTest
     }
 
     @Test
-    public void shouldNotAcceptLeasesWithNegativeTTL()
+    public void shouldNotAcceptLeasesWithNegativeTTL() throws Exception
     {
         FakeClock fakeClock = new FakeClock();
         LeaseManager<LeasableObject> manager = new LeaseManager<LeasableObject>( fakeClock );
@@ -31,7 +31,7 @@ public class LeaseManagerTest
     }
 
     @Test
-    public void shouldRetrieveAnExistingLeaseImmediatelyAfterCreation()
+    public void shouldRetrieveAnExistingLeaseImmediatelyAfterCreation() throws Exception
     {
         FakeClock fakeClock = new FakeClock();
         LeaseManager<LeasableObject> manager = new LeaseManager<LeasableObject>( fakeClock );
@@ -43,7 +43,7 @@ public class LeaseManagerTest
     }
 
     @Test
-    public void shouldRetrieveAnExistingLeaseSomeTimeAfterCreation()
+    public void shouldRetrieveAnExistingLeaseSomeTimeAfterCreation() throws Exception
     {
         FakeClock fakeClock = new FakeClock();
         LeaseManager<LeasableObject> manager = new LeaseManager<LeasableObject>( fakeClock );
@@ -56,7 +56,7 @@ public class LeaseManagerTest
     }
 
     @Test
-    public void shouldNotRetrieveALeaseAfterItExpired()
+    public void shouldNotRetrieveALeaseAfterItExpired() throws Exception
     {
         FakeClock fakeClock = new FakeClock();
         LeaseManager<LeasableObject> manager = new LeaseManager<LeasableObject>( fakeClock );
@@ -69,7 +69,7 @@ public class LeaseManagerTest
     }
 
     @Test
-    public void shouldNotBarfWhenAnotherThreadOrRetrieveRevokesTheLease()
+    public void shouldNotBarfWhenAnotherThreadOrRetrieveRevokesTheLease() throws Exception
     {
         FakeClock fakeClock = new FakeClock();
         LeaseManager<LeasableObject> manager = new LeaseManager<LeasableObject>( fakeClock );

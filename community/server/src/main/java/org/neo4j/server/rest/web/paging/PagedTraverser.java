@@ -7,13 +7,13 @@ import java.util.List;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.traversal.Traverser;
 
-public class TraversalPager implements Iterator<List<Path>>, Iterable<List<Path>>
+public class PagedTraverser implements Iterator<List<Path>>, Iterable<List<Path>>, Leasable
 {
 
     private final int pageSize;
     private Iterator<Path> iterator;
 
-    public TraversalPager( Traverser traverser, int pageSize )
+    public PagedTraverser( Traverser traverser, int pageSize )
     {
         iterator = traverser.iterator();
         this.pageSize = pageSize;

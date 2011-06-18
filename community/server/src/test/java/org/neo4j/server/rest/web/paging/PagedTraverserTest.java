@@ -22,7 +22,7 @@ import org.neo4j.kernel.Uniqueness;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.database.Database;
 
-public class TraversalPagerTest
+public class PagedTraverserTest
 {
     private static final int LIST_LENGTH = 100;
     private String databasePath;
@@ -78,7 +78,7 @@ public class TraversalPagerTest
     public void shouldPageThroughResultsForWhollyDivisiblePageSize()
     {
         Traverser myTraverser = simpleListTraverser();
-        TraversalPager traversalPager = new TraversalPager( myTraverser, LIST_LENGTH / 10 );
+        PagedTraverser traversalPager = new PagedTraverser( myTraverser, LIST_LENGTH / 10 );
 
         int iterations = iterateThroughPagedTraverser( traversalPager );
 
@@ -88,7 +88,7 @@ public class TraversalPagerTest
     }
 
     @SuppressWarnings( "unused" )
-    private int iterateThroughPagedTraverser( TraversalPager traversalPager )
+    private int iterateThroughPagedTraverser( PagedTraverser traversalPager )
     {
         int count = 0;
         for ( List<Path> paths : traversalPager )
@@ -103,7 +103,7 @@ public class TraversalPagerTest
     {
         int awkwardPageSize = 7;
         Traverser myTraverser = simpleListTraverser();
-        TraversalPager traversalPager = new TraversalPager( myTraverser, awkwardPageSize );
+        PagedTraverser traversalPager = new PagedTraverser( myTraverser, awkwardPageSize );
 
         int iterations = iterateThroughPagedTraverser( traversalPager );
 
