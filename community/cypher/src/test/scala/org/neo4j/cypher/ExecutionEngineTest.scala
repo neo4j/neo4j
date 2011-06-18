@@ -23,7 +23,9 @@ import org.neo4j.cypher.commands._
 import org.junit.Assert._
 import java.lang.String
 import org.junit.{Ignore, Test}
-import org.neo4j.graphdb.{DynamicRelationshipType, Relationship, Direction, Node}
+import org.neo4j.graphdb.{Relationship, Direction, Node}
+import scala.collection.JavaConverters._
+import org.junit.matchers.JUnitMatchers._
 
 class ExecutionEngineTest extends ExecutionEngineTestBase {
 
@@ -254,7 +256,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
     val query = Query(
       Return(EntityOutput("n")),
-      Start(NodeByIndexQuery("n", idxName, key +":"+ value)))
+      Start(NodeByIndexQuery("n", idxName, key + ":" + value)))
 
     val result = execute(query)
 
@@ -270,7 +272,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
     val query = Query(
       Return(EntityOutput("n")),
-      Start(NodeByIndexQuery("n", idxName, key +":andr*")))
+      Start(NodeByIndexQuery("n", idxName, key + ":andr*")))
 
     val result = execute(query)
 
@@ -384,9 +386,8 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     assertEquals(List(n1, n2), result.columnAs[Node]("n").toList)
   }
 
-  @Ignore("No implemented yet")
-  @Test def shouldBeAbleToCount() {
-    val a = createNode() //start a = node(0) match (a) --> (b) return a, count(*)
+  @Test def shouldBeAbleToCountNodes() {
+    val a = createNode() //start a = (0) match (a) --> (b) return a, count(*)
     val b = createNode()
     relate(refNode, a, "A")
     relate(refNode, b, "A")
@@ -395,7 +396,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
       Return(EntityOutput("a")),
       Start(NodeById("a", refNode.getId)),
       Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
-      Aggregation(Count("*")))
+      Aggregation(CountStar()))
 
     val result = execute(query)
 
@@ -407,7 +408,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
     val query = Query(
       Return(EntityOutput("start")),
-      Start(NodeById("start", nodeIds:_*)),
+      Start(NodeById("start", nodeIds: _*)),
       Slice(None, Some(2)))
 
     val result = execute(query)
@@ -420,7 +421,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
     val query = Query(
       Return(EntityOutput("start")),
-      Start(NodeById("start", nodeIds:_*)),
+      Start(NodeById("start", nodeIds: _*)),
       Sort(SortItem(PropertyOutput("start", "name"), true)),
       Slice(Some(2), None))
 
@@ -434,7 +435,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
     val query = Query(
       Return(EntityOutput("start")),
-      Start(NodeById("start", nodeIds:_*)),
+      Start(NodeById("start", nodeIds: _*)),
       Sort(SortItem(PropertyOutput("start", "name"), true)),
       Slice(Some(2), Some(2)))
 
@@ -471,10 +472,54 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
     val result = execute(query)
 
-    val KNOWS =relType("KNOWS")
+    val KNOWS = relType("KNOWS")
     val HATES = relType("HATES")
 
-    assertEquals(List(KNOWS,HATES), result.columnAs[Node]("r:TYPE").toList)
+    assertEquals(List(KNOWS, HATES), result.columnAs[Node]("r:TYPE").toList)
   }
 
+  @Test def shouldAggregateOnProperties() {
+    val n1 = createNode(Map("x" -> 33))
+    val n2 = createNode(Map("x" -> 33))
+    val n3 = createNode(Map("x" -> 42))
+
+    val query = Query(
+      Return(PropertyOutput("node", "x")),
+      Start(NodeById("node", n1.getId, n2.getId, n3.getId)),
+      Aggregation(CountStar()))
+
+    val result = execute(query)
+
+    assertThat(result.toList.asJava, hasItems[Map[String, Any]](Map("node.x" -> 33, "count(*)" -> 2), Map("node.x" -> 42, "count(*)" -> 1)))
+  }
+
+  @Test def shouldCountNonNullValues() {
+    val n1 = createNode(Map("y" -> "a", "x" -> 33))
+    val n2 = createNode(Map("y" -> "a"))
+    val n3 = createNode(Map("y" -> "b", "x" -> 42))
+
+    val query = Query(
+      Return(PropertyOutput("node", "y")),
+      Start(NodeById("node", n1.getId, n2.getId, n3.getId)),
+      Aggregation(Count(NullablePropertyOutput("node", "x"))))
+
+    val result = execute(query)
+
+    assertThat(result.toList.asJava,
+      hasItems[Map[String, Any]](
+        Map("node.y" -> "a", "count(node.x)" -> 1),
+        Map("node.y" -> "b", "count(node.x)" -> 1)))
+  }
+
+  @Test def shouldBeAbleToOutputANodeTwice() {
+    val query = Query(
+      Return(EntityOutput("node")),
+      Start(NodeById("node", 0)))
+
+    val result = execute(query)
+    assertEquals(List(refNode), result.columnAs[Node]("node").toList)
+  }
+
+
 }
+

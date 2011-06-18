@@ -74,8 +74,8 @@ class SortPipeTest {
 
 }
 
-class FakePipe(data: Seq[Map[String, Any]]) extends Pipe {
-  val symbols: SymbolTable = new SymbolTable()
+class FakePipe(data: Seq[Map[String, Any]], val symbols:SymbolTable) extends Pipe {
+  def this(data: Seq[Map[String, Any]]) = this(data, new SymbolTable())
 
   def foreach[U](f: (Map[String, Any]) => U) {
     data.foreach(f(_))

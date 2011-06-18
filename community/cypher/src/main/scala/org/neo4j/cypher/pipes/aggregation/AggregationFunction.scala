@@ -17,20 +17,35 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.pipes
+package org.neo4j.cypher.pipes.aggregation
 
-import org.neo4j.cypher.SymbolTable
 import org.neo4j.cypher.commands.ReturnItem
 
-class ColumnFilterPipe(source: Pipe, returnItems: Seq[ReturnItem]) extends Pipe {
-  val symbols: SymbolTable = new SymbolTable(returnItems.map(_.identifier))
+abstract class AggregationFunction {
+  def apply(data: Map[String, Any])
 
-  def foreach[U](f: (Map[String, Any]) => U) {
-    source.foreach(row => {
-      val filtered = row.filter((kv) => kv match {
-        case (name, _) => returnItems.exists(_.identifier.name == name)
-      })
-      f.apply(filtered)
-    })
+  def result: Any
+}
+
+class CountStarFunction extends AggregationFunction {
+  var count = 0
+
+  def apply(data: Map[String, Any]) {
+    count = count + 1
   }
+
+  def result: Int = count
+}
+
+class CountFunction(returnItem:ReturnItem) extends AggregationFunction {
+  var count = 0
+
+  def apply(data: Map[String, Any]) {
+    returnItem(data).head._2 match {
+      case null =>
+      case _ => count = count + 1
+    }
+  }
+
+  def result: Int = count
 }

@@ -37,7 +37,7 @@ define ['lib/backbone'], () ->
     eval : (statement, showStatement=true, includeInHistory=true, prepend = @lang) =>
       @set {"showPrompt":false, prompt:""}, {silent:true}
       if showStatement
-        @pushLines [statement], prepend + ">"
+        @pushLines [statement], prepend + "> "
       
       if includeInHistory
         @pushHistory statement
