@@ -59,13 +59,13 @@ import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.domain.TraverserReturnType;
+import org.neo4j.server.rest.paging.Clock;
+import org.neo4j.server.rest.paging.FakeClock;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 import org.neo4j.server.rest.web.RestfulGraphDatabase.AmpersandSeparatedCollection;
-import org.neo4j.server.rest.web.paging.Clock;
-import org.neo4j.server.rest.web.paging.FakeClock;
 
 public class RestfulGraphDatabaseTest
 {

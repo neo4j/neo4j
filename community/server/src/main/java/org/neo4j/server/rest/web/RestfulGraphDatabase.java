@@ -44,12 +44,12 @@ import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.domain.EndNodeNotFoundException;
 import org.neo4j.server.rest.domain.StartNodeNotFoundException;
 import org.neo4j.server.rest.domain.TraverserReturnType;
+import org.neo4j.server.rest.paging.Clock;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.PropertiesRepresentation;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
-import org.neo4j.server.rest.web.paging.Clock;
 
 @Path( "/" )
 public class RestfulGraphDatabase

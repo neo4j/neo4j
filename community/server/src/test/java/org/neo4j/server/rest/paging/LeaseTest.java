@@ -17,14 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.web.paging;
+package org.neo4j.server.rest.paging;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.server.rest.web.paging.HexMatcher.containsOnlyHex;
+import static org.neo4j.server.rest.paging.HexMatcher.containsOnlyHex;
 
 import org.junit.Test;
+import org.neo4j.server.rest.paging.Leasable;
+import org.neo4j.server.rest.paging.Lease;
+import org.neo4j.server.rest.paging.LeaseAlreadyExpiredException;
 
 public class LeaseTest
 {

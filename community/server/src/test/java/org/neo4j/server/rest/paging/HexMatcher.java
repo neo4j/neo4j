@@ -17,25 +17,41 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.web.paging;
+package org.neo4j.server.rest.paging;
 
-public class FakeClock implements Clock
+import java.util.regex.Pattern;
+
+import org.hamcrest.Description;
+import org.hamcrest.Factory;
+import org.hamcrest.Matcher;
+import org.junit.internal.matchers.TypeSafeMatcher;
+
+public class HexMatcher extends TypeSafeMatcher<String>
 {
-    private long time = System.currentTimeMillis();
-    
+    private static final Pattern pattern = Pattern.compile( "[a-fA-F0-9]*" );
+    private String candidate;
+
+    private HexMatcher()
+    {
+        
+    }
+
     @Override
-    public long currentTimeInMilliseconds()
+    public void describeTo( Description description )
     {
-        return time;
+        description.appendText( String.format("[%s] is not a pure hexadecimal string", candidate) );
     }
 
-    public void forwardMinutes( int minutes )
+    @Override
+    public boolean matchesSafely( String candidate )
     {
-        time += 60000 * minutes;
+        this.candidate = candidate;
+        return pattern.matcher( candidate ).matches();
     }
 
-    public void forwardSeconds( long seconds )
+    @Factory
+    public static <T> Matcher<String> containsOnlyHex()
     {
-        time += 1000 * seconds;
+        return new HexMatcher();
     }
 }

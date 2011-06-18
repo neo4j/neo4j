@@ -17,9 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.web.paging;
+package org.neo4j.server.rest.paging;
 
-public interface Leasable
+import org.neo4j.server.rest.paging.Clock;
+
+public class FakeClock implements Clock
 {
+    private long time = System.currentTimeMillis();
+    
+    @Override
+    public long currentTimeInMilliseconds()
+    {
+        return time;
+    }
 
+    public void forwardMinutes( int minutes )
+    {
+        time += 60000 * minutes;
+    }
+
+    public void forwardSeconds( long seconds )
+    {
+        time += 1000 * seconds;
+    }
 }

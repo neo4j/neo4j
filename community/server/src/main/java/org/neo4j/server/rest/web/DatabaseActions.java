@@ -57,6 +57,10 @@ import org.neo4j.server.rest.domain.RelationshipExpanderBuilder;
 import org.neo4j.server.rest.domain.StartNodeNotFoundException;
 import org.neo4j.server.rest.domain.TraversalDescriptionBuilder;
 import org.neo4j.server.rest.domain.TraverserReturnType;
+import org.neo4j.server.rest.paging.Clock;
+import org.neo4j.server.rest.paging.Lease;
+import org.neo4j.server.rest.paging.LeaseManager;
+import org.neo4j.server.rest.paging.PagedTraverser;
 import org.neo4j.server.rest.repr.DatabaseRepresentation;
 import org.neo4j.server.rest.repr.IndexRepresentation;
 import org.neo4j.server.rest.repr.IndexedEntityRepresentation;
@@ -72,10 +76,6 @@ import org.neo4j.server.rest.repr.RelationshipRepresentation;
 import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.RepresentationType;
 import org.neo4j.server.rest.repr.WeightedPathRepresentation;
-import org.neo4j.server.rest.web.paging.Clock;
-import org.neo4j.server.rest.web.paging.Lease;
-import org.neo4j.server.rest.web.paging.LeaseManager;
-import org.neo4j.server.rest.web.paging.PagedTraverser;
 
 public class DatabaseActions
 {

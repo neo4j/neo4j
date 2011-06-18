@@ -31,10 +31,10 @@ import org.neo4j.server.database.DatabaseProvider;
 import org.neo4j.server.database.GraphDatabaseServiceProvider;
 import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.plugins.PluginInvocatorProvider;
+import org.neo4j.server.rest.paging.RealClockProvider;
 import org.neo4j.server.rest.repr.InputFormatProvider;
 import org.neo4j.server.rest.repr.OutputFormatProvider;
 import org.neo4j.server.rest.repr.RepresentationFormatRepository;
-import org.neo4j.server.rest.web.paging.RealClockProvider;
 import org.neo4j.server.rrd.RrdDbProvider;
 
 import com.sun.jersey.api.core.HttpContext;

@@ -17,12 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.web.paging;
+package org.neo4j.server.rest.paging;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
 import org.junit.Test;
+import org.neo4j.server.rest.paging.Leasable;
+import org.neo4j.server.rest.paging.Lease;
+import org.neo4j.server.rest.paging.LeaseManager;
 
 public class LeaseManagerTest
 {
