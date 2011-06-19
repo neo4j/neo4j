@@ -19,12 +19,15 @@
  */
 package org.neo4j.server.rest.web;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Map;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -46,6 +49,7 @@ import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.PropertiesRepresentation;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
+import org.neo4j.server.rest.web.paging.Clock;
 
 @Path( "/" )
 public class RestfulGraphDatabase
@@ -95,17 +99,21 @@ public class RestfulGraphDatabase
     protected static final String PATH_RELATIONSHIP_INDEX_ID = PATH_RELATIONSHIP_INDEX_GET + "/{id}";
     protected static final String PATH_RELATIONSHIP_INDEX_REMOVE_KEY = PATH_NAMED_RELATIONSHIP_INDEX + "/{key}/{id}";
     protected static final String PATH_RELATIONSHIP_INDEX_REMOVE = PATH_NAMED_RELATIONSHIP_INDEX + "/{id}";
+    protected static final String PATH_TO_PAGED_TRAVERSERS = "/traversers";
+    private static final String SIXTY_SECONDS = "60";
 
     private final DatabaseActions server;
     private final OutputFormat output;
     private final InputFormat input;
+    private final UriInfo uriInfo;
 
     public RestfulGraphDatabase( @Context UriInfo uriInfo, @Context Database database, @Context InputFormat input,
-            @Context OutputFormat output )
+            @Context OutputFormat output, @Context Clock clock )
     {
+        this.uriInfo = uriInfo;
         this.input = input;
         this.output = output;
-        this.server = new DatabaseActions( database );
+        this.server = new DatabaseActions( database, clock );
     }
 
     private static Response nothing()
@@ -321,6 +329,7 @@ public class RestfulGraphDatabase
 
     // Relationships
 
+    @SuppressWarnings( "unchecked" )
     @POST
     @Path( PATH_NODE_RELATIONSHIPS )
     public Response createRelationship( @PathParam( "nodeId" ) long startNodeId, String body )
@@ -947,6 +956,68 @@ public class RestfulGraphDatabase
         }
     }
 
+    // Paged traversal
+
+    @GET
+    @Path( PATH_TO_PAGED_TRAVERSERS )
+    public Response pagedTraverse( @PathParam( "traverserId" ) String traverserId,
+            @QueryParam( "returnType" ) TraverserReturnType returnType )
+    {
+        try
+        {
+            String responseBody = output.format( server.pagedTraverse( traverserId, returnType ) );
+
+            URI uri = new URI( uriInfo.getBaseUri()
+                    .toString() + PATH_TO_PAGED_TRAVERSERS + "/" + traverserId );
+
+            return Response.ok( uri.normalize() )
+                    .entity( responseBody )
+                    .build();
+        }
+        catch ( NotFoundException e )
+        {
+            return output.notFound( e );
+        }
+        catch ( URISyntaxException e )
+        {
+            return output.serverError( e );
+        }
+    }
+
+    @POST
+    @Path( PATH_TO_PAGED_TRAVERSERS )
+    public Response createPagedTraverser( @PathParam( "nodeId" ) long startNode,
+            @PathParam( "returnType" ) TraverserReturnType returnType, @QueryParam( "pageSize" ) int pageSize,
+            @QueryParam( "leaseTime" ) @DefaultValue(SIXTY_SECONDS) int leaseTimeInSeconds, String body )
+    {
+        try
+        {
+            String traverserId = server.createPagedTraverser( startNode, input.readMap( body ), pageSize,
+                    leaseTimeInSeconds );
+
+            String responseBody = output.format( server.pagedTraverse( traverserId, returnType ) );
+
+            URI uri = new URI( uriInfo.getBaseUri()
+                    .toString() + PATH_TO_PAGED_TRAVERSERS + "/" + traverserId + "?returnType=" + returnType.toString() );
+
+            return Response.created( uri.normalize() )
+                    .entity( responseBody )
+                    .build();
+        }
+        catch ( BadInputException e )
+        {
+            return output.badRequest( e );
+        }
+        catch ( NotFoundException e )
+        {
+            return output.notFound( e );
+        }
+        catch ( URISyntaxException e )
+        {
+            return output.serverError( e );
+        }
+    }
+
     @POST
     @Path( PATH_NODE_PATH )
     public Response singlePath( @PathParam( "nodeId" ) long startNode, String body )
@@ -995,5 +1066,4 @@ public class RestfulGraphDatabase
             return output.badRequest( e );
         }
     }
-
 }

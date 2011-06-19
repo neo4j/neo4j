@@ -22,29 +22,29 @@ package org.neo4j.cypher
 import commands.Identifier
 import scala.Some
 
-class SymbolTable(val identifiers: Map[String, Identifier]) {
-  def this() = this (Map())
+class SymbolTable(val identifiers: Set[Identifier]) {
+  def this(identifier:Identifier)=this(Set(identifier))
+  def this(data:Seq[Identifier])=this(data.toSet)
+  def this() = this (List())
 
   def assertHas(name: String) {
-    if (!identifiers.contains(name)) {
+    if (get(name).isEmpty) {
       throw new SyntaxError("Unknown identifier \"" + name + "\".")
     }
   }
 
-  def add(idents: Map[String, Identifier]) = new SymbolTable(identifiers ++ idents)
+  def add(idents: Seq[Identifier]) = new SymbolTable(identifiers ++ idents.toList)
+
+  def get(name: String): Option[Identifier] = identifiers.find(_.name == name)
 
   def ++(other: SymbolTable): SymbolTable = {
-    identifiers.foreach {
-      case (key, value) => {
-        other.identifiers.get(key) match {
-          case None =>
-          case Some(x) => if (!x.getClass.isInstance(value)) {
-            throw new SyntaxError("Identifier " + key + " already defined with different type")
-          }
-        }
+    identifiers.foreach(identifier => other.get(identifier.name) match {
+      case None =>
+      case Some(x) => if (!x.getClass.isInstance(identifier)) {
+        throw new SyntaxError("Identifier " + x.name + " already defined with different type")
       }
-    }
+    })
 
-    new SymbolTable(identifiers ++ other.identifiers)
+    new SymbolTable((identifiers ++ other.identifiers).toSet.toList)
   }
 }

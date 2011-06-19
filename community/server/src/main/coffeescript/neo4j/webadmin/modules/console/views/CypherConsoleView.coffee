@@ -29,7 +29,7 @@ define(
     class CypherConsoleView extends ConsoleView
       
       render : =>
-        $(@el).html(baseTemplate())
-        @renderConsole("cypher")
+        $(@el).html(baseTemplate(current:'cypher'))
+        @renderConsole()
         return this  
 )

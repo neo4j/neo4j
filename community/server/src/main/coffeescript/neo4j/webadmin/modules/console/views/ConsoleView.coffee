@@ -48,11 +48,12 @@ define(
       wrapperClicked : (ev) =>
         $("#console-input").focus()
 
-      renderConsole : (asdf)=>
-        $("#console",@el).html consoleTemplate(
+      renderConsole : ()=>
+        $("#console-base",@el).html consoleTemplate(
           lines : @consoleState.get "lines"
           prompt : @consoleState.get "prompt"
           showPrompt : @consoleState.get "showPrompt"
+          current : @lang
           promptPrefix : @lang)
         
         @delegateEvents()

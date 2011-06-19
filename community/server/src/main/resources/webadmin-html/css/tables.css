@@ -71,7 +71,7 @@ table.info-table {
 
 table.info-table tr td, table.info-table tr th {    
   vertical-align: top;
-  padding: 0 5px;
+  padding: 0 5px 5px;
   margin: 2px 0;
 }
 

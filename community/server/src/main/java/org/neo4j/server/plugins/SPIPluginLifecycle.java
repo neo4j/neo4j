@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.plugins;
 
-import org.neo4j.server.NeoServer;
-
 import java.util.Collection;
+
+import org.neo4j.server.NeoServer;
 
 public interface SPIPluginLifecycle extends PluginLifecycle {
 

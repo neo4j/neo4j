@@ -21,20 +21,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 define(
   ['ribcage/storage/LocallyStoredModel'], 
   (LocallyStoredModel) ->
-
+    # Stores arbitrary key/value configuration
     class Settings extends LocallyStoredModel
-      
-      defaults :
-        labelProperties : ['name']
 
       getStorageKey : () ->
-        "visualization-settings"
-
-      getLabelProperties : () ->
-        @get("labelProperties") or []
-      
-      setLabelProperties : (labelProps) ->
-        @set("labelProperties" : labelProps)
-
+        "settings"
 
 )

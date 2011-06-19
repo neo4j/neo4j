@@ -18,7 +18,7 @@ include::index-users.txt[]
 
 include::traversal.txt[]
 
-:leveloffset: 4
+:leveloffset: 3
 
 include::social.txt[]
 

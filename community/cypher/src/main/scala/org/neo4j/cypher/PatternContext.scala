@@ -30,9 +30,8 @@ import org.neo4j.graphdb.{PropertyContainer, DynamicRelationshipType, Direction}
 class PatternContext(source: Pipe, matching: Match) {
 
   val patternSymbolTypes: Seq[Identifier] = matching.patterns.map(pattern => createSymbolType(pattern)).flatten
-  val patternSymbolMap = patternSymbolTypes.map(x => x.name -> x).toMap
 
-  val symbolTable = source.symbols.add(patternSymbolMap)
+  val symbolTable = source.symbols.add(patternSymbolTypes)
 
   val group = new PatternGroup
   val nodes = scala.collection.mutable.Map[String, PatternNode]()
@@ -42,14 +41,10 @@ class PatternContext(source: Pipe, matching: Match) {
   createPatterns()
 
   private def createStartItemsPatterns() {
-    source.symbols.identifiers.foreach {
-      case (name, typ) => {
-        typ match {
-          case NodeIdentifier(subName) => getOrCreateNode(subName)
-          case RelationshipIdentifier(subName) => getOrCreateRelationship(subName)
-        }
-      }
-    }
+    source.symbols.identifiers.foreach( identifier => identifier match {
+      case NodeIdentifier(identifier.name) => getOrCreateNode(identifier.name)
+      case RelationshipIdentifier(identifier.name) => getOrCreateRelationship(identifier.name)
+    })
   }
 
 
@@ -119,7 +114,7 @@ class PatternContext(source: Pipe, matching: Match) {
       }
     }
 
-    startIdentifiers.identifiers.map((item) => patternObject(item._1)).foreach(_ match {
+    startIdentifiers.identifiers.map((item) => patternObject(item.name)).foreach(_ match {
       case None => throw new SyntaxError("Encountered a part of the pattern that is not part of the pattern. If you see this, please report this problem!")
       case Some(obj) => visit(obj)
     })

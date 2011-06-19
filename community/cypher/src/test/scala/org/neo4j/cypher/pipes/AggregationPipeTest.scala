@@ -22,39 +22,61 @@ package org.neo4j.cypher.pipes
 import org.junit.Test
 import org.junit.Assert._
 import org.junit.matchers.JUnitMatchers._
-import org.neo4j.cypher.SymbolTable
-import org.neo4j.cypher.commands.{NodeIdentifier, AggregationIdentifier, Count, EntityOutput}
 import scala.collection.JavaConverters._
+import org.neo4j.cypher.commands._
+import org.neo4j.cypher.{SyntaxError, SymbolTable}
 
 
 class AggregationPipeTest {
   @Test def shouldReturnColumnsFromReturnItems() {
-    val source = new FakePipe(List(), new SymbolTable(Map("foo" -> NodeIdentifier("foo"))))
+    val source = new FakePipe(List(), new SymbolTable(NodeIdentifier("foo")))
 
     val returnItems = List(EntityOutput("name"))
-    val grouping = List(Count("*"))
+    val grouping = List(CountStar())
     val aggregationPipe = new AggregationPipe(source, returnItems, grouping)
 
-    assertEquals(Map(
-      "count(*)" -> AggregationIdentifier("count(*)"),
-      "foo" -> NodeIdentifier("foo")), aggregationPipe.symbols.identifiers)
+    assertEquals(
+      Set(NodeIdentifier("foo"),AggregationIdentifier("count(*)")),
+      aggregationPipe.symbols.identifiers)
   }
 
-  @Test def shouldAggregateCounts() {
+  @Test(expected = classOf[SyntaxError]) def shouldThrowSemanticException() {
+    val source = new FakePipe(List(), new SymbolTable(NodeIdentifier("foo")))
+
+    val returnItems = List(EntityOutput("name"))
+    val grouping = List(Count(EntityOutput("none-existing-identifier")))
+    new AggregationPipe(source, returnItems, grouping)
+  }
+
+  @Test def shouldAggregateCountStar() {
     val source = new FakePipe(List(
       Map("name" -> "Andres", "age" -> 36),
       Map("name" -> "Peter", "age" -> 38),
       Map("name" -> "Michael", "age" -> 36),
-      Map("name" -> "Michael", "age" -> 31)), new SymbolTable(Map("foo" -> NodeIdentifier("foo"))))
+      Map("name" -> "Michael", "age" -> 31)), new SymbolTable(NodeIdentifier("foo")))
 
     val returnItems = List(EntityOutput("name"))
-    val grouping = List(Count("*"))
+    val grouping = List(CountStar())
     val aggregationPipe = new AggregationPipe(source, returnItems, grouping)
 
     assertThat(aggregationPipe.toList.asJava, hasItems(
       Map("name" -> "Andres", "count(*)" -> 1),
       Map("name" -> "Peter", "count(*)" -> 1),
       Map("name" -> "Michael", "count(*)" -> 2)))
+  }
+
+  @Test def shouldCountNonNullValues() {
+    val source = new FakePipe(List(
+      Map("name" -> "Andres", "age" -> 36),
+      Map("name" -> null, "age" -> 38),
+      Map("name" -> "Michael", "age" -> 36),
+      Map("name" -> "Michael", "age" -> 31)), new SymbolTable(NodeIdentifier("name")))
+
+    val returnItems = List()
+    val grouping = List(Count(EntityOutput("name")))
+    val aggregationPipe = new AggregationPipe(source, returnItems, grouping)
+
+    assertEquals(List(Map("count(name)" -> 3)), aggregationPipe.toList)
   }
 
 }

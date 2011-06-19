@@ -19,8 +19,44 @@
  */
 package org.neo4j.cypher.pipes.aggregation
 
-abstract class AggregationFunction {
-  def apply(data:Map[String,Any])
+import org.neo4j.cypher.commands.ReturnItem
 
+/**
+ * Base class for aggregation functions. The function is stateful
+ * and aggregates by having it's apply method called once for every
+ * row that matches the key.
+ */
+abstract class AggregationFunction {
+  /**
+   * Adds this data to the aggregated total.
+   */
+  def apply(data: Map[String, Any])
+
+  /**
+   * The aggregated result.
+   */
   def result: Any
+}
+
+class CountStarFunction extends AggregationFunction {
+  var count = 0
+
+  def apply(data: Map[String, Any]) {
+    count = count + 1
+  }
+
+  def result: Int = count
+}
+
+class CountFunction(returnItem:ReturnItem) extends AggregationFunction {
+  var count = 0
+
+  def apply(data: Map[String, Any]) {
+    returnItem(data).head._2 match {
+      case null =>
+      case _ => count = count + 1
+    }
+  }
+
+  def result: Int = count
 }

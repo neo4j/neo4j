@@ -105,14 +105,14 @@ public class JSONArray {
     /**
      * The arrayList where the JSONArray's properties are kept.
      */
-    private ArrayList myArrayList;
+    private ArrayList<Object> myArrayList;
 
 
     /**
      * Construct an empty JSONArray.
      */
     public JSONArray() {
-        this.myArrayList = new ArrayList();
+        this.myArrayList = new ArrayList<Object>();
     }
 
     /**
@@ -195,7 +195,7 @@ public class JSONArray {
      */
 
     public JSONArray(Collection collection, boolean includeSuperClass) {
-		this.myArrayList = new ArrayList();
+		this.myArrayList = new ArrayList<Object>();
 		if (collection != null) {
 			Iterator iter = collection.iterator();;
 			while (iter.hasNext()) {

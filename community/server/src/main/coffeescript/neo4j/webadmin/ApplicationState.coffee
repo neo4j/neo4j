@@ -28,10 +28,10 @@ define(
       getServer : ->
         @get "server"
 
-      getVisualizationSettings : () ->
-        if not @visualizationSettings?
-          @visualizationSettings = new Settings()
-          @visualizationSettings.fetch()
-        return @visualizationSettings
+      getSettings : () ->
+        if not @settings?
+          @settings = new Settings()
+          @settings.fetch()
+        return @settings
 
 )

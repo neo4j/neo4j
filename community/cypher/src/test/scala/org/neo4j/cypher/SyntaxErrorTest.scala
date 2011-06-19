@@ -23,11 +23,6 @@ import org.junit.Assert._
 import org.junit.{Assert, Test}
 
 
-/**
- * Created by Andres Taylor
- * Date: 5/1/11
- * Time: 10:36 
- */
 
 class SyntaxErrorTest {
   def expectError(query: String, expectedError: String) {
@@ -36,7 +31,7 @@ class SyntaxErrorTest {
       parser.parse(query)
       fail("Should have produced the error: "+expectedError)
     } catch {
-      case x : SyntaxError => Assert.assertEquals(x.getMessage, expectedError)
+      case x : SyntaxError => Assert.assertEquals(expectedError,x.getMessage)
     }
   }
 
@@ -45,4 +40,14 @@ class SyntaxErrorTest {
       "start s = (1) return s order by s",
       "Cannot ORDER BY on nodes or relationships")
   }
+
+  @Test def shouldRaiseErrorWhenFinishingAListWithAComma() {
+    expectError(
+      "start s = (1,2,) return s order by s",
+      "Last element of list must be a value")
+  }
+
+
+  //TODO: Write test for       start n=(%A%,%B%,%C%,%D%,) return count(n.property?)
+
 }

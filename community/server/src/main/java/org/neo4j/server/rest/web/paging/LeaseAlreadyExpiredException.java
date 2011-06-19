@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.pipes.aggregation
+package org.neo4j.server.rest.web.paging;
 
-class CountFunction extends AggregationFunction {
-  var count = 0
+public class LeaseAlreadyExpiredException extends RuntimeException
+{
+    public LeaseAlreadyExpiredException( String message )
+    {
+        super(message);
+    }
 
-  def apply(data: Map[String, Any]) {
-    count = count + 1
-  }
-
-  def result: Int = count
+    private static final long serialVersionUID = -4827067345302605272L;
 }

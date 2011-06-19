@@ -73,16 +73,17 @@ include::ql/return/index.txt[]
 
 :leveloffset: 2
 
-include::ql/order/index.txt[]
+include::ql/aggregation/index.txt[]
 
 :leveloffset: 2
 
-include::ql/from/index.txt[]
+include::ql/order-by/index.txt[]
+
+:leveloffset: 2
+
+include::ql/skip/index.txt[]
 
 :leveloffset: 2
 
 include::ql/limit/index.txt[]
 
-:leveloffset: 2
-
-include::ql/skip/index.txt[]

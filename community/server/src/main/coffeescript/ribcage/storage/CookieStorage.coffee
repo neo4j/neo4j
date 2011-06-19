@@ -37,7 +37,7 @@ define(
 
         return null
 
-      set : (key, value, days=false) ->
+      set : (key, value, days=365) ->
         if days
           date = new Date()
           date.setTime(date.getTime()+(days*24*60*60*1000))

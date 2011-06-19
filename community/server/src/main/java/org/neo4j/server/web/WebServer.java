@@ -19,14 +19,15 @@
  */
 package org.neo4j.server.web;
 
-import org.mortbay.jetty.Server;
-import org.neo4j.server.NeoServer;
+import java.io.IOException;
+import java.util.List;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.List;
+
+import org.mortbay.jetty.Server;
+import org.neo4j.server.NeoServer;
 
 public interface WebServer {
     void init();

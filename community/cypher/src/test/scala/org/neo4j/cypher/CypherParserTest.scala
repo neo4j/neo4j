@@ -22,7 +22,7 @@ package org.neo4j.cypher
 import org.neo4j.cypher.commands._
 import org.junit.Assert._
 import org.neo4j.graphdb.Direction
-import org.junit.Test
+import org.junit.{Ignore, Test}
 
 class CypherParserTest {
   def testQuery(query: String, expectedQuery: Query) {
@@ -300,7 +300,7 @@ class CypherParserTest {
         Return(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
         Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
-        Aggregation(Count("*"))))
+        Aggregation(CountStar())))
   }
 
   @Test def singleColumnSorting() {
@@ -423,4 +423,29 @@ class CypherParserTest {
         Start(NodeById("n", 1)),
         Match(RelatedTo("n", "x", Some("r"), None, Direction.OUTGOING))))
   }
+
+  @Test def countNonNullValues() {
+    testQuery(
+      "start a = (1) return a, count(a)",
+      Query(
+        Return(EntityOutput("a")),
+        Start(NodeById("a", 1)),
+        Aggregation(Count(EntityOutput("a")))))
+  }
+
+  @Test def shouldBeAbleToHandleStringLiteralsWithApostrophe() {
+  testQuery(
+    "start a = (index, key, 'value') return a",
+    Query(
+      Return(EntityOutput("a")),
+      Start(NodeByIndex("a", "index", "key", "value"))))
+}
+  @Test def shouldHandleQuotationsInsideApostrophes() {
+  testQuery(
+    "start a = (index, key, 'val\"ue') return a",
+    Query(
+      Return(EntityOutput("a")),
+      Start(NodeByIndex("a", "index", "key", "val\"ue"))))
+}
+
 }
