@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher
 
-import commands.Identifier
+import commands.{Match, UnboundIdentifier, Identifier}
 import scala.Some
 
 class SymbolTable(val identifiers: Set[Identifier]) {
   def this(identifier:Identifier)=this(Set(identifier))
   def this(data:Seq[Identifier])=this(data.toSet)
-  def this() = this (List())
+  def this() = this(Set[Identifier]())
+  def this(other:SymbolTable) = this(other.identifiers)
 
   def assertHas(name: String) {
     if (get(name).isEmpty) {
@@ -33,18 +34,35 @@ class SymbolTable(val identifiers: Set[Identifier]) {
     }
   }
 
-  def add(idents: Seq[Identifier]) = new SymbolTable(identifiers ++ idents.toList)
+  def add(idents: Seq[Identifier]) = this ++ new SymbolTable(idents)
 
   def get(name: String): Option[Identifier] = identifiers.find(_.name == name)
 
-  def ++(other: SymbolTable): SymbolTable = {
-    identifiers.foreach(identifier => other.get(identifier.name) match {
-      case None =>
-      case Some(x) => if (!x.getClass.isInstance(identifier)) {
-        throw new SyntaxError("Identifier " + x.name + " already defined with different type")
-      }
-    })
+  def merge(other: SymbolTable) : Set[Identifier] = {
+    identifiers ++
+    other.identifiers.map( otherIdentifier => {
+        val identifier = get(otherIdentifier.name)
+        otherIdentifier match {
+          case UnboundIdentifier(name,wrapped) => {
+            if (identifier == None) {
+               throw new SyntaxError("Unbound Identifier "+otherIdentifier+" not resolved!")
+            } else {
+              wrapped match {
+                case None => identifier.get
+                case Some(x) => x
+              }
+            }
+          }
+          case _ =>
+            val result = identifier.getOrElse(otherIdentifier)
+            if (result.getClass == otherIdentifier.getClass) result else {
+              throw new SyntaxError("Identifier " + result + " already defined with different type "+otherIdentifier)
+          }
+        }
+      })
+  }
 
-    new SymbolTable((identifiers ++ other.identifiers).toSet.toList)
+  def ++(other: SymbolTable): SymbolTable = {
+    new SymbolTable(merge(other))
   }
 }

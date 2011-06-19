@@ -32,7 +32,7 @@ class SematicErrorTest extends ExecutionEngineTestBase {
       Return(EntityOutput("bar")),
       Start(NodeById("foo", node.getId)))
 
-    expectedError(query, """Unknown identifier "bar".""")
+    expectedError(query, """Unbound Identifier UnboundIdentifier(bar,None) not resolved!""")
   }
 
   @Test def throwOnDisconnectedPattern() {
@@ -54,7 +54,7 @@ class SematicErrorTest extends ExecutionEngineTestBase {
       Start(NodeById("foo", node.getId)),
       Match(RelatedTo("a", "b", Some("foo"), None, Direction.BOTH)))
 
-    expectedError(query, "Identifier \"foo\" already defined as a node.")
+    expectedError(query, "Identifier NodeIdentifier(foo) already defined with different type RelationshipIdentifier(foo)")
   }
 
 

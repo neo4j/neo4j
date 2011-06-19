@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher
 
+import commands._
 import org.junit.Test
-import commands.{NodeIdentifier, RelationshipIdentifier}
 import org.junit.Assert._
 
 
@@ -49,5 +49,34 @@ class SymbolTableTest {
     val result = table1 ++ table2
 
     assertEquals(Set(NodeIdentifier("x")), result.identifiers)
+  }
+
+  @Test def shouldResolveUnboundIdentifiers() {
+    val table1 = new SymbolTable(NodeIdentifier("x"))
+    val table2 = new SymbolTable(UnboundIdentifier("x",None))
+
+    val result = table1 ++ table2
+
+    assertEquals(Set(NodeIdentifier("x")), result.identifiers)
+  }
+  @Test def shouldResolveUnboundConcreteIdentifiers() {
+    val table1 = new SymbolTable(NodeIdentifier("x"))
+    val table2 = new SymbolTable(UnboundIdentifier("x",Some(PropertyIdentifier("x","name"))))
+
+    val result = table1 ++ table2
+
+    assertEquals(Set(NodeIdentifier("x"),PropertyIdentifier("x","name")), result.identifiers)
+  }
+  @Test(expected = classOf[SyntaxError]) def shouldFailForUnboundConcreteIdentifiers() {
+    val table1 = new SymbolTable()
+    val table2 = new SymbolTable(UnboundIdentifier("x",Some(PropertyIdentifier("x","name"))))
+
+    table1 ++ table2
+  }
+  @Test(expected = classOf[SyntaxError]) def shouldFailForUnbound() {
+    val table1 = new SymbolTable()
+    val table2 = new SymbolTable(UnboundIdentifier("x",None))
+
+    table1 ++ table2
   }
 }
