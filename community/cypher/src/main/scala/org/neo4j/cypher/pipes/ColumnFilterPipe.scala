@@ -19,16 +19,22 @@
  */
 package org.neo4j.cypher.pipes
 
-import org.neo4j.cypher.SymbolTable
-import org.neo4j.cypher.commands.ReturnItem
+import org.neo4j.cypher.commands.{Identifier, UnboundIdentifier, ReturnItem}
+import org.neo4j.cypher.{SyntaxError, SymbolTable}
 
 class ColumnFilterPipe(source: Pipe, returnItems: Seq[ReturnItem]) extends Pipe {
-  val symbols: SymbolTable = new SymbolTable(returnItems.map(_.identifier))
+  val returnIdentifiers = returnItems.map(_.identifier)
+  val returnItemNames = returnItems.map( _.columnName )
+
+  val symbols: SymbolTable = {
+    val mergedSymbols: SymbolTable = source.symbols ++ new SymbolTable(returnIdentifiers)
+    new SymbolTable(returnItemNames.map( name => mergedSymbols.get(name).getOrElse(throw new SyntaxError("Unbound Symbol "+name))))
+  }
 
   def foreach[U](f: (Map[String, Any]) => U) {
     source.foreach(row => {
       val filtered = row.filter((kv) => kv match {
-        case (name, _) => returnItems.exists(_.identifier.name == name)
+        case (name, _) => returnItemNames.exists(_ == name)
       })
       f.apply(filtered)
     })
