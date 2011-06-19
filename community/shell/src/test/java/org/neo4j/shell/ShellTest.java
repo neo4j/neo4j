@@ -119,12 +119,12 @@ public class ShellTest
         Documenter doc = new Documenter("sample session", client);
         doc.add("pwd", "", "where are we?");
         doc.add("start n=(0) return n", "0", "send a cypher query");
-        doc.add("mkrel -c -d i -t LIKES --np \"{'app':'foobar'}\"", "", "make a relationship and create the end node");
+        doc.add("mkrel -c -d i -t LIKES --np \"{'app':'foobar'}\"", "", "make an incoming relationship of type LIKES, create the end node with the node properties specified.");
         doc.add("ls", "1", "where are we?");
         doc.add("cd 1", "", "change to the newly created node");
         doc.add("ls -avr", "LIKES", "list relationships, including relationshship id");
         
-        doc.add( "mkrel -c -d i -t KNOWS --np \"{'name':'Bob'}\"", "", "create one more KNOWS relatoinship and the end node" );
+        doc.add( "mkrel -c -d i -t KNOWS --np \"{'name':'Bob'}\"", "", "create one more KNOWS relationship and the end node" );
         doc.add( "pwd", "0", "print current history stack" );
         doc.add( "ls -avr", "KNOWS", "verbose list relationships" );
         doc.run();
