@@ -41,25 +41,17 @@ class SymbolTable(val identifiers: Set[Identifier]) {
   def merge(other: SymbolTable) : Set[Identifier] = {
     identifiers ++
     other.identifiers.map( otherIdentifier => {
-        val identifier = get(otherIdentifier.name)
-        otherIdentifier match {
-          case UnboundIdentifier(name,wrapped) => {
-            if (identifier == None) {
-               throw new SyntaxError("Unbound Identifier "+otherIdentifier+" not resolved!")
-            } else {
-              wrapped match {
-                case None => identifier.get
-                case Some(x) => x
-              }
-            }
+        get(otherIdentifier.name) match {
+          case None => otherIdentifier match {
+            case UnboundIdentifier(_,_) => throw new SyntaxError("Unbound Identifier "+otherIdentifier+" not resolved!")
+            case _ => otherIdentifier
           }
-          case _ =>
-            val result = identifier.getOrElse(otherIdentifier)
-            if (result.getClass == otherIdentifier.getClass) result else {
-              throw new SyntaxError("Identifier " + result + " already defined with different type "+otherIdentifier)
-          }
-        }
-      })
+          case Some(identifier) => otherIdentifier match {
+            case UnboundIdentifier(name,None) => identifier
+            case UnboundIdentifier(name,Some(wrapped)) => wrapped
+            case _ => if (identifier.getClass == otherIdentifier.getClass) identifier
+                      else throw new SyntaxError("Identifier " + identifier + " already defined with different type "+otherIdentifier)
+          } } } )
   }
 
   def ++(other: SymbolTable): SymbolTable = {
