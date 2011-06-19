@@ -124,7 +124,7 @@ public class ShellTest
         doc.add("cd 1", "", "change to the newly created node");
         doc.add("ls -avr", "LIKES", "list relationships, including relationshship id");
         
-        doc.add( "mkrel -c -d i -t KNOWS --np \"{'name':'Bob'}\"", "", "create one more KNOWS relatoinship and the end node" );
+        doc.add( "mkrel -c -d i -t KNOWS --np \"{'name':'Bob'}\"", "", "create one more KNOWS relationship and the end node" );
         doc.add( "pwd", "0", "print current history stack" );
         doc.add( "ls -avr", "KNOWS", "verbose list relationships" );
         doc.run();
