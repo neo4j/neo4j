@@ -19,34 +19,54 @@
  */
 package org.neo4j.cypher.javacompat;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.cypher.commands.Query;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
+import java.io.IOException;
 import java.util.Iterator;
 
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
 import static org.junit.matchers.JUnitMatchers.containsString;
 import static org.junit.matchers.JUnitMatchers.hasItem;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
-// START SNIPPET: JavaQuery
 public class JavaExecutionEngineTests
 {
+
+    private GraphDatabaseService db;
+
+    @Before public void setUp() throws IOException {
+        db = new ImpermanentGraphDatabase();
+    }
     @Test
     public void exampleQuery() throws Exception
     {
-        GraphDatabaseService db = new ImpermanentGraphDatabase();
+// START SNIPPET: JavaQuery
         CypherParser parser = new CypherParser();
-        ExecutionEngine engine = new ExecutionEngine( db );
+        ExecutionEngine engine = new ExecutionEngine(db);
         Query query = parser.parse( "start n=(0) where 1=1 return n" );
         ExecutionResult result = engine.execute( query );
 
         assertThat( result.columns(), hasItem( "n" ) );
         Iterator<Node> n_column = result.columnAs( "n" );
-        assertThat( asIterable( n_column ), hasItem( db.getNodeById( 0 ) ) );
+        assertThat( asIterable( n_column ), hasItem(db.getNodeById(0)) );
         assertThat( result.toString(), containsString("Node[0]") );
+// END SNIPPET: JavaQuery
+    }
+
+    @Test
+    public void exampleConsole() throws Exception
+    {
+        ExecutionEngine engine = new ExecutionEngine( db );
+        Query query = CypherParser.parseConsole("start n=(0) where 1=1 return n.name");
+        ExecutionResult result = engine.execute( query );
+
+        assertThat( result.columns(), hasItem( "n.name" ) );
+        Iterator<Object> n_column = result.columnAs( "n.name" );
+        assertNull( n_column.next() );
+        assertThat( result.toString(), containsString("null") );
     }
 }
-// END SNIPPET: JavaQuery

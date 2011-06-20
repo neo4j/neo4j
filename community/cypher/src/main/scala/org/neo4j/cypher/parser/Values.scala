@@ -19,11 +19,8 @@ package org.neo4j.cypher.parser
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import org.neo4j.cypher._
 import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
-import org.neo4j.graphdb.Direction
-
 
 trait Values extends JavaTokenParsers with Tokens {
   def value: Parser[Value] = (boolean | relationshipType | property | stringValue | decimal)

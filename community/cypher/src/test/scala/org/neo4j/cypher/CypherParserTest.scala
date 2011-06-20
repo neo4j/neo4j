@@ -24,7 +24,7 @@ import org.junit.Assert._
 import org.neo4j.graphdb.Direction
 import org.junit.{Ignore, Test}
 import org.scalatest.junit.JUnitSuite
-import parser.CypherParser
+import parser.{ConsoleCypherParser, CypherParser}
 
 class CypherParserTest extends JUnitSuite {
   def testQuery(query: String, expectedQuery: Query) {
@@ -448,6 +448,17 @@ class CypherParserTest extends JUnitSuite {
     Query(
       Return(EntityOutput("a")),
       Start(NodeByIndex("a", "index", "key", "val\"ue"))))
-}
+  }
+
+  @Test def consoleModeParserShouldOutputNullableProperties() {
+    val query = "start a = (1) return a.name"
+    val parser = new ConsoleCypherParser()
+    val executionTree = parser.parse(query)
+
+    assertEquals(Query(
+        Return(NullablePropertyOutput("a", "name")),
+        Start(NodeById("a", 1))),
+      executionTree)
+  }
 
 }

@@ -19,12 +19,8 @@ package org.neo4j.cypher.parser
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import org.neo4j.cypher._
 import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
-import org.neo4j.graphdb.Direction
-
-
 trait StartClause extends JavaTokenParsers with Tokens {
   def start: Parser[Start] = ignoreCase("start") ~> repsep(nodeByIds | nodeByIndex | nodeByIndexQuery | relsByIds | relsByIndex, ",") ^^ (Start(_: _*))
 

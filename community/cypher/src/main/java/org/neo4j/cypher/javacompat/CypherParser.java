@@ -38,4 +38,12 @@ public class CypherParser
     {
         return inner.parse( query );
     }
+
+    public static Query parseStrict(String query) throws SyntaxError {
+        return new org.neo4j.cypher.parser.CypherParser().parse( query );
+    }
+
+    public static Query parseConsole(String query) throws SyntaxError {
+        return new org.neo4j.cypher.parser.ConsoleCypherParser().parse( query );
+    }
 }
