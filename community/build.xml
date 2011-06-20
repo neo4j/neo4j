@@ -3,7 +3,7 @@
 	<property name="buildNumber" value="1.4.DEVELOPER"/>
 	<property environment="env" />
 	
-	<target name="build" description="Build the Neo4j community edition" depends="clean,compile"/>
+	<target name="build" description="Build the Neo4j community edition" depends="clean,compile,createPackage"/>
 
 	<target name="clean" description="Cleans all of the community components">
 		<exec executable="mvn" dir="." failonerror="true">
@@ -59,6 +59,12 @@
 	</target>
 	
 	<target name="createPackage" description="Creates package for linux" depends="compile">
+		<copy file="packaging/pom.xml" tofile="packaging/pom-with-build-number.xml" overwrite="true"/>
+		<replace file="packaging/pom-with-build-number.xml" token="1.4-SNAPSHOT" value="${buildNumber}"/>
+		<exec executable="mvn" dir="packaging" failonerror="true">
+			<arg value="clean"/>
+			<arg value="package"/>
+		</exec>		
 	</target>
 	
 	<macrodef name="compileProject" description="Maven installs a single project"> 
