@@ -40,8 +40,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
@@ -68,25 +68,25 @@ import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 
 public class DatabaseActionsTest
 {
-    private DatabaseActions actions;
-    private GraphDbHelper graphdbHelper;
-    private Database database;
-    private String databasePath;
+    private static DatabaseActions actions;
+    private static GraphDbHelper graphdbHelper;
+    private static Database database;
+    private static String databasePath;
 
-    @Before
-    public void clearDb() throws IOException
+    @BeforeClass
+    public static void clearDb() throws IOException
     {
         databasePath = ServerTestUtils.createTempDir().getAbsolutePath();
         database = new Database( ServerTestUtils.EMBEDDED_GRAPH_DATABASE_FACTORY, databasePath );
 
         graphdbHelper = new GraphDbHelper( database );
-        this.actions = new DatabaseActions( database, new FakeClock() );
+        actions = new DatabaseActions( database, new FakeClock() );
     }
 
-    @After
-    public void shutdownDatabase() throws IOException
+    @AfterClass
+    public static void shutdownDatabase() throws IOException
     {
-        this.database.shutdown();
+        database.shutdown();
         FileUtils.forceDelete( new File( databasePath ) );
     }
 

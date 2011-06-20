@@ -48,8 +48,9 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.ServerTestUtils;
@@ -70,15 +71,15 @@ import org.neo4j.server.rest.web.RestfulGraphDatabase.AmpersandSeparatedCollecti
 public class RestfulGraphDatabaseTest
 {
     private static final String BASE_URI = "http://neo4j.org/";
-    private RestfulGraphDatabase service;
-    private Database database;
-    private GraphDbHelper helper;
-    private EntityOutputFormat output;
-    private String databasePath;
-    private Clock clock;
+    private static RestfulGraphDatabase service;
+    private static Database database;
+    private static GraphDbHelper helper;
+    private static EntityOutputFormat output;
+    private static String databasePath;
+    private static Clock clock;
 
-    @Before
-    public void doBefore() throws IOException
+    @BeforeClass
+    public static void doBefore() throws IOException
     {
         databasePath = ServerTestUtils.createTempDir().getAbsolutePath();
         database = new Database( ServerTestUtils.EMBEDDED_GRAPH_DATABASE_FACTORY, databasePath );
@@ -87,15 +88,28 @@ public class RestfulGraphDatabaseTest
         clock = new FakeClock();
         service = new RestfulGraphDatabase( uriInfo(), database, new JsonFormat(), output, clock );
     }
-
-    @After
-    public void shutdownDatabase() throws IOException
+    
+    @Before
+    public void deleteAllIndexes()
     {
-        this.database.shutdown();
+        for ( String name : helper.getNodeIndexes() )
+        {
+            service.deleteNodeIndex( name );
+        }
+        for ( String name : helper.getRelationshipIndexes() )
+        {
+            service.deleteRelationshipIndex( name );
+        }
+    }
+
+    @AfterClass
+    public static void shutdownDatabase() throws IOException
+    {
+        database.shutdown();
         org.apache.commons.io.FileUtils.forceDelete( new File(databasePath) );
     }
 
-    private UriInfo uriInfo()
+    private static UriInfo uriInfo()
     {
         UriInfo mockUriInfo = mock( UriInfo.class );
         try
@@ -913,7 +927,6 @@ public class RestfulGraphDatabaseTest
     @Test
     public void shouldBeAbleToRemoveNodeIndex() throws DatabaseBlockedException, JsonParseException
     {
-
         String indexName = "myFancyIndex";
         
         assertEquals(0,helper.getNodeIndexes().length);
@@ -931,7 +944,6 @@ public class RestfulGraphDatabaseTest
     @Test
     public void shouldBeAbleToRemoveRelationshipIndex() throws DatabaseBlockedException, JsonParseException
     {
-
         String indexName = "myFancyIndex";
         
         assertEquals(0,helper.getRelationshipIndexes().length);

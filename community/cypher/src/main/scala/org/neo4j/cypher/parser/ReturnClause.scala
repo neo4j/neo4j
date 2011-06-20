@@ -1,3 +1,5 @@
+package org.neo4j.cypher.parser
+
 /**
  * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -17,18 +19,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.commands
+import org.neo4j.cypher.commands._
+import scala.util.parsing.combinator._
+trait ReturnClause extends JavaTokenParsers with Tokens with ReturnItems {
+  def aggregate:Parser[AggregationItem] = count
 
-sealed abstract class Identifier(val name: String)
 
-case class UnboundIdentifier(subName: String, wrapped:Option[Identifier]) extends Identifier(subName)
+  def returns: Parser[(Return, Option[Aggregation])] = ignoreCase("return") ~> rep1sep((aggregate | returnItem), ",") ^^
+    { case items => {
+      val list = items.filter(_.isInstanceOf[AggregationItem]).map(_.asInstanceOf[AggregationItem])
 
-case class NodeIdentifier(subName: String) extends Identifier(subName)
+      (
+        Return(items.filter(!_.isInstanceOf[AggregationItem]): _*),
+        list match {
+          case List() => None
+          case _ => Some(Aggregation(list : _*))
+        }
+      )
+    }}
 
-case class RelationshipIdentifier(subName: String) extends Identifier(subName)
 
-case class RelationshipTypeIdentifier(subName: String) extends Identifier(subName + ":TYPE")
+}
 
-case class PropertyIdentifier(entity: String, property: String) extends Identifier(entity + "." + property)
 
-case class AggregationIdentifier(subName: String) extends Identifier(subName)
+
+
+

@@ -87,8 +87,8 @@ class ExecutionEngine(graph: GraphDatabaseService) {
     })
 
   def checkScalaVersion() {
-    if (util.Properties.versionString != "version 2.9.0.1") {
-      throw new Error("Cypher can only run with Scala 2.9.0.1. It looks like the Scala version is: " +
+    if (util.Properties.versionString.matches("^version 2.9.0")) {
+      throw new Error("Cypher can only run with Scala 2.9.0. It looks like the Scala version is: " +
         util.Properties.versionString)
     }
   }

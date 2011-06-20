@@ -17,18 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.commands
+package org.neo4j.cypher.parser
 
-sealed abstract class Identifier(val name: String)
+import org.neo4j.cypher.commands._
 
-case class UnboundIdentifier(subName: String, wrapped:Option[Identifier]) extends Identifier(subName)
+trait ConsoleMode extends ReturnItems {
+  override  def propertyOutput:Parser[ReturnItem] = identity ~ "." ~ identity ^^ { case c ~ "." ~ p => NullablePropertyOutput(c,p) }
+}
 
-case class NodeIdentifier(subName: String) extends Identifier(subName)
+class ConsoleCypherParser extends CypherParser with ConsoleMode {
 
-case class RelationshipIdentifier(subName: String) extends Identifier(subName)
-
-case class RelationshipTypeIdentifier(subName: String) extends Identifier(subName + ":TYPE")
-
-case class PropertyIdentifier(entity: String, property: String) extends Identifier(entity + "." + property)
-
-case class AggregationIdentifier(subName: String) extends Identifier(subName)
+}

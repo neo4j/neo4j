@@ -26,13 +26,16 @@ import org.neo4j.test.GraphDescription
 import scala.collection.JavaConverters._
 import java.io.{ PrintWriter, File, FileWriter }
 import org.neo4j.graphdb._
-import org.neo4j.cypher.{ExecutionResult, ExecutionEngine, CypherParser}
+import org.neo4j.cypher.parser.CypherParser
+import org.neo4j.cypher.{ExecutionResult, ExecutionEngine}
+import org.scalatest.junit.JUnitSuite
+
 /**
  * @author ata
  * @since 6/1/11
  */
 
-abstract class DocumentingTestBase {
+abstract class DocumentingTestBase extends JUnitSuite {
   var db: GraphDatabaseService = null
   val parser: CypherParser = new CypherParser
   var engine: ExecutionEngine = null

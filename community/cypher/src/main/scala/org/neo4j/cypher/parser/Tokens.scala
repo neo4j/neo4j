@@ -1,3 +1,5 @@
+package org.neo4j.cypher.parser
+
 /**
  * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -17,18 +19,38 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.commands
+import scala.util.parsing.combinator._
 
-sealed abstract class Identifier(val name: String)
+trait Tokens extends JavaTokenParsers {
+  def ignoreCase(str:String): Parser[String] = ("""(?i)\Q""" + str + """\E""").r
 
-case class UnboundIdentifier(subName: String, wrapped:Option[Identifier]) extends Identifier(subName)
+  def identity:Parser[String] = (ident | escapedIdentity)
 
-case class NodeIdentifier(subName: String) extends Identifier(subName)
+  def escapedIdentity:Parser[String] = ("`(``|[^`])*`").r ^^ { case str => stripQuotes(str).replace("``", "`") }
 
-case class RelationshipIdentifier(subName: String) extends Identifier(subName)
+  def stripQuotes(s: String) = s.substring(1, s.length - 1)
 
-case class RelationshipTypeIdentifier(subName: String) extends Identifier(subName + ":TYPE")
+  def positiveNumber: Parser[String] = """\d+""".r
 
-case class PropertyIdentifier(entity: String, property: String) extends Identifier(entity + "." + property)
+  def string: Parser[String] = (stringLiteral | apostropheString)  ^^ { case str => stripQuotes(str) }
 
-case class AggregationIdentifier(subName: String) extends Identifier(subName)
+  def apostropheString:Parser[String] = ("\'"+"""([^'\p{Cntrl}\\]|\\[\\/bfnrt]|\\u[a-fA-F0-9]{4})*"""+"\'").r
+
+  def regularLiteral = ("/"+"""([^"\p{Cntrl}\\]|\\[\\/bfnrt]|\\u[a-fA-F0-9]{4})*"""+"/").r
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

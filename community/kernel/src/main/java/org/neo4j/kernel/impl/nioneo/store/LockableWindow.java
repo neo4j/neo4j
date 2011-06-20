@@ -45,8 +45,8 @@ abstract class LockableWindow implements PersistenceWindow
     private final FileChannel fileChannel;
 
     private Thread lockingThread = null;
-    private final LinkedList<Thread> waitingThreadList = 
-        new LinkedList<Thread>();
+    private final LinkedList<LockElement> waitingThreadList = 
+        new LinkedList<LockElement>();
     private int lockCount = 0;
     private int marked = 0;
 
@@ -85,12 +85,24 @@ abstract class LockableWindow implements PersistenceWindow
         return marked > 0;
     }
 
+    private static class LockElement
+    {
+        private final Thread thread;
+        private boolean movedOn = false;
+        
+        LockElement( Thread thread )
+        {
+            this.thread = thread;
+        }
+    }
+    
     synchronized void lock()
     {
         Thread currentThread = Thread.currentThread();
+        LockElement le = new LockElement( currentThread );
         while ( lockCount > 0 && lockingThread != currentThread )
         {
-            waitingThreadList.addFirst( currentThread );
+            waitingThreadList.addFirst( le );
             try
             {
                 wait();
@@ -102,6 +114,7 @@ abstract class LockableWindow implements PersistenceWindow
         }
         lockCount++;
         lockingThread = currentThread;
+        le.movedOn = true;
         marked--;
     }
 
@@ -119,7 +132,11 @@ abstract class LockableWindow implements PersistenceWindow
             lockingThread = null;
             if ( waitingThreadList.size() > 0 )
             {
-                waitingThreadList.removeLast().interrupt();
+                LockElement le = waitingThreadList.removeLast();
+                if ( !le.movedOn )
+                {
+                    le.thread.interrupt();
+                }
             }
         }
     }

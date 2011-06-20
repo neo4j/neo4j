@@ -25,9 +25,10 @@ import org.junit.matchers.JUnitMatchers._
 import scala.collection.JavaConverters._
 import org.neo4j.cypher.commands._
 import org.neo4j.cypher.{SyntaxError, SymbolTable}
+import org.scalatest.junit.JUnitSuite
 
 
-class AggregationPipeTest {
+class AggregationPipeTest extends JUnitSuite {
   @Test def shouldReturnColumnsFromReturnItems() {
     val source = new FakePipe(List(), new SymbolTable(NodeIdentifier("foo")))
 

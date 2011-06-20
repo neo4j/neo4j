@@ -22,6 +22,8 @@ package org.neo4j.cypher
 
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb.{PropertyContainer, Relationship, NotFoundException, Node}
+import java.util.jar.Attributes.Name
+import collection.Traversable
 
 trait ExecutionResult extends Traversable[Map[String, Any]] {
   val symbols:SymbolTable
@@ -42,7 +44,7 @@ trait ExecutionResult extends Traversable[Map[String, Any]] {
   def javaIterator: java.util.Iterator[java.util.Map[String, Any]] = this.map((m) => m.asJava).toIterator.asJava
 
   def calculateColumnSizes: Map[String, Int] = {
-    val columnSizes = new scala.collection.mutable.HashMap[String, Int]
+    val columnSizes = new scala.collection.mutable.HashMap[String, Int] ++ columns.map( name => name -> name.size)
 
     this.foreach((m) => {
       m.foreach((kv) => {
@@ -57,22 +59,27 @@ trait ExecutionResult extends Traversable[Map[String, Any]] {
 
   def dumpToString(): String = {
     val columnSizes = calculateColumnSizes
-    val columns = columnSizes.keys.toList
-    val builder = new StringBuilder()
 
     val headers = columns.map((c) => Map[String, Any](c -> c)).reduceLeft(_ ++ _)
-    builder.append("| " + createString(columns, columnSizes, headers) + " |" + "\r\n")
-    val wholeLine = repeat("-", builder.length-2)
-    builder.append(wholeLine + "\r\n")
-    builder.insert(0, wholeLine + "\r\n")
+    val headerLine: String = createString(columns, columnSizes, headers)
+    val lineWidth: Int = headerLine.length - 2
+    val --- = "+" + repeat("-", lineWidth) + "+"
 
-    foreach((m) => {
-      builder.append("| " + createString(columns, columnSizes, m) + " |" + "\r\n")
-    })
+    val resultLines: Traversable[String] = map(createString(columns, columnSizes, _))
+    val footer = resultLines.size + " rows"
+    val footerLine = "| " + makeSize(footer,lineWidth-2) + " |"
+    val lines = List(
+          --- ,
+          headerLine ,
+          --- ) ++
+          resultLines ++
+          List(
+          ---,
+          footerLine ,
+          ---
+          )
 
-    builder.append(wholeLine + "\r\n")
-
-    builder.toString()
+    lines.mkString("\r\n")
   }
 
   def repeat(x: String, size: Int): String = (1 to size).map((i) => x).mkString
@@ -97,7 +104,7 @@ trait ExecutionResult extends Traversable[Map[String, Any]] {
       val txt = text(m.get(c).get)
       val value = makeSize(txt, length)
       value
-    }).reduceLeft(_ + " | " + _)
+    }).mkString("| ", " | " ,  " |")
   }
 
   def makeSize(txt: String, wantedSize: Int): String = {
