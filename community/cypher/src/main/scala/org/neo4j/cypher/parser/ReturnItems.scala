@@ -40,6 +40,10 @@ trait ReturnItems extends JavaTokenParsers with Tokens {
       case "*" => CountStar()
       case x:ReturnItem => Count(x)
     }
+  def sum:Parser[AggregationItem] = ignoreCase("sum") ~>"(" ~> returnItem <~ ")" ^^
+    {
+      case r => Sum(r)
+    }
 }
 
 
