@@ -27,11 +27,11 @@ import org.neo4j.cypher.commands.Query;
  */
 public class CypherParser
 {
-    private org.neo4j.cypher.CypherParser inner;
+    private org.neo4j.cypher.parser.CypherParser inner;
 
     public CypherParser()
     {
-        inner = new org.neo4j.cypher.CypherParser();
+        inner = new org.neo4j.cypher.parser.CypherParser();
     }
 
     public Query parse( String query ) throws SyntaxError

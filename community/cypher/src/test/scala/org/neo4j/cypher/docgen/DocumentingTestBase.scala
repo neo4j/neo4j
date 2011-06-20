@@ -26,7 +26,8 @@ import org.neo4j.test.GraphDescription
 import scala.collection.JavaConverters._
 import java.io.{ PrintWriter, File, FileWriter }
 import org.neo4j.graphdb._
-import org.neo4j.cypher.{ExecutionResult, ExecutionEngine, CypherParser}
+import org.neo4j.cypher.parser.CypherParser
+import org.neo4j.cypher.{ExecutionResult, ExecutionEngine}
 import org.scalatest.junit.JUnitSuite
 
 /**

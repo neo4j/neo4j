@@ -24,6 +24,7 @@ import org.junit.Assert._
 import org.neo4j.graphdb.Direction
 import org.junit.{Ignore, Test}
 import org.scalatest.junit.JUnitSuite
+import parser.CypherParser
 
 class CypherParserTest extends JUnitSuite {
   def testQuery(query: String, expectedQuery: Query) {
