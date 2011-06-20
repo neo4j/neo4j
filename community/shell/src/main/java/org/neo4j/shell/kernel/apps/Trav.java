@@ -205,7 +205,15 @@ public class Trav extends ReadOnlyGraphDatabaseApp
             }
             if ( hit )
             {
-                printPath( path, quiet, session, out );
+                if ( commandsToRun.isEmpty() )
+                {
+                    printPath( path, quiet, session, out );
+                }
+                else
+                {
+                    printAndInterpretTemplateLines( commandsToRun, false, true,
+                            NodeOrRelationship.wrap( path.endNode() ), getServer(), session, out );
+                }
             }
         }
         return null;
