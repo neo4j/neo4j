@@ -26,10 +26,14 @@ import org.neo4j.cypher.pipes.aggregation._
 abstract sealed class ReturnItem(val identifier: Identifier) extends (Map[String, Any] => Map[String, Any]) {
   def assertDependencies(source: Pipe)
 
-  def columnName = identifier match { case UnboundIdentifier(name,None) => name; case UnboundIdentifier(name,id) => id.get.name; case identifier:Identifier => identifier.name; }
+  def columnName = identifier match {
+    case UnboundIdentifier(name, None) => name;
+    case UnboundIdentifier(name, id) => id.get.name;
+    case identifier: Identifier => identifier.name;
+  }
 }
 
-case class EntityOutput(name: String) extends ReturnItem(UnboundIdentifier(name,None)) {
+case class EntityOutput(name: String) extends ReturnItem(UnboundIdentifier(name, None)) {
   def apply(m: Map[String, Any]): Map[String, Any] = Map(name -> m.getOrElse(name, throw new NotFoundException))
 
   def assertDependencies(source: Pipe) {
@@ -77,37 +81,50 @@ case class NullablePropertyOutput(entity: String, property: String) extends Retu
   }
 }
 
-abstract sealed class AggregationItem(ident: Identifier) extends ReturnItem(ident) {
+abstract sealed class AggregationItem(name: String) extends ReturnItem(AggregationIdentifier(name)) {
   def apply(m: Map[String, Any]): Map[String, Any] = m
 
   def createAggregationFunction: AggregationFunction
 }
 
-case class CountStar() extends AggregationItem(AggregationIdentifier("count(*)")) {
+case class CountStar() extends AggregationItem("count(*)") {
   def createAggregationFunction: AggregationFunction = new CountStarFunction
+
   def assertDependencies(source: Pipe) {}
 }
 
-case class Count(returnItem:ReturnItem) extends AggregationItem(AggregationIdentifier("count(" + returnItem.columnName + ")")) {
-  def createAggregationFunction: AggregationFunction = new CountFunction(returnItem)
-
-  def assertDependencies(source: Pipe) {
-    returnItem.assertDependencies(source)
-  }
+case class Count(inner: ReturnItem)
+  extends AggregationItem("count(" + inner.columnName + ")") with InnerReturnItem {
+  def createAggregationFunction = new CountFunction(inner)
 }
 
-case class Sum(returnItem:ReturnItem) extends AggregationItem(AggregationIdentifier("sum(" + returnItem.columnName + ")")) {
-  def createAggregationFunction: AggregationFunction = new SumFunction(returnItem)
-
-  def assertDependencies(source: Pipe) {
-    returnItem.assertDependencies(source)
-  }
+case class Sum(inner: ReturnItem)
+  extends AggregationItem("sum(" + inner.columnName + ")") with InnerReturnItem {
+  def createAggregationFunction = new SumFunction(inner)
 }
 
-case class Avg(returnItem:ReturnItem) extends AggregationItem(AggregationIdentifier("avg(" + returnItem.columnName + ")")) {
-  def createAggregationFunction: AggregationFunction = new AvgFunction(returnItem)
+case class Avg(inner: ReturnItem)
+  extends AggregationItem("avg(" + inner.columnName + ")") with InnerReturnItem {
+
+  def createAggregationFunction = new AvgFunction(inner)
+}
+
+case class Max(inner: ReturnItem)
+  extends AggregationItem("max(" + inner.columnName + ")") with InnerReturnItem {
+
+  def createAggregationFunction = new MaxFunction(inner)
+}
+
+case class Min(inner: ReturnItem)
+  extends AggregationItem("min(" + inner.columnName + ")") with InnerReturnItem {
+
+  def createAggregationFunction = new MinFunction(inner)
+}
+
+trait InnerReturnItem extends AggregationItem {
+  def inner: ReturnItem
 
   def assertDependencies(source: Pipe) {
-    returnItem.assertDependencies(source)
+    inner.assertDependencies(source)
   }
 }

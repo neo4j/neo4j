@@ -20,9 +20,9 @@ package org.neo4j.cypher
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import org.junit.Assert._
-import org.junit.{Assert, Test}
 import org.scalatest.junit.JUnitSuite
 import parser.CypherParser
+import org.junit.{Ignore, Assert, Test}
 
 
 class SyntaxErrorTest extends JUnitSuite {
@@ -70,6 +70,12 @@ class SyntaxErrorTest extends JUnitSuite {
     expectError(
       "start s = (1) where s.name = Name and s.age = 10 return s",
       "Probably missing quotes around a string")
+  }
+
+  @Test @Ignore def shouldComplainAboutMissingFunction() {
+    expectError(
+      "start s = (1) where s.name = Name and s.age = 10 return foobar(s)",
+      "No such function found: foobar")
   }
 
 }

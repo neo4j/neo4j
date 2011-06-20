@@ -22,7 +22,7 @@ package org.neo4j.cypher.parser
 import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
 trait ReturnClause extends JavaTokenParsers with Tokens with ReturnItems {
-  def aggregate:Parser[AggregationItem] = count | sum | avg
+  def aggregate:Parser[AggregationItem] = countStar | aggregationFunction
 
 
   def returns: Parser[(Return, Option[Aggregation])] = ignoreCase("return") ~> rep1sep((aggregate | returnItem), ",") ^^

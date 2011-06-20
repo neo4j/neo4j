@@ -312,17 +312,37 @@ class CypherParserTest extends JUnitSuite {
         Return(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
         Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
-        Aggregation(Sum(PropertyOutput("a","age")))))
+        Aggregation(Sum(PropertyOutput("a", "age")))))
   }
 
-    @Test def avgTheAgesOfPeople() {
+  @Test def avgTheAgesOfPeople() {
     testQuery(
       "start a = (1) match (a) --> (b) return a, b, avg(a.age)",
       Query(
         Return(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
         Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
-        Aggregation(Avg(PropertyOutput("a","age")))))
+        Aggregation(Avg(PropertyOutput("a", "age")))))
+  }
+
+  @Test def minTheAgesOfPeople() {
+    testQuery(
+      "start a = (1) match (a) --> (b) return a, b, min(a.age)",
+      Query(
+        Return(EntityOutput("a"), EntityOutput("b")),
+        Start(NodeById("a", 1)),
+        Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
+        Aggregation(Min(PropertyOutput("a", "age")))))
+  }
+
+  @Test def maxTheAgesOfPeople() {
+    testQuery(
+      "start a = (1) match (a) --> (b) return a, b, max(a.age)",
+      Query(
+        Return(EntityOutput("a"), EntityOutput("b")),
+        Start(NodeById("a", 1)),
+        Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
+        Aggregation(Max(PropertyOutput("a", "age")))))
   }
 
   @Test def singleColumnSorting() {
@@ -436,7 +456,7 @@ class CypherParserTest extends JUnitSuite {
         Equals(RelationshipTypeValue("r"), Literal("something"))))
   }
 
-    @Test def relationshipTypeOut() {
+  @Test def relationshipTypeOut() {
     testQuery(
       "start n=(1) match (n)-[r]->(x) return r:TYPE",
 
@@ -456,18 +476,19 @@ class CypherParserTest extends JUnitSuite {
   }
 
   @Test def shouldBeAbleToHandleStringLiteralsWithApostrophe() {
-  testQuery(
-    "start a = (index, key, 'value') return a",
-    Query(
-      Return(EntityOutput("a")),
-      Start(NodeByIndex("a", "index", "key", "value"))))
-}
+    testQuery(
+      "start a = (index, key, 'value') return a",
+      Query(
+        Return(EntityOutput("a")),
+        Start(NodeByIndex("a", "index", "key", "value"))))
+  }
+
   @Test def shouldHandleQuotationsInsideApostrophes() {
-  testQuery(
-    "start a = (index, key, 'val\"ue') return a",
-    Query(
-      Return(EntityOutput("a")),
-      Start(NodeByIndex("a", "index", "key", "val\"ue"))))
+    testQuery(
+      "start a = (index, key, 'val\"ue') return a",
+      Query(
+        Return(EntityOutput("a")),
+        Start(NodeByIndex("a", "index", "key", "val\"ue"))))
   }
 
   @Test def consoleModeParserShouldOutputNullableProperties() {
@@ -476,8 +497,8 @@ class CypherParserTest extends JUnitSuite {
     val executionTree = parser.parse(query)
 
     assertEquals(Query(
-        Return(NullablePropertyOutput("a", "name")),
-        Start(NodeById("a", 1))),
+      Return(NullablePropertyOutput("a", "name")),
+      Start(NodeById("a", 1))),
       executionTree)
   }
 
