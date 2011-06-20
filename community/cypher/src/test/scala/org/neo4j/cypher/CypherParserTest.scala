@@ -23,8 +23,9 @@ import org.neo4j.cypher.commands._
 import org.junit.Assert._
 import org.neo4j.graphdb.Direction
 import org.junit.{Ignore, Test}
+import org.scalatest.junit.JUnitSuite
 
-class CypherParserTest {
+class CypherParserTest extends JUnitSuite {
   def testQuery(query: String, expectedQuery: Query) {
     val parser = new CypherParser()
     val executionTree = parser.parse(query)

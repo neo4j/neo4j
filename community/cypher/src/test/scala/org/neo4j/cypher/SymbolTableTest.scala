@@ -22,9 +22,9 @@ package org.neo4j.cypher
 import commands._
 import org.junit.Test
 import org.junit.Assert._
+import org.scalatest.junit.JUnitSuite
 
-
-class SymbolTableTest {
+class SymbolTableTest extends JUnitSuite {
   @Test def testConcatenating() {
     val table1 = new SymbolTable(NodeIdentifier("node"))
     val table2 = new SymbolTable(RelationshipIdentifier("rel"))

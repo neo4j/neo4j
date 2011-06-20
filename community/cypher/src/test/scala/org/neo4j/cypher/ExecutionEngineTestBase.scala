@@ -25,9 +25,10 @@ import org.neo4j.test.ImpermanentGraphDatabase
 import org.junit.{After, Before}
 import org.neo4j.graphdb.{RelationshipType, DynamicRelationshipType, Relationship, Node}
 import scala.collection.JavaConverters._
+import org.scalatest.junit.JUnitSuite
 
 
-class ExecutionEngineTestBase {
+abstract class ExecutionEngineTestBase extends JUnitSuite {
   var graph: AbstractGraphDatabase = null
   var engine: ExecutionEngine = null
   var refNode: Node = null
