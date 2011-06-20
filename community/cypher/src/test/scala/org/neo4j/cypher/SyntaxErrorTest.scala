@@ -42,13 +42,34 @@ class SyntaxErrorTest extends JUnitSuite {
       "Cannot ORDER BY on nodes or relationships")
   }
 
+  @Test def shouldRaiseErrorWhenMissingIndexValue() {
+    expectError(
+      "start s = (index,key,) return s",
+      "Probably missing index value")
+  }
+
+  @Test def shouldRaiseErrorWhenMissingIndexKey() {
+    expectError(
+      "start s = (index,) return s",
+      "Probably missing index value")
+  }
+
+  @Test def shouldRaiseErrorWhenMissingReturn() {
+    expectError(
+      "start s = (0)",
+      "Missing return clause")
+  }
+
   @Test def shouldRaiseErrorWhenFinishingAListWithAComma() {
     expectError(
       "start s = (1,2,) return s order by s",
       "Last element of list must be a value")
   }
 
-
-  //TODO: Write test for       start n=(%A%,%B%,%C%,%D%,) return count(n.property?)
+  @Test def shouldComplainAboutNonQuotedStrings() {
+    expectError(
+      "start s = (1) where s.name = Name and s.age = 10 return s",
+      "Probably missing quotes around a string")
+  }
 
 }

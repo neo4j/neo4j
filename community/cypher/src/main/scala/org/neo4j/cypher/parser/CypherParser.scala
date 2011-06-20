@@ -31,13 +31,17 @@ class CypherParser extends JavaTokenParsers with StartClause with MatchClause wi
   }
 
   @throws(classOf[SyntaxError])
-  def parse(queryText: String): Query =
+  def parse(queryText: String): Query = {
+    val MissingQuoteError = "`\\.' expected but `.' found".r
     parseAll(query, queryText) match {
       case Success(r, q) => r
       case NoSuccess(message, input) => message match {
+        case MissingQuoteError() => throw new SyntaxError("Probably missing quotes around a string")
         case "string matching regex `-?\\d+' expected but `)' found" => throw new SyntaxError("Last element of list must be a value")
+        case "string matching regex `'([^'\\p{Cntrl}\\\\]|\\\\[\\\\/bfnrt]|\\\\u[a-fA-F0-9]{4})*'' expected but `)' found" => throw new SyntaxError("Probably missing index value")
+        case "string matching regex `(?i)\\Qreturn\\E' expected but end of source found" => throw new SyntaxError("Missing return clause")
         case _ => throw new SyntaxError(message)
       }
-    }
+    }}
 
 }
