@@ -23,9 +23,10 @@ import org.neo4j.cypher.commands._
 import org.junit.Assert._
 import java.lang.String
 import org.junit.{Ignore, Test}
-import org.neo4j.graphdb.{Relationship, Direction, Node}
+import parser.CypherParser
 import scala.collection.JavaConverters._
 import org.junit.matchers.JUnitMatchers._
+import org.neo4j.graphdb.{RelationshipType, Relationship, Direction, Node}
 
 class ExecutionEngineTest extends ExecutionEngineTestBase {
 
@@ -486,7 +487,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val KNOWS = relType("KNOWS")
     val HATES = relType("HATES")
 
-    assertEquals(List(KNOWS, HATES), result.columnAs[Node]("r:TYPE").toList)
+    assertEquals(List(KNOWS, HATES), result.columnAs[RelationshipType]("r:TYPE").toList)
   }
 
   @Test def shouldAggregateOnProperties() {
@@ -520,6 +521,33 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
       hasItems[Map[String, Any]](
         Map("node.y" -> "a", "count(node.x)" -> 1),
         Map("node.y" -> "b", "count(node.x)" -> 1)))
+  }
+
+  @Test def shouldWalkAlternativeRelationships() {
+    val nodes: List[Node] = createNodes("A", "B", "C")
+    relate("A" -> "KNOWS" -> "B")
+    relate("A" -> "HATES" -> "C")
+
+    val query = Query(
+      Return(EntityOutput("x")),
+      Start(NodeById("n", 1)),
+      Match(RelatedTo("n", "x", Some("r"), None, Direction.OUTGOING)),
+      Or(Equals(RelationshipTypeValue("r"),Literal("KNOWS")),Equals(RelationshipTypeValue("r"),Literal("HATES"))))
+
+    val result = execute(query)
+
+    assertEquals(nodes.slice(1,3), result.columnAs[Node]("x").toList)
+  }
+
+  @Test def shouldWalkAlternativeRelationships2() {
+    val nodes: List[Node] = createNodes("A", "B", "C")
+    relate("A" -> "KNOWS" -> "B")
+    relate("A" -> "HATES" -> "C")
+
+    val query = new CypherParser().parse("start n=(1) match (n)-[r]->(x) where r:TYPE='KNOWS' or r:TYPE='HATES' return x")
+    val result = execute(query)
+
+    assertEquals(nodes.slice(1,3), result.columnAs[Node]("x").toList)
   }
 }
 
