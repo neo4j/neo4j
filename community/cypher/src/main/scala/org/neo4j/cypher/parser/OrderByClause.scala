@@ -22,22 +22,34 @@ package org.neo4j.cypher.parser
 import org.neo4j.cypher._
 import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
+import org.neo4j.graphdb.Direction
 
-class CypherParser extends JavaTokenParsers with StartClause with MatchClause with WhereClause with ReturnClause with SkipLimitClause with OrderByClause {
+trait OrderByClause extends JavaTokenParsers with Tokens with ReturnItems  {
+  def desc:Parser[String] = ignoreCase("descending") | ignoreCase("desc")
 
-  def query: Parser[Query] = start ~ opt(matching) ~ opt(where) ~ returns ~ opt(order) ~ opt(skip) ~ opt(limit) ^^ {
-    case start ~ matching ~ where ~ returns ~ sort ~ None ~ None => Query(returns._1, start, matching, where, returns._2, sort, None)
-    case start ~ matching ~ where ~ returns ~ sort ~ skip ~ limit => Query(returns._1, start, matching, where, returns._2, sort, Some(Slice(skip, limit)))
+  def asc:Parser[String] = ignoreCase("ascending") | ignoreCase("asc")
+
+  def ascOrDesc:Parser[Boolean] = opt(asc | desc) ^^ {
+    case None => true
+    case Some(txt) => txt.toLowerCase.startsWith("a")
   }
 
-  @throws(classOf[SyntaxError])
-  def parse(queryText: String): Query =
-    parseAll(query, queryText) match {
-      case Success(r, q) => r
-      case NoSuccess(message, input) => message match {
-        case "string matching regex `-?\\d+' expected but `)' found" => throw new SyntaxError("Last element of list must be a value")
-        case _ => throw new SyntaxError(message)
+  def sortItem :Parser[SortItem] = (nullablePropertyOutput | propertyOutput | nodeOutput ) ~ ascOrDesc ^^ {
+    case returnItem ~ reverse => {
+      returnItem match {
+        case x : EntityOutput => throw new SyntaxError("Cannot ORDER BY on nodes or relationships")
+        case _ => SortItem(returnItem, reverse)
       }
     }
+  }
 
+  def order: Parser[Sort] = ignoreCase("order by")  ~> rep1sep(sortItem, ",") ^^
+    {
+      case items => Sort(items:_*)
+    }
 }
+
+
+
+
+
