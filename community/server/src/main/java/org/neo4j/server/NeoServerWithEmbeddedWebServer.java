@@ -37,6 +37,7 @@ import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.plugins.PluginManager;
+import org.neo4j.server.rest.paging.Clock;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 import org.neo4j.server.web.WebServer;
@@ -56,27 +57,31 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
     private PluginInitializer pluginInitializer;
     private final Bootstrapper bootstrapper;
 
+    private final Clock clock;
+
     public NeoServerWithEmbeddedWebServer( Bootstrapper bootstrapper, AddressResolver addressResolver,
             StartupHealthCheck startupHealthCheck, Configurator configurator, WebServer webServer,
-            Iterable<Class<? extends ServerModule>> moduleClasses )
+            Iterable<Class<? extends ServerModule>> moduleClasses, Clock clock )
     {
         this.bootstrapper = bootstrapper;
         this.addressResolver = addressResolver;
         this.startupHealthCheck = startupHealthCheck;
         this.configurator = configurator;
         this.webServer = webServer;
+        this.clock = clock;
+        
         webServer.setNeoServer( this );
         for ( Class<? extends ServerModule> moduleClass : moduleClasses )
         {
             registerModule( moduleClass );
         }
     }
-
-    public NeoServerWithEmbeddedWebServer( Bootstrapper bootstrapper, StartupHealthCheck startupHealthCheck,
-            Configurator configurator, WebServer ws, Iterable<Class<? extends ServerModule>> mc )
-    {
-        this( bootstrapper, new AddressResolver(), startupHealthCheck, configurator, ws, mc );
-    }
+//
+//    public NeoServerWithEmbeddedWebServer( Bootstrapper bootstrapper, StartupHealthCheck startupHealthCheck,
+//            Configurator configurator, WebServer ws, Iterable<Class<? extends ServerModule>> mc )
+//    {
+//        this( bootstrapper, new AddressResolver(), startupHealthCheck, configurator, ws, mc );
+//    }
 
     @Override
     public void start() {

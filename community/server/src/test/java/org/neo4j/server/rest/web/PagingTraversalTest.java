@@ -87,8 +87,7 @@ public class PagingTraversalTest
                 .get( "Location" )
                 .get( 0 )
                 .toString();
-        assertThat( responseUri, containsString( BASE_URI + "traversers" ) );
-        assertThat( responseUri, containsString( "?returnType=node" ) );
+        assertThat( responseUri, containsString( "/node/1/paged/traverse/node/" ) );
         assertNotNull( response.getEntity() );
         System.out.println( response.getEntity()
                 .toString() );
@@ -214,6 +213,6 @@ public class PagingTraversalTest
         .get( 0 )
         .toString();
         
-        return locationUri.substring( locationUri.lastIndexOf( "/" ) + 1, locationUri.lastIndexOf( "?" ) );
+        return locationUri.substring( locationUri.lastIndexOf( "/" ) + 1 );
     }
 }

@@ -27,10 +27,8 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -89,8 +87,7 @@ public class RestfulGraphDatabasePagedTraversalTest
                 .get( "Location" )
                 .get( 0 )
                 .toString();
-        assertThat( responseUri, containsString( BASE_URI + "traversers" ) );
-        assertThat( responseUri, containsString( "?returnType=node" ) );
+        assertThat( responseUri, containsString( "/node/1/paged/traverse/node/" ) );
         assertNotNull( response.getEntity() );
         System.out.println( response.getEntity()
                 .toString() );
@@ -216,6 +213,6 @@ public class RestfulGraphDatabasePagedTraversalTest
         .get( 0 )
         .toString();
         
-        return locationUri.substring( locationUri.lastIndexOf( "/" ) + 1, locationUri.lastIndexOf( "?" ) );
+        return locationUri.substring( locationUri.lastIndexOf( "/" ) + 1 );
     }
 }

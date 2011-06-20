@@ -18,6 +18,7 @@ import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
+import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.FunctionalTestHelper;
@@ -38,7 +39,8 @@ public class PagedTraverserFunctionalTest
     @BeforeClass
     public static void setupServer() throws IOException
     {
-        server = ServerHelper.createServer();
+        server = ServerBuilder.server().withFakeClock().build();
+        server.start();
         functionalTestHelper = new FunctionalTestHelper( server );
     }
 
@@ -73,7 +75,7 @@ public class PagedTraverserFunctionalTest
     }
 
     @Test
-    public void shouldPostATraverserAndReceiveTheFirstPageOfResults() throws Exception
+    public void shouldPostATraverserWithDefaultOptionsAndReceiveTheFirstPageOfResults() throws Exception
     {
         ClientResponse response = Client.create()
                 .resource(
