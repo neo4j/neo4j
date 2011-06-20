@@ -18,73 +18,49 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-window.log = () ->
-  if $("#messages").length is 0
-    $("body").append("<ul id='messages'></ul>")
-  
-  for item in arguments
-   $("#messages").append("<li>#{item}")
-
-
 require(
-  ["neo4j/webadmin/DashboardController"
-   "neo4j/webadmin/DataBrowserController"
-   "neo4j/webadmin/ConsoleController"
-   "neo4j/webadmin/ServerInfoController"
-   "neo4j/webadmin/IndexManagerController"
-   "neo4j/webadmin/models/ApplicationState"
-   "neo4j/webadmin/views/BaseView"
-   "neo4j/webadmin/ui/FoldoutWatcher"
-   "neo4j/webadmin/KeyboardShortcuts"
-   "neo4j/webadmin/SplashScreen"
-   "neo4j/webadmin/GlobalLoadingIndicator"
-   "neo4j/webadmin/ServerConnectionMonitor"
+  ["neo4j/webadmin/modules/dashboard/DashboardRouter"
+   "neo4j/webadmin/modules/databrowser/DataBrowserRouter"
+   "neo4j/webadmin/modules/console/ConsoleRouter"
+   "neo4j/webadmin/modules/serverinfo/ServerInfoRouter"
+   "neo4j/webadmin/modules/indexmanager/IndexManagerRouter"
+   "neo4j/webadmin/modules/baseui/BaseUI"
+   "neo4j/webadmin/modules/moreinfo/MoreInfo"
+   "neo4j/webadmin/modules/splash/SplashScreen"
+   "neo4j/webadmin/modules/loading/GlobalLoadingIndicator"
+   "neo4j/webadmin/modules/connectionmonitor/ConnectionMonitor"
+   "neo4j/webadmin/ApplicationState"
    "ribcage/security/HtmlEscaper"
    "lib/jquery"
    "lib/neo4js"
    "lib/backbone"]
-  (DashboardController, DataBrowserController, ConsoleController, ServerInfoController, IndexManagerController, ApplicationState, BaseView, FoldoutWatcher, KeyboardShortcuts, SplashScreen, GlobalLoadingIndicator, ServerConnectionMonitor, HtmlEscaper) ->
+  (DashboardRouter, DataBrowserRouter, ConsoleRouter, ServerInfoRouter, IndexManagerRouter, BaseUI, MoreInfo, SplashScreen, GlobalLoadingIndicator, ConnectionMonitor, ApplicationState, HtmlEscaper) ->
 
-    # Global html escaper, used by the pre-compiled templates. Should be replaced by writing a haml template plugin.
+    # Global html escaper, used by the pre-compiled templates.
     htmlEscaper = new HtmlEscaper()
     window.htmlEscape = htmlEscaper.escape
 
     # WEBADMIN BOOT
 
-    connectionMonitor = new ServerConnectionMonitor
-    splashScreen = new SplashScreen
-    loadingIndicator = new GlobalLoadingIndicator("#global-loading-indicator")
-    foldoutWatcher = new FoldoutWatcher
-      
     appState = new ApplicationState
     appState.set server : new neo4j.GraphDatabase(location.protocol + "//" + location.host)
 
-    baseView = new BaseView(appState:appState)
+    modules = [
+        new BaseUI
+        new DashboardRouter
+        new DataBrowserRouter
+        new ConsoleRouter
+        new IndexManagerRouter
+        new ServerInfoRouter
 
-    dashboardController   = new DashboardController appState
-    databrowserController = new DataBrowserController appState
-    consoleController     = new ConsoleController appState
-    serverInfoController  = new ServerInfoController appState
-    indexManagerController = new IndexManagerController appState
-
-    shortcuts = new KeyboardShortcuts(
-      dashboardController, 
-      databrowserController, 
-      consoleController, 
-      serverInfoController)
-
+        new ConnectionMonitor
+        new SplashScreen
+        new GlobalLoadingIndicator
+        new MoreInfo
+    ]
 
     jQuery () ->
-
-      $("body").append(baseView.el)
-      
-      connectionMonitor.init(appState)
-      foldoutWatcher.init()
+      m.init(appState) for m in modules
       Backbone.history.start()
-      shortcuts.init()
-      loadingIndicator.init()
-
-      #if not splashScreen.hasBeenShownForThisSession()
-      #  splashScreen.show()
 
 )

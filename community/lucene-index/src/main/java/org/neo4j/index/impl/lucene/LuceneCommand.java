@@ -28,6 +28,7 @@ import java.util.Map;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.index.impl.lucene.CommitContext.DocumentContext;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
@@ -185,7 +186,7 @@ abstract class LuceneCommand extends XaCommand
         void perform( CommitContext context )
         {
             context.ensureWriterInstantiated();
-            context.indexType.addToDocument( context.getDocument( entityId ).document, key, value );
+            context.indexType.addToDocument( context.getDocument( entityId, true ).document, key, value );
             context.dataSource.invalidateCache( context.identifier, key, value );
         }
         
@@ -216,7 +217,7 @@ abstract class LuceneCommand extends XaCommand
         void perform( CommitContext context )
         {
             context.ensureWriterInstantiated();
-            context.indexType.addToDocument( context.getDocument( entityId ).document, key, value );
+            context.indexType.addToDocument( context.getDocument( entityId, true ).document, key, value );
             context.dataSource.invalidateCache( context.identifier, key, value );
         }
         
@@ -238,8 +239,12 @@ abstract class LuceneCommand extends XaCommand
         void perform( CommitContext context )
         {
             context.ensureWriterInstantiated();
-            context.indexType.removeFromDocument( context.getDocument( entityId ).document, key, value );
-            context.dataSource.invalidateCache( context.identifier, key, value );
+            DocumentContext document = context.getDocument( entityId, false );
+            if ( document != null )
+            {
+                context.indexType.removeFromDocument( document.document, key, value );
+                context.dataSource.invalidateCache( context.identifier, key, value );
+            }
         }
         
         @Override

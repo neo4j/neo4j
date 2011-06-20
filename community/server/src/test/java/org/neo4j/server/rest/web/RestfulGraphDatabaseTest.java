@@ -48,8 +48,9 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.ServerTestUtils;
@@ -64,34 +65,51 @@ import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 import org.neo4j.server.rest.web.RestfulGraphDatabase.AmpersandSeparatedCollection;
+import org.neo4j.server.rest.web.paging.Clock;
+import org.neo4j.server.rest.web.paging.FakeClock;
 
 public class RestfulGraphDatabaseTest
 {
     private static final String BASE_URI = "http://neo4j.org/";
-    private RestfulGraphDatabase service;
-    private Database database;
-    private GraphDbHelper helper;
-    private EntityOutputFormat output;
-    private String databasePath;
+    private static RestfulGraphDatabase service;
+    private static Database database;
+    private static GraphDbHelper helper;
+    private static EntityOutputFormat output;
+    private static String databasePath;
+    private static Clock clock;
 
-    @Before
-    public void doBefore() throws IOException
+    @BeforeClass
+    public static void doBefore() throws IOException
     {
         databasePath = ServerTestUtils.createTempDir().getAbsolutePath();
         database = new Database( ServerTestUtils.EMBEDDED_GRAPH_DATABASE_FACTORY, databasePath );
         helper = new GraphDbHelper( database );
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
-        service = new RestfulGraphDatabase( uriInfo(), database, new JsonFormat(), output );
+        clock = new FakeClock();
+        service = new RestfulGraphDatabase( uriInfo(), database, new JsonFormat(), output, clock );
+    }
+    
+    @Before
+    public void deleteAllIndexes()
+    {
+        for ( String name : helper.getNodeIndexes() )
+        {
+            service.deleteNodeIndex( name );
+        }
+        for ( String name : helper.getRelationshipIndexes() )
+        {
+            service.deleteRelationshipIndex( name );
+        }
     }
 
-    @After
-    public void shutdownDatabase() throws IOException
+    @AfterClass
+    public static void shutdownDatabase() throws IOException
     {
-        this.database.shutdown();
+        database.shutdown();
         org.apache.commons.io.FileUtils.forceDelete( new File(databasePath) );
     }
 
-    private UriInfo uriInfo()
+    private static UriInfo uriInfo()
     {
         UriInfo mockUriInfo = mock( UriInfo.class );
         try
@@ -909,7 +927,6 @@ public class RestfulGraphDatabaseTest
     @Test
     public void shouldBeAbleToRemoveNodeIndex() throws DatabaseBlockedException, JsonParseException
     {
-
         String indexName = "myFancyIndex";
         
         assertEquals(0,helper.getNodeIndexes().length);
@@ -927,7 +944,6 @@ public class RestfulGraphDatabaseTest
     @Test
     public void shouldBeAbleToRemoveRelationshipIndex() throws DatabaseBlockedException, JsonParseException
     {
-
         String indexName = "myFancyIndex";
         
         assertEquals(0,helper.getRelationshipIndexes().length);
@@ -984,7 +1000,7 @@ public class RestfulGraphDatabaseTest
     @Test
     public void shouldBeAbleToGetListOfNodeRepresentationsFromIndexLookup() throws DatabaseBlockedException, PropertyValueException, URISyntaxException
     {
-        RestfulModelHelper.DomainModel matrixers = RestfulModelHelper.generateMatrix( service );
+        ModelBuilder.DomainModel matrixers = ModelBuilder.generateMatrix( service );
 
         Map.Entry<String, String> indexedKeyValue = matrixers.indexedNodeKeyValues.entrySet().iterator().next();
         Response response = service.getIndexedNodes( matrixers.nodeIndexName, indexedKeyValue.getKey(), indexedKeyValue.getValue() );
@@ -1006,7 +1022,7 @@ public class RestfulGraphDatabaseTest
     @Test
     public void shouldBeAbleToGetListOfNodeRepresentationsFromIndexQuery() throws DatabaseBlockedException, PropertyValueException, URISyntaxException
     {
-        RestfulModelHelper.DomainModel matrixers = RestfulModelHelper.generateMatrix( service );
+        ModelBuilder.DomainModel matrixers = ModelBuilder.generateMatrix( service );
 
         Map.Entry<String, String> indexedKeyValue = matrixers.indexedNodeKeyValues.entrySet().iterator().next();
         // query for the first letter with which the nodes were indexed.
@@ -1031,7 +1047,7 @@ public class RestfulGraphDatabaseTest
     @Test
     public void shouldBeAbleToGetListOfNodeRepresentationsFromIndexQueryWithDefaultKey() throws DatabaseBlockedException, PropertyValueException, URISyntaxException
     {
-        RestfulModelHelper.DomainModel matrixers = RestfulModelHelper.generateMatrix( service );
+        ModelBuilder.DomainModel matrixers = ModelBuilder.generateMatrix( service );
 
         Map.Entry<String, String> indexedKeyValue = matrixers.indexedNodeKeyValues.entrySet().iterator().next();
         // query for the first letter with which the nodes were indexed.

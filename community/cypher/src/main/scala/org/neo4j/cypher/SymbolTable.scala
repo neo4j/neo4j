@@ -19,32 +19,54 @@
  */
 package org.neo4j.cypher
 
-import commands.Identifier
+import commands.{Match, UnboundIdentifier, Identifier}
 import scala.Some
 
-class SymbolTable(val identifiers: Map[String, Identifier]) {
-  def this() = this (Map())
+class SymbolTable(val identifiers: Set[Identifier]) {
+  def this(identifier:Identifier)=this(Set(identifier))
+  def this(data:Seq[Identifier])=this(data.toSet)
+  def this() = this(Set[Identifier]())
+  def this(other:SymbolTable) = this(other.identifiers)
 
   def assertHas(name: String) {
-    if (!identifiers.contains(name)) {
+    if (get(name).isEmpty) {
       throw new SyntaxError("Unknown identifier \"" + name + "\".")
     }
   }
 
-  def add(idents:Map[String, Identifier]) = new SymbolTable(identifiers ++ idents)
+  def add(idents: Seq[Identifier]) = this ++ new SymbolTable(idents)
 
-  def ++(other: SymbolTable): SymbolTable = {
-    identifiers.foreach {
-      case (key, value) => {
-        other.identifiers.get(key) match {
-          case None =>
-          case Some(x) => if (!x.getClass.isInstance(value)) {
-            throw new SyntaxError("Identifier " + key + " already defined with different type")
+  def get(name: String): Option[Identifier] = identifiers.find(_.name == name)
+
+  def merge(other: SymbolTable) : Set[Identifier] = {
+    def handleUnmatched(newIdentifier: Identifier): Identifier = {
+      newIdentifier match {
+        case UnboundIdentifier(_, _) => throw new SyntaxError("Unbound Identifier " + newIdentifier + " not resolved!")
+        case _ => newIdentifier
+      }
+    }
+    def handleMatched(newIdentifier: Identifier, existingIdentifier: Identifier): Identifier = {
+      newIdentifier match {
+        case UnboundIdentifier(name, None) => existingIdentifier
+        case UnboundIdentifier(name, Some(wrapped)) => wrapped
+        case _ => {
+          if (newIdentifier.getClass == existingIdentifier.getClass) {
+            existingIdentifier
+          } else {
+            throw new SyntaxError("Identifier " + existingIdentifier + " already defined with different type " + newIdentifier)
           }
         }
       }
     }
 
-    new SymbolTable(identifiers ++ other.identifiers)
+    identifiers ++
+    other.identifiers.map( newIdentifier => {
+        get(newIdentifier.name) match {
+          case None => handleUnmatched(newIdentifier)
+          case Some(existingIdentifier) => handleMatched(newIdentifier, existingIdentifier) } } )
+  }
+
+  def ++(other: SymbolTable): SymbolTable = {
+    new SymbolTable(merge(other))
   }
 }

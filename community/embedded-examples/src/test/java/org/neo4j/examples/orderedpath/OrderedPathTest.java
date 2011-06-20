@@ -39,7 +39,7 @@ public class OrderedPathTest
 {
     private static EmbeddedGraphDatabase db;
     private static RelationshipType REL1 = withName( "REL1" ),
-            REL2 = withName( "REL2" ), REL3 = withName( "REL3" );
+    REL2 = withName( "REL2" ), REL3 = withName( "REL3" );
 
     @BeforeClass
     public static void createTheGraph()
@@ -55,8 +55,11 @@ public class OrderedPathTest
         B.createRelationshipTo( C, REL2 );
         C.createRelationshipTo( D, REL3 );
         A.createRelationshipTo( C, REL2 );
-
         // END SNIPPET: createGraph
+        A.setProperty( "name", "A" );
+        B.setProperty( "name", "B" );
+        C.setProperty( "name", "C" );
+        D.setProperty( "name", "D" );
         tx.success();
         tx.finish();
     }
@@ -72,8 +75,8 @@ public class OrderedPathTest
         TraversalDescription td = Traversal.description().evaluator(
                 new Evaluator()
                 {
-
-                    public Evaluation evaluate( Path path )
+                    @Override
+                    public Evaluation evaluate( final Path path )
                     {
                         if ( path.length() == 0 )
                         {

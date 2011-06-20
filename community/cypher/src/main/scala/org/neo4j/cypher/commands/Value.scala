@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.commands
 
-import org.neo4j.graphdb.PropertyContainer
+import org.neo4j.graphdb.{Relationship, PropertyContainer}
 
 abstract sealed class Value {
   def value(m: Map[String, Any]): Any
@@ -29,7 +29,11 @@ case class Literal(v: Any) extends Value {
   def value(m: Map[String, Any]) = v
 }
 
-case class PropertyValue(variable: String, property: String) extends Value {
-  def value(m: Map[String, Any]): Any = m(variable).asInstanceOf[PropertyContainer].getProperty(property)
+case class PropertyValue(identifier: String, property: String) extends Value {
+  def value(m: Map[String, Any]): Any = m(identifier).asInstanceOf[PropertyContainer].getProperty(property)
+}
+
+case class RelationshipTypeValue(identifier:String) extends Value {
+  def value(m: Map[String, Any]): Any = m(identifier).asInstanceOf[Relationship].getType.toString
 }
 

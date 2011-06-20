@@ -52,6 +52,12 @@
       <version>${scala.version}</version>
     </dependency>
     <dependency>
+    <groupId>org.scalatest</groupId>
+    <artifactId>scalatest_2.9.0</artifactId>
+    <version>1.6.1</version>
+    <scope>test</scope>
+</dependency>
+    <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
       <version>1.4-SNAPSHOT</version>

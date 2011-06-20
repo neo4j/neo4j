@@ -30,34 +30,36 @@ import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.Stack;
 
+import org.neo4j.shell.impl.RemoteOutput;
+
 public class Documenter
 {
-
     public class DocOutput implements Output, Serializable
     {
         private static final long serialVersionUID = 1L;
-        public ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        PrintWriter out = new PrintWriter( baos );
+        private ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        private PrintWriter out = new PrintWriter( baos );
 
         @Override
         public Appendable append( CharSequence csq, int start, int end )
                 throws IOException
         {
-            return null;
+            this.print( RemoteOutput.asString( csq ).substring( start, end ) );
+            return this;
         }
 
         @Override
         public Appendable append( char c ) throws IOException
         {
-            // TODO Auto-generated method stub
-            return null;
+            this.print( c );
+            return this;
         }
 
         @Override
         public Appendable append( CharSequence csq ) throws IOException
         {
-            // TODO Auto-generated method stub
-            return null;
+            this.print( RemoteOutput.asString( csq ) );
+            return this;
         }
 
         @Override
@@ -65,7 +67,6 @@ public class Documenter
         {
             out.println( object );
             out.flush();
-
         }
 
         @Override
@@ -73,7 +74,6 @@ public class Documenter
         {
             out.println();
             out.flush();
-
         }
 
         @Override
@@ -81,14 +81,11 @@ public class Documenter
         {
             out.print( object );
             out.flush();
-
         }
-
     }
 
     public class Job
     {
-
         public final String query;
         public final String assertion;
         public final String comment;
@@ -99,7 +96,6 @@ public class Documenter
             this.assertion = assertion;
             this.comment = comment;
         }
-
     }
 
     private final String title;

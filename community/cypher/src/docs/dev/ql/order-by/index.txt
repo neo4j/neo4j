@@ -1,0 +1,11 @@
+[[query-order]]
+Order by
+========
+
+To sort the output, use the Order by clause. Note that you can not sort on nodes or relationships,
+just on properties on these.
+
+include::order-nodes-by-property.txt[]
+include::order-nodes-by-multiple-properties.txt[]
+include::order-nodes-in-descending-order.txt[]
+include::ordering-null.txt[]

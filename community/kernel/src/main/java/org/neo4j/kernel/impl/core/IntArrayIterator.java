@@ -45,11 +45,16 @@ class IntArrayIterator implements Iterable<Relationship>,
     private final RelationshipType types[];
 
     private final List<RelTypeElementIterator> rels;
+    
+    // This is just for optimization
+    private boolean isFullyLoaded;
 
     IntArrayIterator( List<RelTypeElementIterator> rels, NodeImpl fromNode,
-        DirectionWrapper direction, NodeManager nodeManager, RelationshipType[] types )
+        DirectionWrapper direction, NodeManager nodeManager, RelationshipType[] types,
+        boolean isFullyLoaded )
     {
         this.rels = rels;
+        this.isFullyLoaded = isFullyLoaded;
         this.typeIterator = rels.iterator();
         this.currentTypeIterator = typeIterator.hasNext() ? typeIterator.next() : EMPTY;
         this.fromNode = fromNode;
@@ -90,7 +95,13 @@ class IntArrayIterator implements Iterable<Relationship>,
                 {
                     currentTypeIterator = typeIterator.next();
                 }
-                else if ( fromNode.getMoreRelationships( nodeManager ) )
+                else if ( fromNode.getMoreRelationships( nodeManager ) ||
+                        // This is here to guard for that someone else might have loaded
+                        // stuff in this relationship chain (and exhausted it) while I
+                        // iterated over my batch of relationships. It will only happen
+                        // for nodes which have more than <grab size> relationships and
+                        // isn't fully loaded when starting iterating.
+                        !isFullyLoaded )
                 {
                     Map<String, RelTypeElementIterator> newRels = new HashMap<String, RelTypeElementIterator>();
                     for ( RelTypeElementIterator itr : rels )
@@ -135,6 +146,7 @@ class IntArrayIterator implements Iterable<Relationship>,
                     
                     typeIterator = rels.iterator();
                     currentTypeIterator = typeIterator.hasNext() ? typeIterator.next() : RelTypeElementIterator.EMPTY;
+                    isFullyLoaded = !fromNode.hasMoreRelationshipsToLoad();
                 }
                 else
                 {

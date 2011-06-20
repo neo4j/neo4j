@@ -23,8 +23,10 @@ import org.neo4j.cypher.commands._
 import org.junit.Assert._
 import org.neo4j.graphdb.Direction
 import org.junit.Test
+import org.scalatest.junit.JUnitSuite
+import parser.{ConsoleCypherParser, CypherParser}
 
-class CypherParserTest {
+class CypherParserTest extends JUnitSuite {
   def testQuery(query: String, expectedQuery: Query) {
     val parser = new CypherParser()
     val executionTree = parser.parse(query)
@@ -300,7 +302,17 @@ class CypherParserTest {
         Return(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
         Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
-        Aggregation(Count("*"))))
+        Aggregation(CountStar())))
+  }
+
+  @Test def sumTheAgesOfPeople() {
+    testQuery(
+      "start a = (1) match (a) --> (b) return a, b, sum(a.age)",
+      Query(
+        Return(EntityOutput("a"), EntityOutput("b")),
+        Start(NodeById("a", 1)),
+        Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
+        Aggregation(Sum(PropertyOutput("a","age")))))
   }
 
   @Test def singleColumnSorting() {
@@ -386,21 +398,77 @@ class CypherParserTest {
         Slice(None, Some(5))))
   }
 
-  @Test def from5() {
+  @Test def skip5() {
     testQuery(
-      "start n=(1) return n from 5",
+      "start n=(1) return n skip 5",
       Query(
         Return(EntityOutput("n")),
         Start(NodeById("n", 1)),
         Slice(Some(5), None)))
   }
 
-  @Test def from5limit5() {
+  @Test def skip5limit5() {
     testQuery(
-      "start n=(1) return n from 5 limit 5",
+      "start n=(1) return n skip 5 limit 5",
       Query(
         Return(EntityOutput("n")),
         Start(NodeById("n", 1)),
         Slice(Some(5), Some(5))))
   }
+
+  @Test def relationshipType() {
+    testQuery(
+      "start n=(1) match (n)-[r]->(x) where r:TYPE = \"something\" return r",
+      Query(
+        Return(EntityOutput("r")),
+        Start(NodeById("n", 1)),
+        Match(RelatedTo("n", "x", Some("r"), None, Direction.OUTGOING)),
+        Equals(RelationshipTypeValue("r"), Literal("something"))))
+  }
+
+    @Test def relationshipTypeOut() {
+    testQuery(
+      "start n=(1) match (n)-[r]->(x) return r:TYPE",
+
+      Query(
+        Return(RelationshipTypeOutput("r")),
+        Start(NodeById("n", 1)),
+        Match(RelatedTo("n", "x", Some("r"), None, Direction.OUTGOING))))
+  }
+
+  @Test def countNonNullValues() {
+    testQuery(
+      "start a = (1) return a, count(a)",
+      Query(
+        Return(EntityOutput("a")),
+        Start(NodeById("a", 1)),
+        Aggregation(Count(EntityOutput("a")))))
+  }
+
+  @Test def shouldBeAbleToHandleStringLiteralsWithApostrophe() {
+  testQuery(
+    "start a = (index, key, 'value') return a",
+    Query(
+      Return(EntityOutput("a")),
+      Start(NodeByIndex("a", "index", "key", "value"))))
+}
+  @Test def shouldHandleQuotationsInsideApostrophes() {
+  testQuery(
+    "start a = (index, key, 'val\"ue') return a",
+    Query(
+      Return(EntityOutput("a")),
+      Start(NodeByIndex("a", "index", "key", "val\"ue"))))
+  }
+
+  @Test def consoleModeParserShouldOutputNullableProperties() {
+    val query = "start a = (1) return a.name"
+    val parser = new ConsoleCypherParser()
+    val executionTree = parser.parse(query)
+
+    assertEquals(Query(
+        Return(NullablePropertyOutput("a", "name")),
+        Start(NodeById("a", 1))),
+      executionTree)
+  }
+
 }

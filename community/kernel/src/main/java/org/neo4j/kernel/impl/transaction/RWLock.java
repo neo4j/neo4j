@@ -84,6 +84,8 @@ class RWLock
         int readCount = 0;
         int writeCount = 0;
 
+        private boolean movedOn = false;
+        
         TxLockElement( Transaction tx )
         {
             this.tx = tx;
@@ -142,6 +144,7 @@ class RWLock
 
         try
         {
+            tle.movedOn = false;
             while ( writeCount > tle.writeCount )
             {
                 ragManager.checkWaitOn( this, tx );
@@ -164,6 +167,7 @@ class RWLock
             }
             readCount++;
             tle.readCount++;
+            tle.movedOn = true;
             // TODO: this put could be optimized?
             txLockElementMap.put( tx, tle );
         }
@@ -227,7 +231,10 @@ class RWLock
                 {
                     // found a write lock with all read locks
                     waitingThreadList.removeLast();
-                    we.waitingThread.interrupt();
+                    if ( !we.element.movedOn )
+                    {
+                        we.waitingThread.interrupt();
+                    }
                 }
                 else
                 {
@@ -244,15 +251,21 @@ class RWLock
                         {
                             // found a write lock with all read locks
                             listItr.remove();
-                            we.waitingThread.interrupt();
-                            // ----
-                            break;
+                            if ( !we.element.movedOn )
+                            {
+                                we.waitingThread.interrupt();
+                                // ----
+                                break;
+                            }
                         }
                         else if ( we.lockType == LockType.READ )
                         {
                             // found a read lock, let it do the job...
                             listItr.remove();
-                            we.waitingThread.interrupt();
+                            if ( !we.element.movedOn )
+                            {
+                                we.waitingThread.interrupt();
+                            }
                         }
                     }
                 }
@@ -265,7 +278,10 @@ class RWLock
                 if ( writeCount == 0 )
                 {
                     waitingThreadList.removeLast();
-                    we.waitingThread.interrupt();
+                    if ( !we.element.movedOn )
+                    {
+                        we.waitingThread.interrupt();
+                    }
                 }
             }
         }
@@ -299,6 +315,7 @@ class RWLock
 
         try
         {
+            tle.movedOn = false;
             while ( writeCount > tle.writeCount || readCount > tle.readCount )
             {
                 ragManager.checkWaitOn( this, tx );
@@ -321,6 +338,7 @@ class RWLock
             }
             writeCount++;
             tle.writeCount++;
+            tle.movedOn = true;
             // TODO optimize this put?
             txLockElementMap.put( tx, tle );
         }
@@ -381,10 +399,13 @@ class RWLock
             do
             {
                 WaitElement we = waitingThreadList.removeLast();
-                we.waitingThread.interrupt();
-                if ( we.lockType == LockType.WRITE )
+                if ( !we.element.movedOn )
                 {
-                    break;
+                    we.waitingThread.interrupt();
+                    if ( we.lockType == LockType.WRITE )
+                    {
+                        break;
+                    }
                 }
             }
             while ( waitingThreadList.size() > 0 );

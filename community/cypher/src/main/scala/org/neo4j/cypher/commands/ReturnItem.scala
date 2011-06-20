@@ -19,14 +19,17 @@
  */
 package org.neo4j.cypher.commands
 
-import org.neo4j.graphdb.{PropertyContainer, NotFoundException}
 import org.neo4j.cypher.pipes.Pipe
+import org.neo4j.graphdb.{Relationship, PropertyContainer, NotFoundException}
+import org.neo4j.cypher.pipes.aggregation.{SumFunction, CountFunction, CountStarFunction, AggregationFunction}
 
 abstract sealed class ReturnItem(val identifier: Identifier) extends (Map[String, Any] => Map[String, Any]) {
-  def assertDependencies(source:Pipe)
+  def assertDependencies(source: Pipe)
+
+  def columnName = identifier match { case UnboundIdentifier(name,None) => name; case UnboundIdentifier(name,id) => id.get.name; case identifier:Identifier => identifier.name; }
 }
 
-case class EntityOutput(name: String) extends ReturnItem(NodeIdentifier(name)) {
+case class EntityOutput(name: String) extends ReturnItem(UnboundIdentifier(name,None)) {
   def apply(m: Map[String, Any]): Map[String, Any] = Map(name -> m.getOrElse(name, throw new NotFoundException))
 
   def assertDependencies(source: Pipe) {
@@ -34,14 +37,25 @@ case class EntityOutput(name: String) extends ReturnItem(NodeIdentifier(name)) {
   }
 }
 
-case class PropertyOutput(entityName: String, property: String) extends ReturnItem(PropertyIdentifier(entityName, property)) {
+case class PropertyOutput(entity: String, property: String) extends ReturnItem(PropertyIdentifier(entity, property)) {
   def apply(m: Map[String, Any]): Map[String, Any] = {
-    val node = m.getOrElse(entityName, throw new NotFoundException).asInstanceOf[PropertyContainer]
-    Map(entityName + "." + property -> node.getProperty(property))
+    val node = m.getOrElse(entity, throw new NotFoundException).asInstanceOf[PropertyContainer]
+    Map(entity + "." + property -> node.getProperty(property))
   }
 
   def assertDependencies(source: Pipe) {
-    source.symbols.assertHas(entityName)
+    source.symbols.assertHas(entity)
+  }
+}
+
+case class RelationshipTypeOutput(relationship: String) extends ReturnItem(RelationshipTypeIdentifier(relationship)) {
+  def apply(m: Map[String, Any]): Map[String, Any] = {
+    val rel = m.getOrElse(relationship, throw new NotFoundException).asInstanceOf[Relationship]
+    Map(relationship + ":TYPE" -> rel.getType)
+  }
+
+  def assertDependencies(source: Pipe) {
+    source.symbols.assertHas(relationship)
   }
 }
 
@@ -63,10 +77,29 @@ case class NullablePropertyOutput(entity: String, property: String) extends Retu
   }
 }
 
-abstract sealed class AggregationItem(ident: String) extends ReturnItem(AggregationIdentifier(ident))
-
-case class Count(variable: String) extends AggregationItem(variable) {
+abstract sealed class AggregationItem(ident: Identifier) extends ReturnItem(ident) {
   def apply(m: Map[String, Any]): Map[String, Any] = m
+
+  def createAggregationFunction: AggregationFunction
+}
+
+case class CountStar() extends AggregationItem(AggregationIdentifier("count(*)")) {
+  def createAggregationFunction: AggregationFunction = new CountStarFunction
+  def assertDependencies(source: Pipe) {}
+}
+
+case class Count(returnItem:ReturnItem) extends AggregationItem(AggregationIdentifier("count(" + returnItem.columnName + ")")) {
+  def createAggregationFunction: AggregationFunction = new CountFunction(returnItem)
+
   def assertDependencies(source: Pipe) {
+    returnItem.assertDependencies(source)
+  }
+}
+
+case class Sum(returnItem:ReturnItem) extends AggregationItem(AggregationIdentifier("sum(" + returnItem.columnName + ")")) {
+  def createAggregationFunction: AggregationFunction = new SumFunction(returnItem)
+
+  def assertDependencies(source: Pipe) {
+    returnItem.assertDependencies(source)
   }
 }

@@ -19,35 +19,64 @@
  */
 package org.neo4j.cypher
 
+import commands._
 import org.junit.Test
-import commands.{NodeIdentifier, RelationshipIdentifier}
 import org.junit.Assert._
+import org.scalatest.junit.JUnitSuite
 
-
-class SymbolTableTest {
+class SymbolTableTest extends JUnitSuite {
   @Test def testConcatenating() {
-    val table1 = new SymbolTable(Map("node"->NodeIdentifier("node")))
-    val table2 = new SymbolTable(Map("rel"->RelationshipIdentifier("rel")))
+    val table1 = new SymbolTable(NodeIdentifier("node"))
+    val table2 = new SymbolTable(RelationshipIdentifier("rel"))
 
     val result = table1 ++ table2
 
-    assertEquals(Map("node" -> NodeIdentifier("node"), "rel" -> RelationshipIdentifier("rel")), result.identifiers)
+    assertEquals(Set(NodeIdentifier("node"), RelationshipIdentifier("rel")), result.identifiers)
   }
 
 
   @Test(expected = classOf[SyntaxError]) def shouldNotOverwriteSymbolsWithNewType() {
-    val table1 = new SymbolTable(Map("x"->NodeIdentifier("x")))
-    val table2 = new SymbolTable(Map("x"->RelationshipIdentifier("x")))
+    val table1 = new SymbolTable(NodeIdentifier("x"))
+    val table2 = new SymbolTable(RelationshipIdentifier("x"))
 
     table1 ++ table2
   }
 
   @Test def registreringTwiceIsOk() {
-    val table1 = new SymbolTable(Map("x"->NodeIdentifier("x")))
-    val table2 = new SymbolTable(Map("x"->NodeIdentifier("x")))
+    val table1 = new SymbolTable(NodeIdentifier("x"))
+    val table2 = new SymbolTable(NodeIdentifier("x"))
 
     val result = table1 ++ table2
 
-    assertEquals(Map("x" -> NodeIdentifier("x")), result.identifiers)
+    assertEquals(Set(NodeIdentifier("x")), result.identifiers)
+  }
+
+  @Test def shouldResolveUnboundIdentifiers() {
+    val table1 = new SymbolTable(NodeIdentifier("x"))
+    val table2 = new SymbolTable(UnboundIdentifier("x",None))
+
+    val result = table1 ++ table2
+
+    assertEquals(Set(NodeIdentifier("x")), result.identifiers)
+  }
+  @Test def shouldResolveUnboundConcreteIdentifiers() {
+    val table1 = new SymbolTable(NodeIdentifier("x"))
+    val table2 = new SymbolTable(UnboundIdentifier("x",Some(PropertyIdentifier("x","name"))))
+
+    val result = table1 ++ table2
+
+    assertEquals(Set(NodeIdentifier("x"),PropertyIdentifier("x","name")), result.identifiers)
+  }
+  @Test(expected = classOf[SyntaxError]) def shouldFailForUnboundConcreteIdentifiers() {
+    val table1 = new SymbolTable()
+    val table2 = new SymbolTable(UnboundIdentifier("x",Some(PropertyIdentifier("x","name"))))
+
+    table1 ++ table2
+  }
+  @Test(expected = classOf[SyntaxError]) def shouldFailForUnbound() {
+    val table1 = new SymbolTable()
+    val table2 = new SymbolTable(UnboundIdentifier("x",None))
+
+    table1 ++ table2
   }
 }

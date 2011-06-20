@@ -1,7 +1,0 @@
-[[query-slice]]
-Slice
-=====
-
-Slice enables the return of only subsets of the total result.
-
-include::return-first-part.txt[]

@@ -29,7 +29,7 @@ class StartPipe[T <: PropertyContainer](name: String, source: Iterable[T]) exten
     case rels: Iterable[Relationship] => RelationshipIdentifier(name)
   }
 
-  val symbols: SymbolTable = new SymbolTable(Map(name -> symbolType))
+  val symbols: SymbolTable = new SymbolTable(List(symbolType))
 
   def foreach[U](f: (Map[String, Any]) => U) {
     source.foreach((x) => {

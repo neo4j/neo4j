@@ -53,7 +53,7 @@ public class TestAutoIndexing
     private Transaction tx;
     private Map<String, String> config;
 
-    private String currentId = null;
+    private static int currentId = 0;
 
     private void newTransaction()
     {
@@ -77,6 +77,7 @@ public class TestAutoIndexing
     @Before
     public void startDb()
     {
+        currentId++;
         File workDir = getWorkDir();
         workDir.mkdirs();
         graphDb = new EmbeddedGraphDatabase( workDir.getAbsolutePath(),
@@ -86,8 +87,6 @@ public class TestAutoIndexing
     @After
     public void stopDb()
     {
-        // For access from the delete thread
-        final File currentWorkDir = getWorkDir();
         if ( tx != null )
         {
             tx.finish();
@@ -96,9 +95,10 @@ public class TestAutoIndexing
         {
             graphDb.shutdown();
         }
+        // For access from the delete thread
+        final File currentWorkDir = getWorkDir();
         new Thread(new Runnable() {
             public void run() {
-
                 try
                 {
                     FileUtils.deleteRecursively( currentWorkDir );
@@ -113,16 +113,11 @@ public class TestAutoIndexing
         tx = null;
         config = null;
         graphDb = null;
-        currentId = null;
     }
 
     private File getWorkDir()
     {
-        if ( currentId == null )
-        {
-            currentId = Long.toString( System.currentTimeMillis() );
-        }
-        return new File( WorkDir, currentId );
+        return new File( WorkDir, Integer.toString( currentId ) );
     }
 
     @Test

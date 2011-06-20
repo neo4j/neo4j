@@ -23,11 +23,13 @@ import commands._
 import pipes._
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb._
-import java.lang.Iterable
 import collection.Seq
-
+import java.lang.{Error, Iterable}
 
 class ExecutionEngine(graph: GraphDatabaseService) {
+  checkScalaVersion()
+
+
   @throws(classOf[SyntaxError])
   def execute(query: Query): ExecutionResult = query match {
     case Query(returns, start, matching, where, aggregation, sort, slice) => {
@@ -45,6 +47,11 @@ class ExecutionEngine(graph: GraphDatabaseService) {
 
       pipe = new TransformPipe(pipe, returns.returnItems)
 
+      aggregation match {
+        case None =>
+        case Some(aggr) => pipe = new AggregationPipe(pipe, returns.returnItems, aggr.aggregationItems)
+      }
+
       sort match {
         case None =>
         case Some(s) => pipe = new SortPipe(pipe, s.sortItems.toList)
@@ -55,7 +62,9 @@ class ExecutionEngine(graph: GraphDatabaseService) {
         case Some(x) => pipe = new SlicePipe(pipe, x.from, x.limit)
       }
 
-      val result = new ColumnFilterPipe(pipe, returns.returnItems) with ExecutionResult
+      val columns = returns.returnItems ++ aggregation.getOrElse(new Aggregation()).aggregationItems
+
+      val result = new ColumnFilterPipe(pipe, columns) with ExecutionResult
 
       result
     }
@@ -76,4 +85,11 @@ class ExecutionEngine(graph: GraphDatabaseService) {
         case RelationshipById(varName, ids@_*) => new StartPipe(varName, ids.map(graph.getRelationshipById))
       }
     })
+
+  def checkScalaVersion() {
+    if (util.Properties.versionString.matches("^version 2.9.0")) {
+      throw new Error("Cypher can only run with Scala 2.9.0. It looks like the Scala version is: " +
+        util.Properties.versionString)
+    }
+  }
 }

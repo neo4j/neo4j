@@ -181,7 +181,7 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>com.tinkerpop</groupId>
       <artifactId>gremlin</artifactId>
-      <version>0.9</version>
+      <version>1.1</version>
       <type>jar</type>
       <exclusions>
         <!-- Sail support not needed --> 
@@ -204,7 +204,7 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>com.tinkerpop.blueprints</groupId>
       <artifactId>blueprints-neo4j-graph</artifactId>
-      <version>0.7</version>
+      <version>0.8</version>
       <exclusions>
         <exclusion>
           <groupId>org.neo4j</groupId>

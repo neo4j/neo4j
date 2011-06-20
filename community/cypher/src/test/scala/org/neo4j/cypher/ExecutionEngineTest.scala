@@ -23,7 +23,10 @@ import org.neo4j.cypher.commands._
 import org.junit.Assert._
 import java.lang.String
 import org.junit.{Ignore, Test}
-import org.neo4j.graphdb.{Relationship, Direction, Node}
+import parser.CypherParser
+import scala.collection.JavaConverters._
+import org.junit.matchers.JUnitMatchers._
+import org.neo4j.graphdb.{RelationshipType, Relationship, Direction, Node}
 
 class ExecutionEngineTest extends ExecutionEngineTestBase {
 
@@ -210,6 +213,17 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     println(textOutput)
   }
 
+  @Test def doesNotFailOnVisualizingEmptyOutput() {
+    val query = Query(
+      Return(EntityOutput("start")),
+      Start(NodeById("start", refNode.getId)),
+      Equals(Literal(1),Literal(0)))
+
+    val result = execute(query)
+
+    println(result.dumpToString())
+  }
+
   @Test def shouldGetRelatedToRelatedTo() {
     val n1: Node = createNode()
     val n2: Node = createNode()
@@ -254,7 +268,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
     val query = Query(
       Return(EntityOutput("n")),
-      Start(NodeByIndexQuery("n", idxName, key +":"+ value)))
+      Start(NodeByIndexQuery("n", idxName, key + ":" + value)))
 
     val result = execute(query)
 
@@ -270,7 +284,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
     val query = Query(
       Return(EntityOutput("n")),
-      Start(NodeByIndexQuery("n", idxName, key +":andr*")))
+      Start(NodeByIndexQuery("n", idxName, key + ":andr*")))
 
     val result = execute(query)
 
@@ -384,9 +398,8 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     assertEquals(List(n1, n2), result.columnAs[Node]("n").toList)
   }
 
-  @Ignore("No implemented yet")
-  @Test def shouldBeAbleToCount() {
-    val a = createNode() //start a = node(0) match (a) --> (b) return a, count(*)
+  @Test def shouldBeAbleToCountNodes() {
+    val a = createNode() //start a = (0) match (a) --> (b) return a, count(*)
     val b = createNode()
     relate(refNode, a, "A")
     relate(refNode, b, "A")
@@ -395,7 +408,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
       Return(EntityOutput("a")),
       Start(NodeById("a", refNode.getId)),
       Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
-      Aggregation(Count("*")))
+      Aggregation(CountStar()))
 
     val result = execute(query)
 
@@ -403,11 +416,11 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
   }
 
   @Test def shouldLimitToTwoHits() {
-    val nodes = List(createNode(), createNode(), createNode(), createNode(), createNode(), createNode())
+    createNodes("A", "B", "C", "D", "E")
 
     val query = Query(
       Return(EntityOutput("start")),
-      Start(NodeById("start", nodes.map(_.getId): _*)),
+      Start(NodeById("start", nodeIds: _*)),
       Slice(None, Some(2)))
 
     val result = execute(query)
@@ -420,7 +433,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
     val query = Query(
       Return(EntityOutput("start")),
-      Start(NodeById("start", nodes.map(_.getId): _*)),
+      Start(NodeById("start", nodeIds: _*)),
       Sort(SortItem(PropertyOutput("start", "name"), true)),
       Slice(Some(2), None))
 
@@ -434,12 +447,124 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
     val query = Query(
       Return(EntityOutput("start")),
-      Start(NodeById("start", nodes.map(_.getId): _*)),
+      Start(NodeById("start", nodeIds: _*)),
       Sort(SortItem(PropertyOutput("start", "name"), true)),
       Slice(Some(2), Some(2)))
 
     val result = execute(query)
 
-    assertEquals(nodes.slice(2,4).toList, result.columnAs[Node]("start").toList)
+    assertEquals(nodes.slice(2, 4).toList, result.columnAs[Node]("start").toList)
+  }
+
+  @Test def magicRelTypeWorksAsExpected() {
+    createNodes("A", "B", "C")
+    relate("A" -> "KNOWS" -> "B")
+    relate("A" -> "HATES" -> "C")
+
+    val query = Query(
+      Return(EntityOutput("x")),
+      Start(NodeById("n", 1)),
+      Match(RelatedTo("n", "x", Some("r"), None, Direction.OUTGOING)),
+      Equals(RelationshipTypeValue("r"), Literal("KNOWS")))
+
+    val result = execute(query)
+
+    assertEquals(List(node("B")), result.columnAs[Node]("x").toList)
+  }
+
+  @Test def magicRelTypeOutput() {
+    createNodes("A", "B", "C")
+    relate("A" -> "KNOWS" -> "B")
+    relate("A" -> "HATES" -> "C")
+
+    val query = Query(
+      Return(RelationshipTypeOutput("r")),
+      Start(NodeById("n", 1)),
+      Match(RelatedTo("n", "x", Some("r"), None, Direction.OUTGOING)))
+
+    val result = execute(query)
+
+    val KNOWS = relType("KNOWS")
+    val HATES = relType("HATES")
+
+    assertEquals(List(KNOWS, HATES), result.columnAs[RelationshipType]("r:TYPE").toList)
+  }
+
+  @Test def shouldAggregateOnProperties() {
+    val n1 = createNode(Map("x" -> 33))
+    val n2 = createNode(Map("x" -> 33))
+    val n3 = createNode(Map("x" -> 42))
+
+    val query = Query(
+      Return(PropertyOutput("node", "x")),
+      Start(NodeById("node", n1.getId, n2.getId, n3.getId)),
+      Aggregation(CountStar()))
+
+    val result = execute(query)
+
+    assertThat(result.toList.asJava, hasItems[Map[String, Any]](Map("node.x" -> 33, "count(*)" -> 2), Map("node.x" -> 42, "count(*)" -> 1)))
+  }
+
+  @Test def shouldCountNonNullValues() {
+    val n1 = createNode(Map("y" -> "a", "x" -> 33))
+    val n2 = createNode(Map("y" -> "a"))
+    val n3 = createNode(Map("y" -> "b", "x" -> 42))
+
+    val query = Query(
+      Return(PropertyOutput("node", "y")),
+      Start(NodeById("node", n1.getId, n2.getId, n3.getId)),
+      Aggregation(Count(NullablePropertyOutput("node", "x"))))
+
+    val result = execute(query)
+
+    assertThat(result.toList.asJava,
+      hasItems[Map[String, Any]](
+        Map("node.y" -> "a", "count(node.x)" -> 1),
+        Map("node.y" -> "b", "count(node.x)" -> 1)))
+  }
+
+
+  @Test def shouldSumNonNullValues() {
+    val n1 = createNode(Map("y" -> "a", "x" -> 33))
+    val n2 = createNode(Map("y" -> "a"))
+    val n3 = createNode(Map("y" -> "a", "x" -> 42))
+
+    val query = Query(
+      Return(PropertyOutput("node", "y")),
+      Start(NodeById("node", n1.getId, n2.getId, n3.getId)),
+      Aggregation(Sum(NullablePropertyOutput("node", "x"))))
+
+    val result = execute(query)
+
+    assertThat(result.toList.asJava,
+      hasItems[Map[String, Any]](Map("node.y" -> "a", "sum(node.x)" -> 75)))
+  }
+
+  @Test def shouldWalkAlternativeRelationships() {
+    val nodes: List[Node] = createNodes("A", "B", "C")
+    relate("A" -> "KNOWS" -> "B")
+    relate("A" -> "HATES" -> "C")
+
+    val query = Query(
+      Return(EntityOutput("x")),
+      Start(NodeById("n", 1)),
+      Match(RelatedTo("n", "x", Some("r"), None, Direction.OUTGOING)),
+      Or(Equals(RelationshipTypeValue("r"),Literal("KNOWS")),Equals(RelationshipTypeValue("r"),Literal("HATES"))))
+
+    val result = execute(query)
+
+    assertEquals(nodes.slice(1,3), result.columnAs[Node]("x").toList)
+  }
+
+  @Test def shouldWalkAlternativeRelationships2() {
+    val nodes: List[Node] = createNodes("A", "B", "C")
+    relate("A" -> "KNOWS" -> "B")
+    relate("A" -> "HATES" -> "C")
+
+    val query = new CypherParser().parse("start n=(1) match (n)-[r]->(x) where r:TYPE='KNOWS' or r:TYPE='HATES' return x")
+    val result = execute(query)
+
+    assertEquals(nodes.slice(1,3), result.columnAs[Node]("x").toList)
   }
 }
+

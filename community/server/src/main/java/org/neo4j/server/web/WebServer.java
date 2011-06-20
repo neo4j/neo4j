@@ -26,16 +26,18 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.mortbay.jetty.Server;
 import org.neo4j.server.NeoServer;
 
 public interface WebServer {
-    public void setNeoServer(NeoServer server);
-    public void setPort(int portNo);
-    public void start();
-    public void stop();
-    public void setMaxThreads(int maxThreads);
-    public void addJAXRSPackages(List<String> packageNames, String serverMountPoint);
-    public void addStaticContent(String contentLocation, String serverMountPoint);
-    
-    public void invokeDirectly(String targetUri, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException;
+    void init();
+    void setNeoServer(NeoServer server);
+    void setPort(int portNo);
+    void start();
+    void stop();
+    void setMaxThreads(int maxThreads);
+    void addJAXRSPackages(List<String> packageNames, String serverMountPoint);
+    void addStaticContent(String contentLocation, String serverMountPoint);
+    void invokeDirectly(String targetUri, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException;
+    Server getJetty();
 }

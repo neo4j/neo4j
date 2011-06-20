@@ -22,14 +22,16 @@ package org.neo4j.cypher.pipes
 import org.junit.Assert
 import org.junit.Test
 import org.neo4j.cypher.commands.{NodeIdentifier, EntityOutput}
+import org.neo4j.cypher.SymbolTable
+import org.scalatest.junit.JUnitSuite
 
-class ColumnFilterPipeTest {
+class ColumnFilterPipeTest extends JUnitSuite {
   @Test def shouldReturnColumnsFromReturnItems() {
     val returnItems = List(EntityOutput("foo"))
-    val source = new FakePipe(List(Map("x" -> "x", "foo" -> "bar")))
+    val source = new FakePipe(List(Map("x" -> "x", "foo" -> "bar")), new SymbolTable(NodeIdentifier("foo")))
     val columnPipe = new ColumnFilterPipe(source, returnItems)
 
-    Assert.assertEquals(Map("foo" -> NodeIdentifier("foo")), columnPipe.symbols.identifiers)
+    Assert.assertEquals(Set(NodeIdentifier("foo")), columnPipe.symbols.identifiers)
     Assert.assertEquals(List(Map("foo" -> "bar")), columnPipe.toList)
   }
 }

@@ -1,0 +1,13 @@
+[[query-aggregation]]
+Aggregation
+===========
+
+To calculate aggregated data, Cypher offers a few aggregation functions.
+
+:leveloffset: 2
+
+include::count/index.txt[]
+
+:leveloffset: 2
+
+include::sum/index.txt[]

@@ -1,8 +1,0 @@
-%ul
-  :each line in lines
-    %li = htmlEscape(line, true)
-
-  %li 
-    :if showPrompt
-      =htmlEscape(promptPrefix+">") 
-      %input#console-input(type="text" value="#{htmlEscape(prompt)}")
