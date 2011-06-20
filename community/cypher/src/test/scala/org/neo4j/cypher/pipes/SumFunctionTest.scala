@@ -23,8 +23,9 @@ import aggregation.SumFunction
 import org.junit.Assert._
 import org.junit.{Before, Test}
 import org.neo4j.cypher.SyntaxError
+import org.scalatest.junit.JUnitSuite
 
-class SumFunctionTest {
+class SumFunctionTest extends JUnitSuite {
   var func: SumFunction = null
 
   @Before

@@ -21,10 +21,10 @@ package org.neo4j.cypher
  */
 import org.junit.Assert._
 import org.junit.{Assert, Test}
+import org.scalatest.junit.JUnitSuite
 
 
-
-class SyntaxErrorTest {
+class SyntaxErrorTest extends JUnitSuite {
   def expectError(query: String, expectedError: String) {
     val parser = new CypherParser()
     try {

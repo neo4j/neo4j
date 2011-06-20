@@ -30,7 +30,7 @@ class AggregationPipe(source: Pipe, returnItems: Seq[ReturnItem], aggregations: 
 
   def foreach[U](f: Map[String, Any] => U) {
     val result = collection.mutable.Map[Seq[Any], Seq[AggregationFunction]]()
-    val valueNames = returnItems.map(_.identifier.name)
+    val valueNames = returnItems.map(_.columnName)
     val aggregationNames = aggregations.map(_.identifier.name)
     source.foreach(m => {
       val groupValues = valueNames.map(m(_))

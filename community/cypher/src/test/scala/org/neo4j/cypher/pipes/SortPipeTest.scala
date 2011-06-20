@@ -24,8 +24,9 @@ import org.junit.Assert._
 import org.neo4j.graphdb._
 import org.neo4j.cypher.SymbolTable
 import org.neo4j.cypher.commands.{SortItem, EntityOutput}
+import org.scalatest.junit.JUnitSuite
 
-class SortPipeTest {
+class SortPipeTest extends JUnitSuite{
   @Test def emptyInIsEmptyOut() {
     val source = new StartPipe[Node]("x", List())
     val sortPipe = new SortPipe(source, List(SortItem(EntityOutput("x"), true)))
