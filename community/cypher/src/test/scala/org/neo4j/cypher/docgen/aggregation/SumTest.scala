@@ -17,8 +17,8 @@ class SumTest extends DocumentingTestBase with AggregationTest {
 
   @Test def sumProperty() {
     testQuery(
-      title = "Sum property",
-      text = "The SUM aggregation function simply sums all the values it encounters. Null values are silently dropped.",
+      title = "Sum properties",
+      text = "This is an example of how you can use SUM.",
       queryText = "start n=(%A%,%B%,%C%) return sum(n.foo)",
       returns = "The sum of all the values in the property 'foo'.",
       (p) => assertEquals(Map("sum(n.foo)" -> (13+33+44)), p.toList.head))

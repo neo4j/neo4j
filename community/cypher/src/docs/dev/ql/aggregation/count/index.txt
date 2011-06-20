@@ -1,8 +1,10 @@
-[[query-aggregation]]
-Aggregation
-===========
+[[aggregation-count]]
+Count
+=====
 
-To calculate aggregated data, Cypher offers a few aggregation functions.
+COUNT is used to count the number of hits. Count can be used in two forms - count(*)
+which just counts the number of matching rows, and count(<identifier>), which counts
+the number of non-null values.
 
 include::count-nodes.txt[]
 include::count-entities.txt[]
