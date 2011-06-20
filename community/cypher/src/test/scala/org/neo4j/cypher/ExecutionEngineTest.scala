@@ -212,6 +212,17 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     println(textOutput)
   }
 
+  @Test def doesNotFailOnVisualizingEmptyOutput() {
+    val query = Query(
+      Return(EntityOutput("start")),
+      Start(NodeById("start", refNode.getId)),
+      Equals(Literal(1),Literal(0)))
+
+    val result = execute(query)
+
+    println(result.dumpToString())
+  }
+
   @Test def shouldGetRelatedToRelatedTo() {
     val n1: Node = createNode()
     val n2: Node = createNode()
