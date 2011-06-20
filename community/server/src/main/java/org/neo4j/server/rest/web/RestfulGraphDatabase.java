@@ -69,7 +69,7 @@ public class RestfulGraphDatabase
             }
         }
     }
-
+    
     private static final String PATH_NODES = "node";
     private static final String PATH_NODE = PATH_NODES + "/{nodeId}";
     private static final String PATH_NODE_PROPERTIES = PATH_NODE + "/properties";
@@ -99,7 +99,6 @@ public class RestfulGraphDatabase
     protected static final String PATH_RELATIONSHIP_INDEX_ID = PATH_RELATIONSHIP_INDEX_GET + "/{id}";
     protected static final String PATH_RELATIONSHIP_INDEX_REMOVE_KEY = PATH_NAMED_RELATIONSHIP_INDEX + "/{key}/{id}";
     protected static final String PATH_RELATIONSHIP_INDEX_REMOVE = PATH_NAMED_RELATIONSHIP_INDEX + "/{id}";
-    protected static final String PATH_TO_PAGED_TRAVERSERS = "/traversers";
     private static final String SIXTY_SECONDS = "60";
     private static final String FIFTY = "50";
 
@@ -107,6 +106,9 @@ public class RestfulGraphDatabase
     private final OutputFormat output;
     private final InputFormat input;
     private final UriInfo uriInfo;
+    
+    public static final String PATH_TO_CREATE_PAGED_TRAVERSERS = PATH_NODE + "/paged/traverse/{returnType}";
+    public static final String PATH_TO_PAGED_TRAVERSERS = PATH_NODE + "/paged/traverse/{returnType}/{traverserId}";
 
     public RestfulGraphDatabase( @Context UriInfo uriInfo, @Context Database database, @Context InputFormat input,
             @Context OutputFormat output, @Context Clock clock )
@@ -968,10 +970,7 @@ public class RestfulGraphDatabase
         {
             String responseBody = output.format( server.pagedTraverse( traverserId, returnType ) );
 
-            URI uri = new URI( uriInfo.getBaseUri()
-                    .toString() + PATH_TO_PAGED_TRAVERSERS + "/" + traverserId );
-
-            return Response.ok( uri.normalize() )
+            return Response.ok( uriInfo.getRequestUri() )
                     .entity( responseBody )
                     .build();
         }
@@ -979,14 +978,10 @@ public class RestfulGraphDatabase
         {
             return output.notFound( e );
         }
-        catch ( URISyntaxException e )
-        {
-            return output.serverError( e );
-        }
     }
 
     @POST
-    @Path( PATH_TO_PAGED_TRAVERSERS )
+    @Path( PATH_TO_CREATE_PAGED_TRAVERSERS )
     public Response createPagedTraverser( @PathParam( "nodeId" ) long startNode,
             @PathParam( "returnType" ) TraverserReturnType returnType,
             @QueryParam( "pageSize" ) @DefaultValue( FIFTY ) int pageSize,
@@ -1000,8 +995,8 @@ public class RestfulGraphDatabase
             String responseBody = output.format( server.pagedTraverse( traverserId, returnType ) );
 
             URI uri = new URI( uriInfo.getBaseUri()
-                    .toString() + PATH_TO_PAGED_TRAVERSERS + "/" + traverserId + "?returnType=" + returnType.toString() );
-
+                    .toString() + "node/" + startNode + "/paged/traverse/" + returnType + "/" + traverserId );
+            
             return Response.created( uri.normalize() )
                     .entity( responseBody )
                     .build();

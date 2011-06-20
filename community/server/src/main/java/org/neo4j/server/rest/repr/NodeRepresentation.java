@@ -119,6 +119,12 @@ public final class NodeRepresentation extends ObjectRepresentation implements
     {
         return ValueRepresentation.template( path( "/traverse/{returnType}" ) );
     }
+    
+    @Mapping( "paged_traverse" )
+    public ValueRepresentation pagedTraverseUriTemplate()
+    {
+        return ValueRepresentation.template( path( "/paged/traverse/{returnType}{?pageSize,leaseTime}" ) );
+    }
 
     @Override
     void extraData( MappingSerializer serializer )
