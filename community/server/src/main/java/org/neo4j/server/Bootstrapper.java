@@ -32,6 +32,7 @@ import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.database.GraphDatabaseFactory;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.modules.ServerModule;
+import org.neo4j.server.rest.paging.RealClock;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
 import org.neo4j.server.web.Jetty6WebServer;
@@ -41,9 +42,6 @@ public abstract class Bootstrapper
     public static final Integer OK = 0;
     public static final Integer WEB_SERVER_STARTUP_ERROR_CODE = 1;
     public static final Integer GRAPH_DATABASE_STARTUP_ERROR_CODE = 2;
-    /*
-        public static final String KEY_LOG4J_CONFIG_XML_PATH = "log4j.config.xml.path";
-    */
 
     private static Logger log = Logger.getLogger( NeoServerBootstrapper.class );
 
@@ -83,7 +81,7 @@ public abstract class Bootstrapper
             StartupHealthCheck startupHealthCheck = new StartupHealthCheck( rules() );
             Jetty6WebServer webServer = new Jetty6WebServer();
             server = new NeoServerWithEmbeddedWebServer( this, new AddressResolver(),
-                    startupHealthCheck, getConfigurator(), webServer, getServerModules() );
+                    startupHealthCheck, getConfigurator(), webServer, getServerModules(), new RealClock() );
             server.start();
 
             addShutdownHook();
