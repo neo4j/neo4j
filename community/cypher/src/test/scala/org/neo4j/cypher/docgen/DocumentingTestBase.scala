@@ -30,11 +30,6 @@ import org.neo4j.cypher.parser.CypherParser
 import org.neo4j.cypher.{ExecutionResult, ExecutionEngine}
 import org.scalatest.junit.JUnitSuite
 
-/**
- * @author ata
- * @since 6/1/11
- */
-
 abstract class DocumentingTestBase extends JUnitSuite {
   var db: GraphDatabaseService = null
   val parser: CypherParser = new CypherParser
@@ -48,7 +43,7 @@ abstract class DocumentingTestBase extends JUnitSuite {
 
   def graphDescription: List[String]
 
-  def indexProps: List[String]
+  def indexProps: List[String] = List()
 
   def nicefy(in: String): String = in.toLowerCase.replace(" ", "-")
 
@@ -78,6 +73,10 @@ abstract class DocumentingTestBase extends JUnitSuite {
     writer.close()
   }
 
+  def path: String = {
+    "target/docs/ql/"
+  }
+
   def testQuery(title: String, text: String, queryText: String, returns: String, assertions: (ExecutionResult => Unit)*) {
     var query = queryText
     nodes.keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
@@ -85,7 +84,7 @@ abstract class DocumentingTestBase extends JUnitSuite {
     val result = engine.execute(q)
     assertions.foreach(_.apply(result))
 
-    val dir = new File("target/docs/ql/" + nicefy(section))
+    val dir = new File(path + nicefy(section))
     if (!dir.exists()) {
       dir.mkdirs()
     }
@@ -139,4 +138,8 @@ abstract class DocumentingTestBase extends JUnitSuite {
     tx.success()
     tx.finish()
   }
+}
+
+trait AggregationTest extends DocumentingTestBase {
+  override def path = super.path + "/aggregation/"
 }

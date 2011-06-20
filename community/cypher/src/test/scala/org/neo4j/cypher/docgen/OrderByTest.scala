@@ -24,8 +24,6 @@ import org.neo4j.graphdb.Node
 import org.junit.Test
 
 class OrderByTest extends DocumentingTestBase {
-  def indexProps = List()
-
   def graphDescription = List("A KNOWS B", "B KNOWS C")
 
   override val properties = Map(

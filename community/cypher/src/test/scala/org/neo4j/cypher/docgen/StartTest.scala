@@ -29,7 +29,7 @@ import org.junit.Test
 class StartTest extends DocumentingTestBase {
   def graphDescription = List("A KNOWS B", "A KNOWS C")
 
-  def indexProps = List("name")
+  override def indexProps = List("name")
 
   def section: String = "Start"
 

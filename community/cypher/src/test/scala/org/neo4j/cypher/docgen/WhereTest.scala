@@ -24,8 +24,6 @@ import org.junit.Assert._
 import org.neo4j.graphdb.{Relationship, RelationshipType, Node}
 
 class WhereTest extends DocumentingTestBase {
-  def indexProps = List()
-
   def graphDescription = List("Andres KNOWS Tobias")
 
   override val properties = Map(

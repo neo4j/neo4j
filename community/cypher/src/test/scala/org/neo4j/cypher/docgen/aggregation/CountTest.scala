@@ -1,3 +1,5 @@
+package org.neo4j.cypher.docgen.aggregation
+
 /**
  * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -17,14 +19,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.docgen
-
 import org.junit.Test
 import org.junit.Assert._
+import org.neo4j.cypher.docgen.{AggregationTest, DocumentingTestBase}
 
-class AggregationTest extends DocumentingTestBase {
-  def indexProps = List()
-
+class CountTest extends DocumentingTestBase with AggregationTest {
   def graphDescription = List("A KNOWS B", "A KNOWS C", "A KNOWS D")
 
 
@@ -34,7 +33,7 @@ class AggregationTest extends DocumentingTestBase {
     "C"->Map("property"->44)
   )
 
-  def section = "Aggregation"
+  def section = "Count"
 
   @Test def countNodes() {
     testQuery(

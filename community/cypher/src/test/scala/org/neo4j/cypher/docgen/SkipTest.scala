@@ -26,8 +26,6 @@ import org.junit.Test
 class SkipTest extends DocumentingTestBase {
   def graphDescription = List("A KNOWS B", "A KNOWS C", "A KNOWS D", "A KNOWS E")
 
-  def indexProps = List()
-
   def section: String = "Skip"
 
   @Test def returnFromThree() {

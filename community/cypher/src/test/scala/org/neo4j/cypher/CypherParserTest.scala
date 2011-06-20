@@ -22,7 +22,7 @@ package org.neo4j.cypher
 import org.neo4j.cypher.commands._
 import org.junit.Assert._
 import org.neo4j.graphdb.Direction
-import org.junit.{Ignore, Test}
+import org.junit.Test
 import org.scalatest.junit.JUnitSuite
 import parser.{ConsoleCypherParser, CypherParser}
 
