@@ -21,7 +21,7 @@ package org.neo4j.cypher.commands
 
 import org.neo4j.cypher.pipes.Pipe
 import org.neo4j.graphdb.{Relationship, PropertyContainer, NotFoundException}
-import org.neo4j.cypher.pipes.aggregation.{SumFunction, CountFunction, CountStarFunction, AggregationFunction}
+import org.neo4j.cypher.pipes.aggregation._
 
 abstract sealed class ReturnItem(val identifier: Identifier) extends (Map[String, Any] => Map[String, Any]) {
   def assertDependencies(source: Pipe)
@@ -98,6 +98,14 @@ case class Count(returnItem:ReturnItem) extends AggregationItem(AggregationIdent
 
 case class Sum(returnItem:ReturnItem) extends AggregationItem(AggregationIdentifier("sum(" + returnItem.columnName + ")")) {
   def createAggregationFunction: AggregationFunction = new SumFunction(returnItem)
+
+  def assertDependencies(source: Pipe) {
+    returnItem.assertDependencies(source)
+  }
+}
+
+case class Avg(returnItem:ReturnItem) extends AggregationItem(AggregationIdentifier("avg(" + returnItem.columnName + ")")) {
+  def createAggregationFunction: AggregationFunction = new AvgFunction(returnItem)
 
   def assertDependencies(source: Pipe) {
     returnItem.assertDependencies(source)

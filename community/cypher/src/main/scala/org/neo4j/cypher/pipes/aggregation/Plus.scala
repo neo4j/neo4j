@@ -21,19 +21,21 @@ package org.neo4j.cypher.pipes.aggregation
  */
 
 trait Plus {
-  def plus(left: Any , right: Any): Any = {
+  def divide(dividend: Any, divisor: Int): Any = dividend match {
+    case x: BigDecimal => x / divisor
+    case x: Byte => x / divisor
+    case x: Double => x / divisor
+    case x: Float => x / divisor
+    case x: Int => x.doubleValue() / divisor
+    case x: Long => x / divisor
+    case x: Short => x / divisor
+  }
+
+  def plus(left: Any, right: Any): Any = {
     (left, right) match {
       case (null, x) => x
       case (x, null) => x
-      case (l: BigDecimal, r: BigDecimal) => l + r
-      case (l: BigDecimal, r: Byte) => l + r
-      case (l: BigDecimal, r: Double) => l + r
-      case (l: BigDecimal, r: Float) => l + r
-      case (l: BigDecimal, r: Int) => l + r
-      case (l: BigDecimal, r: Long) => l + r
-      case (l: BigDecimal, r: Short) => l + r
 
-      case (l: Byte, r: BigDecimal) => r + l
       case (l: Byte, r: Byte) => l + r
       case (l: Byte, r: Double) => l + r
       case (l: Byte, r: Float) => l + r
@@ -41,7 +43,6 @@ trait Plus {
       case (l: Byte, r: Long) => l + r
       case (l: Byte, r: Short) => l + r
 
-      case (l: Double, r: BigDecimal) => r + l
       case (l: Double, r: Byte) => l + r
       case (l: Double, r: Double) => l + r
       case (l: Double, r: Float) => l + r
@@ -49,7 +50,6 @@ trait Plus {
       case (l: Double, r: Long) => l + r
       case (l: Double, r: Short) => l + r
 
-      case (l: Float, r: BigDecimal) => r + l
       case (l: Float, r: Byte) => l + r
       case (l: Float, r: Double) => l + r
       case (l: Float, r: Float) => l + r
@@ -57,7 +57,6 @@ trait Plus {
       case (l: Float, r: Long) => l + r
       case (l: Float, r: Short) => l + r
 
-      case (l: Int, r: BigDecimal) => r + l
       case (l: Int, r: Byte) => l + r
       case (l: Int, r: Double) => l + r
       case (l: Int, r: Float) => l + r
@@ -65,7 +64,6 @@ trait Plus {
       case (l: Int, r: Long) => l + r
       case (l: Int, r: Short) => l + r
 
-      case (l: Long, r: BigDecimal) => r + l
       case (l: Long, r: Byte) => l + r
       case (l: Long, r: Double) => l + r
       case (l: Long, r: Float) => l + r
@@ -73,7 +71,6 @@ trait Plus {
       case (l: Long, r: Long) => l + r
       case (l: Long, r: Short) => l + r
 
-      case (l: Short, r: BigDecimal) => r + l
       case (l: Short, r: Byte) => l + r
       case (l: Short, r: Double) => l + r
       case (l: Short, r: Float) => l + r

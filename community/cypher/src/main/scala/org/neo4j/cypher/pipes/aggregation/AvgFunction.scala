@@ -1,5 +1,3 @@
-package org.neo4j.cypher.parser
-
 /**
  * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -19,29 +17,27 @@ package org.neo4j.cypher.parser
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import org.neo4j.cypher.commands._
-import scala.util.parsing.combinator._
-trait ReturnClause extends JavaTokenParsers with Tokens with ReturnItems {
-  def aggregate:Parser[AggregationItem] = count | sum | avg
+package org.neo4j.cypher.pipes.aggregation
 
+import org.neo4j.cypher.commands.ReturnItem
+import org.neo4j.cypher.SyntaxError
 
-  def returns: Parser[(Return, Option[Aggregation])] = ignoreCase("return") ~> rep1sep((aggregate | returnItem), ",") ^^
-    { case items => {
-      val list = items.filter(_.isInstanceOf[AggregationItem]).map(_.asInstanceOf[AggregationItem])
+class AvgFunction(returnItem: ReturnItem) extends AggregationFunction with Plus {
+  private var count: Int = 0
+  private var sofar: Any = 0
 
-      (
-        Return(items.filter(!_.isInstanceOf[AggregationItem]): _*),
-        list match {
-          case List() => None
-          case _ => Some(Aggregation(list : _*))
-        }
-      )
-    }}
+  def result: Any = divide(sofar, count)
 
+  def apply(data: Map[String, Any]) {
+    val value = returnItem(data).head._2
 
+    value match {
+      case null =>
+      case number: Number => {
+        count = count + 1
+        sofar = plus(sofar, number)
+      }
+      case _ => throw new SyntaxError("AVG can only handle values of Number type, or null.")
+    }
+  }
 }
-
-
-
-
-

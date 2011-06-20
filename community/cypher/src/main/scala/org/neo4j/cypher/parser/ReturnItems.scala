@@ -45,6 +45,11 @@ trait ReturnItems extends JavaTokenParsers with Tokens {
     {
       case r => Sum(r)
     }
+
+  def avg:Parser[AggregationItem] = ignoreCase("avg") ~>"(" ~> returnItem <~ ")" ^^
+    {
+      case r => Avg(r)
+    }
 }
 
 

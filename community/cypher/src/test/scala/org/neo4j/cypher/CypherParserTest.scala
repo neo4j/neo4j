@@ -315,6 +315,16 @@ class CypherParserTest extends JUnitSuite {
         Aggregation(Sum(PropertyOutput("a","age")))))
   }
 
+    @Test def avgTheAgesOfPeople() {
+    testQuery(
+      "start a = (1) match (a) --> (b) return a, b, avg(a.age)",
+      Query(
+        Return(EntityOutput("a"), EntityOutput("b")),
+        Start(NodeById("a", 1)),
+        Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
+        Aggregation(Avg(PropertyOutput("a","age")))))
+  }
+
   @Test def singleColumnSorting() {
     testQuery(
       "start a = (1) return a order by a.name",
