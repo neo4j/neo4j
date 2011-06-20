@@ -108,6 +108,16 @@ class CypherParserTest extends JUnitSuite {
         Equals(PropertyValue("a", "name"), Literal("andres"))))
   }
 
+
+  @Test def shouldFilterOnPropWithDecimals() {
+    testQuery(
+      "start a = (1) where a.foo = 3.1415 return a",
+      Query(
+        Return(EntityOutput("a")),
+        Start(NodeById("a", 1)),
+        Equals(PropertyValue("a", "foo"), Literal(3.1415))))
+  }
+
   @Test def shouldHandleNot() {
     testQuery(
       "start a = (1) where not(a.name = \"andres\") return a",
