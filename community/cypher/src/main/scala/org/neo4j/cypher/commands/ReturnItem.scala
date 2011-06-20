@@ -26,7 +26,7 @@ import org.neo4j.cypher.pipes.aggregation.{CountFunction, CountStarFunction, Agg
 abstract sealed class ReturnItem(val identifier: Identifier) extends (Map[String, Any] => Map[String, Any]) {
   def assertDependencies(source: Pipe)
 
-  def columnName = identifier match { case UnboundIdentifier(name,None) => name; case UnboundIdentifier(name,identifier) => identifier.get.name; case identifier:Identifier => identifier.name; }
+  def columnName = identifier match { case UnboundIdentifier(name,None) => name; case UnboundIdentifier(name,id) => id.get.name; case identifier:Identifier => identifier.name; }
 }
 
 case class EntityOutput(name: String) extends ReturnItem(UnboundIdentifier(name,None)) {
@@ -37,7 +37,7 @@ case class EntityOutput(name: String) extends ReturnItem(UnboundIdentifier(name,
   }
 }
 
-case class PropertyOutput(entity: String, property: String) extends ReturnItem(UnboundIdentifier(entity,Some(PropertyIdentifier(entity, property)))) {
+case class PropertyOutput(entity: String, property: String) extends ReturnItem(PropertyIdentifier(entity, property)) {
   def apply(m: Map[String, Any]): Map[String, Any] = {
     val node = m.getOrElse(entity, throw new NotFoundException).asInstanceOf[PropertyContainer]
     Map(entity + "." + property -> node.getProperty(property))
@@ -48,7 +48,7 @@ case class PropertyOutput(entity: String, property: String) extends ReturnItem(U
   }
 }
 
-case class RelationshipTypeOutput(relationship: String) extends ReturnItem(UnboundIdentifier(relationship,Some(RelationshipTypeIdentifier(relationship)))) {
+case class RelationshipTypeOutput(relationship: String) extends ReturnItem(RelationshipTypeIdentifier(relationship)) {
   def apply(m: Map[String, Any]): Map[String, Any] = {
     val rel = m.getOrElse(relationship, throw new NotFoundException).asInstanceOf[Relationship]
     Map(relationship + ":TYPE" -> rel.getType)
@@ -59,7 +59,7 @@ case class RelationshipTypeOutput(relationship: String) extends ReturnItem(Unbou
   }
 }
 
-case class NullablePropertyOutput(entity: String, property: String) extends ReturnItem(UnboundIdentifier(entity,Some(PropertyIdentifier(entity, property)))) {
+case class NullablePropertyOutput(entity: String, property: String) extends ReturnItem(PropertyIdentifier(entity, property)) {
   def apply(m: Map[String, Any]): Map[String, Any] = {
     val node = m.getOrElse(entity, throw new NotFoundException).asInstanceOf[PropertyContainer]
 

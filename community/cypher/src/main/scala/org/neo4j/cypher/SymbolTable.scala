@@ -39,19 +39,31 @@ class SymbolTable(val identifiers: Set[Identifier]) {
   def get(name: String): Option[Identifier] = identifiers.find(_.name == name)
 
   def merge(other: SymbolTable) : Set[Identifier] = {
-    identifiers ++
-    other.identifiers.map( otherIdentifier => {
-        get(otherIdentifier.name) match {
-          case None => otherIdentifier match {
-            case UnboundIdentifier(_,_) => throw new SyntaxError("Unbound Identifier "+otherIdentifier+" not resolved!")
-            case _ => otherIdentifier
+    def handleUnmatched(newIdentifier: Identifier): Identifier = {
+      newIdentifier match {
+        case UnboundIdentifier(_, _) => throw new SyntaxError("Unbound Identifier " + newIdentifier + " not resolved!")
+        case _ => newIdentifier
+      }
+    }
+    def handleMatched(newIdentifier: Identifier, existingIdentifier: Identifier): Identifier = {
+      newIdentifier match {
+        case UnboundIdentifier(name, None) => existingIdentifier
+        case UnboundIdentifier(name, Some(wrapped)) => wrapped
+        case _ => {
+          if (newIdentifier.getClass == existingIdentifier.getClass) {
+            existingIdentifier
+          } else {
+            throw new SyntaxError("Identifier " + existingIdentifier + " already defined with different type " + newIdentifier)
           }
-          case Some(identifier) => otherIdentifier match {
-            case UnboundIdentifier(name,None) => identifier
-            case UnboundIdentifier(name,Some(wrapped)) => wrapped
-            case _ => if (identifier.getClass == otherIdentifier.getClass) identifier
-                      else throw new SyntaxError("Identifier " + identifier + " already defined with different type "+otherIdentifier)
-          } } } )
+        }
+      }
+    }
+
+    identifiers ++
+    other.identifiers.map( newIdentifier => {
+        get(newIdentifier.name) match {
+          case None => handleUnmatched(newIdentifier)
+          case Some(existingIdentifier) => handleMatched(newIdentifier, existingIdentifier) } } )
   }
 
   def ++(other: SymbolTable): SymbolTable = {
