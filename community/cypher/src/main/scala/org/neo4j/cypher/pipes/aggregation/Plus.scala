@@ -19,8 +19,6 @@ package org.neo4j.cypher.pipes.aggregation
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import org.neo4j.cypher.SyntaxError
-import org.neo4j.cypher.commands.ReturnItem
 
 trait Plus {
   def plus(left: Any , right: Any): Any = {

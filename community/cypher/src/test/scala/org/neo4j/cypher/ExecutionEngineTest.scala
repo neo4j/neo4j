@@ -523,6 +523,23 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
         Map("node.y" -> "b", "count(node.x)" -> 1)))
   }
 
+
+  @Test def shouldSumNonNullValues() {
+    val n1 = createNode(Map("y" -> "a", "x" -> 33))
+    val n2 = createNode(Map("y" -> "a"))
+    val n3 = createNode(Map("y" -> "a", "x" -> 42))
+
+    val query = Query(
+      Return(PropertyOutput("node", "y")),
+      Start(NodeById("node", n1.getId, n2.getId, n3.getId)),
+      Aggregation(Sum(NullablePropertyOutput("node", "x"))))
+
+    val result = execute(query)
+
+    assertThat(result.toList.asJava,
+      hasItems[Map[String, Any]](Map("node.y" -> "a", "sum(node.x)" -> 75)))
+  }
+
   @Test def shouldWalkAlternativeRelationships() {
     val nodes: List[Node] = createNodes("A", "B", "C")
     relate("A" -> "KNOWS" -> "B")
