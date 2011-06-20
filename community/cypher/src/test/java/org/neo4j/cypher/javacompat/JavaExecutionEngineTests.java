@@ -37,10 +37,15 @@ public class JavaExecutionEngineTests
 {
 
     private GraphDatabaseService db;
+    private ExecutionEngine engine;
 
     @Before public void setUp() throws IOException {
+// START SNIPPET: JavaQuery
         db = new ImpermanentGraphDatabase();
+        engine = new ExecutionEngine( db );
+// END SNIPPET: JavaQuery
     }
+
     @Test
     public void exampleQuery() throws Exception
     {
@@ -60,9 +65,8 @@ public class JavaExecutionEngineTests
     @Test
     public void exampleConsole() throws Exception
     {
-        ExecutionEngine engine = new ExecutionEngine( db );
         Query query = CypherParser.parseConsole("start n=(0) where 1=1 return n.name");
-        ExecutionResult result = engine.execute( query );
+        ExecutionResult result = engine.execute(query);
 
         assertThat( result.columns(), hasItem( "n.name" ) );
         Iterator<Object> n_column = result.columnAs( "n.name" );
