@@ -33,7 +33,6 @@ import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.Record;
@@ -309,7 +308,7 @@ class NodeImpl extends Primitive
 
     private void loadInitialRelationships( NodeManager nodeManager )
     {
-        Pair<Map<Long,RelationshipImpl>,Long> rels = null;
+        Triplet<ArrayMap<String, RelIdArray>, Map<Long, RelationshipImpl>, Long> rels = null;
         synchronized ( this )
         {
             if ( relationships == null )
@@ -320,13 +319,13 @@ class NodeImpl extends Primitive
                 this.relationships = toRelIdArray( tmpRelMap );
                 if ( rels != null )
                 {
-                    setRelChainPosition( rels.other() );
+                    setRelChainPosition( rels.third() );
                 }
             }
         }
         if ( rels != null )
         {
-            nodeManager.putAllInRelCache( rels.first() );
+            nodeManager.putAllInRelCache( rels.second() );
         }
     }
 
@@ -346,16 +345,16 @@ class NodeImpl extends Primitive
         return result;
     }
 
-    private Pair<Map<Long,RelationshipImpl>,Long> getMoreRelationships( NodeManager nodeManager, 
-            ArrayMap<String,RelIdArray> tmpRelMap )
+    private Triplet<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>,Long> getMoreRelationships(
+            NodeManager nodeManager, ArrayMap<String,RelIdArray> tmpRelMap )
     {
         if ( !hasMoreRelationshipsToLoad() )
         {
             return null;
         }
-        Triplet<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>,Long> pair = 
+        Triplet<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>,Long> rels = 
             nodeManager.getMoreRelationships( this );
-        ArrayMap<String,RelIdArray> addMap = pair.first();
+        ArrayMap<String,RelIdArray> addMap = rels.first();
         if ( addMap.size() == 0 )
         {
             return null;
@@ -378,7 +377,7 @@ class NodeImpl extends Primitive
                 }
             }
         }
-        return pair.other();
+        return rels;
         // nodeManager.putAllInRelCache( pair.other() );
     }
     
