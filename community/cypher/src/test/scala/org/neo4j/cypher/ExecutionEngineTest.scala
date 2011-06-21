@@ -457,17 +457,20 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
   }
 
   @Test def shouldSortOnAggregatedFunction() {
-    createNodes("A", "B", "C", "D", "E") // start start=(1..1) return start order by max(start.name)
+    val n1 = createNode(Map("name" -> "andres", "divison" -> "Sweden", "age" -> 33))
+    val n2 = createNode(Map("name" -> "michael", "divison" -> "Germany", "age" -> 22))
+    val n3 = createNode(Map("name" -> "jim", "divison" -> "England", "age" -> 55))
+    val n4 = createNode(Map("name" -> "anders", "divison" -> "Sweden", "age" -> 35))
 
     val query = Query(
-      Return(),
-      Start(NodeById("start", nodeIds: _*)),
-      Aggregation(Max(PropertyOutput("start", "name"))),
-      Sort(SortItem(Max(PropertyOutput("start", "name")), true)))
+      Return(PropertyOutput("n", "divison")),
+      Start(NodeById("n", n1.getId, n2.getId, n3.getId, n4.getId)),
+      Aggregation(Max(PropertyOutput("n", "age"))),
+      Sort(SortItem(Max(PropertyOutput("n", "age")), true)))
 
     val result = execute(query)
 
-    assertEquals(List("E"), result.columnAs[String]("max(start.name)").toList)
+    assertEquals(List("Germany", "Sweden", "England"), result.columnAs[String]("n.divison").toList)
   }
 
   @Test def magicRelTypeWorksAsExpected() {

@@ -29,7 +29,7 @@ class AvgFunction(returnItem: ReturnItem) extends AggregationFunction with Plus 
   def result: Any = divide(sofar, count)
 
   def apply(data: Map[String, Any]) {
-    val value = returnItem(data).head._2
+    val value = returnItem(data)(returnItem.columnName)
 
     value match {
       case null =>

@@ -31,7 +31,7 @@ class SumFunction(returnItem:ReturnItem) extends AggregationFunction with Plus {
   }
 
   def apply(data: Map[String, Any]) {
-    val value = returnItem(data).head._2
+    val value = returnItem(data)(returnItem.columnName)
 
     if(value != null && !value.isInstanceOf[Number]) {
       throw new SyntaxError("Sum can only handle values of Number type, or null.")

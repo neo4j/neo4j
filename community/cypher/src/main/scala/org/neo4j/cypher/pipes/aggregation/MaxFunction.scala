@@ -33,7 +33,7 @@ trait MinMax extends AggregationFunction with Comparer {
   def result: Any = biggestSeen
 
   def apply(data: Map[String, Any]) {
-    val value = returnItem(data).head._2
+    val value = returnItem(data)(returnItem.columnName)
 
     try {
       value match {
