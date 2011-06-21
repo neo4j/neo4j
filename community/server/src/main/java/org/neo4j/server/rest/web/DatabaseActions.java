@@ -967,7 +967,7 @@ public class DatabaseActions
         {
             leases.remove(traverserId);
             // Yuck.
-            throw new NotFoundException(String.format("The results for traveser with id [%s] have been fully paged]", traverserId));  
+            throw new NotFoundException(String.format("The results for paged traverser with id [%s] have been fully enumerated", traverserId));  
         }
 
         return new ListRepresentation( returnType.repType, result );
