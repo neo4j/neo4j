@@ -64,5 +64,5 @@ Useful links when configuring the docbook toolchain:
 
 === With brew on OSX ===
 
-  brew install docbook asciidoc w3m fop
+  brew install docbook asciidoc w3m fop graphviz
 
