@@ -429,29 +429,20 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             {
                 command.execute();
             }
-            // nodes
-            java.util.Collections.sort( nodeCommands, sorter );
-            for ( Command.NodeCommand command : nodeCommands )
-            {
-                command.execute();
-            }
-            // relationships
-            java.util.Collections.sort( relCommands, sorter );
-            for ( Command.RelationshipCommand command : relCommands )
-            {
-                command.execute();
-            }
+            // property keys
             java.util.Collections.sort( propIndexCommands, sorter );
             for ( Command.PropertyIndexCommand command : propIndexCommands )
             {
                 command.execute();
             }
-            // properties
+
+            // primitives
+            java.util.Collections.sort( nodeCommands, sorter );
+            java.util.Collections.sort( relCommands, sorter );
             java.util.Collections.sort( propCommands, sorter );
-            for ( Command.PropertyCommand command : propCommands )
-            {
-                command.execute();
-            }
+            executeCreated( propCommands, relCommands, nodeCommands );
+            executeModified( propCommands, relCommands, nodeCommands );
+            executeDeleted( propCommands, relCommands, nodeCommands );
 
             neoStore.setLastCommittedTx( getCommitTxId() );
         }
@@ -468,6 +459,39 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             propIndexCommands.clear();
             relCommands.clear();
             relTypeCommands.clear();
+        }
+    }
+
+    private static void executeCreated( ArrayList<? extends Command>... commands )
+    {
+        for ( ArrayList<? extends Command> c : commands ) for ( Command command : c )
+        {
+            if ( command.isCreated() )
+            {
+                command.execute();
+            }
+        }
+    }
+
+    private static void executeModified( ArrayList<? extends Command>... commands )
+    {
+        for ( ArrayList<? extends Command> c : commands ) for ( Command command : c )
+        {
+            if ( !command.isCreated() && !command.isDeleted() )
+            {
+                command.execute();
+            }
+        }
+    }
+
+    private static void executeDeleted( ArrayList<? extends Command>... commands )
+    {
+        for ( ArrayList<? extends Command> c : commands ) for ( Command command : c )
+        {
+            if ( command.isDeleted() )
+            {
+                command.execute();
+            }
         }
     }
 
