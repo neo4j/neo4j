@@ -55,7 +55,7 @@
 		<replace file="kernel/target/generated-sources/version/org/neo4j/kernel/impl/ComponentVersion.java"
 			 		token="@GITDESCRIBE@" value="${git.describe}"/>
 		<!-- This is to pass the build number on to downstream builds -->
-		<echo message="buildNumber=${buildNumber}" file="artifacts/buildNumber.properties"/>	
+		<echo message="buildNumber=${buildNumber}" file="artifacts/reports/buildNumber.properties"/>	
 	</target>
 	
 	<target name="createPackage" description="Creates package for linux" depends="compile">
@@ -64,7 +64,13 @@
 		<exec executable="mvn" dir="packaging" failonerror="true">
 			<arg value="clean"/>
 			<arg value="package"/>
-		</exec>		
+		</exec>
+		<copy todir="artifacts/binaries">
+			<fileset dir="packaging/target">
+				<include name="*.zip"/>
+				<include name="*.tar.gz"/>
+			</fileset>
+		</copy>		
 	</target>
 	
 	<macrodef name="compileProject" description="Maven installs a single project"> 
