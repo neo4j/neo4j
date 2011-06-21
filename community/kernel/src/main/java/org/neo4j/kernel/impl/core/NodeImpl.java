@@ -457,39 +457,19 @@ class NodeImpl extends Primitive
         // we're about to set it then redo the loop. A kind of lock-free synchronization
         
         String expectedType = addRels.getType();
-        RelIdArray[] safeRelationships = relationships;
-        boolean stay = true;
-        while ( stay )
+        for ( int i = 0; i < relationships.length; i++ )
         {
-            stay = false;
-            for ( int i = 0; i < safeRelationships.length; i++ )
+            if ( relationships[i].getType().equals( expectedType ) )
             {
-                if ( safeRelationships[i].getType().equals( expectedType ) )
-                {
-                    if ( relationships == safeRelationships )
-                    {
-                        safeRelationships[i] = addRels;
-                        return;
-                    }
-                    stay = true;
-                    safeRelationships = relationships;
-                    break;
-                }
+                relationships[i] = addRels;
+                return;
             }
         }
         
-        while ( true )
-        {
-            RelIdArray[] newArray = new RelIdArray[safeRelationships.length+1];
-            System.arraycopy( safeRelationships, 0, newArray, 0, safeRelationships.length );
-            newArray[safeRelationships.length] = addRels;
-            if ( relationships == safeRelationships )
-            {
-                relationships = newArray;
-                break;
-            }
-            safeRelationships = relationships;
-        }
+        RelIdArray[] newArray = new RelIdArray[relationships.length+1];
+        System.arraycopy( relationships, 0, newArray, 0, relationships.length );
+        newArray[relationships.length] = addRels;
+        relationships = newArray;
     }
 
     public Relationship createRelationshipTo( NodeManager nodeManager, Node otherNode,
