@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import static java.lang.System.currentTimeMillis;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -95,48 +93,48 @@ public class TestBufferedFileChannel
         file.delete();
     }
     
-    @Test
-    public void testSpeed() throws Exception
-    {
-        File file = createBigTempFile( 5 );
-        long totalSlow = 0;
-        long totalFast = 0;
-        for ( int i = 0; i < 3; i++ )
-        {
-            long t = currentTimeMillis();
-            readOneByteAtATimeFromNakedChannel( file );
-            totalSlow += currentTimeMillis()-t;
-            t = currentTimeMillis();
-            readOneByteAtATimeFromBufferingChannel( file );
-            totalFast += currentTimeMillis()-t;
-        }
-        assertTrue( totalSlow / totalFast >= 5.0 );
-        file.delete();
-    }
+//    @Test
+//    public void testSpeed() throws Exception
+//    {
+//        File file = createBigTempFile( 5 );
+//        long totalSlow = 0;
+//        long totalFast = 0;
+//        for ( int i = 0; i < 3; i++ )
+//        {
+//            long t = currentTimeMillis();
+//            readOneByteAtATimeFromNakedChannel( file );
+//            totalSlow += currentTimeMillis()-t;
+//            t = currentTimeMillis();
+//            readOneByteAtATimeFromBufferingChannel( file );
+//            totalFast += currentTimeMillis()-t;
+//        }
+//        assertTrue( totalSlow / totalFast >= 5.0 );
+//        file.delete();
+//    }
 
-    private void readOneByteAtATimeFromNakedChannel( File file ) throws IOException
-    {
-        FileChannel channel = new RandomAccessFile( file, "r" ).getChannel();
-        readTheEntireChannel( channel );
-        channel.close();
-    }
-
-    private void readOneByteAtATimeFromBufferingChannel( File file ) throws IOException
-    {
-        FileChannel channel = new RandomAccessFile( file, "r" ).getChannel();
-        FileChannel buffering = new BufferedFileChannel( channel );
-        readTheEntireChannel( buffering );
-        channel.close();
-    }
-    
-    private void readTheEntireChannel( FileChannel buffering ) throws IOException
-    {
-        ByteBuffer buffer = ByteBuffer.wrap( new byte[4] );
-        while ( buffering.read( buffer ) != -1 )
-        {
-            buffer.clear();
-        }
-    }
+//    private void readOneByteAtATimeFromNakedChannel( File file ) throws IOException
+//    {
+//        FileChannel channel = new RandomAccessFile( file, "r" ).getChannel();
+//        readTheEntireChannel( channel );
+//        channel.close();
+//    }
+//
+//    private void readOneByteAtATimeFromBufferingChannel( File file ) throws IOException
+//    {
+//        FileChannel channel = new RandomAccessFile( file, "r" ).getChannel();
+//        FileChannel buffering = new BufferedFileChannel( channel );
+//        readTheEntireChannel( buffering );
+//        channel.close();
+//    }
+//    
+//    private void readTheEntireChannel( FileChannel buffering ) throws IOException
+//    {
+//        ByteBuffer buffer = ByteBuffer.wrap( new byte[4] );
+//        while ( buffering.read( buffer ) != -1 )
+//        {
+//            buffer.clear();
+//        }
+//    }
 
     private File createBigTempFile( int mb ) throws IOException
     {
