@@ -33,22 +33,30 @@ import javax.ws.rs.core.MediaType;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.helpers.ServerHelper;
+import org.neo4j.server.rest.DocsGenerator;
+import org.neo4j.server.rest.DocsGenerator.ResponseEntity;
 import org.neo4j.server.rest.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.test.TestData;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class PagedTraverserFunctionalTest
 {
+    public @Rule
+    TestData<DocsGenerator> docGenerator = TestData.producedThrough( DocsGenerator.PRODUCER );
+
     private static NeoServerWithEmbeddedWebServer server;
     private static FunctionalTestHelper functionalTestHelper;
 
@@ -93,24 +101,83 @@ public class PagedTraverserFunctionalTest
 
         assertNotNull( jsonMap.containsKey( PAGED_TRAVERSE_LINK_REL ) );
         assertThat( String.valueOf( jsonMap.get( PAGED_TRAVERSE_LINK_REL ) ),
-                containsString( "/db/data/node/" + String.valueOf( theStartNode.getId() ) + "/paged/traverse/{returnType}{?pageSize,leaseTime}" ) );
+                containsString( "/db/data/node/" + String.valueOf( theStartNode.getId() )
+                                + "/paged/traverse/{returnType}{?pageSize,leaseTime}" ) );
     }
 
+    /**
+     * Creating a paged traverser. Paged traversers are created by
+     * 
+     * <pre>
+     * POST
+     * </pre>
+     * 
+     * ing a traversal description to the link identified by the
+     * 
+     * <pre>
+     * paged_traverser
+     * </pre>
+     * 
+     * key in a node representation. When creating a paged traverser, the same
+     * options appy as for a regular traverser, meaning that
+     * 
+     * <pre>
+     * node
+     * </pre>
+     * 
+     * ,
+     * 
+     * <pre>path/pre>, or
+     * 
+     * <pre>fullpath/pre>, can be targetted.
+     * 
+     */
+    @Documented
     @Test
     public void shouldPostATraverserWithDefaultOptionsAndReceiveTheFirstPageOfResults() throws Exception
     {
         theStartNode = createLinkedList( SHORT_LIST_LENGTH, server.getDatabase() );
 
-        ClientResponse response = createPagedTraverser();
-
-        assertEquals( 201, response.getStatus() );
-        assertThat( response.getLocation()
+        ResponseEntity entity = docGenerator.get()
+                .expectedType( MediaType.APPLICATION_JSON_TYPE )
+                .expectedHeader( "Location" )
+                .expectedStatus( 201 )
+                .payload( traverserDescription() )
+                .payloadType( MediaType.APPLICATION_JSON_TYPE )
+                .post( functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node" );
+        assertEquals( 201, entity.response()
+                .getStatus() );
+        assertThat( entity.response()
+                .getLocation()
                 .toString(), containsString( "/db/data/node/" + theStartNode.getId() + "/paged/traverse/node/" ) );
-        assertEquals( "application/json", response.getType()
+        assertEquals( "application/json", entity.response()
+                .getType()
                 .toString()
                 .toLowerCase() );
     }
 
+    /**
+     * Paging through the results of a paged traverser. Paged traversers hold
+     * state on the server, and allow clients to page through the results of a
+     * traversal. To progress to the next page of traversal results, the client
+     * issues a HTTP GET request on the paged traversal URI which causes the
+     * traversal to fill the next page (or partially fill it if insufficient
+     * results are available).
+     * 
+     * Note that if a traverser expires through inactivity it will cause a 404
+     * response on the next
+     * 
+     * <pre>
+     * GET
+     * </pre>
+     * 
+     * request. Traversers' leases are renewed on every successful access for
+     * the same amount of time as originally specified.
+     * 
+     * When the paged traverser reaches the end of its results, the client can
+     * expect a 404 response as the traverser is disposed by the server.
+     */
+    @Documented
     @Test
     public void shouldBeAbleToTraverseAllThePagesWithDefaultPageSize()
     {
@@ -122,11 +189,11 @@ public class PagedTraverserFunctionalTest
         for ( int i = 0; i < enoughPagesToExpireTheTraverser; i++ )
         {
 
-            ClientResponse response = Client.create()
-                    .resource( traverserLocation )
-                    .accept( MediaType.APPLICATION_JSON )
-                    .get( ClientResponse.class );
-            assertEquals( 200, response.getStatus() );
+            docGenerator.get()
+                    .expectedType( MediaType.APPLICATION_JSON_TYPE )
+                    .expectedStatus( 200 )
+                    .payload( traverserDescription() )
+                    .get( traverserLocation.toString() );
         }
 
         ClientResponse response = Client.create()
@@ -156,6 +223,18 @@ public class PagedTraverserFunctionalTest
         assertEquals( 404, getResponse.getStatus() );
     }
 
+    /**
+     * Using a different page size. The default page size is 50 items, but
+     * depending on the application larger or smaller pages sizes might be
+     * appropriate. Thes can be set by adding a
+     * 
+     * <pre>
+     * pageSize
+     * </pre>
+     * 
+     * query parameter.
+     */
+    @Documented
     @Test
     public void shouldBeAbleToTraverseAllThePagesWithNonDefaultPageSize()
     {
@@ -181,6 +260,19 @@ public class PagedTraverserFunctionalTest
         assertEquals( 404, response.getStatus() );
     }
 
+    /**
+     * Using a different timeout. The default timeout for a paged traverser is
+     * 60 seconds, but depending on the application larger or smaller timeouts
+     * might be appropriate. This can be set by adding a
+     * 
+     * <pre>
+     * leaseTime
+     * </pre>
+     * 
+     * query parameter with the number of seconds the paged traverser should
+     * last.
+     */
+    @Documented
     @Test
     public void shouldExpireTraverserWithNonDefaultTimeout()
     {
@@ -290,41 +382,35 @@ public class PagedTraverserFunctionalTest
 
     private ClientResponse createPagedTraverserWithTimeoutInMinutes( int leaseTime )
     {
-        String description = traverserDescription();
+        ResponseEntity responseEntity = docGenerator.get()
+                .expectedType( MediaType.APPLICATION_JSON_TYPE )
+                .expectedStatus( 201 )
+                .payload( traverserDescription() )
+                .post( functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?leaseTime="
+                       + String.valueOf( leaseTime ) );
 
-        ClientResponse response = Client.create()
-                .resource(
-                        functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?leaseTime="
-                                + String.valueOf( leaseTime ) )
-                .accept( MediaType.APPLICATION_JSON_TYPE )
-                .entity( description )
-                .post( ClientResponse.class );
-        return response;
+        return responseEntity.response();
     }
 
     private ClientResponse createPagedTraverserWithPageSize( int pageSize )
     {
-        String description = traverserDescription();
+        ResponseEntity responseEntity = docGenerator.get()
+                .expectedType( MediaType.APPLICATION_JSON_TYPE )
+                .expectedStatus( 201 )
+                .payload( traverserDescription() )
+                .post( functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?pageSize="
+                       + String.valueOf( pageSize ) );
 
-        ClientResponse response = Client.create()
-                .resource(
-                        functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?pageSize="
-                                + String.valueOf( pageSize ) )
-                .accept( MediaType.APPLICATION_JSON_TYPE )
-                .entity( description )
-                .post( ClientResponse.class );
-        return response;
+        return responseEntity.response();
     }
 
     private ClientResponse createPagedTraverser()
     {
 
-        String description = traverserDescription();
-
         ClientResponse response = Client.create()
                 .resource( functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node" )
                 .accept( MediaType.APPLICATION_JSON_TYPE )
-                .entity( description )
+                .entity( traverserDescription() )
                 .post( ClientResponse.class );
         return response;
     }
