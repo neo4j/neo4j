@@ -44,16 +44,6 @@
       </includes>
     </fileSet>
     <!-- chmod 755 for unix bins -->
-    <fileSet>
-      <directory>target/wrapper</directory>
-      <outputDirectory>/bin</outputDirectory>
-      <fileMode>0755</fileMode>
-    </fileSet>
-    <fileSet>
-      <directory>target/wrapperlibs</directory>
-      <outputDirectory>/bin/lib</outputDirectory>
-      <fileMode>0755</fileMode>
-    </fileSet>
     <!-- filter and chmod 755 shell scripts -->
     <fileSet>
       <directory>src/main/distribution/shell-scripts</directory>
@@ -109,6 +99,7 @@
         <exclude>*:pom:*</exclude>
         <exclude>org.neo4j:neo4j:jar</exclude>
         <exclude>org.neo4j:neo4j-udc:jar:neo4j</exclude>
+        <exclude>org.neo4j:windows-service-wrapper:*</exclude>
         
         <exclude>org.neo4j:neo4j-advanced</exclude>
         <exclude>org.neo4j:neo4j-community</exclude>
@@ -135,6 +126,7 @@
         <exclude>org.slf4j:slf4j-api</exclude>
         <exclude>org.slf4j:log4j-over-slf4j</exclude>
         <exclude>commons-logging:*</exclude>
+        <exclude>org.neo4j:windows-service-wrapper:*</exclude>
       </excludes>
     </dependencySet>
     <dependencySet>

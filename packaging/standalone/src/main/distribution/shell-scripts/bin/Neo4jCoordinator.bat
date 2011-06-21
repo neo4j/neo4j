@@ -5,100 +5,111 @@ rem
 rem This file is part of Neo4j.
 rem
 rem Neo4j is free software: you can redistribute it and/or modify
-rem it under the terms of the GNU Affero General Public License as
-rem published by the Free Software Foundation, either version 3 of the
-rem License, or (at your option) any later version.
+rem it under the terms of the GNU General Public License as published by
+rem the Free Software Foundation, either version 3 of the License, or
+rem (at your option) any later version.
 rem
 rem This program is distributed in the hope that it will be useful,
 rem but WITHOUT ANY WARRANTY; without even the implied warranty of
 rem MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-rem GNU Affero General Public License for more details.
+rem GNU General Public License for more details.
 rem
-rem You should have received a copy of the GNU Affero General Public License
-rem along with this program. If not, see <http://www.gnu.org/licenses/>.
+rem You should have received a copy of the GNU General Public License
+rem along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-rem
-rem This script is the main controller for the server coordinator
-rem There are commands to install, uninstall, start, stop 
-rem and restart the service on windows and also run it as
-rem a console process. For the first four operations however,
-rem Administrator rights are required.
-rem
-rem To do that, you can go to
-rem
-rem Start -> All Programs -> Accessories -> Right click on Command Prompt
-rem Click "Run as Administrator"
-rem
-rem Provide confirmation and/or the Administrator password if requested.
-rem From the command prompt that will come up, navigate to the directory
-rem containing the unpacked distribution and issue the command you wish,
-rem for example
-rem
-rem bin\Neo4jCoordinator.bat install
-rem
-rem to install Neo4j as a Windows Service.
-rem
+call:main %1
+pause
+goto:eof
 
-setlocal
-call "%~dp0"setenv.bat
+:main
+set command=""
+set serviceName="Neo4jCoordinator"
+set serviceDisplayName="Neo4j HA Coordinator"
+set serviceStartType=auto
+call:parseConfig ..\conf\coord-service.conf
+for /F %%v in ('echo %1^|findstr "^help$ ^start$ ^stop$ ^query$ ^restart$ ^install$ ^remove$"') do set command=%%v
 
-set _WRAPPER_CONF_DEFAULT="..\conf\coord-wrapper.conf"
-set _WRAPPER_CONF=%_WRAPPER_CONF_DEFAULT%
-
-set _REALPATH=%~dp0
-
-
-set _WRAPPER_EXE="%_REALPATH%wrapper.bat"
-
-for /F %%v in ('echo %1^|findstr "^help$ ^console$ ^start$ ^stop$ ^restart$ ^query$ ^install$ ^remove$"') do call :exec set COMMAND=%%v
-
-if "%COMMAND%" == "" (
-    set COMMAND=console
+if %command% == "" (
+    set command=help
 )
 
-goto %COMMAND%
-if errorlevel 1 goto callerror
-goto :eof
+goto:%command%
+if errorlevel 1 goto:callerror
+goto:eof
 
 :callerror
 echo An error occurred in the process.
 pause
-goto :eof
-
-:help
-echo Usage: %0 { console : start : stop : restart : install : remove }
-pause
-goto :eof
-
-:console
-call %wrapper_bat% -c %_WRAPPER_CONF%
-goto :eof
-
-:start
-call %wrapper_bat% -t %_WRAPPER_CONF%
-goto :eof
-
-:stop
-call %wrapper_bat% -p %_WRAPPER_CONF%
-goto :eof
+goto:eof
 
 :query
-call %wrapper_bat% -q %_WRAPPER_CONF%
-goto :eof
+set status=""
+
+rem get the state line from the sc output
+for /F "tokens=1,2 delims=:" %%a in ('sc query %serviceName%^|findstr "STATE"') do set status=%%b
+
+rem Remove ALL space, concatenating the numerical and the string - no prob
+set status=%status: =%
+
+rem done, if non existent it will be empty
+rem note that the strings we compare to normally
+rem have two spaces between numerical and
+rem string description. The substitution
+rem above swallowed these, though
+if "%status%" == "4RUNNING" (
+	set status="RUNNING"
+) else if "%status%" == "1STOPPED" (
+	set status="STOPPED"
+) else (
+	set status="NOT INSTALLED"
+)
+echo %status%
+goto:eof
 
 :install
-call %wrapper_bat% -i %_WRAPPER_CONF%
-goto :eof
+set classpath="-DserverClasspath=lib/zoo*.jar;system/coordinator/lib/*.jar"
+set mainclass="-DserverMainClass=org.apache.zookeeper.server.quorum.QuorumPeerMain"
+set binPath="java "-DworkingDir=%~dp0.." -DconfigFile=conf\neo4j-wrapper.conf %classpath% %mainclass% -jar "%~dp0windows-service-wrapper-1.0.0.jar" %serviceName% start"
+sc create %serviceName% binPath= %binPath% DisplayName= %serviceDisplayName% start= %serviceStartType%
+goto:eof
 
 :remove
-call %wrapper_bat% -r %_WRAPPER_CONF%
-goto :eof
+sc delete %serviceName%
+goto:eof
+
+:start
+sc start %serviceName%
+goto:eof
+
+:stop
+sc stop %serviceName%
+goto:eof
 
 :restart
-call %wrapper_bat% -p %_WRAPPER_CONF%
-call %wrapper_bat% -t %_WRAPPER_CONF%
-goto :eof
+goto:stop
+goto:start
+goto:eof
 
-:exec
-%*
-goto :eof
+:help
+
+goto:eof
+
+rem This function parses the various settings off the
+rem configuration file. #'s are comments and ignored.
+
+:parseConfig
+set confFileName=%1
+
+for /F "tokens=1,2 delims== eol=#" %%a in (%confFileName%) do call:setOption %%a %%b
+goto:eof
+
+rem Factored out switch for setting the variables
+:setOption
+	if "%1"=="wrapper.name" (
+	set serviceName=%2
+	) else if "%1"=="serviceDisplayName" (
+	set serviceDisplayName=%2
+	) else if "%1"=="serviceStartType" (
+	set serviceStartType=%2
+	)
+goto:eof
