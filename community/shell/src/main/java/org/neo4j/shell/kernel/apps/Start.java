@@ -70,7 +70,6 @@ public class Start extends GraphDatabaseApp
         ExecutionEngine engine = new ExecutionEngine( getServer().getDb() );
         try
         {
-            System.out.println( query );
             Query cquery = qparser.parse( query );
             ExecutionResult result = engine.execute( cquery );
             out.print( result.toString());
