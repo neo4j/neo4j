@@ -107,6 +107,8 @@ public class RelIdArray
             }
             else
             {
+                // TODO: instead of always creating a new id block when high bits change
+                // traverse back and try find a fit
                 newLastBlock = new HighIdBlock( highBits );
                 if ( lastBlock != null )
                 {
