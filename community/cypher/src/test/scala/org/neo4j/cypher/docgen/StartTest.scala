@@ -47,7 +47,7 @@ class StartTest extends DocumentingTestBase {
       title = "Multiple nodes by id",
       text = "Multiple nodes are selected by listing them separated by commas.",
       queryText = "start n=(%A%, %B%, %C%) return n",
-      returns = "The reference node is returned",
+      returns = "The nodes listed in the START statement.",
       (p) => assertEquals(List(node("A"), node("B"), node("C")), p.columnAs[Node]("n").toList))
   }
 

@@ -19,37 +19,41 @@
  */
 package org.neo4j.cypher.commands
 
-abstract class Clause
-{
+import org.neo4j.graphdb.PropertyContainer
+
+abstract class Clause {
   def ++(other: Clause): Clause = And(this, other)
 
   def isMatch(m: Map[String, Any]): Boolean
 }
 
-case class And(a: Clause, b: Clause) extends Clause
-{
+case class And(a: Clause, b: Clause) extends Clause {
   def isMatch(m: Map[String, Any]): Boolean = a.isMatch(m) && b.isMatch(m)
 }
 
-case class Or(a: Clause, b: Clause) extends Clause
-{
+case class Or(a: Clause, b: Clause) extends Clause {
   def isMatch(m: Map[String, Any]): Boolean = a.isMatch(m) || b.isMatch(m)
 }
 
-case class Not(a: Clause) extends Clause
-{
+case class Not(a: Clause) extends Clause {
   def isMatch(m: Map[String, Any]): Boolean = !a.isMatch(m)
 }
 
-case class True() extends Clause
-{
+case class True() extends Clause {
   def isMatch(m: Map[String, Any]): Boolean = true
 }
 
-case class RegularExpression(a: Value, str: String) extends Clause
-{
-  def isMatch(m: Map[String, Any]): Boolean =
-  {
+case class Has(property: PropertyValue) extends Clause {
+  def isMatch(m: Map[String, Any]): Boolean = property match {
+    case PropertyValue(identifier, propertyName) => {
+      val propContainer = m(identifier).asInstanceOf[PropertyContainer]
+      propContainer.hasProperty(propertyName)
+    }
+  }
+}
+
+case class RegularExpression(a: Value, str: String) extends Clause {
+  def isMatch(m: Map[String, Any]): Boolean = {
     val value = a.value(m).asInstanceOf[String]
     str.r.pattern.matcher(value).matches()
   }

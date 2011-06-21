@@ -21,7 +21,7 @@ package org.neo4j.cypher
  */
 import org.scalatest.junit.JUnitSuite
 import parser.CypherParser
-import org.junit.{Ignore, Assert, Test}
+import org.junit.{Assert, Test}
 
 
 class SyntaxErrorTest extends JUnitSuite {

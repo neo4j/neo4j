@@ -55,9 +55,9 @@ class MatchTest extends DocumentingTestBase
   @Test def allOutgoingRelationships2()
   {
     testQuery(
-      title = "Directed relationships and variable",
-      text = "If a variable is needed, either for filtering on properties of the relationship, or to return the relationship, " +
-        "this is how you introduce the variable.",
+      title = "Directed relationships and identifier",
+      text = "If an identifier is needed, either for filtering on properties of the relationship, or to return the relationship, " +
+        "this is how you introduce the identifier.",
       queryText = """start n=(%A%) match (n)-[r]->() return r""",
       returns = """All outgoing relationships from node A.""",
       (p) => assertEquals(2, p.size)
@@ -78,9 +78,9 @@ class MatchTest extends DocumentingTestBase
   @Test def relationshipsByType()
   {
     testQuery(
-      title = "Match by relationship type and use a variable",
-      text = "If you both want to introduce a variable to hold the relationship, and specify the relationship type you want, " +
-        "just separate them with a coma.",
+      title = "Match by relationship type and use an identifier",
+      text = "If you both want to introduce an identifier to hold the relationship, and specify the relationship type you want, " +
+        "just separate them with a comma.",
       queryText = """start n=(%A%) match (n)-[r, :BLOCKS]->() return r""",
       returns = """All BLOCK relationship going out from A.""",
       (p) => assertEquals(1, p.size)
