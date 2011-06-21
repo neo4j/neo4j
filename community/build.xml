@@ -64,6 +64,8 @@
 		<exec executable="mvn" dir="packaging" failonerror="true">
 			<arg value="clean"/>
 			<arg value="package"/>
+			<arg value="-f"/>
+			<arg value="pom-with-build-number.xml"/>
 		</exec>
 		<copy todir="artifacts/packages">
 			<fileset dir="packaging/target">
