@@ -217,7 +217,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val query = Query(
       Return(EntityOutput("start")),
       Start(NodeById("start", refNode.getId)),
-      Equals(Literal(1),Literal(0)))
+      Equals(Literal(1), Literal(0)))
 
     val result = execute(query)
 
@@ -456,6 +456,20 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     assertEquals(nodes.slice(2, 4).toList, result.columnAs[Node]("start").toList)
   }
 
+  @Test def shouldSortOnAggregatedFunction() {
+    createNodes("A", "B", "C", "D", "E") // start start=(1..1) return start order by max(start.name)
+
+    val query = Query(
+      Return(),
+      Start(NodeById("start", nodeIds: _*)),
+      Aggregation(Max(PropertyOutput("start", "name"))),
+      Sort(SortItem(Max(PropertyOutput("start", "name")), true)))
+
+    val result = execute(query)
+
+    assertEquals(List("E"), result.columnAs[String]("max(start.name)").toList)
+  }
+
   @Test def magicRelTypeWorksAsExpected() {
     createNodes("A", "B", "C")
     relate("A" -> "KNOWS" -> "B")
@@ -549,11 +563,11 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
       Return(EntityOutput("x")),
       Start(NodeById("n", 1)),
       Match(RelatedTo("n", "x", Some("r"), None, Direction.OUTGOING)),
-      Or(Equals(RelationshipTypeValue("r"),Literal("KNOWS")),Equals(RelationshipTypeValue("r"),Literal("HATES"))))
+      Or(Equals(RelationshipTypeValue("r"), Literal("KNOWS")), Equals(RelationshipTypeValue("r"), Literal("HATES"))))
 
     val result = execute(query)
 
-    assertEquals(nodes.slice(1,3), result.columnAs[Node]("x").toList)
+    assertEquals(nodes.slice(1, 3), result.columnAs[Node]("x").toList)
   }
 
   @Test def shouldWalkAlternativeRelationships2() {
@@ -564,7 +578,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val query = new CypherParser().parse("start n=(1) match (n)-[r]->(x) where r:TYPE='KNOWS' or r:TYPE='HATES' return x")
     val result = execute(query)
 
-    assertEquals(nodes.slice(1,3), result.columnAs[Node]("x").toList)
+    assertEquals(nodes.slice(1, 3), result.columnAs[Node]("x").toList)
   }
 }
 

@@ -27,6 +27,9 @@ object Query {
   def apply(returns:Return, start:Start, aggregation:Aggregation) = new Query(returns, start, None, None, Some(aggregation), None, None)
   def apply(returns:Return, start:Start, sort:Sort) = new Query(returns, start, None, None, None, Some(sort), None)
 
+  def apply(returns:Return, start:Start, aggregation:Aggregation, sort:Sort) = new Query(returns, start, None, None, Some(aggregation), Some(sort), None)
+
+
   def apply(returns:Return, start:Start, matching:Match, where:Clause) = new Query(returns, start, Some(matching), Some(where), None, None, None)
   def apply(returns:Return, start:Start, matching:Match, aggregation:Aggregation) = new Query(returns, start, Some(matching), None, Some(aggregation), None, None)
   def apply(returns:Return, start:Start, matching:Match, sort:Sort) = new Query(returns, start, Some(matching), None, None, Some(sort), None)

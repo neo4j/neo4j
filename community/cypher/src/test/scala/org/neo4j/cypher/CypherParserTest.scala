@@ -109,13 +109,13 @@ class CypherParserTest extends JUnitSuite {
   }
 
 
-  @Test def shouldFilterOutNodesWithoutProperty() {
+  @Test def shouldFilterOutNodesWithoutA() {
     testQuery(
-      "start a = (1) where a.name return a",
+      "start a = (1) where a.name = \"andres\" return a",
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
-        Has(PropertyValue("a", "name"))))
+        Equals(PropertyValue("a", "name"), Literal("andres"))))
   }
 
 
@@ -372,6 +372,15 @@ class CypherParserTest extends JUnitSuite {
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
         Sort(SortItem(PropertyOutput("a", "name"), true))))
+  }
+
+  @Test def sortOnAggregatedColumn() {
+    testQuery(
+      "start a = (1) return a order by avg(a.name)",
+      Query(
+        Return(EntityOutput("a")),
+        Start(NodeById("a", 1)),
+        Sort(SortItem(Avg(PropertyOutput("a", "name")), true))))
   }
 
   @Test def shouldHandleTwoSortColumns() {

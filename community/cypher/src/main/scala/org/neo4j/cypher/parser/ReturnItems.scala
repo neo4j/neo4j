@@ -22,7 +22,6 @@ package org.neo4j.cypher.parser
 
 import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
-import org.neo4j.cypher.SyntaxError
 
 trait ReturnItems extends JavaTokenParsers with Tokens {
   def returnItem: Parser[ReturnItem] = nullablePropertyOutput | relationshipTypeOutput | propertyOutput | nodeOutput

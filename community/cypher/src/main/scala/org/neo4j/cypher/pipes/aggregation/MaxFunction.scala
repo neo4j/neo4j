@@ -35,10 +35,14 @@ trait MinMax extends AggregationFunction with Comparer {
   def apply(data: Map[String, Any]) {
     val value = returnItem(data).head._2
 
-    value match {
-      case null =>
-      case x: Number => checkIfLargest(value)
-      case _ => throw new SyntaxError("MIN/MAX can only handle values of Number type, or null.")
+    try {
+      value match {
+        case null =>
+        case x: Comparable[_] => checkIfLargest(value)
+        case _ => throw new SyntaxError("MIN/MAX can only handle values of Comparable type, or null.")
+      }
+    } catch {
+      case error => throw new SyntaxError("Identifier: %s - %s".format(returnItem.columnName, error.getMessage))
     }
   }
 
