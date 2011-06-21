@@ -19,18 +19,10 @@
  */
 package org.neo4j.server.plugin.cypher;
 
-import static org.junit.Assert.assertTrue;
-
-import java.net.URI;
-import java.util.Map;
-
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.cypher.CypherParser;
-import org.neo4j.cypher.ExecutionEngine;
 import org.neo4j.cypher.SyntaxError;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -45,12 +37,15 @@ import org.neo4j.test.GraphHolder;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestData;
 
+import java.net.URI;
+import java.util.Map;
+
+import static org.junit.Assert.assertTrue;
+
 public class CypherPluginTest implements GraphHolder
 {
 
-    private CypherParser parser;
     private static ImpermanentGraphDatabase db;
-    private ExecutionEngine engine;
     public @Rule
     TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor(
             this, true ) );
@@ -60,9 +55,7 @@ public class CypherPluginTest implements GraphHolder
     @Before
     public void setUp() throws Exception
     {
-        parser = new CypherParser();
         db = new ImpermanentGraphDatabase();
-        engine = new ExecutionEngine( db );
         plugin = new CypherPlugin();
         json = new OutputFormat( new JsonFormat(),
                 new URI( "http://localhost/" ), null );
