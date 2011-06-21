@@ -169,22 +169,6 @@ public class Config
      * This applies to Nodes only.
      */
     @Documented
-    public static final String NODE_KEYS_NON_INDEXABLE = "node_keys_non_indexable";
-    /**
-     * A list of property names (comma separated) that will be ignored by the
-     * auto indexer.
-     * This applies to Relationships only.
-     */
-    @Documented
-    public static final String RELATIONSHIP_KEYS_NON_INDEXABLE = "relationship_keys_non_indexable";
-    /**
-     * Boolean value (one of true, false) that controls the auto indexing
-     * feature for nodes. Setting to false shuts it down unconditionally, while true
-     * enables it for every property, subject to restrictions in the
-     * configuration.
-     * The default is false.
-     */
-    @Documented
     public static final String NODE_AUTO_INDEXING = "node_auto_indexing";
 
     /**
