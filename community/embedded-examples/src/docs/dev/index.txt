@@ -26,3 +26,7 @@ include::social.txt[]
 
 include::entities.txt[]
 
+:leveloffset: 2
+
+include::management.txt[]
+

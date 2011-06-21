@@ -18,15 +18,25 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-define ['./MultiLineInputConsole'], (MultiLineInputConsole) ->
+define ['./Console'], (Console) ->
   
-  class CypherConsole extends MultiLineInputConsole
+  class MultiLineInputConsole extends Console
+    
+    inputBuffer : []
 
-    initialize : (opts) =>
-      @server = opts.server
-      @lang = opts.lang
-      @set {"showPrompt":true},{silent:true}
-  
-    eval : (statement, showStatement=true, includeInHistory=true) =>
-      super statement, showStatement, includeInHistory, "cypher"
+    eval : (statement, showStatement=true, includeInHistory=true, prepend = @lang) =>
+      @set {"showPrompt":false, prompt:""}, {silent:true}
+      if showStatement
+        @pushLines [statement], prepend + "> "
       
+      if statement is ""
+        statement = @inputBuffer.join "\n"
+        @inputBuffer = []
+        @server.manage.console.exec statement, @lang, @parseEvalResult
+      else
+        if includeInHistory
+          @pushHistory statement
+          
+        @inputBuffer.push statement
+        @set {"showPrompt":true}
+   
