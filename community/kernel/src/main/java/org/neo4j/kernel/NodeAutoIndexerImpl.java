@@ -59,12 +59,6 @@ class NodeAutoIndexerImpl extends AbstractAutoIndexerImpl<Node>
     }
 
     @Override
-    protected String getIgnoreConfigListName()
-    {
-        return Config.NODE_KEYS_NON_INDEXABLE;
-    }
-
-    @Override
     protected Index<Node> getIndexInternal()
     {
         return getGraphDbImpl().index().forNodes( NODE_AUTO_INDEX );

@@ -43,7 +43,6 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
         TransactionEventHandler<Void>, AutoIndexer<T>
 {
     private final Set<String> propertyKeysToInclude = new HashSet<String>();
-    private final Set<String> propertyKeysToIgnore = new HashSet<String>();
 
     private final EmbeddedGraphDbImpl gdb;
 
@@ -73,8 +72,6 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
         // Act only if actual state change requested
         if ( enable && !this.enabled )
         {
-            // Check first, enable later
-            checkListConsistency();
             gdb.registerTransactionEventHandler( this );
         }
         else if ( !enable && this.enabled )
@@ -88,52 +85,18 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
     public void startAutoIndexingProperty( String propName )
     {
         propertyKeysToInclude.add( propName );
-        if ( enabled )
-        {
-            checkListConsistency();
-        }
     }
 
     @Override
     public void stopAutoIndexingProperty( String propName )
     {
         propertyKeysToInclude.remove( propName );
-        if ( enabled )
-        {
-            checkListConsistency();
-        }
-    }
-
-    @Override
-    public void startIgnoringProperty( String propName )
-    {
-        propertyKeysToIgnore.add( propName );
-        if ( enabled )
-        {
-            checkListConsistency();
-        }
-    }
-
-    @Override
-    public void stopIgnoringProperty( String propName )
-    {
-        propertyKeysToIgnore.remove( propName );
-        if ( enabled )
-        {
-            checkListConsistency();
-        }
     }
 
     @Override
     public Set<String> getAutoIndexedProperties()
     {
         return Collections.unmodifiableSet( propertyKeysToInclude );
-    }
-
-    @Override
-    public Set<String> getIgnoredProperties()
-    {
-        return Collections.unmodifiableSet( propertyKeysToIgnore );
     }
 
     protected EmbeddedGraphDbImpl getGraphDbImpl()
@@ -181,12 +144,6 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
     protected abstract String getAutoIndexConfigListName();
 
     /**
-     * @return The configuration parameter name that contains the comma
-     *         separated list of properties to ignore for auto indexing.
-     */
-    protected abstract String getIgnoreConfigListName();
-
-    /**
      * @return The configuration parameter name that sets this auto indexer to
      *         enabled/disabled.
      */
@@ -207,7 +164,7 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
      * @param assigned An iterable of PropertyEntries changed during this
      *            transaction for the Primitive type supported
      */
-    private void handlePropertiesDefaultInclude(
+    private void handleProperties(
             Iterable<PropertyEntry<T>> removed,
             Iterable<PropertyEntry<T>> assigned )
     {
@@ -240,48 +197,6 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
     }
 
     /**
-     * Executed when there are ignored properties defined. It ignores only
-     * those defined, indexing anything else.
-     *
-     * @param removed An iterable of PropertyEntries removed during this
-     *            transaction for the Primitive type supported
-     * @param assigned An iterable of PropertyEntries changed during this
-     *            transaction for the Primitive type supported
-     */
-    private void handlePropertiesDefaultIgnore(
-            Iterable<PropertyEntry<T>> removed,
-            Iterable<PropertyEntry<T>> assigned )
-    {
-        final Index<T> nodeIndex = getIndexInternal();
-        for ( PropertyEntry<T> entry : assigned )
-        {
-            if ( !propertyKeysToIgnore.contains( entry.key() ) )
-            {
-                Object previousValue = entry.previouslyCommitedValue();
-                String key = entry.key();
-                if ( previousValue != null )
-                {
-                    nodeIndex.remove( entry.entity(), key, previousValue );
-                }
-                nodeIndex.add( entry.entity(), key, entry.value() );
-            }
-        }
-        for ( PropertyEntry<T> entry : removed )
-        {
-            // will fix thread safety later
-            if ( !propertyKeysToIgnore.contains( entry.key() ) )
-            {
-                Object previouslyCommitedValue = entry.previouslyCommitedValue();
-                if ( previouslyCommitedValue != null )
-                {
-                    nodeIndex.remove( entry.entity(), entry.key(),
-                            previouslyCommitedValue );
-                }
-            }
-        }
-    }
-
-    /**
      * Reads in the configuration from the GraphDbImpl, gets the actual
      * configuration parameter names from the derived implementations and parses
      * the input.
@@ -293,19 +208,6 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
         setEnabled( enable );
 
         propertyKeysToInclude.addAll( parseConfigList( (String) ( config.getParams().get( getAutoIndexConfigListName() ) ) ) );
-        propertyKeysToIgnore.addAll( parseConfigList( (String) ( config.getParams().get( getIgnoreConfigListName() ) ) ) );
-        checkListConsistency();
-    }
-
-    private void checkListConsistency()
-    {
-
-        if ( !propertyKeysToInclude.isEmpty()
-             && !propertyKeysToIgnore.isEmpty() )
-        {
-            throw new IllegalStateException(
-                    "Cannot set both add and ignore lists for node auto indexing" );
-        }
     }
 
     private Set<String> parseConfigList( String list )
@@ -336,25 +238,13 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
     public Void beforeCommit( TransactionData data ) throws Exception
     {
         /*
-         *  If we are enabled, the lists are sane. We depend on this.
-         *  If there are keys to include, then index only those.
-         *  If there are keys to ignore, then index all but those.
-         *  The default is the ignore list, which means that if
-         *  include is empty, default behavior is to index
-         *  everything
+         *  We always have to run this because if there are
+         *  auto indexed properties that now are not monitored
+         *  any more (hence the include set is - possibly - empty)
+         *  then we have to remove them from the auto index.
          */
-        if ( propertyKeysToInclude.size() > 0 )
-        {
-            handlePropertiesDefaultInclude(
-                    getRemovedPropertiesOnCommit( data ),
-                    getAssignedPropertiesOnCommit( data ) );
-        }
-        else
-        {
-            handlePropertiesDefaultIgnore(
-                    getRemovedPropertiesOnCommit( data ),
-                    getAssignedPropertiesOnCommit( data ) );
-        }
+        handleProperties( getRemovedPropertiesOnCommit( data ),
+                getAssignedPropertiesOnCommit( data ) );
         return null;
     }
 

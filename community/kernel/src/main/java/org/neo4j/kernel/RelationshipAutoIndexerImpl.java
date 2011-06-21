@@ -59,12 +59,6 @@ class RelationshipAutoIndexerImpl extends AbstractAutoIndexerImpl<Relationship>
     }
 
     @Override
-    protected String getIgnoreConfigListName()
-    {
-        return Config.RELATIONSHIP_KEYS_NON_INDEXABLE;
-    }
-
-    @Override
     protected Index<Relationship> getIndexInternal()
     {
         return getGraphDbImpl().index().forRelationships(

@@ -43,10 +43,10 @@ public interface AutoIndexer<T extends PropertyContainer>
      * Returns true iff this auto indexer is enabled, false otherwise. For a
      * cursory definition of enabled indexer, look at
      * <code>setAutoIndexingEnabled(boolean)</code>
-     *
+     * 
      * @return true iff this auto indexer is enabled
-     *
-     * @see setAutoIndexingEnabled(boolean)
+     * 
+     * @see setEnabled(boolean)
      */
     boolean isEnabled();
 
@@ -76,40 +76,12 @@ public interface AutoIndexer<T extends PropertyContainer>
     void stopAutoIndexingProperty( String propName );
 
     /**
-     * Start ignoring a property. This could lead to an IllegalStateException
-     * if there are already auto indexed properties. Adding an already ignored
-     * property is a no-op.
-     *
-     * @param propName The property name the auto indexer is supposed to ignore.
-     */
-    void startIgnoringProperty( String propName );
-
-    /**
-     * Removes the argument from the set of ignored properties. If
-     * the property was not already ignored, nothing happens
-     *
-     * @param propName The property name to stop ignoring.
-     */
-    void stopIgnoringProperty( String propName );
-
-    /**
      * Returns the set of property names that are currently monitored for auto
      * indexing. If this auto indexer is set to ignore properties, the result
      * is the empty set.
-     * 
+     *
      * @return An immutable set of the auto indexed property names, possibly
      *         empty.
      */
     Set<String> getAutoIndexedProperties();
-
-    /**
-     * Returns the set of property names that are currently ignored from auto
-     * indexing. If this auto indexer is set to auto index properties, the
-     * result
-     * is the empty set.
-     *
-     * @return An immutable set of the ignored property names, possibly
-     *         empty.
-     */
-    Set<String> getIgnoredProperties();
 }
