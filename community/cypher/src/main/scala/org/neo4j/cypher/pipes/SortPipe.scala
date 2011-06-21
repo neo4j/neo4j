@@ -36,8 +36,8 @@ class SortPipe(source: Pipe,sortDescription: List[SortItem]) extends Pipe with C
     case Nil => false
     case head :: tail => {
       val key = head.returnItem.identifier.name
-      val aVal = head.returnItem(a)(key)
-      val bVal = head.returnItem(b)(key)
+      val aVal = a(key)
+      val bVal = b(key)
       signum(compare(aVal, bVal)) match {
         case 1 => !head.ascending
         case -1 => head.ascending

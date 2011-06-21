@@ -31,6 +31,8 @@ abstract sealed class ReturnItem(val identifier: Identifier) extends (Map[String
     case UnboundIdentifier(name, id) => id.get.name;
     case identifier: Identifier => identifier.name;
   }
+
+  def concreteReturnItem = this
 }
 
 case class EntityOutput(name: String) extends ReturnItem(UnboundIdentifier(name, None)) {
@@ -127,4 +129,5 @@ trait InnerReturnItem extends AggregationItem {
   def assertDependencies(source: Pipe) {
     inner.assertDependencies(source)
   }
+  override def concreteReturnItem = inner
 }

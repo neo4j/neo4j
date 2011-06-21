@@ -45,19 +45,24 @@ class ExecutionEngine(graph: GraphDatabaseService) {
         case Some(w) => pipe = new FilterPipe(pipe, w)
       }
 
-      pipe = new TransformPipe(pipe, returns.returnItems)
+      val allReturnItems = returns.returnItems ++
+        aggregation.getOrElse(new Aggregation()).aggregationItems.map(_.concreteReturnItem) ++
+        sort.getOrElse(new Sort()).sortItems.map(_.returnItem.concreteReturnItem)
+
+      pipe = new TransformPipe(pipe, allReturnItems)
 
       aggregation match {
         case None =>
         case Some(aggr) => {
-          pipe = new TransformPipe(pipe, aggr.aggregationItems)
           pipe = new AggregationPipe(pipe, returns.returnItems, aggr.aggregationItems)
         }
       }
 
       sort match {
         case None =>
-        case Some(s) => pipe = new SortPipe(pipe, s.sortItems.toList)
+        case Some(s) => {
+          pipe = new SortPipe(pipe, s.sortItems.toList)
+        }
       }
 
       slice match {
