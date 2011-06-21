@@ -139,7 +139,3 @@ abstract class DocumentingTestBase extends JUnitSuite {
     tx.finish()
   }
 }
-
-trait AggregationTest extends DocumentingTestBase {
-  override def path = super.path + "/aggregation/"
-}

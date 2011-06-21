@@ -1,4 +1,4 @@
-package org.neo4j.cypher.docgen.aggregation
+package org.neo4j.cypher.docgen
 
 /**
  * Copyright (c) 2002-2011 "Neo Technology,"
@@ -19,21 +19,21 @@ package org.neo4j.cypher.docgen.aggregation
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 import org.junit.Test
 import org.junit.Assert._
-import org.neo4j.cypher.docgen.{AggregationTest, DocumentingTestBase}
 
-class CountTest extends DocumentingTestBase with AggregationTest {
+class AggregationTest extends DocumentingTestBase {
   def graphDescription = List("A KNOWS B", "A KNOWS C", "A KNOWS D")
 
 
   override val properties: Map[String, Map[String, Any]] = Map(
-    "A"->Map("property"->13),
-    "B"->Map("property"->33),
-    "C"->Map("property"->44)
+    "A" -> Map("property" -> 13),
+    "B" -> Map("property" -> 33),
+    "C" -> Map("property" -> 44)
   )
 
-  def section = "Count"
+  def section = "Aggregation"
 
   @Test def countNodes() {
     testQuery(
@@ -61,6 +61,40 @@ class CountTest extends DocumentingTestBase with AggregationTest {
       queryText = "start n=(%A%,%B%,%C%,%D%) return count(n.property?)",
       returns = "The start node and the count of related nodes.",
       (p) => assertEquals(Map("count(n.property)" -> 3), p.toList.head))
+  }
+
+  @Test def sumProperty() {
+    testQuery(
+      title = "Sum properties",
+      text = "This is an example of how you can use SUM.",
+      queryText = "start n=(%A%,%B%,%C%) return sum(n.property)",
+      returns = "The sum of all the values in the property 'property'.",
+      (p) => assertEquals(Map("sum(n.property)" -> (13 + 33 + 44)), p.toList.head))
+  }
+
+  @Test def avg() {
+    testQuery(
+      title = "Avg",
+      text = "AVG calculates the average of a numeric column.",
+      queryText = "start n=(%A%,%B%,%C%) return avg(n.property)",
+      returns = "The average of all the values in the property 'property'.",
+      (p) => assertEquals(Map("avg(n.property)" -> 30), p.toList.head))
+  }
+  @Test def min() {
+    testQuery(
+      title = "Min",
+      text = "MIN takes a numeric property as input, and returns the smallest value in that column.",
+      queryText = "start n=(%A%,%B%,%C%) return min(n.property)",
+      returns = "The smallest of all the values in the property 'property'.",
+      (p) => assertEquals(Map("min(n.property)" -> 13), p.toList.head))
+  }
+  @Test def max() {
+    testQuery(
+      title = "Max",
+      text = "MAX find the largets value in a numeric column.",
+      queryText = "start n=(%A%,%B%,%C%) return max(n.property)",
+      returns = "The largest of all the values in the property 'property'.",
+      (p) => assertEquals(Map("max(n.property)" -> 44), p.toList.head))
   }
 
 }

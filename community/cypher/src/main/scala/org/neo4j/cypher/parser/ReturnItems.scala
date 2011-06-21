@@ -53,7 +53,6 @@ trait ReturnItems extends JavaTokenParsers with Tokens {
     case "max" ~ "(" ~ inner ~ ")" => Max(inner)
     case "sum" ~ "(" ~ inner ~ ")" => Sum(inner)
     case "avg" ~ "(" ~ inner ~ ")" => Avg(inner)
-    case x ~ "(" ~ inner ~ ")" => throw new SyntaxError("No such function found.")
   }
 
   def countStar: Parser[AggregationItem] = ignoreCase("count") ~> "(*)" ^^ {

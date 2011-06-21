@@ -1,6 +1,0 @@
-[[aggregation-sum]]
-Sum
-===
-The SUM aggregation function simply sums all the values it encounters. Null values are silently dropped.
-
-include::sum-properties.txt[]

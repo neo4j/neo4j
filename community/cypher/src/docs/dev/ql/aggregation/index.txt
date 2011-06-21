@@ -2,12 +2,34 @@
 Aggregation
 ===========
 
-To calculate aggregated data, Cypher offers a few aggregation functions.
+To calculate aggregated data, Cypher offers a aggregation, much like SQL's GROUP BY.
+If any aggregation functions are found in the RETURN statement, all the columns without aggregating functions are used as the grouping key.
 
-:leveloffset: 2
+== COUNT ==
+COUNT is used to count the number of rows. COUNT can be used in two forms - COUNT(*)
+which just counts the number of matching rows, and COUNT(<identifier>), which counts
+the number of non-null values in <identifier>.
 
-include::count/index.txt[]
+include::count-nodes.txt[]
+include::count-entities.txt[]
+include::count-non-null-values.txt[]
 
-:leveloffset: 2
+== SUM ==
+The SUM aggregation function simply sums all the numeric values it encounters. Null values are silently dropped.
 
-include::sum/index.txt[]
+include::sum-properties.txt[]
+
+== AVG ==
+AVG calculates the average of a numeric column.
+
+include::avg.txt[]
+
+== MAX ==
+Returns the largest value.
+
+include::max.txt[]
+
+== MIN ==
+Returns the smallest value.
+
+include::min.txt[]
