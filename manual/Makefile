@@ -157,6 +157,8 @@ docbook-html:  manpages copyimages
 	#
 	mkdir -p $(BUILDDIR)
 	asciidoc $(ASCIIDOC_FLAGS) --backend docbook --attribute docinfo1 --doctype book --conf-file=$(CONFDIR)/asciidoc.conf --conf-file=$(CONFDIR)/docbook45.conf --conf-file=$(CONFDIR)/linkedimages.conf --out-file $(DOCBOOKFILEHTML) $(SRCFILE)
+	# replacing svg files with png files by dirty hack
+	sed -i 's/.svg"/.png"/g' $(DOCBOOKFILEHTML)
 	xmllint --nonet --noout --xinclude --postvalid $(DOCBOOKFILEHTML)
 
 pdf:  docbook copyimages
@@ -165,7 +167,7 @@ pdf:  docbook copyimages
 	# Building PDF.
 	#
 	#
-	sed 's/\&#8594;/\&#8211;\&gt;/g' <$(DOCBOOKFILE) >$(DOCBOOKFILEPDF)
+	sed -e 's/\&#8594;/\&#8211;\&gt;/g' -e 's/\&#8592;/\&lt;\&#8211;/g' <$(DOCBOOKFILE) >$(DOCBOOKFILEPDF)
 	mkdir -p $(FOPDIR)
 	cd $(FOPDIR)
 	xsltproc --xinclude --output $(FOPFILE) $(CONFDIR)/fo.xsl $(DOCBOOKFILEPDF)

@@ -16,7 +16,15 @@ The simplest possible graph is a single Node, a record that has named values ref
 A Node could start with a single Property and grow to a few million, though that can get a little awkward. 
 At some point it makes sense to distribute the data into multiple nodes, organized with explicit Relationships.
 
-image::G_V_E.png[scaledwidth="7cm"]
+["dot", "graphdb-GVE.svg"]
+----
+"Graph" [fillcolor="NODEHIGHLIGHT"]
+"Graph" -> Nodes [label="records data in" weight=2.0]
+"Graph" -> Relationships [label="records data in" weight=2.0]
+Nodes -> Relationships [label="organized by"]
+Nodes -> Properties [label="have"]
+Relationships -> Properties [label="have"]
+----
 
 == Relationships organize the Graph ==
 
@@ -35,7 +43,16 @@ ____
 
 A Traversal is how you query a Graph, navigating from starting Nodes to related Nodes according to an algorithm, finding answers to questions like ``what music do my friends like that I don't yet own,'' or ``if this power supply goes down, what web services are affected?''
 
-image::Traversal.png[scaledwidth="11cm"]
+["dot", "graphdb-traversal.svg"]
+----
+Traversal [fillcolor="NODEHIGHLIGHT"]
+Nodes -> Relationships [label="organized by"]
+"Graph" -> Nodes [label="records data in"]
+"Graph" -> Relationships [label="records data in"]
+Traversal -> Paths [label="navigates" weight=2.0]
+Traversal -> Algorithm [label="expresses"]
+Paths -> Nodes [label="order" weight=2.0]
+----
 
 
 == Indexes look-up Nodes or Relationships ==
@@ -47,7 +64,16 @@ ____
 Often, you want to find a specific Node or Relationship according to a Property it has.
 Rather than traversing the entire graph, use an Index to perform a look-up, for questions like ``find the Account for username master-of-graphs.''
 
-image::Indexes.png[scaledwidth="12cm"]
+["dot", "graphdb-indexes.svg"]
+----
+"Indexes" [fillcolor="NODEHIGHLIGHT"]
+Nodes -> Relationships [label="organized by"]
+Nodes -> Properties [label="have"]
+Relationships -> Properties [label="have"]
+Indexes -> Nodes [label="map to" weight=2.0]
+Indexes -> Relationships [label="map to" weight=2.0]
+Indexes -> Properties [label="map from" weight=2.0]
+----
 
 == Neo4j is a Graph Database ==
 
@@ -59,5 +85,21 @@ Neo4j is a commercially supported open-source graph database.
 It was designed and built from the ground-up to be a reliable database, optimized for graph structures instead of tables. 
 Working with Neo4j, your application gets all the expressiveness of a graph, with all the dependability you expect out of a database.
 
-image::Overview.svg[scaledwidth="100%"]
+["dot", "graphdb-overview.svg", scaledwidth="75%"]
+----
+"Graph Database" [fillcolor="NODEHIGHLIGHT"]
+Nodes -> Relationships [label="organized by"]
+Nodes -> Properties [label="have"]
+Relationships -> Properties [label="have"]
+"Graph Database" -> "Graph" [label="manages"]
+"Graph" -> Nodes [label="records data in"]
+"Graph" -> Relationships [label="records data in"]
+"Graph Database" -> Indexes [label="manages"]
+Indexes -> Nodes [label="map to"]
+Indexes -> Relationships [label="map to"]
+Indexes -> Properties [label="map from"]  
+Traversal -> Paths [label="navigates"]
+Traversal -> Algorithm [label="expresses"]
+Paths -> Nodes [label="order"]
+----
 
