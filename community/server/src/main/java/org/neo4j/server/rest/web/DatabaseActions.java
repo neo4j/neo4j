@@ -80,11 +80,11 @@ import org.neo4j.server.rest.repr.WeightedPathRepresentation;
 public class DatabaseActions
 {
     private final AbstractGraphDatabase graphDb;
-    private final LeaseManager<PagedTraverser> leases;
+    private final LeaseManager leases;
 
-    public DatabaseActions( Database database, Clock clock )
+    public DatabaseActions( Database database, LeaseManager leaseManager)
     {
-        this.leases = new LeaseManager<PagedTraverser>( clock);
+        this.leases = leaseManager;
         this.graphDb = database.graph;
     }
 
@@ -946,7 +946,7 @@ public class DatabaseActions
 
     public ListRepresentation pagedTraverse( String traverserId, TraverserReturnType returnType)
     {
-        Lease<PagedTraverser> lease = leases.getLeaseById( traverserId );
+        Lease lease = leases.getLeaseById( traverserId );
         if(lease == null) {
             throw new NotFoundException( String.format("The traverser with id [%s] was not found", traverserId) );
         }

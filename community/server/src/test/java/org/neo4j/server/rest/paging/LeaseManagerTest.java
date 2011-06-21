@@ -21,34 +21,31 @@ package org.neo4j.server.rest.paging;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.mockito.Mockito.mock;
 
 import org.junit.Test;
-import org.neo4j.server.rest.paging.Leasable;
-import org.neo4j.server.rest.paging.Lease;
-import org.neo4j.server.rest.paging.LeaseManager;
 
 public class LeaseManagerTest
 {
     private static final long SIXTY_SECONDS = 60;
-    private static class LeasableObject implements Leasable {}
 
 
     @Test
     public void shouldNotAcceptLeasesWithNegativeTTL() throws Exception
     {
         FakeClock fakeClock = new FakeClock();
-        LeaseManager<LeasableObject> manager = new LeaseManager<LeasableObject>( fakeClock );
-        assertNull( manager.createLease( -1l, new LeasableObject() ) );
-        assertNull( manager.createLease( Long.MAX_VALUE + 1, new LeasableObject() ) );
+        LeaseManager manager = new LeaseManager( fakeClock );
+        assertNull( manager.createLease( -1l, mock(PagedTraverser.class)) );
+        assertNull( manager.createLease( Long.MAX_VALUE + 1, mock(PagedTraverser.class) ) );
     }
 
     @Test
     public void shouldRetrieveAnExistingLeaseImmediatelyAfterCreation() throws Exception
     {
         FakeClock fakeClock = new FakeClock();
-        LeaseManager<LeasableObject> manager = new LeaseManager<LeasableObject>( fakeClock );
+        LeaseManager manager = new LeaseManager( fakeClock );
 
-        Lease<LeasableObject> lease = manager.createLease( SIXTY_SECONDS, new LeasableObject() );
+        Lease lease = manager.createLease( SIXTY_SECONDS, mock(PagedTraverser.class) );
 
         assertNotNull( manager.getLeaseById( lease.getId() ) );
 
@@ -58,9 +55,9 @@ public class LeaseManagerTest
     public void shouldRetrieveAnExistingLeaseSomeTimeAfterCreation() throws Exception
     {
         FakeClock fakeClock = new FakeClock();
-        LeaseManager<LeasableObject> manager = new LeaseManager<LeasableObject>( fakeClock );
+        LeaseManager manager = new LeaseManager( fakeClock );
 
-        Lease<LeasableObject> lease = manager.createLease( 120, new LeasableObject() );
+        Lease lease = manager.createLease( 120, mock(PagedTraverser.class) );
         
         fakeClock.forwardMinutes( 1 );
 
@@ -72,9 +69,9 @@ public class LeaseManagerTest
     public void shouldNotRetrieveALeaseAfterItExpired() throws Exception
     {
         FakeClock fakeClock = new FakeClock();
-        LeaseManager<LeasableObject> manager = new LeaseManager<LeasableObject>( fakeClock );
+        LeaseManager manager = new LeaseManager( fakeClock );
 
-        Lease<LeasableObject> lease = manager.createLease( SIXTY_SECONDS, new LeasableObject() );
+        Lease lease = manager.createLease( SIXTY_SECONDS, mock(PagedTraverser.class));
 
         fakeClock.forwardMinutes( 2 );
 
@@ -85,10 +82,10 @@ public class LeaseManagerTest
     public void shouldNotBarfWhenAnotherThreadOrRetrieveRevokesTheLease() throws Exception
     {
         FakeClock fakeClock = new FakeClock();
-        LeaseManager<LeasableObject> manager = new LeaseManager<LeasableObject>( fakeClock );
+        LeaseManager manager = new LeaseManager( fakeClock );
 
-        Lease<LeasableObject> leaseA = manager.createLease( SIXTY_SECONDS, new LeasableObject() );
-        Lease<LeasableObject> leaseB = manager.createLease( SIXTY_SECONDS * 3, new LeasableObject() );
+        Lease leaseA = manager.createLease( SIXTY_SECONDS, mock(PagedTraverser.class) );
+        Lease leaseB = manager.createLease( SIXTY_SECONDS * 3, mock(PagedTraverser.class) );
 
         fakeClock.forwardMinutes( 2 );
 

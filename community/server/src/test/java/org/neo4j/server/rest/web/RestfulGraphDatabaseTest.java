@@ -62,6 +62,8 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.domain.TraverserReturnType;
 import org.neo4j.server.rest.paging.Clock;
 import org.neo4j.server.rest.paging.FakeClock;
+import org.neo4j.server.rest.paging.LeaseManager;
+import org.neo4j.server.rest.paging.PagedTraverser;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
@@ -76,7 +78,7 @@ public class RestfulGraphDatabaseTest
     private static GraphDbHelper helper;
     private static EntityOutputFormat output;
     private static String databasePath;
-    private static Clock clock;
+    private static LeaseManager leaseManager;
 
     @BeforeClass
     public static void doBefore() throws IOException
@@ -85,8 +87,8 @@ public class RestfulGraphDatabaseTest
         database = new Database( ServerTestUtils.EMBEDDED_GRAPH_DATABASE_FACTORY, databasePath );
         helper = new GraphDbHelper( database );
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
-        clock = new FakeClock();
-        service = new RestfulGraphDatabase( uriInfo(), database, new JsonFormat(), output, clock );
+        leaseManager = new LeaseManager(new FakeClock());
+        service = new RestfulGraphDatabase( uriInfo(), database, new JsonFormat(), output, leaseManager );
     }
     
     @Before

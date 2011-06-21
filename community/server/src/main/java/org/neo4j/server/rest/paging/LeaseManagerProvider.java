@@ -23,16 +23,19 @@ import org.neo4j.server.database.AbstractInjectableProvider;
 
 import com.sun.jersey.api.core.HttpContext;
 
-public class RealClockProvider extends AbstractInjectableProvider<Clock>
+public class LeaseManagerProvider extends AbstractInjectableProvider<LeaseManager>
 {
-    public RealClockProvider()
+    private static final LeaseManager leaseManager = new LeaseManager( new RealClock() );
+    
+    public LeaseManagerProvider()
     {
-        super(Clock.class);
+        super(LeaseManager.class);
     }
 
     @Override
-    public Clock getValue( HttpContext arg0 )
+    public LeaseManager getValue( HttpContext arg0 )
     {
-        return new RealClock();
+        
+        return leaseManager;
     }
 }

@@ -58,6 +58,8 @@ import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.StartNodeNotFoundException;
 import org.neo4j.server.rest.domain.TraverserReturnType;
 import org.neo4j.server.rest.paging.FakeClock;
+import org.neo4j.server.rest.paging.LeaseManager;
+import org.neo4j.server.rest.paging.PagedTraverser;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.NodeRepresentation;
@@ -72,6 +74,7 @@ public class DatabaseActionsTest
     private static GraphDbHelper graphdbHelper;
     private static Database database;
     private static String databasePath;
+    private static LeaseManager leaseManager;
 
     @BeforeClass
     public static void clearDb() throws IOException
@@ -80,7 +83,8 @@ public class DatabaseActionsTest
         database = new Database( ServerTestUtils.EMBEDDED_GRAPH_DATABASE_FACTORY, databasePath );
 
         graphdbHelper = new GraphDbHelper( database );
-        actions = new DatabaseActions( database, new FakeClock() );
+        leaseManager = new LeaseManager(new FakeClock());
+        actions = new DatabaseActions( database,  leaseManager);
     }
 
     @AfterClass

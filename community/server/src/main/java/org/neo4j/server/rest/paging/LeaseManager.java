@@ -22,32 +22,34 @@ package org.neo4j.server.rest.paging;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class LeaseManager<T extends Leasable>
-{
+public class LeaseManager
+{   
     private final Clock clock;
-    private Map<String, Lease<T>> leases = new ConcurrentHashMap<String, Lease<T>>();
-
+    private Map<String, Lease> leases = new ConcurrentHashMap<String, Lease>();
+    
+    
     public LeaseManager( Clock clock )
     {
         this.clock = clock;
     }
 
-    public Lease<T> createLease( long seconds, T leasedObject ) throws LeaseAlreadyExpiredException
-    {
+    public Lease createLease( long seconds, PagedTraverser leasedObject ) throws LeaseAlreadyExpiredException
+    {        
         if ( seconds < 1 )
         {
             return null;
         }
 
-        Lease<T> lease = new Lease<T>( leasedObject, seconds, clock );
+        Lease lease = new Lease( leasedObject, seconds, clock );
         leases.put( lease.getId(), lease );
+        
         return lease;
     }
 
-    public Lease<T> getLeaseById( String id )
+    public Lease getLeaseById( String id )
     {
         pruneOldLeasesByNaivelyIteratingThroughAllOfThem();
-        Lease<T> lease = leases.get( id );
+        Lease lease = leases.get( id );
         
         if(lease!= null) {
             lease.renew();
@@ -62,7 +64,7 @@ public class LeaseManager<T extends Leasable>
         {
             try
             {
-                Lease<T> lease = leases.get( key );
+                Lease lease = leases.get( key );
                 if ( lease.getStartTime() + lease.getPeriod() < clock.currentTimeInMilliseconds() )
                 {
                     leases.remove( key );
@@ -74,5 +76,10 @@ public class LeaseManager<T extends Leasable>
                 // thread already nuked the lease
             }
         }
+    }
+
+    public Clock getClock()
+    {
+        return clock;
     }
 }

@@ -40,7 +40,6 @@ import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.Uniqueness;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.rest.paging.PagedTraverser;
 
 public class PagedTraverserTest
 {

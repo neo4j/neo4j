@@ -21,15 +21,15 @@ package org.neo4j.server.rest.paging;
 
 import java.util.UUID;
 
-public class Lease<T extends Leasable>
+public class Lease
 {
     private long startTime;
-    public final T leasedItem;
+    public final PagedTraverser leasedTraverser;
     private final String id;
     private long leasePeriod;
     private final Clock clock;
 
-    Lease( T leasedItem, long leasePeriodInSeconds, Clock clock ) throws LeaseAlreadyExpiredException
+    Lease( PagedTraverser leasedTraverser, long leasePeriodInSeconds, Clock clock ) throws LeaseAlreadyExpiredException
     {
         if ( leasePeriodInSeconds < 0 )
         {
@@ -38,7 +38,7 @@ public class Lease<T extends Leasable>
         }
 
         this.clock = clock;
-        this.leasedItem = leasedItem;
+        this.leasedTraverser = leasedTraverser;
         this.startTime = clock.currentTimeInMilliseconds();
         this.leasePeriod = leasePeriodInSeconds * 1000;
         this.id = toHexOnly( UUID.randomUUID() );
@@ -55,10 +55,10 @@ public class Lease<T extends Leasable>
                 .replaceAll( "-", "" );
     }
 
-    public T getLeasedItemAndRenewLease()
+    public PagedTraverser getLeasedItemAndRenewLease()
     {
         renew();
-        return leasedItem;
+        return leasedTraverser;
     }
 
     public void renew()

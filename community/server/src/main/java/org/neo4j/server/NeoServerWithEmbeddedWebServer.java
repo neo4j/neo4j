@@ -37,14 +37,14 @@ import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.plugins.PluginManager;
-import org.neo4j.server.rest.paging.Clock;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 import org.neo4j.server.web.WebServer;
 
-public class NeoServerWithEmbeddedWebServer implements NeoServer {
+public class NeoServerWithEmbeddedWebServer implements NeoServer
+{
 
-    public static final Logger log = Logger.getLogger(NeoServerWithEmbeddedWebServer.class);
+    public static final Logger log = Logger.getLogger( NeoServerWithEmbeddedWebServer.class );
 
     private Configurator configurator;
     private Database database;
@@ -57,35 +57,29 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
     private PluginInitializer pluginInitializer;
     private final Bootstrapper bootstrapper;
 
-    private final Clock clock;
-
     public NeoServerWithEmbeddedWebServer( Bootstrapper bootstrapper, AddressResolver addressResolver,
             StartupHealthCheck startupHealthCheck, Configurator configurator, WebServer webServer,
-            Iterable<Class<? extends ServerModule>> moduleClasses, Clock clock )
+            Iterable<Class<? extends ServerModule>> moduleClasses )
     {
+
         this.bootstrapper = bootstrapper;
         this.addressResolver = addressResolver;
         this.startupHealthCheck = startupHealthCheck;
         this.configurator = configurator;
         this.webServer = webServer;
-        this.clock = clock;
-        
+
         webServer.setNeoServer( this );
         for ( Class<? extends ServerModule> moduleClass : moduleClasses )
         {
             registerModule( moduleClass );
         }
     }
-//
-//    public NeoServerWithEmbeddedWebServer( Bootstrapper bootstrapper, StartupHealthCheck startupHealthCheck,
-//            Configurator configurator, WebServer ws, Iterable<Class<? extends ServerModule>> mc )
-//    {
-//        this( bootstrapper, new AddressResolver(), startupHealthCheck, configurator, ws, mc );
-//    }
 
     @Override
-    public void start() {
-        // Start at the bottom of the stack and work upwards to the Web container
+    public void start()
+    {
+        // Start at the bottom of the stack and work upwards to the Web
+        // container
         startupHealthCheck();
 
         initWebServer();
@@ -100,7 +94,8 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
     }
 
     /**
-     *  Initializes individual plugins using the mechanism provided via @{see PluginInitializer} and the java service locator
+     * Initializes individual plugins using the mechanism provided via @{see
+     * PluginInitializer} and the java service locator
      */
     protected void startExtensionInitialization()
     {
@@ -109,105 +104,137 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
 
     /**
      * Use this method to register server modules from subclasses
+     * 
      * @param clazz
      */
-    protected final void registerModule(Class<? extends ServerModule> clazz) {
-        try {
-            serverModules.add(clazz.newInstance());
-        } catch (Exception e) {
+    protected final void registerModule( Class<? extends ServerModule> clazz )
+    {
+        try
+        {
+            serverModules.add( clazz.newInstance() );
+        }
+        catch ( Exception e )
+        {
             log.warn( "Failed to instantiate server module [%s], reason: %s", clazz.getName(), e.getMessage() );
         }
     }
 
-    private void startModules() {
-        for(ServerModule module : serverModules) {
-            module.start(this);
+    private void startModules()
+    {
+        for ( ServerModule module : serverModules )
+        {
+            module.start( this );
         }
     }
 
-    private void stopModules() {
-        for(ServerModule module : serverModules) {
+    private void stopModules()
+    {
+        for ( ServerModule module : serverModules )
+        {
 
-            try{
+            try
+            {
                 module.stop();
             }
-            catch(Exception e)
+            catch ( Exception e )
             {
-               log.error( e );
+                log.error( e );
             }
         }
     }
 
-    private void startupHealthCheck() {
-        if (!startupHealthCheck.run()) {
-            throw new StartupHealthCheckFailedException(startupHealthCheck.failedRule());
+    private void startupHealthCheck()
+    {
+        if ( !startupHealthCheck.run() )
+        {
+            throw new StartupHealthCheckFailedException( startupHealthCheck.failedRule() );
         }
     }
 
-    private void startDatabase() {
-        String dbLocation = new File(configurator.configuration().getString(Configurator.DATABASE_LOCATION_PROPERTY_KEY)).getAbsolutePath();
+    private void startDatabase()
+    {
+        String dbLocation = new File( configurator.configuration()
+                .getString( Configurator.DATABASE_LOCATION_PROPERTY_KEY ) ).getAbsolutePath();
         GraphDatabaseFactory dbFactory = bootstrapper.getGraphDatabaseFactory( configurator.configuration() );
         Map<String, String> databaseTuningProperties = configurator.getDatabaseTuningProperties();
-        if (databaseTuningProperties != null) {
+        if ( databaseTuningProperties != null )
+        {
             this.database = new Database( dbFactory, dbLocation, databaseTuningProperties );
-        } else {
+        }
+        else
+        {
             this.database = new Database( dbFactory, dbLocation );
         }
     }
 
     @Override
-    public Configuration getConfiguration() {
+    public Configuration getConfiguration()
+    {
         return configurator.configuration();
     }
 
-    private void initWebServer() {
+    private void initWebServer()
+    {
 
         int webServerPort = getWebServerPort();
 
-        log.info("Starting Neo Server on port [%s]", webServerPort);
-        webServer.setPort(webServerPort);
+        log.info( "Starting Neo Server on port [%s]", webServerPort );
+        webServer.setPort( webServerPort );
         webServer.init();
     }
 
-
-    private void startWebServer() {
-        try {
+    private void startWebServer()
+    {
+        try
+        {
             webServer.start();
             log.info( "Server started on [%s]", baseUri() );
-        } catch (Exception e) {
+        }
+        catch ( Exception e )
+        {
             e.printStackTrace();
-            log.error("Failed to start Neo Server on port [%d], reason [%s]", getWebServerPort(), e.getMessage());
+            log.error( "Failed to start Neo Server on port [%d], reason [%s]", getWebServerPort(), e.getMessage() );
         }
     }
 
-    protected int getWebServerPort() {
-        return configurator.configuration().getInt(Configurator.WEBSERVER_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_PORT);
+    protected int getWebServerPort()
+    {
+        return configurator.configuration()
+                .getInt( Configurator.WEBSERVER_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_PORT );
     }
 
     @Override
-    public void stop() {
-        try {
+    public void stop()
+    {
+        try
+        {
             stopServer();
             stopDatabase();
-            log.info("Successfully shutdown database [%s]", getDatabase().getLocation());
-        } catch (Exception e) {
-            log.warn("Failed to cleanly shutdown database [%s]. Reason: %s", getDatabase().getLocation(),
-                    e.getMessage());
+            log.info( "Successfully shutdown database [%s]", getDatabase().getLocation() );
+        }
+        catch ( Exception e )
+        {
+            log.warn( "Failed to cleanly shutdown database [%s]. Reason: %s", getDatabase().getLocation(),
+                    e.getMessage() );
         }
     }
-    
+
     /**
      * Stops everything but the database.
      */
-    public void stopServer() {
-        try {
+    public void stopServer()
+    {
+        try
+        {
             stopWebServer();
             stopModules();
             stopExtensionInitializers();
-            log.info("Successfully shutdown Neo Server on port [%d]", getWebServerPort(), getDatabase().getLocation());
-        } catch (Exception e) {
-            log.warn("Failed to cleanly shutdown Neo Server on port [%d], database [%s]. Reason: %s", getWebServerPort(), getDatabase().getLocation(),
-                    e.getMessage());
+            log.info( "Successfully shutdown Neo Server on port [%d]", getWebServerPort(), getDatabase().getLocation() );
+        }
+        catch ( Exception e )
+        {
+            log.warn( "Failed to cleanly shutdown Neo Server on port [%d], database [%s]. Reason: %s",
+                    getWebServerPort(), getDatabase().getLocation(), e.getMessage() );
         }
     }
 
@@ -216,66 +243,82 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
      */
     private void stopExtensionInitializers()
     {
-        pluginInitializer.stop(  );
+        pluginInitializer.stop();
     }
 
-    private void stopWebServer() {
-        if (webServer != null) {
+    private void stopWebServer()
+    {
+        if ( webServer != null )
+        {
             webServer.stop();
         }
     }
 
-    private void stopDatabase() {
-        if (database != null) {
+    private void stopDatabase()
+    {
+        if ( database != null )
+        {
             database.shutdown();
         }
     }
 
     @Override
-    public Database getDatabase() {
+    public Database getDatabase()
+    {
         return database;
     }
 
-
     @Override
-    public URI baseUri() {
+    public URI baseUri()
+    {
         StringBuilder sb = new StringBuilder();
-        sb.append("http");
+        sb.append( "http" );
         int webServerPort = getWebServerPort();
-        if (webServerPort == 443) {
-            sb.append("s");
+        if ( webServerPort == 443 )
+        {
+            sb.append( "s" );
 
         }
-        sb.append("://");
-        sb.append(addressResolver.getHostname());
+        sb.append( "://" );
+        sb.append( addressResolver.getHostname() );
 
-        if (webServerPort != 80) {
-            sb.append(":");
-            sb.append(webServerPort);
+        if ( webServerPort != 80 )
+        {
+            sb.append( ":" );
+            sb.append( webServerPort );
         }
-        sb.append("/");
+        sb.append( "/" );
 
-        try {
-            return new URI(sb.toString());
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
+        try
+        {
+            return new URI( sb.toString() );
+        }
+        catch ( URISyntaxException e )
+        {
+            throw new RuntimeException( e );
         }
     }
 
-    public WebServer getWebServer() {
+    public WebServer getWebServer()
+    {
         return webServer;
     }
 
     @Override
-    public Configurator getConfigurator() {
+    public Configurator getConfigurator()
+    {
         return configurator;
     }
 
     @Override
-    public PluginManager getExtensionManager() {
-        if(hasModule(RESTApiModule.class)) {
-            return getModule(RESTApiModule.class).getPlugins();
-        } else {
+    public PluginManager getExtensionManager()
+    {
+        if ( hasModule( RESTApiModule.class ) )
+        {
+            return getModule( RESTApiModule.class ).getPlugins();
+        }
+        else
+        {
             return null;
         }
     }
@@ -286,24 +329,29 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer {
         return pluginInitializer.intitializePackages( packageNames );
     }
 
-    private boolean hasModule(Class<? extends ServerModule> clazz) {
-        for(ServerModule sm : serverModules) {
-            if(sm.getClass() == clazz) {
+    private boolean hasModule( Class<? extends ServerModule> clazz )
+    {
+        for ( ServerModule sm : serverModules )
+        {
+            if ( sm.getClass() == clazz )
+            {
                 return true;
             }
         }
         return false;
     }
 
-    @SuppressWarnings("unchecked")
-    private <T extends ServerModule> T getModule(Class<T> clazz) {
-        for(ServerModule sm : serverModules) {
-            if(sm.getClass() == clazz) {
+    @SuppressWarnings( "unchecked" )
+    private <T extends ServerModule> T getModule( Class<T> clazz )
+    {
+        for ( ServerModule sm : serverModules )
+        {
+            if ( sm.getClass() == clazz )
+            {
                 return (T) sm;
             }
         }
 
         return null;
     }
-
 }

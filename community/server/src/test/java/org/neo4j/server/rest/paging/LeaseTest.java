@@ -25,9 +25,7 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.server.rest.paging.HexMatcher.containsOnlyHex;
 
 import org.junit.Test;
-import org.neo4j.server.rest.paging.Leasable;
-import org.neo4j.server.rest.paging.Lease;
-import org.neo4j.server.rest.paging.LeaseAlreadyExpiredException;
+import static org.mockito.Mockito.*;
 
 public class LeaseTest
 {
@@ -37,7 +35,7 @@ public class LeaseTest
     @Test
     public void shouldReturnHexIdentifierString() throws Exception
     {
-        Lease<Leasable> lease = new Lease<Leasable>( new Leasable() {}, SIXTY_SECONDS, new FakeClock() );
+        Lease lease = new Lease( mock( PagedTraverser.class ), SIXTY_SECONDS, new FakeClock() );
         assertThat( lease.getId(), containsOnlyHex() );
     }
 
@@ -45,7 +43,7 @@ public class LeaseTest
     public void shouldNotAllowLeasesInThePast() throws Exception
     {
         FakeClock clock = new FakeClock();
-        new Lease<Leasable>( new Leasable(){}, oneMinuteInThePast(), clock );
+        new Lease( mock( PagedTraverser.class ), oneMinuteInThePast(), clock );
     }
 
     private long oneMinuteInThePast()
@@ -57,7 +55,7 @@ public class LeaseTest
     public void leasesShouldExpire() throws Exception
     {
         FakeClock clock = new FakeClock();
-        Lease<Leasable> lease = new Lease<Leasable>( new Leasable(){}, SIXTY_SECONDS, clock );
+        Lease lease = new Lease( mock( PagedTraverser.class ), SIXTY_SECONDS, clock );
         clock.forwardMinutes( 10 );
         assertTrue( lease.expired() );
     }
@@ -66,11 +64,12 @@ public class LeaseTest
     public void shouldRenewLeaseForSamePeriod()
     {
         FakeClock clock = new FakeClock();
-        Lease<Leasable> lease = new Lease<Leasable>( new Leasable(){}, SIXTY_SECONDS, clock );
+        Lease lease = new Lease( mock( PagedTraverser.class ), SIXTY_SECONDS, clock );
 
         clock.forwardSeconds( THIRTY_SECONDS );
 
-        lease.getLeasedItemAndRenewLease(); // has side effect of renewing the lease
+        lease.getLeasedItemAndRenewLease(); // has side effect of renewing the
+                                            // lease
 
         clock.forwardSeconds( 30 );
         assertFalse( lease.expired() );

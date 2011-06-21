@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
@@ -35,11 +36,14 @@ public class PagedTraverserFunctionalTest
 
     private Node theStartNode;
     private static final String PAGED_TRAVERSE_LINK_REL = "paged_traverse";
+    private int lONG_LIST_LENGTH = 1234;
 
     @BeforeClass
     public static void setupServer() throws IOException
     {
-        server = ServerBuilder.server().withFakeClock().build();
+        server = ServerBuilder.server()
+                //.withFakeClock()
+                .build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper( server );
     }
@@ -48,8 +52,7 @@ public class PagedTraverserFunctionalTest
     public void setupTheDatabase() throws Exception
     {
         ServerHelper.cleanTheDatabase( server );
-        final int LONG_LIST_LENGTH = 123;
-        theStartNode = createLinkedList( LONG_LIST_LENGTH, server.getDatabase() );
+        theStartNode = createLinkedList( lONG_LIST_LENGTH, server.getDatabase() );
     }
 
     @AfterClass
@@ -68,7 +71,6 @@ public class PagedTraverserFunctionalTest
 
         Map<String, Object> jsonMap = JsonHelper.jsonToMap( response.getEntity( String.class ) );
 
-        
         assertNotNull( jsonMap.containsKey( PAGED_TRAVERSE_LINK_REL ) );
         assertThat( String.valueOf( jsonMap.get( PAGED_TRAVERSE_LINK_REL ) ),
                 containsString( "/db/data/node/1/paged/traverse/{returnType}{?pageSize,leaseTime}" ) );
@@ -77,15 +79,43 @@ public class PagedTraverserFunctionalTest
     @Test
     public void shouldPostATraverserWithDefaultOptionsAndReceiveTheFirstPageOfResults() throws Exception
     {
-        ClientResponse response = Client.create()
-                .resource(
-                        functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node/")
-                .accept( MediaType.APPLICATION_JSON_TYPE )
-                .post( ClientResponse.class );
+        ClientResponse response = createPagedTraverser();
 
-        assertEquals(201, response.getStatus() );
-        assertThat(response.getLocation().toString(), containsString("/db/data/node/" + theStartNode.getId() + "/paged/traverse/node/"));
-        assertEquals("application/json", response.getType().toString().toLowerCase());
+        assertEquals( 201, response.getStatus() );
+        assertThat( response.getLocation()
+                .toString(), containsString( "/db/data/node/" + theStartNode.getId() + "/paged/traverse/node/" ) );
+        assertEquals( "application/json", response.getType()
+                .toString()
+                .toLowerCase() );
+    }
+
+    @Test
+    public void shouldBeAbleToTraverseAllThePagesWithDefaultPageSize()
+    {
+        URI traverserLocation = createPagedTraverser().getLocation();
+        
+        System.out.println(traverserLocation);
+        
+        ClientResponse response = Client.create().resource( traverserLocation ).accept( MediaType.APPLICATION_JSON ).get( ClientResponse.class );
+        assertEquals(200, response.getStatus());
+    }
+
+    private ClientResponse createPagedTraverser()
+    {
+
+        String description = "{"
+                                 + "\"prune evaluator\":{\"language\":\"builtin\",\"name\":\"none\"},"
+                                 + "\"return filter\":{\"language\":\"javascript\",\"body\":\"position.endNode().getProperty('name').contains('1');\"},"
+                                 + "\"order\":\"depth first\","
+                                 + "\"relationships\":{\"type\":\"NEXT\",\"direction\":\"out\"}" + "}";
+
+        
+        ClientResponse response = Client.create()
+                .resource( functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node/" )
+                .accept( MediaType.APPLICATION_JSON_TYPE )
+                .entity( description )
+                .post( ClientResponse.class );
+        return response;
     }
 
     private Node createLinkedList( int listLength, Database db )
@@ -98,6 +128,7 @@ public class PagedTraverserFunctionalTest
             for ( int i = 0; i < listLength; i++ )
             {
                 Node current = db.graph.createNode();
+                current.setProperty( "name", String.valueOf( i ) );
 
                 if ( previous != null )
                 {

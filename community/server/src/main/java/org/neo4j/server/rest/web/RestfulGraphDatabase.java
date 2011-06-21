@@ -45,6 +45,8 @@ import org.neo4j.server.rest.domain.EndNodeNotFoundException;
 import org.neo4j.server.rest.domain.StartNodeNotFoundException;
 import org.neo4j.server.rest.domain.TraverserReturnType;
 import org.neo4j.server.rest.paging.Clock;
+import org.neo4j.server.rest.paging.LeaseManager;
+import org.neo4j.server.rest.paging.PagedTraverser;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.OutputFormat;
@@ -102,7 +104,7 @@ public class RestfulGraphDatabase
     private static final String SIXTY_SECONDS = "60";
     private static final String FIFTY = "50";
 
-    private final DatabaseActions server;
+    private final DatabaseActions actions;
     private final OutputFormat output;
     private final InputFormat input;
     private final UriInfo uriInfo;
@@ -111,12 +113,12 @@ public class RestfulGraphDatabase
     public static final String PATH_TO_PAGED_TRAVERSERS = PATH_NODE + "/paged/traverse/{returnType}/{traverserId}";
 
     public RestfulGraphDatabase( @Context UriInfo uriInfo, @Context Database database, @Context InputFormat input,
-            @Context OutputFormat output, @Context Clock clock )
+            @Context OutputFormat output, @Context LeaseManager leaseManager)
     {
         this.uriInfo = uriInfo;
         this.input = input;
         this.output = output;
-        this.server = new DatabaseActions( database, clock );
+        this.actions = new DatabaseActions( database, leaseManager );
     }
 
     private static Response nothing()
@@ -144,7 +146,7 @@ public class RestfulGraphDatabase
     @GET
     public Response getRoot()
     {
-        return output.ok( server.root() );
+        return output.ok( actions.root() );
     }
 
     // Nodes
@@ -155,7 +157,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            return output.created( server.createNode( input.readMap( body ) ) );
+            return output.created( actions.createNode( input.readMap( body ) ) );
         }
         catch ( ArrayStoreException ase )
         {
@@ -181,7 +183,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            return output.ok( server.getNode( nodeId ) );
+            return output.ok( actions.getNode( nodeId ) );
         }
         catch ( NodeNotFoundException e )
         {
@@ -195,7 +197,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            server.deleteNode( nodeId );
+            actions.deleteNode( nodeId );
             return nothing();
         }
         catch ( NodeNotFoundException e )
@@ -216,7 +218,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            server.setAllNodeProperties( nodeId, input.readMap( body ) );
+            actions.setAllNodeProperties( nodeId, input.readMap( body ) );
         }
         catch ( BadInputException e )
         {
@@ -240,7 +242,7 @@ public class RestfulGraphDatabase
         final PropertiesRepresentation properties;
         try
         {
-            properties = server.getAllNodeProperties( nodeId );
+            properties = actions.getAllNodeProperties( nodeId );
         }
         catch ( NodeNotFoundException e )
         {
@@ -261,7 +263,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            server.setNodeProperty( nodeId, key, input.readValue( body ) );
+            actions.setNodeProperty( nodeId, key, input.readValue( body ) );
         }
         catch ( BadInputException e )
         {
@@ -284,7 +286,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            return output.ok( server.getNodeProperty( nodeId, key ) );
+            return output.ok( actions.getNodeProperty( nodeId, key ) );
         }
         catch ( NodeNotFoundException e )
         {
@@ -302,7 +304,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            server.removeNodeProperty( nodeId, key );
+            actions.removeNodeProperty( nodeId, key );
         }
         catch ( NodeNotFoundException e )
         {
@@ -321,7 +323,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            server.removeAllNodeProperties( nodeId );
+            actions.removeAllNodeProperties( nodeId );
         }
         catch ( NodeNotFoundException e )
         {
@@ -358,7 +360,7 @@ public class RestfulGraphDatabase
         }
         try
         {
-            return output.created( server.createRelationship( startNodeId, endNodeId, type, properties ) );
+            return output.created( actions.createRelationship( startNodeId, endNodeId, type, properties ) );
         }
         catch ( StartNodeNotFoundException e )
         {
@@ -384,7 +386,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            return output.ok( server.getRelationship( relationshipId ) );
+            return output.ok( actions.getRelationship( relationshipId ) );
         }
         catch ( RelationshipNotFoundException e )
         {
@@ -398,7 +400,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            server.deleteRelationship( relationshipId );
+            actions.deleteRelationship( relationshipId );
         }
         catch ( RelationshipNotFoundException e )
         {
@@ -414,7 +416,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            return output.ok( server.getNodeRelationships( nodeId, direction, Collections.<String>emptyList() ) );
+            return output.ok( actions.getNodeRelationships( nodeId, direction, Collections.<String>emptyList() ) );
         }
         catch ( NodeNotFoundException e )
         {
@@ -430,7 +432,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            return output.ok( server.getNodeRelationships( nodeId, direction, types ) );
+            return output.ok( actions.getNodeRelationships( nodeId, direction, types ) );
         }
         catch ( NodeNotFoundException e )
         {
@@ -447,7 +449,7 @@ public class RestfulGraphDatabase
         final PropertiesRepresentation properties;
         try
         {
-            properties = server.getAllRelationshipProperties( relationshipId );
+            properties = actions.getAllRelationshipProperties( relationshipId );
         }
         catch ( RelationshipNotFoundException e )
         {
@@ -470,7 +472,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            return output.ok( server.getRelationshipProperty( relationshipId, key ) );
+            return output.ok( actions.getRelationshipProperty( relationshipId, key ) );
         }
         catch ( RelationshipNotFoundException e )
         {
@@ -489,7 +491,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            server.setAllRelationshipProperties( relationshipId, input.readMap( body ) );
+            actions.setAllRelationshipProperties( relationshipId, input.readMap( body ) );
         }
         catch ( BadInputException e )
         {
@@ -510,7 +512,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            server.setRelationshipProperty( relationshipId, key, input.readValue( body ) );
+            actions.setRelationshipProperty( relationshipId, key, input.readValue( body ) );
         }
         catch ( BadInputException e )
         {
@@ -529,7 +531,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            server.removeAllRelationshipProperties( relationshipId );
+            actions.removeAllRelationshipProperties( relationshipId );
         }
         catch ( RelationshipNotFoundException e )
         {
@@ -545,7 +547,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            server.removeRelationshipProperty( relationshipId, key );
+            actions.removeRelationshipProperty( relationshipId, key );
         }
         catch ( RelationshipNotFoundException e )
         {
@@ -564,11 +566,11 @@ public class RestfulGraphDatabase
     @Path( PATH_NODE_INDEX )
     public Response getNodeIndexRoot()
     {
-        if ( server.getNodeIndexNames().length == 0 )
+        if ( actions.getNodeIndexNames().length == 0 )
         {
             return output.noContent();
         }
-        return output.ok( server.nodeIndexRoot() );
+        return output.ok( actions.nodeIndexRoot() );
     }
 
     @POST
@@ -578,7 +580,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            return output.created( server.createNodeIndex( input.readMap( json ) ) );
+            return output.created( actions.createNodeIndex( input.readMap( json ) ) );
         }
         catch ( BadInputException e )
         {
@@ -590,11 +592,11 @@ public class RestfulGraphDatabase
     @Path( PATH_RELATIONSHIP_INDEX )
     public Response getRelationshipIndexRoot()
     {
-        if ( server.getRelationshipIndexNames().length == 0 )
+        if ( actions.getRelationshipIndexNames().length == 0 )
         {
             return output.noContent();
         }
-        return output.ok( server.relationshipIndexRoot() );
+        return output.ok( actions.relationshipIndexRoot() );
     }
 
     @POST
@@ -604,7 +606,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            return output.created( server.createRelationshipIndex( input.readMap( json ) ) );
+            return output.created( actions.createRelationshipIndex( input.readMap( json ) ) );
         }
         catch ( BadInputException e )
         {
@@ -623,7 +625,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            return output.ok( server.getIndexedNodesByQuery( indexName, query ) );
+            return output.ok( actions.getIndexedNodesByQuery( indexName, query ) );
         }
         catch ( NotFoundException nfe )
         {
@@ -640,7 +642,7 @@ public class RestfulGraphDatabase
     @Consumes( MediaType.APPLICATION_JSON )
     public Response deleteNodeIndex( @PathParam( "indexName" ) String indexName )
     {
-        server.removeNodeIndex( indexName );
+        actions.removeNodeIndex( indexName );
         return output.noContent();
     }
 
@@ -649,7 +651,7 @@ public class RestfulGraphDatabase
     @Consumes( MediaType.APPLICATION_JSON )
     public Response deleteRelationshipIndex( @PathParam( "indexName" ) String indexName )
     {
-        server.removeRelationshipIndex( indexName );
+        actions.removeRelationshipIndex( indexName );
         return output.noContent();
     }
 
@@ -661,7 +663,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            return output.created( server.addToNodeIndex( indexName, key, value,
+            return output.created( actions.addToNodeIndex( indexName, key, value,
                     extractNodeId( input.readUri( objectUri )
                             .toString() ) ) );
         }
@@ -682,7 +684,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            return output.created( server.addToRelationshipIndex( indexName, key, value,
+            return output.created( actions.addToRelationshipIndex( indexName, key, value,
                     extractNodeId( input.readUri( objectUri )
                             .toString() ) ) );
         }
@@ -703,7 +705,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            return output.ok( server.getIndexedNode( indexName, key, value, id ) );
+            return output.ok( actions.getIndexedNode( indexName, key, value, id ) );
         }
         catch ( NotFoundException nfe )
         {
@@ -720,7 +722,7 @@ public class RestfulGraphDatabase
     public Response getRelationshipFromIndexUri( @PathParam( "indexName" ) String indexName,
             @PathParam( "key" ) String key, @PathParam( "value" ) String value, @PathParam( "id" ) long id )
     {
-        return output.ok( server.getIndexedRelationship( indexName, key, value, id ) );
+        return output.ok( actions.getIndexedRelationship( indexName, key, value, id ) );
     }
 
     @GET
@@ -730,7 +732,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            return output.ok( server.getIndexedNodesByExactMatch( indexName, key, value ) );
+            return output.ok( actions.getIndexedNodesByExactMatch( indexName, key, value ) );
         }
         catch ( NotFoundException nfe )
         {
@@ -749,7 +751,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            return output.ok( server.getIndexedNodesByQuery( indexName, key, query ) );
+            return output.ok( actions.getIndexedNodesByQuery( indexName, key, query ) );
         }
         catch ( NotFoundException nfe )
         {
@@ -768,7 +770,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            return output.ok( server.getIndexedRelationships( indexName, key, value ) );
+            return output.ok( actions.getIndexedRelationships( indexName, key, value ) );
         }
         catch ( NotFoundException nfe )
         {
@@ -787,7 +789,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            return output.ok( server.getIndexedRelationshipsByQuery( indexName, query ) );
+            return output.ok( actions.getIndexedRelationshipsByQuery( indexName, query ) );
         }
         catch ( NotFoundException nfe )
         {
@@ -806,7 +808,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            return output.ok( server.getIndexedRelationshipsByQuery( indexName, key, query ) );
+            return output.ok( actions.getIndexedRelationshipsByQuery( indexName, key, query ) );
         }
         catch ( NotFoundException nfe )
         {
@@ -825,7 +827,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            server.removeFromNodeIndex( indexName, key, value, id );
+            actions.removeFromNodeIndex( indexName, key, value, id );
             return nothing();
         }
         catch ( NotFoundException nfe )
@@ -845,7 +847,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            server.removeFromNodeIndexNoValue( indexName, key, id );
+            actions.removeFromNodeIndexNoValue( indexName, key, id );
             return nothing();
         }
         catch ( NotFoundException nfe )
@@ -865,7 +867,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            server.removeFromNodeIndexNoKeyValue( indexName, id );
+            actions.removeFromNodeIndexNoKeyValue( indexName, id );
             return nothing();
         }
         catch ( NotFoundException nfe )
@@ -885,7 +887,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            server.removeFromRelationshipIndex( indexName, key, value, id );
+            actions.removeFromRelationshipIndex( indexName, key, value, id );
             return nothing();
         }
         catch ( NotFoundException nfe )
@@ -905,7 +907,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            server.removeFromRelationshipIndexNoValue( indexName, key, id );
+            actions.removeFromRelationshipIndexNoValue( indexName, key, id );
             return nothing();
         }
         catch ( NotFoundException nfe )
@@ -925,7 +927,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            server.removeFromRelationshipIndexNoKeyValue( indexName, id );
+            actions.removeFromRelationshipIndexNoKeyValue( indexName, id );
             return nothing();
         }
         catch ( NotFoundException nfe )
@@ -947,7 +949,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            return output.ok( server.traverse( startNode, input.readMap( body ), returnType ) );
+            return output.ok( actions.traverse( startNode, input.readMap( body ), returnType ) );
         }
         catch ( BadInputException e )
         {
@@ -968,7 +970,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            String responseBody = output.format( server.pagedTraverse( traverserId, returnType ) );
+            String responseBody = output.format( actions.pagedTraverse( traverserId, returnType ) );
 
             return Response.ok( uriInfo.getRequestUri() )
                     .entity( responseBody )
@@ -989,10 +991,10 @@ public class RestfulGraphDatabase
     {
         try
         {
-            String traverserId = server.createPagedTraverser( startNode, input.readMap( body ), pageSize,
+            String traverserId = actions.createPagedTraverser( startNode, input.readMap( body ), pageSize,
                     leaseTimeInSeconds );
 
-            String responseBody = output.format( server.pagedTraverse( traverserId, returnType ) );
+            String responseBody = output.format( actions.pagedTraverse( traverserId, returnType ) );
 
             URI uri = new URI( uriInfo.getBaseUri()
                     .toString() + "node/" + startNode + "/paged/traverse/" + returnType + "/" + traverserId );
@@ -1025,7 +1027,7 @@ public class RestfulGraphDatabase
         {
             description = input.readMap( body );
             endNode = extractNodeId( (String) description.get( "to" ) );
-            return output.ok( server.findSinglePath( startNode, endNode, description ) );
+            return output.ok( actions.findSinglePath( startNode, endNode, description ) );
         }
         catch ( BadInputException e )
         {
@@ -1052,7 +1054,7 @@ public class RestfulGraphDatabase
         {
             description = input.readMap( body );
             endNode = extractNodeId( (String) description.get( "to" ) );
-            return output.ok( server.findPaths( startNode, endNode, description ) );
+            return output.ok( actions.findPaths( startNode, endNode, description ) );
         }
         catch ( BadInputException e )
         {

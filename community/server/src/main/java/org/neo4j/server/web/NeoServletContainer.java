@@ -31,7 +31,7 @@ import org.neo4j.server.database.DatabaseProvider;
 import org.neo4j.server.database.GraphDatabaseServiceProvider;
 import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.plugins.PluginInvocatorProvider;
-import org.neo4j.server.rest.paging.RealClockProvider;
+import org.neo4j.server.rest.paging.LeaseManagerProvider;
 import org.neo4j.server.rest.repr.InputFormatProvider;
 import org.neo4j.server.rest.repr.OutputFormatProvider;
 import org.neo4j.server.rest.repr.RepresentationFormatRepository;
@@ -58,7 +58,7 @@ public class NeoServletContainer extends ServletContainer {
         super.configure(wc, rc, wa);
 
         Set<Object> singletons = rc.getSingletons();
-        singletons.add( new RealClockProvider() );
+        singletons.add( new LeaseManagerProvider() );
         singletons.add( new DatabaseProvider( server.getDatabase() ) );
         singletons.add( new GraphDatabaseServiceProvider( server.getDatabase().graph ) );
         singletons.add( new NeoServerProvider( server ) );

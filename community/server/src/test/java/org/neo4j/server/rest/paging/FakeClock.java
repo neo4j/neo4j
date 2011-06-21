@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.rest.paging;
 
-import org.neo4j.server.rest.paging.Clock;
 
 public class FakeClock implements Clock
 {

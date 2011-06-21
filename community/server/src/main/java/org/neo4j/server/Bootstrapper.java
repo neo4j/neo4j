@@ -32,7 +32,6 @@ import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.database.GraphDatabaseFactory;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.modules.ServerModule;
-import org.neo4j.server.rest.paging.RealClock;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
 import org.neo4j.server.web.Jetty6WebServer;
@@ -81,7 +80,7 @@ public abstract class Bootstrapper
             StartupHealthCheck startupHealthCheck = new StartupHealthCheck( rules() );
             Jetty6WebServer webServer = new Jetty6WebServer();
             server = new NeoServerWithEmbeddedWebServer( this, new AddressResolver(),
-                    startupHealthCheck, getConfigurator(), webServer, getServerModules(), new RealClock() );
+                    startupHealthCheck, getConfigurator(), webServer, getServerModules());
             server.start();
 
             addShutdownHook();

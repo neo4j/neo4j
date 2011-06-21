@@ -47,9 +47,6 @@ import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.modules.ThirdPartyJAXRSModule;
 import org.neo4j.server.modules.WebAdminModule;
-import org.neo4j.server.rest.paging.Clock;
-import org.neo4j.server.rest.paging.FakeClock;
-import org.neo4j.server.rest.paging.RealClock;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
 import org.neo4j.server.web.Jetty6WebServer;
@@ -64,7 +61,6 @@ public class ServerBuilder
     private StartupHealthCheck startupHealthCheck;
     private AddressResolver addressResolver = new LocalhostAddressResolver();
     private final HashMap<String, String> thirdPartyPackages = new HashMap<String, String>();
-    private Clock clock = new RealClock();
 
     private static enum WhatToDo
     {
@@ -104,8 +100,7 @@ public class ServerBuilder
 
         return new NeoServerWithEmbeddedWebServer( new NeoServerBootstrapper(), addressResolver, startupHealthCheck,
                 new PropertyFileConfigurator( new Validator( new DatabaseLocationMustBeSpecifiedRule() ), configFile ),
-                new Jetty6WebServer(), serverModules, clock );
-
+                new Jetty6WebServer(), serverModules );
     }
 
     public File createPropertiesFiles() throws IOException
@@ -294,12 +289,6 @@ public class ServerBuilder
     public ServerBuilder withSpecificServerModulesOnly( Class<? extends ServerModule>... modules )
     {
         serverModules = Arrays.asList( modules );
-        return this;
-    }
-
-    public ServerBuilder withFakeClock()
-    {
-        clock = new FakeClock();
         return this;
     }
 }
