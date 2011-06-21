@@ -487,8 +487,8 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
     val result = execute(query)
 
-    assertEquals(List("Sweden", "England", "Germany" ), result.columnAs[String]("n.division").toList)
-    assertEquals(List(2,1,1), result.columnAs[Int]("count(*)").toList)
+    assertEquals(List("Sweden", "England", "Germany"), result.columnAs[String]("n.division").toList)
+    assertEquals(List(2, 1, 1), result.columnAs[Int]("count(*)").toList)
   }
 
   @Test def magicRelTypeWorksAsExpected() {
@@ -600,6 +600,15 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val result = execute(query)
 
     assertEquals(nodes.slice(1, 3), result.columnAs[Node]("x").toList)
+  }
+
+  @Test def shouldThrowNiceErrorMessageWhenPropertyIsMissing() {
+    val query = new CypherParser().parse("start n=(0) return n.A_PROPERTY_THAT_IS_MISSING")
+    try {
+      execute(query).toList
+    } catch {
+      case x: SyntaxError => assertEquals("n.A_PROPERTY_THAT_IS_MISSING does not exist on Node[0]", x.getMessage)
+    }
   }
 }
 
