@@ -35,8 +35,9 @@ class SortPipe(source: Pipe,sortDescription: List[SortItem]) extends Pipe with C
   def compareBy(a:Map[String, Any], b:Map[String, Any], order:Seq[SortItem]):Boolean = order match {
     case Nil => false
     case head :: tail => {
-      val aVal = head.returnItem(a)(head.returnItem.columnName)
-      val bVal = head.returnItem(b)(head.returnItem.columnName)
+      val key = head.returnItem.identifier.name
+      val aVal = head.returnItem(a)(key)
+      val bVal = head.returnItem(b)(key)
       signum(compare(aVal, bVal)) match {
         case 1 => !head.ascending
         case -1 => head.ascending

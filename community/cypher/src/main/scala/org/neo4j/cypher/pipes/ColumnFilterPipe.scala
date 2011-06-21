@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.pipes
 
-import org.neo4j.cypher.commands.{Identifier, UnboundIdentifier, ReturnItem}
+import org.neo4j.cypher.commands.ReturnItem
 import org.neo4j.cypher.{SyntaxError, SymbolTable}
 
 class ColumnFilterPipe(source: Pipe, returnItems: Seq[ReturnItem]) extends Pipe {

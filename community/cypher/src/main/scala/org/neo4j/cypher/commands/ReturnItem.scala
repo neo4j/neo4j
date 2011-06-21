@@ -43,7 +43,7 @@ case class EntityOutput(name: String) extends ReturnItem(UnboundIdentifier(name,
 
 case class PropertyOutput(entity: String, property: String) extends ReturnItem(PropertyIdentifier(entity, property)) {
   def apply(m: Map[String, Any]): Map[String, Any] = {
-    val node = m.getOrElse(entity, throw new NotFoundException).asInstanceOf[PropertyContainer]
+    val node = m.getOrElse(entity, throw new NotFoundException("%s not found.".format(entity))).asInstanceOf[PropertyContainer]
     Map(entity + "." + property -> node.getProperty(property))
   }
 

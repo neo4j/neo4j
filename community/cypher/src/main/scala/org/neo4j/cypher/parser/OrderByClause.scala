@@ -32,7 +32,7 @@ trait OrderByClause extends JavaTokenParsers with Tokens with ReturnItems  {
     case Some(txt) => txt.toLowerCase.startsWith("a")
   }
 
-  def sortItem :Parser[SortItem] = (aggregationFunction | returnItem) ~ ascOrDesc ^^ {
+  def sortItem :Parser[SortItem] = (aggregate | returnItem) ~ ascOrDesc ^^ {
     case returnItem ~ reverse => {
       returnItem match {
         case x : EntityOutput => throw new SyntaxError("Cannot ORDER BY on nodes or relationships")

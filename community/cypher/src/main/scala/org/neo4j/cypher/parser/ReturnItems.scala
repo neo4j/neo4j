@@ -57,6 +57,8 @@ trait ReturnItems extends JavaTokenParsers with Tokens {
   def countStar: Parser[AggregationItem] = ignoreCase("count") ~> "(*)" ^^ {
     case "(*)" => CountStar()
   }
+
+  def aggregate:Parser[AggregationItem] = countStar | aggregationFunction
 }
 
 

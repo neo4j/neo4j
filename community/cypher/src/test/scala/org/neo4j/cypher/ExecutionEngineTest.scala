@@ -473,6 +473,24 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     assertEquals(List("Germany", "Sweden", "England"), result.columnAs[String]("n.divison").toList)
   }
 
+  @Test @Ignore def shouldSortOnAggregatedFunctionAndNormalProperty() {
+    val n1 = createNode(Map("name" -> "andres", "division" -> "Sweden"))
+    val n2 = createNode(Map("name" -> "michael", "division" -> "Germany"))
+    val n3 = createNode(Map("name" -> "jim", "division" -> "England"))
+    val n4 = createNode(Map("name" -> "mattias", "division" -> "Sweden"))
+
+    val query = Query(
+      Return(PropertyOutput("n", "division")),
+      Start(NodeById("n", n1.getId, n2.getId, n3.getId, n4.getId)),
+      Aggregation(CountStar()),
+      Sort(SortItem(CountStar(), true), SortItem(PropertyOutput("n", "division"), true)))
+
+    val result = execute(query)
+
+    assertEquals(List("Sweden", "Germany", "England"), result.columnAs[String]("n.division").toList)
+    assertEquals(List(2,1,1), result.columnAs[Int]("count(*)").toList)
+  }
+
   @Test def magicRelTypeWorksAsExpected() {
     createNodes("A", "B", "C")
     relate("A" -> "KNOWS" -> "B")
