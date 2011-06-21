@@ -756,15 +756,16 @@ public class TestRelationship extends AbstractNeo4jTestCase
 
         /* create 256 nodes */
         Transaction tx = graphDB.beginTx();
-        for ( int num_nodes = 0; num_nodes < 256; num_nodes += 1 )
+        Node[] nodes = new Node[256];
+        for ( int num_nodes = 0; num_nodes < nodes.length; num_nodes += 1 )
         {
-            graphDB.createNode();
+            nodes[num_nodes] = graphDB.createNode();
         }
         tx.success();
         tx.finish();
 
         /* create random outgoing relationships from node 5 */
-        hub = graphDB.getNodeById( 5 );
+        hub = nodes[4];
         int nextID = 7;
 
         tx = graphDB.beginTx();
@@ -799,8 +800,8 @@ public class TestRelationship extends AbstractNeo4jTestCase
         tx.finish();
 
         graphDB.shutdown();
-        graphDB = new EmbeddedGraphDatabase( "neo4j_broken" );
-        hub = graphDB.getNodeById( 5 );
+        graphDB = new EmbeddedGraphDatabase( path );
+        hub = graphDB.getNodeById( hub.getId() );
         int count = 0;
         for ( @SuppressWarnings( "unused" )
         Relationship r1 : hub.getRelationships() )
