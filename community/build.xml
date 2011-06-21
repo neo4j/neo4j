@@ -65,7 +65,7 @@
 			<arg value="clean"/>
 			<arg value="package"/>
 		</exec>
-		<copy todir="artifacts/binaries">
+		<copy todir="artifacts/packages">
 			<fileset dir="packaging/target">
 				<include name="*.zip"/>
 				<include name="*.tar.gz"/>
