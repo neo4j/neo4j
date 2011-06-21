@@ -167,7 +167,7 @@ pdf:  docbook copyimages
 	# Building PDF.
 	#
 	#
-	sed 's/\&#8594;/\&#8211;\&gt;/g' <$(DOCBOOKFILE) >$(DOCBOOKFILEPDF)
+	sed -e 's/\&#8594;/\&#8211;\&gt;/g' -e 's/\&#8592;/\&lt;\&#8211;/g' <$(DOCBOOKFILE) >$(DOCBOOKFILEPDF)
 	mkdir -p $(FOPDIR)
 	cd $(FOPDIR)
 	xsltproc --xinclude --output $(FOPFILE) $(CONFDIR)/fo.xsl $(DOCBOOKFILEPDF)
