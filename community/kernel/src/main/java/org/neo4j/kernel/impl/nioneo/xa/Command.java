@@ -180,6 +180,18 @@ abstract class Command extends XaCommand
         }
 
         @Override
+        boolean isCreated()
+        {
+            return record.isCreated();
+        }
+
+        @Override
+        boolean isDeleted()
+        {
+            return !record.inUse();
+        }
+
+        @Override
         public void execute()
         {
             if ( isRecovered() )
@@ -274,6 +286,18 @@ abstract class Command extends XaCommand
             super( record.getId() );
             this.record = record;
             this.store = store;
+        }
+
+        @Override
+        boolean isCreated()
+        {
+            return record.isCreated();
+        }
+
+        @Override
+        boolean isDeleted()
+        {
+            return !record.inUse();
         }
 
         long getFirstNode()
@@ -408,6 +432,18 @@ abstract class Command extends XaCommand
         }
 
         @Override
+        boolean isCreated()
+        {
+            return record.isCreated();
+        }
+
+        @Override
+        boolean isDeleted()
+        {
+            return !record.inUse();
+        }
+
+        @Override
         public void execute()
         {
             if ( isRecovered() )
@@ -515,6 +551,18 @@ abstract class Command extends XaCommand
             super( record.getId() );
             this.record = record;
             this.store = store;
+        }
+
+        @Override
+        boolean isCreated()
+        {
+            return record.isCreated();
+        }
+
+        @Override
+        boolean isDeleted()
+        {
+            return !record.inUse();
         }
 
         @Override
@@ -708,6 +756,18 @@ abstract class Command extends XaCommand
         }
 
         @Override
+        boolean isCreated()
+        {
+            return record.isCreated();
+        }
+
+        @Override
+        boolean isDeleted()
+        {
+            return !record.inUse();
+        }
+
+        @Override
         public void execute()
         {
             if ( isRecovered() )
@@ -782,7 +842,7 @@ abstract class Command extends XaCommand
                 }
                 record.addTypeRecord( dr );
             }
-            return new RelationshipTypeCommand( 
+            return new RelationshipTypeCommand(
                     neoStore == null ? null : neoStore.getRelationshipTypeStore(), record );
         }
 
@@ -830,4 +890,8 @@ abstract class Command extends XaCommand
                     + "]" );
         }
     }
+
+    abstract boolean isCreated();
+
+    abstract boolean isDeleted();
 }
