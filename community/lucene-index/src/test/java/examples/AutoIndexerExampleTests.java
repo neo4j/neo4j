@@ -157,6 +157,7 @@ public class AutoIndexerExampleTests implements GraphHolder
 
         // Get the Relationship AutoIndexer
         AutoIndexer<Relationship> relAutoIndexer = graphDb.index().getRelationshipAutoIndexer();
+        relAutoIndexer.startAutoIndexingProperty( "relProp1" );
 
         // None of the AutoIndexers are enabled so far. Do that now
         nodeAutoIndexer.setEnabled( true );
@@ -180,7 +181,7 @@ public class AutoIndexerExampleTests implements GraphHolder
             node2.setProperty( "nodeProp2", "nodeProp2Value" );
             node1.setProperty( "nonIndexed", "nodeProp2NonIndexedValue" );
             rel.setProperty( "relProp1", "relProp1Value1" );
-            rel.setProperty( "relProp2", "relProp1Value2" );
+            rel.setProperty( "relPropNonIndexed", "relProp1Value2" );
 
             // Make things persistent
             tx.success();
@@ -208,9 +209,108 @@ public class AutoIndexerExampleTests implements GraphHolder
         // Get the relationship auto index
         AutoIndex<Relationship> autoRelIndex = relAutoIndexer.getAutoIndex();
         // All properties ignored
-        assertFalse( autoRelIndex.get( "relProp1", "relProp1Value1" ).hasNext() );
-        assertFalse( autoRelIndex.get( "relProp2", "relProp1Value2" ).hasNext() );
+        assertEquals( rel,
+                autoRelIndex.get( "relProp1", "relProp1Value1" ).getSingle() );
+        assertFalse( autoRelIndex.get( "relPropNonIndexed", "relProp1Value2" ).hasNext() );
         graphDb.shutdown();
+    }
+
+    @Test
+    public void testMutations() throws Exception
+    {
+        // START SNIPPET: Mutations
+
+        /*
+         * Creating the configuration
+         */
+        Map<String, String> config = new HashMap<String, String>();
+        config.put( Config.NODE_KEYS_INDEXABLE, "nodeProp1, nodeProp2" );
+        config.put( Config.NODE_AUTO_INDEXING, "true" );
+
+        EmbeddedGraphDatabase graphDb = new EmbeddedGraphDatabase(
+                getStoreDir( "mutations" ), config );
+
+        Transaction tx = graphDb.beginTx();
+        Node node1 = null, node2 = null, node3 = null, node4 = null;
+        try
+        {
+            // Create the primitives
+            node1 = graphDb.createNode();
+            node2 = graphDb.createNode();
+            node3 = graphDb.createNode();
+            node4 = graphDb.createNode();
+
+            // Add indexable and non-indexable properties
+            node1.setProperty( "nodeProp1", "nodeProp1Value" );
+            node2.setProperty( "nodeProp2", "nodeProp2Value" );
+            node3.setProperty( "nodeProp1", "nodeProp3Value" );
+            node4.setProperty( "nodeProp2", "nodeProp4Value" );
+
+            // Make things persistent
+            tx.success();
+        }
+        catch ( Exception e )
+        {
+            tx.failure();
+        }
+        finally
+        {
+            tx.finish();
+        }
+
+        /*
+         *  Here both nodes are indexed. To demonstrate removal, we stop
+         *  autoindexing nodeProp1.
+         */
+        AutoIndexer<Node> nodeAutoIndexer = graphDb.index().getNodeAutoIndexer();
+        nodeAutoIndexer.stopAutoIndexingProperty( "nodeProp1" );
+
+        tx = graphDb.beginTx();
+        try
+        {
+            /*
+             * nodeProp1 is no longer auto indexed. It will be
+             * removed regardless. Note that node3 will remain.
+             */
+            node1.setProperty( "nodeProp1", "nodeProp1Value2" );
+            /*
+             * node2 will be auto updated
+             */
+            node2.setProperty( "nodeProp2", "nodeProp2Value2" );
+            /*
+             * remove node4 property nodeProp2 from index.
+             */
+            node4.removeProperty( "nodeProp2" );
+            // Make things persistent
+            tx.success();
+        }
+        catch ( Exception e )
+        {
+            tx.failure();
+        }
+        finally
+        {
+            tx.finish();
+        }
+
+        // Verify
+        AutoIndex<Node> nodeAutoIndex = nodeAutoIndexer.getAutoIndex();
+        // node1 is completely gone
+        assertFalse( nodeAutoIndex.get( "nodeProp1", "nodeProp1Value" ).hasNext() );
+        assertFalse( nodeAutoIndex.get( "nodeProp1", "nodeProp1Value2" ).hasNext() );
+        // node2 is updated
+        assertFalse( nodeAutoIndex.get( "nodeProp2", "nodeProp2Value" ).hasNext() );
+        assertEquals( node2,
+                nodeAutoIndex.get( "nodeProp2", "nodeProp2Value2" ).getSingle() );
+        /*
+         * node3 is still there, despite its nodeProp1 property not being monitored
+         * any more because it was not touched, in contrast with node1.
+         */
+        assertEquals( node3,
+                nodeAutoIndex.get( "nodeProp1", "nodeProp3Value" ).getSingle() );
+        // Finally, node4 is removed because the property was removed.
+        assertFalse( nodeAutoIndex.get( "nodeProp2", "nodeProp4Value" ).hasNext() );
+        // END SNIPPET: Mutations
     }
 
     @Test

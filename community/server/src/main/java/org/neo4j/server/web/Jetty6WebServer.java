@@ -23,8 +23,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -48,6 +47,8 @@ import org.neo4j.server.rest.web.AllowAjaxFilter;
 import com.sun.jersey.api.core.ResourceConfig;
 import com.sun.jersey.spi.container.servlet.ServletContainer;
 
+import static java.lang.String.format;
+
 public class Jetty6WebServer implements WebServer
 {
     public static final Logger log = Logger.getLogger( Jetty6WebServer.class );
@@ -57,6 +58,7 @@ public class Jetty6WebServer implements WebServer
 
     private final HashMap<String, String> staticContent = new HashMap<String, String>();
     private final HashMap<String, ServletHolder> jaxRSPackages = new HashMap<String, ServletHolder>();
+
     private NeoServer server;
 
     @Override
@@ -72,11 +74,47 @@ public class Jetty6WebServer implements WebServer
 
         jetty.addHandler( redirector );
 
-        SessionManager sm = new HashSessionManager();
-        loadStaticContent( sm );
-        loadJAXRSPackages( sm );
+        loadAllMounts();
 
         startJetty();
+    }
+
+    private void loadAllMounts()
+    {
+        SessionManager sm = new HashSessionManager();
+
+        final SortedSet<String> mountpoints = new TreeSet<String>(new Comparator<String>() {
+            @Override public int compare(final String o1, final String o2) {
+                return o2.compareTo(o1);
+            }
+        });
+
+        mountpoints.addAll(staticContent.keySet());
+        mountpoints.addAll(jaxRSPackages.keySet());
+
+        for (String contentKey : mountpoints)
+        {
+            final boolean isStatic = staticContent.containsKey( contentKey );
+            final boolean isJaxrs = jaxRSPackages.containsKey( contentKey );
+
+            if (isStatic && isJaxrs)
+            {
+                throw new RuntimeException(
+                        format( "content-key '%s' is mapped twice (static and jaxrs)", contentKey ) );
+            }
+            else if (isStatic)
+            {
+                loadStaticContent( sm, contentKey );
+            }
+            else if (isJaxrs)
+            {
+                loadJAXRSPackage( sm, contentKey );
+            }
+            else
+            {
+                throw new RuntimeException( format( "content-key '%s' is not mapped", contentKey ) );
+            }
+        }
     }
 
     @Override
@@ -140,8 +178,6 @@ public class Jetty6WebServer implements WebServer
         servletHolder.setInitParameter( ResourceConfig.PROPERTY_CONTAINER_RESPONSE_FILTERS, AllowAjaxFilter.class.getName() );
         log.debug( "Adding JAXRS packages %s at [%s]", packageNames, mountPoint );
 
-        System.out.println(String.format( "Adding JAXRS packages %s at [%s]", packageNames, mountPoint ));
-        
         jaxRSPackages.put( mountPoint, servletHolder );
     }
 
@@ -193,57 +229,50 @@ public class Jetty6WebServer implements WebServer
         jetty.handle( targetPath, request, response, Handler.REQUEST);
     }
 
-    protected void loadStaticContent( SessionManager sm )
+    private void loadStaticContent( SessionManager sm, String mountPoint )
     {
-        for ( String mountPoint : staticContent.keySet() )
+        String contentLocation = staticContent.get( mountPoint );
+        log.info( "Mounting static content at [%s] from [%s]", mountPoint, contentLocation );
+        try
         {
-            String contentLocation = staticContent.get( mountPoint );
-            log.info( "Mounting static content at [%s] from [%s]", mountPoint, contentLocation );
-            try
+            final WebAppContext staticContext = new WebAppContext( null, new SessionHandler( sm ), null, null );
+            staticContext.setServer( getJetty() );
+            staticContext.setContextPath( mountPoint );
+            URL resourceLoc = getClass().getClassLoader()
+                    .getResource( contentLocation );
+            if ( resourceLoc != null )
             {
-                final WebAppContext staticContext = new WebAppContext( null, new SessionHandler( sm ), null, null );
-                staticContext.setServer( getJetty() );
-                staticContext.setContextPath( mountPoint );
-                URL resourceLoc = getClass().getClassLoader()
-                        .getResource( contentLocation );
-                if ( resourceLoc != null )
-                {
-                    log.debug( "Found [%s]", resourceLoc );
-                    URL url = resourceLoc.toURI()
-                            .toURL();
-                    final Resource resource = Resource.newResource( url );
-                    staticContext.setBaseResource( resource );
-                    log.debug( "Mounting static content from [%s] at [%s]", url, mountPoint );
-                    jetty.addHandler( staticContext );
-                }
-                else
-                {
-                    log.error(
-                            "No static content available for Neo Server at port [%d], management console may not be available.",
-                            jettyPort );
-                }
+                log.debug( "Found [%s]", resourceLoc );
+                URL url = resourceLoc.toURI()
+                        .toURL();
+                final Resource resource = Resource.newResource( url );
+                staticContext.setBaseResource( resource );
+                log.debug( "Mounting static content from [%s] at [%s]", url, mountPoint );
+                jetty.addHandler( staticContext );
             }
-            catch ( Exception e )
+            else
             {
-                log.error( e );
-                e.printStackTrace();
-                throw new RuntimeException( e );
+                log.error(
+                        "No static content available for Neo Server at port [%d], management console may not be available.",
+                        jettyPort );
             }
+        }
+        catch ( Exception e )
+        {
+            log.error( e );
+            e.printStackTrace();
+            throw new RuntimeException( e );
         }
     }
 
-    protected void loadJAXRSPackages( SessionManager sm )
+    private void loadJAXRSPackage( SessionManager sm, String mountPoint )
     {
-        for ( String mountPoint : jaxRSPackages.keySet() )
-        {
-
-            ServletHolder servletHolder = jaxRSPackages.get( mountPoint );
-            log.debug( "Mounting servlet at [%s]", mountPoint );
-            Context jerseyContext = new Context( jetty, mountPoint );
-            SessionHandler sh = new SessionHandler( sm );
-            jerseyContext.addServlet( servletHolder, "/*" );
-            jerseyContext.setSessionHandler( sh );
-        }
+        ServletHolder servletHolder = jaxRSPackages.get( mountPoint );
+        log.debug( "Mounting servlet at [%s]", mountPoint );
+        Context jerseyContext = new Context( jetty, mountPoint );
+        SessionHandler sh = new SessionHandler( sm );
+        jerseyContext.addServlet( servletHolder, "/*" );
+        jerseyContext.setSessionHandler( sh );
     }
 
     private String toCommaSeparatedList( List<String> packageNames )

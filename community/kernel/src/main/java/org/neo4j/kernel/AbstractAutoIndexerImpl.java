@@ -171,27 +171,29 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
         final Index<T> nodeIndex = getIndexInternal();
         for ( PropertyEntry<T> entry : assigned )
         {
-            if ( propertyKeysToInclude.contains( entry.key() ) )
+            Object previousValue = entry.previouslyCommitedValue();
+            String key = entry.key();
+            if ( propertyKeysToInclude.contains( key ) )
             {
-                Object previousValue = entry.previouslyCommitedValue();
-                String key = entry.key();
                 if ( previousValue != null )
                 {
                     nodeIndex.remove( entry.entity(), key, previousValue );
                 }
                 nodeIndex.add( entry.entity(), key, entry.value() );
             }
+            else if ( previousValue != null )
+            {
+                nodeIndex.remove( entry.entity(), key, previousValue );
+            }
         }
         for ( PropertyEntry<T> entry : removed )
         {
+            String key = entry.key();
             // will fix thread safety later
-            if ( propertyKeysToInclude.contains( entry.key() ) )
+            Object previouslyCommitedValue = entry.previouslyCommitedValue();
+            if ( previouslyCommitedValue != null )
             {
-                Object previouslyCommitedValue = entry.previouslyCommitedValue();
-                if ( previouslyCommitedValue != null )
-                {
-                    nodeIndex.remove( entry.entity(), entry.key(), previouslyCommitedValue );
-                }
+                nodeIndex.remove( entry.entity(), key, previouslyCommitedValue );
             }
         }
     }

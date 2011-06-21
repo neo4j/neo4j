@@ -48,11 +48,9 @@ import org.neo4j.graphdb.GraphDatabaseService;
 public class CypherSession implements ScriptSession
 {
     private final ExecutionEngine engine;
-    private final CypherParser parser;
 
     public CypherSession( GraphDatabaseService graph )
     {
-        parser = new CypherParser();
         engine = new ExecutionEngine(graph);
     }
 
@@ -66,7 +64,7 @@ public class CypherSession implements ScriptSession
 
         try
         {
-            Query query = parser.parse(script);
+            Query query = CypherParser.parseConsole(script);
             ExecutionResult result = engine.execute(query);
 
             return result.toString();
