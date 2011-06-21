@@ -391,30 +391,35 @@ public class RelIdArray
         // Assume id has same high bits
         void add( int id )
         {
-            int length = length();
-            if ( length == ids.length-1 )
-            {
-                int[] newIds = new int[(length == 0 ? 1 : length)*5];
-                System.arraycopy( ids, 0, newIds, 0, length+1 );
-                ids = newIds;
-            }
+            int length = ensureSpace( 1 );
             ids[length+1] = id;
             ids[0] = length+1;
         }
         
-        void addAll( IdBlock block )
+        int ensureSpace( int delta )
         {
             int length = length();
-            int otherBlockLength = block.length();
-            int newLength = length + otherBlockLength;
-            if ( newLength+1 > ids.length )
+            int newLength = length+delta;
+            if ( newLength >= ids.length-1 )
             {
-                int[] newIds = new int[newLength+1];
-                System.arraycopy( ids, 1, newIds, 1, length );
+                int calculatedLength = ids.length*3;
+                if ( newLength > calculatedLength )
+                {
+                    calculatedLength = newLength*2;
+                }
+                int[] newIds = new int[calculatedLength];
+                System.arraycopy( ids, 0, newIds, 0, length+1 );
                 ids = newIds;
             }
+            return length;
+        }
+        
+        void addAll( IdBlock block )
+        {
+            int otherBlockLength = block.length();
+            int length = ensureSpace( otherBlockLength+1 );
             System.arraycopy( block.ids, 1, ids, length+1, otherBlockLength );
-            ids[0] = newLength;
+            ids[0] = otherBlockLength+length;
         }
         
         long get( int index )

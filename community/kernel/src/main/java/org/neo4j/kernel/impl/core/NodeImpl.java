@@ -34,6 +34,7 @@ import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.transaction.LockType;
@@ -308,20 +309,24 @@ class NodeImpl extends Primitive
 
     private void loadInitialRelationships( NodeManager nodeManager )
     {
-        Map<Long,RelationshipImpl> map = null;
+        Pair<Map<Long,RelationshipImpl>,Long> rels = null;
         synchronized ( this )
         {
             if ( relationships == null )
             {
                 this.relChainPosition = nodeManager.getRelationshipChainPosition( this );
                 ArrayMap<String,RelIdArray> tmpRelMap = new ArrayMap<String,RelIdArray>();
-                map = getMoreRelationships( nodeManager, tmpRelMap );
+                rels = getMoreRelationships( nodeManager, tmpRelMap );
                 this.relationships = toRelIdArray( tmpRelMap );
+                if ( rels != null )
+                {
+                    setRelChainPosition( rels.other() );
+                }
             }
         }
-        if ( map != null )
+        if ( rels != null )
         {
-            nodeManager.putAllInRelCache( map );
+            nodeManager.putAllInRelCache( rels.first() );
         }
     }
 
@@ -336,19 +341,19 @@ class NodeImpl extends Primitive
         int i = 0;
         for ( RelIdArray array : tmpRelMap.values() )
         {
-            result[i++] = array.shrink();
+            result[i++] = array;
         }
         return result;
     }
 
-    private Map<Long,RelationshipImpl> getMoreRelationships( NodeManager nodeManager, 
+    private Pair<Map<Long,RelationshipImpl>,Long> getMoreRelationships( NodeManager nodeManager, 
             ArrayMap<String,RelIdArray> tmpRelMap )
     {
         if ( !hasMoreRelationshipsToLoad() )
         {
             return null;
         }
-        Pair<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>> pair = 
+        Triplet<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>,Long> pair = 
             nodeManager.getMoreRelationships( this );
         ArrayMap<String,RelIdArray> addMap = pair.first();
         if ( addMap.size() == 0 )
@@ -384,7 +389,7 @@ class NodeImpl extends Primitive
 
     boolean getMoreRelationships( NodeManager nodeManager )
     {
-        Pair<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>> pair;
+        Triplet<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>,Long> rels;
         if ( !hasMoreRelationshipsToLoad() )
         {
             return false;
@@ -396,8 +401,8 @@ class NodeImpl extends Primitive
                 return false;
             }
             
-            pair = nodeManager.getMoreRelationships( this );
-            ArrayMap<String,RelIdArray> addMap = pair.first();
+            rels = nodeManager.getMoreRelationships( this );
+            ArrayMap<String,RelIdArray> addMap = rels.first();
             if ( addMap.size() == 0 )
             {
                 return false;
@@ -421,12 +426,13 @@ class NodeImpl extends Primitive
                     }
                 }
             }
+            
+            setRelChainPosition( rels.third() );
         }
-        nodeManager.putAllInRelCache( pair.other() );
+        nodeManager.putAllInRelCache( rels.second() );
         return true;
     }
         
-
     private RelIdArray getRelIdArray( String type )
     {
         // Concurrency-wise it's ok even if the relationships variable
@@ -627,6 +633,14 @@ class NodeImpl extends Primitive
     void setRelChainPosition( long position )
     {
         this.relChainPosition = position;
+        if ( !hasMoreRelationshipsToLoad() )
+        {
+            // Shrink arrays
+            for ( int i = 0; i < relationships.length; i++ )
+            {
+                relationships[i] = relationships[i].shrink();
+            }
+        }
     }
 
     RelIdArray getRelationshipIds( String type )
