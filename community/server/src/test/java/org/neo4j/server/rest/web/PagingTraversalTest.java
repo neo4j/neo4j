@@ -47,7 +47,6 @@ import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.TraverserReturnType;
 import org.neo4j.server.rest.paging.FakeClock;
 import org.neo4j.server.rest.paging.LeaseManager;
-import org.neo4j.server.rest.paging.PagedTraverser;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 
 public class PagingTraversalTest

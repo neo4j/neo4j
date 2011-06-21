@@ -22,10 +22,10 @@ package org.neo4j.server.rest.paging;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.server.rest.paging.HexMatcher.containsOnlyHex;
 
 import org.junit.Test;
-import static org.mockito.Mockito.*;
 
 public class LeaseTest
 {

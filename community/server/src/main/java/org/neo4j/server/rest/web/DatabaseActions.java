@@ -57,7 +57,6 @@ import org.neo4j.server.rest.domain.RelationshipExpanderBuilder;
 import org.neo4j.server.rest.domain.StartNodeNotFoundException;
 import org.neo4j.server.rest.domain.TraversalDescriptionBuilder;
 import org.neo4j.server.rest.domain.TraverserReturnType;
-import org.neo4j.server.rest.paging.Clock;
 import org.neo4j.server.rest.paging.Lease;
 import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.paging.PagedTraverser;
