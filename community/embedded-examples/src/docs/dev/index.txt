@@ -28,5 +28,9 @@ include::entities.txt[]
 
 :leveloffset: 2
 
+include::graph-algo.txt[]
+
+:leveloffset: 2
+
 include::management.txt[]
 
