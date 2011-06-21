@@ -68,7 +68,6 @@ define(
               min : startTime - @statistics.timezoneOffset
               mode : "time"
               timeformat : zoomLevel.timeformat
-
           @chart.render data, _.extend(chartDef.chartSettings || {}, settings)
 
       switchChartClicked : (ev) =>

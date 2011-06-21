@@ -30,6 +30,10 @@ define(
             {label:"Nodes",         key:'node_count'}, 
             {label:"Properties",    key:'property_count'}, 
             {label:"Relationships", key:'relationship_count'}]
+          chartSettings:
+            yaxis :
+              min : 0
+          
         memory :
           layers : [{
             label:"Memory usage", 
