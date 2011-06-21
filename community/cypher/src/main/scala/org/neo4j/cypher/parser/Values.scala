@@ -29,7 +29,7 @@ trait Values extends JavaTokenParsers with Tokens {
 
   def stringValue: Parser[Value] = string ^^ { case str => Literal(str) }
 
-  def decimal: Parser[Value] = decimalNumber ^^ { case num => Literal(num.toLong) }
+  def decimal: Parser[Value] = decimalNumber ^^ { case num => Literal(num.toDouble) }
 
   def boolean: Parser[Value] = (trueX | falseX)
   def trueX: Parser[Value] = ignoreCase("true") ^^ { case str => Literal(true) }

@@ -49,7 +49,10 @@ class ExecutionEngine(graph: GraphDatabaseService) {
 
       aggregation match {
         case None =>
-        case Some(aggr) => pipe = new AggregationPipe(pipe, returns.returnItems, aggr.aggregationItems)
+        case Some(aggr) => {
+          pipe = new TransformPipe(pipe, aggr.aggregationItems)
+          pipe = new AggregationPipe(pipe, returns.returnItems, aggr.aggregationItems)
+        }
       }
 
       sort match {

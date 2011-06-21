@@ -22,7 +22,7 @@ package org.neo4j.cypher
 import org.neo4j.cypher.commands._
 import org.junit.Assert._
 import org.neo4j.graphdb.Direction
-import org.junit.{Ignore, Test}
+import org.junit.Test
 import org.scalatest.junit.JUnitSuite
 import parser.{ConsoleCypherParser, CypherParser}
 
@@ -106,6 +106,26 @@ class CypherParserTest extends JUnitSuite {
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
         Equals(PropertyValue("a", "name"), Literal("andres"))))
+  }
+
+
+  @Test def shouldFilterOutNodesWithoutA() {
+    testQuery(
+      "start a = (1) where a.name = \"andres\" return a",
+      Query(
+        Return(EntityOutput("a")),
+        Start(NodeById("a", 1)),
+        Equals(PropertyValue("a", "name"), Literal("andres"))))
+  }
+
+
+  @Test def shouldFilterOnPropWithDecimals() {
+    testQuery(
+      "start a = (1) where a.foo = 3.1415 return a",
+      Query(
+        Return(EntityOutput("a")),
+        Start(NodeById("a", 1)),
+        Equals(PropertyValue("a", "foo"), Literal(3.1415))))
   }
 
   @Test def shouldHandleNot() {
@@ -305,6 +325,46 @@ class CypherParserTest extends JUnitSuite {
         Aggregation(CountStar())))
   }
 
+  @Test def sumTheAgesOfPeople() {
+    testQuery(
+      "start a = (1) match (a) --> (b) return a, b, sum(a.age)",
+      Query(
+        Return(EntityOutput("a"), EntityOutput("b")),
+        Start(NodeById("a", 1)),
+        Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
+        Aggregation(Sum(PropertyOutput("a", "age")))))
+  }
+
+  @Test def avgTheAgesOfPeople() {
+    testQuery(
+      "start a = (1) match (a) --> (b) return a, b, avg(a.age)",
+      Query(
+        Return(EntityOutput("a"), EntityOutput("b")),
+        Start(NodeById("a", 1)),
+        Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
+        Aggregation(Avg(PropertyOutput("a", "age")))))
+  }
+
+  @Test def minTheAgesOfPeople() {
+    testQuery(
+      "start a = (1) match (a) --> (b) return a, b, min(a.age)",
+      Query(
+        Return(EntityOutput("a"), EntityOutput("b")),
+        Start(NodeById("a", 1)),
+        Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
+        Aggregation(Min(PropertyOutput("a", "age")))))
+  }
+
+  @Test def maxTheAgesOfPeople() {
+    testQuery(
+      "start a = (1) match (a) --> (b) return a, b, max(a.age)",
+      Query(
+        Return(EntityOutput("a"), EntityOutput("b")),
+        Start(NodeById("a", 1)),
+        Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
+        Aggregation(Max(PropertyOutput("a", "age")))))
+  }
+
   @Test def singleColumnSorting() {
     testQuery(
       "start a = (1) return a order by a.name",
@@ -312,6 +372,15 @@ class CypherParserTest extends JUnitSuite {
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
         Sort(SortItem(PropertyOutput("a", "name"), true))))
+  }
+
+  @Test def sortOnAggregatedColumn() {
+    testQuery(
+      "start a = (1) return a order by avg(a.name)",
+      Query(
+        Return(EntityOutput("a")),
+        Start(NodeById("a", 1)),
+        Sort(SortItem(Avg(PropertyOutput("a", "name")), true))))
   }
 
   @Test def shouldHandleTwoSortColumns() {
@@ -416,7 +485,7 @@ class CypherParserTest extends JUnitSuite {
         Equals(RelationshipTypeValue("r"), Literal("something"))))
   }
 
-    @Test def relationshipTypeOut() {
+  @Test def relationshipTypeOut() {
     testQuery(
       "start n=(1) match (n)-[r]->(x) return r:TYPE",
 
@@ -436,18 +505,19 @@ class CypherParserTest extends JUnitSuite {
   }
 
   @Test def shouldBeAbleToHandleStringLiteralsWithApostrophe() {
-  testQuery(
-    "start a = (index, key, 'value') return a",
-    Query(
-      Return(EntityOutput("a")),
-      Start(NodeByIndex("a", "index", "key", "value"))))
-}
+    testQuery(
+      "start a = (index, key, 'value') return a",
+      Query(
+        Return(EntityOutput("a")),
+        Start(NodeByIndex("a", "index", "key", "value"))))
+  }
+
   @Test def shouldHandleQuotationsInsideApostrophes() {
-  testQuery(
-    "start a = (index, key, 'val\"ue') return a",
-    Query(
-      Return(EntityOutput("a")),
-      Start(NodeByIndex("a", "index", "key", "val\"ue"))))
+    testQuery(
+      "start a = (index, key, 'val\"ue') return a",
+      Query(
+        Return(EntityOutput("a")),
+        Start(NodeByIndex("a", "index", "key", "val\"ue"))))
   }
 
   @Test def consoleModeParserShouldOutputNullableProperties() {
@@ -456,8 +526,8 @@ class CypherParserTest extends JUnitSuite {
     val executionTree = parser.parse(query)
 
     assertEquals(Query(
-        Return(NullablePropertyOutput("a", "name")),
-        Start(NodeById("a", 1))),
+      Return(NullablePropertyOutput("a", "name")),
+      Start(NodeById("a", 1))),
       executionTree)
   }
 

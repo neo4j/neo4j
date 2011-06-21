@@ -19,10 +19,9 @@ package org.neo4j.cypher
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import org.junit.Assert._
-import org.junit.{Assert, Test}
 import org.scalatest.junit.JUnitSuite
 import parser.CypherParser
+import org.junit.{Assert, Test}
 
 
 class SyntaxErrorTest extends JUnitSuite {
@@ -71,5 +70,4 @@ class SyntaxErrorTest extends JUnitSuite {
       "start s = (1) where s.name = Name and s.age = 10 return s",
       "Probably missing quotes around a string")
   }
-
 }

@@ -24,16 +24,23 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.kernel.impl.util.FileUtils;
 
 public class TestRelationship extends AbstractNeo4jTestCase
 {
@@ -736,5 +743,88 @@ public class TestRelationship extends AbstractNeo4jTestCase
         rel.setProperty( "test", "test4" );
         newTransaction();
         assertEquals( "test4", rel.getProperty( "test" ) );
+    }
+
+    @Test
+    public void makeSureLazyLoadingRelationshipsWorksEvenIfOtherIteratorAlsoLoadsInTheSameIteration() throws IOException
+    {
+        String path = "target/var/lazyloadrels";
+        FileUtils.deleteRecursively( new File( path ) );
+        GraphDatabaseService graphDB = new EmbeddedGraphDatabase( path );
+        int num_edges = 100;
+        Node hub;
+
+        /* create 256 nodes */
+        Transaction tx = graphDB.beginTx();
+        Node[] nodes = new Node[256];
+        for ( int num_nodes = 0; num_nodes < nodes.length; num_nodes += 1 )
+        {
+            nodes[num_nodes] = graphDB.createNode();
+        }
+        tx.success();
+        tx.finish();
+
+        /* create random outgoing relationships from node 5 */
+        hub = nodes[4];
+        int nextID = 7;
+
+        tx = graphDB.beginTx();
+        for ( int k = 0; k < num_edges; k += 1 )
+        {
+            Node neighbor = graphDB.getNodeById( nextID );
+            nextID += 7;
+            nextID &= 255;
+            if ( nextID == 0 )
+            {
+                nextID = 1;
+            }
+            hub.createRelationshipTo( neighbor, DynamicRelationshipType.withName( "outtie" ) );
+        }
+        tx.success();
+        tx.finish();
+
+        tx = graphDB.beginTx();
+        /* create random incoming relationships to node 5 */
+        for ( int k = 0; k < num_edges; k += 1 )
+        {
+            Node neighbor = graphDB.getNodeById( nextID );
+            nextID += 7;
+            nextID &= 255;
+            if ( nextID == 0 )
+            {
+                nextID = 1;
+            }
+            neighbor.createRelationshipTo( hub, DynamicRelationshipType.withName( "innie" ) );
+        }
+        tx.success();
+        tx.finish();
+
+        graphDB.shutdown();
+        graphDB = new EmbeddedGraphDatabase( path );
+        hub = graphDB.getNodeById( hub.getId() );
+        int count = 0;
+        for ( @SuppressWarnings( "unused" )
+        Relationship r1 : hub.getRelationships() )
+        {
+            for ( @SuppressWarnings( "unused" )
+            Relationship r2 : hub.getRelationships() )
+            {
+                count += 1;
+            }
+        }
+        assertEquals( 40000, count );
+
+        count = 0;
+        for ( @SuppressWarnings( "unused" )
+        Relationship r1 : hub.getRelationships() )
+        {
+            for ( @SuppressWarnings( "unused" )
+            Relationship r2 : hub.getRelationships() )
+            {
+                count += 1;
+            }
+        }
+        assertEquals( 40000, count );
+        graphDB.shutdown();
     }
 }

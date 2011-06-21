@@ -19,27 +19,46 @@ package org.neo4j.cypher.parser
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
+
 trait ReturnItems extends JavaTokenParsers with Tokens {
-  def returnItem:Parser[ReturnItem] = nullablePropertyOutput | relationshipTypeOutput | propertyOutput | nodeOutput
+  def returnItem: Parser[ReturnItem] = nullablePropertyOutput | relationshipTypeOutput | propertyOutput | nodeOutput
 
-  def nodeOutput:Parser[ReturnItem] = identity ^^ { EntityOutput(_) }
+  def nodeOutput: Parser[ReturnItem] = identity ^^ {
+    EntityOutput(_)
+  }
 
-  def propertyOutput:Parser[ReturnItem] = identity ~ "." ~ identity ^^
-    { case c ~ "." ~ p => PropertyOutput(c,p) }
+  def propertyOutput: Parser[ReturnItem] = identity ~ "." ~ identity ^^ {
+    case c ~ "." ~ p => PropertyOutput(c, p)
+  }
 
-  def nullablePropertyOutput:Parser[ReturnItem] = identity ~ "." ~ identity ~ "?" ^^
-    { case c ~ "." ~ p ~ "?" => NullablePropertyOutput(c,p) }
+  def nullablePropertyOutput: Parser[ReturnItem] = identity ~ "." ~ identity ~ "?" ^^ {
+    case c ~ "." ~ p ~ "?" => NullablePropertyOutput(c, p)
+  }
 
-  def relationshipTypeOutput:Parser[ReturnItem] = identity <~ ":TYPE" ^^
-    { case c => RelationshipTypeOutput(c) }
+  def relationshipTypeOutput: Parser[ReturnItem] = identity <~ ":TYPE" ^^ {
+    case c => RelationshipTypeOutput(c)
+  }
 
-  def count:Parser[AggregationItem] = ignoreCase("count") ~>"(" ~> ("*" | returnItem) <~ ")" ^^
-    {
-      case "*" => CountStar()
-      case x:ReturnItem => Count(x)
-    }
+  def lowerCaseIdent = ident ^^ {
+    case c => c.toLowerCase
+  }
+
+  def aggregationFunction: Parser[AggregationItem] = lowerCaseIdent ~ "(" ~ returnItem ~ ")" ^^ {
+    case "count" ~ "(" ~ inner ~ ")" => Count(inner)
+    case "min" ~ "(" ~ inner ~ ")" => Min(inner)
+    case "max" ~ "(" ~ inner ~ ")" => Max(inner)
+    case "sum" ~ "(" ~ inner ~ ")" => Sum(inner)
+    case "avg" ~ "(" ~ inner ~ ")" => Avg(inner)
+  }
+
+  def countStar: Parser[AggregationItem] = ignoreCase("count") ~> "(*)" ^^ {
+    case "(*)" => CountStar()
+  }
+
+  def aggregate:Parser[AggregationItem] = countStar | aggregationFunction
 }
 
 

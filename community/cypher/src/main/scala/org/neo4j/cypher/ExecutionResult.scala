@@ -22,7 +22,6 @@ package org.neo4j.cypher
 
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb.{PropertyContainer, Relationship, NotFoundException, Node}
-import java.util.jar.Attributes.Name
 import collection.Traversable
 
 trait ExecutionResult extends Traversable[Map[String, Any]] {
@@ -58,6 +57,8 @@ trait ExecutionResult extends Traversable[Map[String, Any]] {
   }
 
   def dumpToString(): String = {
+    val start = System.currentTimeMillis()
+
     val columnSizes = calculateColumnSizes
 
     val headers = columns.map((c) => Map[String, Any](c -> c)).reduceLeft(_ ++ _)
@@ -66,7 +67,9 @@ trait ExecutionResult extends Traversable[Map[String, Any]] {
     val --- = "+" + repeat("-", lineWidth) + "+"
 
     val resultLines: Traversable[String] = map(createString(columns, columnSizes, _))
-    val footer = resultLines.size + " rows"
+    val timeTaken = System.currentTimeMillis() - start
+    val footer = "%d rows, %d ms".format(resultLines.size, timeTaken)
+
     val footerLine = "| " + makeSize(footer,lineWidth-2) + " |"
     val lines = List(
           --- ,

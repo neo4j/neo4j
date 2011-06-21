@@ -217,7 +217,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val query = Query(
       Return(EntityOutput("start")),
       Start(NodeById("start", refNode.getId)),
-      Equals(Literal(1),Literal(0)))
+      Equals(Literal(1), Literal(0)))
 
     val result = execute(query)
 
@@ -456,6 +456,41 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     assertEquals(nodes.slice(2, 4).toList, result.columnAs[Node]("start").toList)
   }
 
+  @Test def shouldSortOnAggregatedFunction() {
+    val n1 = createNode(Map("name" -> "andres", "divison" -> "Sweden", "age" -> 33))
+    val n2 = createNode(Map("name" -> "michael", "divison" -> "Germany", "age" -> 22))
+    val n3 = createNode(Map("name" -> "jim", "divison" -> "England", "age" -> 55))
+    val n4 = createNode(Map("name" -> "anders", "divison" -> "Sweden", "age" -> 35))
+
+    val query = Query(
+      Return(PropertyOutput("n", "divison")),
+      Start(NodeById("n", n1.getId, n2.getId, n3.getId, n4.getId)),
+      Aggregation(Max(PropertyOutput("n", "age"))),
+      Sort(SortItem(Max(PropertyOutput("n", "age")), true)))
+
+    val result = execute(query)
+
+    assertEquals(List("Germany", "Sweden", "England"), result.columnAs[String]("n.divison").toList)
+  }
+
+  @Test @Ignore def shouldSortOnAggregatedFunctionAndNormalProperty() {
+    val n1 = createNode(Map("name" -> "andres", "division" -> "Sweden"))
+    val n2 = createNode(Map("name" -> "michael", "division" -> "Germany"))
+    val n3 = createNode(Map("name" -> "jim", "division" -> "England"))
+    val n4 = createNode(Map("name" -> "mattias", "division" -> "Sweden"))
+
+    val query = Query(
+      Return(PropertyOutput("n", "division")),
+      Start(NodeById("n", n1.getId, n2.getId, n3.getId, n4.getId)),
+      Aggregation(CountStar()),
+      Sort(SortItem(CountStar(), true), SortItem(PropertyOutput("n", "division"), true)))
+
+    val result = execute(query)
+
+    assertEquals(List("Sweden", "Germany", "England"), result.columnAs[String]("n.division").toList)
+    assertEquals(List(2,1,1), result.columnAs[Int]("count(*)").toList)
+  }
+
   @Test def magicRelTypeWorksAsExpected() {
     createNodes("A", "B", "C")
     relate("A" -> "KNOWS" -> "B")
@@ -523,6 +558,23 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
         Map("node.y" -> "b", "count(node.x)" -> 1)))
   }
 
+
+  @Test def shouldSumNonNullValues() {
+    val n1 = createNode(Map("y" -> "a", "x" -> 33))
+    val n2 = createNode(Map("y" -> "a"))
+    val n3 = createNode(Map("y" -> "a", "x" -> 42))
+
+    val query = Query(
+      Return(PropertyOutput("node", "y")),
+      Start(NodeById("node", n1.getId, n2.getId, n3.getId)),
+      Aggregation(Sum(NullablePropertyOutput("node", "x"))))
+
+    val result = execute(query)
+
+    assertThat(result.toList.asJava,
+      hasItems[Map[String, Any]](Map("node.y" -> "a", "sum(node.x)" -> 75)))
+  }
+
   @Test def shouldWalkAlternativeRelationships() {
     val nodes: List[Node] = createNodes("A", "B", "C")
     relate("A" -> "KNOWS" -> "B")
@@ -532,11 +584,11 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
       Return(EntityOutput("x")),
       Start(NodeById("n", 1)),
       Match(RelatedTo("n", "x", Some("r"), None, Direction.OUTGOING)),
-      Or(Equals(RelationshipTypeValue("r"),Literal("KNOWS")),Equals(RelationshipTypeValue("r"),Literal("HATES"))))
+      Or(Equals(RelationshipTypeValue("r"), Literal("KNOWS")), Equals(RelationshipTypeValue("r"), Literal("HATES"))))
 
     val result = execute(query)
 
-    assertEquals(nodes.slice(1,3), result.columnAs[Node]("x").toList)
+    assertEquals(nodes.slice(1, 3), result.columnAs[Node]("x").toList)
   }
 
   @Test def shouldWalkAlternativeRelationships2() {
@@ -547,7 +599,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val query = new CypherParser().parse("start n=(1) match (n)-[r]->(x) where r:TYPE='KNOWS' or r:TYPE='HATES' return x")
     val result = execute(query)
 
-    assertEquals(nodes.slice(1,3), result.columnAs[Node]("x").toList)
+    assertEquals(nodes.slice(1, 3), result.columnAs[Node]("x").toList)
   }
 }
 

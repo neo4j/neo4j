@@ -22,7 +22,7 @@ package org.neo4j.cypher.parser
 import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
 trait Clauses extends JavaTokenParsers with Tokens with Values {
-  def clause: Parser[Clause] = (orderedComparison | not | notEquals | equals | regexp | parens) * (
+  def clause: Parser[Clause] = (orderedComparison | not | notEquals | equals | regexp | hasProperty | parens) * (
     ignoreCase("and") ^^^ { (a: Clause, b: Clause) => And(a, b) } |
     ignoreCase("or") ^^^ {  (a: Clause, b: Clause) => Or(a, b) })
 
@@ -30,6 +30,9 @@ trait Clauses extends JavaTokenParsers with Tokens with Values {
     case a ~ "=~" ~ b => RegularExpression(a, stripQuotes(b))
   }
 
+  def hasProperty: Parser[Clause] = property ^^ {
+    case prop => Has(prop.asInstanceOf[PropertyValue])
+  }
 
   def parens: Parser[Clause] = "(" ~> clause <~ ")"
 

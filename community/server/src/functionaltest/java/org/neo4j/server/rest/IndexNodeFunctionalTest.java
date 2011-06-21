@@ -184,9 +184,9 @@ public class IndexNodeFunctionalTest
      * 
      * NOTE: Spaces in the URI have to be escaped.
      * 
-     * [CAUTION] This does *not* overwrite previous entries. If you index the
-     * same key/value/item combination twice,two index entries are created. To
-     * do update-type operations,you need to delete the old entry before adding
+     * CAUTION: This does *not* overwrite previous entries. If you index the
+     * same key/value/item combination twice, two index entries are created. To
+     * do update-type operations, you need to delete the old entry before adding
      * a new one.
      * 
      * ...

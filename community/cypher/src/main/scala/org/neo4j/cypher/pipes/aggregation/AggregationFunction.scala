@@ -52,7 +52,7 @@ class CountFunction(returnItem:ReturnItem) extends AggregationFunction {
   var count = 0
 
   def apply(data: Map[String, Any]) {
-    returnItem(data).head._2 match {
+    returnItem(data)(returnItem.columnName) match {
       case null =>
       case _ => count = count + 1
     }

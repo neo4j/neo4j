@@ -1,3 +1,5 @@
+package org.neo4j.cypher.pipes.aggregation
+
 /**
  * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -17,22 +19,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.pipes
 
-import aggregation.SumFunction
 import org.junit.Assert._
 import org.junit.{Before, Test}
 import org.neo4j.cypher.SyntaxError
 import org.scalatest.junit.JUnitSuite
+import org.neo4j.cypher.commands.EntityOutput
 
 class SumFunctionTest extends JUnitSuite {
-  var func: SumFunction = null
-
-  @Before
-  def init() {
-    func = new SumFunction("x")
-  }
-
   @Test def singleValueReturnsThatNumber() {
     val result = sumOn(1)
 
@@ -80,7 +74,7 @@ class SumFunctionTest extends JUnitSuite {
   }
 
   def sumOn(values: Any*): Any = {
-    val func = new SumFunction("x")
+    val func = new SumFunction(EntityOutput("x"))
 
     values.foreach(value => {
       func(Map("x" -> value))

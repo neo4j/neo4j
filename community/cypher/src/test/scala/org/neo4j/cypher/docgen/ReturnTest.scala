@@ -24,8 +24,6 @@ import org.junit.Assert._
 import org.neo4j.graphdb.RelationshipType
 
 class ReturnTest extends DocumentingTestBase {
-  def indexProps = List()
-
   def graphDescription = List("A KNOWS B")
 
   def section = "Return"

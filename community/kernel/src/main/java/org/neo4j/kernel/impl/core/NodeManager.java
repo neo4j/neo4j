@@ -35,6 +35,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.LruCache;
@@ -596,13 +597,12 @@ public class NodeManager
         return persistenceManager.getRelationshipChainPosition( node.getId() );
     }
 
-    Pair<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>> getMoreRelationships( NodeImpl node )
+    Triplet<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>,Long> getMoreRelationships( NodeImpl node )
     {
         long nodeId = node.getId();
         long position = node.getRelChainPosition();
         Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, Long> rels =
             persistenceManager.getMoreRelationships( nodeId, position );
-        node.setRelChainPosition( rels.other() );
         ArrayMap<String,RelIdArray> newRelationshipMap =
             new ArrayMap<String,RelIdArray>();
         Map<Long,RelationshipImpl> relsMap = new HashMap<Long,RelationshipImpl>( 150 );
@@ -619,7 +619,7 @@ public class NodeManager
                 relsMap, DirectionWrapper.INCOMING, hasLoops );
         
         // relCache.putAll( relsMap );
-        return Pair.of( newRelationshipMap, relsMap );
+        return Triplet.of( newRelationshipMap, relsMap, rels.other() );
     }
 
     private void receiveRelationships(

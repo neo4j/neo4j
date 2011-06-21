@@ -34,6 +34,7 @@ import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.transaction.LockType;
@@ -176,28 +177,28 @@ class NodeImpl extends Primitive
     public Iterable<Relationship> getRelationships( NodeManager nodeManager )
     {
         return new IntArrayIterator( getAllRelationships( nodeManager, DirectionWrapper.BOTH ), this,
-            DirectionWrapper.BOTH, nodeManager, new RelationshipType[0] );
+            DirectionWrapper.BOTH, nodeManager, new RelationshipType[0], !hasMoreRelationshipsToLoad() );
     }
 
     public Iterable<Relationship> getRelationships( NodeManager nodeManager, Direction dir )
     {
         DirectionWrapper direction = RelIdArray.wrap( dir );
         return new IntArrayIterator( getAllRelationships( nodeManager, direction ), this, direction,
-            nodeManager, new RelationshipType[0] );
+            nodeManager, new RelationshipType[0], !hasMoreRelationshipsToLoad() );
     }
 
     public Iterable<Relationship> getRelationships( NodeManager nodeManager, RelationshipType type )
     {
         RelationshipType types[] = new RelationshipType[] { type };
         return new IntArrayIterator( getAllRelationshipsOfType( nodeManager, DirectionWrapper.BOTH, types ),
-            this, DirectionWrapper.BOTH, nodeManager, types );
+            this, DirectionWrapper.BOTH, nodeManager, types, !hasMoreRelationshipsToLoad() );
     }
 
     public Iterable<Relationship> getRelationships( NodeManager nodeManager,
             RelationshipType... types )
     {
         return new IntArrayIterator( getAllRelationshipsOfType( nodeManager, DirectionWrapper.BOTH, types ),
-            this, DirectionWrapper.BOTH, nodeManager, types );
+            this, DirectionWrapper.BOTH, nodeManager, types, !hasMoreRelationshipsToLoad() );
     }
 
     public Iterable<Relationship> getRelationships( NodeManager nodeManager,
@@ -205,7 +206,7 @@ class NodeImpl extends Primitive
     {
         DirectionWrapper dir = RelIdArray.wrap( direction );
         return new IntArrayIterator( getAllRelationshipsOfType( nodeManager, dir, types ),
-            this, dir, nodeManager, types );
+            this, dir, nodeManager, types, !hasMoreRelationshipsToLoad() );
     }
     
     public Relationship getSingleRelationship( NodeManager nodeManager, RelationshipType type,
@@ -214,7 +215,7 @@ class NodeImpl extends Primitive
         DirectionWrapper direction = RelIdArray.wrap( dir );
         RelationshipType types[] = new RelationshipType[] { type };
         Iterator<Relationship> rels = new IntArrayIterator( getAllRelationshipsOfType( nodeManager,
-                direction, types ), this, direction, nodeManager, types );
+                direction, types ), this, direction, nodeManager, types, !hasMoreRelationshipsToLoad() );
         if ( !rels.hasNext() )
         {
             return null;
@@ -234,7 +235,7 @@ class NodeImpl extends Primitive
         RelationshipType types[] = new RelationshipType[] { type };
         DirectionWrapper direction = RelIdArray.wrap( dir );
         return new IntArrayIterator( getAllRelationshipsOfType( nodeManager, direction, types ),
-            this, direction, nodeManager, types );
+            this, direction, nodeManager, types, !hasMoreRelationshipsToLoad() );
     }
 
     public void delete( NodeManager nodeManager )
@@ -308,20 +309,24 @@ class NodeImpl extends Primitive
 
     private void loadInitialRelationships( NodeManager nodeManager )
     {
-        Map<Long,RelationshipImpl> map = null;
+        Pair<Map<Long,RelationshipImpl>,Long> rels = null;
         synchronized ( this )
         {
             if ( relationships == null )
             {
                 this.relChainPosition = nodeManager.getRelationshipChainPosition( this );
                 ArrayMap<String,RelIdArray> tmpRelMap = new ArrayMap<String,RelIdArray>();
-                map = getMoreRelationships( nodeManager, tmpRelMap );
+                rels = getMoreRelationships( nodeManager, tmpRelMap );
                 this.relationships = toRelIdArray( tmpRelMap );
+                if ( rels != null )
+                {
+                    setRelChainPosition( rels.other() );
+                }
             }
         }
-        if ( map != null )
+        if ( rels != null )
         {
-            nodeManager.putAllInRelCache( map );
+            nodeManager.putAllInRelCache( rels.first() );
         }
     }
 
@@ -336,19 +341,19 @@ class NodeImpl extends Primitive
         int i = 0;
         for ( RelIdArray array : tmpRelMap.values() )
         {
-            result[i++] = array.shrink();
+            result[i++] = array;
         }
         return result;
     }
 
-    private Map<Long,RelationshipImpl> getMoreRelationships( NodeManager nodeManager, 
+    private Pair<Map<Long,RelationshipImpl>,Long> getMoreRelationships( NodeManager nodeManager, 
             ArrayMap<String,RelIdArray> tmpRelMap )
     {
         if ( !hasMoreRelationshipsToLoad() )
         {
             return null;
         }
-        Pair<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>> pair = 
+        Triplet<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>,Long> pair = 
             nodeManager.getMoreRelationships( this );
         ArrayMap<String,RelIdArray> addMap = pair.first();
         if ( addMap.size() == 0 )
@@ -377,14 +382,14 @@ class NodeImpl extends Primitive
         // nodeManager.putAllInRelCache( pair.other() );
     }
     
-    private boolean hasMoreRelationshipsToLoad()
+    boolean hasMoreRelationshipsToLoad()
     {
         return relChainPosition != Record.NO_NEXT_RELATIONSHIP.intValue();
     }
 
     boolean getMoreRelationships( NodeManager nodeManager )
     {
-        Pair<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>> pair;
+        Triplet<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>,Long> rels;
         if ( !hasMoreRelationshipsToLoad() )
         {
             return false;
@@ -396,8 +401,8 @@ class NodeImpl extends Primitive
                 return false;
             }
             
-            pair = nodeManager.getMoreRelationships( this );
-            ArrayMap<String,RelIdArray> addMap = pair.first();
+            rels = nodeManager.getMoreRelationships( this );
+            ArrayMap<String,RelIdArray> addMap = rels.first();
             if ( addMap.size() == 0 )
             {
                 return false;
@@ -421,12 +426,13 @@ class NodeImpl extends Primitive
                     }
                 }
             }
+            
+            setRelChainPosition( rels.third() );
         }
-        nodeManager.putAllInRelCache( pair.other() );
+        nodeManager.putAllInRelCache( rels.second() );
         return true;
     }
         
-
     private RelIdArray getRelIdArray( String type )
     {
         // Concurrency-wise it's ok even if the relationships variable
@@ -627,6 +633,14 @@ class NodeImpl extends Primitive
     void setRelChainPosition( long position )
     {
         this.relChainPosition = position;
+        if ( !hasMoreRelationshipsToLoad() )
+        {
+            // Shrink arrays
+            for ( int i = 0; i < relationships.length; i++ )
+            {
+                relationships[i] = relationships[i].shrink();
+            }
+        }
     }
 
     RelIdArray getRelationshipIds( String type )
