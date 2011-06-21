@@ -81,7 +81,7 @@ public class DatabaseActions
     private final AbstractGraphDatabase graphDb;
     private final LeaseManager leases;
 
-    public DatabaseActions( Database database, LeaseManager leaseManager)
+    public DatabaseActions( Database database, LeaseManager leaseManager )
     {
         this.leases = leaseManager;
         this.graphDb = database.graph;
@@ -943,26 +943,37 @@ public class DatabaseActions
         return new ListRepresentation( returnType.repType, result );
     }
 
-    public ListRepresentation pagedTraverse( String traverserId, TraverserReturnType returnType)
+    public ListRepresentation pagedTraverse( String traverserId, TraverserReturnType returnType )
     {
         Lease lease = leases.getLeaseById( traverserId );
-        if(lease == null) {
-            throw new NotFoundException( String.format("The traverser with id [%s] was not found", traverserId) );
+        if ( lease == null )
+        {
+            throw new NotFoundException( String.format( "The traverser with id [%s] was not found", traverserId ) );
         }
-        
+
         PagedTraverser traverser = lease.getLeasedItemAndRenewLease();
         List<Path> paths = traverser.next();
-        
+
         List<Representation> result = new ArrayList<Representation>();
-        
-        for(Path p : paths) {
-            result.add( returnType.toRepresentation( p ) );
+
+        if ( paths != null )
+        {
+            for ( Path p : paths )
+            {
+                result.add( returnType.toRepresentation( p ) );
+            }
         }
-        
+        else
+        {
+            leases.remove(traverserId);
+            // Yuck.
+            throw new NotFoundException(String.format("The results for traveser with id [%s] have been fully paged]", traverserId));  
+        }
+
         return new ListRepresentation( returnType.repType, result );
     }
 
-    public String createPagedTraverser( long nodeId, Map<String, Object> description, int pageSize, int leaseTime)
+    public String createPagedTraverser( long nodeId, Map<String, Object> description, int pageSize, int leaseTime )
     {
         Node node = graphDb.getNodeById( nodeId );
 
@@ -970,9 +981,22 @@ public class DatabaseActions
 
         PagedTraverser traverser = new PagedTraverser( traversalDescription.traverse( node ), pageSize );
 
-        return leases.createLease( leaseTime, traverser ).getId();
+        return leases.createLease( leaseTime, traverser )
+                .getId();
     }
     
+    
+    public boolean removePagedTraverse( String traverserId )
+    {
+        Lease lease = leases.getLeaseById( traverserId );
+        if( lease == null) {
+            return false;
+        } else {
+            leases.remove( lease.getId() );
+            return true;
+        }
+    }
+
     // Graph algos
 
     @SuppressWarnings( "rawtypes" )

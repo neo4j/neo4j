@@ -47,6 +47,7 @@ import org.neo4j.server.rest.domain.TraverserReturnType;
 import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.InputFormat;
+import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.PropertiesRepresentation;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
@@ -69,7 +70,7 @@ public class RestfulGraphDatabase
             }
         }
     }
-    
+
     private static final String PATH_NODES = "node";
     private static final String PATH_NODE = PATH_NODES + "/{nodeId}";
     private static final String PATH_NODE_PROPERTIES = PATH_NODE + "/properties";
@@ -106,12 +107,12 @@ public class RestfulGraphDatabase
     private final OutputFormat output;
     private final InputFormat input;
     private final UriInfo uriInfo;
-    
+
     public static final String PATH_TO_CREATE_PAGED_TRAVERSERS = PATH_NODE + "/paged/traverse/{returnType}";
     public static final String PATH_TO_PAGED_TRAVERSERS = PATH_NODE + "/paged/traverse/{returnType}/{traverserId}";
 
     public RestfulGraphDatabase( @Context UriInfo uriInfo, @Context Database database, @Context InputFormat input,
-            @Context OutputFormat output, @Context LeaseManager leaseManager)
+            @Context OutputFormat output, @Context LeaseManager leaseManager )
     {
         this.uriInfo = uriInfo;
         this.input = input;
@@ -961,6 +962,22 @@ public class RestfulGraphDatabase
 
     // Paged traversal
 
+    @DELETE
+    @Path( PATH_TO_PAGED_TRAVERSERS )
+    public Response removePagedTraverser( @PathParam( "traverserId" ) String traverserId )
+    {
+
+        if ( actions.removePagedTraverse( traverserId ) )
+        {
+            return Response.ok().build();
+        }
+        else
+        {
+            return output.notFound();
+        }
+
+    }
+
     @GET
     @Path( PATH_TO_PAGED_TRAVERSERS )
     public Response pagedTraverse( @PathParam( "traverserId" ) String traverserId,
@@ -968,10 +985,10 @@ public class RestfulGraphDatabase
     {
         try
         {
-            String responseBody = output.format( actions.pagedTraverse( traverserId, returnType ) );
+            ListRepresentation result = actions.pagedTraverse( traverserId, returnType );
 
             return Response.ok( uriInfo.getRequestUri() )
-                    .entity( responseBody )
+                    .entity( output.format( result ) )
                     .build();
         }
         catch ( NotFoundException e )
@@ -989,6 +1006,9 @@ public class RestfulGraphDatabase
     {
         try
         {
+            validatePageSize( pageSize );
+            validateLeaseTime( leaseTimeInSeconds );
+
             String traverserId = actions.createPagedTraverser( startNode, input.readMap( body ), pageSize,
                     leaseTimeInSeconds );
 
@@ -996,7 +1016,7 @@ public class RestfulGraphDatabase
 
             URI uri = new URI( uriInfo.getBaseUri()
                     .toString() + "node/" + startNode + "/paged/traverse/" + returnType + "/" + traverserId );
-            
+
             return Response.created( uri.normalize() )
                     .entity( responseBody )
                     .build();
@@ -1012,6 +1032,22 @@ public class RestfulGraphDatabase
         catch ( URISyntaxException e )
         {
             return output.serverError( e );
+        }
+    }
+
+    private void validateLeaseTime( int leaseTimeInSeconds ) throws BadInputException
+    {
+        if ( leaseTimeInSeconds < 1 )
+        {
+            throw new BadInputException( "Lease time less than 1 second is not supported" );
+        }
+    }
+
+    private void validatePageSize( int pageSize ) throws BadInputException
+    {
+        if ( pageSize < 1 )
+        {
+            throw new BadInputException( "Page size less than 1 is not permitted" );
         }
     }
 

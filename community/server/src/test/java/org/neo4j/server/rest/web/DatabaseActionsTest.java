@@ -876,7 +876,7 @@ public class DatabaseActionsTest
                 TraverserReturnType.node ) );
         assertEquals( 2, hits.size() );
     }
-
+    
     @Test
     public void shouldBeAbleToGetRelationshipsIfSpecified() throws DatabaseBlockedException
     {

@@ -59,6 +59,7 @@ public class PagingTraversalTest
     private String databasePath;
     private GraphDbHelper helper;
     private LeaseManager leaseManager;
+    private static final int SIXTY_SECONDS = 60;
     
 
     @Before
@@ -135,6 +136,26 @@ public class PagingTraversalTest
     }
     
     @Test
+    public void shouldRespondWith400OnNegativePageSize() {
+        long arbitraryStartNodeId = 1l;
+        int negativePageSize = -5;
+        String arbitraryDescription = description();
+        Response response = service.createPagedTraverser( arbitraryStartNodeId , TraverserReturnType.node, negativePageSize, SIXTY_SECONDS, arbitraryDescription );
+        
+        assertEquals(400, response.getStatus());
+    }
+    
+    @Test
+    public void shouldRespondWith400OnLeaseTime() {
+        long arbitraryStartNodeId = 1l;
+        int arbitraryPageSize = 5;
+        String arbitraryDescription = description();
+        Response response = service.createPagedTraverser( arbitraryStartNodeId , TraverserReturnType.node, arbitraryPageSize, -5, arbitraryDescription );
+        
+        assertEquals(400, response.getStatus());
+    }
+    
+    @Test
     public void shouldRenewLeaseAtEachTraversal() {
         Response response = createAPagedTraverser();
 
@@ -153,6 +174,16 @@ public class PagingTraversalTest
         assertEquals(404, response.getStatus());
     }
 
+    @Test
+    public void shouldBeAbleToRemoveALeaseOnceOnly()
+    {        
+        Response response = createAPagedTraverser();
+        String traverserId = parseTraverserIdFromLocationUri( response );
+        
+        assertEquals(200, service.removePagedTraverser( traverserId ).getStatus());
+        assertEquals(404, service.removePagedTraverser( traverserId ).getStatus());
+    }
+    
     private UriInfo uriInfo()
     {
         UriInfo mockUriInfo = mock( UriInfo.class );
@@ -171,17 +202,22 @@ public class PagingTraversalTest
     private Response createAPagedTraverser()
     {
         long startNodeId = createListOfNodes( 1000 );
+        String description = description();
+
+        final int PAGE_SIZE = 10;
+        Response response = service.createPagedTraverser( startNodeId, TraverserReturnType.node, PAGE_SIZE, SIXTY_SECONDS, description );
+        
+        return response;
+    }
+
+    private String description()
+    {
         String description = "{"
                              + "\"prune evaluator\":{\"language\":\"builtin\",\"name\":\"none\"},"
                              + "\"return filter\":{\"language\":\"javascript\",\"body\":\"position.endNode().getProperty('name').contains('9');\"},"
                              + "\"order\":\"depth first\","
                              + "\"relationships\":{\"type\":\"PRECEDES\",\"direction\":\"out\"}" + "}";
-
-        final int SIXTY_SECONDS = 60;
-        final int PAGE_SIZE = 10;
-        Response response = service.createPagedTraverser( startNodeId, TraverserReturnType.node, PAGE_SIZE, SIXTY_SECONDS, description );
-        
-        return response;
+        return description;
     }
 
     private long createListOfNodes( int numberOfNodes )

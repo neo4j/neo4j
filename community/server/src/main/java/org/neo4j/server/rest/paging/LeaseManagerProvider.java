@@ -27,6 +27,15 @@ public class LeaseManagerProvider extends AbstractInjectableProvider<LeaseManage
 {
     private static final LeaseManager leaseManager = new LeaseManager( new RealClock() );
     
+    public static void setClock(Clock clock) {
+        leaseManager.setClock(clock);
+    }
+    
+    static Clock getClock()
+    {
+        return leaseManager.getClock();
+    }
+    
     public LeaseManagerProvider()
     {
         super(LeaseManager.class);

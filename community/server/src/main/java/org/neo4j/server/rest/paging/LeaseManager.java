@@ -23,26 +23,25 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class LeaseManager
-{   
-    private final Clock clock;
+{
+    private Clock clock;
     private Map<String, Lease> leases = new ConcurrentHashMap<String, Lease>();
-    
-    
+
     public LeaseManager( Clock clock )
     {
         this.clock = clock;
     }
 
-    public Lease createLease( long seconds, PagedTraverser leasedObject ) throws LeaseAlreadyExpiredException
-    {        
+    public Lease createLease( long seconds, PagedTraverser leasedTraverser ) throws LeaseAlreadyExpiredException
+    {
         if ( seconds < 1 )
         {
             return null;
         }
 
-        Lease lease = new Lease( leasedObject, seconds, clock );
+        Lease lease = new Lease( leasedTraverser, seconds, clock );
         leases.put( lease.getId(), lease );
-        
+
         return lease;
     }
 
@@ -50,11 +49,12 @@ public class LeaseManager
     {
         pruneOldLeasesByNaivelyIteratingThroughAllOfThem();
         Lease lease = leases.get( id );
-        
-        if(lease!= null) {
+
+        if ( lease != null )
+        {
             lease.renew();
         }
-        
+
         return lease;
     }
 
@@ -67,7 +67,7 @@ public class LeaseManager
                 Lease lease = leases.get( key );
                 if ( lease.getStartTime() + lease.getPeriod() < clock.currentTimeInMilliseconds() )
                 {
-                    leases.remove( key );
+                    remove( key );
                 }
             }
             catch ( Exception e )
@@ -81,5 +81,18 @@ public class LeaseManager
     public Clock getClock()
     {
         return clock;
+    }
+
+    public void setClock( Clock clock )
+    {
+        this.clock = clock;
+    }
+
+    public void remove( String key )
+    {
+        if ( leases.containsKey( key ) )
+        {
+            leases.remove( key );
+        }
     }
 }

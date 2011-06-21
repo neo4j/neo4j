@@ -47,6 +47,9 @@ import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.modules.ThirdPartyJAXRSModule;
 import org.neo4j.server.modules.WebAdminModule;
+import org.neo4j.server.rest.paging.Clock;
+import org.neo4j.server.rest.paging.FakeClock;
+import org.neo4j.server.rest.paging.LeaseManagerProvider;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
 import org.neo4j.server.web.Jetty6WebServer;
@@ -71,7 +74,8 @@ public class ServerBuilder
 
     private WhatToDo action;
     private List<Class<? extends ServerModule>> serverModules = null;
-
+    private Clock clock = null;
+    
     public static ServerBuilder server()
     {
         return new ServerBuilder();
@@ -96,6 +100,11 @@ public class ServerBuilder
         {
             startupHealthCheck = mock( StartupHealthCheck.class );
             when( startupHealthCheck.run() ).thenReturn( true );
+        }
+        
+        if(clock != null) 
+        {
+            LeaseManagerProvider.setClock( clock );
         }
 
         return new NeoServerWithEmbeddedWebServer( new NeoServerBootstrapper(), addressResolver, startupHealthCheck,
@@ -289,6 +298,12 @@ public class ServerBuilder
     public ServerBuilder withSpecificServerModulesOnly( Class<? extends ServerModule>... modules )
     {
         serverModules = Arrays.asList( modules );
+        return this;
+    }
+
+    public ServerBuilder withFakeClock()
+    {
+        clock = new FakeClock();
         return this;
     }
 }

@@ -29,14 +29,13 @@ public class LeaseManagerTest
 {
     private static final long SIXTY_SECONDS = 60;
 
-
     @Test
     public void shouldNotAcceptLeasesWithNegativeTTL() throws Exception
     {
         FakeClock fakeClock = new FakeClock();
         LeaseManager manager = new LeaseManager( fakeClock );
-        assertNull( manager.createLease( -1l, mock(PagedTraverser.class)) );
-        assertNull( manager.createLease( Long.MAX_VALUE + 1, mock(PagedTraverser.class) ) );
+        assertNull( manager.createLease( -1l, mock( PagedTraverser.class ) ) );
+        assertNull( manager.createLease( Long.MAX_VALUE + 1, mock( PagedTraverser.class ) ) );
     }
 
     @Test
@@ -45,7 +44,7 @@ public class LeaseManagerTest
         FakeClock fakeClock = new FakeClock();
         LeaseManager manager = new LeaseManager( fakeClock );
 
-        Lease lease = manager.createLease( SIXTY_SECONDS, mock(PagedTraverser.class) );
+        Lease lease = manager.createLease( SIXTY_SECONDS, mock( PagedTraverser.class ) );
 
         assertNotNull( manager.getLeaseById( lease.getId() ) );
 
@@ -57,8 +56,8 @@ public class LeaseManagerTest
         FakeClock fakeClock = new FakeClock();
         LeaseManager manager = new LeaseManager( fakeClock );
 
-        Lease lease = manager.createLease( 120, mock(PagedTraverser.class) );
-        
+        Lease lease = manager.createLease( 120, mock( PagedTraverser.class ) );
+
         fakeClock.forwardMinutes( 1 );
 
         assertNotNull( manager.getLeaseById( lease.getId() ) );
@@ -71,7 +70,7 @@ public class LeaseManagerTest
         FakeClock fakeClock = new FakeClock();
         LeaseManager manager = new LeaseManager( fakeClock );
 
-        Lease lease = manager.createLease( SIXTY_SECONDS, mock(PagedTraverser.class));
+        Lease lease = manager.createLease( SIXTY_SECONDS, mock( PagedTraverser.class ) );
 
         fakeClock.forwardMinutes( 2 );
 
@@ -84,13 +83,24 @@ public class LeaseManagerTest
         FakeClock fakeClock = new FakeClock();
         LeaseManager manager = new LeaseManager( fakeClock );
 
-        Lease leaseA = manager.createLease( SIXTY_SECONDS, mock(PagedTraverser.class) );
-        Lease leaseB = manager.createLease( SIXTY_SECONDS * 3, mock(PagedTraverser.class) );
+        Lease leaseA = manager.createLease( SIXTY_SECONDS, mock( PagedTraverser.class ) );
+        Lease leaseB = manager.createLease( SIXTY_SECONDS * 3, mock( PagedTraverser.class ) );
 
         fakeClock.forwardMinutes( 2 );
 
         assertNotNull( manager.getLeaseById( leaseB.getId() ) );
         assertNull( manager.getLeaseById( leaseA.getId() ) );
+    }
 
+    @Test
+    public void shouldRemoveALease()
+    {
+        FakeClock fakeClock = new FakeClock();
+        LeaseManager manager = new LeaseManager( fakeClock );
+        Lease lease = manager.createLease( 101l, mock( PagedTraverser.class ) );
+
+        manager.remove( lease.getId() );
+
+        assertNull( manager.getLeaseById( lease.getId() ) );
     }
 }

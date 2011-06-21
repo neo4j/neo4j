@@ -81,14 +81,15 @@ public class RestfulGraphDatabaseTest
     @BeforeClass
     public static void doBefore() throws IOException
     {
-        databasePath = ServerTestUtils.createTempDir().getAbsolutePath();
+        databasePath = ServerTestUtils.createTempDir()
+                .getAbsolutePath();
         database = new Database( ServerTestUtils.EMBEDDED_GRAPH_DATABASE_FACTORY, databasePath );
         helper = new GraphDbHelper( database );
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
-        leaseManager = new LeaseManager(new FakeClock());
+        leaseManager = new LeaseManager( new FakeClock() );
         service = new RestfulGraphDatabase( uriInfo(), database, new JsonFormat(), output, leaseManager );
     }
-    
+
     @Before
     public void deleteAllIndexes()
     {
@@ -106,7 +107,7 @@ public class RestfulGraphDatabaseTest
     public static void shutdownDatabase() throws IOException
     {
         database.shutdown();
-        org.apache.commons.io.FileUtils.forceDelete( new File(databasePath) );
+        org.apache.commons.io.FileUtils.forceDelete( new File( databasePath ) );
     }
 
     private static UriInfo uriInfo()
@@ -115,7 +116,8 @@ public class RestfulGraphDatabaseTest
         try
         {
             when( mockUriInfo.getBaseUri() ).thenReturn( new URI( BASE_URI ) );
-        } catch ( URISyntaxException e )
+        }
+        catch ( URISyntaxException e )
         {
             throw new RuntimeException( e );
         }
@@ -129,7 +131,8 @@ public class RestfulGraphDatabaseTest
         try
         {
             return new String( bytes, "UTF-8" );
-        } catch ( UnsupportedEncodingException e )
+        }
+        catch ( UnsupportedEncodingException e )
         {
             throw new RuntimeException( "Could not decode UTF-8", e );
         }
@@ -141,8 +144,11 @@ public class RestfulGraphDatabaseTest
         Response response = service.createNode( null );
 
         assertEquals( 201, response.getStatus() );
-        assertNotNull( response.getMetadata().get( "Location" ).get( 0 ) );
-        assertEquals( response.getMetadata().getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+        assertNotNull( response.getMetadata()
+                .get( "Location" )
+                .get( 0 ) );
+        assertEquals( response.getMetadata()
+                .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
         String json = entityAsString( response );
 
         Map<String, Object> map = JsonHelper.jsonToMap( json );
@@ -153,13 +159,17 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith201LocationHeaderAndNodeRepresentationInJSONWhenPopulatedNodeCreated() throws Exception
+    public void shouldRespondWith201LocationHeaderAndNodeRepresentationInJSONWhenPopulatedNodeCreated()
+            throws Exception
     {
         Response response = service.createNode( "{\"foo\" : \"bar\"}" );
 
         assertEquals( 201, response.getStatus() );
-        assertNotNull( response.getMetadata().get( "Location" ).get( 0 ) );
-        assertEquals( response.getMetadata().getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+        assertNotNull( response.getMetadata()
+                .get( "Location" )
+                .get( 0 ) );
+        assertEquals( response.getMetadata()
+                .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
         String json = entityAsString( response );
 
         Map<String, Object> map = JsonHelper.jsonToMap( json );
@@ -168,20 +178,22 @@ public class RestfulGraphDatabaseTest
 
         assertTrue( map.containsKey( "self" ) );
 
-        @SuppressWarnings("unchecked")
-        Map<String, Object> data = (Map<String, Object>) map.get( "data" );
+        @SuppressWarnings( "unchecked" ) Map<String, Object> data = (Map<String, Object>) map.get( "data" );
 
         assertEquals( "bar", data.get( "foo" ) );
     }
 
     @Test
-    @SuppressWarnings("unchecked")
-    public void shouldRespondWith201LocationHeaderAndNodeRepresentationInJSONWhenPopulatedNodeCreatedWithArrays() throws Exception
+    @SuppressWarnings( "unchecked" )
+    public void shouldRespondWith201LocationHeaderAndNodeRepresentationInJSONWhenPopulatedNodeCreatedWithArrays()
+            throws Exception
     {
         Response response = service.createNode( "{\"foo\" : [\"bar\", \"baz\"] }" );
 
         assertEquals( 201, response.getStatus() );
-        assertNotNull( response.getMetadata().get( "Location" ).get( 0 ) );
+        assertNotNull( response.getMetadata()
+                .get( "Location" )
+                .get( 0 ) );
         String json = entityAsString( response );
 
         Map<String, Object> map = JsonHelper.jsonToMap( json );
@@ -247,16 +259,14 @@ public class RestfulGraphDatabaseTest
     @Test
     public void shouldRespondWith400WhenTransferringCorruptJsonPayload() throws Exception
     {
-        Response response = service.setAllNodeProperties( helper.createNode(),
-                "{\"foo\" : bad-json-here \"bar\"}" );
+        Response response = service.setAllNodeProperties( helper.createNode(), "{\"foo\" : bad-json-here \"bar\"}" );
         assertEquals( 400, response.getStatus() );
     }
 
     @Test
     public void shouldRespondWith400WhenTransferringIncompatibleJsonPayload() throws Exception
     {
-        Response response = service.setAllNodeProperties( helper.createNode(),
-                "{\"foo\" : {\"bar\" : \"baz\"}}" );
+        Response response = service.setAllNodeProperties( helper.createNode(), "{\"foo\" : {\"bar\" : \"baz\"}}" );
         assertEquals( 400, response.getStatus() );
     }
 
@@ -269,7 +279,8 @@ public class RestfulGraphDatabaseTest
         helper.setNodeProperties( nodeId, properties );
         Response response = service.getAllNodeProperties( nodeId );
         assertEquals( 200, response.getStatus() );
-        assertEquals( response.getMetadata().getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+        assertEquals( response.getMetadata()
+                .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
     }
 
     @Test
@@ -390,7 +401,8 @@ public class RestfulGraphDatabaseTest
         helper.setNodeProperties( nodeId, Collections.singletonMap( key, value ) );
         Response response = service.getNodeProperty( nodeId, "foo" );
         assertEquals( 200, response.getStatus() );
-        assertEquals( response.getMetadata().getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+        assertEquals( response.getMetadata()
+                .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
     }
 
     @Test
@@ -405,27 +417,31 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith201AndLocationWhenRelationshipIsCreatedWithoutProperties() throws DatabaseBlockedException
+    public void shouldRespondWith201AndLocationWhenRelationshipIsCreatedWithoutProperties()
+            throws DatabaseBlockedException
     {
         long startNode = helper.createNode();
         long endNode = helper.createNode();
-        Response response = service.createRelationship( startNode, "{\"to\" : \"" + BASE_URI
-                + endNode
-                + "\", \"type\" : \"LOVES\"}" );
+        Response response = service.createRelationship( startNode, "{\"to\" : \"" + BASE_URI + endNode
+                                                                   + "\", \"type\" : \"LOVES\"}" );
         assertEquals( 201, response.getStatus() );
-        assertNotNull( response.getMetadata().get( "Location" ).get( 0 ) );
+        assertNotNull( response.getMetadata()
+                .get( "Location" )
+                .get( 0 ) );
     }
 
     @Test
-    public void shouldRespondWith201AndLocationWhenRelationshipIsCreatedWithProperties() throws DatabaseBlockedException
+    public void shouldRespondWith201AndLocationWhenRelationshipIsCreatedWithProperties()
+            throws DatabaseBlockedException
     {
         long startNode = helper.createNode();
         long endNode = helper.createNode();
         Response response = service.createRelationship( startNode,
-                "{\"to\" : \"" + BASE_URI + endNode
-                        + "\", \"type\" : \"LOVES\", \"properties\" : {\"foo\" : \"bar\"}}" );
+                "{\"to\" : \"" + BASE_URI + endNode + "\", \"type\" : \"LOVES\", \"properties\" : {\"foo\" : \"bar\"}}" );
         assertEquals( 201, response.getStatus() );
-        assertNotNull( response.getMetadata().get( "Location" ).get( 0 ) );
+        assertNotNull( response.getMetadata()
+                .get( "Location" )
+                .get( 0 ) );
     }
 
     @Test
@@ -434,15 +450,14 @@ public class RestfulGraphDatabaseTest
         long startNode = helper.createNode();
         long endNode = helper.createNode();
         Response response = service.createRelationship( startNode,
-                "{\"to\" : \"" + BASE_URI + endNode
-                        + "\", \"type\" : \"LOVES\", \"data\" : {\"foo\" : \"bar\"}}" );
+                "{\"to\" : \"" + BASE_URI + endNode + "\", \"type\" : \"LOVES\", \"data\" : {\"foo\" : \"bar\"}}" );
         Map<String, Object> map = JsonHelper.jsonToMap( entityAsString( response ) );
         assertNotNull( map );
         assertTrue( map.containsKey( "self" ) );
-        assertEquals( response.getMetadata().getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+        assertEquals( response.getMetadata()
+                .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
 
-        @SuppressWarnings("unchecked")
-        Map<String, Object> data = (Map<String, Object>) map.get( "data" );
+        @SuppressWarnings( "unchecked" ) Map<String, Object> data = (Map<String, Object>) map.get( "data" );
 
         assertEquals( "bar", data.get( "foo" ) );
     }
@@ -451,9 +466,8 @@ public class RestfulGraphDatabaseTest
     public void shouldRespondWith404WhenTryingToCreateRelationshipFromNonExistentNode() throws DatabaseBlockedException
     {
         long nodeId = helper.createNode();
-        Response response = service.createRelationship( nodeId * 1000,
-                "{\"to\" : \"" + BASE_URI + nodeId
-                        + "\", \"type\" : \"LOVES\"}" );
+        Response response = service.createRelationship( nodeId * 1000, "{\"to\" : \"" + BASE_URI + nodeId
+                                                                       + "\", \"type\" : \"LOVES\"}" );
         assertEquals( 404, response.getStatus() );
     }
 
@@ -461,9 +475,8 @@ public class RestfulGraphDatabaseTest
     public void shouldRespondWith400WhenTryingToCreateRelationshipToNonExistentNode() throws DatabaseBlockedException
     {
         long nodeId = helper.createNode();
-        Response response = service.createRelationship( nodeId, "{\"to\" : \"" + BASE_URI
-                + (nodeId * 1000)
-                + "\", \"type\" : \"LOVES\"}" );
+        Response response = service.createRelationship( nodeId, "{\"to\" : \"" + BASE_URI + ( nodeId * 1000 )
+                                                                + "\", \"type\" : \"LOVES\"}" );
         assertEquals( 400, response.getStatus() );
     }
 
@@ -472,7 +485,7 @@ public class RestfulGraphDatabaseTest
     {
         long nodeId = helper.createNode();
         Response response = service.createRelationship( nodeId, "{\"to\" : \"" + BASE_URI + nodeId
-                + "\", \"type\" : \"LOVES\"}" );
+                                                                + "\", \"type\" : \"LOVES\"}" );
         assertEquals( 201, response.getStatus() );
     }
 
@@ -481,14 +494,14 @@ public class RestfulGraphDatabaseTest
     {
         long startNode = helper.createNode();
         long endNode = helper.createNode();
-        Response response = service.createRelationship( startNode,
-                "{\"to\" : \"" + BASE_URI + endNode
-                        + "\", \"type\" ***and junk*** : \"LOVES\"}" );
+        Response response = service.createRelationship( startNode, "{\"to\" : \"" + BASE_URI + endNode
+                                                                   + "\", \"type\" ***and junk*** : \"LOVES\"}" );
         assertEquals( 400, response.getStatus() );
     }
 
     @Test
-    public void shouldRespondWith400WhenTryingToCreateRelationshipWithUnsupportedProperties() throws DatabaseBlockedException
+    public void shouldRespondWith400WhenTryingToCreateRelationshipWithUnsupportedProperties()
+            throws DatabaseBlockedException
     {
         long startNode = helper.createNode();
         long endNode = helper.createNode();
@@ -519,7 +532,8 @@ public class RestfulGraphDatabaseTest
         properties.put( "number", 15 );
         helper.setNodeProperties( nodeId, properties );
         service.deleteAllNodeProperties( nodeId );
-        assertEquals( true, helper.getNodeProperties( nodeId ).isEmpty() );
+        assertEquals( true, helper.getNodeProperties( nodeId )
+                .isEmpty() );
     }
 
     @Test
@@ -539,7 +553,8 @@ public class RestfulGraphDatabaseTest
         properties.put( "number", 15 );
         helper.setNodeProperties( nodeId, properties );
         service.deleteNodeProperty( nodeId, "foo" );
-        assertEquals( Collections.singletonMap( "number", (Object) new Integer( 15 ) ), helper.getNodeProperties( nodeId ) );
+        assertEquals( Collections.singletonMap( "number", (Object) new Integer( 15 ) ),
+                helper.getNodeProperties( nodeId ) );
     }
 
     @Test
@@ -568,7 +583,8 @@ public class RestfulGraphDatabaseTest
         long relationshipId = helper.createRelationship( "BEATS" );
         Response response = service.getRelationship( relationshipId );
         assertEquals( 200, response.getStatus() );
-        assertEquals( response.getMetadata().getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+        assertEquals( response.getMetadata()
+                .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
     }
 
     @Test
@@ -587,7 +603,8 @@ public class RestfulGraphDatabaseTest
         helper.setRelationshipProperties( relationshipId, properties );
         Response response = service.getAllRelationshipProperties( relationshipId );
         assertEquals( 200, response.getStatus() );
-        assertEquals( response.getMetadata().getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+        assertEquals( response.getMetadata()
+                .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
         Map<String, Object> readProperties = JsonHelper.jsonToMap( entityAsString( response ) );
         assertEquals( properties, readProperties );
     }
@@ -601,7 +618,8 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldGet200WhenSuccessfullyRetrievedPropertyOnRelationship() throws DatabaseBlockedException, PropertyValueException
+    public void shouldGet200WhenSuccessfullyRetrievedPropertyOnRelationship() throws DatabaseBlockedException,
+            PropertyValueException
     {
 
         long relationshipId = helper.createRelationship( "knows" );
@@ -613,7 +631,8 @@ public class RestfulGraphDatabaseTest
 
         assertEquals( 200, response.getStatus() );
         assertEquals( "some-value", JsonHelper.jsonToSingleValue( entityAsString( response ) ) );
-        assertEquals( response.getMetadata().getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+        assertEquals( response.getMetadata()
+                .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
     }
 
     @Test
@@ -643,7 +662,8 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingRelationshipsForANode() throws DatabaseBlockedException, JsonParseException
+    public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingRelationshipsForANode()
+            throws DatabaseBlockedException, JsonParseException
     {
         long nodeId = helper.createNode();
         helper.createRelationship( "LIKES", nodeId, helper.createNode() );
@@ -653,7 +673,8 @@ public class RestfulGraphDatabaseTest
         Response response = service.getNodeRelationships( nodeId, RelationshipDirection.all,
                 new AmpersandSeparatedCollection( "" ) );
         assertEquals( 200, response.getStatus() );
-        assertEquals( response.getMetadata().getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+        assertEquals( response.getMetadata()
+                .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
         verifyRelReps( 3, entityAsString( response ) );
 
         response = service.getNodeRelationships( nodeId, RelationshipDirection.in,
@@ -661,24 +682,25 @@ public class RestfulGraphDatabaseTest
         assertEquals( 200, response.getStatus() );
         verifyRelReps( 1, entityAsString( response ) );
 
-        response = service.getNodeRelationships( nodeId, RelationshipDirection.out,
-                new AmpersandSeparatedCollection( "" ) );
+        response = service.getNodeRelationships( nodeId, RelationshipDirection.out, new AmpersandSeparatedCollection(
+                "" ) );
         assertEquals( 200, response.getStatus() );
         verifyRelReps( 2, entityAsString( response ) );
 
-        response = service.getNodeRelationships( nodeId, RelationshipDirection.out,
-                new AmpersandSeparatedCollection( "LIKES&HATES" ) );
+        response = service.getNodeRelationships( nodeId, RelationshipDirection.out, new AmpersandSeparatedCollection(
+                "LIKES&HATES" ) );
         assertEquals( 200, response.getStatus() );
         verifyRelReps( 2, entityAsString( response ) );
 
-        response = service.getNodeRelationships( nodeId, RelationshipDirection.all,
-                new AmpersandSeparatedCollection( "LIKES" ) );
+        response = service.getNodeRelationships( nodeId, RelationshipDirection.all, new AmpersandSeparatedCollection(
+                "LIKES" ) );
         assertEquals( 200, response.getStatus() );
         verifyRelReps( 2, entityAsString( response ) );
     }
 
     @Test
-    public void shouldNotReturnDuplicatesIfSameTypeSpecifiedMoreThanOnce() throws DatabaseBlockedException, PropertyValueException
+    public void shouldNotReturnDuplicatesIfSameTypeSpecifiedMoreThanOnce() throws DatabaseBlockedException,
+            PropertyValueException
     {
         long nodeId = helper.createNode();
         helper.createRelationship( "LIKES", nodeId, helper.createNode() );
@@ -708,11 +730,13 @@ public class RestfulGraphDatabaseTest
                 new AmpersandSeparatedCollection( "" ) );
         assertEquals( 200, response.getStatus() );
         verifyRelReps( 0, entityAsString( response ) );
-        assertEquals( response.getMetadata().getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+        assertEquals( response.getMetadata()
+                .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
     }
 
     @Test
-    public void shouldRespondWith404WhenGettingIncomingRelationshipsForNonExistingNode() throws DatabaseBlockedException
+    public void shouldRespondWith404WhenGettingIncomingRelationshipsForNonExistingNode()
+            throws DatabaseBlockedException
     {
         Response response = service.getNodeRelationships( 999999, RelationshipDirection.all,
                 new AmpersandSeparatedCollection( "" ) );
@@ -720,7 +744,8 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith204AndSetCorrectDataWhenSettingRelationshipProperties() throws DatabaseBlockedException
+    public void shouldRespondWith204AndSetCorrectDataWhenSettingRelationshipProperties()
+            throws DatabaseBlockedException
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
         String json = "{\"name\": \"Mattias\", \"age\": 30}";
@@ -742,7 +767,8 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith404WhenSettingRelationshipPropertiesOnNonExistingRelationship() throws DatabaseBlockedException
+    public void shouldRespondWith404WhenSettingRelationshipPropertiesOnNonExistingRelationship()
+            throws DatabaseBlockedException
     {
         long relationshipId = 99999999;
         String json = "{\"name\": \"Mattias\", \"age\": 30}";
@@ -759,7 +785,8 @@ public class RestfulGraphDatabaseTest
         String json = "\"" + value + "\"";
         Response response = service.setRelationshipProperty( relationshipId, key, json );
         assertEquals( 204, response.getStatus() );
-        assertEquals( value, helper.getRelationshipProperties( relationshipId ).get( "name" ) );
+        assertEquals( value, helper.getRelationshipProperties( relationshipId )
+                .get( "name" ) );
     }
 
     @Test
@@ -772,7 +799,8 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith404WhenSettingRelationshipPropertyOnNonExistingRelationship() throws DatabaseBlockedException
+    public void shouldRespondWith404WhenSettingRelationshipPropertyOnNonExistingRelationship()
+            throws DatabaseBlockedException
     {
         long relationshipId = 99999999;
         String json = "\"Mattias\"";
@@ -791,7 +819,8 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith204WhenSuccessfullyRemovedRelationshipPropertiesWhichAreEmpty() throws DatabaseBlockedException
+    public void shouldRespondWith204WhenSuccessfullyRemovedRelationshipPropertiesWhichAreEmpty()
+            throws DatabaseBlockedException
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
 
@@ -887,7 +916,8 @@ public class RestfulGraphDatabaseTest
         assertNotNull( map.get( "node_index" ) );
         assertNotNull( map.get( "extensions_info" ) );
         assertNotNull( map.get( "relationship_index" ) );
-        assertEquals( response.getMetadata().getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+        assertEquals( response.getMetadata()
+                .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
     }
 
     @Test
@@ -907,55 +937,57 @@ public class RestfulGraphDatabaseTest
 
         assertNull( map.get( "reference_node" ) );
 
-        assertEquals( response.getMetadata().getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+        assertEquals( response.getMetadata()
+                .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
     }
 
     @Test
     public void shouldBeAbleToIndexNode() throws DatabaseBlockedException, JsonParseException
     {
         Response response = service.createNode( null );
-        URI nodeUri = (URI) response.getMetadata().getFirst( "Location" );
+        URI nodeUri = (URI) response.getMetadata()
+                .getFirst( "Location" );
 
         String key = "key";
         String value = "value";
-        response = service.addToNodeIndex( "node", key, value,
-                JsonHelper.createJsonFrom( nodeUri.toString() ) );
+        response = service.addToNodeIndex( "node", key, value, JsonHelper.createJsonFrom( nodeUri.toString() ) );
         assertEquals( 201, response.getStatus() );
-        assertNotNull( response.getMetadata().getFirst( "Location" ) );
+        assertNotNull( response.getMetadata()
+                .getFirst( "Location" ) );
     }
-    
+
     @Test
     public void shouldBeAbleToRemoveNodeIndex() throws DatabaseBlockedException, JsonParseException
     {
         String indexName = "myFancyIndex";
-        
-        assertEquals(0,helper.getNodeIndexes().length);
+
+        assertEquals( 0, helper.getNodeIndexes().length );
 
         helper.createNodeIndex( indexName );
-        
-        assertEquals(1,helper.getNodeIndexes().length);
-        
+
+        assertEquals( 1, helper.getNodeIndexes().length );
+
         Response response = service.deleteNodeIndex( indexName );
 
         assertEquals( 204, response.getStatus() );
-        assertEquals(0,helper.getNodeIndexes().length);
+        assertEquals( 0, helper.getNodeIndexes().length );
     }
-    
+
     @Test
     public void shouldBeAbleToRemoveRelationshipIndex() throws DatabaseBlockedException, JsonParseException
     {
         String indexName = "myFancyIndex";
-        
-        assertEquals(0,helper.getRelationshipIndexes().length);
+
+        assertEquals( 0, helper.getRelationshipIndexes().length );
 
         helper.createRelationshipIndex( indexName );
-        
-        assertEquals(1,helper.getRelationshipIndexes().length);
-        
+
+        assertEquals( 1, helper.getRelationshipIndexes().length );
+
         Response response = service.deleteRelationshipIndex( indexName );
 
         assertEquals( 204, response.getStatus() );
-        assertEquals(0,helper.getRelationshipIndexes().length);
+        assertEquals( 0, helper.getRelationshipIndexes().length );
     }
 
     @Test
@@ -968,15 +1000,18 @@ public class RestfulGraphDatabaseTest
         helper.addNodeToIndex( indexName, key, value, nodeId );
         Response response = service.getNodeFromIndexUri( indexName, key, value, nodeId );
         assertEquals( 200, response.getStatus() );
-        assertEquals( response.getMetadata().getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
-        assertNull( response.getMetadata().get( "Location" ) );
+        assertEquals( response.getMetadata()
+                .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+        assertNull( response.getMetadata()
+                .get( "Location" ) );
         Map<String, Object> map = JsonHelper.jsonToMap( entityAsString( response ) );
         assertNotNull( map );
         assertTrue( map.containsKey( "self" ) );
     }
 
     @Test
-    public void shouldBeAbleToGetRelationshipRepresentationFromIndexUri() throws DatabaseBlockedException, JsonParseException
+    public void shouldBeAbleToGetRelationshipRepresentationFromIndexUri() throws DatabaseBlockedException,
+            JsonParseException
     {
         String key = "key_get_noderep";
         String value = "value";
@@ -989,21 +1024,26 @@ public class RestfulGraphDatabaseTest
         helper.addRelationshipToIndex( indexName, key, value, relationshipId );
         Response response = service.getRelationshipFromIndexUri( indexName, key, value, relationshipId );
         assertEquals( 200, response.getStatus() );
-        assertEquals( response.getMetadata().getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
-        assertNull( response.getMetadata().get( "Location" ) );
+        assertEquals( response.getMetadata()
+                .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+        assertNull( response.getMetadata()
+                .get( "Location" ) );
         Map<String, Object> map = JsonHelper.jsonToMap( entityAsString( response ) );
         assertNotNull( map );
         assertTrue( map.containsKey( "self" ) );
     }
 
-
     @Test
-    public void shouldBeAbleToGetListOfNodeRepresentationsFromIndexLookup() throws DatabaseBlockedException, PropertyValueException, URISyntaxException
+    public void shouldBeAbleToGetListOfNodeRepresentationsFromIndexLookup() throws DatabaseBlockedException,
+            PropertyValueException, URISyntaxException
     {
         ModelBuilder.DomainModel matrixers = ModelBuilder.generateMatrix( service );
 
-        Map.Entry<String, String> indexedKeyValue = matrixers.indexedNodeKeyValues.entrySet().iterator().next();
-        Response response = service.getIndexedNodes( matrixers.nodeIndexName, indexedKeyValue.getKey(), indexedKeyValue.getValue() );
+        Map.Entry<String, String> indexedKeyValue = matrixers.indexedNodeKeyValues.entrySet()
+                .iterator()
+                .next();
+        Response response = service.getIndexedNodes( matrixers.nodeIndexName, indexedKeyValue.getKey(),
+                indexedKeyValue.getValue() );
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
         Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( entityAsString( response ) );
         int counter = 0;
@@ -1013,20 +1053,26 @@ public class RestfulGraphDatabaseTest
             Map<?, ?> properties = (Map<?, ?>) map.get( "data" );
             assertNotNull( map.get( "self" ) );
             String indexedUri = (String) map.get( "indexed" );
-            assertEquals( matrixers.indexedNodeUriToEntityMap.get( new URI(indexedUri) ).properties.get("name"), properties.get( "name" ) );
+            assertEquals( matrixers.indexedNodeUriToEntityMap.get( new URI( indexedUri ) ).properties.get( "name" ),
+                    properties.get( "name" ) );
             counter++;
         }
         assertEquals( 2, counter );
     }
 
     @Test
-    public void shouldBeAbleToGetListOfNodeRepresentationsFromIndexQuery() throws DatabaseBlockedException, PropertyValueException, URISyntaxException
+    public void shouldBeAbleToGetListOfNodeRepresentationsFromIndexQuery() throws DatabaseBlockedException,
+            PropertyValueException, URISyntaxException
     {
         ModelBuilder.DomainModel matrixers = ModelBuilder.generateMatrix( service );
 
-        Map.Entry<String, String> indexedKeyValue = matrixers.indexedNodeKeyValues.entrySet().iterator().next();
+        Map.Entry<String, String> indexedKeyValue = matrixers.indexedNodeKeyValues.entrySet()
+                .iterator()
+                .next();
         // query for the first letter with which the nodes were indexed.
-        Response response = service.getIndexedNodesByQuery( matrixers.nodeIndexName, indexedKeyValue.getKey() + ":" + indexedKeyValue.getValue().substring( 0, 1 ) + "*" );
+        Response response = service.getIndexedNodesByQuery( matrixers.nodeIndexName, indexedKeyValue.getKey() + ":"
+                                                                                     + indexedKeyValue.getValue()
+                                                                                             .substring( 0, 1 ) + "*" );
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
         Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( entityAsString( response ) );
         int counter = 0;
@@ -1034,24 +1080,35 @@ public class RestfulGraphDatabaseTest
         {
             Map<?, ?> map = (Map<?, ?>) item;
             Map<?, ?> properties = (Map<?, ?>) map.get( "data" );
-            String indexedUri = (String) map.get( "indexed" ); // unlike exact match, a query can not return a sensible index uri for the result
-            assertNull(indexedUri);
-            String selfUri = (String) map.get("self");
+            String indexedUri = (String) map.get( "indexed" ); // unlike exact
+                                                               // match, a query
+                                                               // can not return
+                                                               // a sensible
+                                                               // index uri for
+                                                               // the result
+            assertNull( indexedUri );
+            String selfUri = (String) map.get( "self" );
             assertNotNull( selfUri );
-            assertEquals( matrixers.nodeUriToEntityMap.get( new URI(selfUri) ).properties.get("name"), properties.get( "name" ) );
+            assertEquals( matrixers.nodeUriToEntityMap.get( new URI( selfUri ) ).properties.get( "name" ),
+                    properties.get( "name" ) );
             counter++;
         }
-        assertThat( counter, is( greaterThanOrEqualTo(2)) );
+        assertThat( counter, is( greaterThanOrEqualTo( 2 ) ) );
     }
 
     @Test
-    public void shouldBeAbleToGetListOfNodeRepresentationsFromIndexQueryWithDefaultKey() throws DatabaseBlockedException, PropertyValueException, URISyntaxException
+    public void shouldBeAbleToGetListOfNodeRepresentationsFromIndexQueryWithDefaultKey()
+            throws DatabaseBlockedException, PropertyValueException, URISyntaxException
     {
         ModelBuilder.DomainModel matrixers = ModelBuilder.generateMatrix( service );
 
-        Map.Entry<String, String> indexedKeyValue = matrixers.indexedNodeKeyValues.entrySet().iterator().next();
+        Map.Entry<String, String> indexedKeyValue = matrixers.indexedNodeKeyValues.entrySet()
+                .iterator()
+                .next();
         // query for the first letter with which the nodes were indexed.
-        Response response = service.getIndexedNodesByQuery( matrixers.nodeIndexName, indexedKeyValue.getKey(), indexedKeyValue.getValue().substring( 0, 1 ) + "*" );
+        Response response = service.getIndexedNodesByQuery( matrixers.nodeIndexName, indexedKeyValue.getKey(),
+                indexedKeyValue.getValue()
+                        .substring( 0, 1 ) + "*" );
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
         Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( entityAsString( response ) );
         int counter = 0;
@@ -1059,19 +1116,25 @@ public class RestfulGraphDatabaseTest
         {
             Map<?, ?> map = (Map<?, ?>) item;
             Map<?, ?> properties = (Map<?, ?>) map.get( "data" );
-            String indexedUri = (String) map.get( "indexed" ); // unlike exact match, a query can not return a sensible index uri for the result
-            assertNull(indexedUri);
-            String selfUri = (String) map.get("self");
+            String indexedUri = (String) map.get( "indexed" ); // unlike exact
+                                                               // match, a query
+                                                               // can not return
+                                                               // a sensible
+                                                               // index uri for
+                                                               // the result
+            assertNull( indexedUri );
+            String selfUri = (String) map.get( "self" );
             assertNotNull( selfUri );
-            assertEquals( matrixers.nodeUriToEntityMap.get( new URI(selfUri) ).properties.get("name"), properties.get( "name" ) );
+            assertEquals( matrixers.nodeUriToEntityMap.get( new URI( selfUri ) ).properties.get( "name" ),
+                    properties.get( "name" ) );
             counter++;
         }
-        assertThat( counter, is( greaterThanOrEqualTo(2)) );
+        assertThat( counter, is( greaterThanOrEqualTo( 2 ) ) );
     }
 
-
     @Test
-    public void shouldBeAbleToGetListOfRelationshipRepresentationsFromIndexLookup() throws DatabaseBlockedException, PropertyValueException
+    public void shouldBeAbleToGetListOfRelationshipRepresentationsFromIndexLookup() throws DatabaseBlockedException,
+            PropertyValueException
     {
         String key = "key_get";
         String value = "value";
@@ -1100,15 +1163,16 @@ public class RestfulGraphDatabaseTest
             String indexedUri = (String) map.get( "indexed" );
             assertThat( indexedUri, containsString( key ) );
             assertThat( indexedUri, containsString( value ) );
-            assertTrue( indexedUri.endsWith( Long.toString( relationshipId1 ) ) ||
-                    indexedUri.endsWith( Long.toString( relationshipId2 ) ) );
+            assertTrue( indexedUri.endsWith( Long.toString( relationshipId1 ) )
+                        || indexedUri.endsWith( Long.toString( relationshipId2 ) ) );
             counter++;
         }
         assertEquals( 2, counter );
     }
 
     @Test
-    public void shouldBeAbleToGetListOfRelationshipRepresentationsFromIndexQuery() throws DatabaseBlockedException, PropertyValueException
+    public void shouldBeAbleToGetListOfRelationshipRepresentationsFromIndexQuery() throws DatabaseBlockedException,
+            PropertyValueException
     {
         String key = "key_get";
         String value = "value";
@@ -1126,7 +1190,8 @@ public class RestfulGraphDatabaseTest
         helper.addRelationshipToIndex( indexName, key, value, relationshipId1 );
         helper.addRelationshipToIndex( indexName, key, value, relationshipId2 );
 
-        Response response = service.getIndexedRelationshipsByQuery( indexName, key + ":" + value.substring( 0,1 ) + "*" );
+        Response response = service.getIndexedRelationshipsByQuery( indexName, key + ":" + value.substring( 0, 1 )
+                                                                               + "*" );
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
         Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( entityAsString( response ) );
         int counter = 0;
@@ -1134,18 +1199,20 @@ public class RestfulGraphDatabaseTest
         {
             Map<?, ?> map = (Map<?, ?>) item;
             String indexedUri = (String) map.get( "indexed" );
-            assertNull( indexedUri ); // queries can not return a sensible index uri
-            String selfUri = (String) map.get("self");
+            assertNull( indexedUri ); // queries can not return a sensible index
+                                      // uri
+            String selfUri = (String) map.get( "self" );
             assertNotNull( selfUri );
-            assertTrue( selfUri.endsWith( Long.toString( relationshipId1 ) ) ||
-                    selfUri.endsWith( Long.toString( relationshipId2 ) ) );
+            assertTrue( selfUri.endsWith( Long.toString( relationshipId1 ) )
+                        || selfUri.endsWith( Long.toString( relationshipId2 ) ) );
             counter++;
         }
-        assertThat( counter, is(greaterThanOrEqualTo( 2 )));
+        assertThat( counter, is( greaterThanOrEqualTo( 2 ) ) );
     }
 
     @Test
-    public void shouldBeAbleToGetListOfRelationshipRepresentationsFromIndexQueryWithDefaultKey() throws DatabaseBlockedException, PropertyValueException
+    public void shouldBeAbleToGetListOfRelationshipRepresentationsFromIndexQueryWithDefaultKey()
+            throws DatabaseBlockedException, PropertyValueException
     {
         String key = "key_get";
         String value = "value";
@@ -1163,7 +1230,7 @@ public class RestfulGraphDatabaseTest
         helper.addRelationshipToIndex( indexName, key, value, relationshipId1 );
         helper.addRelationshipToIndex( indexName, key, value, relationshipId2 );
 
-        Response response = service.getIndexedRelationshipsByQuery( indexName, key, value.substring( 0,1 ) + "*" );
+        Response response = service.getIndexedRelationshipsByQuery( indexName, key, value.substring( 0, 1 ) + "*" );
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
         Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( entityAsString( response ) );
         int counter = 0;
@@ -1171,28 +1238,31 @@ public class RestfulGraphDatabaseTest
         {
             Map<?, ?> map = (Map<?, ?>) item;
             String indexedUri = (String) map.get( "indexed" );
-            assertNull( indexedUri ); // queries can not return a sensible index uri
-            String selfUri = (String) map.get("self");
+            assertNull( indexedUri ); // queries can not return a sensible index
+                                      // uri
+            String selfUri = (String) map.get( "self" );
             assertNotNull( selfUri );
-            assertTrue( selfUri.endsWith( Long.toString( relationshipId1 ) ) ||
-                    selfUri.endsWith( Long.toString( relationshipId2 ) ) );
+            assertTrue( selfUri.endsWith( Long.toString( relationshipId1 ) )
+                        || selfUri.endsWith( Long.toString( relationshipId2 ) ) );
             counter++;
         }
-        assertThat( counter, is(greaterThanOrEqualTo( 2 )));
+        assertThat( counter, is( greaterThanOrEqualTo( 2 ) ) );
     }
 
     @Test
-    public void shouldGet200AndEmptyListWhenNothingFoundInIndexLookup() throws DatabaseBlockedException, PropertyValueException
+    public void shouldGet200AndEmptyListWhenNothingFoundInIndexLookup() throws DatabaseBlockedException,
+            PropertyValueException
     {
         String indexName = "nothing-in-this-index";
         helper.createNodeIndex( indexName );
         Response response = service.getIndexedNodes( indexName, "fooo", "baaar" );
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
-        assertEquals( response.getMetadata().getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+        assertEquals( response.getMetadata()
+                .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
         String entity = entityAsString( response );
         Object parsedJson = JsonHelper.jsonToSingleValue( entity );
         assertTrue( parsedJson instanceof Collection<?> );
-        assertTrue( ((Collection<?>) parsedJson).isEmpty() );
+        assertTrue( ( (Collection<?>) parsedJson ).isEmpty() );
     }
 
     @Test
@@ -1202,10 +1272,12 @@ public class RestfulGraphDatabaseTest
         String key = "key_remove";
         String value = "value";
         helper.addNodeToIndex( "node", key, value, nodeId );
-        assertEquals( 1, helper.getIndexedNodes( "node", key, value ).size() );
+        assertEquals( 1, helper.getIndexedNodes( "node", key, value )
+                .size() );
         Response response = service.deleteFromNodeIndex( "node", key, value, nodeId );
         assertEquals( Status.NO_CONTENT.getStatusCode(), response.getStatus() );
-        assertEquals( 0, helper.getIndexedNodes( "node", key, value ).size() );
+        assertEquals( 0, helper.getIndexedNodes( "node", key, value )
+                .size() );
     }
 
     @Test
@@ -1219,10 +1291,12 @@ public class RestfulGraphDatabaseTest
         String value = "value";
         String indexName = "relationships";
         helper.addRelationshipToIndex( indexName, key, value, relationshipId );
-        assertEquals( 1, helper.getIndexedRelationships( indexName, key, value ).size() );
+        assertEquals( 1, helper.getIndexedRelationships( indexName, key, value )
+                .size() );
         Response response = service.deleteFromRelationshipIndex( indexName, key, value, relationshipId );
         assertEquals( Status.NO_CONTENT.getStatusCode(), response.getStatus() );
-        assertEquals( 0, helper.getIndexedRelationships( indexName, key, value ).size() );
+        assertEquals( 0, helper.getIndexedRelationships( indexName, key, value )
+                .size() );
     }
 
     @Test
@@ -1273,7 +1347,8 @@ public class RestfulGraphDatabaseTest
         assertTrue( entity.contains( "/node/" + child1_l1 ) );
         assertTrue( entity.contains( "/node/" + child2_l1 ) );
         assertFalse( entity.contains( "/node/" + child1_l2 ) );
-        assertEquals( response.getMetadata().getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
+        assertEquals( response.getMetadata()
+                .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
     }
 
     @Test
@@ -1286,9 +1361,11 @@ public class RestfulGraphDatabaseTest
         helper.createRelationship( "knows", startNode, node1 );
         helper.createRelationship( "knows", startNode, node2 );
         helper.createRelationship( "knows", node1, node3 );
-        String description = "{" + "\"prune evaluator\":{\"language\":\"builtin\",\"name\":\"none\"},"
-                + "\"return filter\":{\"language\":\"javascript\",\"body\":\"position.endNode().getProperty('name').toLowerCase().contains('t');\"},"
-                + "\"order\":\"depth first\"," + "\"relationships\":{\"type\":\"knows\",\"direction\":\"all\"}" + "}";
+        String description = "{"
+                             + "\"prune evaluator\":{\"language\":\"builtin\",\"name\":\"none\"},"
+                             + "\"return filter\":{\"language\":\"javascript\",\"body\":\"position.endNode().getProperty('name').toLowerCase().contains('t');\"},"
+                             + "\"order\":\"depth first\","
+                             + "\"relationships\":{\"type\":\"knows\",\"direction\":\"all\"}" + "}";
         Response response = service.traverse( startNode, TraverserReturnType.node, description );
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
         String entity = entityAsString( response );
@@ -1347,13 +1424,8 @@ public class RestfulGraphDatabaseTest
         long n1 = helper.createNode();
         long n2 = helper.createNode();
         helper.createRelationship( "knows", n1, n2 );
-        Map<String, Object> config = MapUtil.map(
-                "max depth", 3,
-                "algorithm", "shortestPath",
-                "to", Long.toString( n2 ),
-                "relationships", MapUtil.map(
-                "type", "knows",
-                "direction", "out" ) );
+        Map<String, Object> config = MapUtil.map( "max depth", 3, "algorithm", "shortestPath", "to",
+                Long.toString( n2 ), "relationships", MapUtil.map( "type", "knows", "direction", "out" ) );
 
         String payload = JsonHelper.createJsonFrom( config );
 
@@ -1370,13 +1442,8 @@ public class RestfulGraphDatabaseTest
         long n1 = helper.createNode();
         long n2 = helper.createNode();
         helper.createRelationship( "knows", n1, n2 );
-        Map<String, Object> config = MapUtil.map(
-                "max depth", 3,
-                "algorithm", "shortestPath",
-                "to", Long.toString( n2 ),
-                "relationships", MapUtil.map(
-                "type", "knows",
-                "direction", "out" ) );
+        Map<String, Object> config = MapUtil.map( "max depth", 3, "algorithm", "shortestPath", "to",
+                Long.toString( n2 ), "relationships", MapUtil.map( "type", "knows", "direction", "out" ) );
 
         String payload = JsonHelper.createJsonFrom( config );
 
@@ -1388,46 +1455,61 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldBeAbleToParseJsonEvenWithUnicodeMarkerAtTheStart() throws DatabaseBlockedException, JsonParseException
+    public void shouldBeAbleToParseJsonEvenWithUnicodeMarkerAtTheStart() throws DatabaseBlockedException,
+            JsonParseException
     {
         Response response = service.createNode( markWithUnicodeMarker( "{\"name\":\"Mattias\"}" ) );
         assertEquals( Status.CREATED.getStatusCode(), response.getStatus() );
-        String nodeLocation = response.getMetadata().getFirst( HttpHeaders.LOCATION ).toString();
+        String nodeLocation = response.getMetadata()
+                .getFirst( HttpHeaders.LOCATION )
+                .toString();
 
         long node = helper.createNode();
-        assertEquals( Status.NO_CONTENT.getStatusCode(), service.setNodeProperty( node, "foo",
-                markWithUnicodeMarker( "\"bar\"" ) ).getStatus() );
-        assertEquals( Status.NO_CONTENT.getStatusCode(), service.setNodeProperty( node, "foo",
-                markWithUnicodeMarker( "" + 10 ) ).getStatus() );
-        assertEquals( Status.NO_CONTENT.getStatusCode(), service.setAllNodeProperties( node,
-                markWithUnicodeMarker( "{\"name\":\"Something\",\"number\":10}" ) )
-                .getStatus() );
+        assertEquals( Status.NO_CONTENT.getStatusCode(),
+                service.setNodeProperty( node, "foo", markWithUnicodeMarker( "\"bar\"" ) )
+                        .getStatus() );
+        assertEquals( Status.NO_CONTENT.getStatusCode(),
+                service.setNodeProperty( node, "foo", markWithUnicodeMarker( "" + 10 ) )
+                        .getStatus() );
+        assertEquals( Status.NO_CONTENT.getStatusCode(),
+                service.setAllNodeProperties( node, markWithUnicodeMarker( "{\"name\":\"Something\",\"number\":10}" ) )
+                        .getStatus() );
 
-        assertEquals( Status.CREATED.getStatusCode(),
-                service.createRelationship(
-                        node,
-                        markWithUnicodeMarker( "{\"to\":\"" + nodeLocation + "\",\"type\":\"knows\"}" ) ).getStatus() );
+        assertEquals(
+                Status.CREATED.getStatusCode(),
+                service.createRelationship( node,
+                        markWithUnicodeMarker( "{\"to\":\"" + nodeLocation + "\",\"type\":\"knows\"}" ) )
+                        .getStatus() );
 
         long relationship = helper.createRelationship( "knows" );
-        assertEquals( Status.NO_CONTENT.getStatusCode(), service.setRelationshipProperty(
-                relationship, "foo", markWithUnicodeMarker( "\"bar\"" ) ).getStatus() );
-        assertEquals( Status.NO_CONTENT.getStatusCode(), service.setRelationshipProperty(
-                relationship, "foo", markWithUnicodeMarker( "" + 10 ) ).getStatus() );
+        assertEquals( Status.NO_CONTENT.getStatusCode(),
+                service.setRelationshipProperty( relationship, "foo", markWithUnicodeMarker( "\"bar\"" ) )
+                        .getStatus() );
+        assertEquals( Status.NO_CONTENT.getStatusCode(),
+                service.setRelationshipProperty( relationship, "foo", markWithUnicodeMarker( "" + 10 ) )
+                        .getStatus() );
         assertEquals(
                 Status.NO_CONTENT.getStatusCode(),
                 service.setAllRelationshipProperties( relationship,
-                        markWithUnicodeMarker( "{\"name\":\"Something\",\"number\":10}" ) ).getStatus() );
+                        markWithUnicodeMarker( "{\"name\":\"Something\",\"number\":10}" ) )
+                        .getStatus() );
 
-        assertEquals( Status.CREATED.getStatusCode(), service.addToNodeIndex( "node", "foo", "bar",
-                markWithUnicodeMarker( JsonHelper.createJsonFrom( nodeLocation ) ) ).getStatus() );
+        assertEquals(
+                Status.CREATED.getStatusCode(),
+                service.addToNodeIndex( "node", "foo", "bar",
+                        markWithUnicodeMarker( JsonHelper.createJsonFrom( nodeLocation ) ) )
+                        .getStatus() );
 
-        assertEquals( Status.OK.getStatusCode(), service.traverse( node, TraverserReturnType.node,
-                markWithUnicodeMarker( "{\"max depth\":2}" ) ).getStatus() );
+        assertEquals( Status.OK.getStatusCode(),
+                service.traverse( node, TraverserReturnType.node, markWithUnicodeMarker( "{\"max depth\":2}" ) )
+                        .getStatus() );
     }
 
     @Test
-    public void shouldAdvertiseUriForQueringAllRelationsInTheDatabase() {
+    public void shouldAdvertiseUriForQueringAllRelationsInTheDatabase()
+    {
         Response response = service.getRoot();
-        assertThat(new String((byte[])response.getEntity()), containsString("\"relationship_types\" : \"http://neo4j.org/relationship/types\""));
+        assertThat( new String( (byte[]) response.getEntity() ),
+                containsString( "\"relationship_types\" : \"http://neo4j.org/relationship/types\"" ) );
     }
 }
