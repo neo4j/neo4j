@@ -27,6 +27,11 @@ import org.neo4j.graphdb.PropertyContainer;
  * The primary interaction point with the auto indexing infrastructure of neo4j.
  * From here it is possible to enable/disable the auto indexing functionality,
  * set/unset auto indexed properties and retrieve index hits.
+ * 
+ * It only exposes a {@link ReadOnlyIndex} (see {@link #getAutoIndex()}) and
+ * the idea is that the mutating operations are managed by the AutoIndexer only
+ * and the user should have no access other than mutating operations on the
+ * database primitives.
  */
 public interface AutoIndexer<T extends PropertyContainer>
 {
@@ -56,7 +61,7 @@ public interface AutoIndexer<T extends PropertyContainer>
      *
      * @return A read only index
      */
-    AutoIndex<T> getAutoIndex();
+    ReadOnlyIndex<T> getAutoIndex();
 
     /**
      * Start auto indexing a property. This could lead to an

@@ -37,7 +37,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.index.AutoIndex;
+import org.neo4j.graphdb.index.ReadOnlyIndex;
 import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
@@ -403,7 +403,7 @@ public class TestAutoIndexing
 
         newTransaction();
 
-        AutoIndex<Node> autoIndex = graphDb.index().getNodeAutoIndexer().getAutoIndex();
+        ReadOnlyIndex<Node> autoIndex = graphDb.index().getNodeAutoIndexer().getAutoIndex();
         assertEquals( node1, autoIndex.get( "propName", "node1" ).getSingle() );
         assertEquals( node2, autoIndex.get( "propName", "node2" ).getSingle() );
         assertFalse( graphDb.index().getRelationshipAutoIndexer().getAutoIndex().get(
@@ -549,7 +549,7 @@ public class TestAutoIndexing
         }
 
         // Verify
-        AutoIndex<Node> nodeAutoIndex = nodeAutoIndexer.getAutoIndex();
+        ReadOnlyIndex<Node> nodeAutoIndex = nodeAutoIndexer.getAutoIndex();
         // node1 is completely gone
         assertFalse( nodeAutoIndex.get( "nodeProp1", "nodeProp1Value" ).hasNext() );
         assertFalse( nodeAutoIndex.get( "nodeProp1", "nodeProp1Value2" ).hasNext() );

@@ -28,7 +28,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.graphdb.index.AutoIndex;
+import org.neo4j.graphdb.index.ReadOnlyIndex;
 import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
@@ -55,7 +55,7 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
     }
 
     @Override
-    public AutoIndex<T> getAutoIndex()
+    public ReadOnlyIndex<T> getAutoIndex()
     {
         return new IndexWrapper<T>( getIndexInternal() );
     }
@@ -267,14 +267,19 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
      * @param <K> The type of database primitive this index holds
      */
     private static class IndexWrapper<K extends PropertyContainer> implements
-            AutoIndex<K>
+            ReadOnlyIndex<K>
     {
-
         private final Index<K> delegate;
 
         IndexWrapper( Index<K> delegate )
         {
             this.delegate = delegate;
+        }
+        
+        @Override
+        public String getName()
+        {
+            return delegate.getName();
         }
 
         @Override
@@ -300,6 +305,5 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
         {
             return delegate.query( queryOrQueryObject );
         }
-
     }
 }
