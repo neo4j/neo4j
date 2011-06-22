@@ -18,8 +18,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /**
- * This package contains facilities for finding occurrences of patterns in a
- * Neo4j graph. The main classes for defining a graph pattern is the
+ * Facilities for finding occurrences of patterns in a Neo4j graph.
+ * 
+ * The main classes for defining a graph pattern is the
  * {@link org.neo4j.graphmatching.PatternNode} and the
  * {@link org.neo4j.graphmatching.PatternRelationship}. The actual matching
  * is performed by the {@link org.neo4j.graphmatching.PatternMatcher}.

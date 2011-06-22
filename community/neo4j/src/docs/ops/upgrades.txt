@@ -27,6 +27,12 @@ To perform a special upgrade (for significant changes to the database store):
 . the upgrade will happen during startup and the process is done when the database has been successfully started
 . "allow_store_upgrade=true" configuration parameter should be removed, set to "false" or commented out
 
+[[deployment-upgrading-one-four]]
+== Upgrade 1.3 -> 1.4 ==
+
+[WARNING]
+Upgrading from 1.3 -> 1.4 is done automatically, but will in that process upgrade Lucene indexes to Lucene version 3.1.0.
+That Lucene index upgrade is irreversible.
 
 [[deployment-upgrading-one-three-milestones]]
 == Upgrade 1.3.M03 -> 1.3.M04 ==
@@ -60,3 +66,4 @@ Indexes created using the old IndexService/LuceneIndexService are no longer acce
 == Upgrade 1.1 -> 1.2 ==
 
 Upgrading from Neo4j 1.1 to Neo4j 1.2 is a "normal" upgrade.
+

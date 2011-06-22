@@ -17,43 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.javacompat;
-
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
 /**
- * Holds Cypher query result sets.
+ * Execute Cypher queries from Java code.
  */
-public class ExecutionResult implements Iterable<Map<String,Object>>
-{
-    private org.neo4j.cypher.ExecutionResult inner;
-
-    public ExecutionResult( org.neo4j.cypher.ExecutionResult projection )
-    {
-        inner = projection;
-    }
-
-    public <T> Iterator<T> columnAs( String n )
-    {
-        return inner.javaColumnAs( n );
-    }
-
-    public List<String> columns()
-    {
-        return inner.javaColumns();
-    }
-
-    @Override
-    public Iterator<Map<String, Object>> iterator()
-    {
-        return inner.javaIterator();
-    }
-
-    @Override
-    public String toString()
-    {
-        return inner.dumpToString();
-    }
-}
+package org.neo4j.cypher.javacompat;
