@@ -9,9 +9,8 @@
   <groupId>org.neo4j.server.plugin</groupId>
   <artifactId>neo4j-gremlin-plugin</artifactId>
   <packaging>jar</packaging>
-  <version>0.1-SNAPSHOT</version>
+  <version>1.4-SNAPSHOT</version>
   <name>neo4j-gremlin-plugin</name>
-
 
   <properties>
     <!-- Jar Versions -->
@@ -44,8 +43,11 @@ the relevant Commercial Agreement.
       </comments>
     </license>
   </licenses>
+
   <scm>
-    <url>https://github.com/neo4j/neo4j-gremlin-plugin/tree/master</url>
+    <connection>scm:git:git://github.com/neo4j/gremlin-plugin.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/gremlin-plugin.git</developerConnection>
+    <url>https://github.com/neo4j/gremlin-plugin</url>
   </scm>
 
   <dependencies>
