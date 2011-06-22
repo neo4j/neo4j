@@ -45,11 +45,6 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
-/**
-* Created by Andres Taylor
-* Date: 5/30/11
-* Time: 21:58
-*/
 public class CypherSessionTest
 {
     @Test
