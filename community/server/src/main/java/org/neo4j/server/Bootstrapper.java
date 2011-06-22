@@ -49,7 +49,11 @@ public abstract class Bootstrapper
     public static void main( String[] args )
     {
         Bootstrapper bootstrapper = loadMostDerivedBootstrapper();
-        bootstrapper.start( args );
+        Integer exit = bootstrapper.start( args );
+        if ( exit != 0 )
+        {
+            System.exit( exit );
+        }
     }
 
     public static Bootstrapper loadMostDerivedBootstrapper()
@@ -61,8 +65,8 @@ public abstract class Bootstrapper
         }
         return winner;
     }
-    
-    
+
+
     public void controlEvent( int arg )
     {
         // Do nothing, required by the WrapperListener interface
@@ -132,7 +136,7 @@ public abstract class Bootstrapper
     {
         return server;
     }
-    
+
     protected abstract GraphDatabaseFactory getGraphDatabaseFactory( Configuration configuration );
 
     protected abstract Iterable<StartupHealthCheckRule> getHealthCheckRules();
@@ -153,7 +157,7 @@ public abstract class Bootstrapper
             }
         } );
     }
-    
+
     protected Configurator getConfigurator()
     {
         File configFile = new File( System.getProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY, Configurator.DEFAULT_CONFIG_DIR ) );
