@@ -28,6 +28,7 @@ import org.apache.commons.configuration.Configuration;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
+import org.neo4j.server.logging.Logger;
 import org.rrd4j.ConsolFun;
 import org.rrd4j.DsType;
 import org.rrd4j.core.RrdDb;
@@ -40,7 +41,8 @@ public class RrdFactory
     private static final String RRD_THREAD_NAME = "Statistics Gatherer";
     
     private final Configuration config;
-
+    private Logger log = Logger.getLogger(RrdFactory.class);
+    
     public RrdFactory( Configuration config )
     {
 
@@ -71,18 +73,34 @@ public class RrdFactory
         return new File( db.getStoreDir(), "rrd" ).getAbsolutePath();
     }
 
-    protected RrdDb createRrdb( String inDirectory, int stepSize, int stepsPerArchive,
+    protected RrdDb createRrdb( String rrdPath, int stepSize, int stepsPerArchive,
                                 Sampleable... sampleables ) throws IOException
     {
-        if ( !new File( inDirectory ).exists() )
+        if ( !new File( rrdPath ).exists() )
         {
-            RrdDef rrdDef = createRrdDb( inDirectory, stepSize );
+            RrdDef rrdDef = createRrdDb( rrdPath, stepSize );
             defineDataSources( stepSize, rrdDef, sampleables );
             addArchives( stepsPerArchive, rrdDef );
             return new RrdDb( rrdDef );
         } else
         {
-            return new RrdDb( inDirectory );
+        	try {
+        		return new RrdDb( rrdPath );
+        	} catch(IOException e) {
+        		if(e.getMessage().startsWith("Invalid file header.")) 
+        		{
+        			// RRD file has become corrupt
+        			File rrdFile = new File(rrdPath);
+        			if(rrdFile.canWrite()) {
+        				rrdFile.delete();
+        				log.error("Deleted corrupt RRDB statistics logging file.");
+        				return createRrdb(rrdPath, stepSize, stepsPerArchive, sampleables);
+        			}
+        			
+        			throw new IOException("RRD file ['"+rrdFile.getAbsolutePath()+"'] has become corrupted, but I do not have write permissions to recreate it.", e);
+        		} 
+        		throw e;
+        	}
         }
     }
 
