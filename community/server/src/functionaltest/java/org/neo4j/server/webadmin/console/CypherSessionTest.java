@@ -48,7 +48,7 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 public class CypherSessionTest
 {
     @Test
-    public void testHelloWorld() throws Exception
+    public void shouldReturnASingleNode() throws Exception
     {
         CypherSession session = new CypherSession(new ImpermanentGraphDatabase());
         String result = session.evaluate("start a=(0) return a");
