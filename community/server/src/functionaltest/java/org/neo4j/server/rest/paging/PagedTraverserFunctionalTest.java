@@ -106,31 +106,11 @@ public class PagedTraverserFunctionalTest
     }
 
     /**
-     * Creating a paged traverser. Paged traversers are created by
-     * 
-     * <pre>
-     * POST
-     * </pre>
-     * 
-     * ing a traversal description to the link identified by the
-     * 
-     * <pre>
-     * paged_traverser
-     * </pre>
-     * 
-     * key in a node representation. When creating a paged traverser, the same
-     * options appy as for a regular traverser, meaning that
-     * 
-     * <pre>
-     * node
-     * </pre>
-     * 
-     * ,
-     * 
-     * <pre>path/pre>, or
-     * 
-     * <pre>fullpath/pre>, can be targetted.
-     * 
+     * Creating a paged traverser. Paged traversers are created by +POST+-ing a
+     * traversal description to the link identified by the +paged_traverser+ key
+     * in a node representation. When creating a paged traverser, the same
+     * options apply as for a regular traverser, meaning that +node+, 'path/',
+     * or 'fullpath', can be targeted.
      */
     @Documented
     @Test
@@ -165,14 +145,9 @@ public class PagedTraverserFunctionalTest
      * results are available).
      * 
      * Note that if a traverser expires through inactivity it will cause a 404
-     * response on the next
-     * 
-     * <pre>
-     * GET
-     * </pre>
-     * 
-     * request. Traversers' leases are renewed on every successful access for
-     * the same amount of time as originally specified.
+     * response on the next +GET+ request. Traversers' leases are renewed on
+     * every successful access for the same amount of time as originally
+     * specified.
      * 
      * When the paged traverser reaches the end of its results, the client can
      * expect a 404 response as the traverser is disposed by the server.
@@ -224,15 +199,9 @@ public class PagedTraverserFunctionalTest
     }
 
     /**
-     * Using a different page size. The default page size is 50 items, but
+     * Paged traverser page size. The default page size is 50 items, but
      * depending on the application larger or smaller pages sizes might be
-     * appropriate. Thes can be set by adding a
-     * 
-     * <pre>
-     * pageSize
-     * </pre>
-     * 
-     * query parameter.
+     * appropriate. This can be set by adding a +pageSize+ query parameter.
      */
     @Documented
     @Test
@@ -261,16 +230,10 @@ public class PagedTraverserFunctionalTest
     }
 
     /**
-     * Using a different timeout. The default timeout for a paged traverser is
-     * 60 seconds, but depending on the application larger or smaller timeouts
-     * might be appropriate. This can be set by adding a
-     * 
-     * <pre>
-     * leaseTime
-     * </pre>
-     * 
-     * query parameter with the number of seconds the paged traverser should
-     * last.
+     * Paged traverser timeout. The default timeout for a paged traverser is 60
+     * seconds, but depending on the application larger or smaller timeouts
+     * might be appropriate. This can be set by adding a +leaseTime+ query
+     * parameter with the number of seconds the paged traverser should last.
      */
     @Documented
     @Test
