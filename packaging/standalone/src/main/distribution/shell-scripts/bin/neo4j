@@ -172,6 +172,26 @@ reportstatus() {
 
 }
 
+console() {
+
+  checkstatus
+
+  if [ -z $NEO4J_PID ] ; then
+    echo "Starting neo4j-service console-mode..."
+
+    findjava
+    buildclasspath
+
+    $JAVACMD -cp $CLASSPATH $JAVA_OPTS $NEO4J_OPTS org.neo4j.server.Bootstrapper
+
+  else
+    echo "Server already running with pid $NEO4J_PID"
+    exit 1
+  fi
+
+}
+
+
 showinfo() {
   reportstatus
 
@@ -185,6 +205,10 @@ showinfo() {
 }
 
 case "$1" in
+  console)
+    console
+    ;;
+
   start)
     startit
     ;;
