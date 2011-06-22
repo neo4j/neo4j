@@ -7,10 +7,11 @@
 # Default-Stop:      0 1 6
 ### END INIT INFO
 
-NEO4J_HOME=` cd $( dirname $0 )/.. && dirs -l +0 `
+NEO4J_HOME=`cd $( dirname $0 )/.. && dirs -l +0`
 NEO4J_INSTANCE=$NEO4J_HOME
 NEO4J_OPTS="-Dorg.neo4j.server.properties=${NEO4J_INSTANCE}/conf/neo4j-server.properties -Djava.util.logging.config.file=${NEO4J_INSTANCE}/conf/logging.properties -Dneo4j.home=$NEO4J_HOME -Dneo4j.instance=$NEO4J_INSTANCE"
 JAVA_OPTS="-server"
+NEO4J_SERVER_PORT=7474
 TIMEOUT=20
 
 PID_FILE=$NEO4J_INSTANCE/data/neo4j-service.pid
@@ -118,17 +119,33 @@ startit() {
     echo $STARTED_PID > $PID_FILE
     printf " process [$STARTED_PID]... waiting for server to be ready."
 
-    sleep 5
+    x=0
+    while ( [ $x -lt 120 ] ) ; do
+      ## wait for start
+      newpid=`lsof -i :$NEO4J_SERVER_PORT -t` && break
+      kill -0 $STARTED_PID || break
+      printf "."
+      sleep 1
+      x=$[$x +1]
+    done
 
     if kill -0 $STARTED_PID 2>/dev/null ; then
+      if [ "$newpid" != "$STARTED_PID" ] ; then
+	    rm $PID_FILE
+        kill -9 $STARTED_PID
+        echo " BAD."
+        echo " a other server-process is running with [$newpid]"
+        exit 2
+      fi
+
       echo " OK."
       exit 0
-    else
-      echo " BAD."
-      echo "Server may have failed to start, please check the logs."
-      rm $PID_FILE
-      exit 1
     fi
+
+    echo " BAD."
+    echo "Server may have failed to start, please check the logs."
+    rm $PID_FILE
+    exit 1
   else
     echo "Server already running with pid $NEO4J_PID"
     exit 1
@@ -150,7 +167,7 @@ stopit() {
     while [ $x -lt $TIMEOUT ] && kill $NEO4J_PID 2>/dev/null ; do
       printf "."
       sleep 1
-      x=$(( $x + 1 ))
+      x=$[$x+1]
     done
 	  [  $x -eq $TIMEOUT ] && ( echo " force shutdown" ;  kill -9 $JPID >/dev/null ) || echo " done"
 	  [ -e $PID_FILE ] && rm  $PID_FILE
@@ -196,10 +213,11 @@ showinfo() {
   findjava
   buildclasspath
 
-  echo "NEO4J_HOME:     $NEO4J_HOME"
-  echo "NEO4J_INSTANCE: $NEO4J_INSTANCE"
-  echo "JAVA_HOME:      $JAVA_HOME"
-  echo "CLASSPATH:      $CLASSPATH"
+  echo "NEO4J_HOME:        $NEO4J_HOME"
+  echo "NEO4J_SERVER_PORT: $NEO4J_SERVER_PORT"
+  echo "NEO4J_INSTANCE:    $NEO4J_INSTANCE"
+  echo "JAVA_HOME:         $JAVA_HOME"
+  echo "CLASSPATH:         $CLASSPATH"
 }
 
 case "$1" in
