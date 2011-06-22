@@ -24,7 +24,7 @@ import scala.collection.JavaConverters._
 import org.neo4j.graphdb.{PropertyContainer, Relationship, NotFoundException, Node}
 import collection.Traversable
 
-trait ExecutionResult extends Traversable[Map[String, Any]] {
+trait ExecutionResult extends Traversable[Map[String, Any]] with StringExtras {
   val symbols:SymbolTable
 
   val columns: List[String] = symbols.identifiers.map(_.name).toList
@@ -85,7 +85,6 @@ trait ExecutionResult extends Traversable[Map[String, Any]] {
     lines.mkString("\r\n")
   }
 
-  def repeat(x: String, size: Int): String = (1 to size).map((i) => x).mkString
 
   def props(x: PropertyContainer): String = x.getPropertyKeys.asScala.map((key) => key + "->" + quoteString(x.getProperty(key))).mkString("{", ",", "}")
 
@@ -110,13 +109,5 @@ trait ExecutionResult extends Traversable[Map[String, Any]] {
     }).mkString("| ", " | " ,  " |")
   }
 
-  def makeSize(txt: String, wantedSize: Int): String = {
-    val actualSize = txt.length()
-    if (actualSize > wantedSize) {
-      txt.slice(0, wantedSize)
-    } else if (actualSize < wantedSize) {
-      txt + repeat(" ", wantedSize - actualSize)
-    } else txt
-  }
 
 }

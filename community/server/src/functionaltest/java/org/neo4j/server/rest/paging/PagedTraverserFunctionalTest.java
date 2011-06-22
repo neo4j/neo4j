@@ -385,6 +385,7 @@ public class PagedTraverserFunctionalTest
                              + "\"return_filter\":{\"language\":\"javascript\",\"body\":\"position.endNode().getProperty('name').contains('1');\"},"
                              + "\"order\":\"depth_first\","
                              + "\"relationships\":{\"type\":\"NEXT\",\"direction\":\"out\"}" + "}";
+
         return description;
     }
 

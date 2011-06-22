@@ -19,19 +19,20 @@ package org.neo4j.cypher
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 import org.scalatest.junit.JUnitSuite
 import parser.CypherParser
-import org.junit.{Assert, Test}
-
+import org.junit.Test
+import org.junit.Assert._
 
 class SyntaxErrorTest extends JUnitSuite {
   def expectError(query: String, expectedError: String) {
     val parser = new CypherParser()
     try {
       parser.parse(query)
-      fail("Should have produced the error: "+expectedError)
+      fail("Should have produced the error: " + expectedError)
     } catch {
-      case x : SyntaxError => Assert.assertEquals(expectedError,x.getMessage)
+      case x: SyntaxError => assertTrue(x.getMessage,  x.getMessage.startsWith(expectedError))
     }
   }
 
@@ -44,19 +45,19 @@ class SyntaxErrorTest extends JUnitSuite {
   @Test def shouldRaiseErrorWhenMissingIndexValue() {
     expectError(
       "start s = (index,key,) return s",
-      "Probably missing index value")
+      "String literal expected")
   }
 
   @Test def shouldRaiseErrorWhenMissingIndexKey() {
     expectError(
       "start s = (index,) return s",
-      "Probably missing index value")
+      "String literal expected")
   }
 
   @Test def shouldRaiseErrorWhenMissingReturn() {
     expectError(
       "start s = (0)",
-      "Missing return clause")
+      "Missing RETURN clause")
   }
 
   @Test def shouldRaiseErrorWhenFinishingAListWithAComma() {
@@ -69,5 +70,23 @@ class SyntaxErrorTest extends JUnitSuite {
     expectError(
       "start s = (1) where s.name = Name and s.age = 10 return s",
       "Probably missing quotes around a string")
+  }
+
+  @Test def shouldWarnAboutMissingStart() {
+    expectError(
+      "where s.name = Name and s.age = 10 return s",
+      "Missing START clause")
+  }
+
+  @Test def shouldComplainAboutWholeNumbers() {
+    expectError(
+      "start s=(0) return s limit -1",
+      "Whole number expected")
+  }
+
+  @Test def shouldComplainAboutAStringBeingExpected() {
+    expectError(
+      "start s=(index,key,value) return s limit -1",
+      "String literal expected")
   }
 }

@@ -23,23 +23,41 @@ import org.neo4j.cypher._
 import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
 
-class CypherParser extends JavaTokenParsers with StartClause with MatchClause with WhereClause with ReturnClause with SkipLimitClause with OrderByClause {
+class CypherParser extends JavaTokenParsers
+  with StartClause
+  with MatchClause
+  with WhereClause
+  with ReturnClause
+  with SkipLimitClause
+  with OrderByClause
+  with StringExtras {
 
   def query: Parser[Query] = start ~ opt(matching) ~ opt(where) ~ returns ~ opt(order) ~ opt(skip) ~ opt(limit) ^^ {
     case start ~ matching ~ where ~ returns ~ sort ~ None ~ None => Query(returns._1, start, matching, where, returns._2, sort, None)
     case start ~ matching ~ where ~ returns ~ sort ~ skip ~ limit => Query(returns._1, start, matching, where, returns._2, sort, Some(Slice(skip, limit)))
   }
 
+  def fail(input: Input, errorMessage:String): Nothing = {
+    val arrow = repeat(" ", input.offset) + "^"
+
+    throw new SyntaxError(errorMessage + "\r\n" + input.source + "\r\n" + arrow )
+  }
+
   @throws(classOf[SyntaxError])
   def parse(queryText: String): Query = {
-    val MissingQuoteError = "`\\.' expected but `.' found".r
+    val MissingQuoteError = """`\.' expected but `.' found""".r
+    val MissingStartError = """string matching regex `\(\?i\)\\Qstart\\E' expected.*""".r
+    val WholeNumberExpected = """string matching regex `\\d\+' expected.*""".r
+    val StringExpected = """string matching regex `'\(\[\^'\\p\{Cntrl\}\\\\\]\|\\\\\[\\\\\/bfnrt\]\|\\\\u\[a-fA-F0-9\]\{4\}\)\*'' .*""".r
     parseAll(query, queryText) match {
       case Success(r, q) => r
       case NoSuccess(message, input) => message match {
-        case MissingQuoteError() => throw new SyntaxError("Probably missing quotes around a string")
-        case "string matching regex `-?\\d+' expected but `)' found" => throw new SyntaxError("Last element of list must be a value")
-        case "string matching regex `'([^'\\p{Cntrl}\\\\]|\\\\[\\\\/bfnrt]|\\\\u[a-fA-F0-9]{4})*'' expected but `)' found" => throw new SyntaxError("Probably missing index value")
-        case "string matching regex `(?i)\\Qreturn\\E' expected but end of source found" => throw new SyntaxError("Missing return clause")
+        case MissingQuoteError() => fail(input, "Probably missing quotes around a string")
+        case MissingStartError() => fail(input, "Missing START clause")
+        case WholeNumberExpected() => fail(input, "Whole number expected")
+        case StringExpected() => fail(input, "String literal expected")
+        case "string matching regex `-?\\d+' expected but `)' found" => fail(input, "Last element of list must be a value")
+        case "string matching regex `(?i)\\Qreturn\\E' expected but end of source found" => throw new SyntaxError("Missing RETURN clause")
         case _ => throw new SyntaxError(message)
       }
     }}
