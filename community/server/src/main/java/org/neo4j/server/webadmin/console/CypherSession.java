@@ -44,10 +44,12 @@ import org.neo4j.cypher.javacompat.CypherParser;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.server.logging.Logger;
 
 public class CypherSession implements ScriptSession
 {
     private final ExecutionEngine engine;
+    private static Logger log = Logger.getLogger( CypherSession.class );
 
     public CypherSession( GraphDatabaseService graph )
     {
@@ -71,6 +73,10 @@ public class CypherSession implements ScriptSession
         } catch (SyntaxError error)
         {
             return error.getMessage();
+        } catch (Exception exception)
+        {
+            log.error(exception);
+            return "Error: " + exception.getClass().getSimpleName() + " - " + exception.getMessage();
         }
     }
 }
