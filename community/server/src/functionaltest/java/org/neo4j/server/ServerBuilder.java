@@ -19,24 +19,6 @@
  */
 package org.neo4j.server;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.server.ServerTestUtils.createTempDir;
-import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
-import static org.neo4j.server.ServerTestUtils.writePropertiesToFile;
-import static org.neo4j.server.ServerTestUtils.writePropertyToFile;
-
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Properties;
-
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
@@ -54,10 +36,29 @@ import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
 import org.neo4j.server.web.Jetty6WebServer;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Properties;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.server.ServerTestUtils.createTempDir;
+import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
+import static org.neo4j.server.ServerTestUtils.writePropertiesToFile;
+import static org.neo4j.server.ServerTestUtils.writePropertyToFile;
+
 public class ServerBuilder
 {
 
     private String portNo = "7474";
+    private String maxThreads = null;
     private String dbDir = null;
     private String webAdminUri = "/db/manage/";
     private String webAdminDataUri = "/db/data/";
@@ -129,6 +130,10 @@ public class ServerBuilder
         {
             writePropertyToFile( Configurator.WEBSERVER_PORT_PROPERTY_KEY, portNo, temporaryConfigFile );
         }
+        if ( maxThreads != null )
+        {
+            writePropertyToFile( Configurator.WEBSERVER_MAX_THREADS_PROPERTY_KEY, maxThreads, temporaryConfigFile );
+        }
         writePropertyToFile( Configurator.MANAGEMENT_PATH_PROPERTY_KEY, webAdminUri, temporaryConfigFile );
         writePropertyToFile( Configurator.REST_API_PATH_PROPERTY_KEY, webAdminDataUri, temporaryConfigFile );
 
@@ -188,6 +193,12 @@ public class ServerBuilder
     public ServerBuilder onPort( int portNo )
     {
         this.portNo = String.valueOf( portNo );
+        return this;
+    }
+
+    public ServerBuilder withMaxJettyThreads( int maxThreads )
+    {
+        this.maxThreads = String.valueOf( maxThreads );
         return this;
     }
 
