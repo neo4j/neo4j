@@ -24,19 +24,12 @@ define ['./Console'], (Console) ->
     
     inputBuffer : []
 
-    eval : (statement, showStatement=true, includeInHistory=true, prepend = @lang) =>
-      @set {"showPrompt":false, prompt:""}, {silent:true}
-      if showStatement
-        @pushLines [statement], prepend + "> "
-      
+    executeStatement : (statement) ->
       if statement is ""
         statement = @inputBuffer.join "\n"
         @inputBuffer = []
-        @server.manage.console.exec statement, @lang, @parseEvalResult
+        super statement
       else
-        if includeInHistory
-          @pushHistory statement
-          
         @inputBuffer.push statement
         @set {"showPrompt":true}
    

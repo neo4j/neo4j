@@ -38,8 +38,10 @@ define(
         @consoleState.bind("change", @renderConsole)
 
       consoleKeyUp : (ev) =>
+        @consoleState.setStatement $("#console-input").val(), silent : true
+        
         if ev.keyCode is 13 # ENTER
-          @consoleState.eval $("#console-input").val()
+          @consoleState.eval()
         else if ev.keyCode is 38 # UP
           @consoleState.prevHistory()
         else if ev.keyCode is 40 # DOWN

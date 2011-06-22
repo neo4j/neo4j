@@ -26,7 +26,4 @@ define ['./MultiLineInputConsole'], (MultiLineInputConsole) ->
       @server = opts.server
       @lang = opts.lang
       @set {"showPrompt":true},{silent:true}
-  
-    eval : (statement, showStatement=true, includeInHistory=true) =>
-      super statement, showStatement, includeInHistory, "cypher"
-      
+

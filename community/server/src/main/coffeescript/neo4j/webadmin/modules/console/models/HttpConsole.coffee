@@ -26,16 +26,10 @@ define ['./Console'], (Console) ->
 
     initialize : (opts) =>
       @server = opts.server
+      @lang = opts.lang
       @set {"showPrompt":true},{silent:true}
   
-    eval : (statement, showStatement=true, includeInHistory=true) =>
-      @set {"showPrompt":false, prompt:""}, {silent:true}
-      if showStatement
-        @pushLines [statement], "http> "
-      
-      if includeInHistory
-        @pushHistory statement
-        
+    executeStatement : (statement) ->
       if @statementRegex.test statement
         result = @statementRegex.exec statement
         [method, url, data] = [result[1], result[6], result[8]]

@@ -40,7 +40,7 @@ define(
         @appState = appState
         @gremlinState = new Console(server:@appState.get("server"), lang:"gremlin")
         @cypherState = new CypherConsole(server:@appState.get("server"), lang:"cypher")
-        @httpState = new HttpConsole(server:@appState.get("server"))
+        @httpState = new HttpConsole(server:@appState.get("server"), lang:"http")
       
         @views = 
           gremlin : new GremlinConsoleView

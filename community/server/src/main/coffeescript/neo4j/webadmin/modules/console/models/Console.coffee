@@ -32,16 +32,27 @@ define ['lib/backbone'], () ->
     initialize : (opts) =>
       @server = opts.server
       @lang = opts.lang
-      @eval("init()", false, false)
+      @setStatement "init()"
+      @eval false, false
+      
+    # Set the current statement (== current prompt input)
+    setStatement : (str, opts={}) =>
+      @set {prompt :  str}, opts
 
-    eval : (statement, showStatement=true, includeInHistory=true, prepend = @lang) =>
+    # Evaluate the current statement line 
+    # (the current prompt input)
+    eval : (showStatement=true, includeInHistory=true, prepend = @lang) =>
+      statement = @get 'prompt'
       @set {"showPrompt":false, prompt:""}, {silent:true}
       if showStatement
         @pushLines [statement], prepend + "> "
       
-      if includeInHistory
+      if includeInHistory and statement is not ''
         @pushHistory statement
-
+        
+      @executeStatement statement
+      
+    executeStatement : (statement) ->
       @server.manage.console.exec statement, @lang, @parseEvalResult   
 
     prevHistory : =>
