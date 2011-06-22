@@ -14,22 +14,7 @@ include::count-nodes.txt[]
 include::count-entities.txt[]
 include::count-non-null-values.txt[]
 
-== SUM ==
-The SUM aggregation function simply sums all the numeric values it encounters. Null values are silently dropped.
-
-include::sum-properties.txt[]
-
-== AVG ==
-AVG calculates the average of a numeric column.
-
+include::sum.txt[]
 include::avg.txt[]
-
-== MAX ==
-Returns the largest value.
-
 include::max.txt[]
-
-== MIN ==
-Returns the smallest value.
-
 include::min.txt[]

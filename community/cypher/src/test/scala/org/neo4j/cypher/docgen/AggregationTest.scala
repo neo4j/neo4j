@@ -65,8 +65,9 @@ class AggregationTest extends DocumentingTestBase {
 
   @Test def sumProperty() {
     testQuery(
-      title = "Sum properties",
-      text = "This is an example of how you can use +SUM+.",
+      title = "SUM",
+      text = "The +SUM+ aggregation function simply sums all the numeric values it encounters. " +
+        "Null values are silently dropped. This is an example of how you can use +SUM+.",
       queryText = "start n=(%A%,%B%,%C%) return sum(n.property)",
       returns = "The sum of all the values in the property 'property'.",
       (p) => assertEquals(Map("sum(n.property)" -> (13 + 33 + 44)), p.toList.head))
@@ -74,7 +75,7 @@ class AggregationTest extends DocumentingTestBase {
 
   @Test def avg() {
     testQuery(
-      title = "Avg",
+      title = "AVG",
       text = "+AVG+ calculates the average of a numeric column.",
       queryText = "start n=(%A%,%B%,%C%) return avg(n.property)",
       returns = "The average of all the values in the property 'property'.",
@@ -83,7 +84,7 @@ class AggregationTest extends DocumentingTestBase {
 
   @Test def min() {
     testQuery(
-      title = "Min",
+      title = "MIN",
       text = "+MIN+ takes a numeric property as input, and returns the smallest value in that column.",
       queryText = "start n=(%A%,%B%,%C%) return min(n.property)",
       returns = "The smallest of all the values in the property 'property'.",
@@ -92,8 +93,8 @@ class AggregationTest extends DocumentingTestBase {
 
   @Test def max() {
     testQuery(
-      title = "Max",
-      text = "MAX find the largets value in a numeric column.",
+      title = "MAX",
+      text = "+MAX+ find the largets value in a numeric column.",
       queryText = "start n=(%A%,%B%,%C%) return max(n.property)",
       returns = "The largest of all the values in the property 'property'.",
       (p) => assertEquals(Map("max(n.property)" -> 44), p.toList.head))
