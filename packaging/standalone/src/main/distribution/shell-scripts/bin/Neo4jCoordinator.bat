@@ -27,7 +27,7 @@ set serviceName="Neo4jCoordinator"
 set serviceDisplayName="Neo4j HA Coordinator"
 set serviceStartType=auto
 call:parseConfig ..\conf\coord-wrapper.conf
-for /F %%v in ('echo %1^|findstr "^help$ ^start$ ^stop$ ^query$ ^restart$ ^install$ ^remove$"') do set command=%%v
+for /F %%v in ('echo %1^|findstr "^help$ ^start$ ^stop$ ^query$ ^restart$ ^install$ ^remove$ ^console$"') do set command=%%v
 
 if %command% == "" (
     set command=help
@@ -69,7 +69,7 @@ goto:eof
 :install
 set classpath="-DserverClasspath=lib/zoo*.jar;system/coordinator/lib/*.jar"
 set mainclass="-DserverMainClass=org.apache.zookeeper.server.quorum.QuorumPeerMain"
-set binPath="java "-DworkingDir=%~dp0.." -DconfigFile=conf\coord-wrapper.conf %classpath% %mainclass% -jar "%~dp0windows-service-wrapper-1.0.0.jar" %serviceName% start"
+set binPath="java "-DworkingDir=%~dp0.." -DconfigFile=conf\coord-wrapper.conf %classpath% %mainclass% -jar "%~dp0windows-service-wrapper-1-SNAPSHOT.jar" %serviceName%"
 sc create %serviceName% binPath= %binPath% DisplayName= %serviceDisplayName% start= %serviceStartType%
 goto:eof
 
@@ -90,8 +90,14 @@ goto:stop
 goto:start
 goto:eof
 
+:console
+set classpath="-DserverClasspath=lib/zoo*.jar;system/coordinator/lib/*.jar"
+set mainclass="-DserverMainClass=org.apache.zookeeper.server.quorum.QuorumPeerMain"
+java "-DworkingDir=%~dp0.." -DconfigFile=conf\coord-wrapper.conf %classpath% %mainclass% -jar "%~dp0windows-service-wrapper-1-SNAPSHOT.jar"
+goto:eof
+
 :help
-echo Proper arguments for this command are: help start stop query restart install remove
+echo Proper arguments for this command are: help start stop query restart install remove console
 goto:eof
 
 rem This function parses the various settings off the
