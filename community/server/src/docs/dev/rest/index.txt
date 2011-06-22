@@ -106,6 +106,14 @@ include::traversals.txt[]
 
 include::traversal-using-a-return-filter.txt[]
 
+include::creating-a-paged-traverser.txt[]
+
+include::paging-through-the-results-of-a-paged-traverser.txt[]
+
+include::paged-traverser-page-size.txt[]
+
+include::paged-traverser-timeout.txt[]
+
 [[rest-api-graph-algos]]
 == Built-in Graph Algorithms ==
 
