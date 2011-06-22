@@ -29,9 +29,13 @@ define(
     class NodeFilterDialog extends Dialog
       
       events : 
+        'dblclick .selectWrap' : 'w'
         'click .complete'  : 'complete'
         'click .selectAll' : 'selectAll'
         'click .cancel'    : 'cancel'
+
+      w : ->
+        alert "BLURG!"
 
       initialize : (opts) ->
         @completeCallback = opts.completeCallback

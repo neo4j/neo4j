@@ -17,9 +17,11 @@
             %input.property-value(type="text" value="#{property.getValueAsHtml()}")
         %li.property-actions-wrap
           .property-input-wrap
-            %button.delete-property.bad-button Remove
+            .delete-property.bad-button Remove
       .break
 
   %li.property-controls
-    %button.add-property.text-icon-button(title="Add a new property") Add property
+    .add-property.text-icon-button(title="Add a new property")
+      %span.icon
+      Add property
     .break

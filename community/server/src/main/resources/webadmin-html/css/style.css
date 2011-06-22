@@ -175,7 +175,12 @@ body {
 .dashboard-zoom-tabs {
   float:right;
   padding:0;
-  margin-right:10px !important;
+  margin-right:16px !important;
+}
+
+.dashboard-zoom-tabs .button {
+  border-top:0;
+  border-bottom:0;
 }
 
 /**
@@ -204,44 +209,24 @@ body {
   float:right;
 }
 
-#data-refresh {
-  background:url("../img/icons/glyphish/01-refresh.png") no-repeat scroll center center #333;
+#data-refresh .icon {
+  background:url("../img/icons/glyphish/01-refresh.png") no-repeat scroll center center;
 }
-#data-home {
-  background:url("../img/icons/glyphish/53-house.png") no-repeat scroll center center #333;
+#data-switch-view .icon {
+  background:url("../img/icons/glyphish/55-network.png") no-repeat scroll center center;
 }
-#data-switch-view {
-  background:url("../img/icons/glyphish/55-network.png") no-repeat scroll center center #333;
+#data-switch-view.tabular .icon {
+  background:url("../img/icons/glyphish/tabular.png") no-repeat scroll center center;
 }
-#data-switch-view.tabular {
-  background:url("../img/icons/glyphish/tabular.png") no-repeat scroll center center #333;
+#visualization-show-settings .icon {
+  background:url("../img/icons/glyphish/157-wrench.png") no-repeat scroll 5px center;
 }
-#visualization-show-settings {
-  background:url("../img/icons/glyphish/157-wrench.png") no-repeat scroll 5px center #333;
-}
-#visualization-reflow {
-  background:url("../img/icons/glyphish/05-shuffle.png") no-repeat scroll center center #333;
+#visualization-reflow .icon {
+  background:url("../img/icons/glyphish/05-shuffle.png") no-repeat scroll center center;
 }
 
-
-#data-refresh:hover {
-  background:url("../img/icons/glyphish/01-refresh.png") no-repeat scroll center center #555;
-}
-#data-home:hover {
-  background:url("../img/icons/glyphish/53-house.png") no-repeat scroll center center #555;
-}
-#data-switch-view:hover {
-  background:url("../img/icons/glyphish/55-network.png") no-repeat scroll center center #555;
-}
-#data-switch-view.tabular:hover {
-  background:url("../img/icons/glyphish/tabular.png") no-repeat scroll center center #555;
-}
-
-#data-create-node, #data-create-relationship {
-  background:url("../img/icons/glyphish/add.png") no-repeat scroll 5px center #333;
-}
-#data-create-node:hover, #data-create-relationship:hover {
-  background:url("../img/icons/glyphish/add.png") no-repeat scroll 5px center #555;
+#data-create-node .icon, #data-create-relationship .icon {
+  background:url("../img/icons/glyphish/add.png") no-repeat scroll 5px center;
 }
 
 #data-create-relationship.selected, #visualization-show-settings.selected  {
@@ -252,24 +237,20 @@ body {
   -webkit-border-bottom-left-radius:0;
   border-bottom-left-radius:0;
   border: 1px solid #333;
-  background-color:#333 !important;
+  background:#333 !important;
   color:#eee;
-}
-#data-create-relationship.selected {
-  background: url("../img/icons/glyphish/add.png") no-repeat scroll 5px center #333 !important;
 }
 
 #data-execute-console {
-  background:url("../img/icons/glyphish/06-magnify.png") no-repeat scroll center center #333;
   margin-left:5px;
 }
-#data-execute-console:hover {
-  background:url("../img/icons/glyphish/06-magnify.png") no-repeat scroll center center #555;
+
+#data-execute-console .icon{
+  background:url("../img/icons/glyphish/06-magnify.png") no-repeat scroll center center;
 }
 
-
 #create-relationship-types {
-  float:right;
+  float:left;
   clear:both;
 }
 
@@ -282,11 +263,8 @@ body {
   float:right;
 }
 
-.add-property {
-  background:url("../img/icons/glyphish/add.png") no-repeat scroll 5px center #333;
-}
-.add-property:hover {
-  background:url("../img/icons/glyphish/add.png") no-repeat scroll 5px center #555;
+.add-property .icon {
+  background:url("../img/icons/glyphish/add.png") no-repeat scroll 5px center;
 }
 
 .property-list {
@@ -439,39 +417,6 @@ body {
   background: #eee;
 }
 
-.headline-bar .tabs {
-  list-style:none;
-  margin:0;
-  height:100%;
-  border-right:1px solid #DDD;
-} 
-
-.headline-bar .tabs li {
-  display:block;
-  float:left;
-  margin:0;
-  padding:0;
-  height:100%;
-  border-left:1px solid #DDD;
-}
-
-.headline-bar .tabs li a, .headline-bar .tabs li button {
-  background:none;
-  height:100%;
-  width:70px;
-  padding:0;
-  border:0;
-  color:#333;
-  cursor:pointer;
-  font-size:11px;
-  height: 32px;
-}
-.headline-bar .tabs li a:hover, .headline-bar .tabs li button:hover,
-.headline-bar .tabs li a.current, .headline-bar .tabs li button.current  {
-  background: #8bc760;
-  color:#333;
-}
-
 .headline-bar .title {
   float:left;
 }
@@ -516,6 +461,7 @@ body {
   position: absolute;
   right: 0;
   top: 0;
+  z-index:1001;
 }
 
 .dialog {
@@ -626,23 +572,20 @@ body {
 
 /* FANCY BOX */
 .box { 
-  border : 1px solid #CCC;
+  border : 1px solid #eee;
   padding: 5px 3px;
   width:120px;
   -moz-border-radius: 4px 4px 4px 4px;
   -webkit-border-radius:4px;
   border-radius:4px;
-  background-color: #eee;
-  background-image: -webkit-gradient(
-    linear,
-    left bottom,
-    left top,
-    color-stop(0.31, rgb(221,221,221)),
-    color-stop(0.58, rgb(238,238,238)));
-  background-image: -moz-linear-gradient(
-    center bottom,
-    rgb(221,221,221) 31%,
-    rgb(238,238,238) 58%);
+  background: #ffffff;
+  background: -moz-linear-gradient(top, #ffffff 0%, #faf4fa 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#ffffff), color-stop(100%,#faf4fa));
+  background: -webkit-linear-gradient(top, #ffffff 0%,#faf4fa 100%);
+  background: -o-linear-gradient(top, #ffffff 0%,#faf4fa 100%);
+  background: -ms-linear-gradient(top, #ffffff 0%,#faf4fa 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ffffff', endColorstr='#faf4fa',GradientType=0 );
+  background: linear-gradient(top, #ffffff 0%,#faf4fa 100%);
 
 }
 .box .value { text-align:center; }
@@ -761,6 +704,7 @@ pre {
   padding: 5px 10px;
   position: absolute;
   text-decoration: none !important;
+  z-index:100;
 
   -moz-border-radius:4px;
   -webkit-border-radius:4px;
@@ -773,7 +717,7 @@ pre {
 
 .error {
   font-size: 10px;
-  padding: 2px 5px;
+  padding: 0 5px;
 }
 
 /**

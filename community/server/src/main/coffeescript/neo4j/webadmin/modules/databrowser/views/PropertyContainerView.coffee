@@ -31,10 +31,10 @@ define(
         "keyup input.property-value"   : "valueChanged",
         "change input.property-key"    : "keyChangeDone",
         "change input.property-value"  : "valueChangeDone",
-        "click button.delete-property" : "deleteProperty",
-        "click button.add-property"    : "addProperty",
-        "click button.data-save-properties" : "saveChanges"
-        "click button.data-delete-item" : "deleteItem"
+        "click .delete-property" : "deleteProperty",
+        "click .add-property"    : "addProperty",
+        "click .data-save-properties" : "saveChanges"
+        "click .data-delete-item" : "deleteItem"
 
       initialize : (opts) =>
         @template = opts.template
@@ -101,7 +101,7 @@ define(
           when "cantSave" then @setSaveState "Save", true
 
       setSaveState : (text, disabled) =>
-        button = $("button.data-save-properties", @el)
+        button = $(".data-save-properties", @el)
         button.html(text)
         if disabled
           button.attr("disabled","disabled")
