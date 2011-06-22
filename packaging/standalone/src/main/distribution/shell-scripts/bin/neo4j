@@ -11,7 +11,7 @@ NEO4J_HOME=`cd $( dirname $0 )/.. && dirs -l +0`
 NEO4J_INSTANCE=$NEO4J_HOME
 NEO4J_OPTS="-Dorg.neo4j.server.properties=${NEO4J_INSTANCE}/conf/neo4j-server.properties -Djava.util.logging.config.file=${NEO4J_INSTANCE}/conf/logging.properties -Dneo4j.home=$NEO4J_HOME -Dneo4j.instance=$NEO4J_INSTANCE"
 JAVA_OPTS="-server"
-NEO4J_SERVER_PORT=7474
+NEO4J_SERVER_PORT=`( egrep "^org.neo4j.server.webserver.port" $NEO4J_INSTANCE/conf/neo4j-server.properties || echo 7474 ) | sed -e 's/.*=//'`
 TIMEOUT=20
 
 PID_FILE=$NEO4J_INSTANCE/data/neo4j-service.pid
