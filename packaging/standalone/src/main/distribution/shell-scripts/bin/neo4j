@@ -7,14 +7,51 @@
 # Default-Stop:      0 1 6
 ### END INIT INFO
 
+# getconfig <filename>
+#   - plain key-value pairs become environment variables
+#   - keys have '.' chars changed to '_'
+#   - keys of the form KEY.# (where # is a number) are concatenated
+#     into a single environment variable named KEY
+function getconfig {
+  if [ -e $1 ]; then
+    while read line; do 
+      if [[ ${line} =~ ^([^#=]+)=(.+)$ ]]; then
+        key=`echo ${BASH_REMATCH[1]} | sed 's/\./_/g'`
+        value="${BASH_REMATCH[2]}"
+        if [[ ${key} =~ ^(.*)_([0-9]+)$ ]]; then
+          key=${BASH_REMATCH[1]}
+          if [[ ${!key} ]]; then
+            export ${key}="${!key} ${value}"
+          else
+            export ${key}="$value"
+          fi
+        else
+          export ${key}=${value}
+        fi
+      fi
+    done < $1
+  fi
+}  
+
+
 NEO4J_HOME=`cd $( dirname $0 )/.. && dirs -l +0`
 NEO4J_INSTANCE=$NEO4J_HOME
+
+getconfig ${NEO4J_INSTANCE}/conf/neo4j-wrapper.conf
+getconfig ${NEO4J_INSTANCE}/conf/neo4j-server.properties
+
 NEO4J_OPTS="-Dorg.neo4j.server.properties=${NEO4J_INSTANCE}/conf/neo4j-server.properties -Djava.util.logging.config.file=${NEO4J_INSTANCE}/conf/logging.properties -Dneo4j.home=$NEO4J_HOME -Dneo4j.instance=$NEO4J_INSTANCE"
-JAVA_OPTS="-server"
-NEO4J_SERVER_PORT=`( egrep "^org.neo4j.server.webserver.port" $NEO4J_INSTANCE/conf/neo4j-server.properties || echo 7474 ) | sed -e 's/.*=//'`
+JAVA_OPTS="-server ${wrapper_java_additional}"
+#NEO4J_SERVER_PORT=`( egrep "^org.neo4j.server.webserver.port" $NEO4J_INSTANCE/conf/neo4j-server.properties || echo 7474 ) | sed -e 's/.*=//'`
+NEO4J_SERVER_PORT=${org_neo4j_server_webserver_port:=7474}
+
 TIMEOUT=20
 
-PID_FILE=$NEO4J_INSTANCE/data/neo4j-service.pid
+if [[ $wrapper_pidfile ]]; then
+  PID_FILE=${wrapper_pidfile}
+else
+  PID_FILE=${NEO4J_INSTANCE}/data/neo4j-service.pid
+fi
 
 findjava() {
   # OS specific support.  $var _must_ be set to either true or false.
@@ -65,6 +102,34 @@ findjava() {
     echo "  We cannot execute $JAVACMD"
     exit 1
   fi
+}
+
+# Resolve the os
+detectos() {
+  DIST_OS=`uname -s | tr [A-Z] [a-z] | tr -d ' '`
+  case "$DIST_OS" in
+    'sunos')
+      DIST_OS="solaris"
+      ;;
+    'hp-ux' | 'hp-ux64')
+      # HP-UX needs the XPG4 version of ps (for -o args)
+      DIST_OS="hpux"
+      UNIX95=""
+      export UNIX95   
+      ;;
+    'darwin')
+      DIST_OS="macosx"
+      ;;
+    'unix_sv')
+      DIST_OS="unixware"
+      ;;
+    'os/390')
+      DIST_OS="zos"
+      ;;
+    'cygwin')
+      DIST_OS="cygwin"
+      ;;
+  esac
 }
 
 buildclasspath() {
@@ -176,7 +241,7 @@ stopit() {
 }
 
 reportstatus() {
-  
+ 
   checkstatus
 
   if [ -z $NEO4J_PID ] ; then
@@ -206,6 +271,45 @@ console() {
 
 }
 
+installservice() {
+    SERVICE_NAME=${wrapper_ntservice_name:=neo4j-service}
+
+    if [ `id | sed 's/^uid=//;s/(.*$//'` != "0" ] ; then       
+        eval echo  'Must be root to perform this action.'
+        exit 1
+    else
+      checkstatus
+      if [ ! -z $NEO4J_PID ] ; then
+        stopit
+      fi
+      detectos
+      #if [[ -d "/etc/init.d" && -e "/etc/init.d${SERVICE_NAME}" ]]; then
+      if [[ -d "/etc/init.d" ]]; then
+        if [[ -e "/etc/init.d${SERVICE_NAME}" ]]; then
+          echo "${SERVICE_NAME} already installed."
+        else
+          echo "cp $0 /etc/init.d/${SERVICE_NAME}"
+        fi
+      elif [[ $DIST_OS -eq "macosx" ]] ; then
+        echo "A proper Macintosh Launchd is not yet ready."
+      else
+        echo "Sorry, don't know how to install on ${DIST_OS}."
+      fi
+    fi
+}
+
+removeservice() {
+    if [ `id | sed 's/^uid=//;s/(.*$//'` != "0" ] ; then       
+        eval echo  'Must be root to perform this action.'
+        exit 1
+    else
+        stopit "0"
+
+        COMMAND_LINE="'$java_exe' '$yajsw_java_options' '$yajsw_log_options' -jar '$yajsw_jar' -r '$WRAPPER_CONF'"
+        eval $COMMAND_LINE
+    fi
+}
+
 
 showinfo() {
   reportstatus
@@ -217,7 +321,9 @@ showinfo() {
   echo "NEO4J_SERVER_PORT: $NEO4J_SERVER_PORT"
   echo "NEO4J_INSTANCE:    $NEO4J_INSTANCE"
   echo "JAVA_HOME:         $JAVA_HOME"
+  echo "JAVA_OPTS:         $JAVA_OPTS"
   echo "CLASSPATH:         $CLASSPATH"
+
 }
 
 case "$1" in
@@ -245,9 +351,14 @@ case "$1" in
   info)
     showinfo
     ;;
-
+  install)
+    installservice
+    ;;
+  remove)
+    removeservice
+    ;;
   *)
-    echo "Usage: neo4j-service { start | stop | restart | status | info }"
+    echo "Usage: neo4j { start | stop | restart | status | info | install | remove }"
     exit 1;;
 
 esac
