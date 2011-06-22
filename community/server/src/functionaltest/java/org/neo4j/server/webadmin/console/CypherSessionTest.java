@@ -40,8 +40,8 @@
 package org.neo4j.server.webadmin.console;
 
 import static org.hamcrest.text.StringContains.containsString;
+import static org.junit.Assert.assertThat;
 
-import org.junit.Assert;
 import org.junit.Test;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
@@ -52,6 +52,6 @@ public class CypherSessionTest
     {
         CypherSession session = new CypherSession(new ImpermanentGraphDatabase());
         String result = session.evaluate("start a=(0) return a");
-        Assert.assertThat(result, containsString("Node[0]"));
+        assertThat(result, containsString("Node[0]"));
     }
 }
