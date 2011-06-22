@@ -102,7 +102,7 @@ abstract class EvaluatorFactory
         {
             return Traversal.returnAll();
         }
-        else if ( name.equalsIgnoreCase( "all but start node" ) )
+        else if ( name.equalsIgnoreCase( "all_but_start_node" ) )
         {
             return Traversal.returnAllButStartNode();
         }

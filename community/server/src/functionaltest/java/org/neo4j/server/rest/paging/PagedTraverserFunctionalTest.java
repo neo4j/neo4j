@@ -380,12 +380,12 @@ public class PagedTraverserFunctionalTest
 
     private String traverserDescription()
     {
-        String description = "{\n"
-                             + "  \"prune evaluator\":{\"language\":\"builtin\",\"name\":\"none\"},\n"
-                             + "  \"return filter\":{\"language\":\"javascript\",\"body\":\"position.endNode().getProperty('name').contains('1');\"},\n"
-                             + "  \"order\":\"depth first\",\n"
-                             + "  \"relationships\":{\"type\":\"NEXT\",\"direction\":\"out\"}\n"
-                             + "}\n";
+        String description = "{"
+                             + "\"prune_evaluator\":{\"language\":\"builtin\",\"name\":\"none\"},"
+                             + "\"return_filter\":{\"language\":\"javascript\",\"body\":\"position.endNode().getProperty('name').contains('1');\"},"
+                             + "\"order\":\"depth_first\","
+                             + "\"relationships\":{\"type\":\"NEXT\",\"direction\":\"out\"}" + "}";
+
         return description;
     }
 

@@ -1362,9 +1362,9 @@ public class RestfulGraphDatabaseTest
         helper.createRelationship( "knows", startNode, node2 );
         helper.createRelationship( "knows", node1, node3 );
         String description = "{"
-                             + "\"prune evaluator\":{\"language\":\"builtin\",\"name\":\"none\"},"
-                             + "\"return filter\":{\"language\":\"javascript\",\"body\":\"position.endNode().getProperty('name').toLowerCase().contains('t');\"},"
-                             + "\"order\":\"depth first\","
+                             + "\"prune_evaluator\":{\"language\":\"builtin\",\"name\":\"none\"},"
+                             + "\"return_filter\":{\"language\":\"javascript\",\"body\":\"position.endNode().getProperty('name').toLowerCase().contains('t');\"},"
+                             + "\"order\":\"depth_first\","
                              + "\"relationships\":{\"type\":\"knows\",\"direction\":\"all\"}" + "}";
         Response response = service.traverse( startNode, TraverserReturnType.node, description );
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
