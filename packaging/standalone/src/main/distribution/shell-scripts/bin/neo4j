@@ -7,9 +7,7 @@
 # Default-Stop:      0 1 6
 ### END INIT INFO
 
-function abspath() { pushd . > /dev/null; if [ -d "$1" ]; then cd "$1"; dirs -l +0; else cd "`dirname \"$1\"`"; cur_dir=`dirs -l +0`; if [ "$cur_dir" == "/" ]; then echo "$cur_dir`basename \"$1\"`"; else echo "$cur_dir/`basename \"$1\"`"; fi; fi; popd > /dev/null; }
-
-NEO4J_HOME=`abspath $( dirname $0 )/..`
+NEO4J_HOME=` cd $( dirname $0 )/.. && dirs -l +0 `
 NEO4J_INSTANCE=$NEO4J_HOME
 NEO4J_OPTS="-Dorg.neo4j.server.properties=${NEO4J_INSTANCE}/conf/neo4j-server.properties -Djava.util.logging.config.file=${NEO4J_INSTANCE}/conf/logging.properties -Dneo4j.home=$NEO4J_HOME -Dneo4j.instance=$NEO4J_INSTANCE"
 JAVA_OPTS="-server"
