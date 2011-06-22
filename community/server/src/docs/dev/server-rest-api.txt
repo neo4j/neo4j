@@ -879,8 +879,8 @@ curl -H Accept:application/json http://localhost:7474/db/data/index/relationship
 
 ---
 {
-  "order": "depth first",
-  "uniqueness": "node path",
+  "order": "depth_first",
+  "uniqueness": "node_path",
   "relationships": [
     { "type": "KNOWS", "direction": "out" },
     { "type": "LOVES" }
@@ -889,11 +889,11 @@ curl -H Accept:application/json http://localhost:7474/db/data/index/relationship
     "language": "javascript",
     "body": "position.endNode().getProperty('date')>1234567;"
   },
-  "return filter": {
+  "return_filter": {
     "language": "builtin",
     "name": "all"
   },
-  "max depth": 2
+  "max_depth": 2
 }
 ---
 
@@ -904,12 +904,12 @@ curl -H Accept:application/json http://localhost:7474/db/data/index/relationship
 
     <<Builtin prune evaluators>>: none
 
-    <<Builtin return filters>>: all, all but start node 
+    <<Builtin return filters>>: all, all_but_start_node 
 
 ** Example using curl
 
 ---
-curl -H Accept:application/json -H Content-Type:application/json -X POST -d '{"order":"depth first"}' http://localhost:7474/db/data/node/123/traverse/node
+curl -H Accept:application/json -H Content-Type:application/json -X POST -d '{"order":"depth_first"}' http://localhost:7474/db/data/node/123/traverse/node
 ---
 
 ** Response
@@ -1032,7 +1032,7 @@ curl -H Accept:application/json -H Content-Type:application/json -X POST -d '{"o
 ---
 { "to": "http://localhost:7474/db/data/node/456",
   "relationships": {"type": "KNOWS", "direction": "out"},
-  "max depth": 3,
+  "max_depth": 3,
   "algorithm", "shortestPath"
 }
 ---
@@ -1044,8 +1044,8 @@ curl -H Accept:application/json -H Content-Type:application/json -X POST -d '{"o
 ** Example using curl
 
 ---
-curl -H Accept:application/json -H Content-Type:application/json -X POST http://localhost:7474/db/data/node/123/path -d '{"to":"http://localhost:7474/db/data/node/456","relationships":{"type":"KNOWS"},"algorithm":"shortestPath","max depth":10}'
-curl -H Accept:application/json -H Content-Type:application/json -X POST http://localhost:7474/db/data/node/123/path -d '{"to":"http://localhost:7474/db/data/node/456","relationships":{"type":"KNOWS"},"algorithm":"dijkstra","cost property":"cost","default cost":1}'
+curl -H Accept:application/json -H Content-Type:application/json -X POST http://localhost:7474/db/data/node/123/path -d '{"to":"http://localhost:7474/db/data/node/456","relationships":{"type":"KNOWS"},"algorithm":"shortestPath","max_depth":10}'
+curl -H Accept:application/json -H Content-Type:application/json -X POST http://localhost:7474/db/data/node/123/path -d '{"to":"http://localhost:7474/db/data/node/456","relationships":{"type":"KNOWS"},"algorithm":"dijkstra","cost_property":"cost","default_cost":1}'
 ---
 
 ** Response
@@ -1072,7 +1072,7 @@ curl -H Accept:application/json -H Content-Type:application/json -X POST http://
 ---
 { "to": "http://localhost:7474/db/data/node/456",
   "relationships": {"type": "KNOWS", "direction": "out"},
-  "max depth": 3,
+  "max_depth": 3,
   "algorithm", "shortestPath"
 }
 ---
@@ -1084,8 +1084,8 @@ curl -H Accept:application/json -H Content-Type:application/json -X POST http://
 ** Example using curl
 
 ---
-curl -H Accept:application/json -H Content-Type:application/json -X POST http://localhost:7474/db/data/node/123/paths -d '{"to":"http://localhost:7474/db/data/node/456","relationships":{"type":"KNOWS"},"algorithm":"shortestPath","max depth":10}'
-curl -H Accept:application/json -H Content-Type:application/json -X POST http://localhost:7474/db/data/node/123/paths -d '{"to":"http://localhost:7474/db/data/node/456","relationships":{"type":"KNOWS"},"algorithm":"dijkstra","cost property":"cost","default cost":1}'
+curl -H Accept:application/json -H Content-Type:application/json -X POST http://localhost:7474/db/data/node/123/paths -d '{"to":"http://localhost:7474/db/data/node/456","relationships":{"type":"KNOWS"},"algorithm":"shortestPath","max_depth":10}'
+curl -H Accept:application/json -H Content-Type:application/json -X POST http://localhost:7474/db/data/node/123/paths -d '{"to":"http://localhost:7474/db/data/node/456","relationships":{"type":"KNOWS"},"algorithm":"dijkstra","cost_property":"cost","default_cost":1}'
 ---
 
 ** Response

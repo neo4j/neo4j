@@ -171,8 +171,8 @@ public class RestfulGraphDatabasePagedTraversalTest
     {
         long startNodeId = createListOfNodes( 1000 );
         String description = "{"
-                             + "\"prune evaluator\":{\"language\":\"builtin\",\"name\":\"none\"},"
-                             + "\"return filter\":{\"language\":\"javascript\",\"body\":\"position.endNode().getProperty('name').contains('9');\"},"
+                             + "\"prune_evaluator\":{\"language\":\"builtin\",\"name\":\"none\"},"
+                             + "\"return_filter\":{\"language\":\"javascript\",\"body\":\"position.endNode().getProperty('name').contains('9');\"},"
                              + "\"order\":\"depth first\","
                              + "\"relationships\":{\"type\":\"PRECEDES\",\"direction\":\"out\"}" + "}";
 

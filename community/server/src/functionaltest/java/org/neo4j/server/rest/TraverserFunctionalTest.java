@@ -172,9 +172,9 @@ public class TraverserFunctionalTest
         ArrayList<Map<String, Object>> rels = new ArrayList<Map<String, Object>>();
         rels.add( MapUtil.map( "type", "knows", "direction", "all" ) );
         rels.add( MapUtil.map( "type", "loves", "direction", "all" ) );
-        String description = JsonHelper.createJsonFrom( MapUtil.map( "order", "breadth first", "uniqueness",
-                "node global", "prune evaluator", MapUtil.map( "language", "builtin", "name", "none" ),
-                "return filter", MapUtil.map( "language", "javascript", "body",
+        String description = JsonHelper.createJsonFrom( MapUtil.map( "order", "breadth_first", "uniqueness",
+                "node_global", "prune_evaluator", MapUtil.map( "language", "builtin", "name", "none" ),
+                "return_filter", MapUtil.map( "language", "javascript", "body",
                         "position.endNode().getProperty('name').toLowerCase().contains('t')" ), "relationships", rels,
                 "max depth", 3 ) );
         String entity = gen.get()

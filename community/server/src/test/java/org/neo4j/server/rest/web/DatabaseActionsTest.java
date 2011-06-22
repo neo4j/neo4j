@@ -833,7 +833,7 @@ public class DatabaseActionsTest
     {
         long startNode = createBasicTraversableGraph();
         List<Object> hits = serialize( actions.traverse( startNode, MapUtil.map(
-                "max depth", 2 ), TraverserReturnType.node ) );
+                "max_depth", 2 ), TraverserReturnType.node ) );
         assertEquals( 3, hits.size() );
     }
 
@@ -842,11 +842,11 @@ public class DatabaseActionsTest
     {
         long startNode = createBasicTraversableGraph();
         List<Object> hits = serialize( actions.traverse( startNode, MapUtil.map(
-                "return filter", MapUtil.map( "language", "javascript", "body", "true;" ),
-                "max depth", 10 ), TraverserReturnType.node ) );
+                "return_filter", MapUtil.map( "language", "javascript", "body", "true;" ),
+                "max_depth", 10 ), TraverserReturnType.node ) );
         assertEquals( 6, hits.size() );
-        hits = serialize( actions.traverse( startNode, MapUtil.map( "return filter", MapUtil.map(
-                "language", "builtin", "name", "all" ), "max depth", 10 ), TraverserReturnType.node ) );
+        hits = serialize( actions.traverse( startNode, MapUtil.map( "return_filter", MapUtil.map(
+                "language", "builtin", "name", "all" ), "max_depth", 10 ), TraverserReturnType.node ) );
         assertEquals( 6, hits.size() );
     }
 
@@ -854,9 +854,9 @@ public class DatabaseActionsTest
     public void shouldBeAbleToUseCustomReturnFilter() throws DatabaseBlockedException
     {
         long startNode = createBasicTraversableGraph();
-        List<Object> hits = serialize( actions.traverse( startNode, MapUtil.map( "prune evaluator",
+        List<Object> hits = serialize( actions.traverse( startNode, MapUtil.map( "prune_evaluator",
                 MapUtil.map( "language", "builtin", "name", "none" ),
-                "return filter", MapUtil.map( "language", "javascript", "body", "position.endNode().getProperty( 'name' ).contains( 'o' )" ) ),
+                "return_filter", MapUtil.map( "language", "javascript", "body", "position.endNode().getProperty( 'name' ).contains( 'o' )" ) ),
                 TraverserReturnType.node ) );
         assertEquals( 3, hits.size() );
     }
@@ -865,13 +865,13 @@ public class DatabaseActionsTest
     public void shouldBeAbleToTraverseWithMaxDepthAndPruneEvaluatorCombined() throws DatabaseBlockedException
     {
         long startNode = createBasicTraversableGraph();
-        List<Object> hits = serialize( actions.traverse( startNode, MapUtil.map( "max depth", 2,
-                "prune evaluator", MapUtil.map( "language", "javascript", "body",
+        List<Object> hits = serialize( actions.traverse( startNode, MapUtil.map( "max_depth", 2,
+                "prune_evaluator", MapUtil.map( "language", "javascript", "body",
                 "position.endNode().getProperty('name').equals('Emil')" ) ),
                 TraverserReturnType.node ) );
         assertEquals( 3, hits.size() );
-        hits = serialize( actions.traverse( startNode, MapUtil.map( "max depth", 1,
-                "prune evaluator", MapUtil.map( "language", "javascript", "body",
+        hits = serialize( actions.traverse( startNode, MapUtil.map( "max_depth", 1,
+                "prune_evaluator", MapUtil.map( "language", "javascript", "body",
                 "position.endNode().getProperty('name').equals('Emil')" ) ),
                 TraverserReturnType.node ) );
         assertEquals( 2, hits.size() );

@@ -381,9 +381,9 @@ public class PagedTraverserFunctionalTest
     private String traverserDescription()
     {
         String description = "{"
-                             + "\"prune evaluator\":{\"language\":\"builtin\",\"name\":\"none\"},"
-                             + "\"return filter\":{\"language\":\"javascript\",\"body\":\"position.endNode().getProperty('name').contains('1');\"},"
-                             + "\"order\":\"depth first\","
+                             + "\"prune_evaluator\":{\"language\":\"builtin\",\"name\":\"none\"},"
+                             + "\"return_filter\":{\"language\":\"javascript\",\"body\":\"position.endNode().getProperty('name').contains('1');\"},"
+                             + "\"order\":\"depth_first\","
                              + "\"relationships\":{\"type\":\"NEXT\",\"direction\":\"out\"}" + "}";
         return description;
     }

@@ -12,26 +12,26 @@ responseType:: The kind of objects in the response is determined by 'traverse/\{
 To decide how the graph should be traversed you can use these parameters in the request body:
 
 order:: Decides in which order to visit nodes. Possible values:
- * +breadth first+
- * +depth first+
+ * +breadth_first+
+ * +depth_first+
 relationships:: Decides which relationship types and directions should be followed.
  The direction can be one of:
  * +all+
  * +in+
  * +out+
 uniqueness:: Decides how uniqueness should be calculated. Possible values:
- * +node global+
+ * +node_global+
  * +none+
- * +relationship global+
- * +node path+
- * +relationship path+
-prune evaluator:: Decides whether the traverser should continue down that path or if it should be pruned so that the traverser won't continue down that path.
+ * +relationship_global+
+ * +node_path+
+ * +relationship_path+
+prune_evaluator:: Decides whether the traverser should continue down that path or if it should be pruned so that the traverser won't continue down that path.
  You can write your own prune evaluator or use the built-in +none+ prune evaluator.
 return filter:: Decides whether the current position should be included in the result.
  You can provide your own code for this, or use one of the built-in filters:
  * +all+
- * +all but start node+
-max depth:: Is a short-hand way of specifying a prune evaluator which prunes after a certain depth.
+ * +all_but_start_node+
+max_depth:: Is a short-hand way of specifying a prune evaluator which prunes after a certain depth.
  If not specified a max depth of 1 is used and if a +prune evaluator+ is specified instead of a +max depth+, no max depth limit is set.
 
 The +position+ object in the body of the return filter and prune evaluator is a
