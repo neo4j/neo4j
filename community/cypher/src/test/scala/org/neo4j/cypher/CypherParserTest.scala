@@ -211,6 +211,16 @@ class CypherParserTest extends JUnitSuite {
         Equals(Literal(35), PropertyValue("a", "age"))))
   }
 
+
+  @Test def shouldCreateNotEqualsQuery() {
+    testQuery(
+      "start a = (1) where 35 != a.age return a",
+      Query(
+        Return(EntityOutput("a")),
+        Start(NodeById("a", 1)),
+        Not(Equals(Literal(35), PropertyValue("a", "age")))))
+  }
+
   @Test def multipleFilters() {
     testQuery(
       "start a = (1) where a.name = \"andres\" or a.name = \"mattias\" return a",

@@ -19,12 +19,18 @@ package org.neo4j.cypher.parser
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
+
 trait Clauses extends JavaTokenParsers with Tokens with Values {
   def clause: Parser[Clause] = (orderedComparison | not | notEquals | equals | regexp | hasProperty | parens) * (
-    ignoreCase("and") ^^^ { (a: Clause, b: Clause) => And(a, b) } |
-    ignoreCase("or") ^^^ {  (a: Clause, b: Clause) => Or(a, b) })
+    ignoreCase("and") ^^^ {
+      (a: Clause, b: Clause) => And(a, b)
+    } |
+      ignoreCase("or") ^^^ {
+        (a: Clause, b: Clause) => Or(a, b)
+      })
 
   def regexp: Parser[Clause] = value ~ "=~" ~ regularLiteral ^^ {
     case a ~ "=~" ~ b => RegularExpression(a, stripQuotes(b))
@@ -37,32 +43,32 @@ trait Clauses extends JavaTokenParsers with Tokens with Values {
   def parens: Parser[Clause] = "(" ~> clause <~ ")"
 
   def equals: Parser[Clause] = value ~ "=" ~ value ^^ {
-    case l ~ "=" ~ r => Equals(l,r)
+    case l ~ "=" ~ r => Equals(l, r)
   }
 
-  def orderedComparison:Parser[Clause] = (lessThanOrEqual | greaterThanOrEqual | lessThan | greaterThan)
+  def notEquals: Parser[Clause] = value ~ ("!=" | "<>") ~ value ^^ {
+    case l ~ wut ~ r => Not(Equals(l, r))
+  }
+
+  def orderedComparison: Parser[Clause] = (lessThanOrEqual | greaterThanOrEqual | lessThan | greaterThan)
 
   def lessThan: Parser[Clause] = value ~ "<" ~ value ^^ {
-    case l ~ "<" ~ r => LessThan(l,r)
+    case l ~ "<" ~ r => LessThan(l, r)
   }
 
   def greaterThan: Parser[Clause] = value ~ ">" ~ value ^^ {
-    case l ~ ">" ~ r => GreaterThan(l,r)
+    case l ~ ">" ~ r => GreaterThan(l, r)
   }
 
   def lessThanOrEqual: Parser[Clause] = value ~ "<=" ~ value ^^ {
-    case l ~ "<=" ~ r => LessThanOrEqual(l,r)
+    case l ~ "<=" ~ r => LessThanOrEqual(l, r)
   }
 
   def greaterThanOrEqual: Parser[Clause] = value ~ ">=" ~ value ^^ {
-    case l ~ ">=" ~ r => GreaterThanOrEqual(l,r)
+    case l ~ ">=" ~ r => GreaterThanOrEqual(l, r)
   }
 
-  def notEquals: Parser[Clause] = value ~ "<>" ~ value ^^ {
-    case l ~ "<>" ~ r => Not(Equals(l,r))
-  }
-
-  def not:Parser[Clause] = ignoreCase("not") ~ "(" ~ clause ~ ")" ^^ {
+  def not: Parser[Clause] = ignoreCase("not") ~ "(" ~ clause ~ ")" ^^ {
     case not ~ "(" ~ inner ~ ")" => Not(inner)
   }
 
