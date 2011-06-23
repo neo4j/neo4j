@@ -61,7 +61,7 @@ public class DiscoveryService {
     
     
     @GET
-    @Produces(MediaType.TEXT_HTML)
+    @Produces(MediaType.WILDCARD)
     public Response redirectToWebadmin() {
         try {
             return Response.seeOther(new URI(Configurator.DEFAULT_WEB_ADMIN_PATH)).build();
