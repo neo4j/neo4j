@@ -55,7 +55,7 @@ public class Jetty6WebServer implements WebServer
 {
     public static final Logger log = Logger.getLogger( Jetty6WebServer.class );
     public static final int DEFAULT_PORT = 80;
-    private static final int JETTY_DEFAULT_MAX_THREADS = 100;
+    private static final int JETTY_DEFAULT_MAX_THREADS = 10 * Runtime.getRuntime().availableProcessors();
 
     private Server jetty;
     private int jettyPort = DEFAULT_PORT;

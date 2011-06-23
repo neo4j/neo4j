@@ -40,7 +40,8 @@ public class JettyThreadLimitTest
                 .getThreadPool();
         threadPool.start();
         loadThreadPool( threadPool );
-        assertEquals( 100, threadPool.getThreads() );
+        assertEquals( 10 * Runtime.getRuntime()
+                .availableProcessors(), threadPool.getThreads() );
         threadPool.stop();
     }
 
