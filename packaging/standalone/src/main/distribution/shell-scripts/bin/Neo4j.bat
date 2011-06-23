@@ -26,7 +26,7 @@ set command=""
 set serviceName="neo4j"
 set serviceDisplayName="Neo4j Graph DB Server"
 set serviceStartType=auto
-call:parseConfig ..\conf\neo4j-wrapper.conf
+call:parseConfig "%~dp0..\conf\neo4j-wrapper.conf"
 for /F %%v in ('echo %1^|findstr "^help$ ^start$ ^stop$ ^query$ ^restart$ ^install$ ^remove$ ^console$"') do set command=%%v
 
 if %command% == "" (
@@ -73,7 +73,7 @@ goto:eof
 :install
 set classpath="-DserverClasspath=lib/*.jar;system/lib/*.jar;plugins/*.jar;system/coordinator/lib/*.jar"
 set mainclass="-DserverMainClass=org.neo4j.server.Bootstrapper"
-set binPath="java "-DworkingDir=%~dp0.." -DconfigFile=conf\neo4j-wrapper.conf %classpath% %mainclass% -jar "%~dp0windows-service-wrapper-1-SNAPSHOT.jar" %serviceName%"
+set binPath="java "-DworkingDir=%~dps0.." -DconfigFile=conf\neo4j-wrapper.conf %classpath% %mainclass% -jar "%~dps0windows-service-wrapper-1-SNAPSHOT.jar" %serviceName%"
 sc create %serviceName% binPath= %binPath% DisplayName= %serviceDisplayName% start= %serviceStartType%
 goto:eof
 
@@ -97,8 +97,8 @@ sc stop %serviceName%
 goto:eof
 
 :restart
-goto:stop
-goto:start
+sc stop %serviceName%
+sc start %serviceName%
 goto:eof
 
 :console
