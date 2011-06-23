@@ -64,10 +64,16 @@ define(
           if visualNode.data.neoNode?
             node = visualNode.data.neoNode
             id = @itemUrlUtils.extractNodeId(node.getSelf())
+            labelText = id
+            
+            propList = []
             for prop in @labelProperties
               if node.hasProperty(prop)
-                labelText = id + ": " + node.getProperty(prop)
-                break
+                propList.push node.getProperty(prop)
+                
+            propertiesText = propList.join ", "
+            if propertiesText
+              labelText = labelText + ": " + propertiesText
                       
             labelText ?= id
           else 

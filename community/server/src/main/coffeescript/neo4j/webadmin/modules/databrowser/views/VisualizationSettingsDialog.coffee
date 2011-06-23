@@ -44,6 +44,7 @@ define(
 
       save : =>
         keys = $("#visualization-label-properties").val().split(",")
+        keys = key.trim() for key in keys
         @settings.setLabelProperties(keys)
         @closeCallback()
 
@@ -54,7 +55,7 @@ define(
         $(@el).css({position:"absolute", top:top+"px", left:left+"px"})
         
       render : () =>
-        $(@el).html(template( labels : @settings.getLabelProperties().join(",") ))
+        $(@el).html(template( labels : @settings.getLabelProperties().join(", ") ))
         return this
 
 )
