@@ -12,7 +12,10 @@ define(
         # Pass
 
       getLabelProperties : () ->
-        @settings.get(@LABEL_PROPERTIES_KEY) or @LABEL_PROPERTIES_DEFAULT
+        s = @settings.get(@LABEL_PROPERTIES_KEY)
+        if s and _(s).isArray()
+          s
+        else @LABEL_PROPERTIES_DEFAULT
         
       setLabelProperties : (properties) ->
         attr = {}

@@ -44,7 +44,7 @@ define(
 
       save : =>
         keys = $("#visualization-label-properties").val().split(",")
-        keys = key.trim() for key in keys
+        keys = (key.trim() for key in keys)
         @settings.setLabelProperties(keys)
         @closeCallback()
 
