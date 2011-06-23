@@ -185,7 +185,7 @@ startit() {
     findjava
     buildclasspath
 
-    $JAVACMD -cp $CLASSPATH $JAVA_OPTS $NEO4J_OPTS org.neo4j.server.Bootstrapper >> $NEO4J_INSTANCE/data/log/console.log 2>&1 &
+    sudo -u $NEO4J_USER $JAVACMD -cp $CLASSPATH $JAVA_OPTS $NEO4J_OPTS org.neo4j.server.Bootstrapper >> $NEO4J_INSTANCE/data/log/console.log 2>&1 &
     STARTED_PID=$!
     echo $STARTED_PID > $PID_FILE
     printf " process [$STARTED_PID]... waiting for server to be ready."
@@ -292,7 +292,8 @@ installservice() {
           if [ ! -z $NEO4J_PID ] ; then
             stopit
           fi
-          sudo -u ${NEO4J_USER} ln -s ${SCRIPT_NAME} "/etc/init.d/${SERVICE_NAME}"
+          ln -s ${SCRIPT_NAME} "/etc/init.d/${SERVICE_NAME}"
+	        update-rc.d ${SERVICE_NAME} defaults
         fi
       fi
     elif [[ $DIST_OS -eq "macosx" ]] ; then
@@ -316,6 +317,7 @@ removeservice() {
           if [ ! -z $NEO4J_PID ] ; then
             stopit
           fi
+	        update-rc.d -f ${SERVICE_NAME} remove
           rm /etc/init.d/${SERVICE_NAME}
         fi
       else
