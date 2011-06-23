@@ -46,12 +46,21 @@ public class WebdriverLibrary
         return d;
     }
     
+    public void clickOn(String text) {
+    	clickOnByXpath("//*[contains(.,'"+text+"')]");
+    }
+    
     public void clickOnButton(String text) {
-        getElement( By.xpath( "//button[contains(.,'"+text+"')]") ).click();
+    	clickOnByXpath("//div[contains(.,'"+text+"') and contains(@class, 'button')]");
     }
     
     public void clickOnLink(String text) {
-        getElement( By.xpath( "//a[contains(.,'"+text+"')]") ).click();
+    	clickOnByXpath( "//a[contains(.,'"+text+"')]");
+    }
+
+    public void clickOnByXpath( String xpath )
+    {
+        getElement( By.xpath( xpath ) ).click();
     }
     
     public void waitForUrlToBe(String url) {

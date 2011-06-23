@@ -43,7 +43,7 @@ public class DataBrowserSteps
     public DataBrowserSteps(  WebadminWebdriverLibrary wl ) throws InvocationTargetException, InstantiationException, IllegalAccessException
     {
         this.wl = wl;
-        saveButton = new ElementReference(wl, By.xpath( "//button[@class='data-save-properties button']" ));
+        saveButton = new ElementReference(wl, By.xpath( "//div[@class='data-save-properties button']" ));
     }
     
     @Given("^I have created a node through webadmin$")

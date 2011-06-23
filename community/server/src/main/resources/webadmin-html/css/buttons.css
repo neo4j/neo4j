@@ -82,6 +82,13 @@
   line-height:30px;
 }
 
+/* Chrome + safari only */
+@media screen and (-webkit-min-device-pixel-ratio:0) {
+  .button, .text-icon-button, .icon-button, .micro-button, .bad-button {
+    line-height:32px;
+  }
+}
+
 .button:hover, .text-icon-button:hover, .icon-button:hover, .micro-button:hover {
   border:1px solid #7EB3D6;
   background: #abd3ee;
@@ -225,6 +232,10 @@ a.button {
   -webkit-border-top-right-radius:0;
   border-top-right-radius:0;
   color: #eee;
+}
+
+.popout input {
+  width:97%;
 }
 
 .popout-controls {

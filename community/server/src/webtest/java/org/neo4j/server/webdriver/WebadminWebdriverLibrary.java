@@ -103,11 +103,6 @@ public class WebadminWebdriverLibrary extends WebdriverLibrary
         return dataBrowserItemSubtitle;
     }
 
-    public void clickOnButtonByXpath( String xpath )
-    {
-        getElement( By.xpath( xpath ) ).click();
-    }
-
     public void waitForSingleElementToAppear( By xpath )
     {
         waitForElementToAppear( xpath );

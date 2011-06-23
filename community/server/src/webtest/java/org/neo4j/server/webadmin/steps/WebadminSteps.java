@@ -66,14 +66,19 @@ public class WebadminSteps
         wl.clickOnTab( tabName );
     }
     
-    @When("^I click on the (.+) button in webadmin$")
+    @When("^I click on \"(.+)\" in webadmin$")
+    public void iClickOnX(String text) throws Exception {
+        wl.clickOn( text );
+    }
+    
+    @When("^I click on the \"(.+)\" button in webadmin$")
     public void iClickOnXButton(String text) throws Exception {
         wl.clickOnButton( text );
     }
     
     @When("^I click on the button found by the xpath (.+)$")
     public void iClickOnButtonByXpath(String xpath) throws Exception {
-        wl.clickOnButtonByXpath(xpath);
+        wl.clickOnByXpath(xpath);
     }
     
     @When("^I click on the (.+) link in webadmin$")

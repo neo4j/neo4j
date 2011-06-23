@@ -26,14 +26,14 @@ Feature: Webadmin data browser allows me to see and change details for a node
   Scenario: Create nodes in webadmin
     Given I have a neo4j server running
     When I look at the webadmin data browser in a web browser
-    And I click on the Node button in webadmin
+    And I click on the "Node" button in webadmin
     Then The data browser item subtitle should change from http://localhost:7474/db/data/node/0
     And The data browser item subtitle should be http://localhost:7474/db/data/node/[0-9]+
 
   Scenario: Create node properties in webadmin
     Given I have a neo4j server running
     When I look at the webadmin data browser in a web browser
-    When I click on the Add property button in webadmin
+    When I click on the "Add property" button in webadmin
     Then An element should appear that can be found by the xpath //li[1]/ul/li//input[@class="property-key"]
     
     When I type "mykey" into the element found by the xpath //li[1]/ul/li//input[@class="property-key"]

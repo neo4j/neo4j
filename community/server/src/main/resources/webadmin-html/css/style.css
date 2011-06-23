@@ -190,7 +190,6 @@ body {
 #data-console {
   color: #444444;
   font-size: 14px;
-  padding: 5px;
   width: 85%;
   float:left;
 }
@@ -303,10 +302,6 @@ body {
   padding: 0 10px 0 0;
 }
 
-.property-row input {
-  height: 24px;
-}
-
 .property-key-wrap {
   width:30%;
 }
@@ -377,8 +372,9 @@ body {
   background:transparent;
   color:inherit;
   font:inherit;
-  padding-left: 4px;
+  padding: 0 4px;
   width:80%;
+  height:17px;
 }
 
 #console {

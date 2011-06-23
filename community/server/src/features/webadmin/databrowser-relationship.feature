@@ -8,9 +8,9 @@ Feature: Webadmin data browser allows me to see and change details of a relation
     And I have created a node through webadmin
 
     When I look at the webadmin data browser in a web browser
-    And I click on the Relationship button in webadmin
+    And I click on the "Relationship" button in webadmin
     And I type "1" into the element found by the xpath //input[@id="create-relationship-to"]
-    And I click on the Create button in webadmin
+    And I click on the "Create" button in webadmin
     
     Then The data browser item subtitle should change to http://localhost:7474/db/data/relationship/[0-9]+
 
@@ -29,7 +29,7 @@ Feature: Webadmin data browser allows me to see and change details of a relation
     And I enter rel:0 into the data browser search field
     Then The data browser item subtitle should be http://localhost:7474/db/data/relationship/0
     
-    When I click on the Add property button in webadmin
+    When I click on the "Add property" button in webadmin
     Then An element should appear that can be found by the xpath //li[1]/ul/li//input[@class="property-key"]
     
     When I type "mykey" into the element found by the xpath //li[1]/ul/li//input[@class="property-key"]
