@@ -31,6 +31,8 @@
     <!-- other filter properties -->
     <wrapper.conf>conf/neo4j-wrapper.conf</wrapper.conf>
     <neo4j.version>1.4-SNAPSHOT</neo4j.version>
+    <neo4j.manual.version>@MANUALVERSION@</neo4j.manual.version>
+    <neo4j.3rdparty.version>@3RDPARTYVERSION@</neo4j.3rdparty.version>
     
     <!-- plugin versions -->
     <neo4j-gremlin-plugin.version>0.1-SNAPSHOT</neo4j-gremlin-plugin.version>
@@ -156,7 +158,7 @@ terms of the relevant Commercial Agreement.
                  <artifactItem>
                   <groupId>org.neo4j.doc</groupId>
                   <artifactId>neo4j-manual</artifactId>
-                  <version>${neo4j.version}</version>
+                  <version>${neo4j.manual.version}</version>
                   <classifier>manpages</classifier>
                   <type>jar</type>
                   <outputDirectory>${project.build.directory}/manpages</outputDirectory>
@@ -175,7 +177,7 @@ terms of the relevant Commercial Agreement.
                  <artifactItem>
                   <groupId>org.neo4j.doc</groupId>
                   <artifactId>neo4j-manual</artifactId>
-                  <version>${neo4j.version}</version>
+                  <version>${neo4j.manual.version}</version>
                   <classifier>upgrade</classifier>
                   <type>zip</type>
                   <outputDirectory>${project.build.directory}/upgrade</outputDirectory>
@@ -194,7 +196,7 @@ terms of the relevant Commercial Agreement.
                  <artifactItem>
                   <groupId>org.neo4j.3rdparty</groupId>
                   <artifactId>yajsw-neo4j</artifactId>
-                  <version>${neo4j.version}</version>
+                  <version>${neo4j.3rdparty.version}</version>
                   <classifier>wrapper</classifier>
                   <type>zip</type>
                   <outputDirectory>${project.build.directory}/wrapper</outputDirectory>
@@ -212,7 +214,7 @@ terms of the relevant Commercial Agreement.
                  <artifactItem>
                   <groupId>org.neo4j.3rdparty</groupId>
                   <artifactId>yajsw-neo4j</artifactId>
-                  <version>${neo4j.version}</version>
+                  <version>${neo4j.3rdparty.version}</version>
                   <classifier>wrapperlibs</classifier>
                   <type>zip</type>
                   <outputDirectory>${project.build.directory}/wrapperlibs</outputDirectory>
@@ -366,19 +368,19 @@ terms of the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j.doc</groupId>
       <artifactId>neo4j-manual</artifactId>
-      <version>${neo4j.version}</version>
+      <version>${neo4j.manual.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.neo4j.doc</groupId>
       <artifactId>neo4j-manual</artifactId>
-      <version>${neo4j.version}</version>
+      <version>${neo4j.manual.version}</version>
       <classifier>manpages</classifier>
     </dependency>
     <dependency>
       <groupId>org.neo4j.doc</groupId>
       <artifactId>neo4j-manual</artifactId>
-      <version>${neo4j.version}</version>
+      <version>${neo4j.manual.version}</version>
       <classifier>upgrade</classifier>
       <type>zip</type>
     </dependency>

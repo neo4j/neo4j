@@ -19,14 +19,6 @@
  */
 package org.neo4j.server;
 
-import java.io.File;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
@@ -41,13 +33,21 @@ import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 import org.neo4j.server.web.WebServer;
 
+import java.io.File;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
 public class NeoServerWithEmbeddedWebServer implements NeoServer
 {
 
     public static final Logger log = Logger.getLogger( NeoServerWithEmbeddedWebServer.class );
 
-    private Configurator configurator;
     private Database database;
+    private final Configurator configurator;
     private final WebServer webServer;
     private final StartupHealthCheck startupHealthCheck;
 
@@ -180,7 +180,14 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
 
         log.info( "Starting Neo Server on port [%s]", webServerPort );
         webServer.setPort( webServerPort );
+        webServer.setMaxThreads( getMaxThreads() );
         webServer.init();
+    }
+
+    private int getMaxThreads()
+    {
+        return configurator.configuration().getInt( Configurator.WEBSERVER_MAX_THREADS_PROPERTY_KEY,
+            2 * Runtime.getRuntime().availableProcessors() );
     }
 
     private void startWebServer()

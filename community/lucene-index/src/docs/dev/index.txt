@@ -475,9 +475,8 @@ classifier=test-sources
 [[auto-indexing-api]]
 === Search ===
 The usefulness of the auto indexing functionality comes of course from the ability to actually query the index and retrieve results.
-To that end, you can acquire an +AutoIndex+ object from the +AutoIndexer+ that exposes all the query and get methods of a normal
-http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html[+Index+],
-making it in essence a read-only version of one.
+To that end, you can acquire a +ReadOnlyIndex+ object from the +AutoIndexer+ that exposes all the query and get methods of a full
+http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html[+Index+] with exactly the same functionality.
 Continuing from the previous example, accessing the index is done like this:
 
 [snippet,java]

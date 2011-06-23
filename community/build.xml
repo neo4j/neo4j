@@ -22,7 +22,7 @@
 	</target>
 	
 	<target name="compile" description="Compiles all of the individual community components" depends="generateKernelVersion">
-		<compileProject projectName="kernel" pom="pom.tom"/>
+		<compileProject projectName="kernel" pom="pom.xml"/>
 		<compileProject projectName="jmx" pom="pom.xml"/>		
 		<compileProject projectName="udc" pom="pom.xml"/>
 		<compileProject projectName="lucene-index" pom="pom.xml"/>
@@ -58,9 +58,11 @@
 		<echo message="buildNumber=${buildNumber}" file="artifacts/reports/buildNumber.properties"/>	
 	</target>
 	
-	<target name="createPackage" description="Creates package for linux" depends="compile">
+	<target name="createPackage" description="Creates package for linux">
 		<copy file="packaging/pom.xml" tofile="packaging/pom-with-build-number.xml" overwrite="true"/>
 		<replace file="packaging/pom-with-build-number.xml" token="1.4-SNAPSHOT" value="${buildNumber}"/>
+		<replace file="packaging/pom-with-build-number.xml" token="@MANUALVERSION@" value="1.4-SNAPSHOT"/>	
+		<replace file="packaging/pom-with-build-number.xml" token="@3RDPARTYVERSION@" value="1.4-SNAPSHOT"/>				
 		<exec executable="mvn" dir="packaging" failonerror="true">
 			<arg value="clean"/>
 			<arg value="package"/>

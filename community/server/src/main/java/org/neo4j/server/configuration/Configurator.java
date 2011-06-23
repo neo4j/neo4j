@@ -19,11 +19,11 @@
  */
 package org.neo4j.server.configuration;
 
+import org.apache.commons.configuration.Configuration;
+
 import java.io.File;
 import java.util.Map;
 import java.util.Set;
-
-import org.apache.commons.configuration.Configuration;
 
 public interface Configurator {
     String DB_TUNING_PROPERTY_FILE_KEY = "org.neo4j.server.db.tuning.properties";
@@ -34,6 +34,7 @@ public interface Configurator {
 
     int DEFAULT_WEBSERVER_PORT = 7474;
     String WEBSERVER_PORT_PROPERTY_KEY = "org.neo4j.server.webserver.port";
+    String WEBSERVER_MAX_THREADS_PROPERTY_KEY = "org.neo4j.server.webserver.maxthreads";
 
     String REST_API_PATH_PROPERTY_KEY = "org.neo4j.server.webadmin.data.uri";
     String REST_API_PACKAGE = "org.neo4j.server.rest.web";

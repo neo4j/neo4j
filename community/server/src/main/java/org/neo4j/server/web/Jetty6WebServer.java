@@ -19,16 +19,8 @@
  */
 package org.neo4j.server.web;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.*;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import com.sun.jersey.api.core.ResourceConfig;
+import com.sun.jersey.spi.container.servlet.ServletContainer;
 import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.SessionManager;
@@ -44,17 +36,30 @@ import org.neo4j.server.NeoServer;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rest.web.AllowAjaxFilter;
 
-import com.sun.jersey.api.core.ResourceConfig;
-import com.sun.jersey.spi.container.servlet.ServletContainer;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import static java.lang.String.format;
 
 public class Jetty6WebServer implements WebServer
 {
     public static final Logger log = Logger.getLogger( Jetty6WebServer.class );
+    public static final int DEFAULT_PORT = 80;
+    public static final int DEFAULT_MAX_THREADS = 20;
 
     private Server jetty;
-    private int jettyPort = 80;
+    private int jettyPort = DEFAULT_PORT;
+    private int jettyMaxThreads = DEFAULT_MAX_THREADS;
 
     private final HashMap<String, String> staticContent = new HashMap<String, String>();
     private final HashMap<String, ServletHolder> jaxRSPackages = new HashMap<String, ServletHolder>();
@@ -70,6 +75,10 @@ public class Jetty6WebServer implements WebServer
     @Override
     public void start()
     {
+        if (jetty == null)
+        {
+            throw new IllegalStateException( "Jetty not initialized." );
+        }
         MovedContextHandler redirector = new MovedContextHandler();
 
         jetty.addHandler( redirector );
@@ -123,6 +132,7 @@ public class Jetty6WebServer implements WebServer
         if (jetty == null)
         {
             jetty = new Server( jettyPort );
+            jetty.setThreadPool( new QueuedThreadPool( jettyMaxThreads ) );
         }
     }
 
@@ -161,7 +171,7 @@ public class Jetty6WebServer implements WebServer
     @Override
     public void setMaxThreads( int maxThreads )
     {
-        jetty.setThreadPool( new QueuedThreadPool( maxThreads ) );
+        jettyMaxThreads = maxThreads;
     }
 
     @Override
@@ -226,7 +236,7 @@ public class Jetty6WebServer implements WebServer
     public void invokeDirectly( String targetPath, HttpServletRequest request, HttpServletResponse response )
             throws IOException, ServletException
     {
-        jetty.handle( targetPath, request, response, Handler.REQUEST);
+        jetty.handle( targetPath, request, response, Handler.REQUEST );
     }
 
     private void loadStaticContent( SessionManager sm, String mountPoint )
