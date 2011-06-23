@@ -1,38 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC -//Apple Computer//DTD PLIST 1.0//EN http://www.apple.com/DTDs/PropertyList-1.0.dtd >
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-    <dict>
-        <key>Label</key>
-        <string>org.neo4j.server</string>
-        <!-- Program key is not necessary for Java -->
-        <!--
-        <key>Program</key>
-        <string>/usr/bin/java</string>
-        -->
-        <key>ProgramArguments</key>
-        <array>
-            <string>/usr/bin/java</string>
-            <string>-server</string>
-            <string>-cp</string>
-            <string>CLASSPATH</string>
-            <string>-Dorg.neo4j.server.properties=conf/neo4j-server.properties</string>
-            <string>-Dlog4j.configuration=file:conf/log4j.properties</string>
-            <string>-Dneo4j.home=NEO4J_HOME</string>
-            <string>-Dneo4j.instance=NEO4J_INSTANCE</string>
-        </array>
-        <key>OnDemand</key>
-        <true/>
-        <key>RunAtLoad</key>
-        <false/>
-        <key>KeepAlive</key>
-        <false/>
-        <!-- MODIFY FOR YOUR ENVIRONMENT -->
-        <key>StandardErrorPath</key>
-        <string>NEO4J_INSTANCE/data/log/err.log</string>
-        <key>StandardOutPath</key>
-        <string>NEO4J_INSTANCE/data/log/out.log</string>
-        <key>WorkingDirectory</key>
-        <string>NEO4J_INSTANCE</string>
-    </dict>
-</plist>
+  <dict>
+    <key>Label</key> 
+    <string>org.neo4j.server</string>
+    
+    <key>ProgramArguments</key>
+    <array>
+      <string>NEO4J_INSTANCE/bin/neo4j</string>
+      <string>console</string>
+    </array>
 
+    <key>OnDemand</key>
+    <false/>
+  </dict>
+</plist>
