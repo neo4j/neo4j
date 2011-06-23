@@ -13,5 +13,5 @@
 
     %li 
       :if showPrompt
-        =htmlEscape(promptPrefix+">") 
+        =htmlEscape(promptPrefix+"> ") 
         %input#console-input(type="text" value="#{htmlEscape(prompt)}")

@@ -47,7 +47,7 @@ define ['lib/backbone'], () ->
       if showStatement
         @pushLines [statement], prepend + "> "
       
-      if includeInHistory and statement is not ''
+      if includeInHistory and statement isnt ''
         @pushHistory statement
         
       @executeStatement statement
