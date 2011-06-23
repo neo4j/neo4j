@@ -43,6 +43,11 @@ pause
 goto:eof
 
 :query
+call:getStatus
+echo %status%
+goto:eof
+
+:getStatus
 set status=""
 
 rem get the state line from the sc output
@@ -63,7 +68,6 @@ if "%status%" == "4RUNNING" (
 ) else (
 	set status="NOT INSTALLED"
 )
-echo %status%
 goto:eof
 
 :install
@@ -78,7 +82,14 @@ sc delete %serviceName%
 goto:eof
 
 :start
-sc start %serviceName%
+call:getStatus
+if %status% == "NOT INSTALLED" (
+	call:console
+) else if %status% == "RUNNING" (
+	echo "Service is already running, no action taken"
+) else (
+	sc start %serviceName%
+)
 goto:eof
 
 :stop
