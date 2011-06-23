@@ -45,8 +45,15 @@ JAVA_OPTS="-server ${wrapper_java_additional}"
 #NEO4J_SERVER_PORT=`( egrep "^org.neo4j.server.webserver.port" $NEO4J_INSTANCE/conf/neo4j-server.properties || echo 7474 ) | sed -e 's/.*=//'`
 NEO4J_SERVER_PORT=${org_neo4j_server_webserver_port:=7474}
 
+if [ -z "${wrapper_user}" ]; then
+  NEO4J_USER=`id -un`
+else
+  NEO4J_USER=${wrapper_user}
+fi
+
 SCRIPT_NAME="${NEO4J_HOME}/$0"
 SERVICE_NAME=${wrapper_ntservice_name:=neo4j-service}
+LAUNCHD_DIR=~/Library/LaunchAgents/
 
 TIMEOUT=20
 
@@ -271,57 +278,57 @@ console() {
 }
 
 installservice() {
-  if [ `id | sed 's/^uid=//;s/(.*$//'` != "0" ] ; then       
-    eval echo  'Must be root to perform this action.'
-    exit 1
-  else
-    checkstatus
-    if [ ! -z $NEO4J_PID ] ; then
-      stopit
-    fi
-
     detectos
 
     if [[ -d "/etc/init.d" ]]; then
       if [[ -e "/etc/init.d${SERVICE_NAME}" ]]; then
         echo "${SERVICE_NAME} already installed."
       else
-        ln -s ${SCRIPT_NAME} "/etc/init.d/${SERVICE_NAME}"
+        if [ `id | sed 's/^uid=//;s/(.*$//'` != "0" ] ; then       
+          eval echo  'Must be root to perform this action.'
+          exit 1
+        else
+          checkstatus
+          if [ ! -z $NEO4J_PID ] ; then
+            stopit
+          fi
+          sudo -u ${NEO4J_USER} ln -s ${SCRIPT_NAME} "/etc/init.d/${SERVICE_NAME}"
+        fi
       fi
     elif [[ $DIST_OS -eq "macosx" ]] ; then
-      sed -e "s^NEO4J_HOME^${NEO4J_HOME}^" <${NEO4J_INSTANCE}/bin/org.neo4j.server.plist >/Library/LaunchDaemons/org.neo4j.server.plist
-      launchctl load -w /Library/LaunchDaemons/org.neo4j.server.plist
+      sed -e "s^NEO4J_INSTANCE^${NEO4J_INSTANCE}^" <${NEO4J_INSTANCE}/bin/org.neo4j.server.plist >${LAUNCHD_DIR}/org.neo4j.server.plist
+      launchctl load -w ${LAUNCHD_DIR}/org.neo4j.server.plist
+      launchctl start org.neo4j.server
     else
       echo "Sorry, don't know how to install on ${DIST_OS}."
     fi
-  fi
 }
 
 removeservice() {
-  if [ `id | sed 's/^uid=//;s/(.*$//'` != "0" ] ; then       
-    eval echo  'Must be root to perform this action.'
-    exit 1
-  else
     checkstatus
-    if [ ! -z $NEO4J_PID ] ; then
-      stopit
-    fi
  
     if [[ -d "/etc/init.d" ]]; then
       if [[ -e "/etc/init.d/${SERVICE_NAME}" ]]; then
-        rm /etc/init.d/${SERVICE_NAME}
+        if [ `id | sed 's/^uid=//;s/(.*$//'` != "0" ] ; then       
+          eval echo  'Must be root to perform this action.'
+          exit 1
+        else
+          if [ ! -z $NEO4J_PID ] ; then
+            stopit
+          fi
+          rm /etc/init.d/${SERVICE_NAME}
+        fi
       else
         echo "${SERVICE_NAME} not installed."
       fi
     elif [[ $DIST_OS -eq "macosx" ]] ; then
-      if [[ -e /Library/LaunchDaemons/org.neo4j.server.plist ]]; then
-        launchctl unload -w /Library/LaunchDaemons/org.neo4j.server.plist
-        rm /Library/LaunchDaemons/org.neo4j.server.plist
+      if [[ -e ${LAUNCHD_DIR}/org.neo4j.server.plist ]]; then
+        launchctl unload -w ${LAUNCHD_DIR}/org.neo4j.server.plist
+        rm ${LAUNCHD_DIR}/org.neo4j.server.plist
       fi
     else
       echo "Sorry, don't know how to install on ${DIST_OS}."
     fi
-  fi
 }
 
 
