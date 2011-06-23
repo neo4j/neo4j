@@ -184,8 +184,14 @@ startit() {
 
     findjava
     buildclasspath
+    detectos
+    
+    if [[ $DIST_OS -eq "macosx" ]] ; then
+      $JAVACMD -cp $CLASSPATH $JAVA_OPTS $NEO4J_OPTS org.neo4j.server.Bootstrapper >> $NEO4J_INSTANCE/data/log/console.log 2>&1 &
+    else
+      sudo -u $NEO4J_USER $JAVACMD -cp $CLASSPATH $JAVA_OPTS $NEO4J_OPTS org.neo4j.server.Bootstrapper >> $NEO4J_INSTANCE/data/log/console.log 2>&1 &    
+    fi
 
-    sudo -u $NEO4J_USER $JAVACMD -cp $CLASSPATH $JAVA_OPTS $NEO4J_OPTS org.neo4j.server.Bootstrapper >> $NEO4J_INSTANCE/data/log/console.log 2>&1 &
     STARTED_PID=$!
     echo $STARTED_PID > $PID_FILE
     printf " process [$STARTED_PID]... waiting for server to be ready."
