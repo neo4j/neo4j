@@ -236,12 +236,14 @@ stopit() {
   else
     printf "Stopping neo4j-service [$NEO4J_PID]..."
     x=0
-    while [ $x -lt $TIMEOUT ] && kill $NEO4J_PID 2>/dev/null ; do
+    while [ $x -lt $TIMEOUT ] && [ "$NEO4J_PID" != "" ]  ; do
+      kill $NEO4J_PID 2>/dev/null
       printf "."
       sleep 1
+      checkstatus
       x=$[$x+1]
     done
-	  [  $x -eq $TIMEOUT ] && ( echo " force shutdown" ;  kill -9 $JPID >/dev/null ) || echo " done"
+	  [  $x -eq $TIMEOUT ] && ( echo " force shutdown" ;  kill -9 $NEO4J_PID >/dev/null ) || echo " done"
 	  [ -e $PID_FILE ] && rm  $PID_FILE
 	  exit 0
   fi
