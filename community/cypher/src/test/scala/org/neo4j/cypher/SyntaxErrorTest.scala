@@ -32,7 +32,7 @@ class SyntaxErrorTest extends JUnitSuite {
       parser.parse(query)
       fail("Should have produced the error: " + expectedError)
     } catch {
-      case x: SyntaxError => assertTrue(x.getMessage,  x.getMessage.startsWith(expectedError))
+      case x: SyntaxError => assertTrue(x.getMessage, x.getMessage.startsWith(expectedError))
     }
   }
 
@@ -88,5 +88,27 @@ class SyntaxErrorTest extends JUnitSuite {
     expectError(
       "start s=(index,key,value) return s limit -1",
       "String literal expected")
+  }
+
+  @Test def handlesMultilineQueries() {
+    val query = """start
+    a=(0),
+    b=(0),
+    c=(0),
+    d=(0),
+    e=(0),
+    f=(0),
+    g=(0),
+    s=(index,key,value) return s"""
+
+    val expected = """String literal expected
+"    s=(index,key,value) return s"
+                  ^"""
+
+    try {
+      new CypherParser().parse(query)
+    } catch {
+      case x:SyntaxError => assertEquals(expected, x.getMessage)
+    }
   }
 }

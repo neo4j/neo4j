@@ -55,11 +55,11 @@ public class Jetty6WebServer implements WebServer
 {
     public static final Logger log = Logger.getLogger( Jetty6WebServer.class );
     public static final int DEFAULT_PORT = 80;
-    public static final int DEFAULT_MAX_THREADS = 20;
+    private static final int JETTY_DEFAULT_MAX_THREADS = 10 * Runtime.getRuntime().availableProcessors();
 
     private Server jetty;
     private int jettyPort = DEFAULT_PORT;
-    private int jettyMaxThreads = DEFAULT_MAX_THREADS;
+    private Integer jettyMaxThreads;
 
     private final HashMap<String, String> staticContent = new HashMap<String, String>();
     private final HashMap<String, ServletHolder> jaxRSPackages = new HashMap<String, ServletHolder>();
@@ -132,7 +132,13 @@ public class Jetty6WebServer implements WebServer
         if (jetty == null)
         {
             jetty = new Server( jettyPort );
-            jetty.setThreadPool( new QueuedThreadPool( jettyMaxThreads ) );
+            if ( jettyMaxThreads != null )
+            {
+                jetty.setThreadPool( new QueuedThreadPool( jettyMaxThreads ) );
+            } else 
+            {
+                jetty.setThreadPool( new QueuedThreadPool( JETTY_DEFAULT_MAX_THREADS ) );
+            }
         }
     }
 

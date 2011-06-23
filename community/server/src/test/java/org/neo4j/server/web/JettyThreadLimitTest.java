@@ -19,13 +19,14 @@
  */
 package org.neo4j.server.web;
 
-import org.junit.Test;
-import org.mortbay.thread.QueuedThreadPool;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 
-import static org.junit.Assert.assertTrue;
+import org.junit.Test;
+import org.mortbay.thread.QueuedThreadPool;
 
 public class JettyThreadLimitTest
 {
@@ -35,10 +36,12 @@ public class JettyThreadLimitTest
     {
         WebServer server = new Jetty6WebServer();
         server.init();
-        QueuedThreadPool threadPool = (QueuedThreadPool) server.getJetty().getThreadPool();
+        QueuedThreadPool threadPool = (QueuedThreadPool) server.getJetty()
+                .getThreadPool();
         threadPool.start();
         loadThreadPool( threadPool );
-        assertTrue( threadPool.getThreads() < 50 );
+        assertEquals( 10 * Runtime.getRuntime()
+                .availableProcessors(), threadPool.getThreads() );
         threadPool.stop();
     }
 
@@ -46,13 +49,15 @@ public class JettyThreadLimitTest
     public void shouldHaveConfigurableJettyThreadPoolSize() throws Exception
     {
         WebServer server = new Jetty6WebServer();
-        server.setMaxThreads( 7 );
+        final int maxThreads = 7;
+        server.setMaxThreads( maxThreads );
         server.init();
-        QueuedThreadPool threadPool = (QueuedThreadPool) server.getJetty().getThreadPool();
+        QueuedThreadPool threadPool = (QueuedThreadPool) server.getJetty()
+                .getThreadPool();
         threadPool.start();
         loadThreadPool( threadPool );
         int threads = threadPool.getThreads();
-        assertTrue( threads <= 7 );
+        assertTrue( threads <= maxThreads );
         threadPool.stop();
     }
 

@@ -19,28 +19,42 @@ package org.neo4j.cypher.parser
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 import org.neo4j.cypher._
 import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
 
 class CypherParser extends JavaTokenParsers
-  with StartClause
-  with MatchClause
-  with WhereClause
-  with ReturnClause
-  with SkipLimitClause
-  with OrderByClause
-  with StringExtras {
+with StartClause
+with MatchClause
+with WhereClause
+with ReturnClause
+with SkipLimitClause
+with OrderByClause
+with StringExtras {
 
   def query: Parser[Query] = start ~ opt(matching) ~ opt(where) ~ returns ~ opt(order) ~ opt(skip) ~ opt(limit) ^^ {
     case start ~ matching ~ where ~ returns ~ sort ~ None ~ None => Query(returns._1, start, matching, where, returns._2, sort, None)
     case start ~ matching ~ where ~ returns ~ sort ~ skip ~ limit => Query(returns._1, start, matching, where, returns._2, sort, Some(Slice(skip, limit)))
   }
 
-  def fail(input: Input, errorMessage:String): Nothing = {
-    val arrow = repeat(" ", input.offset) + "^"
+  private def findErrorLine(idx: Int, message: Seq[String]): String =
+    message.toList match {
+      case Nil => "oops"
+      case head :: tail => {
+        if (head.size > idx) {
+          "\"" + head + "\"\n" + repeat(" ", idx) + " ^"
+        } else {
+          findErrorLine(idx - head.size - 1, tail) //The extra minus one is there for the now missing \n
+        }
+      }
+    }
 
-    throw new SyntaxError(errorMessage + "\r\n" + input.source + "\r\n" + arrow )
+
+  def fail(input: Input, errorMessage: String): Nothing = {
+    val location = findErrorLine(input.offset, input.source.toString.split("\n"))
+
+    throw new SyntaxError(errorMessage + "\n" + location)
   }
 
   @throws(classOf[SyntaxError])
@@ -60,6 +74,7 @@ class CypherParser extends JavaTokenParsers
         case "string matching regex `(?i)\\Qreturn\\E' expected but end of source found" => throw new SyntaxError("Missing RETURN clause")
         case _ => throw new SyntaxError(message)
       }
-    }}
+    }
+  }
 
 }

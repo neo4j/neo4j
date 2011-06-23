@@ -1,3 +1,8 @@
+1.4.M05 (2011-06-23)
+--------------------
+o REST paging now supported
+o Cypher plugin available
+
 1.4.M03 (2011-05-26)
 --------------------
 o Ability to manage indexes via the webadmin
