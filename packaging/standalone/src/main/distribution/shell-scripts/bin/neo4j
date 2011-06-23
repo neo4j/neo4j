@@ -290,7 +290,7 @@ installservice() {
       fi
     elif [[ $DIST_OS -eq "macosx" ]] ; then
       sed -e "s^NEO4J_HOME^${NEO4J_HOME}^" <${NEO4J_INSTANCE}/bin/org.neo4j.server.plist >/Library/LaunchDaemons/org.neo4j.server.plist
-      launchctl load /Library/LaunchDaemons/org.neo4j.server.plist
+      launchctl load -w /Library/LaunchDaemons/org.neo4j.server.plist
     else
       echo "Sorry, don't know how to install on ${DIST_OS}."
     fi
@@ -314,7 +314,10 @@ removeservice() {
         echo "${SERVICE_NAME} not installed."
       fi
     elif [[ $DIST_OS -eq "macosx" ]] ; then
-      echo "Until install is ready, can't remove on Mac OSX."
+      if [[ -e /Library/LaunchDaemons/org.neo4j.server.plist ]]; then
+        launchctl unload -w /Library/LaunchDaemons/org.neo4j.server.plist
+        rm /Library/LaunchDaemons/org.neo4j.server.plist
+      fi
     else
       echo "Sorry, don't know how to install on ${DIST_OS}."
     fi
