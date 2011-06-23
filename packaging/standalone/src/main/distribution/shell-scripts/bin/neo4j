@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 ### BEGIN INIT INFO
 # Provides:          neo4j-service
 # Required-Start:     
@@ -15,7 +15,7 @@
 function getconfig {
   if [ -e $1 ]; then
     while read line; do 
-      if [[ ${line} =~ ^([^#=]+)=(.+)$ ]]; then
+      if [[ ${line} =~ ^([^#=\s]+)=(.+)$ ]]; then
         key=`echo ${BASH_REMATCH[1]} | sed 's/\./_/g'`
         value="${BASH_REMATCH[2]}"
         if [[ ${key} =~ ^(.*)_([0-9]+)$ ]]; then
@@ -44,14 +44,11 @@ NEO4J_OPTS="-Dorg.neo4j.server.properties=${NEO4J_INSTANCE}/conf/neo4j-server.pr
 JAVA_OPTS="-server ${wrapper_java_additional}"
 #NEO4J_SERVER_PORT=`( egrep "^org.neo4j.server.webserver.port" $NEO4J_INSTANCE/conf/neo4j-server.properties || echo 7474 ) | sed -e 's/.*=//'`
 NEO4J_SERVER_PORT=${org_neo4j_server_webserver_port:=7474}
+SERVICE_NAME=${wrapper_ntservice_name:=neo4j-service}
 
 TIMEOUT=20
 
-if [[ $wrapper_pidfile ]]; then
-  PID_FILE=${wrapper_pidfile}
-else
-  PID_FILE=${NEO4J_INSTANCE}/data/neo4j-service.pid
-fi
+PID_FILE=${NEO4J_INSTANCE}/data/neo4j-service.pid
 
 findjava() {
   # OS specific support.  $var _must_ be set to either true or false.
@@ -199,7 +196,7 @@ startit() {
 	    rm $PID_FILE
         kill -9 $STARTED_PID
         echo " BAD."
-        echo " a other server-process is running with [$newpid]"
+        echo " an other server-process is running with [$newpid]"
         exit 2
       fi
 
@@ -272,42 +269,53 @@ console() {
 }
 
 installservice() {
-    SERVICE_NAME=${wrapper_ntservice_name:=neo4j-service}
-
-    if [ `id | sed 's/^uid=//;s/(.*$//'` != "0" ] ; then       
-        eval echo  'Must be root to perform this action.'
-        exit 1
-    else
-      checkstatus
-      if [ ! -z $NEO4J_PID ] ; then
-        stopit
-      fi
-      detectos
-      #if [[ -d "/etc/init.d" && -e "/etc/init.d${SERVICE_NAME}" ]]; then
-      if [[ -d "/etc/init.d" ]]; then
-        if [[ -e "/etc/init.d${SERVICE_NAME}" ]]; then
-          echo "${SERVICE_NAME} already installed."
-        else
-          echo "cp $0 /etc/init.d/${SERVICE_NAME}"
-        fi
-      elif [[ $DIST_OS -eq "macosx" ]] ; then
-        echo "A proper Macintosh Launchd is not yet ready."
-      else
-        echo "Sorry, don't know how to install on ${DIST_OS}."
-      fi
+  if [ `id | sed 's/^uid=//;s/(.*$//'` != "0" ] ; then       
+    eval echo  'Must be root to perform this action.'
+    exit 1
+  else
+    checkstatus
+    if [ ! -z $NEO4J_PID ] ; then
+      stopit
     fi
+
+    detectos
+
+    if [[ -d "/etc/init.d" ]]; then
+      if [[ -e "/etc/init.d${SERVICE_NAME}" ]]; then
+        echo "${SERVICE_NAME} already installed."
+      else
+        echo "cp $0 /etc/init.d/${SERVICE_NAME}"
+      fi
+    elif [[ $DIST_OS -eq "macosx" ]] ; then
+      echo "A proper Mac OSX Launchd spec is not yet ready."
+    else
+      echo "Sorry, don't know how to install on ${DIST_OS}."
+    fi
+  fi
 }
 
 removeservice() {
-    if [ `id | sed 's/^uid=//;s/(.*$//'` != "0" ] ; then       
-        eval echo  'Must be root to perform this action.'
-        exit 1
-    else
-        stopit "0"
-
-        COMMAND_LINE="'$java_exe' '$yajsw_java_options' '$yajsw_log_options' -jar '$yajsw_jar' -r '$WRAPPER_CONF'"
-        eval $COMMAND_LINE
+  if [ `id | sed 's/^uid=//;s/(.*$//'` != "0" ] ; then       
+    eval echo  'Must be root to perform this action.'
+    exit 1
+  else
+    checkstatus
+    if [ ! -z $NEO4J_PID ] ; then
+      stopit
     fi
+ 
+    if [[ -d "/etc/init.d" ]]; then
+      if [[ -e "/etc/init.d/${SERVICE_NAME}" ]]; then
+        rm /etc/init.d/${SERVICE_NAME}
+      else
+        echo "${SERVICE_NAME} not installed."
+      fi
+    elif [[ $DIST_OS -eq "macosx" ]] ; then
+      echo "Until install is ready, can't remove on Mac OSX."
+    else
+      echo "Sorry, don't know how to install on ${DIST_OS}."
+    fi
+  fi
 }
 
 
