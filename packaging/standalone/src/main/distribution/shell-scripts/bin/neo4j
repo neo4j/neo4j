@@ -194,7 +194,7 @@ startit() {
     x=0
     while ( [ $x -lt 120 ] ) ; do
       ## wait for start
-      newpid=`lsof -i :$NEO4J_SERVER_PORT -t` && break
+      newpid=`lsof -i :$NEO4J_SERVER_PORT -sTCP:LISTEN -t` && break
       kill -0 $STARTED_PID || break
       printf "."
       sleep 1
