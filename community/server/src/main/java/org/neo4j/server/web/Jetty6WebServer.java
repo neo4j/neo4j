@@ -55,6 +55,7 @@ public class Jetty6WebServer implements WebServer
 {
     public static final Logger log = Logger.getLogger( Jetty6WebServer.class );
     public static final int DEFAULT_PORT = 80;
+    private static final int JETTY_DEFAULT_MAX_THREADS = 100;
 
     private Server jetty;
     private int jettyPort = DEFAULT_PORT;
@@ -134,6 +135,9 @@ public class Jetty6WebServer implements WebServer
             if ( jettyMaxThreads != null )
             {
                 jetty.setThreadPool( new QueuedThreadPool( jettyMaxThreads ) );
+            } else 
+            {
+                jetty.setThreadPool( new QueuedThreadPool( JETTY_DEFAULT_MAX_THREADS ) );
             }
         }
     }
