@@ -131,7 +131,7 @@ public class HaServerFunctionalTest
 
     private static Object get( URI property )
     {
-        ClientResponse response = Client.create().resource( property ).accept(
+        ClientResponse response = CLIENT( property ).accept(
                 MediaType.APPLICATION_JSON_TYPE ).type( MediaType.APPLICATION_JSON_TYPE ).get(
                 ClientResponse.class );
         try
@@ -154,7 +154,7 @@ public class HaServerFunctionalTest
 
     private static void put( URI property, Object value )
     {
-        Client.create().resource( property ).accept( MediaType.APPLICATION_JSON_TYPE ).type(
+        CLIENT.reCLIENTy ).accept( MediaType.APPLICATION_JSON_TYPE ).type(
                 MediaType.APPLICATION_JSON_TYPE ).entity( JsonHelper.createJsonFrom( value ) ).put();
     }
 }
