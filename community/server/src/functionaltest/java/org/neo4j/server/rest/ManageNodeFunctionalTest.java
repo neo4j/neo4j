@@ -25,6 +25,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
 
 import java.io.IOException;
 import java.net.URI;
@@ -46,7 +47,6 @@ import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.test.TestData;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
@@ -78,7 +78,7 @@ public class ManageNodeFunctionalTest
     {
         server.stop();
     }
-    
+
     public @Rule
     TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
 
@@ -120,8 +120,9 @@ public class ManageNodeFunctionalTest
 
     /**
      * Property values can not be null.
-     *
-     * This example shows the response you get when trying to set a property to null.
+     * 
+     * This example shows the response you get when trying to set a property to
+     * null.
      */
     @Documented
     @Test
@@ -149,7 +150,7 @@ public class ManageNodeFunctionalTest
 
     private ClientResponse sendCreateRequestToServer( final String json )
     {
-        WebResource resource = Client.create().resource( functionalTestHelper.dataUri() + "node/" );
+        WebResource resource = CLIENT.resource( functionalTestHelper.dataUri() + "node/" );
         ClientResponse response = resource.type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
                 .entity( json )
@@ -159,7 +160,7 @@ public class ManageNodeFunctionalTest
 
     private ClientResponse sendCreateRequestToServer()
     {
-        WebResource resource = Client.create().resource( functionalTestHelper.dataUri() + "node/" );
+        WebResource resource = CLIENT.resource( functionalTestHelper.dataUri() + "node/" );
         ClientResponse response = resource.type( MediaType.APPLICATION_FORM_URLENCODED )
                 .accept( MediaType.APPLICATION_JSON )
                 .post( ClientResponse.class );
@@ -231,7 +232,7 @@ public class ManageNodeFunctionalTest
 
     /**
      * Nodes with relationships can not be deleted.
-     *
+     * 
      * The relationships on a node has to be deleted before the node can be
      * deleted.
      */
@@ -269,7 +270,7 @@ public class ManageNodeFunctionalTest
         URI nodeLocation = sendCreateRequestToServer().getLocation();
 
         String mangledJsonArray = "[1,2,\"three\"]";
-        ClientResponse response = Client.create().resource( new URI( nodeLocation.toString() + "/properties/myprop" ) )
+        ClientResponse response = CLIENT.resource( new URI( nodeLocation.toString() + "/properties/myprop" ) )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
                 .entity( mangledJsonArray )
@@ -287,7 +288,7 @@ public class ManageNodeFunctionalTest
         URI nodeLocation = sendCreateRequestToServer().getLocation();
 
         String mangledJsonProperties = "{\"a\":\"b\", \"c\":[1,2,\"three\"]}";
-        ClientResponse response = Client.create().resource( new URI( nodeLocation.toString() + "/properties" ) )
+        ClientResponse response = CLIENT.resource( new URI( nodeLocation.toString() + "/properties" ) )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
                 .entity( mangledJsonProperties )
@@ -301,8 +302,7 @@ public class ManageNodeFunctionalTest
 
     private ClientResponse sendDeleteRequestToServer( final long id ) throws Exception
     {
-        return Client.create()
-                .resource( new URI( functionalTestHelper.dataUri() + "node/" + id ) )
+        return CLIENT.resource( new URI( functionalTestHelper.dataUri() + "node/" + id ) )
                 .accept( MediaType.APPLICATION_JSON_TYPE )
                 .delete( ClientResponse.class );
     }

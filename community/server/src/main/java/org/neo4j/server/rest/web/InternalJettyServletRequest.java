@@ -36,31 +36,35 @@ import javax.ws.rs.core.MediaType;
 import org.mortbay.jetty.HttpURI;
 import org.mortbay.jetty.Request;
 
-public class InternalJettyServletRequest extends Request {
+public class InternalJettyServletRequest extends Request
+{
 
-    private class Input extends ServletInputStream {
+    private class Input extends ServletInputStream
+    {
 
         private final byte[] bytes;
         private int position = 0;
-        
-        public Input(String data) {
+
+        public Input( String data )
+        {
             bytes = data.getBytes();
         }
-        
+
         public int read() throws IOException
         {
-            if(bytes.length > position)
-               return (int)bytes[position++];
-            
+            if ( bytes.length > position ) return (int) bytes[position++];
+
             return -1;
         }
-        
-        public int length() {
+
+        public int length()
+        {
             return bytes.length;
         }
-        
-        public long contentRead() {
-            return (long)position;
+
+        public long contentRead()
+        {
+            return (long) position;
         }
     }
 
@@ -70,28 +74,32 @@ public class InternalJettyServletRequest extends Request {
     private BufferedReader inputReader;
     private String contentType;
     private String method;
-    
-    public InternalJettyServletRequest(){
-        
+
+    public InternalJettyServletRequest()
+    {
+
     }
-    
-    public void setup(String method, String uri, String body) throws UnsupportedEncodingException {
-        setup(method, new HttpURI(uri), body, new Cookie[] {}, MediaType.APPLICATION_JSON, "UTF-8");
+
+    public void setup( String method, String uri, String body ) throws UnsupportedEncodingException
+    {
+        setup( method, new HttpURI( uri ), body, new Cookie[] {}, MediaType.APPLICATION_JSON, "UTF-8" );
     }
-    
-    public void setup(String method, HttpURI uri, String body, Cookie[] cookies, String contentType, String encoding) throws UnsupportedEncodingException {
-        this.input = new Input(body);
-        this.inputReader = new BufferedReader(new StringReader(body));
-        
+
+    public void setup( String method, HttpURI uri, String body, Cookie[] cookies, String contentType, String encoding )
+            throws UnsupportedEncodingException
+    {
+        this.input = new Input( body );
+        this.inputReader = new BufferedReader( new StringReader( body ) );
+
         this.contentType = contentType;
         this.cookies = cookies;
         this.method = method;
-        
+
         this.headers = new HashMap<String, Object>();
-        
-        setUri(uri);
+
+        setUri( uri );
         setCharacterEncoding( encoding );
-        setRequestURI(null);
+        setRequestURI( null );
         setQueryString( null );
     }
 
@@ -106,12 +114,14 @@ public class InternalJettyServletRequest extends Request {
     {
         return contentType;
     }
-    
-    public void setContentType(String contentType) {
+
+    public void setContentType( String contentType )
+    {
         this.contentType = contentType;
     }
-    
-    public long getContentRead() {
+
+    public long getContentRead()
+    {
         return input.contentRead();
     }
 
@@ -132,7 +142,7 @@ public class InternalJettyServletRequest extends Request {
     {
         return inputReader;
     }
-    
+
     @Override
     public String getRemoteAddr()
     {
@@ -190,38 +200,51 @@ public class InternalJettyServletRequest extends Request {
     @Override
     public long getDateHeader( String name )
     {
-        if(headers.containsKey( name )) {
-            return (Long)headers.get( name );
-        } 
+        if ( headers.containsKey( name ) )
+        {
+            return (Long) headers.get( name );
+        }
         return -1;
     }
 
     @Override
     public String getHeader( String name )
     {
-        if(headers.containsKey( name )) {
+        if ( headers.containsKey( name ) )
+        {
             Object value = headers.get( name );
-            if(value instanceof String) {
-                return (String)value;
-            } else if (value instanceof Collection) {
-                return ((Collection<?>)value).iterator().next().toString();
-            } else {
+            if ( value instanceof String )
+            {
+                return (String) value;
+            }
+            else if ( value instanceof Collection )
+            {
+                return ( (Collection<?>) value ).iterator()
+                        .next()
+                        .toString();
+            }
+            else
+            {
                 return value.toString();
             }
         }
-        
+
         return null;
     }
 
     @Override
     public Enumeration<?> getHeaders( String name )
     {
-        if(headers.containsKey( name )) {
+        if ( headers.containsKey( name ) )
+        {
             Object value = headers.get( name );
-            if (value instanceof Collection) {
-                return Collections.enumeration( (Collection<?>)value );
-            } else {
-                return Collections.enumeration(Collections.singleton( value ));
+            if ( value instanceof Collection )
+            {
+                return Collections.enumeration( (Collection<?>) value );
+            }
+            else
+            {
+                return Collections.enumeration( Collections.singleton( value ) );
             }
         }
         return null;
@@ -236,9 +259,10 @@ public class InternalJettyServletRequest extends Request {
     @Override
     public int getIntHeader( String name )
     {
-        if(headers.containsKey( name )) {
-            return (Integer)headers.get( name );
-        } 
+        if ( headers.containsKey( name ) )
+        {
+            return (Integer) headers.get( name );
+        }
         return -1;
     }
 

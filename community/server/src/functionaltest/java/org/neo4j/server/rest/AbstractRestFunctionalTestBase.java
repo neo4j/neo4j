@@ -38,19 +38,19 @@ public class AbstractRestFunctionalTestBase implements GraphHolder
 {
 
     private static ImpermanentGraphDatabase graphdb;
-    
+
     public @Rule
-    TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor(
-            this, true ) );
-    
+    TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
+
     public @Rule
     TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
     protected static WrappingNeoServerBootstrapper server;
+
     @BeforeClass
     public static void startDatabase()
     {
-        graphdb = new ImpermanentGraphDatabase("target/db");
-        
+        graphdb = new ImpermanentGraphDatabase( "target/db" );
+
     }
 
     @AfterClass
@@ -63,16 +63,17 @@ public class AbstractRestFunctionalTestBase implements GraphHolder
     {
         return graphdb;
     }
-    
+
     @Before
-    public void startServer() {
-        server = new WrappingNeoServerBootstrapper(
-                graphdb );
+    public void startServer()
+    {
+        server = new WrappingNeoServerBootstrapper( graphdb );
         server.start();
     }
-    
+
     @After
-    public void shutdownServer() {
+    public void shutdownServer()
+    {
         server.stop();
     }
 }

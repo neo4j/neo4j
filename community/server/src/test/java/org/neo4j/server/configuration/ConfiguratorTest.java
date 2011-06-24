@@ -34,79 +34,93 @@ import org.junit.Test;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.validation.Validator;
 
-public class ConfiguratorTest {
+public class ConfiguratorTest
+{
 
     @Test
-    public void shouldProvideAConfiguration() throws IOException {
-        File configFile = PropertyFileBuilder.builder().build();
-        Configuration config = new PropertyFileConfigurator(new Validator(), configFile).configuration();
-        assertNotNull(config);
+    public void shouldProvideAConfiguration() throws IOException
+    {
+        File configFile = PropertyFileBuilder.builder()
+                .build();
+        Configuration config = new PropertyFileConfigurator( new Validator(), configFile ).configuration();
+        assertNotNull( config );
         configFile.delete();
     }
 
     @Test
-    public void shouldUseSpecifiedConfigFile() throws Exception {
+    public void shouldUseSpecifiedConfigFile() throws Exception
+    {
 
-        File configFile = PropertyFileBuilder.builder().withNameValue("foo", "bar").build();
+        File configFile = PropertyFileBuilder.builder()
+                .withNameValue( "foo", "bar" )
+                .build();
 
-        Configuration testConf = new PropertyFileConfigurator(new Validator(), configFile).configuration();
+        Configuration testConf = new PropertyFileConfigurator( new Validator(), configFile ).configuration();
 
         final String EXPECTED_VALUE = "bar";
-        assertEquals(EXPECTED_VALUE, testConf.getString("foo"));
+        assertEquals( EXPECTED_VALUE, testConf.getString( "foo" ) );
 
         configFile.delete();
     }
 
     @Test
-    public void shouldAcceptDuplicateKeysWithSameValue() throws IOException {
-        File configFile = PropertyFileBuilder.builder().withNameValue("foo", "bar").withNameValue("foo", "bar").build();
+    public void shouldAcceptDuplicateKeysWithSameValue() throws IOException
+    {
+        File configFile = PropertyFileBuilder.builder()
+                .withNameValue( "foo", "bar" )
+                .withNameValue( "foo", "bar" )
+                .build();
 
-        Configurator configurator = new PropertyFileConfigurator(configFile);
+        Configurator configurator = new PropertyFileConfigurator( configFile );
         Configuration testConf = configurator.configuration();
 
-        assertNotNull(testConf);
+        assertNotNull( testConf );
         final String EXPECTED_VALUE = "bar";
-        assertEquals(EXPECTED_VALUE, testConf.getString("foo"));
+        assertEquals( EXPECTED_VALUE, testConf.getString( "foo" ) );
 
         configFile.delete();
     }
 
     @Test
-    public void shouldSupportProvidingDatabaseTuningParametersSeparately() throws IOException {
-        File databaseTuningPropertyFile = DatabaseTuningPropertyFileBuilder.builder().build();
+    public void shouldSupportProvidingDatabaseTuningParametersSeparately() throws IOException
+    {
+        File databaseTuningPropertyFile = DatabaseTuningPropertyFileBuilder.builder()
+                .build();
 
+        File propertyFileWithDbTuningProperty = PropertyFileBuilder.builder()
+                .withDbTuningPropertyFile( databaseTuningPropertyFile )
+                .build();
 
-        File propertyFileWithDbTuningProperty = PropertyFileBuilder.builder().withDbTuningPropertyFile(databaseTuningPropertyFile).build();
-
-        Configurator configurator = new PropertyFileConfigurator(propertyFileWithDbTuningProperty);
+        Configurator configurator = new PropertyFileConfigurator( propertyFileWithDbTuningProperty );
 
         Map<String, String> databaseTuningProperties = configurator.getDatabaseTuningProperties();
-        assertNotNull(databaseTuningProperties);
-        assertEquals(5, databaseTuningProperties.size());
+        assertNotNull( databaseTuningProperties );
+        assertEquals( 5, databaseTuningProperties.size() );
 
         propertyFileWithDbTuningProperty.delete();
     }
 
     @Test
-    public void shouldFindThirdPartyJaxRsClasses() throws IOException {
+    public void shouldFindThirdPartyJaxRsClasses() throws IOException
+    {
 
         File file = ServerTestUtils.createTempPropertyFile();
 
-        FileWriter fstream = new FileWriter(file, true);
-        BufferedWriter out = new BufferedWriter(fstream);
-        out.write(Configurator.THIRD_PARTY_PACKAGES_KEY);
-        out.write("=");
-        out.write("com.foo.bar=\"mount/point/foo\",");
-        out.write("com.foo.baz=\"/bar\",");
-        out.write("com.foo.foobarbaz=\"/\"");
-        out.write(System.getProperty("line.separator"));
+        FileWriter fstream = new FileWriter( file, true );
+        BufferedWriter out = new BufferedWriter( fstream );
+        out.write( Configurator.THIRD_PARTY_PACKAGES_KEY );
+        out.write( "=" );
+        out.write( "com.foo.bar=\"mount/point/foo\"," );
+        out.write( "com.foo.baz=\"/bar\"," );
+        out.write( "com.foo.foobarbaz=\"/\"" );
+        out.write( System.getProperty( "line.separator" ) );
         out.close();
 
-        Configurator configurator = new PropertyFileConfigurator(file);
+        Configurator configurator = new PropertyFileConfigurator( file );
 
         Set<ThirdPartyJaxRsPackage> thirdpartyJaxRsClasses = configurator.getThirdpartyJaxRsClasses();
-        assertNotNull(thirdpartyJaxRsClasses);
-        assertEquals(3, thirdpartyJaxRsClasses.size());
+        assertNotNull( thirdpartyJaxRsClasses );
+        assertEquals( 3, thirdpartyJaxRsClasses.size() );
 
         file.delete();
     }

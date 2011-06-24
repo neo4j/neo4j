@@ -38,24 +38,25 @@ import org.neo4j.server.database.Database;
 import org.neo4j.server.web.WebServer;
 import org.rrd4j.core.RrdDb;
 
-
-public class WebAdminModuleTest {
+public class WebAdminModuleTest
+{
     @Test
-    public void shouldRegisterASingleUri() throws Exception {
-        WebServer webServer = mock(WebServer.class);
+    public void shouldRegisterASingleUri() throws Exception
+    {
+        WebServer webServer = mock( WebServer.class );
 
-        NeoServerWithEmbeddedWebServer neoServer = mock(NeoServerWithEmbeddedWebServer.class);
-        when(neoServer.baseUri()).thenReturn(new URI("http://localhost:7575"));
-        when(neoServer.getWebServer()).thenReturn(webServer);
+        NeoServerWithEmbeddedWebServer neoServer = mock( NeoServerWithEmbeddedWebServer.class );
+        when( neoServer.baseUri() ).thenReturn( new URI( "http://localhost:7575" ) );
+        when( neoServer.getWebServer() ).thenReturn( webServer );
 
-        Database db = mock(Database.class);
-        db.graph = (mock(AbstractGraphDatabase.class));
-        Kernel mockKernel = mock(Kernel.class);
-        ObjectName mockObjectName = mock(ObjectName.class);
-        when(mockKernel.getMBeanQuery()).thenReturn(mockObjectName);
-        when(db.graph.getManagementBean(Kernel.class)).thenReturn(mockKernel);
+        Database db = mock( Database.class );
+        db.graph = ( mock( AbstractGraphDatabase.class ) );
+        Kernel mockKernel = mock( Kernel.class );
+        ObjectName mockObjectName = mock( ObjectName.class );
+        when( mockKernel.getMBeanQuery() ).thenReturn( mockObjectName );
+        when( db.graph.getManagementBean( Kernel.class ) ).thenReturn( mockKernel );
 
-        when(neoServer.getDatabase()).thenReturn(db);
+        when( neoServer.getDatabase() ).thenReturn( db );
         when( neoServer.getConfiguration() ).thenReturn( new MapConfiguration( new HashMap<Object, Object>() ) );
 
         WebAdminModule module = new WebAdminModule();

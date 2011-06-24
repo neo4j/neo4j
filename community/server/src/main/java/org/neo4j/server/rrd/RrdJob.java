@@ -24,7 +24,7 @@ import java.util.Date;
 public class RrdJob implements Job
 {
     private static final long MIN_STEP_TIME = 1000;
-    
+
     private RrdSampler sampler;
     private long lastRun = 0;
 
@@ -36,7 +36,8 @@ public class RrdJob implements Job
     public void run()
     {
         // Guard against getting run in too rapid succession.
-        if((new Date().getTime() - lastRun) >= MIN_STEP_TIME) {
+        if ( ( new Date().getTime() - lastRun ) >= MIN_STEP_TIME )
+        {
             sampler.updateSample();
         }
     }

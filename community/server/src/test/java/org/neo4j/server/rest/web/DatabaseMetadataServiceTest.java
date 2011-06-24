@@ -37,25 +37,27 @@ import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 
-public class DatabaseMetadataServiceTest {
+public class DatabaseMetadataServiceTest
+{
     @Test
-    public void shouldAdvertiseRelationshipTyoesThatCurrentlyExistInTheDatabase() throws JsonParseException {
+    public void shouldAdvertiseRelationshipTyoesThatCurrentlyExistInTheDatabase() throws JsonParseException
+    {
         HashSet<RelationshipType> fakeRelationshipTypes = new HashSet<RelationshipType>();
-        fakeRelationshipTypes.add(DynamicRelationshipType.withName("a"));
-        fakeRelationshipTypes.add(DynamicRelationshipType.withName("b"));
-        fakeRelationshipTypes.add(DynamicRelationshipType.withName("c"));
-        
-        Database database = mock(Database.class);
-        AbstractGraphDatabase graph = mock(AbstractGraphDatabase.class);
+        fakeRelationshipTypes.add( DynamicRelationshipType.withName( "a" ) );
+        fakeRelationshipTypes.add( DynamicRelationshipType.withName( "b" ) );
+        fakeRelationshipTypes.add( DynamicRelationshipType.withName( "c" ) );
+
+        Database database = mock( Database.class );
+        AbstractGraphDatabase graph = mock( AbstractGraphDatabase.class );
         database.graph = graph;
-        when(database.graph.getRelationshipTypes()).thenReturn(fakeRelationshipTypes);
-        DatabaseMetadataService service  = new DatabaseMetadataService(database);
-        
+        when( database.graph.getRelationshipTypes() ).thenReturn( fakeRelationshipTypes );
+        DatabaseMetadataService service = new DatabaseMetadataService( database );
+
         Response response = service.getRelationshipTypes();
-        
-        assertEquals(200, response.getStatus());
-        List<Map<String, Object>> jsonList = JsonHelper.jsonToList(response.getEntity().toString());
-        assertEquals(3, jsonList.size());
+
+        assertEquals( 200, response.getStatus() );
+        List<Map<String, Object>> jsonList = JsonHelper.jsonToList( response.getEntity()
+                .toString() );
+        assertEquals( 3, jsonList.size() );
     }
 }
-

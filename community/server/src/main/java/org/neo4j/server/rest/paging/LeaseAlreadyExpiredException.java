@@ -23,7 +23,7 @@ public class LeaseAlreadyExpiredException extends RuntimeException
 {
     public LeaseAlreadyExpiredException( String message )
     {
-        super(message);
+        super( message );
     }
 
     private static final long serialVersionUID = -4827067345302605272L;

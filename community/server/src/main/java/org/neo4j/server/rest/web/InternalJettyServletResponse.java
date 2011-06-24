@@ -38,27 +38,28 @@ import org.mortbay.jetty.Response;
 public class InternalJettyServletResponse extends Response
 {
 
-    private class Output extends ServletOutputStream {
+    private class Output extends ServletOutputStream
+    {
 
         private StringWriter writer = new StringWriter();
-        
+
         @Override
         public void write( int arg0 ) throws IOException
         {
-            writer.append( (char)arg0 );
+            writer.append( (char) arg0 );
         }
-        
-        public String toString() {
+
+        public String toString()
+        {
             return writer.toString();
         }
     }
-    
 
     private Map<String, Object> headers;
     private Output output;
     private int status;
     private String message;
-    
+
     public InternalJettyServletResponse()
     {
         super( null );
@@ -69,7 +70,7 @@ public class InternalJettyServletResponse extends Response
         output = new Output();
         status = -1;
         message = "";
-        headers = new HashMap<String,Object>();
+        headers = new HashMap<String, Object>();
     }
 
     public void addCookie( Cookie cookie )
@@ -90,13 +91,13 @@ public class InternalJettyServletResponse extends Response
 
     public void sendError( int code, String message ) throws IOException
     {
-        setStatus(code, message);
+        setStatus( code, message );
     }
 
     public void sendRedirect( String location ) throws IOException
     {
-        setStatus(304);
-        addHeader("location", location);
+        setStatus( 304 );
+        addHeader( "location", location );
     }
 
     public boolean containsHeader( String name )
@@ -111,61 +112,75 @@ public class InternalJettyServletResponse extends Response
 
     public void addDateHeader( String name, long date )
     {
-        if(headers.containsKey( name )) {
+        if ( headers.containsKey( name ) )
+        {
             headers.put( name, date );
         }
     }
-    
-    public void addHeader(String name, String value)
+
+    public void addHeader( String name, String value )
     {
-        setHeader(name, value);
+        setHeader( name, value );
     }
-    
-    public void setHeader(String name, String value)
-    {
-        headers.put( name, value );
-    }
-    
-    public void setIntHeader(String name, int value)
+
+    public void setHeader( String name, String value )
     {
         headers.put( name, value );
     }
-    
-    public void addIntHeader(String name, int value)
+
+    public void setIntHeader( String name, int value )
+    {
+        headers.put( name, value );
+    }
+
+    public void addIntHeader( String name, int value )
     {
         setIntHeader( name, value );
     }
-    
+
     @Override
     public String getHeader( String name )
     {
-        if(headers.containsKey( name )) {
+        if ( headers.containsKey( name ) )
+        {
             Object value = headers.get( name );
-            if(value instanceof String) {
-                return (String)value;
-            } else if (value instanceof Collection) {
-                return ((Collection<?>)value).iterator().next().toString();
-            } else {
+            if ( value instanceof String )
+            {
+                return (String) value;
+            }
+            else if ( value instanceof Collection )
+            {
+                return ( (Collection<?>) value ).iterator()
+                        .next()
+                        .toString();
+            }
+            else
+            {
                 return value.toString();
             }
         }
-        
+
         return null;
     }
-    
-    public Map<String, Object> getHeaders() {
+
+    public Map<String, Object> getHeaders()
+    {
         return headers;
     }
 
     @Override
     public Enumeration<?> getHeaders( String name )
     {
-        if(headers.containsKey( name )) {
+        if ( headers.containsKey( name ) )
+        {
             Object value = headers.get( name );
-            if (value instanceof Collection) {
-                return Collections.enumeration( (Collection<?>)value );
-            } else {
-                return Collections.enumeration(Collections.singleton( value ));
+            if ( value instanceof Collection )
+            {
+                return Collections.enumeration( (Collection<?>) value );
+            }
+            else
+            {
+                return Collections.enumeration( Collections.singleton( value ) );
             }
         }
         return null;
@@ -176,12 +191,14 @@ public class InternalJettyServletResponse extends Response
         status = sc;
         message = sm;
     }
-    
-    public int getStatus() {
+
+    public int getStatus()
+    {
         return status;
     }
-    
-    public String getReason() {
+
+    public String getReason()
+    {
         return message;
     }
 
@@ -197,7 +214,7 @@ public class InternalJettyServletResponse extends Response
 
     public PrintWriter getWriter() throws IOException
     {
-        return new PrintWriter(output);
+        return new PrintWriter( output );
     }
 
     public void setCharacterEncoding( String encoding )
@@ -247,11 +264,14 @@ public class InternalJettyServletResponse extends Response
     public void complete() throws IOException
     {
     }
-    
-    public void setLocale(Locale locale)
-    { }
-    
+
+    public void setLocale( Locale locale )
+    {
+    }
+
     public boolean isCommitted()
-    { return false; }
+    {
+        return false;
+    }
 
 }

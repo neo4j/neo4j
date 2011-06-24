@@ -37,11 +37,10 @@ import org.neo4j.kernel.Traversal;
 public class RelationshipExpanderBuilder
 {
 
-    @SuppressWarnings("unchecked")
-    public static RelationshipExpander describeRelationships(
-            Map<String, Object> description )
+    @SuppressWarnings( "unchecked" )
+    public static RelationshipExpander describeRelationships( Map<String, Object> description )
     {
-    	Expander expander = Traversal.emptyExpander();
+        Expander expander = Traversal.emptyExpander();
 
         Object relationshipsDescription = description.get( "relationships" );
         if ( relationshipsDescription != null )
@@ -55,35 +54,33 @@ public class RelationshipExpanderBuilder
             {
                 pairDescriptions = Arrays.asList( relationshipsDescription );
             }
-            
+
             for ( Object pairDescription : pairDescriptions )
             {
                 Map map = (Map) pairDescription;
                 String name = (String) map.get( "type" );
                 RelationshipType type = DynamicRelationshipType.withName( name );
                 String directionName = (String) map.get( "direction" );
-                expander = ( directionName == null ) ? expander.add( type ) : 
-                	expander.add( type, stringToEnum( directionName,
-                        RelationshipDirection.class, true ).internal ); 
+                expander = ( directionName == null ) ? expander.add( type ) : expander.add( type,
+                        stringToEnum( directionName, RelationshipDirection.class, true ).internal );
             }
         }
         return expander;
     }
 
-    
     // TODO Refactor - same method exists in TraversalDescriptionBuilder
-    private static <T extends Enum<T>> T stringToEnum( String name, Class<T> enumClass,
-            boolean fuzzyMatch )
+    private static <T extends Enum<T>> T stringToEnum( String name, Class<T> enumClass, boolean fuzzyMatch )
     {
         if ( name == null )
         {
             return null;
         }
-        
-//        name = enumifyName( name );
+
+        // name = enumifyName( name );
         for ( T candidate : enumClass.getEnumConstants() )
         {
-            if ( candidate.name().equals( name ) )
+            if ( candidate.name()
+                    .equals( name ) )
             {
                 return candidate;
             }
@@ -92,14 +89,14 @@ public class RelationshipExpanderBuilder
         {
             for ( T candidate : enumClass.getEnumConstants() )
             {
-                if ( candidate.name().startsWith( name ) )
+                if ( candidate.name()
+                        .startsWith( name ) )
                 {
                     return candidate;
                 }
             }
         }
-        throw new RuntimeException( "Unregognized " + enumClass.getSimpleName() + " '" +
-                name + "'" );
+        throw new RuntimeException( "Unregognized " + enumClass.getSimpleName() + " '" + name + "'" );
     }
 
 }

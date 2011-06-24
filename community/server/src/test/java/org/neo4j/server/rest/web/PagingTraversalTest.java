@@ -60,7 +60,6 @@ public class PagingTraversalTest
     private GraphDbHelper helper;
     private LeaseManager leaseManager;
     private static final int SIXTY_SECONDS = 60;
-    
 
     @Before
     public void startDatabase() throws IOException
@@ -70,7 +69,7 @@ public class PagingTraversalTest
         database = new Database( ServerTestUtils.EMBEDDED_GRAPH_DATABASE_FACTORY, databasePath );
         helper = new GraphDbHelper( database );
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
-        leaseManager = new LeaseManager(new FakeClock());
+        leaseManager = new LeaseManager( new FakeClock() );
         service = new RestfulGraphDatabase( uriInfo(), database, new JsonFormat(), output, leaseManager );
     }
 
@@ -126,7 +125,7 @@ public class PagingTraversalTest
     public void shouldRespondWith404WhenTraversalHasExpired()
     {
         Response response = createAPagedTraverser();
-        ((FakeClock)leaseManager.getClock()).forwardMinutes( 2 );
+        ( (FakeClock) leaseManager.getClock() ).forwardMinutes( 2 );
 
         String traverserId = parseTraverserIdFromLocationUri( response );
 
@@ -134,56 +133,68 @@ public class PagingTraversalTest
 
         assertEquals( 404, response.getStatus() );
     }
-    
+
     @Test
-    public void shouldRespondWith400OnNegativePageSize() {
+    public void shouldRespondWith400OnNegativePageSize()
+    {
         long arbitraryStartNodeId = 1l;
         int negativePageSize = -5;
         String arbitraryDescription = description();
-        Response response = service.createPagedTraverser( arbitraryStartNodeId , TraverserReturnType.node, negativePageSize, SIXTY_SECONDS, arbitraryDescription );
-        
-        assertEquals(400, response.getStatus());
+        Response response = service.createPagedTraverser( arbitraryStartNodeId, TraverserReturnType.node,
+                negativePageSize, SIXTY_SECONDS, arbitraryDescription );
+
+        assertEquals( 400, response.getStatus() );
     }
-    
+
     @Test
-    public void shouldRespondWith400OnLeaseTime() {
+    public void shouldRespondWith400OnLeaseTime()
+    {
         long arbitraryStartNodeId = 1l;
         int arbitraryPageSize = 5;
         String arbitraryDescription = description();
-        Response response = service.createPagedTraverser( arbitraryStartNodeId , TraverserReturnType.node, arbitraryPageSize, -5, arbitraryDescription );
-        
-        assertEquals(400, response.getStatus());
+        Response response = service.createPagedTraverser( arbitraryStartNodeId, TraverserReturnType.node,
+                arbitraryPageSize, -5, arbitraryDescription );
+
+        assertEquals( 400, response.getStatus() );
     }
-    
+
     @Test
-    public void shouldRenewLeaseAtEachTraversal() {
+    public void shouldRenewLeaseAtEachTraversal()
+    {
         Response response = createAPagedTraverser();
 
         String traverserId = parseTraverserIdFromLocationUri( response );
-        
-        ((FakeClock)leaseManager.getClock()).forwardSeconds( 30 );
-        response = service.pagedTraverse( traverserId, TraverserReturnType.node );
-        assertEquals(200, response.getStatus());
 
-        ((FakeClock)leaseManager.getClock()).forwardSeconds( 30 );
+        ( (FakeClock) leaseManager.getClock() ).forwardSeconds( 30 );
         response = service.pagedTraverse( traverserId, TraverserReturnType.node );
-        assertEquals(200, response.getStatus());
-        
-        ((FakeClock)leaseManager.getClock()).forwardMinutes( 10 ); // Long pause, expect lease to expire
+        assertEquals( 200, response.getStatus() );
+
+        ( (FakeClock) leaseManager.getClock() ).forwardSeconds( 30 );
         response = service.pagedTraverse( traverserId, TraverserReturnType.node );
-        assertEquals(404, response.getStatus());
+        assertEquals( 200, response.getStatus() );
+
+        ( (FakeClock) leaseManager.getClock() ).forwardMinutes( 10 ); // Long
+                                                                      // pause,
+                                                                      // expect
+                                                                      // lease
+                                                                      // to
+                                                                      // expire
+        response = service.pagedTraverse( traverserId, TraverserReturnType.node );
+        assertEquals( 404, response.getStatus() );
     }
 
     @Test
     public void shouldBeAbleToRemoveALeaseOnceOnly()
-    {        
+    {
         Response response = createAPagedTraverser();
         String traverserId = parseTraverserIdFromLocationUri( response );
-        
-        assertEquals(200, service.removePagedTraverser( traverserId ).getStatus());
-        assertEquals(404, service.removePagedTraverser( traverserId ).getStatus());
+
+        assertEquals( 200, service.removePagedTraverser( traverserId )
+                .getStatus() );
+        assertEquals( 404, service.removePagedTraverser( traverserId )
+                .getStatus() );
     }
-    
+
     private UriInfo uriInfo()
     {
         UriInfo mockUriInfo = mock( UriInfo.class );
@@ -205,8 +216,9 @@ public class PagingTraversalTest
         String description = description();
 
         final int PAGE_SIZE = 10;
-        Response response = service.createPagedTraverser( startNodeId, TraverserReturnType.node, PAGE_SIZE, SIXTY_SECONDS, description );
-        
+        Response response = service.createPagedTraverser( startNodeId, TraverserReturnType.node, PAGE_SIZE,
+                SIXTY_SECONDS, description );
+
         return response;
     }
 
@@ -247,10 +259,10 @@ public class PagingTraversalTest
     private String parseTraverserIdFromLocationUri( Response response )
     {
         String locationUri = response.getMetadata()
-        .get( "Location" )
-        .get( 0 )
-        .toString();
-        
+                .get( "Location" )
+                .get( 0 )
+                .toString();
+
         return locationUri.substring( locationUri.lastIndexOf( "/" ) + 1 );
     }
 }

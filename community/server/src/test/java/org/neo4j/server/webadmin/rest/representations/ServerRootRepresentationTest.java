@@ -36,12 +36,14 @@ public class ServerRootRepresentationTest
     public void shouldProvideAListOfServiceUris() throws Exception
     {
         ConsoleService consoleService = new ConsoleService( (SessionFactory) null, null, null );
-        ServerRootRepresentation srr = new ServerRootRepresentation( new URI( "http://example.org:9999" ), consoleService );
+        ServerRootRepresentation srr = new ServerRootRepresentation( new URI( "http://example.org:9999" ),
+                consoleService );
         Map<String, Map<String, String>> map = srr.serialize();
 
-        assertNotNull(map.get("services"));
+        assertNotNull( map.get( "services" ) );
 
-        assertThat( map.get("services").get( consoleService.getName() ), containsString( consoleService.getServerPath() ) );
+        assertThat( map.get( "services" )
+                .get( consoleService.getName() ), containsString( consoleService.getServerPath() ) );
 
     }
 }

@@ -88,7 +88,9 @@ abstract class ResultConverter
                 return CHAR_RESULT;
             }
             else if ( cls.isPrimitive() || ( Number.class.isAssignableFrom( cls ) && //
-                      cls.getPackage().getName().equals( "java.lang" ) ) )
+                      cls.getPackage()
+                              .getName()
+                              .equals( "java.lang" ) ) )
             {
                 return INT_RESULT;
             }
@@ -100,8 +102,7 @@ abstract class ResultConverter
             Type paramType = parameterizedType.getActualTypeArguments()[0];
             if ( !( paramType instanceof Class<?> ) )
             {
-                throw new IllegalStateException(
-                        "Parameterized result types must have a concrete type parameter." );
+                throw new IllegalStateException( "Parameterized result types must have a concrete type parameter." );
             }
             Class<?> param = (Class<?>) paramType;
             if ( Iterable.class.isAssignableFrom( raw ) )
@@ -234,15 +235,15 @@ abstract class ResultConverter
         @SuppressWarnings( "unchecked" )
         Representation convert( Object obj )
         {
-            return new ListRepresentation( itemConverter.type(),
-                    new IterableWrapper<Representation, Object>( (Iterable<Object>) obj )
-                    {
-                        @Override
-                        protected Representation underlyingObjectToObject( Object object )
-                        {
-                            return itemConverter.convert( object );
-                        }
-                    } );
+            return new ListRepresentation( itemConverter.type(), new IterableWrapper<Representation, Object>(
+                    (Iterable<Object>) obj )
+            {
+                @Override
+                protected Representation underlyingObjectToObject( Object object )
+                {
+                    return itemConverter.convert( object );
+                }
+            } );
         }
 
         @Override

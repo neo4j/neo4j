@@ -40,17 +40,21 @@ public class PagedTraverser implements Iterator<List<Path>>, Iterable<List<Path>
 
     public List<Path> next()
     {
-        if(!iterator.hasNext()) {
+        if ( !iterator.hasNext() )
+        {
             return null;
         }
-        
+
         ArrayList<Path> result = new ArrayList<Path>();
 
         for ( int i = 0; i < pageSize; i++ )
         {
-            if(!iterator.hasNext()) {
+            if ( !iterator.hasNext() )
+            {
                 break;
-            } else {
+            }
+            else
+            {
                 result.add( iterator.next() );
             }
         }
@@ -64,11 +68,10 @@ public class PagedTraverser implements Iterator<List<Path>>, Iterable<List<Path>
         return iterator.hasNext();
     }
 
-
     @Override
     public void remove()
     {
-        iterator.remove(); 
+        iterator.remove();
     }
 
     @Override

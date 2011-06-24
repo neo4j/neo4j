@@ -50,7 +50,7 @@ public class CompactJsonFormatTest
         String entity = json.format( ValueRepresentation.string( "expected value" ) );
         assertEquals( entity, "\"expected value\"" );
     }
-    
+
     @Test
     public void canFormatListOfStrings() throws Exception
     {
@@ -66,7 +66,6 @@ public class CompactJsonFormatTest
         assertEquals( "10", entity );
     }
 
- 
     @Test
     public void canFormatObjectWithStringField() throws Exception
     {
@@ -78,10 +77,7 @@ public class CompactJsonFormatTest
                 serializer.putString( "key", "expected string" );
             }
         } );
-        assertEquals(
-                JsonHelper.createJsonFrom( Collections.singletonMap( "key", "expected string" ) ),
-                entity );
+        assertEquals( JsonHelper.createJsonFrom( Collections.singletonMap( "key", "expected string" ) ), entity );
     }
 
- 
- }
+}

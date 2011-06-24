@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
 
 import java.io.IOException;
 import java.net.URI;
@@ -49,7 +50,6 @@ import org.neo4j.server.rest.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.test.TestData;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class PagedTraverserFunctionalTest
@@ -92,8 +92,7 @@ public class PagedTraverserFunctionalTest
     {
         theStartNode = createLinkedList( SHORT_LIST_LENGTH, server.getDatabase() );
 
-        ClientResponse response = Client.create()
-                .resource( functionalTestHelper.nodeUri( theStartNode.getId() ) )
+        ClientResponse response = CLIENT.resource( functionalTestHelper.nodeUri( theStartNode.getId() ) )
                 .accept( MediaType.APPLICATION_JSON_TYPE )
                 .get( ClientResponse.class );
 
@@ -171,8 +170,7 @@ public class PagedTraverserFunctionalTest
                     .get( traverserLocation.toString() );
         }
 
-        ClientResponse response = Client.create()
-                .resource( traverserLocation )
+        ClientResponse response = CLIENT.resource( traverserLocation )
                 .accept( MediaType.APPLICATION_JSON )
                 .get( ClientResponse.class );
         assertEquals( 404, response.getStatus() );
@@ -190,8 +188,7 @@ public class PagedTraverserFunctionalTest
         final int TEN_MINUTES = 10;
         clock.forwardMinutes( TEN_MINUTES );
 
-        ClientResponse getResponse = Client.create()
-                .resource( postResponse.getLocation() )
+        ClientResponse getResponse = CLIENT.resource( postResponse.getLocation() )
                 .accept( MediaType.APPLICATION_JSON_TYPE )
                 .get( ClientResponse.class );
 
@@ -215,15 +212,13 @@ public class PagedTraverserFunctionalTest
         for ( int i = 0; i < enoughPagesToExpireTheTraverser; i++ )
         {
 
-            ClientResponse response = Client.create()
-                    .resource( traverserLocation )
+            ClientResponse response = CLIENT.resource( traverserLocation )
                     .accept( MediaType.APPLICATION_JSON )
                     .get( ClientResponse.class );
             assertEquals( 200, response.getStatus() );
         }
 
-        ClientResponse response = Client.create()
-                .resource( traverserLocation )
+        ClientResponse response = CLIENT.resource( traverserLocation )
                 .accept( MediaType.APPLICATION_JSON )
                 .get( ClientResponse.class );
         assertEquals( 404, response.getStatus() );
@@ -245,8 +240,7 @@ public class PagedTraverserFunctionalTest
 
         ( (FakeClock) LeaseManagerProvider.getClock() ).forwardMinutes( 11 );
 
-        ClientResponse response = Client.create()
-                .resource( traverserLocation )
+        ClientResponse response = CLIENT.resource( traverserLocation )
                 .accept( MediaType.APPLICATION_JSON )
                 .get( ClientResponse.class );
         assertEquals( 404, response.getStatus() );
@@ -263,15 +257,13 @@ public class PagedTraverserFunctionalTest
         for ( int i = 0; i < enoughPagesToExpireTheTraverser; i++ )
         {
 
-            ClientResponse response = Client.create()
-                    .resource( traverserLocation )
+            ClientResponse response = CLIENT.resource( traverserLocation )
                     .accept( MediaType.APPLICATION_JSON )
                     .get( ClientResponse.class );
             assertEquals( 200, response.getStatus() );
         }
 
-        ClientResponse response = Client.create()
-                .resource( traverserLocation )
+        ClientResponse response = CLIENT.resource( traverserLocation )
                 .accept( MediaType.APPLICATION_JSON )
                 .get( ClientResponse.class );
         assertEquals( 404, response.getStatus() );
@@ -283,10 +275,9 @@ public class PagedTraverserFunctionalTest
         theStartNode = createLinkedList( SHORT_LIST_LENGTH, server.getDatabase() );
 
         int negativeLeaseTime = -9;
-        ClientResponse response = Client.create()
-                .resource(
-                        functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?leaseTime="
-                                + String.valueOf( negativeLeaseTime ) )
+        ClientResponse response = CLIENT.resource(
+                functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?leaseTime="
+                        + String.valueOf( negativeLeaseTime ) )
                 .accept( MediaType.APPLICATION_JSON_TYPE )
                 .entity( traverserDescription() )
                 .post( ClientResponse.class );
@@ -300,10 +291,9 @@ public class PagedTraverserFunctionalTest
         theStartNode = createLinkedList( SHORT_LIST_LENGTH, server.getDatabase() );
 
         int negativePageSize = -99;
-        ClientResponse response = Client.create()
-                .resource(
-                        functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?pageSize="
-                                + String.valueOf( negativePageSize ) )
+        ClientResponse response = CLIENT.resource(
+                functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?pageSize="
+                        + String.valueOf( negativePageSize ) )
                 .accept( MediaType.APPLICATION_JSON_TYPE )
                 .entity( traverserDescription() )
                 .post( ClientResponse.class );
@@ -318,13 +308,11 @@ public class PagedTraverserFunctionalTest
 
         ClientResponse response = createPagedTraverser();
 
-        ClientResponse deleteResponse = Client.create()
-                .resource( response.getLocation() )
+        ClientResponse deleteResponse = CLIENT.resource( response.getLocation() )
                 .delete( ClientResponse.class );
         assertEquals( 200, deleteResponse.getStatus() );
 
-        deleteResponse = Client.create()
-                .resource( response.getLocation() )
+        deleteResponse = CLIENT.resource( response.getLocation() )
                 .delete( ClientResponse.class );
         assertEquals( 404, deleteResponse.getStatus() );
     }
@@ -333,10 +321,9 @@ public class PagedTraverserFunctionalTest
     {
         String description = traverserDescription();
 
-        ClientResponse response = Client.create()
-                .resource(
-                        functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?leaseTime="
-                                + String.valueOf( leaseTime ) + "&pageSize=" + pageSize )
+        ClientResponse response = CLIENT.resource(
+                functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?leaseTime="
+                        + String.valueOf( leaseTime ) + "&pageSize=" + pageSize )
                 .accept( MediaType.APPLICATION_JSON_TYPE )
                 .entity( description )
                 .post( ClientResponse.class );
@@ -370,8 +357,8 @@ public class PagedTraverserFunctionalTest
     private ClientResponse createPagedTraverser()
     {
 
-        ClientResponse response = Client.create()
-                .resource( functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node" )
+        ClientResponse response = CLIENT.resource(
+                functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node" )
                 .accept( MediaType.APPLICATION_JSON_TYPE )
                 .entity( traverserDescription() )
                 .post( ClientResponse.class );

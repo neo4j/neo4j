@@ -68,8 +68,8 @@ public class RestfulGraphDatabasePagedTraversalTest
         database = new Database( ServerTestUtils.EMBEDDED_GRAPH_DATABASE_FACTORY, databasePath );
         helper = new GraphDbHelper( database );
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
-        leaseManager = new LeaseManager(new FakeClock());
-        service = new RestfulGraphDatabase( uriInfo(), database, new JsonFormat(), output, leaseManager);
+        leaseManager = new LeaseManager( new FakeClock() );
+        service = new RestfulGraphDatabase( uriInfo(), database, new JsonFormat(), output, leaseManager );
     }
 
     @After
@@ -124,7 +124,7 @@ public class RestfulGraphDatabasePagedTraversalTest
     public void shouldRespondWith404WhenTraversalHasExpired()
     {
         Response response = createAPagedTraverser();
-        ((FakeClock)leaseManager.getClock()).forwardMinutes( 2 );
+        ( (FakeClock) leaseManager.getClock() ).forwardMinutes( 2 );
 
         String traverserId = parseTraverserIdFromLocationUri( response );
 
@@ -132,24 +132,30 @@ public class RestfulGraphDatabasePagedTraversalTest
 
         assertEquals( 404, response.getStatus() );
     }
-    
+
     @Test
-    public void shouldRenewLeaseAtEachTraversal() {
+    public void shouldRenewLeaseAtEachTraversal()
+    {
         Response response = createAPagedTraverser();
 
         String traverserId = parseTraverserIdFromLocationUri( response );
-        
-        ((FakeClock)leaseManager.getClock()).forwardSeconds( 30 );
-        response = service.pagedTraverse( traverserId, TraverserReturnType.node );
-        assertEquals(200, response.getStatus());
 
-        ((FakeClock)leaseManager.getClock()).forwardSeconds( 30 );
+        ( (FakeClock) leaseManager.getClock() ).forwardSeconds( 30 );
         response = service.pagedTraverse( traverserId, TraverserReturnType.node );
-        assertEquals(200, response.getStatus());
-        
-        ((FakeClock)leaseManager.getClock()).forwardMinutes( 10 ); // Long pause, expect lease to expire
+        assertEquals( 200, response.getStatus() );
+
+        ( (FakeClock) leaseManager.getClock() ).forwardSeconds( 30 );
         response = service.pagedTraverse( traverserId, TraverserReturnType.node );
-        assertEquals(404, response.getStatus());
+        assertEquals( 200, response.getStatus() );
+
+        ( (FakeClock) leaseManager.getClock() ).forwardMinutes( 10 ); // Long
+                                                                      // pause,
+                                                                      // expect
+                                                                      // lease
+                                                                      // to
+                                                                      // expire
+        response = service.pagedTraverse( traverserId, TraverserReturnType.node );
+        assertEquals( 404, response.getStatus() );
     }
 
     private UriInfo uriInfo()
@@ -178,8 +184,9 @@ public class RestfulGraphDatabasePagedTraversalTest
 
         final int SIXTY_SECONDS = 60;
         final int PAGE_SIZE = 10;
-        Response response = service.createPagedTraverser( startNodeId, TraverserReturnType.node, PAGE_SIZE, SIXTY_SECONDS, description );
-        
+        Response response = service.createPagedTraverser( startNodeId, TraverserReturnType.node, PAGE_SIZE,
+                SIXTY_SECONDS, description );
+
         return response;
     }
 
@@ -210,10 +217,10 @@ public class RestfulGraphDatabasePagedTraversalTest
     private String parseTraverserIdFromLocationUri( Response response )
     {
         String locationUri = response.getMetadata()
-        .get( "Location" )
-        .get( 0 )
-        .toString();
-        
+                .get( "Location" )
+                .get( 0 )
+                .toString();
+
         return locationUri.substring( locationUri.lastIndexOf( "/" ) + 1 );
     }
 }

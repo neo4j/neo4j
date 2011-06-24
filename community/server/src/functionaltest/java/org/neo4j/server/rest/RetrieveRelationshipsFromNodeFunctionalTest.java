@@ -21,6 +21,7 @@ package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
 
 import java.io.IOException;
 import java.util.List;
@@ -43,7 +44,6 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import org.neo4j.test.TestData;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
@@ -94,7 +94,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest
 
     private ClientResponse sendRetrieveRequestToServer( long nodeId, String path )
     {
-        WebResource resource = Client.create().resource( functionalTestHelper.nodeUri() + "/" + nodeId + "/relationships" + path );
+        WebResource resource = CLIENT.resource( functionalTestHelper.nodeUri() + "/" + nodeId + "/relationships" + path );
         return resource.accept( MediaType.APPLICATION_JSON )
                 .get( ClientResponse.class );
     }
@@ -261,7 +261,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest
     {
         long relationshipId = helper.createRelationship( "LIKES" );
 
-        ClientResponse response = Client.create().resource( functionalTestHelper.relationshipUri( relationshipId ) )
+        ClientResponse response = CLIENT.resource( functionalTestHelper.relationshipUri( relationshipId ) )
                 .accept( MediaType.APPLICATION_JSON_TYPE )
                 .get( ClientResponse.class );
 
@@ -274,7 +274,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest
     {
         long relationshipId = helper.createRelationship( "LIKES" );
 
-        ClientResponse response = Client.create().resource( functionalTestHelper.relationshipUri( relationshipId ) )
+        ClientResponse response = CLIENT.resource( functionalTestHelper.relationshipUri( relationshipId ) )
                 .accept( MediaType.APPLICATION_JSON_TYPE )
                 .get( ClientResponse.class );
 

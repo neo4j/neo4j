@@ -21,6 +21,7 @@ package org.neo4j.server;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
 
 import java.io.IOException;
 
@@ -30,7 +31,6 @@ import org.junit.Test;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.FunctionalTestHelper;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class NeoServerDefaultPortFunctionalTest
@@ -65,8 +65,7 @@ public class NeoServerDefaultPortFunctionalTest
 
         FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper( server );
 
-        ClientResponse response = Client.create()
-                .resource( functionalTestHelper.getWebadminUri() )
+        ClientResponse response = CLIENT.resource( functionalTestHelper.getWebadminUri() )
                 .get( ClientResponse.class );
 
         assertThat( response.getStatus(), is( 200 ) );

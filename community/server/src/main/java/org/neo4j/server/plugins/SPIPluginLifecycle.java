@@ -23,9 +23,10 @@ import java.util.Collection;
 
 import org.neo4j.server.NeoServer;
 
-public interface SPIPluginLifecycle extends PluginLifecycle {
+public interface SPIPluginLifecycle extends PluginLifecycle
+{
 
-    Collection<Injectable<?>> start(NeoServer neoServer);
+    Collection<Injectable<?>> start( NeoServer neoServer );
 
     void stop();
 }

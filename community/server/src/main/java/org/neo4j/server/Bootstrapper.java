@@ -66,7 +66,6 @@ public abstract class Bootstrapper
         return winner;
     }
 
-
     public void controlEvent( int arg )
     {
         // Do nothing, required by the WrapperListener interface
@@ -83,8 +82,8 @@ public abstract class Bootstrapper
         {
             StartupHealthCheck startupHealthCheck = new StartupHealthCheck( rules() );
             Jetty6WebServer webServer = new Jetty6WebServer();
-            server = new NeoServerWithEmbeddedWebServer( this, new AddressResolver(),
-                    startupHealthCheck, getConfigurator(), webServer, getServerModules());
+            server = new NeoServerWithEmbeddedWebServer( this, new AddressResolver(), startupHealthCheck,
+                    getConfigurator(), webServer, getServerModules() );
             server.start();
 
             addShutdownHook();
@@ -95,7 +94,8 @@ public abstract class Bootstrapper
         {
             tfe.printStackTrace();
             log.error( String.format( "Failed to start Neo Server on port [%d], because ", server.getWebServerPort() )
-                       + tfe + ". Another process may be using database location " + server.getDatabase().getLocation() );
+                       + tfe + ". Another process may be using database location " + server.getDatabase()
+                               .getLocation() );
             return GRAPH_DATABASE_STARTUP_ERROR_CODE;
         }
         catch ( Exception e )
@@ -143,35 +143,40 @@ public abstract class Bootstrapper
 
     protected abstract Iterable<Class<? extends ServerModule>> getServerModules();
 
-    protected void addShutdownHook() {
-        Runtime.getRuntime().addShutdownHook( new Thread()
-        {
-            @Override
-            public void run()
-            {
-                log.info( "Neo4j Server shutdown initiated by kill signal" );
-                if ( server != null )
+    protected void addShutdownHook()
+    {
+        Runtime.getRuntime()
+                .addShutdownHook( new Thread()
                 {
-                    server.stop();
-                }
-            }
-        } );
+                    @Override
+                    public void run()
+                    {
+                        log.info( "Neo4j Server shutdown initiated by kill signal" );
+                        if ( server != null )
+                        {
+                            server.stop();
+                        }
+                    }
+                } );
     }
 
     protected Configurator getConfigurator()
     {
-        File configFile = new File( System.getProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY, Configurator.DEFAULT_CONFIG_DIR ) );
-        return new PropertyFileConfigurator(new Validator(new DatabaseLocationMustBeSpecifiedRule()), configFile);
+        File configFile = new File( System.getProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY,
+                Configurator.DEFAULT_CONFIG_DIR ) );
+        return new PropertyFileConfigurator( new Validator( new DatabaseLocationMustBeSpecifiedRule() ), configFile );
     }
 
     protected boolean isMoreDerivedThan( Bootstrapper other )
     {
         // Default implementation just checks if this is a subclass of other
-        return other.getClass().isAssignableFrom( getClass() );
+        return other.getClass()
+                .isAssignableFrom( getClass() );
     }
 
     private StartupHealthCheckRule[] rules()
     {
-        return IteratorUtil.asCollection( getHealthCheckRules() ).toArray( new StartupHealthCheckRule[0] );
+        return IteratorUtil.asCollection( getHealthCheckRules() )
+                .toArray( new StartupHealthCheckRule[0] );
     }
 }

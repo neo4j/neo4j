@@ -50,32 +50,36 @@ public class PropertyCountSampleableTest
     @Test
     public void addANodeAndSampleableGoesUp() throws IOException, MalformedObjectNameException
     {
-        addPropertyToReferenceNode( );
+        addPropertyToReferenceNode();
 
         assertThat( sampleable.getValue(), is( 1L ) );
 
-        addNodeIntoGraph( );
-        addNodeIntoGraph( );
+        addNodeIntoGraph();
+        addNodeIntoGraph();
 
         assertThat( sampleable.getValue(), is( 3L ) );
     }
 
-    private void addNodeIntoGraph() {
+    private void addNodeIntoGraph()
+    {
         Transaction tx = db.graph.beginTx();
         Node referenceNode = db.graph.getReferenceNode();
         Node myNewNode = db.graph.createNode();
-        myNewNode.setProperty("id", UUID.randomUUID().toString());
-        myNewNode.createRelationshipTo(referenceNode, new RelationshipType() {
-            public String name() {
+        myNewNode.setProperty( "id", UUID.randomUUID()
+                .toString() );
+        myNewNode.createRelationshipTo( referenceNode, new RelationshipType()
+        {
+            public String name()
+            {
                 return "knows_about";
             }
-        });
+        } );
 
         tx.success();
         tx.finish();
     }
 
-    private void addPropertyToReferenceNode( )
+    private void addPropertyToReferenceNode()
     {
         Transaction tx = db.graph.beginTx();
         Node n = db.graph.getReferenceNode();
@@ -87,7 +91,7 @@ public class PropertyCountSampleableTest
     @Before
     public void setUp() throws Exception
     {
-        db = new Database(new ImpermanentGraphDatabase());
+        db = new Database( new ImpermanentGraphDatabase() );
         sampleable = new PropertyCountSampleable( db );
     }
 

@@ -24,26 +24,35 @@ import java.util.ArrayList;
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.server.logging.Logger;
 
-public class Validator {
+public class Validator
+{
 
-    public static Logger log = Logger.getLogger(Validator.class);
+    public static Logger log = Logger.getLogger( Validator.class );
     private final ArrayList<ValidationRule> validationRules = new ArrayList<ValidationRule>();
-    
-    public Validator(ValidationRule ... rules) {
-        if(rules == null) {
+
+    public Validator( ValidationRule... rules )
+    {
+        if ( rules == null )
+        {
             return;
         }
-        for(ValidationRule r : rules) {
-            this.validationRules.add(r);
+        for ( ValidationRule r : rules )
+        {
+            this.validationRules.add( r );
         }
     }
-    
-    public boolean validate(Configuration configuration) {
-        for(ValidationRule vr : validationRules) {
-            try {
-                vr.validate(configuration);
-            } catch(RuleFailedException rfe) {
-                log.warn(rfe.getMessage());
+
+    public boolean validate( Configuration configuration )
+    {
+        for ( ValidationRule vr : validationRules )
+        {
+            try
+            {
+                vr.validate( configuration );
+            }
+            catch ( RuleFailedException rfe )
+            {
+                log.warn( rfe.getMessage() );
                 return false;
             }
         }

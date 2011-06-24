@@ -20,6 +20,7 @@
 package org.neo4j.server;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
 
 import java.net.URI;
 
@@ -37,7 +38,6 @@ import org.neo4j.server.helpers.Transactor;
 import org.neo4j.server.helpers.UnitOfWork;
 import org.neo4j.server.rest.FunctionalTestHelper;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class NeoServerJAXRSFunctionalTest
@@ -66,8 +66,7 @@ public class NeoServerJAXRSFunctionalTest
         server = ServerHelper.createServer();
         FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper( server );
 
-        ClientResponse response = Client.create()
-                .resource( functionalTestHelper.getWebadminUri() )
+        ClientResponse response = CLIENT.resource( functionalTestHelper.getWebadminUri() )
                 .accept( MediaType.APPLICATION_JSON_TYPE )
                 .get( ClientResponse.class );
         assertEquals( 200, response.getStatus() );
@@ -85,8 +84,7 @@ public class NeoServerJAXRSFunctionalTest
 
         URI thirdPartyServiceUri = new URI( server.baseUri()
                 .toString() + DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT ).normalize();
-        String response = Client.create()
-                .resource( thirdPartyServiceUri.toString() )
+        String response = CLIENT.resource( thirdPartyServiceUri.toString() )
                 .get( String.class );
         assertEquals( "hello", response );
     }
@@ -104,8 +102,7 @@ public class NeoServerJAXRSFunctionalTest
 
         URI thirdPartyServiceUri = new URI( server.baseUri()
                 .toString() + DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT + "/inject-test" ).normalize();
-        String response = Client.create()
-                .resource( thirdPartyServiceUri.toString() )
+        String response = CLIENT.resource( thirdPartyServiceUri.toString() )
                 .get( String.class );
         assertEquals( String.valueOf( nodesCreated + ROOT_NODE ), response );
     }

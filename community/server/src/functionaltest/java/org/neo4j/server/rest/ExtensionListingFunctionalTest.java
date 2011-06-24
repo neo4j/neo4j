@@ -24,6 +24,7 @@ import static org.hamcrest.Matchers.hasKey;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
 
 import java.io.IOException;
 import java.net.URI;
@@ -40,7 +41,6 @@ import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.plugins.FunctionalTestPlugin;
 import org.neo4j.server.rest.domain.JsonHelper;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class ExtensionListingFunctionalTest
@@ -70,7 +70,7 @@ public class ExtensionListingFunctionalTest
     @Test
     public void datarootContainsReferenceToExtensions() throws Exception
     {
-        ClientResponse response = Client.create().resource( functionalTestHelper.dataUri() )
+        ClientResponse response = CLIENT.resource( functionalTestHelper.dataUri() )
                 .accept( MediaType.APPLICATION_JSON_TYPE )
                 .get( ClientResponse.class );
         assertThat( response.getStatus(), equalTo( 200 ) );
@@ -83,7 +83,7 @@ public class ExtensionListingFunctionalTest
     @Test
     public void canListAllAvailableServerExtensions() throws Exception
     {
-        ClientResponse response = Client.create().resource( functionalTestHelper.extensionUri() )
+        ClientResponse response = CLIENT.resource( functionalTestHelper.extensionUri() )
                 .accept( MediaType.APPLICATION_JSON_TYPE )
                 .get( ClientResponse.class );
         assertThat( response.getStatus(), equalTo( 200 ) );
@@ -96,7 +96,7 @@ public class ExtensionListingFunctionalTest
     @Test
     public void canListExtensionMethodsForServerExtension() throws Exception
     {
-        ClientResponse response = Client.create().resource( functionalTestHelper.extensionUri() )
+        ClientResponse response = CLIENT.resource( functionalTestHelper.extensionUri() )
                 .accept( MediaType.APPLICATION_JSON_TYPE )
                 .get( ClientResponse.class );
         assertThat( response.getStatus(), equalTo( 200 ) );
@@ -105,7 +105,7 @@ public class ExtensionListingFunctionalTest
         String refNodeService = (String) json.get( FunctionalTestPlugin.class.getSimpleName() );
         response.close();
 
-        response = Client.create().resource( refNodeService )
+        response = CLIENT.resource( refNodeService )
                 .accept( MediaType.APPLICATION_JSON_TYPE )
                 .get( ClientResponse.class );
         String result = response.getEntity( String.class );

@@ -37,8 +37,7 @@ public final class ServerExtensionRepresentation extends MappingRepresentation
             EntityExtensionRepresentation entity = extended.get( extension.getExtendedEntity() );
             if ( entity == null )
             {
-                extended.put( extension.getExtendedEntity(),
-                        entity = new EntityExtensionRepresentation() );
+                extended.put( extension.getExtendedEntity(), entity = new EntityExtensionRepresentation() );
             }
             entity.add( extension );
         }

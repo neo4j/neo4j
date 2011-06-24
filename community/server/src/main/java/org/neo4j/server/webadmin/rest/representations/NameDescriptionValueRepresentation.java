@@ -29,7 +29,7 @@ public class NameDescriptionValueRepresentation extends ObjectRepresentation
     private String description;
     private Representation value;
 
-    public NameDescriptionValueRepresentation(String name, String description, Representation value)
+    public NameDescriptionValueRepresentation( String name, String description, Representation value )
     {
         super( "nameDescriptionValue" );
         this.name = name;

@@ -29,7 +29,7 @@ public class NodeIndexRootRepresentation extends MappingRepresentation
 
     public NodeIndexRootRepresentation( IndexManager indexManager )
     {
-        super("node-index");
+        super( "node-index" );
         this.indexManager = indexManager;
     }
 
@@ -41,7 +41,8 @@ public class NodeIndexRootRepresentation extends MappingRepresentation
         for ( String indexName : indexManager.nodeIndexNames() )
         {
             Index<Node> index = indexManager.forNodes( indexName );
-            serializer.putMapping( indexName, new NodeIndexRepresentation( indexName, indexManager.getConfiguration( index ) ) );
+            serializer.putMapping( indexName,
+                    new NodeIndexRepresentation( indexName, indexManager.getConfiguration( index ) ) );
         }
     }
 }

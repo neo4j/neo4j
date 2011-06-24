@@ -30,14 +30,16 @@ public class MediaTypeNotSupportedException extends WebApplicationException
     private static final long serialVersionUID = 5159216782240337940L;
 
     public MediaTypeNotSupportedException( Response.Status status, Collection<MediaType> supported,
-                                           MediaType... requested )
+            MediaType... requested )
     {
         super( createResponse( status, message( supported, requested ) ) );
     }
 
     private static Response createResponse( Response.Status status, String message )
     {
-        return Response.status( status ).entity( message ).build();
+        return Response.status( status )
+                .entity( message )
+                .build();
     }
 
     private static String message( Collection<MediaType> supported, MediaType[] requested )
@@ -49,15 +51,20 @@ public class MediaTypeNotSupportedException extends WebApplicationException
         }
         else if ( requested.length == 1 )
         {
-            message.append( "Request format: " ).append( requested[0] ).append( "\n" );
+            message.append( "Request format: " )
+                    .append( requested[0] )
+                    .append( "\n" );
         }
         else
         {
             message.append( "Requested formats:\n" );
             for ( int i = 0; i < requested.length; i++ )
             {
-                message.append( " " ).append( i ).append( ". " );
-                message.append( requested[i] ).append( "\n" );
+                message.append( " " )
+                        .append( i )
+                        .append( ". " );
+                message.append( requested[i] )
+                        .append( "\n" );
             }
         }
         message.append( "Supported representation formats:" );
@@ -69,7 +76,8 @@ public class MediaTypeNotSupportedException extends WebApplicationException
         {
             for ( MediaType type : supported )
             {
-                message.append( "\n * " ).append( type );
+                message.append( "\n * " )
+                        .append( type );
             }
         }
         return message.toString();

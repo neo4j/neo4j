@@ -969,7 +969,8 @@ public class RestfulGraphDatabase
 
         if ( actions.removePagedTraverse( traverserId ) )
         {
-            return Response.ok().build();
+            return Response.ok()
+                    .build();
         }
         else
         {

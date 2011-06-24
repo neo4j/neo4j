@@ -24,6 +24,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
 
 import java.io.IOException;
 
@@ -34,7 +35,6 @@ import org.junit.Test;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.FunctionalTestHelper;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class NeoServerFunctionalTest
@@ -75,8 +75,7 @@ public class NeoServerFunctionalTest
         assertFalse( server.baseUri()
                 .toString()
                 .contains( "webadmin" ) );
-        ClientResponse response = Client.create()
-                .resource( server.baseUri() )
+        ClientResponse response = CLIENT.resource( server.baseUri() )
                 .get( ClientResponse.class );
         assertThat( response.getStatus(), is( 200 ) );
         assertThat( response.toString(), containsString( "webadmin" ) );
@@ -88,8 +87,7 @@ public class NeoServerFunctionalTest
     {
         FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper( server );
 
-        ClientResponse response = Client.create()
-                .resource( functionalTestHelper.getWebadminUri() )
+        ClientResponse response = CLIENT.resource( functionalTestHelper.getWebadminUri() )
                 .get( ClientResponse.class );
 
         assertThat( response.getStatus(), is( 200 ) );

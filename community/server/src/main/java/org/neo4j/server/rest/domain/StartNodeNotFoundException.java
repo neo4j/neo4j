@@ -19,7 +19,8 @@
  */
 package org.neo4j.server.rest.domain;
 
-@SuppressWarnings("serial")
-public class StartNodeNotFoundException extends Exception {
+@SuppressWarnings( "serial" )
+public class StartNodeNotFoundException extends Exception
+{
 
 }

@@ -27,25 +27,26 @@ import java.util.Map;
 
 import org.junit.Test;
 
-
-public class DiscoveryRepresentationTest {
+public class DiscoveryRepresentationTest
+{
     @Test
-    public void shouldCreateAMapContainingDataAndManagementURIs() throws Exception {
+    public void shouldCreateAMapContainingDataAndManagementURIs() throws Exception
+    {
         String managementUri = "/management";
         String dataUri = "/data";
-        DiscoveryRepresentation dr = new DiscoveryRepresentation(managementUri, dataUri);
-        
-        Map<String, Object> mapOfUris = RepresentationTestBase.serialize(dr);
-        
-        Object mappedManagementUri = mapOfUris.get("management");
-        Object mappedDataUri = mapOfUris.get("data");
+        DiscoveryRepresentation dr = new DiscoveryRepresentation( managementUri, dataUri );
 
-        assertNotNull(mappedManagementUri);
-        assertNotNull(mappedDataUri);
-        
+        Map<String, Object> mapOfUris = RepresentationTestBase.serialize( dr );
+
+        Object mappedManagementUri = mapOfUris.get( "management" );
+        Object mappedDataUri = mapOfUris.get( "data" );
+
+        assertNotNull( mappedManagementUri );
+        assertNotNull( mappedDataUri );
+
         URI baseUri = RepresentationTestBase.BASE_URI;
-        
-        assertEquals( mappedManagementUri.toString(), Serializer.joinBaseWithRelativePath( baseUri, managementUri ));
-        assertEquals( mappedDataUri.toString(), Serializer.joinBaseWithRelativePath( baseUri, dataUri ));
+
+        assertEquals( mappedManagementUri.toString(), Serializer.joinBaseWithRelativePath( baseUri, managementUri ) );
+        assertEquals( mappedDataUri.toString(), Serializer.joinBaseWithRelativePath( baseUri, dataUri ) );
     }
 }

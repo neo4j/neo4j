@@ -158,7 +158,8 @@ public class CloneSubgraphPluginTest
         originalCount--; // Don't count the reference node
 
         // Find the start node URI from the server
-        ClientResponse response = Client.create().resource( functionalTestHelper.dataUri() + "node/1" )
+        ClientResponse response = Client.create()
+                .resource( functionalTestHelper.dataUri() + "node/1" )
                 .accept( MediaType.APPLICATION_JSON )
                 .get( ClientResponse.class );
 
@@ -183,7 +184,8 @@ public class CloneSubgraphPluginTest
 
         final String CLONE_DEPTH_MUCH_LARGER_THAN_THE_GRAPH = "99";
         response.close();
-        response = Client.create().resource( clonedSubgraphUri )
+        response = Client.create()
+                .resource( clonedSubgraphUri )
                 .type( MediaType.APPLICATION_FORM_URLENCODED )
                 .entity( "depth=" + CLONE_DEPTH_MUCH_LARGER_THAN_THE_GRAPH )
                 .post( ClientResponse.class );

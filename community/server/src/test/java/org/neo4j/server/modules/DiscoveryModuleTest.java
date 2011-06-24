@@ -32,19 +32,21 @@ import org.junit.Test;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.web.WebServer;
 
-public class DiscoveryModuleTest {
+public class DiscoveryModuleTest
+{
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldRegisterAtRootByDefault() throws Exception {
-        WebServer webServer = mock(WebServer.class);
+    public void shouldRegisterAtRootByDefault() throws Exception
+    {
+        WebServer webServer = mock( WebServer.class );
 
-        NeoServerWithEmbeddedWebServer neoServer = mock(NeoServerWithEmbeddedWebServer.class);
-        when(neoServer.baseUri()).thenReturn(new URI("http://localhost:7575"));
-        when(neoServer.getWebServer()).thenReturn(webServer);
+        NeoServerWithEmbeddedWebServer neoServer = mock( NeoServerWithEmbeddedWebServer.class );
+        when( neoServer.baseUri() ).thenReturn( new URI( "http://localhost:7575" ) );
+        when( neoServer.getWebServer() ).thenReturn( webServer );
 
         DiscoveryModule module = new DiscoveryModule();
 
-        module.start(neoServer);
+        module.start( neoServer );
 
         verify( webServer ).addJAXRSPackages( any( List.class ), anyString() );
     }

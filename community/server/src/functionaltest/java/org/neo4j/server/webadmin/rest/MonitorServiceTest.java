@@ -62,11 +62,10 @@ public class MonitorServiceTest implements JobScheduler
         assertEquals( 200, resp.getStatus() );
 
         Map<String, Object> resultAsMap = output.getResultAsMap();
-        @SuppressWarnings( "unchecked" )
-        Map<String, Object> resources = (Map<String, Object>)resultAsMap.get( "resources" );
-        assertThat( (String)resources.get( "data_from" ), containsString( "/fetch/{start}" ) );
-        assertThat( (String)resources.get( "data_period" ), containsString( "/fetch/{start}/{stop}" ) );
-        URI latest_data = (URI)resources.get( "latest_data" );
+        @SuppressWarnings( "unchecked" ) Map<String, Object> resources = (Map<String, Object>) resultAsMap.get( "resources" );
+        assertThat( (String) resources.get( "data_from" ), containsString( "/fetch/{start}" ) );
+        assertThat( (String) resources.get( "data_period" ), containsString( "/fetch/{start}/{stop}" ) );
+        URI latest_data = (URI) resources.get( "latest_data" );
         assertThat( latest_data.toString(), containsString( "/fetch" ) );
     }
 
@@ -78,7 +77,7 @@ public class MonitorServiceTest implements JobScheduler
         when( mockUri.getBaseUri() ).thenReturn( uri );
         Response resp = monitorService.getData();
 
-        String entity = new String( (byte[])resp.getEntity(), "UTF-8" );
+        String entity = new String( (byte[]) resp.getEntity(), "UTF-8" );
 
         assertEquals( entity, 200, resp.getStatus() );
         assertThat( entity, containsString( "timestamps" ) );
@@ -89,12 +88,11 @@ public class MonitorServiceTest implements JobScheduler
     @Before
     public void setUp() throws Exception
     {
-        database = new Database(new ImpermanentGraphDatabase());
+        database = new Database( new ImpermanentGraphDatabase() );
 
         rrdDb = new RrdFactory( new SystemConfiguration() ).createRrdDbAndSampler( database, this );
 
-        output = new EntityOutputFormat( new JsonFormat(),
-                URI.create( "http://peteriscool.com:6666/" ), null );
+        output = new EntityOutputFormat( new JsonFormat(), URI.create( "http://peteriscool.com:6666/" ), null );
         monitorService = new MonitorService( rrdDb, output );
     }
 
@@ -104,7 +102,8 @@ public class MonitorServiceTest implements JobScheduler
         try
         {
             rrdDb.close();
-        } catch ( IOException e )
+        }
+        catch ( IOException e )
         {
             throw new RuntimeException( e );
         }

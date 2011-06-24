@@ -29,7 +29,6 @@ import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.ObjectRepresentation;
 import org.neo4j.server.rest.repr.ValueRepresentation;
 
-
 public class JmxDomainRepresentation extends ObjectRepresentation
 {
 
@@ -38,7 +37,7 @@ public class JmxDomainRepresentation extends ObjectRepresentation
 
     public JmxDomainRepresentation( String name )
     {
-        super("jmxDomain");
+        super( "jmxDomain" );
         this.domainName = name;
     }
 
@@ -49,7 +48,7 @@ public class JmxDomainRepresentation extends ObjectRepresentation
     }
 
     @Mapping( "beans" )
-    public ListRepresentation getBeans( )
+    public ListRepresentation getBeans()
     {
         return new ListRepresentation( "bean", beans );
     }

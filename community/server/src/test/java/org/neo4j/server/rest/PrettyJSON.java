@@ -23,49 +23,64 @@ import java.io.StringWriter;
 
 import org.json.JSONStringer;
 
-public class PrettyJSON extends JSONStringer {
+public class PrettyJSON extends JSONStringer
+{
 
-	private static final String INDENTATION = "  ";
-	
-	public String toString() {
-		
-		/*
-		 * Naive implementation of a JSON prettifier,
-		 */
-		
-		String json = super.toString();
-		
-		StringWriter w = new StringWriter();
-		String indent = "\n";
-		boolean inString = false,
-		        escaped = false;
-		
-		for(char c : json.toCharArray()) {
-			if(c == '\\') { // Track escape characters
-				escaped = !escaped;
-				w.append(c);
-			} else if(c == '"' && !escaped) { // Enter and exit strings
-				inString = !inString;
-				w.append(c);
-			} else if(inString) { // Inside strings
-				w.append(c);
-			} else if(c == '[' || c == '{') { // Opening brackets
-				w.append(c);
-				indent += INDENTATION;
-				w.append(indent);
-			} else if (c == ']' || c == '}') { // Closing brackets
-				indent = indent.substring(0, indent.length() - INDENTATION.length());
-				w.append(indent);
-				w.append(c);
-			} else if (c == ',') { // Comma
-				w.append(c);
-				w.append(indent);
-			} else { // Everything else
-				w.append(c);
-			}
-		}
-		
-		return w.toString();
-	}
-	
+    private static final String INDENTATION = "  ";
+
+    public String toString()
+    {
+
+        /*
+         * Naive implementation of a JSON prettifier,
+         */
+
+        String json = super.toString();
+
+        StringWriter w = new StringWriter();
+        String indent = "\n";
+        boolean inString = false, escaped = false;
+
+        for ( char c : json.toCharArray() )
+        {
+            if ( c == '\\' )
+            { // Track escape characters
+                escaped = !escaped;
+                w.append( c );
+            }
+            else if ( c == '"' && !escaped )
+            { // Enter and exit strings
+                inString = !inString;
+                w.append( c );
+            }
+            else if ( inString )
+            { // Inside strings
+                w.append( c );
+            }
+            else if ( c == '[' || c == '{' )
+            { // Opening brackets
+                w.append( c );
+                indent += INDENTATION;
+                w.append( indent );
+            }
+            else if ( c == ']' || c == '}' )
+            { // Closing brackets
+                indent = indent.substring( 0, indent.length() - INDENTATION.length() );
+                w.append( indent );
+                w.append( c );
+            }
+            else if ( c == ',' )
+            { // Comma
+                w.append( c );
+                w.append( indent );
+            }
+            else
+            { // Everything else
+                w.append( c );
+            }
+        }
+
+        return w.toString();
+    }
+
 }

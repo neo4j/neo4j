@@ -39,8 +39,7 @@ public enum TraverserReturnType
         @Override
         public MappingRepresentation toRepresentation( Path position )
         {
-            return new org.neo4j.server.rest.repr.RelationshipRepresentation(
-                    position.lastRelationship() );
+            return new org.neo4j.server.rest.repr.RelationshipRepresentation( position.lastRelationship() );
         }
     },
     path( RepresentationType.PATH )

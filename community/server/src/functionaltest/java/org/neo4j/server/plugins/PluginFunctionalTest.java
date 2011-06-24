@@ -25,6 +25,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -49,7 +50,6 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.NodeRepresentationTest;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 @SuppressWarnings( "unchecked" )
@@ -77,7 +77,7 @@ public class PluginFunctionalTest
     {
         server.stop();
     }
-    
+
     @Test
     public void canGetGraphDatabaseExtensionList() throws Exception
     {
@@ -102,7 +102,8 @@ public class PluginFunctionalTest
         map = (Map<String, Object>) map.get( FunctionalTestPlugin.class.getSimpleName() );
 
         assertThat( (String) map.get( FunctionalTestPlugin.GET_REFERENCE_NODE ), RegExp.endsWith( String.format(
-                "/ext/%s/graphdb/%s", FunctionalTestPlugin.class.getSimpleName(), FunctionalTestPlugin.GET_REFERENCE_NODE ) ) );
+                "/ext/%s/graphdb/%s", FunctionalTestPlugin.class.getSimpleName(),
+                FunctionalTestPlugin.GET_REFERENCE_NODE ) ) );
     }
 
     @Test
@@ -292,7 +293,8 @@ public class PluginFunctionalTest
                 .createNode() ) );
 
         String uri = (String) map.get( "createRelationships" );
-        List<Map<String, Object>> response = PluginFunctionalTestHelper.makePostList( uri, MapUtil.map( "type", "KNOWS", "nodes", nodes ) );
+        List<Map<String, Object>> response = PluginFunctionalTestHelper.makePostList( uri,
+                MapUtil.map( "type", "KNOWS", "nodes", nodes ) );
         assertEquals( nodes.size(), response.size() );
         verifyRelationships( response );
     }
@@ -340,7 +342,7 @@ public class PluginFunctionalTest
 
         String postBody = "strings[]=aaa&strings[]=bbb&strings[]=ccc";
 
-        Client.create().resource( methodUri )
+        CLIENT.resource( methodUri )
                 .accept( MediaType.APPLICATION_JSON_TYPE )
                 .entity( postBody, MediaType.APPLICATION_FORM_URLENCODED )
                 .post( ClientResponse.class );
@@ -351,7 +353,7 @@ public class PluginFunctionalTest
 
         assertThat( FunctionalTestPlugin.stringList, is( stringsList ) );
     }
-    
+
     @Test
     public void shouldHandleUrlEncodedListsAndInt() throws Exception
     {
@@ -359,7 +361,7 @@ public class PluginFunctionalTest
 
         String postBody = "strings[]=aaa&strings[]=bbb&strings[]=ccc&count=3";
 
-        Client.create().resource( methodUri )
+        CLIENT.resource( methodUri )
                 .accept( MediaType.APPLICATION_JSON_TYPE )
                 .entity( postBody, MediaType.APPLICATION_FORM_URLENCODED )
                 .post( ClientResponse.class );
@@ -434,7 +436,7 @@ public class PluginFunctionalTest
 
         String url = getPluginMethodUri( functionalTestHelper.nodeUri( n ), "pathToReference" );
 
-        ClientResponse response = Client.create().resource( url )
+        ClientResponse response = CLIENT.resource( url )
                 .accept( MediaType.APPLICATION_JSON_TYPE )
                 .post( ClientResponse.class );
 

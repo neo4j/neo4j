@@ -20,6 +20,7 @@
 package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -36,7 +37,6 @@ import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class RemoveRelationshipPropertiesFunctionalTest
@@ -84,7 +84,7 @@ public class RemoveRelationshipPropertiesFunctionalTest
     @Test
     public void shouldReturn404WhenPropertiesRemovedFromRelationshipWhichDoesNotExist()
     {
-        ClientResponse response = Client.create().resource( getPropertiesUri( 999999 ) )
+        ClientResponse response = CLIENT.resource( getPropertiesUri( 999999 ) )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
                 .delete( ClientResponse.class );
@@ -94,7 +94,7 @@ public class RemoveRelationshipPropertiesFunctionalTest
 
     private ClientResponse removeRelationshipPropertiesOnServer( long relationshipId )
     {
-        return Client.create().resource( getPropertiesUri( relationshipId ) )
+        return CLIENT.resource( getPropertiesUri( relationshipId ) )
                 .delete( ClientResponse.class );
     }
 
@@ -130,7 +130,7 @@ public class RemoveRelationshipPropertiesFunctionalTest
     @Test
     public void shouldReturn404WhenPropertyRemovedFromARelationshipWhichDoesNotExist()
     {
-        ClientResponse response = Client.create().resource( getPropertyUri( 999999, "foo" ) )
+        ClientResponse response = CLIENT.resource( getPropertyUri( 999999, "foo" ) )
                 .accept( MediaType.APPLICATION_JSON_TYPE )
                 .delete( ClientResponse.class );
         assertEquals( 404, response.getStatus() );
@@ -139,7 +139,7 @@ public class RemoveRelationshipPropertiesFunctionalTest
 
     private ClientResponse removeRelationshipPropertyOnServer( long nodeId, String key )
     {
-        return Client.create().resource( getPropertyUri( nodeId, key ) )
+        return CLIENT.resource( getPropertyUri( nodeId, key ) )
                 .accept( MediaType.APPLICATION_JSON_TYPE )
                 .delete( ClientResponse.class );
     }

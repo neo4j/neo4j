@@ -76,7 +76,7 @@ public class ServerBuilder
     private WhatToDo action;
     private List<Class<? extends ServerModule>> serverModules = null;
     private Clock clock = null;
-    
+
     public static ServerBuilder server()
     {
         return new ServerBuilder();
@@ -102,8 +102,8 @@ public class ServerBuilder
             startupHealthCheck = mock( StartupHealthCheck.class );
             when( startupHealthCheck.run() ).thenReturn( true );
         }
-        
-        if(clock != null) 
+
+        if ( clock != null )
         {
             LeaseManagerProvider.setClock( clock );
         }

@@ -25,43 +25,54 @@ import static org.neo4j.server.ServerTestUtils.writePropertyToFile;
 import java.io.File;
 import java.io.IOException;
 
-public class DatabaseTuningPropertyFileBuilder {
+public class DatabaseTuningPropertyFileBuilder
+{
     private File parentDirectory = null;
     private String mappedMemory = null;
 
-    public static DatabaseTuningPropertyFileBuilder builder() {
+    public static DatabaseTuningPropertyFileBuilder builder()
+    {
         return new DatabaseTuningPropertyFileBuilder();
     }
-    
-    private DatabaseTuningPropertyFileBuilder() {}
-    
-    public File build() throws IOException {
-        if(parentDirectory == null) {
+
+    private DatabaseTuningPropertyFileBuilder()
+    {
+    }
+
+    public File build() throws IOException
+    {
+        if ( parentDirectory == null )
+        {
             parentDirectory = createTempDir();
         }
-       
+
         File temporaryConfigFile = new File( parentDirectory, "neo4j.properties" );
-        
-        if(mappedMemory == null) {
-            writePropertyToFile("neostore.nodestore.db.mapped_memory", "25M", temporaryConfigFile);
-        } else {
-            writePropertyToFile("neostore.nodestore.db.mapped_memory", mappedMemory, temporaryConfigFile);
+
+        if ( mappedMemory == null )
+        {
+            writePropertyToFile( "neostore.nodestore.db.mapped_memory", "25M", temporaryConfigFile );
         }
-        writePropertyToFile("neostore.relationshipstore.db.mapped_memory", "50M", temporaryConfigFile);
-        writePropertyToFile("neostore.propertystore.db.mapped_memory", "90M", temporaryConfigFile);
-        writePropertyToFile("neostore.propertystore.db.strings.mapped_memory", "130M", temporaryConfigFile);
-        writePropertyToFile("neostore.propertystore.db.arrays.mapped_memory", "150M", temporaryConfigFile);
-        
+        else
+        {
+            writePropertyToFile( "neostore.nodestore.db.mapped_memory", mappedMemory, temporaryConfigFile );
+        }
+        writePropertyToFile( "neostore.relationshipstore.db.mapped_memory", "50M", temporaryConfigFile );
+        writePropertyToFile( "neostore.propertystore.db.mapped_memory", "90M", temporaryConfigFile );
+        writePropertyToFile( "neostore.propertystore.db.strings.mapped_memory", "130M", temporaryConfigFile );
+        writePropertyToFile( "neostore.propertystore.db.arrays.mapped_memory", "150M", temporaryConfigFile );
+
         return temporaryConfigFile;
     }
 
-    public DatabaseTuningPropertyFileBuilder inDirectory(File parentDirectory) {
+    public DatabaseTuningPropertyFileBuilder inDirectory( File parentDirectory )
+    {
         this.parentDirectory = parentDirectory;
         return this;
     }
 
-    public DatabaseTuningPropertyFileBuilder mappedMemory(int i) {
-        this.mappedMemory = String.valueOf(i) + "M";
+    public DatabaseTuningPropertyFileBuilder mappedMemory( int i )
+    {
+        this.mappedMemory = String.valueOf( i ) + "M";
         return this;
     }
 

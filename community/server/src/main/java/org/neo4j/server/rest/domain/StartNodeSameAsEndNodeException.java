@@ -19,7 +19,8 @@
  */
 package org.neo4j.server.rest.domain;
 
-@SuppressWarnings("serial")
-public class StartNodeSameAsEndNodeException extends Exception {
+@SuppressWarnings( "serial" )
+public class StartNodeSameAsEndNodeException extends Exception
+{
 
 }

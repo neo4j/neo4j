@@ -177,7 +177,7 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
     {
         int webServerPort = getWebServerPort();
         int maxThreads = getMaxThreads();
-        
+
         log.info( "Starting Neo Server on port [%s] with [%d] threads available", webServerPort, maxThreads );
         webServer.setPort( webServerPort );
         webServer.setMaxThreads( maxThreads );
@@ -186,13 +186,15 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
 
     private int getMaxThreads()
     {
-        return configurator.configuration().containsKey( Configurator.WEBSERVER_MAX_THREADS_PROPERTY_KEY ) ?
-                configurator.configuration().getInt( Configurator.WEBSERVER_MAX_THREADS_PROPERTY_KEY ) : defaultMaxWebServerThreads();
+        return configurator.configuration()
+                .containsKey( Configurator.WEBSERVER_MAX_THREADS_PROPERTY_KEY ) ? configurator.configuration()
+                .getInt( Configurator.WEBSERVER_MAX_THREADS_PROPERTY_KEY ) : defaultMaxWebServerThreads();
     }
 
     private int defaultMaxWebServerThreads()
     {
-        return 10 * Runtime.getRuntime().availableProcessors();
+        return 10 * Runtime.getRuntime()
+                .availableProcessors();
     }
 
     private void startWebServer()

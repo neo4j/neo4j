@@ -19,13 +19,16 @@
  */
 package org.neo4j.server.configuration.validation;
 
-@SuppressWarnings("serial")
-public class RuleFailedException extends Exception {
-    public RuleFailedException(String message) {
-        super(message);
+@SuppressWarnings( "serial" )
+public class RuleFailedException extends Exception
+{
+    public RuleFailedException( String message )
+    {
+        super( message );
     }
-    
-    public RuleFailedException(String message, Object ... args) {
-        super(String.format(message, args));
+
+    public RuleFailedException( String message, Object... args )
+    {
+        super( String.format( message, args ) );
     }
 }

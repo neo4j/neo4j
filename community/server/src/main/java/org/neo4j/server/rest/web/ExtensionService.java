@@ -49,8 +49,7 @@ import org.neo4j.server.rest.repr.ServerExtensionRepresentation;
 public class ExtensionService
 {
     private static final String PATH_EXTENSION = "/{name}";
-    private static final String PATH_GRAPHDB_EXTENSION_METHOD = PATH_EXTENSION
-                                                                + "/graphdb/{method}";
+    private static final String PATH_GRAPHDB_EXTENSION_METHOD = PATH_EXTENSION + "/graphdb/{method}";
     private static final String PATH_NODE_EXTENSION_METHOD = PATH_EXTENSION + "/node/{nodeId}/{method}";
     private static final String PATH_RELATIONSHIP_EXTENSION_METHOD = PATH_EXTENSION
                                                                      + "/relationship/{relationshipId}/{method}";
@@ -76,7 +75,7 @@ public class ExtensionService
         }
         catch ( NotFoundException e )
         {
-            throw new NodeNotFoundException(e);
+            throw new NodeNotFoundException( e );
         }
     }
 
@@ -119,8 +118,7 @@ public class ExtensionService
     {
         try
         {
-            return output.ok( this.invokeGraphDatabaseExtension( name, method,
-                    input.readParameterList( data ) ) );
+            return output.ok( this.invokeGraphDatabaseExtension( name, method, input.readParameterList( data ) ) );
         }
         catch ( BadInputException e )
         {
@@ -157,13 +155,12 @@ public class ExtensionService
 
     @POST
     @Path( PATH_NODE_EXTENSION_METHOD )
-    public Response invokeNodeExtension( @PathParam( "name" ) String name,
-            @PathParam( "method" ) String method, @PathParam( "nodeId" ) long nodeId, String data )
+    public Response invokeNodeExtension( @PathParam( "name" ) String name, @PathParam( "method" ) String method,
+            @PathParam( "nodeId" ) long nodeId, String data )
     {
         try
         {
-            return output.ok( this.invokeNodeExtension( nodeId, name, method,
-                    input.readParameterList( data ) ) );
+            return output.ok( this.invokeNodeExtension( nodeId, name, method, input.readParameterList( data ) ) );
         }
         catch ( NodeNotFoundException e )
         {
@@ -205,8 +202,7 @@ public class ExtensionService
     @POST
     @Path( PATH_RELATIONSHIP_EXTENSION_METHOD )
     public Response invokeRelationshipExtension( @PathParam( "name" ) String name,
-            @PathParam( "method" ) String method,
-            @PathParam( "relationshipId" ) long relationshipId, String data )
+            @PathParam( "method" ) String method, @PathParam( "relationshipId" ) long relationshipId, String data )
     {
         try
         {
@@ -269,16 +265,14 @@ public class ExtensionService
 
     protected Representation extensionList( String extensionName ) throws PluginLookupException
     {
-        return new ServerExtensionRepresentation( extensionName,
-                extensions.describeAll( extensionName ) );
+        return new ServerExtensionRepresentation( extensionName, extensions.describeAll( extensionName ) );
     }
 
-    protected Representation invokeGraphDatabaseExtension( String extensionName, String method,
-            ParameterList data ) throws PluginLookupException, BadInputException,
-            PluginInvocationFailureException, BadPluginInvocationException
+    protected Representation invokeGraphDatabaseExtension( String extensionName, String method, ParameterList data )
+            throws PluginLookupException, BadInputException, PluginInvocationFailureException,
+            BadPluginInvocationException
     {
-        return extensions.invoke( graphDb, extensionName, GraphDatabaseService.class, method,
-                graphDb, data );
+        return extensions.invoke( graphDb, extensionName, GraphDatabaseService.class, method, graphDb, data );
     }
 
     protected Representation describeGraphDatabaseExtension( String extensionName, String method )
@@ -287,26 +281,24 @@ public class ExtensionService
         return extensions.describe( extensionName, GraphDatabaseService.class, method );
     }
 
-    protected Representation invokeNodeExtension( long nodeId, String extensionName, String method,
-            ParameterList data ) throws NodeNotFoundException, PluginLookupException,
-            BadInputException, PluginInvocationFailureException, BadPluginInvocationException
+    protected Representation invokeNodeExtension( long nodeId, String extensionName, String method, ParameterList data )
+            throws NodeNotFoundException, PluginLookupException, BadInputException, PluginInvocationFailureException,
+            BadPluginInvocationException
     {
         return extensions.invoke( graphDb, extensionName, Node.class, method, node( nodeId ), data );
     }
 
-    protected Representation describeNodeExtension( String extensionName, String method )
-            throws PluginLookupException
+    protected Representation describeNodeExtension( String extensionName, String method ) throws PluginLookupException
     {
         return extensions.describe( extensionName, Node.class, method );
     }
 
-    protected Representation invokeRelationshipExtension( long relationshipId,
-            String extensionName, String method, ParameterList data )
-            throws RelationshipNotFoundException, PluginLookupException, BadInputException,
+    protected Representation invokeRelationshipExtension( long relationshipId, String extensionName, String method,
+            ParameterList data ) throws RelationshipNotFoundException, PluginLookupException, BadInputException,
             PluginInvocationFailureException, BadPluginInvocationException
     {
-        return extensions.invoke( graphDb, extensionName, Relationship.class, method,
-                relationship( relationshipId ), data );
+        return extensions.invoke( graphDb, extensionName, Relationship.class, method, relationship( relationshipId ),
+                data );
     }
 
     protected Representation describeRelationshipExtension( String extensionName, String method )

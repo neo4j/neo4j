@@ -101,9 +101,10 @@ public class JmxService implements AdvertisableService
 
         for ( Object objName : server.queryNames( null, null ) )
         {
-            if ( objName.toString().startsWith( domainName ) )
+            if ( objName.toString()
+                    .startsWith( domainName ) )
             {
-                domain.addBean( (ObjectName)objName );
+                domain.addBean( (ObjectName) objName );
             }
         }
 
@@ -119,7 +120,7 @@ public class JmxService implements AdvertisableService
         ArrayList<JmxMBeanRepresentation> beans = new ArrayList<JmxMBeanRepresentation>();
         for ( Object objName : server.queryNames( createObjectName( domainName, objectName ), null ) )
         {
-            beans.add( new JmxMBeanRepresentation( (ObjectName)objName ) );
+            beans.add( new JmxMBeanRepresentation( (ObjectName) objName ) );
         }
 
         return output.ok( new ListRepresentation( "bean", beans ) );
@@ -130,15 +131,16 @@ public class JmxService implements AdvertisableService
         try
         {
             return new ObjectName( domainName + ":" + URLDecoder.decode( objectName, "UTF-8" ) );
-        } catch ( MalformedObjectNameException e )
+        }
+        catch ( MalformedObjectNameException e )
         {
             throw new WebApplicationException( e, 400 );
-        } catch ( UnsupportedEncodingException e )
+        }
+        catch ( UnsupportedEncodingException e )
         {
             throw new WebApplicationException( e, 400 );
         }
     }
-
 
     @POST
     @Consumes( MediaType.APPLICATION_JSON )
@@ -150,25 +152,26 @@ public class JmxService implements AdvertisableService
         {
             MBeanServer server = ManagementFactory.getPlatformMBeanServer();
 
-
             String json = dodgeStartingUnicodeMarker( query );
-            Collection<Object> queries = (Collection<Object>)JsonHelper.jsonToSingleValue( json );
+            Collection<Object> queries = (Collection<Object>) JsonHelper.jsonToSingleValue( json );
 
             ArrayList<JmxMBeanRepresentation> beans = new ArrayList<JmxMBeanRepresentation>();
             for ( Object queryObj : queries )
             {
                 assert queryObj instanceof String;
-                for ( Object objName : server.queryNames( new ObjectName( (String)queryObj ), null ) )
+                for ( Object objName : server.queryNames( new ObjectName( (String) queryObj ), null ) )
                 {
-                    beans.add( new JmxMBeanRepresentation( (ObjectName)objName ) );
+                    beans.add( new JmxMBeanRepresentation( (ObjectName) objName ) );
                 }
             }
 
             return output.ok( new ListRepresentation( "jmxBean", beans ) );
-        } catch ( MalformedObjectNameException e )
+        }
+        catch ( MalformedObjectNameException e )
         {
             return output.badRequest( e );
-        } catch ( BadInputException e )
+        }
+        catch ( BadInputException e )
         {
             return output.badRequest( e );
         }
@@ -190,7 +193,10 @@ public class JmxService implements AdvertisableService
     public Response currentKernelInstance( @Context Database database ) throws DatabaseBlockedException
     {
         Kernel kernelBean = database.graph.getManagementBean( Kernel.class );
-        return Response.ok( "\"" + kernelBean.getMBeanQuery().toString() + "\"" ).type( MediaType.APPLICATION_JSON ).build();
+        return Response.ok( "\"" + kernelBean.getMBeanQuery()
+                .toString() + "\"" )
+                .type( MediaType.APPLICATION_JSON )
+                .build();
     }
 
     public String getName()

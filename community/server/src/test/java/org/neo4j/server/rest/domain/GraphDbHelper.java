@@ -57,7 +57,10 @@ public class GraphDbHelper
 
     private int numberOfEntitiesFor( Class<? extends PropertyContainer> type ) throws DatabaseBlockedException
     {
-        return (int) ((EmbeddedGraphDatabase) database.graph).getConfig().getGraphDbModule().getNodeManager().getNumberOfIdsInUse( type );
+        return (int) ( (EmbeddedGraphDatabase) database.graph ).getConfig()
+                .getGraphDbModule()
+                .getNodeManager()
+                .getNumberOfIdsInUse( type );
     }
 
     public Map<String, Object> getNodeProperties( long nodeId ) throws DatabaseBlockedException
@@ -73,7 +76,8 @@ public class GraphDbHelper
             }
             tx.success();
             return allProperties;
-        } finally
+        }
+        finally
         {
             tx.finish();
         }
@@ -90,7 +94,8 @@ public class GraphDbHelper
                 node.setProperty( propertyEntry.getKey(), propertyEntry.getValue() );
             }
             tx.success();
-        } finally
+        }
+        finally
         {
             tx.finish();
         }
@@ -104,7 +109,8 @@ public class GraphDbHelper
             Node node = database.graph.createNode();
             tx.success();
             return node.getId();
-        } finally
+        }
+        finally
         {
             tx.finish();
         }
@@ -122,12 +128,13 @@ public class GraphDbHelper
             }
             tx.success();
             return node.getId();
-        } finally
+        }
+        finally
         {
             tx.finish();
         }
     }
-    
+
     public void deleteNode( long id ) throws DatabaseBlockedException
     {
         Transaction tx = database.graph.beginTx();
@@ -136,7 +143,8 @@ public class GraphDbHelper
             Node node = database.graph.getNodeById( id );
             node.delete();
             tx.success();
-        } finally
+        }
+        finally
         {
             tx.finish();
         }
@@ -149,10 +157,12 @@ public class GraphDbHelper
         {
             Node startNode = database.graph.getNodeById( startNodeId );
             Node endNode = database.graph.getNodeById( endNodeId );
-            Relationship relationship = startNode.createRelationshipTo( endNode, DynamicRelationshipType.withName( type ) );
+            Relationship relationship = startNode.createRelationshipTo( endNode,
+                    DynamicRelationshipType.withName( type ) );
             tx.success();
             return relationship.getId();
-        } finally
+        }
+        finally
         {
             tx.finish();
         }
@@ -165,16 +175,19 @@ public class GraphDbHelper
         {
             Node startNode = database.graph.createNode();
             Node endNode = database.graph.createNode();
-            Relationship relationship = startNode.createRelationshipTo( endNode, DynamicRelationshipType.withName( type ) );
+            Relationship relationship = startNode.createRelationshipTo( endNode,
+                    DynamicRelationshipType.withName( type ) );
             tx.success();
             return relationship.getId();
-        } finally
+        }
+        finally
         {
             tx.finish();
         }
     }
 
-    public void setRelationshipProperties( long relationshipId, Map<String, Object> properties ) throws DatabaseBlockedException
+    public void setRelationshipProperties( long relationshipId, Map<String, Object> properties )
+            throws DatabaseBlockedException
     {
         Transaction tx = database.graph.beginTx();
         try
@@ -185,7 +198,8 @@ public class GraphDbHelper
                 relationship.setProperty( propertyEntry.getKey(), propertyEntry.getValue() );
             }
             tx.success();
-        } finally
+        }
+        finally
         {
             tx.finish();
         }
@@ -204,7 +218,8 @@ public class GraphDbHelper
             }
             tx.success();
             return allProperties;
-        } finally
+        }
+        finally
         {
             tx.finish();
         }
@@ -218,7 +233,8 @@ public class GraphDbHelper
             Relationship relationship = database.graph.getRelationshipById( relationshipId );
             tx.success();
             return relationship;
-        } finally
+        }
+        finally
         {
             tx.finish();
         }
@@ -232,17 +248,18 @@ public class GraphDbHelper
         {
             index.add( database.graph.getNodeById( id ), key, value );
             tx.success();
-        } finally
+        }
+        finally
         {
             tx.finish();
         }
     }
 
-
-    public Collection<Long> queryIndexedNodes( String indexName, String key, Object value ) throws DatabaseBlockedException
+    public Collection<Long> queryIndexedNodes( String indexName, String key, Object value )
+            throws DatabaseBlockedException
     {
         // TODO: refactor this and getIndexedNodes to avoid dupe code
-        Index<Node> index =  database.getNodeIndex( indexName );
+        Index<Node> index = database.getNodeIndex( indexName );
         Transaction tx = database.graph.beginTx();
         try
         {
@@ -253,15 +270,18 @@ public class GraphDbHelper
             }
             tx.success();
             return result;
-        } finally
+        }
+        finally
         {
             tx.finish();
         }
     }
-    public Collection<Long> getIndexedNodes( String indexName, String key, Object value ) throws DatabaseBlockedException
+
+    public Collection<Long> getIndexedNodes( String indexName, String key, Object value )
+            throws DatabaseBlockedException
     {
 
-        Index<Node> index =  database.getNodeIndex( indexName );
+        Index<Node> index = database.getNodeIndex( indexName );
         Transaction tx = database.graph.beginTx();
         try
         {
@@ -272,16 +292,18 @@ public class GraphDbHelper
             }
             tx.success();
             return result;
-        } finally
+        }
+        finally
         {
             tx.finish();
         }
     }
 
-    public Collection<Long> getIndexedRelationships( String indexName, String key, Object value ) throws DatabaseBlockedException
+    public Collection<Long> getIndexedRelationships( String indexName, String key, Object value )
+            throws DatabaseBlockedException
     {
 
-        Index<Relationship> index =  database.getRelationshipIndex( indexName );
+        Index<Relationship> index = database.getRelationshipIndex( indexName );
         Transaction tx = database.graph.beginTx();
         try
         {
@@ -292,7 +314,8 @@ public class GraphDbHelper
             }
             tx.success();
             return result;
-        } finally
+        }
+        finally
         {
             tx.finish();
         }
@@ -306,7 +329,8 @@ public class GraphDbHelper
         {
             index.add( database.graph.getRelationshipById( relationshipId ), key, value );
             tx.success();
-        } finally
+        }
+        finally
         {
             tx.finish();
         }
@@ -314,46 +338,55 @@ public class GraphDbHelper
 
     public String[] getNodeIndexes()
     {
-        return database.getIndexManager().nodeIndexNames();
+        return database.getIndexManager()
+                .nodeIndexNames();
     }
 
     public Index<Node> getNodeIndex( String indexName )
     {
-        return database.getIndexManager().forNodes( indexName );
+        return database.getIndexManager()
+                .forNodes( indexName );
     }
 
     public Index<Node> createNodeFullTextIndex( String named )
     {
-        return database.getIndexManager().forNodes( named, MapUtil.stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" ) );
+        return database.getIndexManager()
+                .forNodes( named, MapUtil.stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" ) );
     }
 
     public Index<Node> createNodeIndex( String named )
     {
-        return database.getIndexManager().forNodes( named );
+        return database.getIndexManager()
+                .forNodes( named );
     }
 
     public String[] getRelationshipIndexes()
     {
-        return database.getIndexManager().relationshipIndexNames();
+        return database.getIndexManager()
+                .relationshipIndexNames();
     }
 
     public long getReferenceNode()
     {
-        return database.graph.getReferenceNode().getId();
+        return database.graph.getReferenceNode()
+                .getId();
     }
 
     public Index<Relationship> getRelationshipIndex( String indexName )
     {
-        return database.getIndexManager().forRelationships( indexName );
+        return database.getIndexManager()
+                .forRelationships( indexName );
     }
 
     public Index<Relationship> createRelationshipFullTextIndex( String named )
     {
-        return database.getIndexManager().forRelationships( named, MapUtil.stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" ) );
+        return database.getIndexManager()
+                .forRelationships( named, MapUtil.stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" ) );
     }
 
     public Index<Relationship> createRelationshipIndex( String named )
     {
-        return database.getIndexManager().forRelationships( named );
+        return database.getIndexManager()
+                .forRelationships( named );
     }
 }

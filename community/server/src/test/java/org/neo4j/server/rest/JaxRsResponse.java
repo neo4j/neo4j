@@ -32,7 +32,7 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.core.util.StringKeyObjectValueIgnoreCaseMultivaluedMap;
 import com.sun.net.httpserver.Headers;
 
-@SuppressWarnings("restriction")
+@SuppressWarnings( "restriction" )
 public class JaxRsResponse extends Response
 {
 
@@ -59,7 +59,8 @@ public class JaxRsResponse extends Response
     public MultivaluedMap<String, Object> getMetadata()
     {
         MultivaluedMap<String, Object> metadata = new StringKeyObjectValueIgnoreCaseMultivaluedMap();
-        for ( Map.Entry<String, List<String>> header : jettyResponse.getHeaders().entrySet() )
+        for ( Map.Entry<String, List<String>> header : jettyResponse.getHeaders()
+                .entrySet() )
         {
             for ( Object value : header.getValue() )
             {
@@ -78,14 +79,15 @@ public class JaxRsResponse extends Response
 
     public <T> T getEntity( Class<T> asType )
     {
-        return jettyResponse.getEntity(asType);
+        return jettyResponse.getEntity( asType );
     }
 
     public URI getLocation() throws URISyntaxException
     {
-        return new URI(getHeaders().get( HttpHeaders.LOCATION).get(0));
+        return new URI( getHeaders().get( HttpHeaders.LOCATION )
+                .get( 0 ) );
     }
-    
+
     public void close()
     {
         jettyResponse.close();

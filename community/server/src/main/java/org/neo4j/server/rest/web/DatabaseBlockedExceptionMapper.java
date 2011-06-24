@@ -33,10 +33,14 @@ import org.neo4j.server.database.DatabaseBlockedException;
  * 
  */
 @Provider
-public class DatabaseBlockedExceptionMapper implements ExceptionMapper<DatabaseBlockedException> {
+public class DatabaseBlockedExceptionMapper implements ExceptionMapper<DatabaseBlockedException>
+{
 
-    public Response toResponse(DatabaseBlockedException e) {
-        return Response.status(Status.SERVICE_UNAVAILABLE).entity("Database is temporarily unavailable, please try again in a moment.").build();
+    public Response toResponse( DatabaseBlockedException e )
+    {
+        return Response.status( Status.SERVICE_UNAVAILABLE )
+                .entity( "Database is temporarily unavailable, please try again in a moment." )
+                .build();
     }
 
 }

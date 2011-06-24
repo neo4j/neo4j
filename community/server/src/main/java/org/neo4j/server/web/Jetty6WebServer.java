@@ -69,7 +69,8 @@ public class Jetty6WebServer implements WebServer
 
     private int tenThreadsPerProcessor()
     {
-        return 10 * Runtime.getRuntime().availableProcessors();
+        return 10 * Runtime.getRuntime()
+                .availableProcessors();
     }
 
     @Override
@@ -81,7 +82,7 @@ public class Jetty6WebServer implements WebServer
     @Override
     public void start()
     {
-        if (jetty == null)
+        if ( jetty == null )
         {
             throw new IllegalStateException( "Jetty not initialized." );
         }
@@ -98,30 +99,32 @@ public class Jetty6WebServer implements WebServer
     {
         SessionManager sm = new HashSessionManager();
 
-        final SortedSet<String> mountpoints = new TreeSet<String>(new Comparator<String>() {
-            @Override public int compare(final String o1, final String o2) {
-                return o2.compareTo(o1);
+        final SortedSet<String> mountpoints = new TreeSet<String>( new Comparator<String>()
+        {
+            @Override
+            public int compare( final String o1, final String o2 )
+            {
+                return o2.compareTo( o1 );
             }
-        });
+        } );
 
-        mountpoints.addAll(staticContent.keySet());
-        mountpoints.addAll(jaxRSPackages.keySet());
+        mountpoints.addAll( staticContent.keySet() );
+        mountpoints.addAll( jaxRSPackages.keySet() );
 
-        for (String contentKey : mountpoints)
+        for ( String contentKey : mountpoints )
         {
             final boolean isStatic = staticContent.containsKey( contentKey );
             final boolean isJaxrs = jaxRSPackages.containsKey( contentKey );
 
-            if (isStatic && isJaxrs)
+            if ( isStatic && isJaxrs )
             {
-                throw new RuntimeException(
-                        format( "content-key '%s' is mapped twice (static and jaxrs)", contentKey ) );
+                throw new RuntimeException( format( "content-key '%s' is mapped twice (static and jaxrs)", contentKey ) );
             }
-            else if (isStatic)
+            else if ( isStatic )
             {
                 loadStaticContent( sm, contentKey );
             }
-            else if (isJaxrs)
+            else if ( isJaxrs )
             {
                 loadJAXRSPackage( sm, contentKey );
             }
@@ -135,7 +138,7 @@ public class Jetty6WebServer implements WebServer
     @Override
     public void init()
     {
-        if (jetty == null)
+        if ( jetty == null )
         {
             jetty = new Server( jettyPort );
             jetty.setThreadPool( new QueuedThreadPool( jettyMaxThreads ) );
@@ -191,7 +194,8 @@ public class Jetty6WebServer implements WebServer
         ServletContainer container = new NeoServletContainer( server, server.getInjectables( packageNames ) );
         ServletHolder servletHolder = new ServletHolder( container );
         servletHolder.setInitParameter( "com.sun.jersey.config.property.packages", toCommaSeparatedList( packageNames ) );
-        servletHolder.setInitParameter( ResourceConfig.PROPERTY_CONTAINER_RESPONSE_FILTERS, AllowAjaxFilter.class.getName() );
+        servletHolder.setInitParameter( ResourceConfig.PROPERTY_CONTAINER_RESPONSE_FILTERS,
+                AllowAjaxFilter.class.getName() );
         log.debug( "Adding JAXRS packages %s at [%s]", packageNames, mountPoint );
 
         jaxRSPackages.put( mountPoint, servletHolder );
@@ -305,7 +309,8 @@ public class Jetty6WebServer implements WebServer
         return result.substring( 0, result.length() - 2 );
     }
 
-    @Override public Server getJetty()
+    @Override
+    public Server getJetty()
     {
         return jetty;
     }

@@ -98,9 +98,10 @@ public class JsonFormat extends RepresentationFormat
     {
         try
         {
-            return (List<Object>)JsonHelper.readJson( input );
+            return (List<Object>) JsonHelper.readJson( input );
         }
-        catch (ClassCastException ex ) {
+        catch ( ClassCastException ex )
+        {
             throw new BadInputException( ex );
         }
         catch ( JsonParseException ex )

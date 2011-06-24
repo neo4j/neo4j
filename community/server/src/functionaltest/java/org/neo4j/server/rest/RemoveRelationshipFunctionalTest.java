@@ -20,6 +20,7 @@
 package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
 
 import java.io.IOException;
 import java.net.URI;
@@ -34,7 +35,6 @@ import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
@@ -90,7 +90,7 @@ public class RemoveRelationshipFunctionalTest
 
     private ClientResponse sendDeleteRequest( URI requestUri )
     {
-        WebResource.Builder resource = Client.create().resource( requestUri )
+        WebResource.Builder resource = CLIENT.resource( requestUri )
                 .accept( MediaType.APPLICATION_JSON );
         ClientResponse response = resource.delete( ClientResponse.class );
         return response;

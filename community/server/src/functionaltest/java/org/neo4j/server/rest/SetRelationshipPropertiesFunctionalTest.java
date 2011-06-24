@@ -20,6 +20,7 @@
 package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
 
 import java.io.IOException;
 import java.net.URI;
@@ -41,7 +42,6 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.TestData;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class SetRelationshipPropertiesFunctionalTest
@@ -109,7 +109,7 @@ public class SetRelationshipPropertiesFunctionalTest
     @Test
     public void shouldReturn400WhenSendingCorruptJsonProperties()
     {
-        ClientResponse response = Client.create().resource( propertiesUri )
+        ClientResponse response = CLIENT.resource( propertiesUri )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
                 .entity( "this:::Is::notJSON}" )
@@ -124,7 +124,7 @@ public class SetRelationshipPropertiesFunctionalTest
         Map<String, Object> map = new HashMap<String, Object>();
         map.put( "jim", "tobias" );
 
-        ClientResponse response = Client.create().resource( badUri )
+        ClientResponse response = CLIENT.resource( badUri )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
                 .entity( JsonHelper.createJsonFrom( map ) )
@@ -135,7 +135,7 @@ public class SetRelationshipPropertiesFunctionalTest
 
     private ClientResponse updatePropertiesOnServer( final Map<String, Object> map ) throws JsonParseException
     {
-        return Client.create().resource( propertiesUri )
+        return CLIENT.resource( propertiesUri )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
                 .entity( JsonHelper.createJsonFrom( map ) )
@@ -166,7 +166,7 @@ public class SetRelationshipPropertiesFunctionalTest
     @Test
     public void shouldReturn400WhenSendingCorruptJsonProperty() throws Exception
     {
-        ClientResponse response = Client.create().resource( getPropertyUri( "foo" ) )
+        ClientResponse response = CLIENT.resource( getPropertyUri( "foo" ) )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
                 .entity( "this:::Is::notJSON}" )
@@ -178,7 +178,7 @@ public class SetRelationshipPropertiesFunctionalTest
     @Test
     public void shouldReturn404WhenPropertySentToANodeWhichDoesNotExist() throws Exception
     {
-        ClientResponse response = Client.create().resource( badUri.toString() + "/foo" )
+        ClientResponse response = CLIENT.resource( badUri.toString() + "/foo" )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
                 .entity( JsonHelper.createJsonFrom( "bar" ) )
@@ -189,7 +189,7 @@ public class SetRelationshipPropertiesFunctionalTest
 
     private ClientResponse setPropertyOnServer( final String key, final Object value ) throws Exception
     {
-        return Client.create().resource( getPropertyUri( key ) )
+        return CLIENT.resource( getPropertyUri( key ) )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
                 .entity( JsonHelper.createJsonFrom( value ) )

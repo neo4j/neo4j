@@ -37,8 +37,8 @@ import org.neo4j.kernel.Traversal;
 /**
  * This factory can instantiate or get {@link PruneEvaluator}s and
  * {@link ReturnFilter}s from a description. Either it returns built-in
- * evaluators, or instantiates wrappers around user-supplied scripts,
- * f.ex. javascript.
+ * evaluators, or instantiates wrappers around user-supplied scripts, f.ex.
+ * javascript.
  */
 abstract class EvaluatorFactory
 {
@@ -55,8 +55,7 @@ abstract class EvaluatorFactory
         }
         else
         {
-            return new ScriptedPruneEvaluator( scriptEngine( description ),
-                    (String) description.get( KEY_BODY ) );
+            return new ScriptedPruneEvaluator( scriptEngine( description ), (String) description.get( KEY_BODY ) );
         }
     }
 
@@ -68,8 +67,7 @@ abstract class EvaluatorFactory
         }
         else
         {
-            return new ScriptedReturnEvaluator( scriptEngine( description ),
-                    (String) description.get( KEY_BODY ) );
+            return new ScriptedReturnEvaluator( scriptEngine( description ), (String) description.get( KEY_BODY ) );
         }
     }
 
@@ -79,8 +77,7 @@ abstract class EvaluatorFactory
         return language.equals( BUILTIN );
     }
 
-    private static PruneEvaluator builtInPruneEvaluator(
-            Map<String, Object> description )
+    private static PruneEvaluator builtInPruneEvaluator( Map<String, Object> description )
     {
         String name = (String) description.get( KEY_NAME );
         // FIXME I don't like these hardcoded strings
@@ -148,8 +145,8 @@ abstract class EvaluatorFactory
         {
             try
             {
-                this.script.getContext().setAttribute( "position", position,
-                        ScriptContext.ENGINE_SCOPE );
+                this.script.getContext()
+                        .setAttribute( "position", position, ScriptContext.ENGINE_SCOPE );
                 return this.script.eval( body );
             }
             catch ( ScriptException e )
@@ -211,8 +208,7 @@ abstract class EvaluatorFactory
                     this.engine.setContext( context );
                     if ( this.engine instanceof Compilable )
                     {
-                        this.executor = new CompiledScriptExecutor(
-                                ((Compilable) engine).compile( body ), context );
+                        this.executor = new CompiledScriptExecutor( ( (Compilable) engine ).compile( body ), context );
                     }
                     else
                     {
@@ -242,8 +238,7 @@ abstract class EvaluatorFactory
         }
     }
 
-    private static class ScriptedReturnEvaluator extends ScriptedEvaluator implements
-            Predicate<Path>
+    private static class ScriptedReturnEvaluator extends ScriptedEvaluator implements Predicate<Path>
     {
         ScriptedReturnEvaluator( ScriptEngine engine, String body )
         {
@@ -252,7 +247,8 @@ abstract class EvaluatorFactory
 
         public boolean accept( Path position )
         {
-            return (Boolean) this.executor( position ).eval( position );
+            return (Boolean) this.executor( position )
+                    .eval( position );
         }
     }
 }

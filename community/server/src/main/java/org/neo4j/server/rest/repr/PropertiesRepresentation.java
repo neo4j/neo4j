@@ -34,7 +34,9 @@ public final class PropertiesRepresentation extends MappingRepresentation
 
     public boolean isEmpty()
     {
-        return !entity.getPropertyKeys().iterator().hasNext();
+        return !entity.getPropertyKeys()
+                .iterator()
+                .hasNext();
     }
 
     @Override
@@ -147,8 +149,7 @@ public final class PropertiesRepresentation extends MappingRepresentation
 
         @Override
         @SuppressWarnings( "boxing" )
-        protected Void dispatchShortArrayProperty( PropertyArray<short[], Short> array,
-                String param )
+        protected Void dispatchShortArrayProperty( PropertyArray<short[], Short> array, String param )
         {
             ListWriter list = writer.newList( RepresentationType.SHORT, param );
             for ( Short s : array )
@@ -161,8 +162,7 @@ public final class PropertiesRepresentation extends MappingRepresentation
 
         @Override
         @SuppressWarnings( "boxing" )
-        protected Void dispatchCharacterArrayProperty( PropertyArray<char[], Character> array,
-                String param )
+        protected Void dispatchCharacterArrayProperty( PropertyArray<char[], Character> array, String param )
         {
             ListWriter list = writer.newList( RepresentationType.CHAR, param );
             for ( Character c : array )
@@ -175,8 +175,7 @@ public final class PropertiesRepresentation extends MappingRepresentation
 
         @Override
         @SuppressWarnings( "boxing" )
-        protected Void dispatchIntegerArrayProperty( PropertyArray<int[], Integer> array,
-                String param )
+        protected Void dispatchIntegerArrayProperty( PropertyArray<int[], Integer> array, String param )
         {
             ListWriter list = writer.newList( RepresentationType.INTEGER, param );
             for ( Integer i : array )
@@ -215,8 +214,7 @@ public final class PropertiesRepresentation extends MappingRepresentation
 
         @Override
         @SuppressWarnings( "boxing" )
-        protected Void dispatchDoubleArrayProperty( PropertyArray<double[], Double> array,
-                String param )
+        protected Void dispatchDoubleArrayProperty( PropertyArray<double[], Double> array, String param )
         {
             ListWriter list = writer.newList( RepresentationType.DOUBLE, param );
             for ( Double d : array )
@@ -229,8 +227,7 @@ public final class PropertiesRepresentation extends MappingRepresentation
 
         @Override
         @SuppressWarnings( "boxing" )
-        protected Void dispatchBooleanArrayProperty( PropertyArray<boolean[], Boolean> array,
-                String param )
+        protected Void dispatchBooleanArrayProperty( PropertyArray<boolean[], Boolean> array, String param )
         {
             ListWriter list = writer.newList( RepresentationType.BOOLEAN, param );
             for ( Boolean z : array )

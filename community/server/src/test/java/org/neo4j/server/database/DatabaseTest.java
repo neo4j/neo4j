@@ -38,17 +38,18 @@ import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellLobby;
 
-public class DatabaseTest {
+public class DatabaseTest
+{
 
     private File databaseDirectory;
     private Database theDatabase;
     private boolean deletionFailureOk;
 
     @Before
-    public void setup() throws Exception {
+    public void setup() throws Exception
+    {
         databaseDirectory = createTempDir();
-        theDatabase = new Database( EMBEDDED_GRAPH_DATABASE_FACTORY,
-                databaseDirectory.getAbsolutePath() );
+        theDatabase = new Database( EMBEDDED_GRAPH_DATABASE_FACTORY, databaseDirectory.getAbsolutePath() );
     }
 
     @After
@@ -62,7 +63,8 @@ public class DatabaseTest {
         }
         catch ( IOException e )
         {
-            // TODO Removed this when EmbeddedGraphDatabase startup failures closes its
+            // TODO Removed this when EmbeddedGraphDatabase startup failures
+            // closes its
             // files properly.
             if ( !deletionFailureOk )
             {
@@ -72,49 +74,54 @@ public class DatabaseTest {
     }
 
     @Test
-    public void shouldLogOnSuccessfulStartup() {
-        InMemoryAppender appender = new InMemoryAppender(Database.log);
+    public void shouldLogOnSuccessfulStartup()
+    {
+        InMemoryAppender appender = new InMemoryAppender( Database.log );
 
         theDatabase.startup();
 
-        assertThat(appender.toString(), containsString("Successfully started database"));
+        assertThat( appender.toString(), containsString( "Successfully started database" ) );
     }
 
     @Test
-    public void shouldShutdownCleanly() {
-        InMemoryAppender appender = new InMemoryAppender(Database.log);
+    public void shouldShutdownCleanly()
+    {
+        InMemoryAppender appender = new InMemoryAppender( Database.log );
 
         theDatabase.startup();
         theDatabase.shutdown();
 
-        assertThat(appender.toString(), containsString("Successfully shutdown database"));
+        assertThat( appender.toString(), containsString( "Successfully shutdown database" ) );
     }
 
-    @Test(expected = TransactionFailureException.class)
-    public void shouldComplainIfDatabaseLocationIsAlreadyInUse() {
+    @Test( expected = TransactionFailureException.class )
+    public void shouldComplainIfDatabaseLocationIsAlreadyInUse()
+    {
         deletionFailureOk = true;
         new Database( EMBEDDED_GRAPH_DATABASE_FACTORY, theDatabase.getLocation() );
     }
-    
+
     @Test
     public void connectWithShellOnDefaultPortWhenNoShellConfigSupplied() throws Exception
     {
-        ShellLobby.newClient().shutdown();
+        ShellLobby.newClient()
+                .shutdown();
     }
-    
+
     @Test
     public void shouldBeAbleToOverrideShellConfig() throws Exception
     {
         int customPort = findFreeShellPortToUse( 8881 );
         File tempDir = createTempDir();
-        Database otherDb = new Database( EMBEDDED_GRAPH_DATABASE_FACTORY,
-                tempDir.getAbsolutePath(), stringMap( ENABLE_REMOTE_SHELL, "port=" + customPort ) );
+        Database otherDb = new Database( EMBEDDED_GRAPH_DATABASE_FACTORY, tempDir.getAbsolutePath(), stringMap(
+                ENABLE_REMOTE_SHELL, "port=" + customPort ) );
         otherDb.startup();
-        
+
         // Try to connect with a shell client to that custom port.
         // Throws exception if unable to connect
-        ShellLobby.newClient( customPort ).shutdown();
-        
+        ShellLobby.newClient( customPort )
+                .shutdown();
+
         otherDb.shutdown();
         FileUtils.forceDelete( tempDir );
     }
@@ -126,7 +133,8 @@ public class DatabaseTest {
         {
             try
             {
-                ShellLobby.newClient( startingPort ).shutdown();
+                ShellLobby.newClient( startingPort )
+                        .shutdown();
                 startingPort++;
             }
             catch ( ShellException e )

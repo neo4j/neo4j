@@ -27,7 +27,7 @@ public class WeightedPathRepresentation extends PathRepresentation<WeightedPath>
     {
         super( path );
     }
-    
+
     @Mapping( "weight" )
     public ValueRepresentation weight()
     {

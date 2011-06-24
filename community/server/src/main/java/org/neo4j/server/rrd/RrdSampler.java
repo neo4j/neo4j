@@ -30,7 +30,8 @@ import org.rrd4j.core.Sample;
  * Manages sampling the state of the database and storing the samples in a round
  * robin database instance.
  */
-public class RrdSampler {
+public class RrdSampler
+{
     /**
      * The current sampling object. This is created when calling #start().
      */
@@ -40,7 +41,8 @@ public class RrdSampler {
     /**
      * Keep track of whether to run the update task or not.
      */
-    protected RrdSampler(Sample sample, Sampleable... samplables) throws MalformedObjectNameException {
+    protected RrdSampler( Sample sample, Sampleable... samplables ) throws MalformedObjectNameException
+    {
         this.sample = sample;
         this.samplables = samplables;
     }
@@ -50,19 +52,26 @@ public class RrdSampler {
      * state. Data sources to work with are defined in {@link
      * RrdManager#getRrdDB()}
      */
-    public Sample updateSample() {
-        try {
-            sample.setTime(new Date().getTime());
-            for (Sampleable samplable : samplables) {
-                sample.setValue(samplable.getName(), samplable.getValue());
+    public Sample updateSample()
+    {
+        try
+        {
+            sample.setTime( new Date().getTime() );
+            for ( Sampleable samplable : samplables )
+            {
+                sample.setValue( samplable.getName(), samplable.getValue() );
             }
 
             sample.update();
             return sample;
-        } catch(UnableToSampleException e) {
+        }
+        catch ( UnableToSampleException e )
+        {
             return sample;
-        } catch (IOException e) {
-            throw new RuntimeException("IO Error trying to access round robin database path. See nested exception.", e);
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( "IO Error trying to access round robin database path. See nested exception.", e );
         }
     }
 }

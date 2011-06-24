@@ -22,14 +22,16 @@ package org.neo4j.server;
 /**
  * Thrown during start-up of the server, with an explicit error code.
  */
-@SuppressWarnings("serial")
+@SuppressWarnings( "serial" )
 public class ServerStartupException extends Exception
 {
     private Integer errorCode;
 
     /**
      * Creates a new exception with an message and error code.
-     * @param message sensible explanation about the exception, excluding the error code value, which will be automatically appended
+     * 
+     * @param message sensible explanation about the exception, excluding the
+     *            error code value, which will be automatically appended
      * @param errorCode unique identifying number for the error
      */
     public ServerStartupException( String message, Integer errorCode )

@@ -27,7 +27,7 @@ import org.apache.commons.configuration.AbstractConfiguration;
 
 public class MapBasedConfiguration extends AbstractConfiguration
 {
-    
+
     private Map<String, Object> config = new HashMap<String, Object>();
 
     @Override
@@ -51,7 +51,8 @@ public class MapBasedConfiguration extends AbstractConfiguration
     @Override
     public Iterator<String> getKeys()
     {
-        return config.keySet().iterator();
+        return config.keySet()
+                .iterator();
     }
 
     @Override

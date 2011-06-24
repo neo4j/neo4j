@@ -41,11 +41,11 @@ public class RootService
 
     private AdvertisableService[] services()
     {
-        AdvertisableService console = new ConsoleService( (SessionFactory)null, null, null );
+        AdvertisableService console = new ConsoleService( (SessionFactory) null, null, null );
         AdvertisableService jmx = new JmxService( null, null );
         MonitorService monitor = new MonitorService( null, null );
 
-        return new AdvertisableService[]{console, jmx, monitor};
+        return new AdvertisableService[] { console, jmx, monitor };
     }
 
 }

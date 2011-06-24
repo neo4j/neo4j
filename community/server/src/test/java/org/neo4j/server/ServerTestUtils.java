@@ -65,7 +65,8 @@ public class ServerTestUtils
         return createTempPropertyFile( createTempDir() );
     }
 
-    public static void writePropertiesToFile( String outerPropertyName, Map<String, String> properties, File propertyFile )
+    public static void writePropertiesToFile( String outerPropertyName, Map<String, String> properties,
+            File propertyFile )
     {
         writePropertyToFile( outerPropertyName, asOneLine( properties ), propertyFile );
     }
@@ -75,7 +76,7 @@ public class ServerTestUtils
         StringBuilder builder = new StringBuilder();
         for ( Map.Entry<String, String> property : properties.entrySet() )
         {
-            builder.append( (builder.length() > 0 ? "," : "") );
+            builder.append( ( builder.length() > 0 ? "," : "" ) );
             builder.append( property.getKey() + "=" + property.getValue() );
         }
         return builder.toString();
@@ -88,8 +89,7 @@ public class ServerTestUtils
         storeProperties( propertyFile, properties );
     }
 
-    private static void storeProperties( File propertyFile,
-        Properties properties )
+    private static void storeProperties( File propertyFile, Properties properties )
     {
         OutputStream out = null;
         try

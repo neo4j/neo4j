@@ -24,8 +24,7 @@ import javax.ws.rs.ext.Provider;
 import com.sun.jersey.api.core.HttpContext;
 
 @Provider
-public class DatabaseProvider extends
-        AbstractInjectableProvider<Database>
+public class DatabaseProvider extends AbstractInjectableProvider<Database>
 {
     public Database db;
 

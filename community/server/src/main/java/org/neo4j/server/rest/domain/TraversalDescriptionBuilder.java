@@ -49,15 +49,16 @@ public class TraversalDescriptionBuilder
         }
         catch ( NoClassDefFoundError e )
         {
-            // This one can happen if you run on Java 5, but haven't included the
+            // This one can happen if you run on Java 5, but haven't included
+            // the
             // backported javax.script jar file(s) on the classpath.
             throw new EvaluationException( e );
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private static TraversalDescription describeReturnFilter(
-            TraversalDescription result, Map<String, Object> description )
+    @SuppressWarnings( "unchecked" )
+    private static TraversalDescription describeReturnFilter( TraversalDescription result,
+            Map<String, Object> description )
     {
         Object returnDescription = description.get( "return_filter" );
         if ( returnDescription != null )
@@ -72,29 +73,28 @@ public class TraversalDescriptionBuilder
         return result;
     }
 
-    @SuppressWarnings("unchecked")
-    private static TraversalDescription describePruneEvaluator(
-            TraversalDescription result, Map<String, Object> description )
+    @SuppressWarnings( "unchecked" )
+    private static TraversalDescription describePruneEvaluator( TraversalDescription result,
+            Map<String, Object> description )
     {
         Object pruneDescription = description.get( "prune_evaluator" );
         if ( pruneDescription != null )
         {
             result = result.prune( EvaluatorFactory.pruneEvaluator( (Map) pruneDescription ) );
         }
-        
+
         Object maxDepth = description.get( "max_depth" );
         maxDepth = maxDepth != null || pruneDescription != null ? maxDepth : 1;
         if ( maxDepth != null )
         {
-            result = result.prune( Traversal.pruneAfterDepth(
-                    ((Number) maxDepth).intValue() ) );
+            result = result.prune( Traversal.pruneAfterDepth( ( (Number) maxDepth ).intValue() ) );
         }
         return result;
     }
 
-    @SuppressWarnings("unchecked")
-    private static TraversalDescription describeRelationships(
-            TraversalDescription result, Map<String, Object> description )
+    @SuppressWarnings( "unchecked" )
+    private static TraversalDescription describeRelationships( TraversalDescription result,
+            Map<String, Object> description )
     {
         Object relationshipsDescription = description.get( "relationships" );
         if ( relationshipsDescription != null )
@@ -108,23 +108,21 @@ public class TraversalDescriptionBuilder
             {
                 pairDescriptions = Arrays.asList( relationshipsDescription );
             }
-            
+
             for ( Object pairDescription : pairDescriptions )
             {
                 Map map = (Map) pairDescription;
                 String name = (String) map.get( "type" );
                 RelationshipType type = DynamicRelationshipType.withName( name );
                 String directionName = (String) map.get( "direction" );
-                result = directionName == null ? result.relationships( type ) :
-                        result.relationships( type, stringToEnum( directionName,
-                                RelationshipDirection.class, true ).internal );
+                result = directionName == null ? result.relationships( type ) : result.relationships( type,
+                        stringToEnum( directionName, RelationshipDirection.class, true ).internal );
             }
         }
         return result;
     }
 
-    private static TraversalDescription describeUniqueness(
-            TraversalDescription result, Map<String, Object> description )
+    private static TraversalDescription describeUniqueness( TraversalDescription result, Map<String, Object> description )
     {
         Object uniquenessDescription = description.get( "uniqueness" );
         if ( uniquenessDescription != null )
@@ -141,15 +139,14 @@ public class TraversalDescriptionBuilder
             {
                 name = (String) uniquenessDescription;
             }
-            org.neo4j.kernel.Uniqueness uniqueness = stringToEnum( enumifyName( name ), org.neo4j.kernel.Uniqueness.class, true );
-            result = value == null ? result.uniqueness( uniqueness ) :
-                    result.uniqueness( uniqueness, value );
+            org.neo4j.kernel.Uniqueness uniqueness = stringToEnum( enumifyName( name ),
+                    org.neo4j.kernel.Uniqueness.class, true );
+            result = value == null ? result.uniqueness( uniqueness ) : result.uniqueness( uniqueness, value );
         }
         return result;
     }
 
-    private static TraversalDescription describeOrder(
-            TraversalDescription result, Map<String, Object> description )
+    private static TraversalDescription describeOrder( TraversalDescription result, Map<String, Object> description )
     {
         String orderDescription = (String) description.get( "order" );
         if ( orderDescription != null )
@@ -169,18 +166,18 @@ public class TraversalDescriptionBuilder
         return result;
     }
 
-    private static <T extends Enum<T>> T stringToEnum( String name, Class<T> enumClass,
-            boolean fuzzyMatch )
+    private static <T extends Enum<T>> T stringToEnum( String name, Class<T> enumClass, boolean fuzzyMatch )
     {
         if ( name == null )
         {
             return null;
         }
-        
-//        name = enumifyName( name );
+
+        // name = enumifyName( name );
         for ( T candidate : enumClass.getEnumConstants() )
         {
-            if ( candidate.name().equals( name ) )
+            if ( candidate.name()
+                    .equals( name ) )
             {
                 return candidate;
             }
@@ -189,18 +186,19 @@ public class TraversalDescriptionBuilder
         {
             for ( T candidate : enumClass.getEnumConstants() )
             {
-                if ( candidate.name().startsWith( name ) )
+                if ( candidate.name()
+                        .startsWith( name ) )
                 {
                     return candidate;
                 }
             }
         }
-        throw new RuntimeException( "Unregognized " + enumClass.getSimpleName() + " '" +
-                name + "'" );
+        throw new RuntimeException( "Unregognized " + enumClass.getSimpleName() + " '" + name + "'" );
     }
 
     private static String enumifyName( String name )
     {
-        return name.replaceAll( " ", "_" ).toUpperCase();
+        return name.replaceAll( " ", "_" )
+                .toUpperCase();
     }
 }

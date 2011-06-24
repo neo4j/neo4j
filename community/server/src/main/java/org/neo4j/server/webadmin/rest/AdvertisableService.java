@@ -19,7 +19,8 @@
  */
 package org.neo4j.server.webadmin.rest;
 
-public interface AdvertisableService {
+public interface AdvertisableService
+{
 
     String getName();
 

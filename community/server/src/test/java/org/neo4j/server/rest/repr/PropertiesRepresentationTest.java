@@ -41,8 +41,7 @@ public class PropertiesRepresentationTest extends RepresentationTestBase
     {
         Map<String, Object> values = new HashMap<String, Object>();
         values.put( "foo", "bar" );
-        Map<String, Object> serialized = serialize( new PropertiesRepresentation(
-                container( values ) ) );
+        Map<String, Object> serialized = serialize( new PropertiesRepresentation( container( values ) ) );
         assertEquals( "bar", serialized.get( "foo" ) );
     }
 
@@ -85,8 +84,7 @@ public class PropertiesRepresentationTest extends RepresentationTestBase
     @Test
     public void shouldBeAbleToSignalEmptiness()
     {
-        PropertiesRepresentation properties = new PropertiesRepresentation(
-                container( new HashMap<String, Object>() ) );
+        PropertiesRepresentation properties = new PropertiesRepresentation( container( new HashMap<String, Object>() ) );
         Map<String, Object> values = new HashMap<String, Object>();
         values.put( "key", "value" );
         assertTrue( properties.isEmpty() );
@@ -97,8 +95,7 @@ public class PropertiesRepresentationTest extends RepresentationTestBase
     private void assertEqualContent( List<?> expected, List<?> actual )
     {
         assertEquals( expected.size(), actual.size() );
-        for ( Iterator<?> ex = expected.iterator(), ac = actual.iterator(); ex.hasNext()
-                                                                            && ac.hasNext(); )
+        for ( Iterator<?> ex = expected.iterator(), ac = actual.iterator(); ex.hasNext() && ac.hasNext(); )
         {
             assertEquals( ex.next(), ac.next() );
         }

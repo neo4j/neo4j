@@ -22,6 +22,7 @@ package org.neo4j.server.rest;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -40,7 +41,6 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.formats.CompactJsonFormat;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class CompactJsonFunctionalTest
@@ -108,7 +108,7 @@ public class CompactJsonFunctionalTest
     @Test
     public void shouldGetThomasAndersonDirectly()
     {
-        ClientResponse response = Client.create().resource( functionalTestHelper.nodeUri( thomasAnderson ) )
+        ClientResponse response = CLIENT.resource( functionalTestHelper.nodeUri( thomasAnderson ) )
                 .accept( CompactJsonFormat.MEDIA_TYPE )
                 .get( ClientResponse.class );
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );

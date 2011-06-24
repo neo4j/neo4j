@@ -65,19 +65,23 @@ public class GremlinResultHook extends Closure
         }
         else if ( result instanceof Object[] )
         {
-            itty = Arrays.asList( (Object[])result ).iterator();
+            itty = Arrays.asList( (Object[]) result )
+                    .iterator();
         }
         else if ( result instanceof Map )
         {
-            itty = ( (Map) result ).entrySet().iterator();
+            itty = ( (Map) result ).entrySet()
+                    .iterator();
         }
-        else if ( result == null)
+        else if ( result == null )
         {
-            itty = Collections.singleton( "" ).iterator();
+            itty = Collections.singleton( "" )
+                    .iterator();
         }
         else
         {
-            itty = Collections.singleton( result ).iterator();
+            itty = Collections.singleton( result )
+                    .iterator();
         }
 
         while ( itty.hasNext() )

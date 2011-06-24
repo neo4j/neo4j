@@ -21,6 +21,7 @@ package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -40,7 +41,6 @@ import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
@@ -64,12 +64,12 @@ public class GetRelationshipPropertiesFunctionalTest
     public void setupTheDatabase()
     {
         ServerHelper.cleanTheDatabase( server );
-        
+
         long relationship = helper.createRelationship( "LIKES" );
         Map<String, Object> map = new HashMap<String, Object>();
         map.put( "foo", "bar" );
         helper.setRelationshipProperties( relationship, map );
-        baseRelationshipUri = functionalTestHelper.dataUri() + "relationship/" + relationship + "/properties/"; 
+        baseRelationshipUri = functionalTestHelper.dataUri() + "relationship/" + relationship + "/properties/";
     }
 
     @AfterClass
@@ -77,14 +77,15 @@ public class GetRelationshipPropertiesFunctionalTest
     {
         server.stop();
     }
- 
-    
+
     @Test
     public void shouldGet204ForNoProperties() throws DatabaseBlockedException
     {
         long relId = helper.createRelationship( "LIKES" );
-        WebResource resource = Client.create().resource( functionalTestHelper.dataUri() + "relationship/" + relId + "/properties" );
-        ClientResponse response = resource.accept( MediaType.APPLICATION_JSON ).get( ClientResponse.class );
+        WebResource resource = CLIENT.resource( functionalTestHelper.dataUri() + "relationship/" + relId
+                                                + "/properties" );
+        ClientResponse response = resource.accept( MediaType.APPLICATION_JSON )
+                .get( ClientResponse.class );
         assertEquals( 204, response.getStatus() );
         response.close();
     }
@@ -94,18 +95,24 @@ public class GetRelationshipPropertiesFunctionalTest
     {
         long relId = helper.createRelationship( "LIKES" );
         helper.setRelationshipProperties( relId, Collections.<String, Object>singletonMap( "foo", "bar" ) );
-        WebResource resource = Client.create().resource( functionalTestHelper.dataUri() + "relationship/" + relId + "/properties" );
-        ClientResponse response = resource.type( MediaType.APPLICATION_FORM_URLENCODED ).accept( MediaType.APPLICATION_JSON ).get( ClientResponse.class );
+        WebResource resource = CLIENT.resource( functionalTestHelper.dataUri() + "relationship/" + relId
+                                                + "/properties" );
+        ClientResponse response = resource.type( MediaType.APPLICATION_FORM_URLENCODED )
+                .accept( MediaType.APPLICATION_JSON )
+                .get( ClientResponse.class );
         assertEquals( 200, response.getStatus() );
-        assertNotNull( response.getHeaders().get( "Content-Length" ) );
+        assertNotNull( response.getHeaders()
+                .get( "Content-Length" ) );
         response.close();
     }
 
     @Test
     public void shouldGet404ForPropertiesOnNonExistentRelationship()
     {
-        WebResource resource = Client.create().resource( functionalTestHelper.dataUri() + "relationship/999999/properties" );
-        ClientResponse response = resource.type( MediaType.APPLICATION_FORM_URLENCODED ).accept( MediaType.APPLICATION_JSON ).get( ClientResponse.class );
+        WebResource resource = CLIENT.resource( functionalTestHelper.dataUri() + "relationship/999999/properties" );
+        ClientResponse response = resource.type( MediaType.APPLICATION_FORM_URLENCODED )
+                .accept( MediaType.APPLICATION_JSON )
+                .get( ClientResponse.class );
         assertEquals( 404, response.getStatus() );
         response.close();
     }
@@ -115,8 +122,11 @@ public class GetRelationshipPropertiesFunctionalTest
     {
         long relId = helper.createRelationship( "LIKES" );
         helper.setRelationshipProperties( relId, Collections.<String, Object>singletonMap( "foo", "bar" ) );
-        WebResource resource = Client.create().resource( functionalTestHelper.dataUri() + "relationship/" + relId + "/properties" );
-        ClientResponse response = resource.type( MediaType.APPLICATION_FORM_URLENCODED ).accept( MediaType.APPLICATION_JSON ).get( ClientResponse.class );
+        WebResource resource = CLIENT.resource( functionalTestHelper.dataUri() + "relationship/" + relId
+                                                + "/properties" );
+        ClientResponse response = resource.type( MediaType.APPLICATION_FORM_URLENCODED )
+                .accept( MediaType.APPLICATION_JSON )
+                .get( ClientResponse.class );
         assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
         response.close();
     }
@@ -129,8 +139,9 @@ public class GetRelationshipPropertiesFunctionalTest
     @Test
     public void shouldGet404ForNoProperty()
     {
-        WebResource resource = Client.create().resource( getPropertyUri( "baz" ) );
-        ClientResponse response = resource.accept( MediaType.APPLICATION_JSON ).get( ClientResponse.class );
+        WebResource resource = CLIENT.resource( getPropertyUri( "baz" ) );
+        ClientResponse response = resource.accept( MediaType.APPLICATION_JSON )
+                .get( ClientResponse.class );
         assertEquals( 404, response.getStatus() );
         response.close();
     }
@@ -139,8 +150,9 @@ public class GetRelationshipPropertiesFunctionalTest
     public void shouldGet200ForProperty()
     {
         String propertyUri = getPropertyUri( "foo" );
-        WebResource resource = Client.create().resource( propertyUri );
-        ClientResponse response = resource.accept( MediaType.APPLICATION_JSON ).get( ClientResponse.class );
+        WebResource resource = CLIENT.resource( propertyUri );
+        ClientResponse response = resource.accept( MediaType.APPLICATION_JSON )
+                .get( ClientResponse.class );
         assertEquals( 200, response.getStatus() );
         response.close();
     }
@@ -149,17 +161,19 @@ public class GetRelationshipPropertiesFunctionalTest
     public void shouldGet404ForNonExistingRelationship()
     {
         String uri = functionalTestHelper.dataUri() + "relationship/999999/properties/foo";
-        WebResource resource = Client.create().resource( uri );
-        ClientResponse response = resource.accept( MediaType.APPLICATION_JSON ).get( ClientResponse.class );
+        WebResource resource = CLIENT.resource( uri );
+        ClientResponse response = resource.accept( MediaType.APPLICATION_JSON )
+                .get( ClientResponse.class );
         assertEquals( 404, response.getStatus() );
         response.close();
-   }
+    }
 
     @Test
     public void shouldBeValidJSONOnResponse() throws JsonParseException
     {
-        WebResource resource = Client.create().resource( getPropertyUri( "foo" ) );
-        ClientResponse response = resource.accept( MediaType.APPLICATION_JSON ).get( ClientResponse.class );
+        WebResource resource = CLIENT.resource( getPropertyUri( "foo" ) );
+        ClientResponse response = resource.accept( MediaType.APPLICATION_JSON )
+                .get( ClientResponse.class );
         assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
         assertNotNull( JsonHelper.createJsonFrom( response.getEntity( String.class ) ) );
         response.close();

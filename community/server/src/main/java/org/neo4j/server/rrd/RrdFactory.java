@@ -39,25 +39,21 @@ public class RrdFactory
     public static final int STEP_SIZE = 3000;
     public static final int STEPS_PER_ARCHIVE = 750;
     private static final String RRD_THREAD_NAME = "Statistics Gatherer";
-    
+
     private final Configuration config;
-    private Logger log = Logger.getLogger(RrdFactory.class);
-    
+    private Logger log = Logger.getLogger( RrdFactory.class );
+
     public RrdFactory( Configuration config )
     {
 
         this.config = config;
     }
 
-    public RrdDb createRrdDbAndSampler( Database db,
-                                        JobScheduler scheduler ) throws MalformedObjectNameException, IOException
+    public RrdDb createRrdDbAndSampler( Database db, JobScheduler scheduler ) throws MalformedObjectNameException,
+            IOException
     {
-        Sampleable[] sampleables = new Sampleable[]{
-                new MemoryUsedSampleable(),
-                new NodeIdsInUseSampleable( db ),
-                new PropertyCountSampleable( db ),
-                new RelationshipCountSampleable( db )
-        };
+        Sampleable[] sampleables = new Sampleable[] { new MemoryUsedSampleable(), new NodeIdsInUseSampleable( db ),
+                new PropertyCountSampleable( db ), new RelationshipCountSampleable( db ) };
 
         String basePath = config.getString( Configurator.RRDB_LOCATION_PROPERTY_KEY, getDefaultDirectory( db.graph ) );
         RrdDb rrdb = createRrdb( basePath, STEP_SIZE, STEPS_PER_ARCHIVE, sampleables );
@@ -73,8 +69,8 @@ public class RrdFactory
         return new File( db.getStoreDir(), "rrd" ).getAbsolutePath();
     }
 
-    protected RrdDb createRrdb( String rrdPath, int stepSize, int stepsPerArchive,
-                                Sampleable... sampleables ) throws IOException
+    protected RrdDb createRrdb( String rrdPath, int stepSize, int stepsPerArchive, Sampleable... sampleables )
+            throws IOException
     {
         if ( !new File( rrdPath ).exists() )
         {
@@ -82,25 +78,33 @@ public class RrdFactory
             defineDataSources( stepSize, rrdDef, sampleables );
             addArchives( stepsPerArchive, rrdDef );
             return new RrdDb( rrdDef );
-        } else
+        }
+        else
         {
-        	try {
-        		return new RrdDb( rrdPath );
-        	} catch(IOException e) {
-        		if(e.getMessage().startsWith("Invalid file header.")) 
-        		{
-        			// RRD file has become corrupt
-        			File rrdFile = new File(rrdPath);
-        			if(rrdFile.canWrite()) {
-        				rrdFile.delete();
-        				log.error("Deleted corrupt RRDB statistics logging file.");
-        				return createRrdb(rrdPath, stepSize, stepsPerArchive, sampleables);
-        			}
-        			
-        			throw new IOException("RRD file ['"+rrdFile.getAbsolutePath()+"'] has become corrupted, but I do not have write permissions to recreate it.", e);
-        		} 
-        		throw e;
-        	}
+            try
+            {
+                return new RrdDb( rrdPath );
+            }
+            catch ( IOException e )
+            {
+                if ( e.getMessage()
+                        .startsWith( "Invalid file header." ) )
+                {
+                    // RRD file has become corrupt
+                    File rrdFile = new File( rrdPath );
+                    if ( rrdFile.canWrite() )
+                    {
+                        rrdFile.delete();
+                        log.error( "Deleted corrupt RRDB statistics logging file." );
+                        return createRrdb( rrdPath, stepSize, stepsPerArchive, sampleables );
+                    }
+
+                    throw new IOException(
+                            "RRD file ['" + rrdFile.getAbsolutePath()
+                                    + "'] has become corrupted, but I do not have write permissions to recreate it.", e );
+                }
+                throw e;
+            }
         }
     }
 
@@ -137,7 +141,7 @@ public class RrdFactory
     private static RrdDef createRrdDb( String inDirectory, int stepSize )
     {
         RrdDef rrdDef = new RrdDef( inDirectory, stepSize );
-        //rrdDef.setVersion( 2 );
+        // rrdDef.setVersion( 2 );
         return rrdDef;
     }
 }

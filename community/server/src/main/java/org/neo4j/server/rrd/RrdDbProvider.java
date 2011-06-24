@@ -29,17 +29,17 @@ import com.sun.jersey.api.core.HttpContext;
 @Provider
 public class RrdDbProvider extends AbstractInjectableProvider<RrdDb>
 {
-	private RrdDb rrdDb;
+    private RrdDb rrdDb;
 
-	public RrdDbProvider(RrdDb rrdDb)
-	{
-		super(RrdDb.class);
-		this.rrdDb = rrdDb;
-	}
+    public RrdDbProvider( RrdDb rrdDb )
+    {
+        super( RrdDb.class );
+        this.rrdDb = rrdDb;
+    }
 
-	@Override
-	public RrdDb getValue(HttpContext c)
-	{
-		return rrdDb;
-	}
+    @Override
+    public RrdDb getValue( HttpContext c )
+    {
+        return rrdDb;
+    }
 }

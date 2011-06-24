@@ -30,39 +30,45 @@ import org.junit.Test;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.Configurator;
 
-public class ConfigFileMustBePresentRuleTest {
+public class ConfigFileMustBePresentRuleTest
+{
     @Test
-    public void shouldFailIfThereIsNoSystemPropertyForConfigFile() {
+    public void shouldFailIfThereIsNoSystemPropertyForConfigFile()
+    {
         ConfigFileMustBePresentRule rule = new ConfigFileMustBePresentRule();
-        assertFalse(rule.execute(propertiesWithoutConfigFileLocation()));
-    }
-    
-    @Test
-    public void shouldFailIfThereIsNoConfigFileWhereTheSystemPropertyPoints() throws IOException {
-        ConfigFileMustBePresentRule rule = new ConfigFileMustBePresentRule();
-        File tempFile = ServerTestUtils.createTempPropertyFile();
-        tempFile.delete();
-        
-        assertFalse(rule.execute(propertiesWithConfigFileLocation(tempFile)));
+        assertFalse( rule.execute( propertiesWithoutConfigFileLocation() ) );
     }
 
     @Test
-    public void shouldPassIfThereIsAConfigFileWhereTheSystemPropertyPoints() throws IOException {
-        File propertyFile = ServerTestUtils.createTempPropertyFile();
-        ServerTestUtils.writePropertyToFile(Configurator.DATABASE_LOCATION_PROPERTY_KEY, "/tmp/foo.db", propertyFile);
-        
+    public void shouldFailIfThereIsNoConfigFileWhereTheSystemPropertyPoints() throws IOException
+    {
         ConfigFileMustBePresentRule rule = new ConfigFileMustBePresentRule();
-        assertTrue(rule.execute(propertiesWithConfigFileLocation(propertyFile)));
+        File tempFile = ServerTestUtils.createTempPropertyFile();
+        tempFile.delete();
+
+        assertFalse( rule.execute( propertiesWithConfigFileLocation( tempFile ) ) );
+    }
+
+    @Test
+    public void shouldPassIfThereIsAConfigFileWhereTheSystemPropertyPoints() throws IOException
+    {
+        File propertyFile = ServerTestUtils.createTempPropertyFile();
+        ServerTestUtils.writePropertyToFile( Configurator.DATABASE_LOCATION_PROPERTY_KEY, "/tmp/foo.db", propertyFile );
+
+        ConfigFileMustBePresentRule rule = new ConfigFileMustBePresentRule();
+        assertTrue( rule.execute( propertiesWithConfigFileLocation( propertyFile ) ) );
         propertyFile.delete();
     }
-    
-    private Properties propertiesWithoutConfigFileLocation() {
-        System.clearProperty(Configurator.NEO_SERVER_CONFIG_FILE_KEY);
+
+    private Properties propertiesWithoutConfigFileLocation()
+    {
+        System.clearProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY );
         return System.getProperties();
     }
-    
-    private Properties propertiesWithConfigFileLocation(File propertyFile) {
-        System.setProperty(Configurator.NEO_SERVER_CONFIG_FILE_KEY, propertyFile.getAbsolutePath());
+
+    private Properties propertiesWithConfigFileLocation( File propertyFile )
+    {
+        System.setProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY, propertyFile.getAbsolutePath() );
         return System.getProperties();
     }
 }

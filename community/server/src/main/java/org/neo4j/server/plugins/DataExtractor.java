@@ -24,8 +24,8 @@ import org.neo4j.server.rest.repr.BadInputException;
 
 abstract class DataExtractor
 {
-    abstract Object extract( AbstractGraphDatabase graphDb, Object source,
-            ParameterList parameters ) throws BadInputException;
+    abstract Object extract( AbstractGraphDatabase graphDb, Object source, ParameterList parameters )
+            throws BadInputException;
 
     void describe( ParameterDescriptionConsumer consumer )
     {

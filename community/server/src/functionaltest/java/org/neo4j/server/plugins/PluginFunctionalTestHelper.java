@@ -24,6 +24,7 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
 
 import java.util.List;
 import java.util.Map;
@@ -37,14 +38,13 @@ import org.hamcrest.TypeSafeMatcher;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class PluginFunctionalTestHelper
 {
     public static Map<String, Object> makeGet( String url ) throws JsonParseException
     {
-        ClientResponse response = Client.create().resource( url )
+        ClientResponse response = CLIENT.resource( url )
                 .accept( MediaType.APPLICATION_JSON_TYPE )
                 .get( ClientResponse.class );
 
@@ -78,7 +78,7 @@ public class PluginFunctionalTestHelper
 
     protected static Map<String, Object> makePostMap( String url ) throws JsonParseException
     {
-        ClientResponse response = Client.create().resource( url )
+        ClientResponse response = CLIENT.resource( url )
                 .accept( MediaType.APPLICATION_JSON_TYPE )
                 .post( ClientResponse.class );
 
@@ -88,10 +88,11 @@ public class PluginFunctionalTestHelper
         return deserializeMap( body );
     }
 
-    protected static Map<String, Object> makePostMap( String url, Map<String, Object> params ) throws JsonParseException
+    protected static Map<String, Object> makePostMap( String url, Map<String, Object> params )
+            throws JsonParseException
     {
         String json = JsonHelper.createJsonFrom( params );
-        ClientResponse response = Client.create().resource( url )
+        ClientResponse response = CLIENT.resource( url )
                 .accept( MediaType.APPLICATION_JSON_TYPE )
                 .entity( json, MediaType.APPLICATION_JSON_TYPE )
                 .post( ClientResponse.class );
@@ -104,7 +105,7 @@ public class PluginFunctionalTestHelper
 
     protected static List<Map<String, Object>> makePostList( String url ) throws JsonParseException
     {
-        ClientResponse response = Client.create().resource( url )
+        ClientResponse response = CLIENT.resource( url )
                 .accept( MediaType.APPLICATION_JSON_TYPE )
                 .post( ClientResponse.class );
 
@@ -118,7 +119,7 @@ public class PluginFunctionalTestHelper
             throws JsonParseException
     {
         String json = JsonHelper.createJsonFrom( params );
-        ClientResponse response = Client.create().resource( url )
+        ClientResponse response = CLIENT.resource( url )
                 .accept( MediaType.APPLICATION_JSON_TYPE )
                 .entity( json, MediaType.APPLICATION_JSON_TYPE )
                 .post( ClientResponse.class );

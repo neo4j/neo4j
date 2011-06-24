@@ -24,7 +24,7 @@ import java.util.logging.LogRecord;
 
 /**
  * A logging facility that restricts messages to org.neo4j.server messages.
- *
+ * 
  * A hack because j.u.l. logging configuration is annoying.
  */
 public class NeoLogFilter implements Filter
@@ -32,6 +32,7 @@ public class NeoLogFilter implements Filter
     @Override
     public boolean isLoggable( LogRecord logRecord )
     {
-        return logRecord.getLoggerName().startsWith( "org.neo4j.server" );
+        return logRecord.getLoggerName()
+                .startsWith( "org.neo4j.server" );
     }
 }

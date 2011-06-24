@@ -28,7 +28,8 @@ public class URIHelper
     {
         try
         {
-            return URLEncoder.encode( value, "utf-8" ).replaceAll( "\\+", "%20" );
+            return URLEncoder.encode( value, "utf-8" )
+                    .replaceAll( "\\+", "%20" );
         }
         catch ( UnsupportedEncodingException e )
         {

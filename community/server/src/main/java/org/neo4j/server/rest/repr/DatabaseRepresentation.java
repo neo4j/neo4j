@@ -22,8 +22,7 @@ package org.neo4j.server.rest.repr;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.NotFoundException;
 
-public class DatabaseRepresentation extends MappingRepresentation implements
-        ExtensibleRepresentation
+public class DatabaseRepresentation extends MappingRepresentation implements ExtensibleRepresentation
 {
     private final GraphDatabaseService graphDb;
 
@@ -44,10 +43,12 @@ public class DatabaseRepresentation extends MappingRepresentation implements
     protected void serialize( MappingSerializer serializer )
     {
         serializer.putUri( "node", "node" );
-        try {
-            serializer.putUri( "reference_node",
-                    NodeRepresentation.path( graphDb.getReferenceNode() ) );
-        } catch(NotFoundException e) {
+        try
+        {
+            serializer.putUri( "reference_node", NodeRepresentation.path( graphDb.getReferenceNode() ) );
+        }
+        catch ( NotFoundException e )
+        {
             // No reference node.
         }
         serializer.putUri( "node_index", "index/node" );

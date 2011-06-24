@@ -21,6 +21,7 @@ package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -48,7 +49,6 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.TestData;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class TraverserFunctionalTest
@@ -108,7 +108,7 @@ public class TraverserFunctionalTest
 
     private ClientResponse traverse( long node, String description )
     {
-        return Client.create().resource( functionalTestHelper.nodeUri( node ) + "/traverse/node" )
+        return CLIENT.resource( functionalTestHelper.nodeUri( node ) + "/traverse/node" )
                 .accept( MediaType.APPLICATION_JSON_TYPE )
                 .entity( description, MediaType.APPLICATION_JSON_TYPE )
                 .post( ClientResponse.class );

@@ -36,9 +36,9 @@ public class EntityOutputFormat extends OutputFormat
 {
     private Representation representation;
 
-    public EntityOutputFormat(  RepresentationFormat format, URI baseUri, ExtensionInjector extensions  )
+    public EntityOutputFormat( RepresentationFormat format, URI baseUri, ExtensionInjector extensions )
     {
-        super( format, baseUri, extensions);
+        super( format, baseUri, extensions );
     }
 
     @Override
@@ -46,12 +46,12 @@ public class EntityOutputFormat extends OutputFormat
     {
         this.representation = representation;
 
-        return super.response(response, representation);
+        return super.response( response, representation );
     }
 
-    public Map<String,Object> getResultAsMap() throws BadInputException
+    public Map<String, Object> getResultAsMap() throws BadInputException
     {
-        return (Map<String, Object>)RepresentationTestBase.serialize( representation );
+        return (Map<String, Object>) RepresentationTestBase.serialize( representation );
     }
 
     public Representation getRepresentation()
@@ -61,6 +61,6 @@ public class EntityOutputFormat extends OutputFormat
 
     public List<Object> getResultAsList() throws BadInputException
     {
-        return (List<Object>)RepresentationTestBase.serialize( representation );
+        return (List<Object>) RepresentationTestBase.serialize( representation );
     }
 }

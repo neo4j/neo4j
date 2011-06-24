@@ -59,18 +59,17 @@ public class DocsGenerator
 
     private static final Builder REQUEST_BUILDER = ClientRequest.create();
 
-    private static final List<String> RESPONSE_HEADERS = Arrays.asList( new String[] {
-            "Content-Type", "Location" } );
+    private static final List<String> RESPONSE_HEADERS = Arrays.asList( new String[] { "Content-Type", "Location" } );
 
-    private static final List<String> REQUEST_HEADERS = Arrays.asList( new String[] {
-            "Content-Type", "Accept" } );
+    private static final List<String> REQUEST_HEADERS = Arrays.asList( new String[] { "Content-Type", "Accept" } );
 
     public static final Producer<DocsGenerator> PRODUCER = new Producer<DocsGenerator>()
     {
         @Override
         public DocsGenerator create( GraphDefinition graph, String title, String documentation )
         {
-            return DocsGenerator.create( title ).description( documentation );
+            return DocsGenerator.create( title )
+                    .description( documentation );
         }
 
         @Override
@@ -95,7 +94,7 @@ public class DocsGenerator
      * response, use {@link ResponseEntity#entity} to get the entity or
      * {@link ResponseEntity#response} to get the rest of the response
      * (excluding the entity).
-     *
+     * 
      * @param title title of the test
      */
     public static DocsGenerator create( final String title )
@@ -115,15 +114,14 @@ public class DocsGenerator
     /**
      * Add a description to the test (in asciidoc format). Adding multiple
      * descriptions will yield one paragraph per description.
-     *
+     * 
      * @param description the description
      */
     public DocsGenerator description( final String description )
     {
         if ( description == null )
         {
-            throw new IllegalArgumentException(
-                    "The description can not be null" );
+            throw new IllegalArgumentException( "The description can not be null" );
         }
         String content;
         int pos = description.indexOf( DOCUMENTATION_END );
@@ -149,11 +147,10 @@ public class DocsGenerator
     /**
      * Set the expected status of the response. The test will fail if the
      * response has a different status. Defaults to HTTP 200 OK.
-     *
+     * 
      * @param expectedResponseStatus the expected response status
      */
-    public DocsGenerator expectedStatus(
-            final int expectedResponseStatus )
+    public DocsGenerator expectedStatus( final int expectedResponseStatus )
     {
         this.expectedResponseStatus = expectedResponseStatus;
         return this;
@@ -162,7 +159,7 @@ public class DocsGenerator
     /**
      * Set the expected media type of the response. The test will fail if the
      * response has a different media type. Defaults to application/json.
-     *
+     * 
      * @param expectedMediaType the expected media tyupe
      */
     public DocsGenerator expectedType( final MediaType expectedMediaType )
@@ -173,7 +170,7 @@ public class DocsGenerator
 
     /**
      * The media type of the request payload. Defaults to application/json.
-     *
+     * 
      * @param payloadMediaType the media type to use
      */
     public DocsGenerator payloadType( final MediaType payloadMediaType )
@@ -184,7 +181,7 @@ public class DocsGenerator
 
     /**
      * Set the payload of the request.
-     *
+     * 
      * @param payload the payload
      */
     public DocsGenerator payload( final String payload )
@@ -197,7 +194,7 @@ public class DocsGenerator
      * Add an expected response header. If the heading is missing in the
      * response the test will fail. The header and its value are also included
      * in the documentation.
-     *
+     * 
      * @param expectedHeaderField the expected header
      */
     public DocsGenerator expectedHeader( final String expectedHeaderField )
@@ -208,69 +205,64 @@ public class DocsGenerator
 
     /**
      * Send a request using your own request object.
-     *
+     * 
      * @param request the request to perform
      */
     public ResponseEntity request( final ClientRequest request )
     {
         return retrieveResponse( title, description, request.getURI()
-                .toString(), expectedResponseStatus, expectedMediaType,
-                expectedHeaderFields, request );
+                .toString(), expectedResponseStatus, expectedMediaType, expectedHeaderFields, request );
     }
 
     /**
      * Send a GET request.
-     *
+     * 
      * @param uri the URI to use.
      */
     public ResponseEntity get( final String uri )
     {
-        return retrieveResponseFromRequest( title, description, "GET", uri,
-                expectedResponseStatus, expectedMediaType, expectedHeaderFields );
+        return retrieveResponseFromRequest( title, description, "GET", uri, expectedResponseStatus, expectedMediaType,
+                expectedHeaderFields );
     }
 
     /**
      * Send a POST request.
-     *
+     * 
      * @param uri the URI to use.
      */
     public ResponseEntity post( final String uri )
     {
-        return retrieveResponseFromRequest( title, description, "POST", uri,
-                payload, payloadMediaType, expectedResponseStatus,
-                expectedMediaType, expectedHeaderFields );
+        return retrieveResponseFromRequest( title, description, "POST", uri, payload, payloadMediaType,
+                expectedResponseStatus, expectedMediaType, expectedHeaderFields );
     }
 
     /**
      * Send a PUT request.
-     *
+     * 
      * @param uri the URI to use.
      */
     public ResponseEntity put( final String uri )
     {
-        return retrieveResponseFromRequest( title, description, "PUT", uri,
-                payload, payloadMediaType, expectedResponseStatus,
-                expectedMediaType, expectedHeaderFields );
+        return retrieveResponseFromRequest( title, description, "PUT", uri, payload, payloadMediaType,
+                expectedResponseStatus, expectedMediaType, expectedHeaderFields );
     }
 
     /**
      * Send a DELETE request.
-     *
+     * 
      * @param uri the URI to use.
      */
     public ResponseEntity delete( final String uri )
     {
-        return retrieveResponseFromRequest( title, description, "DELETE", uri,
-                payload, payloadMediaType, expectedResponseStatus,
-                expectedMediaType, expectedHeaderFields );
+        return retrieveResponseFromRequest( title, description, "DELETE", uri, payload, payloadMediaType,
+                expectedResponseStatus, expectedMediaType, expectedHeaderFields );
     }
 
     /**
      * Send a request with no payload.
      */
-    private ResponseEntity retrieveResponseFromRequest( final String title,
-            final String description, final String method, final String uri,
-            final int responseCode, final MediaType accept,
+    private ResponseEntity retrieveResponseFromRequest( final String title, final String description,
+            final String method, final String uri, final int responseCode, final MediaType accept,
             final List<String> headerFields )
     {
         ClientRequest request;
@@ -283,18 +275,15 @@ public class DocsGenerator
         {
             throw new RuntimeException( e );
         }
-        return retrieveResponse( title, description, uri, responseCode, accept,
-                headerFields, request );
+        return retrieveResponse( title, description, uri, responseCode, accept, headerFields, request );
     }
 
     /**
      * Send a request with payload.
      */
-    private ResponseEntity retrieveResponseFromRequest( final String title,
-            final String description, final String method, final String uri,
-            final String payload, final MediaType payloadType,
-            final int responseCode, final MediaType accept,
-            final List<String> headerFields )
+    private ResponseEntity retrieveResponseFromRequest( final String title, final String description,
+            final String method, final String uri, final String payload, final MediaType payloadType,
+            final int responseCode, final MediaType accept, final List<String> headerFields )
     {
         ClientRequest request;
         try
@@ -316,17 +305,14 @@ public class DocsGenerator
         {
             throw new RuntimeException( e );
         }
-        return retrieveResponse( title, description, uri, responseCode, accept,
-                headerFields, request );
+        return retrieveResponse( title, description, uri, responseCode, accept, headerFields, request );
     }
 
     /**
      * Send the request and create the documentation.
      */
-    private ResponseEntity retrieveResponse( final String title,
-            final String description, final String uri,
-            final int responseCode, final MediaType type,
-            final List<String> headerFields, final ClientRequest request )
+    private ResponseEntity retrieveResponse( final String title, final String description, final String uri,
+            final int responseCode, final MediaType type, final List<String> headerFields, final ClientRequest request )
     {
         DocumentationData data = new DocumentationData();
         getRequestHeaders( data, request.getHeaders() );
@@ -361,30 +347,24 @@ public class DocsGenerator
         return new ResponseEntity( response, data.entity );
     }
 
-    private void getResponseHeaders( final DocumentationData data,
-            final MultivaluedMap<String, String> headers,
+    private void getResponseHeaders( final DocumentationData data, final MultivaluedMap<String, String> headers,
             final List<String> additionalFilter )
     {
-        data.setResponseHeaders( getHeaders( headers, RESPONSE_HEADERS,
-                additionalFilter ) );
+        data.setResponseHeaders( getHeaders( headers, RESPONSE_HEADERS, additionalFilter ) );
     }
 
-    private void getRequestHeaders( final DocumentationData data,
-            final MultivaluedMap<String, Object> headers )
+    private void getRequestHeaders( final DocumentationData data, final MultivaluedMap<String, Object> headers )
     {
-        data.setRequestHeaders( getHeaders( headers, REQUEST_HEADERS,
-                Collections.<String>emptyList() ) );
+        data.setRequestHeaders( getHeaders( headers, REQUEST_HEADERS, Collections.<String>emptyList() ) );
     }
 
-    private <T> Map<String, String> getHeaders(
-            final MultivaluedMap<String, T> headers, final List<String> filter,
+    private <T> Map<String, String> getHeaders( final MultivaluedMap<String, T> headers, final List<String> filter,
             final List<String> additionalFilter )
     {
         Map<String, String> filteredHeaders = new TreeMap<String, String>();
         for ( Entry<String, List<T>> header : headers.entrySet() )
         {
-            if ( filter.contains( header.getKey() )
-                 || additionalFilter.contains( header.getKey() ) )
+            if ( filter.contains( header.getKey() ) || additionalFilter.contains( header.getKey() ) )
             {
                 String values = "";
                 for ( T value : header.getValue() )
@@ -494,11 +474,9 @@ public class DocsGenerator
         @Override
         public String toString()
         {
-            return "DocumentationData [payload=" + payload + ", title=" + title
-                   + ", description=" + description + ", uri=" + uri
-                   + ", method=" + method + ", status=" + status + ", entity="
-                   + entity + ", requestHeaders=" + requestHeaders
-                   + ", responseHeaders=" + responseHeaders + "]";
+            return "DocumentationData [payload=" + payload + ", title=" + title + ", description=" + description
+                   + ", uri=" + uri + ", method=" + method + ", status=" + status + ", entity=" + entity
+                   + ", requestHeaders=" + requestHeaders + ", responseHeaders=" + responseHeaders + "]";
         }
     }
 
@@ -521,8 +499,7 @@ public class DocsGenerator
             }
             if ( !out.createNewFile() )
             {
-                throw new RuntimeException( "File exists: "
-                                            + out.getAbsolutePath() );
+                throw new RuntimeException( "File exists: " + out.getAbsolutePath() );
             }
 
             fw = new FileWriter( out, false );
@@ -542,24 +519,20 @@ public class DocsGenerator
             {
                 for ( Entry<String, String> header : data.requestHeaders.entrySet() )
                 {
-                    line( fw,
-                            "* *+" + header.getKey() + ":+* +"
-                                    + header.getValue() + "+" );
+                    line( fw, "* *+" + header.getKey() + ":+* +" + header.getValue() + "+" );
                 }
             }
             writeEntity( fw, data.payload );
             line( fw, "" );
             line( fw, "_Example response_" );
             line( fw, "" );
-            line( fw, "* *+" + data.status + ":+* +"
-                      + Response.Status.fromStatusCode( data.status ).toString() + "+");
+            line( fw, "* *+" + data.status + ":+* +" + Response.Status.fromStatusCode( data.status )
+                    .toString() + "+" );
             if ( data.responseHeaders != null )
             {
                 for ( Entry<String, String> header : data.responseHeaders.entrySet() )
                 {
-                    line( fw,
-                            "* *+" + header.getKey() + ":+* +"
-                                    + header.getValue() + "+" );
+                    line( fw, "* *+" + header.getKey() + ":+* +" + header.getValue() + "+" );
                 }
             }
             writeEntity( fw, data.entity );
@@ -587,8 +560,7 @@ public class DocsGenerator
         }
     }
 
-    private void writeEntity( final FileWriter fw, final String entity )
-            throws IOException
+    private void writeEntity( final FileWriter fw, final String entity ) throws IOException
     {
         if ( entity != null )
         {
@@ -600,8 +572,7 @@ public class DocsGenerator
         }
     }
 
-    private void line( final FileWriter fw, final String string )
-            throws IOException
+    private void line( final FileWriter fw, final String string ) throws IOException
     {
         fw.append( string );
         fw.append( "\n" );

@@ -47,50 +47,55 @@ public class BatchOperationResults
 
     private List<String> operationResults;
     private Map<Integer, String> locations = new HashMap<Integer, String>();
-    
+
     public BatchOperationResults( int numOperations )
     {
         operationResults = new ArrayList<String>( numOperations );
     }
 
-    public void addOperationResult( String from, Integer id, String body,
-            String location )
-    {   
+    public void addOperationResult( String from, Integer id, String body, String location )
+    {
         StringWriter wt = new StringWriter();
 
         wt.append( OPENING_CURLY );
 
         if ( id != null )
         {
-            wt.append( "\"id\":" ).append( id.toString() ).append( COMMA );
+            wt.append( "\"id\":" )
+                    .append( id.toString() )
+                    .append( COMMA );
         }
 
         if ( location != null )
         {
             locations.put( id, location );
-            wt.append( "\"location\":" ).append(
-                    JsonHelper.createJsonFrom( location ) ).append( COMMA );
+            wt.append( "\"location\":" )
+                    .append( JsonHelper.createJsonFrom( location ) )
+                    .append( COMMA );
         }
 
         if ( body != null && body.length() != 0 )
         {
-            wt.append( "\"body\":" ).append( body ).append( COMMA );
+            wt.append( "\"body\":" )
+                    .append( body )
+                    .append( COMMA );
         }
 
-        wt.append( "\"from\":" ).append( JsonHelper.createJsonFrom( from) );
+        wt.append( "\"from\":" )
+                .append( JsonHelper.createJsonFrom( from ) );
 
         wt.append( CLOSING_CURLY );
 
         operationResults.add( wt.toString() );
     }
-    
-    public Map<Integer, String> getLocations() {
+
+    public Map<Integer, String> getLocations()
+    {
         return locations;
     }
 
     public String toJSON()
     {
-        return OPENING_BRACKET + StringUtils.join( operationResults, "," )
-               + CLOSING_BRACKET;
+        return OPENING_BRACKET + StringUtils.join( operationResults, "," ) + CLOSING_BRACKET;
     }
 }

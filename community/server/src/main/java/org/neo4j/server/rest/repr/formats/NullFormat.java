@@ -38,7 +38,7 @@ public class NullFormat extends RepresentationFormat
     private final Collection<MediaType> supported;
     private final MediaType[] requested;
 
-    public NullFormat(Collection<MediaType> supported, MediaType... requested)
+    public NullFormat( Collection<MediaType> supported, MediaType... requested )
     {
         super( null );
         this.supported = supported;

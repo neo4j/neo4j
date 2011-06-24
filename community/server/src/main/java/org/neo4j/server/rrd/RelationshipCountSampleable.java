@@ -25,8 +25,7 @@ import org.neo4j.server.database.Database;
 
 public class RelationshipCountSampleable extends DatabasePrimitivesSampleableBase
 {
-    public RelationshipCountSampleable( Database db )
-        throws MalformedObjectNameException
+    public RelationshipCountSampleable( Database db ) throws MalformedObjectNameException
     {
         super( db );
     }

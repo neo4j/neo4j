@@ -20,6 +20,7 @@
 package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
 
 import java.io.IOException;
 
@@ -30,12 +31,11 @@ import org.junit.Test;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.helpers.ServerHelper;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class GetIndexRootFunctionalTest
 {
-    
+
     private static NeoServerWithEmbeddedWebServer server;
     private static FunctionalTestHelper functionalTestHelper;
 
@@ -60,36 +60,41 @@ public class GetIndexRootFunctionalTest
 
     /**
      * /db/data/index is not itself a resource
-     *
+     * 
      */
     @Test
     public void shouldRespondWith404ForNonResourceIndexPath() throws Exception
     {
-        ClientResponse response = Client.create().resource(functionalTestHelper.indexUri() ).get( ClientResponse.class );
+        ClientResponse response = CLIENT.resource( functionalTestHelper.indexUri() )
+                .get( ClientResponse.class );
         assertEquals( 404, response.getStatus() );
         response.close();
     }
 
     /**
      * /db/data/index/node should be a resource with no content
+     * 
      * @throws Exception
      */
     @Test
     public void shouldRespondWithNodeIndexes() throws Exception
     {
-        ClientResponse response = Client.create().resource(functionalTestHelper.nodeIndexUri() ).get( ClientResponse.class );
+        ClientResponse response = CLIENT.resource( functionalTestHelper.nodeIndexUri() )
+                .get( ClientResponse.class );
         assertEquals( 204, response.getStatus() );
         response.close();
     }
 
     /**
      * /db/data/index/relationship should be a resource with no content
+     * 
      * @throws Exception
      */
     @Test
     public void shouldRespondWithRelationshipIndexes() throws Exception
     {
-        ClientResponse response = Client.create().resource(functionalTestHelper.relationshipIndexUri() ).get( ClientResponse.class );
+        ClientResponse response = CLIENT.resource( functionalTestHelper.relationshipIndexUri() )
+                .get( ClientResponse.class );
         assertEquals( 204, response.getStatus() );
         response.close();
     }

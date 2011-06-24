@@ -25,18 +25,21 @@ import java.net.URI;
 
 import org.junit.Test;
 
-public class UriToDatabaseMatcherTest {
+public class UriToDatabaseMatcherTest
+{
 
-	@Test
-	public void shouldMatchDefaults() throws Exception {
-		UriToDatabaseMatcher matcher = new UriToDatabaseMatcher();
-		matcher.add(new GraphDatabaseName("restbucks"));
-		matcher.add(new GraphDatabaseName("order"));
-		matcher.add(new GraphDatabaseName("amazon"));
-		
-		
-		assertEquals(new GraphDatabaseName("restbucks"), matcher.lookup(new URI("http://localhost/restbucks/order/1234")));
-		assertEquals(new GraphDatabaseName("amazon"), matcher.lookup(new URI("http://www.amazon.com/amazon/product/0596805829")));
-		assertEquals(new GraphDatabaseName("order"), matcher.lookup(new URI("http://restbucks.com/order/1234")));
-	}
+    @Test
+    public void shouldMatchDefaults() throws Exception
+    {
+        UriToDatabaseMatcher matcher = new UriToDatabaseMatcher();
+        matcher.add( new GraphDatabaseName( "restbucks" ) );
+        matcher.add( new GraphDatabaseName( "order" ) );
+        matcher.add( new GraphDatabaseName( "amazon" ) );
+
+        assertEquals( new GraphDatabaseName( "restbucks" ),
+                matcher.lookup( new URI( "http://localhost/restbucks/order/1234" ) ) );
+        assertEquals( new GraphDatabaseName( "amazon" ),
+                matcher.lookup( new URI( "http://www.amazon.com/amazon/product/0596805829" ) ) );
+        assertEquals( new GraphDatabaseName( "order" ), matcher.lookup( new URI( "http://restbucks.com/order/1234" ) ) );
+    }
 }

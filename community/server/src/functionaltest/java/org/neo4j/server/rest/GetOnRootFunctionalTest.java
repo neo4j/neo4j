@@ -21,6 +21,7 @@ package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
 
 import java.io.IOException;
 import java.util.Map;
@@ -38,7 +39,6 @@ import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.test.TestData;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class GetOnRootFunctionalTest
@@ -85,7 +85,7 @@ public class GetOnRootFunctionalTest
     @Test
     public void assertResponseHaveCorrectContentFromGet() throws Exception
     {
-        ClientResponse response = Client.create().resource( functionalTestHelper.dataUri() )
+        ClientResponse response = CLIENT.resource( functionalTestHelper.dataUri() )
                 .accept( MediaType.APPLICATION_JSON )
                 .get( ClientResponse.class );
         String body = response.getEntity( String.class );
@@ -98,7 +98,7 @@ public class GetOnRootFunctionalTest
         response.close();
 
         String referenceNodeUri = (String) map.get( "reference_node" );
-        response = Client.create().resource( referenceNodeUri )
+        response = CLIENT.resource( referenceNodeUri )
                 .accept( MediaType.APPLICATION_JSON )
                 .get( ClientResponse.class );
         assertEquals( 200, response.getStatus() );

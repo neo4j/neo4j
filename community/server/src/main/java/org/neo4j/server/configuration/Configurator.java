@@ -25,7 +25,8 @@ import java.util.Set;
 
 import org.apache.commons.configuration.Configuration;
 
-public interface Configurator {
+public interface Configurator
+{
     String DB_TUNING_PROPERTY_FILE_KEY = "org.neo4j.server.db.tuning.properties";
     String DEFAULT_CONFIG_DIR = File.separator + "etc" + File.separator + "neo";
     String DATABASE_LOCATION_PROPERTY_KEY = "org.neo4j.server.database.location";

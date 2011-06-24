@@ -29,17 +29,19 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 
-public class DatabaseRepresentationTest {
+public class DatabaseRepresentationTest
+{
     @Test
-    public void shouldProvideUriForTheAvailableRelationshipTypes() {
-        Node mockNode = mock(Node.class);
-        GraphDatabaseService mockDb = mock(GraphDatabaseService.class);
-        when(mockDb.getReferenceNode()).thenReturn(mockNode);
-        DatabaseRepresentation representation = new DatabaseRepresentation(mockDb);
-        
-        Map<String, Object> map = RepresentationTestBase.serialize(representation);
-        
-        assertTrue(map.containsKey("relationship_types"));
+    public void shouldProvideUriForTheAvailableRelationshipTypes()
+    {
+        Node mockNode = mock( Node.class );
+        GraphDatabaseService mockDb = mock( GraphDatabaseService.class );
+        when( mockDb.getReferenceNode() ).thenReturn( mockNode );
+        DatabaseRepresentation representation = new DatabaseRepresentation( mockDb );
+
+        Map<String, Object> map = RepresentationTestBase.serialize( representation );
+
+        assertTrue( map.containsKey( "relationship_types" ) );
 
     }
 }

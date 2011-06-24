@@ -33,11 +33,11 @@ import org.neo4j.jmx.Kernel;
 import org.neo4j.jmx.Primitives;
 import org.neo4j.server.database.Database;
 
-public abstract class DatabasePrimitivesSampleableBase  implements Sampleable
+public abstract class DatabasePrimitivesSampleableBase implements Sampleable
 {
     private final MBeanServer mbeanServer;
     private final Database database;
-    
+
     public DatabasePrimitivesSampleableBase( Database db )
     {
         mbeanServer = ManagementFactory.getPlatformMBeanServer();
@@ -50,32 +50,41 @@ public abstract class DatabasePrimitivesSampleableBase  implements Sampleable
     {
         try
         {
-            return (Long)mbeanServer.getAttribute( getObjectName(), getJmxAttributeName() );
-        } catch( UnsupportedOperationException e) {
+            return (Long) mbeanServer.getAttribute( getObjectName(), getJmxAttributeName() );
+        }
+        catch ( UnsupportedOperationException e )
+        {
             // Happens when the database has been shut down
             throw new UnableToSampleException();
-        } catch ( InstanceNotFoundException e ) {
+        }
+        catch ( InstanceNotFoundException e )
+        {
             throw new UnableToSampleException();
-        } catch ( MBeanException e )
+        }
+        catch ( MBeanException e )
         {
             throw new RuntimeException( e );
-        } catch ( AttributeNotFoundException e )
+        }
+        catch ( AttributeNotFoundException e )
         {
             throw new RuntimeException( e );
-        } catch ( ReflectionException e )
+        }
+        catch ( ReflectionException e )
         {
             throw new RuntimeException( e );
         }
         catch ( MalformedObjectNameException e )
         {
-            throw new RuntimeException(e);
+            throw new RuntimeException( e );
         }
     }
 
     protected abstract String getJmxAttributeName();
 
-    protected ObjectName getObjectName() throws MalformedObjectNameException, NullPointerException {
-        ObjectName neoQuery = database.graph.getManagementBean( Kernel.class ).getMBeanQuery();
+    protected ObjectName getObjectName() throws MalformedObjectNameException, NullPointerException
+    {
+        ObjectName neoQuery = database.graph.getManagementBean( Kernel.class )
+                .getMBeanQuery();
         String instance = neoQuery.getKeyProperty( "instance" );
         String baseName = neoQuery.getDomain() + ":instance=" + instance + ",name=";
         return new ObjectName( baseName + Primitives.NAME );

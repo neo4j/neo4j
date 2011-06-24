@@ -22,6 +22,7 @@ package org.neo4j.server.rest;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
 
 import java.io.IOException;
 import java.net.URI;
@@ -43,7 +44,6 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.formats.CompactJsonFormat;
 import org.neo4j.test.TestData;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
@@ -153,7 +153,7 @@ public class RetrieveNodeFunctionalTest
 
     private ClientResponse retrieveNodeFromService( final String uri )
     {
-        WebResource resource = Client.create().resource( uri );
+        WebResource resource = CLIENT.resource( uri );
         ClientResponse response = resource.accept( MediaType.APPLICATION_JSON )
                 .get( ClientResponse.class );
         return response;

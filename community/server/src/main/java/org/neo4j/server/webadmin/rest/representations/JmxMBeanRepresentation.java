@@ -61,27 +61,32 @@ public class JmxMBeanRepresentation extends ObjectRepresentation
     {
         try
         {
-            String value = URLEncoder.encode( beanName.toString(), "UTF-8" ).replace( "%3A", "/" );
+            String value = URLEncoder.encode( beanName.toString(), "UTF-8" )
+                    .replace( "%3A", "/" );
             return ValueRepresentation.string( value );
-        } catch ( UnsupportedEncodingException e )
+        }
+        catch ( UnsupportedEncodingException e )
         {
             throw new RuntimeException( "Could not encode string as UTF-8", e );
         }
     }
 
     @Mapping( "description" )
-    public ValueRepresentation getDescription() throws IntrospectionException, InstanceNotFoundException, ReflectionException
+    public ValueRepresentation getDescription() throws IntrospectionException, InstanceNotFoundException,
+            ReflectionException
     {
         MBeanInfo beanInfo = jmxServer.getMBeanInfo( beanName );
         return ValueRepresentation.string( beanInfo.getDescription() );
     }
 
     @Mapping( "attributes" )
-    public ListRepresentation getAttributes() throws IntrospectionException, InstanceNotFoundException, ReflectionException
+    public ListRepresentation getAttributes() throws IntrospectionException, InstanceNotFoundException,
+            ReflectionException
     {
         MBeanInfo beanInfo = jmxServer.getMBeanInfo( beanName );
 
-        return new ListRepresentation( "jmxAttribute", new IterableWrapper<Representation, MBeanAttributeInfo>( Arrays.asList( beanInfo.getAttributes() ) )
+        return new ListRepresentation( "jmxAttribute", new IterableWrapper<Representation, MBeanAttributeInfo>(
+                Arrays.asList( beanInfo.getAttributes() ) )
         {
             @Override
             protected Representation underlyingObjectToObject( MBeanAttributeInfo attrInfo )

@@ -19,9 +19,12 @@
  */
 package org.neo4j.server.startup.healthcheck;
 
-@SuppressWarnings("serial")
-public class StartupHealthCheckFailedException extends RuntimeException {
-    public StartupHealthCheckFailedException(StartupHealthCheckRule failedRule) {
-        super(String.format("Startup health check failed due to rule [%s]. %s", failedRule.getClass(), failedRule.getFailureMessage()));
+@SuppressWarnings( "serial" )
+public class StartupHealthCheckFailedException extends RuntimeException
+{
+    public StartupHealthCheckFailedException( StartupHealthCheckRule failedRule )
+    {
+        super( String.format( "Startup health check failed due to rule [%s]. %s", failedRule.getClass(),
+                failedRule.getFailureMessage() ) );
     }
 }

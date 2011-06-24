@@ -22,25 +22,27 @@ package org.neo4j.server.rest.repr;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 
-public final class IndexedEntityRepresentation extends MappingRepresentation implements
-        ExtensibleRepresentation, EntityRepresentation
+public final class IndexedEntityRepresentation extends MappingRepresentation implements ExtensibleRepresentation,
+        EntityRepresentation
 {
     private final MappingRepresentation entity;
     private final ValueRepresentation selfUri;
 
-    @SuppressWarnings("boxing")
+    @SuppressWarnings( "boxing" )
     public IndexedEntityRepresentation( Node node, String key, String value, IndexRepresentation indexRepresentation )
     {
         this( new NodeRepresentation( node ), node.getId(), key, value, indexRepresentation );
     }
 
-    @SuppressWarnings("boxing")
-    public IndexedEntityRepresentation( Relationship rel, String key, String value, IndexRepresentation indexRepresentation )
+    @SuppressWarnings( "boxing" )
+    public IndexedEntityRepresentation( Relationship rel, String key, String value,
+            IndexRepresentation indexRepresentation )
     {
         this( new RelationshipRepresentation( rel ), rel.getId(), key, value, indexRepresentation );
     }
 
-    private IndexedEntityRepresentation( MappingRepresentation entity, long entityId, String key, String value, IndexRepresentation indexRepresentation )
+    private IndexedEntityRepresentation( MappingRepresentation entity, long entityId, String key, String value,
+            IndexRepresentation indexRepresentation )
     {
         super( entity.type );
         this.entity = entity;
@@ -50,7 +52,7 @@ public final class IndexedEntityRepresentation extends MappingRepresentation imp
     @Override
     public String getIdentity()
     {
-        return ((ExtensibleRepresentation) entity).getIdentity();
+        return ( (ExtensibleRepresentation) entity ).getIdentity();
     }
 
     public ValueRepresentation selfUri()

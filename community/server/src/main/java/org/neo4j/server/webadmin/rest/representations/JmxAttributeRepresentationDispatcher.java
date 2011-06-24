@@ -29,8 +29,9 @@ import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.ValueRepresentation;
 
 /**
- * Converts common primitive and basic objects and arrays of the same into a representation. Has
- * additional understanding of CompositeData, to allow representations of JMX beans.
+ * Converts common primitive and basic objects and arrays of the same into a
+ * representation. Has additional understanding of CompositeData, to allow
+ * representations of JMX beans.
  */
 public class JmxAttributeRepresentationDispatcher extends PropertyTypeDispatcher<String, Representation>
 {
@@ -76,12 +77,16 @@ public class JmxAttributeRepresentationDispatcher extends PropertyTypeDispatcher
     {
         return ValueRepresentation.string( property );
     }
-    
+
     @Override
-    protected Representation dispatchOtherProperty( Object property, String param ) {
-        if( property instanceof CompositeData) {
+    protected Representation dispatchOtherProperty( Object property, String param )
+    {
+        if ( property instanceof CompositeData )
+        {
             return new JmxCompositeDataRepresentation( (CompositeData) property );
-        } else {
+        }
+        else
+        {
             return ValueRepresentation.string( property.toString() );
         }
     }
@@ -89,17 +94,21 @@ public class JmxAttributeRepresentationDispatcher extends PropertyTypeDispatcher
     @Override
     protected Representation dispatchOtherArray( Object[] property, String param )
     {
-        if(property instanceof CompositeData[]) {
+        if ( property instanceof CompositeData[] )
+        {
             ArrayList<Representation> values = new ArrayList<Representation>();
-            for(CompositeData value : (CompositeData[]) property) {
+            for ( CompositeData value : (CompositeData[]) property )
+            {
                 values.add( new JmxCompositeDataRepresentation( value ) );
             }
-            return new ListRepresentation( "", values);
-        } else {
-            return super.dispatchOtherArray(property, param);
+            return new ListRepresentation( "", values );
+        }
+        else
+        {
+            return super.dispatchOtherArray( property, param );
         }
     }
-    
+
     @Override
     protected Representation dispatchStringArrayProperty( String[] array, String param )
     {
@@ -108,33 +117,31 @@ public class JmxAttributeRepresentationDispatcher extends PropertyTypeDispatcher
         {
             values.add( ValueRepresentation.string( z ) );
         }
-        return new ListRepresentation( "", values);
+        return new ListRepresentation( "", values );
     }
 
     @Override
     @SuppressWarnings( "boxing" )
-    protected Representation dispatchShortArrayProperty( PropertyArray<short[], Short> array,
-            String param )
+    protected Representation dispatchShortArrayProperty( PropertyArray<short[], Short> array, String param )
     {
         ArrayList<Representation> values = new ArrayList<Representation>();
         for ( Short z : array )
         {
             values.add( ValueRepresentation.number( z ) );
         }
-        return new ListRepresentation( "", values);
+        return new ListRepresentation( "", values );
     }
 
     @Override
     @SuppressWarnings( "boxing" )
-    protected Representation dispatchIntegerArrayProperty( PropertyArray<int[], Integer> array,
-            String param )
+    protected Representation dispatchIntegerArrayProperty( PropertyArray<int[], Integer> array, String param )
     {
         ArrayList<Representation> values = new ArrayList<Representation>();
         for ( Integer z : array )
         {
             values.add( ValueRepresentation.number( z ) );
         }
-        return new ListRepresentation( "", values);
+        return new ListRepresentation( "", values );
     }
 
     @Override
@@ -146,7 +153,7 @@ public class JmxAttributeRepresentationDispatcher extends PropertyTypeDispatcher
         {
             values.add( ValueRepresentation.number( z ) );
         }
-        return new ListRepresentation( "", values);
+        return new ListRepresentation( "", values );
     }
 
     @Override
@@ -159,45 +166,41 @@ public class JmxAttributeRepresentationDispatcher extends PropertyTypeDispatcher
         {
             values.add( ValueRepresentation.number( z ) );
         }
-        return new ListRepresentation( "", values);
+        return new ListRepresentation( "", values );
     }
 
     @Override
     @SuppressWarnings( "boxing" )
-    protected Representation dispatchDoubleArrayProperty( PropertyArray<double[], Double> array,
-            String param )
+    protected Representation dispatchDoubleArrayProperty( PropertyArray<double[], Double> array, String param )
     {
         ArrayList<Representation> values = new ArrayList<Representation>();
         for ( Double z : array )
         {
             values.add( ValueRepresentation.number( z ) );
         }
-        return new ListRepresentation( "", values);
+        return new ListRepresentation( "", values );
     }
 
     @Override
     @SuppressWarnings( "boxing" )
-    protected Representation dispatchBooleanArrayProperty( PropertyArray<boolean[], Boolean> array,
-            String param )
+    protected Representation dispatchBooleanArrayProperty( PropertyArray<boolean[], Boolean> array, String param )
     {
         ArrayList<Representation> values = new ArrayList<Representation>();
         for ( Boolean z : array )
         {
             values.add( ValueRepresentation.bool( z ) );
         }
-        return new ListRepresentation( "", values);
+        return new ListRepresentation( "", values );
     }
 
     @Override
-    protected Representation dispatchByteProperty( byte property,
-            String param )
+    protected Representation dispatchByteProperty( byte property, String param )
     {
-        throw new UnsupportedOperationException("Representing bytes not implemented.");
+        throw new UnsupportedOperationException( "Representing bytes not implemented." );
     }
 
     @Override
-    protected Representation dispatchCharacterProperty( char property,
-            String param )
+    protected Representation dispatchCharacterProperty( char property, String param )
     {
         return ValueRepresentation.number( property );
     }

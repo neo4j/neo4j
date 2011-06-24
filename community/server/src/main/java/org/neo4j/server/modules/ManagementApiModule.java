@@ -29,23 +29,29 @@ import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.logging.Logger;
 
-public class ManagementApiModule implements ServerModule {
+public class ManagementApiModule implements ServerModule
+{
 
-    private final Logger log = Logger.getLogger(ManagementApiModule.class);
+    private final Logger log = Logger.getLogger( ManagementApiModule.class );
 
     public void start( NeoServerWithEmbeddedWebServer neoServer )
     {
-        try {
-            neoServer.getWebServer().addJAXRSPackages(
-                    listFrom(new String[] { Configurator.MANAGEMENT_API_PACKAGE }), managementApiUri(neoServer).toString());
-            log.info("Mounted management API at [%s]", managementApiUri(neoServer).toString());
+        try
+        {
+            neoServer.getWebServer()
+                    .addJAXRSPackages( listFrom( new String[] { Configurator.MANAGEMENT_API_PACKAGE } ),
+                            managementApiUri( neoServer ).toString() );
+            log.info( "Mounted management API at [%s]", managementApiUri( neoServer ).toString() );
 
-        } catch (UnknownHostException e) {
-            log.warn(e);
+        }
+        catch ( UnknownHostException e )
+        {
+            log.warn( e );
         }
     }
 
-    public void stop() {
+    public void stop()
+    {
         // Do nothing.
     }
 
@@ -53,8 +59,8 @@ public class ManagementApiModule implements ServerModule {
     {
         try
         {
-            return new URI( neoServer.getConfiguration().getString( Configurator.MANAGEMENT_PATH_PROPERTY_KEY,
-                    Configurator.DEFAULT_MANAGEMENT_API_PATH ) );
+            return new URI( neoServer.getConfiguration()
+                    .getString( Configurator.MANAGEMENT_PATH_PROPERTY_KEY, Configurator.DEFAULT_MANAGEMENT_API_PATH ) );
         }
         catch ( URISyntaxException e )
         {

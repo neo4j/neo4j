@@ -40,34 +40,34 @@ public class AllowAjaxFilter implements ContainerResponseFilter
     private static final String ACCESS_CONTROL_REQUEST_METHOD = "access-control-request-method";
     private static final String ACCESS_CONTROL_REQUEST_HEADERS = "access-control-request-headers";
 
-    public ContainerResponse filter( ContainerRequest request,
-            ContainerResponse response )
+    public ContainerResponse filter( ContainerRequest request, ContainerResponse response )
     {
 
-        response.getHttpHeaders().add( ACCESS_CONTROL_ALLOW_ORIGIN, "*" );
+        response.getHttpHeaders()
+                .add( ACCESS_CONTROL_ALLOW_ORIGIN, "*" );
 
         // Allow all forms of requests
-        if ( request.getRequestHeaders().containsKey(
-                ACCESS_CONTROL_REQUEST_METHOD ) )
+        if ( request.getRequestHeaders()
+                .containsKey( ACCESS_CONTROL_REQUEST_METHOD ) )
         {
 
-            for ( String value : request.getRequestHeaders().get(
-                    ACCESS_CONTROL_REQUEST_METHOD ) )
+            for ( String value : request.getRequestHeaders()
+                    .get( ACCESS_CONTROL_REQUEST_METHOD ) )
             {
-                response.getHttpHeaders().add( ACCESS_CONTROL_ALLOW_METHODS,
-                        value );
+                response.getHttpHeaders()
+                        .add( ACCESS_CONTROL_ALLOW_METHODS, value );
             }
         }
 
         // Allow all types of headers
-        if ( request.getRequestHeaders().containsKey(
-                ACCESS_CONTROL_REQUEST_HEADERS ) )
+        if ( request.getRequestHeaders()
+                .containsKey( ACCESS_CONTROL_REQUEST_HEADERS ) )
         {
-            for ( String value : request.getRequestHeaders().get(
-                    ACCESS_CONTROL_REQUEST_HEADERS ) )
+            for ( String value : request.getRequestHeaders()
+                    .get( ACCESS_CONTROL_REQUEST_HEADERS ) )
             {
-                response.getHttpHeaders().add( ACCESS_CONTROL_ALLOW_HEADERS,
-                        value );
+                response.getHttpHeaders()
+                        .add( ACCESS_CONTROL_ALLOW_HEADERS, value );
             }
         }
 

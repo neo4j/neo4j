@@ -66,8 +66,7 @@ public class RelationshipRepresentationTest extends RepresentationTestBase
     @Test
     public void shouldHavePropertyLinkTemplate() throws BadInputException
     {
-        assertUriMatches( RELATIONSHIP_URI_PATTERN + "/properties/\\{key\\}",
-                relrep( 1234 ).propertyUriTemplate() );
+        assertUriMatches( RELATIONSHIP_URI_PATTERN + "/properties/\\{key\\}", relrep( 1234 ).propertyUriTemplate() );
     }
 
     @Test
@@ -107,14 +106,16 @@ public class RelationshipRepresentationTest extends RepresentationTestBase
     @SuppressWarnings( "unchecked" )
     public static void verifySerialisation( Map<String, Object> relrep )
     {
-        assertUriMatches( RELATIONSHIP_URI_PATTERN, relrep.get( "self" ).toString() );
-        assertUriMatches( NODE_URI_PATTERN, relrep.get( "start" ).toString() );
-        assertUriMatches( NODE_URI_PATTERN, relrep.get( "end" ).toString() );
+        assertUriMatches( RELATIONSHIP_URI_PATTERN, relrep.get( "self" )
+                .toString() );
+        assertUriMatches( NODE_URI_PATTERN, relrep.get( "start" )
+                .toString() );
+        assertUriMatches( NODE_URI_PATTERN, relrep.get( "end" )
+                .toString() );
         assertNotNull( (String) relrep.get( "type" ) );
-        assertUriMatches( RELATIONSHIP_URI_PATTERN + "/properties",
-                relrep.get( "properties" ).toString() );
-        assertUriMatches( RELATIONSHIP_URI_PATTERN + "/properties/\\{key\\}",
-                (String) relrep.get( "property" ) );
+        assertUriMatches( RELATIONSHIP_URI_PATTERN + "/properties", relrep.get( "properties" )
+                .toString() );
+        assertUriMatches( RELATIONSHIP_URI_PATTERN + "/properties/\\{key\\}", (String) relrep.get( "property" ) );
         assertNotNull( (Map<String, Object>) relrep.get( "data" ) );
     }
 }

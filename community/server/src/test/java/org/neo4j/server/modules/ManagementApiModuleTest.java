@@ -35,22 +35,22 @@ import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.web.WebServer;
 
-
-public class ManagementApiModuleTest {
+public class ManagementApiModuleTest
+{
     @Test
-    public void shouldRegisterASingleUri() throws Exception {
-        WebServer webServer = mock(WebServer.class);
+    public void shouldRegisterASingleUri() throws Exception
+    {
+        WebServer webServer = mock( WebServer.class );
 
-        NeoServerWithEmbeddedWebServer neoServer = mock(NeoServerWithEmbeddedWebServer.class);
-        when(neoServer.baseUri()).thenReturn(new URI("http://localhost:7575"));
-        when(neoServer.getWebServer()).thenReturn(webServer);
+        NeoServerWithEmbeddedWebServer neoServer = mock( NeoServerWithEmbeddedWebServer.class );
+        when( neoServer.baseUri() ).thenReturn( new URI( "http://localhost:7575" ) );
+        when( neoServer.getWebServer() ).thenReturn( webServer );
 
         Configuration config = new PropertiesConfiguration();
         String managementPath = "/db/manage";
-        config.addProperty(Configurator.MANAGEMENT_PATH_PROPERTY_KEY, managementPath);
+        config.addProperty( Configurator.MANAGEMENT_PATH_PROPERTY_KEY, managementPath );
 
-        when(neoServer.getConfiguration()).thenReturn(config);
-
+        when( neoServer.getConfiguration() ).thenReturn( config );
 
         ManagementApiModule module = new ManagementApiModule();
         module.start( neoServer );

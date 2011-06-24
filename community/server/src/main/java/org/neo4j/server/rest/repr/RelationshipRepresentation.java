@@ -22,8 +22,8 @@ package org.neo4j.server.rest.repr;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.IterableWrapper;
 
-public final class RelationshipRepresentation extends ObjectRepresentation implements
-        ExtensibleRepresentation, EntityRepresentation
+public final class RelationshipRepresentation extends ObjectRepresentation implements ExtensibleRepresentation,
+        EntityRepresentation
 {
     private final Relationship rel;
 
@@ -89,7 +89,7 @@ public final class RelationshipRepresentation extends ObjectRepresentation imple
     {
         return ValueRepresentation.template( path( "/properties/{key}" ) );
     }
-    
+
     @Override
     void extraData( MappingSerializer serializer )
     {

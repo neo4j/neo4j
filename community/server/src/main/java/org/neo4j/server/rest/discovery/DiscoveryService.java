@@ -36,38 +36,49 @@ import org.neo4j.server.rest.repr.DiscoveryRepresentation;
 import org.neo4j.server.rest.repr.OutputFormat;
 
 /**
- * Used to discover the rest of the server URIs through a HTTP GET request to the server root (/).
+ * Used to discover the rest of the server URIs through a HTTP GET request to
+ * the server root (/).
  */
 @Path( "/" )
-public class DiscoveryService {
-    
+public class DiscoveryService
+{
+
     private final Configuration configuration;
     private final OutputFormat outputFormat;
 
-    public DiscoveryService(@Context Configuration configuration, @Context OutputFormat outputFormat) {
+    public DiscoveryService( @Context Configuration configuration, @Context OutputFormat outputFormat )
+    {
         this.configuration = configuration;
         this.outputFormat = outputFormat;
     }
 
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response getDiscoveryDocument() throws URISyntaxException {
-        String webAdminManagementUri = configuration.getString(Configurator.MANAGEMENT_PATH_PROPERTY_KEY, Configurator.DEFAULT_MANAGEMENT_API_PATH);
-        String dataUri = configuration.getString( Configurator.REST_API_PATH_PROPERTY_KEY, Configurator.DEFAULT_DATA_API_PATH);
+    @Produces( MediaType.APPLICATION_JSON )
+    public Response getDiscoveryDocument() throws URISyntaxException
+    {
+        String webAdminManagementUri = configuration.getString( Configurator.MANAGEMENT_PATH_PROPERTY_KEY,
+                Configurator.DEFAULT_MANAGEMENT_API_PATH );
+        String dataUri = configuration.getString( Configurator.REST_API_PATH_PROPERTY_KEY,
+                Configurator.DEFAULT_DATA_API_PATH );
 
-        DiscoveryRepresentation dr = new DiscoveryRepresentation(webAdminManagementUri, dataUri);
-        return outputFormat.ok(dr);
+        DiscoveryRepresentation dr = new DiscoveryRepresentation( webAdminManagementUri, dataUri );
+        return outputFormat.ok( dr );
     }
-    
-    
+
     @GET
-    @Produces(MediaType.WILDCARD)
-    public Response redirectToWebadmin() {
-        try {
-            return Response.seeOther(new URI(Configurator.DEFAULT_WEB_ADMIN_PATH)).build();
-        } catch (URISyntaxException e) {
-            Log.warn(e.getMessage());
-            return Response.serverError().build();
+    @Produces( MediaType.WILDCARD )
+    public Response redirectToWebadmin()
+    {
+        try
+        {
+            return Response.seeOther( new URI( Configurator.DEFAULT_WEB_ADMIN_PATH ) )
+                    .build();
+        }
+        catch ( URISyntaxException e )
+        {
+            Log.warn( e.getMessage() );
+            return Response.serverError()
+                    .build();
         }
     }
 }

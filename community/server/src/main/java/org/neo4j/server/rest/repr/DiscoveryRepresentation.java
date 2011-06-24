@@ -19,7 +19,8 @@
  */
 package org.neo4j.server.rest.repr;
 
-public class DiscoveryRepresentation extends MappingRepresentation {
+public class DiscoveryRepresentation extends MappingRepresentation
+{
 
     private static final String DATA_URI_KEY = "data";
     private static final String MANAGEMENT_URI_KEY = "management";
@@ -27,16 +28,18 @@ public class DiscoveryRepresentation extends MappingRepresentation {
     private final String managementUri;
     private final String dataUri;
 
-    public DiscoveryRepresentation(String managementUri, String dataUri) {
-        super(DISCOVERY_REPRESENTATION_TYPE);
+    public DiscoveryRepresentation( String managementUri, String dataUri )
+    {
+        super( DISCOVERY_REPRESENTATION_TYPE );
         this.managementUri = managementUri;
         this.dataUri = dataUri;
     }
-    
+
     @Override
-    protected void serialize(MappingSerializer serializer) {
-        serializer.putUri( MANAGEMENT_URI_KEY, managementUri);
-        serializer.putUri( DATA_URI_KEY, dataUri);
+    protected void serialize( MappingSerializer serializer )
+    {
+        serializer.putUri( MANAGEMENT_URI_KEY, managementUri );
+        serializer.putUri( DATA_URI_KEY, dataUri );
     }
 
 }

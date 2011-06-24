@@ -65,11 +65,9 @@ public class RrdDataRepresentation extends ObjectRepresentation
                 String[] dsNames = rrdData.getDsNames();
                 for ( int i = 0, l = dsNames.length; i < l; i++ )
                 {
-                    serializer.putList( dsNames[i],
-                            ListRepresentation.numbers( rrdData.getValues( i ) ) );
+                    serializer.putList( dsNames[i], ListRepresentation.numbers( rrdData.getValues( i ) ) );
                 }
             }
         };
     }
 }
-

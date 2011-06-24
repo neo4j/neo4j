@@ -23,7 +23,6 @@ import javax.management.MalformedObjectNameException;
 
 import org.neo4j.server.database.Database;
 
-
 public class NodeIdsInUseSampleable extends DatabasePrimitivesSampleableBase
 {
 

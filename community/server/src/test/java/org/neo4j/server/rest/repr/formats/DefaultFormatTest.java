@@ -81,21 +81,19 @@ public class DefaultFormatTest
         assertThat( nestedMap, hasEntry( "key", "valuable" ) );
     }
 
-    @Test(expected = MediaTypeNotSupportedException.class)
+    @Test( expected = MediaTypeNotSupportedException.class )
     public void failsWithTheCorrectExceptionWhenGettingTheWrongInput() throws BadInputException
     {
         input.readValue( "<xml />" );
     }
 
-
-    @Test(expected = MediaTypeNotSupportedException.class)
+    @Test( expected = MediaTypeNotSupportedException.class )
     public void failsWithTheCorrectExceptionWhenGettingTheWrongInput2() throws BadInputException
     {
         input.readMap( "<xml />" );
     }
 
-
-    @Test(expected = MediaTypeNotSupportedException.class)
+    @Test( expected = MediaTypeNotSupportedException.class )
     public void failsWithTheCorrectExceptionWhenGettingTheWrongInput3() throws BadInputException
     {
         input.readUri( "<xml />" );

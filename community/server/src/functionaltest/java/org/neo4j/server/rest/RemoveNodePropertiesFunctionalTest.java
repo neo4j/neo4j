@@ -20,6 +20,7 @@
 package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -39,7 +40,6 @@ import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.test.TestData;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class RemoveNodePropertiesFunctionalTest
@@ -107,7 +107,7 @@ public class RemoveNodePropertiesFunctionalTest
     @Test
     public void shouldReturn404WhenPropertiesSentToANodeWhichDoesNotExist()
     {
-        ClientResponse response = Client.create().resource( getPropertiesUri( 999999 ) )
+        ClientResponse response = CLIENT.resource( getPropertiesUri( 999999 ) )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
                 .delete( ClientResponse.class );
@@ -117,7 +117,7 @@ public class RemoveNodePropertiesFunctionalTest
 
     private ClientResponse removeNodePropertiesOnServer( final long nodeId )
     {
-        return Client.create().resource( getPropertiesUri( nodeId ) )
+        return CLIENT.resource( getPropertiesUri( nodeId ) )
                 .delete( ClientResponse.class );
     }
 
@@ -148,7 +148,7 @@ public class RemoveNodePropertiesFunctionalTest
     @Test
     public void shouldReturn404WhenPropertySentToANodeWhichDoesNotExist()
     {
-        ClientResponse response = Client.create().resource( getPropertyUri( 999999, "foo" ) )
+        ClientResponse response = CLIENT.resource( getPropertyUri( 999999, "foo" ) )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
                 .delete( ClientResponse.class );
@@ -163,7 +163,7 @@ public class RemoveNodePropertiesFunctionalTest
 
     private ClientResponse removeNodePropertyOnServer( final long nodeId, final String key )
     {
-        return Client.create().resource( getPropertyUri( nodeId, key ) )
+        return CLIENT.resource( getPropertyUri( nodeId, key ) )
                 .delete( ClientResponse.class );
     }
 }

@@ -39,55 +39,65 @@ import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.rest.web.EntityOutputFormat;
 
+public class DiscoveryServiceTest
+{
 
-public class DiscoveryServiceTest {
-    
     @Test
-    public void shouldReturnValidJSONWithDataAndManagementUris() throws Exception {
-        Configuration mockConfig = mock(Configuration.class);
+    public void shouldReturnValidJSONWithDataAndManagementUris() throws Exception
+    {
+        Configuration mockConfig = mock( Configuration.class );
         String managementUri = "/management";
-        when(mockConfig.getString(Configurator.MANAGEMENT_PATH_PROPERTY_KEY, Configurator.DEFAULT_MANAGEMENT_API_PATH)).thenReturn(managementUri);
+        when(
+                mockConfig.getString( Configurator.MANAGEMENT_PATH_PROPERTY_KEY,
+                        Configurator.DEFAULT_MANAGEMENT_API_PATH ) ).thenReturn( managementUri );
         String dataUri = "/data";
-        when(mockConfig.getString(Configurator.REST_API_PATH_PROPERTY_KEY, Configurator.DEFAULT_DATA_API_PATH)).thenReturn(dataUri);
-        
+        when( mockConfig.getString( Configurator.REST_API_PATH_PROPERTY_KEY, Configurator.DEFAULT_DATA_API_PATH ) ).thenReturn(
+                dataUri );
+
         String baseUri = "http://www.example.com";
-        DiscoveryService ds = new DiscoveryService(mockConfig, new EntityOutputFormat( new JsonFormat(), new URI(baseUri), null ));
+        DiscoveryService ds = new DiscoveryService( mockConfig, new EntityOutputFormat( new JsonFormat(), new URI(
+                baseUri ), null ) );
         Response response = ds.getDiscoveryDocument();
-        
-        String json = new String((byte[]) response.getEntity());
-        
-        assertNotNull(json);
-        assertThat(json.length(), is(greaterThan(0)));
-        assertThat(json, is(not("\"\"")));
-        assertThat(json, is(not("null")));
-        
-        assertThat(json, containsString("\"management\" : \"" + baseUri + managementUri + "\""));
-        assertThat(json, containsString("\"data\" : \"" + baseUri + dataUri + "\""));
-   
+
+        String json = new String( (byte[]) response.getEntity() );
+
+        assertNotNull( json );
+        assertThat( json.length(), is( greaterThan( 0 ) ) );
+        assertThat( json, is( not( "\"\"" ) ) );
+        assertThat( json, is( not( "null" ) ) );
+
+        assertThat( json, containsString( "\"management\" : \"" + baseUri + managementUri + "\"" ) );
+        assertThat( json, containsString( "\"data\" : \"" + baseUri + dataUri + "\"" ) );
+
     }
-    
+
     @Ignore
     @Test
-    public void shouldReturnConfiguredUrlIfConfigIsAbsolute() throws Exception {
-        Configuration mockConfig = mock(Configuration.class);
+    public void shouldReturnConfiguredUrlIfConfigIsAbsolute() throws Exception
+    {
+        Configuration mockConfig = mock( Configuration.class );
         String managementUri = "http://absolutedomain/management";
-        when(mockConfig.getString(Configurator.MANAGEMENT_PATH_PROPERTY_KEY, Configurator.DEFAULT_MANAGEMENT_API_PATH)).thenReturn(managementUri);
+        when(
+                mockConfig.getString( Configurator.MANAGEMENT_PATH_PROPERTY_KEY,
+                        Configurator.DEFAULT_MANAGEMENT_API_PATH ) ).thenReturn( managementUri );
         String dataUri = "http://absolutedomain/management";
-        when(mockConfig.getString(Configurator.REST_API_PATH_PROPERTY_KEY, Configurator.DEFAULT_DATA_API_PATH)).thenReturn(dataUri);
-        
+        when( mockConfig.getString( Configurator.REST_API_PATH_PROPERTY_KEY, Configurator.DEFAULT_DATA_API_PATH ) ).thenReturn(
+                dataUri );
+
         String baseUri = "http://www.example.com";
-        DiscoveryService ds = new DiscoveryService(mockConfig, new EntityOutputFormat( new JsonFormat(), new URI(baseUri), null ));
+        DiscoveryService ds = new DiscoveryService( mockConfig, new EntityOutputFormat( new JsonFormat(), new URI(
+                baseUri ), null ) );
         Response response = ds.getDiscoveryDocument();
-        
-        String json = new String((byte[]) response.getEntity());
-        
-        assertNotNull(json);
-        assertThat(json.length(), is(greaterThan(0)));
-        assertThat(json, is(not("\"\"")));
-        assertThat(json, is(not("null")));
-        
-        assertThat(json, containsString("\"management\" : \"" + managementUri + "\""));
-        assertThat(json, containsString("\"data\" : \"" + dataUri + "\""));
-   
+
+        String json = new String( (byte[]) response.getEntity() );
+
+        assertNotNull( json );
+        assertThat( json.length(), is( greaterThan( 0 ) ) );
+        assertThat( json, is( not( "\"\"" ) ) );
+        assertThat( json, is( not( "null" ) ) );
+
+        assertThat( json, containsString( "\"management\" : \"" + managementUri + "\"" ) );
+        assertThat( json, containsString( "\"data\" : \"" + dataUri + "\"" ) );
+
     }
 }

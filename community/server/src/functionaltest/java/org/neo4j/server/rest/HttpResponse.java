@@ -21,11 +21,11 @@ package org.neo4j.server.rest;
 
 import com.sun.jersey.api.client.ClientResponse;
 
-public class HttpResponse implements  TestResponse
+public class HttpResponse implements TestResponse
 {
     private final ClientResponse inner;
 
-    public HttpResponse(ClientResponse inner )
+    public HttpResponse( ClientResponse inner )
     {
         this.inner = inner;
     }

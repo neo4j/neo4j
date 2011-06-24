@@ -21,6 +21,7 @@ package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
 
 import java.io.IOException;
 import java.util.List;
@@ -41,17 +42,15 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.TestData;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.UniformInterfaceException;
 
 public class BatchOperationFunctionalTest
 {
-    
+
     public @Rule
     TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
-    
 
     private static NeoServerWithEmbeddedWebServer server;
     private static FunctionalTestHelper functionalTestHelper;
@@ -76,84 +75,110 @@ public class BatchOperationFunctionalTest
     {
         server.stop();
     }
-    
+
     /**
      * Execute multiple operations in batch.
      * 
      * This lets you execute multiple API calls through a single HTTP call,
-     * significantly improving performance for large insert and update operations.
+     * significantly improving performance for large insert and update
+     * operations.
      * 
-     * The batch service expects an array of job descriptions as input, 
-     * each job description describing an action to be performed via the 
-     * normal server API.
+     * The batch service expects an array of job descriptions as input, each job
+     * description describing an action to be performed via the normal server
+     * API.
      * 
-     * This service is transactional. If any of the operations performed
-     * fails (returns a non-2xx HTTP status code), the transaction will be 
-     * rolled back and all changes will be undone.
+     * This service is transactional. If any of the operations performed fails
+     * (returns a non-2xx HTTP status code), the transaction will be rolled back
+     * and all changes will be undone.
      * 
-     * Each job description should contain a +path+ attribute, with a value relative to the
-     * data API root (so http://localhost/db/data/node becomes just /node), and
-     * a +method+ attribute containing HTTP verb to use.
+     * Each job description should contain a +path+ attribute, with a value
+     * relative to the data API root (so http://localhost/db/data/node becomes
+     * just /node), and a +method+ attribute containing HTTP verb to use.
      * 
-     * Optionally you may provide a +body+ attribute, and an +id+ attribute to help you keep 
-     * track of responses, although responses are guaranteed to be returned in the same 
-     * order the job descriptions are received.
+     * Optionally you may provide a +body+ attribute, and an +id+ attribute to
+     * help you keep track of responses, although responses are guaranteed to be
+     * returned in the same order the job descriptions are received.
      * 
-     * The following figure outlines the different parts of the job descriptions:
+     * The following figure outlines the different parts of the job
+     * descriptions:
      * 
      * image::batch-request-api.png[]
      */
     @Documented
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldPerformMultipleOperations() throws Exception 
+    public void shouldPerformMultipleOperations() throws Exception
     {
-        
-        String jsonString = new PrettyJSON()
-            .array()
-    
-            .object()
-            .key("method").value("PUT")
-            .key("to").value("/node/0/properties")
-            .key("body").object().key("age").value(1).endObject()
-            .key("id").value(0)
-            .endObject()
-    
-            .object()
-            .key("method").value("GET")
-            .key("to").value("/node/0")
-            .key("id").value(1)
-            .endObject()
-    
-            .object()
-            .key("method").value("POST")
-            .key("to").value("/node")
-            .key("body").object().key("age").value(1).endObject()
-            .key("id").value(2)
-            .endObject()
-    
-            .object()
-            .key("method").value("POST")
-            .key("to").value("/node")
-            .key("body").object().key("age").value(1).endObject()
-            .key("id").value(3)
-            .endObject()
-    
-            .endArray()
-            .toString();
+
+        String jsonString = new PrettyJSON().array()
+
+                .object()
+                .key( "method" )
+                .value( "PUT" )
+                .key( "to" )
+                .value( "/node/0/properties" )
+                .key( "body" )
+                .object()
+                .key( "age" )
+                .value( 1 )
+                .endObject()
+                .key( "id" )
+                .value( 0 )
+                .endObject()
+
+                .object()
+                .key( "method" )
+                .value( "GET" )
+                .key( "to" )
+                .value( "/node/0" )
+                .key( "id" )
+                .value( 1 )
+                .endObject()
+
+                .object()
+                .key( "method" )
+                .value( "POST" )
+                .key( "to" )
+                .value( "/node" )
+                .key( "body" )
+                .object()
+                .key( "age" )
+                .value( 1 )
+                .endObject()
+                .key( "id" )
+                .value( 2 )
+                .endObject()
+
+                .object()
+                .key( "method" )
+                .value( "POST" )
+                .key( "to" )
+                .value( "/node" )
+                .key( "body" )
+                .object()
+                .key( "age" )
+                .value( 1 )
+                .endObject()
+                .key( "id" )
+                .value( 3 )
+                .endObject()
+
+                .endArray()
+                .toString();
 
         String uri = functionalTestHelper.dataUri() + "batch";
-        
-        ClientResponse response = Client.create()
-          .resource( uri)
-          .type(MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON )
-          .entity( jsonString ).post( ClientResponse.class );
-        
-        assertEquals(200, response.getStatus());
-        
-        List<Map<String, Object>> results = JsonHelper.jsonToList( response.getEntity( String.class ));
-        
-        assertEquals(4, results.size());
+
+        ClientResponse response = CLIENT.resource( uri )
+                .type( MediaType.APPLICATION_JSON )
+                .accept( MediaType.APPLICATION_JSON )
+                .entity( jsonString )
+                .post( ClientResponse.class );
+
+        assertEquals( 200, response.getStatus() );
+
+        List<Map<String, Object>> results = JsonHelper.jsonToList( response.getEntity( String.class ) );
+
+        assertEquals( 4, results.size() );
 
         Map<String, Object> putResult = results.get( 0 );
         Map<String, Object> getResult = results.get( 1 );
@@ -161,116 +186,151 @@ public class BatchOperationFunctionalTest
         Map<String, Object> secondPostResult = results.get( 3 );
 
         // Ids should be ok
-        assertEquals(0, putResult.get("id"));
-        assertEquals(2, firstPostResult.get("id"));
-        assertEquals(3, secondPostResult.get("id"));
+        assertEquals( 0, putResult.get( "id" ) );
+        assertEquals( 2, firstPostResult.get( "id" ) );
+        assertEquals( 3, secondPostResult.get( "id" ) );
 
         // Should contain "from"
-        assertEquals("/node/0/properties", putResult.get( "from" ));
-        assertEquals("/node/0", getResult.get("from"));
-        assertEquals("/node", firstPostResult.get("from"));
-        assertEquals("/node", secondPostResult.get("from"));
-        
+        assertEquals( "/node/0/properties", putResult.get( "from" ) );
+        assertEquals( "/node/0", getResult.get( "from" ) );
+        assertEquals( "/node", firstPostResult.get( "from" ) );
+        assertEquals( "/node", secondPostResult.get( "from" ) );
+
         // Post should contain location
-        assertTrue(((String)firstPostResult.get( "location" )).length() > 0);
-        assertTrue(((String)secondPostResult.get( "location" )).length() > 0);
+        assertTrue( ( (String) firstPostResult.get( "location" ) ).length() > 0 );
+        assertTrue( ( (String) secondPostResult.get( "location" ) ).length() > 0 );
 
         // Should have created by the first PUT request
-        Map<String, Object> body = (Map<String, Object>) getResult.get("body");
-        assertEquals(1, ((Map<String, Object>)body.get("data")).get( "age" ));
-        
+        Map<String, Object> body = (Map<String, Object>) getResult.get( "body" );
+        assertEquals( 1, ( (Map<String, Object>) body.get( "data" ) ).get( "age" ) );
+
         gen.get()
-            .payload( jsonString )
-            .expectedStatus( 200 )
-            .post( uri );
+                .payload( jsonString )
+                .expectedStatus( 200 )
+                .post( uri );
     }
-    
+
     /**
      * Refer to items created earlier in the same batch job.
      * 
-     * The batch operation API allows you to refer to the URI returned
-     * from a created resource in subsequent job descriptions, within the same batch call. 
+     * The batch operation API allows you to refer to the URI returned from a
+     * created resource in subsequent job descriptions, within the same batch
+     * call.
      * 
-     * Use the +{[JOB ID]}+ special syntax to inject URIs from created
-     * resources into JSON strings in subsequent job descriptions.
+     * Use the +{[JOB ID]}+ special syntax to inject URIs from created resources
+     * into JSON strings in subsequent job descriptions.
      */
     @Documented
     @Test
     public void shouldBeAbleToReferToCreatedResource() throws Exception
     {
-        String jsonString =new PrettyJSON()
-            .array()
-            .object()
-              .key( "method" ).value( "POST" )
-              .key( "to" ).value("/node")
-              .key( "id" ).value( 0 )
-              .key("body").object().key( "age" ).value( 1 ).endObject()
-            .endObject()
-            .object()
-                .key( "method" ).value( "POST" )
-                .key( "to" ).value("/node")
-                .key( "id" ).value( 1 )
-                .key("body").object().key( "age" ).value( 12 ).endObject()
-            .endObject()
-            .object()
-              .key( "method" ).value( "POST" )
-              .key( "to" ).value("{0}/relationships")
-              .key( "id" ).value( 3 )
-              .key("body")
+        String jsonString = new PrettyJSON().array()
                 .object()
-                  .key( "to" ).value( "{1}" )
-                  .key( "data" ).object().key( "name" ).value("bob").endObject()
-                  .key("type").value("KNOWS")
+                .key( "method" )
+                .value( "POST" )
+                .key( "to" )
+                .value( "/node" )
+                .key( "id" )
+                .value( 0 )
+                .key( "body" )
+                .object()
+                .key( "age" )
+                .value( 1 )
                 .endObject()
-            .endObject()
-            .object()
-              .key( "method" ).value( "POST" )
-              .key( "to" ).value("/index/relationship/my_rels/name/bob")
-              .key( "id" ).value( 4)
-              .key("body").value( "{3}" )
-             .endObject()
-            .endArray().toString();
-        
+                .endObject()
+                .object()
+                .key( "method" )
+                .value( "POST" )
+                .key( "to" )
+                .value( "/node" )
+                .key( "id" )
+                .value( 1 )
+                .key( "body" )
+                .object()
+                .key( "age" )
+                .value( 12 )
+                .endObject()
+                .endObject()
+                .object()
+                .key( "method" )
+                .value( "POST" )
+                .key( "to" )
+                .value( "{0}/relationships" )
+                .key( "id" )
+                .value( 3 )
+                .key( "body" )
+                .object()
+                .key( "to" )
+                .value( "{1}" )
+                .key( "data" )
+                .object()
+                .key( "name" )
+                .value( "bob" )
+                .endObject()
+                .key( "type" )
+                .value( "KNOWS" )
+                .endObject()
+                .endObject()
+                .object()
+                .key( "method" )
+                .value( "POST" )
+                .key( "to" )
+                .value( "/index/relationship/my_rels/name/bob" )
+                .key( "id" )
+                .value( 4 )
+                .key( "body" )
+                .value( "{3}" )
+                .endObject()
+                .endArray()
+                .toString();
+
         String uri = functionalTestHelper.dataUri() + "batch";
-        
-        ClientResponse response = Client.create()
-          .resource( uri)
-          .type(MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON )
-          .entity( jsonString ).post( ClientResponse.class );
-        
-        assertEquals(200, response.getStatus());
-        
-        List<Map<String, Object>> results = JsonHelper.jsonToList( response.getEntity( String.class ));
-        
-        assertEquals(4, results.size());
-        assertEquals( 1, helper.getIndexedRelationships( "my_rels", "name", "bob" ).size() );
-        
+
+        ClientResponse response = CLIENT.resource( uri )
+                .type( MediaType.APPLICATION_JSON )
+                .accept( MediaType.APPLICATION_JSON )
+                .entity( jsonString )
+                .post( ClientResponse.class );
+
+        assertEquals( 200, response.getStatus() );
+
+        List<Map<String, Object>> results = JsonHelper.jsonToList( response.getEntity( String.class ) );
+
+        assertEquals( 4, results.size() );
+        assertEquals( 1, helper.getIndexedRelationships( "my_rels", "name", "bob" )
+                .size() );
+
         gen.get()
-            .payload( jsonString )
-            .expectedStatus( 200 )
-            .post( uri );
+                .payload( jsonString )
+                .expectedStatus( 200 )
+                .post( uri );
     }
 
     @Test
-    public void shouldGetLocationHeadersWhenCreatingThings() throws Exception {
+    public void shouldGetLocationHeadersWhenCreatingThings() throws Exception
+    {
 
         int originalNodeCount = helper.getNumberOfNodes();
 
-        ClientResponse response = Client.create()
-                .resource( functionalTestHelper.dataUri() + "batch" )
+        ClientResponse response = CLIENT.resource( functionalTestHelper.dataUri() + "batch" )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
-                .entity(new PrettyJSON()
-                        .array()
+                .entity( new PrettyJSON().array()
 
                         .object()
-                        .key("method").value("POST")
-                        .key("to").value("/node")
-                        .key("body").object().key("age").value(1).endObject()
+                        .key( "method" )
+                        .value( "POST" )
+                        .key( "to" )
+                        .value( "/node" )
+                        .key( "body" )
+                        .object()
+                        .key( "age" )
+                        .value( 1 )
+                        .endObject()
                         .endObject()
 
                         .endArray()
-                        .toString())
+                        .toString() )
                 .post( ClientResponse.class );
 
         assertEquals( 200, response.getStatus() );
@@ -295,8 +355,7 @@ public class BatchOperationFunctionalTest
 
         int originalNodeCount = helper.getNumberOfNodes();
 
-        ClientResponse response = Client.create()
-                .resource( functionalTestHelper.dataUri() + "batch" )
+        ClientResponse response = CLIENT.resource( functionalTestHelper.dataUri() + "batch" )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
                 .entity( jsonString )
@@ -318,8 +377,7 @@ public class BatchOperationFunctionalTest
 
         int originalNodeCount = helper.getNumberOfNodes();
 
-        ClientResponse response = Client.create()
-                .resource( functionalTestHelper.dataUri() + "batch" )
+        ClientResponse response = CLIENT.resource( functionalTestHelper.dataUri() + "batch" )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
                 .entity( jsonString )
@@ -340,8 +398,7 @@ public class BatchOperationFunctionalTest
 
         int originalNodeCount = helper.getNumberOfNodes();
 
-        ClientResponse response = Client.create()
-                .resource( functionalTestHelper.dataUri() + "batch" )
+        ClientResponse response = CLIENT.resource( functionalTestHelper.dataUri() + "batch" )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
                 .entity( jsonString )

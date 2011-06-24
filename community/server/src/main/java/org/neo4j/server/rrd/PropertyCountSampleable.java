@@ -25,8 +25,7 @@ import org.neo4j.server.database.Database;
 
 public class PropertyCountSampleable extends DatabasePrimitivesSampleableBase
 {
-    public PropertyCountSampleable( Database db )
-        throws MalformedObjectNameException
+    public PropertyCountSampleable( Database db ) throws MalformedObjectNameException
     {
         super( db );
     }

@@ -25,7 +25,7 @@ public class FullPathRepresentation extends ObjectRepresentation
 {
     private final Path path;
 
-    public FullPathRepresentation(Path path)
+    public FullPathRepresentation( Path path )
     {
         super( RepresentationType.FULL_PATH );
         this.path = path;
@@ -52,12 +52,12 @@ public class FullPathRepresentation extends ObjectRepresentation
     @Mapping( "nodes" )
     public ListRepresentation nodes()
     {
-        return NodeRepresentation.list(path.nodes());
+        return NodeRepresentation.list( path.nodes() );
     }
 
     @Mapping( "relationships" )
     public ListRepresentation relationships()
     {
-        return RelationshipRepresentation.list(path.relationships());
+        return RelationshipRepresentation.list( path.relationships() );
     }
 }

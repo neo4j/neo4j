@@ -24,8 +24,9 @@ import java.util.Map;
 
 public class NodeIndexRepresentation extends IndexRepresentation
 {
-    public NodeIndexRepresentation( String name) {
-        this(name, Collections.EMPTY_MAP);
+    public NodeIndexRepresentation( String name )
+    {
+        this( name, Collections.EMPTY_MAP );
     }
 
     public NodeIndexRepresentation( String name, Map<String, String> type )
@@ -33,7 +34,8 @@ public class NodeIndexRepresentation extends IndexRepresentation
         super( name, type );
     }
 
-    public String propertyContainerType() {
+    public String propertyContainerType()
+    {
         return "node";
     }
 

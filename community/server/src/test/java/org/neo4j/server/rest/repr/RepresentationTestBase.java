@@ -64,7 +64,8 @@ public abstract class RepresentationTestBase
         }
         else
         {
-            throw new IllegalArgumentException( repr.getClass().toString() );
+            throw new IllegalArgumentException( repr.getClass()
+                    .toString() );
         }
     }
 
@@ -75,8 +76,7 @@ public abstract class RepresentationTestBase
 
     static void assertUriMatches( String expectedRegex, String actualUri )
     {
-        assertTrue( "expected <" + expectedRegex + "> got <" + actualUri + ">",
-                actualUri.matches( expectedRegex ) );
+        assertTrue( "expected <" + expectedRegex + "> got <" + actualUri + ">", actualUri.matches( expectedRegex ) );
     }
 
     static String uriPattern( String subPath )

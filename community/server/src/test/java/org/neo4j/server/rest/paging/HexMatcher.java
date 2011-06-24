@@ -33,20 +33,21 @@ public class HexMatcher extends TypeSafeMatcher<String>
 
     private HexMatcher()
     {
-        
+
     }
 
     @Override
     public void describeTo( Description description )
     {
-        description.appendText( String.format("[%s] is not a pure hexadecimal string", candidate) );
+        description.appendText( String.format( "[%s] is not a pure hexadecimal string", candidate ) );
     }
 
     @Override
     public boolean matchesSafely( String candidate )
     {
         this.candidate = candidate;
-        return pattern.matcher( candidate ).matches();
+        return pattern.matcher( candidate )
+                .matches();
     }
 
     @Factory
