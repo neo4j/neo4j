@@ -19,6 +19,8 @@
  */
 package org.neo4j.server;
 
+import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -101,7 +103,7 @@ public class WrappingNeoServerBootstrapperTest
         srv.start();
         helper = new FunctionalTestHelper( srv.getServer() );
 
-        ClientResponse response = Client.create()
+        ClientResponse response = CLIENT
                 .resource( helper.dataUri() )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )
@@ -125,7 +127,7 @@ public class WrappingNeoServerBootstrapperTest
         helper = new FunctionalTestHelper( srv.getServer() );
         String nodeData = "{\"age\":12}";
 
-        ClientResponse response = Client.create()
+        ClientResponse response = CLIENT
                 .resource( helper.dataUri() + "node" )
                 .type( MediaType.APPLICATION_JSON )
                 .accept( MediaType.APPLICATION_JSON )

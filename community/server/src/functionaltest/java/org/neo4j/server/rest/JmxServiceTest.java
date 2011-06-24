@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.rest;
 
+import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
@@ -65,7 +66,7 @@ public class JmxServiceTest
     public void shouldRespondWithTheWebAdminClientSettings() throws Exception
     {
         String url = functionalTestHelper.mangementUri() + "/server/jmx";
-        ClientResponse resp = Client.create()
+        ClientResponse resp = CLIENT
                 .resource( url )
                 .accept( MediaType.APPLICATION_JSON_TYPE )
                 .get( ClientResponse.class );

@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.plugins;
 
+import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -158,7 +159,7 @@ public class CloneSubgraphPluginTest
         originalCount--; // Don't count the reference node
 
         // Find the start node URI from the server
-        ClientResponse response = Client.create()
+        ClientResponse response = CLIENT
                 .resource( functionalTestHelper.dataUri() + "node/1" )
                 .accept( MediaType.APPLICATION_JSON )
                 .get( ClientResponse.class );
@@ -184,7 +185,7 @@ public class CloneSubgraphPluginTest
 
         final String CLONE_DEPTH_MUCH_LARGER_THAN_THE_GRAPH = "99";
         response.close();
-        response = Client.create()
+        response = CLIENT
                 .resource( clonedSubgraphUri )
                 .type( MediaType.APPLICATION_FORM_URLENCODED )
                 .entity( "depth=" + CLONE_DEPTH_MUCH_LARGER_THAN_THE_GRAPH )

@@ -19,6 +19,7 @@
  */
 package org.neo4j.server;
 
+import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -56,7 +57,7 @@ public class ServerConfigTest
 
         assertEquals( NON_DEFAULT_PORT, server.getWebServerPort() );
 
-        ClientResponse response = Client.create()
+        ClientResponse response = CLIENT
                 .resource( server.baseUri() )
                 .get( ClientResponse.class );
 
@@ -75,13 +76,13 @@ public class ServerConfigTest
                 .build();
         server.start();
 
-        ClientResponse response = Client.create()
+        ClientResponse response = CLIENT
                 .resource( "http://localhost:7474" + webAdminDataUri )
                 .accept( MediaType.TEXT_HTML )
                 .get( ClientResponse.class );
         assertEquals( 200, response.getStatus() );
 
-        response = Client.create()
+        response = CLIENT
                 .resource( "http://localhost:7474" + webAdminManagementUri )
                 .accept( MediaType.APPLICATION_JSON )
                 .get( ClientResponse.class );

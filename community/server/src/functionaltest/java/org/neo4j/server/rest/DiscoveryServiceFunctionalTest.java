@@ -108,7 +108,7 @@ public class DiscoveryServiceFunctionalTest
     @Test
     public void shouldRedirectToWebadminOnHtmlRequest() throws Exception
     {
-        Client nonRedirectingClient = Client.create();
+        Client nonRedirectingClient = CLIENT;
         nonRedirectingClient.setFollowRedirects( false );
 
         ClientResponse clientResponse = nonRedirectingClient.resource( server.baseUri() )
