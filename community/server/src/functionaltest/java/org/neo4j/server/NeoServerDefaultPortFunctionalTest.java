@@ -31,6 +31,7 @@ import org.junit.Test;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.FunctionalTestHelper;
 
+import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class NeoServerDefaultPortFunctionalTest
@@ -64,8 +65,8 @@ public class NeoServerDefaultPortFunctionalTest
     {
 
         FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper( server );
-
-        ClientResponse response = CLIENT.resource( functionalTestHelper.getWebadminUri() )
+        
+        ClientResponse response = Client.create().resource( functionalTestHelper.getWebadminUri() )
                 .get( ClientResponse.class );
 
         assertThat( response.getStatus(), is( 200 ) );

@@ -57,7 +57,7 @@ public class ServerConfigTest
 
         assertEquals( NON_DEFAULT_PORT, server.getWebServerPort() );
 
-        ClientResponse response = CLIENT
+        ClientResponse response = Client.create()
                 .resource( server.baseUri() )
                 .get( ClientResponse.class );
 
