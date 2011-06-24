@@ -19,6 +19,14 @@
  */
 package org.neo4j.server;
 
+import java.io.File;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
@@ -32,14 +40,6 @@ import org.neo4j.server.plugins.PluginManager;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 import org.neo4j.server.web.WebServer;
-
-import java.io.File;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
 
 public class NeoServerWithEmbeddedWebServer implements NeoServer
 {
@@ -175,23 +175,24 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
 
     private void initWebServer()
     {
-
         int webServerPort = getWebServerPort();
-
-        log.info( "Starting Neo Server on port [%s]", webServerPort );
+        int maxThreads = getMaxThreads();
+        
+        log.info( "Starting Neo Server on port [%s] with [%d] threads available", webServerPort, maxThreads );
         webServer.setPort( webServerPort );
-        Integer maxThreads = getMaxThreads();
-        if ( maxThreads != null )
-        {
-            webServer.setMaxThreads( maxThreads );
-        }
+        webServer.setMaxThreads( maxThreads );
         webServer.init();
     }
 
-    private Integer getMaxThreads()
+    private int getMaxThreads()
     {
         return configurator.configuration().containsKey( Configurator.WEBSERVER_MAX_THREADS_PROPERTY_KEY ) ?
-                configurator.configuration().getInt( Configurator.WEBSERVER_MAX_THREADS_PROPERTY_KEY ) : null;
+                configurator.configuration().getInt( Configurator.WEBSERVER_MAX_THREADS_PROPERTY_KEY ) : defaultMaxWebServerThreads();
+    }
+
+    private int defaultMaxWebServerThreads()
+    {
+        return 10 * Runtime.getRuntime().availableProcessors();
     }
 
     private void startWebServer()

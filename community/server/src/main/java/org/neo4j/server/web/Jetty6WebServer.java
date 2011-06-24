@@ -19,8 +19,22 @@
  */
 package org.neo4j.server.web;
 
-import com.sun.jersey.api.core.ResourceConfig;
-import com.sun.jersey.spi.container.servlet.ServletContainer;
+import static java.lang.String.format;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.SessionManager;
@@ -36,35 +50,27 @@ import org.neo4j.server.NeoServer;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rest.web.AllowAjaxFilter;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
-
-import static java.lang.String.format;
+import com.sun.jersey.api.core.ResourceConfig;
+import com.sun.jersey.spi.container.servlet.ServletContainer;
 
 public class Jetty6WebServer implements WebServer
 {
     public static final Logger log = Logger.getLogger( Jetty6WebServer.class );
     public static final int DEFAULT_PORT = 80;
-    private static final int JETTY_DEFAULT_MAX_THREADS = 10 * Runtime.getRuntime().availableProcessors();
 
     private Server jetty;
     private int jettyPort = DEFAULT_PORT;
-    private Integer jettyMaxThreads;
 
     private final HashMap<String, String> staticContent = new HashMap<String, String>();
     private final HashMap<String, ServletHolder> jaxRSPackages = new HashMap<String, ServletHolder>();
 
     private NeoServer server;
+    private int jettyMaxThreads = tenThreadsPerProcessor();
+
+    private int tenThreadsPerProcessor()
+    {
+        return 10 * Runtime.getRuntime().availableProcessors();
+    }
 
     @Override
     public void setNeoServer( NeoServer server )
@@ -132,13 +138,7 @@ public class Jetty6WebServer implements WebServer
         if (jetty == null)
         {
             jetty = new Server( jettyPort );
-            if ( jettyMaxThreads != null )
-            {
-                jetty.setThreadPool( new QueuedThreadPool( jettyMaxThreads ) );
-            } else 
-            {
-                jetty.setThreadPool( new QueuedThreadPool( JETTY_DEFAULT_MAX_THREADS ) );
-            }
+            jetty.setThreadPool( new QueuedThreadPool( jettyMaxThreads ) );
         }
     }
 

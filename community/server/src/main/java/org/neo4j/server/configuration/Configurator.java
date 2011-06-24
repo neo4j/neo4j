@@ -19,11 +19,11 @@
  */
 package org.neo4j.server.configuration;
 
-import org.apache.commons.configuration.Configuration;
-
 import java.io.File;
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.commons.configuration.Configuration;
 
 public interface Configurator {
     String DB_TUNING_PROPERTY_FILE_KEY = "org.neo4j.server.db.tuning.properties";
