@@ -17,85 +17,116 @@ rem
 rem You should have received a copy of the GNU General Public License
 rem along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-rem This script is the main controller for the server
-rem There are commands to install, uninstall, start, stop 
-rem and restart the service on windows and also run it as
-rem a console process. For the first four operations however,
-rem Administrator rights are required.
-rem
-rem To do that, you can go to
-rem
-rem Start -> All Programs -> Accessories -> Right click on Command Prompt
-rem Click "Run as Administrator"
-rem
-rem Provide confirmation and/or the Administrator password if requested.
-rem From the command prompt that will come up, navigate to the directory
-rem containing the unpacked distribution and issue the command you wish,
-rem for example
-rem
-rem bin\Neo4j.bat install
-rem
-rem to install Neo4j as a Windows Service.
+call:main %1
+pause
+goto:eof
 
-setlocal
-call "%~dp0"setenv.bat
+:main
+set command=""
+set serviceName="neo4j"
+set serviceDisplayName="Neo4j Graph DB Server"
+set serviceStartType=auto
+call:parseConfig "%~dp0..\conf\neo4j-wrapper.conf"
+for /F %%v in ('echo %1^|findstr "^help$ ^start$ ^stop$ ^query$ ^restart$ ^install$ ^remove$ ^console$"') do set command=%%v
 
-set _WRAPPER_CONF_DEFAULT="..\conf\neo4j-wrapper.conf"
-set _WRAPPER_CONF=%_WRAPPER_CONF_DEFAULT%
-
-set _REALPATH=%~dp0
-
-set _WRAPPER_EXE="%_REALPATH%wrapper.bat"
-
-for /F %%v in ('echo %1^|findstr "^help$ ^console$ ^start$ ^stop$ ^query$ ^restart$ ^install$ ^remove$"') do call :exec set COMMAND=%%v
-
-if "%COMMAND%" == "" (
-    set COMMAND=console
+if %command% == "" (
+    set command=help
 )
 
-goto %COMMAND%
-if errorlevel 1 goto callerror
-goto :eof
+goto:%command%
+if errorlevel 1 goto:callerror
+goto:eof
 
 :callerror
 echo An error occurred in the process.
 pause
-goto :eof
-
-:help
-echo Usage: %0 { console : start : stop : restart : install : remove }
-pause
-goto :eof
-
-:console
-call %wrapper_bat% -c %_WRAPPER_CONF%
-goto :eof
-
-:start
-call %wrapper_bat% -t %_WRAPPER_CONF%
-goto :eof
-
-:stop
-call %wrapper_bat% -p %_WRAPPER_CONF%
-goto :eof
+goto:eof
 
 :query
-call %wrapper_bat% -q %_WRAPPER_CONF%
-goto :eof
+call:getStatus
+echo %status%
+goto:eof
+
+:getStatus
+set status=""
+
+rem get the state line from the sc output
+for /F "tokens=1,2 delims=:" %%a in ('sc query %serviceName%^|findstr "STATE"') do set status=%%b
+
+rem Remove ALL space, concatenating the numerical and the string - no prob
+set status=%status: =%
+
+rem done, if non existent it will be empty
+rem note that the strings we compare to normally
+rem have two spaces between numerical and
+rem string description. The substitution
+rem above swallowed these, though
+if "%status%" == "4RUNNING" (
+	set status="RUNNING"
+) else if "%status%" == "1STOPPED" (
+	set status="STOPPED"
+) else (
+	set status="NOT INSTALLED"
+)
+goto:eof
 
 :install
-call %wrapper_bat% -i %_WRAPPER_CONF%
-goto :eof
+set classpath="-DserverClasspath=lib/*.jar;system/lib/*.jar;plugins/*.jar;system/coordinator/lib/*.jar"
+set mainclass="-DserverMainClass=org.neo4j.server.Bootstrapper"
+set binPath="java "-DworkingDir=%~dps0.." -DconfigFile=conf\neo4j-wrapper.conf %classpath% %mainclass% -jar "%~dps0windows-service-wrapper-1-SNAPSHOT.jar" %serviceName%"
+sc create %serviceName% binPath= %binPath% DisplayName= %serviceDisplayName% start= %serviceStartType%
+goto:eof
 
 :remove
-call %wrapper_bat% -r %_WRAPPER_CONF%
-goto :eof
+sc delete %serviceName%
+goto:eof
+
+:start
+call:getStatus
+if %status% == "NOT INSTALLED" (
+	call:console
+) else if %status% == "RUNNING" (
+	echo "Service is already running, no action taken"
+) else (
+	sc start %serviceName%
+)
+goto:eof
+
+:stop
+sc stop %serviceName%
+goto:eof
 
 :restart
-call %wrapper_bat% -p %_WRAPPER_CONF%
-call %wrapper_bat% -t %_WRAPPER_CONF%
-goto :eof
+sc stop %serviceName%
+sc start %serviceName%
+goto:eof
 
-:exec
-%*
-goto :eof
+:console
+set classpath="-DserverClasspath=lib/*.jar;system/lib/*.jar;plugins/*.jar;system/coordinator/lib/*.jar"
+set mainclass="-DserverMainClass=org.neo4j.server.Bootstrapper"
+java "-DworkingDir=%~dp0.." -DconfigFile=conf\neo4j-wrapper.conf %classpath% %mainclass% -jar "%~dp0windows-service-wrapper-1-SNAPSHOT.jar"
+goto:eof
+
+:help
+echo Proper arguments for this command are: help start stop query restart install remove console
+goto:eof
+
+rem This function parses the various settings off the
+rem configuration file. #'s are comments and ignored.
+
+:parseConfig
+set confFileName=%1
+
+for /F "tokens=1,2 delims== eol=#" %%a in (%confFileName%) do call:setOption %%a %%b
+goto:eof
+
+rem Factored out switch for setting the variables
+:setOption
+	if "%1"=="wrapper.name" (
+	set serviceName=%2
+	) else if "%1"=="serviceDisplayName" (
+	set serviceDisplayName=%2
+	) else if "%1"=="serviceStartType" (
+	set serviceStartType=%2
+	)
+goto:eof
