@@ -19,10 +19,9 @@
  */
 package org.neo4j.server;
 
-import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
 
 import java.io.IOException;
 
@@ -38,7 +37,6 @@ import org.neo4j.server.configuration.EmbeddedServerConfigurator;
 import org.neo4j.server.rest.FunctionalTestHelper;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class WrappingNeoServerBootstrapperTest
