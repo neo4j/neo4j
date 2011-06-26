@@ -1,5 +1,5 @@
-The Neo4j Manual
-================
+The Neo4j Manual v{revnumber}
+=============================
 
 :neo4j-version: {revnumber}
 :neo4j-buildnumber: {revnumber}
