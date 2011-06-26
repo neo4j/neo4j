@@ -7,7 +7,7 @@ With it, you can:
 
 - monitor the Neo4j Server
 - manipulate and browse data
-- interact with the database via a scripting environment
+- interact with the database via various consoles
 - view raw data management objects (JMX MBeans)
 
 [[webadmin-dashboard]]
@@ -40,19 +40,32 @@ Use the Data tab to browse, add or modify nodes, relationships and their propert
 .Browsing and manipulating data
 image::operations/webadmin-data.png["Data tab", scaledwidth="100%"]
 
+.Editing properties
+image::operations/webadmin-databrowser.png["Node properties", scaledwidth="75%"]
+
 [[webadmin-console]]
 == Console tab ==
 
-The Console tab gives scripting access to the database via the http://gremlin.tinkerpop.com[Gremlin] scripting engine.
+The Console tab gives:
 
-.Manipulating data with Gremlin
-image::operations/webadmin-console.png["Data manipulation with Gremlin", scaledwidth="100%"]
+* scripting access to the database via the http://gremlin.tinkerpop.com[Gremlin] scripting engine,
+* query access via <<cypher-query-lang,Cypher>>,
+* HTTP access via the HTTP console.
+
+.Traverse data with Gremlin
+image::operations/webadmin-console-gremlin.png["Data manipulation with Gremlin", scaledwidth="75%"]
+
+.Query data with Cypher
+image::operations/webadmin-console-cypher.png["Queries with Cypher", scaledwidth="75%"]
+
+.Interact over HTTP
+image::operations/webadmin-console-http.png["Queries with Cypher", scaledwidth="75%"]
 
 [[webadmin-serverinfo]]
-== The JMX tab ==
+== The Server Info tab ==
 
-The JMX tab provides raw access to all available management objects.
+The Server Info tab provides raw access to all available management objects (see <<operations-monitoring>> for details).
 
 .JMX Attributes
-image::operations/webadmin-jmx.png["JMX", scaledwidth="100%"]
+image::operations/webadmin-jmx.png["JMX", scaledwidth="50%"]
 

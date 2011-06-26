@@ -10,7 +10,7 @@ The documents use the asciidoc format, see:
 
 Asciidoc version 8.6.3 is a requirement
 together with whatever dependencies it needs
-and specifically docbook, w3m, fop and graphviz.
+and specifically docbook, w3m and fop.
 
 Maven is used to unpack the pieces of the manual and
 to execute asciidoc on them.
@@ -64,7 +64,5 @@ Useful links when configuring the docbook toolchain:
 
 === With brew on OSX ===
 
-  brew install docbook asciidoc w3m fop
-
-Also install graphviz.
+  brew install docbook asciidoc w3m fop graphviz
 
