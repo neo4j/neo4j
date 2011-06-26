@@ -30,7 +30,7 @@ call:parseConfig "%~dp0..\conf\coord-wrapper.conf"
 for /F %%v in ('echo %1^|findstr "^help$ ^start$ ^stop$ ^query$ ^restart$ ^install$ ^remove$ ^console$"') do set command=%%v
 
 if %command% == "" (
-    set command=help
+    set command=console
 )
 
 goto:%command%
