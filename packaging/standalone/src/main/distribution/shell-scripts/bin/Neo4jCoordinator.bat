@@ -72,7 +72,7 @@ goto:eof
 
 :install
 set classpath="-DserverClasspath=lib/zoo*.jar;system/coordinator/lib/*.jar"
-set mainclass="-DserverMainClass=org.apache.zookeeper.server.quorum.QuorumPeerMain conf/coord.cfg"
+set mainclass="-DserverMainClass=org.apache.zookeeper.server.quorum.QuorumPeerMain"
 set binPath="java "-DworkingDir=%~dps0.." -DconfigFile=conf\coord-wrapper.conf %classpath% %mainclass% -jar "%~dps0windows-service-wrapper-1-SNAPSHOT.jar" %serviceName%"
 sc create %serviceName% binPath= %binPath% DisplayName= %serviceDisplayName% start= %serviceStartType%
 goto:eof
@@ -103,7 +103,7 @@ goto:eof
 
 :console
 set classpath="-DserverClasspath=lib/zoo*.jar;system/coordinator/lib/*.jar"
-set mainclass="-DserverMainClass=org.apache.zookeeper.server.quorum.QuorumPeerMain conf/coord.cfg"
+set mainclass="-DserverMainClass=org.apache.zookeeper.server.quorum.QuorumPeerMain"
 java "-DworkingDir=%~dp0.." -DconfigFile=conf\coord-wrapper.conf %classpath% %mainclass% -jar "%~dp0windows-service-wrapper-1-SNAPSHOT.jar"
 goto:eof
 
