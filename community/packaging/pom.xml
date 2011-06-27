@@ -187,42 +187,6 @@ terms of the relevant Commercial Agreement.
                </artifactItems>
              </configuration>
           </execution>
-          <execution>
-            <id>unpack-wrapper</id>
-            <phase>generate-resources</phase>
-            <goals><goal>unpack</goal></goals>
-             <configuration>
-               <artifactItems>
-                 <artifactItem>
-                  <groupId>org.neo4j.3rdparty</groupId>
-                  <artifactId>yajsw-neo4j</artifactId>
-                  <version>${neo4j.3rdparty.version}</version>
-                  <classifier>wrapper</classifier>
-                  <type>zip</type>
-                  <outputDirectory>${project.build.directory}/wrapper</outputDirectory>
-                  <includes>*.*,**/*.*</includes>
-                 </artifactItem>
-               </artifactItems>
-             </configuration>
-          </execution>
-          <execution>
-            <id>unpack-wrapperlibs</id>
-            <phase>generate-resources</phase>
-            <goals><goal>unpack</goal></goals>
-             <configuration>
-               <artifactItems>
-                 <artifactItem>
-                  <groupId>org.neo4j.3rdparty</groupId>
-                  <artifactId>yajsw-neo4j</artifactId>
-                  <version>${neo4j.3rdparty.version}</version>
-                  <classifier>wrapperlibs</classifier>
-                  <type>zip</type>
-                  <outputDirectory>${project.build.directory}/wrapperlibs</outputDirectory>
-                  <includes>*.*,**/*.*</includes>
-                 </artifactItem>
-               </artifactItems>
-             </configuration>
-          </execution>
         </executions>
       </plugin>
       <plugin>
