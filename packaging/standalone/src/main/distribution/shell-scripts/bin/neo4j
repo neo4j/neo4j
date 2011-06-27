@@ -58,6 +58,8 @@ NEO4J_SCRIPT=$0
 NEO4J_HOME=`cd $( dirname $NEO4J_SCRIPT )/.. && dirs -l +0`
 NEO4J_INSTANCE=$NEO4J_HOME
 
+cd $NEO4J_HOME
+
 getconfig ${NEO4J_INSTANCE}/conf/neo4j-wrapper.conf
 getconfig ${NEO4J_INSTANCE}/conf/neo4j-server.properties
 
