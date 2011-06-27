@@ -53,7 +53,9 @@ function getconfig {
   fi
 }  
 
-NEO4J_HOME=`cd $( dirname $0 )/.. && dirs -l +0`
+NEO4J_SCRIPT=$0
+[ -L "$NEO4J_SCRIPT" ] && NEO4J_SCRIPT=$( readlink $NEO4J_SCRIPT ) 
+NEO4J_HOME=`cd $( dirname $NEO4J_SCRIPT )/.. && dirs -l +0`
 NEO4J_INSTANCE=$NEO4J_HOME
 
 getconfig ${NEO4J_INSTANCE}/conf/neo4j-wrapper.conf
