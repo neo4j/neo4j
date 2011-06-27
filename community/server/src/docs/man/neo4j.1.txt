@@ -32,22 +32,19 @@ COMMANDS
   Stops a running daemonized server.
 
 *restart*::
-  Restarts a running server.
-
-*condrestart*::
-  Restarts a server, but only if it was already running.
+  Restarts the server.
 
 *status*::
-  Current running state of the server
+  Current running state of the server.
 
 *install*::
   Installs the server as a platform-appropriate system service.
 
 *remove*::
-  Uninstalls the system service
+  Uninstalls the system service.
 
-*dump*::
-  Displays thread dump, also saved to the wrapper.log
+*info*::
+  Displays configuration information, such as the current NEO4J_HOME and CLASSPATH.
 
 [[neo4j-manpage-usage-windows]]
 Usage - Windows
@@ -58,16 +55,23 @@ Usage - Windows
 Double-clicking on the Neo4j.bat script will start the server in a console.
 To quit, just press `control-C` in the console window.
 
-*InstallNeo4j/UninstallNeo4j*
+*Neo4j.bat install/remove*
 
-Neo4j can be installed as a Windows Service, running without a console
+Neo4j can be installed and run as a Windows Service, running without a console
 window. You'll need to run the scripts with Administrator priveleges.
-Just use either of these bat scripts:
+Just use the Neo4j.bat script with the proper argument:
 
-* InstallNeo4j - install as a Windows service
-** will install and automatically start the service 
-** use the normal windows administrative controls for start/stop
-* UninstallNeo4j - remove the Neo4j service
+* Neo4j.bat install - install as a Windows service
+** will install the service 
+* Neo4j.bat remove - remove the Neo4j service
+** will stop and remove the Neo4j service
+* Neo4j.bat start - will start the Neo4j service
+** will start the Neo4j service if installed or a console
+** session otherwise.
+* Neo4j.bat stop - stop the Neo4j service if running
+* Neo4j.bat restart - restart the Neo4j service if installed
+* Neo4j.bat status - report on the status of the Neo4j service
+** returns RUNNING, STOPPED or NOT INSTALLED 
 
 
 [[neo4j-manpage-files]]
