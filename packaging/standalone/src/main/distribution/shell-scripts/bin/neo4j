@@ -382,7 +382,8 @@ installservice() {
             modify_user_config $proposed_user
           fi
           ln -s ${SCRIPT_NAME} "/etc/init.d/${SERVICE_NAME}"
-	  update-rc.d ${SERVICE_NAME} defaults
+          update-rc.d ${SERVICE_NAME} defaults
+          chown -R $proposed_user: $NEO4J_HOME/data
         fi
       fi
     elif [[ $DIST_OS -eq "macosx" ]] ; then
