@@ -64,6 +64,7 @@ getconfig ${NEO4J_INSTANCE}/conf/coord-wrapper.conf
 NEO4J_OPTS="-DconfigFile=conf\coord-wrapper.conf -Dneo4j.home=$NEO4J_HOME -Dneo4j.instance=$NEO4J_INSTANCE"
 JAVA_OPTS="-server ${wrapper_java_additional}"
 
+wrapper_user=`( egrep "^wrapper.user=" $NEO4J_INSTANCE/conf/neo4j-wrapper.conf ) | sed -e 's/^.*=//'`
 if [ -z "${wrapper_user}" ]; then
   NEO4J_USER=`id -un`
 else
@@ -229,10 +230,10 @@ stopit() {
   checkstatus
 
   if [ -z $NEO4J_PID ] ; then
-    echo "ERROR: server not running"
+    echo "ERROR: coordinator not running"
     [ -e $PID_FILE ] && rm $PID_FILE
   else
-    printf "Stopping neo4j-service [$NEO4J_PID]..."
+    printf "Stopping Neo4j Coordinator [$NEO4J_PID]..."
     x=0
     while [ $x -lt $TIMEOUT ] && [ "$NEO4J_PID" != "" ]  ; do
       kill $NEO4J_PID 2>/dev/null
@@ -314,7 +315,7 @@ remove_user() {
         ;;
     esac
   else 
-    echo "Neo4j Coordinator was running as user ${wrapper_user}, which remains."
+    echo "Neo4j Coordinator was running as user \"${wrapper_user}\", which remains."
   fi
 }
 
@@ -325,6 +326,10 @@ installservice() {
       if [[ -e "/etc/init.d/${SERVICE_NAME}" ]]; then
         echo "${SERVICE_NAME} already installed."
       else
+        if ! `grep -q neo4j /etc/init.d/*` ; then
+          eval echo "Please install neo4j first."
+          exit 1
+        fi
         if [ $UID != 0 ] ; then
           eval echo  'Must be root to perform this action.'
           exit 1
@@ -333,28 +338,18 @@ installservice() {
           if [ ! -z $NEO4J_PID ] ; then
             stopit
           fi
-          if [[ $NEO4J_USER == $wrapper_user ]]; then 
-            default_user=$wrapper_user
-          else
-            default_user="neo4j"
-          fi
-          read -p "It is better if the service did not run as root. What user should run Zookeeper? [$default_user] " proposed_user
-          proposed_user=${proposed_user:-$default_user}
-          if ! `id $proposed_user &> /dev/null` ; then
-            read -p "User \"$proposed_user\" does not yet exist. Shall I create the account for you? [Yn]" yn
+          if ! `id $NEO4J_USER &> /dev/null` ; then
+            read -p "User \"$NEO4J_USER\" does not yet exist. Shall I create the account for you? [Yn]" yn
             case $yn in
-              [Nn]* ) echo "WARNING: Alright, but Neo4j will fail to launch until that user has been created."
-              set_user $proposed_user
+              [Nn]* ) echo "WARNING: Alright, but Neo4j Coordinator will fail to launch until that user has been created."
+              set_user $NEO4J_USER
               ;;
-            * ) create_user $proposed_user 
+            * ) create_user $NEO4J_USER
               ;;
             esac
-          else
-            modify_user_config $proposed_user
           fi
           ln -s ${SCRIPT_NAME} "/etc/init.d/${SERVICE_NAME}"
           update-rc.d ${SERVICE_NAME} defaults
-          chown -R $proposed_user: $NEO4J_HOME/data/
         fi
       fi
     elif [[ $DIST_OS -eq "macosx" ]] ; then

@@ -335,7 +335,7 @@ create_user() {
 
 remove_user() {
   if [[ $wrapper_user_created == "true" ]]; then
-    read -p "It appears that user ${wrapper_user} was created during install. Remove that user now? [yN] " yn
+    read -p "It appears that user \"${wrapper_user}\" was created during install. Remove that user now? [yN] " yn
     case $yn in
       [Yy]* ) deluser $wrapper_user
         ;;
