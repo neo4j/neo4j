@@ -25,6 +25,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
 # getconfig <filename>
 #   - plain key-value pairs become environment variables
 #   - keys have '.' chars changed to '_'
@@ -33,9 +34,9 @@
 function getconfig {
   if [ -e $1 ]; then
     while read line; do 
-      if [[ ${line} =~ ^([^#=\s]+)=(.+)$ ]]; then
+      if [[ ${line} =~ ^([^#\s][^=]+)=(.+)$ ]]; then
         key=`echo ${BASH_REMATCH[1]} | sed 's/\./_/g'`
-        value="${BASH_REMATCH[2]}"
+        value="${BASH_REMATCH[2]}" 
         if [[ ${key} =~ ^(.*)_([0-9]+)$ ]]; then
           key=${BASH_REMATCH[1]}
           if [[ ${!key} ]]; then
@@ -44,13 +45,13 @@ function getconfig {
             export ${key}="$value"
           fi
         else
-          export ${key}=${value}
+          export ${key}="${value}"
         fi
       fi
+
     done < $1
   fi
 }  
-
 
 NEO4J_HOME=`cd $( dirname $0 )/.. && dirs -l +0`
 NEO4J_INSTANCE=$NEO4J_HOME
@@ -301,20 +302,80 @@ console() {
 
 }
 
+# Modifies neo4j config to set the effective user when running as a service
+# usage: modify_user_config <username> <created=false>
+# pass in "true" for created to mark that the user was created (instead than pre-existing)
+modify_user_config() {
+  created=${2:-"false"}
+  if `grep -q "wrapper\.user=" ${NEO4J_INSTANCE}/conf/neo4j-wrapper.conf` ; then
+    sed -i -e "s/^.*wrapper\.user=.*$/wrapper\.user=$1/" ${NEO4J_INSTANCE}/conf/neo4j-wrapper.conf
+  else
+    echo "wrapper.user=$1" >> ${NEO4J_INSTANCE}/conf/neo4j-wrapper.conf
+  fi
+
+  if `grep -q "wrapper\.user\.created=" ${NEO4J_INSTANCE}/conf/neo4j-wrapper.conf` ; then
+    sed -i -e "s/^.*wrapper\.user\.created=.*$/wrapper\.user\.created=${created}/" ${NEO4J_INSTANCE}/conf/neo4j-wrapper.conf
+  else
+    echo "wrapper.user.created=${created}" >> ${NEO4J_INSTANCE}/conf/neo4j-wrapper.conf
+  fi
+
+
+}
+
+# Creates a user on the system
+create_user() {
+  useradd -M -r $1
+  modify_user_config $1 "true"
+  echo "Created user \"${1}\"."
+}
+
+remove_user() {
+  if [[ $wrapper_user_created == "true" ]]; then
+    read -p "It appears that user ${wrapper_user} was created during install. Remove that user now? [yN] " yn
+    case $yn in
+      [Yy]* ) deluser $wrapper_user
+        ;;
+      * ) echo "OK, we'll let that user live, for now." 
+        ;;
+    esac
+  else 
+    echo "Neo4j was running as user ${wrapper_user}, which remains."
+  fi
+}
+
 installservice() {
     detectos
 
     if [[ -d "/etc/init.d" ]]; then
-      if [[ -e "/etc/init.d${SERVICE_NAME}" ]]; then
+      if [[ -e "/etc/init.d/${SERVICE_NAME}" ]]; then
         echo "${SERVICE_NAME} already installed."
       else
-        if [ `id | sed 's/^uid=//;s/(.*$//'` != "0" ] ; then
+        if [ `id | sed 's/^uid=//;s/(.*$//'` != "0" ] ; then       
           eval echo  'Must be root to perform this action.'
           exit 1
         else
           checkstatus
           if [ ! -z $NEO4J_PID ] ; then
             stopit
+          fi
+          if [[ $NEO4J_USER == $wrapper_user ]]; then 
+            default_user=$wrapper_user
+          else
+            default_user="neo4j"
+          fi
+          read -p "Graph-like power should be handled carefully. What user should run Neo4j? [$default_user] " proposed_user
+          proposed_user=${proposed_user:-$default_user}
+          if ! `id $proposed_user &> /dev/null` ; then
+            read -p "User \"$proposed_user\" does not yet exist. Shall I create the account for you? [Yn]" yn
+            case $yn in
+              [Nn]* ) echo "WARNING: Alright, but Neo4j will fail to launch until that user has been created."
+              set_user $proposed_user
+              ;;
+            * ) create_user $proposed_user 
+              ;;
+            esac
+          else
+            modify_user_config $proposed_user
           fi
           ln -s ${SCRIPT_NAME} "/etc/init.d/${SERVICE_NAME}"
 	        update-rc.d ${SERVICE_NAME} defaults
@@ -344,9 +405,12 @@ removeservice() {
 	        update-rc.d -f ${SERVICE_NAME} remove
           rm /etc/init.d/${SERVICE_NAME}
         fi
+        # remove effective user, if created by install-script
+        remove_user
       else
         echo "${SERVICE_NAME} not installed."
       fi
+
     elif [[ $DIST_OS -eq "macosx" ]] ; then
       if [[ -e ${LAUNCHD_DIR}/org.neo4j.server.plist ]]; then
         launchctl unload -w ${LAUNCHD_DIR}/org.neo4j.server.plist
@@ -355,6 +419,7 @@ removeservice() {
     else
       echo "Sorry, don't know how to install on ${DIST_OS}."
     fi
+
 }
 
 
@@ -370,7 +435,6 @@ showinfo() {
   echo "JAVA_HOME:         $JAVA_HOME"
   echo "JAVA_OPTS:         $JAVA_OPTS"
   echo "CLASSPATH:         $CLASSPATH"
-
 }
 
 case "$1" in
