@@ -234,7 +234,7 @@ startit() {
 	    rm $PID_FILE
         kill -9 $STARTED_PID
         echo " BAD."
-        echo " an other server-process is running with [$newpid]"
+        echo " another server-process is running with [$newpid]"
         exit 2
       fi
 
