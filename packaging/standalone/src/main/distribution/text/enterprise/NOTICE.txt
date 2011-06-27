@@ -40,9 +40,12 @@ The Mime  streaming plugin library  is licensed under the  GNU General
 Public  License  Version 2  with  classpath exception.   Alternatively
 under the Common Development and Distribution License, version 1.0.
 
-The  Yet  another  Java  service wrapper  (YAJSW)  library  (including
-patches by  Neo Technology) is  licensed under the GNU  Lesser General
-Public License Version 2.1 or later.
+Parts of the JNA library are included and licensed under the
+GNU LESSER GENERAL PUBLIC LICENSE v2.1 and is 
+Copyright (c) 2007, 2008, 2009, 2010 Wayne Meissner, Timothy Wall, Thomas Boerkel
+
+Parts of the Yet Another Java Service Wrapper (YAJSW) are included and licensed under
+the GNU LESSER GENERAL PUBLIC LICENSE v2.1
 
 Other bundled libraries are licenced according to the following listing.
 

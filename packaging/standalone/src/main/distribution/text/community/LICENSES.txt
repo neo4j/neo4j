@@ -772,6 +772,7 @@ GNU Lesser General Public License (LGPL) 2.1:
  Abeille Forms designer,
  GlazedLists,
  JRexx regular expressions engine,
+ JNA library
 ---------------------------------------------
 
                   GNU LESSER GENERAL PUBLIC LICENSE
