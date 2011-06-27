@@ -768,10 +768,11 @@ of liability.
 
 ---------------------------------------------
 GNU Lesser General Public License (LGPL) 2.1:
- Yet another Java service wrapper (YAJSW),
  Abeille Forms designer,
  GlazedLists,
  JRexx regular expressions engine,
+ JNA library,
+ Yet Another Java Service Wrapper (YAJSW)
 ---------------------------------------------
 
                   GNU LESSER GENERAL PUBLIC LICENSE
