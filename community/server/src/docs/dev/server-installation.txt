@@ -42,8 +42,10 @@ The following procedure should work on most popular Linux distributions:
 4. `service neo4j-server start`
    * will start the server
    
-   Note that during installation you will be prompted to supply the name of the user Neo4j will run as. You will be prompted to create one as part of the installation or choose a pre-existing one. In the first case, the fact will be noted in the configuration and on uninstall you will be given the option to remove the user as well.
-
+   During installation you will be given the option to select the user Neo4j will run as. You will be asked to supply a username (defaulting to `neo4j`) and if that user is not present on the system it will be created as a system account and the `$NEO4J_HOME/data` directory will be `chown`'ed to that user.
+   You are encouraged to create a dedicated user for running the service and for that reason it is suggested that you unpack the distribution package under `/opt` or your site specific optional packages directory. 
+   Finally, note that if you chose to create a new user account, on uninstall you will be prompted to remove it from the system.
+   
 == Macintosh Service ==
 
 Neo4j can be installed as a Mac launchd job:
