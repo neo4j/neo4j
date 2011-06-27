@@ -41,6 +41,8 @@ The following procedure should work on most popular Linux distributions:
    * should indicate that the server is not running
 4. `service neo4j-server start`
    * will start the server
+   
+   Note that during installation you will be prompted to supply the name of the user Neo4j will run as. You will be prompted to create one as part of the installation or choose a pre-existing one. In the first case, the fact will be noted in the configuration and on uninstall you will be given the option to remove the user as well.
 
 == Macintosh Service ==
 
