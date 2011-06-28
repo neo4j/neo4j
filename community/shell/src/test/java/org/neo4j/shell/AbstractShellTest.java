@@ -39,6 +39,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -50,7 +51,8 @@ import org.neo4j.shell.impl.RemoteOutput;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
-public class AbstractShellTest
+@Ignore
+public abstract class AbstractShellTest
 {
     private static final String DB_PATH = "target/var/shelldb";
     protected static GraphDatabaseService db;
