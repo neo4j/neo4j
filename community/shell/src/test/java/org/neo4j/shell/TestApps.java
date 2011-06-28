@@ -20,13 +20,14 @@
 package org.neo4j.shell;
 
 import org.junit.Test;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 
 public class TestApps extends AbstractShellTest
 {
     @Test
-    public void cd() throws Exception
+    public void variationsOfCdAndPws() throws Exception
     {
         Relationship[] relationships = createRelationshipChain( 3 );
         executeCommand( "cd" );
@@ -43,6 +44,26 @@ public class TestApps extends AbstractShellTest
         executeCommand( "pwd", pwdOutputFor( relationships[0].getStartNode(), relationships[0].getEndNode() ) );
         executeCommand( "cd " + relationships[1].getEndNode().getId() );
         executeCommand( "pwd", pwdOutputFor( relationships[0].getStartNode(), relationships[0].getEndNode(), relationships[1].getEndNode() ) );
+    }
+    
+    @Test
+    public void canSetPropertiesAndLsWithFilters() throws Exception
+    {
+        Relationship[] relationships = createRelationshipChain( 2 );
+        Node node = relationships[0].getEndNode();
+        executeCommand( "cd -a " + node.getId() );
+        executeCommand( "ls", "<-", "->" );
+        executeCommand( "ls -p", "!Neo" );
+        setProperty( node, "name", "Neo" );
+        executeCommand( "ls -p", "Neo" );
+        executeCommand( "ls", "<-", "->", "Neo" );
+        executeCommand( "ls -r", "<-", "->", "!Neo" );
+        executeCommand( "ls -rf .*:out", "!<-", "->", "!Neo" );
+        executeCommand( "ls -rf .*:in", "<-", "!->", "!Neo" );
+        executeCommand( "ls -pf something", "!<-", "!->", "!Neo" );
+        executeCommand( "ls -pf name", "!<-", "!->", "Neo" );
+        executeCommand( "ls -pf name:Something", "!<-", "!->", "!Neo" );
+        executeCommand( "ls -pf name:Neo", "!<-", "!->", "Neo" );
     }
     
     @Test

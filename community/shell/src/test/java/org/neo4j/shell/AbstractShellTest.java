@@ -20,10 +20,11 @@
 package org.neo4j.shell;
 
 import static java.util.regex.Pattern.compile;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 
 import java.io.File;
 import java.io.IOException;
@@ -109,6 +110,8 @@ public class AbstractShellTest
         
         for ( String lineThatMustExist : theseLinesMustExistRegEx )
         {
+            boolean negative = lineThatMustExist.startsWith( "!" );
+            lineThatMustExist = negative ? lineThatMustExist.substring( 1 ) : lineThatMustExist;
             Pattern pattern = compile( lineThatMustExist );
             boolean found = false;
             for ( String line : output )
@@ -119,7 +122,8 @@ public class AbstractShellTest
                     break;
                 }
             }
-            assertTrue( "Was expecting a line matching '" + lineThatMustExist + "', but didn't find any", found );
+            assertTrue( "Was expecting a line matching '" + lineThatMustExist + "', but didn't find any from out of " +
+                    asCollection( output ), found != negative );
         }
     }
 
@@ -185,6 +189,14 @@ public class AbstractShellTest
         return rels;
     }
     
+    protected void setProperty( Node node, String key, Object value )
+    {
+        Transaction tx = db.beginTx();
+        node.setProperty( key, value );
+        tx.success();
+        tx.finish();
+    }
+
     public class OutputCollector implements Output, Serializable, Iterable<String>
     {
         private static final long serialVersionUID = 1L;
