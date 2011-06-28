@@ -144,11 +144,18 @@ public class GraphDatabaseShellServer extends SimpleAppServer
         public String getReplacement( ShellServer server, Session session )
             throws ShellException
         {
-            return GraphDatabaseApp.getDisplayName(
-                ( GraphDatabaseShellServer ) server, session,
-                GraphDatabaseApp.getCurrent(
-                    ( GraphDatabaseShellServer ) server, session ),
-                    false ).toString();
+            try
+            {
+                return GraphDatabaseApp.getDisplayName(
+                    ( GraphDatabaseShellServer ) server, session,
+                    GraphDatabaseApp.getCurrent(
+                        ( GraphDatabaseShellServer ) server, session ),
+                        false ).toString();
+            }
+            catch ( ShellException e )
+            {
+                return GraphDatabaseApp.getDisplayNameForNonExistent();
+            }
         }
     }
 

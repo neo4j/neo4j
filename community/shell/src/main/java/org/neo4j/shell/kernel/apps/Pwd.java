@@ -22,7 +22,6 @@ package org.neo4j.shell.kernel.apps;
 import java.rmi.RemoteException;
 import java.util.List;
 
-import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
@@ -47,19 +46,18 @@ public class Pwd extends ReadOnlyGraphDatabaseApp
     protected String exec( AppCommandParser parser, Session session,
         Output out ) throws ShellException, RemoteException
     {
-
-        NodeOrRelationship current = null;
-        try {
-            
-            current = this.getCurrent( session );
-        } catch (NotFoundException nnfe) {
-            out.println( "Current not found. make sure you are standing on a valid structure.");
-            return null;
+        String current = null;
+        try
+        {
+            current = getDisplayName( getServer(), session, getCurrent( session ), false );
         }
-        out.println( "Current is " +
-            getDisplayName( getServer(), session, current, false ) );
+        catch ( ShellException e )
+        {
+            current = getDisplayNameForNonExistent();
+        }
+        out.println( "Current is " + current );
 
-        String path = stringifyPath( Cd.readCurrentWorkingDir( session ), session );
+        String path = stringifyPath( Cd.readCurrentWorkingDir( session ), session ) + current;
         if ( path.length() > 0 )
         {
             out.println( path );
@@ -77,10 +75,17 @@ public class Pwd extends ReadOnlyGraphDatabaseApp
         StringBuilder path = new StringBuilder();
         for ( TypedId id : pathIds )
         {
-            path.append( getDisplayName( getServer(), session,
-                    id, false ) ).append( "-->" );
+            String displayName;
+            try
+            {
+                displayName = getDisplayName( getServer(), session, id, false );
+            }
+            catch ( ShellException e )
+            {
+                displayName = getDisplayNameForNonExistent();
+            }
+            path.append( displayName ).append( "-->" );
         }
-        return path.append( getDisplayName( getServer(), session,
-                getCurrent( session ), true ) ).toString();
+        return path.toString();
     }
 }

@@ -118,6 +118,11 @@ public abstract class GraphDatabaseApp extends AbstractApp
         return currentThing != null && currentThing.equals(
                 thing.getTypedId().toString() );
     }
+    
+    protected static void clearCurrent( Session session )
+    {
+        safeSet( session, CURRENT_KEY, new TypedId( NodeOrRelationship.TYPE_NODE, 0 ).toString() );
+    }
 
     protected static void setCurrent( Session session,
         NodeOrRelationship current )
@@ -255,6 +260,11 @@ public abstract class GraphDatabaseApp extends AbstractApp
     {
         NodeOrRelationship current = getCurrent( server, session );
         return current.isNode() ? "(me)" : "<me>";
+    }
+    
+    public static String getDisplayNameForNonExistent()
+    {
+        return "(?)";
     }
 
     /**
