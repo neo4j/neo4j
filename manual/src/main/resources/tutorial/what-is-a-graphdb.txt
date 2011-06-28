@@ -21,7 +21,7 @@ At some point it makes sense to distribute the data into multiple nodes, organiz
 "Graph" [fillcolor="NODEHIGHLIGHT"]
 "Graph" -> Nodes [label="records data in" weight=2.0]
 "Graph" -> Relationships [label="records data in" weight=2.0]
-Nodes -> Relationships [label="organized by"]
+Relationships -> Nodes [label="organize"]
 Nodes -> Properties [label="have"]
 Relationships -> Properties [label="have"]
 ----
@@ -46,10 +46,11 @@ A Traversal is how you query a Graph, navigating from starting Nodes to related 
 ["dot", "graphdb-traversal.svg"]
 ----
 Traversal [fillcolor="NODEHIGHLIGHT"]
-Nodes -> Relationships [label="organized by"]
+Relationships -> Nodes [label="organize"]
 "Graph" -> Nodes [label="records data in"]
 "Graph" -> Relationships [label="records data in"]
-Traversal -> Paths [label="navigates" weight=2.0]
+Traversal -> "Graph" [label="navigates" weight=2.0]
+Traversal -> Paths [label="identifies" weight=2.0]
 Traversal -> Algorithm [label="expresses"]
 Paths -> Nodes [label="order" weight=2.0]
 ----
@@ -66,8 +67,8 @@ Rather than traversing the entire graph, use an Index to perform a look-up, for 
 
 ["dot", "graphdb-indexes.svg"]
 ----
-"Indexes" [fillcolor="NODEHIGHLIGHT"]
-Nodes -> Relationships [label="organized by"]
+Indexes [fillcolor="NODEHIGHLIGHT"]
+Relationships -> Nodes [label="organize"]
 Nodes -> Properties [label="have"]
 Relationships -> Properties [label="have"]
 Indexes -> Nodes [label="map to" weight=2.0]
@@ -88,7 +89,7 @@ Working with Neo4j, your application gets all the expressiveness of a graph, wit
 ["dot", "graphdb-overview.svg", scaledwidth="75%"]
 ----
 "Graph Database" [fillcolor="NODEHIGHLIGHT"]
-Nodes -> Relationships [label="organized by"]
+Relationships -> Nodes [label="organize"]
 Nodes -> Properties [label="have"]
 Relationships -> Properties [label="have"]
 "Graph Database" -> "Graph" [label="manages"]
@@ -98,7 +99,8 @@ Relationships -> Properties [label="have"]
 Indexes -> Nodes [label="map to"]
 Indexes -> Relationships [label="map to"]
 Indexes -> Properties [label="map from"]  
-Traversal -> Paths [label="navigates"]
+Traversal -> "Graph" [label="navigates"]
+Traversal -> Paths [label="identifies"]
 Traversal -> Algorithm [label="expresses"]
 Paths -> Nodes [label="order"]
 ----

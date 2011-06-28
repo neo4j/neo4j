@@ -1,0 +1,42 @@
+[[graphdb-neo4j]]
+The Neo4j Graph Database
+========================
+
+This chapter will introduce some more details on the data model and behavior of Neo4j.
+
+== Properties ==
+
+Properties are key-value pairs where the key is a string.
+Property values can be either a primitive or an array of one primitive type.
+For example +String+, +int+ and +int[]+ values are valid for properties.
+Note that +null+ is not a valid property value.
+Nulls can instead be modeled by the absense of a key.
+
+["dot", "graphdb-properties.svg"]
+----
+"A Property" [fillcolor="NODEHIGHLIGHT"]
+"A Property" -> Key [label="has a"]
+Key -> Primitive:String [label="is a"]
+"A Property" -> Value [label="has a"]
+Value -> Primitive [label="can be a"]
+Value -> Primitive [label="can be an array of"]
+Primitive [shape="record" label="Primitive |{boolean|byte|short|int|long|float|double|char|<String>String}"]
+----
+
+.Property value types
+[options="header", cols="15m,,"]
+|========================================================
+|Type | Description | Value range
+|boolean| | +true+/+false+
+|byte|8-bit integer | +-128+ to +127+, inclusive 
+|short|16-bit integer | +-32768+ to +32767+, inclusive
+|int| 32-bit integer | +-2147483648+ to +2147483647+, inclusive
+|long| 64-bit integer | +-9223372036854775808+ to +9223372036854775807+, inclusive
+|float| 32-bit IEEE 754 floating-point number |
+|double| 64-bit IEEE 754 floating-point number |
+|char| 16-bit unsigned integers representing Unicode characters | +u0000+ to +uffff+ (+0+ to +65535+)
+|String| sequence of Unicode characters |
+|========================================================
+
+For further details on float/double values, see http://java.sun.com/docs/books/jls/third_edition/html/typesValues.html#4.2.3[Java Language Specification].
+

@@ -6,7 +6,7 @@ edgehighlight=mediumblue
 
 nodeshape=box
 nodestyle=filled,rounded
-nodeheight=0.37
+#nodeheight=0.37
 nodesep=0.4
 
 arrowhead=vee
@@ -28,7 +28,7 @@ pngfile="${svgfile%.svg}.png"
 
 prepend="digraph g{ \
   node [shape=\"$nodeshape\" fillcolor=\"$nodefillcolor\" style=\"$nodestyle\" \
-    fontsize=$nodefontsize fontname=\"$nodefont\" height=$nodeheight]
+    fontsize=$nodefontsize fontname=\"$nodefont\"]
   edge [arrowhead=\"$arrowhead\" arrowsize=$arrowsize fontsize=$edgefontsize fontname=\"$edgefont\"] \
   nodesep=$nodesep \
   fontname=\"$graphfont\" "
