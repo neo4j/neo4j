@@ -19,9 +19,16 @@
  */
 package org.neo4j.shell;
 
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+
 import org.junit.Test;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 
 public class TestApps extends AbstractShellTest
@@ -32,11 +39,11 @@ public class TestApps extends AbstractShellTest
         Relationship[] relationships = createRelationshipChain( 3 );
         executeCommand( "cd" );
         executeCommand( "pwd", pwdOutputFor( relationships[0].getStartNode() ) );
-        executeCommandExpectingException( "cd " + relationships[0].getStartNode().getId() );
+        executeCommandExpectingException( "cd " + relationships[0].getStartNode().getId(), "stand" );
         executeCommand( "pwd", pwdOutputFor( relationships[0].getStartNode() ) );
         executeCommand( "cd " + relationships[0].getEndNode().getId() );
         executeCommand( "pwd", pwdOutputFor( relationships[0].getStartNode(), relationships[0].getEndNode() ) );
-        executeCommandExpectingException( "cd " + relationships[2].getEndNode().getId() );
+        executeCommandExpectingException( "cd " + relationships[2].getEndNode().getId(), "connected" );
         executeCommand( "pwd", pwdOutputFor( relationships[0].getStartNode(), relationships[0].getEndNode() ) );
         executeCommand( "cd -a " + relationships[2].getEndNode().getId() );
         executeCommand( "pwd", pwdOutputFor( relationships[0].getStartNode(), relationships[0].getEndNode(), relationships[2].getEndNode() ) );
@@ -51,7 +58,7 @@ public class TestApps extends AbstractShellTest
     {
         Relationship[] relationships = createRelationshipChain( 2 );
         Node node = relationships[0].getEndNode();
-        executeCommand( "cd -a " + node.getId() );
+        executeCommand( "cd " + node.getId() );
         executeCommand( "ls", "<-", "->" );
         executeCommand( "ls -p", "!Neo" );
         setProperty( node, "name", "Neo" );
@@ -67,6 +74,56 @@ public class TestApps extends AbstractShellTest
     }
     
     @Test
+    public void canSetAndRemoveProperties() throws Exception
+    {
+        Relationship[] relationships = createRelationshipChain( 2 );
+        Node node = relationships[0].getEndNode();
+        executeCommand( "cd " + node.getId() );
+        String name = "Mattias";
+        executeCommand( "set name " + name );
+        int age = 31;
+        executeCommand( "set age -t int " + age );
+        executeCommand( "set \"some property\" -t long[] \"[1234,5678]" );
+        assertEquals( name, node.getProperty( "name" ) );
+        assertEquals( age, node.getProperty( "age" ) );
+        assertEquals( asList( 1234L, 5678L ), asList( (Long[])node.getProperty( "some property" ) ) );
+        
+        executeCommand( "rm age" );
+        assertNull( node.getProperty( "age", null ) );
+        assertEquals( name, node.getProperty( "name" ) );
+    }
+    
+    @Test
+    public void canCreateRelationshipsAndNodes() throws Exception
+    {
+        RelationshipType type1 = withName( "type1" );
+        RelationshipType type2 = withName( "type2" );
+        RelationshipType type3 = withName( "type3" );
+        
+        // No type supplied
+        executeCommandExpectingException( "mkrel -c", "type" );
+        
+        executeCommand( "mkrel -ct " + type1.name() );
+        Relationship relationship = db.getReferenceNode().getSingleRelationship( type1, Direction.OUTGOING );
+        Node node = relationship.getEndNode();
+        executeCommand( "mkrel -t " + type2.name() + " " + node.getId() );
+        Relationship otherRelationship = db.getReferenceNode().getSingleRelationship( type2, Direction.OUTGOING );
+        assertEquals( node, otherRelationship.getEndNode() );
+        
+        // With properties
+        executeCommand( "mkrel -ct " + type3.name() + " --np \"{'name':'Neo','destiny':'The one'}\" --rp \"{'number':11}\"" );
+        Relationship thirdRelationship = db.getReferenceNode().getSingleRelationship( type3, Direction.OUTGOING );
+        assertEquals( 11, thirdRelationship.getProperty( "number" ) );
+        Node thirdNode = thirdRelationship.getEndNode();
+        assertEquals( "Neo", thirdNode.getProperty( "name" ) );
+        assertEquals( "The one", thirdNode.getProperty( "destiny" ) );
+        executeCommand( "cd -r " + thirdRelationship.getId() );
+        executeCommand( "mv number other-number" );
+        assertNull( thirdRelationship.getProperty( "number", null ) );
+        assertEquals( 11, thirdRelationship.getProperty( "other-number" ) );
+    }
+    
+    @Test
     public void rmrelCanLeaveStrandedNodes() throws Exception
     {
         Relationship[] relationships = createRelationshipChain( 4 );
@@ -74,7 +131,7 @@ public class TestApps extends AbstractShellTest
         
         // Remove relationship with the check, shouldn't work
         Relationship relToDelete = relationships[2];
-        executeCommandExpectingException( "rmrel -ed " + relToDelete.getId() );
+        executeCommandExpectingException( "rmrel -ed " + relToDelete.getId(), "decoupled" );
         assertRelationshipExists( relToDelete );
         
         // Remove relationship without the check

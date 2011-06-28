@@ -127,7 +127,7 @@ public class AbstractShellTest
         }
     }
 
-    public void executeCommandExpectingException( String command ) throws Exception
+    public void executeCommandExpectingException( String command, String errorMessageShouldContain ) throws Exception
     {
         OutputCollector output = new OutputCollector();
         try
@@ -137,7 +137,11 @@ public class AbstractShellTest
         }
         catch ( ShellException e )
         {
-            // Expected
+            String errorMessage = e.getMessage();
+            if ( !errorMessage.toLowerCase().contains( errorMessageShouldContain.toLowerCase() ) )
+            {
+                fail( "Error message '" + errorMessage + "' should have contained '" + errorMessageShouldContain + "'" );
+            }
         }
     }
     
