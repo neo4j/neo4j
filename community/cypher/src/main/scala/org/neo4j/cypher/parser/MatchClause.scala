@@ -62,10 +62,10 @@ trait MatchClause extends JavaTokenParsers with Tokens {
     }
   }
 
-  def relatedHead:Parser[Option[String]] = "(" ~> opt(identity) <~ ")" ^^ { case name => name }
+  def relatedHead:Parser[Option[String]] = opt("(") ~> opt(identity) <~ opt(")") ^^ { case name => name }
 
-  def relatedTail = opt("<") ~ "-" ~ opt("[" ~> (relationshipInfo1 | relationshipInfo2) <~ "]") ~ "-" ~ opt(">") ~ "(" ~ opt(identity) ~ ")" ^^ {
-    case back ~ "-" ~ relInfo ~ "-" ~ forward ~ "(" ~ end ~ ")" => relInfo match {
+  def relatedTail = opt("<") ~ "-" ~ opt("[" ~> (relationshipInfo1 | relationshipInfo2) <~ "]") ~ "-" ~ opt(">") ~ opt("(") ~ opt(identity) ~ opt(")") ^^ {
+    case back ~ "-" ~ relInfo ~ "-" ~ forward ~ leftParen ~ end ~ rightParen => relInfo match {
       case Some(x) => (back, x._1, x._2, forward, end)
       case None => (back, None, None, forward, end)
     }
