@@ -38,7 +38,8 @@ import org.neo4j.server.helpers.Transactor;
 import org.neo4j.server.helpers.UnitOfWork;
 import org.neo4j.server.rest.FunctionalTestHelper;
 
-import com.sun.jersey.api.client.ClientResponse;
+import org.neo4j.server.rest.JaxRsResponse;
+import org.neo4j.server.rest.RestRequest;
 
 public class NeoServerJAXRSFunctionalTest
 {
@@ -61,15 +62,12 @@ public class NeoServerJAXRSFunctionalTest
     }
 
     @Test
-    public void shouldMakeJAXRSClassesAvailableViaHTTP() throws Exception
-    {
+    public void shouldMakeJAXRSClassesAvailableViaHTTP() throws Exception {
         server = ServerHelper.createServer();
-        FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper( server );
+        FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper(server);
 
-        ClientResponse response = CLIENT.resource( functionalTestHelper.getWebadminUri() )
-                .accept( MediaType.APPLICATION_JSON_TYPE )
-                .get( ClientResponse.class );
-        assertEquals( 200, response.getStatus() );
+        JaxRsResponse response = new RestRequest().get(functionalTestHelper.getWebadminUri());
+        assertEquals(200, response.getStatus());
         response.close();
     }
 

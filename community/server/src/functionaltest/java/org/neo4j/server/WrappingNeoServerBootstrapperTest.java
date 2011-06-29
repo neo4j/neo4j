@@ -35,9 +35,9 @@ import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.EmbeddedServerConfigurator;
 import org.neo4j.server.rest.FunctionalTestHelper;
+import org.neo4j.server.rest.JaxRsResponse;
+import org.neo4j.server.rest.RestRequest;
 import org.neo4j.test.ImpermanentGraphDatabase;
-
-import com.sun.jersey.api.client.ClientResponse;
 
 public class WrappingNeoServerBootstrapperTest
 {
@@ -101,42 +101,32 @@ public class WrappingNeoServerBootstrapperTest
         srv.start();
         helper = new FunctionalTestHelper( srv.getServer() );
 
-        ClientResponse response = CLIENT
-                .resource( helper.dataUri() )
-                .type( MediaType.APPLICATION_JSON )
-                .accept( MediaType.APPLICATION_JSON )
-                .get( ClientResponse.class );
+        JaxRsResponse response = new RestRequest().get(helper.dataUri());
         assertEquals( 200, response.getStatus() );
 
         srv.stop();
     }
 
     @Test
-    public void shouldModifyInjectedDatabase()
-    {
+    public void shouldModifyInjectedDatabase() {
 
-        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper( myDb );
+        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper(myDb);
 
         srv.start();
 
-        long originalNodeNumber = myDb.getManagementBean( Primitives.class )
+        long originalNodeNumber = myDb.getManagementBean(Primitives.class)
                 .getNumberOfNodeIdsInUse();
 
-        helper = new FunctionalTestHelper( srv.getServer() );
+        helper = new FunctionalTestHelper(srv.getServer());
         String nodeData = "{\"age\":12}";
 
-        ClientResponse response = CLIENT
-                .resource( helper.dataUri() + "node" )
-                .type( MediaType.APPLICATION_JSON )
-                .accept( MediaType.APPLICATION_JSON )
-                .entity( nodeData )
-                .post( ClientResponse.class );
-        assertEquals( 201, response.getStatus() );
+        JaxRsResponse response = new RestRequest().post(helper.dataUri() + "node", nodeData);
+        assertEquals(201, response.getStatus());
 
-        long newNodeNumber = myDb.getManagementBean( Primitives.class )
+        long newNodeNumber = myDb.getManagementBean(Primitives.class)
                 .getNumberOfNodeIdsInUse();
 
-        assertEquals( originalNodeNumber + 1, newNodeNumber );
+        assertEquals(originalNodeNumber + 1, newNodeNumber);
 
         srv.stop();
     }

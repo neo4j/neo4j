@@ -19,22 +19,7 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
-
-import java.io.IOException;
-import java.net.URI;
-import java.util.Map;
-
-import javax.ws.rs.core.MediaType;
-
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.helpers.ServerHelper;
@@ -44,8 +29,12 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.formats.CompactJsonFormat;
 import org.neo4j.test.TestData;
 
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
+import javax.ws.rs.core.MediaType;
+import java.io.IOException;
+import java.net.URI;
+import java.util.Map;
+
+import static org.junit.Assert.*;
 
 public class RetrieveNodeFunctionalTest
 {
@@ -115,7 +104,7 @@ public class RetrieveNodeFunctionalTest
     @Test
     public void shouldGetContentLengthHeaderWhenRetrievingNode() throws Exception
     {
-        ClientResponse response = retrieveNodeFromService( nodeUri.toString() );
+        JaxRsResponse response = retrieveNodeFromService(nodeUri.toString());
         assertNotNull( response.getHeaders()
                 .get( "Content-Length" ) );
         response.close();
@@ -124,7 +113,7 @@ public class RetrieveNodeFunctionalTest
     @Test
     public void shouldHaveJsonMediaTypeOnResponse()
     {
-        ClientResponse response = retrieveNodeFromService( nodeUri.toString() );
+        JaxRsResponse response = retrieveNodeFromService(nodeUri.toString());
         assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
         response.close();
     }
@@ -132,7 +121,7 @@ public class RetrieveNodeFunctionalTest
     @Test
     public void shouldHaveJsonDataInResponse() throws Exception
     {
-        ClientResponse response = retrieveNodeFromService( nodeUri.toString() );
+        JaxRsResponse response = retrieveNodeFromService(nodeUri.toString());
 
         Map<String, Object> map = JsonHelper.jsonToMap( response.getEntity( String.class ) );
         assertTrue( map.containsKey( "self" ) );
@@ -151,12 +140,9 @@ public class RetrieveNodeFunctionalTest
                 .get( nodeUri + "00000" );
     }
 
-    private ClientResponse retrieveNodeFromService( final String uri )
+    private JaxRsResponse retrieveNodeFromService(final String uri)
     {
-        WebResource resource = CLIENT.resource( uri );
-        ClientResponse response = resource.accept( MediaType.APPLICATION_JSON )
-                .get( ClientResponse.class );
-        return response;
+        return RestRequest.req().get( uri );
     }
 
 }

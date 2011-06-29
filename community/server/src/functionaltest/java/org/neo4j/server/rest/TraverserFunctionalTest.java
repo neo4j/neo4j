@@ -19,25 +19,7 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response.Status;
-
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -49,7 +31,12 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.TestData;
 
-import com.sun.jersey.api.client.ClientResponse;
+import javax.ws.rs.core.Response.Status;
+import java.io.IOException;
+import java.util.*;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TraverserFunctionalTest
 {
@@ -106,18 +93,15 @@ public class TraverserFunctionalTest
         tx.finish();
     }
 
-    private ClientResponse traverse( long node, String description )
+    private JaxRsResponse traverse(long node, String description)
     {
-        return CLIENT.resource( functionalTestHelper.nodeUri( node ) + "/traverse/node" )
-                .accept( MediaType.APPLICATION_JSON_TYPE )
-                .entity( description, MediaType.APPLICATION_JSON_TYPE )
-                .post( ClientResponse.class );
+        return RestRequest.req().post(functionalTestHelper.nodeUri(node) + "/traverse/node", description);
     }
 
     @Test
     public void shouldGet404WhenTraversingFromNonExistentNode()
     {
-        ClientResponse response = traverse( 99999, "{}" );
+        JaxRsResponse response = traverse(99999, "{}");
         assertEquals( Status.NOT_FOUND.getStatusCode(), response.getStatus() );
         response.close();
     }
@@ -126,7 +110,7 @@ public class TraverserFunctionalTest
     public void shouldGet200WhenNoHitsFromTraversing() throws DatabaseBlockedException
     {
         long node = helper.createNode();
-        ClientResponse response = traverse( node, "{}" );
+        JaxRsResponse response = traverse(node, "{}");
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
         response.close();
     }
@@ -134,7 +118,7 @@ public class TraverserFunctionalTest
     @Test
     public void shouldGetSomeHitsWhenTraversingWithDefaultDescription() throws PropertyValueException
     {
-        ClientResponse response = traverse( startNode, "" );
+        JaxRsResponse response = traverse(startNode, "");
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
         String entity = response.getEntity( String.class );
         expectNodes( entity, child1_l1, child2_l1 );
@@ -169,7 +153,7 @@ public class TraverserFunctionalTest
     @Test
     public void shouldGetExpectedHitsWhenTraversingWithDescription() throws PropertyValueException
     {
-        ArrayList<Map<String, Object>> rels = new ArrayList<Map<String, Object>>();
+        List<Map<String, Object>> rels = new ArrayList<Map<String, Object>>();
         rels.add( MapUtil.map( "type", "knows", "direction", "all" ) );
         rels.add( MapUtil.map( "type", "loves", "direction", "all" ) );
         String description = JsonHelper.createJsonFrom( MapUtil.map( "order", "breadth_first", "uniqueness",
@@ -189,7 +173,7 @@ public class TraverserFunctionalTest
     public void shouldGet400WhenSupplyingInvalidTraverserDescriptionFormat() throws DatabaseBlockedException
     {
         long node = helper.createNode();
-        ClientResponse response = traverse( node, "::not JSON{[ at all" );
+        JaxRsResponse response = traverse(node, "::not JSON{[ at all");
         assertEquals( Status.BAD_REQUEST.getStatusCode(), response.getStatus() );
         response.close();
     }

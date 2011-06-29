@@ -44,11 +44,12 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.FunctionalTestHelper;
+import org.neo4j.server.rest.JaxRsResponse;
+import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 
 import com.sun.jersey.api.client.ClientHandlerException;
-import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.UniformInterfaceException;
 
 public class CloneSubgraphPluginTest
@@ -158,10 +159,7 @@ public class CloneSubgraphPluginTest
         originalCount--; // Don't count the reference node
 
         // Find the start node URI from the server
-        ClientResponse response = CLIENT
-                .resource( functionalTestHelper.dataUri() + "node/1" )
-                .accept( MediaType.APPLICATION_JSON )
-                .get( ClientResponse.class );
+        JaxRsResponse response = new RestRequest().get(functionalTestHelper.dataUri() + "node/1");
 
         String entity = response.getEntity( String.class );
 
@@ -184,11 +182,7 @@ public class CloneSubgraphPluginTest
 
         final String CLONE_DEPTH_MUCH_LARGER_THAN_THE_GRAPH = "99";
         response.close();
-        response = CLIENT
-                .resource( clonedSubgraphUri )
-                .type( MediaType.APPLICATION_FORM_URLENCODED )
-                .entity( "depth=" + CLONE_DEPTH_MUCH_LARGER_THAN_THE_GRAPH )
-                .post( ClientResponse.class );
+        response = new RestRequest().post( clonedSubgraphUri, "depth=" + CLONE_DEPTH_MUCH_LARGER_THAN_THE_GRAPH, MediaType.APPLICATION_FORM_URLENCODED_TYPE );
 
         assertEquals( 200, response.getStatus() );
 

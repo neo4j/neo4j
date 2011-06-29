@@ -25,7 +25,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -46,11 +45,11 @@ import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.plugins.PluginFunctionalTestHelper.RegExp;
 import org.neo4j.server.rest.FunctionalTestHelper;
+import org.neo4j.server.rest.JaxRsResponse;
+import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.NodeRepresentationTest;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
-
-import com.sun.jersey.api.client.ClientResponse;
 
 @SuppressWarnings( "unchecked" )
 public class PluginFunctionalTest
@@ -342,10 +341,7 @@ public class PluginFunctionalTest
 
         String postBody = "strings[]=aaa&strings[]=bbb&strings[]=ccc";
 
-        CLIENT.resource( methodUri )
-                .accept( MediaType.APPLICATION_JSON_TYPE )
-                .entity( postBody, MediaType.APPLICATION_FORM_URLENCODED )
-                .post( ClientResponse.class );
+        RestRequest.req().post( methodUri ,postBody,MediaType.APPLICATION_FORM_URLENCODED_TYPE);
 
         List<String> strings = Arrays.asList( "aaa", "bbb", "ccc" );
 
@@ -361,10 +357,7 @@ public class PluginFunctionalTest
 
         String postBody = "strings[]=aaa&strings[]=bbb&strings[]=ccc&count=3";
 
-        CLIENT.resource( methodUri )
-                .accept( MediaType.APPLICATION_JSON_TYPE )
-                .entity( postBody, MediaType.APPLICATION_FORM_URLENCODED )
-                .post( ClientResponse.class );
+        RestRequest.req().post(methodUri,postBody,MediaType.APPLICATION_FORM_URLENCODED_TYPE);
 
         List<String> strings = Arrays.asList( "aaa", "bbb", "ccc" );
 
@@ -429,18 +422,15 @@ public class PluginFunctionalTest
     }
 
     @Test
-    public void shouldHandleNullPath() throws Exception
-    {
+    public void shouldHandleNullPath() throws Exception {
         long n = functionalTestHelper.getGraphDbHelper()
                 .createNode();
 
-        String url = getPluginMethodUri( functionalTestHelper.nodeUri( n ), "pathToReference" );
+        String url = getPluginMethodUri(functionalTestHelper.nodeUri(n), "pathToReference");
 
-        ClientResponse response = CLIENT.resource( url )
-                .accept( MediaType.APPLICATION_JSON_TYPE )
-                .post( ClientResponse.class );
+        JaxRsResponse response = new RestRequest().post(url, null);
 
-        assertThat( response.getStatus(), is( 204 ) );
+        assertThat(response.getStatus(), is(204));
         response.close();
     }
 

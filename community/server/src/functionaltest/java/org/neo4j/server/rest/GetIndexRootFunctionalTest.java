@@ -19,11 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
-
-import java.io.IOException;
-
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -31,7 +26,9 @@ import org.junit.Test;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.helpers.ServerHelper;
 
-import com.sun.jersey.api.client.ClientResponse;
+import java.io.IOException;
+
+import static org.junit.Assert.assertEquals;
 
 public class GetIndexRootFunctionalTest
 {
@@ -65,8 +62,7 @@ public class GetIndexRootFunctionalTest
     @Test
     public void shouldRespondWith404ForNonResourceIndexPath() throws Exception
     {
-        ClientResponse response = CLIENT.resource( functionalTestHelper.indexUri() )
-                .get( ClientResponse.class );
+        JaxRsResponse response = RestRequest.req().get(functionalTestHelper.indexUri());
         assertEquals( 404, response.getStatus() );
         response.close();
     }
@@ -77,11 +73,9 @@ public class GetIndexRootFunctionalTest
      * @throws Exception
      */
     @Test
-    public void shouldRespondWithNodeIndexes() throws Exception
-    {
-        ClientResponse response = CLIENT.resource( functionalTestHelper.nodeIndexUri() )
-                .get( ClientResponse.class );
-        assertEquals( 204, response.getStatus() );
+    public void shouldRespondWithNodeIndexes() throws Exception {
+        JaxRsResponse response = RestRequest.req().get(functionalTestHelper.nodeIndexUri());
+        assertEquals(204, response.getStatus());
         response.close();
     }
 
@@ -91,11 +85,9 @@ public class GetIndexRootFunctionalTest
      * @throws Exception
      */
     @Test
-    public void shouldRespondWithRelationshipIndexes() throws Exception
-    {
-        ClientResponse response = CLIENT.resource( functionalTestHelper.relationshipIndexUri() )
-                .get( ClientResponse.class );
-        assertEquals( 204, response.getStatus() );
+    public void shouldRespondWithRelationshipIndexes() throws Exception {
+        JaxRsResponse response = RestRequest.req().get(functionalTestHelper.relationshipIndexUri());
+        assertEquals(204, response.getStatus());
         response.close();
     }
 

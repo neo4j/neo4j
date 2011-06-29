@@ -19,15 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
-
-import java.io.IOException;
-
-import javax.ws.rs.core.MediaType;
-
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -35,7 +26,11 @@ import org.junit.Test;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.helpers.ServerHelper;
 
-import com.sun.jersey.api.client.ClientResponse;
+import java.io.IOException;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class RedirectorTests
 {
@@ -61,28 +56,16 @@ public class RedirectorTests
     }
 
     @Test
-    public void shouldRedirectRootToWebadmin() throws Exception
-    {
-        ClientResponse response = CLIENT
-                .resource( server.baseUri() )
-                .type( MediaType.APPLICATION_JSON )
-                .accept( MediaType.APPLICATION_JSON )
-                .get( ClientResponse.class );
+    public void shouldRedirectRootToWebadmin() throws Exception {
+        JaxRsResponse response = new RestRequest(server.baseUri()).get();
 
-        assertThat( response.getStatus(), is( not( 404 ) ) );
+        assertThat(response.getStatus(), is(not(404)));
     }
 
     @Test
-    public void shouldNotRedirectTheRestOfTheWorld() throws Exception
-    {
-        String url = server.baseUri() + "a/different/relative/webadmin/data/uri/";
+    public void shouldNotRedirectTheRestOfTheWorld() throws Exception {
+        JaxRsResponse response = new RestRequest(server.baseUri()).get("a/different/relative/webadmin/data/uri/");
 
-        ClientResponse response = CLIENT
-                .resource( url )
-                .type( MediaType.APPLICATION_JSON )
-                .accept( MediaType.APPLICATION_JSON )
-                .get( ClientResponse.class );
-
-        assertThat( response.getStatus(), is( 404 ) );
+        assertThat(response.getStatus(), is(404));
     }
 }

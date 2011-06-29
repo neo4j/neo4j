@@ -72,18 +72,19 @@ public class CreateSimpleGraph {
         ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).entity(jsonTraverserPayload).post(ClientResponse.class);
         
         System.out.println(String.format("POST [%s] to [%s], status code [%d], returned data: " + System.getProperty("line.separator") + "%s", jsonTraverserPayload, traverserUri, response.getStatus(), response.getEntity(String.class)));
+        response.close();
         // END SNIPPET: traverse
     }
 
     // START SNIPPET: insideAddMetaToProp
     private static void addMetadataToProperty(URI relationshipUri, String name, String value) throws URISyntaxException {
         URI propertyUri = new URI(relationshipUri.toString() + "/properties");
-        WebResource resource = Client.create().resource(propertyUri); 
-        
         String entity = toJsonNameValuePairCollection(name, value);
+        WebResource resource = Client.create().resource(propertyUri);
         ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).entity(entity).put(ClientResponse.class);
         
         System.out.println(String.format("PUT [%s] to [%s], status code [%d]", entity, propertyUri, response.getStatus()));
+        response.close();
     }
     // END SNIPPET: insideAddMetaToProp
 
@@ -97,10 +98,12 @@ public class CreateSimpleGraph {
 
         WebResource resource = Client.create().resource(nodeEntryPointUri); // http://localhost:7474/db/data/node
         ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).entity("{}").post(ClientResponse.class); // POST {} to the node entry point URI
-        
-        System.out.println(String.format("POST to [%s], status code [%d], location header [%s]", nodeEntryPointUri, response.getStatus(), response.getLocation().toString()));
-        
-        return response.getLocation();
+
+        final URI location = response.getLocation();
+        System.out.println(String.format("POST to [%s], status code [%d], location header [%s]", nodeEntryPointUri, response.getStatus(), location.toString()));
+        response.close();
+
+        return location;
         // END SNIPPET: createNode
     }
 
@@ -111,10 +114,12 @@ public class CreateSimpleGraph {
         
         WebResource resource = Client.create().resource(fromUri);
         ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).entity(relationshipJson).post(ClientResponse.class); // POST JSON to the relationships URI
-        
-        System.out.println(String.format("POST to [%s], status code [%d], location header [%s]", fromUri, response.getStatus(), response.getLocation().toString()));
-        
-        return response.getLocation();
+
+        final URI location = response.getLocation();
+        System.out.println(String.format("POST to [%s], status code [%d], location header [%s]", fromUri, response.getStatus(), location.toString()));
+
+        response.close();
+        return location;
     }
     // END SNIPPET: insideAddRel
 
@@ -150,6 +155,7 @@ public class CreateSimpleGraph {
         ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).entity("\"" + propertyValue + "\"").put(ClientResponse.class);
         
         System.out.println(String.format("PUT to [%s], status code [%d]", propertyUri, response.getStatus()));
+        response.close();
         // END SNIPPET: addProp
     }
     
@@ -159,6 +165,8 @@ public class CreateSimpleGraph {
         ClientResponse response = resource.get(ClientResponse.class);
         
         System.out.println(String.format("GET on [%s], status code [%d]", SERVER_ROOT_URI, response.getStatus()));
+        response.close();
+
         // END SNIPPET: checkServer
     }
 }

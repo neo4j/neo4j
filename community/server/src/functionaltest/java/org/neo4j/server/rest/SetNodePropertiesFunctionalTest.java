@@ -19,21 +19,7 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
-
-import java.io.IOException;
-import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.ws.rs.core.MediaType;
-
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.helpers.ServerHelper;
@@ -42,7 +28,12 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.TestData;
 
-import com.sun.jersey.api.client.ClientResponse;
+import java.io.IOException;
+import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
 
 public class SetNodePropertiesFunctionalTest
 {
@@ -93,9 +84,8 @@ public class SetNodePropertiesFunctionalTest
                 .payload( JsonHelper.createJsonFrom( map ) )
                 .expectedStatus( 204 )
                 .put( propertiesUri.toString() );
-        ClientResponse response = updateNodePropertiesOnServer( map );
-        assertEquals( 204, response.getStatus() );
-        response.close();
+        JaxRsResponse response = updateNodePropertiesOnServer(map);
+        assertEquals(204, response.getStatus());
     }
 
     @Test
@@ -103,44 +93,29 @@ public class SetNodePropertiesFunctionalTest
     {
         Map<String, Object> map = new HashMap<String, Object>();
         map.put( "jim", new HashMap<String, Object>() );
-        ClientResponse response = updateNodePropertiesOnServer( map );
+        JaxRsResponse response = updateNodePropertiesOnServer(map);
         assertEquals( 400, response.getStatus() );
         response.close();
     }
 
     @Test
-    public void shouldReturn400WhenSendingCorruptJsonProperties()
-    {
-        ClientResponse response = CLIENT.resource( propertiesUri )
-                .type( MediaType.APPLICATION_JSON )
-                .accept( MediaType.APPLICATION_JSON )
-                .entity( "this:::Is::notJSON}" )
-                .put( ClientResponse.class );
-        assertEquals( 400, response.getStatus() );
+    public void shouldReturn400WhenSendingCorruptJsonProperties() {
+        JaxRsResponse response = RestRequest.req().put(propertiesUri, "this:::Is::notJSON}");
+        assertEquals(400, response.getStatus());
         response.close();
     }
 
     @Test
-    public void shouldReturn404WhenPropertiesSentToANodeWhichDoesNotExist() throws JsonParseException
-    {
+    public void shouldReturn404WhenPropertiesSentToANodeWhichDoesNotExist() throws JsonParseException {
         Map<String, Object> map = new HashMap<String, Object>();
-        map.put( "jim", "tobias" );
-        ClientResponse response = CLIENT.resource( badUri )
-                .type( MediaType.APPLICATION_JSON )
-                .accept( MediaType.APPLICATION_JSON )
-                .entity( JsonHelper.createJsonFrom( map ) )
-                .put( ClientResponse.class );
-        assertEquals( 404, response.getStatus() );
+        map.put("jim", "tobias");
+        JaxRsResponse response = RestRequest.req().put(badUri, JsonHelper.createJsonFrom(map));
+        assertEquals(404, response.getStatus());
         response.close();
     }
 
-    private ClientResponse updateNodePropertiesOnServer( Map<String, Object> map ) throws JsonParseException
-    {
-        return CLIENT.resource( propertiesUri )
-                .type( MediaType.APPLICATION_JSON )
-                .accept( MediaType.APPLICATION_JSON )
-                .entity( JsonHelper.createJsonFrom( map ) )
-                .put( ClientResponse.class );
+    private JaxRsResponse updateNodePropertiesOnServer(Map<String, Object> map) throws JsonParseException {
+        return RestRequest.req().put(propertiesUri, JsonHelper.createJsonFrom(map));
     }
 
     private URI getPropertyUri( String key ) throws Exception
@@ -175,41 +150,26 @@ public class SetNodePropertiesFunctionalTest
                 .payload( "{\"foo\" : {\"bar\" : \"baz\"}}" )
                 .expectedStatus( 400 )
                 .post( functionalTestHelper.nodeUri() );
-        ClientResponse response = setNodePropertyOnServer( "jim", new HashMap<String, Object>() );
+        JaxRsResponse response = setNodePropertyOnServer("jim", new HashMap<String, Object>());
         assertEquals( 400, response.getStatus() );
         response.close();
     }
 
     @Test
-    public void shouldReturn400WhenSendingCorruptJsonProperty() throws Exception
-    {
-        ClientResponse response = CLIENT.resource( getPropertyUri( "foo" ) )
-                .type( MediaType.APPLICATION_JSON )
-                .accept( MediaType.APPLICATION_JSON )
-                .entity( "this:::Is::notJSON}" )
-                .put( ClientResponse.class );
-        assertEquals( 400, response.getStatus() );
+    public void shouldReturn400WhenSendingCorruptJsonProperty() throws Exception {
+        JaxRsResponse response = RestRequest.req().put(getPropertyUri("foo"), "this:::Is::notJSON}");
+        assertEquals(400, response.getStatus());
         response.close();
     }
 
     @Test
-    public void shouldReturn404WhenPropertySentToANodeWhichDoesNotExist() throws Exception
-    {
-        ClientResponse response = CLIENT.resource( badUri.toString() + "/foo" )
-                .type( MediaType.APPLICATION_JSON )
-                .accept( MediaType.APPLICATION_JSON )
-                .entity( JsonHelper.createJsonFrom( "bar" ) )
-                .put( ClientResponse.class );
-        assertEquals( 404, response.getStatus() );
+    public void shouldReturn404WhenPropertySentToANodeWhichDoesNotExist() throws Exception {
+        JaxRsResponse response = RestRequest.req().put(badUri.toString() + "/foo", JsonHelper.createJsonFrom("bar"));
+        assertEquals(404, response.getStatus());
         response.close();
     }
 
-    private ClientResponse setNodePropertyOnServer( String key, Object value ) throws Exception
-    {
-        return CLIENT.resource( getPropertyUri( key ) )
-                .type( MediaType.APPLICATION_JSON )
-                .accept( MediaType.APPLICATION_JSON )
-                .entity( JsonHelper.createJsonFrom( value ) )
-                .put( ClientResponse.class );
+    private JaxRsResponse setNodePropertyOnServer(String key, Object value) throws Exception {
+        return RestRequest.req().put(getPropertyUri(key), JsonHelper.createJsonFrom(value));
     }
 }

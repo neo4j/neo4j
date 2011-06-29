@@ -19,18 +19,14 @@
  */
 package org.neo4j.server.rest;
 
-import java.io.IOException;
-
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.test.TestData;
+
+import java.io.IOException;
 
 public class DatabaseMetadataServiceFunctionalTest
 {

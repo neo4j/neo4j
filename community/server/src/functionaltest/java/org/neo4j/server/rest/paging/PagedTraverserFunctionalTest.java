@@ -23,7 +23,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
 
 import java.io.IOException;
 import java.net.URI;
@@ -47,10 +46,10 @@ import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.DocsGenerator;
 import org.neo4j.server.rest.DocsGenerator.ResponseEntity;
 import org.neo4j.server.rest.FunctionalTestHelper;
+import org.neo4j.server.rest.JaxRsResponse;
+import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.test.TestData;
-
-import com.sun.jersey.api.client.ClientResponse;
 
 public class PagedTraverserFunctionalTest
 {
@@ -88,20 +87,17 @@ public class PagedTraverserFunctionalTest
     }
 
     @Test
-    public void nodeRepresentationShouldHaveLinkToPagedTraverser() throws Exception
-    {
-        theStartNode = createLinkedList( SHORT_LIST_LENGTH, server.getDatabase() );
+    public void nodeRepresentationShouldHaveLinkToPagedTraverser() throws Exception {
+        theStartNode = createLinkedList(SHORT_LIST_LENGTH, server.getDatabase());
 
-        ClientResponse response = CLIENT.resource( functionalTestHelper.nodeUri( theStartNode.getId() ) )
-                .accept( MediaType.APPLICATION_JSON_TYPE )
-                .get( ClientResponse.class );
+        JaxRsResponse response = RestRequest.req().get(functionalTestHelper.nodeUri(theStartNode.getId()));
 
-        Map<String, Object> jsonMap = JsonHelper.jsonToMap( response.getEntity( String.class ) );
+        Map<String, Object> jsonMap = JsonHelper.jsonToMap(response.getEntity(String.class));
 
-        assertNotNull( jsonMap.containsKey( PAGED_TRAVERSE_LINK_REL ) );
-        assertThat( String.valueOf( jsonMap.get( PAGED_TRAVERSE_LINK_REL ) ),
-                containsString( "/db/data/node/" + String.valueOf( theStartNode.getId() )
-                                + "/paged/traverse/{returnType}{?pageSize,leaseTime}" ) );
+        assertNotNull(jsonMap.containsKey(PAGED_TRAVERSE_LINK_REL));
+        assertThat(String.valueOf(jsonMap.get(PAGED_TRAVERSE_LINK_REL)),
+                containsString("/db/data/node/" + String.valueOf(theStartNode.getId())
+                        + "/paged/traverse/{returnType}{?pageSize,leaseTime}"));
     }
 
     /**
@@ -170,29 +166,24 @@ public class PagedTraverserFunctionalTest
                     .get( traverserLocation.toString() );
         }
 
-        ClientResponse response = CLIENT.resource( traverserLocation )
-                .accept( MediaType.APPLICATION_JSON )
-                .get( ClientResponse.class );
+        JaxRsResponse response = new RestRequest(traverserLocation).get();
         assertEquals( 404, response.getStatus() );
     }
 
     @Test
-    public void shouldExpireTheTraverserAfterDefaultTimeoutAndGetA404Response()
-    {
-        theStartNode = createLinkedList( SHORT_LIST_LENGTH, server.getDatabase() );
+    public void shouldExpireTheTraverserAfterDefaultTimeoutAndGetA404Response() {
+        theStartNode = createLinkedList(SHORT_LIST_LENGTH, server.getDatabase());
 
-        ClientResponse postResponse = createPagedTraverser();
-        assertEquals( 201, postResponse.getStatus() );
+        JaxRsResponse postResponse = createPagedTraverser();
+        assertEquals(201, postResponse.getStatus());
 
         FakeClock clock = (FakeClock) LeaseManagerProvider.getClock();
         final int TEN_MINUTES = 10;
-        clock.forwardMinutes( TEN_MINUTES );
+        clock.forwardMinutes(TEN_MINUTES);
 
-        ClientResponse getResponse = CLIENT.resource( postResponse.getLocation() )
-                .accept( MediaType.APPLICATION_JSON_TYPE )
-                .get( ClientResponse.class );
+        JaxRsResponse getResponse = new RestRequest(postResponse.getLocation()).get();
 
-        assertEquals( 404, getResponse.getStatus() );
+        assertEquals(404, getResponse.getStatus() );
     }
 
     /**
@@ -212,15 +203,11 @@ public class PagedTraverserFunctionalTest
         for ( int i = 0; i < enoughPagesToExpireTheTraverser; i++ )
         {
 
-            ClientResponse response = CLIENT.resource( traverserLocation )
-                    .accept( MediaType.APPLICATION_JSON )
-                    .get( ClientResponse.class );
+            JaxRsResponse response = new RestRequest(traverserLocation).get();
             assertEquals( 200, response.getStatus() );
         }
 
-        ClientResponse response = CLIENT.resource( traverserLocation )
-                .accept( MediaType.APPLICATION_JSON )
-                .get( ClientResponse.class );
+        JaxRsResponse response = new RestRequest(traverserLocation).get();
         assertEquals( 404, response.getStatus() );
     }
 
@@ -240,9 +227,7 @@ public class PagedTraverserFunctionalTest
 
         ( (FakeClock) LeaseManagerProvider.getClock() ).forwardMinutes( 11 );
 
-        ClientResponse response = CLIENT.resource( traverserLocation )
-                .accept( MediaType.APPLICATION_JSON )
-                .get( ClientResponse.class );
+        JaxRsResponse response = new RestRequest(traverserLocation).get();
         assertEquals( 404, response.getStatus() );
     }
 
@@ -257,15 +242,11 @@ public class PagedTraverserFunctionalTest
         for ( int i = 0; i < enoughPagesToExpireTheTraverser; i++ )
         {
 
-            ClientResponse response = CLIENT.resource( traverserLocation )
-                    .accept( MediaType.APPLICATION_JSON )
-                    .get( ClientResponse.class );
+            JaxRsResponse response = new RestRequest(traverserLocation).get();
             assertEquals( 200, response.getStatus() );
         }
 
-        ClientResponse response = CLIENT.resource( traverserLocation )
-                .accept( MediaType.APPLICATION_JSON )
-                .get( ClientResponse.class );
+        JaxRsResponse response = new RestRequest(traverserLocation).get();
         assertEquals( 404, response.getStatus() );
     }
 
@@ -275,12 +256,9 @@ public class PagedTraverserFunctionalTest
         theStartNode = createLinkedList( SHORT_LIST_LENGTH, server.getDatabase() );
 
         int negativeLeaseTime = -9;
-        ClientResponse response = CLIENT.resource(
+        JaxRsResponse response = RestRequest.req().post(
                 functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?leaseTime="
-                        + String.valueOf( negativeLeaseTime ) )
-                .accept( MediaType.APPLICATION_JSON_TYPE )
-                .entity( traverserDescription() )
-                .post( ClientResponse.class );
+                        + String.valueOf( negativeLeaseTime ) , traverserDescription() );
 
         assertEquals( 400, response.getStatus() );
     }
@@ -291,12 +269,10 @@ public class PagedTraverserFunctionalTest
         theStartNode = createLinkedList( SHORT_LIST_LENGTH, server.getDatabase() );
 
         int negativePageSize = -99;
-        ClientResponse response = CLIENT.resource(
+        JaxRsResponse response = RestRequest.req().post(
                 functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?pageSize="
-                        + String.valueOf( negativePageSize ) )
-                .accept( MediaType.APPLICATION_JSON_TYPE )
-                .entity( traverserDescription() )
-                .post( ClientResponse.class );
+                        + String.valueOf( negativePageSize ) ,
+                traverserDescription() );
 
         assertEquals( 400, response.getStatus() );
     }
@@ -306,31 +282,26 @@ public class PagedTraverserFunctionalTest
     {
         theStartNode = createLinkedList( SHORT_LIST_LENGTH, server.getDatabase() );
 
-        ClientResponse response = createPagedTraverser();
+        JaxRsResponse response = createPagedTraverser();
 
-        ClientResponse deleteResponse = CLIENT.resource( response.getLocation() )
-                .delete( ClientResponse.class );
+        final RestRequest request = RestRequest.req();
+        JaxRsResponse deleteResponse = request.delete(response.getLocation());
         assertEquals( 200, deleteResponse.getStatus() );
 
-        deleteResponse = CLIENT.resource( response.getLocation() )
-                .delete( ClientResponse.class );
+        deleteResponse = request.delete(response.getLocation());
         assertEquals( 404, deleteResponse.getStatus() );
     }
 
-    private ClientResponse createPagedTraverserWithTimeoutInMinutesAndPageSize( int leaseTime, int pageSize )
+    private JaxRsResponse createPagedTraverserWithTimeoutInMinutesAndPageSize(int leaseTime, int pageSize)
     {
         String description = traverserDescription();
 
-        ClientResponse response = CLIENT.resource(
+        return RestRequest.req().post(
                 functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?leaseTime="
-                        + String.valueOf( leaseTime ) + "&pageSize=" + pageSize )
-                .accept( MediaType.APPLICATION_JSON_TYPE )
-                .entity( description )
-                .post( ClientResponse.class );
-        return response;
+                        + String.valueOf( leaseTime ) + "&pageSize=" + pageSize , description );
     }
 
-    private ClientResponse createPagedTraverserWithTimeoutInMinutes( int leaseTime )
+    private JaxRsResponse createPagedTraverserWithTimeoutInMinutes(int leaseTime)
     {
         ResponseEntity responseEntity = docGenerator.get()
                 .expectedType( MediaType.APPLICATION_JSON_TYPE )
@@ -342,7 +313,7 @@ public class PagedTraverserFunctionalTest
         return responseEntity.response();
     }
 
-    private ClientResponse createPagedTraverserWithPageSize( int pageSize )
+    private JaxRsResponse createPagedTraverserWithPageSize(int pageSize)
     {
         ResponseEntity responseEntity = docGenerator.get()
                 .expectedType( MediaType.APPLICATION_JSON_TYPE )
@@ -354,15 +325,11 @@ public class PagedTraverserFunctionalTest
         return responseEntity.response();
     }
 
-    private ClientResponse createPagedTraverser()
+    private JaxRsResponse createPagedTraverser()
     {
 
-        ClientResponse response = CLIENT.resource(
-                functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node" )
-                .accept( MediaType.APPLICATION_JSON_TYPE )
-                .entity( traverserDescription() )
-                .post( ClientResponse.class );
-        return response;
+        final String uri = functionalTestHelper.nodeUri(theStartNode.getId()) + "/paged/traverse/node";
+        return RestRequest.req().post(uri, traverserDescription());
     }
 
     private String traverserDescription()

@@ -19,27 +19,20 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
-
-import java.io.IOException;
-import java.util.Map;
-
-import javax.ws.rs.core.MediaType;
-
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.test.TestData;
 
-import com.sun.jersey.api.client.ClientResponse;
+import java.io.IOException;
+import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
+
 
 public class GetOnRootFunctionalTest
 {
@@ -85,9 +78,7 @@ public class GetOnRootFunctionalTest
     @Test
     public void assertResponseHaveCorrectContentFromGet() throws Exception
     {
-        ClientResponse response = CLIENT.resource( functionalTestHelper.dataUri() )
-                .accept( MediaType.APPLICATION_JSON )
-                .get( ClientResponse.class );
+        JaxRsResponse response = RestRequest.req().get(functionalTestHelper.dataUri());
         String body = response.getEntity( String.class );
         Map<String, Object> map = JsonHelper.jsonToMap( body );
         assertEquals( functionalTestHelper.nodeUri(), map.get( "node" ) );
@@ -98,9 +89,7 @@ public class GetOnRootFunctionalTest
         response.close();
 
         String referenceNodeUri = (String) map.get( "reference_node" );
-        response = CLIENT.resource( referenceNodeUri )
-                .accept( MediaType.APPLICATION_JSON )
-                .get( ClientResponse.class );
+        response = RestRequest.req().get(referenceNodeUri);
         assertEquals( 200, response.getStatus() );
         response.close();
     }

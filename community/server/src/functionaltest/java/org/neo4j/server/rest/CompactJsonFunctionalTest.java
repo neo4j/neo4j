@@ -19,16 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
-
-import java.io.IOException;
-import java.util.Collections;
-
-import javax.ws.rs.core.Response.Status;
-
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -41,7 +31,13 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.formats.CompactJsonFormat;
 
-import com.sun.jersey.api.client.ClientResponse;
+import javax.ws.rs.core.Response.Status;
+import java.io.IOException;
+import java.util.Collections;
+
+import static org.junit.Assert.*;
+
+
 
 public class CompactJsonFunctionalTest
 {
@@ -106,15 +102,12 @@ public class CompactJsonFunctionalTest
     }
 
     @Test
-    public void shouldGetThomasAndersonDirectly()
-    {
-        ClientResponse response = CLIENT.resource( functionalTestHelper.nodeUri( thomasAnderson ) )
-                .accept( CompactJsonFormat.MEDIA_TYPE )
-                .get( ClientResponse.class );
-        assertEquals( Status.OK.getStatusCode(), response.getStatus() );
-        String entity = response.getEntity( String.class );
-        assertTrue( entity.contains( "Thomas Anderson" ) );
-        assertValidJson( entity );
+    public void shouldGetThomasAndersonDirectly() {
+        JaxRsResponse response = RestRequest.req().get(functionalTestHelper.nodeUri(thomasAnderson), CompactJsonFormat.MEDIA_TYPE);
+        assertEquals(Status.OK.getStatusCode(), response.getStatus());
+        String entity = response.getEntity(String.class);
+        assertTrue(entity.contains("Thomas Anderson"));
+        assertValidJson(entity);
         response.close();
     }
 

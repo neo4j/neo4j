@@ -35,23 +35,20 @@ import org.hamcrest.Description;
 import org.hamcrest.Factory;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
+import org.neo4j.server.rest.JaxRsResponse;
+import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 
-import com.sun.jersey.api.client.ClientResponse;
-
 public class PluginFunctionalTestHelper
 {
-    public static Map<String, Object> makeGet( String url ) throws JsonParseException
-    {
-        ClientResponse response = CLIENT.resource( url )
-                .accept( MediaType.APPLICATION_JSON_TYPE )
-                .get( ClientResponse.class );
+    public static Map<String, Object> makeGet( String url ) throws JsonParseException {
+        JaxRsResponse response = new RestRequest().get(url);
 
-        String body = getResponseText( response );
+        String body = getResponseText(response);
         response.close();
 
-        return deserializeMap( body );
+        return deserializeMap(body);
     }
 
     protected static Map<String, Object> deserializeMap( final String body ) throws JsonParseException
@@ -68,7 +65,7 @@ public class PluginFunctionalTestHelper
         return result;
     }
 
-    protected static String getResponseText( final ClientResponse response )
+    protected static String getResponseText( final JaxRsResponse response )
     {
         String body = response.getEntity( String.class );
 
@@ -78,9 +75,7 @@ public class PluginFunctionalTestHelper
 
     protected static Map<String, Object> makePostMap( String url ) throws JsonParseException
     {
-        ClientResponse response = CLIENT.resource( url )
-                .accept( MediaType.APPLICATION_JSON_TYPE )
-                .post( ClientResponse.class );
+        JaxRsResponse response = new RestRequest().post(url,null);
 
         String body = getResponseText( response );
         response.close();
@@ -92,10 +87,7 @@ public class PluginFunctionalTestHelper
             throws JsonParseException
     {
         String json = JsonHelper.createJsonFrom( params );
-        ClientResponse response = CLIENT.resource( url )
-                .accept( MediaType.APPLICATION_JSON_TYPE )
-                .entity( json, MediaType.APPLICATION_JSON_TYPE )
-                .post( ClientResponse.class );
+        JaxRsResponse response = new RestRequest().post(url, json, MediaType.APPLICATION_JSON_TYPE);
 
         String body = getResponseText( response );
         response.close();
@@ -103,31 +95,24 @@ public class PluginFunctionalTestHelper
         return deserializeMap( body );
     }
 
-    protected static List<Map<String, Object>> makePostList( String url ) throws JsonParseException
-    {
-        ClientResponse response = CLIENT.resource( url )
-                .accept( MediaType.APPLICATION_JSON_TYPE )
-                .post( ClientResponse.class );
+    protected static List<Map<String, Object>> makePostList( String url ) throws JsonParseException {
+        JaxRsResponse response = new RestRequest().post(url, null);
 
-        String body = getResponseText( response );
+        String body = getResponseText(response);
         response.close();
 
-        return deserializeList( body );
+        return deserializeList(body);
     }
 
     protected static List<Map<String, Object>> makePostList( String url, Map<String, Object> params )
-            throws JsonParseException
-    {
-        String json = JsonHelper.createJsonFrom( params );
-        ClientResponse response = CLIENT.resource( url )
-                .accept( MediaType.APPLICATION_JSON_TYPE )
-                .entity( json, MediaType.APPLICATION_JSON_TYPE )
-                .post( ClientResponse.class );
+            throws JsonParseException {
+        String json = JsonHelper.createJsonFrom(params);
+        JaxRsResponse response = new RestRequest().post(url, json);
 
-        String body = getResponseText( response );
+        String body = getResponseText(response);
         response.close();
 
-        return deserializeList( body );
+        return deserializeList(body);
     }
 
     public static class RegExp extends TypeSafeMatcher<String>

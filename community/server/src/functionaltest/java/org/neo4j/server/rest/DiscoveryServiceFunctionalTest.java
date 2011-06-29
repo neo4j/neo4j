@@ -19,16 +19,7 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
-
-import java.io.IOException;
-import java.util.Map;
-
-import javax.ws.rs.core.MediaType;
-
+import com.sun.jersey.api.client.Client;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -37,8 +28,11 @@ import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
+import javax.ws.rs.core.MediaType;
+import java.io.IOException;
+import java.util.Map;
+
+import static org.junit.Assert.*;
 
 public class DiscoveryServiceFunctionalTest
 {
@@ -66,7 +60,7 @@ public class DiscoveryServiceFunctionalTest
     @Test
     public void shouldRespondWith200WhenRetrievingDiscoveryDocument() throws Exception
     {
-        ClientResponse response = getDiscoveryDocument();
+        JaxRsResponse response = getDiscoveryDocument();
         assertEquals( 200, response.getStatus() );
         response.close();
     }
@@ -74,7 +68,7 @@ public class DiscoveryServiceFunctionalTest
     @Test
     public void shouldGetContentLengthHeaderWhenRetrievingDiscoveryDocument() throws Exception
     {
-        ClientResponse response = getDiscoveryDocument();
+        JaxRsResponse response = getDiscoveryDocument();
         assertNotNull( response.getHeaders()
                 .get( "Content-Length" ) );
         response.close();
@@ -83,7 +77,7 @@ public class DiscoveryServiceFunctionalTest
     @Test
     public void shouldHaveJsonMediaTypeWhenRetrievingDiscoveryDocument() throws Exception
     {
-        ClientResponse response = getDiscoveryDocument();
+        JaxRsResponse response = getDiscoveryDocument();
         assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
         response.close();
     }
@@ -91,7 +85,7 @@ public class DiscoveryServiceFunctionalTest
     @Test
     public void shouldHaveJsonDataInResponse() throws Exception
     {
-        ClientResponse response = getDiscoveryDocument();
+        JaxRsResponse response = getDiscoveryDocument();
 
         Map<String, Object> map = JsonHelper.jsonToMap( response.getEntity( String.class ) );
 
@@ -108,21 +102,17 @@ public class DiscoveryServiceFunctionalTest
     @Test
     public void shouldRedirectToWebadminOnHtmlRequest() throws Exception
     {
-        Client nonRedirectingClient = CLIENT;
+        Client nonRedirectingClient = Client.create();
         nonRedirectingClient.setFollowRedirects( false );
 
-        ClientResponse clientResponse = nonRedirectingClient.resource( server.baseUri() )
-                .accept( MediaType.TEXT_HTML )
-                .get( ClientResponse.class );
+        JaxRsResponse clientResponse = new RestRequest(null,nonRedirectingClient).get(server.baseUri().toString(),MediaType.TEXT_HTML_TYPE);
 
         assertEquals( 303, clientResponse.getStatus() );
     }
 
-    private ClientResponse getDiscoveryDocument() throws Exception
+    private JaxRsResponse getDiscoveryDocument() throws Exception
     {
-        return CLIENT.resource( server.baseUri() )
-                .accept( MediaType.APPLICATION_JSON )
-                .get( ClientResponse.class );
+        return new RestRequest(server.baseUri()).get();
     }
 
 }

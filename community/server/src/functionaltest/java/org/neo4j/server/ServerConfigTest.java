@@ -19,7 +19,6 @@
  */
 package org.neo4j.server;
 
-import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -32,8 +31,8 @@ import javax.ws.rs.core.MediaType;
 import org.junit.After;
 import org.junit.Test;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
+import org.neo4j.server.rest.JaxRsResponse;
+import org.neo4j.server.rest.RestRequest;
 
 public class ServerConfigTest
 {
@@ -47,21 +46,18 @@ public class ServerConfigTest
     }
 
     @Test
-    public void shouldPickUpPortFromConfig() throws Exception
-    {
+    public void shouldPickUpPortFromConfig() throws Exception {
         final int NON_DEFAULT_PORT = 4321;
 
-        server = server().onPort( NON_DEFAULT_PORT )
+        server = server().onPort(NON_DEFAULT_PORT)
                 .build();
         server.start();
 
-        assertEquals( NON_DEFAULT_PORT, server.getWebServerPort() );
+        assertEquals(NON_DEFAULT_PORT, server.getWebServerPort());
 
-        ClientResponse response = Client.create()
-                .resource( server.baseUri() )
-                .get( ClientResponse.class );
+        JaxRsResponse response = new RestRequest(server.baseUri()).get();
 
-        assertThat( response.getStatus(), is( 200 ) );
+        assertThat(response.getStatus(), is(200));
         response.close();
     }
 
@@ -76,16 +72,10 @@ public class ServerConfigTest
                 .build();
         server.start();
 
-        ClientResponse response = CLIENT
-                .resource( "http://localhost:7474" + webAdminDataUri )
-                .accept( MediaType.TEXT_HTML )
-                .get( ClientResponse.class );
+        JaxRsResponse response = new RestRequest().get("http://localhost:7474" + webAdminDataUri, MediaType.TEXT_HTML_TYPE);
         assertEquals( 200, response.getStatus() );
 
-        response = CLIENT
-                .resource( "http://localhost:7474" + webAdminManagementUri )
-                .accept( MediaType.APPLICATION_JSON )
-                .get( ClientResponse.class );
+        response = new RestRequest().get("http://localhost:7474" + webAdminManagementUri);
         assertEquals( 200, response.getStatus() );
         response.close();
     }

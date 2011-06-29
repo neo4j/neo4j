@@ -341,7 +341,6 @@ public class DocsGenerator
         {
             data.setEntity( response.getEntity( String.class ) );
         }
-        response.close();
         getResponseHeaders( data, response.getHeaders(), headerFields );
         document( data );
         return new ResponseEntity( response, data.entity );
@@ -387,11 +386,11 @@ public class DocsGenerator
     public static class ResponseEntity
     {
         private final String entity;
-        private final ClientResponse response;
+        private final JaxRsResponse response;
 
         public ResponseEntity( ClientResponse response, String entity )
         {
-            this.response = response;
+            this.response = new JaxRsResponse(response,entity);
             this.entity = entity;
         }
 
@@ -407,7 +406,7 @@ public class DocsGenerator
          * Note that the response object returned does not give access to the
          * response entity.
          */
-        public ClientResponse response()
+        public JaxRsResponse response()
         {
             return response;
         }

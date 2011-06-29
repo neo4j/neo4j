@@ -34,20 +34,22 @@ import org.junit.Test;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.FunctionalTestHelper;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
+import org.neo4j.server.rest.JaxRsResponse;
+import org.neo4j.server.rest.RestRequest;
+
+import javax.ws.rs.core.MediaType;
 
 public class NeoServerFunctionalTest
 {
 
     private static NeoServerWithEmbeddedWebServer server;
-    
-    private static final Client LOCAL_TO_CURRENT_TEST_CLIENT = Client.create();
+    private static FunctionalTestHelper functionalTestHelper;
 
     @BeforeClass
     public static void setupServer() throws IOException
     {
         server = ServerHelper.createServer();
+        functionalTestHelper = new FunctionalTestHelper(server);
     }
 
     @Before
@@ -72,30 +74,21 @@ public class NeoServerFunctionalTest
     }
 
     @Test
-    public void shouldRedirectRootToWebadmin() throws Exception
-    {
-        assertFalse( server.baseUri()
+    public void shouldRedirectRootToWebadmin() throws Exception {
+        assertFalse(server.baseUri()
                 .toString()
-                .contains( "webadmin" ) );
-        ClientResponse response = LOCAL_TO_CURRENT_TEST_CLIENT.resource( server.baseUri() )
-                .get( ClientResponse.class );
-        assertThat( response.getStatus(), is( 200 ) );
-        assertThat( response.toString(), containsString( "webadmin" ) );
-        response.close();
+                .contains("webadmin"));
+        JaxRsResponse response = RestRequest.req().get(server.baseUri().toString(), MediaType.TEXT_HTML_TYPE);
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getEntity(), containsString("webadmin"));
     }
 
     @Test
-    public void serverShouldProvideAWelcomePage() throws Exception
-    {
-        FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper( server );
+    public void serverShouldProvideAWelcomePage() throws Exception {
+        JaxRsResponse response = RestRequest.req().get(functionalTestHelper.getWebadminUri());
 
-        ClientResponse response = LOCAL_TO_CURRENT_TEST_CLIENT.resource( functionalTestHelper.getWebadminUri() )
-                .get( ClientResponse.class );
-
-        assertThat( response.getStatus(), is( 200 ) );
-        assertThat( response.getHeaders()
-                .getFirst( "Content-Type" ), containsString( "html" ) );
-        response.close();
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getHeaders().getFirst("Content-Type"), containsString("html"));
     }
 
 }

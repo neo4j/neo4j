@@ -19,14 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
-
-import java.io.IOException;
-import java.net.URI;
-
-import javax.ws.rs.core.MediaType;
-
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -35,8 +27,10 @@ import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
+import java.io.IOException;
+import java.net.URI;
+
+import static org.junit.Assert.assertEquals;
 
 public class RemoveRelationshipFunctionalTest
 {
@@ -70,7 +64,7 @@ public class RemoveRelationshipFunctionalTest
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
 
-        ClientResponse response = sendDeleteRequest( new URI( functionalTestHelper.relationshipUri( relationshipId ) ) );
+        JaxRsResponse response = sendDeleteRequest(new URI(functionalTestHelper.relationshipUri(relationshipId)));
 
         assertEquals( 204, response.getStatus() );
         response.close();
@@ -81,18 +75,15 @@ public class RemoveRelationshipFunctionalTest
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
 
-        ClientResponse response = sendDeleteRequest( new URI(
-                functionalTestHelper.relationshipUri( ( relationshipId + 1 ) * 9999 ) ) );
+        JaxRsResponse response = sendDeleteRequest(new URI(
+                functionalTestHelper.relationshipUri((relationshipId + 1) * 9999)));
 
         assertEquals( 404, response.getStatus() );
         response.close();
     }
 
-    private ClientResponse sendDeleteRequest( URI requestUri )
+    private JaxRsResponse sendDeleteRequest(URI requestUri)
     {
-        WebResource.Builder resource = CLIENT.resource( requestUri )
-                .accept( MediaType.APPLICATION_JSON );
-        ClientResponse response = resource.delete( ClientResponse.class );
-        return response;
+       return RestRequest.req().delete(requestUri);
     }
 }

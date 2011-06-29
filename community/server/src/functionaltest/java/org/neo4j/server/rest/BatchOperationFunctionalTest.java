@@ -19,21 +19,9 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-
-import javax.ws.rs.core.MediaType;
-
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import com.sun.jersey.api.client.ClientHandlerException;
+import com.sun.jersey.api.client.UniformInterfaceException;
+import org.junit.*;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.helpers.ServerHelper;
@@ -42,9 +30,12 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.TestData;
 
-import com.sun.jersey.api.client.ClientHandlerException;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.UniformInterfaceException;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class BatchOperationFunctionalTest
 {
@@ -107,60 +98,59 @@ public class BatchOperationFunctionalTest
     @Documented
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldPerformMultipleOperations() throws Exception
-    {
+    public void shouldPerformMultipleOperations() throws Exception {
 
         String jsonString = new PrettyJSON().array()
 
                 .object()
-                .key( "method" )
-                .value( "PUT" )
-                .key( "to" )
-                .value( "/node/0/properties" )
-                .key( "body" )
+                .key("method")
+                .value("PUT")
+                .key("to")
+                .value("/node/0/properties")
+                .key("body")
                 .object()
-                .key( "age" )
-                .value( 1 )
+                .key("age")
+                .value(1)
                 .endObject()
-                .key( "id" )
-                .value( 0 )
-                .endObject()
-
-                .object()
-                .key( "method" )
-                .value( "GET" )
-                .key( "to" )
-                .value( "/node/0" )
-                .key( "id" )
-                .value( 1 )
+                .key("id")
+                .value(0)
                 .endObject()
 
                 .object()
-                .key( "method" )
-                .value( "POST" )
-                .key( "to" )
-                .value( "/node" )
-                .key( "body" )
-                .object()
-                .key( "age" )
-                .value( 1 )
-                .endObject()
-                .key( "id" )
-                .value( 2 )
+                .key("method")
+                .value("GET")
+                .key("to")
+                .value("/node/0")
+                .key("id")
+                .value(1)
                 .endObject()
 
                 .object()
-                .key( "method" )
-                .value( "POST" )
-                .key( "to" )
-                .value( "/node" )
-                .key( "body" )
+                .key("method")
+                .value("POST")
+                .key("to")
+                .value("/node")
+                .key("body")
                 .object()
-                .key( "age" )
-                .value( 1 )
+                .key("age")
+                .value(1)
                 .endObject()
-                .key( "id" )
-                .value( 3 )
+                .key("id")
+                .value(2)
+                .endObject()
+
+                .object()
+                .key("method")
+                .value("POST")
+                .key("to")
+                .value("/node")
+                .key("body")
+                .object()
+                .key("age")
+                .value(1)
+                .endObject()
+                .key("id")
+                .value(3)
                 .endObject()
 
                 .endArray()
@@ -168,46 +158,42 @@ public class BatchOperationFunctionalTest
 
         String uri = functionalTestHelper.dataUri() + "batch";
 
-        ClientResponse response = CLIENT.resource( uri )
-                .type( MediaType.APPLICATION_JSON )
-                .accept( MediaType.APPLICATION_JSON )
-                .entity( jsonString )
-                .post( ClientResponse.class );
+        JaxRsResponse response = RestRequest.req().post(uri, jsonString);
 
-        assertEquals( 200, response.getStatus() );
+        assertEquals(200, response.getStatus());
 
-        List<Map<String, Object>> results = JsonHelper.jsonToList( response.getEntity( String.class ) );
+        List<Map<String, Object>> results = JsonHelper.jsonToList(response.getEntity());
 
-        assertEquals( 4, results.size() );
+        assertEquals(4, results.size());
 
-        Map<String, Object> putResult = results.get( 0 );
-        Map<String, Object> getResult = results.get( 1 );
-        Map<String, Object> firstPostResult = results.get( 2 );
-        Map<String, Object> secondPostResult = results.get( 3 );
+        Map<String, Object> putResult = results.get(0);
+        Map<String, Object> getResult = results.get(1);
+        Map<String, Object> firstPostResult = results.get(2);
+        Map<String, Object> secondPostResult = results.get(3);
 
         // Ids should be ok
-        assertEquals( 0, putResult.get( "id" ) );
-        assertEquals( 2, firstPostResult.get( "id" ) );
-        assertEquals( 3, secondPostResult.get( "id" ) );
+        assertEquals(0, putResult.get("id"));
+        assertEquals(2, firstPostResult.get("id"));
+        assertEquals(3, secondPostResult.get("id"));
 
         // Should contain "from"
-        assertEquals( "/node/0/properties", putResult.get( "from" ) );
-        assertEquals( "/node/0", getResult.get( "from" ) );
-        assertEquals( "/node", firstPostResult.get( "from" ) );
-        assertEquals( "/node", secondPostResult.get( "from" ) );
+        assertEquals("/node/0/properties", putResult.get("from"));
+        assertEquals("/node/0", getResult.get("from"));
+        assertEquals("/node", firstPostResult.get("from"));
+        assertEquals("/node", secondPostResult.get("from"));
 
         // Post should contain location
-        assertTrue( ( (String) firstPostResult.get( "location" ) ).length() > 0 );
-        assertTrue( ( (String) secondPostResult.get( "location" ) ).length() > 0 );
+        assertTrue(((String) firstPostResult.get("location")).length() > 0);
+        assertTrue(((String) secondPostResult.get("location")).length() > 0);
 
         // Should have created by the first PUT request
-        Map<String, Object> body = (Map<String, Object>) getResult.get( "body" );
-        assertEquals( 1, ( (Map<String, Object>) body.get( "data" ) ).get( "age" ) );
+        Map<String, Object> body = (Map<String, Object>) getResult.get("body");
+        assertEquals(1, ((Map<String, Object>) body.get("data")).get("age"));
 
         gen.get()
-                .payload( jsonString )
-                .expectedStatus( 200 )
-                .post( uri );
+                .payload(jsonString)
+                .expectedStatus(200)
+                .post(uri);
     }
 
     /**
@@ -222,190 +208,165 @@ public class BatchOperationFunctionalTest
      */
     @Documented
     @Test
-    public void shouldBeAbleToReferToCreatedResource() throws Exception
-    {
+    public void shouldBeAbleToReferToCreatedResource() throws Exception {
         String jsonString = new PrettyJSON().array()
                 .object()
-                .key( "method" )
-                .value( "POST" )
-                .key( "to" )
-                .value( "/node" )
-                .key( "id" )
-                .value( 0 )
-                .key( "body" )
+                .key("method")
+                .value("POST")
+                .key("to")
+                .value("/node")
+                .key("id")
+                .value(0)
+                .key("body")
                 .object()
-                .key( "age" )
-                .value( 1 )
+                .key("age")
+                .value(1)
                 .endObject()
                 .endObject()
                 .object()
-                .key( "method" )
-                .value( "POST" )
-                .key( "to" )
-                .value( "/node" )
-                .key( "id" )
-                .value( 1 )
-                .key( "body" )
+                .key("method")
+                .value("POST")
+                .key("to")
+                .value("/node")
+                .key("id")
+                .value(1)
+                .key("body")
                 .object()
-                .key( "age" )
-                .value( 12 )
+                .key("age")
+                .value(12)
                 .endObject()
                 .endObject()
                 .object()
-                .key( "method" )
-                .value( "POST" )
-                .key( "to" )
-                .value( "{0}/relationships" )
-                .key( "id" )
-                .value( 3 )
-                .key( "body" )
+                .key("method")
+                .value("POST")
+                .key("to")
+                .value("{0}/relationships")
+                .key("id")
+                .value(3)
+                .key("body")
                 .object()
-                .key( "to" )
-                .value( "{1}" )
-                .key( "data" )
+                .key("to")
+                .value("{1}")
+                .key("data")
                 .object()
-                .key( "name" )
-                .value( "bob" )
+                .key("name")
+                .value("bob")
                 .endObject()
-                .key( "type" )
-                .value( "KNOWS" )
+                .key("type")
+                .value("KNOWS")
                 .endObject()
                 .endObject()
                 .object()
-                .key( "method" )
-                .value( "POST" )
-                .key( "to" )
-                .value( "/index/relationship/my_rels/name/bob" )
-                .key( "id" )
-                .value( 4 )
-                .key( "body" )
-                .value( "{3}" )
+                .key("method")
+                .value("POST")
+                .key("to")
+                .value("/index/relationship/my_rels/name/bob")
+                .key("id")
+                .value(4)
+                .key("body")
+                .value("{3}")
                 .endObject()
                 .endArray()
                 .toString();
 
         String uri = functionalTestHelper.dataUri() + "batch";
 
-        ClientResponse response = CLIENT.resource( uri )
-                .type( MediaType.APPLICATION_JSON )
-                .accept( MediaType.APPLICATION_JSON )
-                .entity( jsonString )
-                .post( ClientResponse.class );
+        JaxRsResponse response = RestRequest.req().post(uri, jsonString);
 
-        assertEquals( 200, response.getStatus() );
+        assertEquals(200, response.getStatus());
 
-        List<Map<String, Object>> results = JsonHelper.jsonToList( response.getEntity( String.class ) );
+        List<Map<String, Object>> results = JsonHelper.jsonToList(response.getEntity());
 
-        assertEquals( 4, results.size() );
-        assertEquals( 1, helper.getIndexedRelationships( "my_rels", "name", "bob" )
-                .size() );
+        assertEquals(4, results.size());
+        assertEquals(1, helper.getIndexedRelationships("my_rels", "name", "bob")
+                .size());
 
         gen.get()
-                .payload( jsonString )
-                .expectedStatus( 200 )
-                .post( uri );
+                .payload(jsonString)
+                .expectedStatus(200)
+                .post(uri);
     }
 
     @Test
-    public void shouldGetLocationHeadersWhenCreatingThings() throws Exception
-    {
+    public void shouldGetLocationHeadersWhenCreatingThings() throws Exception {
 
         int originalNodeCount = helper.getNumberOfNodes();
 
-        ClientResponse response = CLIENT.resource( functionalTestHelper.dataUri() + "batch" )
-                .type( MediaType.APPLICATION_JSON )
-                .accept( MediaType.APPLICATION_JSON )
-                .entity( new PrettyJSON().array()
+        JaxRsResponse response = RestRequest.req().post(functionalTestHelper.dataUri() + "batch", new PrettyJSON().array()
 
-                        .object()
-                        .key( "method" )
-                        .value( "POST" )
-                        .key( "to" )
-                        .value( "/node" )
-                        .key( "body" )
-                        .object()
-                        .key( "age" )
-                        .value( 1 )
-                        .endObject()
-                        .endObject()
+                .object()
+                .key("method")
+                .value("POST")
+                .key("to")
+                .value("/node")
+                .key("body")
+                .object()
+                .key("age")
+                .value(1)
+                .endObject()
+                .endObject()
 
-                        .endArray()
-                        .toString() )
-                .post( ClientResponse.class );
+                .endArray()
+                .toString());
 
-        assertEquals( 200, response.getStatus() );
-        assertEquals( originalNodeCount + 1, helper.getNumberOfNodes() );
+        assertEquals(200, response.getStatus());
+        assertEquals(originalNodeCount + 1, helper.getNumberOfNodes());
 
-        List<Map<String, Object>> results = JsonHelper.jsonToList( response.getEntity( String.class ) );
+        List<Map<String, Object>> results = JsonHelper.jsonToList(response.getEntity());
 
-        assertEquals( 1, results.size() );
+        assertEquals(1, results.size());
 
-        Map<String, Object> result = results.get( 0 );
-        assertTrue( ( (String) result.get( "location" ) ).length() > 0 );
+        Map<String, Object> result = results.get(0);
+        assertTrue(((String) result.get("location")).length() > 0);
     }
 
     @Test
     public void shouldRollbackAllWhenGivenIncorrectRequest() throws JsonParseException, ClientHandlerException,
-            UniformInterfaceException
-    {
+            UniformInterfaceException {
 
         String jsonString = "[" + "{ " + "\"method\":\"POST\"," + "\"to\":\"/node\", " + "\"body\":{ \"age\":1 }"
-                            + "}," + "{ " + "\"method\":\"POST\"," + "\"to\":\"/node\", "
-                            + "\"body\":[\"a_list\",\"this_makes_no_sense\"]" + "}" + "]";
+                + "}," + "{ " + "\"method\":\"POST\"," + "\"to\":\"/node\", "
+                + "\"body\":[\"a_list\",\"this_makes_no_sense\"]" + "}" + "]";
 
         int originalNodeCount = helper.getNumberOfNodes();
 
-        ClientResponse response = CLIENT.resource( functionalTestHelper.dataUri() + "batch" )
-                .type( MediaType.APPLICATION_JSON )
-                .accept( MediaType.APPLICATION_JSON )
-                .entity( jsonString )
-                .post( ClientResponse.class );
+        JaxRsResponse response = RestRequest.req().post(functionalTestHelper.dataUri() + "batch", jsonString);
 
-        assertEquals( 400, response.getStatus() );
-        assertEquals( originalNodeCount, helper.getNumberOfNodes() );
+        assertEquals(400, response.getStatus());
+        assertEquals(originalNodeCount, helper.getNumberOfNodes());
 
     }
 
     @Test
     public void shouldRollbackAllWhenInsertingIllegalData() throws JsonParseException, ClientHandlerException,
-            UniformInterfaceException
-    {
+            UniformInterfaceException {
 
         String jsonString = "[" + "{ " + "\"method\":\"POST\"," + "\"to\":\"/node\", " + "\"body\":{ \"age\":1 }"
-                            + "}," + "{ " + "\"method\":\"POST\"," + "\"to\":\"/node\", "
-                            + "\"body\":{ \"age\":{ \"age\":{ \"age\":1 } } }" + "}" + "]";
+                + "}," + "{ " + "\"method\":\"POST\"," + "\"to\":\"/node\", "
+                + "\"body\":{ \"age\":{ \"age\":{ \"age\":1 } } }" + "}" + "]";
 
         int originalNodeCount = helper.getNumberOfNodes();
 
-        ClientResponse response = CLIENT.resource( functionalTestHelper.dataUri() + "batch" )
-                .type( MediaType.APPLICATION_JSON )
-                .accept( MediaType.APPLICATION_JSON )
-                .entity( jsonString )
-                .post( ClientResponse.class );
+        JaxRsResponse response = RestRequest.req().post(functionalTestHelper.dataUri() + "batch", jsonString);
 
-        assertEquals( 400, response.getStatus() );
-        assertEquals( originalNodeCount, helper.getNumberOfNodes() );
+        assertEquals(400, response.getStatus());
+        assertEquals(originalNodeCount, helper.getNumberOfNodes());
 
     }
 
     @Test
     public void shouldRollbackAllOnSingle404() throws JsonParseException, ClientHandlerException,
-            UniformInterfaceException
-    {
+            UniformInterfaceException {
 
         String jsonString = "[" + "{ " + "\"method\":\"POST\"," + "\"to\":\"/node\", " + "\"body\":{ \"age\":1 }"
-                            + "}," + "{ " + "\"method\":\"POST\"," + "\"to\":\"www.google.com\"" + "}" + "]";
+                + "}," + "{ " + "\"method\":\"POST\"," + "\"to\":\"www.google.com\"" + "}" + "]";
 
         int originalNodeCount = helper.getNumberOfNodes();
 
-        ClientResponse response = CLIENT.resource( functionalTestHelper.dataUri() + "batch" )
-                .type( MediaType.APPLICATION_JSON )
-                .accept( MediaType.APPLICATION_JSON )
-                .entity( jsonString )
-                .post( ClientResponse.class );
+        JaxRsResponse response = RestRequest.req().post(functionalTestHelper.dataUri() + "batch", jsonString);
 
-        assertEquals( 400, response.getStatus() );
-        assertEquals( originalNodeCount, helper.getNumberOfNodes() );
+        assertEquals(400, response.getStatus());
+        assertEquals(originalNodeCount, helper.getNumberOfNodes());
 
     }
 }

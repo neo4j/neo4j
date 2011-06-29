@@ -19,15 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.ws.rs.core.MediaType;
-
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -37,7 +28,12 @@ import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 
-import com.sun.jersey.api.client.ClientResponse;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
+
 
 public class RemoveRelationshipPropertiesFunctionalTest
 {
@@ -77,25 +73,19 @@ public class RemoveRelationshipPropertiesFunctionalTest
         Map<String, Object> map = new HashMap<String, Object>();
         map.put( "jim", "tobias" );
         helper.setRelationshipProperties( relationshipId, map );
-        ClientResponse response = removeRelationshipPropertiesOnServer( relationshipId );
+        JaxRsResponse response = removeRelationshipPropertiesOnServer( relationshipId );
         assertEquals( 204, response.getStatus() );
     }
 
     @Test
-    public void shouldReturn404WhenPropertiesRemovedFromRelationshipWhichDoesNotExist()
-    {
-        ClientResponse response = CLIENT.resource( getPropertiesUri( 999999 ) )
-                .type( MediaType.APPLICATION_JSON )
-                .accept( MediaType.APPLICATION_JSON )
-                .delete( ClientResponse.class );
-        assertEquals( 404, response.getStatus() );
-        response.close();
+    public void shouldReturn404WhenPropertiesRemovedFromRelationshipWhichDoesNotExist() {
+        JaxRsResponse response = RestRequest.req().delete(getPropertiesUri(999999));
+        assertEquals(404, response.getStatus());
     }
 
-    private ClientResponse removeRelationshipPropertiesOnServer( long relationshipId )
+    private JaxRsResponse removeRelationshipPropertiesOnServer( long relationshipId )
     {
-        return CLIENT.resource( getPropertiesUri( relationshipId ) )
-                .delete( ClientResponse.class );
+        return RestRequest.req().delete(getPropertiesUri(relationshipId));
     }
 
     private String getPropertyUri( long relationshipId, String key )
@@ -110,9 +100,8 @@ public class RemoveRelationshipPropertiesFunctionalTest
         Map<String, Object> map = new HashMap<String, Object>();
         map.put( "jim", "tobias" );
         helper.setRelationshipProperties( relationshipId, map );
-        ClientResponse response = removeRelationshipPropertyOnServer( relationshipId, "jim" );
-        assertEquals( 204, response.getStatus() );
-        response.close();
+        JaxRsResponse response = removeRelationshipPropertyOnServer( relationshipId, "jim" );
+        assertEquals(204, response.getStatus());
     }
 
     @Test
@@ -122,25 +111,19 @@ public class RemoveRelationshipPropertiesFunctionalTest
         Map<String, Object> map = new HashMap<String, Object>();
         map.put( "jim", "tobias" );
         helper.setRelationshipProperties( relationshipId, map );
-        ClientResponse response = removeRelationshipPropertyOnServer( relationshipId, "foo" );
-        assertEquals( 404, response.getStatus() );
-        response.close();
+        JaxRsResponse response = removeRelationshipPropertyOnServer( relationshipId, "foo" );
+        assertEquals(404, response.getStatus());
     }
 
     @Test
     public void shouldReturn404WhenPropertyRemovedFromARelationshipWhichDoesNotExist()
     {
-        ClientResponse response = CLIENT.resource( getPropertyUri( 999999, "foo" ) )
-                .accept( MediaType.APPLICATION_JSON_TYPE )
-                .delete( ClientResponse.class );
-        assertEquals( 404, response.getStatus() );
-        response.close();
+        JaxRsResponse response = RestRequest.req().delete(getPropertyUri(999999, "foo"));
+        assertEquals(404, response.getStatus());
     }
 
-    private ClientResponse removeRelationshipPropertyOnServer( long nodeId, String key )
+    private JaxRsResponse removeRelationshipPropertyOnServer(long nodeId, String key)
     {
-        return CLIENT.resource( getPropertyUri( nodeId, key ) )
-                .accept( MediaType.APPLICATION_JSON_TYPE )
-                .delete( ClientResponse.class );
+        return RestRequest.req().delete(getPropertyUri(nodeId, key));
     }
 }

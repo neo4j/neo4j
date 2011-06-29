@@ -19,19 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasKey;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
-
-import java.io.IOException;
-import java.net.URI;
-import java.util.Map;
-
-import javax.ws.rs.core.MediaType;
-
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -41,7 +28,15 @@ import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.plugins.FunctionalTestPlugin;
 import org.neo4j.server.rest.domain.JsonHelper;
 
-import com.sun.jersey.api.client.ClientResponse;
+import java.io.IOException;
+import java.net.URI;
+import java.util.Map;
+
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasKey;
+import static org.junit.Assert.*;
+
+
 
 public class ExtensionListingFunctionalTest
 {
@@ -68,53 +63,42 @@ public class ExtensionListingFunctionalTest
     }
 
     @Test
-    public void datarootContainsReferenceToExtensions() throws Exception
-    {
-        ClientResponse response = CLIENT.resource( functionalTestHelper.dataUri() )
-                .accept( MediaType.APPLICATION_JSON_TYPE )
-                .get( ClientResponse.class );
-        assertThat( response.getStatus(), equalTo( 200 ) );
-        Map<String, Object> json = JsonHelper.jsonToMap( response.getEntity( String.class ) );
-        String extInfo = (String) json.get( "extensions_info" );
-        assertNotNull( new URI( extInfo ) );
+    public void datarootContainsReferenceToExtensions() throws Exception {
+        JaxRsResponse response = RestRequest.req().get(functionalTestHelper.dataUri());
+        assertThat(response.getStatus(), equalTo(200));
+        Map<String, Object> json = JsonHelper.jsonToMap(response.getEntity(String.class));
+        String extInfo = (String) json.get("extensions_info");
+        assertNotNull(new URI(extInfo));
         response.close();
     }
 
     @Test
-    public void canListAllAvailableServerExtensions() throws Exception
-    {
-        ClientResponse response = CLIENT.resource( functionalTestHelper.extensionUri() )
-                .accept( MediaType.APPLICATION_JSON_TYPE )
-                .get( ClientResponse.class );
-        assertThat( response.getStatus(), equalTo( 200 ) );
-        Map<String, Object> json = JsonHelper.jsonToMap( response.getEntity( String.class ) );
-        assertFalse( json.isEmpty() );
+    public void canListAllAvailableServerExtensions() throws Exception {
+        JaxRsResponse response = RestRequest.req().get(functionalTestHelper.extensionUri());
+        assertThat(response.getStatus(), equalTo(200));
+        Map<String, Object> json = JsonHelper.jsonToMap(response.getEntity(String.class));
+        assertFalse(json.isEmpty());
         response.close();
     }
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void canListExtensionMethodsForServerExtension() throws Exception
-    {
-        ClientResponse response = CLIENT.resource( functionalTestHelper.extensionUri() )
-                .accept( MediaType.APPLICATION_JSON_TYPE )
-                .get( ClientResponse.class );
-        assertThat( response.getStatus(), equalTo( 200 ) );
+    public void canListExtensionMethodsForServerExtension() throws Exception {
+        JaxRsResponse response = RestRequest.req().get(functionalTestHelper.extensionUri());
+        assertThat(response.getStatus(), equalTo(200));
 
-        Map<String, Object> json = JsonHelper.jsonToMap( response.getEntity( String.class ) );
-        String refNodeService = (String) json.get( FunctionalTestPlugin.class.getSimpleName() );
+        Map<String, Object> json = JsonHelper.jsonToMap(response.getEntity(String.class));
+        String refNodeService = (String) json.get(FunctionalTestPlugin.class.getSimpleName());
         response.close();
 
-        response = CLIENT.resource( refNodeService )
-                .accept( MediaType.APPLICATION_JSON_TYPE )
-                .get( ClientResponse.class );
-        String result = response.getEntity( String.class );
+        response = RestRequest.req().get(refNodeService);
+        String result = response.getEntity(String.class);
 
-        assertThat( response.getStatus(), equalTo( 200 ) );
+        assertThat(response.getStatus(), equalTo(200));
 
-        json = JsonHelper.jsonToMap( result );
-        json = (Map<String, Object>) json.get( "graphdb" );
-        assertThat( json, hasKey( FunctionalTestPlugin.GET_REFERENCE_NODE ) );
+        json = JsonHelper.jsonToMap(result);
+        json = (Map<String, Object>) json.get("graphdb");
+        assertThat(json, hasKey(FunctionalTestPlugin.GET_REFERENCE_NODE));
         response.close();
     }
 }

@@ -19,20 +19,7 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
-
-import java.io.IOException;
-import java.util.Collections;
-
-import javax.ws.rs.core.MediaType;
-
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.helpers.ServerHelper;
@@ -40,14 +27,18 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.TestData;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
+import javax.ws.rs.core.MediaType;
+import java.io.IOException;
+import java.util.Collections;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class GetNodePropertiesFunctionalTest
 {
     private static NeoServerWithEmbeddedWebServer server;
     private static FunctionalTestHelper functionalTestHelper;
+    private RestRequest req;
 
     @BeforeClass
     public static void setupServer() throws IOException
@@ -60,6 +51,7 @@ public class GetNodePropertiesFunctionalTest
     public void cleanTheDatabase()
     {
         ServerHelper.cleanTheDatabase( server );
+        req = RestRequest.req();
     }
 
     @AfterClass
@@ -78,16 +70,12 @@ public class GetNodePropertiesFunctionalTest
      */
     @Documented
     @Test
-    public void shouldGet204ForNoProperties()
-    {
-        WebResource createResource = CLIENT.resource( functionalTestHelper.dataUri() + "node/" );
-        ClientResponse createResponse = createResource.accept( MediaType.APPLICATION_JSON )
-                .entity( "" )
-                .post( ClientResponse.class );
+    public void shouldGet204ForNoProperties() {
+        JaxRsResponse createResponse = req.post(functionalTestHelper.dataUri() + "node/", "");
         gen.get()
-                .expectedStatus( 204 )
-                .get( createResponse.getLocation()
-                        .toString() + "/properties" );
+                .expectedStatus(204)
+                .get(createResponse.getLocation()
+                        .toString() + "/properties");
     }
 
     /**
@@ -95,86 +83,46 @@ public class GetNodePropertiesFunctionalTest
      */
     @Documented
     @Test
-    public void shouldGet200ForProperties() throws JsonParseException
-    {
-        WebResource createResource = CLIENT.resource( functionalTestHelper.dataUri() + "node/" );
-        String entity = JsonHelper.createJsonFrom( Collections.singletonMap( "foo", "bar" ) );
-        ClientResponse createResponse = createResource.type( MediaType.APPLICATION_JSON )
-                .entity( entity )
-                .accept( MediaType.APPLICATION_JSON )
-                .post( ClientResponse.class );
+    public void shouldGet200ForProperties() throws JsonParseException {
+        String entity = JsonHelper.createJsonFrom(Collections.singletonMap("foo", "bar"));
+        JaxRsResponse createResponse = req.post(functionalTestHelper.dataUri() + "node/", entity);
         gen.get()
-                .expectedStatus( 200 )
-                .get( createResponse.getLocation()
-                        .toString() + "/properties" );
+                .expectedStatus(200)
+                .get(createResponse.getLocation()
+                        .toString() + "/properties");
     }
 
     @Test
     public void shouldGetContentLengthHeaderForRetrievingProperties() throws JsonParseException
     {
-        Client client = CLIENT;
-        WebResource createResource = client.resource( functionalTestHelper.dataUri() + "node/" );
-        String entity = JsonHelper.createJsonFrom( Collections.singletonMap( "foo", "bar" ) );
-        ClientResponse createResponse = createResource.type( MediaType.APPLICATION_JSON )
-                .entity( entity )
-                .accept( MediaType.APPLICATION_JSON )
-                .post( ClientResponse.class );
-        WebResource resource = client.resource( createResponse.getLocation()
-                .toString() + "/properties" );
-        ClientResponse response = resource.type( MediaType.APPLICATION_FORM_URLENCODED )
-                .accept( MediaType.APPLICATION_JSON )
-                .get( ClientResponse.class );
-        assertNotNull( response.getHeaders()
-                .get( "Content-Length" ) );
+        String entity = JsonHelper.createJsonFrom(Collections.singletonMap("foo", "bar"));
+        final RestRequest request = req;
+        JaxRsResponse createResponse = request.post(functionalTestHelper.dataUri() + "node/", entity);
+        JaxRsResponse response = request.get(createResponse.getLocation().toString() + "/properties");
+        assertNotNull( response.getHeaders().get("Content-Length") );
     }
 
     @Test
-    public void shouldGet404ForPropertiesOnNonExistentNode()
-    {
-        WebResource resource = CLIENT.resource( functionalTestHelper.dataUri() + "node/999999/properties" );
-        ClientResponse response = resource.type( MediaType.APPLICATION_FORM_URLENCODED )
-                .accept( MediaType.APPLICATION_JSON )
-                .get( ClientResponse.class );
-        assertEquals( 404, response.getStatus() );
+    public void shouldGet404ForPropertiesOnNonExistentNode() {
+        JaxRsResponse response = RestRequest.req().get(functionalTestHelper.dataUri() + "node/999999/properties");
+        assertEquals(404, response.getStatus());
     }
 
     @Test
     public void shouldBeJSONContentTypeOnPropertiesResponse() throws JsonParseException
     {
-        Client client = CLIENT;
-        WebResource createResource = client.resource( functionalTestHelper.dataUri() + "node/" );
-        String entity = JsonHelper.createJsonFrom( Collections.singletonMap( "foo", "bar" ) );
-        ClientResponse createResponse = createResource.type( MediaType.APPLICATION_JSON )
-                .entity( entity )
-                .accept( MediaType.APPLICATION_JSON )
-                .post( ClientResponse.class );
-        WebResource resource = client.resource( createResponse.getLocation()
-                .toString() + "/properties" );
-        ClientResponse response = resource.type( MediaType.APPLICATION_FORM_URLENCODED )
-                .accept( MediaType.APPLICATION_JSON )
-                .get( ClientResponse.class );
+        String entity = JsonHelper.createJsonFrom(Collections.singletonMap("foo", "bar"));
+        JaxRsResponse createResource = req.post(functionalTestHelper.dataUri() + "node/", entity);
+        JaxRsResponse response = req.get(createResource.getLocation().toString() + "/properties");
         assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
-
-        createResponse.close();
-        response.close();
     }
 
     @Test
     public void shouldGet404ForNoProperty()
     {
-        Client client = CLIENT;
-        WebResource createResource = client.resource( functionalTestHelper.dataUri() + "node/" );
-        ClientResponse createResponse = createResource.type( MediaType.APPLICATION_FORM_URLENCODED )
-                .accept( MediaType.APPLICATION_JSON )
-                .post( ClientResponse.class );
-        WebResource resource = client.resource( getPropertyUri( createResponse.getLocation()
-                .toString(), "foo" ) );
-        ClientResponse response = resource.accept( MediaType.APPLICATION_JSON )
-                .get( ClientResponse.class );
-        assertEquals( 404, response.getStatus() );
-
-        createResponse.close();
-        response.close();
+        final JaxRsResponse createResponse = req.post(functionalTestHelper.dataUri() + "node/", "");
+        JaxRsResponse response = req.get(getPropertyUri(createResponse.getLocation().toString(), "foo"));
+        assertEquals(404, response.getStatus());
     }
 
     /**
@@ -186,53 +134,31 @@ public class GetNodePropertiesFunctionalTest
     @Test
     public void shouldGet200ForProperty() throws JsonParseException
     {
-        WebResource createResource = CLIENT.resource( functionalTestHelper.dataUri() + "node/" );
-        String entity = JsonHelper.createJsonFrom( Collections.singletonMap( "foo", "bar" ) );
-        ClientResponse createResponse = createResource.type( MediaType.APPLICATION_JSON )
-                .entity( entity )
-                .accept( MediaType.APPLICATION_JSON )
-                .post( ClientResponse.class );
-        WebResource resource = CLIENT.resource( getPropertyUri( createResponse.getLocation()
-                .toString(), "foo" ) );
-        ClientResponse response = resource.accept( MediaType.APPLICATION_JSON )
-                .get( ClientResponse.class );
-        assertEquals( 200, response.getStatus() );
-
-        createResponse.close();
-        response.close();
+        String entity = JsonHelper.createJsonFrom(Collections.singletonMap("foo", "bar"));
+        JaxRsResponse createResponse = req.post(functionalTestHelper.dataUri() + "node/", entity);
+        JaxRsResponse response = req.get(getPropertyUri(createResponse.getLocation().toString(), "foo"));
+        assertEquals(200, response.getStatus());
 
         gen.get()
                 .expectedStatus( 200 )
-                .get( getPropertyUri( createResponse.getLocation()
-                        .toString(), "foo" ).toString() );
+                .get(getPropertyUri(createResponse.getLocation()
+                        .toString(), "foo"));
     }
 
     @Test
-    public void shouldGet404ForPropertyOnNonExistentNode()
-    {
-        WebResource resource = CLIENT.resource( getPropertyUri( functionalTestHelper.dataUri() + "node/" + "999999",
-                "foo" ) );
-        ClientResponse response = resource.type( MediaType.APPLICATION_FORM_URLENCODED )
-                .accept( MediaType.APPLICATION_JSON )
-                .get( ClientResponse.class );
-        assertEquals( 404, response.getStatus() );
-        response.close();
+    public void shouldGet404ForPropertyOnNonExistentNode() {
+        JaxRsResponse response = RestRequest.req().get(getPropertyUri(functionalTestHelper.dataUri() + "node/" + "999999", "foo"));
+        assertEquals(404, response.getStatus());
     }
 
     @Test
-    public void shouldBeJSONContentTypeOnPropertyResponse() throws JsonParseException
-    {
-        WebResource createResource = CLIENT.resource( functionalTestHelper.dataUri() + "node/" );
-        String entity = JsonHelper.createJsonFrom( Collections.singletonMap( "foo", "bar" ) );
-        ClientResponse createResponse = createResource.type( MediaType.APPLICATION_JSON )
-                .entity( entity )
-                .accept( MediaType.APPLICATION_JSON )
-                .post( ClientResponse.class );
-        WebResource resource = CLIENT.resource( getPropertyUri( createResponse.getLocation()
-                .toString(), "foo" ) );
-        ClientResponse response = resource.accept( MediaType.APPLICATION_JSON )
-                .get( ClientResponse.class );
-        assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
+    public void shouldBeJSONContentTypeOnPropertyResponse() throws JsonParseException {
+        String entity = JsonHelper.createJsonFrom(Collections.singletonMap("foo", "bar"));
+
+        JaxRsResponse createResponse = req.post(functionalTestHelper.dataUri() + "node/", entity);
+
+        JaxRsResponse response = req.get(getPropertyUri(createResponse.getLocation().toString(), "foo"));
+        assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
 
         createResponse.close();
         response.close();
@@ -240,6 +166,6 @@ public class GetNodePropertiesFunctionalTest
 
     private String getPropertyUri( final String baseUri, final String key )
     {
-        return baseUri.toString() + "/properties/" + key;
+        return baseUri + "/properties/" + key;
     }
 }

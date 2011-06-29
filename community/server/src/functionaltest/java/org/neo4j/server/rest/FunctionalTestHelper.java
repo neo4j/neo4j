@@ -19,15 +19,14 @@
  */
 package org.neo4j.server.rest;
 
-import java.io.IOException;
-
+import com.sun.jersey.api.client.Client;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 
-import com.sun.jersey.api.client.Client;
+import java.io.IOException;
 
 public final class FunctionalTestHelper
 {
@@ -35,6 +34,7 @@ public final class FunctionalTestHelper
     private final GraphDbHelper helper;
 
     public static final Client CLIENT = Client.create();
+    private RestRequest request;
 
     public FunctionalTestHelper( NeoServerWithEmbeddedWebServer server )
     {
@@ -44,6 +44,7 @@ public final class FunctionalTestHelper
         }
         this.helper = new GraphDbHelper( server.getDatabase() );
         this.server = server;
+        this.request = new RestRequest(server.baseUri().resolve("db/data/"));
     }
 
     public GraphDbHelper getGraphDbHelper()
@@ -58,8 +59,7 @@ public final class FunctionalTestHelper
 
     public String dataUri()
     {
-        return server.baseUri()
-                .toString() + "db/data/";
+        return server.baseUri().toString() + "db/data/";
     }
 
     String nodeUri()
@@ -188,5 +188,25 @@ public final class FunctionalTestHelper
     {
         return server.baseUri()
                 .toString() + "webadmin";
+    }
+
+    public JaxRsResponse get(String path) {
+        return request.get(path);
+    }
+
+    public JaxRsResponse get(String path, String data) {
+        return request.get(path, data);
+    }
+
+    public JaxRsResponse delete(String path) {
+        return request.delete(path);
+    }
+
+    public JaxRsResponse post(String path, String data) {
+        return request.post(path, data);
+    }
+
+    public void put(String path, String data) {
+        request.put(path, data);
     }
 }

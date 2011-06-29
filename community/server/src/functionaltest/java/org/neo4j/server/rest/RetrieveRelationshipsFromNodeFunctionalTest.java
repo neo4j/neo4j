@@ -19,21 +19,7 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-
-import javax.ws.rs.core.MediaType;
-
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.database.DatabaseBlockedException;
@@ -44,8 +30,13 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import org.neo4j.test.TestData;
 
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
+import javax.ws.rs.core.MediaType;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class RetrieveRelationshipsFromNodeFunctionalTest
 {
@@ -92,11 +83,8 @@ public class RetrieveRelationshipsFromNodeFunctionalTest
     public @Rule
     TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
 
-    private ClientResponse sendRetrieveRequestToServer( long nodeId, String path )
-    {
-        WebResource resource = CLIENT.resource( functionalTestHelper.nodeUri() + "/" + nodeId + "/relationships" + path );
-        return resource.accept( MediaType.APPLICATION_JSON )
-                .get( ClientResponse.class );
+    private JaxRsResponse sendRetrieveRequestToServer(long nodeId, String path) {
+        return RestRequest.req().get(functionalTestHelper.nodeUri() + "/" + nodeId + "/relationships" + path);
     }
 
     private void verifyRelReps( int expectedSize, String json ) throws JsonParseException
@@ -177,7 +165,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest
     public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingIncomingTypedRelationshipsForANode()
             throws JsonParseException
     {
-        ClientResponse response = sendRetrieveRequestToServer( nodeWithRelationships, "/in/LIKES" );
+        JaxRsResponse response = sendRetrieveRequestToServer( nodeWithRelationships, "/in/LIKES" );
         assertEquals( 200, response.getStatus() );
         assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
         verifyRelReps( 1, response.getEntity( String.class ) );
@@ -188,7 +176,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest
     public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingOutgoingTypedRelationshipsForANode()
             throws JsonParseException
     {
-        ClientResponse response = sendRetrieveRequestToServer( nodeWithRelationships, "/out/HATES" );
+        JaxRsResponse response = sendRetrieveRequestToServer( nodeWithRelationships, "/out/HATES" );
         assertEquals( 200, response.getStatus() );
         assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
         verifyRelReps( 1, response.getEntity( String.class ) );
@@ -214,7 +202,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest
     public void shouldRespondWith200AndEmptyListOfRelationshipRepresentationsWhenGettingIncomingRelationshipsForANodeWithoutRelationships()
             throws JsonParseException
     {
-        ClientResponse response = sendRetrieveRequestToServer( nodeWithoutRelationships, "/in" );
+        JaxRsResponse response = sendRetrieveRequestToServer( nodeWithoutRelationships, "/in" );
         assertEquals( 200, response.getStatus() );
         assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
         verifyRelReps( 0, response.getEntity( String.class ) );
@@ -225,7 +213,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest
     public void shouldRespondWith200AndEmptyListOfRelationshipRepresentationsWhenGettingOutgoingRelationshipsForANodeWithoutRelationships()
             throws JsonParseException
     {
-        ClientResponse response = sendRetrieveRequestToServer( nodeWithoutRelationships, "/out" );
+        JaxRsResponse response = sendRetrieveRequestToServer( nodeWithoutRelationships, "/out" );
         assertEquals( 200, response.getStatus() );
         assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
         verifyRelReps( 0, response.getEntity( String.class ) );
@@ -235,7 +223,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest
     @Test
     public void shouldRespondWith404WhenGettingAllRelationshipsForNonExistingNode()
     {
-        ClientResponse response = sendRetrieveRequestToServer( nonExistingNode, "/all" );
+        JaxRsResponse response = sendRetrieveRequestToServer( nonExistingNode, "/all" );
         assertEquals( 404, response.getStatus() );
         response.close();
     }
@@ -243,7 +231,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest
     @Test
     public void shouldRespondWith404WhenGettingIncomingRelationshipsForNonExistingNode()
     {
-        ClientResponse response = sendRetrieveRequestToServer( nonExistingNode, "/in" );
+        JaxRsResponse response = sendRetrieveRequestToServer( nonExistingNode, "/in" );
         assertEquals( 404, response.getStatus() );
         response.close();
     }
@@ -251,36 +239,30 @@ public class RetrieveRelationshipsFromNodeFunctionalTest
     @Test
     public void shouldRespondWith404WhenGettingOutgoingRelationshipsForNonExistingNode()
     {
-        ClientResponse response = sendRetrieveRequestToServer( nonExistingNode, "/out" );
+        JaxRsResponse response = sendRetrieveRequestToServer( nonExistingNode, "/out" );
         assertEquals( 404, response.getStatus() );
         response.close();
     }
 
     @Test
-    public void shouldGet200WhenRetrievingValidRelationship() throws DatabaseBlockedException
-    {
-        long relationshipId = helper.createRelationship( "LIKES" );
+    public void shouldGet200WhenRetrievingValidRelationship() throws DatabaseBlockedException {
+        long relationshipId = helper.createRelationship("LIKES");
 
-        ClientResponse response = CLIENT.resource( functionalTestHelper.relationshipUri( relationshipId ) )
-                .accept( MediaType.APPLICATION_JSON_TYPE )
-                .get( ClientResponse.class );
+        JaxRsResponse response = RestRequest.req().get(functionalTestHelper.relationshipUri(relationshipId));
 
-        assertEquals( 200, response.getStatus() );
+        assertEquals(200, response.getStatus());
         response.close();
     }
 
     @Test
-    public void shouldGetARelationshipRepresentationInJsonWhenRetrievingValidRelationship() throws Exception
-    {
-        long relationshipId = helper.createRelationship( "LIKES" );
+    public void shouldGetARelationshipRepresentationInJsonWhenRetrievingValidRelationship() throws Exception {
+        long relationshipId = helper.createRelationship("LIKES");
 
-        ClientResponse response = CLIENT.resource( functionalTestHelper.relationshipUri( relationshipId ) )
-                .accept( MediaType.APPLICATION_JSON_TYPE )
-                .get( ClientResponse.class );
+        JaxRsResponse response = RestRequest.req().get(functionalTestHelper.relationshipUri(relationshipId));
 
-        String entity = response.getEntity( String.class );
-        assertNotNull( entity );
-        isLegalJson( entity );
+        String entity = response.getEntity(String.class);
+        assertNotNull(entity);
+        isLegalJson(entity);
         response.close();
     }
 
