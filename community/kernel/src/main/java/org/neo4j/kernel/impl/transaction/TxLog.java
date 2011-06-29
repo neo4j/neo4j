@@ -256,7 +256,24 @@ public class TxLog
         {
             XidImpl xid = new XidImpl( globalId, branchId == null ? new byte[0]
                 : branchId );
-            return "TxLogRecord[" + type + "," + xid + "," + seqNr + "]";
+            return "TxLogRecord[" + typeName() + "," + xid + "," + seqNr + "]";
+        }
+
+        String typeName()
+        {
+            switch ( type )
+            {
+            case TX_START:
+                return "TX_START";
+            case BRANCH_ADD:
+                return "BRANCH_ADD";
+            case MARK_COMMIT:
+                return "MARK_COMMIT";
+            case TX_DONE:
+                return "TX_DONE";
+            default:
+                return "<unknown type>";
+            }
         }
     }
 

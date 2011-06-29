@@ -51,6 +51,41 @@ public class ArrayMap<K,V>
         data = new ArrayEntry[toMapThreshold];
     }
 
+    @Override
+    public String toString()
+    {
+        final byte size;
+        final Object snapshot;
+        if ( useThreadSafeMap )
+        {
+            synchronized ( this )
+            {
+                size = arrayCount;
+                snapshot = this.data;
+            }
+        }
+        else
+        {
+            size = arrayCount;
+            snapshot = this.data;
+        }
+        if ( size != -1 )
+        {
+            StringBuilder result = new StringBuilder();
+            String sep = "[";
+            for ( int i = 0; i < size; i++ )
+            {
+                result.append( sep ).append( ( (ArrayEntry[]) snapshot )[i] );
+                sep = ", ";
+            }
+            return result.append( "]" ).toString();
+        }
+        else
+        {
+            return snapshot.toString();
+        }
+    }
+
     public void put( K key, V value )
     {
         if ( useThreadSafeMap )
@@ -271,6 +306,12 @@ public class ArrayMap<K,V>
             V oldValue = value;
             this.value = value;
             return oldValue;
+        }
+
+        @Override
+        public String toString()
+        {
+            return key + "=" + value;
         }
     }
 
