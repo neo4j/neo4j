@@ -22,6 +22,7 @@ package org.neo4j.shell.kernel.apps;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.TreeSet;
 
@@ -74,45 +75,47 @@ public class Cd extends ReadOnlyGraphDatabaseApp
         {
             return super.completionCandidates( partOfLine, session );
         }
+
+        TreeSet<String> result = new TreeSet<String>();
+        NodeOrRelationship current;
         try
         {
-            TreeSet<String> result = new TreeSet<String>();
-            NodeOrRelationship current = getCurrent( session );
-            if ( current.isNode() )
-            {
-                // TODO Check if -r is supplied
-                Node node = current.asNode();
-                for ( Node otherNode : RelationshipToNodeIterable.wrap(
-                        node.getRelationships(), node ) )
-                {
-                    long otherNodeId = otherNode.getId();
-                    String title = findTitle( getServer(), session, otherNode );
-                    if ( title != null )
-                    {
-                        if ( !result.contains( title ) )
-                        {
-                            maybeAddCompletionCandidate( result, title + "," + otherNodeId,
-                                    lastWord );
-                        }
-                    }
-                    maybeAddCompletionCandidate( result, "" + otherNodeId, lastWord );
-                }
-            }
-            else
-            {
-                maybeAddCompletionCandidate( result, START_ALIAS, lastWord );
-                maybeAddCompletionCandidate( result, END_ALIAS, lastWord );
-                Relationship rel = current.asRelationship();
-                maybeAddCompletionCandidate( result, "" + rel.getStartNode().getId(), lastWord );
-                maybeAddCompletionCandidate( result, "" + rel.getEndNode().getId(), lastWord );
-            }
-            return new ArrayList<String>( result );
+            current = getCurrent( session );
         }
         catch ( ShellException e )
         {
-            e.printStackTrace();
-            return super.completionCandidates( partOfLine, session );
+            return Collections.emptyList();
         }
+        
+        if ( current.isNode() )
+        {
+            // TODO Check if -r is supplied
+            Node node = current.asNode();
+            for ( Node otherNode : RelationshipToNodeIterable.wrap(
+                    node.getRelationships(), node ) )
+            {
+                long otherNodeId = otherNode.getId();
+                String title = findTitle( getServer(), session, otherNode );
+                if ( title != null )
+                {
+                    if ( !result.contains( title ) )
+                    {
+                        maybeAddCompletionCandidate( result, title + "," + otherNodeId,
+                                lastWord );
+                    }
+                }
+                maybeAddCompletionCandidate( result, "" + otherNodeId, lastWord );
+            }
+        }
+        else
+        {
+            maybeAddCompletionCandidate( result, START_ALIAS, lastWord );
+            maybeAddCompletionCandidate( result, END_ALIAS, lastWord );
+            Relationship rel = current.asRelationship();
+            maybeAddCompletionCandidate( result, "" + rel.getStartNode().getId(), lastWord );
+            maybeAddCompletionCandidate( result, "" + rel.getEndNode().getId(), lastWord );
+        }
+        return new ArrayList<String>( result );
     }
 
     private static void maybeAddCompletionCandidate( Collection<String> candidates,
@@ -130,23 +133,34 @@ public class Cd extends ReadOnlyGraphDatabaseApp
     {
         List<TypedId> paths = readCurrentWorkingDir( session );
 
-        NodeOrRelationship current = getCurrent( session );
         NodeOrRelationship newThing = null;
         if ( parser.arguments().isEmpty() )
         {
-            try {
-              newThing = NodeOrRelationship.wrap(
-                getServer().getDb().getReferenceNode() );
-              paths.clear();
-            } catch (NotFoundException nne) {
-                out.println( "Can't find reference node, not moving.");
+            try
+            {
+                newThing = NodeOrRelationship.wrap( getServer().getDb().getReferenceNode() );
+                paths.clear();
+            }
+            catch ( NotFoundException nne )
+            {
+                clearCurrent( session );
+                writeCurrentWorkingDir( paths, session );
                 return null;
             }
         }
         else
         {
+            NodeOrRelationship current = null;
+            try
+            {
+                current = getCurrent( session );
+            }
+            catch ( ShellException e )
+            { // Ok, didn't exist
+            }
+            
             String arg = parser.arguments().get( 0 );
-            TypedId newId = current.getTypedId();
+            TypedId newId = null;
             if ( arg.equals( ".." ) )
             {
                 if ( paths.size() > 0 )
@@ -159,6 +173,12 @@ public class Cd extends ReadOnlyGraphDatabaseApp
             }
             else if ( arg.equals( START_ALIAS ) || arg.equals( END_ALIAS ) )
             {
+                if ( current == null )
+                {
+                    throw new ShellException( "Can't do " + START_ALIAS + " or " +
+                            END_ALIAS + " on a non-existent relationship" );
+                }
+                
                 newId = getStartOrEnd( current, arg );
                 paths.add( current.getTypedId() );
             }
@@ -171,7 +191,10 @@ public class Cd extends ReadOnlyGraphDatabaseApp
                 }
                 catch ( NumberFormatException e )
                 {
-                    suppliedId = findNodeWithTitle( current.asNode(), arg, session );
+                    if ( current != null )
+                    {
+                        suppliedId = findNodeWithTitle( current.asNode(), arg, session );
+                    }
                     if ( suppliedId == -1 )
                     {
                         throw new ShellException( "No connected node with title '" + arg + "'" );
@@ -181,24 +204,35 @@ public class Cd extends ReadOnlyGraphDatabaseApp
                 newId = parser.options().containsKey( "r" ) ?
                     new TypedId( NodeOrRelationship.TYPE_RELATIONSHIP, suppliedId ) :
                     new TypedId( NodeOrRelationship.TYPE_NODE, suppliedId );
-                if ( newId.equals( current.getTypedId() ) )
+                if ( current != null && newId.equals( current.getTypedId() ) )
                 {
                     throw new ShellException( "Can't cd to where you stand" );
                 }
                 boolean absolute = parser.options().containsKey( "a" );
-                if ( !absolute && !this.isConnected( current, newId ) )
+                if ( !absolute && current != null && !isConnected( current, newId ) )
                 {
                     throw new ShellException(
                         getDisplayName( getServer(), session, newId, false ) +
                         " isn't connected to the current primitive," +
                         " use -a to force it to go there anyway" );
                 }
-                paths.add( current.getTypedId() );
+                
+                if ( current != null )
+                {
+                    paths.add( current.getTypedId() );
+                }
             }
-            newThing = this.getThingById( newId );
+            newThing = newId != null ? getThingById( newId ) : current;
         }
 
-        setCurrent( session, newThing );
+        if ( newThing != null )
+        {
+            setCurrent( session, newThing );
+        }
+        else
+        {
+            clearCurrent( session );
+        }
         writeCurrentWorkingDir( paths, session );
         return null;
     }

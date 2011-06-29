@@ -51,6 +51,8 @@ public class Rmrel extends GraphDatabaseApp
      */
     public Rmrel()
     {
+        this.addOptionDefinition( "e", new OptionDefinition( OptionValueType.NONE,
+            "Ensure that nodes doesn't get disconnected from the rest of the graph" ) );
         this.addOptionDefinition( "d", new OptionDefinition( OptionValueType.NONE,
             "Must be supplied if the affected other node gets decoupled " +
             "after this operation so that it gets deleted." ) );
@@ -78,6 +80,7 @@ public class Rmrel extends GraphDatabaseApp
         Relationship rel = findRel( currentNode, Long.parseLong(
             parser.arguments().get( 0 ) ) );
         rel.delete();
+        
         if ( !currentNode.equals(
             getServer().getDb().getReferenceNode() ) &&
             !currentNode.getRelationships().iterator().hasNext() )
@@ -88,8 +91,7 @@ public class Rmrel extends GraphDatabaseApp
         Node otherNode = rel.getOtherNode( currentNode );
         if ( !otherNode.getRelationships().iterator().hasNext() )
         {
-            boolean deleteOtherNodeWhenEmpty = parser.options().containsKey(
-                "d" );
+            boolean deleteOtherNodeWhenEmpty = parser.options().containsKey( "d" );
             if ( !deleteOtherNodeWhenEmpty )
             {
                 throw new ShellException( "Since the node " +
@@ -100,7 +102,7 @@ public class Rmrel extends GraphDatabaseApp
             }
             otherNode.delete();
         }
-        else
+        else if ( parser.options().containsKey( "e" ) )
         {
             if ( !this.hasPathToRefNode( otherNode ) )
             {
