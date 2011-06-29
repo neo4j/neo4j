@@ -137,7 +137,7 @@ abstract class IndexType
         public void addToDocument( Document document, String key, Object value )
         {
             document.add( new Field( exactKey( key ), value.toString(), Store.YES, Index.NOT_ANALYZED ) );
-            document.add( instantiateField( key, value.toString(), Index.ANALYZED ) );
+            document.add( instantiateField( key, value, Index.ANALYZED ) );
         }
         
         @Override
