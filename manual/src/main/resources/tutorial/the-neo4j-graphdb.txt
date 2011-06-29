@@ -2,17 +2,112 @@
 The Neo4j Graph Database
 ========================
 
-This chapter will introduce some more details on the data model and behavior of Neo4j.
+This chapter will introduce more details on the data model and behavior of Neo4j.
+
+== Relationships ==
+
+Relationships between nodes are a key part of a graph database.
+They allow for finding related data.
+
+["dot", "graphdb-rels-overview.svg", "meta"]
+----
+"A Relationship" [fillcolor="NODEHIGHLIGHT"]
+"A Relationship" -> "Start node" [label="has a"]
+"A Relationship" -> "End node" [label="has a"]
+"A Relationship" -> "Relationship type" [label="has a"]
+"Relationship type" -> Name [label="uniquely identified by"]
+----
+
+A relationship connects two nodes, and is guaranteed to have valid start and end nodes.
+
+["dot", "graphdb-rels.svg"]
+----
+graph [rankdir="LR"]
+"Start node" -> "End node" [label="relationship"]
+----
+
+As relationships are always directed, they can be viewed as outgoing or incoming relative to a node, which is useful when traversing the graph:
+
+["dot", "graphdb-rels-dir.svg"]
+----
+graph [rankdir="LR"]
+START [label=""]
+MIDDLE [label="Node" fillcolor="NODEHIGHLIGHT"]
+END [label=""]
+MIDDLE -> END [label="outgoing relationship"]
+START -> MIDDLE [label="incoming relationship"]
+----
+
+'Relationships are equally well traversed in either direction.'
+This means that there is no need to add duplicate relationships in the opposite direction (with regard to traversal or performance).
+
+While relationships always have a direction, you can ignore the direction where it is not useful in your application.
+
+Note that a node can have relationships to itself as well:
+
+["dot", "graphdb-rels-loop.svg"]
+----
+"Node" -> "Node" [label="loop"]
+----
+
+To further enhance graph traversal all relationships have a relationship type.
+The following example shows a simple social network with two relationship types.
+
+["dot", "graphdb-rels-twitter.svg"]
+----
+Maja -> Oscar [label="follows"]
+Oscar -> Maja [label="follows"]
+Alice -> Oscar [label="follows"]
+Oscar -> William [label="blocks" color="EDGEHIGHLIGHT" fontcolor="EDGEHIGHLIGHT"]
+----
+
+.Using relationship direction and type
+[options="header"]
+|========================================================
+| What | How
+| get who a person follows | outgoing +follows+ relationships, depth one
+| get the followers of a person | incoming +follows+ relationships, depth one
+| get who a person blocks | outgoing +blocks+ relationships, depth one
+| get who a person is blocked by | incoming +blocks+ relationships, depth one
+|========================================================
+
+
+This example is a simple model of a file system, which includes symbolic links:
+
+["dot", "graphdb-rels-filesys.svg"]
+----
+"/" [ fillcolor="NODEHIGHLIGHT"]
+"/" -> A
+A -> B [label="file"]
+A -> C [label="file"]
+C -> D [label="file"]
+B -> D [label="symbolic link \n{name: \"E\"}" color="EDGEHIGHLIGHT" fontcolor="EDGEHIGHLIGHT"]
+----
+
+Depending on what you are looking for, you will use the direction and type of relationships during traversal.
+
+[options="header"]
+|========================================================
+|What | How
+|get the full path of a file | incoming +file+ relationships
+|get all paths for a file | incoming +file+ and +symbolic link+ relationships
+|get all files in a directory | outgoing +file+ and +symbolic link+ relationships, stop at depth one
+|get all files in a directory, excluding symbolic links | outgoing +file+ relationships, stop at depth one
+|get all files in a directory, recursively | outgoing +file+ and +symbolic link+ relationships
+|========================================================
+
 
 == Properties ==
 
 Properties are key-value pairs where the key is a string.
 Property values can be either a primitive or an array of one primitive type.
 For example +String+, +int+ and +int[]+ values are valid for properties.
-Note that +null+ is not a valid property value.
-Nulls can instead be modeled by the absense of a key.
 
-["dot", "graphdb-properties.svg"]
+[NOTE]
++null+ is not a valid property value.
+Nulls can instead be modeled by the absence of a key.
+
+["dot", "graphdb-properties.svg", "meta"]
 ----
 "A Property" [fillcolor="NODEHIGHLIGHT"]
 "A Property" -> Key [label="has a"]
@@ -24,7 +119,7 @@ Primitive [shape="record" label="Primitive |{boolean|byte|short|int|long|float|d
 ----
 
 .Property value types
-[options="header", cols="15m,,"]
+[options="header", cols="15m,45,40"]
 |========================================================
 |Type | Description | Value range
 |boolean| | +true+/+false+

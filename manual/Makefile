@@ -161,13 +161,13 @@ docbook-html:  manpages copyimages
 	sed -i 's/.svg"/.png"/g' $(DOCBOOKFILEHTML)
 	xmllint --nonet --noout --xinclude --postvalid $(DOCBOOKFILEHTML)
 
-pdf:  docbook copyimages
+pdf: docbook-shortinfo copyimages
 	#
 	#
 	# Building PDF.
 	#
 	#
-	sed -e 's/\&#8594;/\&#8211;\&gt;/g' -e 's/\&#8592;/\&lt;\&#8211;/g' <$(DOCBOOKFILE) >$(DOCBOOKFILEPDF)
+	sed -e 's/\&#8594;/\&#8211;\&gt;/g' -e 's/\&#8592;/\&lt;\&#8211;/g' <$(DOCBOOKSHORTINFOFILE) >$(DOCBOOKFILEPDF)
 	mkdir -p $(FOPDIR)
 	cd $(FOPDIR)
 	xsltproc --xinclude --output $(FOPFILE) $(CONFDIR)/fo.xsl $(DOCBOOKFILEPDF)

@@ -1,8 +1,19 @@
 #!/bin/bash
 
-nodefillcolor=palegreen
-nodehighlight=lightgoldenrod1
-edgehighlight=mediumblue
+if [[ "$2" == "meta" ]]
+then
+  nodefillcolor=slategray1
+  nodehighlight=darkseagreen1
+  nodehighlight2=aquamarine
+  edgehighlight=mediumblue
+  boxcolor=black
+else
+  nodefillcolor=ivory1
+  nodehighlight=khaki1
+  nodehighlight2=lemonchiffon1
+  edgehighlight=mediumblue
+  boxcolor=black
+fi
 
 nodeshape=box
 nodestyle=filled,rounded
@@ -21,7 +32,9 @@ edgefontsize=$nodefontsize
 
 indata=$(cat);
 indata=${indata//NODEHIGHLIGHT/$nodehighlight}
+indata=${indata//NODE2HIGHLIGHT/$nodehighlight2}
 indata=${indata//EDGEHIGHLIGHT/$edgehighlight}
+indata=${indata//BOXCOLOR/$boxcolor}
 
 svgfile=$1
 pngfile="${svgfile%.svg}.png"

@@ -8,5 +8,9 @@ include::what-is-a-graphdb.txt[]
 
 :leveloffset: 2
 
+include::comparing.txt[]
+
+:leveloffset: 2
+
 include::the-neo4j-graphdb.txt[]
 
