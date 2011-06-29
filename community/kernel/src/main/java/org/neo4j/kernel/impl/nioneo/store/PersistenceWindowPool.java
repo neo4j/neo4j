@@ -531,7 +531,7 @@ class PersistenceWindowPool
                 {
                     ((MappedPersistenceWindow) window).unmap();
                 }
-                else if ( window instanceof PlainPersistenceWindow )
+                else if ( !readOnly && window instanceof PlainPersistenceWindow )
                 {
                     ((PlainPersistenceWindow) window).writeOut();
                 }

@@ -592,12 +592,21 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
             restartTx();
         }
     }
+    
+    @Test
+    public void testNumericValuesExactIndex() throws Exception
+    {
+        testNumericValues( nodeIndex( "numeric", LuceneIndexImplementation.EXACT_CONFIG ) );
+    }
 
     @Test
-    public void testNumericValues()
+    public void testNumericValuesFulltextIndex() throws Exception
     {
-        Index<Node> index = nodeIndex( "numeric", LuceneIndexImplementation.EXACT_CONFIG );
-
+        testNumericValues( nodeIndex( "numeric-ft", LuceneIndexImplementation.FULLTEXT_CONFIG ) );
+    }
+    
+    private void testNumericValues( Index<Node> index )
+    {
         Node node10 = graphDb.createNode();
         Node node6 = graphDb.createNode();
         Node node31 = graphDb.createNode();
@@ -614,6 +623,11 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
             assertThat( index.query( NumericRangeQuery.newIntRange( key, 6, 15, false, true ) ), contains( node10 ) );
             restartTx();
         }
+        
+        index.remove( node6, key, numeric( 6 ) );
+        assertThat( index.query( NumericRangeQuery.newIntRange( key, 4, 40, true, true ) ), contains( node10, node31 ) );
+        restartTx();
+        assertThat( index.query( NumericRangeQuery.newIntRange( key, 4, 40, true, true ) ), contains( node10, node31 ) );
     }
 
     @Test

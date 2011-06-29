@@ -61,7 +61,8 @@ class NodeAutoIndexerImpl extends AbstractAutoIndexerImpl<Node>
     @Override
     protected Index<Node> getIndexInternal()
     {
-        return getGraphDbImpl().index().forNodes( NODE_AUTO_INDEX );
+        return ( (IndexManagerImpl) getGraphDbImpl().index() ).getOrCreateNodeIndex(
+                NODE_AUTO_INDEX, null );
     }
 
     @Override
