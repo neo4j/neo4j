@@ -37,8 +37,8 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.index.ReadOnlyIndex;
 import org.neo4j.graphdb.index.AutoIndexer;
+import org.neo4j.graphdb.index.ReadOnlyIndex;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.util.FileUtils;
@@ -566,5 +566,17 @@ public class TestAutoIndexing
         // Finally, node4 is removed because the property was removed.
         assertFalse( nodeAutoIndex.get( "nodeProp2", "nodeProp4Value" ).hasNext() );
         // END SNIPPET: Mutations
+    }
+
+    @Test( expected = IllegalArgumentException.class )
+    public void testShouldNotReturnNodeAutoIndexFromIndexManager()
+    {
+        graphDb.index().forNodes( "node_auto_index" );
+    }
+
+    @Test( expected = IllegalArgumentException.class )
+    public void testShouldNotReturnRelAutoIndexFromIndexManager()
+    {
+        graphDb.index().forRelationships( "relationship_auto_index" );
     }
 }

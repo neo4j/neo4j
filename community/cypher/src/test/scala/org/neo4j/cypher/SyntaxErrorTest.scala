@@ -84,6 +84,21 @@ class SyntaxErrorTest extends JUnitSuite {
       "Whole number expected")
   }
 
+  @Test def matchWithoutIdentifierHasToHaveParenthesis() {
+    expectError(
+      "start a = (0) match --> a return a",
+      "Matching nodes without identifiers have to have parenthesis: ()")
+  }
+
+
+  @Test def matchWithoutIdentifierHasToHaveParenthesis2() {
+    expectError(
+      "start a = (0) match (a) --> return a",
+      "return is a reserved keyword and may not be used here.")
+  }
+
+
+
   @Test def shouldComplainAboutAStringBeingExpected() {
     expectError(
       "start s=(index,key,value) return s limit -1",
