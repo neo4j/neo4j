@@ -61,8 +61,8 @@ class RelationshipAutoIndexerImpl extends AbstractAutoIndexerImpl<Relationship>
     @Override
     protected Index<Relationship> getIndexInternal()
     {
-        return getGraphDbImpl().index().forRelationships(
-                RELATIONSHIP_AUTO_INDEX );
+        return ( (IndexManagerImpl) getGraphDbImpl().index() ).getOrCreateRelationshipIndex(
+                RELATIONSHIP_AUTO_INDEX, null );
     }
 
     @Override

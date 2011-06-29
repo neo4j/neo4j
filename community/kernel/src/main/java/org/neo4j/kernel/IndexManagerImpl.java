@@ -245,15 +245,37 @@ class IndexManagerImpl implements IndexManager
 
     public Index<Node> forNodes( String indexName )
     {
-        Map<String, String> config = getOrCreateIndexConfig( Node.class, indexName, null );
-        return getIndexProvider( config.get( PROVIDER ) ).nodeIndex( indexName, config );
+        return forNodes( indexName, null );
     }
 
-    public Index<Node> forNodes( String indexName, Map<String, String> customConfiguration )
+    public Index<Node> forNodes( String indexName,
+            Map<String, String> customConfiguration )
     {
-        Map<String, String> config = getOrCreateIndexConfig( Node.class, indexName,
-                customConfiguration );
-        return getIndexProvider( config.get( PROVIDER ) ).nodeIndex( indexName, config );
+        if (NodeAutoIndexerImpl.NODE_AUTO_INDEX.equals(indexName))
+        {
+            throw new IllegalArgumentException(
+                    "The node auto index should not be accessed by name" );
+        }
+        return getOrCreateNodeIndex( indexName, customConfiguration );
+    }
+
+    Index<Node> getOrCreateNodeIndex(
+            String indexName, Map<String, String> customConfiguration )
+    {
+        Map<String, String> config = getOrCreateIndexConfig( Node.class,
+                indexName, customConfiguration );
+        return getIndexProvider( config.get( PROVIDER ) ).nodeIndex( indexName,
+                config );
+    }
+
+    RelationshipIndex getOrCreateRelationshipIndex(
+ String indexName,
+            Map<String, String> customConfiguration )
+    {
+        Map<String, String> config = getOrCreateIndexConfig(
+                Relationship.class, indexName, customConfiguration );
+        return getIndexProvider( config.get( PROVIDER ) ).relationshipIndex(
+                indexName, config );
     }
 
     public String[] nodeIndexNames()
@@ -268,18 +290,18 @@ class IndexManagerImpl implements IndexManager
 
     public RelationshipIndex forRelationships( String indexName )
     {
-        Map<String, String> config = getOrCreateIndexConfig( Relationship.class, indexName, null );
-        return getIndexProvider( config.get( PROVIDER ) ).relationshipIndex( indexName,
-                config );
+        return forRelationships( indexName, null );
     }
 
     public RelationshipIndex forRelationships( String indexName,
             Map<String, String> customConfiguration )
     {
-        Map<String, String> config = getOrCreateIndexConfig( Relationship.class, indexName,
-                customConfiguration );
-        return getIndexProvider( config.get( PROVIDER ) ).relationshipIndex( indexName,
-                config );
+        if ( RelationshipAutoIndexerImpl.RELATIONSHIP_AUTO_INDEX.equals( indexName ) )
+        {
+            throw new IllegalArgumentException(
+                    "The relationship auto index should not be accessed by name" );
+        }
+        return getOrCreateRelationshipIndex( indexName, customConfiguration );
     }
 
     public String[] relationshipIndexNames()
