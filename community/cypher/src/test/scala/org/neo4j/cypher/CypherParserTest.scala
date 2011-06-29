@@ -85,10 +85,10 @@ class CypherParserTest extends JUnitSuite {
 
   @Test def keywordsShouldBeCaseInsensitive() {
     testQuery(
-      "START start = (1) RETURN start",
+      "START s = (1) RETURN s",
       Query(
-        Return(EntityOutput("start")),
-        Start(NodeById("start", 1))))
+        Return(EntityOutput("s")),
+        Start(NodeById("s", 1))))
   }
 
   @Test def shouldParseMultipleNodes() {
@@ -533,14 +533,6 @@ class CypherParserTest extends JUnitSuite {
   @Test def shouldHandleQuotationsInsideApostrophes() {
     testQuery(
       "start a = (index, key, 'val\"ue') return a",
-      Query(
-        Return(EntityOutput("a")),
-        Start(NodeByIndex("a", "index", "key", "val\"ue"))))
-  }
-
-  @Test def dawef() {
-    testQuery(
-      "start a = (0) match --> a return a",
       Query(
         Return(EntityOutput("a")),
         Start(NodeByIndex("a", "index", "key", "val\"ue"))))

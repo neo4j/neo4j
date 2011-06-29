@@ -22,12 +22,13 @@ package org.neo4j.cypher.parser
 import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
 import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.SyntaxError
 
 
 trait MatchClause extends JavaTokenParsers with Tokens {
-  def matching: Parser[Match] = ignoreCase("match") ~> rep1sep(relatedTo, ",") ^^ { case matching:List[List[Pattern]] => Match(matching.flatten: _*) }
+  def matching: Parser[Match] = ignoreCase("match") ~> rep1sep(path, ",") ^^ { case matching:List[List[Pattern]] => Match(matching.flatten: _*) }
 
-  def relatedTo: Parser[List[Pattern]] = relatedHead ~ rep1(relatedTail) ^^ {
+  def path: Parser[List[Pattern]] = relatedNode ~ rep1(relatedTail) ^^ {
     case head ~ tails => {
       val namer = new NodeNamer
       var last = namer.name(head)
@@ -47,8 +48,7 @@ trait MatchClause extends JavaTokenParsers with Tokens {
     (back.nonEmpty, forward.nonEmpty) match {
       case (true,false) => Direction.INCOMING
       case (false,true) => Direction.OUTGOING
-      case (false,false) => Direction.BOTH
-      case (true,true) => Direction.BOTH
+      case _ => Direction.BOTH
     }
   class NodeNamer {
     var lastNodeNumber = 0
@@ -62,10 +62,13 @@ trait MatchClause extends JavaTokenParsers with Tokens {
     }
   }
 
-  def relatedHead:Parser[Option[String]] = opt("(") ~> opt(identity) <~ opt(")") ^^ { case name => name }
+  def relatedNode:Parser[Option[String]] = opt("(") ~ opt(identity) ~ opt(")") ^^ {
+    case None ~ None ~ None => throw new SyntaxError("Matching nodes without identifiers have to have parenthesis: ()")
+    case l ~ name ~ r => name
+  }
 
-  def relatedTail = opt("<") ~ "-" ~ opt("[" ~> (relationshipInfo1 | relationshipInfo2) <~ "]") ~ "-" ~ opt(">") ~ opt("(") ~ opt(identity) ~ opt(")") ^^ {
-    case back ~ "-" ~ relInfo ~ "-" ~ forward ~ leftParen ~ end ~ rightParen => relInfo match {
+  def relatedTail = opt("<") ~ "-" ~ opt("[" ~> (relationshipInfo1 | relationshipInfo2) <~ "]") ~ "-" ~ opt(">") ~ relatedNode ^^ {
+    case back ~ "-" ~ relInfo ~ "-" ~ forward ~ end => relInfo match {
       case Some(x) => (back, x._1, x._2, forward, end)
       case None => (back, None, None, forward, end)
     }
