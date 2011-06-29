@@ -94,7 +94,7 @@ public class ServerHelper
 
     public static NeoServerWithEmbeddedWebServer createServer() throws IOException
     {
-        NeoServerWithEmbeddedWebServer server = ServerBuilder.server().withMaxJettyThreads(2)
+        NeoServerWithEmbeddedWebServer server = ServerBuilder.server()
                 .build();
 
         server.start();
