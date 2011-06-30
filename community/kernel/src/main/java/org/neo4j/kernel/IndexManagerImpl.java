@@ -33,6 +33,7 @@ import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.graphdb.index.RelationshipAutoIndexer;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
@@ -47,7 +48,7 @@ class IndexManagerImpl implements IndexManager
 
     private final EmbeddedGraphDbImpl graphDbImpl;
     private final AutoIndexer<Node> nodeAutoIndexer;
-    private final AutoIndexer<Relationship> relAutoIndexer;
+    private final RelationshipAutoIndexer relAutoIndexer;
 
 
     IndexManagerImpl( EmbeddedGraphDbImpl graphDbImpl, IndexStore indexStore )
@@ -251,12 +252,13 @@ class IndexManagerImpl implements IndexManager
     public Index<Node> forNodes( String indexName,
             Map<String, String> customConfiguration )
     {
+        Index<Node> toReturn = getOrCreateNodeIndex( indexName,
+                customConfiguration );
         if (NodeAutoIndexerImpl.NODE_AUTO_INDEX.equals(indexName))
         {
-            throw new IllegalArgumentException(
-                    "The node auto index should not be accessed by name" );
+            toReturn = new AbstractAutoIndexerImpl.ReadOnlyIndexToIndexAdapter<Node>( toReturn );
         }
-        return getOrCreateNodeIndex( indexName, customConfiguration );
+        return toReturn;
     }
 
     Index<Node> getOrCreateNodeIndex(
@@ -268,8 +270,7 @@ class IndexManagerImpl implements IndexManager
                 config );
     }
 
-    RelationshipIndex getOrCreateRelationshipIndex(
- String indexName,
+    RelationshipIndex getOrCreateRelationshipIndex( String indexName,
             Map<String, String> customConfiguration )
     {
         Map<String, String> config = getOrCreateIndexConfig(
@@ -296,12 +297,14 @@ class IndexManagerImpl implements IndexManager
     public RelationshipIndex forRelationships( String indexName,
             Map<String, String> customConfiguration )
     {
+        RelationshipIndex toReturn = getOrCreateRelationshipIndex( indexName,
+                customConfiguration );
         if ( RelationshipAutoIndexerImpl.RELATIONSHIP_AUTO_INDEX.equals( indexName ) )
         {
-            throw new IllegalArgumentException(
-                    "The relationship auto index should not be accessed by name" );
+            toReturn = new RelationshipAutoIndexerImpl.RelationshipReadOnlyIndexToIndexAdapter(
+                    toReturn );
         }
-        return getOrCreateRelationshipIndex( indexName, customConfiguration );
+        return toReturn;
     }
 
     public String[] relationshipIndexNames()
@@ -359,7 +362,7 @@ class IndexManagerImpl implements IndexManager
         return nodeAutoIndexer;
     }
 
-    public AutoIndexer<Relationship> getRelationshipAutoIndexer()
+    public RelationshipAutoIndexer getRelationshipAutoIndexer()
     {
         return relAutoIndexer;
     }

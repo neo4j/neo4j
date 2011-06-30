@@ -40,6 +40,7 @@ import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.graphdb.index.RelationshipAutoIndexer;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
@@ -525,7 +526,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, IndexMa
     }
 
     @Override
-    public AutoIndexer<Relationship> getRelationshipAutoIndexer()
+    public RelationshipAutoIndexer getRelationshipAutoIndexer()
     {
         return actual.index().getRelationshipAutoIndexer();
     }

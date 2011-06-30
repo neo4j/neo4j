@@ -133,7 +133,8 @@ public interface IndexManager
      * should be case insensitive. The parameters given here (except "provider") are
      * only interpreted by the implementation represented by the provider.
      */
-    RelationshipIndex forRelationships( String indexName, Map<String, String> customConfiguration );
+    RelationshipIndex forRelationships( String indexName,
+            Map<String, String> customConfiguration );
 
     /**
      * Returns the names of all existing {@link Relationship} indexes.
@@ -190,5 +191,5 @@ public interface IndexManager
 
     AutoIndexer<Node> getNodeAutoIndexer();
 
-    AutoIndexer<Relationship> getRelationshipAutoIndexer();
+    RelationshipAutoIndexer getRelationshipAutoIndexer();
 }

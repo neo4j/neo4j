@@ -24,6 +24,12 @@ import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.index.Index;
 
+/**
+ * Implementation of an AutoIndexer for Node primitives. It
+ * defines the auto index name, the configuration properties
+ * names and a wrapper for adapting read write indexes to read only
+ * ones so that they are safe to return.
+ */
 class NodeAutoIndexerImpl extends AbstractAutoIndexerImpl<Node>
 {
     static final String NODE_AUTO_INDEX = "node_auto_index";

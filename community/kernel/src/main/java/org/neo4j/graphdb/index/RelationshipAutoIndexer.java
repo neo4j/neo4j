@@ -21,12 +21,7 @@ package org.neo4j.graphdb.index;
 
 import org.neo4j.graphdb.Relationship;
 
-/**
- * Extends the ReadableRelationshipIndex and the Index interfaces
- * for completing the set of available types.
- */
-public interface RelationshipIndex extends ReadableRelationshipIndex,
-        Index<Relationship>
+public interface RelationshipAutoIndexer extends AutoIndexer<Relationship>
 {
-
+    public ReadableRelationshipIndex getAutoIndex();
 }

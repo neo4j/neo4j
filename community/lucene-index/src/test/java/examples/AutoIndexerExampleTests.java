@@ -37,7 +37,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.index.ReadOnlyIndex;
+import org.neo4j.graphdb.index.ReadableIndex;
 import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
@@ -118,7 +118,7 @@ public class AutoIndexerExampleTests implements GraphHolder
 
         // START SNIPPET: APIReadAutoIndex
         // Get the Node auto index
-        ReadOnlyIndex<Node> autoNodeIndex = graphDb.index().getNodeAutoIndexer().getAutoIndex();
+        ReadableIndex<Node> autoNodeIndex = graphDb.index().getNodeAutoIndexer().getAutoIndex();
         // node1 and node2 both had auto indexed properties, get them
         assertEquals( node1,
                 autoNodeIndex.get( "nodeProp1", "nodeProp1Value" ).getSingle() );
@@ -129,7 +129,7 @@ public class AutoIndexerExampleTests implements GraphHolder
                 "nodeProp2NonIndexedValue" ).hasNext() );
 
         // Get the relationship auto index
-        ReadOnlyIndex<Relationship> autoRelIndex = graphDb.index().getRelationshipAutoIndexer().getAutoIndex();
+        ReadableIndex<Relationship> autoRelIndex = graphDb.index().getRelationshipAutoIndexer().getAutoIndex();
         // One property was set for auto indexing
         assertEquals( rel,
                 autoRelIndex.get( "relProp1", "relProp1Value" ).getSingle() );
@@ -196,7 +196,7 @@ public class AutoIndexerExampleTests implements GraphHolder
         }
 
         // Get the Node auto index
-        ReadOnlyIndex<Node> autoNodeIndex = nodeAutoIndexer.getAutoIndex();
+        ReadableIndex<Node> autoNodeIndex = nodeAutoIndexer.getAutoIndex();
         // node1 and node2 both had auto indexed properties, get them
         assertEquals( node1,
                 autoNodeIndex.get( "nodeProp1", "nodeProp1Value" ).getSingle() );
@@ -207,7 +207,7 @@ public class AutoIndexerExampleTests implements GraphHolder
                 "nodeProp2NonIndexedValue" ).hasNext() );
 
         // Get the relationship auto index
-        ReadOnlyIndex<Relationship> autoRelIndex = relAutoIndexer.getAutoIndex();
+        ReadableIndex<Relationship> autoRelIndex = relAutoIndexer.getAutoIndex();
         // All properties ignored
         assertEquals( rel,
                 autoRelIndex.get( "relProp1", "relProp1Value1" ).getSingle() );
@@ -294,7 +294,7 @@ public class AutoIndexerExampleTests implements GraphHolder
         }
 
         // Verify
-        ReadOnlyIndex<Node> nodeAutoIndex = nodeAutoIndexer.getAutoIndex();
+        ReadableIndex<Node> nodeAutoIndex = nodeAutoIndexer.getAutoIndex();
         // node1 is completely gone
         assertFalse( nodeAutoIndex.get( "nodeProp1", "nodeProp1Value" ).hasNext() );
         assertFalse( nodeAutoIndex.get( "nodeProp1", "nodeProp1Value2" ).hasNext() );
