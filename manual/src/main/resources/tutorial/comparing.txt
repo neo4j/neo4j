@@ -129,7 +129,7 @@ K3 -> gV3
 
 == A Graph Database relates Column-Family ==
 
-Column Family (BigTable-style) databases are an evolution of key-value, using "families" to allow grouping table rows.
+Column Family (BigTable-style) databases are an evolution of key-value,  using "families" to allow grouping of rows.
 Stored in a graph, the families could become hierarchical, and the relationships among data becomes explicit.
 
 
