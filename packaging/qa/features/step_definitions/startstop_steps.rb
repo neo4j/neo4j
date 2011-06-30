@@ -17,7 +17,7 @@ end
 When /^I (start|stop) Neo4j Server$/ do |action|
   puts "=====> stop/start "
   if (current_platform.unix?)
-    IO.popen("#{neo4j.home}/bin/neo4j #{action}", close_fds=1)
+	IO.popen("#{neo4j.home}/bin/neo4j #{action}", close_fds=1).close
   elsif (current_platform.windows?)
     Dir.chdir("#{neo4j.home}\\bin")
     if (action == "start")
@@ -48,7 +48,7 @@ When /^wait for Server (started|stopped) at "([^\"]*)"$/ do |state, uri|
       puts e.to_s
       break if (state == "stopped")
     end
-    sleep 5
+    sleep 1
     i += 1
   end
 end
