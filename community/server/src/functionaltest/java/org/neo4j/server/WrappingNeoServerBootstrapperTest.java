@@ -21,11 +21,8 @@ package org.neo4j.server;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
 
 import java.io.IOException;
-
-import javax.ws.rs.core.MediaType;
 
 import org.junit.After;
 import org.junit.Before;
