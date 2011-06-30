@@ -67,21 +67,17 @@ trait MatchClause extends JavaTokenParsers with Tokens {
     case l ~ name ~ r => name
   }
 
-  def relatedTail = opt("<") ~ "-" ~ opt("[" ~> (relationshipInfo1 | relationshipInfo2) <~ "]") ~ "-" ~ opt(">") ~ relatedNode ^^ {
+  def relatedTail = opt("<") ~ "-" ~ opt("[" ~> relationshipInfo  <~ "]") ~ "-" ~ opt(">") ~ relatedNode ^^ {
     case back ~ "-" ~ relInfo ~ "-" ~ forward ~ end => relInfo match {
-      case Some(x) => (back, x._1, x._2, forward, end)
+      case Some((relName, relType)) => (back, relName, relType, forward, end)
       case None => (back, None, None, forward, end)
     }
   }
 
-  def relationshipInfo1 = opt(identity <~ ",") ~ ":" ~ identity ^^ {
-    case relName ~ ":" ~ relType => (relName, Some(relType))
+  def relationshipInfo:Parser[(Option[String],Option[String])] = opt(identity) ~ opt(":" ~ identity) ^^ {
+    case relName  ~ Some(":" ~ relType) => (relName, Some(relType))
+    case relName  ~ None => (relName, None)
   }
-
-  def relationshipInfo2 = identity ^^ {
-    case relName => (Some(relName), None)
-  }
-
 }
 
 

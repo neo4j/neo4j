@@ -297,7 +297,7 @@ class CypherParserTest extends JUnitSuite {
 
   @Test def relatedToWithRelationOutput() {
     testQuery(
-      "start a = (1) match a -[rel,:KNOWS]-> (b) return rel",
+      "start a = (1) match a -[rel:KNOWS]-> (b) return rel",
       Query(
         Return(EntityOutput("rel")),
         Start(NodeById("a", 1)),
