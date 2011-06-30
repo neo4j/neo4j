@@ -20,18 +20,15 @@
 package org.neo4j.server.rest;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
 
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.core.util.StringKeyObjectValueIgnoreCaseMultivaluedMap;
-import com.sun.net.httpserver.Headers;
 
 @SuppressWarnings( "restriction" )
 public class JaxRsResponse extends Response

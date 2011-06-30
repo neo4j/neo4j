@@ -24,7 +24,6 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
 
 import java.util.List;
 import java.util.Map;

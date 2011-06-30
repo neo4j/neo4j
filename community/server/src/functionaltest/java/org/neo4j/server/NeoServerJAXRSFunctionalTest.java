@@ -24,8 +24,6 @@ import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
 
 import java.net.URI;
 
-import javax.ws.rs.core.MediaType;
-
 import org.dummy.web.service.DummyThirdPartyWebService;
 import org.junit.After;
 import org.junit.Before;
@@ -37,7 +35,6 @@ import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.helpers.Transactor;
 import org.neo4j.server.helpers.UnitOfWork;
 import org.neo4j.server.rest.FunctionalTestHelper;
-
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 
