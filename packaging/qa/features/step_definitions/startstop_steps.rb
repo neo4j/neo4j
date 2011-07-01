@@ -17,7 +17,8 @@ end
 When /^I (start|stop) Neo4j Server$/ do |action|
   puts "=====> stop/start "
   if (current_platform.unix?)
-	IO.popen("#{neo4j.home}/bin/neo4j #{action}", close_fds=1).close
+    #IO.popen("#{neo4j.home}/bin/neo4j #{action}", close_fds=1).close
+    puts `#{neo4j.home}/bin/neo4j #{action}`
   elsif (current_platform.windows?)
     Dir.chdir("#{neo4j.home}\\bin")
     if (action == "start")
