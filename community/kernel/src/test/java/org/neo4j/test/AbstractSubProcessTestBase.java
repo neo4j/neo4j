@@ -163,6 +163,7 @@ public class AbstractSubProcessTestBase
         }
     }
 
+    @SuppressWarnings( "serial" )
     private static class ThreadTask implements Task
     {
         private final Task task;
@@ -193,12 +194,20 @@ public class AbstractSubProcessTestBase
         private static final AtomicReferenceFieldUpdater<SubInstance, AbstractGraphDatabase> GRAPHDB = AtomicReferenceFieldUpdater
                 .newUpdater( SubInstance.class, AbstractGraphDatabase.class, "graphdb" );
         private volatile Bootstrapper bootstrap;
+        private volatile Throwable failure;
 
         @Override
-        protected synchronized void startup( Bootstrapper bootstrap ) throws Throwable
+        protected synchronized void startup( Bootstrapper bootstrap )
         {
             this.bootstrap = bootstrap;
-            graphdb = bootstrap.startup();
+            try
+            {
+                graphdb = bootstrap.startup();
+            }
+            catch ( Throwable failure )
+            {
+                this.failure = failure;
+            }
         }
 
         @Override
@@ -206,6 +215,8 @@ public class AbstractSubProcessTestBase
         {
             while ( graphdb == null )
             {
+                Throwable failure = this.failure;
+                if ( failure != null ) throw new StartupFailureException( failure );
                 Thread.sleep( 1 );
             }
         }
@@ -252,6 +263,15 @@ public class AbstractSubProcessTestBase
                 if ( this.bootstrap == null ) throw new IllegalStateException( "instance has been shut down" );
             }
             return graphdb.getManagementBean( beanType );
+        }
+    }
+
+    @SuppressWarnings( "serial" )
+    private static class StartupFailureException extends RuntimeException
+    {
+        StartupFailureException( Throwable failure )
+        {
+            super( failure );
         }
     }
 }

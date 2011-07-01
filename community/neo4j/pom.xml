@@ -70,6 +70,18 @@
       <groupId>org.osgi</groupId>
       <artifactId>osgi_R4_compendium</artifactId>
     </dependency>
+    <!-- For the tests specified by this package -->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel</artifactId>
+      <version>1.4-SNAPSHOT</version>
+      <type>test-jar</type>
+    </dependency>
   </dependencies>
 
   <licenses>

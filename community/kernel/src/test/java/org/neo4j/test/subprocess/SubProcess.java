@@ -38,6 +38,7 @@ import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.rmi.ServerError;
 import java.rmi.server.RemoteObject;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
@@ -413,7 +414,7 @@ public abstract class SubProcess<T, P> implements Serializable
 
     protected abstract void startup( P parameter ) throws Throwable;
 
-    protected final void shutdown()
+    public final void shutdown()
     {
         shutdown( true );
     }
@@ -894,6 +895,10 @@ public abstract class SubProcess<T, P> implements Serializable
                 {
                     throw new UnsupportedOperationException( method.toString() );
                 }
+            }
+            catch ( ServerError ex )
+            {
+                throw ex.detail;
             }
             catch ( RemoteException ex )
             {
