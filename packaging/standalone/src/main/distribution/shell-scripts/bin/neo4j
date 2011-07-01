@@ -82,6 +82,7 @@ TIMEOUT=20
 
 PID_FILE=${NEO4J_INSTANCE}/data/neo4j-service.pid
 
+# Detect java and set JAVACMD on successful find.
 findjava() {
   # OS specific support.  $var _must_ be set to either true or false.
   cygwin=false;
@@ -125,7 +126,11 @@ findjava() {
       JAVACMD=`which java`
     fi
   fi
+}
 
+# Use findjava to set JAVACMD. If that fails ($JAVACMD is not set) then exit with failure
+exitonnojava() {
+  findjava
   if [ ! -x "$JAVACMD" ] ; then
     echo "Error: JAVA_HOME is not defined correctly."
     echo "  We cannot execute $JAVACMD"
@@ -206,20 +211,30 @@ checkstatus() {
   fi
 }
 
+checkwriteaccess() {
+    if [ $UID != 0 ] ; then
+    if [ ! -w $NEO4J_INSTANCE/data ] ; then
+      echo "ERROR: No write access to data/ directory, run either as user $NEO4J_USER or root"
+      exit 1
+    fi
+    fi
+}
+
 startit() {
 
+  exitonnojava
   checkstatus
 
   if [ -z $NEO4J_PID ] ; then
     printf "Starting neo4j-service..."
 
-    findjava
     buildclasspath
     detectos
-    
+
     if [ $UID == 0 ] ; then
       su $NEO4J_USER -c "$JAVACMD -cp $CLASSPATH $JAVA_OPTS $NEO4J_OPTS org.neo4j.server.Bootstrapper >> $NEO4J_INSTANCE/data/log/console.log 2>&1 & echo \$! > $PID_FILE "
     else
+      checkwriteaccess
       echo "WARNING: not changing user"
       $JAVACMD -cp $CLASSPATH $JAVA_OPTS $NEO4J_OPTS org.neo4j.server.Bootstrapper >> $NEO4J_INSTANCE/data/log/console.log 2>&1 & echo $! > $PID_FILE
     fi
@@ -230,8 +245,15 @@ startit() {
     x=0
     while ( [ $x -lt 120 ] ) ; do
       ## wait for start
-      newpid=`lsof -i :$NEO4J_SERVER_PORT -sTCP:LISTEN -t` && break
-      kill -0 $STARTED_PID || break
+      ## This could be achieved with filtering using -sTCP:LISTEN but this option is not available
+      ## on lsof v4.78 which is the one bundled with some distros. So we have to do this grep below
+      newpid=$(lsof -i :$NEO4J_SERVER_PORT -F T -Ts | grep -i "TST=LISTEN" -B1 | head -n1)
+      newpid=${newpid:1}
+      if [ $newpid ] ; then
+         break
+      fi
+
+      kill -0 $STARTED_PID 2> /dev/null || break
       printf "."
       sleep 1
       x=$[$x +1]
@@ -264,6 +286,7 @@ startit() {
 stopit() {
 
   checkstatus
+  checkwriteaccess
 
   if [ -z $NEO4J_PID ] ; then
     echo "ERROR: server not running"
@@ -302,7 +325,7 @@ console() {
   if [ -z $NEO4J_PID ] ; then
     echo "Starting neo4j-service console-mode..."
 
-    findjava
+    exitonnojava
     buildclasspath
 
     $JAVACMD -cp $CLASSPATH $JAVA_OPTS $NEO4J_OPTS org.neo4j.server.Bootstrapper
@@ -336,7 +359,7 @@ modify_user_config() {
 
 # Creates a user on the system
 create_user() {
-  useradd -M -r $1
+  useradd -r $1
   modify_user_config $1 "true"
   echo "Created user \"${1}\"."
 }
@@ -357,6 +380,17 @@ remove_user() {
 
 installservice() {
     detectos
+    findjava
+    if [ ! -x "$JAVACMD" ] ; then
+      read -p "It was not possible to determine JAVA_HOME. Do you want to continue with the installation? [yN]" yn
+      case $yn in
+              [yY]* ) echo "WARNING: Alright, but Neo4j will fail to launch until Java has been properly installed and configured."
+              ;;
+      * ) echo "Aborting installation."
+          exit 1
+              ;;
+      esac
+    fi
 
     if [[ -d "/etc/init.d" ]]; then
       if [[ -e "/etc/init.d/${SERVICE_NAME}" ]]; then
@@ -383,7 +417,7 @@ installservice() {
               [Nn]* ) echo "WARNING: Alright, but Neo4j will fail to launch until that user has been created."
               set_user $proposed_user
               ;;
-            * ) create_user $proposed_user 
+            * ) create_user $proposed_user
               ;;
             esac
           else
@@ -401,11 +435,15 @@ installservice() {
     else
       echo "Sorry, don't know how to install on ${DIST_OS}."
     fi
+
+    if [ -x "$JAVACMD" ] ; then
+      startit
+    fi
 }
 
 removeservice() {
     checkstatus
- 
+
     if [[ -d "/etc/init.d" ]]; then
       if [[ -e "/etc/init.d/${SERVICE_NAME}" ]]; then
         if [  $UID != 0 ] ; then
@@ -439,7 +477,7 @@ removeservice() {
 showinfo() {
   reportstatus
 
-  findjava
+  exitonnojava
   buildclasspath
 
   echo "NEO4J_HOME:        $NEO4J_HOME"
