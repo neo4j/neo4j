@@ -35,8 +35,7 @@
     <neo4j.3rdparty.version>@3RDPARTYVERSION@</neo4j.3rdparty.version>
     
     <!-- plugin versions -->
-    <neo4j-gremlin-plugin.version>0.1-SNAPSHOT</neo4j-gremlin-plugin.version>
-    <neo4j-cypher-plugin.version>0.1-SNAPSHOT</neo4j-cypher-plugin.version>
+    <neo4j-gremlin-plugin.version>@GREMLINVERSION@</neo4j-gremlin-plugin.version>
 
     <!-- conf/neo4j-server.properties filter properties -->
     <org.neo4j.database.location>data/graph.db</org.neo4j.database.location>
@@ -356,7 +355,7 @@ terms of the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j.server.plugin</groupId>
       <artifactId>neo4j-cypher-plugin</artifactId>
-      <version>${neo4j-cypher-plugin.version}</version>
+      <version>${neo4j.version}</version>
     </dependency>
     
   </dependencies>
