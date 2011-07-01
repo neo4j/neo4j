@@ -28,6 +28,8 @@ import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.AppShellServer;
+import org.neo4j.shell.OptionDefinition;
+import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
@@ -45,13 +47,20 @@ public class Man extends AbstractApp
     public static final int CONSOLE_WIDTH = 80;
 
     private static Collection<String> availableCommands;
+    
+    public Man()
+    {
+        addOptionDefinition( "l", new OptionDefinition( OptionValueType.NONE,
+                "Display the commands in a vertical list" ) );
+    }
 
     public String execute( AppCommandParser parser, Session session,
         Output out ) throws Exception
     {
         if ( parser.arguments().size() == 0 )
         {
-            out.println( getHelpString( getServer() ) );
+            boolean list = parser.options().containsKey( "l" );
+            printHelpString( out, getServer(), list );
             return null;
         }
 
@@ -178,11 +187,25 @@ public class Man extends AbstractApp
      *            the server to ask for
      * @return the short introductory help string.
      */
-    public static String getHelpString( ShellServer server )
+    public static void printHelpString( Output out, ShellServer server, boolean list )
+            throws ShellException, RemoteException
     {
-        return "Available commands: " + availableCommandsAsString( server ) +
-            "\n" + "Use " + getShortUsageString() +
-            " for info about each command.";
+        String header = "Available commands:";
+        if ( list )
+        {
+            out.println( header );
+            out.println();
+            for ( String command : server.getAllAvailableCommands() )
+            {
+                out.println( "   " + command );
+            }
+            out.println();
+        }
+        else
+        {
+            out.println( header + " " + availableCommandsAsString( server ) );
+        }
+        out.println( "Use " + getShortUsageString() + " for info about each command." );
     }
 
     /**

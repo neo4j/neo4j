@@ -154,19 +154,60 @@ public abstract class AbstractShellTest
     
     protected void assertRelationshipExists( long id )
     {
-        db.getRelationshipById( id );
+        try
+        {
+            db.getRelationshipById( id );
+        }
+        catch ( NotFoundException e )
+        {
+            fail( "Relationship " + id + " should exist" );
+        }
     }
     
-    protected void assertRelationshipDoesnExist( Relationship relationship )
+    protected void assertRelationshipDoesntExist( Relationship relationship )
     {
-        assertRelationshipDoesnExist( relationship.getId() );
+        assertRelationshipDoesntExist( relationship.getId() );
     }
     
-    protected void assertRelationshipDoesnExist( long id )
+    protected void assertRelationshipDoesntExist( long id )
     {
         try
         {
             db.getRelationshipById( id );
+            fail( "Relationship " + id + " shouldn't exist" );
+        }
+        catch ( NotFoundException e )
+        { // Good
+        }
+    }
+    
+    protected void assertNodeExists( Node node )
+    {
+        assertNodeExists( node.getId() );
+    }
+    
+    protected void assertNodeExists( long id )
+    {
+        try
+        {
+            db.getNodeById( id );
+        }
+        catch ( NotFoundException e )
+        {
+            fail( "Node " + id + " should exist" );
+        }
+    }
+    
+    protected void assertNodeDoesntExist( Node node )
+    {
+        assertNodeDoesntExist( node.getId() );
+    }
+    
+    protected void assertNodeDoesntExist( long id )
+    {
+        try
+        {
+            db.getNodeById( id );
             fail( "Relationship " + id + " shouldn't exist" );
         }
         catch ( NotFoundException e )
@@ -193,6 +234,14 @@ public abstract class AbstractShellTest
         tx.success();
         tx.finish();
         return rels;
+    }
+    
+    protected void deleteRelationship( Relationship relationship )
+    {
+        Transaction tx = db.beginTx();
+        relationship.delete();
+        tx.success();
+        tx.finish();
     }
     
     protected void setProperty( Node node, String key, Object value )

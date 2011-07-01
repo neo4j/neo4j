@@ -21,8 +21,11 @@ package org.neo4j.shell;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+
+import java.util.regex.Pattern;
 
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
@@ -124,19 +127,89 @@ public class TestApps extends AbstractShellTest
     }
     
     @Test
-    public void rmrelCanLeaveStrandedNodes() throws Exception
+    public void rmrelCanLeaveStrandedIslands() throws Exception
     {
         Relationship[] relationships = createRelationshipChain( 4 );
         executeCommand( "cd -a " + relationships[1].getEndNode().getId() );
         
-        // Remove relationship with the check, shouldn't work
         Relationship relToDelete = relationships[2];
-        executeCommandExpectingException( "rmrel -ed " + relToDelete.getId(), "decoupled" );
+        executeCommandExpectingException( "rmrel " + relToDelete.getId(), "decoupled" );
         assertRelationshipExists( relToDelete );
         
-        // Remove relationship without the check
-        executeCommand( "rmrel -d " + relToDelete.getId() );
-        assertRelationshipDoesnExist( relToDelete );
+        Node otherNode = relToDelete.getEndNode();
+        executeCommand( "rmrel -fd " + relToDelete.getId() );
+        assertRelationshipDoesntExist( relToDelete );
+        assertNodeExists( otherNode );
+    }
+    
+    @Test
+    public void rmrelCanLeaveStrandedNodes() throws Exception
+    {
+        Relationship[] relationships = createRelationshipChain( 1 );
+        Node otherNode = relationships[0].getEndNode();
+        
+        executeCommandExpectingException( "rmrel " + relationships[0].getId(), "decoupled" );
+        assertRelationshipExists( relationships[0] );
+        assertNodeExists( otherNode );
+        
+        executeCommand( "rmrel -f " + relationships[0].getId() );
+        assertRelationshipDoesntExist( relationships[0] );
+        assertNodeExists( otherNode );
+    }
+    
+    @Test
+    public void rmrelCanDeleteStrandedNodes() throws Exception
+    {
+        Relationship[] relationships = createRelationshipChain( 1 );
+        Node otherNode = relationships[0].getEndNode();
+        
+        executeCommand( "rmrel -fd " + relationships[0].getId(), "not having any relationships" );
+        assertRelationshipDoesntExist( relationships[0] );
+        assertNodeDoesntExist( otherNode );
+    }
+    
+    @Test
+    public void rmrelCanDeleteRelationshipSoThatCurrentNodeGetsStranded() throws Exception
+    {
+        Relationship[] relationships = createRelationshipChain( 2 );
+        executeCommand( "cd " + relationships[0].getEndNode().getId() );
+        deleteRelationship( relationships[0] );
+        Node currentNode = relationships[1].getStartNode();
+        executeCommand( "rmrel -fd " + relationships[1].getId(), "not having any relationships" );
+        assertNodeExists( currentNode );
+        assertFalse( currentNode.hasRelationship() );
+        executeCommand( "pwd" );
+        executeCommand( "cd -a " + db.getReferenceNode().getId() );
+        executeCommand( "pwd" );
+    }
+    
+    @Test
+    public void rmnodeCanDeleteStrandedNodes() throws Exception
+    {
+        Relationship[] relationships = createRelationshipChain( 1 );
+        Node strandedNode = relationships[0].getEndNode();
+        deleteRelationship( relationships[0] );
+        executeCommand( "rmnode " + strandedNode.getId() );
+        assertNodeDoesntExist( strandedNode );
+    }
+    
+    @Test
+    public void rmnodeCanDeleteConnectedNodes() throws Exception
+    {
+        Relationship[] relationships = createRelationshipChain( 2 );
+        Node middleNode = relationships[0].getEndNode();
+        executeCommandExpectingException( "rmnode " + middleNode.getId(), "still have relationships" );
+        assertNodeExists( middleNode );
+        Node endNode = relationships[1].getEndNode();
+        executeCommand( "rmnode -f " + middleNode.getId(), "deleted" );
+        assertNodeDoesntExist( middleNode );
+        assertRelationshipDoesntExist( relationships[0] );
+        assertRelationshipDoesntExist( relationships[1] );
+        
+        assertNodeExists( endNode );
+        executeCommand( "cd -a " + endNode.getId() );
+        executeCommand( "rmnode " + endNode.getId() );
+        executeCommand( "pwd", Pattern.quote( "(?)" ) );
     }
     
     @Test

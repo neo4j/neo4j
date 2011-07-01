@@ -73,9 +73,13 @@ public class ShellException extends Exception
         {
             s.print( stackTraceAsString );
         }
-        else
+        else if ( getCause() != null )
         {
             getCause().printStackTrace( s );
+        }
+        else
+        {
+            s.println( toString() );
         }
     }
     

@@ -19,6 +19,7 @@
  */
 package org.neo4j.shell.kernel.apps;
 
+import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,22 +52,24 @@ public class Rmrel extends GraphDatabaseApp
      */
     public Rmrel()
     {
-        this.addOptionDefinition( "e", new OptionDefinition( OptionValueType.NONE,
-            "Ensure that nodes doesn't get disconnected from the rest of the graph" ) );
+        this.addOptionDefinition( "f", new OptionDefinition( OptionValueType.NONE,
+            "Force deletion, i.e. disables the connectedness check" ) );
         this.addOptionDefinition( "d", new OptionDefinition( OptionValueType.NONE,
-            "Must be supplied if the affected other node gets decoupled " +
-            "after this operation so that it gets deleted." ) );
+            "Also delete the node on the other side of the relationship if removing" +
+            " this relationship results in it not having any relationships left" ) );
     }
 
     @Override
     public String getDescription()
     {
-        return "Deletes a relationship\nUsage: rmrel <relationship id>";
+        return "Deletes a relationship, also ensuring the connectedness of the graph. That check can be ignored with -f\n" +
+        		"Usage: rmrel <relationship id>\n" +
+        		"   or  rmrel -f <relationship id>";
     }
 
     @Override
     protected String exec( AppCommandParser parser, Session session,
-        Output out ) throws ShellException
+        Output out ) throws ShellException, RemoteException
     {
         assertCurrentIsNode( session );
 
@@ -81,41 +84,30 @@ public class Rmrel extends GraphDatabaseApp
             parser.arguments().get( 0 ) ) );
         rel.delete();
         
-        if ( !currentNode.equals(
-            getServer().getDb().getReferenceNode() ) &&
-            !currentNode.getRelationships().iterator().hasNext() )
-        {
-            throw new ShellException( "It would result in the current node " +
-                currentNode + " to be decoupled (no relationships left)" );
-        }
         Node otherNode = rel.getOtherNode( currentNode );
-        if ( !otherNode.getRelationships().iterator().hasNext() )
+        boolean forceDeletion = parser.options().containsKey( "f" );
+        if ( !forceDeletion )
         {
-            boolean deleteOtherNodeWhenEmpty = parser.options().containsKey( "d" );
-            if ( !deleteOtherNodeWhenEmpty )
-            {
-                throw new ShellException( "Since the node " +
-                    getDisplayName( getServer(), session, otherNode, false ) +
-                    " would be decoupled after this, you must supply the" +
-                    " -d (for delete-when-decoupled) so that the other node " +
-                    "(" + otherNode + ") may be deleted" );
-            }
-            otherNode.delete();
+            ensureConnectedness( otherNode );
+            ensureConnectedness( currentNode );
         }
-        else if ( parser.options().containsKey( "e" ) )
+        boolean deleteOtherNodeIfEmpty = parser.options().containsKey( "d" );
+        if ( deleteOtherNodeIfEmpty && !otherNode.hasRelationship() )
         {
-            if ( !this.hasPathToRefNode( otherNode ) )
-            {
-                throw new ShellException( "It would result in " + otherNode +
-                    " to be recursively decoupled with the reference node" );
-            }
-            if ( !this.hasPathToRefNode( currentNode ) )
-            {
-                throw new ShellException( "It would result in " + currentNode +
-                    " to be recursively decoupled with the reference node" );
-            }
+            otherNode.delete();
+            out.println( "Also deleted " + getDisplayName( getServer(), session, otherNode, false ) +
+                    " due to it not having any relationships left" );
         }
         return null;
+    }
+
+    private void ensureConnectedness( Node otherNode ) throws ShellException
+    {
+        if ( !hasPathToRefNode( otherNode ) )
+        {
+            throw new ShellException( "It would result in " + otherNode +
+                " to be recursively decoupled with the reference node. Use -f to disable this check" );
+        }
     }
 
     private Relationship findRel( Node currentNode, long relId )

@@ -105,7 +105,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
         }
         return result;
     }
-
+    
     protected NodeOrRelationship getCurrent( Session session )
         throws ShellException
     {
@@ -434,6 +434,18 @@ public abstract class GraphDatabaseApp extends AbstractApp
             patternOrNull.matcher( value ).matches();
     }
 
+    protected static <T extends Enum<T>> String niceEnumAlternatives( Class<T> enumClass )
+    {
+        StringBuilder builder = new StringBuilder( "[" );
+        int count = 0;
+        for ( T enumConstant : enumClass.getEnumConstants() )
+        {
+            builder.append( (count++ == 0 ? "" : ", ") );
+            builder.append( enumConstant.name() );
+        }
+        return builder.append( "]" ).toString();
+    }
+    
     protected static <T extends Enum<T>> T parseEnum(
         Class<T> enumClass, String name, T defaultValue, Pair<String, T>... additionalPairs )
     {
