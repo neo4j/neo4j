@@ -495,7 +495,7 @@ class CypherParserTest extends JUnitSuite {
 
   @Test def relationshipType() {
     testQuery(
-      "start n=(1) match n-[r]->(x) where r:TYPE = \"something\" return r",
+      "start n=(1) match n-[r]->(x) where r~TYPE = \"something\" return r",
       Query(
         Return(EntityOutput("r")),
         Start(NodeById("n", 1)),
@@ -505,7 +505,7 @@ class CypherParserTest extends JUnitSuite {
 
   @Test def relationshipTypeOut() {
     testQuery(
-      "start n=(1) match n-[r]->(x) return r:TYPE",
+      "start n=(1) match n-[r]->(x) return r~TYPE",
 
       Query(
         Return(RelationshipTypeOutput("r")),

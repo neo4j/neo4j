@@ -83,9 +83,9 @@ like this:""",
   @Test def relationship_type() {
     testQuery(
       title = "Relationship type",
-      text = """When you want to output the relationship type, and not the whole relationship, you can use :TYPE.""",
-      queryText = """start n=(%A%) match (n)-[r]->() return r:TYPE""",
+      text = """When you want to output the relationship type, and not the whole relationship, you can use ~TYPE.""",
+      queryText = """start n=(%A%) match (n)-[r]->() return r~TYPE""",
       returns = """The relationship type of r.""",
-      (p) => assertEquals("KNOWS", p.columnAs[RelationshipType]("r:TYPE").toList.head.name))
+      (p) => assertEquals("KNOWS", p.columnAs[RelationshipType]("r~TYPE").toList.head.name))
   }
 }

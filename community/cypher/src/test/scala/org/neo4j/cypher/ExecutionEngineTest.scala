@@ -522,7 +522,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val KNOWS = relType("KNOWS")
     val HATES = relType("HATES")
 
-    assertEquals(List(KNOWS, HATES), result.columnAs[RelationshipType]("r:TYPE").toList)
+    assertEquals(List(KNOWS, HATES), result.columnAs[RelationshipType]("r~TYPE").toList)
   }
 
   @Test def shouldAggregateOnProperties() {
@@ -596,7 +596,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     relate("A" -> "KNOWS" -> "B")
     relate("A" -> "HATES" -> "C")
 
-    val query = new CypherParser().parse("start n=(1) match (n)-[r]->(x) where r:TYPE='KNOWS' or r:TYPE='HATES' return x")
+    val query = new CypherParser().parse("start n=(1) match (n)-[r]->(x) where r~TYPE='KNOWS' or r~TYPE='HATES' return x")
     val result = execute(query)
 
     assertEquals(nodes.slice(1, 3), result.columnAs[Node]("x").toList)

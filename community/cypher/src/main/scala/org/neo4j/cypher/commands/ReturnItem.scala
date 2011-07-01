@@ -63,7 +63,7 @@ case class PropertyOutput(entity: String, property: String) extends ReturnItem(P
 case class RelationshipTypeOutput(relationship: String) extends ReturnItem(RelationshipTypeIdentifier(relationship)) {
   def apply(m: Map[String, Any]): Map[String, Any] = {
     val rel = m.getOrElse(relationship, throw new NotFoundException).asInstanceOf[Relationship]
-    Map(relationship + ":TYPE" -> rel.getType)
+    Map(relationship + "~TYPE" -> rel.getType)
   }
 
   def assertDependencies(source: Pipe) {

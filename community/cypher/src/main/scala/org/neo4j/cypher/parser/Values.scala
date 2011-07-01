@@ -35,7 +35,7 @@ trait Values extends JavaTokenParsers with Tokens {
   def trueX: Parser[Value] = ignoreCase("true") ^^ { case str => Literal(true) }
   def falseX: Parser[Value] = ignoreCase("false") ^^ { case str => Literal(false) }
 
-  def relationshipType: Parser[Value] = identity <~ ":TYPE" ^^ {  case v => RelationshipTypeValue(v) }
+  def relationshipType: Parser[Value] = identity <~ "~TYPE" ^^ {  case v => RelationshipTypeValue(v) }
 
 }
 
