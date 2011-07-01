@@ -466,7 +466,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     {
         for ( ArrayList<? extends Command> c : commands ) for ( Command command : c )
         {
-            if ( command.isCreated() )
+            if ( command.isCreated() && !command.isDeleted() )
             {
                 command.execute();
             }
