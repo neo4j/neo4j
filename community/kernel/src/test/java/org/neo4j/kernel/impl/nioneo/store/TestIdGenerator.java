@@ -632,14 +632,12 @@ public class TestIdGenerator
             Node otherNode = db.createNode();
             if ( !createdNodeIds.add( otherNode.getId() ) )
             {
-                /*fail*/System.out.println(
-                        "Managed to create a node with an id that was already in use" );
+                fail( "Managed to create a node with an id that was already in use" );
             }
             Relationship relationship = rootNode.createRelationshipTo( otherNode, type );
             if ( !createdRelationshipIds.add( relationship.getId() ) )
             {
-                /*fail*/System.out.println(
-                        "Managed to create a relationship with an id that was already in use" );
+                fail( "Managed to create a relationship with an id that was already in use" );
             }
         }
         tx.success();
