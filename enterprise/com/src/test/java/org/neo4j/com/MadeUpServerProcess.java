@@ -25,9 +25,9 @@ import org.neo4j.test.subprocess.SubProcess;
 public class MadeUpServerProcess extends SubProcess<ServerInterface, Long[]> implements ServerInterface
 {
     public static final int PORT = 8888;
-    
+
     private volatile transient MadeUpServer server;
-    
+
     @Override
     protected void startup( Long[] creationTimeAndStoreId ) throws Throwable
     {
@@ -51,9 +51,9 @@ public class MadeUpServerProcess extends SubProcess<ServerInterface, Long[]> imp
             throw new RuntimeException( e );
         }
     }
-    
+
     @Override
-    public void shutdown()
+    protected void shutdown( boolean normal )
     {
         if ( server != null )
         {
@@ -61,6 +61,7 @@ public class MadeUpServerProcess extends SubProcess<ServerInterface, Long[]> imp
         }
         new Thread()
         {
+            @Override
             public void run()
             {
                 try

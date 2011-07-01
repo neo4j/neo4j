@@ -286,10 +286,10 @@ public final class ServerCluster
         }
 
         @Override
-        protected void shutdown()
+        protected void shutdown( boolean normal )
         {
             if ( this.bootstrap != null ) this.bootstrap.stop();
-            super.shutdown();
+            super.shutdown( normal );
         }
 
         private HighAvailability ha()
