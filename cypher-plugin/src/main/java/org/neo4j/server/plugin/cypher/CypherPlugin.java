@@ -51,9 +51,6 @@ import org.neo4j.server.rest.repr.ValueRepresentation;
 public class CypherPlugin extends ServerPlugin
 {
 
-    private CypherParser parser;
-    private ExecutionEngine engine; 
- 
     @Name( "execute_query" )
     @Description( "execute a query" )
     @PluginTarget( GraphDatabaseService.class )
@@ -61,13 +58,13 @@ public class CypherPlugin extends ServerPlugin
             @Source final GraphDatabaseService neo4j,
             @Description( "The query string" ) @Parameter( name = "query", optional = false ) final String query )
     {
-        parser = new CypherParser();
+        CypherParser parser = new CypherParser();
         ExecutionResult result;
         try
         {
-            Query compiledQuery = parser.parse( query );
-            engine = new ExecutionEngine( neo4j );
-            result = engine.execute( compiledQuery );
+            Query compiledQuery = parser.parse(query);
+            ExecutionEngine engine = new ExecutionEngine(neo4j);
+            result = engine.execute(compiledQuery);
             return new CypherResultRepresentation( result );
         }
         catch ( SyntaxError e )
