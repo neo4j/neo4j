@@ -62,7 +62,7 @@ public class StandaloneDatabase
         args.add( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS );
         args.add( zooKeeper.getConnectionString() );
         args.addAll( asList( extraArgs ) );
-        
+
         return new StandaloneDatabase( testMethodName, new Bootstrap( path, machineId,//
                 args.toArray( new String[args.size()] ) )
         {
@@ -201,7 +201,7 @@ public class StandaloneDatabase
     {
         SubProcess.kill( process );
     }
-    
+
     // <IMPLEMENTATION>
 
     public interface Controller
@@ -372,7 +372,7 @@ public class StandaloneDatabase
         }
 
         @Override
-        protected synchronized void shutdown()
+        protected synchronized void shutdown( boolean normal )
         {
             DatabaseReference ref = db;
             if ( ref == null )
@@ -390,7 +390,7 @@ public class StandaloneDatabase
                 db( (HighlyAvailableGraphDatabase) null );
             }
             System.out.println( "Shutdown completed" );
-            super.shutdown();
+            super.shutdown( normal );
         }
 
         public void awaitStarted() throws StartupFailureException

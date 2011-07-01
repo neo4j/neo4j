@@ -30,7 +30,7 @@ import org.neo4j.test.subprocess.SubProcess;
 public class ServerProcess extends SubProcess<ServerInterface, Pair<String, String>> implements ServerInterface
 {
     private volatile transient GraphDatabaseService db;
-    
+
     @Override
     public void startup( Pair<String, String> config ) throws Throwable
     {
@@ -45,7 +45,7 @@ public class ServerProcess extends SubProcess<ServerInterface, Pair<String, Stri
             this.db = new EmbeddedGraphDatabase( storeDir, stringMap( ENABLE_ONLINE_BACKUP, backupConfigValue ) );
         }
     }
-    
+
     @Override
     public void awaitStarted()
     {
@@ -61,9 +61,9 @@ public class ServerProcess extends SubProcess<ServerInterface, Pair<String, Stri
             }
         }
     }
-    
+
     @Override
-    public void shutdown()
+    public void shutdown( boolean normal )
     {
         db.shutdown();
         new Thread()
