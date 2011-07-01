@@ -57,12 +57,12 @@ public class CypherPluginFunctionalTest implements GraphHolder
     private static WrappingNeoServerBootstrapper server;
 
     /**
+     * Send a Query.
+     * 
      * A simple query returning all nodes connected to node 1,
      * returning the node and the name property, if it exists,
      * otherwise `null`:
-     * `start x  = (1) match (x) -- (n) return n, n.name?, n.age?`
      */
-    @Title("Send a Query")
     @Test
     @Documented
     @Graph( value = { "I know you", "I know him" } )
