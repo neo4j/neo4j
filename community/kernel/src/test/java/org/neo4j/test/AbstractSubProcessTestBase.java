@@ -46,6 +46,11 @@ public class AbstractSubProcessTestBase
         this.target = TargetDirectory.forTest( getClass() );
     }
 
+    protected final void runInThread( Task task )
+    {
+        run( new ThreadTask( task ) );
+    }
+
     protected final void run( Task task )
     {
         for ( Instance instance : instances )
@@ -86,6 +91,24 @@ public class AbstractSubProcessTestBase
         for ( Instance instance : instances )
         {
             if ( instance != null ) instance.awaitStarted();
+        }
+    }
+
+    protected final void killSubprocesses()
+    {
+        synchronized ( instances )
+        {
+            for ( int i = 0; i < instances.length; i++ )
+            {
+                Instance instance = instances[i];
+                if ( instance != null )
+                {
+                    Thread.currentThread().interrupt();
+                    SubProcess.kill( instance );
+                    Thread.interrupted();
+                }
+                instances[i] = null;
+            }
         }
     }
 
@@ -133,6 +156,34 @@ public class AbstractSubProcessTestBase
         {
             return new EmbeddedGraphDatabase( storeDir );
         }
+
+        protected void shutdown( AbstractGraphDatabase graphdb, boolean normal )
+        {
+            graphdb.shutdown();
+        }
+    }
+
+    private static class ThreadTask implements Task
+    {
+        private final Task task;
+
+        ThreadTask( Task task )
+        {
+            this.task = task;
+        }
+
+        @Override
+        public void run( final AbstractGraphDatabase graphdb )
+        {
+            new Thread( new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    task.run( graphdb );
+                }
+            }, task.toString() ).start();
+        }
     }
 
     @SuppressWarnings( { "hiding", "serial" } )
@@ -166,13 +217,17 @@ public class AbstractSubProcessTestBase
         }
 
         @Override
-        protected void shutdown()
+        protected void shutdown( boolean normal )
         {
             AbstractGraphDatabase graphdb;
+            Bootstrapper bootstrap = this.bootstrap;
             graphdb = GRAPHDB.getAndSet( this, null );
             this.bootstrap = null;
-            if ( graphdb != null ) graphdb.shutdown();
-            super.shutdown();
+            if ( graphdb != null )
+            {
+                bootstrap.shutdown( graphdb, normal );
+            }
+            super.shutdown( normal );
         }
 
         @Override

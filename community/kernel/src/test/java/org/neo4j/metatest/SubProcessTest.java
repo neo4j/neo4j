@@ -198,9 +198,9 @@ public class SubProcessTest
         }
 
         @Override
-        protected synchronized void shutdown()
+        protected synchronized void shutdown( boolean normal )
         {
-            System.out.println( "shutdown" );
+            System.out.println( normal ? "normal shutdown" : "abnormal shutdown" );
             try
             {
                 callback.callBack();

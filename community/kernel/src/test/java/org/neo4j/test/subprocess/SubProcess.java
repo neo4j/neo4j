@@ -301,6 +301,7 @@ public abstract class SubProcess<T, P> implements Serializable
                 {
                     return;
                 }
+                Integer exitCode = null;
                 try
                 {
                     for ( com.sun.jdi.event.Event event : events )
@@ -347,9 +348,20 @@ public abstract class SubProcess<T, P> implements Serializable
                         }
                     }
                 }
+                catch ( KillSubProcess kill )
+                {
+                    exitCode = Integer.valueOf( kill.exitCode );
+                }
                 finally
                 {
-                    events.resume();
+                    if ( exitCode != null )
+                    {
+                        events.virtualMachine().exit( exitCode.intValue() );
+                    }
+                    else
+                    {
+                        events.resume();
+                    }
                 }
             }
         }
@@ -364,7 +376,7 @@ public abstract class SubProcess<T, P> implements Serializable
             }
         }
 
-        private void callback( com.sun.jdi.event.LocatableEvent event )
+        private void callback( com.sun.jdi.event.LocatableEvent event ) throws KillSubProcess
         {
             List<BreakPoint> list = breakpoints.get( event.location().declaringType().name() );
             if ( list == null ) return;
@@ -373,7 +385,7 @@ public abstract class SubProcess<T, P> implements Serializable
             {
                 if ( breakpoint.matches( method.name(), method.argumentTypeNames() ) )
                 {
-                    breakpoint.callback( new DebugInterface( this, event ) );
+                    if ( breakpoint.enabled ) breakpoint.callback( new DebugInterface( this, event ) );
                 }
             }
         }
@@ -401,7 +413,12 @@ public abstract class SubProcess<T, P> implements Serializable
 
     protected abstract void startup( P parameter ) throws Throwable;
 
-    protected void shutdown()
+    protected final void shutdown()
+    {
+        shutdown( true );
+    }
+
+    protected void shutdown( boolean normal )
     {
         System.exit( 0 );
     }
@@ -447,10 +464,10 @@ public abstract class SubProcess<T, P> implements Serializable
         liveLoop();
     }
 
-    private void doStop()
+    private void doStop( boolean normal )
     {
         alive = false;
-        shutdown();
+        shutdown( normal );
     }
 
     private void liveLoop() throws Exception
@@ -462,7 +479,7 @@ public abstract class SubProcess<T, P> implements Serializable
                 if ( System.in.read() == -1 )
                 {
                     // Parent process exited, die with it
-                    doStop();
+                    doStop( false );
                 }
                 Thread.sleep( 1 );
             }
@@ -929,7 +946,7 @@ public abstract class SubProcess<T, P> implements Serializable
 
         public void stop() throws RemoteException
         {
-            subprocess.doStop();
+            subprocess.doStop( true );
         }
     }
 }

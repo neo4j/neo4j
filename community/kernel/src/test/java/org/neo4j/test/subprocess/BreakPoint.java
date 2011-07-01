@@ -19,6 +19,7 @@
  */
 package org.neo4j.test.subprocess;
 
+import java.io.PrintStream;
 import java.util.Iterator;
 import java.util.List;
 
@@ -36,7 +37,7 @@ public abstract class BreakPoint implements DebuggerDeadlockCallback
         }
     }
 
-    protected abstract void callback( DebugInterface debug );
+    protected abstract void callback( DebugInterface debug ) throws KillSubProcess;
 
     @Override
     public void deadlock( DebuggedThread thread )
@@ -47,7 +48,7 @@ public abstract class BreakPoint implements DebuggerDeadlockCallback
     final String type;
     private final String method;
     private final String[] args;
-    private boolean enabled = false;
+    volatile boolean enabled = false;
     private @SuppressWarnings( "restriction" )
     com.sun.jdi.request.EventRequest request = null;
 
@@ -98,5 +99,18 @@ public abstract class BreakPoint implements DebuggerDeadlockCallback
             if ( !args[i].equals( names.next() ) ) return false;
         }
         return true;
+    }
+
+    public static BreakPoint stacktrace( final PrintStream out, Class<?> type, String method, Class<?>... args )
+    {
+        return new BreakPoint( type, method, args )
+        {
+            @Override
+            protected void callback( DebugInterface debug )
+            {
+                out.println( "Debugger stacktrace" );
+                debug.printStackTrace( out );
+            }
+        };
     }
 }
