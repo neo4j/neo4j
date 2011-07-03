@@ -343,6 +343,16 @@ class CypherParserTest extends JUnitSuite {
         Aggregation(CountStar())))
   }
 
+    @Test def distinct() {
+    testQuery(
+      "start a = (1) match a --> b return distinct a, b",
+      Query(
+        Return(EntityOutput("a"), EntityOutput("b")),
+        Start(NodeById("a", 1)),
+        Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
+        Aggregation()))
+  }
+
   @Test def sumTheAgesOfPeople() {
     testQuery(
       "start a = (1) match a --> b return a, b, sum(a.age)",

@@ -596,10 +596,21 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     relate("A" -> "KNOWS" -> "B")
     relate("A" -> "HATES" -> "C")
 
-    val query = new CypherParser().parse("start n=(1) match (n)-[r]->(x) where r~TYPE='KNOWS' or r~TYPE='HATES' return x")
-    val result = execute(query)
+    val result = parseAndExecute("start n=(1) match (n)-[r]->(x) where r~TYPE='KNOWS' or r~TYPE='HATES' return x")
 
     assertEquals(nodes.slice(1, 3), result.columnAs[Node]("x").toList)
+  }
+
+  @Test def shouldReturnDistinctItems() {
+    val a = createNode()
+    val b = createNode()
+
+    relate(a, b, "FIRST_REL_TYPE")
+    relate(a, b, "SECOND_REL_TYPE")
+
+    val result = parseAndExecute("start a=(1) match (a)-->(b) return distinct a,b")
+
+    assertEquals(List(Map("a"->a, "b"->b)), result.toList)
   }
 
   @Test def shouldThrowNiceErrorMessageWhenPropertyIsMissing() {
@@ -610,5 +621,12 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
       case x: SyntaxError => assertEquals("n.A_PROPERTY_THAT_IS_MISSING does not exist on Node[0]", x.getMessage)
     }
   }
+
+  private def parseAndExecute(q: String): ExecutionResult = {
+    val query = new CypherParser().parse(q)
+    execute(query)
+  }
+
+
 }
 
