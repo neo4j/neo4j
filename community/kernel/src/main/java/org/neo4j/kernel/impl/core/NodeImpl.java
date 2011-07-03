@@ -50,7 +50,7 @@ import org.neo4j.kernel.impl.util.RelIdIterator;
 class NodeImpl extends Primitive
 {
     private static final RelIdArray[] NO_RELATIONSHIPS = new RelIdArray[0];
-    
+
     private volatile RelIdArray[] relationships;
     private long relChainPosition = Record.NO_NEXT_RELATIONSHIP.intValue();
     private long id;
@@ -70,7 +70,7 @@ class NodeImpl extends Primitive
             relationships = NO_RELATIONSHIPS;
         }
     }
-    
+
     @Override
     public long getId()
     {
@@ -90,9 +90,10 @@ class NodeImpl extends Primitive
     }
 
     @Override
-    protected PropertyData changeProperty( NodeManager nodeManager, long propertyId, Object value )
+    protected PropertyData changeProperty( NodeManager nodeManager,
+            PropertyData property, Object value )
     {
-        return nodeManager.nodeChangeProperty( this, propertyId, value );
+        return nodeManager.nodeChangeProperty( this, property, value );
     }
 
     @Override
@@ -102,9 +103,10 @@ class NodeImpl extends Primitive
     }
 
     @Override
-    protected void removeProperty( NodeManager nodeManager, long propertyId )
+    protected void removeProperty( NodeManager nodeManager,
+            PropertyData property )
     {
-        nodeManager.nodeRemoveProperty( this, propertyId );
+        nodeManager.nodeRemoveProperty( this, property );
     }
 
     @Override
@@ -123,7 +125,7 @@ class NodeImpl extends Primitive
         {
             addMap = nodeManager.getCowRelationshipAddMap( this );
         }
-        
+
         for ( RelIdArray src : relationships )
         {
             String type = src.getType();
@@ -222,7 +224,7 @@ class NodeImpl extends Primitive
         return new IntArrayIterator( getAllRelationshipsOfType( nodeManager, dir, types ),
             this, dir, nodeManager, types, !hasMoreRelationshipsToLoad() );
     }
-    
+
     public Relationship getSingleRelationship( NodeManager nodeManager, RelationshipType type,
         Direction dir )
     {
@@ -350,7 +352,7 @@ class NodeImpl extends Primitive
         {
             return NO_RELATIONSHIPS;
         }
-        
+
         RelIdArray[] result = new RelIdArray[tmpRelMap.size()];
         int i = 0;
         for ( RelIdArray array : tmpRelMap.values() )
@@ -367,7 +369,7 @@ class NodeImpl extends Primitive
         {
             return null;
         }
-        Triplet<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>,Long> rels = 
+        Triplet<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>,Long> rels =
             nodeManager.getMoreRelationships( this );
         ArrayMap<String,RelIdArray> addMap = rels.first();
         if ( addMap.size() == 0 )
@@ -395,7 +397,7 @@ class NodeImpl extends Primitive
         return rels;
         // nodeManager.putAllInRelCache( pair.other() );
     }
-    
+
     boolean hasMoreRelationshipsToLoad()
     {
         return relChainPosition != Record.NO_NEXT_RELATIONSHIP.intValue();
@@ -414,7 +416,7 @@ class NodeImpl extends Primitive
             {
                 return false;
             }
-            
+
             rels = nodeManager.getMoreRelationships( this );
             ArrayMap<String,RelIdArray> addMap = rels.first();
             if ( addMap.size() == 0 )
@@ -440,13 +442,13 @@ class NodeImpl extends Primitive
                     }
                 }
             }
-            
+
             setRelChainPosition( rels.third() );
         }
         nodeManager.putAllInRelCache( rels.second() );
         return true;
     }
-        
+
     private RelIdArray getRelIdArray( String type )
     {
         // Concurrency-wise it's ok even if the relationships variable
@@ -461,7 +463,7 @@ class NodeImpl extends Primitive
         }
         return null;
     }
-    
+
     private void putRelIdArray( RelIdArray addRels )
     {
         // Try to overwrite it if it's already set
@@ -469,7 +471,7 @@ class NodeImpl extends Primitive
         // Make sure the same array is looped all the way through, that's why
         // a safe reference is kept to it. If the real array has changed when
         // we're about to set it then redo the loop. A kind of lock-free synchronization
-        
+
         String expectedType = addRels.getType();
         for ( int i = 0; i < relationships.length; i++ )
         {
@@ -479,7 +481,7 @@ class NodeImpl extends Primitive
                 return;
             }
         }
-        
+
         RelIdArray[] newArray = new RelIdArray[relationships.length+1];
         System.arraycopy( relationships, 0, newArray, 0, relationships.length );
         newArray[relationships.length] = addRels;
@@ -565,7 +567,7 @@ class NodeImpl extends Primitive
     {
         return getRelationships( nodeManager, direction, types ).iterator().hasNext();
     }
-    
+
     public boolean hasRelationship( NodeManager nodeManager, Direction dir )
     {
         return getRelationships( nodeManager, dir ).iterator().hasNext();
@@ -585,7 +587,7 @@ class NodeImpl extends Primitive
             // we will load full in some other tx
             return;
         }
-        
+
         synchronized ( this )
         {
             if ( cowRelationshipAddMap != null )
@@ -626,7 +628,7 @@ class NodeImpl extends Primitive
     {
         return relChainPosition;
     }
-    
+
     void setRelChainPosition( long position )
     {
         this.relChainPosition = position;
@@ -644,7 +646,7 @@ class NodeImpl extends Primitive
     {
         return getRelIdArray( type );
     }
-    
+
     RelIdArray[] getRelationshipIds()
     {
         return relationships;

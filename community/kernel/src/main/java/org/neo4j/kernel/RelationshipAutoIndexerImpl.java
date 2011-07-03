@@ -21,8 +21,6 @@ package org.neo4j.kernel;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.event.PropertyEntry;
-import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.ReadableRelationshipIndex;
 import org.neo4j.graphdb.index.RelationshipAutoIndexer;
@@ -36,13 +34,6 @@ class RelationshipAutoIndexerImpl extends AbstractAutoIndexerImpl<Relationship>
     public RelationshipAutoIndexerImpl( EmbeddedGraphDbImpl gdb )
     {
         super( gdb );
-    }
-
-    @Override
-    protected Iterable<PropertyEntry<Relationship>> getAssignedPropertiesOnCommit(
-            TransactionData data )
-    {
-        return data.assignedRelationshipProperties();
     }
 
     @Override
@@ -77,10 +68,19 @@ class RelationshipAutoIndexerImpl extends AbstractAutoIndexerImpl<Relationship>
     }
 
     @Override
-    protected Iterable<PropertyEntry<Relationship>> getRemovedPropertiesOnCommit(
-            TransactionData data )
+    public void setEnabled( boolean enabled )
     {
-        return data.removedRelationshipProperties();
+        super.setEnabled( enabled );
+        if ( enabled )
+        {
+            getGraphDbImpl().getConfig().getGraphDbModule().getNodeManager().addRelationshipPropertyTracker(
+                    this );
+        }
+        else
+        {
+            getGraphDbImpl().getConfig().getGraphDbModule().getNodeManager().removeRelationshipPropertyTracker(
+                    this );
+        }
     }
 
     static class RelationshipReadOnlyIndexToIndexAdapter extends

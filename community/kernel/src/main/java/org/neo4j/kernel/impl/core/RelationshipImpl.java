@@ -33,7 +33,7 @@ abstract class RelationshipImpl extends Primitive
     {
         super( newRel );
     }
-    
+
     protected RelationshipType assertTypeNotNull( RelationshipType type )
     {
         if ( type == null )
@@ -51,9 +51,10 @@ abstract class RelationshipImpl extends Primitive
     }
 
     @Override
-    protected PropertyData changeProperty( NodeManager nodeManager, long propertyId, Object value )
+    protected PropertyData changeProperty( NodeManager nodeManager,
+            PropertyData property, Object value )
     {
-        return nodeManager.relChangeProperty( this, propertyId, value );
+        return nodeManager.relChangeProperty( this, property, value );
     }
 
     @Override
@@ -63,9 +64,10 @@ abstract class RelationshipImpl extends Primitive
     }
 
     @Override
-    protected void removeProperty( NodeManager nodeManager, long propertyId )
+    protected void removeProperty( NodeManager nodeManager,
+            PropertyData property )
     {
-        nodeManager.relRemoveProperty( this, propertyId );
+        nodeManager.relRemoveProperty( this, property );
     }
 
     @Override
@@ -73,7 +75,7 @@ abstract class RelationshipImpl extends Primitive
     {
         return nodeManager.loadProperties( this, light );
     }
-    
+
     public Node[] getNodes( NodeManager nodeManager )
     {
         return new Node[] { new NodeProxy( getStartNodeId(), nodeManager ),

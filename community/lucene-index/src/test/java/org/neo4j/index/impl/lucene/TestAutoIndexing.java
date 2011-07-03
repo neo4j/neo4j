@@ -138,10 +138,6 @@ public class TestAutoIndexing
         Node node2 = graphDb.createNode();
         node2.setProperty( "test_uuid", "node2" );
 
-        // will index on commit
-        assertFalse( autoIndexer.getAutoIndex().get( "test_uuid", "node1" ).hasNext() );
-        assertFalse( autoIndexer.getAutoIndex().get( "test_uuid", "node2" ).hasNext() );
-
         newTransaction();
 
         assertEquals(
@@ -150,6 +146,43 @@ public class TestAutoIndexing
         assertEquals(
                 node2,
                 autoIndexer.getAutoIndex().get( "test_uuid", "node2" ).getSingle() );
+    }
+
+    @Test
+    public void testChangesAreVisibleInTransaction()
+    {
+        AutoIndexer<Node> autoIndexer = graphDb.index().getNodeAutoIndexer();
+        autoIndexer.startAutoIndexingProperty( "nodeProp" );
+        autoIndexer.setEnabled( true );
+
+        newTransaction();
+
+        Node node1 = graphDb.createNode();
+        node1.setProperty( "nodeProp", "nodePropValue" );
+        node1.setProperty( "nodePropNonIndexable", "valueWhatever" );
+        ReadableIndex<Node> nodeIndex = autoIndexer.getAutoIndex();
+        assertEquals( node1,
+                nodeIndex.get( "nodeProp", "nodePropValue" ).getSingle() );
+
+        newTransaction();
+
+        Node node2 = graphDb.createNode();
+        node2.setProperty( "nodeProp", "nodePropValue2" );
+        assertEquals( node2,
+                nodeIndex.get( "nodeProp", "nodePropValue2" ).getSingle() );
+        node2.setProperty( "nodeProp", "nodePropValue3" );
+        assertEquals( node2,
+                nodeIndex.get( "nodeProp", "nodePropValue3" ).getSingle() );
+        node2.removeProperty( "nodeProp" );
+        assertFalse( nodeIndex.get( "nodeProp", "nodePropValue2" ).hasNext() );
+        assertFalse( nodeIndex.get( "nodeProp", "nodePropValue3" ).hasNext() );
+
+        newTransaction();
+
+        assertEquals( node1,
+                nodeIndex.get( "nodeProp", "nodePropValue" ).getSingle() );
+        assertFalse( nodeIndex.get( "nodeProp", "nodePropValue2" ).hasNext() );
+        assertFalse( nodeIndex.get( "nodeProp", "nodePropValue3" ).hasNext() );
     }
 
     @Test
@@ -172,12 +205,6 @@ public class TestAutoIndexing
 
         rel12.setProperty( propNameToIndex, "rel12" );
         rel23.setProperty( propNameToIndex, "rel23" );
-
-        // will index on commit
-        assertFalse( autoIndexer.getAutoIndex().get( propNameToIndex,
-                "rel12" ).hasNext() );
-        assertFalse( autoIndexer.getAutoIndex().get( propNameToIndex,
-                "rel23" ).hasNext() );
 
         newTransaction();
 
@@ -424,14 +451,15 @@ public class TestAutoIndexing
         startDb();
 
         AutoIndexer<Node> autoIndexer = graphDb.index().getNodeAutoIndexer();
+        assertTrue( autoIndexer.isEnabled() );
 
+        autoIndexer.setEnabled( false );
+        assertFalse( autoIndexer.isEnabled() );
         newTransaction();
 
         Node node1 = graphDb.createNode();
         Node node2 = graphDb.createNode();
         node1.setProperty( "propName", "node" );
-        autoIndexer.setEnabled( false );
-        // Committing with auto indexing off, should not be in the index
         newTransaction();
 
         assertFalse( autoIndexer.getAutoIndex().get( "nodeProp1", "node1" ).hasNext() );

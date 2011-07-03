@@ -20,8 +20,6 @@
 package org.neo4j.kernel;
 
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.event.PropertyEntry;
-import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.index.Index;
 
 /**
@@ -37,13 +35,6 @@ class NodeAutoIndexerImpl extends AbstractAutoIndexerImpl<Node>
     public NodeAutoIndexerImpl( EmbeddedGraphDbImpl gdb )
     {
         super( gdb );
-    }
-
-    @Override
-    protected Iterable<PropertyEntry<Node>> getAssignedPropertiesOnCommit(
-            TransactionData data )
-    {
-        return data.assignedNodeProperties();
     }
 
     @Override
@@ -72,9 +63,18 @@ class NodeAutoIndexerImpl extends AbstractAutoIndexerImpl<Node>
     }
 
     @Override
-    protected Iterable<PropertyEntry<Node>> getRemovedPropertiesOnCommit(
-            TransactionData data )
+    public void setEnabled( boolean enabled )
     {
-        return data.removedNodeProperties();
+        super.setEnabled( enabled );
+        if ( enabled )
+        {
+            getGraphDbImpl().getConfig().getGraphDbModule().getNodeManager().addNodePropertyTracker(
+                this );
+        }
+        else
+        {
+            getGraphDbImpl().getConfig().getGraphDbModule().getNodeManager().removeNodePropertyTracker(
+                    this );
+        }
     }
 }

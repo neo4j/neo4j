@@ -188,6 +188,13 @@ class EmbeddedGraphDbImpl
             }
             graphDbInstance.start( graphDbService, extensionLoader );
             nodeManager = config.getGraphDbModule().getNodeManager();
+            /*
+             *  IndexManager has to exist before extensions load (so that
+             *  it is present and taken into consideration) but after
+             *  graphDbInstance is started so that there is access to the
+             *  nodeManager. In other words, the start() below has to be here.
+             */
+            indexManager.start();
             extensionLoader.load();
 
             started = true; // must be last

@@ -32,14 +32,15 @@ abstract class Primitive
     // Used for marking that properties have been loaded but there just wasn't any.
     // Saves an extra trip down to the store layer.
     private static final PropertyData[] NO_PROPERTIES = new PropertyData[0];
-    
+
     private volatile PropertyData[] properties;
 
-    protected abstract PropertyData changeProperty( NodeManager nodeManager, long propertyId, Object value );
+    protected abstract PropertyData changeProperty( NodeManager nodeManager, PropertyData property, Object value );
 
     protected abstract PropertyData addProperty( NodeManager nodeManager, PropertyIndex index, Object value );
 
-    protected abstract void removeProperty( NodeManager nodeManager, long propertyId );
+    protected abstract void removeProperty( NodeManager nodeManager,
+            PropertyData property );
 
     protected abstract ArrayMap<Integer, PropertyData> loadProperties( NodeManager nodeManager,
             boolean light );
@@ -51,7 +52,7 @@ abstract class Primitive
             properties = NO_PROPERTIES;
         }
     }
-    
+
     public abstract long getId();
 
     @Override
@@ -60,12 +61,12 @@ abstract class Primitive
         long id = getId();
         return (int) (( id >>> 32 ) ^ id );
     }
-    
+
     public Iterable<Object> getPropertyValues( NodeManager nodeManager )
     {
-        ArrayMap<Integer,PropertyData> skipMap = 
+        ArrayMap<Integer,PropertyData> skipMap =
             nodeManager.getCowPropertyRemoveMap( this );
-        ArrayMap<Integer,PropertyData> addMap = 
+        ArrayMap<Integer,PropertyData> addMap =
             nodeManager.getCowPropertyAddMap( this );
 
         ensureFullProperties( nodeManager );
@@ -96,9 +97,9 @@ abstract class Primitive
 
     public Iterable<String> getPropertyKeys( NodeManager nodeManager )
     {
-        ArrayMap<Integer,PropertyData> skipMap = 
+        ArrayMap<Integer,PropertyData> skipMap =
             nodeManager.getCowPropertyRemoveMap( this );
-        ArrayMap<Integer,PropertyData> addMap = 
+        ArrayMap<Integer,PropertyData> addMap =
             nodeManager.getCowPropertyAddMap( this );
 
         ensureFullProperties( nodeManager );
@@ -133,9 +134,9 @@ abstract class Primitive
         {
             throw new IllegalArgumentException( "null key" );
         }
-        ArrayMap<Integer,PropertyData> skipMap = 
+        ArrayMap<Integer,PropertyData> skipMap =
             nodeManager.getCowPropertyRemoveMap( this );
-        ArrayMap<Integer,PropertyData> addMap = 
+        ArrayMap<Integer,PropertyData> addMap =
             nodeManager.getCowPropertyAddMap( this );
 
         ensureFullProperties( nodeManager );
@@ -166,7 +167,7 @@ abstract class Primitive
         }
         throw newPropertyNotFoundException( key );
     }
-    
+
     private NotFoundException newPropertyNotFoundException( String key )
     {
         return new NotFoundException( key +
@@ -187,7 +188,7 @@ abstract class Primitive
             {
                 if ( !nodeManager.hasIndexFor( keyId ) )
                 {
-                    PropertyIndex indexToCheck = 
+                    PropertyIndex indexToCheck =
                         nodeManager.getIndexFor( keyId );
                     if ( indexToCheck.getKey().equals( key ) )
                     {
@@ -195,7 +196,7 @@ abstract class Primitive
                         {
                             throw newPropertyNotFoundException( key );
                         }
-                        PropertyData property = 
+                        PropertyData property =
                             addMap.get( indexToCheck.getKeyId() );
                         if ( property != null )
                         {
@@ -233,9 +234,9 @@ abstract class Primitive
         {
             throw new IllegalArgumentException( "null key" );
         }
-        ArrayMap<Integer,PropertyData> skipMap = 
+        ArrayMap<Integer,PropertyData> skipMap =
             nodeManager.getCowPropertyRemoveMap( this );
-        ArrayMap<Integer,PropertyData> addMap = 
+        ArrayMap<Integer,PropertyData> addMap =
             nodeManager.getCowPropertyAddMap( this );
 
         ensureFullProperties( nodeManager );
@@ -276,7 +277,7 @@ abstract class Primitive
 
         ArrayMap<Integer,PropertyData> skipMap =
             nodeManager.getCowPropertyRemoveMap( this );
-        ArrayMap<Integer,PropertyData> addMap = 
+        ArrayMap<Integer,PropertyData> addMap =
             nodeManager.getCowPropertyAddMap( this );
 
         ensureFullProperties( nodeManager );
@@ -312,7 +313,7 @@ abstract class Primitive
     {
         if ( key == null || value == null )
         {
-            throw new IllegalArgumentException( "Null parameter, " + "key=" + 
+            throw new IllegalArgumentException( "Null parameter, " + "key=" +
                 key + ", " + "value=" + value );
         }
         nodeManager.acquireLock( this, LockType.WRITE );
@@ -322,7 +323,7 @@ abstract class Primitive
             ensureFullProperties( nodeManager );
             ArrayMap<Integer,PropertyData> addMap =
                 nodeManager.getCowPropertyAddMap( this, true );
-            ArrayMap<Integer,PropertyData> skipMap = 
+            ArrayMap<Integer,PropertyData> skipMap =
                 nodeManager.getCowPropertyRemoveMap( this );
             PropertyIndex index = null;
             PropertyData property = null;
@@ -403,8 +404,7 @@ abstract class Primitive
             }
             if ( property != null && !foundInSkipMap )
             {
-                long propertyId = property.getId();
-                property = changeProperty( nodeManager, propertyId, value );
+                property = changeProperty( nodeManager, property, value );
             }
             else
             {
@@ -435,9 +435,9 @@ abstract class Primitive
         {
             ensureFullProperties( nodeManager );
             PropertyData property = null;
-            ArrayMap<Integer,PropertyData> addMap = 
+            ArrayMap<Integer,PropertyData> addMap =
                 nodeManager.getCowPropertyAddMap( this );
-            
+
             // Don't create the map if it doesn't exist here... but instead when (and if)
             // the property is found below.
             ArrayMap<Integer,PropertyData> removeMap = nodeManager.getCowPropertyRemoveMap( this, false );
@@ -520,7 +520,7 @@ abstract class Primitive
                 success = true;
                 return null;
             }
-            removeProperty( nodeManager, property.getId() );
+            removeProperty( nodeManager, property );
             success = true;
             return getPropertyValue( nodeManager, property );
         }
@@ -555,7 +555,7 @@ abstract class Primitive
             // we will load full in some other tx
             return;
         }
-        
+
         PropertyData[] newArray = properties;
         int extraLength = (cowPropertyAddMap != null ? cowPropertyAddMap.size() : 0) -
                 (cowPropertyRemoveMap != null ? cowPropertyRemoveMap.size() : 0);
@@ -564,7 +564,7 @@ abstract class Primitive
             newArray = new PropertyData[properties.length+extraLength];
             System.arraycopy( properties, 0, newArray, 0, properties.length );
         }
-        
+
         int newArraySize = properties.length;
         if ( cowPropertyRemoveMap != null )
         {
@@ -576,7 +576,7 @@ abstract class Primitive
                     if ( existingProperty.getIndex() == keyIndex )
                     {
                         int swapWith = --newArraySize;
-                        newArray[i] = newArray[swapWith]; 
+                        newArray[i] = newArray[swapWith];
                         newArray[swapWith] = null;
                         break;
                     }
@@ -602,7 +602,7 @@ abstract class Primitive
                 }
             }
         }
-        
+
         if ( newArraySize < newArray.length )
         {
             PropertyData[] compactedNewArray = new PropertyData[newArraySize];
@@ -626,7 +626,7 @@ abstract class Primitive
         }
         return null;
     }
-    
+
     private boolean ensureFullProperties( NodeManager nodeManager )
     {
         if ( properties == null )
@@ -643,7 +643,7 @@ abstract class Primitive
         {
             return NO_PROPERTIES;
         }
-        
+
         PropertyData[] result = new PropertyData[loadedProperties.size()];
         int i = 0;
         for ( PropertyData property : loadedProperties.values() )

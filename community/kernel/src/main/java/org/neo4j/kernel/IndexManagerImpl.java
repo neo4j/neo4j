@@ -47,9 +47,8 @@ class IndexManagerImpl implements IndexManager
     private final Map<String, IndexImplementation> indexProviders = new HashMap<String, IndexImplementation>();
 
     private final EmbeddedGraphDbImpl graphDbImpl;
-    private final AutoIndexer<Node> nodeAutoIndexer;
-    private final RelationshipAutoIndexer relAutoIndexer;
-
+    private final NodeAutoIndexerImpl nodeAutoIndexer;
+    private final RelationshipAutoIndexerImpl relAutoIndexer;
 
     IndexManagerImpl( EmbeddedGraphDbImpl graphDbImpl, IndexStore indexStore )
     {
@@ -57,6 +56,12 @@ class IndexManagerImpl implements IndexManager
         this.indexStore = indexStore;
         this.nodeAutoIndexer = new NodeAutoIndexerImpl( graphDbImpl );
         this.relAutoIndexer = new RelationshipAutoIndexerImpl( graphDbImpl );
+    }
+
+    void start()
+    {
+        nodeAutoIndexer.start();
+        relAutoIndexer.start();
     }
 
     private IndexImplementation getIndexProvider( String provider )
