@@ -28,7 +28,6 @@ import java.util.concurrent.CountDownLatch;
 
 import javax.transaction.xa.Xid;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -44,7 +43,6 @@ import org.neo4j.test.subprocess.DebugInterface;
 import org.neo4j.test.subprocess.DebuggedThread;
 import org.neo4j.test.subprocess.KillSubProcess;
 
-@Ignore( "These issues need to be fixed!" )
 @SuppressWarnings( "serial" )
 public class TestRecoveryIssues extends AbstractSubProcessTestBase
 {
@@ -74,7 +72,6 @@ public class TestRecoveryIssues extends AbstractSubProcessTestBase
     }
 
     @Test
-    @Ignore( "can't be completed until the others are fixed" )
     public void canRecoverPreparedTransactionByDirectionFromTxManagerIfCrashingTwice() throws Exception
     {
         stopSubprocesses();

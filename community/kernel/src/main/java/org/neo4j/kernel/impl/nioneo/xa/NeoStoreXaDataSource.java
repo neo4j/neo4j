@@ -469,6 +469,14 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     }
     
     @Override
+    public boolean setRecovered( boolean recovered )
+    {
+        boolean currentValue = neoStore.isInRecoveryMode();
+        neoStore.setRecoveredStatus( true );
+        return currentValue;
+    }
+    
+    @Override
     public ClosableIterable<File> listStoreFiles()
     {
         final Collection<File> files = new ArrayList<File>();

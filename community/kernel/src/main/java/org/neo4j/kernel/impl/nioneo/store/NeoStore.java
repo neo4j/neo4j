@@ -281,7 +281,7 @@ public class NeoStore extends AbstractStore
     {
         if ( lastCommittedTx == -1 )
         {
-           lastCommittedTx = getRecord( 3 );
+            lastCommittedTx = getRecord( 3 );
         }
         return lastCommittedTx;
     }

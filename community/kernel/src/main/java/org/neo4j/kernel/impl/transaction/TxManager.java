@@ -310,27 +310,25 @@ public class TxManager extends AbstractTransactionManager
                 Xid xids[] = nct.getXids();
                 log.fine( "Marked as commit tx-seq[" + seq +
                     "] branch length: " + xids.length );
-                for ( int i = 0; i < xids.length; i++ )
+                for ( Xid xid : xids )
                 {
-                    if ( !recoveredXidsList.contains( xids[i] ) )
+                    if ( !recoveredXidsList.contains( xid ) )
                     {
-                        log.fine( "Tx-seq[" + seq + "][" + xids[i] +
+                        log.fine( "Tx-seq[" + seq + "][" + xid +
                             "] not found in recovered xid list, "
                             + "assuming already committed" );
                         continue;
                     }
-                    recoveredXidsList.remove( xids[i] );
-                    Resource resource = new Resource( xids[i]
-                        .getBranchQualifier() );
+                    recoveredXidsList.remove( xid );
+                    Resource resource = new Resource( xid.getBranchQualifier() );
                     if ( !resourceMap.containsKey( resource ) )
                     {
                         throw new TransactionFailureException(
-                            "Couldn't find XAResource for " + xids[i] );
+                            "Couldn't find XAResource for " + xid );
                     }
-                    log.fine( "Commiting tx seq[" + seq + "][" +
-                        xids[i] + "] ... " );
-                    msgLog.logMessage( "TM: Committing tx " + xids[i], true );
-                    resourceMap.get( resource ).commit( xids[i], false );
+                    log.fine( "Commiting tx seq[" + seq + "][" + xid + "] ... " );
+                    msgLog.logMessage( "TM: Committing tx " + xid, true );
+                    resourceMap.get( resource ).commit( xid, false );
                 }
             }
             // rollback the rest
@@ -481,6 +479,12 @@ public class TxManager extends AbstractTransactionManager
         Xid[] getXids()
         {
             return xidList.toArray( new XidImpl[xidList.size()] );
+        }
+        
+        @Override
+        public String toString()
+        {
+            return "NonCompletedTx[" + seqNr + "," + xidList + "]";
         }
     }
 

@@ -443,7 +443,15 @@ public class XaResourceManager
             txStatus.markCommitStarted();
             if ( xaTransaction.isRecovered() && xaTransaction.getCommitTxId() == -1 )
             {
-                xaTransaction.setCommitTxId( dataSource.getLastCommittedTxId() + 1 );
+                boolean previousRecoveredValue = dataSource.setRecovered( true );
+                try
+                {
+                    xaTransaction.setCommitTxId( dataSource.getLastCommittedTxId() + 1 );
+                }
+                finally
+                {
+                    dataSource.setRecovered( previousRecoveredValue );
+                }
             }
             xaTransaction.commit();
         }
