@@ -39,7 +39,18 @@ public interface LogBuffer
     public LogBuffer put( byte[] bytes ) throws IOException;
 
     public LogBuffer put( char[] chars ) throws IOException;
+    
+    /**
+     * Makes sure the data added to this buffer is written out to the underlying file.
+     * @throws IOException if the data couldn't be written.
+     */
+    public void writeOut() throws IOException;
 
+    /**
+     * Makes sure the data added to this buffer is written out to the underlying file
+     * and forced.
+     * @throws IOException if the data couldn't be written.
+     */
     public void force() throws IOException;
 
     public long getFileChannelPosition() throws IOException;

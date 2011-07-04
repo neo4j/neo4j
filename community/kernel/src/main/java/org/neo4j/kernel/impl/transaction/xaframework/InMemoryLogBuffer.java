@@ -117,6 +117,11 @@ public class InMemoryLogBuffer implements LogBuffer, ReadableByteChannel
             bufferForConversions = ByteBuffer.wrap( new byte[length*2] );
         }
     }
+    
+    @Override
+    public void writeOut() throws IOException
+    {
+    }
 
     public void force() throws IOException
     {

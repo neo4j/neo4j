@@ -122,6 +122,12 @@ class DirectLogBuffer implements LogBuffer
         } while ( position < chars.length );
         return this;
     }
+    
+    @Override
+    public void writeOut() throws IOException
+    {
+        // Nothing to do, since the data is always written in the put... methods.
+    }
 
     public void force() throws IOException
     {

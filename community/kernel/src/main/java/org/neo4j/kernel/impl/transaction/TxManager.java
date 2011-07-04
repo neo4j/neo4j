@@ -25,6 +25,7 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -51,7 +52,9 @@ import javax.transaction.xa.Xid;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.UTF8;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
+import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResource;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -355,11 +358,38 @@ public class TxManager extends AbstractTransactionManager
                 msgLog.logMessage( "TM: no match found for in total " + rollbackList.size() +
                         " transaction that should have been rolled back", true );
             }
+            
+            // Rotate the logs of the participated data sources, making sure that
+            // done-records are written so that even if the tm log gets truncated,
+            // which it will be after this recovery, that transaction information
+            // doesn't get lost.
+            for ( XAResource participant : MapUtil.reverse( resourceMap ).keySet() )
+            {
+                xaResourceToDataSource( participant ).rotateLogicalLog();
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new TransactionFailureException( "Recovery failed.", e );
         }
         catch ( XAException e )
         {
             throw new TransactionFailureException( "Recovery failed.", e );
         }
+    }
+
+    private XaDataSource xaResourceToDataSource( XAResource participant )
+    {
+        byte[] participantBranchId = xaDsManager.getBranchId( participant );
+        for ( XaDataSource dataSource : xaDsManager.getAllRegisteredDataSources() )
+        {
+            if ( Arrays.equals( participantBranchId, dataSource.getBranchId() ) )
+            {
+                return dataSource;
+            }
+        }
+        throw new TransactionFailureException( "Data source for recovery participant " + participant +
+                ", " + Arrays.toString( participantBranchId ) + " couldn't be found" );
     }
 
     private void buildRecoveryInfo( List<NonCompletedTransaction> commitList,
