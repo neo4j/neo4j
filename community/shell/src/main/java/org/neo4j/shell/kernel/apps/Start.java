@@ -21,7 +21,7 @@ package org.neo4j.shell.kernel.apps;
 
 import java.rmi.RemoteException;
 
-import org.neo4j.cypher.SyntaxError;
+import org.neo4j.cypher.SyntaxException;
 import org.neo4j.cypher.commands.Query;
 import org.neo4j.cypher.javacompat.CypherParser;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
@@ -69,7 +69,7 @@ public class Start extends GraphDatabaseApp
             ExecutionResult result = engine.execute( cquery );
             out.println( result.toString() );
         }
-        catch ( SyntaxError e )
+        catch ( SyntaxException e )
         {
             throw ShellException.wrapCause( e );
         }
