@@ -18,7 +18,7 @@ rem You should have received a copy of the GNU General Public License
 rem along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 call:main %1
-pause
+
 goto:eof
 
 :main
