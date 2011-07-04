@@ -66,3 +66,7 @@ Useful links when configuring the docbook toolchain:
 
   brew install docbook asciidoc w3m fop graphviz
 
+=== With apt-get on Ubuntu ===
+
+  sudo apt-get install asciidoc docbook graphviz w3m
+
