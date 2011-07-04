@@ -45,7 +45,7 @@ class MatchTest extends DocumentingTestBase
   {
     testQuery(
       title = "Outgoing relationships",
-      text = "When the direction of a relationship is interesting, it is shown by using ´-->´ or ´<--´, like this: ",
+      text = "When the direction of a relationship is interesting, it is shown by using `-->` or `<--`, like this: ",
       queryText = """start n=(%A%) match (n)-->(x) return x""",
       returns = """All nodes that A has outgoing relationships to.""",
       (p) => assertEquals(List(node("B"), node("C")), p.columnAs[Node]("x").toList)

@@ -25,67 +25,6 @@ and scripting languages like http://gremlin.tinkerpop.com[Gremlin] (supported vi
 and http://neo4j.rubyforge.org/[the JRuby Neo4j bindings]. This makes the concern of how to optimize
 queries in implementation detail not exposed to the user.
 
-==Grokking Cypher==
-We've spent a lot of effort into making Cypher an easy way of describing graph problems. But if you are new to
-"graph thinking", this part of the manual will help you get started.
-
-==Pattern==
-In Cypher you describe what the data you want looks like, and Cypher matches it on your graph. The description is called
- the pattern. An example would be: I want to get the name of all my friends that are married. The Cypher query for this
- would look something like this:
-
-[source]
-----
-START me=(0)
-MATCH me-[:FRIEND]-friend-[:MARRIED]-spouse
-RETURN friend.name
-----
-
-The first two lines describe the pattern.
-
-The first line declares an identifier named "me", and points the node with id 0 to it.
-
-The second describes how "me" should be connected to other nodes: it has to have a un-directed FRIEND relationship with
-a node. This node will be found under the identifier "friend". The node "friend" in turn must have a relationship with a
-third node, which is named spouse.
-
-For a graph that looks like this:
-
-["dot", "query-married-friends.svg"]
-----
-me -> Sara [label="friend"]
-me -> Maria [label="friend"]
-me -> Marcus [label="friend"]
-me -> Johannes [label="friend"]
-me -> Georgios [label="friend"]
-Marcus -> Maria [label="married"]
-Georgios -> Ida [label="married"]
-----
-
-The matching sub-graphs that match our pattern are these:
-
-["dot", "query-married-friends-hits1.svg"]
-----
-me -> Marcus [label="friend"]
-Marcus -> Maria [label="married"]
-----
-
-["dot", "query-married-friends-hits2.svg"]
-----
-me -> Maria [label="friend"]
-Marcus -> Maria [label="married"]
-----
-
-["dot", "query-married-friends-hits3.svg"]
-----
-me -> Georgios [label="friend"]
-Georgios -> Ida [label="married"]
-----
-
-
-
-
-
 The query language is comprised of several distinct parts.
 
 Let's see three of them in action:
@@ -114,6 +53,19 @@ source=org/neo4j/cypher/javacompat/JavaExecutionEngineTests.java
 tag=JavaQuery
 classifier=test-sources
 ----
+
+:leveloffset: 2
+
+== Identifiers ==
+When you reference parts of the pattern, you do so by naming them. 
+
+  start identifier=(0) return identifier
+
+Identifiers are can be lower or upper case, and may contain underscore.
+If other characters are needed, you can use the ` sign. Same rules apply to
+property names.
+
+  start a=(0) return a.`property.with.periods`
 
 :leveloffset: 2
 

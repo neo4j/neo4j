@@ -70,19 +70,15 @@ trait ExecutionResult extends Traversable[Map[String, Any]] with StringExtras {
     val timeTaken = System.currentTimeMillis() - start
     val footer = "%d rows, %d ms".format(resultLines.size, timeTaken)
 
-    val footerLine = "| " + makeSize(footer,lineWidth-2) + " |"
+
     val lines = List(
           --- ,
           headerLine ,
           --- ) ++
           resultLines ++
-          List(
-          ---,
-          footerLine ,
-          ---
-          )
+          List(---)
 
-    lines.mkString("\r\n")
+    lines.mkString("\r\n") + "\r\n" + footer
   }
 
 
