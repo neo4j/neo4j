@@ -21,6 +21,8 @@ package org.neo4j.test;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.junit.After;
@@ -114,9 +116,14 @@ public class AbstractSubProcessTestBase
 
     protected Bootstrapper bootstrap( int id ) throws IOException
     {
-        return new Bootstrapper( this, id );
+        return bootstrap( id, new HashMap<String, String>() );
     }
 
+    protected Bootstrapper bootstrap( int id, Map<String, String> dbConfiguration ) throws IOException
+    {
+        return new Bootstrapper( this, id, dbConfiguration );
+    }
+    
     @After
     public final void stopSubprocesses()
     {
@@ -146,15 +153,18 @@ public class AbstractSubProcessTestBase
     protected static class Bootstrapper implements Serializable
     {
         protected final String storeDir;
+        private final Map<String, String> dbConfiguration;
 
-        protected Bootstrapper( AbstractSubProcessTestBase test, int instance ) throws IOException
+        protected Bootstrapper( AbstractSubProcessTestBase test, int instance,
+                Map<String, String> dbConfiguration ) throws IOException
         {
+            this.dbConfiguration = dbConfiguration;
             this.storeDir = test.target.directory( "graphdb." + instance, true ).getCanonicalPath();
         }
 
         protected AbstractGraphDatabase startup()
         {
-            return new EmbeddedGraphDatabase( storeDir );
+            return new EmbeddedGraphDatabase( storeDir, dbConfiguration );
         }
 
         protected void shutdown( AbstractGraphDatabase graphdb, boolean normal )
