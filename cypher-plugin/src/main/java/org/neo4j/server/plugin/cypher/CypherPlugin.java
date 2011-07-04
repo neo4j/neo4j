@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.plugin.cypher;
 
-import org.neo4j.cypher.SyntaxError;
+import org.neo4j.cypher.SyntaxException;
 import org.neo4j.cypher.commands.Query;
 import org.neo4j.cypher.javacompat.CypherParser;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
@@ -67,7 +67,7 @@ public class CypherPlugin extends ServerPlugin
             result = engine.execute(compiledQuery);
             return new CypherResultRepresentation( result );
         }
-        catch ( SyntaxError e )
+        catch ( SyntaxException e )
         {
             e.printStackTrace();
         }

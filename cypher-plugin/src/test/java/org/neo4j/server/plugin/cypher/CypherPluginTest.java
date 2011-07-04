@@ -23,7 +23,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.cypher.SyntaxError;
+import org.neo4j.cypher.SyntaxException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.server.rest.repr.OutputFormat;
@@ -89,7 +89,7 @@ public class CypherPluginTest implements GraphHolder
         assertTrue( formatted.contains( "name" ) );
     }
 
-    private Representation testQuery( String query ) throws SyntaxError
+    private Representation testQuery( String query ) throws SyntaxException
     {
 
         return plugin.executeScript( db, query );
