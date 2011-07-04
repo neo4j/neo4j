@@ -3,10 +3,10 @@ Given /^Neo4j Server is (not )?running$/ do |negate|
     puts `#{neo4j.home}/bin/neo4j status`
     $? == (negate == 'not ' ? 256 : 0)
   elsif (current_platform.windows?)
-    puts `#{neo4j.home}\\bin\\wrapper-windows-x86-32.exe -q ..\\conf\\neo4j-wrapper.conf`
-    puts "result #{$?} "
-    # fail "failed #{$?} " if $?!= 0
-    fail "not implemented"
+    Dir.chdir("#{neo4j.home}\\bin")
+    puts `Neo4j.bat query`
+    puts "====> result #{$?} "
+    fail "failed #{$?} " if $?!= 0
   else
     fail 'platform not supported'
   end
@@ -17,17 +17,16 @@ end
 When /^I (start|stop) Neo4j Server$/ do |action|
   puts "=====> stop/start "
   if (current_platform.unix?)
-	IO.popen("#{neo4j.home}/bin/neo4j #{action}", close_fds=1).close
+    #IO.popen("#{neo4j.home}/bin/neo4j #{action}", close_fds=1).close
+    puts `#{neo4j.home}/bin/neo4j #{action}`
   elsif (current_platform.windows?)
     Dir.chdir("#{neo4j.home}\\bin")
     if (action == "start")
-      IO.popen("Neo4j.bat install", close_fds=1)
-      sleep 10
-      IO.popen("Neo4j.bat start", close_fds=1)
+      puts `Neo4j.bat install`
+      puts `Neo4j.bat start`
     else
-      IO.popen("Neo4j.bat stop", close_fds=1)
-      sleep 10
-      IO.popen("Neo4j.bat remove", close_fds=1)
+      puts `Neo4j.bat stop`
+      puts `Neo4j.bat remove`
     end
   else
     fail 'platform not supported'
