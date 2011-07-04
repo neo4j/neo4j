@@ -143,6 +143,41 @@ terms of the relevant Commercial Agreement.
     </dependency>
   </dependencies>
 
+  <profiles>
+    <profile><!-- used for testing -->
+      <id>Linux-dependency-tools.jar</id>
+      <activation>
+        <os><name>Linux</name></os>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>com.sun.tools</groupId>
+          <artifactId>tools</artifactId>
+          <version>1.6</version>
+          <scope>system</scope>
+          <systemPath>${java.home}/../lib/tools.jar</systemPath>
+          <optional>true</optional>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile><!-- used for testing -->
+      <id>Windows-dependency-tools.jar</id>
+      <activation>
+        <os><family>Windows</family></os>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>com.sun.tools</groupId>
+          <artifactId>tools</artifactId>
+          <version>1.6</version>
+          <scope>system</scope>
+          <systemPath>${java.home}\\..\\lib\\tools.jar</systemPath>
+          <optional>true</optional>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+
   <developers>
     <developer>
       <id>tobias</id>
