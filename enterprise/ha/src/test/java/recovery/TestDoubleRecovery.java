@@ -83,7 +83,7 @@ public class TestDoubleRecovery extends AbstractSubProcessTestBase
         startSubprocesses();
         OnlineBackup.from( "localhost" ).incremental( backupDirectory );
         run( new Verification() );
-        
+
         GraphDatabaseService db = new EmbeddedGraphDatabase( backupDirectory );
         try
         {
@@ -94,7 +94,7 @@ public class TestDoubleRecovery extends AbstractSubProcessTestBase
             db.shutdown();
         }
     }
-    
+
     static class WriteTransaction implements Task
     {
         @Override
@@ -156,7 +156,7 @@ public class TestDoubleRecovery extends AbstractSubProcessTestBase
             }
         }
     }
-    
+
     static class Crash implements Task
     {
         @Override
@@ -179,17 +179,17 @@ public class TestDoubleRecovery extends AbstractSubProcessTestBase
             assertEquals( "yes", node.getProperty( "correct" ) );
         }
     }
-    
+
     private final BreakPoint ON_CRASH = new BreakPoint( Crash.class, "run", AbstractGraphDatabase.class )
     {
         @Override
         protected void callback( DebugInterface debug ) throws KillSubProcess
         {
             afterCrash.countDown();
-            throw new KillSubProcess( -1 );
+            throw KillSubProcess.withExitCode( -1 );
         }
     };
-    
+
     private final BreakPoint BEFORE_ANY_DATASOURCE_2PC = new BreakPoint( XaResourceHelpImpl.class, "commit", Xid.class, boolean.class )
     {
         @Override
@@ -200,7 +200,7 @@ public class TestDoubleRecovery extends AbstractSubProcessTestBase
                 debug.thread().suspend( null );
                 this.disable();
                 afterWrite.countDown();
-                throw new KillSubProcess( -1 );
+                throw KillSubProcess.withExitCode( -1 );
             }
         }
 
@@ -213,7 +213,7 @@ public class TestDoubleRecovery extends AbstractSubProcessTestBase
     private final BreakPoint BEFORE_SECOND_1PC = new BreakPoint( XaResourceHelpImpl.class, "commit", Xid.class, boolean.class )
     {
         private int counter;
-        
+
         @Override
         protected void callback( DebugInterface debug ) throws KillSubProcess
         {
@@ -224,7 +224,7 @@ public class TestDoubleRecovery extends AbstractSubProcessTestBase
                     debug.thread().suspend( null );
                     this.disable();
                     afterWrite.countDown();
-                    throw new KillSubProcess( -1 );
+                    throw KillSubProcess.withExitCode( -1 );
                 }
             }
         }
@@ -234,7 +234,7 @@ public class TestDoubleRecovery extends AbstractSubProcessTestBase
             return Boolean.parseBoolean( thread.getLocal( 1, "onePhase" ) );
         }
     };
-    
+
 //    private final BreakPoint BEFORE_TXLOG_MARK_AS_COMMITTING_2PC = new BreakPoint( TxLog.class, "markAsCommitting", byte[].class )
 //    {
 //        @Override
@@ -247,7 +247,7 @@ public class TestDoubleRecovery extends AbstractSubProcessTestBase
 //            throw new KillSubProcess( -1 );
 //        }
 //    };
-    
+
     private final BreakPoint[] breakpointsForBefore2PC = new BreakPoint[] { ON_CRASH, BEFORE_ANY_DATASOURCE_2PC };
 //    private final BreakPoint[] breakpointsForMarkAsCommitting2PC = new BreakPoint[] { ON_CRASH, BEFORE_TXLOG_MARK_AS_COMMITTING_2PC };
 
