@@ -21,6 +21,7 @@ package org.neo4j.test;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -123,7 +124,7 @@ public class AbstractSubProcessTestBase
     {
         return new Bootstrapper( this, id, dbConfiguration );
     }
-    
+
     @After
     public final void stopSubprocesses()
     {
@@ -154,6 +155,12 @@ public class AbstractSubProcessTestBase
     {
         protected final String storeDir;
         private final Map<String, String> dbConfiguration;
+
+        protected Bootstrapper( AbstractSubProcessTestBase test, int instance )
+                                                                               throws IOException
+        {
+            this( test, instance, Collections.EMPTY_MAP );
+        }
 
         protected Bootstrapper( AbstractSubProcessTestBase test, int instance,
                 Map<String, String> dbConfiguration ) throws IOException

@@ -201,7 +201,7 @@ public class TestRecoveryIssues extends AbstractSubProcessTestBase
         return breakpoints;
     }
 
-    private final Bootstrapper bootstrap = bootstrap( this );
+    private final Bootstrapper bootstrap = getBootstrapperInstance( this );
 
     @Override
     protected Bootstrapper bootstrap( int id ) throws IOException
@@ -209,7 +209,7 @@ public class TestRecoveryIssues extends AbstractSubProcessTestBase
         return bootstrap;
     }
 
-    private static Bootstrapper bootstrap( TestRecoveryIssues test )
+    private static Bootstrapper getBootstrapperInstance( TestRecoveryIssues test )
     {
         try
         {
