@@ -38,7 +38,7 @@
  */
 package org.neo4j.server.webadmin.console;
 
-import org.neo4j.cypher.SyntaxError;
+import org.neo4j.cypher.SyntaxException;
 import org.neo4j.cypher.commands.Query;
 import org.neo4j.cypher.javacompat.CypherParser;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
@@ -72,7 +72,7 @@ public class CypherSession implements ScriptSession
 
             return result.toString();
         }
-        catch ( SyntaxError error )
+        catch ( SyntaxException error )
         {
             return error.getMessage();
         }
