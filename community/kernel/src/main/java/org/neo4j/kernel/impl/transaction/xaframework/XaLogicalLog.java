@@ -317,6 +317,7 @@ public class XaLogicalLog
         try
         {
             LogIoUtils.writePrepare( writeBuffer, identifier );
+            writeBuffer.writeOut();
         }
         catch ( IOException e )
         {

@@ -40,20 +40,12 @@ public class DirectMappedLogBuffer implements LogBuffer
         byteBuffer = CloseableByteBuffer.wrap( ByteBuffer.allocateDirect( BUFFER_SIZE ) );
     }
 
-    private void getNewDirectBuffer() throws IOException
-    {
-        byteBuffer.flip();
-        bufferStartPosition += fileChannel.write( byteBuffer.getDelegate(),
-                bufferStartPosition );
-        byteBuffer.clear();
-    }
-
     private void ensureCapacity( int plusSize ) throws IOException
     {
         if ( byteBuffer == null
                 || ( BUFFER_SIZE - byteBuffer.position() ) < plusSize )
         {
-            getNewDirectBuffer();
+            writeOut();
         }
     }
 
@@ -144,10 +136,19 @@ public class DirectMappedLogBuffer implements LogBuffer
             put( chars, offset );
         }
     }
+    
+    @Override
+    public void writeOut() throws IOException
+    {
+        byteBuffer.flip();
+        bufferStartPosition += fileChannel.write( byteBuffer.getDelegate(),
+                bufferStartPosition );
+        byteBuffer.clear();
+    }
 
     public void force() throws IOException
     {
-        getNewDirectBuffer();
+        writeOut();
         fileChannel.force( false );
     }
 
