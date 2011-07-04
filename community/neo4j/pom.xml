@@ -300,16 +300,7 @@ the relevant Commercial Agreement.
     </plugins>
   </reporting>
   
-    <profiles>
-    <profile>
-      <id>git-windows</id>
-      <activation>
-        <os><family>Windows</family></os>
-      </activation>
-      <properties>
-        <git.executable>git.cmd</git.executable>
-      </properties>
-    </profile>
+  <profiles>
     <profile><!-- used for testing -->
       <id>Linux-dependency-tools.jar</id>
       <activation>
