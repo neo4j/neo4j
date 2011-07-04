@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.pipes.aggregation
 
-import org.neo4j.cypher.SyntaxError
+import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.commands.ReturnItem
 
 class SumFunction(returnItem:ReturnItem) extends AggregationFunction with Plus {
@@ -34,7 +34,7 @@ class SumFunction(returnItem:ReturnItem) extends AggregationFunction with Plus {
     val value = returnItem(data)(returnItem.columnName)
 
     if(value != null && !value.isInstanceOf[Number]) {
-      throw new SyntaxError("Sum can only handle values of Number type, or null.")
+      throw new SyntaxException("Sum can only handle values of Number type, or null.")
     }
 
     soFar = plus(soFar, value)

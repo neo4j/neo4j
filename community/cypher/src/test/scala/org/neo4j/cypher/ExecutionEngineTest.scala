@@ -618,7 +618,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     try {
       execute(query).toList
     } catch {
-      case x: SyntaxError => assertEquals("n.A_PROPERTY_THAT_IS_MISSING does not exist on Node[0]", x.getMessage)
+      case x: SyntaxException => assertEquals("n.A_PROPERTY_THAT_IS_MISSING does not exist on Node[0]", x.getMessage)
     }
   }
 

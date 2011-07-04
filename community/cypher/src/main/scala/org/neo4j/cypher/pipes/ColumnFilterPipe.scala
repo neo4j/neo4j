@@ -20,14 +20,14 @@
 package org.neo4j.cypher.pipes
 
 import org.neo4j.cypher.commands.ReturnItem
-import org.neo4j.cypher.{SyntaxError, SymbolTable}
+import org.neo4j.cypher.{SyntaxException, SymbolTable}
 
 class ColumnFilterPipe(source: Pipe, returnItems: Seq[ReturnItem]) extends Pipe {
   val returnItemNames = returnItems.map( _.columnName )
 
   val symbols: SymbolTable = {
     val mergedSymbols: SymbolTable = source.symbols ++ new SymbolTable(returnItems.map(_.identifier))
-    new SymbolTable(returnItemNames.map( name => mergedSymbols.get(name).getOrElse(throw new SyntaxError("Unbound Symbol "+name))))
+    new SymbolTable(returnItemNames.map( name => mergedSymbols.get(name).getOrElse(throw new SyntaxException("Unbound Symbol "+name))))
   }
 
   def foreach[U](f: (Map[String, Any]) => U) {

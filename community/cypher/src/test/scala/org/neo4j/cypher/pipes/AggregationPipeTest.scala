@@ -24,7 +24,7 @@ import org.junit.Assert._
 import org.junit.matchers.JUnitMatchers._
 import scala.collection.JavaConverters._
 import org.neo4j.cypher.commands._
-import org.neo4j.cypher.{SyntaxError, SymbolTable}
+import org.neo4j.cypher.{SyntaxException, SymbolTable}
 import org.scalatest.junit.JUnitSuite
 
 
@@ -41,7 +41,7 @@ class AggregationPipeTest extends JUnitSuite {
       aggregationPipe.symbols.identifiers)
   }
 
-  @Test(expected = classOf[SyntaxError]) def shouldThrowSemanticException() {
+  @Test(expected = classOf[SyntaxException]) def shouldThrowSemanticException() {
     val source = new FakePipe(List(), new SymbolTable(NodeIdentifier("foo")))
 
     val returnItems = List(EntityOutput("name"))

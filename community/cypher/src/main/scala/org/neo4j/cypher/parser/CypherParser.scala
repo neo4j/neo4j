@@ -54,10 +54,10 @@ with StringExtras {
   def fail(input: Input, errorMessage: String): Nothing = {
     val location = findErrorLine(input.offset, input.source.toString.split("\n"))
 
-    throw new SyntaxError(errorMessage + "\n" + location)
+    throw new SyntaxException(errorMessage + "\n" + location)
   }
 
-  @throws(classOf[SyntaxError])
+  @throws(classOf[SyntaxException])
   def parse(queryText: String): Query = {
     val MissingQuoteError = """`\.' expected but `.' found""".r
     val MissingStartError = """string matching regex `\(\?i\)\\Qstart\\E' expected.*""".r
@@ -71,8 +71,8 @@ with StringExtras {
         case WholeNumberExpected() => fail(input, "Whole number expected")
         case StringExpected() => fail(input, "String literal expected")
         case "string matching regex `-?\\d+' expected but `)' found" => fail(input, "Last element of list must be a value")
-        case "string matching regex `(?i)\\Qreturn\\E' expected but end of source found" => throw new SyntaxError("Missing RETURN clause")
-        case _ => throw new SyntaxError(message)
+        case "string matching regex `(?i)\\Qreturn\\E' expected but end of source found" => throw new SyntaxException("Missing RETURN clause")
+        case _ => throw new SyntaxException(message)
       }
     }
   }

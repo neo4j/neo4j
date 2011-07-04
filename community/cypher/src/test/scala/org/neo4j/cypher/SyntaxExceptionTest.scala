@@ -25,14 +25,14 @@ import parser.CypherParser
 import org.junit.Test
 import org.junit.Assert._
 
-class SyntaxErrorTest extends JUnitSuite {
+class SyntaxExceptionTest extends JUnitSuite {
   def expectError(query: String, expectedError: String) {
     val parser = new CypherParser()
     try {
       parser.parse(query)
       fail("Should have produced the error: " + expectedError)
     } catch {
-      case x: SyntaxError => assertTrue(x.getMessage, x.getMessage.startsWith(expectedError))
+      case x: SyntaxException => assertTrue(x.getMessage, x.getMessage.startsWith(expectedError))
     }
   }
 
@@ -123,7 +123,7 @@ class SyntaxErrorTest extends JUnitSuite {
     try {
       new CypherParser().parse(query)
     } catch {
-      case x:SyntaxError => assertEquals(expected, x.getMessage)
+      case x:SyntaxException => assertEquals(expected, x.getMessage)
     }
   }
 }

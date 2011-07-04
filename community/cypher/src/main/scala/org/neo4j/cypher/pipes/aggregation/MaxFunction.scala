@@ -20,7 +20,7 @@
 package org.neo4j.cypher.pipes.aggregation
 
 import org.neo4j.cypher.commands.ReturnItem
-import org.neo4j.cypher.{SyntaxError, Comparer}
+import org.neo4j.cypher.{SyntaxException, Comparer}
 import java.lang.Boolean
 
 trait MinMax extends AggregationFunction with Comparer {
@@ -39,10 +39,10 @@ trait MinMax extends AggregationFunction with Comparer {
       value match {
         case null =>
         case x: Comparable[_] => checkIfLargest(value)
-        case _ => throw new SyntaxError("MIN/MAX can only handle values of Comparable type, or null.")
+        case _ => throw new SyntaxException("MIN/MAX can only handle values of Comparable type, or null.")
       }
     } catch {
-      case error => throw new SyntaxError("Identifier: %s - %s".format(returnItem.columnName, error.getMessage))
+      case error => throw new SyntaxException("Identifier: %s - %s".format(returnItem.columnName, error.getMessage))
     }
   }
 

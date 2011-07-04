@@ -64,7 +64,7 @@ class SematicErrorTest extends ExecutionEngineTestBase {
       execute(query).toList
       fail("Did not get the expected syntax error, expected: " + message)
     } catch {
-      case x: SyntaxError => assertEquals(message, x.getMessage)
+      case x: SyntaxException => assertEquals(message, x.getMessage)
     }
   }
 }

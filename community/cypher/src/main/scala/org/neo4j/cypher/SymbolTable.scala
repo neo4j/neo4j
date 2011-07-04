@@ -30,7 +30,7 @@ class SymbolTable(val identifiers: Set[Identifier]) {
 
   def assertHas(name: String) {
     if (get(name).isEmpty) {
-      throw new SyntaxError("Unknown identifier \"" + name + "\".")
+      throw new SyntaxException("Unknown identifier \"" + name + "\".")
     }
   }
 
@@ -41,7 +41,7 @@ class SymbolTable(val identifiers: Set[Identifier]) {
   def merge(other: SymbolTable) : Set[Identifier] = {
     def handleUnmatched(newIdentifier: Identifier): Identifier = {
       newIdentifier match {
-        case UnboundIdentifier(_, _) => throw new SyntaxError("Unbound Identifier " + newIdentifier + " not resolved!")
+        case UnboundIdentifier(_, _) => throw new SyntaxException("Unbound Identifier " + newIdentifier + " not resolved!")
         case _ => newIdentifier
       }
     }
@@ -53,7 +53,7 @@ class SymbolTable(val identifiers: Set[Identifier]) {
           if (newIdentifier.getClass == existingIdentifier.getClass) {
             existingIdentifier
           } else {
-            throw new SyntaxError("Identifier " + existingIdentifier + " already defined with different type " + newIdentifier)
+            throw new SyntaxException("Identifier " + existingIdentifier + " already defined with different type " + newIdentifier)
           }
         }
       }

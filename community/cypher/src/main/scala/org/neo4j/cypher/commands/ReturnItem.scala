@@ -22,7 +22,7 @@ package org.neo4j.cypher.commands
 import org.neo4j.cypher.pipes.Pipe
 import org.neo4j.graphdb.{Relationship, PropertyContainer, NotFoundException}
 import org.neo4j.cypher.pipes.aggregation._
-import org.neo4j.cypher.SyntaxError
+import org.neo4j.cypher.SyntaxException
 
 abstract sealed class ReturnItem(val identifier: Identifier) extends (Map[String, Any] => Map[String, Any]) {
   def assertDependencies(source: Pipe)
@@ -51,7 +51,7 @@ case class PropertyOutput(entity: String, property: String) extends ReturnItem(P
     try {
     Map(entity + "." + property -> node.getProperty(property))
     } catch {
-      case x:NotFoundException => throw new SyntaxError("%s does not exist on %s".format(this.columnName, node), x)
+      case x:NotFoundException => throw new SyntaxException("%s does not exist on %s".format(this.columnName, node), x)
     }
   }
 

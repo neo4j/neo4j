@@ -22,7 +22,7 @@ package org.neo4j.cypher.pipes.aggregation
 
 import org.junit.Assert._
 import org.junit.{Before, Test}
-import org.neo4j.cypher.SyntaxError
+import org.neo4j.cypher.SyntaxException
 import org.scalatest.junit.JUnitSuite
 import org.neo4j.cypher.commands.EntityOutput
 
@@ -69,7 +69,7 @@ class SumFunctionTest extends JUnitSuite {
     assertTrue(result.isInstanceOf[Int])
   }
 
-  @Test(expected = classOf[SyntaxError]) def noNumberValuesThrowAnException() {
+  @Test(expected = classOf[SyntaxException]) def noNumberValuesThrowAnException() {
     sumOn(1, "wut")
   }
 

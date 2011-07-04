@@ -22,7 +22,7 @@ package org.neo4j.cypher.parser
 import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.SyntaxError
+import org.neo4j.cypher.SyntaxException
 
 
 trait MatchClause extends JavaTokenParsers with Tokens {
@@ -63,7 +63,7 @@ trait MatchClause extends JavaTokenParsers with Tokens {
   }
 
   def relatedNode:Parser[Option[String]] = opt("(") ~ opt(identity) ~ opt(")") ^^ {
-    case None ~ None ~ None => throw new SyntaxError("Matching nodes without identifiers have to have parenthesis: ()")
+    case None ~ None ~ None => throw new SyntaxException("Matching nodes without identifiers have to have parenthesis: ()")
     case l ~ name ~ r => name
   }
 

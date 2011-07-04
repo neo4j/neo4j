@@ -82,7 +82,7 @@ class PatternContext(source: Pipe, matching: Match) {
 
   private def getOrCreateNode(name: String): PatternNode = {
     if (rels.contains(name)) {
-      throw new SyntaxError("Identifier \"" + name + "\" already defined as a relationship.")
+      throw new SyntaxException("Identifier \"" + name + "\" already defined as a relationship.")
     }
 
     nodes.getOrElse(name, {
@@ -115,13 +115,13 @@ class PatternContext(source: Pipe, matching: Match) {
     }
 
     startIdentifiers.identifiers.map((item) => patternObject(item.name)).foreach(_ match {
-      case None => throw new SyntaxError("Encountered a part of the pattern that is not part of the pattern. If you see this, please report this problem!")
+      case None => throw new SyntaxException("Encountered a part of the pattern that is not part of the pattern. If you see this, please report this problem!")
       case Some(obj) => visit(obj)
     })
 
     val notVisitedParts = identifiers -- visited
     if (notVisitedParts.nonEmpty) {
-      throw new SyntaxError("All parts of the pattern must either directly or indirectly be connected to at least one bound entity. These identifiers were found to be disconnected: " +
+      throw new SyntaxException("All parts of the pattern must either directly or indirectly be connected to at least one bound entity. These identifiers were found to be disconnected: " +
         notVisitedParts.mkString("", ", ", ""))
     }
 
@@ -130,7 +130,7 @@ class PatternContext(source: Pipe, matching: Match) {
   private def getOrCreateRelationship(name: String): PatternRelationship = {
     throw new UnsupportedOperationException("graph-matching doesn't support this yet. Revisit when it does.")
     //     if (nodes.contains(name))
-    //       throw new SyntaxError(name + " already defined as a node")
+    //       throw new SyntaxException(name + " already defined as a node")
     //
     //     rels.getOrElse(name, {
     //       val pRel = new PatternRelationship(name)
@@ -141,7 +141,7 @@ class PatternContext(source: Pipe, matching: Match) {
 
   private def addRelationship(name: String, rel: PatternRelationship) {
     if (nodes.contains(name)) {
-      throw new SyntaxError("Identifier \"" + name + "\" already defined as a node.")
+      throw new SyntaxException("Identifier \"" + name + "\" already defined as a node.")
     }
 
     rels(name) = rel

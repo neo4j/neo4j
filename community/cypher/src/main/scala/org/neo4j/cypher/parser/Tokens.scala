@@ -21,7 +21,7 @@ package org.neo4j.cypher.parser
  */
 
 import scala.util.parsing.combinator._
-import org.neo4j.cypher.SyntaxError
+import org.neo4j.cypher.SyntaxException
 
 trait Tokens extends JavaTokenParsers {
   val keywords = List("start", "where", "return", "limit", "skip", "order", "by")
@@ -32,7 +32,7 @@ trait Tokens extends JavaTokenParsers {
 
   def nonKeywordIdentifier: Parser[String] = ident ^^ {
     case str => if (keywords.contains(str.toLowerCase)) {
-      throw new SyntaxError(str + " is a reserved keyword and may not be used here.")
+      throw new SyntaxException(str + " is a reserved keyword and may not be used here.")
     } else {
       str
     }
