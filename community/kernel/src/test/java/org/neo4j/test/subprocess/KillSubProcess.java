@@ -22,9 +22,14 @@ package org.neo4j.test.subprocess;
 @SuppressWarnings( "serial" )
 public final class KillSubProcess extends Exception
 {
+    public static KillSubProcess withExitCode( int exitCode )
+    {
+        return new KillSubProcess( exitCode );
+    }
+
     final int exitCode;
 
-    public KillSubProcess( int exitCode )
+    private KillSubProcess( int exitCode )
     {
         this.exitCode = exitCode;
     }

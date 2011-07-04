@@ -174,7 +174,7 @@ public class TestRecoveryIssues extends AbstractSubProcessTestBase
                         debug.thread().suspend( null );
                         this.disable();
                         afterWrite.countDown();
-                        throw new KillSubProcess( -1 );
+                        throw KillSubProcess.withExitCode( -1 );
                     }
                 }
 
@@ -188,7 +188,7 @@ public class TestRecoveryIssues extends AbstractSubProcessTestBase
                 protected void callback( DebugInterface debug ) throws KillSubProcess
                 {
                     afterCrash.countDown();
-                    throw new KillSubProcess( -1 );
+                    throw KillSubProcess.withExitCode( -1 );
                 }
             }, };
 
