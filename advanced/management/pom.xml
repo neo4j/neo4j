@@ -17,7 +17,7 @@
   <properties>
     <bundle.namespace>org.neo4j.management</bundle.namespace>
     <short-name>management</short-name>
-    <neo4j.version>1.4-SNAPSHOT</neo4j.version>
+    <neo4j.version>1.4.M06</neo4j.version>
   </properties>
 
   <packaging>jar</packaging>
