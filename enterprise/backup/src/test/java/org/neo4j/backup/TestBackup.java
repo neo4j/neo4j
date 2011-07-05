@@ -22,6 +22,7 @@ package org.neo4j.backup;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
 
 import java.io.File;
 
@@ -33,8 +34,12 @@ import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.index.Index;
+import org.neo4j.index.impl.lucene.LuceneDataSource;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.test.DbRepresentation;
 
 public class TestBackup
@@ -205,5 +210,41 @@ public class TestBackup
         DbRepresentation result = DbRepresentation.of( db );
         db.shutdown();
         return result;
+    }
+    
+    @Test
+    public void multipleIncrementals() throws Exception
+    {
+        GraphDatabaseService db = new EmbeddedGraphDatabase( serverPath, stringMap( ENABLE_ONLINE_BACKUP, "true" ) );
+        Index<Node> index = db.index().forNodes( "yo" );
+        OnlineBackup backup = OnlineBackup.from( "localhost" );
+        backup.full( backupPath );
+        long lastCommittedTxForLucene = getLastCommittedTx( backupPath );
+        
+        for ( int i = 0; i < 5; i++ )
+        {
+            Transaction tx = db.beginTx();
+            Node node = db.createNode();
+            index.add( node, "key", "value" + i );
+            tx.success(); tx.finish();
+            backup.incremental( backupPath );
+            assertEquals( lastCommittedTxForLucene+i+1, getLastCommittedTx( backupPath ) );
+        }
+        db.shutdown();
+    }
+
+    private long getLastCommittedTx( String path )
+    {
+        GraphDatabaseService db = new EmbeddedGraphDatabase( path );
+        try
+        {
+            XaDataSource ds = ((AbstractGraphDatabase)db).getConfig().getTxModule().getXaDataSourceManager().getXaDataSource(
+                    LuceneDataSource.DEFAULT_NAME );
+            return ds.getLastCommittedTxId();
+        }
+        finally
+        {
+            db.shutdown();
+        }
     }
 }
