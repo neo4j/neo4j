@@ -7,7 +7,7 @@
   </parent>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-backup</artifactId>
-  <version>1.4-SNAPSHOT</version>
+  <version>1.4.M06</version>
   <name>Neo4j - Backup Tool</name>
   <description>Command line tool for grabbing backups from a running Neo4j instance</description>
   <packaging>jar</packaging>
@@ -47,7 +47,7 @@ terms of the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-com</artifactId>
-      <version>1.4-SNAPSHOT</version>
+      <version>1.4.M06</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
