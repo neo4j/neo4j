@@ -19,7 +19,7 @@
     <jackson.version>1.5.2</jackson.version>
     <cxf.version>2.3.1</cxf.version>
     <servlet-api.version>2.5</servlet-api.version>
-    <neo4j.version>1.4-SNAPSHOT</neo4j.version>
+    <neo4j.version>1.4.M06</neo4j.version>
     <blueprints.version>0.7</blueprints.version>
     <jersey.server.version>1.6</jersey.server.version>
     <license-text.header>GPL-3-header.txt</license-text.header>
