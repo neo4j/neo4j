@@ -75,9 +75,11 @@ set classpath="-DserverClasspath=lib/*.jar;system/lib/*.jar;plugins/*.jar;system
 set mainclass="-DserverMainClass=org.neo4j.server.Bootstrapper"
 set binPath="java "-DworkingDir=%~dps0.." -DconfigFile=conf\neo4j-wrapper.conf %classpath% %mainclass% -jar "%~dps0windows-service-wrapper-1.jar" %serviceName%"
 sc create %serviceName% binPath= %binPath% DisplayName= %serviceDisplayName% start= %serviceStartType%
+call:start
 goto:eof
 
 :remove
+call:stop
 sc delete %serviceName%
 goto:eof
 
@@ -86,7 +88,7 @@ call:getStatus
 if %status% == "NOT INSTALLED" (
 	call:console
 ) else if %status% == "RUNNING" (
-	echo "Service is already running, no action taken"
+	echo Service is already running, no action taken
 ) else (
 	sc start %serviceName%
 )
