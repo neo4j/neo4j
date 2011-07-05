@@ -1,8 +1,8 @@
 #!/bin/bash
 ### BEGIN INIT INFO
 # Provides:          neo4j-service
-# Required-Start:     
-# Required-Stop:      
+# Required-Start:
+# Required-Stop:
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 ### END INIT INFO
@@ -33,10 +33,10 @@
 #     into a single environment variable named KEY
 function getconfig {
   if [ -e $1 ]; then
-    while read line; do 
+    while read line; do
       if [[ ${line} =~ ^([^#\s][^=]+)=(.+)$ ]]; then
         key=`echo ${BASH_REMATCH[1]} | sed 's/\./_/g'`
-        value="${BASH_REMATCH[2]}" 
+        value="${BASH_REMATCH[2]}"
         if [[ ${key} =~ ^(.*)_([0-9]+)$ ]]; then
           key=${BASH_REMATCH[1]}
           if [[ ${!key} ]]; then
@@ -51,12 +51,12 @@ function getconfig {
 
     done < $1
   fi
-}  
+}
 
 NEO4J_SCRIPT=$0
 while [ -L "$NEO4J_SCRIPT" ] ; do
   NEO4J_SCRIPT=$( readlink $NEO4J_SCRIPT )
-done 
+done
 NEO4J_HOME=`cd $( dirname $NEO4J_SCRIPT )/.. && dirs -l +0`
 NEO4J_INSTANCE=$NEO4J_HOME
 
@@ -222,10 +222,38 @@ checkwriteaccess() {
     fi
 }
 
+getlaunchdpid() {
+  LAUNCHDPID=$(launchctl list | grep org.neo4j.server | cut -f 1)
+  if [ -z $LAUNCHDPID ] ; then
+    # Not there
+    LAUNCHDPID=-1
+  elif [ $LAUNCHDPID = "-" ] ; then
+    # There but not running
+    LAUNCHDPID=0
+  else
+    # There and running
+    LAUNCHDPID=$(($LAUNCHDPID))
+  fi
+    
+}
+
 startit() {
 
   exitonnojava
   checkstatus
+
+  if [[ $DIST_OS -eq "macosx" ]] ; then
+    getlaunchdpid
+    if [ $LAUNCHDPID -eq 0 ] ; then
+      echo "Detected installation in launchd, starting it..."
+      launchctl start org.neo4j.server
+      exit 0
+    elif [ $LAUNCHDPID -gt 0 ] ; then
+      echo "Instance already running via launchd with PID $LAUNCHDPID"
+      exit 1
+    fi
+    # We fall through here since if there is no launchd install we start manually
+  fi
 
   if [ -z $NEO4J_PID ] ; then
     printf "Starting neo4j-service..."
@@ -289,6 +317,16 @@ stopit() {
 
   checkstatus
   checkwriteaccess
+  
+  if [[ $DIST_OS -eq "macosx" ]] ; then
+    getlaunchdpid
+    if [ $LAUNCHDPID -gt 0 ] ; then
+      echo "Instance running via launchd with PID $LAUNCHDPID, stopping it..."
+      launchctl stop org.neo4j.server
+      return
+    fi
+    # We fall through here since if there is no launchd install we stop manually started instance
+  fi
 
   if [ -z $NEO4J_PID ] ; then
     echo "ERROR: server not running"
@@ -309,7 +347,7 @@ stopit() {
 }
 
 reportstatus() {
- 
+
   checkstatus
 
   if [ -z $NEO4J_PID ] ; then
@@ -317,7 +355,6 @@ reportstatus() {
   else
     echo "Neo4j is running at pid $NEO4J_PID"
   fi
-
 }
 
 console() {
@@ -376,7 +413,7 @@ remove_user() {
         ;;
     esac
   else 
-    echo "Neo4j was running as user ${wrapper_user}, which remains."
+    echo "Neo4j was running as user \"${wrapper_user}\", which remains."
   fi
 }
 
@@ -439,7 +476,9 @@ installservice() {
     fi
 
     if [ -x "$JAVACMD" ] ; then
-      startit
+      if [[ $DIST_OS -ne "macosx" ]] ; then
+        startit
+      fi
     fi
 }
 
