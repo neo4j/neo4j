@@ -86,7 +86,7 @@ call:getStatus
 if %status% == "NOT INSTALLED" (
 	call:console
 ) else if %status% == "RUNNING" (
-	echo "Service is already running, no action taken"
+	echo Service is already running, no action taken
 ) else (
 	sc start %serviceName%
 )
