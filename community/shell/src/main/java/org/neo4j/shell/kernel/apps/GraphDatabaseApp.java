@@ -94,8 +94,15 @@ public abstract class GraphDatabaseApp extends AbstractApp
         NodeOrRelationship result = null;
         if ( currentThing == null )
         {
-            result = NodeOrRelationship.wrap(
-                server.getDb().getReferenceNode() );
+            try
+            {
+                result = NodeOrRelationship.wrap(
+                    server.getDb().getReferenceNode() );
+            }
+            catch ( NotFoundException e )
+            {
+                throw new ShellException( "Reference node not found" );
+            }
             setCurrent( session, result );
         }
         else

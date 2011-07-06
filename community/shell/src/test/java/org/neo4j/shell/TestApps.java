@@ -25,14 +25,20 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
+import java.io.File;
 import java.util.regex.Pattern;
 
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.shell.impl.SameJvmClient;
+import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 public class TestApps extends AbstractShellTest
 {
@@ -229,5 +235,28 @@ public class TestApps extends AbstractShellTest
         executeCommand( "pwd", "\\(0\\)-->\\(\\?\\)" );
         executeCommand( "cd -a " + otherRelationships[0].getEndNode().getId() );
         executeCommand( "ls" );
+    }
+    
+    @Test
+    public void startEvenIfReferenceNodeHasBeenDeleted() throws Exception
+    {
+        String storeDir = "target/test-data/db";
+        FileUtils.deleteRecursively( new File( storeDir ) );
+        GraphDatabaseService newDb = new EmbeddedGraphDatabase( storeDir );
+        Transaction tx = newDb.beginTx();
+        newDb.getReferenceNode().delete();
+        Node node = newDb.createNode();
+        String name = "Test";
+        node.setProperty( "name", name );
+        tx.success();
+        tx.finish();
+        
+        GraphDatabaseShellServer server = new GraphDatabaseShellServer( newDb );
+        ShellClient client = new SameJvmClient( server );
+        executeCommand( server, client, "pwd", Pattern.quote( "(?)" ) );
+        executeCommand( server, client, "ls " + node.getId(), "Test" );
+        executeCommand( server, client, "cd -a " + node.getId() );
+        executeCommand( server, client, "ls", "Test" );
+        newDb.shutdown();
     }
 }

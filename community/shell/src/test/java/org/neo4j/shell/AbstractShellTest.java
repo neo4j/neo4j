@@ -107,8 +107,14 @@ public abstract class AbstractShellTest
     
     public void executeCommand( String command, String... theseLinesMustExistRegEx ) throws Exception
     {
+        executeCommand( shellServer, shellClient, command, theseLinesMustExistRegEx );
+    }
+    
+    public void executeCommand( ShellServer server, ShellClient client, String command,
+            String... theseLinesMustExistRegEx ) throws Exception
+    {
         OutputCollector output = new OutputCollector();
-        shellServer.interpretLine( command, shellClient.session(), output );
+        server.interpretLine( command, client.session(), output );
         
         for ( String lineThatMustExist : theseLinesMustExistRegEx )
         {
