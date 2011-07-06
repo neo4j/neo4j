@@ -203,8 +203,10 @@ mkrel -c -d i -t DOMAIN_OF --np "{'app':'foobar'}"
 * +mv <key> <new-key>+ renames a property from one key to another.
 
 === Deleting nodes and relationships ===
-Deleting nodes and relationships is done with the +rmrel+ command.
-It focuses on deletion of relationships, but a node can also be deleted if the deleted relationship leaves the opposite node "stranded" (i.e. it no longer has any relationships drawn to it) '''and''' the +-d+ options is supplied. See the relationship ids with the +ls -rv+ command.
+Deletion of nodes and relationships is done with the +rmnode+ and +rmrel+ commands.
++rmnode+ can delete nodes, if the node to be deleted still has relationships they can also be deleted by supplying -f option.
++rmrel+ can delete relationships, it tries to ensure connectedness in the graph, but relationships can be deleted regardless with the -f option.
++rmrel+ can also delete the node on the other side of the deleted relationship if it's left with no more relationships, see -d option.
 
 [[shell-env-vars]]
 === Environment variables ===
@@ -242,7 +244,7 @@ Example: +index -i persons name+ (will index the name for the current node or re
 * +--cd+ will change current location to the hit from the query. It's just a convenience for using the -c option.
 * +--ls+ will do a listing of the contents for each hit. It's just a convenience for using the -c option.
 * +-i+ will index a key-value pair in an index for the current node/relationship. If no value is given the property value for that key for the current node is used as value.
-* +-r+ will remove a key-value pair (if it exists) from an index for the current node/relationship. If no value is given the property value for that key for the current node is used as value. 
+* +-r+ will remove a key-value pair (if it exists) from an index for the current node/relationship. Key and value is optional. 
 
 [[shell-extending]]
 == Extending the shell: Adding your own commands ==
@@ -253,6 +255,10 @@ So you say you'd like to start a Neo4j http://api.neo4j.org/current/org/neo4j/gr
 
 [source,java]
 ----
+import org.neo4j.helpers.Service;
+import org.neo4j.shell.kernel.apps.GraphDatabaseApp;
+
+@Service.Implementation( App.class )
 public class LsRelTypes extends GraphDatabaseApp
 {
     @Override
@@ -270,10 +276,7 @@ public class LsRelTypes extends GraphDatabaseApp
 }
 ----
 
-You make your app discoverable via the Java Service API, so in a file e.g. src/main/resources/META-INF/services/org.neo4j.shell.App include:
-+org.my.domain.MyShellApp+
-
-And you could now use it in the shell by typing +lsreltypes+ (its name is based on the class name).
+And you could now use it in the shell by typing +lsreltypes+ (its name is based on the class name) if +getName+ method isn't overridden.
 
 If you'd like it to display some nice help information when using the +help+ (or +man+) app, override the +getDescription+ method for a general description and use +addValueType+ method to add descriptions about (and logic to) the options you can supply when using your app.
 
