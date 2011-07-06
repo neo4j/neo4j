@@ -47,7 +47,7 @@ public class Rmnode extends GraphDatabaseApp
     @Override
     public String getDescription()
     {
-        return "Deletes a node from the graph";
+        return "Deletes a node from the graph. If no node-id argument is given the current node is deleted";
     }
 
     @Override
@@ -91,7 +91,7 @@ public class Rmnode extends GraphDatabaseApp
         if ( node.asNode().hasRelationship() )
         {
             throw new ShellException( getDisplayName( getServer(), session, node.asNode(), false ) +
-                    " cannot be deleted because it still have relationships. Use -f to force deletion of its relationships" );
+                    " cannot be deleted because it still has relationships. Use -f to force deletion of its relationships" );
         }
         node.asNode().delete();
         return null;

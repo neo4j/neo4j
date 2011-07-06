@@ -65,7 +65,7 @@ public class PathShellApp extends ReadOnlyGraphDatabaseApp
     protected String exec( AppCommandParser parser, Session session, Output out ) throws Exception
     {
         String fromString = parser.options().get( "from" );
-        String toString = parser.arguments().get( 0 );
+        String toString = parser.argument( 0, "Must supply a 'to' node as first argument" );
         String algo = parser.options().get( "a" );
         String maxDepthString = parser.options().get( "m" );
         boolean quietPrint = parser.options().containsKey( "q" );

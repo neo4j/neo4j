@@ -238,6 +238,21 @@ public class AppCommandParser
 		return this.arguments;
 	}
 	
+	public String argumentWithDefault( int index, String defaultValue )
+	{
+	    return index < arguments.size() ? arguments.get( index ) : defaultValue;
+	}
+	
+	public String argument( int index, String errorMessageIfItDoesnExist )
+	        throws ShellException
+	{
+	    if ( index >= arguments.size() )
+	    {
+	        throw new ShellException( errorMessageIfItDoesnExist );
+	    }
+	    return arguments.get( index );
+	}
+	
 	/**
 	 * @return the entire line from the client.
 	 */

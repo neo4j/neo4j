@@ -204,7 +204,7 @@ public class TestApps extends AbstractShellTest
     {
         Relationship[] relationships = createRelationshipChain( 2 );
         Node middleNode = relationships[0].getEndNode();
-        executeCommandExpectingException( "rmnode " + middleNode.getId(), "still have relationships" );
+        executeCommandExpectingException( "rmnode " + middleNode.getId(), "still has relationships" );
         assertNodeExists( middleNode );
         Node endNode = relationships[1].getEndNode();
         executeCommand( "rmnode -f " + middleNode.getId(), "deleted" );
