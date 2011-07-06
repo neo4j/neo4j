@@ -36,9 +36,6 @@ COMMANDS
 *restart*::
   Restarts a running server.
 
-*condrestart*::
-  Restarts a server, but only if it was already running.
-
 *status*::
   Current running state of the server
 
@@ -47,9 +44,6 @@ COMMANDS
 
 *remove*::
   Uninstalls the system service
-
-*dump*::
-  Displays thread dump, also saved to the wrapper.log
 
 [[neo4j-coordinator-manpage-files]]
 FILES
